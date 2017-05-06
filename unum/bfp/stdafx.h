@@ -9,9 +9,14 @@
 
 #include <stdio.h>
 #include <tchar.h>
-#include <string>
 #include <iostream>
 
+
+// TODO: reference additional headers your program requires here
 #include <cstdint>
+
+#include <cstdio>
+#include <cmath>
+
+
 #include "posit.hpp"
-#include "posit_operators.hpp"

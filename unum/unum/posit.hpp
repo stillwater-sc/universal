@@ -2,6 +2,9 @@
 
 template<size_t nbits, size_t es> class posit {
 public:
+	posit<nbits, es>() {
+		useed = 1 << (1 << es);
+	}
 	posit<nbits, es>& operator=(const int& rhs) {
 		this->bits = rhs;
 		return *this;
@@ -46,9 +49,14 @@ public:
 		operator--();
 		return tmp;
 	}
+
+	void Info()  {
+		std::cout << "useed : " << useed << " Minpos : " << pow(useed, 2 - nbits) << " Maxpos : " << pow(useed, nbits - 2) << std::endl;
+	}
 private:
-	std::uint8_t sign, nbits;
-	std::uint32_t es, bits;
+	std::uint8_t fs;
+	std::uint64_t bits;
+	std::uint64_t useed;
 
 	template<size_t nbits, size_t es>
 	friend std::ostream& operator<< (std::ostream& ostr, const posit<nbits, es>& p);

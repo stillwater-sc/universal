@@ -16,6 +16,7 @@ int main()
 	p5 = p2 * p3;
 	p6 = p5 / p3;
 
+	p1.Info();
 	std::cout << "p1: " << p1 << "\n";
 	std::cout << "p2: " << p2 << "\n";
 	std::cout << "p3: " << p3 << "\n";
