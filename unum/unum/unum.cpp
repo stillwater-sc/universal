@@ -6,7 +6,7 @@
 
 int main()
 {
-	Posit<1,3,8,20> p1, p2, p3, p4, p5, p6;
+	Posit<5,3,8> p1, p2, p3, p4, p5, p6;
 
 	std::cin >> p1 >> p2;
 
