@@ -1,48 +1,48 @@
 #pragma once
 
-template<size_t nbits, size_t es> class Posit {
+template<size_t nbits, size_t es> class posit {
 public:
-	Posit<nbits, es>& operator=(const int& rhs) {
+	posit<nbits, es>& operator=(const int& rhs) {
 		this->bits = rhs;
 		return *this;
 	}
-	Posit<nbits, es>& operator=(const float& rhs) {
+	posit<nbits, es>& operator=(const float& rhs) {
 		return *this;
 	}
-	Posit<nbits, es>& operator=(const double& rhs) {
+	posit<nbits, es>& operator=(const double& rhs) {
 		return *this;
 	}
-	Posit<nbits, es>& operator+=(const Posit& rhs) {
+	posit<nbits, es>& operator+=(const posit& rhs) {
 		this->bits += rhs.bits;
 		return *this;
 	}
-	Posit<nbits, es>& operator-=(const Posit& rhs) {
+	posit<nbits, es>& operator-=(const posit& rhs) {
 		this->bits += rhs.bits;
 		return *this;
 	}
-	Posit<nbits, es>& operator*=(const Posit& rhs) {
+	posit<nbits, es>& operator*=(const posit& rhs) {
 		this->bits *= rhs.bits;
 		return *this;
 	}
-	Posit<nbits, es>& operator/=(const Posit& rhs) {
+	posit<nbits, es>& operator/=(const posit& rhs) {
 		this->bits /= rhs.bits;
 		return *this;
 	}
-	Posit<nbits, es>& operator++() {
+	posit<nbits, es>& operator++() {
 		bits++;
 		return *this;
 	}
-	Posit<nbits, es> operator++(int) {
-		Posit tmp(*this);
+	posit<nbits, es> operator++(int) {
+		posit tmp(*this);
 		operator++();
 		return tmp;
 	}
-	Posit<nbits, es>& operator--() {
+	posit<nbits, es>& operator--() {
 		bits--;
 		return *this;
 	}
-	Posit<nbits, es> operator--(int) {
-		Posit tmp(*this);
+	posit<nbits, es> operator--(int) {
+		posit tmp(*this);
 		operator--();
 		return tmp;
 	}
@@ -51,20 +51,20 @@ private:
 	std::uint32_t es, bits;
 
 	template<size_t nbits, size_t es>
-	friend std::ostream& operator<< (std::ostream& ostr, const Posit<nbits, es>& p);
+	friend std::ostream& operator<< (std::ostream& ostr, const posit<nbits, es>& p);
 	template<size_t nbits, size_t es>
-	friend std::istream& operator>> (std::istream& istr, Posit<nbits, es>& p);
+	friend std::istream& operator>> (std::istream& istr, posit<nbits, es>& p);
 
 	template<size_t nbits, size_t es>
-	friend bool operator==(const Posit<nbits, es>& lhs, const Posit<nbits, es>& rhs);
+	friend bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs);
 	template<size_t nbits, size_t es>
-	friend bool operator!=(const Posit<nbits, es>& lhs, const Posit<nbits, es>& rhs);
+	friend bool operator!=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs);
 	template<size_t nbits, size_t es>
-	friend bool operator< (const Posit<nbits, es>& lhs, const Posit<nbits, es>& rhs);
+	friend bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs);
 	template<size_t nbits, size_t es>
-	friend bool operator> (const Posit<nbits, es>& lhs, const Posit<nbits, es>& rhs);
+	friend bool operator> (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs);
 	template<size_t nbits, size_t es>
-	friend bool operator<=(const Posit<nbits, es>& lhs, const Posit<nbits, es>& rhs);
+	friend bool operator<=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs);
 	template<size_t nbits, size_t es>
-	friend bool operator>=(const Posit<nbits, es>& lhs, const Posit<nbits, es>& rhs);
+	friend bool operator>=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs);
 };
