@@ -1,5 +1,13 @@
 #pragma once
 
+#define SHIFT(n) (1 << (n))
+#ifndef MIN
+#define MIN(a,b) (a) < (b) ? (a) : (b)
+#endif
+#ifndef MAX
+#define MAX(a,b) (a) > (b) ? (a) : (b)
+#endif
+
 template<size_t nbits, size_t es> class posit {
 public:
 	posit<nbits, es>() {
@@ -16,23 +24,23 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator+=(const posit& rhs) {
-		this->bits += rhs.bits;
+		// add rhs             this->bits += rhs.bits;
 		return *this;
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
-		this->bits += rhs.bits;
+		// subtract rhs        this->bits -= rhs.bits;
 		return *this;
 	}
 	posit<nbits, es>& operator*=(const posit& rhs) {
-		this->bits *= rhs.bits;
+		// multiply by rhs     this->bits *= rhs.bits;
 		return *this;
 	}
 	posit<nbits, es>& operator/=(const posit& rhs) {
-		this->bits /= rhs.bits;
+		// multiply by /rhs    this->bits *= /rhs.bits;
 		return *this;
 	}
 	posit<nbits, es>& operator++() {
-		bits++;
+		// add +1 to fraction bits;
 		return *this;
 	}
 	posit<nbits, es> operator++(int) {
@@ -41,7 +49,7 @@ public:
 		return tmp;
 	}
 	posit<nbits, es>& operator--() {
-		bits--;
+		// add -1 to fraction bits;
 		return *this;
 	}
 	posit<nbits, es> operator--(int) {
@@ -50,12 +58,28 @@ public:
 		return tmp;
 	}
 
+	bool isInfinite() {
+		// +-infinite is a bit string of a sign bit of 1 followed by all 0s
+		std::bitset<nbits> tmp(bits << 1);
+		std::cout << bits << " " << tmp << std::endl;
+		return bits[nbits-1] && tmp.any();
+	}
+	bool isZero() {
+		// 0 is a bit string of all 0s
+		return !bits.any();
+	}
+	bool isNegative() {
+		return bits[nbits-1];
+	}
+	bool isPositive() {
+		return !isNegative();
+	}
 	void Info()  {
 		std::cout << "useed : " << useed << " Minpos : " << pow(useed, 2 - nbits) << " Maxpos : " << pow(useed, nbits - 2) << std::endl;
 	}
 private:
 	std::uint8_t fs;
-	std::uint64_t bits;
+	std::bitset<nbits> bits;
 	std::uint64_t useed;
 
 	template<size_t nbits, size_t es>
