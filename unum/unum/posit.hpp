@@ -13,11 +13,41 @@ public:
 	posit<nbits, es>() {
 		useed = 1 << (1 << es);
 	}
+	posit<nbits, es>& operator=(const char& rhs) {
+		this->bits = rhs;
+		return *this;
+	}
 	posit<nbits, es>& operator=(const int& rhs) {
 		this->bits = rhs;
 		return *this;
 	}
+	posit<nbits, es>& operator=(const long& rhs) {
+		this->bits = rhs;
+		return *this;
+	}
+	posit<nbits, es>& operator=(const long long& rhs) {
+		this->bits = rhs;
+		return *this;
+	}
 	posit<nbits, es>& operator=(const float& rhs) {
+		switch (fpclassify(*rhs)) {
+		case FP_INFINITE:
+			bits.reset();
+			bits[nbits - 1] = true;
+			break;
+		case FP_NAN:
+			cerr << "float is NAN" << endl;
+			break;
+		case FP_SUBNORMAL:
+			bits.reset();
+			// TODO
+			break;
+		case FP_NORMAL:
+			bits.reset();
+			// 8 bits of exponent, 23 bits of mantissa
+			extractIEEE(rhs, 8, 23);
+			break;
+		}
 		return *this;
 	}
 	posit<nbits, es>& operator=(const double& rhs) {
@@ -25,6 +55,21 @@ public:
 	}
 	posit<nbits, es>& operator+=(const posit& rhs) {
 		// add rhs             this->bits += rhs.bits;
+		if (isZero()) {
+			bits = rhs.bits;
+			return *this;
+		}
+		else {
+			if (rhs.isZero()) {
+				return *this;
+			}
+			else if (isInfinite() && rhs.isInfinite()) {
+				return *this;
+			}
+			else if (isInfinite() || rhs.isInfinite()) {
+				return *this;
+			}
+		}
 		return *this;
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
@@ -58,29 +103,40 @@ public:
 		return tmp;
 	}
 
-	bool isInfinite() {
+	bool isInfinite() const {
 		// +-infinite is a bit string of a sign bit of 1 followed by all 0s
 		std::bitset<nbits> tmp(bits << 1);
 		std::cout << bits << " " << tmp << std::endl;
 		return bits[nbits-1] && tmp.any();
 	}
-	bool isZero() {
-		// 0 is a bit string of all 0s
+	bool isZero() const {
+		// zero is a bit string of all 0s
 		return !bits.any();
 	}
-	bool isNegative() {
-		return bits[nbits-1];
+	bool isNegative() const {
+		return bits[nbits - 1];
 	}
-	bool isPositive() {
-		return !isNegative();
+	bool isPositive() const {
+		return !bits[nbits - 1];
 	}
-	void Info()  {
+	void Info() const {
 		std::cout << "useed : " << useed << " Minpos : " << pow(useed, 2 - nbits) << " Maxpos : " << pow(useed, nbits - 2) << std::endl;
 	}
 private:
 	std::uint8_t fs;
 	std::bitset<nbits> bits;
 	std::uint64_t useed;
+
+	void extractIEEE(uint64_t f, int exponentSize, int mantissaSize) {
+		int exponentBias = SHIFT(exponentSize - 1) - 1;
+		int16_t exponent = (f >> mantissaSize) & ((1 << exponentSize) - 1);
+		uint64_t mantissa = (f & ((1ULL << mantissaSize) - 1));
+
+		// clip exponent
+		int rmin = SHIFT(es) * (2 - nbits);
+		int rmax = SHIFT(es) * (nbits - 2);
+		int rf = MIN(MAX(exponent - exponentBias, rmin), rmax);
+	}
 
 	template<size_t nbits, size_t es>
 	friend std::ostream& operator<< (std::ostream& ostr, const posit<nbits, es>& p);

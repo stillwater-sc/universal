@@ -11,6 +11,7 @@
 #include <tchar.h>
 #include <string>
 #include <iostream>
+#include <iomanip>
 #include <bitset>
 #include <cstdint>
 #include "posit.hpp"
