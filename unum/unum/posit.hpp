@@ -1,12 +1,21 @@
 #pragma once
 
-#define SHIFT(n) (1 << (n))
+#define POW2(n) (1 << (n))
 #ifndef MIN
 #define MIN(a,b) (a) < (b) ? (a) : (b)
 #endif
 #ifndef MAX
 #define MAX(a,b) (a) > (b) ? (a) : (b)
 #endif
+
+// easy to use segment masks
+#define FLOAT_SIGN_MASK      0x80000000
+#define FLOAT_EXPONENT_MASK  0x7F800000
+#define FLOAT_MANTISSA_MASK  0x007FFFFF
+#define DOUBLE_SIGN_MASK     0x8000000000000000
+#define DOUBLE_EXPONENT_MASK 0x7FF0000000000000
+#define DOUBLE_MANTISSA_MASK 0x000FFFFFFFFFFFFF
+
 
 template<size_t nbits, size_t es> class posit {
 public:
@@ -40,12 +49,12 @@ public:
 			break;
 		case FP_SUBNORMAL:
 			bits.reset();
-			// TODO
+			cerr << "TODO: subnormal number" << endl;
 			break;
 		case FP_NORMAL:
 			bits.reset();
 			// 8 bits of exponent, 23 bits of mantissa
-			extractIEEE(rhs, 8, 23);
+			extractIEEE754((uint64_t)*rhs, 8, 23);
 			break;
 		}
 		return *this;
@@ -127,14 +136,14 @@ private:
 	std::bitset<nbits> bits;
 	std::uint64_t useed;
 
-	void extractIEEE(uint64_t f, int exponentSize, int mantissaSize) {
-		int exponentBias = SHIFT(exponentSize - 1) - 1;
+	void extractIEEE754(uint64_t f, int exponentSize, int mantissaSize) {
+		int exponentBias = POW2(exponentSize - 1) - 1;
 		int16_t exponent = (f >> mantissaSize) & ((1 << exponentSize) - 1);
 		uint64_t mantissa = (f & ((1ULL << mantissaSize) - 1));
 
 		// clip exponent
-		int rmin = SHIFT(es) * (2 - nbits);
-		int rmax = SHIFT(es) * (nbits - 2);
+		int rmin = POW2(es) * (2 - nbits);
+		int rmax = POW2(es) * (nbits - 2);
 		int rf = MIN(MAX(exponent - exponentBias, rmin), rmax);
 	}
 
