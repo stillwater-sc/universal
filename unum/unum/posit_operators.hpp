@@ -30,11 +30,11 @@ inline std::ostream& operator<< (std::ostream& ostr, const posit<nbits, es>& p) 
 	// determine the value of the posit
 	int k = 0;   // will contain the k value
 	if (p.isZero()) {
-		ostr << "zero";
+		ostr << "zero" << "                                                              b" << p.bits;
 		return ostr;
 	}
 	else if (p.isInfinite()) {
-		ostr << "inf";
+		ostr << "infinite" << "                                                          b" << p.bits;
 		return ostr;
 	}
 	else {
@@ -67,7 +67,7 @@ inline std::ostream& operator<< (std::ostream& ostr, const posit<nbits, es>& p) 
 	else {
 		value = p.useed * fraction;
 	}
-	ostr << "Sign : " << p.bits[nbits-1]  << " Regime : " << setw(2) << k << " Regime Bits: 0X" << hex << regime << dec << " Exponent : " << e << " Fraction : b" << p.bits;
+	ostr << "Sign : " << p.bits[nbits-1]  << " Regime : " << setw(3) << k << " Regime Bits: 0X" << hex << setw(4) << regime << dec << " Exponent : " << e << " Fraction : b" << p.bits;
 	return ostr;
 }
 

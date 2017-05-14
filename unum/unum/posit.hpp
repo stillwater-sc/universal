@@ -1,6 +1,6 @@
 #pragma once
 
-#define POW2(n) (1 << (n))
+#define POW2(n) (uint64_t(1) << (n))
 #ifndef MIN
 #define MIN(a,b) (a) < (b) ? (a) : (b)
 #endif

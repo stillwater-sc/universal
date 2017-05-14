@@ -53,13 +53,13 @@ void extract(uint32_t f, int fes, int fms) {
 	// clip exponent
 	long long rmin = POW2(es) * (2 - nbits);
 	long long rmax = POW2(es) * (nbits - 2);
-	long rf = MIN(MAX(exponent - exponentBias, rmin), rmax);
+	long long rf = MIN(MAX(exponent - exponentBias, rmin), rmax);
 
 	cout << "rmin " << rmin << " rmax " << rmax << " rf " << rf << endl;
 
 	uint32_t positSignBit = f >> (fes + fms);
-	int positRegionSize = rf >> es;
-	int positExponentSize = rf - POW2(es) * positRegionSize;
+	int64_t positRegionSize = rf >> es;
+	int64_t positExponentSize = rf - POW2(es) * positRegionSize;
 
 	cout << "positSignBit " << positSignBit << " positRegionSize " << positRegionSize << " exponent " << positExponentSize << endl;
 
@@ -76,7 +76,7 @@ void extract(uint32_t f, int fes, int fms) {
 void generateScaleFactorLookupTable() {
 	uint64_t useed, useed_power_k;
 	for (int es = 0; es < MAX_ES; es++) {
-		useed = POW2(POW2(es));
+		useed = POW2(POW2(uint64_t(es)));
 		useed_power_k = useed; 
 		GENERATED_SCALE_FACTORS[es][0] = 1; // for k = 0
 		for (int k = 1; k < MAX_K; k++) {
@@ -154,37 +154,88 @@ void testConversionOperatorsNegativeRegime() {
 }
 
 void testRawBitPatterns() {
-	posit<5, 1> p;
-	bitset<5> raw;
+	posit<16, 1> p;
+	bitset<16> raw;
 
 	raw.reset();
 	// positive regime infinity - 1
-	raw[4] = 1;
+	raw[15] = 1;
 	p.set(raw); 	cout << p << endl;
 	raw.set();
-	raw[4] = false;			// 4096			
+	raw[15] = false;						// 1152921504606846976			
 	p.set(raw); 	cout << p << endl;
-	raw[0] = false;			// 256
+	raw[0] = false;							// 72057594037927936			
 	p.set(raw); 	cout << p << endl;
-	raw[1] = false;			// 16
+	raw[0] = false;							// 4503599627370496			
 	p.set(raw); 	cout << p << endl;
-	raw[2] = false;			// 1
+	raw[1] = false;							// 281474976710656			
 	p.set(raw); 	cout << p << endl;
+	raw[2] = false;							// 17592186044416			
+	p.set(raw); 	cout << p << endl;
+	raw[3] = false;							// 1099511627776			
+	p.set(raw); 	cout << p << endl;
+	raw[4] = false;							// 68719476736			
+	p.set(raw); 	cout << p << endl;
+	raw[5] = false;							// 4294967296			
+	p.set(raw); 	cout << p << endl;
+	raw[6] = false;							// 268435456			
+	p.set(raw); 	cout << p << endl;
+	raw[7] = false;							// 16777216			
+	p.set(raw); 	cout << p << endl;
+	raw[8] = false;							// 1048576			
+	p.set(raw); 	cout << p << endl;
+	raw[9] = false;							// 65536			
+	p.set(raw); 	cout << p << endl;
+	raw[10] = false;						// 4096			
+	p.set(raw); 	cout << p << endl;
+	raw[11] = false;						// 256
+	p.set(raw); 	cout << p << endl;
+	raw[12] = false;						// 16
+	p.set(raw); 	cout << p << endl;
+	raw[13] = false;						// 1
+	p.set(raw); 	cout << p << " 1 " << endl;
 
 	raw.reset();
 	// positive fractional regime 1 - 0
-	raw[3] = true;			// 1
+	raw[13] = true;			// 1
 	p.set(raw); 	cout << p << endl;
-	raw[2] = true;			// 1/16
-	raw[3] = false;
+	raw.reset();
+	raw[12] = true;			// 1/16
 	p.set(raw); 	cout << p << endl;
-	raw[1] = true;			// 1/256
-	raw[2] = false;
+	raw.reset();
+	raw[11] = true;			// 1/256
 	p.set(raw); 	cout << p << endl;
-	raw[0] = true;			// 1/4096
-	raw[1] = false;
+	raw.reset();
+	raw[10] = true;			// 1/4096
 	p.set(raw); 	cout << p << endl;
-	raw[0] = false;			// 0
+	raw.reset();
+	raw[9] = true;			// 1/4096
+	p.set(raw); 	cout << p << endl;
+	raw.reset();
+	raw[8] = true;			// 1/4096
+	p.set(raw); 	cout << p << endl;
+	raw.reset();
+	raw[7] = true;			// 1/4096
+	p.set(raw); 	cout << p << endl;
+	raw.reset();
+	raw[6] = true;			// 1/4096
+	p.set(raw); 	cout << p << endl;
+	raw.reset();
+	raw[5] = true;			// 1/4096
+	p.set(raw); 	cout << p << endl;
+	raw.reset();
+	raw[4] = true;			// 1/4096
+	p.set(raw); 	cout << p << endl;
+	raw.reset();
+	raw[3] = true;			// 1/4096
+	p.set(raw); 	cout << p << endl;
+	raw.reset();
+	raw[2] = true;			// 1/4096
+	p.set(raw); 	cout << p << endl;
+	raw.reset();
+	raw[1] = true;			// 1/4096
+	p.set(raw); 	cout << p << endl;
+	raw[1] = false;			// 0
 	p.set(raw); 	cout << p << endl;
 }
 
