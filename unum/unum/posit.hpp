@@ -27,6 +27,23 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(const int& rhs) {
+		bits.reset();
+		int base = findBaseExponent(rhs);
+		if (rhs >= 0) {
+			// calculate regime and exponent bits
+			if (base == 0) {
+				// es bits are all 0
+				// regime bits are a run length of k = 0 -> 10
+				bits[nbits - 1] = 0;  // sign bit
+				bits[nbits - 2] = 1;  // first regime bit
+				bits[nbits - 3] = 0;  // second regime bit
+				bits[nbits - 4] = 0;  // first exponent bit
+			}
+		}
+		else {
+			cerr << "Negative regime not implemented yet" << endl;
+		}
+
 		this->bits = rhs;
 		return *this;
 	}
@@ -115,7 +132,7 @@ public:
 	bool isInfinite() const {
 		// +-infinite is a bit string of a sign bit of 1 followed by all 0s
 		std::bitset<nbits> tmp(bits << 1);
-		std::cout << bits << " " << tmp << std::endl;
+		//std::cout << bits << " " << tmp << std::endl;
 		return bits[nbits-1] && tmp.any();
 	}
 	bool isZero() const {
@@ -128,13 +145,29 @@ public:
 	bool isPositive() const {
 		return !bits[nbits - 1];
 	}
-	void Info() const {
-		std::cout << "useed : " << useed << " Minpos : " << pow(useed, 2 - nbits) << " Maxpos : " << pow(useed, nbits - 2) << std::endl;
+	void Range() const {
+		int minpos_exponent = 2 - nbits;
+		int maxpos_exponent = nbits - 2;
+		std::cout << "useed : " << useed << " Minpos : " << pow(useed, minpos_exponent) << " Maxpos : " << pow(useed, maxpos_exponent) << std::endl;
 	}
 private:
 	std::uint8_t fs;
 	std::bitset<nbits> bits;
 	std::uint64_t useed;
+
+	int findBaseExponent(uint64_t number) {
+		// find the most significant bit
+		int i = 0;
+		int size = sizeof(number);
+		while (i < size) {
+			number >>= 1;
+			if (0 == number) {
+				return i;
+			}
+			i++;
+		}
+		return i;
+	}
 
 	void extractIEEE754(uint64_t f, int exponentSize, int mantissaSize) {
 		int exponentBias = POW2(exponentSize - 1) - 1;

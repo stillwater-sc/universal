@@ -87,32 +87,68 @@ void generateScaleFactorLookupTable() {
 
 }
 
+
+template<size_t nbits, size_t es>
+void checkSpecialCases(posit<nbits, es> p) {
+	cout << "posit is " << (p.isZero() ? "zero " : "non-zero ") << (p.isPositive() ? "positive " : "negative ") << (p.isInfinite() ? "+-infinite" : "not infinite") << endl;
+}
+
 void testBasicOperators() {
 	posit<16, 1> p1, p2, p3, p4, p5, p6;
 
-	cin >> p1 >> p2;
+	p1.Range();
 
-	cout << "p1 is " << (p1.isZero() ? "zero " : "non-zero ") << (p1.isPositive() ? "positive " : "negative ") << (p1.isInfinite() ? "+-infinite" : "not infinite") << endl;
-	cout << "p2 is " << (p2.isZero() ? "zero " : "non-zero ") << (p2.isPositive() ? "positive " : "negative ") << (p2.isInfinite() ? "+-infinite" : "not infinite") << endl;
+	p1 = 0;  checkSpecialCases(p1);
+	p1 = 1;  checkSpecialCases(p1);
+	p2 = 2;  checkSpecialCases(p2);
 
-	long long aLong = -65536;
-	p2 = aLong;
 	p3 = p1 + p2;
 	p4 = p2 - p1;
 	p5 = p2 * p3;
 	p6 = p5 / p3;
 
-	p1.Info();
 	cout << "p1: " << p1 << "\n";
 	cout << "p2: " << p2 << "\n";
 	cout << "p3: " << p3 << "\n";
 	cout << "p4: " << p4 << "\n";
 	cout << "p5: " << p5 << "\n";
 	cout << "p6: " << p6 << "\n";
+
 	cout << "p1++ " << p1++ << " " << p1 << "\n";
 	cout << "++p1 " << ++p1 << "\n";
 	cout << "p1-- " << p1-- << " " << p1 << "\n";
 	cout << "--p1 " << --p1 << "\n";
+
+	// negative regime
+	p1 = -1; checkSpecialCases(p1);
+}
+
+void testConversionOperatorsPositiveRegime() {
+	posit<16, 1> p0, p1, p2, p3, p4, p5, p6;
+
+	p0.Range();
+
+	p0 = 0;  checkSpecialCases(p0);
+	p1 = 1;  checkSpecialCases(p1);
+	p2 = 2;  checkSpecialCases(p2);
+	p3 = 4;  checkSpecialCases(p3);
+	p4 = 8;  checkSpecialCases(p4);
+	p5 = 16;  checkSpecialCases(p5);
+	p6 = 32;  checkSpecialCases(p6);
+}
+
+void testConversionOperatorsNegativeRegime() {
+	posit<16, 1> p0, p1, p2, p3, p4, p5, p6;
+
+	p0.Range();
+
+	p0 = 0;  checkSpecialCases(p0);
+	p1 = -1;  checkSpecialCases(p1);
+	p2 = -2;  checkSpecialCases(p2);
+	p3 = -4;  checkSpecialCases(p3);
+	p4 = -8;  checkSpecialCases(p4);
+	p5 = -16;  checkSpecialCases(p5);
+	p6 = -32;  checkSpecialCases(p6);
 }
 
 void extractTest()
@@ -124,6 +160,7 @@ void extractTest()
 	cout << "Value : " << f1 << endl;
 	extract<16, 1>(bits, 8, 23);
 }
+
 
 void printScaleFactors(uint64_t scale_factors[MAX_ES][MAX_K]) {
 	cout << "      ";
@@ -143,9 +180,11 @@ void printScaleFactors(uint64_t scale_factors[MAX_ES][MAX_K]) {
 
 int main()
 {
-	generateScaleFactorLookupTable();
-	printScaleFactors(GENERATED_SCALE_FACTORS);
-	testBasicOperators();
+//	generateScaleFactorLookupTable();
+//	printScaleFactors(GENERATED_SCALE_FACTORS);
+	testConversionOperatorsPositiveRegime();
+//	testConversionOperatorsNegativeRegime();
+//	testBasicOperators();
     return 0;
 }
 
