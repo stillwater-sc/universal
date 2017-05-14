@@ -28,60 +28,51 @@ inline posit<nbits, es>& operator/(posit<nbits, es> lhs, const posit<nbits, es>&
 template<size_t nbits, size_t es>
 inline std::ostream& operator<< (std::ostream& ostr, const posit<nbits, es>& p) {
 	// determine the value of the posit
-	int k;   // will contain the k value
+	int k = 0;   // will contain the k value
 	if (p.isZero()) {
 		ostr << "zero";
+		return ostr;
 	}
 	else if (p.isInfinite()) {
 		ostr << "inf";
+		return ostr;
 	}
 	else {
-		// sign(p)*useed^k*2^exp*fraction
-		// let k be the number of identical bits in the regime
-		if (p.bits[nbits-1] == 1) {
-			k = 0;   // if a run of 1's k = m - 1
-			for (int i = nbits - 2; i > 0; --i) {
-				if (p.bits[i] == 1) {
-					k++;
-				}
-				else {
-					break;
-				}
-			}
-		}
-		else {
-			k = -1;  // if a run of 0's k = -m
-			for (int i = nbits - 2; i > 0; --i) {
-				if (p.bits[i] == 0) {
-					k--;
-				}
-				else {
-					break;
-				}
-			}
+		k = p.identifyRegime();
+	}
+	uint16_t regime = 0;
+	for (int i = 0; i < k; i++) {
+		regime += (p.bits[nbits - 1 - i]) << i;
+	}
+
+	// extract the exponent information
+	bitset<es> e = 0;
+	uint64_t scale;
+    if (k >= 0) {
+		scale = SCALE_FACTORS[es][k];
+
+		for (int i = 0; i < es; i++) {
+			e[es-i-1] = (p.bits[nbits - 1 - k - i]);
 		}
 	}
-	int64_t value;
-	uint64_t scale;
-    if (k > 0) {
+	else {
 		scale = SCALE_FACTORS[es][k];
 	}
-	else {
-			ostr << "Between 0 and 1 region not implemented yet";
-	}
+
 	uint64_t fraction = p.bits.to_ulong();
+	int64_t value;
 	if (p.bits[nbits - 1]) {
-		value = -(int64_t)(scale * fraction);
+		value = -(int64_t)(p.useed * fraction);
 	}
 	else {
-		value = scale * fraction;
+		value = p.useed * fraction;
 	}
-	ostr << p.bits;
+	ostr << "Sign : " << p.bits[nbits-1]  << " Regime : " << setw(2) << k << " Regime Bits: 0X" << hex << regime << dec << " Exponent : " << e << " Fraction : b" << p.bits;
 	return ostr;
 }
 
 template<size_t nbits, size_t es>
-inline std::istream& operator >> (std::istream& istr, posit<nbits, es>& p) {
+inline std::istream& operator >> (std::istream& istr, const posit<nbits, es>& p) {
 	istr >> p.bits;
 	return istr;
 }

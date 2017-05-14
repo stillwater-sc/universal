@@ -51,8 +51,8 @@ void extract(uint32_t f, int fes, int fms) {
 	cout << " mantissa : " << hex << mantissa << " exponent : " << exponent << " bias " << exponentBias << dec << endl;
 
 	// clip exponent
-	long rmin = POW2(es) * (2 - nbits);
-	long rmax = POW2(es) * (nbits - 2);
+	long long rmin = POW2(es) * (2 - nbits);
+	long long rmax = POW2(es) * (nbits - 2);
 	long rf = MIN(MAX(exponent - exponentBias, rmin), rmax);
 
 	cout << "rmin " << rmin << " rmax " << rmax << " rf " << rf << endl;
@@ -98,7 +98,9 @@ void testBasicOperators() {
 
 	p1.Range();
 
-	p1 = 0;  checkSpecialCases(p1);
+	p1 = 0;  //checkSpecialCases(p1);
+	return;
+
 	p1 = 1;  checkSpecialCases(p1);
 	p2 = 2;  checkSpecialCases(p2);
 
@@ -128,13 +130,13 @@ void testConversionOperatorsPositiveRegime() {
 
 	p0.Range();
 
-	p0 = 0;  checkSpecialCases(p0);
-	p1 = 1;  checkSpecialCases(p1);
-	p2 = 2;  checkSpecialCases(p2);
-	p3 = 4;  checkSpecialCases(p3);
-	p4 = 8;  checkSpecialCases(p4);
-	p5 = 16;  checkSpecialCases(p5);
-	p6 = 32;  checkSpecialCases(p6);
+//	p0 = int(0);  checkSpecialCases(p0);
+	p1 = char(1);  cout << "P1 " << p1 << endl;
+	p2 = long(2);  cout << "P2 " << p2 << endl;
+	p3 = 4;  cout << "P3 " << p3 << endl;
+	p4 = 8;  cout << "P4 " << p4 << endl;
+	p5 = 16;  cout << "P5 " << p5 << endl;
+	p6 = long long(32);  cout << "P6 " << p6 << endl;
 }
 
 void testConversionOperatorsNegativeRegime() {
@@ -149,6 +151,41 @@ void testConversionOperatorsNegativeRegime() {
 	p4 = -8;  checkSpecialCases(p4);
 	p5 = -16;  checkSpecialCases(p5);
 	p6 = -32;  checkSpecialCases(p6);
+}
+
+void testRawBitPatterns() {
+	posit<5, 1> p;
+	bitset<5> raw;
+
+	raw.reset();
+	// positive regime infinity - 1
+	raw[4] = 1;
+	p.set(raw); 	cout << p << endl;
+	raw.set();
+	raw[4] = false;			// 4096			
+	p.set(raw); 	cout << p << endl;
+	raw[0] = false;			// 256
+	p.set(raw); 	cout << p << endl;
+	raw[1] = false;			// 16
+	p.set(raw); 	cout << p << endl;
+	raw[2] = false;			// 1
+	p.set(raw); 	cout << p << endl;
+
+	raw.reset();
+	// positive fractional regime 1 - 0
+	raw[3] = true;			// 1
+	p.set(raw); 	cout << p << endl;
+	raw[2] = true;			// 1/16
+	raw[3] = false;
+	p.set(raw); 	cout << p << endl;
+	raw[1] = true;			// 1/256
+	raw[2] = false;
+	p.set(raw); 	cout << p << endl;
+	raw[0] = true;			// 1/4096
+	raw[1] = false;
+	p.set(raw); 	cout << p << endl;
+	raw[0] = false;			// 0
+	p.set(raw); 	cout << p << endl;
 }
 
 void extractTest()
@@ -182,7 +219,8 @@ int main()
 {
 //	generateScaleFactorLookupTable();
 //	printScaleFactors(GENERATED_SCALE_FACTORS);
-	testConversionOperatorsPositiveRegime();
+	testRawBitPatterns();
+//	testConversionOperatorsPositiveRegime();
 //	testConversionOperatorsNegativeRegime();
 //	testBasicOperators();
     return 0;

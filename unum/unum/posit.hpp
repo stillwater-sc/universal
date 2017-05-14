@@ -23,18 +23,47 @@ public:
 		useed = 1 << (1 << es);
 	}
 	posit<nbits, es>& operator=(const char& rhs) {
-		this->bits = rhs;
+		*this = long long(rhs);
 		return *this;
 	}
 	posit<nbits, es>& operator=(const int& rhs) {
+		*this = long long(rhs);
+		return *this;
+	}
+	posit<nbits, es>& operator=(const long& rhs) {
+		*this = long long(rhs);
+		return *this;
+	}
+	posit<nbits, es>& operator=(const long long& rhs) {
 		bits.reset();
-		int base = findBaseExponent(rhs);
+		if (rhs == 0) {
+			return *this;
+		}
+		// the posit exponent is useed^k*2^e
+		// we need to calculate the scale of the input number and map it to 
+		// the minimum useed^k*2^e range to get the bits for the regime and the exponent.
+
+		// useed = 2^2^es
+		// 2^scale = (2^2^es)^k * 2^e ->
+		// 2^scale = 2^(e + k*2^es) ->
+		// scale = e + k*2^es
+		// scale - e = k*2^es
+		// (scale - e)/2^es = k
+		// e = [0, 2^es)
+		// if scale < 2^es then 
+		//    e = scale
+		// else 
+		//   (scale - e)>>es >= 0
+		//   scale>>2^es - 1 >= 0
+		//
+		int scale = findBaseExponent(rhs);
+		cout << "Number scale base is " << scale << endl;
 		if (rhs >= 0) {
+			bits[nbits - 1] = 0;  // sign bit
 			// calculate regime and exponent bits
-			if (base == 0) {
+			if (scale == 0) {
 				// es bits are all 0
 				// regime bits are a run length of k = 0 -> 10
-				bits[nbits - 1] = 0;  // sign bit
 				bits[nbits - 2] = 1;  // first regime bit
 				bits[nbits - 3] = 0;  // second regime bit
 				bits[nbits - 4] = 0;  // first exponent bit
@@ -43,16 +72,6 @@ public:
 		else {
 			cerr << "Negative regime not implemented yet" << endl;
 		}
-
-		this->bits = rhs;
-		return *this;
-	}
-	posit<nbits, es>& operator=(const long& rhs) {
-		this->bits = rhs;
-		return *this;
-	}
-	posit<nbits, es>& operator=(const long long& rhs) {
-		this->bits = rhs;
 		return *this;
 	}
 	posit<nbits, es>& operator=(const float& rhs) {
@@ -128,12 +147,15 @@ public:
 		operator--();
 		return tmp;
 	}
+	// test function:
+	void set(std::bitset<nbits> raw) {
+		bits = raw;
+	}
 
 	bool isInfinite() const {
 		// +-infinite is a bit string of a sign bit of 1 followed by all 0s
 		std::bitset<nbits> tmp(bits << 1);
-		//std::cout << bits << " " << tmp << std::endl;
-		return bits[nbits-1] && tmp.any();
+		return bits[nbits-1] && tmp.none();
 	}
 	bool isZero() const {
 		// zero is a bit string of all 0s
@@ -151,11 +173,10 @@ public:
 		std::cout << "useed : " << useed << " Minpos : " << pow(useed, minpos_exponent) << " Maxpos : " << pow(useed, maxpos_exponent) << std::endl;
 	}
 private:
-	std::uint8_t fs;
 	std::bitset<nbits> bits;
 	std::uint64_t useed;
 
-	int findBaseExponent(uint64_t number) {
+	int findBaseExponent(uint64_t number) const {
 		// find the most significant bit
 		int i = 0;
 		int size = sizeof(number);
@@ -169,6 +190,35 @@ private:
 		return i;
 	}
 
+	int identifyRegime() const {
+		int k = 0;
+		// sign(p)*useed^k*2^exp*fraction
+		// let k be the number of identical bits in the regime
+		if (bits[nbits - 2] == 1) {
+			k = 0;   // if a run of 1's k = m - 1
+			for (int i = nbits - 3; i >= 0; --i) {
+				if (bits[i] == 1) {
+					k++;
+				}
+				else {
+					break;
+				}
+			}
+		}
+		else {
+			k = -1;  // if a run of 0's k = -m
+			for (int i = nbits - 3; i >= 0; --i) {
+				if (bits[i] == 0) {
+					k--;
+				}
+				else {
+					break;
+				}
+			}
+		}
+		return k;
+	}
+
 	void extractIEEE754(uint64_t f, int exponentSize, int mantissaSize) {
 		int exponentBias = POW2(exponentSize - 1) - 1;
 		int16_t exponent = (f >> mantissaSize) & ((1 << exponentSize) - 1);
@@ -179,6 +229,7 @@ private:
 		int rmax = POW2(es) * (nbits - 2);
 		int rf = MIN(MAX(exponent - exponentBias, rmin), rmax);
 	}
+
 
 	template<size_t nbits, size_t es>
 	friend std::ostream& operator<< (std::ostream& ostr, const posit<nbits, es>& p);
