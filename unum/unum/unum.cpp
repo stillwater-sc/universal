@@ -19,12 +19,15 @@ es = 2
 #define MAX_ES 5
 #define MAX_K 10
 const uint64_t SCALE_FACTORS[MAX_ES][MAX_K] = {
-	{1,     1,         1,             1,          1,             1,            1,         1,          1,           1},
-	{1,     4,        16,            64,        256,          1024,         4096,     16384,      65536,        262144},
-	{1,    16,       256,          4096,      65536,       1048576,     16777216, 268435546, 4294967296,    68719476736},
-	{1,   256,     65536,      16777216, 4294967296, 1099511627776,           -1,   -1,   -1,   -1},
-	{1, 16384, 268435546, 4398047985664,         -1,            -1,           -1, -1, -1, -1}
+/*               k = 0         k = 1            k = 2         k = 3          k = 4            k = 5              k = 6         k = 7         k = 8          k = 9  */
+	/* es = 0 */ {   1,            4,               8,           16,            32,              64,               128,          256,          512,          1024 },
+	/* es = 1 */ {   1,           16,              64,          256,          1024,            4096,             16384,        65536,       262144,       1048576 },
+	/* es = 2 */ {   1,          256,            4096,        65536,       1048576,        16777216,         268435456,   4294967296,  68719476736, 1099511627776 },
+	/* es = 3 */ {   1,        65536,        16777216,   4294967296, 1099511627776, 281474976710656, 72057594037927936,            0,            0,             0 },
+	/* es = 4 */ {   1,   4294967296, 281474976710656,            0,             0,               0,                 0,            0,            0,             0 },
 };
+
+uint64_t GENERATED_SCALE_FACTORS[MAX_ES][MAX_K];
 
 /*
 Laid out as bits, floating point numbers look like this:
@@ -70,6 +73,20 @@ void extract(uint32_t f, int fes, int fms) {
 	cout << "posit Fraction " << positFraction << endl;
 }
 
+void generateScaleFactorLookupTable() {
+	uint64_t useed, useed_power_k;
+	for (int es = 0; es < MAX_ES; es++) {
+		useed = POW2(POW2(es));
+		useed_power_k = useed; 
+		GENERATED_SCALE_FACTORS[es][0] = 1; // for k = 0
+		for (int k = 1; k < MAX_K; k++) {
+			useed_power_k *= useed;
+			GENERATED_SCALE_FACTORS[es][k] = useed_power_k;
+		}
+	}
+
+}
+
 void testBasicOperators() {
 	posit<16, 1> p1, p2, p3, p4, p5, p6;
 
@@ -108,24 +125,26 @@ void extractTest()
 	extract<16, 1>(bits, 8, 23);
 }
 
-void printScaleFactors(int es_max, int k_max) {
+void printScaleFactors(uint64_t scale_factors[MAX_ES][MAX_K]) {
 	cout << "      ";
-	for (int j = 0; j < k_max; j++) {
-		cout << "     k = " << j << "   ";
+	for (int k = 0; k < MAX_K; k++) {
+		cout << "     k = " << k << "   ";
 	}
 	cout << endl;
-	for (int i = 0; i < es_max; i++) {
-		cout << "es = " << i << " ";
-		for (int j = 0; j < k_max; j++) {
-			cout << setw(12) << SCALE_FACTORS[i][j] << " ";
+	for (int es = 0; es < MAX_ES; es++) {
+		cout << "es = " << es << " ";
+		for (int k = 0; k < MAX_K; k++) {
+			cout << setw(12) << scale_factors[es][k] << " ";
 		}
 		cout << endl;
 	}
 	cout << endl;
 }
+
 int main()
 {
-	printScaleFactors(MAX_ES, MAX_K);
+	generateScaleFactorLookupTable();
+	printScaleFactors(GENERATED_SCALE_FACTORS);
 	testBasicOperators();
     return 0;
 }
