@@ -154,7 +154,7 @@ void testConversionOperatorsNegativeRegime() {
 }
 
 void testRawBitPatterns() {
-	posit<16, 1> p;
+	posit<16, 2> p;
 	bitset<16> raw;
 
 	raw.reset();
