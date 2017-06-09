@@ -4,25 +4,25 @@
 
 
 template<size_t nbits, size_t es>
-inline posit<nbits,es>& operator+(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits,es> operator+(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
 	lhs += rhs;
 	return lhs;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es>& operator-(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits, es> operator-(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
 	lhs -= rhs;
 	return lhs;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es>& operator*(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits, es> operator*(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
 	lhs *= rhs;
 	return lhs;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es>& operator/(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits, es> operator/(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
 	lhs /= rhs;
 	return lhs;
 }
