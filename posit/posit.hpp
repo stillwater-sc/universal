@@ -1,5 +1,8 @@
 #pragma once
 
+#include <cmath>
+#include <iostream>
+
 #define POW2(n) (uint64_t(1) << (n))
 #ifndef MIN
 #define MIN(a,b) (a) < (b) ? (a) : (b)
@@ -23,15 +26,15 @@ public:
 		useed = 1 << (1 << es);
 	}
 	posit<nbits, es>& operator=(const char& rhs) {
-		*this = long long(rhs);
+		*this = (long long)(rhs);
 		return *this;
 	}
 	posit<nbits, es>& operator=(const int& rhs) {
-		*this = long long(rhs);
+		*this = (long long)(rhs);
 		return *this;
 	}
 	posit<nbits, es>& operator=(const long& rhs) {
-		*this = long long(rhs);
+		*this = (long long)(rhs);
 		return *this;
 	}
 	posit<nbits, es>& operator=(const long long& rhs) {
@@ -57,7 +60,7 @@ public:
 		//   scale>>2^es - 1 >= 0
 		//
 		int scale = findBaseExponent(rhs);
-		cout << "Number scale base is " << scale << endl;
+		std::cout << "Number scale base is " << scale << std::endl;
 		if (rhs >= 0) {
 			bits[nbits - 1] = 0;  // sign bit
 			// calculate regime and exponent bits
@@ -70,12 +73,13 @@ public:
 			}
 		}
 		else {
-			cerr << "Negative regime not implemented yet" << endl;
+			std::cerr << "Negative regime not implemented yet" << std::endl;
 		}
 		return *this;
 	}
 	posit<nbits, es>& operator=(const float& rhs) {
-		switch (fpclassify(*rhs)) {
+            using namespace std;
+		switch (fpclassify(rhs)) {
 		case FP_INFINITE:
 			bits.reset();
 			bits[nbits - 1] = true;
@@ -90,7 +94,7 @@ public:
 		case FP_NORMAL:
 			bits.reset();
 			// 8 bits of exponent, 23 bits of mantissa
-			extractIEEE754((uint64_t)*rhs, 8, 23);
+			extractIEEE754((uint64_t)rhs, 8, 23);
 			break;
 		}
 		return *this;
@@ -168,7 +172,7 @@ public:
 		return !bits[nbits - 1];
 	}
 	void Range() const {
-		int minpos_exponent = 2 - nbits;
+		int minpos_exponent = static_cast<int>(2 - nbits);        //  explicit cast to avoid underflow warning, TODO: is this correct?
 		int maxpos_exponent = nbits - 2;
 		std::cout << "useed : " << useed << " Minpos : " << pow(useed, minpos_exponent) << " Maxpos : " << pow(useed, maxpos_exponent) << std::endl;
 	}
@@ -230,22 +234,22 @@ private:
 		int rf = MIN(MAX(exponent - exponentBias, rmin), rmax);
 	}
 
+        // template parameters need names different from class template parameters (for gcc and clang)
+	template<size_t nnbits, size_t ees>
+	friend std::ostream& operator<< (std::ostream& ostr, const posit<nnbits, ees>& p);
+	template<size_t nnbits, size_t ees>
+	friend std::istream& operator>> (std::istream& istr, posit<nnbits, ees>& p);
 
-	template<size_t nbits, size_t es>
-	friend std::ostream& operator<< (std::ostream& ostr, const posit<nbits, es>& p);
-	template<size_t nbits, size_t es>
-	friend std::istream& operator>> (std::istream& istr, posit<nbits, es>& p);
-
-	template<size_t nbits, size_t es>
-	friend bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs);
-	template<size_t nbits, size_t es>
-	friend bool operator!=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs);
-	template<size_t nbits, size_t es>
-	friend bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs);
-	template<size_t nbits, size_t es>
-	friend bool operator> (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs);
-	template<size_t nbits, size_t es>
-	friend bool operator<=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs);
-	template<size_t nbits, size_t es>
-	friend bool operator>=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator==(const posit<nnbits, ees>& lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator!=(const posit<nnbits, ees>& lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator< (const posit<nnbits, ees>& lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator> (const posit<nnbits, ees>& lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator<=(const posit<nnbits, ees>& lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator>=(const posit<nnbits, ees>& lhs, const posit<nnbits, ees>& rhs);
 };
