@@ -14,5 +14,3 @@
 #include <iomanip>
 #include <bitset>
 #include <cstdint>
-#include "posit.hpp"
-#include "posit_operators.hpp"

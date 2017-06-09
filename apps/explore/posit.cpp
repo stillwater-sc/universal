@@ -3,9 +3,9 @@
 
 #include "stdafx.h"
 
-#include "posit_scale_factors.hpp"
-#include "posit.hpp"
-#include "posit_operators.hpp"
+#include "../../posit/posit_scale_factors.hpp"
+#include "../../posit/posit.hpp"
+#include "../../posit/posit_operators.hpp"
 
 using namespace std;
 
