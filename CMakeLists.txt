@@ -53,4 +53,4 @@ endmacro (compile_all)
 
 add_subdirectory("unum")
 add_subdirectory("unum2")
-add_subdirectory("posit")
+add_subdirectory("apps/explore")
