@@ -1,5 +1,7 @@
 #pragma once 
 
+#include "posit_scale_factors.hpp"
+
 
 template<size_t nbits, size_t es>
 inline posit<nbits,es>& operator+(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
@@ -27,6 +29,7 @@ inline posit<nbits, es>& operator/(posit<nbits, es> lhs, const posit<nbits, es>&
 
 template<size_t nbits, size_t es>
 inline std::ostream& operator<< (std::ostream& ostr, const posit<nbits, es>& p) {
+        using namespace std;
 	// determine the value of the posit
 	int k = 0;   // will contain the k value
 	if (p.isZero()) {
