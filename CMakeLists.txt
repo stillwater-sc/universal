@@ -51,6 +51,6 @@ macro (compile_all testing prefix)
 endmacro (compile_all)
 
 
-add_subdirectory("unum")
-add_subdirectory("unum2")
-add_subdirectory("apps/explore")
+add_subdirectory("tests/unum")
+add_subdirectory("tests/unum2")
+add_subdirectory("tests/posit")
