@@ -155,6 +155,16 @@ public:
 	void set(std::bitset<nbits> raw) {
 		bits = raw;
 	}
+	// Set the raw bits of the posit given a binary pattern
+	posit<nbits,es>& set_raw_bits(unsigned long value) {
+		unsigned long mask = 1;
+		for ( int i = 0; i < nbits; i++ ) {
+			bits.set(i,(value & mask));
+			mask = mask << 1;
+		}
+		useed = (1 << (1 << es));
+		return *this;
+	}
 
 	bool isInfinite() const {
 		// +-infinite is a bit string of a sign bit of 1 followed by all 0s
@@ -177,19 +187,82 @@ public:
 		std::cout << "useed : " << useed << " Minpos : " << pow(useed, minpos_exponent) << " Maxpos : " << pow(useed, maxpos_exponent) << std::endl;
 	}
 
-	// Set the raw bits of the posit
-	void SetBits(unsigned long value) {
-		unsigned long mask = 1;
-		for ( int i = 0; i < nbits; i++ ) {
-			bits.set(i,(value & mask));
-			mask = mask << 1;
+	int64_t regime() {
+		int64_t regime;   // only works for posits smaller than 32bits
+		// useed is 2^(2^es) -> a left-shift of one by 2^es
+		return regime;
+	}
+
+	bool sign() {
+		return bits[nbits-1]
+	}
+
+	// identify the regime bits
+	int identifyRegime() const {
+		int k = 0;
+		std::bitset<nbits> tmp(bits);
+		if (tmp.none()) {
+			// special case of 0
+			return 0;
 		}
-		useed = (1 << (1 << es));
+		if (tmp[nbits-1] == true)
+			if (1 == tmp.count()) {
+			// special case of +-inf
+			return nbits;
+		}
+
+		// sign(p)*useed^k*2^exp*fraction
+		// if sign(p) is 1, take 2's complement
+		if (tmp[nbits-1]) {
+			uint64_t value = tmp.flip().to_ulong();
+			value++;
+			unsigned long mask = 1;
+			for (int i = 0; i < nbits; i++) {
+				tmp.set(i, (value & mask));
+				mask = mask << 1;
+			}
+		}
+		// let k be the number of identical bits in the regime
+		if (tmp[nbits-2] == 1) {
+			k = 0;   // if a run of 1's k = m - 1
+			for (int i = nbits - 3; i >= 0; --i) {
+				if (tmp[i] == 1) {
+					k++;
+				}
+				else {
+					break;
+				}
+			}
+		}
+		else {
+			k = -1;  // if a run of 0's k = -m
+			for (int i = nbits - 3; i >= 0; --i) {
+				if (tmp[i] == 0) {
+					k--;
+				}
+				else {
+					break;
+				}
+			}
+		}
+		return k;
 	}
 
 	unsigned long to_ulong() {
 		unsigned long value = bits.to_ulong();
 		return value;
+	}
+
+	void PrintBinary() {
+		for (int i = nbits - 1; i >= 0; --i) {
+			if (bits[i]) {
+				cout << "1";
+			}
+			else {
+				cout << "0";
+			}
+		}
+		cout << endl;
 	}
 
 private:
@@ -210,35 +283,7 @@ private:
 		return i;
 	}
 
-	// identify the regime bits
-	int identifyRegime() const {
-		int k = 0;
-		// sign(p)*useed^k*2^exp*fraction
-		// let k be the number of identical bits in the regime
-		if (bits[nbits - 2] == 1) {
-			k = 0;   // if a run of 1's k = m - 1
-			for (int i = nbits - 3; i >= 0; --i) {
-				if (bits[i] == 1) {
-					k++;
-				}
-				else {
-					break;
-				}
-			}
-		}
-		else {
-			k = -1;  // if a run of 0's k = -m
-			for (int i = nbits - 3; i >= 0; --i) {
-				if (bits[i] == 0) {
-					k--;
-				}
-				else {
-					break;
-				}
-			}
-		}
-		return k;
-	}
+
 
 	void extractIEEE754(uint64_t f, int exponentSize, int mantissaSize) {
 		int exponentBias = POW2(exponentSize - 1) - 1;
