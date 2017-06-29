@@ -155,6 +155,10 @@ public:
 	void set(std::bitset<nbits> raw) {
 		bits = raw;
 	}
+	// Get the raw bits of the posit
+	std::bitset<nbits> get_raw_bits() const {
+		return bits;
+	}
 	// Set the raw bits of the posit given a binary pattern
 	posit<nbits,es>& set_raw_bits(unsigned long value) {
 		unsigned long mask = 1;
@@ -187,18 +191,99 @@ public:
 		std::cout << "useed : " << useed << " Minpos : " << pow(useed, minpos_exponent) << " Maxpos : " << pow(useed, maxpos_exponent) << std::endl;
 	}
 
-	int64_t regime() {
-		int64_t regime;   // only works for posits smaller than 32bits
+	int sign() {
+		return (bits[nbits - 1] ? -1 : 1);
+	}
+
+	// return exponent bits
+	uint32_t exponent() {
+		if (es == 0) {
+			return 0;
+		}
+		// start of exponent is nbits - (sign_bit + regime_bits)
+		int32_t k = run_length();
+		int32_t start;
+		if (k >= 0) {	// 0, 1, 2, ... nbits-2
+			start = nbits - (k + 3);
+		}
+		else {			// -1, -2, ... , -nbits-1
+			start = nbits - (-k + 4);
+		}
+		if (start < 0) {
+			return 0;
+		}
+		std::bitset<es> exp;
+		for (int i = es-1; i >= 0; --i) {
+			exp[i] = bits[start];
+			--start;
+			if (start < 0) break;
+		}
+		return uint32_t(exp.to_ulong());
+	}	
+	
+	// return fraction bits
+	std::bitset<nbits - 3 - es> fraction_bits() {
+		// start of fraction is nbits - (sign_bit + regime_bits + exponent_bits)
+		std::bitset<nbits - 3 - es> fraction;
+		int32_t k = run_length();
+		int32_t msb;
+		if (k >= 0) {	// 0, 1, 2, ... nbits-2
+			msb = nbits - (k + 3 + es);
+		}
+		else {			// -1, -2, ... , -nbits-1
+			msb = nbits - (-k + 4 + es);
+		}
+		if (msb < 0) {
+			return fraction;
+		}
+		
+		for (int i = 0; i <= msb; i++) {
+			fraction[i] = bits[i];
+		}
+		return fraction;
+	}
+
+	uint32_t fraction() {
+		// start of fraction is nbits - (sign_bit + regime_bits + exponent_bits)
+		int32_t k = run_length();
+		int32_t msb;
+		if (k >= 0) {	// 0, 1, 2, ... nbits-2
+			msb = nbits - (k + 3 + es);
+		}
+		else {			// -1, -2, ... , -nbits-1
+			msb = nbits - (-k + 4 + es);
+		}
+		if (msb < 0) {
+			return 0;
+		}
+		std::bitset<nbits-3-es> fraction;
+		for (int i = 0; i <= msb; i++) {
+			fraction[i] = bits[i];
+		}
+		return uint32_t(fraction.to_ulong());
+	}
+
+	double regime() {
+		double regime;   // only works for posits smaller than 32bits
 		// useed is 2^(2^es) -> a left-shift of one by 2^es
+		// useed^k -> left-shift of k*2^es
+		int64_t k = run_length();
+		if (k == 0) return 0.0;
+		if (k > 0) {
+			regime = (1 << (1 << es)*k);
+		}
+		else {
+			regime = 1.0 / (1 << (1 << es)*-k);
+		}
+		
 		return regime;
 	}
 
-	bool sign() {
-		return bits[nbits-1]
-	}
+
+
 
 	// identify the regime bits
-	int identifyRegime() const {
+	int run_length() const {
 		int k = 0;
 		std::bitset<nbits> tmp(bits);
 		if (tmp.none()) {
@@ -212,7 +297,7 @@ public:
 		}
 
 		// sign(p)*useed^k*2^exp*fraction
-		// if sign(p) is 1, take 2's complement
+		// if sign(p) is -1, take 2's complement
 		if (tmp[nbits-1]) {
 			uint64_t value = tmp.flip().to_ulong();
 			value++;
@@ -252,18 +337,12 @@ public:
 		unsigned long value = bits.to_ulong();
 		return value;
 	}
+	double to_double() {
+		double value = 0.0;
 
-	void PrintBinary() {
-		for (int i = nbits - 1; i >= 0; --i) {
-			if (bits[i]) {
-				cout << "1";
-			}
-			else {
-				cout << "0";
-			}
-		}
-		cout << endl;
+		return value;
 	}
+
 
 private:
 	std::bitset<nbits> bits;
