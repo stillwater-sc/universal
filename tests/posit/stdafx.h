@@ -9,8 +9,8 @@
 
 #include <stdio.h>
 //#include <tchar.h>
+#include <cstdint>	// uint8_t, etc.
 #include <string>
 #include <iostream>
 #include <iomanip>
 #include <bitset>
-#include <cstdint>

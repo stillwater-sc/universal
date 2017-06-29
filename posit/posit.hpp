@@ -176,6 +176,22 @@ public:
 		int maxpos_exponent = nbits - 2;
 		std::cout << "useed : " << useed << " Minpos : " << pow(useed, minpos_exponent) << " Maxpos : " << pow(useed, maxpos_exponent) << std::endl;
 	}
+
+	// Set the raw bits of the posit
+	void SetBits(unsigned long value) {
+		unsigned long mask = 1;
+		for ( int i = 0; i < nbits; i++ ) {
+			bits.set(i,(value & mask));
+			mask = mask << 1;
+		}
+		useed = (1 << (1 << es));
+	}
+
+	unsigned long to_ulong() {
+		unsigned long value = bits.to_ulong();
+		return value;
+	}
+
 private:
 	std::bitset<nbits> bits;
 	std::uint64_t useed;
@@ -194,6 +210,7 @@ private:
 		return i;
 	}
 
+	// identify the regime bits
 	int identifyRegime() const {
 		int k = 0;
 		// sign(p)*useed^k*2^exp*fraction
