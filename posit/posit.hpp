@@ -19,6 +19,18 @@
 #define DOUBLE_EXPONENT_MASK 0x7FF0000000000000
 #define DOUBLE_MANTISSA_MASK 0x000FFFFFFFFFFFFF
 
+template<size_t nbits>
+std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
+	std::bitset<nbits> complement;
+	uint64_t value = number.flip().to_ulong();
+	value++;
+	unsigned long mask = 1;
+	for (int i = 0; i < nbits; i++) {
+		complement.set(i, (value & mask));
+		mask = mask << 1;
+	}
+	return complement;
+}
 
 template<size_t nbits, size_t es> class posit {
 public:
@@ -191,83 +203,16 @@ public:
 		std::cout << "useed : " << useed << " Minpos : " << pow(useed, minpos_exponent) << " Maxpos : " << pow(useed, maxpos_exponent) << std::endl;
 	}
 
-	int sign() {
+	int sign() const {
 		return (bits[nbits - 1] ? -1 : 1);
 	}
 
-	// return exponent bits
-	uint32_t exponent() {
-		if (es == 0) {
-			return 0;
-		}
-		// start of exponent is nbits - (sign_bit + regime_bits)
-		int32_t k = run_length();
-		int32_t start;
-		if (k >= 0) {	// 0, 1, 2, ... nbits-2
-			start = nbits - (k + 3);
-		}
-		else {			// -1, -2, ... , -nbits-1
-			start = nbits - (-k + 4);
-		}
-		if (start < 0) {
-			return 0;
-		}
-		std::bitset<es> exp;
-		for (int i = es-1; i >= 0; --i) {
-			exp[i] = bits[start];
-			--start;
-			if (start < 0) break;
-		}
-		return uint32_t(exp.to_ulong());
-	}	
-	
-	// return fraction bits
-	std::bitset<nbits - 3 - es> fraction_bits() {
-		// start of fraction is nbits - (sign_bit + regime_bits + exponent_bits)
-		std::bitset<nbits - 3 - es> fraction;
-		int32_t k = run_length();
-		int32_t msb;
-		if (k >= 0) {	// 0, 1, 2, ... nbits-2
-			msb = nbits - (k + 3 + es);
-		}
-		else {			// -1, -2, ... , -nbits-1
-			msb = nbits - (-k + 4 + es);
-		}
-		if (msb < 0) {
-			return fraction;
-		}
-		
-		for (int i = 0; i <= msb; i++) {
-			fraction[i] = bits[i];
-		}
-		return fraction;
-	}
-
-	uint32_t fraction() {
-		// start of fraction is nbits - (sign_bit + regime_bits + exponent_bits)
-		int32_t k = run_length();
-		int32_t msb;
-		if (k >= 0) {	// 0, 1, 2, ... nbits-2
-			msb = nbits - (k + 3 + es);
-		}
-		else {			// -1, -2, ... , -nbits-1
-			msb = nbits - (-k + 4 + es);
-		}
-		if (msb < 0) {
-			return 0;
-		}
-		std::bitset<nbits-3-es> fraction;
-		for (int i = 0; i <= msb; i++) {
-			fraction[i] = bits[i];
-		}
-		return uint32_t(fraction.to_ulong());
-	}
-
-	double regime() {
+	// return regime value
+	double regime() const {
 		double regime;   // only works for posits smaller than 32bits
-		// useed is 2^(2^es) -> a left-shift of one by 2^es
-		// useed^k -> left-shift of k*2^es
-		int64_t k = run_length();
+						 // useed is 2^(2^es) -> a left-shift of one by 2^es
+						 // useed^k -> left-shift of k*2^es
+		int16_t k = run_length();
 		if (k == 0) return 0.0;
 		if (k > 0) {
 			regime = (1 << (1 << es)*k);
@@ -275,25 +220,133 @@ public:
 		else {
 			regime = 1.0 / (1 << (1 << es)*-k);
 		}
-		
+
 		return regime;
 	}
 
+	// return exponent value
+	uint32_t exponent() const {
+		return uint32_t(exponent_bits().to_ulong());
+	}	
 
+	uint32_t fraction() const {
+		return uint32_t(fraction_bits().to_ulong());
+	}
+
+	// return regime bits
+	std::bitset<nbits - 1> regime_bits() const {
+		int16_t k = 0;
+		std::bitset<nbits> tmp(bits);
+		if (tmp.none()) {  // special case of 0
+			return -(nbits - 1);
+		}
+		if (tmp[nbits - 1] == true)
+			if (1 == tmp.count()) {	// special case of +-inf
+				return (nbits - 1);
+			}
+
+		// sign(p)*useed^k*2^exp*fraction
+		// if sign(p) is -1, take 2's complement
+		if (tmp[nbits - 1]) {
+			tmp = twos_complement(tmp);
+		}
+		// let k be the number of identical bits in the regime
+		int16_t size = 2;
+		if (tmp[nbits - 2] == 1) {
+			k = 0;   // if a run of 1's k = m - 1
+			for (int i = nbits - 3; i >= 0; --i) {
+				if (tmp[i] == 1) {
+					k++; size++;
+				}
+				else {
+					break;
+				}
+			}
+		}
+		else {
+			k = -1;  // if a run of 0's k = -m
+			for (int i = nbits - 3; i >= 0; --i) {
+				if (tmp[i] == 0) {
+					k--; size++;
+				}
+				else {
+					break;
+				}
+			}
+		}
+		if (size > nbits - 1) size = nbits - 1;
+		std::bitset<nbits - 1> regime;
+		int p = nbits - 2;
+		for (int i = size - 1; i >= 0; --i) {
+			regime[i] = tmp[p--];
+		}
+		return regime;
+	}
+
+	// return exponent bits
+	std::bitset<es> exponent_bits() const {
+		if (es == 0) {
+			return 0;
+		}
+		// start of exponent is nbits - (sign_bit + regime_bits)
+		int32_t k = run_length(); //cout << "k " << k << " ";
+		int32_t msb;
+		if (k >= 0) {	// 0, 1, 2, ... nbits-2
+			if (k == 0) {
+				msb = nbits - 4;
+			}
+			else {
+				msb = nbits - (k + 3);
+			}			
+		}
+		else {			// -1, -2, ... , -(nbits-1)
+			msb = nbits - (-k + 3);
+		}
+		if (msb < 0) {
+			return 0;
+		}
+		std::bitset<es> exp; cout << endl;
+		int32_t size = (msb >= es-1 ? es : msb+1);
+		//cout << " size " << size << " msb " << msb << " ";
+		for (int i = 0; i < size; i++) {
+			exp[i] = bits[msb - (size - 1) + i];
+		}
+		return exp;
+	}
+
+	// return fraction bits: nbits - (sign + regime + es)
+	// sign is 1 bit, regime at least 2
+	std::bitset<nbits - 3 - es> fraction_bits() const {
+		std::bitset<nbits - 3 - es> fraction;
+		int32_t k = run_length();
+		int32_t msb;
+		if (k >= 0) {	// 0, 1, 2, ... nbits-2
+			msb = nbits - (k + 3 + es);
+		}
+		else {			// -1, -2, ... , -(nbits-1)
+			msb = nbits - (-k + 3 + es);
+		}
+		if (msb < 0) {
+			return fraction;
+		}
+
+		for (int i = 0; i <= msb; i++) {
+			fraction[i] = bits[i];
+		}
+		return fraction;
+	}
 
 
 	// identify the regime bits
-	int run_length() const {
-		int k = 0;
+	int16_t run_length() const {
+		int16_t k = 0;
 		std::bitset<nbits> tmp(bits);
-		if (tmp.none()) {
-			// special case of 0
-			return 0;
+		if (tmp.none()) {  // special case of 0
+			return -(nbits-1);
 		}
 		if (tmp[nbits-1] == true)
-			if (1 == tmp.count()) {
-			// special case of +-inf
-			return nbits;
+			if (1 == tmp.count()) {	// special case of +-inf
+			return (nbits-1);
 		}
 
 		// sign(p)*useed^k*2^exp*fraction

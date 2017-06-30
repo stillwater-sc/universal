@@ -28,12 +28,12 @@ std::string BinaryRepresentation(std::bitset<nbits> bits) {
 
 int main(int argc, char** argv)
 {
-    // 8 bit posits cover 256 combinations with two special cases '0000-0000' and '1000-0000'
+    // 8 bit posits cover 256 combinations with two special cases 0 == '0000-0000' and +-inf == '1000-0000'
 	const size_t nbits = 5;
 	const size_t es = 2;
-	const size_t size = (1 << nbits);
 	cout << "Generate Posit Lookup table for a POSIT<" << nbits << "," << es << ">" << endl;
 
+	const size_t size = (1 << nbits);
 	double lookup[size];
     posit<nbits,es>	posit_number;
 
