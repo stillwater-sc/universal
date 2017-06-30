@@ -3,22 +3,9 @@
 #include "stdafx.h"
 #include <sstream>
 #include "../../posit/posit.hpp"
+#include "../../posit/posit_operators.hpp"
 
 using namespace std;
-
-template<size_t nbits>
-std::string BinaryRepresentation(std::bitset<nbits> bits) {
-	std::stringstream ss;
-	for (int i = nbits - 1; i >= 0; --i) {
-		if (bits[i]) {
-			ss << "1";
-		}
-		else {
-			ss << "0";
-		}
-	}
-	return ss.str();
-}
 
 /*
   Posit values are a combination of a scaling factor, useed, an exponent, e, and a fraction, f.
@@ -30,16 +17,16 @@ int main(int argc, char** argv)
 {
     // 8 bit posits cover 256 combinations with two special cases 0 == '0000-0000' and +-inf == '1000-0000'
 	const size_t nbits = 5;
-	const size_t es = 2;
+	const size_t es = 1;
 	cout << "Generate Posit Lookup table for a POSIT<" << nbits << "," << es << ">" << endl;
 
 	const size_t size = (1 << nbits);
 	double lookup[size];
-    posit<nbits,es>	posit_number;
+    posit<nbits,es>	myPosit;
 
     for ( int i = 0; i < size; i++ ) {
-        posit_number.set_raw_bits(i);
-        lookup[i] = posit_number.to_double();
+        myPosit.set_raw_bits(i);
+        lookup[i] = myPosit.to_double();
     }
 
 	const size_t index_column    =  5;
@@ -60,18 +47,18 @@ int main(int argc, char** argv)
 		 << setw(fraction_column) << " fraction"
 		 << setw(value_column) << " value" << endl;
     for ( int i = 0; i < size; i++ ) {
-		posit_number.set_raw_bits(i);
-		string binary = BinaryRepresentation(posit_number.get_raw_bits());
+		myPosit.set_raw_bits(i);
+		string binary = to_binary(myPosit.get_raw_bits());
 		string fraction = "-";
 		if (nbits - 3 - es > 0) {
-			fraction = BinaryRepresentation(posit_number.fraction_bits());
+			fraction = to_binary(myPosit.fraction_bits());
 		}
 		cout << setw(4) << i << ": " 
 			 << setw(bin_column) << binary
-			 << setw(k_column) << posit_number.run_length()
-			 << setw(sign_column) << posit_number.sign() 
-			 << setw(regime_column) << setprecision(7) << posit_number.regime() << setprecision(0)
-			 << setw(exponent_column) << posit_number.exponent()
+			 << setw(k_column) << myPosit.run_length()
+			 << setw(sign_column) << myPosit.sign() 
+			 << setw(regime_column) << setprecision(7) << myPosit.regime() << setprecision(0)
+			 << setw(exponent_column) << myPosit.exponent()
 			 << setw(fraction_column) << fraction
 		     << setw(value_column) << hex << int(lookup[i]) << dec
 			 << endl;

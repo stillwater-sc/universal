@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-
+#include <sstream>
 #include "../../posit/posit_scale_factors.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
@@ -20,8 +20,6 @@ void BasicOperators() {
 	p1.Range();
 
 	p1 = 0;  checkSpecialCases(p1);
-	return;
-
 	p1 = 1;  checkSpecialCases(p1);
 	p2 = 2;  checkSpecialCases(p2);
 
