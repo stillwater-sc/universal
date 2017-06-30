@@ -313,17 +313,17 @@ public:
 		else {			// k = -1, -2, ... , -(nbits-1)
 			msb = nbits + k - 3;
 		}
-		///////////////////////////                             cout << msb << " ";
+		///////////////////////                             cout << msb << " ";
 		int32_t size = 0;
-		if (msb >= 0) {	
+		if (msb >= 0 && es > 0) {	
 			size = (msb >= es - 1 ? es : msb + 1);
-			///////////////////// cout << " size " << size << " msb " << msb << " ";
+			/////////////////// cout << " size " << size << " msb " << msb << " ";
 			for (int i = 0; i < size; i++) {
 				exp[i] = bits[msb - (size - 1) + i];
 			}
 		}
 
-		/////////////////////////// cout << "fraction bits " << msb - size + 1 << endl;
+		//////////////////  cout << "fraction bits " << msb - size + 1 << endl;
 		// finally, set the fraction bits
 		msb = msb - size;
 		if (msb >= 0) {

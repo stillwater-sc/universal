@@ -18,12 +18,13 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	posit<5, 1> myPosit;
+	const size_t nbits = 5;
+	const size_t es = 0;
+	posit<nbits, es> myPosit;
 
 	for (int i = 0; i < 32; i++) {
 		myPosit.set_raw_bits(uint32_t(i));
-		cout << myPosit
-			 << endl;
+		cout << myPosit << endl;
 	}
 
 	return 0;

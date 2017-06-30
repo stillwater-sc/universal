@@ -16,8 +16,8 @@ using namespace std;
 int main(int argc, char** argv)
 {
     // 8 bit posits cover 256 combinations with two special cases 0 == '0000-0000' and +-inf == '1000-0000'
-	const size_t nbits = 5;
-	const size_t es = 1;
+	const size_t nbits = 7;
+	const size_t es = 2;
 	cout << "Generate Posit Lookup table for a POSIT<" << nbits << "," << es << ">" << endl;
 
 	const size_t size = (1 << nbits);
@@ -49,6 +49,10 @@ int main(int argc, char** argv)
     for ( int i = 0; i < size; i++ ) {
 		myPosit.set_raw_bits(i);
 		string binary = to_binary(myPosit.get_raw_bits());
+		string exponent = "-";
+		if (es > 0) {
+			exponent = to_binary(myPosit.exponent_bits());
+		}
 		string fraction = "-";
 		if (nbits - 3 - es > 0) {
 			fraction = to_binary(myPosit.fraction_bits());
@@ -58,7 +62,7 @@ int main(int argc, char** argv)
 			 << setw(k_column) << myPosit.run_length()
 			 << setw(sign_column) << myPosit.sign() 
 			 << setw(regime_column) << setprecision(7) << myPosit.regime() << setprecision(0)
-			 << setw(exponent_column) << myPosit.exponent()
+			 << setw(exponent_column) << exponent
 			 << setw(fraction_column) << fraction
 		     << setw(value_column) << hex << int(lookup[i]) << dec
 			 << endl;
