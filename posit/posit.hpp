@@ -50,43 +50,7 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(const long long& rhs) {
-		bits.reset();
-		if (rhs == 0) {
-			return *this;
-		}
-		// the posit exponent is useed^k*2^e
-		// we need to calculate the scale of the input number and map it to 
-		// the minimum useed^k*2^e range to get the bits for the regime and the exponent.
 
-		// useed = 2^2^es
-		// 2^scale = (2^2^es)^k * 2^e ->
-		// 2^scale = 2^(e + k*2^es) ->
-		// scale = e + k*2^es
-		// scale - e = k*2^es
-		// (scale - e)/2^es = k
-		// e = [0, 2^es)
-		// if scale < 2^es then 
-		//    e = scale
-		// else 
-		//   (scale - e)>>es >= 0
-		//   scale>>2^es - 1 >= 0
-		//
-		int scale = findBaseExponent(rhs);
-		std::cout << "Number scale base is " << scale << std::endl;
-		if (rhs >= 0) {
-			bits[nbits - 1] = 0;  // sign bit
-			// calculate regime and exponent bits
-			if (scale == 0) {
-				// es bits are all 0
-				// regime bits are a run length of k = 0 -> 10
-				bits[nbits - 2] = 1;  // first regime bit
-				bits[nbits - 3] = 0;  // second regime bit
-				bits[nbits - 4] = 0;  // first exponent bit
-			}
-		}
-		else {
-			std::cerr << "Negative regime not implemented yet" << std::endl;
-		}
 		return *this;
 	}
 	posit<nbits, es>& operator=(const float& rhs) {
@@ -164,44 +128,15 @@ public:
 		return tmp;
 	}
 
-	// MODIFIERS
-	void reset() {
-		k = 0;
-		exp.reset();
-		frac.reset();
-		bits.reset();
-	}
-	// test function:
-	void set(std::bitset<nbits> raw) {
-		reset();
-		bits = raw;
-		decode();
-	}
-	// Get the raw bits of the posit
-	std::bitset<nbits> get_raw_bits() const {
-		return bits;
-	}
-	// Set the raw bits of the posit given a binary pattern
-	posit<nbits,es>& set_raw_bits(unsigned long value) {
-		reset();
-		unsigned long mask = 1;
-		for ( int i = 0; i < nbits; i++ ) {
-			bits.set(i,(value & mask));
-			mask = mask << 1;
-		}
-		// do the decode to cache the posit number interpretation
-		decode();
-		return *this;
-	}
-
+	// SELECTORS
 	bool isInfinite() const {
 		// +-infinite is a bit string of a sign bit of 1 followed by all 0s
-		std::bitset<nbits> tmp(bits << 1);
-		return bits[nbits-1] && tmp.none();
+		std::bitset<nbits> tmp(bits);
+		tmp.reset(nbits - 1);
+		return bits[nbits - 1] && tmp.none();
 	}
 	bool isZero() const {
-		// zero is a bit string of all 0s
-		return !bits.any();
+		return bits.none();
 	}
 	bool isNegative() const {
 		return bits[nbits - 1];
@@ -209,23 +144,26 @@ public:
 	bool isPositive() const {
 		return !bits[nbits - 1];
 	}
-	void Range() const {
+	void Range(double& minpos, double& maxpos) const {
 		int minpos_exponent = static_cast<int>(2 - nbits);        //  explicit cast to avoid underflow warning, TODO: is this correct?
 		int maxpos_exponent = nbits - 2;
 		double useed = (1 << (1 << es));
-		std::cout << "useed : " << useed << " Minpos : " << pow(useed, minpos_exponent) << " Maxpos : " << pow(useed, maxpos_exponent) << std::endl;
+		minpos = pow(useed, minpos_exponent);
+		maxpos = pow(useed, maxpos_exponent);
 	}
-
+	// Get the raw bits of the posit
+	std::bitset<nbits> get_raw_bits() const {
+		return bits;
+	}
 	int sign() const {
 		return (bits[nbits - 1] ? -1 : 1);
 	}
-
 	// return regime value
 	double regime() const {
 		double regime;   // only works for posits smaller than 32bits
 						 // useed is 2^(2^es) -> a left-shift of one by 2^es
 						 // useed^k -> left-shift of k*2^es
-		if (k == 0) return 0.0;
+		if (k == 0) return 1.0;
 		if (k > 0) {
 			regime = (1 << (1 << es)*k);
 		}
@@ -235,46 +173,62 @@ public:
 
 		return regime;
 	}
-
 	// return exponent value
 	uint32_t exponent() const {
-		return uint32_t(exp.to_ulong());
-	}	
-
-	uint32_t fraction() const {
-		return uint32_t(frac.to_ulong());
+		return uint32_t(1 << exp.to_ulong());
 	}
-
-	// return run-length encoding
+	double fraction() const {
+		return double(frac.to_ulong())/(1 << nbits);
+	}
+	// return run-length of the regime encoding
 	int run_length() const {
 		return k;
 	}
-
 	// return exponent bits
 	std::bitset<es> exponent_bits() const {
 		return exp;
 	}
-
-	// return fraction bits: nbits - (sign + regime + es)
-	// sign is 1 bit, regime at least 2
-	std::bitset<nbits - 3 - es> fraction_bits() const {
+	// return fraction bits: nbits - 1, right-extended
+	std::bitset<nbits> fraction_bits() const {
 		return frac;
 	}
 
-	// identify the segments
-	// precondition: member vars reset with bits containing the value to decode
+	// MODIFIERS
+	void reset() {
+		k = 0;
+		exp.reset();
+		frac.reset();
+		bits.reset();
+	}
+	void set(std::bitset<nbits> raw) {
+		reset();
+		bits = raw;
+		decode();
+	}
+	// Set the raw bits of the posit given a binary pattern
+	posit<nbits,es>& set_raw_bits(unsigned long value) {
+		reset();
+		unsigned long mask = 1;
+		for ( int i = 0; i < nbits; i++ ) {
+			bits.set(i,(value & mask));
+			mask = mask << 1;
+		}
+		// decode to cache the posit number interpretation
+		decode();
+		return *this;
+	}
+
+	// decode the segments: precondition: member vars reset with bits containing the value to decode
 	int16_t decode() {
-		if (bits.none()) {  // special case = 0
+		if (isZero()) {  // special case = 0
 			k = -(nbits-1);
 			return k;
 		}
-		if (bits[nbits - 1] == true) {
-			if (1 == bits.count()) {	// special case = +-inf
-				k = (nbits - 1);
-				return k;
-			}
+		if (isInfinite()) {	// special case = +-inf
+			k = (nbits - 1);
+			return k;
 		}
-		// sign(p)*useed^k*2^exp*fraction
+
 		// if sign(p) is -1, take 2's complement
 		std::bitset<nbits> tmp(bits);
 		if (bits[nbits - 1]) {
@@ -325,10 +279,17 @@ public:
 
 		//////////////////  cout << "fraction bits " << msb - size + 1 << endl;
 		// finally, set the fraction bits
+		// we do this so that the fraction is right extended with 0;
+		// The max fraction is <nbits - 3 - es>, but we are setting it to <nbits> and right-extent
+		// The msb bit of the fraction representes 2^-1, the next 2^-2, etc.
+		// If the fraction is empty, we have a fraction of nbits-1 0 bits
+		// If the fraction is one bit, we have still have fraction of nbits-1, with the msb representing 2^-1, and the rest are right extended 0's
 		msb = msb - size;
+		size = (msb < 0 ? 0 : msb + 1);
 		if (msb >= 0) {
-			for (int i = 0; i <= msb; i++) {
-				frac[i] = bits[i];
+			int f = 0;
+			for (int i = msb; i >= 0; --i) {
+				frac[nbits - 1 - f++] = bits[i];
 			}
 		}
 		return k;
@@ -338,8 +299,19 @@ public:
 		unsigned long value = bits.to_ulong();
 		return value;
 	}
+
 	double to_double() {
-		double value = 0.0;
+		if (isZero()) {
+			return 0.0;
+		}
+		if (isInfinite()) {
+			return INFINITY;
+		}
+		// value = sign * useed ^ k * 2 ^ exp *   1.fraction
+		double value = sign() * regime() * exponent();
+		if (frac.any()) {
+			value = value * (1.0 + fraction());
+		}
 
 		return value;
 	}
@@ -348,7 +320,7 @@ public:
 private:
 	std::bitset<nbits> bits;
 	std::bitset<es> exp;
-	std::bitset<nbits - 3 - es> frac;
+	std::bitset<nbits> frac; // fraction is max <nbits - 3 - es>  but for small posits, this yields a negative size, so we simply set it to <nbits> and right-extend
 	int8_t k;
 
 	int findBaseExponent(uint64_t number) const {
