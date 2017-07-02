@@ -69,6 +69,7 @@ void GeneratePositTable(ostream& ostr)
 
 int main(int argc, char** argv)
 {
+
 	GeneratePositTable<3, 0>(cout);
 	GeneratePositTable<3, 1>(cout);
 	GeneratePositTable<3, 2>(cout);
@@ -82,7 +83,7 @@ int main(int argc, char** argv)
 	GeneratePositTable<5, 1>(cout);
 	GeneratePositTable<5, 2>(cout);
 	GeneratePositTable<5, 3>(cout);
-	GeneratePositTable<5, 4>(cout);
+	GeneratePositTable<5, 4>(cout);	
 
 	return 0;
 }

@@ -54,7 +54,13 @@ inline std::ostream& operator<< (std::ostream& ostr, const posit<nbits, es>& p) 
 		return ostr;
 	}
 	
-	ostr << setw(14) << to_binary(p.get_raw_bits()) << " Sign : " << setw(2) << p.sign()  << " Regime : " << setw(3) << p.run_length() << " Exponent : " << setw(5) << p.exponent() << " Fraction : " << p.fraction() << " Raw Bits : b" << p.get_raw_bits();
+	ostr << setw(14) << to_binary(p.get_raw_bits()) 
+		<< " Sign : " << setw(2) << p.sign()  
+		<< " Regime : " << setw(3) << p.run_length() 
+		<< " Exponent : " << setw(5) << p.exponent() 
+		<< " Fraction : " << setw(8) << setprecision(7) << p.fraction() 
+		<< " Value : " << setw(16) << p.to_double()
+		<< setprecision(0);
 	return ostr;
 }
 

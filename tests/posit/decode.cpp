@@ -19,7 +19,7 @@ using namespace std;
 int main(int argc, char** argv)
 {
 	const size_t nbits = 5;
-	const size_t es = 0;
+	const size_t es = 1;
 	posit<nbits, es> myPosit;
 
 	for (int i = 0; i < 32; i++) {

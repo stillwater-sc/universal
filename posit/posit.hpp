@@ -160,22 +160,20 @@ public:
 	}
 	// return regime value
 	double regime() const {
-		double regime;   // only works for posits smaller than 32bits
-						 // useed is 2^(2^es) -> a left-shift of one by 2^es
-						 // useed^k -> left-shift of k*2^es
-		if (k == 0) return 1.0;
-		if (k > 0) {
-			regime = (1 << (1 << es)*k);
+		double regime;
+		int e2 = 2 * k;
+		if (e2 >= 0) {
+			regime = (1 << e2);
 		}
 		else {
-			regime = 1.0 / (1 << (1 << es)*-k);
+			regime = 1.0 / (1 << -e2);
 		}
 
 		return regime;
 	}
 	// return exponent value
 	uint32_t exponent() const {
-		return uint32_t(1 << exp.to_ulong());
+		return uint32_t(exp.to_ulong());
 	}
 	double fraction() const {
 		return double(frac.to_ulong())/(1 << nbits);
@@ -228,45 +226,41 @@ public:
 			k = (nbits - 1);
 			return k;
 		}
-
-		// if sign(p) is -1, take 2's complement
-		std::bitset<nbits> tmp(bits);
-		if (bits[nbits - 1]) {
-			tmp = twos_complement(bits);
-		}
-		// let k be the number of identical bits in the regime
-		if (tmp[nbits-2] == 1) {   // run length of 1's
-			k = 0;   // if a run of 1's k = m - 1
+		int m = 0;
+		// let m be the number of identical bits in the regime
+		if (bits[nbits - 2] == 1) {   // run length of 1's
+			m = 1;   // if a run of 1's k = m - 1
 			for (int i = nbits - 3; i >= 0; --i) {
-				if (tmp[i] == 1) {
-					k++;
+				if (bits[i] == 1) {
+					m++;
 				}
 				else {
 					break;
 				}
 			}
+			k = m - 1;
 		}
 		else {
-			k = -1;  // if a run of 0's k = -m
+			m = 1;  // if a run of 0's k = -m
 			for (int i = nbits - 3; i >= 0; --i) {
-				if (tmp[i] == 0) {
-					k--;
+				if (bits[i] == 0) {
+					m++;
 				}
 				else {
 					break;
 				}
 			}
+			k = -m;
+		}	
+		if (isNegative()) {
+			k = -k;
 		}
-		/////////////////////////// cout << "k " << int(k) << " ";
+
+		///////////////////////                            cout << "k = " << int(k) << " m = " << m ;
 		// get the exponent bits
 		// start of exponent is nbits - (sign_bit + regime_bits)
-		int32_t msb;
-		if (k >= 0) {	// k = 0, 1, 2, ... nbits-2
-			msb = nbits - k - 4;
-		}
-		else {			// k = -1, -2, ... , -(nbits-1)
-			msb = nbits + k - 3;
-		}
+		int32_t msb = nbits - (3 + m);
+
 		///////////////////////                             cout << msb << " ";
 		int32_t size = 0;
 		if (msb >= 0 && es > 0) {	
@@ -295,24 +289,52 @@ public:
 		return k;
 	}
 
-	unsigned long to_ulong() {
+	unsigned long to_ulong() const {
 		unsigned long value = bits.to_ulong();
 		return value;
 	}
 
-	double to_double() {
+	double to_double() const {
 		if (isZero()) {
 			return 0.0;
 		}
 		if (isInfinite()) {
 			return INFINITY;
 		}
-		// value = sign * useed ^ k * 2 ^ exp *   1.fraction
-		double value = sign() * regime() * exponent();
-		if (frac.any()) {
-			value = value * (1.0 + fraction());
-		}
+		// positive range =  2^(2r+e)     + 2^(2r+e-1)     * 1.<f>
+		// negative range = -2^(2(r+1)-e) + 2^(2(r+1)-e-2) * 1.<f>
+		double value = 0.0;
+		double base = 0.0;
+		double adjustment = 0.0;
+		int e = exponent();
 
+		if (isPositive()) {
+			int e2 = 2 * k + e;	
+			if (e2 >= 0) {
+				base = (1 << e2);
+			}
+			else {
+				base = 1.0 / (1 << -e2);
+			}
+			value = base + base * fraction();
+		}
+		else {
+			int e2 = 2 * k - e;
+			int e3 = 2 * k - e - 1;
+			if (e2 > 0) {
+				base = -(1 << e2);
+			}
+			else {
+				base = -1.0 / (1 << -e2);
+			}
+			if (e3 > 0) {
+				adjustment = (1 << e3);
+			}
+			else {
+				adjustment = 1.0 / (1 << -e3);
+			}
+			value = base + adjustment * fraction();
+		}
 		return value;
 	}
 
@@ -323,6 +345,8 @@ private:
 	std::bitset<nbits> frac; // fraction is max <nbits - 3 - es>  but for small posits, this yields a negative size, so we simply set it to <nbits> and right-extend
 	int8_t k;
 
+
+	// HELPER methods
 	int findBaseExponent(uint64_t number) const {
 		// find the most significant bit
 		int i = 0;
@@ -336,9 +360,6 @@ private:
 		}
 		return i;
 	}
-
-
-
 	void extractIEEE754(uint64_t f, int exponentSize, int mantissaSize) {
 		int exponentBias = POW2(exponentSize - 1) - 1;
 		int16_t exponent = (f >> mantissaSize) & ((1 << exponentSize) - 1);
