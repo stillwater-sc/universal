@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include <sstream>
 
 #include "../../posit/posit_scale_factors.hpp"
 #include "../../posit/posit.hpp"
@@ -15,11 +16,23 @@ void checkSpecialCases(posit<nbits, es> p) {
 }
 
 void ConversionOperatorsPositiveRegime() {
-	posit<16, 1> p0, p1, p2, p3, p4, p5, p6;
+	posit<5, 1> p0, p1, p2, p3, p4, p5, p6;
+	double minpos, maxpos;
 
-	p0.Range();
+	p0.Range(&minpos, &maxpos);
+	cout << "Minpos = " << setprecision(7) << minpos << endl;
+	cout << "Maxpos = " << maxpos << setprecision(0) << endl;
 
-//	p0 = int(0);  checkSpecialCases(p0);
+	int64_t number = 1;
+	for (int i = 0; i < 8; i++) {
+		p0.from_longlong(number);
+		cout << "number = " << number << p0 << endl;
+		number <<= 1;
+	}
+
+	return;
+
+	p0 = int(0);  checkSpecialCases(p0);
 	p1 = char(1);  cout << "P1 " << p1 << endl;
 	p2 = long(2);  cout << "P2 " << p2 << endl;
 	p3 = 4;  cout << "P3 " << p3 << endl;

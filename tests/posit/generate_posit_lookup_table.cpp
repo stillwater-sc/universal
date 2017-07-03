@@ -69,21 +69,35 @@ void GeneratePositTable(ostream& ostr)
 
 int main(int argc, char** argv)
 {
+	// Sign is 1 bit
+	// Regime is at least 2 bits
+	// So es <= nbits - 3
+	try {
+		posit<3, 1> myPosit;
+	}
+	catch (char* e) {
+		cerr << e << endl;
+	}
 
 	GeneratePositTable<3, 0>(cout);
-	GeneratePositTable<3, 1>(cout);
-	GeneratePositTable<3, 2>(cout);
 
 	GeneratePositTable<4, 0>(cout);
 	GeneratePositTable<4, 1>(cout);
-	GeneratePositTable<4, 2>(cout);
-	GeneratePositTable<4, 3>(cout);
 
 	GeneratePositTable<5, 0>(cout);
 	GeneratePositTable<5, 1>(cout);
 	GeneratePositTable<5, 2>(cout);
-	GeneratePositTable<5, 3>(cout);
-	GeneratePositTable<5, 4>(cout);	
+
+	GeneratePositTable<6, 0>(cout);
+	GeneratePositTable<6, 1>(cout);
+	GeneratePositTable<6, 2>(cout);
+	GeneratePositTable<6, 3>(cout);
+
+	GeneratePositTable<7, 0>(cout);
+	GeneratePositTable<7, 1>(cout);
+	GeneratePositTable<7, 2>(cout);
+	GeneratePositTable<7, 3>(cout);
+	GeneratePositTable<7, 4>(cout);	
 
 	return 0;
 }

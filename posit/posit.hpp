@@ -36,21 +36,25 @@ template<size_t nbits, size_t es> class posit {
 public:
 	posit<nbits, es>() {
 		reset();
+		//validate();
 	}
 	posit<nbits, es>& operator=(const char& rhs) {
-
+		*this = int64_t(rhs);
 		return *this;
 	}
 	posit<nbits, es>& operator=(const int& rhs) {
-
+		*this = int64_t(rhs);
 		return *this;
 	}
 	posit<nbits, es>& operator=(const long& rhs) {
-
+		*this = int64_t(rhs);
 		return *this;
 	}
 	posit<nbits, es>& operator=(const long long& rhs) {
-
+		if (rhs == 0) {
+			bits.reset();
+		}
+		decode();
 		return *this;
 	}
 	posit<nbits, es>& operator=(const float& rhs) {
@@ -144,12 +148,12 @@ public:
 	bool isPositive() const {
 		return !bits[nbits - 1];
 	}
-	void Range(double& minpos, double& maxpos) const {
+	void Range(double* minpos, double* maxpos) const {
 		int minpos_exponent = static_cast<int>(2 - nbits);        //  explicit cast to avoid underflow warning, TODO: is this correct?
 		int maxpos_exponent = nbits - 2;
 		double useed = (1 << (1 << es));
-		minpos = pow(useed, minpos_exponent);
-		maxpos = pow(useed, maxpos_exponent);
+		*minpos = pow(useed, minpos_exponent);
+		*maxpos = pow(useed, maxpos_exponent);
 	}
 	// Get the raw bits of the posit
 	std::bitset<nbits> get_raw_bits() const {
@@ -161,14 +165,18 @@ public:
 	// return regime value
 	double regime() const {
 		double regime;
-		int e2 = 2 * k;
-		if (e2 >= 0) {
-			regime = (1 << e2);
+		int e2 = (1 << es) * k;
+		if (e2 < -63 || e2 > 63) {
+			regime = pow(2.0, e2);
 		}
 		else {
-			regime = 1.0 / (1 << -e2);
+			if (e2 >= 0) {
+				regime = (uint64_t(1) << e2);
+			}
+			else {
+				regime = 1.0 / (uint64_t(1) << -e2);
+			}
 		}
-
 		return regime;
 	}
 	// return exponent value
@@ -189,6 +197,11 @@ public:
 	// return fraction bits: nbits - 1, right-extended
 	std::bitset<nbits> fraction_bits() const {
 		return frac;
+	}
+	void validate() throw(char*) {
+		if (nbits <= es + 3) {
+			throw "Requested es is too large for nbits";
+		}
 	}
 
 	// MODIFIERS
@@ -227,11 +240,15 @@ public:
 			return k;
 		}
 		int m = 0;
+		std::bitset<nbits> tmp(bits);
+		if (tmp[nbits - 1]) {
+			tmp = twos_complement(bits);
+		}
 		// let m be the number of identical bits in the regime
-		if (bits[nbits - 2] == 1) {   // run length of 1's
+		if (tmp[nbits - 2] == 1) {   // run length of 1's
 			m = 1;   // if a run of 1's k = m - 1
 			for (int i = nbits - 3; i >= 0; --i) {
-				if (bits[i] == 1) {
+				if (tmp[i] == 1) {
 					m++;
 				}
 				else {
@@ -243,7 +260,7 @@ public:
 		else {
 			m = 1;  // if a run of 0's k = -m
 			for (int i = nbits - 3; i >= 0; --i) {
-				if (bits[i] == 0) {
+				if (tmp[i] == 0) {
 					m++;
 				}
 				else {
@@ -252,9 +269,6 @@ public:
 			}
 			k = -m;
 		}	
-		if (isNegative()) {
-			k = -k;
-		}
 
 		///////////////////////                            cout << "k = " << int(k) << " m = " << m ;
 		// get the exponent bits
@@ -267,7 +281,7 @@ public:
 			size = (msb >= es - 1 ? es : msb + 1);
 			/////////////////// cout << " size " << size << " msb " << msb << " ";
 			for (int i = 0; i < size; i++) {
-				exp[i] = bits[msb - (size - 1) + i];
+				exp[i] = tmp[msb - (size - 1) + i];
 			}
 		}
 
@@ -283,7 +297,7 @@ public:
 		if (msb >= 0) {
 			int f = 0;
 			for (int i = msb; i >= 0; --i) {
-				frac[nbits - 1 - f++] = bits[i];
+				frac[nbits - 1 - f++] = tmp[i];
 			}
 		}
 		return k;
@@ -301,43 +315,82 @@ public:
 		if (isInfinite()) {
 			return INFINITY;
 		}
-		// positive range =  2^(2r+e)     + 2^(2r+e-1)     * 1.<f>
-		// negative range = -2^(2(r+1)-e) + 2^(2(r+1)-e-2) * 1.<f>
+
 		double value = 0.0;
 		double base = 0.0;
-		double adjustment = 0.0;
 		int e = exponent();
 
-		if (isPositive()) {
-			int e2 = 2 * k + e;	
-			if (e2 >= 0) {
-				base = (1 << e2);
-			}
-			else {
-				base = 1.0 / (1 << -e2);
-			}
-			value = base + base * fraction();
+		// scale = useed ^ k * 2^e -> 2^(k*2^es) * 2^e = 2^(k*2^es + e)
+		int e2 = (k * (1 << es)) + e;
+		if (e2 < -63 || e2 > 63) {
+			base = pow(2.0, e2);
 		}
 		else {
-			int e2 = 2 * k - e;
-			int e3 = 2 * k - e - 1;
-			if (e2 > 0) {
-				base = -(1 << e2);
+			if (e2 >= 0) {			
+				base = (uint64_t(1) << e2);
 			}
 			else {
-				base = -1.0 / (1 << -e2);
+				base = 1.0 / (uint64_t(1) << -e2);
 			}
-			if (e3 > 0) {
-				adjustment = (1 << e3);
-			}
-			else {
-				adjustment = 1.0 / (1 << -e3);
-			}
-			value = base + adjustment * fraction();
 		}
+		value = base + base * fraction();
+		if (isNegative()) {	
+			value = -value;
+		} 
 		return value;
 	}
 
+	// transform an integer to a posit
+	// integers cover only 2 quarters of the number line [0,1..inf], and [0,-1..-inf]
+	std::bitset<nbits> from_longlong(int64_t number) {
+		bits.reset();
+		if (number == 0) {
+			decode();
+			return bits;
+		}
+		if (number == 1) {
+			bits.set(nbits-2);
+			decode();
+			return bits;
+		}
+		if (number == -1) {
+			bits.set(nbits - 1);
+			bits.set(nbits - 2);
+			decode();
+			return bits;
+		}
+		if (number > 1) {
+			// positive range =  2^(2r+e)     + 2^(2r+e)       * 0.<f>
+			// find the first msb set
+			int fbs;
+			uint64_t mask = (uint64_t(1) << 63);
+			for (int i = 63; i >= 0; --i) {
+				if (number & mask) {
+					fbs = i;
+					break;
+				}
+				mask >>= 1; 
+			}
+			// generate the regime pattern for this
+			// 2r+e == fbs -> 2r = fbs - e
+			// r = (fbs - e)/2
+			// base regime = fbs/2
+			// exponent = -e/2
+			int base = (fbs >> 1);
+			cout << "base " << base << endl;
+			if (base > nbits - 3) {
+				cout << "Overflow: number " << number << " is too big for posit<" << nbits << "," << es << ">" << endl;
+				bits.set(nbits - 1);
+				return bits;	// return infinite
+			}
+			k = base;
+			// this is a pattern of 1####
+			for (int i = 1; i < base; i++) {
+				bits.set(nbits - 1 - i);
+			}
+		}
+		return bits;
+	}
 
 private:
 	std::bitset<nbits> bits;
