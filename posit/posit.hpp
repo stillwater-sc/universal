@@ -36,7 +36,7 @@ template<size_t nbits, size_t es> class posit {
 public:
 	posit<nbits, es>() {
 		reset();
-		//validate();
+		validate();
 	}
 	posit<nbits, es>& operator=(const char& rhs) {
 		*this = int64_t(rhs);
@@ -199,7 +199,7 @@ public:
 		return frac;
 	}
 	void validate() throw(char*) {
-		if (nbits <= es + 3) {
+		if (nbits < es + 3) {
 			throw "Requested es is too large for nbits";
 		}
 	}

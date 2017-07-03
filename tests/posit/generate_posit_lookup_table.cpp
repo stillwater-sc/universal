@@ -78,26 +78,31 @@ int main(int argc, char** argv)
 	catch (char* e) {
 		cerr << e << endl;
 	}
+	try {
+		GeneratePositTable<3, 0>(cout);
+		GeneratePositTable<4, 0>(cout);
+		GeneratePositTable<4, 1>(cout);
 
-	GeneratePositTable<3, 0>(cout);
+		GeneratePositTable<5, 0>(cout);
+		GeneratePositTable<5, 1>(cout);
+		GeneratePositTable<5, 2>(cout);
 
-	GeneratePositTable<4, 0>(cout);
-	GeneratePositTable<4, 1>(cout);
+		GeneratePositTable<6, 0>(cout);
+		GeneratePositTable<6, 1>(cout);
+		GeneratePositTable<6, 2>(cout);
+		GeneratePositTable<6, 3>(cout);
 
-	GeneratePositTable<5, 0>(cout);
-	GeneratePositTable<5, 1>(cout);
-	GeneratePositTable<5, 2>(cout);
+		GeneratePositTable<7, 0>(cout);
+		GeneratePositTable<7, 1>(cout);
+		GeneratePositTable<7, 2>(cout);
+		GeneratePositTable<7, 3>(cout);
+		GeneratePositTable<7, 4>(cout);	
+	}
+	catch (char* e) {
+		cerr << e << endl;
+	}
+	
 
-	GeneratePositTable<6, 0>(cout);
-	GeneratePositTable<6, 1>(cout);
-	GeneratePositTable<6, 2>(cout);
-	GeneratePositTable<6, 3>(cout);
-
-	GeneratePositTable<7, 0>(cout);
-	GeneratePositTable<7, 1>(cout);
-	GeneratePositTable<7, 2>(cout);
-	GeneratePositTable<7, 3>(cout);
-	GeneratePositTable<7, 4>(cout);	
 
 	return 0;
 }
