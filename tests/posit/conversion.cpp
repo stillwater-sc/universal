@@ -41,6 +41,20 @@ void ConversionOperatorsPositiveRegime() {
 	p6 = (long long)(32);  cout << "P6 " << p6 << endl;
 }
 
+void ConversionOperatorsNegativeRegime() {
+	posit<16, 1> p0, p1, p2, p3, p4, p5, p6;
+
+	p0.Range();
+
+	p0 = 0;  checkSpecialCases(p0);
+	p1 = -1;  checkSpecialCases(p1);
+	p2 = -2;  checkSpecialCases(p2);
+	p3 = -4;  checkSpecialCases(p3);
+	p4 = -8;  checkSpecialCases(p4);
+	p5 = -16;  checkSpecialCases(p5);
+	p6 = -32;  checkSpecialCases(p6);
+}
+
 int main()
 {
 	ConversionOperatorsPositiveRegime();
