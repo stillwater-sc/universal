@@ -3,21 +3,15 @@
 #include <cmath>
 #include <iostream>
 
-#define POW2(n) (uint64_t(1) << (n))
+inline uint64_t two_to_the_power(int n) {
+	return (uint64_t(1) << n);
+}
 #ifndef MIN
 #define MIN(a,b) (a) < (b) ? (a) : (b)
 #endif
 #ifndef MAX
 #define MAX(a,b) (a) > (b) ? (a) : (b)
 #endif
-
-// easy to use segment masks
-#define FLOAT_SIGN_MASK      0x80000000
-#define FLOAT_EXPONENT_MASK  0x7F800000
-#define FLOAT_MANTISSA_MASK  0x007FFFFF
-#define DOUBLE_SIGN_MASK     0x8000000000000000
-#define DOUBLE_EXPONENT_MASK 0x7FF0000000000000
-#define DOUBLE_MANTISSA_MASK 0x000FFFFFFFFFFFFF
 
 template<size_t nbits>
 std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
@@ -360,7 +354,7 @@ public:
 			return bits;
 		}
 		if (number > 1) {
-			// positive range =  2^(2r+e)     + 2^(2r+e)       * 0.<f>
+			// (2^(2^es))^k * 2^e -> shift is k*2^es + e
 			// find the first msb set
 			int fbs;
 			uint64_t mask = (uint64_t(1) << 63);
@@ -372,23 +366,46 @@ public:
 				mask >>= 1; 
 			}
 			// generate the regime pattern for this
-			// 2r+e == fbs -> 2r = fbs - e
-			// r = (fbs - e)/2
-			// base regime = fbs/2
-			// exponent = -e/2
-			int base = (fbs >> 1);
-			cout << "base " << base << endl;
-			if (base > nbits - 3) {
+			// scale of the number is 2^(fbs+1)
+			// scale of the regime is 2^(k*2^es + e)
+			// k*2^es = fbs+1 -> k = (fbs+1) >> es
+			int k = ((fbs << 1) >> (es+es));
+			cout << "number to convert " << number << " fbs " << fbs << " k " << k << " ";
+			if (k > nbits - 2) {
 				cout << "Overflow: number " << number << " is too big for posit<" << nbits << "," << es << ">" << endl;
 				bits.set(nbits - 1);
+				decode();
 				return bits;	// return infinite
 			}
-			k = base;
-			// this is a pattern of 1####
-			for (int i = 1; i < base; i++) {
-				bits.set(nbits - 1 - i);
+			// this is always a pattern of 01####
+			bits.reset(nbits - 1);
+			bits.set(nbits - 2);
+			// k = 0 -> 10
+			// k = 1 -> 110
+			// k = 2 -> 1110
+			// k = nbits-2 => 1111
+			int r = nbits - 2;
+			for (int i = 0; i < k; i++) {
+				r--;
+				bits.set(r);
 			}
+			if (k == nbits - 2) {
+				bits.set(0);
+			}
+			else {
+				bits.reset(nbits - 3 - k);
+			}
+			// set the exponent bits
+			// the regime takes the base to useed^k
+			// we have exponent and fraction bits if k*2^es < fsb
+			int shift = (k << es);
+			int msb = fbs - shift;	
+			cout << "shift " << shift << " msb " << msb << " ";
+
+
+			// set the fraction bits
 		}
+		decode();
 		return bits;
 	}
 

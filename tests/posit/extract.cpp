@@ -1,4 +1,4 @@
-//  extract.cpp : extract a posit from a float
+﻿//  extract.cpp : extract a posit from a float
 //
 
 #include "stdafx.h"
@@ -19,51 +19,106 @@ Double: SEEEEEEE EEEEMMMM MMMMMMMM MMMMMMMM MMMMMMMM MMMMMMMM MMMMMMMM MMMMMMMM
 3.	The exponent field contains 127 plus the true exponent for single-precision, or 1023 plus the true exponent for double precision.
 4.	The first bit of the mantissa is typically assumed to be 1.f, where f is the field of fraction bits.
 
+#define FLOAT_SIGN_MASK      0x80000000
+#define FLOAT_EXPONENT_MASK  0x7F800000
+#define FLOAT_MANTISSA_MASK  0x007FFFFF
+
+#define DOUBLE_SIGN_MASK     0x8000000000000000
+#define DOUBLE_EXPONENT_MASK 0x7FF0000000000000
+#define DOUBLE_MANTISSA_MASK 0x000FFFFFFFFFFFFF
 */
 template<size_t nbits, size_t es>
-void extract(uint32_t f, int fes, int fms) {
-	cout << "value : " << dec << f << " bits : " << hex << f << " mantissa mask : " << (1ULL << fms)-1 << dec << endl;
+void extract(float f) {
+	int fes = 8;
+	int fms = 23;
+	uint32_t bits = *( (uint32_t*)(&f) );
 
-	int exponentBias = POW2(fes - 1) - 1;
-	int16_t exponent = (f >> fms) & ((1 << fes) - 1);
-	uint32_t mantissa = (f & ((1ULL << fms) - 1));
+	int exponentBias = two_to_the_power(fes - 1) - 1;
+	int16_t biased_exponent = (bits >> fms) & ((bits << fes) - 1);
+	uint32_t mantissa = (bits & ((1ULL << fms) - 1));
+	int16_t exponent = biased_exponent - exponentBias;
+	int sign = 1;
+	if (0x80000000L & bits) {
+		sign = -1;
+	}
+	// Emin = 01H−7FH = −126
+	// Emax = FEH−7FH = 127
+	exponent = (exponent < -126 ? -126 : exponent);
+	exponent = (exponent > 127 ? 127 : exponent);
+	cout << " bits : " << setw(8) << hex << bits << " sign " << sign << " mantissa : " << hex << mantissa << " exponent " << exponent << dec << endl;
 
-	cout << " mantissa : " << hex << mantissa << " exponent : " << exponent << " bias " << exponentBias << dec << endl;
+	int16_t regime = exponent >> es;
+	exponent = exponent & ((1 << es) - 1);
 
-	// clip exponent
-	long long rmin = POW2(es) * (2 - nbits);
-	long long rmax = POW2(es) * (nbits - 2);
-	long long rf = MIN(MAX(exponent - exponentBias, rmin), rmax);
+	uint32_t fraction = (bits << (7 - es) & (0x3FFFFFFFL >> es));
+	fraction |= ((uint32_t)exponent) << (30 - es);
 
-	cout << "rmin " << rmin << " rmax " << rmax << " rf " << rf << endl;
-
-	uint32_t positSignBit = f >> (fes + fms);
-	int64_t positRegionSize = rf >> es;
-	int64_t positExponentSize = rf - POW2(es) * positRegionSize;
-
-	cout << "positSignBit " << positSignBit << " positRegionSize " << positRegionSize << " exponent " << positExponentSize << endl;
-
-	uint32_t positFraction;
-	if (fms <= nbits) {
-		positFraction = mantissa << (nbits - fms);
+	int16_t shift;
+	if (regime >= 0) {
+		shift = 1 + regime;
+		fraction |= 0x80000000UL;
 	}
 	else {
-		positFraction = mantissa >> (fms - nbits);
+		shift = -regime;
+		fraction |= 0x40000000UL;
 	}
-	cout << "posit Fraction " << positFraction << endl;
+	// perform an *arithmetic* shift; convert back to unsigned.
+	fraction = (uint32_t)(((int32_t)fraction) >> shift);
+
+	// mask out the top bit of the fraction, which is going to be the basis for the result.
+	fraction = fraction & 0x7fffffffL;
+
+	bool guard = (fraction & 0x00800000L) != 0;
+	bool summ = (fraction & 0x007fffffL) != 0;
+	bool inner = (fraction & 0x01000000L) != 0;
+
+	// round the fraction variable in the event it needs be augmented.
+	fraction += ((guard && inner) || (guard && summ)) ? 0x01000000UL : 0x00000000UL;
+
+	// shift further, as necessary, to match sizes
+	fraction = fraction >> 24;
+
+	//check to recast zeros to the smallest value
+	fraction = (fraction == 0) ? 0x00000001UL : fraction;
+
+	uint8_t sfrac = (uint8_t)fraction;
+	//(signbit ? -sfrac : sfrac);
+
+	cout << " regime " << regime << " exponent " << exponent << " fraction " << fraction << endl;
 }
 
+template<size_t nbits, size_t es>
+void extract(double d) {
+	int fes = 11;
+	int fms = 52;
+	uint64_t bits = *( (uint64_t*)(&d) );
+	cout << "value : " << dec << d << " bits : " << hex << bits << " mantissa mask : " << (1ULL << fms) - 1 << dec << endl;
 
+	int exponentBias = two_to_the_power(fes - 1) - 1;
+	int16_t biased_exponent = (bits >> fms) & ((1 << fes) - 1);
+	uint32_t mantissa = (bits & ((1ULL << fms) - 1));
+	int16_t exponent = biased_exponent - exponentBias;
+	int sign = 1;
+	if (0x8000000L & bits) {
+		sign = -1;
+	}
+	cout << "sign " << sign << " mantissa : " << hex << mantissa << " exponent " << exponent << dec << endl;
+
+}
 int main()
 {
-	posit<16,2> myPosit;
+	const size_t nbits = 5;
+	const size_t es = 1;
+	const size_t size = (1 << nbits);
+	posit<nbits,es> myPosit;
+	float myFloat = 1.0f;
+	for (int i; i < size; i++) {
+		cout << "Value " << setw(16) << setprecision(6) << myFloat << " ";
+		extract<16, 2>(myFloat);
+		myFloat *= 2.0f;
+	}
 
-	union {
-	    float myFloat;
-	    uint32_t value;
-	};
-	myFloat = 1.0f;
-	extract<16,2>(myFloat, 8, 23);
+
 
 	return 0;
 }

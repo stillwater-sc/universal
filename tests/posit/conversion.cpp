@@ -26,7 +26,7 @@ void ConversionOperatorsPositiveRegime() {
 	int64_t number = 1;
 	for (int i = 0; i < 8; i++) {
 		p0.from_longlong(number);
-		cout << "number = " << number << p0 << endl;
+		cout << p0 << endl;
 		number <<= 1;
 	}
 
@@ -42,9 +42,12 @@ void ConversionOperatorsPositiveRegime() {
 }
 
 void ConversionOperatorsNegativeRegime() {
-	posit<16, 1> p0, p1, p2, p3, p4, p5, p6;
+	posit<5, 1> p0, p1, p2, p3, p4, p5, p6;
+	double minpos, maxpos;
 
-	p0.Range();
+	p0.Range(&minpos, &maxpos);
+	cout << "Minpos = " << setprecision(7) << minpos << endl;
+	cout << "Maxpos = " << maxpos << setprecision(0) << endl;
 
 	p0 = 0;  checkSpecialCases(p0);
 	p1 = -1;  checkSpecialCases(p1);
