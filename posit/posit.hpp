@@ -6,12 +6,6 @@
 inline uint64_t two_to_the_power(int n) {
 	return (uint64_t(1) << n);
 }
-#ifndef MIN
-#define MIN(a,b) (a) < (b) ? (a) : (b)
-#endif
-#ifndef MAX
-#define MAX(a,b) (a) > (b) ? (a) : (b)
-#endif
 
 template<size_t nbits>
 std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
@@ -56,7 +50,7 @@ public:
 		switch (fpclassify(rhs)) {
 		case FP_INFINITE:
 			bits.reset();
-			bits[nbits - 1] = true;
+			bits.set(nbits - 1);
 			break;
 		case FP_NAN:
 			cerr << "float is NAN" << endl;
