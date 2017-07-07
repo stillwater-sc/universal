@@ -220,7 +220,7 @@ public:
 	// decode the segments: precondition: member vars reset with bits containing the value to decode
 	int16_t decode() {
 		if (isZero()) {  // special case = 0
-			k = -(nbits-1);
+			k = -int(nbits-1);
 			return k;
 		}
 		if (isInfinite()) {	// special case = +-inf
@@ -315,10 +315,10 @@ public:
 		}
 		else {
 			if (e2 >= 0) {			
-				base = (uint64_t(1) << e2);
+				base = double(uint64_t(1) << e2);
 			}
 			else {
-				base = 1.0 / (uint64_t(1) << -e2);
+				base = 1.0 / double(uint64_t(1) << -e2);
 			}
 		}
 		value = base + base * fraction();
