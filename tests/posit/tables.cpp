@@ -8,9 +8,14 @@
 using namespace std;
 
 /*
-  Posit values are a combination of a scaling factor, useed, an exponent, e, and a fraction, f.
-  For small posits, it is simpler to have a lookup mechanism to obtain the value.
+  Posit values are a combination of 
+  - a scaling factor: useed, 
+  - an exponent: e, and 
+  - a fraction: f.
+  For small posits, it is faster to have a lookup mechanism to obtain the value.
   This is most valuable for conversion operators from posit to int.
+
+  Goal is to use a single lookup table for any posit configuration with 16 or fewer bits.
 */
 
 template<size_t nbits, size_t es>

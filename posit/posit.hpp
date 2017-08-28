@@ -26,26 +26,45 @@ public:
 		reset();
 		validate();
 	}
-	posit<nbits, es>& operator=(const char& rhs) {
+	posit<nbits, es>& operator=(const char rhs) {
 		*this = int64_t(rhs);
 		return *this;
 	}
-	posit<nbits, es>& operator=(const int& rhs) {
+	posit<nbits, es>& operator=(int rhs) {
 		*this = int64_t(rhs);
 		return *this;
 	}
-	posit<nbits, es>& operator=(const long& rhs) {
+	posit<nbits, es>& operator=(long rhs) {
 		*this = int64_t(rhs);
 		return *this;
 	}
-	posit<nbits, es>& operator=(const long long& rhs) {
+	posit<nbits, es>& operator=(long long rhs) {
 		if (rhs == 0) {
 			bits.reset();
+			return *this;
+		}
+		cout << "Assignment operator with value " << rhs << endl;
+		int msb;
+		if (isPositive()) {
+			msb = findMostSignificantBit(rhs);
+			if (msb > maxpos_scale()) {
+				cout << "Can't represent " << rhs << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale()) << endl;
+			}
+			// transform scale to regime + exponent
+			// hidden bit transforms shift to msb-1
+			int k = (msb - 1 - es) >> es;
+			cout << "k = " << k << " regime bits = " << hex << MAXPOS_REGIME_BITS[k] << dec << endl;			
+		}
+		else {
+			// take a two's complement
+			cout << "Negative numbers not implemented yet" << endl;
 		}
 		decode();
 		return *this;
 	}
-	posit<nbits, es>& operator=(const float& rhs) {
+
+
+	posit<nbits, es>& operator=(const float rhs) {
             using namespace std;
 		switch (fpclassify(rhs)) {
 		case FP_INFINITE:
@@ -67,10 +86,10 @@ public:
 		}
 		return *this;
 	}
-	posit<nbits, es>& operator=(const double& rhs) {
+	posit<nbits, es>& operator=(const double rhs) {
 		return *this;
 	}
-	posit<nbits, es>& operator+=(const posit& rhs) {
+	posit<nbits, es>& operator+=(const posit rhs) {
 		// add rhs             this->bits += rhs.bits;
 		if (isZero()) {
 			bits = rhs.bits;
@@ -142,6 +161,27 @@ public:
 		double useed = (1 << (1 << es));
 		*minpos = pow(useed, minpos_exponent);
 		*maxpos = pow(useed, maxpos_exponent);
+	}
+	int maxpos_scale() {
+		int maxpos_exponent = nbits - 2;
+		return maxpos_exponent * (1 << es);
+	}
+	int minpos_scale() {
+		int minpos_exponent = static_cast<int>(2 - nbits);
+		return minpos_exponent * (1 << es);
+	}
+	// find the most significant bit set
+	unsigned int findMostSignificantBit(int64_t x) const {
+		// find the first non-zero bit
+		static const unsigned int bval[] =
+		{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
+
+		unsigned int base = 0;
+		if (x & 0xFFFFFFFF00000000) { base += 32; x >>= 32; }
+		if (x & 0x00000000FFFF0000) { base += 16; x >>= 16; }
+		if (x & 0x000000000000FF00) { base += 8;  x >>= 8; }
+		if (x & 0x00000000000000F0) { base += 4;  x >>= 4; }
+		return base + bval[x];
 	}
 	// Get the raw bits of the posit
 	std::bitset<nbits> get_raw_bits() const {
@@ -219,11 +259,14 @@ public:
 
 	// decode the segments: precondition: member vars reset with bits containing the value to decode
 	int16_t decode() {
+		cout << "decode is called" << endl;
 		if (isZero()) {  // special case = 0
+			cout << "special case of 0" << endl;
 			k = -int(nbits-1);
 			return k;
 		}
 		if (isInfinite()) {	// special case = +-inf
+			cout << "special case of -infinite" << endl;
 			k = (nbits - 1);
 			return k;
 		}
@@ -258,12 +301,12 @@ public:
 			k = -m;
 		}	
 
-		///////////////////////                            cout << "k = " << int(k) << " m = " << m ;
+		                            cout << "k = " << int(k) << " m = " << m ;
 		// get the exponent bits
 		// start of exponent is nbits - (sign_bit + regime_bits)
 		int32_t msb = nbits - (3 + m);
 
-		///////////////////////                             cout << msb << " ";
+		                             cout << msb << " ";
 		int32_t size = 0;
 		if (msb >= 0 && es > 0) {	
 			size = (msb >= es - 1 ? es : msb + 1);
@@ -273,7 +316,7 @@ public:
 			}
 		}
 
-		//////////////////  cout << "fraction bits " << msb - size + 1 << endl;
+									cout << "fraction bits " << msb - size + 1 << endl;
 		// finally, set the fraction bits
 		// we do this so that the fraction is right extended with 0;
 		// The max fraction is <nbits - 3 - es>, but we are setting it to <nbits> and right-extent
@@ -396,17 +439,24 @@ public:
 			int msb = fbs - shift;	
 			cout << "shift " << shift << " msb " << msb << " ";
 
-
 			// set the fraction bits
 		}
 		decode();
 		return bits;
 	}
 
+	// scale returns the shifts to normalize the number =  regime + exponent shifts
+	int scale() const {
+		// how many shifts represent the regime?
+		// regime = useed ^ k = 2 ^ (k*(2 ^ e))
+		// scale = useed ^ k * 2^e 
+		return k*(1 << es) + exp.to_ulong();
+	}
+
 private:
 	std::bitset<nbits> bits;
 	std::bitset<es> exp;
-	std::bitset<nbits> frac; // fraction is max <nbits - 3 - es>  but for small posits, this yields a negative size, so we simply set it to <nbits> and right-extend
+	std::bitset<nbits> frac; // fraction is max <nbits - 3>
 	int8_t k;
 
 

@@ -18,7 +18,12 @@ std::string to_binary(std::bitset<nbits> bits) {
 
 template<size_t nbits, size_t es>
 inline posit<nbits,es> operator+(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
-	lhs += rhs;
+	
+	cout << "regime: " << lhs.run_length() << " lhs scale " << lhs.scale() << endl;
+    cout << "regime: " << rhs.run_length() << " rhs scale " << rhs.scale() << endl;
+	if (lhs.scale() < rhs.scale())  {
+	  
+	}
 	return lhs;
 }
 
