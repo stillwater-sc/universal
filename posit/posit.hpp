@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include "posit_regime_lookup.hpp"
 
 inline uint64_t two_to_the_power(int n) {
 	return (uint64_t(1) << n);
@@ -222,10 +223,11 @@ public:
 	std::bitset<es> exponent_bits() const {
 		return exp;
 	}
-	// return fraction bits: nbits - 1, right-extended
-	std::bitset<nbits> fraction_bits() const {
+	// return fraction bits: nbits - 3, right-extended
+	std::bitset<nbits-3> fraction_bits() const {
 		return frac;
 	}
+	// posit with nbits < 3 will fail due to zero-value fraction bits array
 	void validate() throw(char*) {
 		if (nbits < es + 3) {
 			throw "Requested es is too large for nbits";
@@ -259,14 +261,11 @@ public:
 
 	// decode the segments: precondition: member vars reset with bits containing the value to decode
 	int16_t decode() {
-		cout << "decode is called" << endl;
 		if (isZero()) {  // special case = 0
-			cout << "special case of 0" << endl;
 			k = -int(nbits-1);
 			return k;
 		}
 		if (isInfinite()) {	// special case = +-inf
-			cout << "special case of -infinite" << endl;
 			k = (nbits - 1);
 			return k;
 		}
@@ -301,34 +300,33 @@ public:
 			k = -m;
 		}	
 
-		                            cout << "k = " << int(k) << " m = " << m ;
+		//                            cout << "k = " << int(k) << " m = " << m ;
 		// get the exponent bits
 		// start of exponent is nbits - (sign_bit + regime_bits)
 		int32_t msb = nbits - (3 + m);
-
-		                             cout << msb << " ";
+		//                             cout << " msb = " << msb << " ";
 		int32_t size = 0;
 		if (msb >= 0 && es > 0) {	
 			size = (msb >= es - 1 ? es : msb + 1);
-			/////////////////// cout << " size " << size << " msb " << msb << " ";
+		//	                         cout << " size " << size << " msb " << msb << " ";
 			for (int i = 0; i < size; i++) {
 				exp[i] = tmp[msb - (size - 1) + i];
 			}
 		}
 
-									cout << "fraction bits " << msb - size + 1 << endl;
+		//							cout << "fraction bits " << msb - size + 1 << endl;
 		// finally, set the fraction bits
 		// we do this so that the fraction is right extended with 0;
-		// The max fraction is <nbits - 3 - es>, but we are setting it to <nbits> and right-extent
-		// The msb bit of the fraction representes 2^-1, the next 2^-2, etc.
-		// If the fraction is empty, we have a fraction of nbits-1 0 bits
-		// If the fraction is one bit, we have still have fraction of nbits-1, with the msb representing 2^-1, and the rest are right extended 0's
+		// The max fraction is <nbits - 3 - es>, but we are setting it to <nbits - 3> and right-extent
+		// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
+		// If the fraction is empty, we have a fraction of nbits-3 0 bits
+		// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
 		msb = msb - size;
 		size = (msb < 0 ? 0 : msb + 1);
 		if (msb >= 0) {
 			int f = 0;
 			for (int i = msb; i >= 0; --i) {
-				frac[nbits - 1 - f++] = tmp[i];
+				frac[nbits - 4 - f++] = tmp[i];
 			}
 		}
 		return k;
@@ -456,7 +454,7 @@ public:
 private:
 	std::bitset<nbits> bits;
 	std::bitset<es> exp;
-	std::bitset<nbits> frac; // fraction is max <nbits - 3>
+	std::bitset<nbits-3> frac; // fraction is max <nbits - 1 sign bit - minimum 2 regime bits>
 	int8_t k;
 
 

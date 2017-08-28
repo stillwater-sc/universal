@@ -81,10 +81,12 @@ int main(int argc, char** argv)
 		posit<3, 1> myPosit;
 	}
 	catch (char* e) {
-		cerr << e << endl;
+		cerr << "Caught expected error: " << e << endl;
 	}
 	try {
+		cerr << "Valid posit configurations" << endl;
 		GeneratePositTable<3, 0>(cout);
+
 		GeneratePositTable<4, 0>(cout);
 		GeneratePositTable<4, 1>(cout);
 
