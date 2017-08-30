@@ -8,6 +8,33 @@ inline uint64_t two_to_the_power(int n) {
 	return (uint64_t(1) << n);
 }
 
+// find the most significant bit set: first bit is at position 1, so that no bits set returns 0
+unsigned int findMostSignificantBit(uint64_t x) {
+	// find the first non-zero bit
+	static const unsigned int bval[] =
+	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
+
+	unsigned int base = 0;
+	if (x & 0xFFFFFFFF00000000) { base += 32; x >>= 32; }
+	if (x & 0x00000000FFFF0000) { base += 16; x >>= 16; }
+	if (x & 0x000000000000FF00) { base += 8;  x >>= 8; }
+	if (x & 0x00000000000000F0) { base += 4;  x >>= 4; }
+	return base + bval[x];
+}
+
+unsigned int findMostSignificantBit(int64_t x) {
+	// find the first non-zero bit
+	static const unsigned int bval[] =
+	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
+
+	unsigned int base = 0;
+	if (x & 0xFFFFFFFF00000000) { base += 32; x >>= 32; }
+	if (x & 0x00000000FFFF0000) { base += 16; x >>= 16; }
+	if (x & 0x000000000000FF00) { base += 8;  x >>= 8; }
+	if (x & 0x00000000000000F0) { base += 4;  x >>= 4; }
+	return base + bval[x];
+}
+
 template<size_t nbits>
 std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
 	std::bitset<nbits> complement;
@@ -47,14 +74,21 @@ public:
 		cout << "Assignment operator with value " << rhs << endl;
 		int msb;
 		if (isPositive()) {
-			msb = findMostSignificantBit(rhs);
+			msb = findMostSignificantBit(rhs)-1;
 			if (msb > maxpos_scale()) {
-				cout << "Can't represent " << rhs << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale()) << endl;
+				cerr << "msb = " << msb << " and maxpos_scale() = " << maxpos_scale() << endl;
+				cerr << "Can't represent " << rhs << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale()) << endl;
 			}
-			// transform scale to regime + exponent
-			// hidden bit transforms shift to msb-1
-			int k = (msb - 1 - es) >> es;
-			cout << "k = " << k << " regime bits = " << hex << MAXPOS_REGIME_BITS[k] << dec << endl;			
+			// we need to find the regime for this rhs
+			// regime represents a scale factor of useed ^ k, where k ranges from [-nbits-1, nbits-2]
+			// regime @ k = 0 -> 1
+			// regime @ k = 1 -> (1 << (1 << es) ^ 1 = 2
+			// regime @ k = 2 -> (1 << (1 << es) ^ 2 = 4
+			// regime @ k = 3 -> (1 << (1 << es) ^ 3 = 8
+			// the left shift of the regime is simply k * 2^es
+			// which means that the msb of the regime is simply k*2^es
+			// TODO: do you want to calculate how many bits the regime is?
+			// yes: because then you can figure out if you have exponent bits and fraction bits left.
 		}
 		else {
 			// take a two's complement
@@ -163,27 +197,22 @@ public:
 		*minpos = pow(useed, minpos_exponent);
 		*maxpos = pow(useed, maxpos_exponent);
 	}
-	int maxpos_scale() {
+	unsigned int useed() {
+		return (1 << (1 << es));
+	}
+	// what are you trying to capture with this method? TODO
+	// return the position of the msb of the largest binary number representable by this posit?
+	// this would be maxpos
+	unsigned int maxpos_scale() {
 		int maxpos_exponent = nbits - 2;
 		return maxpos_exponent * (1 << es);
 	}
-	int minpos_scale() {
+	// TODO: what would minpos_scale represent?
+	unsigned int minpos_scale() {
 		int minpos_exponent = static_cast<int>(2 - nbits);
 		return minpos_exponent * (1 << es);
 	}
-	// find the most significant bit set
-	unsigned int findMostSignificantBit(int64_t x) const {
-		// find the first non-zero bit
-		static const unsigned int bval[] =
-		{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
 
-		unsigned int base = 0;
-		if (x & 0xFFFFFFFF00000000) { base += 32; x >>= 32; }
-		if (x & 0x00000000FFFF0000) { base += 16; x >>= 16; }
-		if (x & 0x000000000000FF00) { base += 8;  x >>= 8; }
-		if (x & 0x00000000000000F0) { base += 4;  x >>= 4; }
-		return base + bval[x];
-	}
 	// Get the raw bits of the posit
 	std::bitset<nbits> get_raw_bits() const {
 		return bits;

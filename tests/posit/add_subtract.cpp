@@ -73,8 +73,22 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	posit<5, 0> p1, p2, p3, p4, p8, p16; 
+	posit<5, 0> p5_0;
+	posit<5, 1> p5_1;
+	posit<5, 2> p5_2;
 
+	cout << "posit<5,0> useed = " << p5_0.useed() << ", minpos_scale = " << p5_0.minpos_scale() << ", maxpos_scale = " << p5_0.maxpos_scale() << endl;
+	cout << "posit<5,1> useed = " << p5_1.useed() << ", minpos_scale = " << p5_1.minpos_scale() << ", maxpos_scale = " << p5_1.maxpos_scale() << endl;
+	cout << "posit<5,2> useed = " << p5_2.useed() << ", minpos_scale = " << p5_2.minpos_scale() << ", maxpos_scale = " << p5_2.maxpos_scale() << endl;
+
+	p5_0 = 9;    // useed =  2, maxpos = useed ^ 3 =    8
+	p5_1 = 65;   // useed =  4, maxpos = useed ^ 3 =   64
+	p5_2 = 4097; // useed = 64, maxpos = useed ^ 3 = 4096
+
+
+	cout << "posit<5,0> = " << p5_0 << endl;
+	cout << "posit<5,1> = " << p5_1 << endl;
+	cout << "posit<5,2> = " << p5_2 << endl;
 
 	return 0;
 }
