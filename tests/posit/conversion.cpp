@@ -129,10 +129,10 @@ int main()
 	// useed^k is the regime and is encoded by runlength of a string of 0's for numbers [0,1), and string of 1's for numbers [1,inf)
 	// the value k ranges from [2-nbits,nbits-2]
 	//  k  regime   exp   fraction regime scale   exponent scale
-	// -4  0-0000    -       -     0.125             1
-	// -3  0-0001    -       -     0.25              1
-	// -2  0-001     -       0     0.5               1
-	// -1  0-01      -      00     0                 1
+	// -4  0-0000    -       -     0                 1
+	// -3  0-0001    -       -     0.125             1
+	// -2  0-001     -       0     0.25              1
+	// -1  0-01      -      00     0.5               1
 	//  0  0-10      -      00     1                 1
 	//  1  0-110     -       0     2                 1
 	//  2  0-1110    -       -     4                 1
@@ -159,6 +159,7 @@ int main()
 	//  1  0-110     0       -     16                2
 	//  2  0-1110    -       -     256               1
 	//  3  0-1111    -       -     4096              1
+
 	return 0;
 }
 
