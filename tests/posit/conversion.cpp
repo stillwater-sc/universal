@@ -4,11 +4,13 @@
 #include "stdafx.h"
 #include <sstream>
 
+using namespace std;
+
 #include "../../posit/posit_scale_factors.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 
-using namespace std;
+
 
 template<size_t nbits, size_t es>
 void checkSpecialCases(posit<nbits, es> p) {
@@ -58,9 +60,41 @@ void ConversionOperatorsNegativeRegime() {
 	p6 = -32;  checkSpecialCases(p6);
 }
 
+// what are you trying to capture with this method? TODO
+// return the position of the msb of the largest binary number representable by this posit?
+// this would be maxpos
+template<size_t nbits, size_t es>
+unsigned int maxpos_scale_f()  {
+	int maxpos_exponent = nbits - 2;
+	return maxpos_exponent * (1 << es);
+}
+
 int main()
 {
-	ConversionOperatorsPositiveRegime();
+	//ConversionOperatorsPositiveRegime();
+	const size_t nbits = 5;
+	const size_t es = 0;
+
+	long long value;
+	unsigned int msb;
+	unsigned int maxpos_scale = maxpos_scale_f<nbits, es>();
+
+	value = 8;
+	msb = findMostSignificantBit(value) - 1;
+	if (msb > maxpos_scale) {
+		cerr << "msb = " << msb << " and maxpos_scale() = " << maxpos_scale << endl;
+		cerr << "Can't represent " << value << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale) << endl;
+	}
+	// we need to find the regime for this rhs
+	// regime represents a scale factor of useed ^ k, where k ranges from [-nbits-1, nbits-2]
+	// regime @ k = 0 -> 1
+	// regime @ k = 1 -> (1 << (1 << es) ^ 1 = 2
+	// regime @ k = 2 -> (1 << (1 << es) ^ 2 = 4
+	// regime @ k = 3 -> (1 << (1 << es) ^ 3 = 8
+	// the left shift of the regime is simply k * 2^es
+	// which means that the msb of the regime is simply k*2^es
+	// TODO: do you want to calculate how many bits the regime is?
+	// yes: because then you can figure out if you have exponent bits and fraction bits left.
     
 	return 0;
 }
