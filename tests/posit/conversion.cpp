@@ -62,11 +62,24 @@ void ConversionOperatorsNegativeRegime() {
 
 // what are you trying to capture with this method? TODO
 // return the position of the msb of the largest binary number representable by this posit?
-// this would be maxpos
+// this would be the scale of maxpos
 template<size_t nbits, size_t es>
 unsigned int maxpos_scale_f()  {
-	int maxpos_exponent = nbits - 2;
-	return maxpos_exponent * (1 << es);
+	int maxpos_regime = nbits - 2;
+	return maxpos_regime * (1 << es);
+}
+
+unsigned int scale(unsigned int max_k, unsigned int es) {
+	return max_k * (1 << es);
+}
+
+unsigned int regime(int64_t value, unsigned int es) {
+	unsigned int binary_scale = findMostSignificantBit(value) - 1;
+	// regime scale is max_k * (1 << es)
+	// max_k * (1 << es) = binary_scale
+	// max_k = binary_scale / (1 << es)
+	// max_k = binary_scale >> (1 << es)
+	return binary_scale >> (1 << es);
 }
 
 int main()
@@ -96,6 +109,56 @@ int main()
 	// TODO: do you want to calculate how many bits the regime is?
 	// yes: because then you can figure out if you have exponent bits and fraction bits left.
     
+	// cycle through the regime bits to test the scale calculation
+	for (int max_k = 1; max_k < 14; max_k++) {
+		cout << "nbits = " << setw(3) << max_k+2 << " max_k " << setw(3) << max_k << "  ";
+		for (int i = 0; i < 4; i++) {
+			cout << setw(5) << scale(max_k, i);
+		}
+		cout << endl;
+	}
+
+	// cycle through scales to test the regime determination
+	value = 1;
+	for (int i = 0; i < 16; i++) {
+		cout << "value = " << hex << setw(10) << value << " regime = " << regime(value, 0) << endl;
+		value <<= 1;
+	}
+
+	// a posit has the form: useed^k * 2^exp * 1.fraction
+	// useed^k is the regime and is encoded by runlength of a string of 0's for numbers [0,1), and string of 1's for numbers [1,inf)
+	// the value k ranges from [2-nbits,nbits-2]
+	//  k  regime   exp   fraction regime scale   exponent scale
+	// -4  0-0000    -       -     0.125             1
+	// -3  0-0001    -       -     0.25              1
+	// -2  0-001     -       0     0.5               1
+	// -1  0-01      -      00     0                 1
+	//  0  0-10      -      00     1                 1
+	//  1  0-110     -       0     2                 1
+	//  2  0-1110    -       -     4                 1
+	//  3  0-1111    -       -     8                 1
+
+	// posit<5,1>
+	//  k  regime   exp   fraction regime scale   exponent scale
+	// -4  0-0000    -       -     0                 1
+	// -3  0-0001    -       -     0.015625          1
+	// -2  0-001     0       -     0.0625            2
+	// -1  0-01      0       0     0.25              2
+	//  0  0-10      0       0     1                 2
+	//  1  0-110     0       -     4                 2
+	//  2  0-1110    -       -     16                1
+	//  3  0-1111    -       -     64                1
+
+	// posit<5,2>
+	//  k  regime   exp   fraction regime scale   exponent scale
+	// -4  0-0000    -       -     0                 1
+	// -3  0-0001    -       -     0.0002441406      1
+	// -2  0-001     0       -     0.00390625        2
+	// -1  0-01     00       -     0.0625            4
+	//  0  0-10     00       -     1                 4
+	//  1  0-110     0       -     16                2
+	//  2  0-1110    -       -     256               1
+	//  3  0-1111    -       -     4096              1
 	return 0;
 }
 
