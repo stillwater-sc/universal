@@ -227,22 +227,21 @@ public:
 	bool isPositive() const {
 		return !bits[nbits - 1];
 	}
-	void Range(double* minpos, double* maxpos) const {
-		int minpos_exponent = static_cast<int>(2 - nbits);        //  explicit cast to avoid underflow warning, TODO: is this correct?
-		int maxpos_exponent = nbits - 2;
-		double useed = (1 << (1 << es));
-		*minpos = pow(useed, minpos_exponent);
-		*maxpos = pow(useed, maxpos_exponent);
+	double maxpos() {
+		return double(useed());
 	}
-	unsigned int useed() {
+	double minpos() {
+		return 1.0 / double(useed());
+	}
+	uint64_t useed() {
 		return (1 << (1 << es));
 	}
-	// what are you trying to capture with this method? TODO
+	unsigned int base_regime(int64_t rhs) {
+		return (findMostSignificantBit(rhs) - 1) >> es;
+	}
 	// return the position of the msb of the largest binary number representable by this posit?
-	// this would be maxpos
 	unsigned int maxpos_scale() {
-		int maxpos_exponent = nbits - 2;
-		return maxpos_exponent * (1 << es);
+		return (nbits - 2) * (1 << es);
 	}
 	// TODO: what would minpos_scale represent?
 	unsigned int minpos_scale() {

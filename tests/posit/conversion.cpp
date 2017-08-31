@@ -21,9 +21,8 @@ void ConversionOperatorsPositiveRegime() {
 	posit<5, 1> p0, p1, p2, p3, p4, p5, p6;
 	double minpos, maxpos;
 
-	p0.Range(&minpos, &maxpos);
-	cout << "Minpos = " << setprecision(7) << minpos << endl;
-	cout << "Maxpos = " << maxpos << setprecision(0) << endl;
+	cout << "Minpos = " << setprecision(7) << p0.minpos() << endl;
+	cout << "Maxpos = " << p0.maxpos() << setprecision(0) << endl;
 
 	int64_t number = 1;
 	for (int i = 0; i < 8; i++) {
@@ -47,9 +46,8 @@ void ConversionOperatorsNegativeRegime() {
 	posit<5, 1> p0, p1, p2, p3, p4, p5, p6;
 	double minpos, maxpos;
 
-	p0.Range(&minpos, &maxpos);
-	cout << "Minpos = " << setprecision(7) << minpos << endl;
-	cout << "Maxpos = " << maxpos << setprecision(0) << endl;
+	cout << "Minpos = " << setprecision(7) << p0.minpos() << endl;
+	cout << "Maxpos = " << p0.maxpos() << setprecision(0) << endl;
 
 	p0 = 0;  checkSpecialCases(p0);
 	p1 = -1;  checkSpecialCases(p1);
@@ -73,13 +71,8 @@ unsigned int scale(unsigned int max_k, unsigned int es) {
 	return max_k * (1 << es);
 }
 
-unsigned int regime(int64_t value, unsigned int es) {
-	unsigned int binary_scale = findMostSignificantBit(value) - 1;
-	// regime scale is max_k * (1 << es)
-	// max_k * (1 << es) = binary_scale
-	// max_k = binary_scale / (1 << es)
-	// max_k = binary_scale >> (1 << es)
-	return binary_scale >> (1 << es);
+unsigned int base_regime(int64_t value, unsigned int es) {
+	return (findMostSignificantBit(value) - 1) >> es;
 }
 
 int main()
@@ -109,25 +102,53 @@ int main()
 	// TODO: do you want to calculate how many bits the regime is?
 	// yes: because then you can figure out if you have exponent bits and fraction bits left.
     
-	// cycle through the regime bits to test the scale calculation
+	// set the max es we want to evaluate. useed grows very quickly as a function of es
+	int max_es = 4;
+
+	// cycle through the k values to test the scale calculation
+	// since useed^k grows so quickly, we can't print the value, 
+	// so instead we just print the scale of the number as measured in the binary exponent of useed^k = k*2^es
+	cout << setw(10) << "posit size" << setw(6) << "max_k" << "   scale of max regime" << endl;
+	cout << setw(16) << "           ";
+	for (int i = 0; i < max_es; i++) {
+		cout << setw(5) << "es@" << i;
+	}
+	cout << endl;
 	for (int max_k = 1; max_k < 14; max_k++) {
-		cout << "nbits = " << setw(3) << max_k+2 << " max_k " << setw(3) << max_k << "  ";
-		for (int i = 0; i < 4; i++) {
-			cout << setw(5) << scale(max_k, i);
+		cout << setw(10) << max_k+2 << setw(6) << max_k;
+		for (int i = 0; i < max_es; i++) {
+			cout << setw(6) << scale(max_k, i);
 		}
 		cout << endl;
 	}
 
 	// cycle through scales to test the regime determination
+	cout << setw(10) << "Value";
+	for (int i = 0; i < max_es; i++) {
+		cout << setw(7) << "k";
+	}
+	cout << endl;
 	value = 1;
 	for (int i = 0; i < 16; i++) {
-		cout << "value = " << hex << setw(10) << value << " regime = " << regime(value, 0) << endl;
+		cout << setw(10) << value;
+		for (int i = 0; i < max_es; i++) {
+			cout << setw(7) << base_regime(value, i);
+		}
+		cout << endl;
 		value <<= 1;
 	}
 
 	// a posit has the form: useed^k * 2^exp * 1.fraction
 	// useed^k is the regime and is encoded by runlength of a string of 0's for numbers [0,1), and string of 1's for numbers [1,inf)
 	// the value k ranges from [2-nbits,nbits-2]
+	//
+	// The first step to convert an integer to a posit is to find the base regime scale
+	// The base is defined as the biggest k where useed^k < integer
+	// => k*2^es < msb && (k+1)*2^es > msb
+	// => k < msb/2^es && k > msb/2^es - 1
+	// => k = (msb >> es)
+
+	// posit<5,0> useed = 2
 	//  k  regime   exp   fraction regime scale   exponent scale
 	// -4  0-0000    -       -     0                 1
 	// -3  0-0001    -       -     0.125             1
@@ -138,7 +159,7 @@ int main()
 	//  2  0-1110    -       -     4                 1
 	//  3  0-1111    -       -     8                 1
 
-	// posit<5,1>
+	// posit<5,1>, useed = 4
 	//  k  regime   exp   fraction regime scale   exponent scale
 	// -4  0-0000    -       -     0                 1
 	// -3  0-0001    -       -     0.015625          1
@@ -149,7 +170,7 @@ int main()
 	//  2  0-1110    -       -     16                1
 	//  3  0-1111    -       -     64                1
 
-	// posit<5,2>
+	// posit<5,2>, useed = 16
 	//  k  regime   exp   fraction regime scale   exponent scale
 	// -4  0-0000    -       -     0                 1
 	// -3  0-0001    -       -     0.0002441406      1
