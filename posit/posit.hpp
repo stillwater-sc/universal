@@ -110,49 +110,50 @@ public:
 		}
 		cout << "posit<" << nbits << "," << es << "> assignment operator with value " << rhs << endl;
 		int msb;
-		if (isPositive()) {
-			msb = findMostSignificantBit(rhs)-1;
-			if (msb > maxpos_scale()) {
-				cerr << "msb = " << msb << " and maxpos_scale() = " << maxpos_scale() << endl;
-				cerr << "Can't represent " << rhs << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale()) << endl;
-			}
-			bits[nbits - 1] = false;
-			unsigned int rgm = msb >> es;
-			uint64_t regime = REGIME_BITS[rgm];
-			uint64_t mask = REGIME_BITS[0];
-			unsigned int nr_of_regime_bits = (rgm < nbits - 2 ? rgm + 2 : nbits - 1);
-			for (int i = 0; i < nr_of_regime_bits; i++) {
-				bits[nbits - 2 - i] = regime & mask;
+		bool value_is_negative = false;
+		if (rhs < 0) {
+			rhs = -rhs;
+			value_is_negative = true;
+		}
+		msb = findMostSignificantBit(rhs)-1;
+		if (msb > maxpos_scale()) {
+			cerr << "msb = " << msb << " and maxpos_scale() = " << maxpos_scale() << endl;
+			cerr << "Can't represent " << rhs << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale()) << endl;
+		}
+		bits[nbits - 1] = false;
+		unsigned int rgm = msb >> es;
+		uint64_t regime = REGIME_BITS[rgm];
+		uint64_t mask = REGIME_BITS[0];
+		unsigned int nr_of_regime_bits = (rgm < nbits - 2 ? rgm + 2 : nbits - 1);
+		for (int i = 0; i < nr_of_regime_bits; i++) {
+			bits[nbits - 2 - i] = regime & mask;
+			mask >>= 1;
+		}
+		//cout << "Regime   " << to_binary<nbits>(bits) << endl;
+
+		unsigned int nr_of_exp_bits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
+		if (nr_of_exp_bits > 0) {
+			unsigned int exponent = (es > 0 ? msb % (1 << es) : 0);
+			mask = (1 << (nr_of_exp_bits - 1));
+			for (int i = 0; i < nr_of_exp_bits; i++) {
+				bits[nbits - 2 - nr_of_regime_bits - i] = exponent & mask;
 				mask >>= 1;
 			}
-			//cout << "Regime   " << to_binary<nbits>(bits) << endl;
-
-			unsigned int nr_of_exp_bits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
-			if (nr_of_exp_bits > 0) {
-				unsigned int exponent = (es > 0 ? msb % (1 << es) : 0);
-				mask = (1 << (nr_of_exp_bits - 1));
-				for (int i = 0; i < nr_of_exp_bits; i++) {
-					bits[nbits - 2 - nr_of_regime_bits - i] = exponent & mask;
-					mask >>= 1;
-				}
-				//cout << "Exponent " << to_binary<nbits>(bits) << endl;
-			}
-
-			unsigned int remainder_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-			if (remainder_bits > 0) {
-				mask = ~(1 << msb);
-				for (int i = 0; i < remainder_bits; i++) {
-					bits[nbits - 2 - nr_of_regime_bits - nr_of_exp_bits - i] = rhs & mask;
-					mask >>= 1;
-				}
-				//cout << "Fraction " << to_binary<nbits>(bits) << endl;
-			}
+			//cout << "Exponent " << to_binary<nbits>(bits) << endl;
 		}
-		else {
-			cout << "Negative numbers not implemented yet" << endl;
-			bits[nbits - 1] = false;
-			// take a two's complement
-			rhs = ~rhs + 1;
+
+		unsigned int remainder_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
+		if (remainder_bits > 0) {
+			mask = ~(1 << msb);
+			for (int i = 0; i < remainder_bits; i++) {
+				bits[nbits - 2 - nr_of_regime_bits - nr_of_exp_bits - i] = rhs & mask;
+				mask >>= 1;
+			}
+			//cout << "Fraction " << to_binary<nbits>(bits) << endl;
+		}
+		if (value_is_negative) {
+			bits = twos_complement(bits);
+			bits.set(nbits - 1);
 		}
 		decode();
 		return *this;

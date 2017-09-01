@@ -247,6 +247,13 @@ int main()
 	p1 = 64;	cout << p1 << endl;
 	p1 = 128;	cout << p1 << endl;
 
+	p1 = -1;	cout << p1 << endl;
+	p1 = -2;	cout << p1 << endl;
+	p1 = -4;	cout << p1 << endl;
+	p1 = -8;	cout << p1 << endl;
+	p1 = -16;	cout << p1 << endl;
+	p1 = -64;	cout << p1 << endl;
+
 	return 0;
 }
 
