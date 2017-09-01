@@ -104,11 +104,11 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(long long rhs) {
+		reset();
 		if (rhs == 0) {
-			bits.reset();
 			return *this;
 		}
-		cout << "Assignment operator with value " << rhs << endl;
+		cout << "posit<" << nbits << "," << es << "> assignment operator with value " << rhs << endl;
 		int msb;
 		if (isPositive()) {
 			msb = findMostSignificantBit(rhs)-1;
@@ -122,27 +122,31 @@ public:
 			uint64_t mask = REGIME_BITS[0];
 			unsigned int nr_of_regime_bits = (rgm < nbits - 2 ? rgm + 2 : nbits - 1);
 			for (int i = 0; i < nr_of_regime_bits; i++) {
-				bits[nbits - 1 - i] = regime & mask;
+				bits[nbits - 2 - i] = regime & mask;
 				mask >>= 1;
 			}
-			cout << "Regime   " << to_binary<nbits>(bits) << endl;
+			//cout << "Regime   " << to_binary<nbits>(bits) << endl;
 
-			unsigned int exponent = (es > 0 ? msb % es : 0);
 			unsigned int nr_of_exp_bits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
-			mask = (1 << (nr_of_exp_bits - 1));
-			for (int i = 0; i < nr_of_exp_bits; i++) {
-				bits[nbits - 1 - nr_of_regime_bits - i] = exponent & mask;
-				mask >>= 1;
+			if (nr_of_exp_bits > 0) {
+				unsigned int exponent = (es > 0 ? msb % (1 << es) : 0);
+				mask = (1 << (nr_of_exp_bits - 1));
+				for (int i = 0; i < nr_of_exp_bits; i++) {
+					bits[nbits - 2 - nr_of_regime_bits - i] = exponent & mask;
+					mask >>= 1;
+				}
+				//cout << "Exponent " << to_binary<nbits>(bits) << endl;
 			}
-			cout << "Exponent  " << to_binary<nbits>(bits) << endl;
 
 			unsigned int remainder_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-			mask = ~(1 << msb);
-			for (int i = 0; i < remainder_bits; i++) {
-				bits[nbits - 1 - nr_of_regime_bits - nr_of_exp_bits - i] = rhs & mask;
-				mask >>= 1;
+			if (remainder_bits > 0) {
+				mask = ~(1 << msb);
+				for (int i = 0; i < remainder_bits; i++) {
+					bits[nbits - 2 - nr_of_regime_bits - nr_of_exp_bits - i] = rhs & mask;
+					mask >>= 1;
+				}
+				//cout << "Fraction " << to_binary<nbits>(bits) << endl;
 			}
-			cout << "Fraction " << to_binary<nbits>(bits) << endl;
 		}
 		else {
 			cout << "Negative numbers not implemented yet" << endl;
@@ -297,7 +301,7 @@ public:
 		return uint32_t(exp.to_ulong());
 	}
 	double fraction() const {
-		return double(frac.to_ulong())/(1 << nbits);
+		return double(frac.to_ulong())/(1 << (nbits-3));
 	}
 	// return run-length of the regime encoding
 	int run_length() const {
@@ -307,7 +311,7 @@ public:
 	std::bitset<es> exponent_bits() const {
 		return exp;
 	}
-	// return fraction bits: nbits - 3, right-extended
+	// return fraction bits: nbits - 3
 	std::bitset<nbits-3> fraction_bits() const {
 		return frac;
 	}
@@ -538,7 +542,11 @@ public:
 private:
 	std::bitset<nbits> bits;
 	std::bitset<es> exp;
-	std::bitset<nbits-3> frac; // fraction is max <nbits - 1 sign bit - minimum 2 regime bits>
+	// fraction is max <nbits - 1 sign bit - minimum 2 regime bits - 1 or more exponent bits>
+	// the conditional length of the exponent field creates a situation where we need to use the maximum size constant.
+	// this is too big and not accurate, but is an out come of using a template specification that needs to be const
+	// at time of compilation.
+	std::bitset<nbits-3> frac; 
 	int8_t k;
 
 

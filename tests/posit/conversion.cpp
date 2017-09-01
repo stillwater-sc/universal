@@ -77,7 +77,7 @@ unsigned int base_regime(int64_t value, unsigned int es) {
 unsigned int exponent(unsigned int msb, unsigned int es) {
 	unsigned int value = 0;
 	if (es > 0) {
-		value = msb % es;
+		value = msb % (1 << es);
 	}
 	return value;
 }
@@ -145,7 +145,7 @@ int main()
 {
 	//ConversionOperatorsPositiveRegime();
 	const size_t nbits = 5;
-	const size_t es = 2;
+	const size_t es = 1;
 
 	long long value;
 	unsigned int msb;
@@ -223,17 +223,29 @@ int main()
 	//         exp = msb % 2^es
 	// step 3: extract remaining fraction
 	//         remove hidden bit
-	value = 0x1ffff;  
+	value = 4;  
 	cout << hex << "0x" << value << dec << setw(12) << value << endl;
 	msb = findMostSignificantBit(value) - 1;
 	cout << "MSB      = " << msb << endl;
 	cout << "Regime   = " << base_regime(value, es) << endl;
 	cout << "Exponent = " << exponent(msb, es) << endl;
-	cout << "Fraction = 0x" << hex << fraction(value) << endl;
+	cout << "Fraction = 0x" << hex << fraction(value) << dec << endl;
 
-	posit<16, 2> p1;
-	p1 = value;
-	cout << p1 << endl;
+	posit<nbits, es> p1;
+	p1 =  1;	cout << p1 << endl;	
+	p1 =  2;	cout << p1 << endl;
+	p1 =  3;	cout << p1 << endl;
+	p1 =  4;	cout << p1 << endl;
+	p1 =  7;	cout << p1 << endl;
+	p1 =  8;	cout << p1 << endl;
+	p1 = 15;	cout << p1 << endl;
+	p1 = 16;	cout << p1 << endl;
+	p1 = 24;	cout << p1 << endl;
+	p1 = 31;	cout << p1 << endl;
+	p1 = 32;	cout << p1 << endl;
+	p1 = 48;	cout << p1 << endl;
+	p1 = 64;	cout << p1 << endl;
+	p1 = 128;	cout << p1 << endl;
 
 	return 0;
 }

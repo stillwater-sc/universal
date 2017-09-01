@@ -78,13 +78,14 @@ int main(int argc, char** argv)
 	// Regime is at least 2 bits
 	// So es <= nbits - 3
 	try {
-		posit<3, 1> myPosit;
+		//posit<3, 1> myPosit;
 	}
 	catch (char* e) {
 		cerr << "Caught expected error: " << e << endl;
 	}
 	try {
 		cerr << "Valid posit configurations" << endl;
+
 		GeneratePositTable<3, 0>(cout);
 
 		GeneratePositTable<4, 0>(cout);
@@ -107,6 +108,7 @@ int main(int argc, char** argv)
 
 		GeneratePositTable<8, 0>(cout);
 		GeneratePositTable<8, 1>(cout);
+
 	}
 	catch (char* e) {
 		cerr << e << endl;
