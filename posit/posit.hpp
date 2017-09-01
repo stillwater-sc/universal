@@ -116,20 +116,39 @@ public:
 				cerr << "msb = " << msb << " and maxpos_scale() = " << maxpos_scale() << endl;
 				cerr << "Can't represent " << rhs << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale()) << endl;
 			}
-			// we need to find the regime for this rhs
-			// regime represents a scale factor of useed ^ k, where k ranges from [-nbits-1, nbits-2]
-			// regime @ k = 0 -> 1
-			// regime @ k = 1 -> (1 << (1 << es) ^ 1 = 2
-			// regime @ k = 2 -> (1 << (1 << es) ^ 2 = 4
-			// regime @ k = 3 -> (1 << (1 << es) ^ 3 = 8
-			// the left shift of the regime is simply k * 2^es
-			// which means that the msb of the regime is simply k*2^es
-			// TODO: do you want to calculate how many bits the regime is?
-			// yes: because then you can figure out if you have exponent bits and fraction bits left.
+			bits[nbits - 1] = false;
+			unsigned int rgm = msb >> es;
+			uint64_t regime = REGIME_BITS[rgm];
+			uint64_t mask = REGIME_BITS[0];
+			unsigned int nr_of_regime_bits = (rgm < nbits - 2 ? rgm + 2 : nbits - 1);
+			for (int i = 0; i < nr_of_regime_bits; i++) {
+				bits[nbits - 1 - i] = regime & mask;
+				mask >>= 1;
+			}
+			cout << "Regime   " << to_binary<nbits>(bits) << endl;
+
+			unsigned int exponent = (es > 0 ? msb % es : 0);
+			unsigned int nr_of_exp_bits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
+			mask = (1 << (nr_of_exp_bits - 1));
+			for (int i = 0; i < nr_of_exp_bits; i++) {
+				bits[nbits - 1 - nr_of_regime_bits - i] = exponent & mask;
+				mask >>= 1;
+			}
+			cout << "Exponent  " << to_binary<nbits>(bits) << endl;
+
+			unsigned int remainder_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
+			mask = ~(1 << msb);
+			for (int i = 0; i < remainder_bits; i++) {
+				bits[nbits - 1 - nr_of_regime_bits - nr_of_exp_bits - i] = rhs & mask;
+				mask >>= 1;
+			}
+			cout << "Fraction " << to_binary<nbits>(bits) << endl;
 		}
 		else {
-			// take a two's complement
 			cout << "Negative numbers not implemented yet" << endl;
+			bits[nbits - 1] = false;
+			// take a two's complement
+			rhs = ~rhs + 1;
 		}
 		decode();
 		return *this;

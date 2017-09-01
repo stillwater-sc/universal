@@ -63,8 +63,7 @@ void ConversionOperatorsNegativeRegime() {
 // this would be the scale of maxpos
 template<size_t nbits, size_t es>
 unsigned int maxpos_scale_f()  {
-	int maxpos_regime = nbits - 2;
-	return maxpos_regime * (1 << es);
+	return (nbits-2) * (1 << es);
 }
 
 unsigned int scale(unsigned int max_k, unsigned int es) {
@@ -75,11 +74,78 @@ unsigned int base_regime(int64_t value, unsigned int es) {
 	return (findMostSignificantBit(value) - 1) >> es;
 }
 
+unsigned int exponent(unsigned int msb, unsigned int es) {
+	unsigned int value = 0;
+	if (es > 0) {
+		value = msb % es;
+	}
+	return value;
+}
+
+unsigned int fraction(int64_t value) {
+	unsigned int hidden_bit_at = findMostSignificantBit(value) - 1;
+	uint64_t mask = ~(1 << hidden_bit_at);
+	return value & mask;
+}
+
+void EnumerationTests() {
+	// set the max es we want to evaluate. useed grows very quickly as a function of es
+	int max_es = 4;
+
+	// cycle through the k values to test the scale calculation
+	// since useed^k grows so quickly, we can't print the value, 
+	// so instead we just print the scale of the number as measured in the binary exponent of useed^k = k*2^es
+	cout << setw(10) << "posit size" << setw(6) << "max_k" << "   scale of max regime" << endl;
+	cout << setw(16) << "           ";
+	for (int i = 0; i < max_es; i++) {
+		cout << setw(5) << "es@" << i;
+	}
+	cout << endl;
+	for (int max_k = 1; max_k < 14; max_k++) {
+		cout << setw(10) << max_k + 2 << setw(6) << max_k;
+		for (int es = 0; es < max_es; es++) {
+			cout << setw(6) << scale(max_k, es);
+		}
+		cout << endl;
+	}
+
+	// cycle through scales to test the regime determination
+	cout << setw(10) << "Value";
+	for (int i = 0; i < max_es; i++) {
+		cout << setw(7) << "k";
+	}
+	cout << endl;
+	unsigned int value = 1;
+	for (int i = 0; i < 16; i++) {
+		cout << setw(10) << value;
+		for (int es = 0; es < max_es; es++) {
+			cout << setw(7) << base_regime(value, es);
+		}
+		cout << endl;
+		value <<= 1;
+	}
+
+	// cycle through a range to test the exponent extraction
+	for (int i = 0; i < 32; i++) {
+		cout << setw(10) << i;
+		for (int es = 0; es < max_es; es++) {
+			cout << setw(5) << exponent(i, es);
+		}
+		cout << endl;
+	}
+
+	// cycle through a range to test the faction extraction
+	for (int i = 0; i < 32; i++) {
+		cout << setw(10) << hex << i << setw(5) << fraction(i) << endl;
+	}
+}
+
+
 int main()
 {
 	//ConversionOperatorsPositiveRegime();
 	const size_t nbits = 5;
-	const size_t es = 0;
+	const size_t es = 2;
 
 	long long value;
 	unsigned int msb;
@@ -101,42 +167,7 @@ int main()
 	// which means that the msb of the regime is simply k*2^es
 	// TODO: do you want to calculate how many bits the regime is?
 	// yes: because then you can figure out if you have exponent bits and fraction bits left.
-    
-	// set the max es we want to evaluate. useed grows very quickly as a function of es
-	int max_es = 4;
 
-	// cycle through the k values to test the scale calculation
-	// since useed^k grows so quickly, we can't print the value, 
-	// so instead we just print the scale of the number as measured in the binary exponent of useed^k = k*2^es
-	cout << setw(10) << "posit size" << setw(6) << "max_k" << "   scale of max regime" << endl;
-	cout << setw(16) << "           ";
-	for (int i = 0; i < max_es; i++) {
-		cout << setw(5) << "es@" << i;
-	}
-	cout << endl;
-	for (int max_k = 1; max_k < 14; max_k++) {
-		cout << setw(10) << max_k+2 << setw(6) << max_k;
-		for (int i = 0; i < max_es; i++) {
-			cout << setw(6) << scale(max_k, i);
-		}
-		cout << endl;
-	}
-
-	// cycle through scales to test the regime determination
-	cout << setw(10) << "Value";
-	for (int i = 0; i < max_es; i++) {
-		cout << setw(7) << "k";
-	}
-	cout << endl;
-	value = 1;
-	for (int i = 0; i < 16; i++) {
-		cout << setw(10) << value;
-		for (int i = 0; i < max_es; i++) {
-			cout << setw(7) << base_regime(value, i);
-		}
-		cout << endl;
-		value <<= 1;
-	}
 
 	// a posit has the form: useed^k * 2^exp * 1.fraction
 	// useed^k is the regime and is encoded by runlength of a string of 0's for numbers [0,1), and string of 1's for numbers [1,inf)
@@ -180,6 +211,29 @@ int main()
 	//  1  0-110     0       -     16                2
 	//  2  0-1110    -       -     256               1
 	//  3  0-1111    -       -     4096              1
+
+	// algorithm: convert int64 to posit<nbits,es>
+	// step 1: find base regime
+	//         if int64 is positive
+	//            base regime = useed ^ k, where k = msb_of_int64 >> es
+	//         else
+	//            take 2's complement
+	//            base regime = useed ^ k, where k = msb_of_2s_complement >> es
+	// step 2: find exponent
+	//         exp = msb % 2^es
+	// step 3: extract remaining fraction
+	//         remove hidden bit
+	value = 0x1ffff;  
+	cout << hex << "0x" << value << dec << setw(12) << value << endl;
+	msb = findMostSignificantBit(value) - 1;
+	cout << "MSB      = " << msb << endl;
+	cout << "Regime   = " << base_regime(value, es) << endl;
+	cout << "Exponent = " << exponent(msb, es) << endl;
+	cout << "Fraction = 0x" << hex << fraction(value) << endl;
+
+	posit<16, 2> p1;
+	p1 = value;
+	cout << p1 << endl;
 
 	return 0;
 }

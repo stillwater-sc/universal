@@ -3,10 +3,10 @@
 #include <cstdint>
 
 /*
-LOOKUP table for regime bits
+LOOKUP table for regime bits for positive k values
 */
 
-uint64_t MAXPOS_REGIME_BITS[64] = {
+uint64_t REGIME_BITS[64] = {
 	0x8000000000000000,
 	0xC000000000000000,
 	0xE000000000000000,
