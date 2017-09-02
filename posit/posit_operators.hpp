@@ -17,6 +17,17 @@ std::string to_binary(std::bitset<nbits> bits) {
 }
 
 template<size_t nbits, size_t es>
+std::string spec_to_string(posit<nbits, es> p) {
+	std::stringstream ss;
+	ss << "posit<" << setw(2) << nbits << "," << es << "> ";
+	ss << "useed " << setw(4) << p.useed()    << "     ";
+	ss << setprecision(12);
+	ss << "minpos " << setw(20) << p.minpos() << "     ";
+	ss << "maxpos " << setw(20) << p.maxpos();
+	return ss.str();
+}
+
+template<size_t nbits, size_t es>
 inline posit<nbits,es> operator+(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
 	
 	cout << "regime: " << lhs.run_length() << " lhs scale " << lhs.scale() << endl;

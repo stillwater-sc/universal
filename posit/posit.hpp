@@ -108,7 +108,7 @@ public:
 		if (rhs == 0) {
 			return *this;
 		}
-		cout << "posit<" << nbits << "," << es << "> assignment operator with value " << rhs << endl;
+
 		int msb;
 		bool value_is_negative = false;
 		if (rhs < 0) {
@@ -117,6 +117,7 @@ public:
 		}
 		msb = findMostSignificantBit(rhs)-1;
 		if (msb > maxpos_scale()) {
+			// TODO: Can we make this a compile time evaluated function for literals?
 			cerr << "msb = " << msb << " and maxpos_scale() = " << maxpos_scale() << endl;
 			cerr << "Can't represent " << rhs << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale()) << endl;
 		}
@@ -158,8 +159,6 @@ public:
 		decode();
 		return *this;
 	}
-
-
 	posit<nbits, es>& operator=(const float rhs) {
             using namespace std;
 		switch (fpclassify(rhs)) {
@@ -252,10 +251,10 @@ public:
 		return !bits[nbits - 1];
 	}
 	double maxpos() {
-		return double(useed());
+		return pow(double(useed()), double(nbits-2));
 	}
 	double minpos() {
-		return 1.0 / double(useed());
+		return pow(double(useed()), double(static_cast<int>(2-nbits)));
 	}
 	uint64_t useed() {
 		return (1 << (1 << es));
@@ -267,10 +266,8 @@ public:
 	unsigned int maxpos_scale() {
 		return (nbits - 2) * (1 << es);
 	}
-	// TODO: what would minpos_scale represent?
 	unsigned int minpos_scale() {
-		int minpos_exponent = static_cast<int>(2 - nbits);
-		return minpos_exponent * (1 << es);
+		return static_cast<int>(2 - nbits) * (1 << es);
 	}
 
 	// Get the raw bits of the posit

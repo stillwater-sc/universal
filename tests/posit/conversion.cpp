@@ -140,10 +140,7 @@ void EnumerationTests() {
 	}
 }
 
-
-int main()
-{
-	//ConversionOperatorsPositiveRegime();
+void basic_algorithm_for_conversion() {
 	const size_t nbits = 5;
 	const size_t es = 1;
 
@@ -158,59 +155,40 @@ int main()
 		cerr << "Can't represent " << value << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale) << endl;
 	}
 	// we need to find the regime for this rhs
-	// regime represents a scale factor of useed ^ k, where k ranges from [-nbits-1, nbits-2]
+	// regime represents a scale factor of useed ^ k, where k ranges from [1-nbits, nbits-2]
 	// regime @ k = 0 -> 1
 	// regime @ k = 1 -> (1 << (1 << es) ^ 1 = 2
 	// regime @ k = 2 -> (1 << (1 << es) ^ 2 = 4
 	// regime @ k = 3 -> (1 << (1 << es) ^ 3 = 8
 	// the left shift of the regime is simply k * 2^es
 	// which means that the msb of the regime is simply k*2^es
-	// TODO: do you want to calculate how many bits the regime is?
-	// yes: because then you can figure out if you have exponent bits and fraction bits left.
-
 
 	// a posit has the form: useed^k * 2^exp * 1.fraction
-	// useed^k is the regime and is encoded by runlength of a string of 0's for numbers [0,1), and string of 1's for numbers [1,inf)
-	// the value k ranges from [2-nbits,nbits-2]
+	// useed^k is the regime and is encoded by the run length m of:
+	//   - a string of 0's for numbers [0,1), and 
+	//   - a string of 1's for numbers [1,inf)
+
+	// The value k ranges from [1-nbits,nbits-2]
+	//  m  s-regime   k  
+	//  ...
+	//  4  0-00001   -4
+	//  3  0-0001    -3
+	//  2  0-001     -2
+	//  1  0-01      -1
+	//  1  0-10       0
+	//  2  0-110      1
+	//  3  0-1110     2
+	//  4  0-11110    3
+	//  ...
 	//
+	// We'll be using m to convert from posit to integer/float.
+	// We'll be using k to convert from integer/float to posit
+
 	// The first step to convert an integer to a posit is to find the base regime scale
 	// The base is defined as the biggest k where useed^k < integer
 	// => k*2^es < msb && (k+1)*2^es > msb
 	// => k < msb/2^es && k > msb/2^es - 1
 	// => k = (msb >> es)
-
-	// posit<5,0> useed = 2
-	//  k  regime   exp   fraction regime scale   exponent scale
-	// -4  0-0000    -       -     0                 1
-	// -3  0-0001    -       -     0.125             1
-	// -2  0-001     -       0     0.25              1
-	// -1  0-01      -      00     0.5               1
-	//  0  0-10      -      00     1                 1
-	//  1  0-110     -       0     2                 1
-	//  2  0-1110    -       -     4                 1
-	//  3  0-1111    -       -     8                 1
-
-	// posit<5,1>, useed = 4
-	//  k  regime   exp   fraction regime scale   exponent scale
-	// -4  0-0000    -       -     0                 1
-	// -3  0-0001    -       -     0.015625          1
-	// -2  0-001     0       -     0.0625            2
-	// -1  0-01      0       0     0.25              2
-	//  0  0-10      0       0     1                 2
-	//  1  0-110     0       -     4                 2
-	//  2  0-1110    -       -     16                1
-	//  3  0-1111    -       -     64                1
-
-	// posit<5,2>, useed = 16
-	//  k  regime   exp   fraction regime scale   exponent scale
-	// -4  0-0000    -       -     0                 1
-	// -3  0-0001    -       -     0.0002441406      1
-	// -2  0-001     0       -     0.00390625        2
-	// -1  0-01     00       -     0.0625            4
-	//  0  0-10     00       -     1                 4
-	//  1  0-110     0       -     16                2
-	//  2  0-1110    -       -     256               1
-	//  3  0-1111    -       -     4096              1
 
 	// algorithm: convert int64 to posit<nbits,es>
 	// step 1: find base regime
@@ -223,39 +201,83 @@ int main()
 	//         exp = msb % 2^es
 	// step 3: extract remaining fraction
 	//         remove hidden bit
-	value = 4;  
+	value = 33;
 	cout << hex << "0x" << value << dec << setw(12) << value << endl;
 	msb = findMostSignificantBit(value) - 1;
 	cout << "MSB      = " << msb << endl;
 	cout << "Regime   = " << base_regime(value, es) << endl;
 	cout << "Exponent = " << exponent(msb, es) << endl;
 	cout << "Fraction = 0x" << hex << fraction(value) << dec << endl;
+}
 
+int main()
+{
+	//ConversionOperatorsPositiveRegime();
+	const size_t nbits = 5;
+	const size_t es = 1;
 	posit<nbits, es> p1;
-	p1 =  1;	cout << p1 << endl;	
-	p1 =  2;	cout << p1 << endl;
-	p1 =  3;	cout << p1 << endl;
-	p1 =  4;	cout << p1 << endl;
-	p1 =  7;	cout << p1 << endl;
-	p1 =  8;	cout << p1 << endl;
-	p1 = 15;	cout << p1 << endl;
-	p1 = 16;	cout << p1 << endl;
-	p1 = 24;	cout << p1 << endl;
-	p1 = 31;	cout << p1 << endl;
-	p1 = 32;	cout << p1 << endl;
-	p1 = 48;	cout << p1 << endl;
-	p1 = 64;	cout << p1 << endl;
-	p1 = 128;	cout << p1 << endl;
 
-	p1 = -1;	cout << p1 << endl;
-	p1 = -2;	cout << p1 << endl;
-	p1 = -4;	cout << p1 << endl;
-	p1 = -8;	cout << p1 << endl;
-	p1 = -16;	cout << p1 << endl;
-	p1 = -64;	cout << p1 << endl;
+	cout << "Conversion tests: (notice the rounding errors)" << endl;
+	long long value;
+	value =  1;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value =  2;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value =  3;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value =  4;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value =  7;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value =  8;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value = 15;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	cout << endl;
+
+	// print scales of different posit configurations
+	// useed = 2^(2^es) and thus is just a function of the exponent configuration
+	// maxpos = useed^(nbits-2)
+	// minpos = useed^(2-nbits)
+	posit<4, 0> p4_0;
+	posit<8, 0> p8_0;
+	posit<16, 1> p16_1;
+	posit<32, 2> p32_2;
+	posit<64, 3> p64_3;
+	cout << "Posit specificiation examples and their ranges:" << endl;
+	cout << spec_to_string(p4_0) << endl;
+	cout << spec_to_string(p8_0) << endl;
+	cout << spec_to_string(p16_1) << endl;
+	cout << spec_to_string(p32_2) << endl;
+	cout << spec_to_string(p64_3) << endl;
 
 	return 0;
 }
 
 
+// posit<5,0> useed = 2
+//  k  regime   exp   fraction regime scale   exponent scale
+// -4  0-0000    -       -     0                 1
+// -3  0-0001    -       -     0.125             1
+// -2  0-001     -       0     0.25              1
+// -1  0-01      -      00     0.5               1
+//  0  0-10      -      00     1                 1
+//  1  0-110     -       0     2                 1
+//  2  0-1110    -       -     4                 1
+//  3  0-1111    -       -     8                 1
+
+// posit<5,1>, useed = 4
+//  k  regime   exp   fraction regime scale   exponent scale
+// -4  0-0000    -       -     0                 1
+// -3  0-0001    -       -     0.015625          1
+// -2  0-001     0       -     0.0625            2
+// -1  0-01      0       0     0.25              2
+//  0  0-10      0       0     1                 2
+//  1  0-110     0       -     4                 2
+//  2  0-1110    -       -     16                1
+//  3  0-1111    -       -     64                1
+
+// posit<5,2>, useed = 16
+//  k  regime   exp   fraction regime scale   exponent scale
+// -4  0-0000    -       -     0                 1
+// -3  0-0001    -       -     0.0002441406      1
+// -2  0-001     0       -     0.00390625        2
+// -1  0-01     00       -     0.0625            4
+//  0  0-10     00       -     1                 4
+//  1  0-110     0       -     16                2
+//  2  0-1110    -       -     256               1
+//  3  0-1111    -       -     4096              1
 
