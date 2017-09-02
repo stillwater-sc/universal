@@ -28,32 +28,31 @@ std::string spec_to_string(posit<nbits, es> p) {
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits,es> operator+(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
-	
-	cout << "regime: " << lhs.run_length() << " lhs scale " << lhs.scale() << endl;
-    cout << "regime: " << rhs.run_length() << " rhs scale " << rhs.scale() << endl;
-	if (lhs.scale() < rhs.scale())  {
-	  
-	}
-	return lhs;
+inline posit<nbits,es> operator+(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+	posit<nbits, es> sum = lhs;
+	sum += rhs;
+	return sum;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es> operator-(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
-	lhs -= rhs;
-	return lhs;
+inline posit<nbits, es> operator-(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+	posit<nbits, es> diff = lhs;
+	diff -= rhs;
+	return diff;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es> operator*(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
-	lhs *= rhs;
-	return lhs;
+inline posit<nbits, es> operator*(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+	posit<nbits, es> mul = lhs;
+	mul *= rhs;
+	return mul;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es> operator/(posit<nbits, es> lhs, const posit<nbits, es>& rhs) {
-	lhs /= rhs;
-	return lhs;
+inline posit<nbits, es> operator/(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+	posit<nbits, es> ratio = lhs;
+	ratio /= rhs;
+	return ratio;
 }
 
 template<size_t nbits, size_t es>
