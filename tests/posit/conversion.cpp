@@ -195,12 +195,14 @@ void basic_algorithm_for_conversion() {
 	//         if int64 is positive
 	//            base regime = useed ^ k, where k = msb_of_int64 >> es
 	//         else
-	//            take 2's complement
-	//            base regime = useed ^ k, where k = msb_of_2s_complement >> es
+	//            negate int64
+	//            base regime = useed ^ k, where k = msb_of_negated_int64 >> es
 	// step 2: find exponent
 	//         exp = msb % 2^es
 	// step 3: extract remaining fraction
 	//         remove hidden bit
+	// step 4: if int64 is negative, take 2's complement the posit of positive int64 calculated above
+	//
 	value = 33;
 	cout << hex << "0x" << value << dec << setw(12) << value << endl;
 	msb = findMostSignificantBit(value) - 1;
