@@ -276,7 +276,7 @@ public:
 	bool isPositive() const {
 		return !bits[nbits - 1];
 	}
-	string RoundingMode() {
+	std::string RoundingMode() {
 		switch (bRoundingMode) {
 		case POSIT_ROUND_DOWN:
 			return string("ROUND_DOWN");
