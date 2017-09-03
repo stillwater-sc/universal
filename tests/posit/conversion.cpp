@@ -221,6 +221,7 @@ int main()
 
 	cout << "Conversion tests: (notice the rounding errors)" << endl;
 	long long value;
+	cout << "Rounding mode : " << p1.RoundingMode() << endl;
 	value =  1;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
 	value =  2;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
 	value =  3;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
@@ -246,6 +247,17 @@ int main()
 	cout << spec_to_string(p16_1) << endl;
 	cout << spec_to_string(p32_2) << endl;
 	cout << spec_to_string(p64_3) << endl;
+	cout << endl;
+
+	// posit initialization and assignment
+	cout << "Posit copy constructor, assignment, and test" << endl;
+	posit<16, 1> p16_1_1;
+	p16_1_1 = (1 << 16);
+	posit<16, 1> p16_1_2(p16_1_1);
+	if (p16_1_1 != p16_1_2) {
+		cerr << "Copy constructor failed" << endl;
+	}
+	cout << "value: " << (1 << 16) << endl << p16_1_1 << endl << p16_1_2 << endl;
 
 	return 0;
 }

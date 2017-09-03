@@ -4,6 +4,9 @@
 #include <iostream>
 #include "posit_regime_lookup.hpp"
 
+const uint8_t POSIT_ROUND_DOWN = 0;
+const uint8_t POSIT_ROUND_TO_NEAREST = 1;
+
 inline uint64_t two_to_the_power(int n) {
 	return (uint64_t(1) << n);
 }
@@ -88,8 +91,12 @@ std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
 template<size_t nbits, size_t es> class posit {
 public:
 	posit<nbits, es>() {
+		bRoundingMode = POSIT_ROUND_DOWN;
 		reset();
 		validate();
+	}
+	posit<nbits, es>(const posit& p) {
+		*this = p;
 	}
 	posit<nbits, es>& operator=(const char rhs) {
 		*this = int64_t(rhs);
@@ -143,15 +150,28 @@ public:
 			//cout << "Exponent " << to_binary<nbits>(bits) << endl;
 		}
 
-		unsigned int remainder_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		if (remainder_bits > 0) {
-			mask = ~(1 << msb);
-			for (int i = 0; i < remainder_bits; i++) {
-				bits[nbits - 2 - nr_of_regime_bits - nr_of_exp_bits - i] = rhs & mask;
-				mask >>= 1;
+		switch (bRoundingMode) {
+		case POSIT_ROUND_DOWN:
+		{
+			unsigned int remainder_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
+			if (remainder_bits > 0) {
+				mask = (1 << (msb-1));  // first bit is transformed into a hidden bit
+				for (int i = 0; i < remainder_bits; i++) {
+					bits[nbits - 2 - nr_of_regime_bits - nr_of_exp_bits - i] = rhs & mask;
+					mask >>= 1;
+				}
+				//cout << "Fraction " << to_binary<nbits>(bits) << endl;
 			}
-			//cout << "Fraction " << to_binary<nbits>(bits) << endl;
 		}
+			break;
+		case POSIT_ROUND_TO_NEAREST:
+			cerr << "ROUND_TO_NEAREST not implemented yet" << endl;
+			break;
+		default:
+			cerr << "Undefined rounding mode" << endl;
+			break;
+		}
+
 		if (value_is_negative) {
 			bits = twos_complement(bits);
 			bits.set(nbits - 1);
@@ -182,6 +202,12 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(const double rhs) {
+		return *this;
+	}
+	posit<nbits, es>& operator=(const posit& rhs) {
+		reset();
+		bits = rhs.bits;
+		decode();
 		return *this;
 	}
 	posit<nbits, es>& operator+=(const posit rhs) {
@@ -249,6 +275,18 @@ public:
 	}
 	bool isPositive() const {
 		return !bits[nbits - 1];
+	}
+	string RoundingMode() {
+		switch (bRoundingMode) {
+		case POSIT_ROUND_DOWN:
+			return string("ROUND_DOWN");
+			break;
+		case POSIT_ROUND_TO_NEAREST:
+			return string("ROUND_TO_NEAREST");
+			break;
+		default:
+			return string("UNKNOWN");
+		}
 	}
 	double maxpos() {
 		return pow(double(useed()), double(nbits-2));
@@ -323,6 +361,7 @@ public:
 	// MODIFIERS
 	void reset() {
 		k = 0;
+		bRoundingMode = POSIT_ROUND_DOWN;
 		exp.reset();
 		frac.reset();
 		bits.reset();
@@ -546,6 +585,7 @@ private:
 	// at time of compilation.
 	std::bitset<nbits-3> frac; 
 	int8_t k;
+	int8_t bRoundingMode;
 
 
 	// HELPER methods
