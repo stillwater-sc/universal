@@ -28,28 +28,28 @@ std::string spec_to_string(posit<nbits, es> p) {
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits,es> operator+(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits,es> operator+ (posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> sum = lhs;
 	sum += rhs;
 	return sum;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es> operator-(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits, es> operator- (posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> diff = lhs;
 	diff -= rhs;
 	return diff;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es> operator*(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits, es> operator* (posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> mul = lhs;
 	mul *= rhs;
 	return mul;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es> operator/(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits, es> operator/ (posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> ratio = lhs;
 	ratio /= rhs;
 	return ratio;
@@ -71,9 +71,9 @@ inline std::ostream& operator<< (std::ostream& ostr, const posit<nbits, es>& p) 
 	
 	ostr << setw(14) << to_binary(p.get_raw_bits()) 
 		<< " Sign : " << setw(2) << p.sign()  
-		<< " Regime : " << setw(3) << p.run_length() 
+		<< " Regime : " << setw(3) << p.regime_k() 
 		<< " Exponent : " << setw(5) << p.exponent() 
-		<< " Fraction : " << setw(8) << setprecision(7) << p.fraction() 
+		<< " Fraction : " << setw(8) << setprecision(7) << 1.0 + p.fraction() 
 		<< " Value : " << setw(16) << p.to_double()
 		<< setprecision(0);
 	return ostr;

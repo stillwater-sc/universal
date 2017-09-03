@@ -62,7 +62,7 @@ void GeneratePositTable(ostream& ostr)
 		}
 		ostr << setw(4) << i << ": "
 			<< setw(bin_column) << binary
-			<< setw(k_column) << myPosit.run_length()
+			<< setw(k_column) << myPosit.regime_k()
 			<< setw(sign_column) << myPosit.sign()
 			<< setw(regime_column) << setprecision(7) << myPosit.regime() << setprecision(0)
 			<< setw(exponent_column) << exponent

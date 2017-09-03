@@ -73,28 +73,29 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	posit<5, 0> p5_0;
-	posit<5, 1> p5_1;
-	posit<5, 2> p5_2;
+	const size_t nbits = 16;
 
-	cout << spec_to_string(p5_0) << endl;
-	cout << spec_to_string(p5_1) << endl;
-	cout << spec_to_string(p5_2) << endl;
+	posit<nbits, 0> p0;
+	posit<nbits, 1> p1;
+	posit<nbits, 2> p2;
 
-	p5_0 = 9;    // useed =  2, maxpos = useed ^ 3 =    8
-	p5_1 = 65;   // useed =  4, maxpos = useed ^ 3 =   64
-	p5_2 = 4097; // useed = 64, maxpos = useed ^ 3 = 4096
+	cout << spec_to_string(p0) << endl;
+	cout << spec_to_string(p1) << endl;
+	cout << spec_to_string(p2) << endl;
 
+	p0 = 9;    // useed =  2, maxpos = useed ^ 3 =    8
+	p1 = 65;   // useed =  4, maxpos = useed ^ 3 =   64
+	p2 = 4097; // useed = 64, maxpos = useed ^ 3 = 4096
 
-	cout << "posit<5,0> = " << p5_0 << endl;
-	cout << "posit<5,1> = " << p5_1 << endl;
-	cout << "posit<5,2> = " << p5_2 << endl;
+	cout << "posit<" << nbits << ",0> = " << p0 << endl;
+	cout << "posit<" << nbits << ",1> = " << p1 << endl;
+	cout << "posit<" << nbits << ",2> = " << p2 << endl;
 
-	posit<5, 1> p1, p2, sum, diff;
-	p1 = 3;
-	p2 = 3;
-	sum = p1 + p2;
-	diff = p1 - p2;
+	posit<16, 1> a, b, sum, diff;
+	a = 3;
+	b = 3;
+	sum = a + b;
+	diff = a - b;
 	cout << sum << endl;
 	cout << diff << endl;
 

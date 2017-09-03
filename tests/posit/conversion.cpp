@@ -26,7 +26,7 @@ void ConversionOperatorsPositiveRegime() {
 
 	int64_t number = 1;
 	for (int i = 0; i < 8; i++) {
-		p0.from_longlong(number);
+		p0 = number;
 		cout << p0 << endl;
 		number <<= 1;
 	}

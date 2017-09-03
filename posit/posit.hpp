@@ -3,91 +3,14 @@
 #include <cmath>
 #include <iostream>
 #include "posit_regime_lookup.hpp"
+#include "posit_helpers.hpp"
 
 const uint8_t POSIT_ROUND_DOWN = 0;
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 
-inline uint64_t two_to_the_power(int n) {
-	return (uint64_t(1) << n);
-}
-
-// find the most significant bit set: first bit is at position 1, so that no bits set returns 0
-unsigned int findMostSignificantBit(uint64_t x) {
-	// find the first non-zero bit
-	static const unsigned int bval[] =
-	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
-
-	unsigned int base = 0;
-	if (x & 0xFFFFFFFF00000000) { base += 32; x >>= 32; }
-	if (x & 0x00000000FFFF0000) { base += 16; x >>= 16; }
-	if (x & 0x000000000000FF00) { base += 8;  x >>= 8; }
-	if (x & 0x00000000000000F0) { base += 4;  x >>= 4; }
-	return base + bval[x];
-}
-
-unsigned int findMostSignificantBit(int64_t x) {
-	// find the first non-zero bit
-	static const unsigned int bval[] =
-	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
-
-	uint64_t tmp = x;
-	unsigned int base = 0;
-	if (tmp & 0xFFFFFFFF00000000) { base += 32; tmp >>= 32; }
-	if (tmp & 0x00000000FFFF0000) { base += 16; tmp >>= 16; }
-	if (tmp & 0x000000000000FF00) { base += 8;  tmp >>= 8; }
-	if (tmp & 0x00000000000000F0) { base += 4;  tmp >>= 4; }
-	return base + bval[tmp];
-}
-
-unsigned int findMostSignificantBit(int32_t x) {
-	// find the first non-zero bit
-	static const unsigned int bval[] =
-	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
-
-	uint32_t tmp = x;
-	unsigned int base = 0;
-	if (tmp & 0xFFFF0000) { base += 16; tmp >>= 16; }
-	if (tmp & 0x0000FF00) { base += 8;  tmp >>= 8; }
-	if (tmp & 0x000000F0) { base += 4;  tmp >>= 4; }
-	return base + bval[tmp];
-}
-
-unsigned int findMostSignificantBit(int16_t x) {
-	// find the first non-zero bit
-	static const unsigned int bval[] =
-	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
-
-	uint16_t tmp = x;
-	unsigned int base = 0;
-	if (tmp & 0xFF00) { base += 8;  tmp >>= 8; }
-	if (tmp & 0x00F0) { base += 4;  tmp >>= 4; }
-	return base + bval[tmp];
-}
-
-unsigned int findMostSignificantBit(int8_t x) {
-	// find the first non-zero bit
-	static const unsigned int bval[] =
-	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
-
-	uint8_t tmp = x;
-	unsigned int base = 0;
-	if (tmp & 0xF0) { base += 4;  tmp >>= 4; }
-	return base + bval[tmp];
-}
-
-template<size_t nbits>
-std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
-	std::bitset<nbits> complement;
-	uint64_t value = number.flip().to_ulong();
-	value++;
-	unsigned long mask = 1;
-	for (int i = 0; i < nbits; i++) {
-		complement.set(i, (value & mask));
-		mask = mask << 1;
-	}
-	return complement;
-}
-
+/*
+ class posit represents arbitrary configuration posits and their arithmetic
+ */
 template<size_t nbits, size_t es> class posit {
 public:
 	posit<nbits, es>() {
@@ -129,20 +52,13 @@ public:
 			cerr << "Can't represent " << rhs << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale()) << endl;
 		}
 		bits[nbits - 1] = false;
-		unsigned int rgm = msb >> es;
-		uint64_t regime = REGIME_BITS[rgm];
-		uint64_t mask = REGIME_BITS[0];
-		unsigned int nr_of_regime_bits = (rgm < nbits - 2 ? rgm + 2 : nbits - 1);
-		for (int i = 0; i < nr_of_regime_bits; i++) {
-			bits[nbits - 2 - i] = regime & mask;
-			mask >>= 1;
-		}
+		unsigned int nr_of_regime_bits = assign_regime_pattern(msb >> es);
 		//cout << "Regime   " << to_binary<nbits>(bits) << endl;
 
 		unsigned int nr_of_exp_bits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
 		if (nr_of_exp_bits > 0) {
 			unsigned int exponent = (es > 0 ? msb % (1 << es) : 0);
-			mask = (1 << (nr_of_exp_bits - 1));
+			uint64_t mask = (1 << (nr_of_exp_bits - 1));
 			for (int i = 0; i < nr_of_exp_bits; i++) {
 				bits[nbits - 2 - nr_of_regime_bits - i] = exponent & mask;
 				mask >>= 1;
@@ -155,7 +71,7 @@ public:
 		{
 			unsigned int remainder_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
 			if (remainder_bits > 0) {
-				mask = (1 << (msb-1));  // first bit is transformed into a hidden bit
+				uint64_t mask = (1 << (msb-1));  // first bit is transformed into a hidden bit
 				for (int i = 0; i < remainder_bits; i++) {
 					bits[nbits - 2 - nr_of_regime_bits - nr_of_exp_bits - i] = rhs & mask;
 					mask >>= 1;
@@ -210,8 +126,7 @@ public:
 		decode();
 		return *this;
 	}
-	posit<nbits, es>& operator+=(const posit rhs) {
-		// add rhs             this->bits += rhs.bits;
+	posit<nbits, es>& operator+=(const posit& rhs) {
 		if (isZero()) {
 			bits = rhs.bits;
 			return *this;
@@ -220,29 +135,50 @@ public:
 			if (rhs.isZero()) {
 				return *this;
 			}
-			else if (isInfinite() && rhs.isInfinite()) {
+			else if (isInfinite()) {
 				return *this;
 			}
-			else if (isInfinite() || rhs.isInfinite()) {
+			else if (rhs.isInfinite()) {
+				*this = rhs;
 				return *this;
 			}
+		}
+		unsigned int msb;
+		int lhs_scale = scale();
+		int rhs_scale = rhs.scale();
+		cout << "scales (lhs:rhs): " << lhs_scale << ":" << rhs_scale << endl;
+		uint64_t lhs_fraction = frac.to_ullong();	// really only needs to be nbits-3 hardware
+		uint64_t rhs_fraction = rhs.frac.to_ullong();
+		cout << "lhs fraction: 0x" << hex << lhs_fraction << endl;
+		cout << "rhs fraction: 0x" << hex << rhs_fraction << endl;
+		if (lhs_scale < rhs_scale) {
+			lhs_fraction >>= (rhs_scale - lhs_scale);
+			msb = findMostSignificantBit(rhs_fraction);
+		}
+		else {
+			rhs_fraction >>= (lhs_scale - rhs_scale);
+			msb = findMostSignificantBit(lhs_fraction);
+		}
+		uint64_t result = lhs_fraction + rhs_fraction;
+		cout << "lhs fraction: 0x" << hex << lhs_fraction << endl;
+		cout << "rhs fraction: 0x" << hex << rhs_fraction << endl;
+		cout << "result      : 0x" << hex << result << endl;
+		// see if we need to increment the scale
+		if (findMostSignificantBit(result) > msb) {
+			increment_scale();
 		}
 		return *this;
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
-		// subtract rhs        this->bits -= rhs.bits;
 		return *this;
 	}
 	posit<nbits, es>& operator*=(const posit& rhs) {
-		// multiply by rhs     this->bits *= rhs.bits;
 		return *this;
 	}
 	posit<nbits, es>& operator/=(const posit& rhs) {
-		// multiply by /rhs    this->bits *= /rhs.bits;
 		return *this;
 	}
 	posit<nbits, es>& operator++() {
-		// add +1 to fraction bits;
 		return *this;
 	}
 	posit<nbits, es> operator++(int) {
@@ -251,7 +187,6 @@ public:
 		return tmp;
 	}
 	posit<nbits, es>& operator--() {
-		// add -1 to fraction bits;
 		return *this;
 	}
 	posit<nbits, es> operator--(int) {
@@ -300,7 +235,6 @@ public:
 	unsigned int base_regime(int64_t rhs) {
 		return (findMostSignificantBit(rhs) - 1) >> es;
 	}
-	// return the position of the msb of the largest binary number representable by this posit?
 	unsigned int maxpos_scale() {
 		return (nbits - 2) * (1 << es);
 	}
@@ -315,7 +249,6 @@ public:
 	int sign() const {
 		return (bits[nbits - 1] ? -1 : 1);
 	}
-	// return regime value
 	double regime() const {
 		double regime;
 		int e2 = (1 << es) * k;
@@ -332,15 +265,25 @@ public:
 		}
 		return regime;
 	}
-	// return exponent value
-	uint32_t exponent() const {
-		return uint32_t(exp.to_ulong());
+	double exponent() const {
+		return double(1 << exp.to_ulong());
 	}
 	double fraction() const {
-		return double(frac.to_ulong())/(1 << (nbits-3));
+		return double(frac.to_ulong()) / (1 << (nbits - 3));
 	}
-	// return run-length of the regime encoding
-	int run_length() const {
+	uint64_t regime_int() const {
+		if (k < 0) return 0;
+		return (1 << k*(1 << es));
+	}
+	uint64_t exponent_int() const {
+		return uint64_t(exp.to_ulong());
+	}
+	uint64_t fraction_int() const {
+		return frac.to_ullong();
+	}
+
+	// return the k-value of the regime: useed ^ k
+	int regime_k() const {
 		return k;
 	}
 	// return exponent bits
@@ -370,6 +313,9 @@ public:
 		reset();
 		bits = raw;
 		decode();
+	}
+	std::bitset<nbits> get() const {
+		return bits;
 	}
 	// Set the raw bits of the posit given a binary pattern
 	posit<nbits,es>& set_raw_bits(unsigned long value) {
@@ -457,8 +403,18 @@ public:
 		return k;
 	}
 
-	unsigned long to_ulong() const {
-		unsigned long value = bits.to_ulong();
+	int64_t to_int64() const {
+		if (isZero()) return 0;
+		if (isInfinite()) throw "inf";
+		// returning the integer representation of a posit only works for [1,inf)
+		int64_t value;
+		int scale = scale();
+		if (scale < 0) {
+			value = (fraction_int() >> -scale);
+		}
+		else {
+			value = (fraction_int() << scale);
+		}	
 		return value;
 	}
 
@@ -470,9 +426,11 @@ public:
 			return INFINITY;
 		}
 
+		//double value = sign() * regime() * exponent() * fraction();
+
 		double value = 0.0;
 		double base = 0.0;
-		int e = exponent();
+		int e = exponent_int();
 
 		// scale = useed ^ k * 2^e -> 2^(k*2^es) * 2^e = 2^(k*2^es + e)
 		int e2 = (k * (1 << es)) + e;
@@ -494,79 +452,6 @@ public:
 		return value;
 	}
 
-	// transform an integer to a posit
-	// integers cover only 2 quarters of the number line [0,1..inf], and [0,-1..-inf]
-	std::bitset<nbits> from_longlong(int64_t number) {
-		bits.reset();
-		if (number == 0) {
-			decode();
-			return bits;
-		}
-		if (number == 1) {
-			bits.set(nbits-2);
-			decode();
-			return bits;
-		}
-		if (number == -1) {
-			bits.set(nbits - 1);
-			bits.set(nbits - 2);
-			decode();
-			return bits;
-		}
-		if (number > 1) {
-			// (2^(2^es))^k * 2^e -> shift is k*2^es + e
-			// find the first msb set
-			int fbs;
-			uint64_t mask = (uint64_t(1) << 63);
-			for (int i = 63; i >= 0; --i) {
-				if (number & mask) {
-					fbs = i;
-					break;
-				}
-				mask >>= 1; 
-			}
-			// generate the regime pattern for this
-			// scale of the number is 2^(fbs+1)
-			// scale of the regime is 2^(k*2^es + e)
-			// k*2^es = fbs+1 -> k = (fbs+1) >> es
-			int k = ((fbs << 1) >> (es+es));
-			cout << "number to convert " << number << " fbs " << fbs << " k " << k << " ";
-			if (k > nbits - 2) {
-				cout << "Overflow: number " << number << " is too big for posit<" << nbits << "," << es << ">" << endl;
-				bits.set(nbits - 1);
-				decode();
-				return bits;	// return infinite
-			}
-			// this is always a pattern of 01####
-			bits.reset(nbits - 1);
-			bits.set(nbits - 2);
-			// k = 0 -> 10
-			// k = 1 -> 110
-			// k = 2 -> 1110
-			// k = nbits-2 => 1111
-			int r = nbits - 2;
-			for (int i = 0; i < k; i++) {
-				r--;
-				bits.set(r);
-			}
-			if (k == nbits - 2) {
-				bits.set(0);
-			}
-			else {
-				bits.reset(nbits - 3 - k);
-			}
-			// set the exponent bits
-			// the regime takes the base to useed^k
-			// we have exponent and fraction bits if k*2^es < fsb
-			int shift = (k << es);
-			int msb = fbs - shift;	
-			cout << "shift " << shift << " msb " << msb << " ";
-
-			// set the fraction bits
-		}
-		decode();
-		return bits;
-	}
 
 	// scale returns the shifts to normalize the number =  regime + exponent shifts
 	int scale() const {
@@ -574,6 +459,46 @@ public:
 		// regime = useed ^ k = 2 ^ (k*(2 ^ e))
 		// scale = useed ^ k * 2^e 
 		return k*(1 << es) + exp.to_ulong();
+	}
+	void increment_scale() {
+		if (es == 0) {
+			k++;
+		}
+		else {
+			if (this->exp.all()) {
+				k++;
+				exp.reset();
+			}
+			else {
+				exp = convert_bits<es>(exp.to_ulong() + 1);
+			}		
+		}
+	}
+	// return the number of regime bits
+	unsigned int assign_regime_pattern (int k) {
+		unsigned int nr_of_regime_bits;
+		if (k < 0) {
+			k = -k - 1;
+			uint64_t regime = REGIME_BITS[k];
+			uint64_t mask = REGIME_BITS[0];
+			nr_of_regime_bits = (k < nbits - 2 ? k + 2 : nbits - 1);
+			for (int i = 0; i < nr_of_regime_bits; i++) {
+				bits[nbits - 2 - i] = !(regime & mask);
+				mask >>= 1;
+			}
+			//cout << "Regime   " << to_binary<nbits>(bits) << endl;
+		}
+		else {
+			uint64_t regime = REGIME_BITS[k];
+			uint64_t mask = REGIME_BITS[0];
+			nr_of_regime_bits = (k < nbits - 2 ? k + 2 : nbits - 1);
+			for (int i = 0; i < nr_of_regime_bits; i++) {
+				bits[nbits - 2 - i] = regime & mask;
+				mask >>= 1;
+			}
+			//cout << "Regime   " << to_binary<nbits>(bits) << endl;
+		}
+		return nr_of_regime_bits;
 	}
 
 private:
