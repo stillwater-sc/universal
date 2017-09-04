@@ -30,6 +30,15 @@ endif()
 # Possibly not under Windows
 add_compile_options ( -std=c++11 )
 
+set(Boost_DIR ${BOOST_ROOT})
+
+set(Boost_USE_STATIC_LIBS OFF) 
+set(Boost_USE_MULTITHREADED ON)  
+set(Boost_USE_STATIC_RUNTIME OFF) 
+find_package(Boost 1.65.0 COMPONENTS multiprecision) 
+
+if(Boost_FOUND)
+endif()
 
 macro (compile_all testing prefix)
     # cycle through the sources
