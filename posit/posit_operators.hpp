@@ -63,11 +63,11 @@ std::string component_values_to_string(posit<nbits,es> p) {
 
 	ss << setw(14) << to_binary(p.get())
 		<< " Sign : " << setw(2) << p.sign()
+		<< " Regime : " << p.regime_int()
+		<< " Exponent : " << p.exponent_int()
 		<< hex
-		<< " Regime : " << setw(3) << p.regime_int()
-		<< " Exponent : " << setw(5) << p.exponent_int()
-		<< " Fraction : " << setw(8) <<  p.fraction_int()
-		<< " Value : " << setw(16) << p.to_int64()
+		<< " Fraction : " << p.fraction_int()
+		<< " Value : " << p.to_int64()
 		<< dec;
 	return ss.str();
 }
@@ -102,23 +102,15 @@ inline posit<nbits, es> operator/(posit<nbits, es>& lhs, const posit<nbits, es>&
 
 template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
-	// determine the value of the posit
 	if (p.isZero()) {
-		ostr << " zero    " << setw(103) << "b" << p._Bits;
+		ostr << double(0.0);
 		return ostr;
 	}
 	else if (p.isInfinite()) {
-		ostr << " infinite" << setw(103) << "b" << p._Bits;
+		ostr << std::numeric_limits<double>::infinity();
 		return ostr;
-	}
-	
-	ostr << setw(14) << to_binary(p.get()) 
-		<< " Sign : " << setw(2) << p.sign()  
-		<< " Regime : " << setw(3) << p.regime_k() 
-		<< " Exponent : " << setw(5) << p.exponent() 
-		<< " Fraction : " << setw(8) << setprecision(7) << 1.0 + p.fraction() 
-		<< " Value : " << setw(16) << p.to_double()
-		<< setprecision(0);
+	}	
+	ostr << p.to_double();
 	return ostr;
 }
 

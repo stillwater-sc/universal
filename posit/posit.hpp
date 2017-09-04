@@ -223,10 +223,10 @@ public:
 			return string("UNKNOWN");
 		}
 	}
-	double maxpos() {
+	long double maxpos() {
 		return pow(double(useed()), double(nbits-2));
 	}
-	double minpos() {
+	long double minpos() {
 		return pow(double(useed()), double(static_cast<int>(2-nbits)));
 	}
 	uint64_t useed() {
@@ -415,7 +415,7 @@ public:
 		}	
 		return value;
 	}
-	double to_double() const {
+	long double to_double() const {
 		if (isZero()) {
 			return 0.0;
 		}
@@ -425,8 +425,8 @@ public:
 
 		//double value = sign() * regime() * exponent() * fraction();
 
-		double value = 0.0;
-		double base = 0.0;
+		long double value = 0.0;
+		long double base = 0.0;
 		int e = exponent_int();
 
 		// scale = useed ^ k * 2^e -> 2^(k*2^es) * 2^e = 2^(k*2^es + e)
@@ -436,10 +436,10 @@ public:
 		}
 		else {
 			if (e2 >= 0) {			
-				base = double(uint64_t(1) << e2);
+				base = long double(uint64_t(1) << e2);
 			}
 			else {
-				base = 1.0 / double(uint64_t(1) << -e2);
+				base = 1.0 / long double(uint64_t(1) << -e2);
 			}
 		}
 		value = base + base * fraction();
@@ -512,19 +512,6 @@ private:
 	int8_t bRoundingMode;
 
 	// HELPER methods
-	int findBaseExponent(uint64_t number) const {
-		// find the most significant bit
-		int i = 0;
-		int size = sizeof(number);
-		while (i < size) {
-			number >>= 1;
-			if (0 == number) {
-				return i;
-			}
-			i++;
-		}
-		return i;
-	}
 	void extractIEEE754(uint64_t f, int exponentSize, int mantissaSize) {
 		int exponentBias = POW2(exponentSize - 1) - 1;
 		int16_t exponent = (f >> mantissaSize) & ((1 << exponentSize) - 1);
