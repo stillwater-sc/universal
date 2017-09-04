@@ -51,7 +51,7 @@ void GeneratePositTable(ostream& ostr)
 		<< setw(value_column) << " value" << endl;
 	for (int i = 0; i < size; i++) {
 		myPosit.set_raw_bits(i);
-		string binary = to_binary(myPosit.get_raw_bits());
+		string binary = to_binary(myPosit.get());
 		string exponent = "-";
 		if (nbits - 3 > 0 && es > 0) {
 			exponent = to_binary(myPosit.exponent_bits());

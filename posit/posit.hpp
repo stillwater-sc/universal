@@ -51,7 +51,7 @@ public:
 			cerr << "msb = " << msb << " and maxpos_scale() = " << maxpos_scale() << endl;
 			cerr << "Can't represent " << rhs << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale()) << endl;
 		}
-		bits[nbits - 1] = false;
+		_Bits[nbits - 1] = false;
 		unsigned int nr_of_regime_bits = assign_regime_pattern(msb >> es);
 		//cout << "Regime   " << to_binary<nbits>(bits) << endl;
 
@@ -60,7 +60,7 @@ public:
 			unsigned int exponent = (es > 0 ? msb % (1 << es) : 0);
 			uint64_t mask = (1 << (nr_of_exp_bits - 1));
 			for (int i = 0; i < nr_of_exp_bits; i++) {
-				bits[nbits - 2 - nr_of_regime_bits - i] = exponent & mask;
+				_Bits[nbits - 2 - nr_of_regime_bits - i] = exponent & mask;
 				mask >>= 1;
 			}
 			//cout << "Exponent " << to_binary<nbits>(bits) << endl;
@@ -73,7 +73,7 @@ public:
 			if (remainder_bits > 0) {
 				uint64_t mask = (1 << (msb-1));  // first bit is transformed into a hidden bit
 				for (int i = 0; i < remainder_bits; i++) {
-					bits[nbits - 2 - nr_of_regime_bits - nr_of_exp_bits - i] = rhs & mask;
+					_Bits[nbits - 2 - nr_of_regime_bits - nr_of_exp_bits - i] = rhs & mask;
 					mask >>= 1;
 				}
 				//cout << "Fraction " << to_binary<nbits>(bits) << endl;
@@ -89,8 +89,8 @@ public:
 		}
 
 		if (value_is_negative) {
-			bits = twos_complement(bits);
-			bits.set(nbits - 1);
+			_Bits = twos_complement(_Bits);
+			_Bits.set(nbits - 1);
 		}
 		decode();
 		return *this;
@@ -122,13 +122,13 @@ public:
 	}
 	posit<nbits, es>& operator=(const posit& rhs) {
 		reset();
-		bits = rhs.bits;
+		_Bits = rhs._Bits;
 		decode();
 		return *this;
 	}
 	posit<nbits, es>& operator+=(const posit& rhs) {
 		if (isZero()) {
-			bits = rhs.bits;
+			_Bits = rhs._Bits;
 			return *this;
 		}
 		else {
@@ -147,8 +147,8 @@ public:
 		int lhs_scale = scale();
 		int rhs_scale = rhs.scale();
 		cout << "scales (lhs:rhs): " << lhs_scale << ":" << rhs_scale << endl;
-		uint64_t lhs_fraction = frac.to_ullong();	// really only needs to be nbits-3 hardware
-		uint64_t rhs_fraction = rhs.frac.to_ullong();
+		uint64_t lhs_fraction = _Frac.to_ullong();	// really only needs to be nbits-3 hardware
+		uint64_t rhs_fraction = rhs._Frac.to_ullong();
 		cout << "lhs fraction: 0x" << hex << lhs_fraction << endl;
 		cout << "rhs fraction: 0x" << hex << rhs_fraction << endl;
 		if (lhs_scale < rhs_scale) {
@@ -198,18 +198,18 @@ public:
 	// SELECTORS
 	bool isInfinite() const {
 		// +-infinite is a bit string of a sign bit of 1 followed by all 0s
-		std::bitset<nbits> tmp(bits);
+		std::bitset<nbits> tmp(_Bits);
 		tmp.reset(nbits - 1);
-		return bits[nbits - 1] && tmp.none();
+		return _Bits[nbits - 1] && tmp.none();
 	}
 	bool isZero() const {
-		return bits.none();
+		return _Bits.none();
 	}
 	bool isNegative() const {
-		return bits[nbits - 1];
+		return _Bits[nbits - 1];
 	}
 	bool isPositive() const {
-		return !bits[nbits - 1];
+		return !_Bits[nbits - 1];
 	}
 	std::string RoundingMode() {
 		switch (bRoundingMode) {
@@ -242,12 +242,8 @@ public:
 		return static_cast<int>(2 - nbits) * (1 << es);
 	}
 
-	// Get the raw bits of the posit
-	std::bitset<nbits> get_raw_bits() const {
-		return bits;
-	}
 	int sign() const {
-		return (bits[nbits - 1] ? -1 : 1);
+		return (_Bits[nbits - 1] ? -1 : 1);
 	}
 	double regime() const {
 		double regime;
@@ -266,20 +262,22 @@ public:
 		return regime;
 	}
 	double exponent() const {
-		return double(1 << exp.to_ulong());
+		return double(1 << _Exp.to_ulong());
 	}
 	double fraction() const {
-		return double(frac.to_ulong()) / (1 << (nbits - 3));
+		return double(_Frac.to_ulong()) / double(1 << (nbits - 3));
 	}
 	uint64_t regime_int() const {
 		if (k < 0) return 0;
 		return (1 << k*(1 << es));
 	}
 	uint64_t exponent_int() const {
-		return uint64_t(exp.to_ulong());
+		return uint64_t(_Exp.to_ulong());
 	}
 	uint64_t fraction_int() const {
-		return frac.to_ullong();
+		uint64_t fraction;
+		int nr_of_fraction_bits = 0;
+		return _Frac.to_ullong();
 	}
 
 	// return the k-value of the regime: useed ^ k
@@ -288,11 +286,11 @@ public:
 	}
 	// return exponent bits
 	std::bitset<es> exponent_bits() const {
-		return exp;
+		return _Exp;
 	}
 	// return fraction bits: nbits - 3
 	std::bitset<nbits-3> fraction_bits() const {
-		return frac;
+		return _Frac;
 	}
 	// posit with nbits < 3 will fail due to zero-value fraction bits array
 	void validate() throw(char*) {
@@ -305,24 +303,24 @@ public:
 	void reset() {
 		k = 0;
 		bRoundingMode = POSIT_ROUND_DOWN;
-		exp.reset();
-		frac.reset();
-		bits.reset();
+		_Exp.reset();
+		_Frac.reset();
+		_Bits.reset();
 	}
 	void set(std::bitset<nbits> raw) {
 		reset();
-		bits = raw;
+		_Bits = raw;
 		decode();
 	}
 	std::bitset<nbits> get() const {
-		return bits;
+		return _Bits;
 	}
 	// Set the raw bits of the posit given a binary pattern
-	posit<nbits,es>& set_raw_bits(unsigned long value) {
+	posit<nbits,es>& set_raw_bits(uint64_t value) {
 		reset();
 		unsigned long mask = 1;
 		for ( int i = 0; i < nbits; i++ ) {
-			bits.set(i,(value & mask));
+			_Bits.set(i,(value & mask));
 			mask = mask << 1;
 		}
 		// decode to cache the posit number interpretation
@@ -341,9 +339,9 @@ public:
 			return k;
 		}
 		int m = 0;
-		std::bitset<nbits> tmp(bits);
+		std::bitset<nbits> tmp(_Bits);
 		if (tmp[nbits - 1]) {
-			tmp = twos_complement(bits);
+			tmp = twos_complement(_Bits);
 		}
 		// let m be the number of identical bits in the regime
 		if (tmp[nbits - 2] == 1) {   // run length of 1's
@@ -381,7 +379,7 @@ public:
 			size = (msb >= es - 1 ? es : msb + 1);
 		//	                         cout << " size " << size << " msb " << msb << " ";
 			for (int i = 0; i < size; i++) {
-				exp[i] = tmp[msb - (size - 1) + i];
+				_Exp[i] = tmp[msb - (size - 1) + i];
 			}
 		}
 
@@ -397,7 +395,7 @@ public:
 		if (msb >= 0) {
 			int f = 0;
 			for (int i = msb; i >= 0; --i) {
-				frac[nbits - 4 - f++] = tmp[i];
+				_Frac[nbits - 4 - f++] = tmp[i];
 			}
 		}
 		return k;
@@ -408,16 +406,15 @@ public:
 		if (isInfinite()) throw "inf";
 		// returning the integer representation of a posit only works for [1,inf)
 		int64_t value;
-		int scale = scale();
-		if (scale < 0) {
-			value = (fraction_int() >> -scale);
+		int s = scale();
+		if (s < 0) {
+			value = ((fraction_int()) >> -s);
 		}
 		else {
-			value = (fraction_int() << scale);
+			value = (fraction_int() << s);
 		}	
 		return value;
 	}
-
 	double to_double() const {
 		if (isZero()) {
 			return 0.0;
@@ -458,19 +455,19 @@ public:
 		// how many shifts represent the regime?
 		// regime = useed ^ k = 2 ^ (k*(2 ^ e))
 		// scale = useed ^ k * 2^e 
-		return k*(1 << es) + exp.to_ulong();
+		return k*(1 << es) + _Exp.to_ulong();
 	}
 	void increment_scale() {
 		if (es == 0) {
 			k++;
 		}
 		else {
-			if (this->exp.all()) {
+			if (this->_Exp.all()) {
 				k++;
-				exp.reset();
+				_Exp.reset();
 			}
 			else {
-				exp = convert_bits<es>(exp.to_ulong() + 1);
+				_Exp = convert_bits<es>(_Exp.to_ulong() + 1);
 			}		
 		}
 	}
@@ -483,7 +480,7 @@ public:
 			uint64_t mask = REGIME_BITS[0];
 			nr_of_regime_bits = (k < nbits - 2 ? k + 2 : nbits - 1);
 			for (int i = 0; i < nr_of_regime_bits; i++) {
-				bits[nbits - 2 - i] = !(regime & mask);
+				_Bits[nbits - 2 - i] = !(regime & mask);
 				mask >>= 1;
 			}
 			//cout << "Regime   " << to_binary<nbits>(bits) << endl;
@@ -493,7 +490,7 @@ public:
 			uint64_t mask = REGIME_BITS[0];
 			nr_of_regime_bits = (k < nbits - 2 ? k + 2 : nbits - 1);
 			for (int i = 0; i < nr_of_regime_bits; i++) {
-				bits[nbits - 2 - i] = regime & mask;
+				_Bits[nbits - 2 - i] = regime & mask;
 				mask >>= 1;
 			}
 			//cout << "Regime   " << to_binary<nbits>(bits) << endl;
@@ -502,16 +499,17 @@ public:
 	}
 
 private:
-	std::bitset<nbits> bits;
-	std::bitset<es> exp;
+	std::bitset<nbits> _Bits;
+	std::bitset<es> _Exp;
+	int8_t exponentLength;
 	// fraction is max <nbits - 1 sign bit - minimum 2 regime bits - 1 or more exponent bits>
 	// the conditional length of the exponent field creates a situation where we need to use the maximum size constant.
-	// this is too big and not accurate, but is an out come of using a template specification that needs to be const
+	// this is too big and not precise, but is an outcome of using a template specification that needs to be const
 	// at time of compilation.
-	std::bitset<nbits-3> frac; 
+	std::bitset<nbits-3> _Frac; 
+	int8_t fractionLength;
 	int8_t k;
 	int8_t bRoundingMode;
-
 
 	// HELPER methods
 	int findBaseExponent(uint64_t number) const {

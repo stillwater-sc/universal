@@ -87,9 +87,11 @@ int main(int argc, char** argv)
 	p1 = 65;   // useed =  4, maxpos = useed ^ 3 =   64
 	p2 = 4097; // useed = 64, maxpos = useed ^ 3 = 4096
 
-	cout << "posit<" << nbits << ",0> = " << p0 << endl;
-	cout << "posit<" << nbits << ",1> = " << p1 << endl;
-	cout << "posit<" << nbits << ",2> = " << p2 << endl;
+	cout << "posit<" << nbits << ",0> = " << components_to_string(p0) << endl;
+	cout << "posit<" << nbits << ",1> = " << components_to_string(p1) << endl;
+	cout << "posit<" << nbits << ",2> = " << components_to_string(p2) << endl;
+
+	cout << "posit<" << nbits << ",2> = " << component_values_to_string(p2) << endl;
 
 	posit<16, 1> a, b, sum, diff;
 	a = 3;

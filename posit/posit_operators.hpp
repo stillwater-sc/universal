@@ -28,48 +28,91 @@ std::string spec_to_string(posit<nbits, es> p) {
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits,es> operator+ (posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+std::string components_to_string(posit<nbits,es> p) {
+	std::stringstream ss;
+	if (p.isZero()) {
+		ss << " zero    " << setw(103) << "b" << p.get();
+		return ss.str();
+	}
+	else if (p.isInfinite()) {
+		ss << " infinite" << setw(103) << "b" << p.get();
+		return ss.str();
+	}
+
+	ss << setw(14) << to_binary(p.get())
+		<< " Sign : " << setw(2) << p.sign()
+		<< " Regime : " << setw(3) << p.regime_k()
+		<< " Exponent : " << setw(5) << p.exponent_int()
+		<< " Fraction : " << setw(8) << setprecision(7) << 1.0 + p.fraction()
+		<< " Value : " << setw(16) << p.to_double()
+		<< setprecision(0);
+	return ss.str();
+}
+
+template<size_t nbits, size_t es>
+std::string component_values_to_string(posit<nbits,es> p) {
+	std::stringstream ss;
+	if (p.isZero()) {
+		ss << " zero    " << setw(103) << "b" << p.get();
+		return ss.str();
+	}
+	else if (p.isInfinite()) {
+		ss << " infinite" << setw(103) << "b" << p.get();
+		return ss.str();
+	}
+
+	ss << setw(14) << to_binary(p.get())
+		<< " Sign : " << setw(2) << p.sign()
+		<< hex
+		<< " Regime : " << setw(3) << p.regime_int()
+		<< " Exponent : " << setw(5) << p.exponent_int()
+		<< " Fraction : " << setw(8) <<  p.fraction_int()
+		<< " Value : " << setw(16) << p.to_int64()
+		<< dec;
+	return ss.str();
+}
+
+template<size_t nbits, size_t es>
+inline posit<nbits,es> operator+(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> sum = lhs;
 	sum += rhs;
 	return sum;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es> operator- (posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits, es> operator-(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> diff = lhs;
 	diff -= rhs;
 	return diff;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es> operator* (posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits, es> operator*(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> mul = lhs;
 	mul *= rhs;
 	return mul;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es> operator/ (posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits, es> operator/(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> ratio = lhs;
 	ratio /= rhs;
 	return ratio;
 }
 
 template<size_t nbits, size_t es>
-inline std::ostream& operator<< (std::ostream& ostr, const posit<nbits, es>& p) {
-        using namespace std;
+inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 	// determine the value of the posit
-	int k = 0;   // will contain the k value
 	if (p.isZero()) {
-		ostr << " zero    " << setw(103) << "b" << p.bits;
+		ostr << " zero    " << setw(103) << "b" << p._Bits;
 		return ostr;
 	}
 	else if (p.isInfinite()) {
-		ostr << " infinite" << setw(103) << "b" << p.bits;
+		ostr << " infinite" << setw(103) << "b" << p._Bits;
 		return ostr;
 	}
 	
-	ostr << setw(14) << to_binary(p.get_raw_bits()) 
+	ostr << setw(14) << to_binary(p.get()) 
 		<< " Sign : " << setw(2) << p.sign()  
 		<< " Regime : " << setw(3) << p.regime_k() 
 		<< " Exponent : " << setw(5) << p.exponent() 
@@ -81,16 +124,16 @@ inline std::ostream& operator<< (std::ostream& ostr, const posit<nbits, es>& p) 
 
 template<size_t nbits, size_t es>
 inline std::istream& operator >> (std::istream& istr, const posit<nbits, es>& p) {
-	istr >> p.bits;
+	istr >> p._Bits;
 	return istr;
 }
 
 template<size_t nbits, size_t es>
-inline bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs.bits == rhs.bits; }
+inline bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._Bits == rhs._Bits; }
 template<size_t nbits, size_t es>
 inline bool operator!=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nbits, size_t es>
-inline bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs.bits < rhs.bits; }
+inline bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._Bits < rhs._Bits; }
 template<size_t nbits, size_t es>
 inline bool operator> (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return  operator< (rhs, lhs); }
 template<size_t nbits, size_t es>
