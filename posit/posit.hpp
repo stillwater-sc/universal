@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include "../bitset/bitset_helpers.hpp"
 #include "posit_regime_lookup.hpp"
 #include "posit_helpers.hpp"
 
@@ -467,7 +468,7 @@ public:
 				_Exp.reset();
 			}
 			else {
-				_Exp = convert_bits<es>(_Exp.to_ulong() + 1);
+				_Exp = assign<es>(_Exp.to_ulong() + 1);
 			}		
 		}
 	}

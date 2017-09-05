@@ -2,6 +2,7 @@
 
 #include "stdafx.h"
 #include <sstream>
+#include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 

@@ -69,7 +69,7 @@ unsigned int findMostSignificantBit(int8_t x) {
 }
 
 template<size_t nbits>
-std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
+std::bitset<nbits> twos_complement_(std::bitset<nbits> number) {
 	std::bitset<nbits> complement;
 	uint64_t value = number.flip().to_ulong();
 	value++;
@@ -82,7 +82,7 @@ std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
 }
 
 template<size_t nbits>
-std::bitset<nbits> convert_bits(uint64_t number) {
+std::bitset<nbits> convert_bits_(uint64_t number) {
 	std::bitset<nbits> bits;
 	uint64_t mask = 1;
 	for (int i = 0; i < nbits; i++) {

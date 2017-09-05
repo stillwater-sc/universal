@@ -22,6 +22,30 @@ std::bitset<sign_magnitude> twos_complement(std::bitset<sign_magnitude> number) 
 }
 
 template<size_t sign_magnitude>
+std::bitset<sign_magnitude> assign(unsigned long number) {
+	std::bitset<sign_magnitude> _Bits;
+	_Bits[sign_magnitude - 1] = 0;
+	uint64_t mask = 1;
+	for (int i = 0; i < sign_magnitude - 1; i++) {
+		_Bits[i] = mask & number;
+		mask <<= 1;
+	}
+	return _Bits;
+}
+
+template<size_t sign_magnitude>
+std::bitset<sign_magnitude> assign(uint32_t number) {
+	std::bitset<sign_magnitude> _Bits;
+	_Bits[sign_magnitude - 1] = 0;
+	uint64_t mask = 1;
+	for (int i = 0; i < sign_magnitude - 1; i++) {
+		_Bits[i] = mask & number;
+		mask <<= 1;
+	}
+	return _Bits;
+}
+
+template<size_t sign_magnitude>
 std::bitset<sign_magnitude> assign(uint64_t number) {
 	std::bitset<sign_magnitude> _Bits;
 	_Bits[sign_magnitude - 1] = 0;
