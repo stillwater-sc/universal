@@ -468,7 +468,7 @@ public:
 				_Exp.reset();
 			}
 			else {
-				_Exp = assign<es>(_Exp.to_ulong() + 1);
+				_Exp = assign<es>(_Exp.to_ullong() + 1);
 			}		
 		}
 	}
