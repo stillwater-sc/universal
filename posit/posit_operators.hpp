@@ -2,20 +2,6 @@
 
 #include "posit_scale_factors.hpp"
 
-template<size_t nbits>
-std::string to_binary(std::bitset<nbits> bits) {
-	std::stringstream ss;
-	for (int i = nbits - 1; i >= 0; --i) {
-		if (bits[i]) {
-			ss << "1";
-		}
-		else {
-			ss << "0";
-		}
-	}
-	return ss.str();
-}
-
 template<size_t nbits, size_t es>
 std::string spec_to_string(posit<nbits, es> p) {
 	std::stringstream ss;
