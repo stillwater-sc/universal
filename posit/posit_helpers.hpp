@@ -80,14 +80,3 @@ std::bitset<nbits> twos_complement_(std::bitset<nbits> number) {
 	}
 	return complement;
 }
-
-template<size_t nbits>
-std::bitset<nbits> convert_bits_(uint64_t number) {
-	std::bitset<nbits> bits;
-	uint64_t mask = 1;
-	for (int i = 0; i < nbits; i++) {
-		bits[i] = mask & number;
-		mask <<= 1;
-	}
-	return bits;
-}
