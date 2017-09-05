@@ -73,10 +73,21 @@ std::bitset<sign_magnitude> assign(int64_t number) {
 	return _Bits;
 }
 
+template<size_t nbits>
+std::string to_binary(std::bitset<nbits> bits) {
+	std::stringstream ss;
+	int msb = nbits; // compilation warning work-around for nbits = 0
+	for (int i = msb - 1; i >= 0; --i) {
+		ss << (bits[i] ? "1" : "0");
+	}
+	return ss.str();
+}
+
 template<size_t sign_magnitude>
-std::string to_binary(std::bitset<sign_magnitude> bits) {
+std::string signed_magnitude_to_binary(std::bitset<sign_magnitude> bits) {
 	std::stringstream ss;
 	ss << (bits[sign_magnitude - 1] ? "n-" : "p-");
+	if (sign_magnitude < 2) return ss.str();
 	for (int i = sign_magnitude - 2; i >= 0; --i) {
 		ss << (bits[i] ? "1" : "0");
 	}

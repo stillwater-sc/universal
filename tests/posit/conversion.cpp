@@ -2,15 +2,12 @@
 //
 
 #include "stdafx.h"
-#include <sstream>
-
-using namespace std;
 
 #include "../../posit/posit_scale_factors.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 
-
+using namespace std;
 
 template<size_t nbits, size_t es>
 void checkSpecialCases(posit<nbits, es> p) {
@@ -36,10 +33,10 @@ void ConversionOperatorsPositiveRegime() {
 	p0 = int(0);  checkSpecialCases(p0);
 	p1 = char(1);  cout << "P1 " << p1 << endl;
 	p2 = long(2);  cout << "P2 " << p2 << endl;
-	p3 = 4;  cout << "P3 " << p3 << endl;
-	p4 = 8;  cout << "P4 " << p4 << endl;
+	p3 =  4;  cout << "P3 " << p3 << endl;
+	p4 =  8;  cout << "P4 " << p4 << endl;
 	p5 = 16;  cout << "P5 " << p5 << endl;
-	p6 = (long long)(32);  cout << "P6 " << p6 << endl;
+	p6 = 32;  cout << "P6 " << p6 << endl;
 }
 
 void ConversionOperatorsNegativeRegime() {
@@ -144,7 +141,7 @@ void basic_algorithm_for_conversion() {
 	const size_t nbits = 5;
 	const size_t es = 1;
 
-	long long value;
+	int64_t value;
 	unsigned int msb;
 	unsigned int maxpos_scale = maxpos_scale_f<nbits, es>();
 
@@ -220,7 +217,7 @@ int main()
 	posit<nbits, es> p1;
 
 	cout << "Conversion tests: (notice the rounding errors)" << endl;
-	long long value;
+	int64_t value;
 	cout << "Rounding mode : " << p1.RoundingMode() << endl;
 	value =  1;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
 	value =  2;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;

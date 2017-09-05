@@ -2,7 +2,7 @@
 //
 
 #include "stdafx.h"
-#include <sstream>
+
 #include "../../posit/posit_scale_factors.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
@@ -128,8 +128,12 @@ void extract(double d) {
 	}
 	cout << "sign " << sign << " mantissa : " << hex << mantissa << " exponent " << exponent << dec << endl;
 
-	uint32_t fraction = (number_bits << (7 - es) & (0x3FFFFFFFL >> es));
+	uint32_t fraction = (bits << (7 - es) & (0x3FFFFFFFL >> es));
 	fraction |= ((uint32_t)exponent) << (30 - es);
+
+	int16_t regime = exponent >> es; 
+	cout << " regime " << regime << endl;
+	int16_t shift, msb;
 
 	//cout << "regime " << regime << " exponent: " << hex << exponent << " fraction: " << fraction;
 

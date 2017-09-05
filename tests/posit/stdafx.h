@@ -12,5 +12,6 @@
 #include <cstdint>	// uint8_t, etc.
 #include <string>
 #include <iostream>
+#include <sstream>
 #include <iomanip>
 #include <bitset>

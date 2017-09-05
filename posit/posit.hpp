@@ -22,19 +22,19 @@ public:
 	posit<nbits, es>(const posit& p) {
 		*this = p;
 	}
-	posit<nbits, es>& operator=(const char rhs) {
+	posit<nbits, es>& operator=(int8_t rhs) {
 		*this = int64_t(rhs);
 		return *this;
 	}
-	posit<nbits, es>& operator=(int rhs) {
+	posit<nbits, es>& operator=(int16_t rhs) {
 		*this = int64_t(rhs);
 		return *this;
 	}
-	posit<nbits, es>& operator=(long rhs) {
+	posit<nbits, es>& operator=(int32_t rhs) {
 		*this = int64_t(rhs);
 		return *this;
 	}
-	posit<nbits, es>& operator=(long long rhs) {
+	posit<nbits, es>& operator=(int64_t rhs) {
 		reset();
 		if (rhs == 0) {
 			return *this;
@@ -49,12 +49,12 @@ public:
 		msb = findMostSignificantBit(rhs)-1;
 		if (msb > maxpos_scale()) {
 			// TODO: Can we make this a compile time evaluated function for literals?
-			cerr << "msb = " << msb << " and maxpos_scale() = " << maxpos_scale() << endl;
-			cerr << "Can't represent " << rhs << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale()) << endl;
+			std::cerr << "msb = " << msb << " and maxpos_scale() = " << maxpos_scale() << std::endl;
+			std::cerr << "Can't represent " << rhs << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale()) << std::endl;
 		}
 		_Bits[nbits - 1] = false;
 		unsigned int nr_of_regime_bits = assign_regime_pattern(msb >> es);
-		//cout << "Regime   " << to_binary<nbits>(bits) << endl;
+		//std::cout << "Regime   " << to_binary<nbits>(bits) << std::endl;
 
 		unsigned int nr_of_exp_bits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
 		if (nr_of_exp_bits > 0) {
@@ -64,7 +64,7 @@ public:
 				_Bits[nbits - 2 - nr_of_regime_bits - i] = exponent & mask;
 				mask >>= 1;
 			}
-			//cout << "Exponent " << to_binary<nbits>(bits) << endl;
+			//std::cout << "Exponent " << to_binary<nbits>(bits) << std::endl;
 		}
 
 		switch (bRoundingMode) {
@@ -77,15 +77,15 @@ public:
 					_Bits[nbits - 2 - nr_of_regime_bits - nr_of_exp_bits - i] = rhs & mask;
 					mask >>= 1;
 				}
-				//cout << "Fraction " << to_binary<nbits>(bits) << endl;
+				//std::cout << "Fraction " << to_binary<nbits>(bits) << std::endl;
 			}
 		}
 			break;
 		case POSIT_ROUND_TO_NEAREST:
-			cerr << "ROUND_TO_NEAREST not implemented yet" << endl;
+			std::cerr << "ROUND_TO_NEAREST not implemented yet" << std::endl;
 			break;
 		default:
-			cerr << "Undefined rounding mode" << endl;
+			std::cerr << "Undefined rounding mode" << std::endl;
 			break;
 		}
 
@@ -100,18 +100,18 @@ public:
             using namespace std;
 		switch (fpclassify(rhs)) {
 		case FP_INFINITE:
-			bits.reset();
-			bits.set(nbits - 1);
+			_Bits.reset();
+			_Bits.set(nbits - 1);
 			break;
 		case FP_NAN:
-			cerr << "float is NAN" << endl;
+			std::cerr << "float is NAN" << std::endl;
 			break;
 		case FP_SUBNORMAL:
-			bits.reset();
-			cerr << "TODO: subnormal number" << endl;
+			_Bits.reset();
+			std::cerr << "TODO: subnormal number" << std::endl;
 			break;
 		case FP_NORMAL:
-			bits.reset();
+			_Bits.reset();
 			// 8 bits of exponent, 23 bits of mantissa
 			extractIEEE754((uint64_t)rhs, 8, 23);
 			break;
@@ -147,11 +147,11 @@ public:
 		unsigned int msb;
 		int lhs_scale = scale();
 		int rhs_scale = rhs.scale();
-		cout << "scales (lhs:rhs): " << lhs_scale << ":" << rhs_scale << endl;
+		std::cout << "scales (lhs:rhs): " << lhs_scale << ":" << rhs_scale << std::endl;
 		uint64_t lhs_fraction = _Frac.to_ullong();	// really only needs to be nbits-3 hardware
 		uint64_t rhs_fraction = rhs._Frac.to_ullong();
-		cout << "lhs fraction: 0x" << hex << lhs_fraction << endl;
-		cout << "rhs fraction: 0x" << hex << rhs_fraction << endl;
+		std::cout << "lhs fraction: 0x" << std::hex << lhs_fraction << std::endl;
+		std::cout << "rhs fraction: 0x" << std::hex << rhs_fraction << std::endl;
 		if (lhs_scale < rhs_scale) {
 			lhs_fraction >>= (rhs_scale - lhs_scale);
 			msb = findMostSignificantBit(rhs_fraction);
@@ -161,9 +161,9 @@ public:
 			msb = findMostSignificantBit(lhs_fraction);
 		}
 		uint64_t result = lhs_fraction + rhs_fraction;
-		cout << "lhs fraction: 0x" << hex << lhs_fraction << endl;
-		cout << "rhs fraction: 0x" << hex << rhs_fraction << endl;
-		cout << "result      : 0x" << hex << result << endl;
+		std::cout << "lhs fraction: 0x" << std::hex << lhs_fraction << std::endl;
+		std::cout << "rhs fraction: 0x" << std::hex << rhs_fraction << std::endl;
+		std::cout << "result      : 0x" << std::hex << result << std::endl;
 		// see if we need to increment the scale
 		if (findMostSignificantBit(result) > msb) {
 			increment_scale();
@@ -215,19 +215,19 @@ public:
 	std::string RoundingMode() {
 		switch (bRoundingMode) {
 		case POSIT_ROUND_DOWN:
-			return string("ROUND_DOWN");
+			return std::string("ROUND_DOWN");
 			break;
 		case POSIT_ROUND_TO_NEAREST:
-			return string("ROUND_TO_NEAREST");
+			return std::string("ROUND_TO_NEAREST");
 			break;
 		default:
-			return string("UNKNOWN");
+			return std::string("UNKNOWN");
 		}
 	}
-	long double maxpos() {
+	double maxpos() {
 		return pow(double(useed()), double(nbits-2));
 	}
-	long double minpos() {
+	double minpos() {
 		return pow(double(useed()), double(static_cast<int>(2-nbits)));
 	}
 	uint64_t useed() {
@@ -384,7 +384,7 @@ public:
 			}
 		}
 
-		//							cout << "fraction bits " << msb - size + 1 << endl;
+		//					std::cout << "fraction bits " << msb - size + 1 << std::endl;
 		// finally, set the fraction bits
 		// we do this so that the fraction is right extended with 0;
 		// The max fraction is <nbits - 3 - es>, but we are setting it to <nbits - 3> and right-extent
@@ -416,7 +416,7 @@ public:
 		}	
 		return value;
 	}
-	long double to_double() const {
+	double to_double() const {
 		if (isZero()) {
 			return 0.0;
 		}
@@ -426,8 +426,8 @@ public:
 
 		//double value = sign() * regime() * exponent() * fraction();
 
-		long double value = 0.0;
-		long double base = 0.0;
+		double value = 0.0;
+		double base = 0.0;
 		int e = exponent_int();
 
 		// scale = useed ^ k * 2^e -> 2^(k*2^es) * 2^e = 2^(k*2^es + e)
@@ -437,10 +437,10 @@ public:
 		}
 		else {
 			if (e2 >= 0) {			
-				base = long double(uint64_t(1) << e2);
+				base = double(uint64_t(1) << e2);
 			}
 			else {
-				base = 1.0 / long double(uint64_t(1) << -e2);
+				base = 1.0 / double(uint64_t(1) << -e2);
 			}
 		}
 		value = base + base * fraction();
@@ -468,7 +468,7 @@ public:
 				_Exp.reset();
 			}
 			else {
-				_Exp = assign<es>(_Exp.to_ullong() + 1);
+				_Exp = assign<es>(uint64_t(_Exp.to_ulong() + 1));
 			}		
 		}
 	}
@@ -484,7 +484,7 @@ public:
 				_Bits[nbits - 2 - i] = !(regime & mask);
 				mask >>= 1;
 			}
-			//cout << "Regime   " << to_binary<nbits>(bits) << endl;
+			// std::cout << "Regime   " << to_binary<nbits>(bits) << std::endl;
 		}
 		else {
 			uint64_t regime = REGIME_BITS[k];
@@ -494,7 +494,7 @@ public:
 				_Bits[nbits - 2 - i] = regime & mask;
 				mask >>= 1;
 			}
-			//cout << "Regime   " << to_binary<nbits>(bits) << endl;
+			// std::cout << "Regime   " << to_binary<nbits>(bits) <<  std::endl;
 		}
 		return nr_of_regime_bits;
 	}
@@ -514,14 +514,14 @@ private:
 
 	// HELPER methods
 	void extractIEEE754(uint64_t f, int exponentSize, int mantissaSize) {
-		int exponentBias = POW2(exponentSize - 1) - 1;
+		int exponentBias = (1 << (exponentSize - 1)) - 1;
 		int16_t exponent = (f >> mantissaSize) & ((1 << exponentSize) - 1);
 		uint64_t mantissa = (f & ((1ULL << mantissaSize) - 1));
 
 		// clip exponent
-		int rmin = POW2(es) * (2 - nbits);
-		int rmax = POW2(es) * (nbits - 2);
-		int rf = MIN(MAX(exponent - exponentBias, rmin), rmax);
+		int rmin = (1 << es) * (2 - nbits);
+		int rmax = (1 << es) * (nbits - 2);
+		// int rf = MIN(MAX(exponent - exponentBias, rmin), rmax);
 	}
 
         // template parameters need names different from class template parameters (for gcc and clang)
