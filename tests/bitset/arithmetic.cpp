@@ -14,7 +14,7 @@ void BasicArithmeticTests() {
 
 	std::bitset<nbits> a, b, sum;
 	bool carry = 0;
-	a = negate(assign_unsigned<nbits>(uint64_t(0x55555555)));
+	a = flip_sign_bit(assign_unsigned<nbits>(uint64_t(0x55555555)));
 	b = assign_unsigned<nbits>(uint64_t(0x5));
 
 	carry = add_signed_magnitude(a, b, sum);
@@ -42,17 +42,14 @@ void BasicArithmeticTests() {
 template<size_t nbits>
 void add_fractions(int f1_scale, std::bitset<nbits> f1, int f2_scale, std::bitset<nbits> f2, int& sum_scale, std::bitset<nbits>& sum) {
 	// fraction operations that are part of adding posits
-	const size_t nbits = 16; // emulating posit<16,#> posits
-
 
 	cout << "f1 scale " << f1_scale << " value " << to_hex(f1) << endl;
-
 	cout << "f2 scale " << f2_scale << " value " << to_hex(f2) << endl;
 
 	// scale the smaller number to the bigger number by right shifting the difference
 	// fractions are right extended, and the hidden bit becomes the msb
-	f1.set(nbits - 3);
-	f2.set(nbits - 3);
+	f1.set(nbits - 1);
+	f2.set(nbits - 1);
 	int diff = f1_scale - f2_scale;
 	cout << "scale difference is " << diff << endl;
 

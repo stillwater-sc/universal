@@ -73,7 +73,7 @@ std::string to_binary(std::bitset<nbits> bits) {
 template<size_t nbits>
 std::string to_hex(std::bitset<nbits> bits) {
 	char str[nbits];   // plenty of room
-	char* hexits = "0123456789ABCDEF";
+	const char* hexits = "0123456789ABCDEF";
 	unsigned int max = (nbits >> 2) + (nbits % 4 ? 2 : 1);
 	for (int i = 0; i < max; i++) {
 		unsigned int hexit = (bits[3] << 3) + (bits[2] << 2) + (bits[1] << 1) + bits[0];
@@ -96,7 +96,7 @@ std::string signed_magnitude_to_binary(std::bitset<sign_magnitude> bits) {
 }
 
 template<size_t nbits>
-std::bitset<nbits> negate(std::bitset<nbits> number) {
+std::bitset<nbits> flip_sign_bit(std::bitset<nbits> number) {
 	number.flip(nbits - 1);
 	return number;
 }
