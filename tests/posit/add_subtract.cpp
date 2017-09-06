@@ -93,17 +93,36 @@ int main(int argc, char** argv)
 
 	cout << "posit<" << nbits << ",2> = " << component_values_to_string(p2) << endl;
 
-	posit<5, 0> a, b, sum, diff;
-	a = 2;
-	cout << a << endl;
-	b = 2;
-	cout << b << endl;
-	sum = a + b;
-	diff = a - b;
-	cout << sum << endl;
-	cout << diff << endl;
+	{
+		posit<8, 0> a, b, sum, diff;
+		a.set_raw_bits(0x5F);
+		b = 1;
+		sum = a + b;
+		cout << "Sum  : " << sum << endl;
+	}
 
-	cout << "a " << a++ << " a+1 " << a << endl;
+	{
+		posit<16,0> a = 0;
+		for (uint32_t i = 0; i < 10; i++) {
+			cout << "a = " << a++ << " a++ = " << a << endl;
+		}
+	}
+
+	{
+		posit<16, 0> a, b, sum;
+		a = 16;
+		for (int i = 0; i < 16; i++) {
+			b = i; sum = a + b;
+			cout << a << " + " << b << " = " << sum << endl;
+		}
+	}
+
+
+
+	//diff = a - b;
+	//cout << "Diff : " << diff << endl;
+
+	//cout << "a " << a++ << " a+1 " << a << endl;
 
 	return 0;
 }
