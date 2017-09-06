@@ -19,6 +19,9 @@ public:
 		reset();
 		validate();
 	}
+	posit<nbits, es>(int64_t initial_value) {
+		*this = initial_value;
+	}
 	posit<nbits, es>(const posit& p) {
 		*this = p;
 	}
@@ -56,21 +59,13 @@ public:
 		unsigned int nr_of_regime_bits = assign_regime_pattern(msb >> es);
 		//std::cout << "Regime   " << to_binary<nbits>(bits) << std::endl;
 
-		unsigned int nr_of_exp_bits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
-		if (nr_of_exp_bits > 0) {
-			unsigned int exponent = (es > 0 ? msb % (1 << es) : 0);
-			uint64_t mask = (1 << (nr_of_exp_bits - 1));
-			for (int i = 0; i < nr_of_exp_bits; i++) {
-				_Bits[nbits - 2 - nr_of_regime_bits - i] = exponent & mask;
-				mask >>= 1;
-			}
-			//std::cout << "Exponent " << to_binary<nbits>(bits) << std::endl;
-		}
+		unsigned int nr_of_exp_bits = assign_exponent_bits(msb, nr_of_regime_bits);
+		//std::cout << "Exponent " << to_binary<nbits>(bits) << std::endl;
 
+		unsigned int remainder_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
 		switch (bRoundingMode) {
 		case POSIT_ROUND_DOWN:
 		{
-			unsigned int remainder_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
 			if (remainder_bits > 0) {
 				uint64_t mask = (1 << (msb-1));  // first bit is transformed into a hidden bit
 				for (int i = 0; i < remainder_bits; i++) {
@@ -96,6 +91,7 @@ public:
 		decode();
 		return *this;
 	}
+
 	posit<nbits, es>& operator=(const float rhs) {
             using namespace std;
 		switch (fpclassify(rhs)) {
@@ -144,32 +140,21 @@ public:
 				return *this;
 			}
 		}
-		unsigned int msb;
-		int lhs_scale = scale();
-		int rhs_scale = rhs.scale();
-		std::cout << "scales (lhs:rhs): " << lhs_scale << ":" << rhs_scale << std::endl;
-		uint64_t lhs_fraction = _Frac.to_ullong();	// really only needs to be nbits-3 hardware
-		uint64_t rhs_fraction = rhs._Frac.to_ullong();
-		std::cout << "lhs fraction: 0x" << std::hex << lhs_fraction << std::endl;
-		std::cout << "rhs fraction: 0x" << std::hex << rhs_fraction << std::endl;
-		if (lhs_scale < rhs_scale) {
-			lhs_fraction >>= (rhs_scale - lhs_scale);
-			msb = findMostSignificantBit(rhs_fraction);
+		std::bitset<nbits - 2> r1, r2; // fraction is at most nbits-3 bits, + 1 for the hidden bit
+		int _scale;
+		align_numbers(scale(), _Frac, rhs.scale(), rhs._Frac, _scale, r1, r2);
+		
+		std::bitset<nbits - 2> sum;
+		bool carry = add_unsigned<nbits - 2>(r1, r2, sum);
+		if (carry) {
+			_scale++;
+			sum >>= 1;
 		}
-		else {
-			rhs_fraction >>= (lhs_scale - rhs_scale);
-			msb = findMostSignificantBit(lhs_fraction);
-		}
-		uint64_t result = lhs_fraction + rhs_fraction;
-		std::cout << "lhs fraction: 0x" << std::hex << lhs_fraction << std::endl;
-		std::cout << "rhs fraction: 0x" << std::hex << rhs_fraction << std::endl;
-		std::cout << "result      : 0x" << std::hex << result << std::endl;
-		// see if we need to increment the scale
-		if (findMostSignificantBit(result) > msb) {
-			increment_scale();
-		}
+		convert_to_posit(_scale, sum);
+		decode();
 		return *this;
 	}
+
 	posit<nbits, es>& operator-=(const posit& rhs) {
 		return *this;
 	}
@@ -180,6 +165,7 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator++() {
+		*this = *this + posit<nbits, es>(1);
 		return *this;
 	}
 	posit<nbits, es> operator++(int) {
@@ -484,7 +470,6 @@ public:
 				_Bits[nbits - 2 - i] = !(regime & mask);
 				mask >>= 1;
 			}
-			// std::cout << "Regime   " << to_binary<nbits>(bits) << std::endl;
 		}
 		else {
 			uint64_t regime = REGIME_BITS[k];
@@ -494,11 +479,34 @@ public:
 				_Bits[nbits - 2 - i] = regime & mask;
 				mask >>= 1;
 			}
-			// std::cout << "Regime   " << to_binary<nbits>(bits) <<  std::endl;
 		}
 		return nr_of_regime_bits;
 	}
-
+	unsigned int assign_exponent_bits(unsigned int msb, unsigned int nr_of_regime_bits) {
+		unsigned int nr_of_exp_bits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
+		if (nr_of_exp_bits > 0) {
+			unsigned int exponent = (es > 0 ? msb % (1 << es) : 0);
+			uint64_t mask = (1 << (nr_of_exp_bits - 1));
+			for (int i = 0; i < nr_of_exp_bits; i++) {
+				_Bits[nbits - 2 - nr_of_regime_bits - i] = exponent & mask;
+				mask >>= 1;
+			}
+		}
+		return nr_of_exp_bits;
+	}
+	void assign_fraction(unsigned int remaining_bits, std::bitset<nbits - 2>& _fraction) {
+		if (remaining_bits > 0) {
+			for (int i = 0; i < remaining_bits; i++) {
+				_Bits[i] = _fraction[nbits - 2 - i];
+			}
+		}
+	}
+	void convert_to_posit(int _scale, std::bitset<nbits - 2>& _fraction) {
+		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale);
+		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
+		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
+		assign_fraction(remaining_bits, _fraction);
+	}
 private:
 	std::bitset<nbits> _Bits;
 	std::bitset<es> _Exp;
@@ -513,6 +521,31 @@ private:
 	int8_t bRoundingMode;
 
 	// HELPER methods
+	void align_numbers(int lhs_scale, const std::bitset<nbits - 3>& lhs, int rhs_scale, const std::bitset<nbits - 3>& rhs, int& scale, std::bitset<nbits - 2>& r1, std::bitset<nbits - 2>& r2) {
+		int diff = lhs_scale - rhs_scale;
+		if (diff < 0) {
+			scale = rhs_scale;
+			denormalize(lhs, diff, r1);
+			normalize(rhs, r2);
+		}
+		else {
+			scale = lhs_scale;
+			normalize(lhs, r1);
+			denormalize(rhs, diff, r2);
+		}
+	}
+	void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 2>& number) {
+		number.set(nbits - 3);
+		for (int i = 0; i < nbits - 3; i++) {
+			number.set(i, fraction[i]);
+		}
+	}
+	void denormalize(const std::bitset<nbits - 3>& fraction, int shift, std::bitset<nbits - 2>& number) {
+		number.set(nbits - 3);
+		for (int i = 0; i < nbits - 3 - shift; i++) {
+			number.set(i, fraction[shift + i]);
+		}
+	}
 	void extractIEEE754(uint64_t f, int exponentSize, int mantissaSize) {
 		int exponentBias = (1 << (exponentSize - 1)) - 1;
 		int16_t exponent = (f >> mantissaSize) & ((1 << exponentSize) - 1);

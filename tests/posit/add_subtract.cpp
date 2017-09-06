@@ -93,13 +93,17 @@ int main(int argc, char** argv)
 
 	cout << "posit<" << nbits << ",2> = " << component_values_to_string(p2) << endl;
 
-	posit<16, 1> a, b, sum, diff;
-	a = 3;
-	b = 3;
+	posit<5, 0> a, b, sum, diff;
+	a = 2;
+	cout << a << endl;
+	b = 2;
+	cout << b << endl;
 	sum = a + b;
 	diff = a - b;
 	cout << sum << endl;
 	cout << diff << endl;
+
+	cout << "a " << a++ << " a+1 " << a << endl;
 
 	return 0;
 }

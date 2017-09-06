@@ -253,8 +253,11 @@ int main()
 	posit<16, 1> p16_1_2(p16_1_1);
 	if (p16_1_1 != p16_1_2) {
 		cerr << "Copy constructor failed" << endl;
+		cerr << "value: " << (1 << 16) << " posits " << p16_1_1 << " == " << p16_1_2 << endl;
 	}
-	cout << "value: " << (1 << 16) << endl << p16_1_1 << endl << p16_1_2 << endl;
+	else {
+		cout << "PASS" << endl;
+	}
 
 	return 0;
 }
