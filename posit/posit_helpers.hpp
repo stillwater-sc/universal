@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cmath>  // for frexp/frexpf
+
 inline uint64_t two_to_the_power(int n) {
 	return (uint64_t(1) << n);
 }
@@ -70,11 +72,34 @@ unsigned int findMostSignificantBit(int8_t x) {
 
 std::string to_binary(int64_t number) {
 	std::stringstream ss;
-	unsigned int msb = findMostSignificantBit(number);
+	unsigned int msb = findMostSignificantBit(number)-1;
 	uint64_t mask = (1 << msb);
 	for (int i = msb; i >= 0; --i) {
 		ss << (mask & number ? "1" : "0");
 		mask >>= 1;
 	}
 	return ss.str();
+}
+
+int extract_exponent(float f) {
+	int exponent;
+	std::frexpf(f, &exponent);
+	return exponent;
+}
+
+uint32_t extract_fraction(float f) {
+	int exponent;
+	float fraction = std::frexpf(f, &exponent);
+	return (0x007FFFFF & *(uint32_t*)&fraction);
+}
+
+template<size_t nbits>
+std::bitset<nbits - 2> copy_float_fraction(uint32_t _23b_fraction_without_hidden_bit) {
+	std::bitset<nbits - 2> _fraction;
+	uint32_t mask = 0x00400000;
+	for (int i = nbits - 3; i >= 0; --i) {
+		_fraction[i] = _23b_fraction_without_hidden_bit & mask;
+		mask >>= 1;
+	}
+	return _fraction;
 }

@@ -3,7 +3,6 @@
 
 #include "stdafx.h"
 
-#include "../../posit/posit_scale_factors.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 
@@ -33,163 +32,59 @@ Double: SEEEEEEE EEEEMMMM MMMMMMMM MMMMMMMM MMMMMMMM MMMMMMMM MMMMMMMM MMMMMMMM
 #define DOUBLE_SIGN_MASK     0x8000000000000000
 #define DOUBLE_EXPONENT_MASK 0x7FF0000000000000
 #define DOUBLE_MANTISSA_MASK 0x000FFFFFFFFFFFFF
+
+In the Standard C++ library there are several functions that manipulate these components:
+in the header <cmath>
+frexp returns the exponent in exponent and the fraction in the return value
+Parameters
+arg	-	floating point value
+exp	-	pointer to integer value to store the exponent to
+Return value
+If arg is zero, returns zero and stores zero in *exp.
+Otherwise (if arg is not zero), if no errors occur, returns the value x in the range (-1;-0.5], [0.5; 1) 
+and stores an integer value in *exp such that x×2(*exp)=arg
+If the value to be stored in *exp is outside the range of int, the behavior is unspecified.
+If arg is not a floating-point number, the behavior is unspecified.
+
+float frexp(float in, int* exponent)
+double frexp(double in, int* exponent)
+long double frexp(long double in, int* exponent)
+
 */
 template<size_t nbits, size_t es>
-std::bitset<nbits> extract(float f) {
-	int fes = 8;
-	int fms = 23;
-	uint32_t number_bits = *( (uint32_t*)(&f) );
-	std::bitset<nbits> posit_bits;
-	posit_bits.reset();
-
-	int exponentBias = two_to_the_power(fes - 1) - 1;
-	int16_t biased_exponent = (number_bits >> fms) & ((number_bits << fes) - 1);
-	uint32_t mantissa = (number_bits & ((1ULL << fms) - 1));
-	int16_t exponent = biased_exponent - exponentBias;
-	int sign = 1;
-	if (0x80000000L & number_bits) {
-		sign = -1;
-		posit_bits.set(nbits - 1);
-	}
-	// Emin = 01H−7FH = −126
-	// Emax = FEH−7FH = 127
-	exponent = (exponent < -126 ? -126 : exponent);
-	exponent = (exponent > 127 ? 127 : exponent);
-	//cout << "sign " << sign << " mantissa : " << hex << mantissa << " exponent " << exponent << dec ;
-
-	int16_t regime = exponent >> es; 
-	cout << " regime " << regime << endl;
-	int16_t shift, msb;
-	if (regime >= 0) {
-		if (regime > nbits - 2) {
-			float maxpos = pow((1 << (1 << es)), nbits - 2);
-			char msg[256];
-			sprintf(msg, "Value %9.6f is too large to be represented by posit<%d,%d> : maxpos = %9.6f", f, int(nbits), int(es), maxpos);
-			throw  msg;
-		}
-		// these are patterns of s-1110## and at the extreme s-111111, that is, an ending with 1
-		msb = nbits - 2;
-		posit_bits.set(msb--);
-		for (int i = 0; i < regime; i++) {
-			posit_bits.set(msb--);
-		}
-		if (msb >= 0) {
-			posit_bits.reset(msb--);
-		}
-		
-		shift = 1 + regime;
-		//fraction |= 0x80000000UL;
-	}
-	else {
-		if (regime < 1 - nbits) {
-			float minpos = pow(double(uint32_t(1) << (uint32_t(1) << es)), double(1.0 - double(nbits)));
-			char msg[256];
-			sprintf(msg, "Value %9.6f is too small to be represented by posit<%d,%d> : minpos = %9.6f", f, int(nbits), int(es), minpos);
-			throw  msg;
-		}
-		// these are patterns of s-0001##, and at the extreme s-00000, that is, an ending with 0
-		msb = nbits - 2;
-		for (int i = 0; i < -regime; i++) {
-			posit_bits.reset(msb--);
-		}
-		if (msb >= 0) {
-			posit_bits.set(msb--);
-		}
-		shift = -regime;
-		//fraction |= 0x40000000UL;
-	}
-
-	exponent = exponent & ((1 << es) - 1);
-	if (es > 0) {
-		uint32_t mask = (1 << es-1);
-		for (int i = es-1; i >= 0, msb >= 0; --i) {
-			posit_bits.set(msb--, mask & exponent);
-			mask >>= 1;
-		}
-	}
-
-	return posit_bits;
+posit<nbits, es> extract(float f) {
+	int exponent = extract_exponent(f);		// exponent is for an unnormalized number 0.1234*2^exp
+	int scale = exponent - 1;
+	uint32_t fraction = extract_fraction(f);
+	posit<nbits, es> p;
+	p.convert_to_posit(scale, fraction);
+	return p;
 }
 
-template<size_t nbits, size_t es>
-void extract(double d) {
-	int fes = 11;
-	int fms = 52;
-	uint64_t bits = *( (uint64_t*)(&d) );
-	cout << "value : " << dec << d << " bits : " << hex << bits << " mantissa mask : " << (1ULL << fms) - 1 << dec << endl;
-
-	int exponentBias = two_to_the_power(fes - 1) - 1;
-	int16_t biased_exponent = (bits >> fms) & ((1 << fes) - 1);
-	uint32_t mantissa = (bits & ((1ULL << fms) - 1));
-	int16_t exponent = biased_exponent - exponentBias;
-	int sign = 1;
-	if (0x8000000L & bits) {
-		sign = -1;
-	}
-	cout << "sign " << sign << " mantissa : " << hex << mantissa << " exponent " << exponent << dec << endl;
-
-	uint32_t fraction = (bits << (7 - es) & (0x3FFFFFFFL >> es));
-	fraction |= ((uint32_t)exponent) << (30 - es);
-
-	int16_t regime = exponent >> es; 
-	cout << " regime " << regime << endl;
-	int16_t shift, msb;
-
-	//cout << "regime " << regime << " exponent: " << hex << exponent << " fraction: " << fraction;
-
-	// perform an *arithmetic* shift; convert back to unsigned.
-	fraction = (uint32_t)(((int32_t)fraction) >> shift);
-	cout << " after shift of " << dec << shift << " " << hex << fraction;
-
-	// mask out the top bit of the fraction, which is going to be the basis for the result.
-	fraction = fraction & 0x7fffffffL;
-	cout << " " << fraction;
-
-	bool guard = (fraction & 0x00800000L) != 0;
-	bool summ = (fraction & 0x007fffffL) != 0;
-	bool inner = (fraction & 0x01000000L) != 0;
-
-	// round the fraction variable in the event it needs be augmented.
-	fraction += ((guard && inner) || (guard && summ)) ? 0x01000000UL : 0x00000000UL;
-
-	// shift further, as necessary, to match sizes
-	fraction = fraction >> 24;
-
-	//check to recast zeros to the smallest value
-	fraction = (fraction == 0) ? 0x00000001UL : fraction;
-
-	uint8_t sfrac = (uint8_t)fraction;
-	//(signbit ? -sfrac : sfrac);
-
-	cout << " regime " << regime << " exponent " << exponent << " fraction " << fraction << endl;
-
-}
 int main()
 try
 {
-	const size_t nbits = 5;
-	const size_t es = 1;
-	const size_t size = (1 << nbits);
+	const size_t nbits = 16;
+	const size_t es = 2;
+	const size_t size = 128;
+
 	posit<nbits,es> myPosit;
 
 	cout << "Conversion tests" << endl;
 
-	union {
-		float f;
-		uint32_t v;
-	};
-	v = 0x55555555UL;
 
 	cout << "Positive regime" << endl;
 	try {
-		f = 1.0f;
-		for (int i; i < size; i++) {
-			cout << "Value " << setw(16) << setprecision(6) << f << " ";
-			std::bitset<nbits> raw_bits = extract<nbits, es>(f);
-			myPosit.set(raw_bits);
-			cout << "Posit = " << myPosit << endl;
-			f *= 2.0f;
-		}
+		int32_t i = 4;
+		myPosit = i;
+
+		float f = 5.0f;
+		uint32_t fraction = extract_fraction(f);
+		std::bitset<nbits - 2> _fraction = copy_float_fraction<nbits>(fraction);
+
+		myPosit = extract<nbits, es>(f);
+		cout << "posit<" << nbits << "," << es << "> = " << myPosit << endl;
+		cout << "posit<" << nbits << "," << es << "> = " << components_to_string(myPosit) << endl;
 	}
 	catch (char* msg) {
 		cerr << endl << msg << endl;
@@ -197,14 +92,10 @@ try
 
 	cout << "Negative Regime" << endl;
 	try {
-		f = 1.0f;
-		for (int i; i < size; i++) {
-			cout << "Value " << setw(16) << setprecision(6) << f << " ";
-			std::bitset<nbits> raw_bits = extract<nbits, es>(f);
-			myPosit.set(raw_bits);
-			cout << "Posit = " << myPosit << endl;
-			f /= 2.0f;
-		}
+		float f = 0.33f;
+		myPosit = extract<nbits, es>(f);
+		cout << "posit<" << nbits << "," << es << "> = " << myPosit << endl;
+		cout << "posit<" << nbits << "," << es << "> = " << components_to_string(myPosit) << endl;
 	}
 	catch (char* msg) {
 		cerr << endl << msg << endl;

@@ -1,7 +1,6 @@
 #pragma once 
 
 #include <limits>
-#include "posit_scale_factors.hpp"
 
 template<size_t nbits, size_t es>
 std::string spec_to_string(posit<nbits, es> p) {
@@ -15,7 +14,7 @@ std::string spec_to_string(posit<nbits, es> p) {
 }
 
 template<size_t nbits, size_t es>
-std::string components_to_string(posit<nbits,es> p) {
+std::string components_to_string(const posit<nbits,es>& p) {
 	std::stringstream ss;
 	if (p.isZero()) {
 		ss << " zero    " << std::setw(103) << "b" << p.get();

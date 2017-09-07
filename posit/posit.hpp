@@ -57,10 +57,10 @@ public:
 		}
 		_Bits[nbits - 1] = false;
 		unsigned int nr_of_regime_bits = assign_regime_pattern(msb >> es);
-		//std::cout << "Regime   " << to_binary<nbits>(bits) << std::endl;
+		std::cout << "Regime   " << to_binary<nbits>(_Bits) << std::endl;
 
 		unsigned int nr_of_exp_bits = assign_exponent_bits(msb, nr_of_regime_bits);
-		//std::cout << "Exponent " << to_binary<nbits>(bits) << std::endl;
+		std::cout << "Exponent " << to_binary<nbits>(_Bits) << std::endl;
 
 		unsigned int remainder_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
 		switch (bRoundingMode) {
@@ -72,7 +72,7 @@ public:
 					_Bits[nbits - 2 - nr_of_regime_bits - nr_of_exp_bits - i] = rhs & mask;
 					mask >>= 1;
 				}
-				//std::cout << "Fraction " << to_binary<nbits>(bits) << std::endl;
+				std::cout << "Fraction " << to_binary<nbits>(_Bits) << std::endl;
 			}
 		}
 			break;
@@ -509,21 +509,35 @@ public:
 	void assign_fraction(unsigned int remaining_bits, std::bitset<nbits - 2>& _fraction) {
 		if (remaining_bits > 0) {
 			for (int i = 0; i < remaining_bits; i++) {
-				_Bits[remaining_bits - 1 - i] = _fraction[nbits - 4 - i];
+				_Bits[remaining_bits - 1 - i] = _fraction[nbits - 3 - i];
 			}
 		}
 	}
 	void convert_to_posit(int _scale, std::bitset<nbits - 2>& _fraction) {
 		_Bits.reset();
 		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
-		cout << _Bits << "  regime bits " << nr_of_regime_bits << endl;
+		cout << "Regime   " << _Bits << "  regime bits " << nr_of_regime_bits << endl;
 		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
-		cout << _Bits << "  exponent bits " << nr_of_exp_bits << endl;
+		cout << "Exponent " << _Bits << "  exponent bits " << nr_of_exp_bits << endl;
 		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
 		cout << " remaining bits " << remaining_bits << " fraction " << _fraction << endl;
 		assign_fraction(remaining_bits, _fraction);
-		cout << _Bits << endl;
+		cout << "Posit    " << _Bits << endl;
+	}
+	// convert floats to posits
+	void convert_to_posit(int _scale, uint32_t _23b_fraction_without_hidden_bit) {
+		_Bits.reset();
+		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
+		cout << "Regime   " << _Bits << "  #regime bits " << nr_of_regime_bits << endl;
+		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
+		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
+		cout << "Exponent " << _Bits << "  #exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << endl;
+		cout << "         " << to_binary(_23b_fraction_without_hidden_bit) << " fraction " << endl;
 
+		std::bitset<nbits - 2> _fraction = copy_float_fraction<nbits>(_23b_fraction_without_hidden_bit);
+		assign_fraction(remaining_bits, _fraction);
+		cout << "Fraction " << _fraction << endl;
+		cout << "Posit    " << _Bits << endl;
 	}
 private:
 	std::bitset<nbits> _Bits;
@@ -563,16 +577,6 @@ private:
 		for (int i = 0; i < nbits - 3 - shift; i++) {
 			number.set(i, fraction[shift + i]);
 		}
-	}
-	void extractIEEE754(uint64_t f, int exponentSize, int mantissaSize) {
-		int exponentBias = (1 << (exponentSize - 1)) - 1;
-		int16_t exponent = (f >> mantissaSize) & ((1 << exponentSize) - 1);
-		uint64_t mantissa = (f & ((1ULL << mantissaSize) - 1));
-
-		// clip exponent
-		int rmin = (1 << es) * (2 - nbits);
-		int rmax = (1 << es) * (nbits - 2);
-		// int rf = MIN(MAX(exponent - exponentBias, rmin), rmax);
 	}
 
         // template parameters need names different from class template parameters (for gcc and clang)

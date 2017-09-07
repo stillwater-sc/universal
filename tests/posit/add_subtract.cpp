@@ -76,7 +76,7 @@ int main(int argc, char** argv)
 	const size_t nbits = 16;
 
 
-	goto debug_test;
+	//goto debug_test;
 	//goto float_posit_comparison;
 
 	posit<nbits, 0> p0;

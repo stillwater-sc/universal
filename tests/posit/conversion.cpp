@@ -3,7 +3,6 @@
 
 #include "stdafx.h"
 
-#include "../../posit/posit_scale_factors.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 
@@ -247,17 +246,47 @@ int main()
 	cout << endl;
 
 	// posit initialization and assignment
-	cout << "Posit copy constructor, assignment, and test" << endl;
-	posit<16, 1> p16_1_1;
-	p16_1_1 = (1 << 16);
-	posit<16, 1> p16_1_2(p16_1_1);
-	if (p16_1_1 != p16_1_2) {
-		cerr << "Copy constructor failed" << endl;
-		cerr << "value: " << (1 << 16) << " posits " << p16_1_1 << " == " << p16_1_2 << endl;
+	{
+		cout << "Posit copy constructor, assignment, and test" << endl;
+		posit<16, 1> p16_1_1;
+		p16_1_1 = (1 << 16);
+		posit<16, 1> p16_1_2(p16_1_1);
+		if (p16_1_1 != p16_1_2) {
+			cerr << "Copy constructor failed" << endl;
+			cerr << "value: " << (1 << 16) << " posits " << p16_1_1 << " == " << p16_1_2 << endl;
+		}
+		else {
+			cout << "PASS" << endl;
+		}
+		cout << endl;
 	}
-	else {
-		cout << "PASS" << endl;
+
+	// posit float conversion
+	{
+		cout << "Posit float conversion" << endl;
+		float f = 1.0 + 1.0 / 3.0;
+		int _exp = 0;
+		float m = frexpf(f, &_exp);
+		uint32_t mBits = *(uint32_t*)&m;
+		cout << "f " << f << " exp " << _exp << " fraction " << m << " bits " << to_binary(mBits) << endl;
+		cout << "f " << std::hexfloat << f << std::defaultfloat << endl;
+		// small posit have very high discretization and thus rounding is severe
+		const size_t nbits = 32;
+		const size_t es = 2;
+
+		posit<32, 2> p;
+		int float_scale = extract_exponent(f);
+		uint32_t fraction = extract_fraction(f);
+
+		uint32_t bits = *(uint32_t*)&f;
+		cout << "f " << to_binary(bits) << endl;
+		cout << "f " << f << " scale of f " << float_scale << " mantissa " << to_binary(fraction) << endl;
+		bitset<nbits - 2> _fraction = assign_unsigned<nbits-2>(fraction);
+		p.convert_to_posit(float_scale, _fraction);
+
+		cout << endl;
 	}
+
 
 	return 0;
 }

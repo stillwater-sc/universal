@@ -3,7 +3,7 @@
 
 #include "stdafx.h"
 #include <sstream>
-#include "../../posit/posit_scale_factors.hpp"
+
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 

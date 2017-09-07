@@ -3,12 +3,12 @@
 
 #include "stdafx.h"
 
-#include "../../posit/posit_scale_factors.hpp"
 #include "../../posit/posit.hpp"
-#include "../../posit/posit_operators.hpp"
 
 using namespace std;
 
+constexpr unsigned int MAX_ES = 5;
+constexpr unsigned int MAX_K = 10;
 uint64_t GENERATED_SCALE_FACTORS[MAX_ES][MAX_K];
 
 void generateScaleFactorLookupTable() {
