@@ -93,21 +93,26 @@ public:
 	}
 
 	posit<nbits, es>& operator=(const float rhs) {
-            using namespace std;
+		_Bits.reset();
 		switch (fpclassify(rhs)) {
 		case FP_INFINITE:
-			_Bits.reset();
+			std::cerr << "float is -INFINITE" << std::endl;
 			_Bits.set(nbits - 1);
 			break;
 		case FP_NAN:
 			std::cerr << "float is NAN" << std::endl;
 			break;
 		case FP_SUBNORMAL:
-			_Bits.reset();
 			std::cerr << "TODO: subnormal number" << std::endl;
 			break;
 		case FP_NORMAL:
-			_Bits.reset();
+			{
+				bool _sign = extract_sign(rhs);
+				int _scale = extract_exponent(rhs) - 1;
+				uint32_t _fraction = extract_fraction(rhs);
+				convert_to_posit(_sign, _scale, _fraction);
+				decode();
+			}
 			break;
 		}
 		return *this;
@@ -138,7 +143,7 @@ public:
 				return *this;
 			}
 		}
-		std::bitset<nbits - 2> r1, r2; // fraction is at most nbits-3 bits, + 1 for the hidden bit
+		std::bitset<nbits - 2> r1, r2, sum; // fraction is at most nbits-3 bits, + 1 for the hidden bit
 		int _scale;
 		align_numbers(scale(), _Frac, rhs.scale(), rhs._Frac, _scale, r1, r2);
 
@@ -149,7 +154,6 @@ public:
 		std::cout << "scale " << _scale << std::endl;
 
 
-		std::bitset<nbits - 2> sum;
 		bool carry = add_unsigned<nbits - 2>(r1, r2, sum);
 		std::cout << "sum " << sum << " carry " << (carry ? "1" : "0") << std::endl;
 		if (carry) {
@@ -523,7 +527,7 @@ public:
 		std::cout << "Posit    " << _Bits << std::endl;
 	}
 	// convert floats to posits
-	void convert_to_posit(int _scale, uint32_t _23b_fraction_without_hidden_bit) {
+	void convert_to_posit(bool sign, int _scale, uint32_t _23b_fraction_without_hidden_bit) {
 		_Bits.reset();
 		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
 		std::cout << "Regime   " << _Bits << "  #regime bits " << nr_of_regime_bits << std::endl;
@@ -535,6 +539,10 @@ public:
 		std::bitset<nbits - 2> _fraction = copy_float_fraction<nbits>(_23b_fraction_without_hidden_bit);
 		assign_fraction(remaining_bits, _fraction);
 		std::cout << "Fraction " << _fraction << std::endl;
+		std::cout << "Posit    " << _Bits << std::endl;
+		if (sign) {
+			_Bits = twos_complement<nbits>(_Bits);
+		}
 		std::cout << "Posit    " << _Bits << std::endl;
 	}
 private:

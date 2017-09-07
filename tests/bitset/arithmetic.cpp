@@ -14,8 +14,8 @@ void BasicArithmeticTests() {
 
 	std::bitset<nbits> a, b, sum;
 	bool carry = 0;
-	a = flip_sign_bit(assign_unsigned<nbits>(uint64_t(0x55555555)));
-	b = assign_unsigned<nbits>(uint64_t(0x5));
+	a = flip_sign_bit(convert_to_bitset<nbits,uint64_t>(uint64_t(0x55555555)));
+	b = convert_to_bitset<nbits,uint64_t>(uint64_t(0x5));
 
 	carry = add_signed_magnitude(a, b, sum);
 
@@ -27,13 +27,13 @@ void BasicArithmeticTests() {
 	cout << "1's complement of b = " << to_binary(ones_complement(b)) << endl;
 
 	std::bitset<9> c;
-	c = assign_signed_magnitude<9>(int8_t(-128));
+	c = convert_to_bitset<9,int8_t>(int8_t(-128));
 	cout << "c                = " << to_binary(c) << endl;
 	c = twos_complement(c);
 	cout << "2's Complement   = " << to_binary(c) << endl;
 
 	std::bitset<9> d;
-	d = assign_signed_magnitude<9>(int64_t(int8_t(-128)));
+	d = convert_to_bitset<9,int64_t>(int64_t(int8_t(-128)));
 	cout << "d                = " << to_binary(d) << endl;
 	d = twos_complement(d);
 	cout << "2's complement   = " << to_binary(d) << endl;
@@ -77,9 +77,9 @@ try
 	const size_t posit_nbits = 16;
 	const size_t fraction_nbits = posit_nbits - 2;
 	int f1_scale = 5;
-	std::bitset<fraction_nbits> f1 = assign_unsigned<fraction_nbits>(uint64_t(0x1fff));
+	std::bitset<fraction_nbits> f1 = convert_to_bitset<fraction_nbits,uint64_t>(uint64_t(0x1fff));
 	int f2_scale = 3;
-	std::bitset<fraction_nbits> f2 = assign_unsigned<fraction_nbits>(uint64_t(0xf));
+	std::bitset<fraction_nbits> f2 = convert_to_bitset<fraction_nbits,uint64_t>(uint64_t(0xf));
 	int sum_scale = 0;
 	std::bitset<fraction_nbits> sum;
 	add_fractions<fraction_nbits>(f1_scale, f1, f2_scale, f2, sum_scale, sum);

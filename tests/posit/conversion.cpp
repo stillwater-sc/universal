@@ -208,10 +208,76 @@ void basic_algorithm_for_conversion() {
 	cout << "Fraction = 0x" << hex << fraction(value) << dec << endl;
 }
 
+/*
+POSIT<3,0>
+   #           Binary         k-value            sign          regime        exponent        fraction           value
+   0:              000              -2               1            0.25               -               -               0
+   1:              001              -1               1             0.5               -               -             0.5
+   2:              010               0               1               1               -               -               1
+   3:              011               1               1               2               -               -               2
+   4:              100               2              -1               4               -               -             inf
+   5:              101               1              -1               2               -               -              -2
+   6:              110               0              -1               1               -               -              -1
+   7:              111              -1              -1             0.5               -               -            -0.5
+   */
+bool ValidatePosit_3_0()
+{
+	float golden_answer[16] = {
+		0.0, 0.5, 1.0, 2.0, INFINITY, -2.0, -1.0, -0.5
+	};
+
+	bool bValid = true;
+	for (int i = 0; i < 16; i++) {
+		posit<3, 0> p = golden_answer[i];
+		if (fabs(p.to_double() - golden_answer[i]) > 0.00000001) {
+			cerr << "Posit conversion failed: golden value = " << golden_answer[i] << " != posit<3,0> " << p << endl;
+			bValid = false;
+		}
+	}
+	return bValid;
+}
+
+/*
+POSIT<4,0>
+   #           Binary         k-value            sign          regime        exponent        fraction           value
+   0:             0000              -3               1           0.125               -               0               0
+   1:             0001              -2               1            0.25               -               0            0.25
+   2:             0010              -1               1             0.5               -               0             0.5
+   3:             0011              -1               1             0.5               -               1            0.75
+   4:             0100               0               1               1               -               0               1
+   5:             0101               0               1               1               -               1             1.5
+   6:             0110               1               1               2               -               0               2
+   7:             0111               2               1               4               -               0               4
+   8:             1000               3              -1               8               -               0             inf
+   9:             1001               2              -1               4               -               0              -4
+  10:             1010               1              -1               2               -               0              -2
+  11:             1011               0              -1               1               -               1            -1.5
+  12:             1100               0              -1               1               -               0              -1
+  13:             1101              -1              -1             0.5               -               1           -0.75
+  14:             1110              -1              -1             0.5               -               0            -0.5
+  15:             1111              -2              -1            0.25               -               0           -0.25
+*/
+bool ValidatePosit_4_0()
+{
+	float golden_answer[16] = {
+		0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0, INFINITY, -4.0, -2.0, -1.5, -1.0, -0.75, -0.5, -0.25
+	};
+
+	bool bValid = true;
+	for (int i = 0; i < 16; i++) {
+		posit<4, 0> p = golden_answer[i];
+		if (fabs(p.to_double() - golden_answer[i]) > 0.00000001) {
+			cerr << "Posit conversion failed: golden value = " << golden_answer[i] << " != posit<4,0> " << p << endl;
+			bValid = false;
+		}
+	}
+	return bValid;
+}
+
 int main()
 {
 	//ConversionOperatorsPositiveRegime();
-	const size_t nbits = 5;
+	const size_t nbits = 16;
 	const size_t es = 1;
 	posit<nbits, es> p1;
 
@@ -264,29 +330,40 @@ int main()
 	// posit float conversion
 	{
 		cout << "Posit float conversion" << endl;
-		float f = 1.0 + 1.0 / 3.0;
-		int _exp = 0;
-		float m = frexpf(f, &_exp);
-		uint32_t mBits = *(uint32_t*)&m;
-		cout << "f " << f << " exp " << _exp << " fraction " << m << " bits " << to_binary(mBits) << endl;
-		cout << "f " << std::hexfloat << f << std::defaultfloat << endl;
-		// small posit have very high discretization and thus rounding is severe
-		const size_t nbits = 32;
-		const size_t es = 2;
-
-		posit<32, 2> p;
-		int float_scale = extract_exponent(f);
-		uint32_t fraction = extract_fraction(f);
-
-		uint32_t bits = *(uint32_t*)&f;
-		cout << "f " << to_binary(bits) << endl;
-		cout << "f " << f << " scale of f " << float_scale << " mantissa " << to_binary(fraction) << endl;
-		bitset<nbits - 2> _fraction = assign_unsigned<nbits-2>(fraction);
-		p.convert_to_posit(float_scale, _fraction);
+		float value;
+		posit<4, 0> p1;
+		cout << "Rounding mode : " << p1.RoundingMode() << endl;
+		value = 0.0;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+		value = 0.25;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+		value = 0.5;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+		value = 0.75;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+		value = 1.0;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+		value = 1.5;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+		value = 2.0;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+		value = 4.0;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+		value = INFINITY;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
 
 		cout << endl;
 	}
+	return 0;
+	{
+		cout << "Posit Configuration validation" << endl;
+		if (!ValidatePosit_3_0()) {
+			cout << "posit<3,0> is incorrect" << endl;
+		}	
+		else {
+			cout << "posit<3,0> float conversions are valid" << endl;
+		}
+		if (!ValidatePosit_4_0()) {
+			cout << "posit<4,0> is incorrect" << endl;
+		}
+		else {
+			cout << "posit<4,0> float conversions are valid" << endl;
+		}
 
+
+		cout << endl;
+	}
 
 	return 0;
 }

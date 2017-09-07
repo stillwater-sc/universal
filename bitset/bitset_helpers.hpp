@@ -11,13 +11,13 @@ std::bitset<sign_magnitude> ones_complement(std::bitset<sign_magnitude> number) 
 	return complement;
 }
 
-template<size_t sign_magnitude>
-bool increment(std::bitset<sign_magnitude>& number) {
+template<size_t nbits>
+bool increment_signed_magnitude(std::bitset<nbits>& number) {
 	uint8_t carry = 0;  // ripple carry
 	uint8_t _a = number[0];
 	uint8_t _b = 1;
 	uint8_t _slice = _a + _b;
-	for (int i = 1; i < sign_magnitude - 1; i++) {
+	for (int i = 1; i < nbits - 1; i++) {
 		_a = number[i];
 		_slice = _a + 0 + carry;
 		carry = _slice >> 1;
@@ -26,34 +26,26 @@ bool increment(std::bitset<sign_magnitude>& number) {
 	return carry;
 }
 
-template<size_t sign_magnitude>
-std::bitset<sign_magnitude> twos_complement(std::bitset<sign_magnitude> number) {
-	std::bitset<sign_magnitude> complement;
-	for (int i = 0; i < sign_magnitude; i++) {
-		complement.set(i, !number[i]);
+template<size_t nbits>
+std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
+	std::bitset<nbits> complement;
+	uint8_t _slice = 0;
+	uint8_t carry = 1;
+	for (int i = 0; i < nbits; i++) {
+		_slice = uint8_t(!number[i]) + carry;
+		carry = _slice >> 1;
+		complement[i] = (0x1 & _slice);
 	}
-	bool carry = increment(complement);
 	return complement;
 }
 
-template<size_t nbits>
-std::bitset<nbits> assign_unsigned(uint64_t number) {
-	std::bitset<nbits> _Bits;
+// DANGER: this depends on the implicit type conversion of number to a uint64_t to sign extent a 2's complement number system
+// if nbits > 64 then this code breaks.
+template<size_t nbits, class Type>
+std::bitset<nbits> convert_to_bitset(Type number) {
+	std::bitset<nbits> _Bits; 
 	uint64_t mask = 1;
 	for (int i = 0; i < nbits; i++) {
-		_Bits[i] = mask & number;
-		mask <<= 1;
-	}
-	return _Bits;
-}
-
-// little endian, sign bit is at sign_magnitude-1
-template<size_t sign_magnitude>
-std::bitset<sign_magnitude> assign_signed_magnitude(int64_t number) {
-	std::bitset<sign_magnitude> _Bits;
-	_Bits[sign_magnitude - 1] = number >> 63;
-	uint64_t mask = 1;
-	for (int i = 0; i < sign_magnitude - 1; i++) {
 		_Bits[i] = mask & number;
 		mask <<= 1;
 	}

@@ -81,6 +81,14 @@ std::string to_binary(int64_t number) {
 	return ss.str();
 }
 
+bool extract_sign(float f) {
+	return (0x80000000 & *(uint32_t*)&f);
+}
+
+bool extract_sign(double f) {
+	return (0x8000000000000000 & *(uint64_t*)&f);
+}
+
 int extract_exponent(float f) {
 	int exponent;
 	frexpf(f, &exponent);

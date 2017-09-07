@@ -108,6 +108,7 @@ int main(int argc, char** argv)
 		GeneratePositTable<8, 2>(cout);
 		GeneratePositTable<8, 3>(cout);
 		GeneratePositTable<8, 4>(cout);
+
 	}
 	catch (char* e) {
 		cerr << e << endl;

@@ -53,19 +53,19 @@ long double frexp(long double in, int* exponent)
 */
 template<size_t nbits, size_t es>
 posit<nbits, es> extract(float f) {
-	int exponent = extract_exponent(f);		// exponent is for an unnormalized number 0.1234*2^exp
-	int scale = exponent - 1;
-	uint32_t fraction = extract_fraction(f);
+	bool _sign = extract_sign(f);
+	int _scale = extract_exponent(f) - 1;		// exponent is for an unnormalized number 0.1234*2^exp
+	uint32_t _fraction = extract_fraction(f);
 	posit<nbits, es> p;
-	p.convert_to_posit(scale, fraction);
+	p.convert_to_posit(_sign, _scale, _fraction);
 	return p;
 }
 
 int main()
 try
 {
-	const size_t nbits = 16;
-	const size_t es = 2;
+	const size_t nbits = 4;
+	const size_t es = 0;
 	const size_t size = 128;
 
 	posit<nbits,es> myPosit;
@@ -75,12 +75,12 @@ try
 
 	cout << "Positive regime" << endl;
 	try {
-		int32_t i = 4;
-		myPosit = i;
-
-		float f = 5.0f;
+		float f = 4.0f;
+		bool sign = extract_sign(f);
+		int exponent = extract_exponent(f);
 		uint32_t fraction = extract_fraction(f);
 		std::bitset<nbits - 2> _fraction = copy_float_fraction<nbits>(fraction);
+		cout << "f " << f << "sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
 
 		myPosit = extract<nbits, es>(f);
 		cout << "posit<" << nbits << "," << es << "> = " << myPosit << endl;
@@ -92,7 +92,13 @@ try
 
 	cout << "Negative Regime" << endl;
 	try {
-		float f = 0.33f;
+		float f = -4.0f;
+		bool sign = extract_sign(f);
+		int exponent = extract_exponent(f);
+		uint32_t fraction = extract_fraction(f);
+		std::bitset<nbits - 2> _fraction = copy_float_fraction<nbits>(fraction);
+		cout << "f " << f << "sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
+
 		myPosit = extract<nbits, es>(f);
 		cout << "posit<" << nbits << "," << es << "> = " << myPosit << endl;
 		cout << "posit<" << nbits << "," << es << "> = " << components_to_string(myPosit) << endl;
