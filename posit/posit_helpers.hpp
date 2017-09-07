@@ -83,13 +83,13 @@ std::string to_binary(int64_t number) {
 
 int extract_exponent(float f) {
 	int exponent;
-	std::frexpf(f, &exponent);
+	frexpf(f, &exponent);
 	return exponent;
 }
 
 uint32_t extract_fraction(float f) {
 	int exponent;
-	float fraction = std::frexpf(f, &exponent);
+	float fraction = frexpf(f, &exponent);
 	return (0x007FFFFF & *(uint32_t*)&fraction);
 }
 

@@ -108,8 +108,6 @@ public:
 			break;
 		case FP_NORMAL:
 			_Bits.reset();
-			// 8 bits of exponent, 23 bits of mantissa
-			extractIEEE754((uint64_t)rhs, 8, 23);
 			break;
 		}
 		return *this;
@@ -144,23 +142,23 @@ public:
 		int _scale;
 		align_numbers(scale(), _Frac, rhs.scale(), rhs._Frac, _scale, r1, r2);
 
-		cout << "lhs " << this->_Bits << " scale " << scale() << endl;
-		cout << "rhs " << rhs._Bits <<   " scale " << rhs.scale() << endl;
-		cout << "r1    " << r1 << endl;
-		cout << "r2    " << r2 << endl;
-		cout << "scale " << _scale << endl;
+		std::cout << "lhs " << this->_Bits << " scale " << scale() << std::endl;
+		std::cout << "rhs " << rhs._Bits <<   " scale " << rhs.scale() << std::endl;
+		std::cout << "r1    " << r1 << std::endl;
+		std::cout << "r2    " << r2 << std::endl;
+		std::cout << "scale " << _scale << std::endl;
 
 
 		std::bitset<nbits - 2> sum;
 		bool carry = add_unsigned<nbits - 2>(r1, r2, sum);
-		cout << "sum " << sum << " carry " << (carry ? "1" : "0") << endl;
+		std::cout << "sum " << sum << " carry " << (carry ? "1" : "0") << std::endl;
 		if (carry) {
 			_scale++;
 			sum >>= 1;
 			sum.set(nbits - 3, carry);
 		}
-		cout << "scale " << _scale << endl;
-		cout << "sum " << sum << endl;
+		std::cout << "scale " << _scale << std::endl;
+		std::cout << "sum " << sum << std::endl;
 		reset();
 		convert_to_posit(_scale, sum);
 		decode();
@@ -368,15 +366,15 @@ public:
 			k = -m;
 		}	
 
-		//                            cout << "k = " << int(k) << " m = " << m ;
+		//                            std::cout << "k = " << int(k) << " m = " << m ;
 		// get the exponent bits
 		// start of exponent is nbits - (sign_bit + regime_bits)
 		int32_t msb = nbits - (3 + m);
-		//                             cout << " msb = " << msb << " ";
+		//                             std::cout << " msb = " << msb << " ";
 		int32_t size = 0;
 		if (msb >= 0 && es > 0) {	
 			size = (msb >= es - 1 ? es : msb + 1);
-		//	                         cout << " size " << size << " msb " << msb << " ";
+		//	                         std::cout << " size " << size << " msb " << msb << " ";
 			for (int i = 0; i < size; i++) {
 				_Exp[i] = tmp[msb - (size - 1) + i];
 			}
@@ -516,28 +514,28 @@ public:
 	void convert_to_posit(int _scale, std::bitset<nbits - 2>& _fraction) {
 		_Bits.reset();
 		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
-		cout << "Regime   " << _Bits << "  regime bits " << nr_of_regime_bits << endl;
+		std::cout << "Regime   " << _Bits << "  regime bits " << nr_of_regime_bits << std::endl;
 		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
-		cout << "Exponent " << _Bits << "  exponent bits " << nr_of_exp_bits << endl;
+		std::cout << "Exponent " << _Bits << "  exponent bits " << nr_of_exp_bits << std::endl;
 		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		cout << " remaining bits " << remaining_bits << " fraction " << _fraction << endl;
+		std::cout << " remaining bits " << remaining_bits << " fraction " << _fraction << std::endl;
 		assign_fraction(remaining_bits, _fraction);
-		cout << "Posit    " << _Bits << endl;
+		std::cout << "Posit    " << _Bits << std::endl;
 	}
 	// convert floats to posits
 	void convert_to_posit(int _scale, uint32_t _23b_fraction_without_hidden_bit) {
 		_Bits.reset();
 		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
-		cout << "Regime   " << _Bits << "  #regime bits " << nr_of_regime_bits << endl;
+		std::cout << "Regime   " << _Bits << "  #regime bits " << nr_of_regime_bits << std::endl;
 		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
 		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		cout << "Exponent " << _Bits << "  #exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << endl;
-		cout << "         " << to_binary(_23b_fraction_without_hidden_bit) << " fraction " << endl;
+		std::cout << "Exponent " << _Bits << "  #exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << std::endl;
+		std::cout << "         " << to_binary(_23b_fraction_without_hidden_bit) << " fraction " << std::endl;
 
 		std::bitset<nbits - 2> _fraction = copy_float_fraction<nbits>(_23b_fraction_without_hidden_bit);
 		assign_fraction(remaining_bits, _fraction);
-		cout << "Fraction " << _fraction << endl;
-		cout << "Posit    " << _Bits << endl;
+		std::cout << "Fraction " << _fraction << std::endl;
+		std::cout << "Posit    " << _Bits << std::endl;
 	}
 private:
 	std::bitset<nbits> _Bits;
