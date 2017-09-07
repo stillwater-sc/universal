@@ -75,6 +75,10 @@ int main(int argc, char** argv)
 {
 	const size_t nbits = 16;
 
+
+	goto debug_test;
+	//goto float_posit_comparison;
+
 	posit<nbits, 0> p0;
 	posit<nbits, 1> p1;
 	posit<nbits, 2> p2;
@@ -108,15 +112,33 @@ int main(int argc, char** argv)
 		}
 	}
 
+float_posit_comparison:
 	{
-		posit<16, 0> a, b, sum;
-		a = 16;
-		for (int i = 0; i < 16; i++) {
-			b = i; sum = a + b;
-			cout << a << " + " << b << " = " << sum << endl;
+		float fa, fb, fsum;
+		posit<16, 1> pa, pb, psum;
+		fa = 16;  pa = 16; 
+		for (int i = 5; i < 16; i++) {
+			fb = i; fsum = fa + fb;
+			//cout << fa << " + " << fb << " = " << fsum << endl;
+			pb = i; psum = pa + pb;
+			cout << pa << " + " << pb << " = " << psum << endl;
 		}
+		return 0;
 	}
 
+debug_test:
+	{
+		cout << to_binary(5) << endl;
+		cout << to_binary(16) << endl;
+		cout << to_binary(21) << endl;
+		posit<8, 1> pa, pb, psum;
+		pa = 16; pb = 5;
+		psum = pa + pb;
+		cout << pa << " + " << pb << " = " << psum << endl;
+		cout << psum.get() << endl;
+		psum = 21;
+		cout << psum.get() << endl;
+	}
 
 
 	//diff = a - b;

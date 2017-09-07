@@ -68,15 +68,13 @@ unsigned int findMostSignificantBit(int8_t x) {
 	return base + bval[tmp];
 }
 
-template<size_t nbits>
-std::bitset<nbits> twos_complement_(std::bitset<nbits> number) {
-	std::bitset<nbits> complement;
-	uint64_t value = number.flip().to_ulong();
-	value++;
-	unsigned long mask = 1;
-	for (int i = 0; i < nbits; i++) {
-		complement.set(i, (value & mask));
-		mask = mask << 1;
+std::string to_binary(int64_t number) {
+	std::stringstream ss;
+	unsigned int msb = findMostSignificantBit(number);
+	uint64_t mask = (1 << msb);
+	for (int i = msb; i >= 0; --i) {
+		ss << (mask & number ? "1" : "0");
+		mask >>= 1;
 	}
-	return complement;
+	return ss.str();
 }

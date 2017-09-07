@@ -143,25 +143,25 @@ public:
 		std::bitset<nbits - 2> r1, r2; // fraction is at most nbits-3 bits, + 1 for the hidden bit
 		int _scale;
 		align_numbers(scale(), _Frac, rhs.scale(), rhs._Frac, _scale, r1, r2);
-		/*
-		cout << "lhs " << this->_Bits << endl;
-		cout << "rhs " << rhs._Bits << endl;
+
+		cout << "lhs " << this->_Bits << " scale " << scale() << endl;
+		cout << "rhs " << rhs._Bits <<   " scale " << rhs.scale() << endl;
 		cout << "r1    " << r1 << endl;
 		cout << "r2    " << r2 << endl;
 		cout << "scale " << _scale << endl;
-		*/
+
 
 		std::bitset<nbits - 2> sum;
 		bool carry = add_unsigned<nbits - 2>(r1, r2, sum);
-		//cout << "sum " << sum << " carry " << (carry ? "1" : "0") << endl;
+		cout << "sum " << sum << " carry " << (carry ? "1" : "0") << endl;
 		if (carry) {
 			_scale++;
 			sum >>= 1;
 			sum.set(nbits - 3, carry);
 		}
-		//cout << "scale " << _scale << endl;
-		//cout << "sum " << sum << endl;
-
+		cout << "scale " << _scale << endl;
+		cout << "sum " << sum << endl;
+		reset();
 		convert_to_posit(_scale, sum);
 		decode();
 		return *this;
@@ -515,14 +515,14 @@ public:
 	}
 	void convert_to_posit(int _scale, std::bitset<nbits - 2>& _fraction) {
 		_Bits.reset();
-		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale);
-		//cout << _Bits << "  regime bits " << nr_of_regime_bits << endl;
+		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
+		cout << _Bits << "  regime bits " << nr_of_regime_bits << endl;
 		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
-		//cout << _Bits << "  exponent bits " << nr_of_exp_bits << endl;
+		cout << _Bits << "  exponent bits " << nr_of_exp_bits << endl;
 		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		//cout << " remaining bits " << remaining_bits << " fraction " << _fraction << endl;
+		cout << " remaining bits " << remaining_bits << " fraction " << _fraction << endl;
 		assign_fraction(remaining_bits, _fraction);
-		//cout << _Bits << endl;
+		cout << _Bits << endl;
 
 	}
 private:

@@ -1,10 +1,8 @@
-// create_small_posit_lookup_table.cpp
+// create detailed tables that spell out all the components that make up a posit
 
 #include "stdafx.h"
 #include <sstream>
-#include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"
-#include "../../posit/posit_operators.hpp"
 
 using namespace std;
 
@@ -99,17 +97,17 @@ int main(int argc, char** argv)
 		GeneratePositTable<6, 0>(cout);
 		GeneratePositTable<6, 1>(cout);
 		GeneratePositTable<6, 2>(cout);
-		GeneratePositTable<6, 3>(cout);
 
 		GeneratePositTable<7, 0>(cout);
 		GeneratePositTable<7, 1>(cout);
 		GeneratePositTable<7, 2>(cout);
 		GeneratePositTable<7, 3>(cout);
-		GeneratePositTable<7, 4>(cout);	
 
 		GeneratePositTable<8, 0>(cout);
 		GeneratePositTable<8, 1>(cout);
-
+		GeneratePositTable<8, 2>(cout);
+		GeneratePositTable<8, 3>(cout);
+		GeneratePositTable<8, 4>(cout);
 	}
 	catch (char* e) {
 		cerr << e << endl;

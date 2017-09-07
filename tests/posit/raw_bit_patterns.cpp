@@ -3,7 +3,7 @@
 
 #include "stdafx.h"
 #include <sstream>
-#include "../../posit/posit_scale_factors.hpp"
+
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 
@@ -11,18 +11,49 @@ using namespace std;
 
 uint64_t GENERATED_SCALE_FACTORS[MAX_ES][MAX_K];
 
+/* OUTPUT
+72057594037927936
+4503599627370496
+281474976710656
+17592186044416
+1099511627776
+68719476736
+4294967296
+268435456
+16777216
+1048576
+65536
+4096
+256
+16
+1 1
+0.0625
+0.00390625
+0.000244140625
+1.52587890625e-05
+9.5367431640625e-07
+5.9604644775390625e-08
+3.7252902984619140625e-09
+2.3283064365386962890625e-10
+1.4551915228366851806640625e-11
+9.094947017729282379150390625e-13
+5.684341886080801486968994140625e-14
+3.552713678800500929355621337890625e-15
+2.220446049250313080847263336181641e-16
+0 0
+*/
+
 int main() {
 	posit<16, 2> p;
 	bitset<16> raw;
-
+	// 1152921504606846976
 	raw.reset();
 	// positive regime infinity - 1
-	raw[15] = 1;
+	cout << setprecision(34);
+	raw[15] = 1;							// inf
 	p.set(raw); 	cout << p << endl;
 	raw.set();
-	raw[15] = false;						// 1152921504606846976			
-	p.set(raw); 	cout << p << endl;
-	raw[0] = false;							// 72057594037927936			
+	raw[15] = false;						// 72057594037927936			
 	p.set(raw); 	cout << p << endl;
 	raw[0] = false;							// 4503599627370496			
 	p.set(raw); 	cout << p << endl;
@@ -67,34 +98,34 @@ int main() {
 	raw[10] = true;			// 1/4096
 	p.set(raw); 	cout << p << endl;
 	raw.reset();
-	raw[9] = true;			// 1/4096
+	raw[9] = true;			// 1/65536
 	p.set(raw); 	cout << p << endl;
 	raw.reset();
-	raw[8] = true;			// 1/4096
+	raw[8] = true;			// 1/1048576
 	p.set(raw); 	cout << p << endl;
 	raw.reset();
-	raw[7] = true;			// 1/4096
+	raw[7] = true;			// 1/16777216
 	p.set(raw); 	cout << p << endl;
 	raw.reset();
-	raw[6] = true;			// 1/4096
+	raw[6] = true;			// 1/268435456
 	p.set(raw); 	cout << p << endl;
 	raw.reset();
-	raw[5] = true;			// 1/4096
+	raw[5] = true;			// 1/4294967296
 	p.set(raw); 	cout << p << endl;
 	raw.reset();
-	raw[4] = true;			// 1/4096
+	raw[4] = true;			// 1/68719476736
 	p.set(raw); 	cout << p << endl;
 	raw.reset();
-	raw[3] = true;			// 1/4096
+	raw[3] = true;			// 1/1099511627776
 	p.set(raw); 	cout << p << endl;
 	raw.reset();
-	raw[2] = true;			// 1/4096
+	raw[2] = true;			// 1/17592186044416
 	p.set(raw); 	cout << p << endl;
 	raw.reset();
-	raw[1] = true;			// 1/4096
+	raw[1] = true;			// 1/281474976710656
 	p.set(raw); 	cout << p << endl;
 	raw[1] = false;			// 0
-	p.set(raw); 	cout << p << endl;
+	p.set(raw); 	cout << p << " 0" << endl;
 
     	return 0;
 }
