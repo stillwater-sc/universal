@@ -41,8 +41,7 @@ public:
 		reset();
 		bool _sign = (0x8000000000000000 & rhs);  // 1 is negative, 0 is positive
 		if (_sign) {
-			// process negative number
-			_Bits.flip(nbits - 1);
+			// process negative number: process 2's complement of the input
 			unsigned int _scale = findMostSignificantBit(-rhs) - 1;
 			uint64_t _fraction_without_hidden_bit = (-rhs << (64 - _scale));
 			std::bitset<nbits - 3> _fraction = copy_int64_fraction<nbits>(_fraction_without_hidden_bit);
@@ -130,15 +129,18 @@ public:
 			break;
 		case FP_NORMAL:
 			{
-				bool _sign = extract_sign(rhs);
+				bool _sign = extract_sign(rhs); 
 				int _scale = extract_exponent(rhs) - 1;
 				uint32_t _23b_fraction_without_hidden_bit = extract_fraction(rhs);
 				std::bitset<nbits - 3> _fraction = copy_float_fraction<nbits>(_23b_fraction_without_hidden_bit);
 				convert_to_posit(_sign, _scale, _fraction);
-				decode();
+				if (_sign) {
+					_Bits = twos_complement(_Bits);
+				}
 			}
 			break;
 		}
+		decode();
 		return *this;
 	}
 	posit<nbits, es>& operator=(const double rhs) {
@@ -549,13 +551,10 @@ public:
 	void convert_to_posit(bool _sign, int _scale, std::bitset<nbits - 3>& _fraction) {
 		reset();
 		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
-		std::cout << "Regime   " << _Bits << "  regime bits " << nr_of_regime_bits << std::endl;
 		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
-		std::cout << "Exponent " << _Bits << "  exponent bits " << nr_of_exp_bits << std::endl;
 		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		std::cout << " remaining bits " << remaining_bits << " fraction " << _fraction << std::endl;
+		std::cout << "Regime   " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _fraction << std::endl;
 		assign_fraction(remaining_bits, _fraction);
-		std::cout << "Posit    " << _Bits << std::endl;
 	}
 
 private:
