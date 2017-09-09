@@ -39,6 +39,24 @@ public:
 	}
 	posit<nbits, es>& operator=(int64_t rhs) {
 		reset();
+		bool _sign = (0x8000000000000000 & rhs);  // 1 is negative, 0 is positive
+		if (_sign) {
+			// process negative number
+		}
+		else {
+			// process positive number
+			if (rhs != 0) {
+				unsigned int _scale = findMostSignificantBit(rhs) - 1;
+				uint64_t _fraction_without_hidden_bit = (rhs << (64 - _scale));
+				std::bitset<nbits - 3> _fraction = copy_int64_fraction<nbits>(_fraction_without_hidden_bit);
+				convert_to_posit(_sign, _scale, _fraction);
+			}
+			decode();
+		}
+		return *this;
+	}
+	posit<nbits, es>& assign(int64_t rhs) {
+		reset();
 		if (rhs == 0) {
 			return *this;
 		}
@@ -93,10 +111,9 @@ public:
 	}
 
 	posit<nbits, es>& operator=(const float rhs) {
-		_Bits.reset();
+		reset();
 		switch (fpclassify(rhs)) {
 		case FP_INFINITE:
-			std::cerr << "float is -INFINITE" << std::endl;
 			_Bits.set(nbits - 1);
 			break;
 		case FP_NAN:
@@ -109,7 +126,8 @@ public:
 			{
 				bool _sign = extract_sign(rhs);
 				int _scale = extract_exponent(rhs) - 1;
-				uint32_t _fraction = extract_fraction(rhs);
+				uint32_t _23b_fraction_without_hidden_bit = extract_fraction(rhs);
+				std::bitset<nbits - 3> _fraction = copy_float_fraction<nbits>(_23b_fraction_without_hidden_bit);
 				convert_to_posit(_sign, _scale, _fraction);
 				decode();
 			}
@@ -143,7 +161,9 @@ public:
 				return *this;
 			}
 		}
-		std::bitset<nbits - 2> r1, r2, sum; // fraction is at most nbits-3 bits, + 1 for the hidden bit
+		bool _sign, _sign_lhs, _sign_rhs;
+		_sign = false;
+		std::bitset<nbits - 3> r1, r2, sum; // fraction is at most nbits-3 bits, + 1 for the hidden bit
 		int _scale;
 		align_numbers(scale(), _Frac, rhs.scale(), rhs._Frac, _scale, r1, r2);
 
@@ -154,7 +174,7 @@ public:
 		std::cout << "scale " << _scale << std::endl;
 
 
-		bool carry = add_unsigned<nbits - 2>(r1, r2, sum);
+		bool carry = add_unsigned<nbits - 3>(r1, r2, sum);
 		std::cout << "sum " << sum << " carry " << (carry ? "1" : "0") << std::endl;
 		if (carry) {
 			_scale++;
@@ -164,7 +184,7 @@ public:
 		std::cout << "scale " << _scale << std::endl;
 		std::cout << "sum " << sum << std::endl;
 		reset();
-		convert_to_posit(_scale, sum);
+		convert_to_posit(_sign, _scale, sum);
 		decode();
 		return *this;
 	}
@@ -329,7 +349,12 @@ public:
 		return *this;
 	}
 
-	// decode the segments: precondition: member vars reset with bits containing the value to decode
+	// decode the segments and store in the posit
+	// precondition: member vars reset with _Bits containing the posit bits to decode
+	// this function takes the raw posit bits in _Bits and extracts
+	// the regime, the exponent, and the fraction and
+	// sets the k value, the _Exp, and _Frac variables
+	// which represent the post-decode information of a posit.
 	int16_t decode() {
 		if (isZero()) {  // special case = 0
 			k = -int(nbits-1);
@@ -508,15 +533,15 @@ public:
 		}
 		return nr_of_exp_bits;
 	}
-	void assign_fraction(unsigned int remaining_bits, std::bitset<nbits - 2>& _fraction) {
+	void assign_fraction(unsigned int remaining_bits, std::bitset<nbits - 3>& _fraction) {
 		if (remaining_bits > 0) {
 			for (int i = 0; i < remaining_bits; i++) {
-				_Bits[remaining_bits - 1 - i] = _fraction[nbits - 3 - i];
+				_Bits[remaining_bits - 1 - i] = _fraction[nbits - 4 - i];
 			}
 		}
 	}
-	void convert_to_posit(int _scale, std::bitset<nbits - 2>& _fraction) {
-		_Bits.reset();
+	void convert_to_posit(bool _sign, int _scale, std::bitset<nbits - 3>& _fraction) {
+		reset();
 		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
 		std::cout << "Regime   " << _Bits << "  regime bits " << nr_of_regime_bits << std::endl;
 		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
@@ -526,25 +551,7 @@ public:
 		assign_fraction(remaining_bits, _fraction);
 		std::cout << "Posit    " << _Bits << std::endl;
 	}
-	// convert floats to posits
-	void convert_to_posit(bool sign, int _scale, uint32_t _23b_fraction_without_hidden_bit) {
-		_Bits.reset();
-		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
-		std::cout << "Regime   " << _Bits << "  #regime bits " << nr_of_regime_bits << std::endl;
-		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
-		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		std::cout << "Exponent " << _Bits << "  #exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << std::endl;
-		std::cout << "         " << to_binary(_23b_fraction_without_hidden_bit) << " fraction " << std::endl;
 
-		std::bitset<nbits - 2> _fraction = copy_float_fraction<nbits>(_23b_fraction_without_hidden_bit);
-		assign_fraction(remaining_bits, _fraction);
-		std::cout << "Fraction " << _fraction << std::endl;
-		std::cout << "Posit    " << _Bits << std::endl;
-		if (sign) {
-			_Bits = twos_complement<nbits>(_Bits);
-		}
-		std::cout << "Posit    " << _Bits << std::endl;
-	}
 private:
 	std::bitset<nbits> _Bits;
 	std::bitset<es> _Exp;
@@ -559,7 +566,7 @@ private:
 	int8_t bRoundingMode;
 
 	// HELPER methods
-	void align_numbers(int lhs_scale, const std::bitset<nbits - 3>& lhs, int rhs_scale, const std::bitset<nbits - 3>& rhs, int& scale, std::bitset<nbits - 2>& r1, std::bitset<nbits - 2>& r2) {
+	void align_numbers(int lhs_scale, const std::bitset<nbits - 3>& lhs, int rhs_scale, const std::bitset<nbits - 3>& rhs, int& scale, std::bitset<nbits - 3>& r1, std::bitset<nbits - 3>& r2) {
 		int diff = lhs_scale - rhs_scale;
 		if (diff < 0) {
 			scale = rhs_scale;
@@ -572,13 +579,13 @@ private:
 			denormalize(rhs, diff, r2);
 		}
 	}
-	void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 2>& number) {
+	void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 3>& number) {
 		number.set(nbits - 3);
 		for (int i = 0; i < nbits - 3; i++) {
 			number.set(i, fraction[i]);
 		}
 	}
-	void denormalize(const std::bitset<nbits - 3>& fraction, int shift, std::bitset<nbits - 2>& number) {
+	void denormalize(const std::bitset<nbits - 3>& fraction, int shift, std::bitset<nbits - 3>& number) {
 		number.set(nbits - 3);
 		for (int i = 0; i < nbits - 3 - shift; i++) {
 			number.set(i, fraction[shift + i]);

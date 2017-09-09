@@ -55,7 +55,8 @@ template<size_t nbits, size_t es>
 posit<nbits, es> extract(float f) {
 	bool _sign = extract_sign(f);
 	int _scale = extract_exponent(f) - 1;		// exponent is for an unnormalized number 0.1234*2^exp
-	uint32_t _fraction = extract_fraction(f);
+	uint32_t _23b_fraction_without_hidden_bit = extract_fraction(f);
+	std::bitset<nbits - 3> _fraction = copy_float_fraction<nbits>(_23b_fraction_without_hidden_bit);
 	posit<nbits, es> p;
 	p.convert_to_posit(_sign, _scale, _fraction);
 	return p;
@@ -79,7 +80,7 @@ try
 		bool sign = extract_sign(f);
 		int exponent = extract_exponent(f);
 		uint32_t fraction = extract_fraction(f);
-		std::bitset<nbits - 2> _fraction = copy_float_fraction<nbits>(fraction);
+		std::bitset<nbits - 3> _fraction = copy_float_fraction<nbits>(fraction);
 		cout << "f " << f << "sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
 
 		myPosit = extract<nbits, es>(f);
@@ -96,7 +97,7 @@ try
 		bool sign = extract_sign(f);
 		int exponent = extract_exponent(f);
 		uint32_t fraction = extract_fraction(f);
-		std::bitset<nbits - 2> _fraction = copy_float_fraction<nbits>(fraction);
+		std::bitset<nbits - 3> _fraction = copy_float_fraction<nbits>(fraction);
 		cout << "f " << f << "sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
 
 		myPosit = extract<nbits, es>(f);

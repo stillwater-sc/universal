@@ -264,24 +264,19 @@ bool ValidatePosit_4_0()
 	};
 
 	bool bValid = true;
-	for (int i = 0; i < 16; i++) {
+	for (int i = 0; i < 9; i++) {
 		posit<4, 0> p = golden_answer[i];
-		if (fabs(p.to_double() - golden_answer[i]) > 0.00000001) {
-			cerr << "Posit conversion failed: golden value = " << golden_answer[i] << " != posit<4,0> " << p << endl;
+		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
+			cerr << "Posit conversion failed: golden value = " << golden_answer[i] << " != posit<4,0> " << components_to_string(p) << endl;
 			bValid = false;
 		}
 	}
 	return bValid;
 }
 
-int main()
-{
-	//ConversionOperatorsPositiveRegime();
-	const size_t nbits = 16;
-	const size_t es = 1;
-	posit<nbits, es> p1;
-
-	cout << "Conversion tests: (notice the rounding errors)" << endl;
+void PositIntegerConversion() {
+	cout << "Conversion examples: (notice the rounding errors)" << endl;
+	posit<5, 1> p1;
 	int64_t value;
 	cout << "Rounding mode : " << p1.RoundingMode() << endl;
 	value =  1;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
@@ -293,7 +288,9 @@ int main()
 	value =  8;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
 	value = 15;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
 	cout << endl;
+}
 
+void ReportPositScales() {
 	// print scales of different posit configurations
 	// useed = 2^(2^es) and thus is just a function of the exponent configuration
 	// maxpos = useed^(nbits-2)
@@ -310,42 +307,74 @@ int main()
 	cout << spec_to_string(p32_2) << endl;
 	cout << spec_to_string(p64_3) << endl;
 	cout << endl;
+}
 
+bool TestPositInitialization() {
 	// posit initialization and assignment
-	{
-		cout << "Posit copy constructor, assignment, and test" << endl;
-		posit<16, 1> p16_1_1;
-		p16_1_1 = (1 << 16);
-		posit<16, 1> p16_1_2(p16_1_1);
-		if (p16_1_1 != p16_1_2) {
-			cerr << "Copy constructor failed" << endl;
-			cerr << "value: " << (1 << 16) << " posits " << p16_1_1 << " == " << p16_1_2 << endl;
-		}
-		else {
-			cout << "PASS" << endl;
-		}
-		cout << endl;
+	bool bValid = false;
+	cout << "Posit copy constructor, assignment, and test" << endl;
+	posit<16, 1> p16_1_1;
+	p16_1_1 = (1 << 16);
+	posit<16, 1> p16_1_2(p16_1_1);
+	if (p16_1_1 != p16_1_2) {
+		cerr << "Copy constructor failed" << endl;
+		cerr << "value: " << (1 << 16) << " posits " << p16_1_1 << " == " << p16_1_2 << endl;
 	}
-
-	// posit float conversion
-	{
-		cout << "Posit float conversion" << endl;
-		float value;
-		posit<4, 0> p1;
-		cout << "Rounding mode : " << p1.RoundingMode() << endl;
-		value = 0.0;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
-		value = 0.25;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
-		value = 0.5;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
-		value = 0.75;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
-		value = 1.0;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
-		value = 1.5;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
-		value = 2.0;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
-		value = 4.0;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
-		value = INFINITY;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
-
-		cout << endl;
+	else {
+		cout << "PASS" << endl;
+		bValid = true;
 	}
+	cout << endl;
+	return bValid;
+}
+
+void PositFloatConversion()
+// posit float conversion
+{
+	cout << "Posit float conversion" << endl;
+	float value;
+	posit<4, 0> p1;
+	cout << "Rounding mode : " << p1.RoundingMode() << endl;
+	value = 0.0;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value = 0.25;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value = 0.5;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value = 0.75;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value = 1.0;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value = 1.5;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value = 2.0;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value = 4.0;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	value = INFINITY;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
+	
+	cout << endl;
+}
+
+int main()
+{
+	/*
+	ReportPositScales();
+	PositIntegerConversion();
+	PositFloatConversion();
+	if (!TestPositInitialization()) {
+		cerr << "initialization failed" << endl;
+	}
+	ConversionOperatorsPositiveRegime();
+	*/
+
+	posit<4, 0> p;
+	p = 0; cout << p << endl;
+	p = 0.25f; cout << p << endl;
+	p = 1; cout << p << endl;
+	p = 1.5; cout << p << endl;  // <- error
+	p = 2; cout << p << endl;
+	p = 4; cout << p << endl;
+
+	//p = 0.25f; cout << p << endl;
+	p = -1; cout << p << endl;
+	//p = 1.5; cout << p << endl;  // <- error
+	p = -2; cout << p << endl;
+	p = -4; cout << p << endl;
 	return 0;
+
 	{
 		cout << "Posit Configuration validation" << endl;
 		if (!ValidatePosit_3_0()) {
@@ -360,7 +389,6 @@ int main()
 		else {
 			cout << "posit<4,0> float conversions are valid" << endl;
 		}
-
 
 		cout << endl;
 	}
