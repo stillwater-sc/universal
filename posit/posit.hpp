@@ -42,6 +42,12 @@ public:
 		bool _sign = (0x8000000000000000 & rhs);  // 1 is negative, 0 is positive
 		if (_sign) {
 			// process negative number
+			_Bits.flip(nbits - 1);
+			unsigned int _scale = findMostSignificantBit(-rhs) - 1;
+			uint64_t _fraction_without_hidden_bit = (-rhs << (64 - _scale));
+			std::bitset<nbits - 3> _fraction = copy_int64_fraction<nbits>(_fraction_without_hidden_bit);
+			convert_to_posit(_sign, _scale, _fraction);
+			_Bits = twos_complement(_Bits);
 		}
 		else {
 			// process positive number
@@ -51,8 +57,8 @@ public:
 				std::bitset<nbits - 3> _fraction = copy_int64_fraction<nbits>(_fraction_without_hidden_bit);
 				convert_to_posit(_sign, _scale, _fraction);
 			}
-			decode();
 		}
+		decode();
 		return *this;
 	}
 	posit<nbits, es>& assign(int64_t rhs) {
