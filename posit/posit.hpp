@@ -144,6 +144,31 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(const double rhs) {
+		reset();
+		switch (fpclassify(rhs)) {
+		case FP_INFINITE:
+			_Bits.set(nbits - 1);
+			break;
+		case FP_NAN:
+			std::cerr << "float is NAN" << std::endl;
+			break;
+		case FP_SUBNORMAL:
+			std::cerr << "TODO: subnormal number" << std::endl;
+			break;
+		case FP_NORMAL:
+		{
+			bool _sign = extract_sign(rhs);
+			int _scale = extract_exponent(rhs) - 1;
+			uint64_t _52b_fraction_without_hidden_bit = extract_fraction(rhs);
+			std::bitset<nbits - 3> _fraction = copy_float_fraction<nbits>(_52b_fraction_without_hidden_bit);
+			convert_to_posit(_sign, _scale, _fraction);
+			if (_sign) {
+				_Bits = twos_complement(_Bits);
+			}
+		}
+		break;
+		}
+		decode();
 		return *this;
 	}
 	posit<nbits, es>& operator=(const posit& rhs) {
@@ -553,7 +578,7 @@ public:
 		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
 		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
 		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		std::cout << "Regime   " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _fraction << std::endl;
+		//std::cout << "Regime   " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _fraction << std::endl;
 		assign_fraction(remaining_bits, _fraction);
 	}
 

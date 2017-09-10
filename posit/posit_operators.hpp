@@ -2,11 +2,12 @@
 
 #include <limits>
 
+// DEBUG/REPORTING HELPERS
 template<size_t nbits, size_t es>
 std::string spec_to_string(posit<nbits, es> p) {
 	std::stringstream ss;
 	ss << "posit<" << std::setw(2) << nbits << "," << es << "> ";
-	ss << "useed " << std::setw(4) << p.useed()    << "     ";
+	ss << "useed " << std::setw(4) << p.useed() << "     ";
 	ss << std::setprecision(12);
 	ss << "minpos " << std::setw(20) << p.minpos() << "     ";
 	ss << "maxpos " << std::setw(20) << p.maxpos();
@@ -14,7 +15,7 @@ std::string spec_to_string(posit<nbits, es> p) {
 }
 
 template<size_t nbits, size_t es>
-std::string components_to_string(const posit<nbits,es>& p) {
+std::string components_to_string(const posit<nbits, es>& p) {
 	std::stringstream ss;
 	if (p.isZero()) {
 		ss << " zero    " << std::setw(103) << "b" << p.get();
@@ -29,14 +30,14 @@ std::string components_to_string(const posit<nbits,es>& p) {
 		<< " Sign : " << std::setw(2) << p.sign()
 		<< " Regime : " << std::setw(3) << p.regime_k()
 		<< " Exponent : " << std::setw(5) << p.exponent_int()
-		<< " Fraction : " << std::setw(8) << std::setprecision(7) << 1.0 + p.fraction()
+		<< " Fraction : " << std::setw(8) << std::setprecision(21) << 1.0 + p.fraction()
 		<< " Value : " << std::setw(16) << p.to_double()
 		<< std::setprecision(0);
 	return ss.str();
 }
 
 template<size_t nbits, size_t es>
-std::string component_values_to_string(posit<nbits,es> p) {
+std::string component_values_to_string(posit<nbits, es> p) {
 	std::stringstream ss;
 	if (p.isZero()) {
 		ss << " zero    " << std::setw(103) << "b" << p.get();
@@ -58,6 +59,7 @@ std::string component_values_to_string(posit<nbits,es> p) {
 	return ss.str();
 }
 
+// OPERATORS
 template<size_t nbits, size_t es>
 inline posit<nbits,es> operator+(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> sum = lhs;
