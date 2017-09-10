@@ -15,9 +15,8 @@ void checkSpecialCases(posit<nbits, es> p) {
 
 void ConversionExamplesPositiveRegime() {
 	posit<5, 1> p0, p1, p2, p3, p4, p5, p6;
-	double minpos, maxpos;
 
-	cout << "Minpos = " << setprecision(7) << p0.minpos() << endl;
+	cout << "Minpos = " << setprecision(21) << p0.minpos() << endl;
 	cout << "Maxpos = " << p0.maxpos() << setprecision(0) << endl;
 
 	int64_t number = 1;
@@ -40,7 +39,6 @@ void ConversionExamplesPositiveRegime() {
 
 void ConversionExamplesNegativeRegime() {
 	posit<5, 1> p0, p1, p2, p3, p4, p5, p6;
-	double minpos, maxpos;
 
 	cout << "Minpos = " << setprecision(21) << p0.minpos() << endl;
 	cout << "Maxpos = " << p0.maxpos() << setprecision(0) << endl;
@@ -80,7 +78,7 @@ unsigned int exponent(unsigned int msb, unsigned int es) {
 
 unsigned int fraction(int64_t value) {
 	unsigned int hidden_bit_at = findMostSignificantBit(value) - 1;
-	uint64_t mask = ~(1 << hidden_bit_at);
+	uint64_t mask = ~(uint64_t(1) << hidden_bit_at);
 	return value & mask;
 }
 

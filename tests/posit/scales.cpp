@@ -14,7 +14,7 @@ uint64_t GENERATED_SCALE_FACTORS[MAX_ES][MAX_K];
 void generateScaleFactorLookupTable() {
 	uint64_t useed, useed_power_k;
 	for (int es = 0; es < MAX_ES; es++) {
-		useed = two_to_the_power(two_to_the_power(uint64_t(es)));
+		useed = two_to_the_power(two_to_the_power(es));
 		useed_power_k = useed; 
 		GENERATED_SCALE_FACTORS[es][0] = 1; // for k = 0
 		for (int k = 1; k < MAX_K; k++) {

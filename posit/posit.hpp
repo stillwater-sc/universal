@@ -151,7 +151,7 @@ public:
 				return *this;
 			}
 		}
-		bool _sign, _sign_lhs, _sign_rhs;
+		bool _sign;
 		_sign = false;
 		std::bitset<nbits - 3> r1, r2, sum; // fraction is at most nbits-3 bits, + 1 for the hidden bit
 		int _scale;
@@ -265,10 +265,10 @@ public:
 		}
 		else {
 			if (e2 >= 0) {
-				regime = (uint64_t(1) << e2);
+				regime = double((uint64_t(1) << e2));
 			}
 			else {
-				regime = 1.0 / (uint64_t(1) << -e2);
+				regime = double(1.0) / double(uint64_t(1) << -e2);
 			}
 		}
 		return regime;
@@ -287,7 +287,6 @@ public:
 		return uint64_t(_Exp.to_ulong());
 	}
 	uint64_t fraction_int() const {
-		uint64_t fraction;
 		int nr_of_fraction_bits = 0;
 		return _Frac.to_ullong();
 	}
@@ -442,10 +441,10 @@ public:
 
 		double value = 0.0;
 		double base = 0.0;
-		int e = exponent_int();
+		uint64_t e = exponent_int();
 
 		// scale = useed ^ k * 2^e -> 2^(k*2^es) * 2^e = 2^(k*2^es + e)
-		int e2 = (k * (1 << es)) + e;
+		int64_t e2 = (k * (uint64_t(1) << es)) + e;
 		if (e2 < -63 || e2 > 63) {
 			base = pow(2.0, e2);
 		}
@@ -493,7 +492,7 @@ public:
 			uint64_t regime = REGIME_BITS[k];
 			uint64_t mask = REGIME_BITS[0];
 			nr_of_regime_bits = (k < nbits - 2 ? k + 2 : nbits - 1);
-			for (int i = 0; i < nr_of_regime_bits; i++) {
+			for (unsigned int i = 0; i < nr_of_regime_bits; i++) {
 				_Bits[nbits - 2 - i] = !(regime & mask);
 				mask >>= 1;
 			}
@@ -502,7 +501,7 @@ public:
 			uint64_t regime = REGIME_BITS[k];
 			uint64_t mask = REGIME_BITS[0];
 			nr_of_regime_bits = (k < nbits - 2 ? k + 2 : nbits - 1);
-			for (int i = 0; i < nr_of_regime_bits; i++) {
+			for (unsigned int i = 0; i < nr_of_regime_bits; i++) {
 				_Bits[nbits - 2 - i] = regime & mask;
 				mask >>= 1;
 			}
@@ -513,8 +512,8 @@ public:
 		unsigned int nr_of_exp_bits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
 		if (nr_of_exp_bits > 0) {
 			unsigned int exponent = (es > 0 ? msb % (1 << es) : 0);
-			uint64_t mask = (1 << (nr_of_exp_bits - 1));
-			for (int i = 0; i < nr_of_exp_bits; i++) {
+			uint64_t mask = (uint64_t(1) << (nr_of_exp_bits - 1));
+			for (unsigned int i = 0; i < nr_of_exp_bits; i++) {
 				_Bits[nbits - 2 - nr_of_regime_bits - i] = exponent & mask;
 				mask >>= 1;
 			}
@@ -523,7 +522,7 @@ public:
 	}
 	void assign_fraction(unsigned int remaining_bits, std::bitset<nbits - 3>& _fraction) {
 		if (remaining_bits > 0) {
-			for (int i = 0; i < remaining_bits; i++) {
+			for (unsigned int i = 0; i < remaining_bits; i++) {
 				_Bits[remaining_bits - 1 - i] = _fraction[nbits - 4 - i];
 			}
 		}

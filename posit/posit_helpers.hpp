@@ -2,7 +2,7 @@
 
 #include <cmath>  // for frexp/frexpf
 
-inline uint64_t two_to_the_power(int n) {
+inline uint64_t two_to_the_power(uint64_t n) {
 	return (uint64_t(1) << n);
 }
 
@@ -120,9 +120,9 @@ int extract_exponent(double f) {
 	return exponent;
 }
 
-uint32_t extract_fraction(double f) {
+uint64_t extract_fraction(double f) {
 	int exponent;
-	float fraction = frexp(f, &exponent);
+	double fraction = frexp(f, &exponent);
 	return (uint64_t(0x001FFFFFFFFFFFFFull) & *(uint64_t*)&fraction);
 }
 
