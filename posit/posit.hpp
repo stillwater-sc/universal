@@ -337,7 +337,6 @@ public:
 		decode();
 		return *this;
 	}
-
 	// decode the segments and store in the posit
 	// precondition: member vars reset with _Bits containing the posit bits to decode
 	// this function takes the raw posit bits in _Bits and extracts
@@ -415,7 +414,6 @@ public:
 		}
 		return k;
 	}
-
 	int64_t to_int64() const {
 		if (isZero()) return 0;
 		if (isInfinite()) throw "inf";
@@ -463,7 +461,6 @@ public:
 		} 
 		return value;
 	}
-
 
 	// scale returns the shifts to normalize the number =  regime + exponent shifts
 	int scale() const {
@@ -531,15 +528,30 @@ public:
 	}
 	void convert_to_posit(bool _sign, int _scale, std::bitset<nbits - 3>& _fraction) {
 		reset();
+		switch (bRoundingMode) {
+		case POSIT_ROUND_DOWN:
+			std::cout << "Rounding down" << std::endl;
+			break;
+		default:
+		case POSIT_ROUND_TO_NEAREST:
+			if (_fraction.test(nbits - 4)) {
+				std::cout << "Rounding up" << std::endl;
+				_scale += 1;
+			}
+			else {
+				std::cout << "Rounding down" << std::endl;
+			}
+			break;
+		}
 		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
-		std::cout << "Regime   " << _Bits << std::endl;
+		//std::cout << "Regime   " << _Bits << std::endl;
 		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
-		std::cout << "Exponent " << _Bits << std::endl;
-		std::cout << "Fraction   " << _fraction << std::endl;
+		//std::cout << "Exponent " << _Bits << std::endl;
+		//std::cout << "Fraction   " << _fraction << std::endl;
 		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		std::cout << "Regime   " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _fraction << std::endl;
+		//std::cout << "Regime   " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _fraction << std::endl;
 		assign_fraction(remaining_bits, _fraction);
-		std::cout << "Posit    " << _Bits << std::endl;
+		//std::cout << "Posit    " << _Bits << std::endl;
 	}
 
 private:
