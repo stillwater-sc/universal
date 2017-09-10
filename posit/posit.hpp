@@ -165,13 +165,23 @@ public:
 		std::cout << "r2    " << r2 << std::endl;
 		std::cout << "scale " << _scale << std::endl;
 
-
 		bool carry = add_unsigned<nbits - 3>(r1, r2, sum);
 		std::cout << "sum " << sum << " carry " << (carry ? "1" : "0") << std::endl;
 		if (carry) {
 			_scale++;
-			sum >>= 1;
-			sum.set(nbits - 3, carry);
+			sum >>= 1;  // hide the msb
+		}
+		else {
+			// find the msb that will become the hidden bit
+			unsigned int msb = 0;
+			for (unsigned int i = nbits - 4; i >= 0; i--) {
+				if (sum.test(i)) {
+					msb = i;
+					break;
+				}
+			}
+			_scale += msb - (nbits - 4);
+			sum <<= 1; // the msb becomes the hidden bit
 		}
 		std::cout << "scale " << _scale << std::endl;
 		std::cout << "sum " << sum << std::endl;
@@ -536,11 +546,17 @@ public:
 		default:
 		case POSIT_ROUND_TO_NEAREST:
 			if (_fraction.test(nbits - 4)) {
-				std::cout << "Rounding up" << std::endl;
+				std::cout << "Rounding up to nearest" << std::endl;
 				_scale += 1;
 			}
 			else {
-				std::cout << "Rounding down" << std::endl;
+				if (_fraction.none()) {
+					std::cout << "No Rounding required" << std::endl;
+				}
+				else {
+					std::cout << "Rounding down to nearest" << std::endl;
+				}
+				
 			}
 			break;
 		}
@@ -582,11 +598,11 @@ private:
 			denormalize(rhs, diff, r2);
 		}
 	}
-	// normalize by adding the hidden bit into the value
+	// normalize the fraction by adding the hidden bit into the value
 	void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 3>& number) {
 		number.set(nbits - 4); // set hidden bit
-		for (int i = nbits - 5; i >= 0; i--) {
-			number.set(i, fraction[i+2]);
+		for (unsigned int i = nbits - 5; i >= 0; i--) {
+			number.set(i, fraction[i+1]);
 		}
 	}
 	/*   h is hidden bit
@@ -594,13 +610,15 @@ private:
 	 *   0.000h_bbbb_bbbb_bbbb_b... number
 	 *  >-.----<                    shift of 4
 	 */
-	void denormalize(const std::bitset<nbits - 3>& fraction, int shift, std::bitset<nbits - 3>& number) {
-		for (int i = nbits - 4; i > nbits - 4 - shift; i--) {
+	void denormalize(const std::bitset<nbits - 3>& fraction, unsigned int shift, std::bitset<nbits - 3>& number) {
+		unsigned int upper_bound = (nbits - 4 - shift > 0 ? nbits - 4 - shift : 0);
+		for (unsigned int i = nbits - 4; i > nbits - 4 - shift; i--) {
 			number.reset(i);
 		}
 		number.set(nbits - 4 - shift); // set hidden bit
-		for (int i = nbits - 5 - shift; i >= 0; i--) {
-			number.set(i, fraction[i + 2 + shift]);
+		if (nbits - 4 - shift <= 0) return;
+		for (unsigned int i = nbits - 5 - shift; i >= 0; i--) {
+			number.set(i, fraction[i + 1 + shift]);
 		}
 	}
 

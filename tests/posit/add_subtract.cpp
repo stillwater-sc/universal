@@ -1,18 +1,20 @@
-// create_small_posit_lookup_table.cpp
+// addition and subtraction tests
 
 #include "stdafx.h"
-#include <sstream>
+
+#include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit_regime_lookup.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 
 using namespace std;
 
+// normalize creates a normalized number with the hidden bit installed: 1.bbbbbbbbb
 template<size_t nbits>
 void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 3>& number) {
 	number.set(nbits - 4); // set hidden bit
 	for (int i = nbits - 5; i >= 0; i--) {
-		number.set(i, fraction[i + 2]);
+		number.set(i, fraction[i + 1]);
 	}
 }
 /*   h is hidden bit
@@ -27,7 +29,7 @@ void denormalize(const std::bitset<nbits - 3>& fraction, int shift, std::bitset<
 	}
 	number.set(nbits - 4 - shift); // set hidden bit
 	for (int i = nbits - 5 - shift; i >= 0; i--) {
-		number.set(i, fraction[i + 2 + shift]);
+		number.set(i, fraction[i + 1 + shift]);
 	}
 }
 
@@ -146,12 +148,28 @@ float_posit_comparison:
 		return 0;
 	}
 
+norm_denorm:
+	{
+		const size_t nbits = 16;
+		const size_t es = 1;
+
+		bitset<nbits - 3> test = convert_to_bitset<nbits - 3, uint32_t>(0xA0A);
+		bitset<nbits - 3> norm;
+		normalize<nbits>(test, norm);
+		cout << test << " " << norm << endl;
+		for (int i = 1; i < 8; i++) {
+			denormalize<nbits>(test, i, norm);
+			cout << test << " " << norm << endl;
+		}
+	}
+
 debug_test:
 	{
+
 		cout << to_binary(6) << endl;
 		cout << to_binary(16) << endl;
 		cout << to_binary(24) << endl;
-		const size_t nbits = 8;
+		const size_t nbits = 5;
 		const size_t es = 1;
 		posit<nbits, es> pa, pb, psum;
 		int32_t va, vb;
