@@ -35,10 +35,10 @@ void GeneratePositTable(ostream& ostr)
 	const size_t bin_column = 16;
 	const size_t k_column = 16;
 	const size_t sign_column = 16;
-	const size_t regime_column = 16;
+	const size_t regime_column = 30;
 	const size_t exponent_column = 16;
 	const size_t fraction_column = 16;
-	const size_t value_column = 16;
+	const size_t value_column = 30;
 
 	ostr << setw(index_column) << " # "
 		<< setw(bin_column) << " Binary"
@@ -63,10 +63,10 @@ void GeneratePositTable(ostream& ostr)
 			<< setw(bin_column) << binary
 			<< setw(k_column) << myPosit.regime_k()
 			<< setw(sign_column) << myPosit.sign()
-			<< setw(regime_column) << setprecision(7) << myPosit.regime() << setprecision(0)
+			<< setw(regime_column) << setprecision(22) << myPosit.regime() << setprecision(0)
 			<< setw(exponent_column) << exponent
 			<< setw(fraction_column) << fraction
-			<< setw(value_column) << setprecision(7) << lookup[i] << setprecision(0)
+			<< setw(value_column) << setprecision(22) << lookup[i] << setprecision(0)
 			<< endl;
 	}
 }
