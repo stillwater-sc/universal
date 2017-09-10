@@ -61,28 +61,28 @@ std::string component_values_to_string(posit<nbits, es> p) {
 
 // OPERATORS
 template<size_t nbits, size_t es>
-inline posit<nbits,es> operator+(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits,es> operator+(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> sum = lhs;
 	sum += rhs;
 	return sum;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es> operator-(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits, es> operator-(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> diff = lhs;
 	diff -= rhs;
 	return diff;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es> operator*(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits, es> operator*(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> mul = lhs;
 	mul *= rhs;
 	return mul;
 }
 
 template<size_t nbits, size_t es>
-inline posit<nbits, es> operator/(posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> ratio = lhs;
 	ratio /= rhs;
 	return ratio;

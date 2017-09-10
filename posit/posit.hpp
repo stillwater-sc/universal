@@ -159,6 +159,8 @@ public:
 
 		std::cout << "lhs " << this->_Bits << " scale " << scale() << std::endl;
 		std::cout << "rhs " << rhs._Bits <<   " scale " << rhs.scale() << std::endl;
+		std::cout << "lhs_f " << this->_Frac << std::endl;
+		std::cout << "rhs_f " << rhs._Frac << std::endl;
 		std::cout << "r1    " << r1 << std::endl;
 		std::cout << "r2    " << r2 << std::endl;
 		std::cout << "scale " << _scale << std::endl;
@@ -581,20 +583,29 @@ private:
 			denormalize(rhs, diff, r2);
 		}
 	}
+	// normalize by adding the hidden bit into the value
 	void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 3>& number) {
-		number.set(nbits - 3);
-		for (int i = 0; i < nbits - 3; i++) {
-			number.set(i, fraction[i]);
+		number.set(nbits - 4); // set hidden bit
+		for (int i = nbits - 5; i >= 0; i--) {
+			number.set(i, fraction[i+2]);
 		}
 	}
+	/*   h is hidden bit
+	 *   h.bbbb_bbbb_bbbb_b...      fraction
+	 *   0.000h_bbbb_bbbb_bbbb_b... number
+	 *  >-.----<                    shift of 4
+	 */
 	void denormalize(const std::bitset<nbits - 3>& fraction, int shift, std::bitset<nbits - 3>& number) {
-		number.set(nbits - 3);
-		for (int i = 0; i < nbits - 3 - shift; i++) {
-			number.set(i, fraction[shift + i]);
+		for (int i = nbits - 4; i > nbits - 4 - shift; i--) {
+			number.reset(i);
+		}
+		number.set(nbits - 4 - shift); // set hidden bit
+		for (int i = nbits - 5 - shift; i >= 0; i--) {
+			number.set(i, fraction[i + 2 + shift]);
 		}
 	}
 
-        // template parameters need names different from class template parameters (for gcc and clang)
+    // template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t ees>
 	friend std::ostream& operator<< (std::ostream& ostr, const posit<nnbits, ees>& p);
 	template<size_t nnbits, size_t ees>

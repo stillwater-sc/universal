@@ -8,6 +8,29 @@
 
 using namespace std;
 
+template<size_t nbits>
+void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 3>& number) {
+	number.set(nbits - 4); // set hidden bit
+	for (int i = nbits - 5; i >= 0; i--) {
+		number.set(i, fraction[i + 2]);
+	}
+}
+/*   h is hidden bit
+*   h.bbbb_bbbb_bbbb_b...      fraction
+*   0.000h_bbbb_bbbb_bbbb_b... number
+*  >-.----<                    shift of 4
+*/
+template<size_t nbits>
+void denormalize(const std::bitset<nbits - 3>& fraction, int shift, std::bitset<nbits - 3>& number) {
+	for (int i = nbits - 4; i > nbits - 4 - shift; i--) {
+		number.reset(i);
+	}
+	number.set(nbits - 4 - shift); // set hidden bit
+	for (int i = nbits - 5 - shift; i >= 0; i--) {
+		number.set(i, fraction[i + 2 + shift]);
+	}
+}
+
 /*
 	Testing the reciprocal nature of positive and negative posits
 
@@ -69,12 +92,9 @@ using namespace std;
 	23:            10111               0              -1               1              01               -              -2
 	24:            11000               0              -1               1              00               -              -1
 */
-
-
 int main(int argc, char** argv)
 {
 	const size_t nbits = 16;
-
 
 	goto debug_test;
 	//goto float_posit_comparison;
@@ -128,11 +148,35 @@ float_posit_comparison:
 
 debug_test:
 	{
-		cout << to_binary(5) << endl;
+		cout << to_binary(6) << endl;
 		cout << to_binary(16) << endl;
-		cout << to_binary(21) << endl;
-		posit<8, 1> pa, pb, psum;
-		pa = 16; pb = 5;
+		cout << to_binary(24) << endl;
+		const size_t nbits = 8;
+		const size_t es = 1;
+		posit<nbits, es> pa, pb, psum;
+		int32_t va, vb;
+		va = 16; vb = 5;
+		pa = va; pb = vb;
+
+		int lhs_scale = pa.scale();
+		int rhs_scale = pb.scale();
+		cout << "LHS " << va << " scale " << lhs_scale << endl;
+		cout << "RHS " << vb << " scale " << rhs_scale << endl;
+		int diff = lhs_scale - rhs_scale;
+		if (diff < 0) {
+			cerr << "Wrong" << endl;
+		}
+		else {
+			bitset<nbits-3> r1, r2;
+			normalize<nbits>(pa.fraction_bits(), r1);
+			cout << "frac1 " << pa.fraction_bits() << endl;
+			cout << "r1    " << r1 << endl;
+
+			denormalize<nbits>(pb.fraction_bits(), diff, r2);
+			cout << "frac2 " << pb.fraction_bits() << endl;
+			cout << "r2    " << r2 << endl;
+		}
+		cout.flush();
 		psum = pa + pb;
 		cout << pa << " + " << pb << " = " << psum << endl;
 		cout << psum.get() << endl;
