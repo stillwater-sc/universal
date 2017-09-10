@@ -13,6 +13,7 @@ Standard posits with nbits = 128 have 4 exponent bits.
 
 int main(int argc, char** argv)
 {
+	cout << "Standard posit<128,4> configuration tests" << endl;
 	try {
         const size_t nbits = 128;
         const size_t es = 4;

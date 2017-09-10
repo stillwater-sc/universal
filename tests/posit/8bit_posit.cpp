@@ -13,6 +13,7 @@ Standard posits with nbits = 8 have no exponent bits.
 
 int main(int argc, char** argv)
 {
+	cout << "Standard posit<8,0> configuration tests" << endl;
 	try {
         const size_t nbits = 8;
         const size_t es = 0;
