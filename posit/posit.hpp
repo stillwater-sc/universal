@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+
 #include "../bitset/bitset_helpers.hpp"
 #include "posit_regime_lookup.hpp"
 #include "posit_helpers.hpp"
@@ -60,61 +61,17 @@ public:
 		decode();
 		return *this;
 	}
-	posit<nbits, es>& assign(int64_t rhs) {
+	posit<nbits, es>& operator=(uint64_t rhs) {
 		reset();
-		if (rhs == 0) {
-			return *this;
-		}
-
-		int msb;
-		bool value_is_negative = false;
-		if (rhs < 0) {
-			rhs = -rhs;
-			value_is_negative = true;
-		}
-		msb = findMostSignificantBit(rhs)-1;
-		if (msb > maxpos_scale()) {
-			// TODO: Can we make this a compile time evaluated function for literals?
-			std::cerr << "msb = " << msb << " and maxpos_scale() = " << maxpos_scale() << std::endl;
-			std::cerr << "Can't represent " << rhs << " with posit<" << nbits << "," << es << ">: maxpos = " << (1 << maxpos_scale()) << std::endl;
-		}
-		_Bits[nbits - 1] = false;
-		unsigned int nr_of_regime_bits = assign_regime_pattern(msb >> es);
-		std::cout << "Regime   " << to_binary<nbits>(_Bits) << std::endl;
-
-		unsigned int nr_of_exp_bits = assign_exponent_bits(msb, nr_of_regime_bits);
-		std::cout << "Exponent " << to_binary<nbits>(_Bits) << std::endl;
-
-		unsigned int remainder_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		switch (bRoundingMode) {
-		case POSIT_ROUND_DOWN:
-		{
-			if (remainder_bits > 0) {
-				uint64_t mask = (1 << (msb-1));  // first bit is transformed into a hidden bit
-				for (int i = 0; i < remainder_bits; i++) {
-					_Bits[nbits - 2 - nr_of_regime_bits - nr_of_exp_bits - i] = rhs & mask;
-					mask >>= 1;
-				}
-				std::cout << "Fraction " << to_binary<nbits>(_Bits) << std::endl;
-			}
-		}
-			break;
-		case POSIT_ROUND_TO_NEAREST:
-			std::cerr << "ROUND_TO_NEAREST not implemented yet" << std::endl;
-			break;
-		default:
-			std::cerr << "Undefined rounding mode" << std::endl;
-			break;
-		}
-
-		if (value_is_negative) {
-			_Bits = twos_complement(_Bits);
-			_Bits.set(nbits - 1);
+		if (rhs != 0) {
+			unsigned int _scale = findMostSignificantBit(rhs) - 1;
+			uint64_t _fraction_without_hidden_bit = (rhs << (64 - _scale));
+			std::bitset<nbits - 3> _fraction = copy_int64_fraction<nbits>(_fraction_without_hidden_bit);
+			convert_to_posit(false, _scale, _fraction);
 		}
 		decode();
 		return *this;
 	}
-
 	posit<nbits, es>& operator=(const float rhs) {
 		reset();
 		switch (fpclassify(rhs)) {
@@ -221,7 +178,6 @@ public:
 		decode();
 		return *this;
 	}
-
 	posit<nbits, es>& operator-=(const posit& rhs) {
 		return *this;
 	}
@@ -356,7 +312,7 @@ public:
 	// MODIFIERS
 	void reset() {
 		k = 0;
-		bRoundingMode = POSIT_ROUND_DOWN;
+		bRoundingMode = POSIT_ROUND_TO_NEAREST;
 		_Exp.reset();
 		_Frac.reset();
 		_Bits.reset();
@@ -576,10 +532,14 @@ public:
 	void convert_to_posit(bool _sign, int _scale, std::bitset<nbits - 3>& _fraction) {
 		reset();
 		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
+		std::cout << "Regime   " << _Bits << std::endl;
 		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
+		std::cout << "Exponent " << _Bits << std::endl;
+		std::cout << "Fraction   " << _fraction << std::endl;
 		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		//std::cout << "Regime   " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _fraction << std::endl;
+		std::cout << "Regime   " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _fraction << std::endl;
 		assign_fraction(remaining_bits, _fraction);
+		std::cout << "Posit    " << _Bits << std::endl;
 	}
 
 private:

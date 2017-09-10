@@ -1,7 +1,7 @@
-// create_small_posit_lookup_table.cpp
+// Functionality tests for standard 32-bit posits
 
 #include "stdafx.h"
-#include <sstream>
+
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 

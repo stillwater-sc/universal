@@ -70,10 +70,21 @@ unsigned int findMostSignificantBit(int8_t x) {
 	return base + bval[tmp];
 }
 
+template<size_t nbits>
+std::string to_binary_(int64_t number) {
+	std::stringstream ss;
+	uint64_t mask = (uint64_t(1) << nbits-1);
+	for (int i = nbits-1; i >= 0; --i) {
+		ss << (mask & number ? "1" : "0");
+		mask >>= 1;
+	}
+	return ss.str();
+}
+
 std::string to_binary(int64_t number) {
 	std::stringstream ss;
 	unsigned int msb = findMostSignificantBit(number)-1;
-	uint64_t mask = (1 << msb);
+	uint64_t mask = (uint64_t(1) << msb);
 	for (int i = msb; i >= 0; --i) {
 		ss << (mask & number ? "1" : "0");
 		mask >>= 1;
