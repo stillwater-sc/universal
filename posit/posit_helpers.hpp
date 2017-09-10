@@ -94,7 +94,7 @@ std::string to_binary(int64_t number) {
 
 // FLOAT component extractions
 bool extract_sign(float f) {
-	return (0x80000000 & *(uint32_t*)&f);
+	return (uint32_t(0x80000000ul) & *(uint32_t*)&f);
 }
 
 int extract_exponent(float f) {
@@ -106,12 +106,12 @@ int extract_exponent(float f) {
 uint32_t extract_fraction(float f) {
 	int exponent;
 	float fraction = frexpf(f, &exponent);
-	return (0x007FFFFF & *(uint32_t*)&fraction);
+	return (uint32_t(0x007FFFFFul) & *(uint32_t*)&fraction);
 }
 
 // DOUBLE component extractions
 bool extract_sign(double f) {
-	return (0x8000000000000000 & *(uint64_t*)&f);
+	return (uint64_t(0x8000000000000000ull) & *(uint64_t*)&f);
 }
 
 int extract_exponent(double f) {
@@ -123,14 +123,14 @@ int extract_exponent(double f) {
 uint32_t extract_fraction(double f) {
 	int exponent;
 	float fraction = frexp(f, &exponent);
-	return (0x001FFFFFFFFFFFFF & *(uint64_t*)&fraction);
+	return (uint64_t(0x001FFFFFFFFFFFFFull) & *(uint64_t*)&fraction);
 }
 
 // integral type to bitset transformations
 template<size_t nbits>
 std::bitset<nbits - 3> copy_float_fraction(uint32_t _23b_fraction_without_hidden_bit) {
 	std::bitset<nbits - 3> _fraction;
-	uint32_t mask = 0x00400000;
+	uint32_t mask = uint32_t(0x00400000ul);
 	for (int i = nbits - 4; i >= 0; --i) {
 		_fraction[i] = _23b_fraction_without_hidden_bit & mask;
 		mask >>= 1;
@@ -141,7 +141,7 @@ std::bitset<nbits - 3> copy_float_fraction(uint32_t _23b_fraction_without_hidden
 template<size_t nbits>
 std::bitset<nbits - 3> copy_double_fraction(uint64_t _52b_fraction_without_hidden_bit) {
 	std::bitset<nbits - 3> _fraction;
-	uint32_t mask = 0x00400000;
+	uint32_t mask = uint32_t(0x00400000ul);
 	for (int i = nbits - 4; i >= 0; --i) {
 		_fraction[i] = _52b_fraction_without_hidden_bit & mask;
 		mask >>= 1;
@@ -150,9 +150,9 @@ std::bitset<nbits - 3> copy_double_fraction(uint64_t _52b_fraction_without_hidde
 }
 
 template<size_t nbits>
-std::bitset<nbits - 3> copy_int64_fraction(uint64_t _fraction_without_hidden_bit) {
+std::bitset<nbits - 3> copy_integer_fraction(uint64_t _fraction_without_hidden_bit) {
 	std::bitset<nbits - 3> _fraction;
-	uint32_t mask = 0x8000000000000000;
+	uint64_t mask = uint64_t(0x8000000000000000ull);
 	for (int i = nbits - 4; i >= 0; --i) {
 		_fraction[i] = _fraction_without_hidden_bit & mask;
 		mask >>= 1;

@@ -45,7 +45,7 @@ public:
 			// process negative number: process 2's complement of the input
 			unsigned int _scale = findMostSignificantBit(-rhs) - 1;
 			uint64_t _fraction_without_hidden_bit = (-rhs << (64 - _scale));
-			std::bitset<nbits - 3> _fraction = copy_int64_fraction<nbits>(_fraction_without_hidden_bit);
+			std::bitset<nbits - 3> _fraction = copy_integer_fraction<nbits>(_fraction_without_hidden_bit);
 			convert_to_posit(_sign, _scale, _fraction);
 			_Bits = twos_complement(_Bits);
 		}
@@ -54,7 +54,7 @@ public:
 			if (rhs != 0) {
 				unsigned int _scale = findMostSignificantBit(rhs) - 1;
 				uint64_t _fraction_without_hidden_bit = (rhs << (64 - _scale));
-				std::bitset<nbits - 3> _fraction = copy_int64_fraction<nbits>(_fraction_without_hidden_bit);
+				std::bitset<nbits - 3> _fraction = copy_integer_fraction<nbits>(_fraction_without_hidden_bit);
 				convert_to_posit(_sign, _scale, _fraction);
 			}
 		}
@@ -66,7 +66,7 @@ public:
 		if (rhs != 0) {
 			unsigned int _scale = findMostSignificantBit(rhs) - 1;
 			uint64_t _fraction_without_hidden_bit = (rhs << (64 - _scale));
-			std::bitset<nbits - 3> _fraction = copy_int64_fraction<nbits>(_fraction_without_hidden_bit);
+			std::bitset<nbits - 3> _fraction = copy_integer_fraction<nbits>(_fraction_without_hidden_bit);
 			convert_to_posit(false, _scale, _fraction);
 		}
 		decode();
