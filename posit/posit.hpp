@@ -600,8 +600,9 @@ private:
 	}
 	// normalize the fraction by adding the hidden bit into the value
 	void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 3>& number) {
+		if (nbits == 3) return;
 		number.set(nbits - 4); // set hidden bit
-		for (unsigned int i = nbits - 5; i >= 0; i--) {
+		for (int i = nbits - 5; i >= 0; i--) {
 			number.set(i, fraction[i+1]);
 		}
 	}
@@ -611,14 +612,13 @@ private:
 	 *  >-.----<                    shift of 4
 	 */
 	void denormalize(const std::bitset<nbits - 3>& fraction, unsigned int shift, std::bitset<nbits - 3>& number) {
-		unsigned int upper_bound = (nbits - 4 - shift > 0 ? nbits - 4 - shift : 0);
-		for (unsigned int i = nbits - 4; i > nbits - 4 - shift; i--) {
-			number.reset(i);
-		}
-		number.set(nbits - 4 - shift); // set hidden bit
-		if (nbits - 4 - shift <= 0) return;
-		for (unsigned int i = nbits - 5 - shift; i >= 0; i--) {
-			number.set(i, fraction[i + 1 + shift]);
+		if (nbits == 3) return;
+		number.reset();
+		if (shift <= nbits - 4) {
+			number.set(nbits - 4 - shift); // set hidden bit
+			for (int i = nbits - 5 - shift; i >= 0; i--) {
+				number.set(i, fraction[i + 1 + shift]);
+			}
 		}
 	}
 

@@ -12,6 +12,7 @@ using namespace std;
 // normalize creates a normalized number with the hidden bit installed: 1.bbbbbbbbb
 template<size_t nbits>
 void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 3>& number) {
+	if (nbits == 3) return;
 	number.set(nbits - 4); // set hidden bit
 	for (int i = nbits - 5; i >= 0; i--) {
 		number.set(i, fraction[i + 1]);
@@ -24,12 +25,13 @@ void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 3>& n
 */
 template<size_t nbits>
 void denormalize(const std::bitset<nbits - 3>& fraction, int shift, std::bitset<nbits - 3>& number) {
-	for (int i = nbits - 4; i > nbits - 4 - shift; i--) {
-		number.reset(i);
-	}
-	number.set(nbits - 4 - shift); // set hidden bit
-	for (int i = nbits - 5 - shift; i >= 0; i--) {
-		number.set(i, fraction[i + 1 + shift]);
+	if (nbits == 3) return;
+	number.reset();
+	if (shift <= nbits - 4) {
+		number.set(nbits - 4 - shift); // set hidden bit
+		for (int i = nbits - 5 - shift; i >= 0; i--) {
+			number.set(i, fraction[i + 1 + shift]);
+		}
 	}
 }
 
@@ -96,7 +98,14 @@ void denormalize(const std::bitset<nbits - 3>& fraction, int shift, std::bitset<
 */
 int main(int argc, char** argv)
 {
-	const size_t nbits = 16;
+	const size_t nbits = 3; // 16
+
+	bitset<nbits - 3> f, n;
+	normalize<nbits>(f, n); cout << "normalize " << n << endl; cout.flush();
+	denormalize<nbits>(f, 0, n); cout << "denormalize " << n << endl; cout.flush();
+	denormalize<nbits>(f, 1, n); cout << "denormalize " << n << endl; cout.flush();
+	denormalize<nbits>(f, 2, n); cout << "denormalize " << n << endl; cout.flush();
+	denormalize<nbits>(f, nbits, n); cout << "denormalize " << n << endl; cout.flush();
 
 	goto debug_test;
 	//goto float_posit_comparison;
@@ -173,7 +182,7 @@ debug_test:
 		const size_t es = 1;
 		posit<nbits, es> pa, pb, psum;
 		int32_t va, vb;
-		va = 16; vb = 5;
+		va = 16; vb = 6;
 		pa = va; pb = vb;
 
 		int lhs_scale = pa.scale();
@@ -181,17 +190,19 @@ debug_test:
 		cout << "LHS " << va << " scale " << lhs_scale << endl;
 		cout << "RHS " << vb << " scale " << rhs_scale << endl;
 		int diff = lhs_scale - rhs_scale;
+		cout << "diff " << diff << endl;
 		if (diff < 0) {
 			cerr << "Wrong" << endl;
 		}
 		else {
 			bitset<nbits-3> r1, r2;
-			normalize<nbits>(pa.fraction_bits(), r1);
+
 			cout << "frac1 " << pa.fraction_bits() << endl;
+			normalize<nbits>(pa.fraction_bits(), r1);
 			cout << "r1    " << r1 << endl;
 
-			denormalize<nbits>(pb.fraction_bits(), diff, r2);
 			cout << "frac2 " << pb.fraction_bits() << endl;
+			denormalize<nbits>(pb.fraction_bits(), diff, r2);
 			cout << "r2    " << r2 << endl;
 		}
 		cout.flush();
