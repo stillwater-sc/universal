@@ -117,7 +117,7 @@ public:
 			bool _sign = extract_sign(rhs);
 			int _scale = extract_exponent(rhs) - 1;
 			uint64_t _52b_fraction_without_hidden_bit = extract_fraction(rhs);
-			std::bitset<nbits - 3> _fraction = copy_float_fraction<nbits>(_52b_fraction_without_hidden_bit);
+			std::bitset<nbits - 3> _fraction = copy_double_fraction<nbits>(_52b_fraction_without_hidden_bit);
 			convert_to_posit(_sign, _scale, _fraction);
 			if (_sign) {
 				_Bits = twos_complement(_Bits);
@@ -291,7 +291,7 @@ public:
 	}
 	uint64_t regime_int() const {
 		if (k < 0) return 0;
-		return (1 << k*(1 << es));
+		return (uint64_t(1) << k*(uint32_t(1) << es));
 	}
 	uint64_t exponent_int() const {
 		return uint64_t(_Exp.to_ulong());
@@ -314,7 +314,7 @@ public:
 		return _Frac;
 	}
 	// posit with nbits < 3 will fail due to zero-value fraction bits array
-	void validate() throw(char*) {
+	void validate() {
 		if (nbits < es + 3) {
 			throw "Requested es is too large for nbits";
 		}
@@ -530,38 +530,67 @@ public:
 		}
 		return nr_of_exp_bits;
 	}
+	unsigned int estimate_nr_fraction_bits(int _scale) {
+		unsigned int nr_of_regime_bits;
+		int k = (_scale >> es);
+		if (k < 0) {
+			nr_of_regime_bits = (k < nbits - 2 ? k + 2 : nbits - 1);
+		}
+		else {
+			nr_of_regime_bits = (k < nbits - 2 ? k + 2 : nbits - 1);
+		}
+		unsigned int nr_of_exp_bits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
+		return (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
+	}
 	void assign_fraction(unsigned int remaining_bits, std::bitset<nbits - 3>& _fraction) {
-		if (remaining_bits > 0) {
+		if (remaining_bits > 0 && nbits > 3) {
 			for (unsigned int i = 0; i < remaining_bits; i++) {
 				_Bits[remaining_bits - 1 - i] = _fraction[nbits - 4 - i];
 			}
 		}
 	}
+	// -1 -> round-down, 0 -> no rounding, +1 -> round-up
+	int rounding_decision(const std::bitset<nbits - 3>& _fraction, unsigned int nr_of_fraction_bits) {
+		// check if there are any bits set past the cut-off
+		int rounding_direction = 0;
+		// cut-off is at nbits - 4 - nr_of_fraction_bits
+		if (nbits > 4 + nr_of_fraction_bits) {
+			rounding_direction = -1;
+			for (unsigned int i = 0; i < nbits - 4 - nr_of_fraction_bits; i++) {
+				if (_fraction.test(i)) {
+					rounding_direction = 1;
+					break;
+				}
+			}
+		}
+		return rounding_direction;
+	}
 	void convert_to_posit(bool _sign, int _scale, std::bitset<nbits - 3>& _fraction) {
 		reset();
+		bool bVerbose = false;
 		switch (bRoundingMode) {
 		case POSIT_ROUND_DOWN:
-			std::cout << "Rounding down" << std::endl;
+			if (bVerbose) std::cout << "Rounding down" << std::endl;
 			break;
 		default:
 		case POSIT_ROUND_TO_NEAREST:
 			if (nbits > 3) {
-				if (_fraction.test(nbits - 4)) {
-					std::cout << "Rounding up to nearest" << std::endl;
+				switch (rounding_decision(_fraction, estimate_nr_fraction_bits(_scale))) {
+				case -1:
+					if (bVerbose) std::cout << "Rounding down to nearest" << std::endl;
+					break;
+				case 0:
+					if (bVerbose) std::cout << "No Rounding required" << std::endl;
+					break;
+				case 1:
+					if (bVerbose) std::cout << "Rounding up to nearest" << std::endl;
 					_scale += 1;
-				}
-				else {
-					if (_fraction.none()) {
-						std::cout << "No Rounding required" << std::endl;
-					}
-					else {
-						std::cout << "Rounding down to nearest" << std::endl;
-					}
-				
+					break;	
 				}
 			}
 			break;
 		}
+
 		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
 		//std::cout << "Regime   " << _Bits << std::endl;
 		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);

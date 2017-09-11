@@ -76,7 +76,7 @@ unsigned int exponent(unsigned int msb, unsigned int es) {
 	return value;
 }
 
-unsigned int fraction(int64_t value) {
+uint64_t fraction(int64_t value) {
 	unsigned int hidden_bit_at = findMostSignificantBit(value) - 1;
 	uint64_t mask = ~(uint64_t(1) << hidden_bit_at);
 	return value & mask;

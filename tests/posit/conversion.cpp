@@ -310,6 +310,15 @@ int main()
 	cout << components_to_string(p) << endl;
 
 	{
+		posit<5, 0> p;
+		p = 0.625f;
+		cout << hexfloat << 0.625f << defaultfloat << " " << p << endl;
+		cout.flush();
+		return 0;
+	}
+
+
+	{
 		cout << "Posit Configuration validation" << endl;
 		if (!ValidatePosit_3_0()) {
 			cout << "posit<3,0> is incorrect" << endl;

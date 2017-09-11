@@ -67,7 +67,7 @@ std::string to_hex(std::bitset<nbits> bits) {
 	char str[nbits];   // plenty of room
 	const char* hexits = "0123456789ABCDEF";
 	unsigned int max = (nbits >> 2) + (nbits % 4 ? 2 : 1);
-	for (int i = 0; i < max; i++) {
+	for (unsigned int i = 0; i < max; i++) {
 		unsigned int hexit = (bits[3] << 3) + (bits[2] << 2) + (bits[1] << 1) + bits[0];
 		str[max-1-i] = hexits[hexit];
 		bits >>= 4;

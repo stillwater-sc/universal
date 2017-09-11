@@ -123,7 +123,7 @@ int extract_exponent(double f) {
 uint64_t extract_fraction(double f) {
 	int exponent;
 	double fraction = frexp(f, &exponent);
-	return (uint64_t(0x001FFFFFFFFFFFFFull) & *(uint64_t*)&fraction);
+	return (uint64_t(0x000FFFFFFFFFFFFFull) & *(uint64_t*)&fraction);
 }
 
 // integral type to bitset transformations
