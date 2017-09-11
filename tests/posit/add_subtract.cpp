@@ -14,7 +14,8 @@ template<size_t nbits>
 void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 3>& number) {
 	if (nbits == 3) return;
 	number.set(nbits - 4); // set hidden bit
-	for (int i = nbits - 5; i >= 0; i--) {
+	int lb = nbits; lb -= 5;
+	for (int i = lb; i >= 0; i--) {
 		number.set(i, fraction[i + 1]);
 	}
 }

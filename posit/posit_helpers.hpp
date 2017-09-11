@@ -132,7 +132,8 @@ std::bitset<nbits - 3> copy_float_fraction(uint32_t _23b_fraction_without_hidden
 	std::bitset<nbits - 3> _fraction;
 	if (nbits == 3) return _fraction;
 	uint32_t mask = uint32_t(0x00400000ul);
-	for (int i = nbits - 4; i >= 0; --i) {
+	int lb = nbits; lb -= 4;
+	for (int i = lb; i >= 0; --i) {
 		_fraction[i] = _23b_fraction_without_hidden_bit & mask;
 		mask >>= 1;
 	}
@@ -141,11 +142,11 @@ std::bitset<nbits - 3> copy_float_fraction(uint32_t _23b_fraction_without_hidden
 
 template<size_t nbits>
 std::bitset<nbits - 3> copy_double_fraction(uint64_t _52b_fraction_without_hidden_bit) {
-	if (nbits == 3) throw;
 	std::bitset<nbits - 3> _fraction;
 	if (nbits == 3) return _fraction;
 	uint32_t mask = uint32_t(0x00400000ul);
-	for (int i = nbits - 4; i >= 0; --i) {
+	int lb = nbits; lb -= 4;
+	for (int i = lb; i >= 0; --i) {
 		_fraction[i] = _52b_fraction_without_hidden_bit & mask;
 		mask >>= 1;
 	}
@@ -155,8 +156,10 @@ std::bitset<nbits - 3> copy_double_fraction(uint64_t _52b_fraction_without_hidde
 template<size_t nbits>
 std::bitset<nbits - 3> copy_integer_fraction(uint64_t _fraction_without_hidden_bit) {
 	std::bitset<nbits - 3> _fraction;
+	if (nbits == 3) return _fraction;
 	uint64_t mask = uint64_t(0x8000000000000000ull);
-	for (int i = nbits - 4; i >= 0; --i) {
+	int lb = nbits; lb -= 4;
+	for (int i = lb; i >= 0; --i) {
 		_fraction[i] = _fraction_without_hidden_bit & mask;
 		mask >>= 1;
 	}

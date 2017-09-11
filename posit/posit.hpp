@@ -480,20 +480,6 @@ public:
 		// scale = useed ^ k * 2^e 
 		return k*(1 << es) + _Exp.to_ulong();
 	}
-	void increment_scale() {
-		if (es == 0) {
-			k++;
-		}
-		else {
-			if (this->_Exp.all()) {
-				k++;
-				_Exp.reset();
-			}
-			else {
-				_Exp = assign_unsigned<es>(uint64_t(_Exp.to_ulong() + 1));
-			}		
-		}
-	}
 	// return the number of regime bits
 	unsigned int assign_regime_pattern (int k) {
 		unsigned int nr_of_regime_bits;
