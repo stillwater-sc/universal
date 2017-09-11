@@ -545,18 +545,20 @@ public:
 			break;
 		default:
 		case POSIT_ROUND_TO_NEAREST:
-			if (_fraction.test(nbits - 4)) {
-				std::cout << "Rounding up to nearest" << std::endl;
-				_scale += 1;
-			}
-			else {
-				if (_fraction.none()) {
-					std::cout << "No Rounding required" << std::endl;
+			if (nbits > 3) {
+				if (_fraction.test(nbits - 4)) {
+					std::cout << "Rounding up to nearest" << std::endl;
+					_scale += 1;
 				}
 				else {
-					std::cout << "Rounding down to nearest" << std::endl;
-				}
+					if (_fraction.none()) {
+						std::cout << "No Rounding required" << std::endl;
+					}
+					else {
+						std::cout << "Rounding down to nearest" << std::endl;
+					}
 				
+				}
 			}
 			break;
 		}
