@@ -74,7 +74,7 @@ public:
 	}
 	posit<nbits, es>& operator=(const float rhs) {
 		reset();
-		switch (fpclassify(rhs)) {
+		switch (std::fpclassify(rhs)) {
 		case FP_INFINITE:
 			_Bits.set(nbits - 1);
 			break;
@@ -102,7 +102,7 @@ public:
 	}
 	posit<nbits, es>& operator=(const double rhs) {
 		reset();
-		switch (fpclassify(rhs)) {
+		switch (std::fpclassify(rhs)) {
 		case FP_INFINITE:
 			_Bits.set(nbits - 1);
 			break;
