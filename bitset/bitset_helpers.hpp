@@ -44,7 +44,7 @@ std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
 template<size_t nbits, class Type>
 std::bitset<nbits> convert_to_bitset(Type number) {
 	std::bitset<nbits> _Bits; 
-	uint64_t mask = 1;
+	uint64_t mask = uint64_t(1);
 	for (int i = 0; i < nbits; i++) {
 		_Bits[i] = mask & number;
 		mask <<= 1;

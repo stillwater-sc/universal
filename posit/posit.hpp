@@ -539,10 +539,11 @@ public:
 	int rounding_decision(const std::bitset<nbits - 3>& _fraction, unsigned int nr_of_fraction_bits) {
 		// check if there are any bits set past the cut-off
 		int rounding_direction = 0;
-		// cut-off is at nbits - 4 - nr_of_fraction_bits
-		if (nbits > 4 + nr_of_fraction_bits) {
+		if (nr_of_fraction_bits == 0) return rounding_direction;
+		// first bit after the cut-off is at nbits - 4 - nr_of_fraction_bits
+		if (nbits >= 4 + nr_of_fraction_bits) {
 			rounding_direction = -1;
-			for (unsigned int i = 0; i < nbits - 4 - nr_of_fraction_bits; i++) {
+			for (int i = nbits - 4 - nr_of_fraction_bits; i >= 0; --i) {
 				if (_fraction.test(i)) {
 					rounding_direction = 1;
 					break;

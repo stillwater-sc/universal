@@ -278,7 +278,104 @@ bool ValidatePosit_5_2()
 	return bValid;
 }
 
+/*
+POSIT<6,0>
+   #           Binary         k-value            sign                        regime        exponent        fraction                         value
+   0:           000000              -5               1                       0.03125               -             000                             0
+   1:           000001              -4               1                        0.0625               -             000                        0.0625
+   2:           000010              -3               1                         0.125               -             000                         0.125
+   3:           000011              -3               1                         0.125               -             100                        0.1875
+   4:           000100              -2               1                          0.25               -             000                          0.25
+   5:           000101              -2               1                          0.25               -             010                        0.3125
+   6:           000110              -2               1                          0.25               -             100                         0.375
+   7:           000111              -2               1                          0.25               -             110                        0.4375
+   8:           001000              -1               1                           0.5               -             000                           0.5
+   9:           001001              -1               1                           0.5               -             001                        0.5625
+  10:           001010              -1               1                           0.5               -             010                         0.625
+  11:           001011              -1               1                           0.5               -             011                        0.6875
+  12:           001100              -1               1                           0.5               -             100                          0.75
+  13:           001101              -1               1                           0.5               -             101                        0.8125
+  14:           001110              -1               1                           0.5               -             110                         0.875
+  15:           001111              -1               1                           0.5               -             111                        0.9375
+  16:           010000               0               1                             1               -             000                             1
+  17:           010001               0               1                             1               -             001                         1.125
+  18:           010010               0               1                             1               -             010                          1.25
+  19:           010011               0               1                             1               -             011                         1.375
+  20:           010100               0               1                             1               -             100                           1.5
+  21:           010101               0               1                             1               -             101                         1.625
+  22:           010110               0               1                             1               -             110                          1.75
+  23:           010111               0               1                             1               -             111                         1.875
+  24:           011000               1               1                             2               -             000                             2
+  25:           011001               1               1                             2               -             010                           2.5
+  26:           011010               1               1                             2               -             100                             3
+  27:           011011               1               1                             2               -             110                           3.5
+  28:           011100               2               1                             4               -             000                             4
+  29:           011101               2               1                             4               -             100                             6
+  30:           011110               3               1                             8               -             000                             8
+  31:           011111               4               1                            16               -             000                            16
+  32:           100000               5              -1                            32               -             000                           inf
+  33:           100001               4              -1                            16               -             000                           -16
+  34:           100010               3              -1                             8               -             000                            -8
+  35:           100011               2              -1                             4               -             100                            -6
+  36:           100100               2              -1                             4               -             000                            -4
+  37:           100101               1              -1                             2               -             110                          -3.5
+  38:           100110               1              -1                             2               -             100                            -3
+  39:           100111               1              -1                             2               -             010                          -2.5
+  40:           101000               1              -1                             2               -             000                            -2
+  41:           101001               0              -1                             1               -             111                        -1.875
+  42:           101010               0              -1                             1               -             110                         -1.75
+  43:           101011               0              -1                             1               -             101                        -1.625
+  44:           101100               0              -1                             1               -             100                          -1.5
+  45:           101101               0              -1                             1               -             011                        -1.375
+  46:           101110               0              -1                             1               -             010                         -1.25
+  47:           101111               0              -1                             1               -             001                        -1.125
+  48:           110000               0              -1                             1               -             000                            -1
+  49:           110001              -1              -1                           0.5               -             111                       -0.9375
+  50:           110010              -1              -1                           0.5               -             110                        -0.875
+  51:           110011              -1              -1                           0.5               -             101                       -0.8125
+  52:           110100              -1              -1                           0.5               -             100                         -0.75
+  53:           110101              -1              -1                           0.5               -             011                       -0.6875
+  54:           110110              -1              -1                           0.5               -             010                        -0.625
+  55:           110111              -1              -1                           0.5               -             001                       -0.5625
+  56:           111000              -1              -1                           0.5               -             000                          -0.5
+  57:           111001              -2              -1                          0.25               -             110                       -0.4375
+  58:           111010              -2              -1                          0.25               -             100                        -0.375
+  59:           111011              -2              -1                          0.25               -             010                       -0.3125
+  60:           111100              -2              -1                          0.25               -             000                         -0.25
+  61:           111101              -3              -1                         0.125               -             100                       -0.1875
+  62:           111110              -3              -1                         0.125               -             000                        -0.125
+  63:           111111              -4              -1                        0.0625               -             000                       -0.0625
+ */
+bool ValidatePosit_6_0()
+{
+	float golden_answer[64] = {
+		0, 0.0625f, 0.125f, 0.1875,0.25, 0.3125,0.375, 0.4375, 0.5, 0.5625,0.625,0.6875, 0.75, 0.8125, 0.875,0.9375, 1,
+		1.125, 1.25, 1.375, 1.5, 1.625f, 1.75f, 1.875f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 6.0f, 8.0f, 16.0f, INFINITY,
+		-16.0f, -8.0, -6.0f, -4.0f, -3.5f, -3.0f, -2.5f, -2.0f, -1.875f, -1.75f, -1.625f, -1.5f, -1.375f, -1.25f, -1.125f, -1.0f,
+		-0.9375f, -0.875f, -0.8125f, -0.75f, -0.6875f, -0.625f, -0.5625f, -0.5f, -0.4375f, -0.375f, -0.3125f, -0.25f, -0.1875f, -0.125f, -0.0625f
+	};
 
+	bool bValid = true;
+	for (int i = 0; i < 64; i++) {
+		posit<6, 0> p;
+		p = golden_answer[i];
+		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
+			cerr << "Posit conversion failed: golden value = " << golden_answer[i] << " != posit<5,0> " << components_to_string(p) << endl;
+			bValid = false;
+		}
+	}
+	return bValid;
+}
+
+void TestPositConfiguration(bool bValid, string posit_cfg)
+{
+	if (!bValid) {
+		cout << posit_cfg << " conversions FAIL" << endl;
+	}
+	else {
+		cout << posit_cfg << " conversions PASS" << endl;
+	}
+}
 void ReportPositScales() {
 	// print scales of different posit configurations
 	// useed = 2^(2^es) and thus is just a function of the exponent configuration
@@ -303,64 +400,17 @@ int main()
 {
 	ReportPositScales();
 
-	posit<5, 2> p;
-	p = 0.000244140625f;	// default C++ float literal is in double format
-	cout << components_to_string(p) << endl;
-	p.set_raw_bits(0x1);
-	cout << components_to_string(p) << endl;
-
-	{
-		posit<5, 0> p;
-		p = 0.625f;
-		cout << hexfloat << 0.625f << defaultfloat << " " << p << endl;
-		cout.flush();
-		return 0;
-	}
-
-
 	{
 		cout << "Posit Configuration validation" << endl;
-		if (!ValidatePosit_3_0()) {
-			cout << "posit<3,0> is incorrect" << endl;
-		}	
-		else {
-			cout << "posit<3,0> float conversions are valid" << endl;
-		}
+		TestPositConfiguration(ValidatePosit_3_0(), "posit<3,0>");
+		TestPositConfiguration(ValidatePosit_4_0(), "posit<4,0>");
+		TestPositConfiguration(ValidatePosit_4_1(), "posit<4,1>");
+		TestPositConfiguration(ValidatePosit_5_0(), "posit<5,0>");
+		TestPositConfiguration(ValidatePosit_5_1(), "posit<5,1>");
+		TestPositConfiguration(ValidatePosit_5_2(), "posit<5,2>");
+		TestPositConfiguration(ValidatePosit_6_0(), "posit<6,0>");
+		//TestPositConfiguration(ValidatePosit_6_1(), "posit<6,1>");
 
-		if (!ValidatePosit_4_0()) {
-			cout << "posit<4,0> is incorrect" << endl;
-		}
-		else {
-			cout << "posit<4,0> float conversions are valid" << endl;
-		}
-
-		if (!ValidatePosit_4_1()) {
-			cout << "posit<4,1> is incorrect" << endl;
-		}
-		else {
-			cout << "posit<4,1> float conversions are valid" << endl;
-		}
-
-		if (!ValidatePosit_5_0()) {
-			cout << "posit<5,0> is incorrect" << endl;
-		}
-		else {
-			cout << "posit<5,0> float conversions are valid" << endl;
-		}
-
-		if (!ValidatePosit_5_1()) {
-			cout << "posit<5,1> is incorrect" << endl;
-		}
-		else {
-			cout << "posit<5,1> float conversions are valid" << endl;
-		}
-
-		if (!ValidatePosit_5_2()) {
-			cout << "posit<5,2> is incorrect" << endl;
-		}
-		else {
-			cout << "posit<5,2> float conversions are valid" << endl;
-		}
 
 		cout << endl;
 	}
