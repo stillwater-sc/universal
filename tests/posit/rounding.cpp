@@ -17,82 +17,175 @@ void transform_into_sign_scale_fraction(int64_t value) {
 	cout << "Sign     " << _sign << endl << "Scale    " << _scale << endl << "Fraction " << _fraction << endl;
 }
 
+void ReportPositScales() {
+	// print scales of different posit configurations
+	// useed = 2^(2^es) and thus is just a function of the exponent configuration
+	// maxpos = useed^(nbits-2)
+	// minpos = useed^(2-nbits)
+	posit<3, 0> p3_0;
+	posit<4, 0> p4_0;
+	posit<4, 1> p4_1;
+	posit<5, 0> p5_0;
+	posit<5, 1> p5_1;
+	posit<5, 2> p5_2;
+	posit<6, 0> p6_0;
+	posit<6, 1> p6_1;
+	posit<6, 2> p6_2;
+	posit<6, 3> p6_3;
+	posit<7, 0> p7_0;
+	posit<7, 1> p7_1;
+	posit<7, 2> p7_2;
+	posit<7, 3> p7_3;
+	posit<8, 0> p8_0;
+	posit<8, 1> p8_1;
+	posit<8, 2> p8_2;
+	posit<8, 3> p8_3;
+	posit<9, 0> p9_0;
+	posit<9, 1> p9_1;
+	posit<9, 2> p9_2;
+	posit<9, 3> p9_3;
+	posit<10, 0> p10_0;
+	posit<10, 1> p10_1;
+	posit<10, 2> p10_2;
+	posit<10, 3> p10_3;
+	cout << "Posit specificiation examples and their ranges:" << endl;
+	cout << spec_to_string(p3_0) << endl;
+	cout << spec_to_string(p4_0) << endl;
+	cout << spec_to_string(p4_1) << endl;
+	cout << spec_to_string(p5_0) << endl;
+	cout << spec_to_string(p5_1) << endl;
+	cout << spec_to_string(p5_2) << endl;
+	cout << spec_to_string(p6_0) << endl;
+	cout << spec_to_string(p6_1) << endl;
+	cout << spec_to_string(p6_2) << endl;
+	cout << spec_to_string(p6_3) << endl;
+	cout << spec_to_string(p7_0) << endl;
+	cout << spec_to_string(p7_1) << endl;
+	cout << spec_to_string(p7_2) << endl;
+	cout << spec_to_string(p7_3) << endl;
+	cout << spec_to_string(p8_0) << endl;
+	cout << spec_to_string(p8_1) << endl;
+	cout << spec_to_string(p8_2) << endl;
+	cout << spec_to_string(p8_3) << endl;
+	cout << spec_to_string(p9_0) << endl;
+	cout << spec_to_string(p9_1) << endl;
+	cout << spec_to_string(p9_2) << endl;
+	cout << spec_to_string(p9_3) << endl;
+	cout << spec_to_string(p10_0) << endl;
+	cout << spec_to_string(p10_1) << endl;
+	cout << spec_to_string(p10_2) << endl;
+	cout << spec_to_string(p10_3) << endl;
+
+
+	cout << endl;
+}
+
+void TestPositRounding(bool bValid, string posit_cfg)
+{
+	if (!bValid) {
+		cout << posit_cfg << " conversions FAIL" << endl;
+	}
+	else {
+		cout << posit_cfg << " conversions PASS" << endl;
+	}
+}
+
 /*
-  Posits are a tapered floating point system, and this creates additional requirements for rounding.
-
-  Rounding to nearest is more involved as we need to find geometric or arithmetic means between two posits
-  to find the proper projection for a real value.
-
-  Posit Lookup table for a POSIT<5,1>
-   #           Binary         k-value            sign                        regime        exponent        fraction                         value
-   0:            00000              -4               1                    0.00390625               0              00                             0
-   1:            00001              -3               1                      0.015625               0              00                      0.015625
-   2:            00010              -2               1                        0.0625               0              00                        0.0625
-   3:            00011              -2               1                        0.0625               1              00                         0.125
-   4:            00100              -1               1                          0.25               0              00                          0.25
-   5:            00101              -1               1                          0.25               0              10                         0.375
-   6:            00110              -1               1                          0.25               1              00                           0.5
-   7:            00111              -1               1                          0.25               1              10                          0.75
-   8:            01000               0               1                             1               0              00                             1
-   9:            01001               0               1                             1               0              10                           1.5
-  10:            01010               0               1                             1               1              00                             2
-  11:            01011               0               1                             1               1              10                             3
-  12:            01100               1               1                             4               0              00                             4
-  13:            01101               1               1                             4               1              00                             8
-  14:            01110               2               1                            16               0              00                            16
-  15:            01111               3               1                            64               0              00                            64
-  16:            10000               4              -1                           256               0              00                           inf
-  17:            10001               3              -1                            64               0              00                           -64
-  18:            10010               2              -1                            16               0              00                           -16
-  19:            10011               1              -1                             4               1              00                            -8
-  20:            10100               1              -1                             4               0              00                            -4
-  21:            10101               0              -1                             1               1              10                            -3
-  22:            10110               0              -1                             1               1              00                            -2
-  23:            10111               0              -1                             1               0              10                          -1.5
-  24:            11000               0              -1                             1               0              00                            -1
-  25:            11001              -1              -1                          0.25               1              10                         -0.75
-  26:            11010              -1              -1                          0.25               1              00                          -0.5
-  27:            11011              -1              -1                          0.25               0              10                        -0.375
-  28:            11100              -1              -1                          0.25               0              00                         -0.25
-  29:            11101              -2              -1                        0.0625               1              00                        -0.125
-  30:            11110              -2              -1                        0.0625               0              00                       -0.0625
-  31:            11111              -3              -1                      0.015625               0              00                     -0.015625
+POSIT<4,0>
+ #           Binary         k-value            sign          regime        exponent        fraction           value
+ 0:             0000              -3               1           0.125               -               0               0
+ 1:             0001              -2               1            0.25               -               0            0.25
+ 2:             0010              -1               1             0.5               -               0             0.5
+ 3:             0011              -1               1             0.5               -               1            0.75
+ 4:             0100               0               1               1               -               0               1
+ 5:             0101               0               1               1               -               1             1.5
+ 6:             0110               1               1               2               -               0               2
+ 7:             0111               2               1               4               -               0               4
+ 8:             1000               3              -1               8               -               0             inf
+ 9:             1001               2              -1               4               -               0              -4
+10:             1010               1              -1               2               -               0              -2
+11:             1011               0              -1               1               -               1            -1.5
+12:             1100               0              -1               1               -               0              -1
+13:             1101              -1              -1             0.5               -               1           -0.75
+14:             1110              -1              -1             0.5               -               0            -0.5
+15:             1111              -2              -1            0.25               -               0           -0.25
 */
+bool ValidateFloatRoundingPosit_4_0()
+{
+	float golden_answer_positive_regime[9] = {
+		0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f, 100.0f
+	};
+
+	bool bValid = true;
+	posit<4, 0> p;
+	float arithmetic_mean;
+	for (int i = 0; i < 8; i++) {
+		arithmetic_mean = (golden_answer_positive_regime[i] + golden_answer_positive_regime[i + 1] - 0.0001) / 2.0f;
+		cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
+		p = arithmetic_mean;
+		if (fabs(p.to_double() - golden_answer_positive_regime[i]) > 0.0001) {
+			cerr << "Posit rounding failed: golden value = " << golden_answer_positive_regime[i] << " != posit<4,0> " << components_to_string(p) << endl;
+			bValid = false;
+		}
+	}
+
+	float golden_answer_negative_regime[9] = {
+		-0.0f, -0.25f, -0.5f, -0.75f, -1.0f, -1.5f, -2.0f, -4.0f, -100.0f
+	};
+	for (int i = 0; i < 8; i++) {
+		arithmetic_mean = (golden_answer_negative_regime[i] + golden_answer_negative_regime[i + 1] + 0.0001) / 2.0f;
+		cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
+		p = arithmetic_mean;
+		if (fabs(p.to_double() - golden_answer_negative_regime[i]) > 0.0001) {
+			cerr << "Posit rounding failed: golden value = " << golden_answer_negative_regime[i] << " != posit<4,0> " << components_to_string(p) << endl;
+			bValid = false;
+		}
+	}
+
+	return bValid;
+}
+bool ValidateDoubleRoundingPosit_4_0()
+{
+	float golden_answer_positive_regime[9] = {
+		0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f, 100.0f
+	};
+
+	bool bValid = true;
+	posit<4, 0> p;
+	double arithmetic_mean;
+	for (int i = 0; i < 8; i++) {
+		arithmetic_mean = (golden_answer_positive_regime[i] + golden_answer_positive_regime[i + 1] - 0.0001) / 2.0f;
+		cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
+		p = arithmetic_mean;
+		if (fabs(p.to_double() - golden_answer_positive_regime[i]) > 0.0001) {
+			cerr << "Posit rounding failed: golden value = " << golden_answer_positive_regime[i] << " != posit<4,0> " << components_to_string(p) << endl;
+			bValid = false;
+		}
+	}
+
+	float golden_answer_negative_regime[9] = {
+		-0.0f, -0.25f, -0.5f, -0.75f, -1.0f, -1.5f, -2.0f, -4.0f, -100.0f
+	};
+	for (int i = 0; i < 8; i++) {
+		arithmetic_mean = (golden_answer_negative_regime[i] + golden_answer_negative_regime[i + 1] + 0.0001) / 2.0f;
+		cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
+		p = arithmetic_mean;
+		if (fabs(p.to_double() - golden_answer_negative_regime[i]) > 0.0001) {
+			cerr << "Posit rounding failed: golden value = " << golden_answer_negative_regime[i] << " != posit<4,0> " << components_to_string(p) << endl;
+			bValid = false;
+		}
+	}
+
+	return bValid;
+}
+
 int main(int argc, char** argv)
 {
+	ReportPositScales();
+
 	try {
-        const size_t nbits = 5;
-        const size_t es = 1;
-        posit<nbits,es> p;
-		uint64_t value;
-
-		cout << spec_to_string(p) << endl;
-
-		value = 4;
-		transform_into_sign_scale_fraction<nbits>(value);
-		p = value; // is 4
-		cout << p << endl;
-
-		value = 5;
-		transform_into_sign_scale_fraction<nbits>(value);
-		p = value; // projects to 4
-		cout << p << endl;
-
-		value = 6;
-		transform_into_sign_scale_fraction<nbits>(value);
-		p = value; // projects to 8
-		cout << p << endl;
-
-		value = 7; 
-		transform_into_sign_scale_fraction<nbits>(value);
-		p = value; // projects to 8
-		cout << p << endl;
-
-		value = 8;
-		transform_into_sign_scale_fraction<nbits>(value);
-		p = value; // is 8
-		cout << p << endl;
-
+		TestPositRounding(ValidateFloatRoundingPosit_4_0(), "posit<4,0>");
+		TestPositRounding(ValidateDoubleRoundingPosit_4_0(), "posit<4,0>");
 	}
 	catch (char* e) {
 		cerr << e << endl;

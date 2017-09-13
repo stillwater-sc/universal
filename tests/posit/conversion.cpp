@@ -65,7 +65,7 @@ bool ValidatePosit_4_0()
 	};
 
 	bool bValid = true;
-	for (int i = 0; i < 9; i++) {
+	for (int i = 0; i < 16; i++) {
 		posit<4, 0> p;
 		p = golden_answer[i];
 		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
@@ -103,7 +103,7 @@ bool ValidatePosit_4_1()
 	};
 
 	bool bValid = true;
-	for (int i = 0; i < 9; i++) {
+	for (int i = 0; i < 16; i++) {
 		posit<4, 1> p;
 		p = golden_answer[i];
 		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
@@ -367,7 +367,7 @@ bool ValidatePosit_6_0()
 	return bValid;
 }
 
-void TestPositConfiguration(bool bValid, string posit_cfg)
+void TestPositConversion(bool bValid, string posit_cfg)
 {
 	if (!bValid) {
 		cout << posit_cfg << " conversions FAIL" << endl;
@@ -376,12 +376,13 @@ void TestPositConfiguration(bool bValid, string posit_cfg)
 		cout << posit_cfg << " conversions PASS" << endl;
 	}
 }
+
 void ReportPositScales() {
 	// print scales of different posit configurations
 	// useed = 2^(2^es) and thus is just a function of the exponent configuration
 	// maxpos = useed^(nbits-2)
 	// minpos = useed^(2-nbits)
-	posit<4, 0> p4_0;
+	posit<4, 0> p4_0;	
 	posit<8, 0> p8_0;
 	posit<16, 1> p16_1;
 	posit<32, 2> p32_2;
@@ -402,15 +403,14 @@ int main()
 
 	{
 		cout << "Posit Configuration validation" << endl;
-		TestPositConfiguration(ValidatePosit_3_0(), "posit<3,0>");
-		TestPositConfiguration(ValidatePosit_4_0(), "posit<4,0>");
-		TestPositConfiguration(ValidatePosit_4_1(), "posit<4,1>");
-		TestPositConfiguration(ValidatePosit_5_0(), "posit<5,0>");
-		TestPositConfiguration(ValidatePosit_5_1(), "posit<5,1>");
-		TestPositConfiguration(ValidatePosit_5_2(), "posit<5,2>");
-		TestPositConfiguration(ValidatePosit_6_0(), "posit<6,0>");
-		//TestPositConfiguration(ValidatePosit_6_1(), "posit<6,1>");
-
+		TestPositConversion(ValidatePosit_3_0(), "posit<3,0>");
+		TestPositConversion(ValidatePosit_4_0(), "posit<4,0>");
+		TestPositConversion(ValidatePosit_4_1(), "posit<4,1>");
+		TestPositConversion(ValidatePosit_5_0(), "posit<5,0>");
+		TestPositConversion(ValidatePosit_5_1(), "posit<5,1>");
+		TestPositConversion(ValidatePosit_5_2(), "posit<5,2>");
+		TestPositConversion(ValidatePosit_6_0(), "posit<6,0>");
+		//TestPositConversion(ValidatePosit_6_1(), "posit<6,1>");
 
 		cout << endl;
 	}

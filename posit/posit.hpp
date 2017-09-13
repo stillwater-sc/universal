@@ -516,10 +516,10 @@ public:
 		}
 		return nr_of_exp_bits;
 	}
-	unsigned int estimate_nr_fraction_bits(int _scale) {
+	unsigned int estimate_nr_fraction_bits(int k) {
 		unsigned int nr_of_regime_bits;
-		int k = (_scale >> es);
 		if (k < 0) {
+			k = -k - 1;
 			nr_of_regime_bits = (k < nbits - 2 ? k + 2 : nbits - 1);
 		}
 		else {
@@ -537,18 +537,37 @@ public:
 	}
 	// -1 -> round-down, 0 -> no rounding, +1 -> round-up
 	int rounding_decision(const std::bitset<nbits - 3>& _fraction, unsigned int nr_of_fraction_bits) {
+		bool bVerbose = false;
+		if (bVerbose) std::cout << "_fraction bits to process: " << nr_of_fraction_bits << " " << _fraction << std::endl;
 		// check if there are any bits set past the cut-off
 		int rounding_direction = 0;
-		if (nr_of_fraction_bits == 0) return rounding_direction;
+		if (nr_of_fraction_bits == 0) {
+			if (_fraction.test(nbits - 4)) {
+				rounding_direction = 1;
+				if (bVerbose) std::cout << "Rounding up" << std::endl;
+			}
+			else {
+				if (bVerbose) std::cout << "Rounding down" << std::endl;
+			}		
+			return rounding_direction;
+		}
 		// first bit after the cut-off is at nbits - 4 - nr_of_fraction_bits
 		if (nbits >= 4 + nr_of_fraction_bits) {
+			if (bVerbose) std::cout << "_fraction bits to process: " << nr_of_fraction_bits << " " << _fraction << std::endl;
 			rounding_direction = -1;
 			for (int i = nbits - 4 - nr_of_fraction_bits; i >= 0; --i) {
 				if (_fraction.test(i)) {
 					rounding_direction = 1;
+					if (bVerbose) std::cout << "Fraction bit set: round up" << std::endl;
 					break;
 				}
 			}
+			if (rounding_direction == -1) {
+				if (bVerbose) std::cout << "Fraction bits not set: round down" << std::endl;
+			}
+		}
+		else {
+			if (bVerbose) std::cout << "No bits left: no rounding" << std::endl;
 		}
 		return rounding_direction;
 	}
@@ -557,20 +576,20 @@ public:
 		bool bVerbose = false;
 		switch (bRoundingMode) {
 		case POSIT_ROUND_DOWN:
-			if (bVerbose) std::cout << "Rounding down" << std::endl;
+			if (bVerbose) std::cout << "Rounding Mode: round down" << std::endl;
 			break;
 		default:
 		case POSIT_ROUND_TO_NEAREST:
 			if (nbits > 3) {
-				switch (rounding_decision(_fraction, estimate_nr_fraction_bits(_scale))) {
+				switch (rounding_decision(_fraction, estimate_nr_fraction_bits(_scale >> es))) {
 				case -1:
-					if (bVerbose) std::cout << "Rounding down to nearest" << std::endl;
+					if (bVerbose) std::cout << "Rounding Mode: Rounding down to nearest" << std::endl;
 					break;
 				case 0:
-					if (bVerbose) std::cout << "No Rounding required" << std::endl;
+					if (bVerbose) std::cout << "Rounding Mode: No Rounding required" << std::endl;
 					break;
 				case 1:
-					if (bVerbose) std::cout << "Rounding up to nearest" << std::endl;
+					if (bVerbose) std::cout << "Rounding Mode: Rounding up to nearest" << std::endl;
 					_scale += 1;
 					break;	
 				}
@@ -579,14 +598,14 @@ public:
 		}
 
 		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
-		//std::cout << "Regime   " << _Bits << std::endl;
+		if (bVerbose) std::cout << "Regime   " << _Bits << std::endl;
 		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
-		//std::cout << "Exponent " << _Bits << std::endl;
-		//std::cout << "Fraction   " << _fraction << std::endl;
+		if (bVerbose) std::cout << "Exponent " << _Bits << std::endl;
+		if (bVerbose) std::cout << "Fraction   " << _fraction << std::endl;
 		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		//std::cout << "Regime   " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _fraction << std::endl;
+		if (bVerbose) std::cout << "Regime   " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _fraction << std::endl;
 		assign_fraction(remaining_bits, _fraction);
-		//std::cout << "Posit    " << _Bits << std::endl;
+		if (bVerbose) std::cout << "Posit    " << _Bits << std::endl;
 	}
 
 private:

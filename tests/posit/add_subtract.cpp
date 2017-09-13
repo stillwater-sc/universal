@@ -99,7 +99,7 @@ void denormalize(const std::bitset<nbits - 3>& fraction, int shift, std::bitset<
 */
 int main(int argc, char** argv)
 {
-	const size_t nbits = 3; // 16
+	const size_t nbits = 16;
 
 	bitset<nbits - 3> f, n;
 	normalize<nbits>(f, n); cout << "normalize " << n << endl; cout.flush();
@@ -190,7 +190,7 @@ int main(int argc, char** argv)
 			cout << "r2    " << r2 << endl;
 		}
 		cout.flush();
-		psum = pa + pb;
+		//psum = pa + pb;
 		cout << pa << " + " << pb << " = " << psum << endl;
 		cout << psum.get() << endl;
 		psum = 21;
