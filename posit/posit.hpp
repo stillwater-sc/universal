@@ -90,6 +90,7 @@ public:
 				int _scale = extract_exponent(rhs) - 1;
 				uint32_t _23b_fraction_without_hidden_bit = extract_fraction(rhs);
 				std::bitset<nbits - 3> _fraction = copy_float_fraction<nbits>(_23b_fraction_without_hidden_bit);
+				//std::cout << "sign " << _sign << " scale " << _scale << " 23b fraction " << std::hex << _23b_fraction_without_hidden_bit << " _fraction " << _fraction << std::dec << std::endl;
 				convert_to_posit(_sign, _scale, _fraction);
 				if (_sign) {
 					_Bits = twos_complement(_Bits);
@@ -118,6 +119,7 @@ public:
 			int _scale = extract_exponent(rhs) - 1;
 			uint64_t _52b_fraction_without_hidden_bit = extract_fraction(rhs);
 			std::bitset<nbits - 3> _fraction = copy_double_fraction<nbits>(_52b_fraction_without_hidden_bit);
+			std::cout << "sign " << _sign << " scale " << _scale << " 52b fraction " << std::hex << _52b_fraction_without_hidden_bit << " _fraction " << _fraction << std::dec << std::endl;
 			convert_to_posit(_sign, _scale, _fraction);
 			if (_sign) {
 				_Bits = twos_complement(_Bits);

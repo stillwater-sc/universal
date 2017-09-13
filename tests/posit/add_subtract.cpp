@@ -38,124 +38,87 @@ void denormalize(const std::bitset<nbits - 3>& fraction, int shift, std::bitset<
 
 /*
 	Testing the reciprocal nature of positive and negative posits
+ */
 
-	posit<5,0>
-	  #           Binary         k-value            sign          regime        exponent        fraction           value
-	 8:            01000               0               1               1               -           00000               1
-	 9:            01001               0               1               1               -           01000            1.25
-	10:            01010               0               1               1               -           10000             1.5
-	11:            01011               0               1               1               -           11000            1.75
-	12:            01100               1               1               2               -           00000               2
-	13:            01101               1               1               2               -           10000               3
-	14:            01110               2               1               4               -           00000               4
-	15:            01111               3               1               8               -           00000               8
-	16:            10000               4              -1              16               -           00000             inf
-	17:            10001               3              -1               8               -           00000              -8
-	18:            10010               2              -1               4               -           00000              -4
-	19:            10011               1              -1               2               -           10000              -3
-	20:            10100               1              -1               2               -           00000              -2
-	21:            10101               0              -1               1               -           11000           -1.75
-	22:            10110               0              -1               1               -           10000            -1.5
-	23:            10111               0              -1               1               -           01000           -1.25
-	24:            11000               0              -1               1               -           00000              -1
-	posit<5,1>
-	  #           Binary         k-value            sign          regime        exponent        fraction           value
-	 8:            01000               0               1               1               0           00000               1
-	 9:            01001               0               1               1               0           10000             1.5
-	10:            01010               0               1               1               1           00000               2
-	11:            01011               0               1               1               1           10000               3
-	12:            01100               1               1               4               0           00000               4
-	13:            01101               1               1               4               1           00000               8
-	14:            01110               2               1              16               0           00000              16
-	15:            01111               3               1              64               0           00000              64
-	16:            10000               4              -1             256               0           00000             inf
-	17:            10001               3              -1              64               0           00000             -64
-	18:            10010               2              -1              16               0           00000             -16
-	19:            10011               1              -1               4               1           00000              -8
-	20:            10100               1              -1               4               0           00000              -4
-	21:            10101               0              -1               1               1           10000              -3
-	22:            10110               0              -1               1               1           00000              -2
-	23:            10111               0              -1               1               0           10000            -1.5
-	24:            11000               0              -1               1               0           00000              -1
-	posit<5,2>
-	  #           Binary         k-value            sign          regime        exponent        fraction           value
-	 8:            01000               0               1               1              00               -               1
-	 9:            01001               0               1               1              01               -               2
-	10:            01010               0               1               1              10               -               4
-	11:            01011               0               1               1              11               -               8
-	12:            01100               1               1              16              00               -              16
-	13:            01101               1               1              16              01               -              32
-	14:            01110               2               1             256              00               -             256
-	15:            01111               3               1            4096              00               -            4096
-	16:            10000               4              -1           65536              00               -             inf
-	17:            10001               3              -1            4096              00               -           -4096
-	18:            10010               2              -1             256              00               -            -256
-	19:            10011               1              -1              16              01               -             -32
-	20:            10100               1              -1              16              00               -             -16
-	21:            10101               0              -1               1              11               -              -8
-	22:            10110               0              -1               1              10               -              -4
-	23:            10111               0              -1               1              01               -              -2
-	24:            11000               0              -1               1              00               -              -1
+/*
+ POSIT<4,0>
+ #           Binary         k-value            sign          regime        exponent        fraction           value
+ 0:             0000              -3               1           0.125               -               0               0
+ 1:             0001              -2               1            0.25               -               0            0.25
+ 2:             0010              -1               1             0.5               -               0             0.5
+ 3:             0011              -1               1             0.5               -               1            0.75
+ 4:             0100               0               1               1               -               0               1
+ 5:             0101               0               1               1               -               1             1.5
+ 6:             0110               1               1               2               -               0               2
+ 7:             0111               2               1               4               -               0               4
+ 8:             1000               3              -1               8               -               0             inf
+ 9:             1001               2              -1               4               -               0              -4
+10:             1010               1              -1               2               -               0              -2
+11:             1011               0              -1               1               -               1            -1.5
+12:             1100               0              -1               1               -               0              -1
+13:             1101              -1              -1             0.5               -               1           -0.75
+14:             1110              -1              -1             0.5               -               0            -0.5
+15:             1111              -2              -1            0.25               -               0           -0.25
 */
+bool ValidateAdditionPosit_4_0() {
+	float input_values[7] = {
+		0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0
+	};
+	float golden_value[7] = {
+		0.50, 1.0, 1.50, 2.0, 4.0, 4.0, 4.0
+	};
+
+	bool bValid = true;
+	posit<4, 0> pa, pb, psum;
+	for (int i = 0; i < sizeof(input_values); i++) {
+		pa = input_values[i];
+		pb = input_values[i];
+		psum = pa + pb;
+		if (fabs(psum.to_double() - golden_value[i]) > 0.0001) {
+			cerr << "Posit<4,0> addition failed: " << pa << " + " << pb << " != " << psum << " " << components_to_string(psum) << endl;
+			bValid = false;
+		}
+	}
+
+	return bValid;
+}
+
+bool ValidateRecipricalPosit_4_0() {
+	float target_values[7] = {
+		0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0
+	};
+
+	bool bValid = true;
+	posit<4, 0> pa, pb, psum;
+	for (int i = 0; i < 7; i++) {
+		pa =  target_values[i];
+		pb = -target_values[i];
+		psum = pa + pb;
+		if (fabs(psum.to_double()) > 0.0001) {
+			cerr << "Posit<4,0> reciprical failed: " << pa << " + " << pb << " != " << psum << " " << components_to_string(psum) << endl;
+			bValid = false;
+		}
+	}
+
+	return bValid;
+}
+
+void TestPositArithmeticOperators(bool bValid, string posit_cfg, string op)
+{
+	if (!bValid) {
+		cout << posit_cfg << " " << op << " FAIL" << endl;
+	}
+	else {
+		cout << posit_cfg << " " << op << " PASS" << endl;
+	}
+}
+
 int main(int argc, char** argv)
 {
-	const size_t nbits = 16;
+	TestPositArithmeticOperators(ValidateAdditionPosit_4_0(), "posit<4,0>", "addition");
+	TestPositArithmeticOperators(ValidateRecipricalPosit_4_0(), "posit<4,0>", "recprical addition");
 
-	bitset<nbits - 3> f, n;
-	normalize<nbits>(f, n); cout << "normalize " << n << endl; cout.flush();
-	denormalize<nbits>(f, 0, n); cout << "denormalize " << n << endl; cout.flush();
-	denormalize<nbits>(f, 1, n); cout << "denormalize " << n << endl; cout.flush();
-	denormalize<nbits>(f, 2, n); cout << "denormalize " << n << endl; cout.flush();
-	denormalize<nbits>(f, nbits, n); cout << "denormalize " << n << endl; cout.flush();
-
-	posit<nbits, 0> p0;
-	posit<nbits, 1> p1;
-	posit<nbits, 2> p2;
-
-	cout << spec_to_string(p0) << endl;
-	cout << spec_to_string(p1) << endl;
-	cout << spec_to_string(p2) << endl;
-
-	p0 = 9;    // useed =  2, maxpos = useed ^ 3 =    8
-	p1 = 65;   // useed =  4, maxpos = useed ^ 3 =   64
-	p2 = 4097; // useed = 64, maxpos = useed ^ 3 = 4096
-
-	cout << "posit<" << nbits << ",0> = " << components_to_string(p0) << endl;
-	cout << "posit<" << nbits << ",1> = " << components_to_string(p1) << endl;
-	cout << "posit<" << nbits << ",2> = " << components_to_string(p2) << endl;
-
-	cout << "posit<" << nbits << ",2> = " << component_values_to_string(p2) << endl;
-
-	{
-		posit<8, 0> a, b, sum, diff;
-		a.set_raw_bits(0x5F);
-		b = 1;
-		sum = a + b;
-		cout << "Sum  : " << sum << endl;
-	}
-
-	{
-		posit<16,0> a = 0;
-		for (uint32_t i = 0; i < 10; i++) {
-			cout << "a = " << a++ << " a++ = " << a << endl;
-		}
-	}
-
-
-	{
-		const size_t nbits = 16;
-		const size_t es = 1;
-
-		bitset<nbits - 3> test = convert_to_bitset<nbits - 3, uint32_t>(0xA0A);
-		bitset<nbits - 3> norm;
-		normalize<nbits>(test, norm);
-		cout << test << " " << norm << endl;
-		for (int i = 1; i < 8; i++) {
-			denormalize<nbits>(test, i, norm);
-			cout << test << " " << norm << endl;
-		}
-	}
-
+	return 0;
 
 	{
 
