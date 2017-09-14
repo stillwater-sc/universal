@@ -308,12 +308,19 @@ int main(int argc, char** argv)
 
 	try {
 
+		posit<4, 1> p;
+		double v = 0.156252f;
+		cout << v << " " << hexfloat << v << defaultfloat << endl;
+		p = v;
+		cout << p << endl;
+
+		/*
 		TestPositRounding(ValidateFloatRoundingPosit_4_0(), "posit<4,0>", "float rounding");
 		TestPositRounding(ValidateDoubleRoundingPosit_4_0(), "posit<4,0>", "double rounding");
 		TestPositRounding(ValidateFloatRoundingPosit_4_1(), "posit<4,1>", "float rounding");
 		TestPositRounding(ValidateDoubleRoundingDownPosit_4_1(), "posit<4,1>", "double rounding down");
 		TestPositRounding(ValidateDoubleRoundingUpPosit_4_1(), "posit<4,1>", "double rounding up");
-		
+		*/
 	}
 	catch (char* e) {
 		cerr << e << endl;

@@ -11,10 +11,10 @@ using namespace std;
 
 // normalize creates a normalized number with the hidden bit installed: 1.bbbbbbbbb
 template<size_t nbits>
-void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 3>& number) {
+void normalize(const std::bitset<nbits>& fraction, std::bitset<nbits>& number) {
 	if (nbits == 3) return;
-	number.set(nbits - 4); // set hidden bit
-	int lb = nbits; lb -= 5;
+	number.set(nbits - 1); // set hidden bit
+	int lb = nbits; lb -= 2;
 	for (int i = lb; i >= 0; i--) {
 		number.set(i, fraction[i + 1]);
 	}
@@ -25,12 +25,12 @@ void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 3>& n
 *  >-.----<                    shift of 4
 */
 template<size_t nbits>
-void denormalize(const std::bitset<nbits - 3>& fraction, int shift, std::bitset<nbits - 3>& number) {
+void denormalize(const std::bitset<nbits>& fraction, int shift, std::bitset<nbits>& number) {
 	if (nbits == 3) return;
 	number.reset();
-	if (shift <= nbits - 4) {
-		number.set(nbits - 4 - shift); // set hidden bit
-		for (int i = nbits - 5 - shift; i >= 0; i--) {
+	if (shift <= nbits - 1) {
+		number.set(nbits - 1 - shift); // set hidden bit
+		for (int i = nbits - 2 - shift; i >= 0; i--) {
 			number.set(i, fraction[i + 1 + shift]);
 		}
 	}
@@ -142,7 +142,7 @@ int main(int argc, char** argv)
 			cerr << "Wrong" << endl;
 		}
 		else {
-			bitset<nbits-3> r1, r2;
+			bitset<nbits> r1, r2;
 
 			cout << "frac1 " << pa.fraction_bits() << endl;
 			normalize<nbits>(pa.fraction_bits(), r1);

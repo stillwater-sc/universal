@@ -157,7 +157,7 @@ public:
 		}
 		bool _sign;
 		_sign = false;
-		std::bitset<nbits - 3> r1, r2, sum; // fraction is at most nbits-3 bits, + 1 for the hidden bit
+		std::bitset<nbits> r1, r2, sum; // fraction is at most nbits-3 bits, + 1 for the hidden bit
 		int _scale;
 		align_numbers(scale(), _Frac, rhs.scale(), rhs._Frac, _scale, r1, r2);
 
@@ -169,7 +169,7 @@ public:
 		std::cout << "r2    " << r2 << std::endl;
 		std::cout << "scale " << _scale << std::endl;
 
-		bool carry = add_unsigned<nbits - 3>(r1, r2, sum);
+		bool carry = add_unsigned<nbits>(r1, r2, sum);
 		std::cout << "sum " << sum << " carry " << (carry ? "1" : "0") << std::endl;
 		if (carry) {
 			_scale++;
@@ -178,13 +178,13 @@ public:
 		else {
 			// find the msb that will become the hidden bit
 			unsigned int msb = 0;
-			for (unsigned int i = nbits - 4; i >= 0; i--) {
+			for (int i = nbits - 1; i >= 0; i--) {
 				if (sum.test(i)) {
 					msb = i;
 					break;
 				}
 			}
-			_scale += msb - (nbits - 4);
+			_scale += msb - (nbits - 1);
 			sum <<= 1; // the msb becomes the hidden bit
 		}
 		std::cout << "scale " << _scale << std::endl;
@@ -313,8 +313,8 @@ public:
 	std::bitset<es> exponent_bits() const {
 		return _Exp;
 	}
-	// return fraction bits: nbits - 3
-	std::bitset<nbits-3> fraction_bits() const {
+	// return fraction bits
+	std::bitset<nbits> fraction_bits() const {
 		return _Frac;
 	}
 	// posit with nbits < 3 will fail due to zero-value fraction bits array
@@ -542,7 +542,7 @@ public:
 	// -1 -> round-down, 0 -> no rounding, +1 -> round-up
 	// _fraction contains the fraction without the hidden bit
 	int rounding_decision(const std::bitset<nbits>& _fraction, unsigned int nr_of_fraction_bits) {
-		bool bVerbose = false;
+		bool bVerbose = true;
 		if (bVerbose) std::cout << "_fraction bits to process: " << nr_of_fraction_bits << " " << _fraction << std::endl;
 		// check if there are any bits set past the cut-off
 		int rounding_direction = 0;
@@ -577,7 +577,7 @@ public:
 		return rounding_direction;
 	}	
 	int round(bool _sign, int _scale, std::bitset<nbits>& _fraction) {
-		bool bVerbose = false;
+		bool bVerbose = true;
 		switch (bRoundingMode) {
 		case POSIT_ROUND_DOWN:
 			if (bVerbose) std::cout << "Rounding Mode: round down" << std::endl;
@@ -602,11 +602,15 @@ public:
 		}
 		return _scale;
 	}
+	// this routine will not allocate 0 or infinity due to the test on (0,minpos], and [maxpos,inf)
+	// TODO: is that the right functionality? right now the special cases are deal with in the
+	// assignment operators for integer/float/double. I don't like that distribution of knowledge.
 	void convert_to_posit(bool _sign, int _scale, std::bitset<nbits>& _fraction) {
 		reset();
-		bool bVerbose = false;
+		bool bVerbose = true;
 		// deal with minpos/maxpos special cases
-		int k = (_scale >> es); if (bVerbose) std::cout << "k " << k << std::endl;
+		int k = (_scale >> es); 
+		if (bVerbose) std::cout << "scale = " << _scale << " es = " << es << " k = " << k << std::endl;
 		if (k < 0) {
 			// minpos is at k = -(nbits-1)
 			if (k <= 1 - nbits) { // <= minpos  0 is dealt with in special case
@@ -651,13 +655,13 @@ private:
 	// the conditional length of the exponent field creates a situation where we need to use the maximum size constant.
 	// this is too big and not precise, but is an outcome of using a template specification that needs to be const
 	// at time of compilation.
-	std::bitset<nbits-3> _Frac; 
+	std::bitset<nbits> _Frac; 
 	int8_t fractionLength;
 	int8_t k;
 	int8_t bRoundingMode;
 
 	// HELPER methods
-	void align_numbers(int lhs_scale, const std::bitset<nbits - 3>& lhs, int rhs_scale, const std::bitset<nbits - 3>& rhs, int& scale, std::bitset<nbits - 3>& r1, std::bitset<nbits - 3>& r2) {
+	void align_numbers(int lhs_scale, const std::bitset<nbits>& lhs, int rhs_scale, const std::bitset<nbits>& rhs, int& scale, std::bitset<nbits>& r1, std::bitset<nbits>& r2) {
 		int diff = lhs_scale - rhs_scale;
 		if (diff < 0) {
 			scale = rhs_scale;
@@ -671,10 +675,10 @@ private:
 		}
 	}
 	// normalize the fraction by adding the hidden bit into the value
-	void normalize(const std::bitset<nbits - 3>& fraction, std::bitset<nbits - 3>& number) {
+	void normalize(const std::bitset<nbits>& fraction, std::bitset<nbits>& number) {
 		if (nbits == 3) return;
-		number.set(nbits - 4); // set hidden bit
-		for (int i = nbits - 5; i >= 0; i--) {
+		number.set(nbits - 1); // set hidden bit
+		for (int i = nbits - 2; i >= 0; i--) {
 			number.set(i, fraction[i+1]);
 		}
 	}
@@ -683,12 +687,12 @@ private:
 	 *   0.000h_bbbb_bbbb_bbbb_b... number
 	 *  >-.----<                    shift of 4
 	 */
-	void denormalize(const std::bitset<nbits - 3>& fraction, unsigned int shift, std::bitset<nbits - 3>& number) {
+	void denormalize(const std::bitset<nbits>& fraction, unsigned int shift, std::bitset<nbits>& number) {
 		if (nbits == 3) return;
 		number.reset();
-		if (shift <= nbits - 4) {
-			number.set(nbits - 4 - shift); // set hidden bit
-			for (int i = nbits - 5 - shift; i >= 0; i--) {
+		if (shift <= nbits - 1) {
+			number.set(nbits - 1 - shift); // set hidden bit
+			for (int i = nbits - 2 - shift; i >= 0; i--) {
 				number.set(i, fraction[i + 1 + shift]);
 			}
 		}
