@@ -615,7 +615,7 @@ public:
 			// minpos is at k = -(nbits-1)
 			if (k <= 1 - nbits) { // <= minpos  0 is dealt with in special case
 				if (bVerbose) std::cout << "value between 0 and minpos: round up" << std::endl;
-				assign_regime_pattern(2-nbits);  // assign minpos
+				assign_regime_pattern(2-int(nbits));  // assign minpos
 				return;
 			}
 			else {
