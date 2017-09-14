@@ -112,15 +112,18 @@ POSIT<4,0>
 */
 bool ValidateFloatRoundingPosit_4_0()
 {
-	float golden_answer[9] = {
+	float input[9] = {
 		0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f, 100.0f
+	};
+	float golden_answer[8] = {
+		0.25f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f
 	};
 
 	bool bValid = true;
 	posit<4, 0> p;
 	float arithmetic_mean;
 	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = float((golden_answer[i] + golden_answer[i + 1] - 0.0001) / 2.0f);
+		arithmetic_mean = float((input[i] + input[i + 1] - 0.0001) / 2.0f);
 		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
 		p = arithmetic_mean;
 		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
@@ -130,7 +133,7 @@ bool ValidateFloatRoundingPosit_4_0()
 	}
 
 	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = float((-golden_answer[i] - golden_answer[i + 1] + 0.0001) / 2.0f);
+		arithmetic_mean = float((-input[i] - input[i + 1] + 0.0001) / 2.0f);
 		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
 		p = arithmetic_mean;
 		if (fabs(p.to_double() + golden_answer[i]) > 0.0001) {
@@ -143,15 +146,18 @@ bool ValidateFloatRoundingPosit_4_0()
 }
 bool ValidateDoubleRoundingPosit_4_0()
 {
-	float golden_answer[9] = {
+	float input[9] = {
 		0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f, 100.0f
+	};
+	float golden_answer[8] = {
+		0.25f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f
 	};
 
 	bool bValid = true;
 	posit<4, 0> p;
 	double arithmetic_mean;
 	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = (golden_answer[i] + golden_answer[i + 1] - 0.000005) / 2.0f;
+		arithmetic_mean = (input[i] + input[i + 1] - 0.000005) / 2.0f;
 		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
 		p = arithmetic_mean;
 		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
@@ -161,7 +167,7 @@ bool ValidateDoubleRoundingPosit_4_0()
 	}
 
 	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = (-golden_answer[i] - golden_answer[i + 1] + 0.000005) / 2.0f;
+		arithmetic_mean = (-input[i] - input[i + 1] + 0.000005) / 2.0f;
 		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
 		p = arithmetic_mean;
 		if (fabs(p.to_double() + golden_answer[i]) > 0.0001) {
@@ -195,15 +201,18 @@ POSIT<4,1>
 */
 bool ValidateFloatRoundingPosit_4_1()
 {
-	float golden_answer[9] = {
+	float input[9] = {
 		0.0, 0.0625, 0.25, 0.5, 1.0, 2.0, 4.0, 16.0, 100.0f
+	};
+	float golden_answer[8] = {
+		0.0625f, 0.0625f, 0.25, 0.5, 1.0, 2.0, 4.0, 16.0
 	};
 
 	bool bValid = true;
 	posit<4, 1> p;
 	float arithmetic_mean;
 	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = float((golden_answer[i] + golden_answer[i + 1] - 0.0001) / 2.0f);
+		arithmetic_mean = float((input[i] + input[i + 1] - 0.0001) / 2.0f);
 		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
 		p = arithmetic_mean;
 		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
@@ -213,7 +222,7 @@ bool ValidateFloatRoundingPosit_4_1()
 	}
 
 	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = float((-golden_answer[i] - golden_answer[i + 1] + 0.0001) / 2.0f);
+		arithmetic_mean = float((-input[i] - input[i + 1] + 0.0001) / 2.0f);
 		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
 		p = arithmetic_mean;
 		if (fabs(p.to_double() + golden_answer[i]) > 0.0001) {
@@ -226,15 +235,18 @@ bool ValidateFloatRoundingPosit_4_1()
 }
 bool ValidateDoubleRoundingDownPosit_4_1()
 {
-	float golden_answer[9] = {
+	float input[9] = {
 		0.0, 0.0625, 0.25, 0.5, 1.0, 2.0, 4.0, 16.0, 100.0f
+	};
+	float golden_answer[8] = {
+		0.0625f, 0.0625, 0.25, 0.5, 1.0, 2.0, 4.0, 16.0
 	};
 
 	bool bValid = true;
 	posit<4, 1> p;
 	double arithmetic_mean;
 	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = double((golden_answer[i] + golden_answer[i + 1] - 0.0001) / 2.0f);
+		arithmetic_mean = double((input[i] + input[i + 1] - 0.0001) / 2.0f);
 		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
 		p = arithmetic_mean;
 		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
@@ -244,7 +256,7 @@ bool ValidateDoubleRoundingDownPosit_4_1()
 	}
 
 	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = double((-golden_answer[i] - golden_answer[i + 1] + 0.0001) / 2.0f);
+		arithmetic_mean = double((-input[i] - input[i + 1] + 0.0001) / 2.0f);
 		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
 		p = arithmetic_mean;
 		if (fabs(p.to_double() + golden_answer[i]) > 0.0001) {
@@ -257,29 +269,32 @@ bool ValidateDoubleRoundingDownPosit_4_1()
 }
 bool ValidateDoubleRoundingUpPosit_4_1()
 {
-	float golden_answer[9] = {
+	float input[9] = {
 		0.0, 0.0625, 0.25, 0.5, 1.0, 2.0, 4.0, 16.0, 100.0f
+	};
+	float golden_answer[8] = {
+		0.0625f, 0.25, 0.5, 1.0, 2.0, 4.0, 16.0f, 16.0f
 	};
 
 	bool bValid = true;
 	posit<4, 1> p;
 	double arithmetic_mean;
 	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = double((golden_answer[i] + golden_answer[i + 1] + 0.000005) / 2.0f);
+		arithmetic_mean = double((input[i] + input[i + 1] + 0.000005) / 2.0f);
 		cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
 		p = arithmetic_mean;
-		if (fabs(p.to_double() - golden_answer[i+1]) > 0.0001) {
-			cerr << "Posit rounding failed: golden value = " << golden_answer[i+1] << " != posit<4,1> " << components_to_string(p) << endl;
+		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
+			cerr << "Posit rounding failed: golden value = " << golden_answer[i] << " != posit<4,1> " << components_to_string(p) << endl;
 			bValid = false;
 		}
 	}
 
 	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = double((-golden_answer[i] - golden_answer[i + 1] - 0.000005) / 2.0f);
+		arithmetic_mean = double((-input[i] - input[i + 1] - 0.000005) / 2.0f);
 		cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
 		p = arithmetic_mean;
-		if (fabs(p.to_double() + golden_answer[i+1]) > 0.0001) {
-			cerr << "Posit rounding failed: golden value = " << golden_answer[i+1] << " != posit<4,1> " << components_to_string(p) << endl;
+		if (fabs(p.to_double() + golden_answer[i]) > 0.0001) {
+			cerr << "Posit rounding failed: golden value = " << golden_answer[i] << " != posit<4,1> " << components_to_string(p) << endl;
 			bValid = false;
 		}
 	}
@@ -289,14 +304,16 @@ bool ValidateDoubleRoundingUpPosit_4_1()
 
 int main(int argc, char** argv)
 {
-	ReportPositScales();
+	//ReportPositScales();
 
 	try {
+
 		TestPositRounding(ValidateFloatRoundingPosit_4_0(), "posit<4,0>", "float rounding");
 		TestPositRounding(ValidateDoubleRoundingPosit_4_0(), "posit<4,0>", "double rounding");
 		TestPositRounding(ValidateFloatRoundingPosit_4_1(), "posit<4,1>", "float rounding");
 		TestPositRounding(ValidateDoubleRoundingDownPosit_4_1(), "posit<4,1>", "double rounding down");
 		TestPositRounding(ValidateDoubleRoundingUpPosit_4_1(), "posit<4,1>", "double rounding up");
+		
 	}
 	catch (char* e) {
 		cerr << e << endl;
