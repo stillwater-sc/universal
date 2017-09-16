@@ -59,6 +59,12 @@ private:
 	std::bitset<nbits - 1> _Bits;
 	int8_t kk;
 	unsigned int nrOfRegimeBits;
+
+	// template parameters need names different from class template parameters (for gcc and clang)
+	template<size_t nnbits>
+	friend std::ostream& operator<< (std::ostream& ostr, const regime<nnbits>& r);
+	template<size_t nnbits>
+	friend std::istream& operator>> (std::istream& istr, regime<nnbits>& r);
 };
 
 template<size_t nbits, size_t es>

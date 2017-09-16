@@ -88,9 +88,31 @@ inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, const posit<nbits
 	return ratio;
 }
 
+// COMPONENT operators
+
+template<size_t nbits>
+inline std::ostream& operator<<(std::ostream& ostr, const regime<nbits>& r) {
+	unsigned int nrOfRegimeBitsProcessed = 0;
+	for (int i = nbits - 2; i >= 0; --i) {
+		if (r.nrOfRegimeBits > nrOfRegimeBitsProcessed++) {
+			ostr << (r._Bits[i] ? "1" : "0");
+		}
+		else {
+			ostr << "-";
+		}
+	}
+	return ostr;
+}
+
+template<size_t nbits>
+inline std::istream& operator>> (std::istream& istr, const regime<nbits>& r) {
+	istr >> r._Bits;
+	return istr;
+}
+
 template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e) {
-	int nrOfExponentBitsProcessed = 0;
+	unsigned int nrOfExponentBitsProcessed = 0;
 	for (int i = es - 1; i >= 0; --i) {
 		if (e.nrOfExponentBits > nrOfExponentBitsProcessed++) {
 			ostr << (e._Bits[i] ? "1" : "0");

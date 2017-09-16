@@ -31,7 +31,7 @@ int main()
 		int k = scale >> es;
 		unsigned int nrOfRegimeBits = test_regime.assign_regime_pattern(k);
 		unsigned int nrOfExponentBits = test_exponent.assign_exponent_bits(scale, nrOfRegimeBits);
-		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime.get() << " " << test_exponent << endl;
+		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime << " " << test_exponent << endl;
 	}
 
 	// fraction component of the posit
