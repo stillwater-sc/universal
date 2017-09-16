@@ -1,5 +1,8 @@
 // raw_bit_patterns.cpp : Defines the entry point for the console application.
 //
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "stdafx.h"
 #include <sstream>

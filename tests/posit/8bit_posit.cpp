@@ -1,4 +1,8 @@
-// Functionality tests for standard 8-bit posits
+// 8bit_posit.cpp: Functionality tests for standard 8-bit posits
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "stdafx.h"
 

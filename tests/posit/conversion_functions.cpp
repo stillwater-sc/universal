@@ -1,5 +1,8 @@
-// positive_regime.cpp : conversion operators for positive regime of posit numbers
+// conversion_functions.cpp : api experiments for conversion algorithms
 //
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "stdafx.h"
 

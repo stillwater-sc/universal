@@ -1,4 +1,8 @@
-// create detailed tables that spell out all the components that make up a posit
+// tables.cpp: create detailed component tables that spell out all the components that make up a posit
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "stdafx.h"
 #include <sstream>

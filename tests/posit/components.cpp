@@ -1,5 +1,8 @@
-// unum.cpp : Defines the entry point for the console application.
+// components.cpp : tests for regime/exponent/fraction components of a posit
 //
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "stdafx.h"
 

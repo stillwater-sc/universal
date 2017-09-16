@@ -1,5 +1,9 @@
 #pragma once
-
+// posit_regime_lookup.hpp: definition of the regime bit patterns for the max 65bit posits
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 
 /*

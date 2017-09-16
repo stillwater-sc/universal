@@ -1,4 +1,8 @@
-// create_small_posit_lookup_table.cpp
+// decode.cpp: functional tests of the posit decode method
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "stdafx.h"
 #include <sstream>

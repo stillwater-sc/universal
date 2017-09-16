@@ -1,4 +1,8 @@
-// addition and subtraction tests
+// add_subtract.cpp: functional tests for addition and subtraction
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "stdafx.h"
 

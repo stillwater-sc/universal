@@ -1,5 +1,8 @@
-//  basic_operators.cpp : conversion operators for positive regime of posit numbers
+//  basic_operators.cpp : functional tests for conversion operators of posit numbers
 //
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "stdafx.h"
 #include <sstream>
