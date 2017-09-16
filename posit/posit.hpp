@@ -10,6 +10,109 @@
 const uint8_t POSIT_ROUND_DOWN = 0;
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 
+template<size_t nbits, size_t es>
+double useed() {
+	return double(uint64_t(1) << (uint64_t(1) << es));
+};
+
+template<size_t nbits>
+class regime {
+public:
+	regime() {
+		_Bits.reset();
+	}
+	std::bitset<nbits - 1> get() const {
+		return _Bits;
+	}
+	void set(const std::bitset<nbits - 1>& raw) {
+		_Bits = raw;
+	}
+	bool isZero() const {
+		return _Bits.none();
+	}
+	// return the number of regime bits
+	unsigned int assign_regime_pattern(int k) {
+		_Bits.reset();
+		kk = k;
+		if (k < 0) {
+			k = -k - 1;
+			uint64_t regime = REGIME_BITS[k];
+			uint64_t mask = REGIME_BITS[0];
+			nrOfRegimeBits = (k < nbits - 2 ? k + 2 : nbits - 1);
+			for (unsigned int i = 0; i < nrOfRegimeBits; i++) {
+				_Bits[nbits - 2 - i] = !(regime & mask);
+				mask >>= 1;
+			}
+		}
+		else {
+			uint64_t regime = REGIME_BITS[k];
+			uint64_t mask = REGIME_BITS[0];
+			nrOfRegimeBits = (k < nbits - 2 ? k + 2 : nbits - 1);
+			for (unsigned int i = 0; i < nrOfRegimeBits; i++) {
+				_Bits[nbits - 2 - i] = regime & mask;
+				mask >>= 1;
+			}
+		}
+		return nrOfRegimeBits;
+	}
+private:
+	std::bitset<nbits - 1> _Bits;
+	int8_t kk;
+	unsigned int nrOfRegimeBits;
+};
+
+template<size_t nbits, size_t es>
+class exponent {
+public:
+	exponent() {
+		_Bits.reset();
+	}
+	std::bitset<es> get() {
+		return _Bits;
+	}
+	void set(const std::bitset<es>& raw) {
+		_Bits = raw;
+	}
+	unsigned int assign_exponent_bits(unsigned int msb, unsigned int nr_of_regime_bits) {
+		_Bits.reset();
+		nrOfExponentBits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
+		if (nrOfExponentBits > 0) {
+			unsigned int exponent = (es > 0 ? msb % (1 << es) : 0);
+			uint64_t mask = (uint64_t(1) << (nrOfExponentBits - 1));
+			for (unsigned int i = 0; i < nrOfExponentBits; i++) {
+				_Bits[es - 1 - i] = exponent & mask;
+				mask >>= 1;
+			}
+		}
+		return nrOfExponentBits;
+	}
+private:
+	std::bitset<es> _Bits;
+	unsigned int nrOfExponentBits;
+
+	// template parameters need names different from class template parameters (for gcc and clang)
+	template<size_t nnbits, size_t ees>
+	friend std::ostream& operator<< (std::ostream& ostr, const exponent<nnbits, ees>& e);
+	template<size_t nnbits, size_t ees>
+	friend std::istream& operator>> (std::istream& istr, exponent<nnbits, ees>& e);
+};
+
+template<size_t nbits>
+class fraction {
+public:
+	fraction() {
+		_Bits.reset();
+	}
+	std::bitset<nbits> get() {
+		return _Bits;
+	}
+	void set(const std::bitset<nbits>& raw) {
+		_Bits = raw;
+	}
+private:
+	std::bitset<nbits> _Bits;
+};
+
 /*
  class posit represents arbitrary configuration posits and their arithmetic
  */
@@ -484,42 +587,8 @@ public:
 		// scale = useed ^ k * 2^e 
 		return k*(1 << es) + _Exp.to_ulong();
 	}
-	// return the number of regime bits
-	unsigned int assign_regime_pattern (int k) {
-		unsigned int nr_of_regime_bits;
-		if (k < 0) {
-			k = -k - 1;
-			uint64_t regime = REGIME_BITS[k];
-			uint64_t mask = REGIME_BITS[0];
-			nr_of_regime_bits = (k < nbits - 2 ? k + 2 : nbits - 1);
-			for (unsigned int i = 0; i < nr_of_regime_bits; i++) {
-				_Bits[nbits - 2 - i] = !(regime & mask);
-				mask >>= 1;
-			}
-		}
-		else {
-			uint64_t regime = REGIME_BITS[k];
-			uint64_t mask = REGIME_BITS[0];
-			nr_of_regime_bits = (k < nbits - 2 ? k + 2 : nbits - 1);
-			for (unsigned int i = 0; i < nr_of_regime_bits; i++) {
-				_Bits[nbits - 2 - i] = regime & mask;
-				mask >>= 1;
-			}
-		}
-		return nr_of_regime_bits;
-	}
-	unsigned int assign_exponent_bits(unsigned int msb, unsigned int nr_of_regime_bits) {
-		unsigned int nr_of_exp_bits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
-		if (nr_of_exp_bits > 0) {
-			unsigned int exponent = (es > 0 ? msb % (1 << es) : 0);
-			uint64_t mask = (uint64_t(1) << (nr_of_exp_bits - 1));
-			for (unsigned int i = 0; i < nr_of_exp_bits; i++) {
-				_Bits[nbits - 2 - nr_of_regime_bits - i] = exponent & mask;
-				mask >>= 1;
-			}
-		}
-		return nr_of_exp_bits;
-	}
+
+
 	unsigned int estimate_nr_fraction_bits(int k) {
 		unsigned int nr_of_regime_bits;
 		if (k < 0) {

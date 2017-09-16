@@ -89,6 +89,26 @@ inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, const posit<nbits
 }
 
 template<size_t nbits, size_t es>
+inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e) {
+	int nrOfExponentBitsProcessed = 0;
+	for (int i = es - 1; i >= 0; --i) {
+		if (e.nrOfExponentBits > nrOfExponentBitsProcessed++) {
+			ostr << (e._Bits[i] ? "1" : "0");
+		}
+		else {
+			ostr << "-";
+		}	
+	}
+	return ostr;
+}
+
+template<size_t nbits, size_t es>
+inline std::istream& operator>> (std::istream& istr, const exponent<nbits, es>& e) {
+	istr >> e._Bits;
+	return istr;
+}
+
+template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 	if (p.isZero()) {
 		ostr << double(0.0);
@@ -103,7 +123,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 }
 
 template<size_t nbits, size_t es>
-inline std::istream& operator >> (std::istream& istr, const posit<nbits, es>& p) {
+inline std::istream& operator>> (std::istream& istr, const posit<nbits, es>& p) {
 	istr >> p._Bits;
 	return istr;
 }
