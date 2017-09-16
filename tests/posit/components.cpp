@@ -10,19 +10,30 @@ using namespace std;
 
 int main()
 {
-	const size_t nbits = 8;
-	const size_t es = 2;
+	const size_t nbits = 4;
+	const size_t es = 0;
+
+
+	posit<nbits, es> p;
+
+	for (unsigned int i = 0; i < 16; i++) {
+		p.set_raw_bits(i);
+		cout << p << endl;
+	}
+
+	return 0;
+
 
 	int k_max = nbits - 1;
 	int bound = (k_max << es);
 	float upper_range = float(useed<nbits, es>());
 
 	// regime component of the posit
-	regime<nbits> test_regime;
+	regime<nbits, es> test_regime;
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = scale >> es;
 		test_regime.assign_regime_pattern(k);
-		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime.get() << endl;
+		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime.get() << " scale " << test_regime.scale() <<  endl;
 	}
     
 	// exponent component of the posit

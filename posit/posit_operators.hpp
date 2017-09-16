@@ -90,11 +90,11 @@ inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, const posit<nbits
 
 // COMPONENT operators
 
-template<size_t nbits>
-inline std::ostream& operator<<(std::ostream& ostr, const regime<nbits>& r) {
+template<size_t nbits, size_t es>
+inline std::ostream& operator<<(std::ostream& ostr, const regime<nbits, es>& r) {
 	unsigned int nrOfRegimeBitsProcessed = 0;
 	for (int i = nbits - 2; i >= 0; --i) {
-		if (r.nrOfRegimeBits > nrOfRegimeBitsProcessed++) {
+		if (r._RegimeBits > nrOfRegimeBitsProcessed++) {
 			ostr << (r._Bits[i] ? "1" : "0");
 		}
 		else {
@@ -104,8 +104,8 @@ inline std::ostream& operator<<(std::ostream& ostr, const regime<nbits>& r) {
 	return ostr;
 }
 
-template<size_t nbits>
-inline std::istream& operator>> (std::istream& istr, const regime<nbits>& r) {
+template<size_t nbits, size_t es>
+inline std::istream& operator>> (std::istream& istr, const regime<nbits, es>& r) {
 	istr >> r._Bits;
 	return istr;
 }
@@ -114,7 +114,7 @@ template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e) {
 	unsigned int nrOfExponentBitsProcessed = 0;
 	for (int i = es - 1; i >= 0; --i) {
-		if (e.nrOfExponentBits > nrOfExponentBitsProcessed++) {
+		if (e._ExponentBits > nrOfExponentBitsProcessed++) {
 			ostr << (e._Bits[i] ? "1" : "0");
 		}
 		else {

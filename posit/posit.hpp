@@ -15,31 +15,60 @@ double useed() {
 	return double(uint64_t(1) << (uint64_t(1) << es));
 };
 
-template<size_t nbits>
+template<size_t nbits, size_t es>
 class regime {
 public:
 	regime() {
 		_Bits.reset();
 	}
-	std::bitset<nbits - 1> get() const {
-		return _Bits;
+	void reset() {
+		_k = 0;
+		_RegimeBits = 0;
+		_Bits.reset();
 	}
-	void set(const std::bitset<nbits - 1>& raw) {
-		_Bits = raw;
+	int scale() const {
+		return (int(_k) << es);
+	}
+	// return the k-value of the regime: useed ^ k
+	int regime_k() const {
+		return _k;
+	}
+	double value() const {
+		double scale;
+		int e2 = (1 << es) * _k;
+		if (e2 < -63 || e2 > 63) {
+			scale = pow(2.0, e2);
+		}
+		else {
+			if (e2 >= 0) {
+				scale = double((uint64_t(1) << e2));
+			}
+			else {
+				scale = double(1.0) / double(uint64_t(1) << -e2);
+			}
+		}
+		return scale;
 	}
 	bool isZero() const {
 		return _Bits.none();
 	}
+	std::bitset<nbits - 1> get() const {
+		return _Bits;
+	}
+	void set(const std::bitset<nbits - 1>& raw, unsigned int nrOfRegimeBits) {
+		_Bits = raw;
+		_RegimeBits = nrOfRegimeBits
+	}
 	// return the number of regime bits
 	unsigned int assign_regime_pattern(int k) {
 		_Bits.reset();
-		kk = k;
+		_k = k;
 		if (k < 0) {
 			k = -k - 1;
 			uint64_t regime = REGIME_BITS[k];
 			uint64_t mask = REGIME_BITS[0];
-			nrOfRegimeBits = (k < nbits - 2 ? k + 2 : nbits - 1);
-			for (unsigned int i = 0; i < nrOfRegimeBits; i++) {
+			_RegimeBits = (k < nbits - 2 ? k + 2 : nbits - 1);
+			for (unsigned int i = 0; i < _RegimeBits; i++) {
 				_Bits[nbits - 2 - i] = !(regime & mask);
 				mask >>= 1;
 			}
@@ -47,24 +76,24 @@ public:
 		else {
 			uint64_t regime = REGIME_BITS[k];
 			uint64_t mask = REGIME_BITS[0];
-			nrOfRegimeBits = (k < nbits - 2 ? k + 2 : nbits - 1);
-			for (unsigned int i = 0; i < nrOfRegimeBits; i++) {
+			_RegimeBits = (k < nbits - 2 ? k + 2 : nbits - 1);
+			for (unsigned int i = 0; i < _RegimeBits; i++) {
 				_Bits[nbits - 2 - i] = regime & mask;
 				mask >>= 1;
 			}
 		}
-		return nrOfRegimeBits;
+		return _RegimeBits;
 	}
 private:
-	std::bitset<nbits - 1> _Bits;
-	int8_t kk;
-	unsigned int nrOfRegimeBits;
+	std::bitset<nbits - 1>	_Bits;
+	int8_t					_k;
+	unsigned int			_RegimeBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t nnbits>
-	friend std::ostream& operator<< (std::ostream& ostr, const regime<nnbits>& r);
-	template<size_t nnbits>
-	friend std::istream& operator>> (std::istream& istr, regime<nnbits>& r);
+	template<size_t nnbits, size_t ees>
+	friend std::ostream& operator<< (std::ostream& ostr, const regime<nnbits, ees>& r);
+	template<size_t nnbits, size_t ees>
+	friend std::istream& operator>> (std::istream& istr, regime<nnbits, ees>& r);
 };
 
 template<size_t nbits, size_t es>
@@ -73,28 +102,39 @@ public:
 	exponent() {
 		_Bits.reset();
 	}
-	std::bitset<es> get() {
+	void reset() {
+		_ExponentBits = 0;
+		_Bits.reset();
+	}
+	int scale() const {
+		return _Bits.to_ulong();
+	}
+	double value() const {
+		return double(uint64_t(1) << scale());
+	}
+	std::bitset<es> get() const {
 		return _Bits;
 	}
-	void set(const std::bitset<es>& raw) {
+	void set(const std::bitset<es>& raw, int nrOfExponentBits) {
 		_Bits = raw;
+		_ExponentBits = nrOfExponentBits;
 	}
 	unsigned int assign_exponent_bits(unsigned int msb, unsigned int nr_of_regime_bits) {
 		_Bits.reset();
-		nrOfExponentBits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
-		if (nrOfExponentBits > 0) {
+		_ExponentBits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
+		if (_ExponentBits > 0) {
 			unsigned int exponent = (es > 0 ? msb % (1 << es) : 0);
-			uint64_t mask = (uint64_t(1) << (nrOfExponentBits - 1));
-			for (unsigned int i = 0; i < nrOfExponentBits; i++) {
+			uint64_t mask = (uint64_t(1) << (_ExponentBits - 1));
+			for (unsigned int i = 0; i < _ExponentBits; i++) {
 				_Bits[es - 1 - i] = exponent & mask;
 				mask >>= 1;
 			}
 		}
-		return nrOfExponentBits;
+		return _ExponentBits;
 	}
 private:
 	std::bitset<es> _Bits;
-	unsigned int nrOfExponentBits;
+	unsigned int	_ExponentBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t ees>
@@ -103,20 +143,33 @@ private:
 	friend std::istream& operator>> (std::istream& istr, exponent<nnbits, ees>& e);
 };
 
-template<size_t nbits>
+template<size_t nbits, size_t es>
 class fraction {
 public:
 	fraction() {
 		_Bits.reset();
 	}
-	std::bitset<nbits> get() {
+	void reset() {
+		_FractionBits = 0;
+		_Bits.reset();
+	}
+	double value() const {
+		return double(_Bits.to_ullong()) / double(uint64_t(1) << (nbits - 3));
+	}
+	std::bitset<nbits> get() const {
 		return _Bits;
 	}
-	void set(const std::bitset<nbits>& raw) {
+	void set(const std::bitset<nbits>& raw, int nrOfFractionBits) {
 		_Bits = raw;
+		_FractionBits = nrOfFractionBits;
 	}
 private:
+	// maximum size fraction is <nbits - one sign bit - minimum two regime bits>
+	// the conditional length of the exponent field creates a situation where we need to use the maximum size constant.
+	// this is too big and not precise, but is an outcome of using a template specification that needs to be const
+	// at time of compilation.
 	std::bitset<nbits> _Bits;
+	unsigned int _FractionBits;
 };
 
 /*
@@ -332,19 +385,16 @@ public:
 
 	// SELECTORS
 	bool isInfinite() const {
-		// +-infinite is a bit string of a sign bit of 1 followed by all 0s
-		std::bitset<nbits> tmp(_Bits);
-		tmp.reset(nbits - 1);
-		return _Bits[nbits - 1] && tmp.none();
+		return (_sign & _regime.isZero());
 	}
 	bool isZero() const {
-		return _Bits.none();
+		return (!_sign & _regime.isZero());
 	}
 	bool isNegative() const {
-		return _Bits[nbits - 1];
+		return _sign;
 	}
 	bool isPositive() const {
-		return !_Bits[nbits - 1];
+		return !_sign;
 	}
 	std::string RoundingMode() {
 		switch (bRoundingMode) {
@@ -364,60 +414,26 @@ public:
 	double minpos() {
 		return pow(double(useed()), double(static_cast<int>(2-nbits)));
 	}
-	uint64_t useed() {
-		return (1 << (1 << es));
-	}
-	unsigned int base_regime(int64_t rhs) {
-		return (findMostSignificantBit(rhs) - 1) >> es;
-	}
-	unsigned int maxpos_scale() {
+	int maxpos_scale() {
 		return (nbits - 2) * (1 << es);
 	}
-	unsigned int minpos_scale() {
+	int minpos_scale() {
 		return static_cast<int>(2 - nbits) * (1 << es);
 	}
 
-	int sign() const {
-		return (_Bits[nbits - 1] ? -1 : 1);
+	int sign_value() const {
+		return (_sign ? -1 : 1);
 	}
-	double regime() const {
-		double regime;
-		int e2 = (1 << es) * k;
-		if (e2 < -63 || e2 > 63) {
-			regime = pow(2.0, e2);
-		}
-		else {
-			if (e2 >= 0) {
-				regime = double((uint64_t(1) << e2));
-			}
-			else {
-				regime = double(1.0) / double(uint64_t(1) << -e2);
-			}
-		}
-		return regime;
+	double regime_value() const {
+		return _regime.value();
 	}
-	double exponent() const {
-		return double(1 << _Exp.to_ulong());
+	double exponent_value() const {
+		return _exponent.value();
 	}
-	double fraction() const {
-		return double(_Frac.to_ulong()) / double(1 << (nbits - 3));
-	}
-	uint64_t regime_int() const {
-		if (k < 0) return 0;
-		return (uint64_t(1) << k*(uint32_t(1) << es));
-	}
-	uint64_t exponent_int() const {
-		return uint64_t(_Exp.to_ulong());
-	}
-	uint64_t fraction_int() const {
-		int nr_of_fraction_bits = 0;
-		return _Frac.to_ullong();
+	double fraction_value() const {
+		return _fraction.value();
 	}
 
-	// return the k-value of the regime: useed ^ k
-	int regime_k() const {
-		return k;
-	}
 	// return exponent bits
 	std::bitset<es> exponent_bits() const {
 		return _Exp;
@@ -435,30 +451,24 @@ public:
 
 	// MODIFIERS
 	void reset() {
-		k = 0;
 		bRoundingMode = POSIT_ROUND_TO_NEAREST;
-		_Exp.reset();
-		_Frac.reset();
-		_Bits.reset();
+		_sign = false;
+		_regime.reset();
+		_exponent.reset();
+		_fraction.reset();
 	}
-	void set(std::bitset<nbits> raw) {
-		reset();
-		_Bits = raw;
-		decode();
-	}
-	std::bitset<nbits> get() const {
-		return _Bits;
-	}
+
 	// Set the raw bits of the posit given a binary pattern
 	posit<nbits,es>& set_raw_bits(uint64_t value) {
 		reset();
+		std::bitset<nbits> raw_bits;
 		unsigned long mask = 1;
 		for ( int i = 0; i < nbits; i++ ) {
-			_Bits.set(i,(value & mask));
+			raw_bits.set(i,(value & mask));
 			mask = mask << 1;
 		}
 		// decode to cache the posit number interpretation
-		decode();
+		decode(raw_bits);
 		return *this;
 	}
 	// decode the segments and store in the posit
@@ -467,21 +477,23 @@ public:
 	// the regime, the exponent, and the fraction and
 	// sets the k value, the _Exp, and _Frac variables
 	// which represent the post-decode information of a posit.
-	int16_t decode() {
-		if (isZero()) {  // special case = 0
-			k = -int(nbits-1);
-			return k;
+	void decode(std::bitset<nbits>& raw_bits) {
+		if (raw_bits.none()) {  // special case = 0
+			// that is reset state
+			return;
 		}
-		if (isInfinite()) {	// special case = +-inf
-			k = (nbits - 1);
-			return k;
-		}
-		int m = 0;
-		std::bitset<nbits> tmp(_Bits);
-		if (tmp[nbits - 1]) {
-			tmp = twos_complement(_Bits);
+		_sign = raw_bits.test(nbits - 1);
+
+		// special case = +-inf
+
+
+		std::bitset<nbits> tmp(raw_bits);
+		if (_sign) {
+			tmp = twos_complement(raw_bits);
 		}
 		// let m be the number of identical bits in the regime
+		int m = 0;   // regime runlength counter
+		int k = 0;   // converted regime scale
 		if (tmp[nbits - 2] == 1) {   // run length of 1's
 			m = 1;   // if a run of 1's k = m - 1
 			for (int i = nbits - 3; i >= 0; --i) {
@@ -506,42 +518,45 @@ public:
 			}
 			k = -m;
 		}	
+		_regime.assign_regime_pattern(k);
 
-		//                            std::cout << "k = " << int(k) << " m = " << m ;
+		                            std::cout << "k = " << int(k) << " m = " << m ;
 		// get the exponent bits
 		// start of exponent is nbits - (sign_bit + regime_bits)
 		int32_t msb = nbits - (3 + m);
-		//                             std::cout << " msb = " << msb << " ";
-		int32_t size = 0;
+		                             std::cout << " msb = " << msb << " ";
+		int _exponentBits = 0;
+		std::bitset<es> _exp;
 		if (msb >= 0 && es > 0) {	
-			size = (msb >= es - 1 ? es : msb + 1);
-		//	                         std::cout << " size " << size << " msb " << msb << " ";
-			for (int i = 0; i < size; i++) {
-				_Exp[i] = tmp[msb - (size - 1) + i];
+			_exponentBits = (msb >= es - 1 ? es : msb + 1);
+			                         std::cout << " _exponentBits " << _exponentBits << " msb " << msb << " ";
+			for (int i = 0; i < _exponentBits; i++) {
+				_exp[i] = tmp[msb - (_exponentBits - 1) + i];
 			}
 		}
+		_exponent.set(_exp, _exponentBits);
 
-		//					std::cout << "fraction bits " << msb - size + 1 << std::endl;
+							std::cout << "fraction bits " << msb - _exponentBits + 1 << std::endl;
 		// finally, set the fraction bits
 		// we do this so that the fraction is right extended with 0;
 		// The max fraction is <nbits - 3 - es>, but we are setting it to <nbits - 3> and right-extent
 		// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
 		// If the fraction is empty, we have a fraction of nbits-3 0 bits
 		// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
-		msb = msb - size;
-		size = (msb < 0 ? 0 : msb + 1);
+		std::bitset<nbits> _frac;
+		msb = msb - _exponentBits;
+		int _fractionBits = (msb < 0 ? 0 : msb + 1);
 		if (msb >= 0) {
-			int f = 0;
 			for (int i = msb; i >= 0; --i) {
-				_Frac[nbits - 4 - f++] = tmp[i];
+				_frac[nbits - 1 - i] = tmp[i];
 			}
 		}
-		return k;
+		_fraction.set(_frac, _fractionBits);
 	}
 	int64_t to_int64() const {
 		if (isZero()) return 0;
 		if (isInfinite()) throw "inf";
-		// returning the integer representation of a posit only works for [1,inf)
+		// returning the integer representation of a posit only works for [1,inf) and is approximate
 		int64_t value;
 		int s = scale();
 		if (s < 0) {
@@ -553,37 +568,7 @@ public:
 		return value;
 	}
 	double to_double() const {
-		if (isZero()) {
-			return 0.0;
-		}
-		if (isInfinite()) {
-			return INFINITY;
-		}
-
-		//double value = sign() * regime() * exponent() * fraction();
-
-		double value = 0.0;
-		double base = 0.0;
-		uint64_t e = exponent_int();
-
-		// scale = useed ^ k * 2^e -> 2^(k*2^es) * 2^e = 2^(k*2^es + e)
-		int64_t e2 = (k * (uint64_t(1) << es)) + e;
-		if (e2 < -63 || e2 > 63) {
-			base = pow(2.0, e2);
-		}
-		else {
-			if (e2 >= 0) {			
-				base = double(uint64_t(1) << e2);
-			}
-			else {
-				base = 1.0 / double(uint64_t(1) << -e2);
-			}
-		}
-		value = base + base * fraction();
-		if (isNegative()) {	
-			value = -value;
-		} 
-		return value;
+		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
 	}
 
 	// scale returns the shifts to normalize the number =  regime + exponent shifts
@@ -591,10 +576,8 @@ public:
 		// how many shifts represent the regime?
 		// regime = useed ^ k = 2 ^ (k*(2 ^ e))
 		// scale = useed ^ k * 2^e 
-		return k*(1 << es) + _Exp.to_ulong();
+		return _regime.scale() + _exponent.scale();
 	}
-
-
 	unsigned int estimate_nr_fraction_bits(int k) {
 		unsigned int nr_of_regime_bits;
 		if (k < 0) {
@@ -723,16 +706,11 @@ public:
 	}
 
 private:
-	std::bitset<nbits> _Bits;
-	std::bitset<es> _Exp;
-	int8_t exponentLength;
-	// fraction is max <nbits - 1 sign bit - minimum 2 regime bits - 1 or more exponent bits>
-	// the conditional length of the exponent field creates a situation where we need to use the maximum size constant.
-	// this is too big and not precise, but is an outcome of using a template specification that needs to be const
-	// at time of compilation.
-	std::bitset<nbits> _Frac; 
-	int8_t fractionLength;
-	int8_t k;
+	bool				 _sign;
+	regime<nbits, es>	_regime;
+	exponent<nbits, es> _exponent;
+	fraction<nbits, es>	_fraction;
+
 	int8_t bRoundingMode;
 
 	// HELPER methods
