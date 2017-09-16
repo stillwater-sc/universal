@@ -159,7 +159,7 @@ public:
 		_Bits.reset();
 	}
 	double value() const {
-		return double(_Bits.to_ullong()) / double(uint64_t(1) << (nbits - 3));
+		return double(_Bits.to_ullong()) / double(uint64_t(1) << nbits);
 	}
 	std::bitset<nbits> get() const {
 		return _Bits;
@@ -168,6 +168,18 @@ public:
 		_Bits = raw;
 		_FractionBits = nrOfFractionBits;
 	}
+	unsigned int assign_fraction_bits(uint64_t number, int nrOfFractionBits) {
+		std::bitset<nbits> _frac;
+		msb = msb - _exponentBits;
+		int _fractionBits = (msb < 0 ? 0 : msb + 1);
+		if (bVerbose) std::cout << "fraction bits " << (msb < 0 ? 0 : msb + 1) << std::endl;
+		if (msb >= 0) {
+			for (int i = msb; i >= 0; --i) {
+				_frac[nbits - 1 - i] = tmp[i];
+			}
+		}
+		_fraction.set(_frac, _fractionBits);
+	}
 private:
 	// maximum size fraction is <nbits - one sign bit - minimum two regime bits>
 	// the conditional length of the exponent field creates a situation where we need to use the maximum size constant.
@@ -175,6 +187,12 @@ private:
 	// at time of compilation.
 	std::bitset<nbits> _Bits;
 	unsigned int _FractionBits;
+
+	// template parameters need names different from class template parameters (for gcc and clang)
+	template<size_t nnbits, size_t ees>
+	friend std::ostream& operator<< (std::ostream& ostr, const fraction<nnbits, ees>& f);
+	template<size_t nnbits, size_t ees>
+	friend std::istream& operator>> (std::istream& istr, fraction<nnbits, ees>& f);
 };
 
 /*
@@ -483,6 +501,7 @@ public:
 	// sets the k value, the _Exp, and _Frac variables
 	// which represent the post-decode information of a posit.
 	void decode(std::bitset<nbits>& raw_bits) {
+		bool bVerbose = false;
 		if (raw_bits.none()) {  // special case = 0
 			// that is reset state
 			return;
@@ -525,23 +544,27 @@ public:
 		}	
 		_regime.assign_regime_pattern(k);
 
-		                            std::cout << "k = " << int(k) << " m = " << m ;
+		if (bVerbose) std::cout << "k = " << int(k) << " m = " << m ;
 		// get the exponent bits
 		// start of exponent is nbits - (sign_bit + regime_bits)
 		int32_t msb = nbits - (3 + m);
-		                             std::cout << " msb = " << msb << " ";
+		if (bVerbose) std::cout << " msb = " << msb << " ";
 		int _exponentBits = 0;
-		std::bitset<es> _exp;
-		if (msb >= 0 && es > 0) {	
-			_exponentBits = (msb >= es - 1 ? es : msb + 1);
-			                         std::cout << " _exponentBits " << _exponentBits << " msb " << msb << " ";
-			for (int i = 0; i < _exponentBits; i++) {
-				_exp[i] = tmp[msb - (_exponentBits - 1) + i];
+		if (es > 0) {
+			if (bVerbose) std::cout << " _exponentBits " << _exponentBits << " msb " << msb << " ";
+			std::bitset<es> _exp;
+			if (msb >= 0 && es > 0) {
+				_exponentBits = (msb >= es - 1 ? es : msb + 1);
+				for (int i = 0; i < _exponentBits; i++) {
+					_exp[i] = tmp[msb - (_exponentBits - 1) + i];
+				}
 			}
+			_exponent.set(_exp, _exponentBits);
 		}
-		_exponent.set(_exp, _exponentBits);
+		else {
+			if (bVerbose) std::cout << " _exponentBits 0 msb " << msb << " ";
+		}
 
-							std::cout << "fraction bits " << msb - _exponentBits + 1 << std::endl;
 		// finally, set the fraction bits
 		// we do this so that the fraction is right extended with 0;
 		// The max fraction is <nbits - 3 - es>, but we are setting it to <nbits - 3> and right-extent
@@ -551,6 +574,7 @@ public:
 		std::bitset<nbits> _frac;
 		msb = msb - _exponentBits;
 		int _fractionBits = (msb < 0 ? 0 : msb + 1);
+		if (bVerbose) std::cout << "fraction bits " << (msb < 0 ? 0 : msb + 1) << std::endl;
 		if (msb >= 0) {
 			for (int i = msb; i >= 0; --i) {
 				_frac[nbits - 1 - i] = tmp[i];

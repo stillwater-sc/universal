@@ -13,19 +13,11 @@ using namespace std;
 
 int main()
 {
-	const size_t nbits = 4;
-	const size_t es = 0;
+	const size_t nbits = 8;
+	const size_t es = 2;
 
 
 	posit<nbits, es> p;
-
-	for (unsigned int i = 0; i < 16; i++) {
-		p.set_raw_bits(i);
-		cout << p << endl;
-	}
-
-	return 0;
-
 
 	int k_max = nbits - 1;
 	int bound = (k_max << es);
@@ -49,7 +41,20 @@ int main()
 	}
 
 	// fraction component of the posit
+	std::bitset<nbits> _fraction;
+	_fraction.set(nbits - 1, true);
+	_fraction.set(nbits - 2, false);
+	_fraction.set(nbits - 3, true);
+	fraction<nbits, es> test_fraction;
+	unsigned int nrOfFractionBits = 3;
+	test_fraction.set(_fraction, nrOfFractionBits);	
+	for (int scale = -bound; scale < bound; scale++) {
+		int k = scale >> es;
+		unsigned int nrOfRegimeBits = test_regime.assign_regime_pattern(k);
+		unsigned int nrOfExponentBits = test_exponent.assign_exponent_bits(scale, nrOfRegimeBits);
 
+		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime << " " << test_exponent << " " << test_fraction << endl;
+	}
 	return 0;
 }
 

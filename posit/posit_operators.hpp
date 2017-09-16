@@ -130,6 +130,26 @@ inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e
 }
 
 template<size_t nbits, size_t es>
+inline std::ostream& operator<<(std::ostream& ostr, const fraction<nbits, es>& f) {
+	unsigned int nrOfFractionBitsProcessed = 0;
+	for (int i = nbits - 1; i >= 0; --i) {
+		if (f._FractionBits > nrOfFractionBitsProcessed++) {
+			ostr << (f._Bits[i] ? "1" : "0");
+		}
+		else {
+			ostr << "-";
+		}
+	}
+	return ostr;
+}
+
+template<size_t nbits, size_t es>
+inline std::istream& operator>> (std::istream& istr, const fraction<nbits, es>& f) {
+	istr >> f._Bits;
+	return istr;
+}
+
+template<size_t nbits, size_t es>
 inline std::istream& operator>> (std::istream& istr, const exponent<nbits, es>& e) {
 	istr >> e._Bits;
 	return istr;
