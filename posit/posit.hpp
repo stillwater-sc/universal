@@ -80,12 +80,16 @@ public:
 		_Bits = raw;
 		_RegimeBits = nrOfRegimeBits
 	}
+	void setZero() {
+		_Bits.reset();
+		_RegimeBits = nbits - 1;
+	}
 	void setInf() {
 		_Bits.reset();
 		_RegimeBits = nbits - 1;
 	}
 	// construct the regime bit pattern given a number's scale and returning the number of regime bits
-	unsigned int assign_regime_pattern(int k) {
+	unsigned int assign_regime_pattern(bool sign, int k) {
 		_Bits.reset();
 		_k = k;
 		if (k < 0) {
@@ -529,9 +533,11 @@ public:
 		for (unsigned int i = 0; i < nrRegimeBits; i++) {
 			_Bits.set(msb--, r[nbits - 2 - i]);
 		}
+		if (msb < 0) return _Bits;
 		for (unsigned int i = 0; i < nrExponentBits; i++) {
 			_Bits.set(msb--, e[es - 1 - i]);
 		}
+		if (msb < 0) return _Bits;
 		for (unsigned int i = 0; i < nrFractionBits; i++) {
 			_Bits.set(msb--, f[nbits - 1 - i]);
 		}
@@ -565,38 +571,14 @@ public:
 		decode(raw_bits);
 		return *this;
 	}
-	// decode takes the raw bits representing a posit coming from memory
-	// and decodes the regime, the exponent, and the fraction.
-	// This function has the functionality of the posit register-file load.
-	void decode(std::bitset<nbits>& raw_bits) {
-		bool bVerbose = false;
-		if (raw_bits.none()) {  // special case = 0
-			// that is reset state
-			return;
-		}
-		_sign = raw_bits.test(nbits - 1);
-
-		// special case = +-inf
-		if (_sign) {
-			raw_bits.reset(nbits - 1);
-			if (raw_bits.none()) {
-				_regime.setInf();
-				return;
-			}
-		}
-
-		std::bitset<nbits> tmp(raw_bits);
-		if (_sign) {
-			//tmp = twos_complement(tmp);
-		}
-
+	int decode_regime(std::bitset<nbits>& raw_bits) {
 		// let m be the number of identical bits in the regime
 		int m = 0;   // regime runlength counter
 		int k = 0;   // converted regime scale
-		if (tmp[nbits - 2] == 1) {   // run length of 1's
+		if (raw_bits[nbits - 2] == 1) {   // run length of 1's
 			m = 1;   // if a run of 1's k = m - 1
 			for (int i = nbits - 3; i >= 0; --i) {
-				if (tmp[i] == 1) {
+				if (raw_bits[i] == 1) {
 					m++;
 				}
 				else {
@@ -608,7 +590,7 @@ public:
 		else {
 			m = 1;  // if a run of 0's k = -m
 			for (int i = nbits - 3; i >= 0; --i) {
-				if (tmp[i] == 0) {
+				if (raw_bits[i] == 0) {
 					m++;
 				}
 				else {
@@ -616,13 +598,40 @@ public:
 				}
 			}
 			k = -m;
-		}	
-		_regime.assign_regime_pattern(k);
+		}
+		return k;
+	}
+	// decode takes the raw bits representing a posit coming from memory
+	// and decodes the regime, the exponent, and the fraction.
+	// This function has the functionality of the posit register-file load.
+	void decode(std::bitset<nbits>& raw_bits) {
+		bool bVerbose = false;
+		if (raw_bits.none()) {  // special case = 0
+			// that is reset state
+			_regime.setZero();
+			_exponent.reset();
+			_fraction.reset();
+			return;
+		}
+		_sign = raw_bits.test(nbits - 1);
 
-		if (bVerbose) std::cout << "k = " << int(k) << " m = " << m ;
+		// special case = +-inf
+		if (_sign) {
+			raw_bits.reset(nbits - 1);
+			if (raw_bits.none()) {
+				_regime.setInf();
+				_exponent.reset();
+				_fraction.reset();
+				return;
+			}
+		}
+
+		std::bitset<nbits> tmp(raw_bits);
+		int nrRegimeBits = _regime.assign_regime_pattern(_sign, decode_regime(tmp));
+
 		// get the exponent bits
 		// start of exponent is nbits - (sign_bit + regime_bits)
-		int32_t msb = nbits - (3 + m);
+		int32_t msb = nbits - 1 - (1 + nrRegimeBits);
 		if (bVerbose) std::cout << " msb = " << msb << " ";
 		int _exponentBits = 0;
 		if (es > 0) {
@@ -652,7 +661,7 @@ public:
 		if (bVerbose) std::cout << "fraction bits " << (msb < 0 ? 0 : msb + 1) << std::endl;
 		if (msb >= 0) {
 			for (int i = msb; i >= 0; --i) {
-				_frac[nbits - 1 - i] = tmp[i];
+				_frac[nbits - 1 - (msb - i)] = tmp[i];
 			}
 		}
 		_fraction.set(_frac, _fractionBits);

@@ -84,12 +84,16 @@ int main(int argc, char** argv)
 	try {
 		cerr << "Valid posit configurations" << endl;
 
+		posit<4, 0> p;
+		p.set_raw_bits(11);
+		cout << p << " " << components_to_string(p) << endl;
+		//return 0;
 
 		GeneratePositTable<3, 0>(cout);
 
 		GeneratePositTable<4, 0>(cout);		
 		GeneratePositTable<4, 1>(cout);
-		return 0;
+
 		GeneratePositTable<5, 0>(cout);
 		GeneratePositTable<5, 1>(cout);
 		GeneratePositTable<5, 2>(cout);
