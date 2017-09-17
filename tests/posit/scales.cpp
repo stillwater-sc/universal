@@ -25,7 +25,6 @@ void generateScaleFactorLookupTable() {
 			GENERATED_SCALE_FACTORS[es][k] = useed_power_k;
 		}
 	}
-
 }
 
 void printScaleFactors(uint64_t scale_factors[MAX_ES][MAX_K]) {

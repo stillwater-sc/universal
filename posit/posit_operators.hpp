@@ -32,10 +32,10 @@ std::string components_to_string(const posit<nbits, es>& p) {
 	}
 
 	ss << std::setw(14) << to_binary(p.get())
-		<< " Sign : " << std::setw(2) << p.sign()
+		<< " Sign : " << std::setw(2) << p.sign_value()
 		<< " Regime : " << std::setw(3) << p.regime_k()
-		<< " Exponent : " << std::setw(5) << p.exponent_int()
-		<< " Fraction : " << std::setw(8) << std::setprecision(21) << 1.0 + p.fraction()
+		<< " Exponent : " << std::setw(5) << p.get_exponent()
+		<< " Fraction : " << std::setw(8) << std::setprecision(21) << 1.0 + p.fraction_value()
 		<< " Value : " << std::setw(16) << p.to_double()
 		<< std::setprecision(0);
 	return ss.str();

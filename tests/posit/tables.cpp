@@ -84,9 +84,10 @@ int main(int argc, char** argv)
 	try {
 		cerr << "Valid posit configurations" << endl;
 
+
 		GeneratePositTable<3, 0>(cout);
 
-		//GeneratePositTable<4, 0>(cout);		
+		GeneratePositTable<4, 0>(cout);		
 		GeneratePositTable<4, 1>(cout);
 		return 0;
 		GeneratePositTable<5, 0>(cout);
@@ -99,8 +100,11 @@ int main(int argc, char** argv)
 
 		GeneratePositTable<7, 0>(cout);
 		GeneratePositTable<7, 1>(cout);
+
 		GeneratePositTable<7, 2>(cout);
+		return 0;
 		GeneratePositTable<7, 3>(cout);
+		return 0;
 
 		GeneratePositTable<8, 0>(cout);
 		GeneratePositTable<8, 1>(cout);

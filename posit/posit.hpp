@@ -28,6 +28,17 @@ public:
 		_k = 0;
 		_RegimeBits = 0;
 	}
+	regime(const regime& r) {
+		_Bits = r._Bits;
+		_k = r._k;
+		_RegimeBits = r._RegimeBits;
+	}
+	regime& operator= (const regime& r) {
+		_Bits = r._Bits;
+		_k = r._k;
+		_RegimeBits = r._RegimeBits;
+		return *this;
+	}
 	void reset() {
 		_k = 0;
 		_RegimeBits = 0;
@@ -73,7 +84,7 @@ public:
 		_Bits.reset();
 		_RegimeBits = nbits - 1;
 	}
-	// return the number of regime bits
+	// construct the regime bit pattern given a number's scale and returning the number of regime bits
 	unsigned int assign_regime_pattern(int k) {
 		_Bits.reset();
 		_k = k;
@@ -116,9 +127,14 @@ public:
 	exponent() {
 		_Bits.reset();
 	}
-	exponent(exponent& e) {
+	exponent(const exponent& e) {
 		_Bits = e._Bits;
 		_ExponentBits = e._ExponentBits;
+	}
+	exponent& operator=(const exponent& e) {
+		_Bits = e._Bits;
+		_ExponentBits = e._ExponentBits;
+		return *this;
 	}
 	void reset() {
 		_ExponentBits = 0;
@@ -140,6 +156,7 @@ public:
 		_Bits = raw;
 		_ExponentBits = nrOfExponentBits;
 	}
+	// calculate the exponent given a number's scale and the number of regime bits, returning the number of exponent bits assigned
 	unsigned int assign_exponent_bits(unsigned int msb, unsigned int nr_of_regime_bits) {
 		_Bits.reset();
 		_ExponentBits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
@@ -170,9 +187,14 @@ public:
 	fraction() {
 		_Bits.reset();
 	}
-	fraction(fraction& f) {
+	fraction(const fraction& f) {
 		_Bits = f._Bits;
 		_FractionBits = f._FractionBits;
+	}
+	fraction& operator=(const fraction& f) {
+		_Bits = f._Bits;
+		_FractionBits = f._FractionBits;
+		return *this;
 	}
 	void reset() {
 		_FractionBits = 0;
@@ -191,6 +213,7 @@ public:
 		_Bits = raw;
 		_FractionBits = nrOfFractionBits;
 	}
+	// given a number and the fraction's cut-off point, assign the fraction bits in a right-extended format, returning the number of fraction bits assigned
 	unsigned int assign_fraction_bits(uint64_t number, int nrOfFractionBits) {
 		std::bitset<nbits> _frac;
 		msb = msb - _exponentBits;
@@ -454,20 +477,20 @@ public:
 			return std::string("UNKNOWN");
 		}
 	}
-	double maxpos() {
+	double maxpos_value() {
 		return pow(double(useed()), double(nbits-2));
 	}
-	double minpos() {
+	double minpos_value() {
 		return pow(double(useed()), double(static_cast<int>(2-nbits)));
 	}
-	int maxpos_scale() {
+	int    maxpos_scale() {
 		return (nbits - 2) * (1 << es);
 	}
-	int minpos_scale() {
+	int    minpos_scale() {
 		return static_cast<int>(2 - nbits) * (1 << es);
 	}
 
-	int sign_value() const {
+	int	   sign_value() const {
 		return (_sign ? -1 : 1);
 	}
 	double regime_value() const {
@@ -480,16 +503,16 @@ public:
 		return _fraction.value();
 	}
 
-	int regime_k() const {
+	int					regime_k() const {
 		return _regime.regime_k();
 	}
-	regime<nbits, es>   get_regime() {
+	regime<nbits, es>   get_regime() const {
 		return _regime;
 	}
-	exponent<nbits, es> get_exponent() {
+	exponent<nbits, es> get_exponent() const {
 		return _exponent;
 	}
-	fraction<nbits,es>  get_fraction() {
+	fraction<nbits,es>  get_fraction() const {
 		return _fraction;
 	}
 	std::bitset<nbits>  get() const {
@@ -567,7 +590,7 @@ public:
 
 		std::bitset<nbits> tmp(raw_bits);
 		if (_sign) {
-			tmp = twos_complement(tmp);
+			//tmp = twos_complement(tmp);
 		}
 
 		// let m be the number of identical bits in the regime
@@ -611,7 +634,7 @@ public:
 			if (msb >= 0 && es > 0) {
 				_exponentBits = (msb >= es - 1 ? es : msb + 1);
 				for (int i = 0; i < _exponentBits; i++) {
-					_exp[i] = tmp[msb - (_exponentBits - 1) + i];
+					_exp[es - 1 - i] = tmp[msb - i];
 				}
 			}
 			_exponent.set(_exp, _exponentBits);
