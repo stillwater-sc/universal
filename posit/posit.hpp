@@ -565,12 +565,9 @@ public:
 		decode(raw_bits);
 		return *this;
 	}
-	// decode the segments and store in the posit
-	// precondition: member vars reset with _Bits containing the posit bits to decode
-	// this function takes the raw posit bits in _Bits and extracts
-	// the regime, the exponent, and the fraction and
-	// sets the k value, the _Exp, and _Frac variables
-	// which represent the post-decode information of a posit.
+	// decode takes the raw bits representing a posit coming from memory
+	// and decodes the regime, the exponent, and the fraction.
+	// This function has the functionality of the posit register-file load.
 	void decode(std::bitset<nbits>& raw_bits) {
 		bool bVerbose = false;
 		if (raw_bits.none()) {  // special case = 0
