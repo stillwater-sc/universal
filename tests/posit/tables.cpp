@@ -7,6 +7,7 @@
 #include "stdafx.h"
 #include <sstream>
 #include "../../posit/posit.hpp"
+#include "../../posit/posit_operators.hpp"
 
 using namespace std;
 
@@ -54,22 +55,16 @@ void GeneratePositTable(ostream& ostr)
 		<< setw(value_column) << " value" << endl;
 	for (int i = 0; i < size; i++) {
 		myPosit.set_raw_bits(i);
-		string binary = to_binary(myPosit.get());
-		string exponent = "-";
-		if (nbits - 3 > 0 && es > 0) {
-			exponent = to_binary(myPosit.exponent_bits());
-		}
-		string fraction = "-";
-		if (int(nbits) - 3 - int(es) > 0) {
-			fraction = to_binary(myPosit.fraction_bits());
-		}
+		regime<nbits,es>   r = myPosit.get_regime();
+		exponent<nbits,es> e = myPosit.get_exponent();
+		fraction<nbits,es> f = myPosit.get_fraction();
 		ostr << setw(4) << i << ": "
-			<< setw(bin_column) << binary
+			<< setw(bin_column) << myPosit.get()
 			<< setw(k_column) << myPosit.regime_k()
-			<< setw(sign_column) << myPosit.sign()
-			<< setw(regime_column) << setprecision(22) << myPosit.regime() << setprecision(0)
-			<< setw(exponent_column) << exponent
-			<< setw(fraction_column) << fraction
+			<< setw(sign_column) << myPosit.sign_value()
+			<< setw(regime_column) << setprecision(22) << r.value() << setprecision(0)
+			<< setw(exponent_column) << right << e 
+			<< setw(fraction_column) << right << f
 			<< setw(value_column) << setprecision(22) << lookup[i] << setprecision(0)
 			<< endl;
 	}
@@ -91,9 +86,9 @@ int main(int argc, char** argv)
 
 		GeneratePositTable<3, 0>(cout);
 
-		GeneratePositTable<4, 0>(cout);
+		//GeneratePositTable<4, 0>(cout);		
 		GeneratePositTable<4, 1>(cout);
-
+		return 0;
 		GeneratePositTable<5, 0>(cout);
 		GeneratePositTable<5, 1>(cout);
 		GeneratePositTable<5, 2>(cout);
