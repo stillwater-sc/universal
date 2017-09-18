@@ -28,6 +28,9 @@ if (UNIVERSAL_ENABLE_TESTS)
 endif()
 
 find_package(boost)
+if (BOOST_FOUND)
+	include_directories($(Boost_INCLUDE_DIRECTORY))
+endif (BOOST_FOUND)
 
 # Possibly not under Windows
 add_compile_options ( -std=c++11 )
