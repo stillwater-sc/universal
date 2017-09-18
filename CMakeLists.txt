@@ -27,6 +27,8 @@ if (UNIVERSAL_ENABLE_TESTS)
     # include(Dart)
 endif()
 
+find_package(boost)
+
 # Possibly not under Windows
 add_compile_options ( -std=c++11 )
 
