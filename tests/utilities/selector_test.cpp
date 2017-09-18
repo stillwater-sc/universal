@@ -12,6 +12,7 @@
 
 #include "../../utilities/es_select.hpp"
 #include "../../utilities/nbits_select.hpp"
+#include "../../utilities/nested_apply_visitor.hpp"
 
 using namespace std;
 
@@ -38,24 +39,53 @@ struct print_nbits_variant
 };
 
 
+template <std::size_t Nbits, std::size_t ES>
+struct dummy_posit
+{
+
+    void whoami() const 
+    { 
+        cout << "I am dummy_posit<" << Nbits << ", " << ES << ">.\n";
+    }
+    
+};
+
+struct posit_test1
+{
+    template <std::size_t Nbits, std::size_t ES>
+    void operator()() const
+    {
+        if (ES >= Nbits) {
+            cerr << "Are you insane? Nbits must be larger than ES.\n";
+            throw "Stupid test";
+        }
+            
+        dummy_posit<Nbits, ES> dp;
+        dp.whoami();
+    }
+    
+};
+
 int main(int argc, char** argv)
 {
     cout << "This is the posit selector test.\n";
     
-    es_variant esv = es_tag<1>{};                           // init to avoid trouble without cmd line args
-    if (argc > 1)
-        esv = es_select(stoull(argv[1]));
-    
-    boost::apply_visitor(print_es_variant{}, esv);
-
-    
     nbits_variant nbitsv = nbits_tag<4>{};                  // init to avoid trouble without cmd line args
-    if (argc > 2)
-        nbitsv = nbits_select(stoull(argv[2]));
+    if (argc > 1)
+        nbitsv = nbits_select(stoull(argv[1]));
     
     boost::apply_visitor(print_nbits_variant{}, nbitsv);
     
     
+    es_variant esv = es_tag<1>{};                           // init to avoid trouble without cmd line args
+    if (argc > 2)
+        esv = es_select(stoull(argv[2]));
+    
+    boost::apply_visitor(print_es_variant{}, esv);
+
+    
+    // And now it all boils down to this:
+    nested_apply_visitor(posit_test1{}, nbitsv, esv);
     
     return 0;
 }
