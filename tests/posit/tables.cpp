@@ -71,57 +71,44 @@ void GeneratePositTable(ostream& ostr)
 }
 
 int main(int argc, char** argv)
-{
-	// Sign is 1 bit
-	// Regime is at least 2 bits
-	// So es <= nbits - 3
-	try {
-		//posit<3, 1> myPosit;
-	}
-	catch (char* e) {
-		cerr << "Caught expected error: " << e << endl;
-	}
-	try {
-		cerr << "Valid posit configurations" << endl;
+try {
+	cerr << "Valid posit configurations" << endl;
 
-		posit<4, 0> p;
-		p.set_raw_bits(11);
-		cout << p << " " << components_to_string(p) << endl;
-		//return 0;
+	posit<4, 0> p;
+	p.set_raw_bits(11);
+	cout << p << " " << components_to_string(p) << endl;
+	//return 0;
 
-		GeneratePositTable<3, 0>(cout);
+	/*
+	GeneratePositTable<3, 0>(cout);
 
-		GeneratePositTable<4, 0>(cout);		
-		GeneratePositTable<4, 1>(cout);
+	GeneratePositTable<4, 0>(cout);		
+	GeneratePositTable<4, 1>(cout);
 
-		GeneratePositTable<5, 0>(cout);
-		GeneratePositTable<5, 1>(cout);
-		GeneratePositTable<5, 2>(cout);
+	GeneratePositTable<5, 0>(cout);
+	GeneratePositTable<5, 1>(cout);
+	GeneratePositTable<5, 2>(cout);
 
-		GeneratePositTable<6, 0>(cout);
-		GeneratePositTable<6, 1>(cout);
-		GeneratePositTable<6, 2>(cout);
+	GeneratePositTable<6, 0>(cout);
+	GeneratePositTable<6, 1>(cout);
+	GeneratePositTable<6, 2>(cout);
 
-		GeneratePositTable<7, 0>(cout);
-		GeneratePositTable<7, 1>(cout);
+	GeneratePositTable<7, 0>(cout);
+	GeneratePositTable<7, 1>(cout);
+	*/
 
-		GeneratePositTable<7, 2>(cout);
-		return 0;
-		GeneratePositTable<7, 3>(cout);
-		return 0;
-
-		GeneratePositTable<8, 0>(cout);
-		GeneratePositTable<8, 1>(cout);
-		GeneratePositTable<8, 2>(cout);
-		GeneratePositTable<8, 3>(cout);
-		GeneratePositTable<8, 4>(cout);
-
-	}
-	catch (char* e) {
-		cerr << e << endl;
-	}
-	
-
-
+	GeneratePositTable<7, 2>(cout);
 	return 0;
+	GeneratePositTable<7, 3>(cout);
+	return 0;
+
+	GeneratePositTable<8, 0>(cout);
+	GeneratePositTable<8, 1>(cout);
+	GeneratePositTable<8, 2>(cout);
+	GeneratePositTable<8, 3>(cout);
+	GeneratePositTable<8, 4>(cout);
+
+}
+catch (char* e) {
+	cerr << e << endl;
 }
