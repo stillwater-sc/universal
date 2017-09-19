@@ -71,7 +71,7 @@ unsigned int base_regime(int64_t value, unsigned int es) {
 	return (findMostSignificantBit(value) - 1) >> es;
 }
 
-unsigned int exponent(unsigned int msb, unsigned int es) {
+unsigned int base_exponent(unsigned int msb, unsigned int es) {
 	unsigned int value = 0;
 	if (es > 0) {
 		value = msb % (1 << es);
@@ -79,7 +79,7 @@ unsigned int exponent(unsigned int msb, unsigned int es) {
 	return value;
 }
 
-uint64_t fraction(int64_t value) {
+uint64_t base_fraction(int64_t value) {
 	unsigned int hidden_bit_at = findMostSignificantBit(value) - 1;
 	uint64_t mask = ~(uint64_t(1) << hidden_bit_at);
 	return value & mask;
@@ -126,14 +126,14 @@ void EnumerationTests() {
 	for (int i = 0; i < 32; i++) {
 		cout << setw(10) << i;
 		for (int es = 0; es < max_es; es++) {
-			cout << setw(5) << exponent(i, es);
+			cout << setw(5) << base_exponent(i, es);
 		}
 		cout << endl;
 	}
 
 	// cycle through a range to test the faction extraction
 	for (int i = 0; i < 32; i++) {
-		cout << setw(10) << hex << i << setw(5) << fraction(i) << endl;
+		cout << setw(10) << hex << i << setw(5) << base_fraction(i) << endl;
 	}
 }
 
@@ -205,8 +205,8 @@ void basic_algorithm_for_conversion() {
 	msb = findMostSignificantBit(value) - 1;
 	cout << "MSB      = " << msb << endl;
 	cout << "Regime   = " << base_regime(value, es) << endl;
-	cout << "Exponent = " << exponent(msb, es) << endl;
-	cout << "Fraction = 0x" << hex << fraction(value) << dec << endl;
+	cout << "Exponent = " << base_exponent(msb, es) << endl;
+	cout << "Fraction = 0x" << hex << base_fraction(value) << dec << endl;
 }
 
 void PositIntegerConversion() {

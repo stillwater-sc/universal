@@ -218,17 +218,10 @@ public:
 		_FractionBits = nrOfFractionBits;
 	}
 	// given a number and the fraction's cut-off point, assign the fraction bits in a right-extended format, returning the number of fraction bits assigned
-	unsigned int assign_fraction_bits(uint64_t number, int nrOfFractionBits) {
+	unsigned int assign_fraction_bits(uint64_t number, unsigned int nrOfFractionBits) {
 		std::bitset<nbits> _frac;
-		msb = msb - _exponentBits;
-		int _fractionBits = (msb < 0 ? 0 : msb + 1);
-		if (bVerbose) std::cout << "fraction bits " << (msb < 0 ? 0 : msb + 1) << std::endl;
-		if (msb >= 0) {
-			for (int i = msb; i >= 0; --i) {
-				_frac[nbits - 1 - i] = tmp[i];
-			}
-		}
-		_fraction.set(_frac, _fractionBits);
+		unsigned int _fractionBits = nrOfFractionBits;
+		_Bits.set(_frac, _fractionBits);
 	}
 	void assign_fraction(unsigned int remaining_bits, std::bitset<nbits>& _fraction) {
 		if (remaining_bits > 0 && nbits > 3) {
@@ -692,10 +685,10 @@ public:
 		int64_t value;
 		int s = scale();
 		if (s < 0) {
-			value = ((fraction_int()) >> -s);
+			value = (_fraction.get().to_ullong() >> -s);
 		}
 		else {
-			value = (fraction_int() << s);
+			value = (_fraction.get().to_ullong() << s);
 		}	
 		return value;
 	}

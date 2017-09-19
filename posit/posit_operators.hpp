@@ -177,11 +177,11 @@ inline std::istream& operator>> (std::istream& istr, const posit<nbits, es>& p) 
 }
 
 template<size_t nbits, size_t es>
-inline bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._Bits == rhs._Bits; }
+inline bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._regime == rhs._regime && lhs._exponent == rhs._exponent && lhs._fraction == rhs._fraction; }
 template<size_t nbits, size_t es>
 inline bool operator!=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nbits, size_t es>
-inline bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._Bits < rhs._Bits; }
+inline bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._regime < rhs._regime && lhs._exponent < rhs._exponent && lhs._fraction < rhs._fraction; }
 template<size_t nbits, size_t es>
 inline bool operator> (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return  operator< (rhs, lhs); }
 template<size_t nbits, size_t es>
