@@ -19,8 +19,8 @@ void checkSpecialCases(posit<nbits, es> p) {
 void ConversionExamplesPositiveRegime() {
 	posit<5, 1> p0, p1, p2, p3, p4, p5, p6;
 
-	cout << "Minpos = " << setprecision(21) << p0.minpos() << endl;
-	cout << "Maxpos = " << p0.maxpos() << setprecision(0) << endl;
+	cout << "Minpos = " << setprecision(21) << p0.minpos_value() << endl;
+	cout << "Maxpos = " << p0.maxpos_value() << setprecision(0) << endl;
 
 	int64_t number = 1;
 	for (int i = 0; i < 8; i++) {
@@ -43,8 +43,8 @@ void ConversionExamplesPositiveRegime() {
 void ConversionExamplesNegativeRegime() {
 	posit<5, 1> p0, p1, p2, p3, p4, p5, p6;
 
-	cout << "Minpos = " << setprecision(21) << p0.minpos() << endl;
-	cout << "Maxpos = " << p0.maxpos() << setprecision(0) << endl;
+	cout << "Minpos = " << setprecision(21) << p0.minpos_value() << endl;
+	cout << "Maxpos = " << p0.maxpos_value() << setprecision(0) << endl;
 
 	p0 = 0;  checkSpecialCases(p0);
 	p1 = -1;  cout << "p1 " << p1 << endl;

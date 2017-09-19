@@ -230,6 +230,13 @@ public:
 		}
 		_fraction.set(_frac, _fractionBits);
 	}
+	void assign_fraction(unsigned int remaining_bits, std::bitset<nbits>& _fraction) {
+		if (remaining_bits > 0 && nbits > 3) {
+			for (unsigned int i = 0; i < remaining_bits; i++) {
+				_Bits[nbits - 1 - i] = _fraction[nbits - 1 - i];
+			}
+		}
+	}
 private:
 	// maximum size fraction is <nbits - one sign bit - minimum two regime bits>
 	// the conditional length of the exponent field creates a situation where we need to use the maximum size constant.
@@ -246,7 +253,7 @@ private:
 };
 
 /*
- class posit represents arbitrary configuration posits and their arithmetic
+ class posit represents arbitrary configuration posits and their basic arithmetic operations (add/sub, mul/div)
  */
 template<size_t nbits, size_t es> class posit {
 public:
@@ -282,7 +289,7 @@ public:
 			uint64_t _fraction_without_hidden_bit = (-rhs << (64 - _scale));
 			std::bitset<nbits> _fraction = copy_integer_fraction<nbits>(_fraction_without_hidden_bit);
 			convert_to_posit(_sign, _scale, _fraction);
-			_Bits = twos_complement(_Bits);
+			take_2s_complement();
 		}
 		else {
 			// process positive number
@@ -293,7 +300,6 @@ public:
 				convert_to_posit(_sign, _scale, _fraction);
 			}
 		}
-		decode();
 		return *this;
 	}
 	posit<nbits, es>& operator=(uint64_t rhs) {
@@ -311,7 +317,7 @@ public:
 		reset();
 		switch (std::fpclassify(rhs)) {
 		case FP_INFINITE:
-			_Bits.set(nbits - 1);
+			_regime.setInf();
 			break;
 		case FP_NAN:
 			std::cerr << "float is NAN" << std::endl;
@@ -329,19 +335,19 @@ public:
 				//std::cout << "sign " << _sign << " scale " << _scale << " 23b fraction " << std::hex << _23b_fraction_without_hidden_bit << " _fraction " << _fraction << std::dec << std::endl;
 				convert_to_posit(_sign, _scale, _fraction);
 				if (_sign) {
-					_Bits = twos_complement(_Bits);
+					// transform back through 2's complement
+					take_2s_complement();
 				}
 			}
 			break;
 		}
-		decode();
 		return *this;
 	}
 	posit<nbits, es>& operator=(const double rhs) {
 		reset();
 		switch (std::fpclassify(rhs)) {
 		case FP_INFINITE:
-			_Bits.set(nbits - 1);
+			_regime.setInf();
 			break;
 		case FP_NAN:
 			std::cerr << "float is NAN" << std::endl;
@@ -350,32 +356,31 @@ public:
 			std::cerr << "TODO: subnormal number" << std::endl;
 			break;
 		case FP_NORMAL:
-		{
-			if (rhs == 0.0) break;  // 0 is a special case
-			bool _sign = extract_sign(rhs);
-			int _scale = extract_exponent(rhs) - 1;
-			uint64_t _52b_fraction_without_hidden_bit = extract_fraction(rhs);
-			std::bitset<nbits> _fraction = copy_double_fraction<nbits>(_52b_fraction_without_hidden_bit);
-			//std::cout << "sign " << _sign << " scale " << _scale << " 52b fraction " << std::hex << _52b_fraction_without_hidden_bit << " _fraction " << _fraction << std::dec << std::endl;
-			convert_to_posit(_sign, _scale, _fraction);
-			if (_sign) {
-				_Bits = twos_complement(_Bits);
+			{
+				if (rhs == 0.0) break;  // 0 is a special case
+				bool _sign = extract_sign(rhs);
+				int _scale = extract_exponent(rhs) - 1;
+				uint64_t _52b_fraction_without_hidden_bit = extract_fraction(rhs);
+				std::bitset<nbits> _fraction = copy_double_fraction<nbits>(_52b_fraction_without_hidden_bit);
+				//std::cout << "sign " << _sign << " scale " << _scale << " 52b fraction " << std::hex << _52b_fraction_without_hidden_bit << " _fraction " << _fraction << std::dec << std::endl;
+				convert_to_posit(_sign, _scale, _fraction);
+				if (_sign) {
+					// transform back through 2's complement
+					take_2s_complement();
+				}
 			}
+			break;
 		}
-		break;
-		}
-		decode();
 		return *this;
 	}
 	posit<nbits, es>& operator=(const posit& rhs) {
-		reset();
-		_Bits = rhs._Bits;
-		decode();
+		_regime = rhs._regime;
+		_exponent = rhs._exponent;
+		_fraction = rhs._fraction;
 		return *this;
 	}
 	posit<nbits, es>& operator+=(const posit& rhs) {
 		if (isZero()) {
-			_Bits = rhs._Bits;
 			return *this;
 		}
 		else {
@@ -390,16 +395,15 @@ public:
 				return *this;
 			}
 		}
-		bool _sign;
-		_sign = false;
+		bool _sign = false;
 		std::bitset<nbits> r1, r2, sum; // fraction is at most nbits-3 bits, + 1 for the hidden bit
 		int _scale;
-		align_numbers(scale(), _Frac, rhs.scale(), rhs._Frac, _scale, r1, r2);
+		align_numbers(scale(), _fraction.get(), rhs.scale(), rhs._fraction.get(), _scale, r1, r2);
 
-		std::cout << "lhs " << this->_Bits << " scale " << scale() << std::endl;
-		std::cout << "rhs " << rhs._Bits <<   " scale " << rhs.scale() << std::endl;
-		std::cout << "lhs_f " << this->_Frac << std::endl;
-		std::cout << "rhs_f " << rhs._Frac << std::endl;
+		std::cout << "lhs " << *this << " scale " << scale() << std::endl;
+		std::cout << "rhs " << rhs <<   " scale " << rhs.scale() << std::endl;
+		std::cout << "lhs_f " << _fraction << std::endl;
+		std::cout << "rhs_f " << rhs._fraction << std::endl;
 		std::cout << "r1    " << r1 << std::endl;
 		std::cout << "r2    " << r2 << std::endl;
 		std::cout << "scale " << _scale << std::endl;
@@ -424,9 +428,7 @@ public:
 		}
 		std::cout << "scale " << _scale << std::endl;
 		std::cout << "sum " << sum << std::endl;
-		reset();
 		convert_to_posit(_sign, _scale, sum);
-		decode();
 		return *this;
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
@@ -481,16 +483,22 @@ public:
 			return std::string("UNKNOWN");
 		}
 	}
+	double useed_value() const {
+		return double(uint64_t(1) << useed_scale());
+	}
 	double maxpos_value() {
-		return pow(double(useed()), double(nbits-2));
+		return pow(double(useed_value()), double(nbits-2));
 	}
 	double minpos_value() {
-		return pow(double(useed()), double(static_cast<int>(2-nbits)));
+		return pow(double(useed_value()), double(static_cast<int>(2-nbits)));
 	}
-	int    maxpos_scale() {
+	uint32_t useed_scale() const {
+		return (uint32_t(1) << es);
+	}
+	uint32_t maxpos_scale() {
 		return (nbits - 2) * (1 << es);
 	}
-	int    minpos_scale() {
+	uint32_t minpos_scale() {
 		return static_cast<int>(2 - nbits) * (1 << es);
 	}
 
@@ -513,7 +521,7 @@ public:
 	regime<nbits, es>   get_regime() const {
 		return _regime;
 	}
-	exponent<nbits, es> get_exponent() const {
+	exponent<nbits,es> get_exponent() const {
 		return _exponent;
 	}
 	fraction<nbits,es>  get_fraction() const {
@@ -557,7 +565,10 @@ public:
 		_exponent.reset();
 		_fraction.reset();
 	}
-
+	posit<nbits, es>&  set(const std::bitset<nbits>& raw_bits) {
+		decode(raw_bits);
+		return *this;
+	}
 	// Set the raw bits of the posit given a binary pattern
 	posit<nbits,es>& set_raw_bits(uint64_t value) {
 		reset();
@@ -604,9 +615,10 @@ public:
 	// decode takes the raw bits representing a posit coming from memory
 	// and decodes the regime, the exponent, and the fraction.
 	// This function has the functionality of the posit register-file load.
-	void decode(std::bitset<nbits>& raw_bits) {
+	void decode(const std::bitset<nbits>& raw_bits) {
 		bool bVerbose = false;
-		if (raw_bits.none()) {  // special case = 0
+		std::bitset<nbits> tmp(raw_bits);
+		if (tmp.none()) {  // special case = 0
 			// that is reset state
 			_regime.setZero();
 			_exponent.reset();
@@ -617,16 +629,17 @@ public:
 
 		// special case = +-inf
 		if (_sign) {
-			raw_bits.reset(nbits - 1);
+			tmp.reset(nbits - 1);
 			if (raw_bits.none()) {
 				_regime.setInf();
 				_exponent.reset();
 				_fraction.reset();
 				return;
 			}
+			tmp.set(nbits - 1);  // set the sign bit again
 		}
 
-		std::bitset<nbits> tmp(raw_bits);
+
 		if (_sign) tmp = twos_complement(tmp);
 		unsigned int nrRegimeBits = _regime.assign_regime_pattern(_sign, decode_regime(tmp));
 
@@ -669,48 +682,7 @@ public:
 
 		if (_sign) {
 			// transform back through 2's complement
-			std::bitset<nbits-1> r = _regime.get();
-			std::bitset<es> e = _exponent.get();
-			std::bitset<nbits> f = _fraction.get();
-			std::bitset<nbits> raw_bits;
-			// gather
-			raw_bits.set(nbits - 1, _sign);
-			int msb = nbits - 2;
-			for (unsigned int i = 0; i < nrRegimeBits; i++) {
-				raw_bits.set(msb--, r[nbits - 2 - i]);
-			}
-			if (msb >= 0) {
-				for (unsigned int i = 0; i < nrExponentBits; i++) {
-					raw_bits.set(msb--, e[es - 1 - i]);
-				}
-			}
-			if (msb >= 0) {
-				for (unsigned int i = 0; i < nrFractionBits; i++) {
-					raw_bits.set(msb--, f[nbits - 1 - i]);
-				}
-			}
-			// transform
-			raw_bits = twos_complement(raw_bits);
-			// distribute
-			std::bitset<nbits - 1> regime_bits;
-			for (unsigned int i = 0; i < nrRegimeBits; i++) {
-				regime_bits.set(nbits - 2 - i, raw_bits[nbits - 2 - i]);
-			}
-			_regime.set(regime_bits, nrRegimeBits);
-			if (es > 0 && nrExponentBits > 0) {
-				std::bitset<es> exponent_bits;
-				for (unsigned int i = 0; i < nrExponentBits; i++) {
-					exponent_bits.set(es - 1 - i, raw_bits[nbits - 2 - nrRegimeBits - i]);
-				}
-				_exponent.set(exponent_bits, nrExponentBits);
-			}
-			if (nrFractionBits > 0) {
-				std::bitset<nbits> fraction_bits;
-				for (unsigned int i = 0; i < nrFractionBits; i++) {
-					fraction_bits.set(nbits - 1 - i, raw_bits[nbits - 2 - nrRegimeBits - nrExponentBits - i]);
-				}
-				_fraction.set(fraction_bits, nrFractionBits);
-			}
+			take_2s_complement();
 		}
 	}
 	int64_t to_int64() const {
@@ -734,7 +706,54 @@ public:
 			return INFINITY;
 		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
 	}
-
+	void take_2s_complement() {
+		// transform back through 2's complement
+		std::bitset<nbits - 1> r = _regime.get();
+		unsigned int nrRegimeBits = _regime.nrBits();
+		std::bitset<es> e = _exponent.get();
+		unsigned int nrExponentBits = _exponent.nrBits();
+		std::bitset<nbits> f = _fraction.get();
+		unsigned int nrFractionBits = _fraction.nrBits();
+		std::bitset<nbits> raw_bits;
+		// gather
+		raw_bits.set(nbits - 1, _sign);
+		int msb = nbits - 2;
+		for (unsigned int i = 0; i < nrRegimeBits; i++) {
+			raw_bits.set(msb--, r[nbits - 2 - i]);
+		}
+		if (msb >= 0) {
+			for (unsigned int i = 0; i < nrExponentBits; i++) {
+				raw_bits.set(msb--, e[es - 1 - i]);
+			}
+		}
+		if (msb >= 0) {
+			for (unsigned int i = 0; i < nrFractionBits; i++) {
+				raw_bits.set(msb--, f[nbits - 1 - i]);
+			}
+		}
+		// transform
+		raw_bits = twos_complement(raw_bits);
+		// distribute
+		std::bitset<nbits - 1> regime_bits;
+		for (unsigned int i = 0; i < nrRegimeBits; i++) {
+			regime_bits.set(nbits - 2 - i, raw_bits[nbits - 2 - i]);
+		}
+		_regime.set(regime_bits, nrRegimeBits);
+		if (es > 0 && nrExponentBits > 0) {
+			std::bitset<es> exponent_bits;
+			for (unsigned int i = 0; i < nrExponentBits; i++) {
+				exponent_bits.set(es - 1 - i, raw_bits[nbits - 2 - nrRegimeBits - i]);
+			}
+			_exponent.set(exponent_bits, nrExponentBits);
+		}
+		if (nrFractionBits > 0) {
+			std::bitset<nbits> fraction_bits;
+			for (unsigned int i = 0; i < nrFractionBits; i++) {
+				fraction_bits.set(nbits - 1 - i, raw_bits[nbits - 2 - nrRegimeBits - nrExponentBits - i]);
+			}
+			_fraction.set(fraction_bits, nrFractionBits);
+		}
+	}
 	// scale returns the shifts to normalize the number =  regime + exponent shifts
 	int scale() const {
 		// how many shifts represent the regime?
@@ -754,13 +773,7 @@ public:
 		unsigned int nr_of_exp_bits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
 		return (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
 	}
-	void assign_fraction(unsigned int remaining_bits, std::bitset<nbits>& _fraction) {
-		if (remaining_bits > 0 && nbits > 3) {
-			for (unsigned int i = 0; i < remaining_bits; i++) {
-				_Bits[remaining_bits - 1 - i] = _fraction[nbits - 1 - i];
-			}
-		}
-	}
+
 	// -1 -> round-down, 0 -> no rounding, +1 -> round-up
 	// _fraction contains the fraction without the hidden bit
 	int rounding_decision(const std::bitset<nbits>& _fraction, unsigned int nr_of_fraction_bits) {
@@ -827,7 +840,7 @@ public:
 	// this routine will not allocate 0 or infinity due to the test on (0,minpos], and [maxpos,inf)
 	// TODO: is that the right functionality? right now the special cases are deal with in the
 	// assignment operators for integer/float/double. I don't like that distribution of knowledge.
-	void convert_to_posit(bool _sign, int _scale, std::bitset<nbits>& _fraction) {
+	void convert_to_posit(bool _sign, int _scale, std::bitset<nbits>& _frac) {
 		reset();
 		bool bVerbose = true;
 		// deal with minpos/maxpos special cases
@@ -837,36 +850,36 @@ public:
 			// minpos is at k = -(nbits-1)
 			if (k <= 1 - nbits) { // <= minpos  0 is dealt with in special case
 				if (bVerbose) std::cout << "value between 0 and minpos: round up" << std::endl;
-				assign_regime_pattern(2-int(nbits));  // assign minpos
+				_regime.assign_regime_pattern(_sign, 2-int(nbits));  // assign minpos
 				return;
 			}
 			else {
 				if (bVerbose) std::cout << "value > minpos: round depending on _fraction" << std::endl;
-				_scale = round(_sign, _scale, _fraction);
+				_scale = round(_sign, _scale, _frac);
 			}
 		}
 		else {
 			// maxpos is at k = nbits-1
 			if (k >= nbits-1) { // maxpos   INFINITY is dealt with in special case
 				if (bVerbose) std::cout << "value between maxpos and INFINITY: round down" << std::endl;
-				assign_regime_pattern(nbits-2);	// assign maxpos
+				_regime.assign_regime_pattern(_sign, nbits-2);	// assign maxpos
 				return;
 			}
 			else {
 				if (bVerbose) std::cout << "value < maxpos: round depending on _fraction" << std::endl;
-				_scale = round(_sign, _scale, _fraction);
+				_scale = round(_sign, _scale, _frac);
 			}
 		}
 		// construct the posit
-		unsigned int nr_of_regime_bits = assign_regime_pattern(_scale >> es);
-		if (bVerbose) std::cout << "Regime   " << _Bits << std::endl;
-		unsigned int nr_of_exp_bits = assign_exponent_bits(_scale, nr_of_regime_bits);
-		if (bVerbose) std::cout << "Exponent " << _Bits << std::endl;
-		if (bVerbose) std::cout << "Fraction   " << _fraction << std::endl;
+		unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
+		if (bVerbose) std::cout << "Regime      " << _regime << std::endl;
+		unsigned int nr_of_exp_bits = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
+		if (bVerbose) std::cout << "Exponent    " << _exponent << std::endl;
+		if (bVerbose) std::cout << "Fraction in " << _frac << std::endl;
 		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		if (bVerbose) std::cout << "Regime   " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _fraction << std::endl;
-		assign_fraction(remaining_bits, _fraction);
-		if (bVerbose) std::cout << "Posit    " << _Bits << std::endl;
+		if (bVerbose) std::cout << "Regime bits " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _frac << std::endl;
+		_fraction.assign_fraction(remaining_bits, _frac);
+		if (bVerbose) std::cout << "Posit    " << *this << std::endl;
 	}
 
 private:

@@ -23,10 +23,7 @@ int main(int argc, char** argv)
 	try {
 		for (int i = 0; i < 2*nbits-1; i++) {
 			int k = i - nbits + 1;
-			p.reset();
-			cout << "k = " << setw(3) << k; 
-			cout << " # Pattern bits = " << setw(3) << p.assign_regime_pattern(k);
-			cout << " Regime = " << to_binary(p.get()) << endl;
+
 		}
 	}
 	catch (char* e) {

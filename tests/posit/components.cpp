@@ -15,7 +15,7 @@ int main()
 {
 	const size_t nbits = 8;
 	const size_t es = 2;
-
+	const bool _sign = false; // positive regime
 
 	posit<nbits, es> p;
 
@@ -27,7 +27,7 @@ int main()
 	regime<nbits, es> test_regime;
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = scale >> es;
-		test_regime.assign_regime_pattern(k);
+		test_regime.assign_regime_pattern(_sign, k);
 		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime.get() << " scale " << test_regime.scale() <<  endl;
 	}
     
@@ -35,7 +35,7 @@ int main()
 	exponent<nbits, es> test_exponent;
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = scale >> es;
-		unsigned int nrOfRegimeBits = test_regime.assign_regime_pattern(k);
+		unsigned int nrOfRegimeBits = test_regime.assign_regime_pattern(_sign, k);
 		unsigned int nrOfExponentBits = test_exponent.assign_exponent_bits(scale, nrOfRegimeBits);
 		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime << " " << test_exponent << endl;
 	}
@@ -50,7 +50,7 @@ int main()
 	test_fraction.set(_fraction, nrOfFractionBits);	
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = scale >> es;
-		unsigned int nrOfRegimeBits = test_regime.assign_regime_pattern(k);
+		unsigned int nrOfRegimeBits = test_regime.assign_regime_pattern(_sign, k);
 		unsigned int nrOfExponentBits = test_exponent.assign_exponent_bits(scale, nrOfRegimeBits);
 
 		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime << " " << test_exponent << " " << test_fraction << endl;

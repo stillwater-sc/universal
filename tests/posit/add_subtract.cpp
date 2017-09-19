@@ -148,12 +148,12 @@ int main(int argc, char** argv)
 		else {
 			bitset<nbits> r1, r2;
 
-			cout << "frac1 " << pa.fraction_bits() << endl;
-			normalize<nbits>(pa.fraction_bits(), r1);
+			cout << "frac1 " << pa.get_fraction() << endl;
+			normalize<nbits>(pa.get_fraction().get(), r1);
 			cout << "r1    " << r1 << endl;
 
-			cout << "frac2 " << pb.fraction_bits() << endl;
-			denormalize<nbits>(pb.fraction_bits(), diff, r2);
+			cout << "frac2 " << pb.get_fraction() << endl;
+			denormalize<nbits>(pb.get_fraction().get(), diff, r2);
 			cout << "r2    " << r2 << endl;
 		}
 		cout.flush();

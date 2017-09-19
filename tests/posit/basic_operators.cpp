@@ -20,8 +20,8 @@ void checkSpecialCases(posit<nbits, es> p) {
 void BasicOperators() {
 	posit<16, 1> p1, p2, p3, p4, p5, p6;
 
-	double minpos = p1.minpos();
-	double maxpos = p1.maxpos();
+	double minpos = p1.minpos_value();
+	double maxpos = p1.maxpos_value();
 
 	p1 = 0;  checkSpecialCases(p1);
 	p1 = 1;  checkSpecialCases(p1);

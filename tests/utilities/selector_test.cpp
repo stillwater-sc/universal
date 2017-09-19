@@ -72,14 +72,14 @@ int main(int argc, char** argv)
     
     nbits_variant nbitsv = nbits_tag<4>{};                  // init to avoid trouble without cmd line args
     if (argc > 1)
-        nbitsv = nbits_select(stoull(argv[1]));
+        nbitsv = nbits_select(size_t(stoull(argv[1])));
     
     boost::apply_visitor(print_nbits_variant{}, nbitsv);
     
     
     es_variant esv = es_tag<1>{};                           // init to avoid trouble without cmd line args
     if (argc > 2)
-        esv = es_select(stoull(argv[2]));
+        esv = es_select(size_t(stoull(argv[2])));
     
     boost::apply_visitor(print_es_variant{}, esv);
 
