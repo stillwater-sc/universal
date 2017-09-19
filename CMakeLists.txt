@@ -27,9 +27,10 @@ if (UNIVERSAL_ENABLE_TESTS)
     # include(Dart)
 endif()
 
-find_package(boost)
+find_package(Boost)
 if (BOOST_FOUND)
-	include_directories($(Boost_INCLUDE_DIRECTORY))
+# 	include_directories($(Boost_INCLUDE_DIRECTORY))
+	include_directories(${Boost_INCLUDE_DIRS})
 endif (BOOST_FOUND)
 
 # Possibly not under Windows
