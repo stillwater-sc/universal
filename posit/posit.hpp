@@ -123,6 +123,19 @@ private:
 	friend std::ostream& operator<< (std::ostream& ostr, const regime<nnbits, ees>& r);
 	template<size_t nnbits, size_t ees>
 	friend std::istream& operator>> (std::istream& istr, regime<nnbits, ees>& r);
+
+	template<size_t nnbits, size_t ees>
+	friend bool operator==(const regime<nnbits, ees>& lhs, const regime<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator!=(const regime<nnbits, ees>& lhs, const regime<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator< (const regime<nnbits, ees>& lhs, const regime<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator> (const regime<nnbits, ees>& lhs, const regime<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator<=(const regime<nnbits, ees>& lhs, const regime<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator>=(const regime<nnbits, ees>& lhs, const regime<nnbits, ees>& rhs);
 };
 
 template<size_t nbits, size_t es>
@@ -183,6 +196,19 @@ private:
 	friend std::ostream& operator<< (std::ostream& ostr, const exponent<nnbits, ees>& e);
 	template<size_t nnbits, size_t ees>
 	friend std::istream& operator>> (std::istream& istr, exponent<nnbits, ees>& e);
+
+	template<size_t nnbits, size_t ees>
+	friend bool operator==(const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator!=(const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator< (const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator> (const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator<=(const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator>=(const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
 };
 
 template<size_t nbits, size_t es>
@@ -243,6 +269,19 @@ private:
 	friend std::ostream& operator<< (std::ostream& ostr, const fraction<nnbits, ees>& f);
 	template<size_t nnbits, size_t ees>
 	friend std::istream& operator>> (std::istream& istr, fraction<nnbits, ees>& f);
+
+	template<size_t nnbits, size_t ees>
+	friend bool operator==(const fraction<nnbits, ees>& lhs, const fraction<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator!=(const fraction<nnbits, ees>& lhs, const fraction<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator< (const fraction<nnbits, ees>& lhs, const fraction<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator> (const fraction<nnbits, ees>& lhs, const fraction<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator<=(const fraction<nnbits, ees>& lhs, const fraction<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator>=(const fraction<nnbits, ees>& lhs, const fraction<nnbits, ees>& rhs);
 };
 
 /*

@@ -95,6 +95,7 @@ inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, const posit<nbits
 
 // COMPONENT operators
 
+/////////////////  REGIME
 template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const regime<nbits, es>& r) {
 	unsigned int nrOfRegimeBitsProcessed = 0;
@@ -116,6 +117,20 @@ inline std::istream& operator>> (std::istream& istr, const regime<nbits, es>& r)
 }
 
 template<size_t nbits, size_t es>
+inline bool operator==(const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return lhs._Bits == rhs._Bits && lhs._RegimeBits == rhs._RegimeBits; }
+template<size_t nbits, size_t es>
+inline bool operator!=(const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nbits, size_t es>
+inline bool operator< (const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return lhs._RegimeBits == rhs._RegimeBits && lhs._Bits < rhs._Bits; }
+template<size_t nbits, size_t es>
+inline bool operator> (const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nbits, size_t es>
+inline bool operator<=(const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return !operator> (lhs, rhs); }
+template<size_t nbits, size_t es>
+inline bool operator>=(const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return !operator< (lhs, rhs); }
+
+/////////////////// EXPONENT
+template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e) {
 	unsigned int nrOfExponentBitsProcessed = 0;
 	for (int i = es - 1; i >= 0; --i) {
@@ -130,6 +145,26 @@ inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e
 	return ostr;
 }
 
+template<size_t nbits, size_t es>
+inline std::istream& operator>> (std::istream& istr, const exponent<nbits, es>& e) {
+	istr >> e._Bits;
+	return istr;
+}
+
+template<size_t nbits, size_t es>
+inline bool operator==(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return lhs._Bits == rhs._Bits && lhs._ExponentBits == rhs._ExponentBits; }
+template<size_t nbits, size_t es>
+inline bool operator!=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nbits, size_t es>
+inline bool operator< (const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return lhs._ExponentBits == rhs._ExponentBits && lhs._Bits < rhs._Bits; }
+template<size_t nbits, size_t es>
+inline bool operator> (const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nbits, size_t es>
+inline bool operator<=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator> (lhs, rhs); }
+template<size_t nbits, size_t es>
+inline bool operator>=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator< (lhs, rhs); }
+
+////////////////////// FRACTION
 template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const fraction<nbits, es>& f) {
 	unsigned int nrOfFractionBitsProcessed = 0;
@@ -150,12 +185,21 @@ inline std::istream& operator>> (std::istream& istr, const fraction<nbits, es>& 
 	return istr;
 }
 
-template<size_t nbits, size_t es>
-inline std::istream& operator>> (std::istream& istr, const exponent<nbits, es>& e) {
-	istr >> e._Bits;
-	return istr;
-}
 
+template<size_t nbits, size_t es>
+inline bool operator==(const fraction<nbits, es>& lhs, const fraction<nbits, es>& rhs) { return lhs._Bits == rhs._Bits; }
+template<size_t nbits, size_t es>
+inline bool operator!=(const fraction<nbits, es>& lhs, const fraction<nbits, es>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nbits, size_t es>
+inline bool operator< (const fraction<nbits, es>& lhs, const fraction<nbits, es>& rhs) { return lhs._FractionBits == rhs._FractionBits && lhs._Bits < rhs._Bits; }
+template<size_t nbits, size_t es>
+inline bool operator> (const fraction<nbits, es>& lhs, const fraction<nbits, es>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nbits, size_t es>
+inline bool operator<=(const fraction<nbits, es>& lhs, const fraction<nbits, es>& rhs) { return !operator> (lhs, rhs); }
+template<size_t nbits, size_t es>
+inline bool operator>=(const fraction<nbits, es>& lhs, const fraction<nbits, es>& rhs) { return !operator< (lhs, rhs); }
+
+////////////////// POSIT
 template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 	if (p.isZero()) {
