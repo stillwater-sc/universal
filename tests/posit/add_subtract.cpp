@@ -10,6 +10,7 @@
 #include "../../posit/posit_regime_lookup.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
+#include "../../posit/posit_manipulators.hpp"
 
 using namespace std;
 
@@ -45,24 +46,24 @@ void denormalize(const std::bitset<nbits>& fraction, int shift, std::bitset<nbit
  */
 
 /*
- POSIT<4,0>
- #           Binary         k-value            sign          regime        exponent        fraction           value
- 0:             0000              -3               1           0.125               -               0               0
- 1:             0001              -2               1            0.25               -               0            0.25
- 2:             0010              -1               1             0.5               -               0             0.5
- 3:             0011              -1               1             0.5               -               1            0.75
- 4:             0100               0               1               1               -               0               1
- 5:             0101               0               1               1               -               1             1.5
- 6:             0110               1               1               2               -               0               2
- 7:             0111               2               1               4               -               0               4
- 8:             1000               3              -1               8               -               0             inf
- 9:             1001               2              -1               4               -               0              -4
-10:             1010               1              -1               2               -               0              -2
-11:             1011               0              -1               1               -               1            -1.5
-12:             1100               0              -1               1               -               0              -1
-13:             1101              -1              -1             0.5               -               1           -0.75
-14:             1110              -1              -1             0.5               -               0            -0.5
-15:             1111              -2              -1            0.25               -               0           -0.25
+POSIT<4,0>
+   #           Binary         Decoded         k-value            sign                        regime        exponent        fraction                         value
+   0:             0000            0000               0               1                             1            -            ----                             0
+   1:             0001            0001              -2               1                          0.25            -            ----                          0.25
+   2:             0010            0010              -1               1                           0.5            -            0---                           0.5
+   3:             0011            0011              -1               1                           0.5            -            1---                          0.75
+   4:             0100            0100               0               1                             1            -            0---                             1
+   5:             0101            0101               0               1                             1            -            1---                           1.5
+   6:             0110            0110               1               1                             2            -            ----                             2
+   7:             0111            0111               2               1                             4            -            ----                             4
+   8:             1000            1000              -3              -1                         0.125            -            ----                           inf
+   9:             1001            1111               2              -1                             4            -            ----                            -4
+  10:             1010            1110               1              -1                             2            -            ----                            -2
+  11:             1011            1101               0              -1                             1            -            1---                          -1.5
+  12:             1100            1100               0              -1                             1            -            0---                            -1
+  13:             1101            1011              -1              -1                           0.5            -            1---                         -0.75
+  14:             1110            1010              -1              -1                           0.5            -            0---                          -0.5
+  15:             1111            1001              -2              -1                          0.25            -            ----                         -0.25
 */
 bool ValidateAdditionPosit_4_0() {
 	float input_values[7] = {
@@ -74,12 +75,12 @@ bool ValidateAdditionPosit_4_0() {
 
 	bool bValid = true;
 	posit<4, 0> pa, pb, psum;
-	for (int i = 0; i < sizeof(input_values); i++) {
+	for (int i = 0; i < 7; i++) {
 		pa = input_values[i];
-		pb = input_values[i];
+		pb = pa;
 		psum = pa + pb;
 		if (fabs(psum.to_double() - golden_value[i]) > 0.0001) {
-			cerr << "Posit<4,0> addition failed: " << pa << " + " << pb << " != " << psum << " " << components_to_string(psum) << endl;
+			cerr << "Posit<4,0> addition failed: " << pa << " + " << pb << " != " << golden_value[i] << " instead it yielded " << psum << " " << components_to_string(psum) << endl;
 			bValid = false;
 		}
 	}
@@ -87,7 +88,31 @@ bool ValidateAdditionPosit_4_0() {
 	return bValid;
 }
 
-bool ValidateRecipricalPosit_4_0() {
+bool ValidateNegationPosit_4_0() {
+	float target_values[16] = {
+		-4.0, -2.0, -1.5, -1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0, INFINITY
+	};
+
+	float golden_value[16] = {
+		4.0, 2.0, 1.5, 1.0, 0.75, 0.5, 0.25, 0.0, -0.25, -0.5, -0.75, -1.0, -1.5, -2.0, -4.0, INFINITY
+	};
+
+	bool bValid = true;
+	posit<4, 0> pa, pb, pgolden;
+	for (int i = 0; i < 16; i++) {
+		pa = target_values[i];
+		pb = -pa;
+		pgolden = golden_value[i];
+		if (pb != pgolden) {
+			cerr << "Posit<4,0> negation failed: " << pa << " != " << pgolden << " instead it yielded " << pb << " " << components_to_string(pb) << endl;
+			bValid = false;
+		}
+	}
+
+	return bValid;
+}
+
+bool ValidateNegAdditionPosit_4_0() {
 	float target_values[7] = {
 		0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0
 	};
@@ -96,10 +121,10 @@ bool ValidateRecipricalPosit_4_0() {
 	posit<4, 0> pa, pb, psum;
 	for (int i = 0; i < 7; i++) {
 		pa =  target_values[i];
-		pb = -target_values[i];
+		pb = -pa;
 		psum = pa + pb;
 		if (fabs(psum.to_double()) > 0.0001) {
-			cerr << "Posit<4,0> reciprical failed: " << pa << " + " << pb << " != " << psum << " " << components_to_string(psum) << endl;
+			cerr << "Posit<4,0> negated add failed: " << pa << " + " << pb << " != 0 instead it yielded " << psum << " " << components_to_string(psum) << endl;
 			bValid = false;
 		}
 	}
@@ -120,7 +145,8 @@ void TestPositArithmeticOperators(bool bValid, string posit_cfg, string op)
 int main(int argc, char** argv)
 {
 	TestPositArithmeticOperators(ValidateAdditionPosit_4_0(), "posit<4,0>", "addition");
-	TestPositArithmeticOperators(ValidateRecipricalPosit_4_0(), "posit<4,0>", "recprical addition");
+	TestPositArithmeticOperators(ValidateNegationPosit_4_0(), "posit<4,0>", "negation");
+	TestPositArithmeticOperators(ValidateNegAdditionPosit_4_0(), "posit<4,0>", "neg addition");
 
 	return 0;
 

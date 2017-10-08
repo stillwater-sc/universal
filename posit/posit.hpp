@@ -406,10 +406,17 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(const posit& rhs) {
-		_regime = rhs._regime;
+		_raw_bits = rhs._raw_bits;
+		_sign     = rhs._sign;
+		_regime   = rhs._regime;
 		_exponent = rhs._exponent;
 		_fraction = rhs._fraction;
 		return *this;
+	}
+	posit<nbits, es> operator-() {
+		posit<nbits, es> negated(*this);
+		negated.decode(twos_complement(_raw_bits));
+		return negated;
 	}
 	posit<nbits, es>& operator+=(const posit& rhs) {
 		if (isZero()) {
@@ -432,6 +439,7 @@ public:
 		int _scale;
 		align_numbers(scale(), _fraction.get(), rhs.scale(), rhs._fraction.get(), _scale, r1, r2);
 
+		/*
 		std::cout << "lhs " << *this << " scale " << scale() << std::endl;
 		std::cout << "rhs " << rhs <<   " scale " << rhs.scale() << std::endl;
 		std::cout << "lhs_f " << _fraction << std::endl;
@@ -439,9 +447,10 @@ public:
 		std::cout << "r1    " << r1 << std::endl;
 		std::cout << "r2    " << r2 << std::endl;
 		std::cout << "scale " << _scale << std::endl;
+		*/
 
 		bool carry = add_unsigned<nbits>(r1, r2, sum);
-		std::cout << "sum " << sum << " carry " << (carry ? "1" : "0") << std::endl;
+		//std::cout << "sum " << sum << " carry " << (carry ? "1" : "0") << std::endl;
 		if (carry) {
 			_scale++;
 			sum >>= 1;  // hide the msb
@@ -458,8 +467,10 @@ public:
 			_scale += msb - (nbits - 1);
 			sum <<= 1; // the msb becomes the hidden bit
 		}
+		/*
 		std::cout << "scale " << _scale << std::endl;
 		std::cout << "sum " << sum << std::endl;
+		*/
 		convert_to_posit(_sign, _scale, sum);
 		return *this;
 	}
@@ -742,6 +753,34 @@ public:
 			return INFINITY;
 		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
 	}
+	// collect the posit components into a bitset
+	std::bitset<nbits> collect() {
+		std::bitset<nbits - 1> r = _regime.get();
+		unsigned int nrRegimeBits = _regime.nrBits();
+		std::bitset<es> e = _exponent.get();
+		unsigned int nrExponentBits = _exponent.nrBits();
+		std::bitset<nbits> f = _fraction.get();
+		unsigned int nrFractionBits = _fraction.nrBits();
+		std::bitset<nbits> raw_bits;
+		// collect
+		raw_bits.set(nbits - 1, _sign);
+		int msb = nbits - 2;
+		for (unsigned int i = 0; i < nrRegimeBits; i++) {
+			raw_bits.set(msb--, r[nbits - 2 - i]);
+		}
+		if (msb >= 0) {
+			for (unsigned int i = 0; i < nrExponentBits; i++) {
+				raw_bits.set(msb--, e[es - 1 - i]);
+			}
+		}
+		if (msb >= 0) {
+			for (unsigned int i = 0; i < nrFractionBits; i++) {
+				raw_bits.set(msb--, f[nbits - 1 - i]);
+			}
+		}
+		return raw_bits;
+	}
+	// given a decoded posit, take its 2's complement
 	void take_2s_complement() {
 		// transform back through 2's complement
 		std::bitset<nbits - 1> r = _regime.get();
@@ -813,7 +852,7 @@ public:
 	// -1 -> round-down, 0 -> no rounding, +1 -> round-up
 	// _fraction contains the fraction without the hidden bit
 	int rounding_decision(const std::bitset<nbits>& _fraction, unsigned int nr_of_fraction_bits) {
-		bool bVerbose = true;
+		bool bVerbose = false;
 		if (bVerbose) std::cout << "_fraction bits to process: " << nr_of_fraction_bits << " " << _fraction << std::endl;
 		// check if there are any bits set past the cut-off
 		int rounding_direction = 0;
@@ -848,7 +887,7 @@ public:
 		return rounding_direction;
 	}	
 	int round(bool _sign, int _scale, std::bitset<nbits>& _fraction) {
-		bool bVerbose = true;
+		bool bVerbose = false;
 		switch (bRoundingMode) {
 		case POSIT_ROUND_DOWN:
 			if (bVerbose) std::cout << "Rounding Mode: round down" << std::endl;
@@ -878,7 +917,7 @@ public:
 	// assignment operators for integer/float/double. I don't like that distribution of knowledge.
 	void convert_to_posit(bool _sign, int _scale, std::bitset<nbits>& _frac) {
 		reset();
-		bool bVerbose = true;
+		bool bVerbose = false;
 		// deal with minpos/maxpos special cases
 		int k = (_scale >> es); 
 		if (bVerbose) std::cout << "scale = " << _scale << " es = " << es << " k = " << k << std::endl;
@@ -915,6 +954,8 @@ public:
 		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
 		if (bVerbose) std::cout << "Regime bits " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _frac << std::endl;
 		_fraction.assign_fraction(remaining_bits, _frac);
+		// store raw bit representation
+		_raw_bits = collect();
 		if (bVerbose) std::cout << "Posit    " << *this << std::endl;
 	}
 
