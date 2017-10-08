@@ -134,7 +134,7 @@ template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e) {
 	unsigned int nrOfExponentBitsProcessed = 0;
 	for (int i = int(es) - 1; i >= 0; --i) {
-		if (e._ExponentBits > nrOfExponentBitsProcessed++) {
+		if (e._NrOfBits > nrOfExponentBitsProcessed++) {
 			ostr << (e._Bits[i] ? "1" : "0");
 		}
 		else {

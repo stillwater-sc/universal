@@ -5,7 +5,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <iostream>
+#include <iomanip>
 #include <cmath>  // for frexp/frexpf
+
 
 inline uint64_t two_to_the_power(uint64_t n) {
 	return (uint64_t(1) << n);
@@ -73,28 +76,6 @@ unsigned int findMostSignificantBit(int8_t x) {
 	unsigned int base = 0;
 	if (tmp & 0xF0) { base += 4;  tmp >>= 4; }
 	return base + bval[tmp];
-}
-
-template<size_t nbits>
-std::string to_binary_(int64_t number) {
-	std::stringstream ss;
-	uint64_t mask = (uint64_t(1) << nbits-1);
-	for (int i = nbits-1; i >= 0; --i) {
-		ss << (mask & number ? "1" : "0");
-		mask >>= 1;
-	}
-	return ss.str();
-}
-
-std::string to_binary(int64_t number) {
-	std::stringstream ss;
-	unsigned int msb = findMostSignificantBit(number)-1;
-	uint64_t mask = (uint64_t(1) << msb);
-	for (int i = msb; i >= 0; --i) {
-		ss << (mask & number ? "1" : "0");
-		mask >>= 1;
-	}
-	return ss.str();
 }
 
 // FLOAT component extractions
@@ -174,4 +155,75 @@ std::bitset<nbits> copy_integer_fraction(uint64_t _fraction_without_hidden_bit) 
 		mask >>= 1;
 	}
 	return _fraction;
+}
+
+// representation helpers
+
+// nbits binary representation of a signed 64-bit number
+template<size_t nbits>
+std::string to_binary_(int64_t number) {
+	std::stringstream ss;
+	uint64_t mask = (uint64_t(1) << nbits - 1);
+	for (int i = nbits - 1; i >= 0; --i) {
+		ss << (mask & number ? "1" : "0");
+		mask >>= 1;
+	}
+	return ss.str();
+}
+
+// full binary representation of a signed 64-bit number
+std::string to_binary(int64_t number) {
+	std::stringstream ss;
+	unsigned int msb = findMostSignificantBit(number) - 1;
+	uint64_t mask = (uint64_t(1) << msb);
+	for (int i = msb; i >= 0; --i) {
+		ss << (mask & number ? "1" : "0");
+		mask >>= 1;
+	}
+	return ss.str();
+}
+
+// generate a full binary representation table for a given posit configuration
+template<size_t nbits, size_t es>
+void GeneratePositTable(std::ostream& ostr) 
+{
+	ostr << "Generate Posit Lookup table for a POSIT<" << nbits << "," << es << ">" << std::endl;
+
+	const size_t size = (1 << nbits);
+	posit<nbits, es>	myPosit;
+
+	const size_t index_column = 5;
+	const size_t bin_column = 16;
+	const size_t k_column = 16;
+	const size_t sign_column = 16;
+	const size_t regime_column = 30;
+	const size_t exponent_column = 16;
+	const size_t fraction_column = 16;
+	const size_t value_column = 30;
+
+	ostr << setw(index_column) << " # "
+		<< setw(bin_column) << " Binary"
+		<< setw(bin_column) << " Decoded"
+		<< setw(k_column) << " k-value"
+		<< setw(sign_column) << "sign"
+		<< setw(regime_column) << " regime"
+		<< setw(exponent_column) << " exponent"
+		<< setw(fraction_column) << " fraction"
+		<< setw(value_column) << " value" << endl;
+	for (int i = 0; i < size; i++) {
+		myPosit.set_raw_bits(i);
+		regime<nbits,es>   r = myPosit.get_regime();
+		exponent<nbits,es> e = myPosit.get_exponent();
+		fraction<nbits,es> f = myPosit.get_fraction();
+		ostr << setw(4) << i << ": "
+			<< setw(bin_column) << myPosit.get()
+			<< setw(bin_column) << myPosit.get_decoded()
+			<< setw(k_column) << myPosit.regime_k()
+			<< setw(sign_column) << myPosit.sign_value()
+			<< setw(regime_column) << setprecision(22) << r.value() << std::setprecision(0)
+			<< setw(exponent_column) << right << e 
+			<< setw(fraction_column) << right << f
+			<< setw(value_column) << std::setprecision(22) << myPosit.to_double() << std::setprecision(0)
+			<< std::endl;
+	}
 }
