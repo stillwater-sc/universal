@@ -152,11 +152,11 @@ inline std::istream& operator>> (std::istream& istr, const exponent<nbits, es>& 
 }
 
 template<size_t nbits, size_t es>
-inline bool operator==(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return lhs._Bits == rhs._Bits && lhs._ExponentBits == rhs._ExponentBits; }
+inline bool operator==(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return lhs._Bits == rhs._Bits && lhs._NrOfBits == rhs._NrOfBits; }
 template<size_t nbits, size_t es>
 inline bool operator!=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nbits, size_t es>
-inline bool operator< (const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return lhs._ExponentBits == rhs._ExponentBits && lhs._Bits < rhs._Bits; }
+inline bool operator< (const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return lhs._NrOfBits == rhs._NrOfBits && lhs._Bits < rhs._Bits; }
 template<size_t nbits, size_t es>
 inline bool operator> (const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return  operator< (rhs, lhs); }
 template<size_t nbits, size_t es>
