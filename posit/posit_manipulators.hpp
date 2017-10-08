@@ -31,29 +31,29 @@ void GeneratePositTable(std::ostream& ostr)
 	const size_t fraction_column = 16;
 	const size_t value_column = 30;
 
-	ostr << setw(index_column) << " # "
-		<< setw(bin_column) << " Binary"
-		<< setw(bin_column) << " Decoded"
-		<< setw(k_column) << " k-value"
-		<< setw(sign_column) << "sign"
-		<< setw(regime_column) << " regime"
-		<< setw(exponent_column) << " exponent"
-		<< setw(fraction_column) << " fraction"
-		<< setw(value_column) << " value" << endl;
+	ostr << std::setw(index_column) << " # "
+		<< std::setw(bin_column) << " Binary"
+		<< std::setw(bin_column) << " Decoded"
+		<< std::setw(k_column) << " k-value"
+		<< std::setw(sign_column) << "sign"
+		<< std::setw(regime_column) << " regime"
+		<< std::setw(exponent_column) << " exponent"
+		<< std::setw(fraction_column) << " fraction"
+		<< std::setw(value_column) << " value" << std::endl;
 	for (int i = 0; i < size; i++) {
 		myPosit.set_raw_bits(i);
 		regime<nbits,es>   r = myPosit.get_regime();
 		exponent<nbits,es> e = myPosit.get_exponent();
 		fraction<nbits,es> f = myPosit.get_fraction();
-		ostr << setw(4) << i << ": "
-			<< setw(bin_column) << myPosit.get()
-			<< setw(bin_column) << myPosit.get_decoded()
-			<< setw(k_column) << myPosit.regime_k()
-			<< setw(sign_column) << myPosit.sign_value()
-			<< setw(regime_column) << setprecision(22) << r.value() << std::setprecision(0)
-			<< setw(exponent_column) << right << e 
-			<< setw(fraction_column) << right << f
-			<< setw(value_column) << std::setprecision(22) << myPosit.to_double() << std::setprecision(0)
+		ostr << std::setw(4) << i << ": "
+			<< std::setw(bin_column) << myPosit.get()
+			<< std::setw(bin_column) << myPosit.get_decoded()
+			<< std::setw(k_column) << myPosit.regime_k()
+			<< std::setw(sign_column) << myPosit.sign_value()
+			<< std::setw(regime_column) << std::setprecision(22) << r.value() << std::setprecision(0)
+			<< std::setw(exponent_column) << std::right << e 
+			<< std::setw(fraction_column) << std::right << f
+			<< std::setw(value_column) << std::setprecision(22) << myPosit.to_double() << std::setprecision(0)
 			<< std::endl;
 	}
 }

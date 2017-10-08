@@ -14,5 +14,5 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
-#include <cmath>
+#include <cmath>        // for frexp/frexpf
 #include <bitset>
