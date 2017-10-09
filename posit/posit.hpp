@@ -84,10 +84,6 @@ public:
 		_Bits.reset();
 		_RegimeBits = nbits - 1;
 	}
-	void setInf() {
-		_Bits.reset();
-		_RegimeBits = nbits - 1;
-	}
 	// construct the regime bit pattern given a number's scale and returning the number of regime bits
 	unsigned int assign_regime_pattern(bool sign, int k) {
 		_Bits.reset();
@@ -179,7 +175,7 @@ public:
 		_NrOfBits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
 		if (_NrOfBits > 0) {
 			unsigned int exponent = (es > 0 ? msb % (1 << es) : 0);
-			uint64_t mask = (uint64_t(1) << (_NrOfBits - 1));
+			uint64_t mask = (uint64_t(1) << es) >> 1;  // (es - 1) can be negative, causing a compilation warning
 			for (unsigned int i = 0; i < _NrOfBits; i++) {
 				_Bits[es - 1 - i] = exponent & mask;
 				mask >>= 1;
@@ -349,23 +345,24 @@ public:
 		reset();
 		switch (std::fpclassify(rhs)) {
 		case FP_INFINITE:
-			_regime.setInf();
+			_sign = true;
+			_regime.setZero();
 			break;
 		case FP_NAN:
-			std::cerr << "float is NAN" << std::endl;
+			std::cerr << "float is NAN: returning 0" << std::endl;
 			break;
 		case FP_SUBNORMAL:
-			std::cerr << "TODO: subnormal number" << std::endl;
+			std::cerr << "TODO: subnormal number: returning 0" << std::endl;
 			break;
 		case FP_NORMAL:
 			{
 				if (rhs == 0.0) break;  // 0 is a special case
-				bool _sign = extract_sign(rhs); 
+				bool _negative = extract_sign(rhs);
 				int _scale = extract_exponent(rhs) - 1;
 				uint32_t _23b_fraction_without_hidden_bit = extract_fraction(rhs);
-				std::bitset<nbits> _fraction = copy_float_fraction<nbits>(_23b_fraction_without_hidden_bit);
+				std::bitset<nbits> _fraction = extract_float_fraction<nbits>(_23b_fraction_without_hidden_bit);
 				//std::cout << "sign " << _sign << " scale " << _scale << " 23b fraction " << std::hex << _23b_fraction_without_hidden_bit << " _fraction " << _fraction << std::dec << std::endl;
-				convert_to_posit(_sign, _scale, _fraction);
+				convert_to_posit(_negative, _scale, _fraction);
 			}
 			break;
 		}
@@ -375,7 +372,8 @@ public:
 		reset();
 		switch (std::fpclassify(rhs)) {
 		case FP_INFINITE:
-			_regime.setInf();
+			_sign = true;
+			_regime.setZero();
 			break;
 		case FP_NAN:
 			std::cerr << "float is NAN" << std::endl;
@@ -386,12 +384,12 @@ public:
 		case FP_NORMAL:
 			{
 				if (rhs == 0.0) break;  // 0 is a special case
-				bool _sign = extract_sign(rhs);
+				bool _negative = extract_sign(rhs);
 				int _scale = extract_exponent(rhs) - 1;
 				uint64_t _52b_fraction_without_hidden_bit = extract_fraction(rhs);
-				std::bitset<nbits> _fraction = copy_double_fraction<nbits>(_52b_fraction_without_hidden_bit);
+				std::bitset<nbits> _fraction = extract_double_fraction<nbits>(_52b_fraction_without_hidden_bit);
 				//std::cout << "sign " << _sign << " scale " << _scale << " 52b fraction " << std::hex << _52b_fraction_without_hidden_bit << " _fraction " << _fraction << std::dec << std::endl;
-				convert_to_posit(_sign, _scale, _fraction);
+				convert_to_posit(_negative, _scale, _fraction);
 			}
 			break;
 		}
@@ -527,13 +525,13 @@ public:
 	double minpos_value() {
 		return pow(double(useed_value()), double(static_cast<int>(2-nbits)));
 	}
-	uint32_t useed_scale() const {
+	int useed_scale() const {
 		return (uint32_t(1) << es);
 	}
-	uint32_t maxpos_scale() {
+	int maxpos_scale() {
 		return (nbits - 2) * (1 << es);
 	}
-	uint32_t minpos_scale() {
+	int minpos_scale() {
 		return static_cast<int>(2 - nbits) * (1 << es);
 	}
 
@@ -661,6 +659,7 @@ public:
 		// special case = 0
 		if (tmp.none()) {  // special case = 0
 			// that is reset state
+			_sign = false;
 			_regime.setZero();
 			_exponent.reset();
 			_fraction.reset();
@@ -672,7 +671,8 @@ public:
 		if (_sign) {
 			tmp.reset(nbits - 1);
 			if (raw_bits.none()) {
-				_regime.setInf();
+				_sign = true;
+				_regime.setZero();
 				_exponent.reset();
 				_fraction.reset();
 				return;
@@ -878,7 +878,7 @@ public:
 		}
 		return rounding_direction;
 	}	
-	int round(bool _sign, int _scale, std::bitset<nbits>& _fraction) {
+	int round(bool _negative, int _scale, std::bitset<nbits>& _fraction) {
 		bool bVerbose = false;
 		switch (bRoundingMode) {
 		case POSIT_ROUND_DOWN:
@@ -911,31 +911,39 @@ public:
 		reset();
 		bool bVerbose = false;
 		_sign = _negative;
+		int posit_size = static_cast<int>(nbits);
+		int es_size = static_cast<int>(es);
 		// deal with minpos/maxpos special cases
 		int k = (_scale >> es); 
 		if (bVerbose) std::cout << "scale = " << _scale << " es = " << es << " k = " << k << std::endl;
 		if (k < 0) {
-			// minpos is at k = -(nbits-1)
-			if (k <= 1 - nbits) { // <= minpos  0 is dealt with in special case
+			// minpos is at k = -(nbits-2)
+			if (k <= -(posit_size -2)) { // <= minpos     NOTE: 0 is dealt with in special case
 				if (bVerbose) std::cout << "value between 0 and minpos: round up" << std::endl;
-				_regime.assign_regime_pattern(_sign, 2-int(nbits));  // assign minpos
+				_regime.assign_regime_pattern(_negative, 2-int(posit_size));  // assign minpos
 				return;
 			}
+			else if (-(posit_size -2-es_size) <= k && k < -(posit_size -2)) {   // exponent rounding
+				if (bVerbose) std::cout << "minpos < value <= (minpos >> es): round depending on _exponent" << std::endl;
+			}
 			else {
-				if (bVerbose) std::cout << "value > minpos: round depending on _fraction" << std::endl;
-				_scale = round(_sign, _scale, _frac);
+				if (bVerbose) std::cout << "value > (minpos >> es): round depending on _fraction" << std::endl;
+				_scale = round(_negative, _scale, _frac);
 			}
 		}
 		else {
-			// maxpos is at k = nbits-1
-			if (k >= nbits-1) { // maxpos   INFINITY is dealt with in special case
+			// maxpos is at k = nbits-2
+			if (k >= (posit_size -2)) { // maxpos            NOTE: INFINITY is dealt with in special case
 				if (bVerbose) std::cout << "value between maxpos and INFINITY: round down" << std::endl;
-				_regime.assign_regime_pattern(_sign, nbits-2);	// assign maxpos
+				_regime.assign_regime_pattern(_negative, posit_size -2);	// assign maxpos
 				return;
 			}
+			else if ((posit_size -2-es_size) <= k && k < (posit_size -2)) {   // exponent rounding
+				if (bVerbose) std::cout << "maxpos < value <= (maxpos >> es): round depending on _exponent" << std::endl;
+			}
 			else {
-				if (bVerbose) std::cout << "value < maxpos: round depending on _fraction" << std::endl;
-				_scale = round(_sign, _scale, _frac);
+				if (bVerbose) std::cout << "value < (maxpos >> es): round depending on _fraction" << std::endl;
+				_scale = round(_negative, _scale, _frac);
 			}
 		}
 		// construct the posit

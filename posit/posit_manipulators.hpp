@@ -19,10 +19,10 @@ template<size_t nbits, size_t es>
 std::string spec_to_string(posit<nbits, es> p) {
 	std::stringstream ss;
 	ss << "posit<" << std::setw(2) << nbits << "," << es << "> ";
-	ss << "useed " << std::setw(4) << p.useed_scale() << "     ";
+	ss << "useed scale " << std::setw(4) << p.useed_scale() << "     ";
 	ss << std::setprecision(12);
-	ss << "minpos " << std::setw(20) << p.minpos_scale() << "     ";
-	ss << "maxpos " << std::setw(20) << p.maxpos_scale();
+	ss << "minpos scale " << std::setw(20) << p.minpos_scale() << "     ";
+	ss << "maxpos scale " << std::setw(20) << p.maxpos_scale();
 	return ss.str();
 }
 
