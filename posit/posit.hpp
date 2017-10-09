@@ -366,10 +366,6 @@ public:
 				std::bitset<nbits> _fraction = copy_float_fraction<nbits>(_23b_fraction_without_hidden_bit);
 				//std::cout << "sign " << _sign << " scale " << _scale << " 23b fraction " << std::hex << _23b_fraction_without_hidden_bit << " _fraction " << _fraction << std::dec << std::endl;
 				convert_to_posit(_sign, _scale, _fraction);
-				if (_sign) {
-					// transform back through 2's complement
-					take_2s_complement();
-				}
 			}
 			break;
 		}
@@ -396,10 +392,6 @@ public:
 				std::bitset<nbits> _fraction = copy_double_fraction<nbits>(_52b_fraction_without_hidden_bit);
 				//std::cout << "sign " << _sign << " scale " << _scale << " 52b fraction " << std::hex << _52b_fraction_without_hidden_bit << " _fraction " << _fraction << std::dec << std::endl;
 				convert_to_posit(_sign, _scale, _fraction);
-				if (_sign) {
-					// transform back through 2's complement
-					take_2s_complement();
-				}
 			}
 			break;
 		}
@@ -915,9 +907,10 @@ public:
 	// this routine will not allocate 0 or infinity due to the test on (0,minpos], and [maxpos,inf)
 	// TODO: is that the right functionality? right now the special cases are deal with in the
 	// assignment operators for integer/float/double. I don't like that distribution of knowledge.
-	void convert_to_posit(bool _sign, int _scale, std::bitset<nbits>& _frac) {
+	void convert_to_posit(bool _negative, int _scale, std::bitset<nbits>& _frac) {
 		reset();
 		bool bVerbose = false;
+		_sign = _negative;
 		// deal with minpos/maxpos special cases
 		int k = (_scale >> es); 
 		if (bVerbose) std::cout << "scale = " << _scale << " es = " << es << " k = " << k << std::endl;
@@ -955,7 +948,7 @@ public:
 		if (bVerbose) std::cout << "Regime bits " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _frac << std::endl;
 		_fraction.assign_fraction(remaining_bits, _frac);
 		// store raw bit representation
-		_raw_bits = collect();
+		_raw_bits = (_sign ? twos_complement(collect()) : collect());
 		if (bVerbose) std::cout << "Posit    " << *this << std::endl;
 	}
 

@@ -104,7 +104,7 @@ bool ValidateNegationPosit_4_0() {
 		pb = -pa;
 		pgolden = golden_value[i];
 		if (pb != pgolden) {
-			cerr << "Posit<4,0> negation failed: " << pa << " != " << pgolden << " instead it yielded " << pb << " " << components_to_string(pb) << endl;
+			cerr << "Posit<4,0> negation failed: neg(" << pa << ") != " << pb << " golden_value is " << pgolden << " " << components_to_string(pb) << endl;
 			bValid = false;
 		}
 	}
