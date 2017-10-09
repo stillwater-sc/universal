@@ -247,8 +247,10 @@ public:
 	}
 	void assign_fraction(unsigned int remaining_bits, std::bitset<nbits>& _fraction) {
 		if (remaining_bits > 0 && nbits > 3) {
+			_FractionBits = 0;
 			for (unsigned int i = 0; i < remaining_bits; i++) {
 				_Bits[nbits - 1 - i] = _fraction[nbits - 1 - i];
+				_FractionBits++;
 			}
 		}
 	}
@@ -344,6 +346,10 @@ public:
 	posit<nbits, es>& operator=(const float rhs) {
 		reset();
 		switch (std::fpclassify(rhs)) {
+		case FP_ZERO:
+			_sign = false;
+			_regime.setZero();
+			break;
 		case FP_INFINITE:
 			_sign = true;
 			_regime.setZero();
@@ -371,6 +377,10 @@ public:
 	posit<nbits, es>& operator=(const double rhs) {
 		reset();
 		switch (std::fpclassify(rhs)) {
+		case FP_ZERO:
+			_sign = false;
+			_regime.setZero();
+			break;
 		case FP_INFINITE:
 			_sign = true;
 			_regime.setZero();
@@ -596,6 +606,7 @@ public:
 	// MODIFIERS
 	void reset() {
 		bRoundingMode = POSIT_ROUND_TO_NEAREST;
+		_raw_bits.reset();
 		_sign = false;
 		_regime.reset();
 		_exponent.reset();
@@ -921,6 +932,8 @@ public:
 			if (k <= -(posit_size -2)) { // <= minpos     NOTE: 0 is dealt with in special case
 				if (bVerbose) std::cout << "value between 0 and minpos: round up" << std::endl;
 				_regime.assign_regime_pattern(_negative, 2-int(posit_size));  // assign minpos
+				_raw_bits = (_sign ? twos_complement(collect()) : collect());
+				_raw_bits.set(posit_size - 1, _sign);
 				return;
 			}
 			else if (-(posit_size -2-es_size) <= k && k < -(posit_size -2)) {   // exponent rounding
@@ -936,6 +949,8 @@ public:
 			if (k >= (posit_size -2)) { // maxpos            NOTE: INFINITY is dealt with in special case
 				if (bVerbose) std::cout << "value between maxpos and INFINITY: round down" << std::endl;
 				_regime.assign_regime_pattern(_negative, posit_size -2);	// assign maxpos
+				_raw_bits = (_sign ? twos_complement(collect()) : collect());
+				_raw_bits.set(posit_size - 1, _sign);
 				return;
 			}
 			else if ((posit_size -2-es_size) <= k && k < (posit_size -2)) {   // exponent rounding
@@ -957,6 +972,7 @@ public:
 		_fraction.assign_fraction(remaining_bits, _frac);
 		// store raw bit representation
 		_raw_bits = (_sign ? twos_complement(collect()) : collect());
+		_raw_bits.set(posit_size - 1, _sign);
 		if (bVerbose) std::cout << "Posit    " << *this << std::endl;
 	}
 

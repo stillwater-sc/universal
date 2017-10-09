@@ -84,7 +84,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e
 			ostr << "-";
 		}	
 	}
-	if (nrOfExponentBitsProcessed == 0) ostr << " "; // for proper alignment in tables
+	if (nrOfExponentBitsProcessed == 0) ostr << "~"; // for proper alignment in tables
 	return ostr;
 }
 
