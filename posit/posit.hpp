@@ -453,7 +453,7 @@ public:
 		//std::cout << "sum " << sum << " carry " << (carry ? "1" : "0") << std::endl;
 		if (carry) {
 			_scale++;
-			sum >>= 1;  // hide the msb
+			// the carry becomes the hidden bit
 		}
 		else {
 			// find the msb that will become the hidden bit
