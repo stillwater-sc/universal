@@ -66,11 +66,11 @@ POSIT<4,0>
   15:             1111            1001              -2              -1                          0.25            -            ----                         -0.25
 */
 bool ValidateAdditionPosit_4_0() {
-	float input_values[7] = {
-		0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0
+	float input_values[16] = {
+		-4.0f, -2.0f, -1.5f, -1.0f, -0.75f, -0.5f, -0.25f, 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f, INFINITY
 	};
-	float golden_value[7] = {
-		0.50, 1.0, 1.50, 2.0, 4.0, 4.0, 4.0
+	float golden_value[16] = {
+		-4.0f, -4.0f, -4.0f, -2.0f, -1.5f, -1.0f, -0.5f, 0.0f, 0.50f, 1.0f, 1.50f, 2.0f, 4.0f, 4.0f, 4.0f, INFINITY
 	};
 
 	bool bValid = true;
@@ -151,7 +151,7 @@ int main(int argc, char** argv)
 	cout << psum << " " << components_to_string(psum) << endl;
 	neg = -pa;
 	cout << neg << " " << components_to_string(neg) << endl;
-	return 0;
+	// return 0;
 
 	TestPositArithmeticOperators(ValidateAdditionPosit_4_0(), "posit<4,0>", "addition");
 	TestPositArithmeticOperators(ValidateNegationPosit_4_0(), "posit<4,0>", "negation");
