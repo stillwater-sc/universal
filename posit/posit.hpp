@@ -434,11 +434,15 @@ public:
 				return *this;
 			}
 		}
-		bool r1_sign = _sign;
-		bool r2_sign = rhs._sign;
+		bool lhs_sign = _sign;
+		bool rhs_sign = rhs._sign;
+
 		std::bitset<nbits> r1, r2, sum; // fraction is at most nbits-3 bits, + 1 for the hidden bit
-		int _scale;
-		align_numbers(scale(), _fraction.get(), rhs.scale(), rhs._fraction.get(), _scale, r1, r2);
+		int lhs_scale = scale();
+		int rhs_scale = rhs.scale();
+		int scale_of_result;
+		// align the numbers, produce right extended values with hidden bit at MSB in r1 and r2
+		align_numbers(lhs_scale, _fraction.get(), rhs_scale, rhs._fraction.get(), scale_of_result, r1, r2);
 
 		/*
 		std::cout << "lhs " << *this << " scale " << scale() << std::endl;
@@ -449,11 +453,19 @@ public:
 		std::cout << "r2    " << r2 << std::endl;
 		std::cout << "scale " << _scale << std::endl;
 		*/
-
+		if (lhs_sign) r1 = twos_complement(r1);
+		if (rhs_sign) r2 = twos_complement(r2);
+		// truth table
+		//  + + = +
+		//  + - =   lhs > rhs ? + : -
+		//  - + =   lhs > rhs ? - : +
+		//  - - = -
+		bool result_sign = (lhs_sign == rhs_sign ? lhs_sign : (lhs_scale > rhs_scale ? lhs_sign : rhs_sign));
 		bool carry = add_unsigned<nbits>(r1, r2, sum);
+		if (result_sign) sum = twos_complement(sum);
 		//std::cout << "sum " << sum << " carry " << (carry ? "1" : "0") << std::endl;
 		if (carry) {
-			_scale++;
+			scale_of_result++;
 			// the carry becomes the hidden bit
 		}
 		else {
@@ -465,14 +477,14 @@ public:
 					break;
 				}
 			}
-			_scale += msb - (nbits - 1);
+			scale_of_result += msb - (nbits - 1);
 			sum <<= 1; // the msb becomes the hidden bit
 		}
 		/*
 		std::cout << "scale " << _scale << std::endl;
 		std::cout << "sum " << sum << std::endl;
 		*/
-		convert_to_posit(r1_sign * r2_sign, _scale, sum);
+		convert_to_posit(result_sign, scale_of_result, sum);
 		return *this;
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
