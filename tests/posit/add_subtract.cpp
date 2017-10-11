@@ -145,8 +145,8 @@ void TestPositArithmeticOperators(bool bValid, string posit_cfg, string op)
 int main(int argc, char** argv)
 {
 	posit<4, 0> pa, pb, psum, neg;
-	pa = 0.75f;
-	pb = -pa;
+	pa = -0.75f;
+	pb = pa;
 	psum = pa + pb;
 	cout << psum << " " << components_to_string(psum) << endl;
 	neg = -pa;

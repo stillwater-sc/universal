@@ -434,7 +434,8 @@ public:
 				return *this;
 			}
 		}
-		bool _sign = false;
+		bool r1_sign = _sign;
+		bool r2_sign = rhs._sign;
 		std::bitset<nbits> r1, r2, sum; // fraction is at most nbits-3 bits, + 1 for the hidden bit
 		int _scale;
 		align_numbers(scale(), _fraction.get(), rhs.scale(), rhs._fraction.get(), _scale, r1, r2);
@@ -471,7 +472,7 @@ public:
 		std::cout << "scale " << _scale << std::endl;
 		std::cout << "sum " << sum << std::endl;
 		*/
-		convert_to_posit(_sign, _scale, sum);
+		convert_to_posit(r1_sign * r2_sign, _scale, sum);
 		return *this;
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
