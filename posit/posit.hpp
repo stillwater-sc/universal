@@ -359,6 +359,7 @@ public:
 		case FP_INFINITE:
 			_sign = true;
 			_regime.setZero();
+			_raw_bits.set(nbits - 1, true);
 			break;
 		case FP_NAN:
 			std::cerr << "float is NAN: returning 0" << std::endl;
@@ -390,6 +391,7 @@ public:
 		case FP_INFINITE:
 			_sign = true;
 			_regime.setZero();
+			_raw_bits.set(nbits - 1, true);
 			break;
 		case FP_NAN:
 			std::cerr << "float is NAN" << std::endl;
@@ -421,7 +423,13 @@ public:
 		return *this;
 	}
 	posit<nbits, es> operator-() {
-		posit<nbits, es> negated(*this);
+		if (isZero()) {
+			return *this;
+		}
+		if (isInfinite()) {
+			return *this;
+		}
+		posit<nbits, es> negated;
 		negated.decode(twos_complement(_raw_bits));
 		return negated;
 	}

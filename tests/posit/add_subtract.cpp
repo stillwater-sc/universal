@@ -113,13 +113,13 @@ bool ValidateNegationPosit_4_0() {
 }
 
 bool ValidateNegAdditionPosit_4_0() {
-	float target_values[7] = {
-		0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0
+	float target_values[15] = {
+		-4.0f, -2.0f, -1.5f, -1.0f, -0.75f, -0.5f, -0.25f, 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f
 	};
 
 	bool bValid = true;
 	posit<4, 0> pa, pb, psum;
-	for (int i = 0; i < 7; i++) {
+	for (int i = 0; i < 15; i++) {
 		pa =  target_values[i];
 		pb = -pa;
 		psum = pa + pb;
@@ -129,6 +129,13 @@ bool ValidateNegAdditionPosit_4_0() {
 		}
 	}
 
+	pa = INFINITY;
+	pb = -pa;
+	psum = pa + pb;
+	if (!psum.isInfinite()) {
+		cerr << "Posit<4,0> negated add failed: " << pa << " + " << pb << " != inf instead it yielded " << psum << " " << components_to_string(psum) << endl;
+		bValid = false;
+	}
 	return bValid;
 }
 
