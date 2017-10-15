@@ -215,19 +215,19 @@ public:
 	}
 	fraction(const fraction& f) {
 		_Bits = f._Bits;
-		_FractionBits = f._FractionBits;
+		_NrOfBits = f._NrOfBits;
 	}
 	fraction& operator=(const fraction& f) {
 		_Bits = f._Bits;
-		_FractionBits = f._FractionBits;
+		_NrOfBits = f._NrOfBits;
 		return *this;
 	}
 	void reset() {
-		_FractionBits = 0;
+		_NrOfBits = 0;
 		_Bits.reset();
 	}
 	unsigned int nrBits() const {
-		return _FractionBits;
+		return _NrOfBits;
 	}
 	double value() const {
 		return double(_Bits.to_ullong()) / double(uint64_t(1) << nbits);
@@ -237,20 +237,20 @@ public:
 	}
 	void set(const std::bitset<nbits>& raw, int nrOfFractionBits) {
 		_Bits = raw;
-		_FractionBits = nrOfFractionBits;
+		_NrOfBits = nrOfFractionBits;
 	}
 	// given a number and the fraction's cut-off point, assign the fraction bits in a right-extended format, returning the number of fraction bits assigned
-	unsigned int assign_fraction_bits(uint64_t number, unsigned int nrOfFractionBits) {
+	unsigned int assign_fraction_bits_(uint64_t number, unsigned int nrOfFractionBits) {
 		std::bitset<nbits> _frac;
-		unsigned int _fractionBits = nrOfFractionBits;
-		_Bits.set(_frac, _fractionBits);
+		unsigned int _nrOfFractionBits = nrOfFractionBits;
+		_Bits.set(_frac, _nrOfFractionBits);
 	}
 	void assign_fraction(unsigned int remaining_bits, std::bitset<nbits>& _fraction) {
 		if (remaining_bits > 0 && nbits > 3) {
-			_FractionBits = 0;
+			_NrOfBits = 0;
 			for (unsigned int i = 0; i < remaining_bits; i++) {
 				_Bits[nbits - 1 - i] = _fraction[nbits - 1 - i];
-				_FractionBits++;
+				_NrOfBits++;
 			}
 		}
 	}
@@ -260,7 +260,7 @@ private:
 	// this is too big and not precise, but is an outcome of using a template specification that needs to be const
 	// at time of compilation.
 	std::bitset<nbits> _Bits;
-	unsigned int _FractionBits;
+	unsigned int _NrOfBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t ees>
@@ -419,6 +419,8 @@ public:
 		return negated;
 	}
 	posit<nbits, es>& operator+=(const posit& rhs) {
+		bool _trace_add = true;
+		if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		if (isZero()) {
 			return *this;
 		}
@@ -453,36 +455,33 @@ public:
 		int scale_of_result;
 		int diff = lhs_scale - rhs_scale;
 		if (diff < 0) {
-			normalize(rhs._fraction.get(), r1);   // <-- rhs is bigger operand
-			denormalize(_fraction.get(), diff, r2);
+			normalize(rhs._fraction.get(), r1);      // <-- rhs is bigger operand
+			denormalize(_fraction.get(), diff, r2);  // denormalize the smaller operand
 			scale_of_result = rhs_scale;
 			r1_sign = rhs._sign;
 			r2_sign = _sign;
 		}
 		else {
-			normalize(_fraction.get(), r1);  // <-- lhs bigger operand
-			denormalize(rhs._fraction.get(), diff, r2);
+			normalize(_fraction.get(), r1);		         // <-- lhs bigger operand
+			denormalize(rhs._fraction.get(), diff, r2);  // denormalize the smaller operand
 			scale_of_result = lhs_scale;
 			r1_sign = _sign;
 			r2_sign = rhs._sign;
 		}
 
-		std::cout << "lhs   " << *this << " scale " << lhs_scale << std::endl;
-		std::cout << "rhs   " << rhs <<   " scale " << rhs_scale << std::endl;
-		std::cout << "lhs_f " << _fraction << std::endl;
-		std::cout << "rhs_f " << rhs._fraction << std::endl;
-		std::cout << "r1    " << r1 << (r1_sign ? " sign -1.0" : " sign  1.0") << std::endl;
-		std::cout << "r2    " << r2 << (r2_sign ? " sign -1.0" : " sign  1.0") << std::endl;
-		std::cout << "scale " << scale_of_result << std::endl;
+		if (_trace_add) {
+			std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << scale_of_result << " r1  " << r1 << " diff " << diff << std::endl;
+			std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << scale_of_result << " r2  " << r2 << std::endl;
+		}
 		
+		if (r1_sign != r2_sign) r2 = twos_complement(r2);
 		bool carry = add_unsigned<nbits>(r1, r2, sum);
 
-		std::cout << "carry " << (carry ? "1" : "0") << " sum " << sum << (r1_sign ? " sign -1.0" : " sign  1.0") << std::endl;
+		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << (carry ? " 1" : " 0") << " sum " << sum << std::endl;
 		if (carry) {
-			scale_of_result++;
-			// the carry becomes the hidden bit
+			if (r1_sign == r2_sign)	scale_of_result++;
 		}
-		else {
+		//else {
 			// find the msb that will become the hidden bit
 			unsigned int msb = 0;
 			for (int i = nbits - 1; i >= 0; i--) {
@@ -493,9 +492,9 @@ public:
 			}
 			scale_of_result += msb - (nbits - 1);
 			sum <<= 1; // the msb becomes the hidden bit
-		}
+		//}
 		
-		std::cout << (r1_sign ? "sign -1.0" : "sign  1.0") << " scale " << scale_of_result << " sum " << sum << std::endl;
+		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << scale_of_result << " sum " << sum << std::endl;
 		convert_to_posit(r1_sign, scale_of_result, sum);
 		return *this;
 	}
@@ -688,7 +687,7 @@ public:
 	// and decodes the regime, the exponent, and the fraction.
 	// This function has the functionality of the posit register-file load.
 	void decode(const std::bitset<nbits>& raw_bits) {
-		bool bVerbose = false;
+		bool _trace_decode = false;
 		_raw_bits = raw_bits;	// store the raw bits for reference
 		// check special cases
 		std::bitset<nbits> tmp(raw_bits);
@@ -718,18 +717,18 @@ public:
 
 		if (_sign) tmp = twos_complement(tmp);
 		unsigned int nrRegimeBits = _regime.assign_regime_pattern(_sign, decode_regime(tmp));
-		if (bVerbose) std::cout << " _regimeBits = " << nrRegimeBits << " ";
+		if (_trace_decode) std::cout << " _regimeBits = " << nrRegimeBits << " ";
 
 		// get the exponent bits
 		// start of exponent is nbits - (sign_bit + regime_bits)
 		int32_t msb = nbits - 1 - (1 + nrRegimeBits);
-		if (bVerbose) std::cout << " msb = " << msb << " ";
+		if (_trace_decode) std::cout << " msb = " << msb << " ";
 		unsigned int nrExponentBits = 0;
 		if (es > 0) {
 			std::bitset<es> _exp;
 			if (msb >= 0 && es > 0) {
 				nrExponentBits = (msb >= es - 1 ? es : msb + 1);
-				if (bVerbose) std::cout << " _exponentBits " << nrExponentBits << " ";
+				if (_trace_decode) std::cout << " _exponentBits " << nrExponentBits << " ";
 				for (unsigned int i = 0; i < nrExponentBits; i++) {
 					_exp[es - 1 - i] = tmp[msb - i];
 				}
@@ -737,7 +736,7 @@ public:
 			_exponent.set(_exp, nrExponentBits);
 		}
 		else {
-			if (bVerbose) std::cout << " _exponentBits 0 msb " << msb << " ";
+			if (_trace_decode) std::cout << " _exponentBits 0 msb " << msb << " ";
 		}
 
 		// finally, set the fraction bits
@@ -749,7 +748,7 @@ public:
 		std::bitset<nbits> _frac;
 		msb = msb - nrExponentBits;
 		unsigned int nrFractionBits = (msb < 0 ? 0 : msb + 1);
-		if (bVerbose) std::cout << "fraction bits " << (msb < 0 ? 0 : msb + 1) << std::endl;
+		if (_trace_decode) std::cout << "fraction bits " << (msb < 0 ? 0 : msb + 1) << std::endl;
 		if (msb >= 0) {
 			for (int i = msb; i >= 0; --i) {
 				_frac[nbits - 1 - (msb - i)] = tmp[i];
@@ -880,58 +879,58 @@ public:
 	// -1 -> round-down, 0 -> no rounding, +1 -> round-up
 	// _fraction contains the fraction without the hidden bit
 	int rounding_decision(const std::bitset<nbits>& _fraction, unsigned int nr_of_fraction_bits) {
-		bool bVerbose = false;
-		if (bVerbose) std::cout << "_fraction bits to process: " << nr_of_fraction_bits << " " << _fraction << std::endl;
+		bool _trace_rounding = false;
+		if (_trace_rounding) std::cout << "_fraction bits to process: " << nr_of_fraction_bits << " " << _fraction << std::endl;
 		// check if there are any bits set past the cut-off
 		int rounding_direction = 0;
 		if (nr_of_fraction_bits == 0) {
 			if (_fraction.test(nbits - 1)) {
 				rounding_direction = 1;
-				if (bVerbose) std::cout << "Rounding up" << std::endl;
+				if (_trace_rounding) std::cout << "Rounding up" << std::endl;
 			}
 			else {
-				if (bVerbose) std::cout << "Rounding down" << std::endl;
+				if (_trace_rounding) std::cout << "Rounding down" << std::endl;
 			}		
 			return rounding_direction;
 		}
 		// first bit after the cut-off is at nbits - 1 - nr_of_fraction_bits
 		if (nbits >= 4 + nr_of_fraction_bits) {
-			if (bVerbose) std::cout << "_fraction bits to process: " << nr_of_fraction_bits << " " << _fraction << std::endl;
+			if (_trace_rounding) std::cout << "_fraction bits to process: " << nr_of_fraction_bits << " " << _fraction << std::endl;
 			rounding_direction = -1;
 			for (int i = nbits - 1 - nr_of_fraction_bits; i >= 0; --i) {
 				if (_fraction.test(i)) {
 					rounding_direction = 1;
-					if (bVerbose) std::cout << "Fraction bit set: round up" << std::endl;
+					if (_trace_rounding) std::cout << "Fraction bit set: round up" << std::endl;
 					break;
 				}
 			}
 			if (rounding_direction == -1) {
-				if (bVerbose) std::cout << "Fraction bits not set: round down" << std::endl;
+				if (_trace_rounding) std::cout << "Fraction bits not set: round down" << std::endl;
 			}
 		}
 		else {
-			if (bVerbose) std::cout << "No bits left: no rounding" << std::endl;
+			if (_trace_rounding) std::cout << "No bits left: no rounding" << std::endl;
 		}
 		return rounding_direction;
 	}	
 	int round(bool _negative, int _scale, std::bitset<nbits>& _fraction) {
-		bool bVerbose = false;
+		bool _trace_rounding = false;
 		switch (bRoundingMode) {
 		case POSIT_ROUND_DOWN:
-			if (bVerbose) std::cout << "Rounding Mode: round down" << std::endl;
+			if (_trace_rounding) std::cout << "Rounding Mode: round down" << std::endl;
 			break;
 		default:
 		case POSIT_ROUND_TO_NEAREST:
 			if (nbits > 3) {
 				switch (rounding_decision(_fraction, estimate_nr_fraction_bits(_scale >> es))) {
 				case -1:
-					if (bVerbose) std::cout << "Rounding Mode: Rounding down to nearest" << std::endl;
+					if (_trace_rounding) std::cout << "Rounding Mode: Rounding down to nearest" << std::endl;
 					break;
 				case 0:
-					if (bVerbose) std::cout << "Rounding Mode: No Rounding required" << std::endl;
+					if (_trace_rounding) std::cout << "Rounding Mode: No Rounding required" << std::endl;
 					break;
 				case 1:
-					if (bVerbose) std::cout << "Rounding Mode: Rounding up to nearest" << std::endl;
+					if (_trace_rounding) std::cout << "Rounding Mode: Rounding up to nearest" << std::endl;
 					_scale += 1;
 					break;
 				}
@@ -944,66 +943,65 @@ public:
 	// TODO: is that the right functionality? right now the special cases are deal with in the
 	// assignment operators for integer/float/double. I don't like that distribution of knowledge.
 	void convert_to_posit(bool _negative, int _scale, std::bitset<nbits>& _frac) {
+		bool _trace_conversion = true;
 		reset();
-		bool bVerbose = true;
+		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 		_sign = _negative;
 		int posit_size = static_cast<int>(nbits);
 		int es_size = static_cast<int>(es);
 		// deal with minpos/maxpos special cases
 		int k = (_scale >> es); 
-		if (bVerbose) std::cout << "scale = " << _scale << " es = " << es << " k = " << k << std::endl;
+		//if (_trace) std::cout << (_negative ? "sign -1 " : "sign 1 ") << " scale = " << _scale << " fraction " << _frac << " es = " << es << " k = " << k << std::endl;
 		if (k < 0) {
 			// minpos is at k = -(nbits-2)
 			if (k <= -(posit_size -2)) { // <= minpos     NOTE: 0 is dealt with in special case
-				if (bVerbose) std::cout << "value between 0 and minpos: round up" << std::endl;
+				if (_trace_conversion) std::cout << "value between 0 and minpos: round up" << std::endl;
 				_regime.assign_regime_pattern(_negative, 2-int(posit_size));  // assign minpos
 				_raw_bits = (_sign ? twos_complement(collect()) : collect());
 				_raw_bits.set(posit_size - 1, _sign);
+				if (_trace_conversion) std::cout << (_sign ? "sign -1 " : "sign  1 ") << "regime " << _regime << " exp " << _exponent << " fraction " << _fraction << " posit    " << *this << std::endl;
 				return;
 			}
 			else if (-(posit_size -2-es_size) <= k && k < -(posit_size -2)) {   // exponent rounding
-				if (bVerbose) std::cout << "minpos < value <= (minpos >> es): round depending on _exponent" << std::endl;
+				if (_trace_conversion) std::cout << "minpos < value <= (minpos >> es): round depending on _exponent" << std::endl;
 			}
 			else {
-				if (bVerbose) std::cout << "value > (minpos >> es): round depending on _fraction" << std::endl;
+				if (_trace_conversion) std::cout << "value > (minpos >> es): round depending on _fraction" << std::endl;
 				_scale = round(_negative, _scale, _frac);
 			}
 		}
 		else {
 			// maxpos is at k = nbits-2
 			if (k >= (posit_size -2)) { // maxpos            NOTE: INFINITY is dealt with in special case
-				if (bVerbose) std::cout << "value between maxpos and INFINITY: round down" << std::endl;
+				if (_trace_conversion) std::cout << "value between maxpos and INFINITY: round down" << std::endl;
 				_regime.assign_regime_pattern(_negative, posit_size -2);	// assign maxpos
 				_raw_bits = (_sign ? twos_complement(collect()) : collect());
 				_raw_bits.set(posit_size - 1, _sign);
 				return;
 			}
 			else if ((posit_size -2-es_size) <= k && k < (posit_size -2)) {   // exponent rounding
-				if (bVerbose) std::cout << "maxpos < value <= (maxpos >> es): round depending on _exponent" << std::endl;
+				if (_trace_conversion) std::cout << "maxpos < value <= (maxpos >> es): round depending on _exponent" << std::endl;
 			}
 			else {
-				if (bVerbose) std::cout << "value < (maxpos >> es): round depending on _fraction" << std::endl;
+				if (_trace_conversion) std::cout << "value < (maxpos >> es): round depending on _fraction" << std::endl;
 				_scale = round(_negative, _scale, _frac);
 			}
 		}
 		// construct the posit
 		unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
-		if (bVerbose) std::cout << "Regime      " << _regime << std::endl;
 		unsigned int nr_of_exp_bits = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
-		if (bVerbose) std::cout << "Exponent    " << _exponent << std::endl;
-		if (bVerbose) std::cout << "Fraction in " << _frac << std::endl;
 		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		if (bVerbose) std::cout << "Regime bits " << nr_of_regime_bits << "  exponent bits " << nr_of_exp_bits << " remaining bits " << remaining_bits << " fraction " << _frac << std::endl;
 		_fraction.assign_fraction(remaining_bits, _frac);
+		if (_trace_conversion) std::cout << (_sign ? "sign -1 " : "sign  1 ") << "regime " << _regime << " exp " << _exponent << " fraction " << _fraction;
 		// store raw bit representation
 		_raw_bits = (_sign ? twos_complement(collect()) : collect());
 		_raw_bits.set(posit_size - 1, _sign);
-		if (bVerbose) std::cout << "Posit    " << *this << std::endl;
+		if (_trace_conversion) std::cout << " posit    " << *this << std::endl;
 	}
 
 private:
-	bool				   _sign;
 	std::bitset<nbits>     _raw_bits;	// raw bit representation
+	bool				   _sign;       // decoded posit representation
 	regime<nbits, es>	   _regime;		// decoded posit representation
 	exponent<nbits, es>    _exponent;	// decoded posit representation
 	fraction<nbits, es>	   _fraction;	// decoded posit representation
@@ -1027,8 +1025,10 @@ private:
 	 *   0.000h_bbbb_bbbb_bbbb_b... number
 	 *  >-.----<                    shift of 4
 	 */
-	void denormalize(const std::bitset<nbits>& fraction, unsigned int shift, std::bitset<nbits>& number) {
+	void denormalize(const std::bitset<nbits>& fraction, int shift, std::bitset<nbits>& number) {
+		std::cout << "fraction " << fraction << std::endl;
 		if (nbits == 3) return;
+		if (shift < 0) shift = -shift;
 		number.reset();
 		if (shift <= nbits - 1) {
 			number.set(nbits - 1 - shift); // set hidden bit

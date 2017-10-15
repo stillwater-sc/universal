@@ -146,16 +146,16 @@ int main(int argc, char** argv)
 {
 	posit<4, 0> pa, pb, psum, neg;
 	pa = 0.5f; pb = 0.25f; psum = pa + pb;
-	cout << psum << " " << components_to_string(psum) << endl;
+	cout << psum << " " << components_to_string(psum) << endl << endl;
 	pa = 0.5f; pb = -0.25f; psum = pa + pb;
-	cout << psum << " " << components_to_string(psum) << endl;
+	cout << psum << " " << components_to_string(psum) << endl << endl;
 	pa = -0.25f; pb = 0.5f; psum = pa + pb;
-	cout << psum << " " << components_to_string(psum) << endl;
+	cout << psum << " " << components_to_string(psum) << endl << endl;
 	pa = -0.5f; pb = -0.25f; psum = pa + pb;
-	cout << psum << " " << components_to_string(psum) << endl;
+	cout << psum << " " << components_to_string(psum) << endl << endl;
 	return 0;
 
-	TestPositArithmeticOperators(ValidateAdditionPosit_4_0(), "posit<4,0>", "addition");
+	//TestPositArithmeticOperators(ValidateAdditionPosit_4_0(), "posit<4,0>", "addition");
 	//TestPositArithmeticOperators(ValidateNegationPosit_4_0(), "posit<4,0>", "negation");
 	//TestPositArithmeticOperators(ValidateNegAdditionPosit_4_0(), "posit<4,0>", "neg addition");
 
