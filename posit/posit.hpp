@@ -434,36 +434,50 @@ public:
 				return *this;
 			}
 		}
-		bool lhs_sign = _sign;
-		bool rhs_sign = rhs._sign;
-
-		std::bitset<nbits> r1, r2, sum; // fraction is at most nbits-3 bits, + 1 for the hidden bit
-		int lhs_scale = scale();
-		int rhs_scale = rhs.scale();
-		int scale_of_result;
-		// align the numbers, produce right extended values with hidden bit at MSB in r1 and r2
-		align_numbers(lhs_scale, _fraction.get(), rhs_scale, rhs._fraction.get(), scale_of_result, r1, r2);
-
-		/*
-		std::cout << "lhs " << *this << " scale " << scale() << std::endl;
-		std::cout << "rhs " << rhs <<   " scale " << rhs.scale() << std::endl;
-		std::cout << "lhs_f " << _fraction << std::endl;
-		std::cout << "rhs_f " << rhs._fraction << std::endl;
-		std::cout << "r1    " << r1 << std::endl;
-		std::cout << "r2    " << r2 << std::endl;
-		std::cout << "scale " << _scale << std::endl;
-		*/
-		if (lhs_sign) r1 = twos_complement(r1);
-		if (rhs_sign) r2 = twos_complement(r2);
-		// truth table
+		// align the fractions, produce right extended fractions in r1 and r2
+		std::bitset<nbits> r1, r2, sum; // fraction is at most nbits-3 bits, but we simplify to nbits-1
+		// with sign/magnitude adders it is customary to organize the computation 
+		// along the four quadrants of sign combinations
 		//  + + = +
 		//  + - =   lhs > rhs ? + : -
 		//  - + =   lhs > rhs ? - : +
 		//  - - = -
-		bool result_sign = (lhs_sign == rhs_sign ? lhs_sign : (lhs_scale > rhs_scale ? lhs_sign : rhs_sign));
+		// to simplify the result processing
+		bool r1_sign, r2_sign;	
+
+		// we need to order the operands in terms of scale, 
+		// with the largest scale taking the r1 slot
+		// and the smaller operand aligned to the larger in r2.
+		int lhs_scale = scale();
+		int rhs_scale = rhs.scale();
+		int scale_of_result;
+		int diff = lhs_scale - rhs_scale;
+		if (diff < 0) {
+			normalize(rhs._fraction.get(), r1);   // <-- rhs is bigger operand
+			denormalize(_fraction.get(), diff, r2);
+			scale_of_result = rhs_scale;
+			r1_sign = rhs._sign;
+			r2_sign = _sign;
+		}
+		else {
+			normalize(_fraction.get(), r1);  // <-- lhs bigger operand
+			denormalize(rhs._fraction.get(), diff, r2);
+			scale_of_result = lhs_scale;
+			r1_sign = _sign;
+			r2_sign = rhs._sign;
+		}
+
+		std::cout << "lhs   " << *this << " scale " << lhs_scale << std::endl;
+		std::cout << "rhs   " << rhs <<   " scale " << rhs_scale << std::endl;
+		std::cout << "lhs_f " << _fraction << std::endl;
+		std::cout << "rhs_f " << rhs._fraction << std::endl;
+		std::cout << "r1    " << r1 << (r1_sign ? " sign -1.0" : " sign  1.0") << std::endl;
+		std::cout << "r2    " << r2 << (r2_sign ? " sign -1.0" : " sign  1.0") << std::endl;
+		std::cout << "scale " << scale_of_result << std::endl;
+		
 		bool carry = add_unsigned<nbits>(r1, r2, sum);
-		if (result_sign) sum = twos_complement(sum);
-		//std::cout << "sum " << sum << " carry " << (carry ? "1" : "0") << std::endl;
+
+		std::cout << "carry " << (carry ? "1" : "0") << " sum " << sum << (r1_sign ? " sign -1.0" : " sign  1.0") << std::endl;
 		if (carry) {
 			scale_of_result++;
 			// the carry becomes the hidden bit
@@ -480,11 +494,9 @@ public:
 			scale_of_result += msb - (nbits - 1);
 			sum <<= 1; // the msb becomes the hidden bit
 		}
-		/*
-		std::cout << "scale " << _scale << std::endl;
-		std::cout << "sum " << sum << std::endl;
-		*/
-		convert_to_posit(result_sign, scale_of_result, sum);
+		
+		std::cout << (r1_sign ? "sign -1.0" : "sign  1.0") << " scale " << scale_of_result << " sum " << sum << std::endl;
+		convert_to_posit(r1_sign, scale_of_result, sum);
 		return *this;
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
@@ -933,7 +945,7 @@ public:
 	// assignment operators for integer/float/double. I don't like that distribution of knowledge.
 	void convert_to_posit(bool _negative, int _scale, std::bitset<nbits>& _frac) {
 		reset();
-		bool bVerbose = false;
+		bool bVerbose = true;
 		_sign = _negative;
 		int posit_size = static_cast<int>(nbits);
 		int es_size = static_cast<int>(es);
@@ -1000,17 +1012,7 @@ private:
 
 	// HELPER methods
 	void align_numbers(int lhs_scale, const std::bitset<nbits>& lhs, int rhs_scale, const std::bitset<nbits>& rhs, int& scale, std::bitset<nbits>& r1, std::bitset<nbits>& r2) {
-		int diff = lhs_scale - rhs_scale;
-		if (diff < 0) {
-			scale = rhs_scale;
-			denormalize(lhs, diff, r1);
-			normalize(rhs, r2);
-		}
-		else {
-			scale = lhs_scale;
-			normalize(lhs, r1);
-			denormalize(rhs, diff, r2);
-		}
+
 	}
 	// normalize the fraction by adding the hidden bit into the value
 	void normalize(const std::bitset<nbits>& fraction, std::bitset<nbits>& number) {

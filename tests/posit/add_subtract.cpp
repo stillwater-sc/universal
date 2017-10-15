@@ -145,11 +145,15 @@ void TestPositArithmeticOperators(bool bValid, string posit_cfg, string op)
 int main(int argc, char** argv)
 {
 	posit<4, 0> pa, pb, psum, neg;
-	pa = -1.5f;
-	pb = pa;
-	psum = pa + pb;
+	pa = 0.5f; pb = 0.25f; psum = pa + pb;
 	cout << psum << " " << components_to_string(psum) << endl;
-	//return 0;
+	pa = 0.5f; pb = -0.25f; psum = pa + pb;
+	cout << psum << " " << components_to_string(psum) << endl;
+	pa = -0.25f; pb = 0.5f; psum = pa + pb;
+	cout << psum << " " << components_to_string(psum) << endl;
+	pa = -0.5f; pb = -0.25f; psum = pa + pb;
+	cout << psum << " " << components_to_string(psum) << endl;
+	return 0;
 
 	TestPositArithmeticOperators(ValidateAdditionPosit_4_0(), "posit<4,0>", "addition");
 	//TestPositArithmeticOperators(ValidateNegationPosit_4_0(), "posit<4,0>", "negation");
