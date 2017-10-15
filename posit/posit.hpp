@@ -14,6 +14,12 @@
 
 const uint8_t POSIT_ROUND_DOWN = 0;
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
+// set intermediate result reporting
+const bool _trace_decode     = false;
+const bool _trace_rounding   = false;
+const bool _trace_conversion = false;
+const bool _trace_add        = false;
+const bool _trace_mult       = false;
 
 template<size_t nbits, size_t es>
 double useed() {
@@ -411,6 +417,7 @@ public:
 		_regime   = rhs._regime;
 		_exponent = rhs._exponent;
 		_fraction = rhs._fraction;
+		bRoundingMode = rhs.bRoundingMode;
 		return *this;
 	}
 	posit<nbits, es> operator-() {
@@ -419,7 +426,6 @@ public:
 		return negated;
 	}
 	posit<nbits, es>& operator+=(const posit& rhs) {
-		bool _trace_add = true;
 		if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		if (isZero()) {
 			return *this;
@@ -470,18 +476,39 @@ public:
 		}
 
 		if (_trace_add) {
-			std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << scale_of_result << " r1  " << r1 << " diff " << diff << std::endl;
-			std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << scale_of_result << " r2  " << r2 << std::endl;
+			std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1  " << r1 << " diff " << diff << std::endl;
+			std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2  " << r2 << std::endl;
 		}
 		
 		if (r1_sign != r2_sign) r2 = twos_complement(r2);
 		bool carry = add_unsigned<nbits>(r1, r2, sum);
 
-		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << (carry ? " 1" : " 0") << " sum " << sum << std::endl;
+		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
 		if (carry) {
-			if (r1_sign == r2_sign)	scale_of_result++;
+			if (r1_sign == r2_sign) {
+				scale_of_result++;   // the carry implies that we have a bigger number than r1
+			}
+			else {
+				// the carry implies that we have a smaller number than r1
+				unsigned int msb = nbits;
+				for (int i = nbits - 1; i >= 0; i--) {
+					if (sum.test(i)) {
+						msb = i;
+						break;
+					}
+				}
+				if (msb == nbits) {
+					// we have actual 0
+					reset();
+					return *this;
+				}
+				else {
+					// adjust the scale down
+					scale_of_result += msb - (nbits - 1);
+				}				
+			}
 		}
-		//else {
+		else {
 			// find the msb that will become the hidden bit
 			unsigned int msb = 0;
 			for (int i = nbits - 1; i >= 0; i--) {
@@ -492,9 +519,9 @@ public:
 			}
 			scale_of_result += msb - (nbits - 1);
 			sum <<= 1; // the msb becomes the hidden bit
-		//}
+		}
 		
-		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << scale_of_result << " sum " << sum << std::endl;
+		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum " << sum << std::endl;
 		convert_to_posit(r1_sign, scale_of_result, sum);
 		return *this;
 	}
@@ -687,7 +714,6 @@ public:
 	// and decodes the regime, the exponent, and the fraction.
 	// This function has the functionality of the posit register-file load.
 	void decode(const std::bitset<nbits>& raw_bits) {
-		bool _trace_decode = false;
 		_raw_bits = raw_bits;	// store the raw bits for reference
 		// check special cases
 		std::bitset<nbits> tmp(raw_bits);
@@ -879,7 +905,6 @@ public:
 	// -1 -> round-down, 0 -> no rounding, +1 -> round-up
 	// _fraction contains the fraction without the hidden bit
 	int rounding_decision(const std::bitset<nbits>& _fraction, unsigned int nr_of_fraction_bits) {
-		bool _trace_rounding = false;
 		if (_trace_rounding) std::cout << "_fraction bits to process: " << nr_of_fraction_bits << " " << _fraction << std::endl;
 		// check if there are any bits set past the cut-off
 		int rounding_direction = 0;
@@ -914,7 +939,6 @@ public:
 		return rounding_direction;
 	}	
 	int round(bool _negative, int _scale, std::bitset<nbits>& _fraction) {
-		bool _trace_rounding = false;
 		switch (bRoundingMode) {
 		case POSIT_ROUND_DOWN:
 			if (_trace_rounding) std::cout << "Rounding Mode: round down" << std::endl;
@@ -943,7 +967,6 @@ public:
 	// TODO: is that the right functionality? right now the special cases are deal with in the
 	// assignment operators for integer/float/double. I don't like that distribution of knowledge.
 	void convert_to_posit(bool _negative, int _scale, std::bitset<nbits>& _frac) {
-		bool _trace_conversion = true;
 		reset();
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 		_sign = _negative;
@@ -977,6 +1000,7 @@ public:
 				_regime.assign_regime_pattern(_negative, posit_size -2);	// assign maxpos
 				_raw_bits = (_sign ? twos_complement(collect()) : collect());
 				_raw_bits.set(posit_size - 1, _sign);
+				if (_trace_conversion) std::cout << (_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << _scale << " frac " << _fraction << std::endl;
 				return;
 			}
 			else if ((posit_size -2-es_size) <= k && k < (posit_size -2)) {   // exponent rounding
@@ -1026,7 +1050,7 @@ private:
 	 *  >-.----<                    shift of 4
 	 */
 	void denormalize(const std::bitset<nbits>& fraction, int shift, std::bitset<nbits>& number) {
-		std::cout << "fraction " << fraction << std::endl;
+		if (_trace_add) std::cout << "fraction " << fraction << std::endl;
 		if (nbits == 3) return;
 		if (shift < 0) shift = -shift;
 		number.reset();
