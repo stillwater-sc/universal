@@ -56,7 +56,7 @@ POSIT<4,0>
    5:             0101            0101               0               1                             1            -            1---                           1.5
    6:             0110            0110               1               1                             2            -            ----                             2
    7:             0111            0111               2               1                             4            -            ----                             4
-   8:             1000            1000              -3              -1                         0.125            -            ----                           inf
+   8:             1000            1000              -3              -1                           inf            -            ----                           inf
    9:             1001            1111               2              -1                             4            -            ----                            -4
   10:             1010            1110               1              -1                             2            -            ----                            -2
   11:             1011            1101               0              -1                             1            -            1---                          -1.5
@@ -69,22 +69,24 @@ bool ValidateAdditionPosit_4_0() {
 	float input_values[16] = {
 		-4.0f, -2.0f, -1.5f, -1.0f, -0.75f, -0.5f, -0.25f, 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f, INFINITY
 	};
-	float golden_value[16] = {
-		-4.0f, -4.0f, -4.0f, -2.0f, -1.5f, -1.0f, -0.5f, 0.0f, 0.50f, 1.0f, 1.50f, 2.0f, 4.0f, 4.0f, 4.0f, INFINITY
-	};
 
 	bool bValid = true;
-	posit<4, 0> pa, pb, psum;
-	for (int i = 0; i < 7; i++) {
-		pa = input_values[i];
-		pb = pa;
-		psum = pa + pb;
-		if (fabs(psum.to_double() - golden_value[i]) > 0.0001) {
-			cerr << "Posit<4,0> addition failed: " << pa << " + " << pb << " != " << golden_value[i] << " instead it yielded " << psum << " " << components_to_string(psum) << endl;
-			bValid = false;
+	posit<4, 0> pa, pb, psum, pref;
+	float fa, fb;
+	for (int i = 0; i < 16; i++) {
+		fa = input_values[i];
+		pa = fa;
+		for (int j = i; j < 16; j++) {
+			fb = input_values[j];
+			pb = fb;
+			psum = pa + pb;
+			pref = fa + fb;
+			if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
+				cerr << "Posit<4,0> addition failed: " << pa << " + " << pb << " != " << pref << " instead it yielded " << psum << " " << components_to_string(psum) << endl;
+				bValid = false;
+			}
 		}
 	}
-
 	return bValid;
 }
 
@@ -139,6 +141,65 @@ bool ValidateNegAdditionPosit_4_0() {
 	return bValid;
 }
 
+/*
+POSIT<5,1>
+   #           Binary         Decoded         k-value            sign                        regime        exponent        fraction                         value
+   0:            00000           00000               0               1                             1               -               -----                             0
+   1:            00001           00001              -3               1                      0.015625               -               -----                      0.015625
+   2:            00010           00010              -2               1                        0.0625               0               -----                        0.0625
+   3:            00011           00011              -2               1                        0.0625               1               -----                         0.125
+   4:            00100           00100              -1               1                          0.25               0               0----                          0.25
+   5:            00101           00101              -1               1                          0.25               0               1----                         0.375
+   6:            00110           00110              -1               1                          0.25               1               0----                           0.5
+   7:            00111           00111              -1               1                          0.25               1               1----                          0.75
+   8:            01000           01000               0               1                             1               0               0----                             1
+   9:            01001           01001               0               1                             1               0               1----                           1.5
+  10:            01010           01010               0               1                             1               1               0----                             2
+  11:            01011           01011               0               1                             1               1               1----                             3
+  12:            01100           01100               1               1                             4               0               -----                             4
+  13:            01101           01101               1               1                             4               1               -----                             8
+  14:            01110           01110               2               1                            16               -               -----                            16
+  15:            01111           01111               3               1                            64               -               -----                            64
+  16:            10000           10000              -4              -1                           inf               -               -----                           inf
+  17:            10001           11111               3              -1                            64               -               -----                           -64
+  18:            10010           11110               2              -1                            16               -               -----                           -16
+  19:            10011           11101               1              -1                             4               1               -----                            -8
+  20:            10100           11100               1              -1                             4               0               -----                            -4
+  21:            10101           11011               0              -1                             1               1               1----                            -3
+  22:            10110           11010               0              -1                             1               1               0----                            -2
+  23:            10111           11001               0              -1                             1               0               1----                          -1.5
+  24:            11000           11000               0              -1                             1               0               0----                            -1
+  25:            11001           10111              -1              -1                          0.25               1               1----                         -0.75
+  26:            11010           10110              -1              -1                          0.25               1               0----                          -0.5
+  27:            11011           10101              -1              -1                          0.25               0               1----                        -0.375
+  28:            11100           10100              -1              -1                          0.25               0               0----                         -0.25
+  29:            11101           10011              -2              -1                        0.0625               1               -----                        -0.125
+  30:            11110           10010              -2              -1                        0.0625               0               -----                       -0.0625
+  31:            11111           10001              -3              -1                      0.015625               -               -----                     -0.015625
+*/
+bool ValidateAdditionPosit_5_1() {
+	float input_values[16] = {
+		-4.0f, -2.0f, -1.5f, -1.0f, -0.75f, -0.5f, -0.25f, 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f, INFINITY
+	};
+	float golden_value[16] = {
+		-4.0f, -4.0f, -4.0f, -2.0f, -1.5f, -1.0f, -0.5f, 0.0f, 0.50f, 1.0f, 1.50f, 2.0f, 4.0f, 4.0f, 4.0f, INFINITY
+	};
+
+	bool bValid = true;
+	posit<5, 1> pa, pb, psum;
+	for (int i = 0; i < 16; i++) {
+		pa = input_values[i];
+		pb = pa;
+		psum = pa + pb;
+		if (fabs(psum.to_double() - golden_value[i]) > 0.0001) {
+			cerr << "Posit<4,0> addition failed: " << pa << " + " << pb << " != " << golden_value[i] << " instead it yielded " << psum << " " << components_to_string(psum) << endl;
+			bValid = false;
+		}
+	}
+
+	return bValid;
+}
+
 void TestPositArithmeticOperators(bool bValid, string posit_cfg, string op)
 {
 	if (!bValid) {
@@ -154,6 +215,12 @@ int main(int argc, char** argv)
 
 	posit<4, 0> pa, pb, psum, neg;
 	/*
+	psum = -3.0f;
+	psum = -3.5f;
+	pa = -4.1f; pb = 0.5f;
+	psum = pa + pb;
+	cout << psum << " " << components_to_string(psum) << endl << endl;
+
 	pa = 8000000000.0f; pb = 4.0f; psum = pa + pb;
 	cout << psum << " " << components_to_string(psum) << endl << endl;
 
@@ -166,7 +233,10 @@ int main(int argc, char** argv)
 	pa = -0.5f; pb = -0.25f; psum = pa + pb;
 	cout << psum << " " << components_to_string(psum) << endl << endl;
 
-	pa = 0.0f;
+	pa = 0.0f; pb = 0.25f; 
+	psum = pa + pb;
+	cout << psum << " " << components_to_string(psum) << endl << endl;
+
 	pa = 0.125f; pb = -0.125f; // should round up to 0.25
 	psum = pa + pb;
 	cout << psum << " " << components_to_string(psum) << endl << endl;

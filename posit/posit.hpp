@@ -436,6 +436,7 @@ public:
 	posit<nbits, es>& operator+=(const posit& rhs) {
 		if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		if (isZero()) {
+			*this = rhs;
 			return *this;
 		}
 		else {
@@ -984,7 +985,7 @@ public:
 		int k = (_scale >> es); 
 		//if (_trace) std::cout << (_negative ? "sign -1 " : "sign 1 ") << " scale = " << _scale << " fraction " << _frac << " es = " << es << " k = " << k << std::endl;
 		if (k < 0) {
-			// minpos is at k = -(nbits-2)
+			// minpos is at k = -(nbits-2) and minpos*useed is at k = -(nbits-3)
 			if (k <= -(posit_size -2)) { // <= minpos     NOTE: 0 is dealt with in special case
 				if (_trace_conversion) std::cout << "value between 0 and minpos: round up" << std::endl;
 				_regime.assign_regime_pattern(_negative, 2-int(posit_size));  // assign minpos
@@ -993,7 +994,7 @@ public:
 				if (_trace_conversion) std::cout << (_sign ? "sign -1 " : "sign  1 ") << "regime " << _regime << " exp " << _exponent << " fraction " << _fraction << " posit    " << *this << std::endl;
 				return;
 			}
-			else if (-(posit_size -2-es_size) <= k && k < -(posit_size -2)) {   // exponent rounding
+			else if (-(posit_size -3-es_size) <= k && k < -(posit_size -2)) {   // exponent rounding
 				if (_trace_conversion) std::cout << "minpos < value <= (minpos >> es): round depending on _exponent" << std::endl;
 			}
 			else {
@@ -1002,16 +1003,16 @@ public:
 			}
 		}
 		else {
-			// maxpos is at k = nbits-2
+			// maxpos is at k = nbits-2 and maxpos/useed is at k = nbits-3
 			if (k >= (posit_size -2)) { // maxpos            NOTE: INFINITY is dealt with in special case
 				if (_trace_conversion) std::cout << "value between maxpos and INFINITY: round down" << std::endl;
 				_regime.assign_regime_pattern(_negative, posit_size -2);	// assign maxpos
 				_raw_bits = (_sign ? twos_complement(collect()) : collect());
 				_raw_bits.set(posit_size - 1, _sign);
-				if (_trace_conversion) std::cout << (_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << _scale << " frac " << _fraction << std::endl;
+				if (_trace_conversion) std::cout << (_sign ? "sign -1 " : "sign  1 ") << "regime " << _regime << " exp " << _exponent << " fraction " << _fraction << " posit    " << *this << std::endl;
 				return;
 			}
-			else if ((posit_size -2-es_size) <= k && k < (posit_size -2)) {   // exponent rounding
+			else if ((posit_size -3-es_size) <= k && k < (posit_size -2)) {   // exponent rounding
 				if (_trace_conversion) std::cout << "maxpos < value <= (maxpos >> es): round depending on _exponent" << std::endl;
 			}
 			else {
