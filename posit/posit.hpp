@@ -16,8 +16,8 @@ const uint8_t POSIT_ROUND_DOWN = 0;
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 // set intermediate result reporting
 const bool _trace_decode     = false;
-const bool _trace_rounding   = false;
-const bool _trace_conversion = false;
+const bool _trace_rounding   = true;
+const bool _trace_conversion = true;
 const bool _trace_add        = false;
 const bool _trace_mult       = false;
 
@@ -294,7 +294,6 @@ private:
 template<size_t nbits, size_t es> class posit {
 public:
 	posit<nbits, es>() {
-		bRoundingMode = POSIT_ROUND_DOWN;
 		reset();
 		validate();
 	}
@@ -419,7 +418,6 @@ public:
 		_regime   = rhs._regime;
 		_exponent = rhs._exponent;
 		_fraction = rhs._fraction;
-		bRoundingMode = rhs.bRoundingMode;
 		return *this;
 	}
 	posit<nbits, es> operator-() {
@@ -574,18 +572,6 @@ public:
 	bool isPositive() const {
 		return !_sign;
 	}
-	std::string RoundingMode() {
-		switch (bRoundingMode) {
-		case POSIT_ROUND_DOWN:
-			return std::string("ROUND_DOWN");
-			break;
-		case POSIT_ROUND_TO_NEAREST:
-			return std::string("ROUND_TO_NEAREST");
-			break;
-		default:
-			return std::string("UNKNOWN");
-		}
-	}
 	double useed_value() const {
 		return double(uint64_t(1) << useed_scale());
 	}
@@ -665,7 +651,6 @@ public:
 
 	// MODIFIERS
 	void reset() {
-		bRoundingMode = POSIT_ROUND_TO_NEAREST;
 		_raw_bits.reset();
 		_sign = false;
 		_regime.reset();
@@ -943,33 +928,34 @@ public:
 			}
 		}
 		else {
-			if (_trace_rounding) std::cout << "No bits left: no rounding" << std::endl;
+			if (_fraction.test(nbits - 1)) {
+				rounding_direction = 1; 
+				if (_trace_rounding) std::cout << "fraction indicates nearest is up" << std::endl;
+			}
+			else {
+				rounding_direction = -1;
+				if (_trace_rounding) std::cout << "fraction indicates nearest is down" << std::endl;
+
+			}			
 		}
 		return rounding_direction;
 	}	
 	int round(bool _negative, int _scale, std::bitset<nbits>& _fraction) {
-		switch (bRoundingMode) {
-		case POSIT_ROUND_DOWN:
-			if (_trace_rounding) std::cout << "Rounding Mode: round down" << std::endl;
-			break;
-		default:
-		case POSIT_ROUND_TO_NEAREST:
-			if (nbits > 3) {
-				switch (rounding_decision(_fraction, estimate_nr_fraction_bits(_scale >> es))) {
-				case -1:
-					if (_trace_rounding) std::cout << "Rounding Mode: Rounding down to nearest" << std::endl;
-					break;
-				case 0:
-					if (_trace_rounding) std::cout << "Rounding Mode: No Rounding required" << std::endl;
-					break;
-				case 1:
-					if (_trace_rounding) std::cout << "Rounding Mode: Rounding up to nearest" << std::endl;
-					_scale += 1;
-					break;
-				}
+		if (nbits > 3) {
+			switch (rounding_decision(_fraction, estimate_nr_fraction_bits(_scale >> es))) {
+			case -1:
+				if (_trace_rounding) std::cout << "Rounding down to nearest" << std::endl;
+				break;
+			case 0:
+				if (_trace_rounding) std::cout << "No Rounding required" << std::endl;
+				break;
+			case 1:
+				if (_trace_rounding) std::cout << "Rounding up to nearest" << std::endl;
+				_scale += 1;
+				break;
 			}
-			break;
 		}
+
 		return _scale;
 	}
 	// this routine will not allocate 0 or infinity due to the test on (0,minpos], and [maxpos,inf)
@@ -983,7 +969,7 @@ public:
 		int es_size = static_cast<int>(es);
 		// deal with minpos/maxpos special cases
 		int k = (_scale >> es); 
-		//if (_trace) std::cout << (_negative ? "sign -1 " : "sign 1 ") << " scale = " << _scale << " fraction " << _frac << " es = " << es << " k = " << k << std::endl;
+		if (_trace_conversion) std::cout << (_negative ? "sign -1 " : "sign 1 ") << " scale = " << _scale << " fraction " << _frac << " es = " << es << " k = " << k << std::endl;
 		if (k < 0) {
 			// minpos is at k = -(nbits-2) and minpos*useed is at k = -(nbits-3)
 			if (k <= -(posit_size -2)) { // <= minpos     NOTE: 0 is dealt with in special case
@@ -994,12 +980,18 @@ public:
 				if (_trace_conversion) std::cout << (_sign ? "sign -1 " : "sign  1 ") << "regime " << _regime << " exp " << _exponent << " fraction " << _fraction << " posit    " << *this << std::endl;
 				return;
 			}
-			else if (-(posit_size -3-es_size) <= k && k < -(posit_size -2)) {   // exponent rounding
-				if (_trace_conversion) std::cout << "minpos < value <= (minpos >> es): round depending on _exponent" << std::endl;
+			else if (-(posit_size - 3) <= k && k < -(posit_size - 2)) {   // regime rounding
+				if (_trace_conversion) std::cout << "minpos < value <= minpos*useed: round depending on _regime: incoming fraction " << _frac << std::endl;
+				if (_frac[nbits - 1]) k--;
+			}
+			else if (es_size > 0 && -(posit_size -3-es_size) <= k && k < -(posit_size -3 - es_size)) {   // exponent rounding
+				if (_trace_conversion) std::cout << "minpos*useed < value <= (minpos >> es): round depending on _exponent" << std::endl;
+				if (_frac[nbits - 1]) _scale++;
 			}
 			else {
 				if (_trace_conversion) std::cout << "value > (minpos >> es): round depending on _fraction" << std::endl;
 				_scale = round(_negative, _scale, _frac);
+				k = (_scale >> es);
 			}
 		}
 		else {
@@ -1012,16 +1004,24 @@ public:
 				if (_trace_conversion) std::cout << (_sign ? "sign -1 " : "sign  1 ") << "regime " << _regime << " exp " << _exponent << " fraction " << _fraction << " posit    " << *this << std::endl;
 				return;
 			}
-			else if ((posit_size -3-es_size) <= k && k < (posit_size -2)) {   // exponent rounding
-				if (_trace_conversion) std::cout << "maxpos < value <= (maxpos >> es): round depending on _exponent" << std::endl;
+			else if ((posit_size - 3) <= k && k < (posit_size - 2)) {   // regime rounding
+				if (_trace_conversion) std::cout << "maxpos < value <= maxpos/useed: round depending on _regime: incoming fraction " << _frac << std::endl;
+				if (_frac[nbits - 1]) k++;
+			}
+			else if (es_size > 0 && es_size > 0 && (posit_size -3-es_size) <= k && k < (posit_size -3)) {   // exponent rounding
+				if (_trace_conversion) std::cout << "(maxpos >> es) < value <= maxpos/useed: round depending on _exponent" << std::endl;
+				if (_frac[nbits - 1]) _scale++;
 			}
 			else {
 				if (_trace_conversion) std::cout << "value < (maxpos >> es): round depending on _fraction" << std::endl;
 				_scale = round(_negative, _scale, _frac);
+				k = (_scale >> es);
 			}
 		}
+		if (_trace_conversion) std::cout << (_negative ? "sign -1 " : "sign 1 ") << " scale = " << _scale << " fraction " << _frac << " es = " << es << " k = " << k << std::endl;
+
 		// construct the posit
-		unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
+		unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, k);
 		unsigned int nr_of_exp_bits = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
 		unsigned int remaining_bits = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
 		_fraction.assign_fraction(remaining_bits, _frac);
@@ -1038,8 +1038,6 @@ private:
 	regime<nbits, es>	   _regime;		// decoded posit representation
 	exponent<nbits, es>    _exponent;	// decoded posit representation
 	fraction<nbits, es>	   _fraction;	// decoded posit representation
-
-	int8_t bRoundingMode;
 
 	// HELPER methods
 	void align_numbers(int lhs_scale, const std::bitset<nbits>& lhs, int rhs_scale, const std::bitset<nbits>& rhs, int& scale, std::bitset<nbits>& r1, std::bitset<nbits>& r2) {
