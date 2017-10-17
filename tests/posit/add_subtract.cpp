@@ -214,34 +214,17 @@ int main(int argc, char** argv)
 {
 
 	posit<4, 0> pa, pb, psum, neg;
-	/*
-	psum = -3.0f;
-	psum = -3.5f;
-	pa = -4.1f; pb = 0.5f;
+
+	pa = -1.0f; pb = 1.5f;
+	psum = pa + pb;
+	cout << psum << " " << components_to_string(psum) << endl << endl;
+	pa = -0.5f;
+	pb = 0.75f;
 	psum = pa + pb;
 	cout << psum << " " << components_to_string(psum) << endl << endl;
 
-	pa = 8000000000.0f; pb = 4.0f; psum = pa + pb;
-	cout << psum << " " << components_to_string(psum) << endl << endl;
+	// return 0;
 
-	pa = 0.5f; pb = 0.25f; psum = pa + pb;
-	cout << psum << " " << components_to_string(psum) << endl << endl;
-	pa = 0.5f; pb = -0.25f; psum = pa + pb;
-	cout << psum << " " << components_to_string(psum) << endl << endl;
-	pa = -0.25f; pb = 0.5f; psum = pa + pb;
-	cout << psum << " " << components_to_string(psum) << endl << endl;
-	pa = -0.5f; pb = -0.25f; psum = pa + pb;
-	cout << psum << " " << components_to_string(psum) << endl << endl;
-
-	pa = 0.0f; pb = 0.25f; 
-	psum = pa + pb;
-	cout << psum << " " << components_to_string(psum) << endl << endl;
-
-	pa = 0.125f; pb = -0.125f; // should round up to 0.25
-	psum = pa + pb;
-	cout << psum << " " << components_to_string(psum) << endl << endl;
-	return 0;
-	*/
 
 	TestPositArithmeticOperators(ValidateAdditionPosit_4_0(), "posit<4,0>", "addition");
 	TestPositArithmeticOperators(ValidateNegationPosit_4_0(), "posit<4,0>", "negation");

@@ -214,7 +214,6 @@ void PositIntegerConversion() {
 	cout << "Conversion examples: (notice the rounding errors)" << endl;
 	posit<5, 1> p1;
 	int64_t value;
-	cout << "Rounding mode : " << p1.RoundingMode() << endl;
 	value =  1;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
 	value =  2;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
 	value =  3;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
@@ -223,25 +222,6 @@ void PositIntegerConversion() {
 	value =  7;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
 	value =  8;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
 	value = 15;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
-	cout << endl;
-}
-
-void ReportPositScales() {
-	// print scales of different posit configurations
-	// useed = 2^(2^es) and thus is just a function of the exponent configuration
-	// maxpos = useed^(nbits-2)
-	// minpos = useed^(2-nbits)
-	posit<4, 0> p4_0;
-	posit<8, 0> p8_0;
-	posit<16, 1> p16_1;
-	posit<32, 2> p32_2;
-	posit<64, 3> p64_3;
-	cout << "Posit specificiation examples and their ranges:" << endl;
-	cout << spec_to_string(p4_0) << endl;
-	cout << spec_to_string(p8_0) << endl;
-	cout << spec_to_string(p16_1) << endl;
-	cout << spec_to_string(p32_2) << endl;
-	cout << spec_to_string(p64_3) << endl;
 	cout << endl;
 }
 
@@ -270,7 +250,6 @@ void PositFloatConversion()
 	cout << "Posit float conversion" << endl;
 	float value;
 	posit<4, 0> p1;
-	cout << "Rounding mode : " << p1.RoundingMode() << endl;
 	value = 0.0;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
 	value = 0.25;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;
 	value = 0.5;  p1 = value;	cout << "value: " << setw(2) << value << " -> posit: " << p1 << endl;

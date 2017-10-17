@@ -26,22 +26,31 @@ POSIT<3,0>
    */
 bool ValidatePosit_3_0()
 {
-	float input[14] = {
-		INFINITY, -100000.0f, -3.00f, -2.0f, -1.75f, -1.5f, -1.25f, -1.0f, -0.8f, -0.75f, -0.60f, -0.5f, -0.25f, 0.0f
+	const int NR_TEST_CASES = 15;
+	float input[NR_TEST_CASES] = {
+		INFINITY, -100000.0f, -3.00f, -2.0f, -1.75f, -1.5f, -1.25f, -1.0f, -0.8f, -0.75f, -0.60f, -0.5f, -0.25f, -0.00000001f, 0.0f
 	};
-	string rounding[14] = {
+	string rounding[NR_TEST_CASES] = {
 		 "no"   ,    "down" , "down",  "no",   "up",  "up", "down",  "no",  "up",   "up", "down",  "no",   "up", "no"
 	};
-	float golden_answer[14] = {
-		INFINITY,      -2.0f, -2.00f, -2.0f, -2.00f, -2.0f, -1.00f, -1.0f, -1.0f, -1.00f, -0.50f, -0.5f, -0.500f, 0.0f
+	float golden_answer[NR_TEST_CASES] = {
+		INFINITY,      -2.0f, -2.00f, -2.0f, -2.00f, -2.0f, -1.00f, -1.0f, -1.0f, -1.00f, -0.50f, -0.5f, -0.500f, -0.5000000f, 0.0f
 	};
 
 	bool bValid = true;
-	for (int i = 0; i < 14; i++) {
+	for (int i = 0; i < NR_TEST_CASES; i++) {
 		posit<3, 0> p;
 		p = input[i];
 		if (fabs(p.to_double() - golden_answer[i]) > 0.00000001) {
 			cerr << "FAIL [" << setw(2) << i << "] input " << input[i] << " ref = " << golden_answer[i] << " != posit<3,0> " << setw(5) << p << " rounding " << rounding[i] << endl;
+			bValid = false;
+		}
+	}
+	for (int i = 1; i < NR_TEST_CASES; i++) {
+		posit<3, 0> p;
+		p = -input[i];
+		if (fabs(p.to_double() + golden_answer[i]) > 0.00000001) {
+			cerr << "FAIL [" << setw(2) << NR_TEST_CASES+i << "] input " << -input[i] << " ref = " << -golden_answer[i] << " != posit<3,0> " << setw(5) << p << " rounding " << rounding[i] << endl;
 			bValid = false;
 		}
 	}
@@ -395,19 +404,12 @@ void TestPositConversion(bool bValid, string posit_cfg)
 
 int main()
 {
-	posit<3, 0> p;
-	p = -64.0f;
-	cout << p << endl;
-	return 0;
-
-	ReportPositScales();
+	//ReportPositScales();
 
 	{
 		cout << "Posit Configuration validation" << endl;
 		TestPositConversion(ValidatePosit_3_0(), "posit<3,0>");
-
 		TestPositConversion(ValidatePosit_4_0(), "posit<4,0>");
-		return 0;	
 		TestPositConversion(ValidatePosit_4_1(), "posit<4,1>");
 		TestPositConversion(ValidatePosit_5_0(), "posit<5,0>");
 		TestPositConversion(ValidatePosit_5_1(), "posit<5,1>");

@@ -113,13 +113,17 @@ bool increment_unsigned(std::bitset<nbits>& number) {
 	return carry;
 }
 
-// increment the input bitset in place, and return true if there is a carray generated.
-// The input number is assumed to be right adjusted starting at nbits-1-nrBits
+// increment the input bitset in place, and return true if there is a carry generated.
+// The input number is assumed to be right adjusted starting at nbits-nrBits
+// [1 0 0 0] nrBits = 0 is a noop as there is no word to increment
+// [1 0 0 0] nrBits = 1 is the word [1]
+// [1 0 0 0] nrBits = 2 is the word [1 0]
+// [1 1 0 0] nrBits = 3 is the word [1 1 0], etc.
 template<size_t nbits>
 bool increment_unsigned(std::bitset<nbits>& number, int nrBits = nbits - 1) {
 	uint8_t carry = 1;  // ripple carry
 	uint8_t _a, _slice;
-	int lsb = nbits - 1 - nrBits;
+	int lsb = nbits - nrBits;
 	for (int i = lsb; i < nbits; i++) {
 		_a = number[i];
 		_slice = _a + 0 + carry;

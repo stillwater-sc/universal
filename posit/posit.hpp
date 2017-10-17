@@ -16,8 +16,8 @@ const uint8_t POSIT_ROUND_DOWN = 0;
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 // set intermediate result reporting
 const bool _trace_decode     = false;
-const bool _trace_rounding   = true;
-const bool _trace_conversion = true;
+const bool _trace_rounding   = false;
+const bool _trace_conversion = false;
 const bool _trace_add        = false;
 const bool _trace_mult       = false;
 
@@ -94,8 +94,8 @@ public:
 	unsigned int assign_regime_pattern(bool sign, int k) {
 		_Bits.reset();
 		if (k < 0) {
-			_k = int8_t(-k <= nbits-2 ? k : nbits - 2);
-			k = -k - 1;
+			_k = int8_t(-k < nbits-2 ? k : -(static_cast<int>(nbits) - 2)); // constrain regime to minpos
+			k = -_k - 1;
 			uint64_t regime = REGIME_BITS[k];
 			uint64_t mask = REGIME_BITS[0];
 			_RegimeBits = (k < nbits - 2 ? k + 2 : nbits - 1);
@@ -106,6 +106,7 @@ public:
 
 		}
 		else {
+			_k = int8_t(k < nbits - 2 ? k : nbits - 2); // constrain regime to maxpos
 			uint64_t regime = REGIME_BITS[k];
 			uint64_t mask = REGIME_BITS[0];
 			_RegimeBits = (k < nbits - 2 ? k + 2 : nbits - 1);
@@ -113,9 +114,20 @@ public:
 				_Bits[nbits - 2 - i] = regime & mask;
 				mask >>= 1;
 			}
-			_k = int8_t(k <= nbits - 2 ? k : nbits - 2);
+
 		}
 		return _RegimeBits;
+	}
+	bool increment() {
+		if (_Bits.all()) return false; // rounding up/down as we are already at minpos/maxpos
+		bool carry = increment_unsigned(_Bits,_RegimeBits);
+		if (carry) {
+			std::cout << "Regime needs to expand" << std::endl;
+		}
+		else {
+			_k++;
+		}
+		return carry;
 	}
 private:
 	std::bitset<nbits - 1>	_Bits;
@@ -191,6 +203,9 @@ public:
 		}
 		return _NrOfBits;
 	}
+	bool increment() {
+		return increment_unsigned(_Bits, _NrOfBits);
+	}
 private:
 	std::bitset<es> _Bits;
 	unsigned int	_NrOfBits;
@@ -253,14 +268,23 @@ public:
 		unsigned int _nrOfFractionBits = nrOfFractionBits;
 		_Bits.set(_frac, _nrOfFractionBits);
 	}
-	void assign_fraction(unsigned int remaining_bits, std::bitset<nbits>& _fraction) {
+	bool assign_fraction(unsigned int remaining_bits, std::bitset<nbits>& _fraction) {
+		bool round_up = false;
 		if (remaining_bits > 0 && nbits > 3) {
 			_NrOfBits = 0;
 			for (unsigned int i = 0; i < remaining_bits; i++) {
 				_Bits[nbits - 1 - i] = _fraction[nbits - 1 - i];
 				_NrOfBits++;
 			}
+			round_up = _fraction[nbits - 1 - remaining_bits];
 		}
+		else {
+			round_up = _fraction[nbits - 1];
+		}
+		return round_up;
+	}
+	bool increment() {
+		return increment_unsigned(_Bits, _NrOfBits);
 	}
 private:
 	// maximum size fraction is <nbits - one sign bit - minimum two regime bits>
@@ -439,18 +463,17 @@ public:
 			*this = rhs;
 			return *this;
 		}
-		else {
-			if (rhs.isZero()) {
-				return *this;
-			}
-			else if (isInfinite()) {
-				return *this;
-			}
-			else if (rhs.isInfinite()) {
-				*this = rhs;
-				return *this;
-			}
+		else if (rhs.isZero()) {
+			return *this;
 		}
+		if (isInfinite()) {
+			return *this;
+		}
+		else if (rhs.isInfinite()) {
+			*this = rhs;
+			return *this;
+		}
+
 		// align the fractions, produce right extended fractions in r1 and r2
 		std::bitset<nbits> r1, r2, sum; // fraction is at most nbits-3 bits, but we simplify to nbits-1
 		// with sign/magnitude adders it is customary to organize the computation 
@@ -468,8 +491,10 @@ public:
 		int lhs_scale = scale();
 		int rhs_scale = rhs.scale();
 		int scale_of_result;
+		// we need to determine the biggest operand
+		bool rhs_bigger = (abs(to_double()) < abs(rhs.to_double()));		//    TODO: need to do this in native posit integer arithmetic
 		int diff = lhs_scale - rhs_scale;
-		if (diff < 0) {
+		if (rhs_bigger) {
 			normalize(rhs._fraction.get(), r1);      // <-- rhs is bigger operand
 			denormalize(_fraction.get(), diff, r2);  // denormalize the smaller operand
 			scale_of_result = rhs_scale;
@@ -495,7 +520,8 @@ public:
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
 		if (carry) {
 			if (r1_sign == r2_sign) {
-				scale_of_result++;   // the carry implies that we have a bigger number than r1
+				// the carry implies that we have a bigger number than r1
+				scale_of_result++;   
 			}
 			else {
 				// the carry implies that we have a smaller number than r1
@@ -513,7 +539,10 @@ public:
 				}
 				else {
 					// adjust the scale down
-					scale_of_result += msb - (nbits - 1);
+					int shift = nbits - 1 - msb;
+					scale_of_result -= shift;
+					// and shift the hidden bit representation out so we are left with just the fraction
+					sum <<= (shift + 1);
 				}				
 			}
 		}
@@ -712,71 +741,69 @@ public:
 	void decode(const std::bitset<nbits>& raw_bits) {
 		_raw_bits = raw_bits;	// store the raw bits for reference
 		// check special cases
+		_sign     = raw_bits.test(nbits - 1);
+		// check for special cases
+		bool special = false;
 		std::bitset<nbits> tmp(raw_bits);
-		// special case = 0
-		if (tmp.none()) {  // special case = 0
-			// that is reset state
-			_sign = false;
-			_regime.setZero();
-			_exponent.reset();
-			_fraction.reset();
-			return;
-		}
-		_sign = raw_bits.test(nbits - 1);
-
-		// special case = +-inf
 		if (_sign) {
 			tmp.reset(nbits - 1);
 			if (raw_bits.none()) {
+				// special case = +-inf
 				_sign = true;
 				_regime.setZero();
 				_exponent.reset();
 				_fraction.reset();
-				return;
+				special = true;
 			}
-			tmp.set(nbits - 1);  // set the sign bit again
-		}
-
-		if (_sign) tmp = twos_complement(tmp);
-		unsigned int nrRegimeBits = _regime.assign_regime_pattern(_sign, decode_regime(tmp));
-		if (_trace_decode) std::cout << " _regimeBits = " << nrRegimeBits << " ";
-
-		// get the exponent bits
-		// start of exponent is nbits - (sign_bit + regime_bits)
-		int32_t msb = nbits - 1 - (1 + nrRegimeBits);
-		if (_trace_decode) std::cout << " msb = " << msb << " ";
-		unsigned int nrExponentBits = 0;
-		if (es > 0) {
-			std::bitset<es> _exp;
-			if (msb >= 0 && es > 0) {
-				nrExponentBits = (msb >= es - 1 ? es : msb + 1);
-				if (_trace_decode) std::cout << " _exponentBits " << nrExponentBits << " ";
-				for (unsigned int i = 0; i < nrExponentBits; i++) {
-					_exp[es - 1 - i] = tmp[msb - i];
-				}
-			}
-			_exponent.set(_exp, nrExponentBits);
 		}
 		else {
-			if (_trace_decode) std::cout << " _exponentBits 0 msb " << msb << " ";
-		}
-
-		// finally, set the fraction bits
-		// we do this so that the fraction is right extended with 0;
-		// The max fraction is <nbits - 3 - es>, but we are setting it to <nbits - 3> and right-extent
-		// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
-		// If the fraction is empty, we have a fraction of nbits-3 0 bits
-		// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
-		std::bitset<nbits> _frac;
-		msb = msb - nrExponentBits;
-		unsigned int nrFractionBits = (msb < 0 ? 0 : msb + 1);
-		if (_trace_decode) std::cout << "fraction bits " << (msb < 0 ? 0 : msb + 1) << std::endl;
-		if (msb >= 0) {
-			for (int i = msb; i >= 0; --i) {
-				_frac[nbits - 1 - (msb - i)] = tmp[i];
+			// special case = 0
+			if (tmp.none()) {  // special case = 0
+				// that is reset state
+				_sign = false;
+				_regime.setZero();
+				_exponent.reset();
+				_fraction.reset();
+				special = true;
 			}
+
 		}
-		_fraction.set(_frac, nrFractionBits);
+		if (!special) {
+			if (_sign) tmp = twos_complement(tmp);
+			unsigned int nrRegimeBits = _regime.assign_regime_pattern(_sign, decode_regime(tmp));
+
+			// get the exponent bits
+			// start of exponent is nbits - (sign_bit + regime_bits)
+			int32_t msb = nbits - 1 - (1 + nrRegimeBits);
+			unsigned int nrExponentBits = 0;
+			if (es > 0) {
+				std::bitset<es> _exp;
+				if (msb >= 0 && es > 0) {
+					nrExponentBits = (msb >= es - 1 ? es : msb + 1);
+					for (unsigned int i = 0; i < nrExponentBits; i++) {
+						_exp[es - 1 - i] = tmp[msb - i];
+					}
+				}
+				_exponent.set(_exp, nrExponentBits);
+			}
+
+			// finally, set the fraction bits
+			// we do this so that the fraction is right extended with 0;
+			// The max fraction is <nbits - 3 - es>, but we are setting it to <nbits - 3> and right-extent
+			// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
+			// If the fraction is empty, we have a fraction of nbits-3 0 bits
+			// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
+			std::bitset<nbits> _frac;
+			msb = msb - nrExponentBits;
+			unsigned int nrFractionBits = (msb < 0 ? 0 : msb + 1);
+			if (msb >= 0) {
+				for (int i = msb; i >= 0; --i) {
+					_frac[nbits - 1 - (msb - i)] = tmp[i];
+				}
+			}
+			_fraction.set(_frac, nrFractionBits);
+		}
+		if (_trace_decode) std::cout << "raw bits: " << _raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
 
 		// we are storing both the raw bit representation and the decoded form
 		// so no need to transform back via 2's complement of regime/exponent/fraction
@@ -898,12 +925,18 @@ public:
 		unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, (_scale >> es));
 		unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
 		unsigned int remaining_bits    = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
-		_fraction.assign_fraction(remaining_bits, _frac);
-		if (_trace_conversion) std::cout << (_sign ? "sign -1 " : "sign  1 ") << "regime " << _regime << " exp " << _exponent << " fraction " << _fraction;
+		bool round_up = _fraction.assign_fraction(remaining_bits, _frac);
+		if (round_up) {
+			bool carry = _fraction.increment();
+			if (es > 0) {
+				carry = _exponent.increment();
+			}
+			if (carry) _regime.increment();
+		}
 		// store raw bit representation
 		_raw_bits = (_sign ? twos_complement(collect()) : collect());
 		_raw_bits.set(nbits - 1, _sign);
-		if (_trace_conversion) std::cout << " posit    " << *this << std::endl;
+		if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
 	}
 
 private:
