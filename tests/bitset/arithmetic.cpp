@@ -73,10 +73,10 @@ void add_fractions(int f1_scale, std::bitset<nbits> f1, int f2_scale, std::bitse
 	sum >>= (carry ? 1 : 0);
 }
 
-int main()
-try
+bool AddFractionsTest()
 {
-	// BasicArithmeticTests();
+	bool bValid = true;
+
 	const size_t posit_nbits = 16;
 	const size_t fraction_nbits = posit_nbits - 2;
 	int f1_scale = 5;
@@ -87,6 +87,35 @@ try
 	std::bitset<fraction_nbits> sum;
 	add_fractions<fraction_nbits>(f1_scale, f1, f2_scale, f2, sum_scale, sum);
 	cout << "sum : " << sum << " sum_scale : " << sum_scale << endl;
+
+	return bValid;
+}
+
+bool IncrementRightAdjustedBitset()
+{
+	bool bValid = true;
+	const size_t size = 5;
+	std::bitset<size> r1, ref;
+	bool carry;
+
+	for (int i = 0; i < size; i++) {
+		r1.reset();
+		r1.set(size - 1 - i, true);
+		carry = false;
+		cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- input" << endl;
+		carry = increment_unsigned(r1, i);
+		cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- result" << endl;
+	}
+
+	return bValid;
+}
+
+int main()
+try
+{
+	BasicArithmeticTests();
+
+	IncrementRightAdjustedBitset();
 
 	return 0;
 }
