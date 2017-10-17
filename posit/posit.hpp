@@ -747,7 +747,7 @@ public:
 		std::bitset<nbits> tmp(raw_bits);
 		if (_sign) {
 			tmp.reset(nbits - 1);
-			if (raw_bits.none()) {
+			if (tmp.none()) {
 				// special case = +-inf
 				_sign = true;
 				_regime.setZero();
@@ -755,6 +755,7 @@ public:
 				_fraction.reset();
 				special = true;
 			}
+			tmp.set(nbits - 1);
 		}
 		else {
 			// special case = 0
