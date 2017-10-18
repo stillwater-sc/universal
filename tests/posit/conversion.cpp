@@ -404,10 +404,7 @@ void TestPositConversion(bool bValid, string posit_cfg)
 
 int main()
 {
-	//ReportPositScales();
-	posit<4, 0> pa;
-	pa = INFINITY;
-	cout << pa << endl;
+	ReportPositScales();
 
 	{
 		cout << "Posit Configuration validation" << endl;

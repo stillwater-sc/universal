@@ -935,7 +935,7 @@ public:
 		bool round_up = _fraction.assign_fraction(remaining_bits, _frac);
 		if (round_up) {
 			bool carry = _fraction.increment();
-			if (es > 0) {
+			if (carry && es > 0) {
 				carry = _exponent.increment();
 			}
 			if (carry) _regime.increment();
