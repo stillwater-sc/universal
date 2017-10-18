@@ -66,23 +66,50 @@ POSIT<4,0>
   15:             1111            1001              -2              -1                          0.25            -            ----                         -0.25
 */
 bool ValidateAdditionPosit_4_0() {
-	float input_values[16] = {
+	const int NR_TEST_CASES = 16;
+	float input_values[NR_TEST_CASES] = {
 		-4.0f, -2.0f, -1.5f, -1.0f, -0.75f, -0.5f, -0.25f, 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f, INFINITY
 	};
 
 	bool bValid = true;
 	posit<4, 0> pa, pb, psum, pref;
 	float fa, fb;
-	for (int i = 0; i < 16; i++) {
+	for (int i = 0; i < NR_TEST_CASES; i++) {
 		fa = input_values[i];
 		pa = fa;
-		for (int j = i; j < 16; j++) {
+		for (int j = 0; j < NR_TEST_CASES; j++) {
 			fb = input_values[j];
 			pb = fb;
 			psum = pa + pb;
 			pref = fa + fb;
 			if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
-				cerr << "Posit<4,0> addition failed: " << pa << " + " << pb << " != " << pref << " instead it yielded " << psum << " " << components_to_string(psum) << endl;
+				ReportBinaryArithmeticError("Posit<4,0> addition failed: ", "+", pa, pb, pref, psum);
+				bValid = false;
+			}
+		}
+	}
+	return bValid;
+}
+
+bool ValidateSubtractionPosit_4_0() {
+	const int NR_TEST_CASES = 16;
+	float input_values[NR_TEST_CASES] = {
+		-4.0f, -2.0f, -1.5f, -1.0f, -0.75f, -0.5f, -0.25f, 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f, INFINITY
+	};
+
+	bool bValid = true;
+	posit<4, 0> pa, pb, pdif, pref;
+	float fa, fb;
+	for (int i = 0; i < NR_TEST_CASES; i++) {
+		fa = input_values[i];
+		pa = fa;
+		for (int j = 0; j < NR_TEST_CASES; j++) {
+			fb = input_values[j];
+			pb = fb;
+			pdif = pa - pb;
+			pref = fa - fb;
+			if (fabs(pdif.to_double() - pref.to_double()) > 0.0001) {
+				ReportBinaryArithmeticError("Posit<4,0> subtraction failed: ", "-", pa, pb, pref, pdif);
 				bValid = false;
 			}
 		}
@@ -91,22 +118,23 @@ bool ValidateAdditionPosit_4_0() {
 }
 
 bool ValidateNegationPosit_4_0() {
-	float target_values[16] = {
+	const int NR_TEST_CASES = 16;
+	float target_values[NR_TEST_CASES] = {
 		-4.0, -2.0, -1.5, -1.0, -0.75, -0.5, -0.25, 0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0, INFINITY
 	};
 
-	float golden_value[16] = {
+	float golden_value[NR_TEST_CASES] = {
 		+4.0, +2.0, +1.5, +1.0, +0.75, +0.5, +0.25, 0.0, -0.25, -0.5, -0.75, -1.0, -1.5, -2.0, -4.0, INFINITY
 	};
 
 	bool bValid = true;
-	posit<4, 0> pa, pb, pgolden;
-	for (int i = 0; i < 16; i++) {
+	posit<4, 0> pa, pb, pref;
+	for (int i = 0; i < NR_TEST_CASES; i++) {
 		pa = target_values[i];
 		pb = -pa;
-		pgolden = golden_value[i];
-		if (pb != pgolden) {
-			cerr << "Posit<4,0> negation failed: neg(" << pa << ") != " << pb << " golden_value is " << pgolden << " " << components_to_string(pb) << endl;
+		pref = golden_value[i];
+		if (pb != pref) {
+			ReportUnaryArithmeticError("Posit<4,0> negation failed: ", "-", pa, pref, pb);
 			bValid = false;
 		}
 	}
@@ -178,22 +206,27 @@ POSIT<5,1>
   31:            11111           10001              -3              -1                      0.015625               -               -----                     -0.015625
 */
 bool ValidateAdditionPosit_5_1() {
-	float input_values[16] = {
-		-4.0f, -2.0f, -1.5f, -1.0f, -0.75f, -0.5f, -0.25f, 0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f, INFINITY
-	};
-	float golden_value[16] = {
-		-4.0f, -4.0f, -4.0f, -2.0f, -1.5f, -1.0f, -0.5f, 0.0f, 0.50f, 1.0f, 1.50f, 2.0f, 4.0f, 4.0f, 4.0f, INFINITY
+	const int NR_TEST_CASES = 32;
+	float input_values[NR_TEST_CASES] = {
+		-64.0f, -16.0f,  -8.0f, -4.0f, -3.0f, -2.0f, -1.5f, -1.0f, -0.75f, -0.5f, -0.375f, -0.25f, -0.125f, -0.0625f, -0.015625f, 0.0f, 
+		0.015625f, 0.0625f, 0.125f, 0.25f, 0.375f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 3.0f, 4.0f,  8.0f, 16.0f, 64.0f, INFINITY
 	};
 
 	bool bValid = true;
-	posit<5, 1> pa, pb, psum;
-	for (int i = 0; i < 16; i++) {
-		pa = input_values[i];
-		pb = pa;
-		psum = pa + pb;
-		if (fabs(psum.to_double() - golden_value[i]) > 0.0001) {
-			cerr << "Posit<4,0> addition failed: " << pa << " + " << pb << " != " << golden_value[i] << " instead it yielded " << psum << " " << components_to_string(psum) << endl;
-			bValid = false;
+	posit<5, 1> pa, pb, psum, pref;
+	float fa, fb;
+	for (int i = 0; i < NR_TEST_CASES; i++) {
+		fa = input_values[i];
+		pa = fa;
+		for (int j = 0; j < NR_TEST_CASES; j++) {
+			fb = input_values[j];
+			pb = fb;
+			psum = pa + pb;
+			pref = fa + fb;
+			if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
+				ReportBinaryArithmeticError("Posit<5,1> addition failed: ", "+", pa, pb, pref, psum);
+				bValid = false;
+			}
 		}
 	}
 
@@ -212,71 +245,12 @@ void TestPositArithmeticOperators(bool bValid, string posit_cfg, string op)
 
 int main(int argc, char** argv)
 {
-
-	posit<4, 0> pa, pb, psum, neg;
-
-	pa = -1.0f; pb = 1.5f;
-	psum = pa + pb;
-	cout << psum << " " << components_to_string(psum) << endl << endl;
-	pa = -0.5f;
-	pb = 0.75f;
-	psum = pa + pb;
-	cout << psum << " " << components_to_string(psum) << endl << endl;
-
-	// return 0;
-
-
 	TestPositArithmeticOperators(ValidateAdditionPosit_4_0(), "posit<4,0>", "addition");
 	TestPositArithmeticOperators(ValidateNegationPosit_4_0(), "posit<4,0>", "negation");
 	TestPositArithmeticOperators(ValidateNegAdditionPosit_4_0(), "posit<4,0>", "neg addition");
+	TestPositArithmeticOperators(ValidateSubtractionPosit_4_0(), "posit<4,0>", "subtraction");
 
-	return 0;
-
-	{
-
-		cout << to_binary(6) << endl;
-		cout << to_binary(16) << endl;
-		cout << to_binary(24) << endl;
-		const size_t nbits = 5;
-		const size_t es = 1;
-		posit<nbits, es> pa, pb, psum;
-		int32_t va, vb;
-		va = 16; vb = 6;
-		pa = va; pb = vb;
-
-		int lhs_scale = pa.scale();
-		int rhs_scale = pb.scale();
-		cout << "LHS " << va << " scale " << lhs_scale << endl;
-		cout << "RHS " << vb << " scale " << rhs_scale << endl;
-		int diff = lhs_scale - rhs_scale;
-		cout << "diff " << diff << endl;
-		if (diff < 0) {
-			cerr << "Wrong" << endl;
-		}
-		else {
-			bitset<nbits> r1, r2;
-
-			cout << "frac1 " << pa.get_fraction() << endl;
-			normalize<nbits>(pa.get_fraction().get(), r1);
-			cout << "r1    " << r1 << endl;
-
-			cout << "frac2 " << pb.get_fraction() << endl;
-			denormalize<nbits>(pb.get_fraction().get(), diff, r2);
-			cout << "r2    " << r2 << endl;
-		}
-		cout.flush();
-		//psum = pa + pb;
-		cout << pa << " + " << pb << " = " << psum << endl;
-		cout << psum.get() << endl;
-		psum = 21;
-		cout << psum.get() << endl;
-	}
-
-
-	//diff = a - b;
-	//cout << "Diff : " << diff << endl;
-
-	//cout << "a " << a++ << " a+1 " << a << endl;
+	TestPositArithmeticOperators(ValidateAdditionPosit_5_1(), "posit<5,1>", "addition");
 
 	return 0;
 }

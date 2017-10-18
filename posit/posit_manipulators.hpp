@@ -170,3 +170,26 @@ void ReportPositScales() {
 	std::cout << spec_to_string(p64_3) << std::endl;
 	std::cout << std::endl;
 }
+
+template<size_t nbits, size_t es>
+void ReportUnaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+	std::cerr << test_case
+		<< " " << op << " "	
+		<< std::setw(10) << lhs
+		<< " != "
+		<< std::setw(10) << pref << " instead it yielded "
+		<< std::setw(10) << presult
+		<< " " << components_to_string(presult) << std::endl;
+}
+
+template<size_t nbits, size_t es>
+void ReportBinaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+	std::cerr << test_case
+		<< std::setw(10) << lhs
+		<< " " << op << " "
+		<< std::setw(10) << rhs
+		<< " != "
+		<< std::setw(10) << pref << " instead it yielded "
+		<< std::setw(10) << presult
+		<< " " << components_to_string(presult) << std::endl;
+}

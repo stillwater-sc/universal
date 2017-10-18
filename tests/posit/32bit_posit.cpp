@@ -16,6 +16,35 @@ using namespace std;
 Standard posits with nbits = 32 have 2 exponent bits.
 */
 
+bool ValidateAddition() {
+	const int NR_TEST_CASES = 256;
+	bool bValid = true;
+	posit<32, 2> pa, pb, psum, pref;
+
+	double input_values[NR_TEST_CASES];
+	for (int i = 0; i < NR_TEST_CASES; i++) {
+		pref.set_raw_bits(i);
+		input_values[i] = pref.to_double();
+	}
+
+	float fa, fb;
+	for (int i = 0; i < NR_TEST_CASES; i++) {
+		fa = input_values[i];
+		pa = fa;
+		for (int j = 0; j < NR_TEST_CASES; j++) {
+			fb = input_values[j];
+			pb = fb;
+			psum = pa + pb;
+			pref = fa + fb;
+			if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
+				ReportBinaryArithmeticError("Posit<32,2> addition failed: ", "+", pa, pb, pref, psum);
+				bValid = false;
+			}
+		}
+	}
+	return bValid;
+}
+
 int main(int argc, char** argv)
 {
 	cout << "Standard posit<32,2> configuration tests" << endl;

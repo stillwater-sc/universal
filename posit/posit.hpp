@@ -446,7 +446,7 @@ public:
 		_fraction = rhs._fraction;
 		return *this;
 	}
-	posit<nbits, es> operator-() {
+	posit<nbits, es> operator-() const {
 		if (isZero()) {
 			return *this;
 		}
@@ -564,6 +564,12 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
+		if (isInfinite() && rhs.isInfinite()) {
+			reset();  // IN FP this operation is a NAN, but will return a 0
+		}
+		else {
+		*this += -rhs;
+		}
 		return *this;
 	}
 	posit<nbits, es>& operator*=(const posit& rhs) {
