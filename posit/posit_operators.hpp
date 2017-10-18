@@ -111,7 +111,7 @@ inline bool operator>=(const exponent<nbits, es>& lhs, const exponent<nbits, es>
 template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const fraction<nbits, es>& f) {
 	unsigned int nrOfFractionBitsProcessed = 0;
-	for (int i = nbits - 1; i >= 0; --i) {
+	for (int i = nbits - 3; i >= 0; --i) {
 		if (f._NrOfBits > nrOfFractionBitsProcessed++) {
 			ostr << (f._Bits[i] ? "1" : "0");
 		}

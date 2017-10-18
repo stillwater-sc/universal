@@ -41,10 +41,10 @@ int main()
 	}
 
 	// fraction component of the posit
-	std::bitset<nbits> _fraction;
-	_fraction.set(nbits - 1, true);
-	_fraction.set(nbits - 2, false);
+	std::bitset<nbits-2> _fraction;
 	_fraction.set(nbits - 3, true);
+	_fraction.set(nbits - 4, false);
+	_fraction.set(nbits - 5, true);
 	fraction<nbits, es> test_fraction;
 	unsigned int nrOfFractionBits = 3;
 	test_fraction.set(_fraction, nrOfFractionBits);	

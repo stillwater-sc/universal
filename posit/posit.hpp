@@ -230,6 +230,8 @@ private:
 	friend bool operator>=(const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
 };
 
+// fraction is spec'ed with the size of the posit it belongs to.
+// However, the size of the fraction segment is nbits-3, but we maintain an extra guard bit, so the size of the actual fraction we manage is nbits-2
 template<size_t nbits, size_t es>
 class fraction {
 public:
@@ -253,12 +255,13 @@ public:
 		return _NrOfBits;
 	}
 	double value() const {
-		return double(_Bits.to_ullong()) / double(uint64_t(1) << nbits);
+		// TODO: this fails when nbits > 67 and we cannot represent the fraction by a 64bit unsigned integer
+		return double(_Bits.to_ullong()) / double(uint64_t(1) << (nbits-2));
 	}
-	std::bitset<nbits> get() const {
+	std::bitset<nbits-2> get() const {
 		return _Bits;
 	}
-	void set(const std::bitset<nbits>& raw, int nrOfFractionBits) {
+	void set(const std::bitset<nbits-2>& raw, int nrOfFractionBits) {
 		_Bits = raw;
 		_NrOfBits = nrOfFractionBits;
 	}
@@ -268,18 +271,18 @@ public:
 		unsigned int _nrOfFractionBits = nrOfFractionBits;
 		_Bits.set(_frac, _nrOfFractionBits);
 	}
-	bool assign_fraction(unsigned int remaining_bits, std::bitset<nbits>& _fraction) {
+	bool assign_fraction(unsigned int remaining_bits, std::bitset<nbits-2>& _fraction) {
 		bool round_up = false;
 		if (remaining_bits > 0 && nbits > 3) {
 			_NrOfBits = 0;
 			for (unsigned int i = 0; i < remaining_bits; i++) {
-				_Bits[nbits - 1 - i] = _fraction[nbits - 1 - i];
+				_Bits[nbits - 3 - i] = _fraction[nbits - 3 - i];
 				_NrOfBits++;
 			}
-			round_up = _fraction[nbits - 1 - remaining_bits];
+			round_up = _fraction[nbits - 3 - remaining_bits];
 		}
 		else {
-			round_up = _fraction[nbits - 1];
+			round_up = _fraction[nbits - 3];
 		}
 		return round_up;
 	}
@@ -288,10 +291,8 @@ public:
 	}
 private:
 	// maximum size fraction is <nbits - one sign bit - minimum two regime bits>
-	// the conditional length of the exponent field creates a situation where we need to use the maximum size constant.
-	// this is too big and not precise, but is an outcome of using a template specification that needs to be const
-	// at time of compilation.
-	std::bitset<nbits> _Bits;
+	// but we maintain 1 guard bit for rounding decisions
+	std::bitset<nbits-2> _Bits;
 	unsigned int _NrOfBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
@@ -348,7 +349,7 @@ public:
 			// process negative number: process 2's complement of the input
 			unsigned int _scale = findMostSignificantBit(-rhs) - 1;
 			uint64_t _fraction_without_hidden_bit = (-rhs << (64 - _scale));
-			std::bitset<nbits> _fraction = copy_integer_fraction<nbits>(_fraction_without_hidden_bit);
+			std::bitset<nbits-2> _fraction = copy_integer_fraction<nbits-2>(_fraction_without_hidden_bit);
 			convert_to_posit(_sign, _scale, _fraction);
 			take_2s_complement();
 		}
@@ -357,7 +358,7 @@ public:
 			if (rhs != 0) {
 				unsigned int _scale = findMostSignificantBit(rhs) - 1;
 				uint64_t _fraction_without_hidden_bit = (rhs << (64 - _scale));
-				std::bitset<nbits> _fraction = copy_integer_fraction<nbits>(_fraction_without_hidden_bit);
+				std::bitset<nbits-2> _fraction = copy_integer_fraction<nbits-2>(_fraction_without_hidden_bit);
 				convert_to_posit(_sign, _scale, _fraction);
 			}
 		}
@@ -368,7 +369,7 @@ public:
 		if (rhs != 0) {
 			unsigned int _scale = findMostSignificantBit(rhs) - 1;
 			uint64_t _fraction_without_hidden_bit = (rhs << (64 - _scale));
-			std::bitset<nbits> _fraction = copy_integer_fraction<nbits>(_fraction_without_hidden_bit);
+			std::bitset<nbits-2> _fraction = copy_integer_fraction<nbits-2>(_fraction_without_hidden_bit);
 			convert_to_posit(false, _scale, _fraction);
 		}
 		decode();
@@ -398,7 +399,7 @@ public:
 				bool _negative = extract_sign(rhs);
 				int _scale = extract_exponent(rhs) - 1;
 				uint32_t _23b_fraction_without_hidden_bit = extract_fraction(rhs);
-				std::bitset<nbits> _fraction = extract_float_fraction<nbits>(_23b_fraction_without_hidden_bit);
+				std::bitset<nbits-2> _fraction = extract_float_fraction<nbits-2>(_23b_fraction_without_hidden_bit);
 				//std::cout << "sign " << _sign << " scale " << _scale << " 23b fraction " << std::hex << _23b_fraction_without_hidden_bit << " _fraction " << _fraction << std::dec << std::endl;
 				convert_to_posit(_negative, _scale, _fraction);
 			}
@@ -430,7 +431,7 @@ public:
 				bool _negative = extract_sign(rhs);
 				int _scale = extract_exponent(rhs) - 1;
 				uint64_t _52b_fraction_without_hidden_bit = extract_fraction(rhs);
-				std::bitset<nbits> _fraction = extract_double_fraction<nbits>(_52b_fraction_without_hidden_bit);
+				std::bitset<nbits-2> _fraction = extract_double_fraction<nbits-2>(_52b_fraction_without_hidden_bit);
 				//std::cout << "sign " << _sign << " scale " << _scale << " 52b fraction " << std::hex << _52b_fraction_without_hidden_bit << " _fraction " << _fraction << std::dec << std::endl;
 				convert_to_posit(_negative, _scale, _fraction);
 			}
@@ -475,7 +476,7 @@ public:
 		}
 
 		// align the fractions, produce right extended fractions in r1 and r2
-		std::bitset<nbits> r1, r2, sum; // fraction is at most nbits-3 bits, but we simplify to nbits-1
+		std::bitset<nbits-2> r1, r2, sum; // fraction is at most nbits-3 bits, but we simplify to nbits-1
 		// with sign/magnitude adders it is customary to organize the computation 
 		// along the four quadrants of sign combinations
 		//  + + = +
@@ -515,7 +516,7 @@ public:
 		}
 		
 		if (r1_sign != r2_sign) r2 = twos_complement(r2);
-		bool carry = add_unsigned<nbits>(r1, r2, sum);
+		bool carry = add_unsigned<nbits-2>(r1, r2, sum);
 
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
 		if (carry) {
@@ -526,7 +527,7 @@ public:
 			else {
 				// the carry implies that we have a smaller number than r1
 				unsigned int msb = nbits;
-				for (int i = nbits - 1; i >= 0; i--) {
+				for (int i = nbits - 3; i >= 0; i--) {
 					if (sum.test(i)) {
 						msb = i;
 						break;
@@ -539,17 +540,18 @@ public:
 				}
 				else {
 					// adjust the scale down
-					int shift = nbits - 1 - msb;
+					int shift = nbits - 3 - msb;
 					scale_of_result -= shift;
 					// and shift the hidden bit representation out so we are left with just the fraction
 					sum <<= (shift + 1);
+					std::cout << "Scaling down by " << shift << std::endl;
 				}				
 			}
 		}
 		else {
 			// find the msb that will become the hidden bit
 			unsigned int msb = 0;
-			for (int i = nbits - 1; i >= 0; i--) {
+			for (int i = nbits - 3; i >= 0; i--) {
 				if (sum.test(i)) {
 					msb = i;
 					break;
@@ -661,7 +663,7 @@ public:
 		unsigned int nrRegimeBits = _regime.nrBits();
 		std::bitset<es> e = _exponent.get();
 		unsigned int nrExponentBits = _exponent.nrBits();
-		std::bitset<nbits> f = _fraction.get();
+		std::bitset<nbits-2> f = _fraction.get();
 		unsigned int nrFractionBits = _fraction.nrBits();
 
 		std::bitset<nbits> _Bits;
@@ -676,7 +678,7 @@ public:
 		}
 		if (msb < 0) return _Bits;
 		for (unsigned int i = 0; i < nrFractionBits; i++) {
-			_Bits.set(msb--, f[nbits - 1 - i]);
+			_Bits.set(msb--, f[nbits - 3 - i]);
 		}
 		return _Bits;
 	}
@@ -800,12 +802,12 @@ public:
 			// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
 			// If the fraction is empty, we have a fraction of nbits-3 0 bits
 			// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
-			std::bitset<nbits> _frac;
+			std::bitset<nbits-2> _frac;
 			msb = msb - nrExponentBits;
 			unsigned int nrFractionBits = (msb < 0 ? 0 : msb + 1);
 			if (msb >= 0) {
 				for (int i = msb; i >= 0; --i) {
-					_frac[nbits - 1 - (msb - i)] = tmp[i];
+					_frac[nbits - 3 - (msb - i)] = tmp[i];
 				}
 			}
 			_fraction.set(_frac, nrFractionBits);
@@ -842,7 +844,7 @@ public:
 		unsigned int nrRegimeBits = _regime.nrBits();
 		std::bitset<es> e = _exponent.get();
 		unsigned int nrExponentBits = _exponent.nrBits();
-		std::bitset<nbits> f = _fraction.get();
+		std::bitset<nbits-2> f = _fraction.get();
 		unsigned int nrFractionBits = _fraction.nrBits();
 		std::bitset<nbits> raw_bits;
 		// collect
@@ -858,7 +860,7 @@ public:
 		}
 		if (msb >= 0) {
 			for (unsigned int i = 0; i < nrFractionBits; i++) {
-				raw_bits.set(msb--, f[nbits - 1 - i]);
+				raw_bits.set(msb--, f[nbits - 3 - i]);
 			}
 		}
 		return raw_bits;
@@ -870,7 +872,7 @@ public:
 		unsigned int nrRegimeBits = _regime.nrBits();
 		std::bitset<es> e = _exponent.get();
 		unsigned int nrExponentBits = _exponent.nrBits();
-		std::bitset<nbits> f = _fraction.get();
+		std::bitset<nbits-2> f = _fraction.get();
 		unsigned int nrFractionBits = _fraction.nrBits();
 		std::bitset<nbits> raw_bits;
 		// collect
@@ -886,7 +888,7 @@ public:
 		}
 		if (msb >= 0) {
 			for (unsigned int i = 0; i < nrFractionBits; i++) {
-				raw_bits.set(msb--, f[nbits - 1 - i]);
+				raw_bits.set(msb--, f[nbits - 3 - i]);
 			}
 		}
 		// transform
@@ -905,9 +907,9 @@ public:
 			_exponent.set(exponent_bits, nrExponentBits);
 		}
 		if (nrFractionBits > 0) {
-			std::bitset<nbits> fraction_bits;
+			std::bitset<nbits-2> fraction_bits;
 			for (unsigned int i = 0; i < nrFractionBits; i++) {
-				fraction_bits.set(nbits - 1 - i, raw_bits[nbits - 2 - nrRegimeBits - nrExponentBits - i]);
+				fraction_bits.set(nbits - 3 - i, raw_bits[nbits - 2 - nrRegimeBits - nrExponentBits - i]);
 			}
 			_fraction.set(fraction_bits, nrFractionBits);
 		}
@@ -923,7 +925,7 @@ public:
 	// this routine will not allocate 0 or infinity due to the test on (0,minpos], and [maxpos,inf)
 	// TODO: is that the right functionality? right now the special cases are deal with in the
 	// assignment operators for integer/float/double. I don't like that distribution of knowledge.
-	void convert_to_posit(bool _negative, int _scale, std::bitset<nbits>& _frac) {
+	void convert_to_posit(bool _negative, int _scale, std::bitset<nbits-2>& _frac) {
 		reset();
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
@@ -958,10 +960,10 @@ private:
 
 	}
 	// normalize the fraction by adding the hidden bit into the value
-	void normalize(const std::bitset<nbits>& fraction, std::bitset<nbits>& number) {
+	void normalize(const std::bitset<nbits-2>& fraction, std::bitset<nbits-2>& number) {
 		if (nbits == 3) return;
-		number.set(nbits - 1); // set hidden bit
-		for (int i = nbits - 2; i >= 0; i--) {
+		number.set(nbits - 3); // set hidden bit
+		for (int i = static_cast<int>(nbits) - 4; i >= 0; i--) {
 			number.set(i, fraction[i+1]);
 		}
 	}
@@ -970,14 +972,14 @@ private:
 	 *   0.000h_bbbb_bbbb_bbbb_b... number
 	 *  >-.----<                    shift of 4
 	 */
-	void denormalize(const std::bitset<nbits>& fraction, int shift, std::bitset<nbits>& number) {
+	void denormalize(const std::bitset<nbits-2>& fraction, int shift, std::bitset<nbits-2>& number) {
 		if (_trace_add) std::cout << "fraction " << fraction << std::endl;
 		if (nbits == 3) return;
 		if (shift < 0) shift = -shift;
 		number.reset();
-		if (shift <= nbits - 1) {
-			number.set(nbits - 1 - shift); // set hidden bit
-			for (int i = nbits - 2 - shift; i >= 0; i--) {
+		if (shift <= static_cast<int>(nbits) - 3) {
+			number.set(static_cast<int>(nbits) - 3 - shift); // set hidden bit
+			for (int i = static_cast<int>(nbits) - 4 - shift; i >= 0; i--) {
 				number.set(i, fraction[i + 1 + shift]);
 			}
 		}
