@@ -45,7 +45,7 @@ int main()
 	_fraction.set(nbits - 3, true);
 	_fraction.set(nbits - 4, false);
 	_fraction.set(nbits - 5, true);
-	fraction<nbits, es> test_fraction;
+	fraction<nbits-2> test_fraction;
 	unsigned int nrOfFractionBits = 3;
 	test_fraction.set(_fraction, nrOfFractionBits);	
 	for (int scale = -bound; scale < bound; scale++) {

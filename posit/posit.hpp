@@ -232,7 +232,7 @@ private:
 
 // fraction is spec'ed with the size of the posit it belongs to.
 // However, the size of the fraction segment is nbits-3, but we maintain an extra guard bit, so the size of the actual fraction we manage is nbits-2
-template<size_t nbits, size_t es>
+template<size_t fbits>
 class fraction {
 public:
 	fraction() {
@@ -255,36 +255,60 @@ public:
 		return _NrOfBits;
 	}
 	double value() const {
-		// TODO: this fails when nbits > 67 and we cannot represent the fraction by a 64bit unsigned integer
-		return double(_Bits.to_ullong()) / double(uint64_t(1) << (nbits-2));
+		// TODO: this fails when fbits > 64 and we cannot represent the fraction by a 64bit unsigned integer
+		return double(_Bits.to_ullong()) / double(uint64_t(1) << (fbits));
 	}
-	std::bitset<nbits-2> get() const {
+	std::bitset<fbits> get() const {
 		return _Bits;
 	}
-	void set(const std::bitset<nbits-2>& raw, int nrOfFractionBits) {
+	void set(const std::bitset<fbits>& raw, int nrOfFractionBits) {
 		_Bits = raw;
-		_NrOfBits = nrOfFractionBits;
+		_NrOfBits = (fbits > nrOfFractionBits ? fbits : nrOfFractionBits);
 	}
 	// given a number and the fraction's cut-off point, assign the fraction bits in a right-extended format, returning the number of fraction bits assigned
 	unsigned int assign_fraction_bits_(uint64_t number, unsigned int nrOfFractionBits) {
-		std::bitset<nbits> _frac;
-		unsigned int _nrOfFractionBits = nrOfFractionBits;
+		std::bitset<fbits> _frac;
+		unsigned int _nrOfFractionBits = (fbits > nrOfFractionBits ? fbits : nrOfFractionBits);
 		_Bits.set(_frac, _nrOfFractionBits);
 	}
-	bool assign_fraction(unsigned int remaining_bits, std::bitset<nbits-2>& _fraction) {
+	bool assign_fraction(unsigned int remaining_bits, std::bitset<fbits>& _fraction) {
 		bool round_up = false;
-		if (remaining_bits > 0 && nbits > 3) {
+		if (remaining_bits > 0 && fbits > 0) {
 			_NrOfBits = 0;
 			for (unsigned int i = 0; i < remaining_bits; i++) {
-				_Bits[nbits - 3 - i] = _fraction[nbits - 3 - i];
+				_Bits[fbits - 1 - i] = _fraction[fbits - 1 - i];
 				_NrOfBits++;
 			}
-			round_up = _fraction[nbits - 3 - remaining_bits];
+			round_up = _fraction[fbits - 1 - remaining_bits];
 		}
 		else {
-			round_up = _fraction[nbits - 3];
+			round_up = _fraction[fbits - 1];
 		}
 		return round_up;
+	}
+	// normalize the fraction by adding the hidden bit into the value
+	void normalize(std::bitset<fbits>& number) const {
+		if (fbits == 0) return;
+		number.set(fbits - 1); // set hidden bit
+		for (int i = static_cast<int>(fbits) - 2; i >= 0; i--) {
+			number.set(i, _Bits[i + 1]);
+		}
+	}
+	/*   h is hidden bit
+	*   h.bbbb_bbbb_bbbb_b...      fraction
+	*   0.000h_bbbb_bbbb_bbbb_b... number
+	*  >-.----<                    shift of 4
+	*/
+	void denormalize(int shift, std::bitset<fbits>& number) const {
+		if (fbits == 0) return;
+		if (shift < 0) shift = -shift;
+		number.reset();
+		if (shift <= static_cast<int>(fbits) - 1) {
+			number.set(static_cast<int>(fbits) - 1 - shift); // set hidden bit
+			for (int i = static_cast<int>(fbits) - 2 - shift; i >= 0; i--) {
+				number.set(i, _Bits[i + 1 + shift]);
+			}
+		}
 	}
 	bool increment() {
 		return increment_unsigned(_Bits, _NrOfBits);
@@ -292,27 +316,27 @@ public:
 private:
 	// maximum size fraction is <nbits - one sign bit - minimum two regime bits>
 	// but we maintain 1 guard bit for rounding decisions
-	std::bitset<nbits-2> _Bits;
+	std::bitset<fbits> _Bits;
 	unsigned int _NrOfBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t nnbits, size_t ees>
-	friend std::ostream& operator<< (std::ostream& ostr, const fraction<nnbits, ees>& f);
-	template<size_t nnbits, size_t ees>
-	friend std::istream& operator>> (std::istream& istr, fraction<nnbits, ees>& f);
+	template<size_t nfbits>
+	friend std::ostream& operator<< (std::ostream& ostr, const fraction<nfbits>& f);
+	template<size_t nfbits>
+	friend std::istream& operator>> (std::istream& istr, fraction<nfbits>& f);
 
-	template<size_t nnbits, size_t ees>
-	friend bool operator==(const fraction<nnbits, ees>& lhs, const fraction<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
-	friend bool operator!=(const fraction<nnbits, ees>& lhs, const fraction<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
-	friend bool operator< (const fraction<nnbits, ees>& lhs, const fraction<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
-	friend bool operator> (const fraction<nnbits, ees>& lhs, const fraction<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
-	friend bool operator<=(const fraction<nnbits, ees>& lhs, const fraction<nnbits, ees>& rhs);
-	template<size_t nnbits, size_t ees>
-	friend bool operator>=(const fraction<nnbits, ees>& lhs, const fraction<nnbits, ees>& rhs);
+	template<size_t nfbits>
+	friend bool operator==(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs);
+	template<size_t nfbits>
+	friend bool operator!=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs);
+	template<size_t nfbits>
+	friend bool operator< (const fraction<nfbits>& lhs, const fraction<nfbits>& rhs);
+	template<size_t nfbits>
+	friend bool operator> (const fraction<nfbits>& lhs, const fraction<nfbits>& rhs);
+	template<size_t nfbits>
+	friend bool operator<=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs);
+	template<size_t nfbits>
+	friend bool operator>=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs);
 };
 
 /*
@@ -496,15 +520,15 @@ public:
 		bool rhs_bigger = (abs(to_double()) < abs(rhs.to_double()));		//    TODO: need to do this in native posit integer arithmetic
 		int diff = lhs_scale - rhs_scale;
 		if (rhs_bigger) {
-			normalize(rhs._fraction.get(), r1);      // <-- rhs is bigger operand
-			denormalize(_fraction.get(), diff, r2);  // denormalize the smaller operand
+			rhs._fraction.normalize(r1);	  // <-- rhs is bigger operand
+			_fraction.denormalize(diff, r2);  // denormalize the smaller operand
 			scale_of_result = rhs_scale;
 			r1_sign = rhs._sign;
 			r2_sign = _sign;
 		}
 		else {
-			normalize(_fraction.get(), r1);		         // <-- lhs bigger operand
-			denormalize(rhs._fraction.get(), diff, r2);  // denormalize the smaller operand
+			_fraction.normalize(r1);			  // <-- lhs bigger operand
+			rhs._fraction.denormalize(diff, r2);  // denormalize the smaller operand
 			scale_of_result = lhs_scale;
 			r1_sign = _sign;
 			r2_sign = rhs._sign;
@@ -652,7 +676,7 @@ public:
 	exponent<nbits,es> get_exponent() const {
 		return _exponent;
 	}
-	fraction<nbits,es> get_fraction() const {
+	fraction<nbits-2> get_fraction() const {
 		return _fraction;
 	}
 	std::bitset<nbits> get() const {
@@ -953,37 +977,13 @@ private:
 	bool				   _sign;       // decoded posit representation
 	regime<nbits, es>	   _regime;		// decoded posit representation
 	exponent<nbits, es>    _exponent;	// decoded posit representation
-	fraction<nbits, es>	   _fraction;	// decoded posit representation
+	fraction<nbits-2>	   _fraction;	// decoded posit representation
 
 	// HELPER methods
 	void align_numbers(int lhs_scale, const std::bitset<nbits>& lhs, int rhs_scale, const std::bitset<nbits>& rhs, int& scale, std::bitset<nbits>& r1, std::bitset<nbits>& r2) {
 
 	}
-	// normalize the fraction by adding the hidden bit into the value
-	void normalize(const std::bitset<nbits-2>& fraction, std::bitset<nbits-2>& number) {
-		if (nbits == 3) return;
-		number.set(nbits - 3); // set hidden bit
-		for (int i = static_cast<int>(nbits) - 4; i >= 0; i--) {
-			number.set(i, fraction[i+1]);
-		}
-	}
-	/*   h is hidden bit
-	 *   h.bbbb_bbbb_bbbb_b...      fraction
-	 *   0.000h_bbbb_bbbb_bbbb_b... number
-	 *  >-.----<                    shift of 4
-	 */
-	void denormalize(const std::bitset<nbits-2>& fraction, int shift, std::bitset<nbits-2>& number) {
-		if (_trace_add) std::cout << "fraction " << fraction << std::endl;
-		if (nbits == 3) return;
-		if (shift < 0) shift = -shift;
-		number.reset();
-		if (shift <= static_cast<int>(nbits) - 3) {
-			number.set(static_cast<int>(nbits) - 3 - shift); // set hidden bit
-			for (int i = static_cast<int>(nbits) - 4 - shift; i >= 0; i--) {
-				number.set(i, fraction[i + 1 + shift]);
-			}
-		}
-	}
+
 
     // template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t ees>
