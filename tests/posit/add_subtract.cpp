@@ -178,7 +178,23 @@ int main(int argc, char** argv)
 	pb = fb;
 	pref = fa + fb;
 	psum = pa + pb;
-	cout << pref << " " << psum << endl;
+	cout << "reference " << pref << " result " << psum << endl;
+
+	fa = 0.125f;
+	fb = 1.0f;
+	pa = fa;
+	pb = fb;
+	pref = fa + fb;
+	psum = pa + pb;
+	cout << "reference " << pref << " result " << psum << endl;
+
+	posit<6, 0> p1, p2, pref2, psum2;
+	p1 = fa;
+	p2 = fb;
+	pref2 = fa + fb;
+	psum2 = p1 + p2;
+	cout << "reference " << pref2 << " result " << psum2 << endl;
+
 	ReportTestResult(ValidateAddition<5, 0>("Posit<5,0> addition failed: "), "posit<5,0>", "addition");
 
 	return 0;

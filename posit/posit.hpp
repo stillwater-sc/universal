@@ -17,8 +17,8 @@ const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 // set intermediate result reporting
 const bool _trace_decode     = false;
 const bool _trace_rounding   = false;
-const bool _trace_conversion = false;
-const bool _trace_add        = false;
+const bool _trace_conversion = true;
+const bool _trace_add        = true;
 const bool _trace_mult       = false;
 
 template<size_t nbits, size_t es>
@@ -265,12 +265,7 @@ public:
 		_Bits = raw;
 		_NrOfBits = (fbits > nrOfFractionBits ? fbits : nrOfFractionBits);
 	}
-	// given a number and the fraction's cut-off point, assign the fraction bits in a right-extended format, returning the number of fraction bits assigned
-	unsigned int assign_fraction_bits_(uint64_t number, unsigned int nrOfFractionBits) {
-		std::bitset<fbits> _frac;
-		unsigned int _nrOfFractionBits = (fbits > nrOfFractionBits ? fbits : nrOfFractionBits);
-		_Bits.set(_frac, _nrOfFractionBits);
-	}
+	// copy the remaining bits into the fraction
 	bool assign_fraction(unsigned int remaining_bits, std::bitset<fbits>& _fraction) {
 		bool round_up = false;
 		if (remaining_bits > 0 && fbits > 0) {
@@ -283,15 +278,15 @@ public:
 		}
 		else {
 			round_up = _fraction[fbits - 1];
+			_NrOfBits = 0;
 		}
 		return round_up;
 	}
-	// normalize the fraction by adding the hidden bit into the value
-	void normalize(std::bitset<fbits>& number) const {
-		if (fbits == 0) return;
-		number.set(fbits - 1); // set hidden bit
-		for (int i = static_cast<int>(fbits) - 2; i >= 0; i--) {
-			number.set(i, _Bits[i + 1]);
+	// normalize the fraction and return its fraction in the argument
+	void normalize(std::bitset<fbits+1>& number) const {
+		number.set(fbits, true); // set hidden bit
+		for (int i = 0; i < fbits; i++) {
+			number.set(i, _Bits[i]);
 		}
 	}
 	/*   h is hidden bit
@@ -299,14 +294,14 @@ public:
 	*   0.000h_bbbb_bbbb_bbbb_b... number
 	*  >-.----<                    shift of 4
 	*/
-	void denormalize(int shift, std::bitset<fbits>& number) const {
+	void denormalize(int shift, std::bitset<fbits+1>& number) const {
+		number.reset();
 		if (fbits == 0) return;
 		if (shift < 0) shift = -shift;
-		number.reset();
-		if (shift <= static_cast<int>(fbits) - 1) {
-			number.set(static_cast<int>(fbits) - 1 - shift); // set hidden bit
-			for (int i = static_cast<int>(fbits) - 2 - shift; i >= 0; i--) {
-				number.set(i, _Bits[i + 1 + shift]);
+		if (shift <= static_cast<int>(fbits)) {
+			number.set(static_cast<int>(fbits) - shift); // set hidden bit
+			for (int i = static_cast<int>(fbits) - 1 - shift; i >= 0; i--) {
+				number.set(i, _Bits[i + shift]);
 			}
 		}
 	}
@@ -317,7 +312,7 @@ private:
 	// maximum size fraction is <nbits - one sign bit - minimum two regime bits>
 	// but we maintain 1 guard bit for rounding decisions
 	std::bitset<fbits> _Bits;
-	unsigned int _NrOfBits;
+	unsigned int       _NrOfBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nfbits>
@@ -499,8 +494,10 @@ public:
 			return *this;
 		}
 
-		// align the fractions, produce right extended fractions in r1 and r2
-		std::bitset<nbits-2> r1, r2, sum; // fraction is at most nbits-3 bits, but we simplify to nbits-1
+		// align the fractions, and produce right extended fractions in r1 and r2 with hidden bits explicit
+		std::bitset<nbits-1> r1, r2, sum; // fraction is at most nbits-3 bits, but we need to incorporate one sticky bit for rounding decisions, and a leading slot for the hidden bit
+		std::bitset<nbits - 2> result_fraction; // fraction part of the sum
+		
 		// with sign/magnitude adders it is customary to organize the computation 
 		// along the four quadrants of sign combinations
 		//  + + = +
@@ -540,7 +537,7 @@ public:
 		}
 		
 		if (r1_sign != r2_sign) r2 = twos_complement(r2);
-		bool carry = add_unsigned<nbits-2>(r1, r2, sum);
+		bool carry = add_unsigned<nbits-1>(r1, r2, sum);
 
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
 		if (carry) {
@@ -551,7 +548,7 @@ public:
 			else {
 				// the carry implies that we have a smaller number than r1
 				unsigned int msb = nbits;
-				for (int i = nbits - 3; i >= 0; i--) {
+				for (int i = nbits - 2; i >= 0; i--) {
 					if (sum.test(i)) {
 						msb = i;
 						break;
@@ -564,29 +561,31 @@ public:
 				}
 				else {
 					// adjust the scale down
-					int shift = nbits - 3 - msb;
+					int shift = nbits - 2 - msb;
 					scale_of_result -= shift;
-					// and shift the hidden bit representation out so we are left with just the fraction
-					sum <<= (shift + 1);
-					std::cout << "Scaling down by " << shift << std::endl;
+					sum <<= shift;
+					std::cout << "msb " << msb <<  " scaling down by " << shift << std::endl;
+					// and extract the fraction
+					for (int i = 0; i < nbits - 2; i++) {
+						result_fraction[i] = sum[i + 1];
+					}
 				}				
 			}
 		}
 		else {
-			// find the msb that will become the hidden bit
-			unsigned int msb = 0;
-			for (int i = nbits - 3; i >= 0; i--) {
-				if (sum.test(i)) {
-					msb = i;
-					break;
-				}
+			// no carry implies that the scale remains the same
+			// and that the first fraction bits came after the nbits-3 slot
+			std::cout << "sum " << sum;
+			sum <<= 1;
+			std::cout << " shifted sum " << sum;
+			for (int i = 0; i < nbits - 2; i++) {
+				result_fraction[i] = sum[i + 1];
 			}
-			scale_of_result += msb - (nbits - 1);
-			sum <<= 1; // the msb becomes the hidden bit
+			std::cout << " result " << result_fraction << std::endl;
 		}
 		
-		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum " << sum << std::endl;
-		convert_to_posit(r1_sign, scale_of_result, sum);
+		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum " << sum << " fraction " << result_fraction << std::endl;
+		convert_to_posit(r1_sign, scale_of_result, result_fraction);
 		return *this;
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {

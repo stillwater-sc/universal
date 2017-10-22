@@ -196,9 +196,9 @@ void ReportBinaryArithmeticError(std::string test_case, std::string op, const po
 
 // enumerate all addition cases for a posit configuration
 template<size_t nbits, size_t es>
-bool ValidateAddition(std::string error_tag) {
+int ValidateAddition(std::string error_tag) {
 	const int NR_TEST_CASES = (1 << nbits);
-	bool bValid = true;
+	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pb, psum, pref;
 
 	double input_values[NR_TEST_CASES];
@@ -216,20 +216,21 @@ bool ValidateAddition(std::string error_tag) {
 			psum = pa + pb;
 			pref = fa + fb;
 			if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
+				std::cout << "fa " << fa << " fb " << fb << " sum " << fa + fb << " pref " << pref << std::endl;
 				ReportBinaryArithmeticError(error_tag, "+", pa, pb, pref, psum);
-				bValid = false;
+				nrOfFailedTests++;
 			}
 		}
 	}
 
-	return bValid;
+	return nrOfFailedTests;
 }
 
 // test reporting helper
-void ReportTestResult(bool bValid, std::string posit_cfg, std::string op)
+void ReportTestResult(int nrOfFailedTests, std::string posit_cfg, std::string op)
 {
-	if (!bValid) {
-		std::cout << posit_cfg << " " << op << " FAIL" << std::endl;
+	if (nrOfFailedTests > 0) {
+		std::cout << posit_cfg << " " << op << " FAIL " << nrOfFailedTests << " failed test cases" << std::endl;
 	}
 	else {
 		std::cout << posit_cfg << " " << op << " PASS" << std::endl;
