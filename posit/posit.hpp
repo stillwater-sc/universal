@@ -500,9 +500,11 @@ public:
 			return *this;
 		}
 
+		const size_t adder_size = nbits - 1;
+		const size_t fract_size = nbits - 2;
 		// align the fractions, and produce right extended fractions in r1 and r2 with hidden bits explicit
-		std::bitset<nbits-1> r1, r2, sum; // fraction is at most nbits-3 bits, but we need to incorporate one sticky bit for rounding decisions, and a leading slot for the hidden bit
-		std::bitset<nbits - 2> result_fraction; // fraction part of the sum
+		std::bitset<adder_size> r1, r2, sum; // fraction is at most nbits-3 bits, but we need to incorporate one sticky bit for rounding decisions, and a leading slot for the hidden bit
+		std::bitset<fract_size> result_fraction; // fraction part of the sum
 		
 		// with sign/magnitude adders it is customary to organize the computation 
 		// along the four quadrants of sign combinations
@@ -543,7 +545,7 @@ public:
 		}
 		
 		if (r1_sign != r2_sign) r2 = twos_complement(r2);
-		bool carry = add_unsigned<nbits-1>(r1, r2, sum);
+		bool carry = add_unsigned<adder_size>(r1, r2, sum);
 
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
 		if (carry) {
@@ -553,23 +555,29 @@ public:
 			}
 			else {
 				// the carry implies that we have a smaller number than r1
-				unsigned int msb = nbits;
-				for (int i = nbits - 2; i >= 0; i--) {
+				// find the hidden bit 
+				int shift = 0;  // shift in addition to removal of hidden bit
+				for (int i = adder_size - 1; i >= 0; i--) {
 					if (sum.test(i)) {
-						msb = i;
+						// hidden_bit is at position i
 						break;
 					}
+					else {
+						shift++;
+					}
 				}
-				if (msb == nbits) {
+				if (shift < adder_size) {
+					// adjust the scale
+					scale_of_result -= shift;
+					// and extract the fraction, leaving the hidden bit behind
+					for (int i = fract_size - 1; i >= shift ; i--) {
+						result_fraction[i] = sum[i - shift];  // fract_size is already 1 smaller than adder_size so we get the implied hidden bit removal automatically
+					}
+				}
+				else {
 					// we have actual 0
 					reset();
 					return *this;
-				}
-				else {
-					// and extract the fraction, leaving the hidden bit behind
-					for (int i = 0; i < nbits - 2; i++) {
-						result_fraction[i] = sum[i];
-					}
 				}				
 			}
 		}

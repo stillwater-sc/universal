@@ -197,8 +197,8 @@ int main(int argc, char** argv)
 	psum = pa + pb;
 	cout << "reference " << pref << " result " << psum << endl << endl;
 	*/
-	fa = -0.125f;
-	fb = 1.5f;
+	fa =  0.125f;
+	fb = -1.0f;
 	pa = fa;
 	pb = fb;
 	pref = fa + fb;
