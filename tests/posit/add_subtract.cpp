@@ -237,7 +237,7 @@ int main(int argc, char** argv)
 	ReportTestResult(ValidateAddition<8, 2>("Posit<8,2> addition failed: ", bReportIndividualTestCases), "posit<8,2>", "addition");
 	ReportTestResult(ValidateAddition<8, 3>("Posit<8,3> addition failed: ", bReportIndividualTestCases), "posit<8,3>", "addition");
 
-	// very long running
+	// very long running, so disabled
 	//ReportTestResult(ValidateAddition<16, 1>("Posit<16,1> addition failed: ", bReportIndividualTestCases), "posit<16,1>", "addition");
 	return 0;
 }

@@ -28,7 +28,8 @@ try
 
 	cout << spec_to_string(p) << endl;
 
-	ReportTestResult(ValidateAddition<16, 1>("Posit<16,`> addition failed: ", bReportIndividualTestCases), "posit<16,1>", "addition");
+	// this is too much (many hours) so disabling
+	// ReportTestResult(ValidateAddition<16, 1>("Posit<16,`> addition failed: ", bReportIndividualTestCases), "posit<16,1>", "addition");
 }
 catch (char* e) {
 	cerr << e << endl;
