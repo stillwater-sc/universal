@@ -551,7 +551,11 @@ public:
 		if (carry) {
 			if (r1_sign == r2_sign) {
 				// the carry implies that we have a bigger number than r1
-				scale_of_result++;   
+				scale_of_result++; 
+				// and that the first fraction bits came after a hidden bit at the carry position in the adder result register
+				for (int i = 0; i < fract_size; i++) {
+					result_fraction[i] = sum[i+1];
+				}
 			}
 			else {
 				// the carry implies that we have a smaller number than r1
@@ -583,7 +587,7 @@ public:
 		}
 		else {
 			// no carry implies that the scale remains the same
-			// and that the first fraction bits came after the nbits-3 slot
+			// and that the first fraction bits came after a hidden bit at nbits-2 position in the adder result register
 			for (int i = 0; i < nbits - 2; i++) {
 				result_fraction[i] = sum[i];
 			}

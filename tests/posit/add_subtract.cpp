@@ -169,41 +169,36 @@ bool ValidateNegAdditionPosit_4_0() {
 	return bValid;
 }
 
+// generate specific test case that you can trace with the trace conditions in posit.h
+// for most bugs they are traceable with _trace_conversion and _trace_add
+template<size_t nbits, size_t es>
+void GenerateTestCase(float fa, float fb) {
+	posit<nbits, es> pa, pb, pref, psum;
+	pa = fa;
+	pb = fb;
+	pref = fa + fb;
+	psum = pa + pb;
+	cout << "reference " << pref << " result " << psum << endl << endl;
+}
+
+template<size_t nbits, size_t es>
+void GenerateTestCase(double da, double db) {
+	posit<nbits, es> pa, pb, pref, psum;
+	pa = dfa;
+	pb = db;
+	pref = fa + fb;
+	psum = pa + pb;
+	cout << "reference " << pref << " result " << psum << endl << endl;
+}
 int main(int argc, char** argv)
 {
-	posit<5, 0> pa, pb, pref, psum;
-	float fa = -0.625f;
-	float fb =  4.0f;
 	/*
-	pa = fa; 
-	pb = fb;
-	pref = fa + fb;
-	psum = pa + pb;
-	cout << "reference " << pref << " result " << psum << endl << endl;
-
-	fa = 0.125f;
-	fb = 0.25f;
-	pa = fa;
-	pb = fb;
-	pref = fa + fb;
-	psum = pa + pb;
-	cout << "reference " << pref << " result " << psum << endl << endl;
-
-	fa = 0.125f;
-	fb = 1.0f;
-	pa = fa;
-	pb = fb;
-	pref = fa + fb;
-	psum = pa + pb;
-	cout << "reference " << pref << " result " << psum << endl << endl;
+	GenerateTestCase<5, 0>(-0.625f,  4.000f);
+	GenerateTestCase<5, 0>( 0.125f,  0.250f);
+	GenerateTestCase<5, 0>( 0.125f,  1.000f);
+	GenerateTestCase<5, 0>( 0.250f, -1.000f);
 	*/
-	fa =  0.125f;
-	fb = -1.0f;
-	pa = fa;
-	pb = fb;
-	pref = fa + fb;
-	psum = pa + pb;
-	cout << "reference " << pref << " result " << psum << endl << endl;
+	GenerateTestCase<5, 0>( 0.250f,  0.375f);
 
 	ReportTestResult(ValidateAddition<5, 0>("Posit<5,0> addition failed: "), "posit<5,0>", "addition");
 
