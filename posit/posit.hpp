@@ -706,10 +706,12 @@ public:
 		}
 		if (msb < 0) return _Bits;
 		for (unsigned int i = 0; i < nrExponentBits; i++) {
+			if (msb < 0) break;
 			_Bits.set(msb--, e[es - 1 - i]);
 		}
 		if (msb < 0) return _Bits;
 		for (unsigned int i = 0; i < nrFractionBits; i++) {
+			if (msb < 0) break;
 			_Bits.set(msb--, f[nbits - 3 - i]);
 		}
 		return _Bits;
