@@ -17,20 +17,19 @@ Standard posits with nbits = 8 have no exponent bits.
 */
 
 int main(int argc, char** argv)
+try
 {
+	bool bReportIndividualTestCases = false;
 	cout << "Standard posit<8,0> configuration tests" << endl;
-	try {
-        const size_t nbits = 8;
-        const size_t es = 0;
-        posit<nbits,es> p;
 
-		cout << spec_to_string(p) << endl;
+    const size_t nbits = 8;
+    const size_t es = 0;
+    posit<nbits,es> p;
 
-		ReportTestResult(ValidateAddition<8,0>("Posit<8,0> addition failed: "), "posit<8,0>", "addition") ;
-	}
-	catch (char* e) {
-		cerr << e << endl;
-	}
+	cout << spec_to_string(p) << endl;
 
-	return 0;
+	ReportTestResult(ValidateAddition<8,0>("Posit<8,0> addition failed: ", bReportIndividualTestCases), "posit<8,0>", "addition") ;
+}
+catch (char* e) {
+	cerr << e << endl;
 }

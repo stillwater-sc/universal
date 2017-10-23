@@ -208,7 +208,7 @@ void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const 
 
 // enumerate all addition cases for a posit configuration
 template<size_t nbits, size_t es>
-int ValidateAddition(std::string error_tag, bool verbose) {
+int ValidateAddition(std::string error_tag, bool bReportIndividualTestCases) {
 	const int NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pb, psum, pref;
@@ -229,11 +229,11 @@ int ValidateAddition(std::string error_tag, bool verbose) {
 			pref = fa + fb;
 			if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
 				//std::cout << "fa " << fa << " fb " << fb << " sum " << fa + fb << " pref " << pref << std::endl;
-				if (verbose) ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
+				if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
 				nrOfFailedTests++;
 			}
 			else {
-				if (verbose) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
+				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
 			}
 		}
 	}
