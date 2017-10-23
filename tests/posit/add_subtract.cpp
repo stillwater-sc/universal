@@ -192,31 +192,48 @@ void GenerateTestCase(double da, double db) {
 }
 int main(int argc, char** argv)
 {
-	/*
+	bool bReportIndividualTestCases = false;
+
 	GenerateTestCase<5, 0>(-0.625f,  4.000f);
+	/*
 	GenerateTestCase<5, 0>( 0.125f,  0.250f);
 	GenerateTestCase<5, 0>( 0.125f,  1.000f);
 	GenerateTestCase<5, 0>( 0.250f, -1.000f);
-	*/
 	GenerateTestCase<5, 0>( 0.250f,  0.375f);
+	*/
 
-	ReportTestResult(ValidateAddition<5, 0>("Posit<5,0> addition failed: "), "posit<5,0>", "addition");
-
-	return 0;
-
+	/*
 	ReportTestResult(ValidateAdditionPosit_4_0(), "posit<4,0>", "addition");
 	ReportTestResult(ValidateNegationPosit_4_0(), "posit<4,0>", "negation");
 	ReportTestResult(ValidateNegAdditionPosit_4_0(), "posit<4,0>", "neg addition");
 	ReportTestResult(ValidateSubtractionPosit_4_0(), "posit<4,0>", "subtraction");
+	*/
 
-	ReportTestResult(ValidateAddition<5, 0>("Posit<5,0> addition failed: "), "posit<5,0>", "addition");
-	ReportTestResult(ValidateAddition<5, 1>("Posit<5,1> addition failed: "), "posit<5,1>", "addition");
-	ReportTestResult(ValidateAddition<5, 2>("Posit<5,2> addition failed: "), "posit<5,2>", "addition");
+	ReportTestResult(ValidateAddition<3, 0>("Posit<3,0> addition failed: ", bReportIndividualTestCases), "posit<3,0>", "addition");
 
-	ReportTestResult(ValidateAddition<6, 0>("Posit<6,0> addition failed: "), "posit<6,0>", "addition");
-	ReportTestResult(ValidateAddition<6, 1>("Posit<6,1> addition failed: "), "posit<6,1>", "addition");
-	ReportTestResult(ValidateAddition<6, 2>("Posit<6,2> addition failed: "), "posit<6,2>", "addition");
-	ReportTestResult(ValidateAddition<6, 2>("Posit<6,3> addition failed: "), "posit<6,3>", "addition");
+	ReportTestResult(ValidateAddition<4, 0>("Posit<4,0> addition failed: ", bReportIndividualTestCases), "posit<4,0>", "addition");
+	ReportTestResult(ValidateAddition<4, 1>("Posit<4,1> addition failed: ", bReportIndividualTestCases), "posit<4,1>", "addition");
 
+	ReportTestResult(ValidateAddition<5, 0>("Posit<5,0> addition failed: ", bReportIndividualTestCases), "posit<5,0>", "addition");
+	ReportTestResult(ValidateAddition<5, 1>("Posit<5,1> addition failed: ", bReportIndividualTestCases), "posit<5,1>", "addition");
+	ReportTestResult(ValidateAddition<5, 2>("Posit<5,2> addition failed: ", bReportIndividualTestCases), "posit<5,2>", "addition");
+
+	ReportTestResult(ValidateAddition<6, 0>("Posit<6,0> addition failed: ", bReportIndividualTestCases), "posit<6,0>", "addition");
+	ReportTestResult(ValidateAddition<6, 1>("Posit<6,1> addition failed: ", bReportIndividualTestCases), "posit<6,1>", "addition");
+	ReportTestResult(ValidateAddition<6, 2>("Posit<6,2> addition failed: ", bReportIndividualTestCases), "posit<6,2>", "addition");
+	ReportTestResult(ValidateAddition<6, 3>("Posit<6,3> addition failed: ", bReportIndividualTestCases), "posit<6,3>", "addition");
+
+	ReportTestResult(ValidateAddition<7, 0>("Posit<7,0> addition failed: ", bReportIndividualTestCases), "posit<7,0>", "addition");
+	ReportTestResult(ValidateAddition<7, 1>("Posit<7,1> addition failed: ", bReportIndividualTestCases), "posit<7,1>", "addition");
+	ReportTestResult(ValidateAddition<7, 2>("Posit<7,2> addition failed: ", bReportIndividualTestCases), "posit<7,2>", "addition");
+	ReportTestResult(ValidateAddition<7, 3>("Posit<7,3> addition failed: ", bReportIndividualTestCases), "posit<7,3>", "addition");
+
+	ReportTestResult(ValidateAddition<8, 0>("Posit<8,0> addition failed: ", bReportIndividualTestCases), "posit<8,0>", "addition");
+	ReportTestResult(ValidateAddition<8, 1>("Posit<8,1> addition failed: ", bReportIndividualTestCases), "posit<8,1>", "addition");
+	ReportTestResult(ValidateAddition<8, 2>("Posit<8,2> addition failed: ", bReportIndividualTestCases), "posit<8,2>", "addition");
+	ReportTestResult(ValidateAddition<8, 3>("Posit<8,3> addition failed: ", bReportIndividualTestCases), "posit<8,3>", "addition");
+
+	// very long running
+	//ReportTestResult(ValidateAddition<16, 1>("Posit<16,1> addition failed: ", bReportIndividualTestCases), "posit<16,1>", "addition");
 	return 0;
 }
