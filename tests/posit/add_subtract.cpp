@@ -184,18 +184,21 @@ void GenerateTestCase(float fa, float fb) {
 template<size_t nbits, size_t es>
 void GenerateTestCase(double da, double db) {
 	posit<nbits, es> pa, pb, pref, psum;
-	pa = dfa;
+	pa = da;
 	pb = db;
-	pref = fa + fb;
+	pref = da + db;
 	psum = pa + pb;
 	cout << "reference " << pref << " result " << psum << endl << endl;
 }
+
 int main(int argc, char** argv)
 {
 	bool bReportIndividualTestCases = false;
 
+	// generate individual testcases to hand trace/debug
 	GenerateTestCase<5, 0>(-0.625f,  4.000f);
 	/*
+	// previous bugs that where hand traced
 	GenerateTestCase<5, 0>( 0.125f,  0.250f);
 	GenerateTestCase<5, 0>( 0.125f,  1.000f);
 	GenerateTestCase<5, 0>( 0.250f, -1.000f);
@@ -203,6 +206,7 @@ int main(int argc, char** argv)
 	*/
 
 	/*
+	// old test structures we have generalized, or are in the process of generalizing
 	ReportTestResult(ValidateAdditionPosit_4_0(), "posit<4,0>", "addition");
 	ReportTestResult(ValidateNegationPosit_4_0(), "posit<4,0>", "negation");
 	ReportTestResult(ValidateNegAdditionPosit_4_0(), "posit<4,0>", "neg addition");
