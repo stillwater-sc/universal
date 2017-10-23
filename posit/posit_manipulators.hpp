@@ -189,8 +189,20 @@ void ReportBinaryArithmeticError(std::string test_case, std::string op, const po
 		<< " " << op << " "
 		<< std::setw(10) << rhs
 		<< " != "
-		<< std::setw(10) << pref << " instead it yielded "
+		<< std::setw(10) << pref <<    " instead it yielded "
 		<< std::setw(10) << presult
+		<< " " << components_to_string(presult) << std::endl;
+}
+
+template<size_t nbits, size_t es>
+void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+	std::cerr << test_case
+		<< std::setw(10) << lhs
+		<< " " << op << " "
+		<< std::setw(10) << rhs
+		<< " == "
+		<< std::setw(10) << presult << " reference value is "
+		<< std::setw(10) << pref
 		<< " " << components_to_string(presult) << std::endl;
 }
 
@@ -216,9 +228,12 @@ int ValidateAddition(std::string error_tag) {
 			psum = pa + pb;
 			pref = fa + fb;
 			if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
-				std::cout << "fa " << fa << " fb " << fb << " sum " << fa + fb << " pref " << pref << std::endl;
-				ReportBinaryArithmeticError(error_tag, "+", pa, pb, pref, psum);
+				//std::cout << "fa " << fa << " fb " << fb << " sum " << fa + fb << " pref " << pref << std::endl;
+				ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
 				nrOfFailedTests++;
+			}
+			else {
+				ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
 			}
 		}
 	}

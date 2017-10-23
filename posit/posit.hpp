@@ -17,8 +17,8 @@ const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 // set intermediate result reporting
 const bool _trace_decode     = false;
 const bool _trace_rounding   = false;
-const bool _trace_conversion = true;
-const bool _trace_add        = true;
+const bool _trace_conversion = false;
+const bool _trace_add        = false;
 const bool _trace_mult       = false;
 
 template<size_t nbits, size_t es>
@@ -363,6 +363,8 @@ public:
 	}
 	posit<nbits, es>& operator=(int64_t rhs) {
 		reset();
+		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
+
 		bool _sign = (0x8000000000000000 & rhs);  // 1 is negative, 0 is positive
 		if (_sign) {
 			// process negative number: process 2's complement of the input
@@ -396,6 +398,8 @@ public:
 	}
 	posit<nbits, es>& operator=(const float rhs) {
 		reset();
+		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
+
 		switch (std::fpclassify(rhs)) {
 		case FP_ZERO:
 			_sign = false;
@@ -419,7 +423,7 @@ public:
 				int _scale = extract_exponent(rhs) - 1;
 				uint32_t _23b_fraction_without_hidden_bit = extract_fraction(rhs);
 				std::bitset<nbits-2> _fraction = extract_float_fraction<nbits-2>(_23b_fraction_without_hidden_bit);
-				//std::cout << "sign " << _sign << " scale " << _scale << " 23b fraction " << std::hex << _23b_fraction_without_hidden_bit << " _fraction " << _fraction << std::dec << std::endl;
+				if (_trace_conversion) std::cout << "float " << rhs << " sign " << _negative << " scale " << _scale << " 23b fraction 0x" << std::hex << _23b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 				convert_to_posit(_negative, _scale, _fraction);
 			}
 			break;
@@ -428,6 +432,8 @@ public:
 	}
 	posit<nbits, es>& operator=(const double rhs) {
 		reset();
+		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
+
 		switch (std::fpclassify(rhs)) {
 		case FP_ZERO:
 			_sign = false;
@@ -451,7 +457,7 @@ public:
 				int _scale = extract_exponent(rhs) - 1;
 				uint64_t _52b_fraction_without_hidden_bit = extract_fraction(rhs);
 				std::bitset<nbits-2> _fraction = extract_double_fraction<nbits-2>(_52b_fraction_without_hidden_bit);
-				//std::cout << "sign " << _sign << " scale " << _scale << " 52b fraction " << std::hex << _52b_fraction_without_hidden_bit << " _fraction " << _fraction << std::dec << std::endl;
+				if (_trace_conversion) std::cout << "double " << rhs << "sign " << _negative << " scale " << _scale << " 52b fraction 0x" << std::hex << _52b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 				convert_to_posit(_negative, _scale, _fraction);
 			}
 			break;
@@ -560,14 +566,9 @@ public:
 					return *this;
 				}
 				else {
-					// adjust the scale down
-					int shift = nbits - 2 - msb;
-					scale_of_result -= shift;
-					sum <<= shift;
-					std::cout << "msb " << msb <<  " scaling down by " << shift << std::endl;
-					// and extract the fraction
+					// and extract the fraction, leaving the hidden bit behind
 					for (int i = 0; i < nbits - 2; i++) {
-						result_fraction[i] = sum[i + 1];
+						result_fraction[i] = sum[i];
 					}
 				}				
 			}
@@ -575,13 +576,9 @@ public:
 		else {
 			// no carry implies that the scale remains the same
 			// and that the first fraction bits came after the nbits-3 slot
-			std::cout << "sum " << sum;
-			sum <<= 1;
-			std::cout << " shifted sum " << sum;
 			for (int i = 0; i < nbits - 2; i++) {
-				result_fraction[i] = sum[i + 1];
+				result_fraction[i] = sum[i];
 			}
-			std::cout << " result " << result_fraction << std::endl;
 		}
 		
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum " << sum << " fraction " << result_fraction << std::endl;
@@ -950,7 +947,7 @@ public:
 	// assignment operators for integer/float/double. I don't like that distribution of knowledge.
 	void convert_to_posit(bool _negative, int _scale, std::bitset<nbits-2>& _frac) {
 		reset();
-		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
+		if (_trace_conversion) std::cout << "sign " << (_negative ? "-1 " : " 1 ") << "scale " << _scale << " fraction " << _frac << std::endl;
 
 		// construct the posit
 		_sign = _negative;	
