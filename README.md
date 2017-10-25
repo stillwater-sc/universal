@@ -6,7 +6,7 @@ Universal Number Arithmetic
 The universal numbers software library is built with cmake. Install the latest cmake (https://cmake.org/download).
 
 ```
-> git clone https://stillwater-sc/universal
+> git clone https://github.com/stillwater-sc/universal
 > cd universal/build
 > cmake ..
 > make
@@ -32,6 +32,15 @@ manage information and discussions around the use of unums.
 [Posit Hub](https://posithub.org)
 [Unum-computing Google Group](https://groups.google.com/forum/#!forum/unum-computing)
 
+# Goals of the library
+
+This library is a bit-level arithmetic reference implementation of the evolving unum III (posit and valid) standard.
+The goal is to provide a faithful posit arithmetic layer for any C/C++/Python environment.
+
+As a reference library, there is extensive test infrastructure to validate the arithmetic, and there is a host
+of utilities to become familiar with the internal workings of posits and valids.
+
+We want to provide a complete unum library, and we are looking for contributors to finish the Type I and II unum implementations.
 
 # Contributing to universal
 
