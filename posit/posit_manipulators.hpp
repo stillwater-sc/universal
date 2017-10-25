@@ -18,11 +18,10 @@
 template<size_t nbits, size_t es>
 std::string spec_to_string(posit<nbits, es> p) {
 	std::stringstream ss;
-	ss << "posit<" << std::setw(2) << nbits << "," << es << "> ";
+	ss << " posit<" << std::setw(2) << nbits << "," << es << "> ";
 	ss << "useed scale " << std::setw(4) << p.useed_scale() << "     ";
-	ss << std::setprecision(12);
-	ss << "minpos scale " << std::setw(20) << p.minpos_scale() << "     ";
-	ss << "maxpos scale " << std::setw(20) << p.maxpos_scale();
+	ss << "minpos scale " << std::setw(10) << p.minpos_scale() << "     ";
+	ss << "maxpos scale " << std::setw(10) << p.maxpos_scale();
 	return ss.str();
 }
 
@@ -103,7 +102,7 @@ void GeneratePositTable(std::ostream& ostr)
 		myPosit.set_raw_bits(i);
 		regime<nbits,es>   r = myPosit.get_regime();
 		exponent<nbits,es> e = myPosit.get_exponent();
-		fraction<nbits,es> f = myPosit.get_fraction();
+		fraction<nbits-2> f = myPosit.get_fraction();
 		ostr << std::setw(4) << i << ": "
 			<< std::setw(bin_column) << myPosit.get()
 			<< std::setw(bin_column) << myPosit.get_decoded()
@@ -114,5 +113,141 @@ void GeneratePositTable(std::ostream& ostr)
 			<< std::setw(fraction_column) << std::right << f
 			<< std::setw(value_column) << std::setprecision(22) << myPosit.to_double() << std::setprecision(0)
 			<< std::endl;
+	}
+}
+
+// print scales of different posit configurations
+// useed = 2^(2^es) and thus is just a function of the exponent configuration
+// maxpos = useed^(nbits-2)
+// minpos = useed^(2-nbits)
+void ReportPositScales() {
+	posit<3, 0> p3_0;
+	posit<4, 0> p4_0;
+	posit<4, 1> p4_1;
+	posit<5, 0> p5_0;
+	posit<5, 1> p5_1;
+	posit<5, 2> p5_2;
+	posit<6, 0> p6_0;
+	posit<6, 1> p6_1;
+	posit<6, 2> p6_2;
+	posit<6, 3> p6_3;
+	posit<7, 0> p7_0;
+	posit<7, 1> p7_1;
+	posit<7, 2> p7_2;
+	posit<7, 3> p7_3;
+	posit<7, 4> p7_4;
+	posit<8, 0> p8_0;
+	posit<16, 1> p16_1;
+	posit<32, 2> p32_2;
+	posit<64, 3> p64_3;
+
+	std::cout << "Posit specificiation examples and their ranges:" << std::endl;
+	std::cout << "Small, specialized posit configurations" << std::endl;
+	std::cout << "nbits = 3" << std::endl;
+	std::cout << spec_to_string(p3_0) << std::endl;
+	std::cout << "nbits = 4" << std::endl;
+	std::cout << spec_to_string(p4_0) << std::endl;
+	std::cout << spec_to_string(p4_1) << std::endl;
+	std::cout << "nbits = 5" << std::endl;
+	std::cout << spec_to_string(p5_0) << std::endl;
+	std::cout << spec_to_string(p5_1) << std::endl;
+	std::cout << spec_to_string(p5_2) << std::endl;
+	std::cout << "nbits = 6" << std::endl;
+	std::cout << spec_to_string(p6_0) << std::endl;
+	std::cout << spec_to_string(p6_1) << std::endl;
+	std::cout << spec_to_string(p6_2) << std::endl;
+	std::cout << spec_to_string(p6_3) << std::endl;
+	std::cout << "nbits = 7" << std::endl;
+	std::cout << spec_to_string(p7_0) << std::endl;
+	std::cout << spec_to_string(p7_1) << std::endl;
+	std::cout << spec_to_string(p7_2) << std::endl;
+	std::cout << spec_to_string(p7_3) << std::endl;
+	std::cout << spec_to_string(p7_4) << std::endl;
+	std::cout << "Standard posit configurations" << std::endl;
+	std::cout << spec_to_string(p8_0) << std::endl;
+	std::cout << spec_to_string(p16_1) << std::endl;
+	std::cout << spec_to_string(p32_2) << std::endl;
+	std::cout << spec_to_string(p64_3) << std::endl;
+	std::cout << std::endl;
+}
+
+template<size_t nbits, size_t es>
+void ReportUnaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+	std::cerr << test_case
+		<< " " << op << " "	
+		<< std::setw(10) << lhs
+		<< " != "
+		<< std::setw(10) << pref << " instead it yielded "
+		<< std::setw(10) << presult
+		<< " " << components_to_string(presult) << std::endl;
+}
+
+template<size_t nbits, size_t es>
+void ReportBinaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+	std::cerr << test_case
+		<< std::setw(10) << lhs
+		<< " " << op << " "
+		<< std::setw(10) << rhs
+		<< " != "
+		<< std::setw(10) << pref <<    " instead it yielded "
+		<< std::setw(10) << presult
+		<< " " << components_to_string(presult) << std::endl;
+}
+
+template<size_t nbits, size_t es>
+void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+	std::cerr << test_case
+		<< std::setw(10) << lhs
+		<< " " << op << " "
+		<< std::setw(10) << rhs
+		<< " == "
+		<< std::setw(10) << presult << " reference value is "
+		<< std::setw(10) << pref
+		<< " " << components_to_string(presult) << std::endl;
+}
+
+// enumerate all addition cases for a posit configuration
+template<size_t nbits, size_t es>
+int ValidateAddition(std::string error_tag, bool bReportIndividualTestCases) {
+	const int NR_TEST_CASES = (1 << nbits);
+	int nrOfFailedTests = 0;
+	posit<nbits, es> pa, pb, psum, pref;
+
+	double input_values[NR_TEST_CASES];
+	for (int i = 0; i < NR_TEST_CASES; i++) {
+		pref.set_raw_bits(i);
+		input_values[i] = pref.to_double();
+	}
+	double fa, fb;
+	for (int i = 0; i < NR_TEST_CASES; i++) {
+		fa = input_values[i];
+		pa = fa;
+		for (int j = 0; j < NR_TEST_CASES; j++) {
+			fb = input_values[j];
+			pb = fb;
+			psum = pa + pb;
+			pref = fa + fb;
+			if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
+				//std::cout << "fa " << fa << " fb " << fb << " sum " << fa + fb << " pref " << pref << std::endl;
+				if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
+				nrOfFailedTests++;
+			}
+			else {
+				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
+			}
+		}
+	}
+
+	return nrOfFailedTests;
+}
+
+// test reporting helper
+void ReportTestResult(int nrOfFailedTests, std::string posit_cfg, std::string op)
+{
+	if (nrOfFailedTests > 0) {
+		std::cout << posit_cfg << " " << op << " FAIL " << nrOfFailedTests << " failed test cases" << std::endl;
+	}
+	else {
+		std::cout << posit_cfg << " " << op << " PASS" << std::endl;
 	}
 }

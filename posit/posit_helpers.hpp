@@ -137,7 +137,6 @@ std::bitset<nbits> extract_float_fraction(uint32_t _23b_fraction_without_hidden_
 template<size_t nbits>
 std::bitset<nbits> extract_double_fraction(uint64_t _52b_fraction_without_hidden_bit) {
 	std::bitset<nbits> _fraction;
-	if (nbits == 3) return _fraction;
 	uint64_t mask = uint64_t(0x0008000000000000ull);
 	unsigned int ub = (nbits < 52 ? nbits : 52);
 	for (unsigned int i = 0; i < ub; i++) {

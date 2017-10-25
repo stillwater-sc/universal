@@ -16,20 +16,6 @@ std::bitset<sign_magnitude> ones_complement(std::bitset<sign_magnitude> number) 
 	return complement;
 }
 
-template<size_t nbits>
-bool increment_signed_magnitude(std::bitset<nbits>& number) {
-	uint8_t carry = 0;  // ripple carry
-	uint8_t _a = number[0];
-	uint8_t _b = 1;
-	uint8_t _slice = _a + _b;
-	for (int i = 1; i < nbits - 1; i++) {
-		_a = number[i];
-		_slice = _a + 0 + carry;
-		carry = _slice >> 1;
-		number[i] = (0x1 & _slice);
-	}
-	return carry;
-}
 
 template<size_t nbits>
 std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
@@ -92,12 +78,14 @@ std::string signed_magnitude_to_binary(std::bitset<sign_magnitude> bits) {
 	return ss.str();
 }
 
+// return a new bitset with the sign flipped as compared to the input bitset
 template<size_t nbits>
 std::bitset<nbits> flip_sign_bit(std::bitset<nbits> number) {
 	number.flip(nbits - 1);
 	return number;
 }
 
+// add bitsets a and b and return in bitset sum. Return true if there is a carry generated.
 template<size_t nbits>
 bool add_unsigned(std::bitset<nbits> a, std::bitset<nbits> b, std::bitset<nbits>& sum) {
 	uint8_t carry = 0;  // ripple carry
@@ -107,6 +95,40 @@ bool add_unsigned(std::bitset<nbits> a, std::bitset<nbits> b, std::bitset<nbits>
 		uint8_t _slice = _a + _b + carry;
 		carry = _slice >> 1;
 		sum[i] = (0x1 & _slice);
+	}
+	return carry;
+}
+
+// increment the input bitset in place, and return true if there is a carray generated.
+template<size_t nbits>
+bool increment_unsigned(std::bitset<nbits>& number) {
+	uint8_t carry = 1;  // ripple carry
+	uint8_t _a, _slice;
+	for (int i = 0; i < nbits; i++) {
+		_a = number[i];
+		_slice = _a + 0 + carry;
+		carry = _slice >> 1;
+		number[i] = (0x1 & _slice);
+	}
+	return carry;
+}
+
+// increment the input bitset in place, and return true if there is a carry generated.
+// The input number is assumed to be right adjusted starting at nbits-nrBits
+// [1 0 0 0] nrBits = 0 is a noop as there is no word to increment
+// [1 0 0 0] nrBits = 1 is the word [1]
+// [1 0 0 0] nrBits = 2 is the word [1 0]
+// [1 1 0 0] nrBits = 3 is the word [1 1 0], etc.
+template<size_t nbits>
+bool increment_unsigned(std::bitset<nbits>& number, int nrBits = nbits - 1) {
+	uint8_t carry = 1;  // ripple carry
+	uint8_t _a, _slice;
+	int lsb = nbits - nrBits;
+	for (int i = lsb; i < nbits; i++) {
+		_a = number[i];
+		_slice = _a + 0 + carry;
+		carry = _slice >> 1;
+		number[i] = (0x1 & _slice);
 	}
 	return carry;
 }

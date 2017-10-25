@@ -26,16 +26,31 @@ POSIT<3,0>
    */
 bool ValidatePosit_3_0()
 {
-	float golden_answer[8] = {
-		-2.0, -1.0, -0.5, 0.0, 0.5, 1.0, 2.0, INFINITY
+	const int NR_TEST_CASES = 15;
+	float input[NR_TEST_CASES] = {
+		INFINITY, -100000.0f, -3.00f, -2.0f, -1.75f, -1.5f, -1.25f, -1.0f, -0.8f, -0.75f, -0.60f, -0.5f, -0.25f, -0.00000001f, 0.0f
+	};
+	string rounding[NR_TEST_CASES] = {
+		 "no"   ,    "down" , "down",  "no",   "up",  "up", "down",  "no",  "up",   "up", "down",  "no",   "up", "no"
+	};
+	float golden_answer[NR_TEST_CASES] = {
+		INFINITY,      -2.0f, -2.00f, -2.0f, -2.00f, -2.0f, -1.00f, -1.0f, -1.0f, -1.00f, -0.50f, -0.5f, -0.500f, -0.5000000f, 0.0f
 	};
 
 	bool bValid = true;
-	for (int i = 0; i < 8; i++) {
+	for (int i = 0; i < NR_TEST_CASES; i++) {
 		posit<3, 0> p;
-		p = golden_answer[i];
+		p = input[i];
 		if (fabs(p.to_double() - golden_answer[i]) > 0.00000001) {
-			cerr << "Posit conversion failed: golden value = " << golden_answer[i] << " != posit<3,0> " << p << " " << components_to_string(p) << endl;
+			cerr << "FAIL [" << setw(2) << i << "] input " << input[i] << " ref = " << golden_answer[i] << " != posit<3,0> " << setw(5) << p << " rounding " << rounding[i] << endl;
+			bValid = false;
+		}
+	}
+	for (int i = 1; i < NR_TEST_CASES; i++) {
+		posit<3, 0> p;
+		p = -input[i];
+		if (fabs(p.to_double() + golden_answer[i]) > 0.00000001) {
+			cerr << "FAIL [" << setw(2) << NR_TEST_CASES+i << "] input " << -input[i] << " ref = " << -golden_answer[i] << " != posit<3,0> " << setw(5) << p << " rounding " << rounding[i] << endl;
 			bValid = false;
 		}
 	}
@@ -64,16 +79,22 @@ POSIT<4,0>
 */
 bool ValidatePosit_4_0()
 {
-	float golden_answer[16] = {
-		0.0, 0.25, 0.5, 0.75, 1.0, 1.5, 2.0, 4.0, INFINITY, -4.0, -2.0, -1.5, -1.0, -0.75, -0.5, -0.25
+	float input[17] = {
+		INFINITY, -100000.0f, -3.00f, -2.0f, -1.75f, -1.5f, -1.25f, -1.0f, -0.875f, -0.80f, -0.75f, -0.625f, -0.60f,  -0.5f, -0.375f, -0.25f,  0.0f
+	};
+	string rounding[17] = {
+		"no"   ,     "down" ,   "up",  "no",   "up",  "no",   "up",  "no",    "up", "down",   "no",    "up", "down",   "no",   "up",    "no",  "no"
+	};
+	float golden_answer[17] = {
+		INFINITY,      -4.0f, -4.00f, -2.0f, -2.00f, -1.5f, -1.50f, -1.0f, -1.000f, -0.75f, -0.75f, -0.750f, -0.50f, -0.50f, -0.500f, -0.25f,  0.0f
 	};
 
 	bool bValid = true;
-	for (int i = 0; i < 16; i++) {
+	for (int i = 0; i < 17; i++) {
 		posit<4, 0> p;
-		p = golden_answer[i];
+		p = input[i];
 		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
-			cerr << "Posit conversion failed: golden value = " << golden_answer[i] << " != posit<4,0> " << p << " " << components_to_string(p) << endl;
+			cerr << "FAIL [" << setw(2) << i << "] input " << input[i] << " ref = " << golden_answer[i] << " != posit<4,0> " << setw(5) << p << " rounding " << rounding[i] << endl;
 			bValid = false;
 		}
 	}
@@ -381,31 +402,9 @@ void TestPositConversion(bool bValid, string posit_cfg)
 	}
 }
 
-void ReportPositScales() {
-	// print scales of different posit configurations
-	// useed = 2^(2^es) and thus is just a function of the exponent configuration
-	// maxpos = useed^(nbits-2)
-	// minpos = useed^(2-nbits)
-	posit<4, 0> p4_0;	
-	posit<8, 0> p8_0;
-	posit<16, 1> p16_1;
-	posit<32, 2> p32_2;
-	posit<64, 3> p64_3;
-	cout << "Posit specificiation examples and their ranges:" << endl;
-	cout << spec_to_string(p4_0) << endl;
-	cout << spec_to_string(p8_0) << endl;
-	cout << spec_to_string(p16_1) << endl;
-	cout << spec_to_string(p32_2) << endl;
-	cout << spec_to_string(p64_3) << endl;
-	cout << endl;
-}
-
-
 int main()
 {
 	ReportPositScales();
-
-
 
 	{
 		cout << "Posit Configuration validation" << endl;

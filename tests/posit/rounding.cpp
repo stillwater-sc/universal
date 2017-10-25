@@ -22,69 +22,6 @@ void transform_into_sign_scale_fraction(int64_t value) {
 	cout << "Sign     " << _sign << endl << "Scale    " << _scale << endl << "Fraction " << _fraction << endl;
 }
 
-void ReportPositScales() {
-	// print scales of different posit configurations
-	// useed = 2^(2^es) and thus is just a function of the exponent configuration
-	// maxpos = useed^(nbits-2)
-	// minpos = useed^(2-nbits)
-	posit<3, 0> p3_0;
-	posit<4, 0> p4_0;
-	posit<4, 1> p4_1;
-	posit<5, 0> p5_0;
-	posit<5, 1> p5_1;
-	posit<5, 2> p5_2;
-	posit<6, 0> p6_0;
-	posit<6, 1> p6_1;
-	posit<6, 2> p6_2;
-	posit<6, 3> p6_3;
-	posit<7, 0> p7_0;
-	posit<7, 1> p7_1;
-	posit<7, 2> p7_2;
-	posit<7, 3> p7_3;
-	posit<8, 0> p8_0;
-	posit<8, 1> p8_1;
-	posit<8, 2> p8_2;
-	posit<8, 3> p8_3;
-	posit<9, 0> p9_0;
-	posit<9, 1> p9_1;
-	posit<9, 2> p9_2;
-	posit<9, 3> p9_3;
-	posit<10, 0> p10_0;
-	posit<10, 1> p10_1;
-	posit<10, 2> p10_2;
-	posit<10, 3> p10_3;
-	cout << "Posit specificiation examples and their ranges:" << endl;
-	cout << spec_to_string(p3_0) << endl;
-	cout << spec_to_string(p4_0) << endl;
-	cout << spec_to_string(p4_1) << endl;
-	cout << spec_to_string(p5_0) << endl;
-	cout << spec_to_string(p5_1) << endl;
-	cout << spec_to_string(p5_2) << endl;
-	cout << spec_to_string(p6_0) << endl;
-	cout << spec_to_string(p6_1) << endl;
-	cout << spec_to_string(p6_2) << endl;
-	cout << spec_to_string(p6_3) << endl;
-	cout << spec_to_string(p7_0) << endl;
-	cout << spec_to_string(p7_1) << endl;
-	cout << spec_to_string(p7_2) << endl;
-	cout << spec_to_string(p7_3) << endl;
-	cout << spec_to_string(p8_0) << endl;
-	cout << spec_to_string(p8_1) << endl;
-	cout << spec_to_string(p8_2) << endl;
-	cout << spec_to_string(p8_3) << endl;
-	cout << spec_to_string(p9_0) << endl;
-	cout << spec_to_string(p9_1) << endl;
-	cout << spec_to_string(p9_2) << endl;
-	cout << spec_to_string(p9_3) << endl;
-	cout << spec_to_string(p10_0) << endl;
-	cout << spec_to_string(p10_1) << endl;
-	cout << spec_to_string(p10_2) << endl;
-	cout << spec_to_string(p10_3) << endl;
-
-
-	cout << endl;
-}
-
 void TestPositRounding(bool bValid, string posit_cfg, string op)
 {
 	if (!bValid) {
@@ -313,19 +250,12 @@ int main(int argc, char** argv)
 
 	try {
 
-		posit<4, 1> p;
-		double v = 0.156252f;
-		cout << v << " " << hexfloat << v << defaultfloat << endl;
-		p = v;
-		cout << p << endl;
-
-		/*
 		TestPositRounding(ValidateFloatRoundingPosit_4_0(), "posit<4,0>", "float rounding");
 		TestPositRounding(ValidateDoubleRoundingPosit_4_0(), "posit<4,0>", "double rounding");
 		TestPositRounding(ValidateFloatRoundingPosit_4_1(), "posit<4,1>", "float rounding");
 		TestPositRounding(ValidateDoubleRoundingDownPosit_4_1(), "posit<4,1>", "double rounding down");
 		TestPositRounding(ValidateDoubleRoundingUpPosit_4_1(), "posit<4,1>", "double rounding up");
-		*/
+
 	}
 	catch (char* e) {
 		cerr << e << endl;
