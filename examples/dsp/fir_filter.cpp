@@ -32,6 +32,9 @@ log_e(2)		M_LN2		0.693147180559945309417
 log_e(10)		M_LN10		2.30258509299404568402
 
 */
+
+const double pi = 3.14159265358979323846;  // best practice for C++
+
 int main(int argc, char** argv)
 try 
 {
@@ -43,7 +46,7 @@ try
 	vector< posit<nbits, es> > sinusoid(vecSize), weights(vecSize);
 
 	for (int i = 0; i < vecSize; i++) {
-		sinusoid[i] = sin((float(i) / float(vecSize)) *2.0 * M_PI);
+		sinusoid[i] = sin((float(i) / float(vecSize)) *2.0 * pi);
 
 		weights[i] = 0.5f;
 	}

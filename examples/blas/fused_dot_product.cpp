@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-// enable the mathematical constants in cmath
+// enable the mathematical constants in cmath: old-style preprocessor magic which isn't best practice anymore
 #define _USE_MATH_DEFINES
 #include "stdafx.h"
 
@@ -33,6 +33,8 @@ log_e(10)		M_LN10		2.30258509299404568402
 
 */
 
+const double pi = 3.14159265358979323846;  // best practice for C++
+
 int main(int argc, char** argv)
 try 
 {
@@ -44,9 +46,9 @@ try
 	vector< posit<nbits,es> > sinusoid(vecSize), cosinusoid(vecSize);
 
 	for (int i = 0; i < vecSize; i++) {
-		p = sin( (float(i) / float(vecSize)) *2.0 * M_PI);
+		p = sin( (float(i) / float(vecSize)) *2.0 * pi);
 		sinusoid[i] = p;
-		p = cos((float(i) / float(vecSize)) *2.0 * M_PI);
+		p = cos((float(i) / float(vecSize)) *2.0 * pi);
 		cosinusoid[i] = p;
 	}
 
