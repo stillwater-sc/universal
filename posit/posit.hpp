@@ -17,8 +17,8 @@ const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 // set intermediate result reporting
 const bool _trace_decode     = false;
 const bool _trace_rounding   = false;
-const bool _trace_conversion = false;
-const bool _trace_add        = false;
+const bool _trace_conversion = true;
+const bool _trace_add        = true;
 const bool _trace_mult       = false;
 
 template<size_t nbits, size_t es>

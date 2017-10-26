@@ -33,6 +33,9 @@ if (BOOST_FOUND)
 	include_directories(${Boost_INCLUDE_DIRS})
 endif (BOOST_FOUND)
 
+# Set posit include directory
+include_directories("./posit")
+
 # Possibly not under Windows
 add_compile_options ( -std=c++11 )
 
@@ -61,3 +64,5 @@ add_subdirectory("tests/unum2")
 add_subdirectory("tests/bitset")
 add_subdirectory("tests/posit")
 add_subdirectory("tests/utilities")
+add_subdirectory("examples/blas")
+add_subdirectory("examples/dsp")

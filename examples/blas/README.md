@@ -1,0 +1,1 @@
+# examples/blasBasic Linear Algebra subroutine examples# How to buildThe examples are automatically build by cmake.# Fused-dot productThe key differentiator of posits to deliver error-free linear algebra.
