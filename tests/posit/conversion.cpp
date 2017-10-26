@@ -12,6 +12,39 @@
 
 using namespace std;
 
+bool ValidateValue_8() {
+	const size_t fbits = 8;
+	const int NR_TEST_CASES = 12;
+	float input[NR_TEST_CASES] = {
+		0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024
+	};
+	float golden_scales[NR_TEST_CASES] = {
+		0, 0, 1, 2, 3,  4,  5,  6,   7,   8,   9,   10
+	};
+	float golden_answer[NR_TEST_CASES] = {
+		0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024
+	};
+
+	bool bValid = true;
+	for (int i = 0; i < NR_TEST_CASES; i++) {
+		value<fbits> v;
+		v = input[i];
+		if (fabs(v.to_double() - golden_answer[i]) > 0.00000001) {
+			cerr << "FAIL [" << setw(2) << i << "] input " << input[i] << " ref = " << golden_answer[i] << " != value<8> " << setw(5) << v  << endl;
+			bValid = false;
+		}
+	}
+	for (int i = 2; i < NR_TEST_CASES; i++) {
+		value<fbits> v;
+		v = 1.0 / input[i];
+		if (fabs(v.to_double() - (1.0 / golden_answer[i])) > 0.00000001) {
+			cerr << "FAIL [" << setw(2) << NR_TEST_CASES + i << "] input " << 1.0/input[i] << " ref = " << 1.0/golden_answer[i] << " != value<8> " << setw(5) << v << endl;
+			bValid = false;
+		}
+	}
+	return bValid;
+}
+
 /*
 POSIT<3,0>
    #           Binary         Decoded         k-value            sign                        regime        exponent        fraction                         value
@@ -392,13 +425,13 @@ bool ValidatePosit_6_0()
 	return bValid;
 }
 
-void TestPositConversion(bool bValid, string posit_cfg)
+void TestConversionResult(bool bValid, string descriptor)
 {
 	if (!bValid) {
-		cout << posit_cfg << " conversions FAIL" << endl;
+		cout << descriptor << " conversions FAIL" << endl;
 	}
 	else {
-		cout << posit_cfg << " conversions PASS" << endl;
+		cout << descriptor << " conversions PASS" << endl;
 	}
 }
 
@@ -407,15 +440,18 @@ int main()
 	ReportPositScales();
 
 	{
+		cout << "Value configuration validation" << endl;
+		TestConversionResult(ValidateValue_8(), "value<8>");
+
 		cout << "Posit Configuration validation" << endl;
-		TestPositConversion(ValidatePosit_3_0(), "posit<3,0>");
-		TestPositConversion(ValidatePosit_4_0(), "posit<4,0>");
-		TestPositConversion(ValidatePosit_4_1(), "posit<4,1>");
-		TestPositConversion(ValidatePosit_5_0(), "posit<5,0>");
-		TestPositConversion(ValidatePosit_5_1(), "posit<5,1>");
-		TestPositConversion(ValidatePosit_5_2(), "posit<5,2>");
-		TestPositConversion(ValidatePosit_6_0(), "posit<6,0>");
-		//TestPositConversion(ValidatePosit_6_1(), "posit<6,1>");
+		TestConversionResult(ValidatePosit_3_0(), "posit<3,0>");
+		TestConversionResult(ValidatePosit_4_0(), "posit<4,0>");
+		TestConversionResult(ValidatePosit_4_1(), "posit<4,1>");
+		TestConversionResult(ValidatePosit_5_0(), "posit<5,0>");
+		TestConversionResult(ValidatePosit_5_1(), "posit<5,1>");
+		TestConversionResult(ValidatePosit_5_2(), "posit<5,2>");
+		TestConversionResult(ValidatePosit_6_0(), "posit<6,0>");
+		//TestConversionResult(ValidatePosit_6_1(), "posit<6,1>");
 
 		cout << endl;
 	}

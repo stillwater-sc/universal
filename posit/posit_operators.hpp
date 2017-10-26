@@ -174,3 +174,37 @@ template<size_t nbits, size_t es>
 inline bool operator<=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator> (lhs, rhs); }
 template<size_t nbits, size_t es>
 inline bool operator>=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator< (lhs, rhs); }
+
+
+// value operators
+
+////////////////////// VALUE
+template<size_t nfbits>
+inline std::ostream& operator<<(std::ostream& ostr, const value<nfbits>& v) {
+	if (v._inf) {
+		ostr << FP_INFINITE;
+	}
+	else {
+		ostr << v.to_double();
+	}
+	return ostr;
+}
+
+template<size_t nfbits>
+inline std::istream& operator>> (std::istream& istr, const value<nfbits>& f) {
+	istr >> v._fraction;
+	return istr;
+}
+
+template<size_t nfbits>
+inline bool operator==(const value<nfbits>& lhs, const value<nfbits>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._fraction == rhs._fraction && lhs._nrOfBits == rhs._nrOfBits; }
+template<size_t nfbits>
+inline bool operator!=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nfbits>
+inline bool operator< (const value<nfbits>& lhs, const value<nfbits>& rhs) { return lhs.to_double() < rhs.to_double(); }
+template<size_t nfbits>
+inline bool operator> (const value<nfbits>& lhs, const value<nfbits>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nfbits>
+inline bool operator<=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator> (lhs, rhs); }
+template<size_t nfbits>
+inline bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator< (lhs, rhs); }
