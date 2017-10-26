@@ -54,7 +54,7 @@ try
 	posit<nbits, es> dot_product;
 	dot_product = 0.0f;
 	for (int i = 0; i < vecSize; i++) {
-		p += sinusoid[i] * cosinusoid[i];
+		dot_product += sinusoid[i] * cosinusoid[i];
 	}
 
 	cout << "Dot product is " << dot_product << endl;
