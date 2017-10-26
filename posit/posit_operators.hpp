@@ -191,7 +191,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const value<nfbits>& v) {
 }
 
 template<size_t nfbits>
-inline std::istream& operator>> (std::istream& istr, const value<nfbits>& f) {
+inline std::istream& operator>> (std::istream& istr, const value<nfbits>& v) {
 	istr >> v._fraction;
 	return istr;
 }
