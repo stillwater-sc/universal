@@ -10,13 +10,13 @@
 
 using namespace std;
 
-void BasicArithmeticTests() {
+void BinaryConversions() {
 	const size_t nbits = 33;
-
-	cout << "Bitset arithmetic tests" << endl;
-
-	std::bitset<nbits> a, b, sum;
+		std::bitset<nbits> a, b, sum;
 	bool carry = 0;
+
+	cout << "Binary conversions" << endl;
+
 	a = flip_sign_bit(convert_to_bitset<nbits,uint64_t>(uint64_t(0x55555555)));
 	b = convert_to_bitset<nbits,uint64_t>(uint64_t(0x5));
 
@@ -40,12 +40,15 @@ void BasicArithmeticTests() {
 	cout << "d                = " << to_binary(d) << endl;
 	d = twos_complement(d);
 	cout << "2's complement   = " << to_binary(d) << endl;
+	cout << endl;
 }
+
+
 
 template<size_t nbits>
 void add_fractions(int f1_scale, std::bitset<nbits> f1, int f2_scale, std::bitset<nbits> f2, int& sum_scale, std::bitset<nbits>& sum) {
 	// fraction operations that are part of adding posits
-
+	cout << "add fractions" << endl;
 	cout << "f1 scale " << f1_scale << " value " << to_hex(f1) << endl;
 	cout << "f2 scale " << f2_scale << " value " << to_hex(f2) << endl;
 
@@ -73,13 +76,14 @@ void add_fractions(int f1_scale, std::bitset<nbits> f1, int f2_scale, std::bitse
 	sum >>= (carry ? 1 : 0);
 }
 
-bool AddFractionsTest()
+bool FractionManipulation()
 {
 	bool bValid = true;
-
 	const size_t posit_nbits = 16;
 	const size_t fraction_nbits = posit_nbits - 2;
 	int f1_scale = 5;
+
+	cout << "Fraction manipulation" << endl;
 	std::bitset<fraction_nbits> f1 = convert_to_bitset<fraction_nbits,uint64_t>(uint64_t(0x1fff));
 	int f2_scale = 3;
 	std::bitset<fraction_nbits> f2 = convert_to_bitset<fraction_nbits,uint64_t>(uint64_t(0xf));
@@ -87,7 +91,7 @@ bool AddFractionsTest()
 	std::bitset<fraction_nbits> sum;
 	add_fractions<fraction_nbits>(f1_scale, f1, f2_scale, f2, sum_scale, sum);
 	cout << "sum : " << sum << " sum_scale : " << sum_scale << endl;
-
+	cout << endl;
 	return bValid;
 }
 
@@ -98,6 +102,7 @@ bool IncrementRightAdjustedBitset()
 	std::bitset<size> r1, ref;
 	bool carry;
 
+	cout << "Increments" << endl;
 	for (int i = 0; i < size; i++) {
 		r1.reset();
 		r1.set(size - 1 - i, true);
@@ -106,16 +111,22 @@ bool IncrementRightAdjustedBitset()
 		carry = increment_unsigned(r1, i);
 		cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- result" << endl;
 	}
-
+	cout << endl;
 	return bValid;
 }
 
 int main()
 try
 {
-	BasicArithmeticTests();
+
+	cout << "Arithmetic experiments on bitsets" << endl;
+
+	BinaryConversions();
 
 	IncrementRightAdjustedBitset();
+
+	FractionManipulation();
+
 
 	return 0;
 }
