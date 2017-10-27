@@ -219,18 +219,21 @@ int ValidateAddition(std::string error_tag, bool bReportIndividualTestCases) {
 		input_values[i] = pref.to_double();
 	}
 	double fa, fb;
-	for (int i = 0; i < NR_TEST_CASES; i++) {
+	for (int i = 1; i < NR_TEST_CASES; i++) {
 		fa = input_values[i];
 		pa = fa;
-		for (int j = 0; j < NR_TEST_CASES; j++) {
+		for (int j = 2; j < NR_TEST_CASES; j++) {
 			fb = input_values[j];
 			pb = fb;
 			psum = pa + pb;
 			pref = fa + fb;
 			if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
-				//std::cout << "fa " << fa << " fb " << fb << " sum " << fa + fb << " pref " << pref << std::endl;
-				if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
+// 				std::cout << "pa " << pa << " pb " << pb << " psum " << psum << " pref " << pref << std::endl;
+// 				std::cout << "fa " << fa << " fb " << fb << "  sum " << fa + fb << " pref " << pref << std::endl;
+				if (bReportIndividualTestCases) 
+                                    ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
 				nrOfFailedTests++;
+// 				throw "Falsch.";
 			}
 			else {
 				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);

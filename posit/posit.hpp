@@ -697,6 +697,7 @@ public:
 		int rhs_scale = rhs.scale();
 		int scale_of_result;
 		// we need to determine the biggest operand
+		using std::abs;
 		bool rhs_bigger = (abs(to_double()) < abs(rhs.to_double()));		//    TODO: need to do this in native posit integer arithmetic
 		int diff = lhs_scale - rhs_scale;
 		if (rhs_bigger) {
