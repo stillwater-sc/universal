@@ -690,8 +690,8 @@ public:
 			return *this;
 		}
 
-		const size_t adder_size = nbits - 1;
-		const size_t fract_size = nbits - 2;
+		constexpr size_t adder_size = nbits - 1;
+		constexpr size_t fract_size = nbits - 2;
 		// align the fractions, and produce right extended fractions in r1 and r2 with hidden bits explicit
 		std::bitset<adder_size> r1, r2, sum; // fraction is at most nbits-3 bits, but we need to incorporate one sticky bit for rounding decisions, and a leading slot for the hidden bit
 		std::bitset<fract_size> result_fraction; // fraction part of the sum
@@ -712,6 +712,7 @@ public:
 		int rhs_scale = rhs.scale();
 		int scale_of_result;
 		// we need to determine the biggest operand
+		using std::abs;
 		bool rhs_bigger = (abs(to_double()) < abs(rhs.to_double()));		//    TODO: need to do this in native posit integer arithmetic
 		int diff = lhs_scale - rhs_scale;
 		if (rhs_bigger) {

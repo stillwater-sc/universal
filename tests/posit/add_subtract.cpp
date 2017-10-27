@@ -4,6 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <iostream>
+
 #include "stdafx.h"
 
 #include "../../bitset/bitset_helpers.hpp"
@@ -216,6 +218,13 @@ int main(int argc, char** argv)
 	ReportTestResult(ValidateSubtractionPosit_4_0(), "posit<4,0>", "subtraction");
 	*/
 
+//         posit<4, 0> pa = 0.25, pb = 0.5, psum;
+//         std::cout << "pa = " << pa << ", pb = " << pb << ".\n";
+//         psum = pa + pb;
+//         std::cout << "psum = " << psum << ".\n";
+
+#if 1
+        // TODO: Count total number of errors and return 1 if there are some
 	ReportTestResult(ValidateAddition<3, 0>("Posit<3,0> addition failed: ", bReportIndividualTestCases), "posit<3,0>", "addition");
 
 	ReportTestResult(ValidateAddition<4, 0>("Posit<4,0> addition failed: ", bReportIndividualTestCases), "posit<4,0>", "addition");
@@ -239,7 +248,7 @@ int main(int argc, char** argv)
 	ReportTestResult(ValidateAddition<8, 1>("Posit<8,1> addition failed: ", bReportIndividualTestCases), "posit<8,1>", "addition");
 	ReportTestResult(ValidateAddition<8, 2>("Posit<8,2> addition failed: ", bReportIndividualTestCases), "posit<8,2>", "addition");
 	ReportTestResult(ValidateAddition<8, 3>("Posit<8,3> addition failed: ", bReportIndividualTestCases), "posit<8,3>", "addition");
-
+#endif
 	// very long running, so disabled
 	//ReportTestResult(ValidateAddition<16, 1>("Posit<16,1> addition failed: ", bReportIndividualTestCases), "posit<16,1>", "addition");
 	return 0;
