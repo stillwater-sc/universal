@@ -6,34 +6,43 @@
 
 #include "stdafx.h"
 #include <sstream>
+#include "../tests/test_helpers.hpp"
 #include "../../bitset/bitset_helpers.hpp"
 
 using namespace std;
 
-void BinaryConversions() {
+int BinaryConversions() {
 	const size_t nbits = 33;
-		std::bitset<nbits> a, b, sum;
+	int nrOfFailedTestCases = 0;
+	std::bitset<nbits> a, b, ref, sum;
 	bool carry = 0;
 
 	cout << "Binary conversions" << endl;
 
+	ref = convert_to_bitset<nbits, uint64_t>(uint64_t(0x155555555));
 	a = flip_sign_bit(convert_to_bitset<nbits,uint64_t>(uint64_t(0x55555555)));
+	nrOfFailedTestCases += (a != ref ? 1 : 0);
+
 	b = convert_to_bitset<nbits,uint64_t>(uint64_t(0x5));
 
-	carry = add_signed_magnitude(a, b, sum);
-
-	cout << "a   = " << a << endl;
-	cout << "b   = " << to_binary(b) << endl;
-	cout << "sum = " << to_binary(sum) << " carry = " << carry << endl;
-
 	cout << "1's complement of a = " << to_binary(ones_complement(a)) << endl;
+	ref = convert_to_bitset<nbits, uint64_t>(uint64_t(0xAAAAAAAA));
+	nrOfFailedTestCases += (ones_complement(a) != ref ? 1 : 0);
 	cout << "1's complement of b = " << to_binary(ones_complement(b)) << endl;
+	ref = convert_to_bitset<nbits, uint64_t>(uint64_t(0x1FFFFFFFA));
+	nrOfFailedTestCases += (ones_complement(b) != ref ? 1 : 0);
 
-	std::bitset<9> c;
-	c = convert_to_bitset<9,int8_t>(int8_t(-128));
+	const size_t nnbits = 9;
+	std::bitset<nnbits> c, ref2;
+	c = convert_to_bitset<9,int8_t>(int8_t(-128));  // this looks like -1 for a 9bit posit
 	cout << "c                = " << to_binary(c) << endl;
-	c = twos_complement(c);
+	ref2 = convert_to_bitset<nnbits, uint64_t>(uint64_t(0x180));
+	nrOfFailedTestCases += (c != ref2 ? 1 : 0);
+
+	c = twos_complement(c);							// this looks like  1 for a 9bit posit
 	cout << "2's Complement   = " << to_binary(c) << endl;
+	ref2 = convert_to_bitset<nnbits, uint64_t>(uint64_t(0x080));
+	nrOfFailedTestCases += (c != ref2 ? 1 : 0);
 
 	std::bitset<9> d;
 	d = convert_to_bitset<9,int64_t>(int64_t(int8_t(-128)));
@@ -41,6 +50,9 @@ void BinaryConversions() {
 	d = twos_complement(d);
 	cout << "2's complement   = " << to_binary(d) << endl;
 	cout << endl;
+	nrOfFailedTestCases += (c != d ? 1 : 0);
+
+	return nrOfFailedTestCases;
 }
 
 
@@ -115,22 +127,22 @@ bool IncrementRightAdjustedBitset()
 	return bValid;
 }
 
-int main()
-try
-{
+int main(int argc, char** argv)
+try {
+	int nrOfFailedTestCases = 0;
 
 	cout << "Arithmetic experiments on bitsets" << endl;
 
-	BinaryConversions();
+	nrOfFailedTestCases += BinaryConversions();
 
 	IncrementRightAdjustedBitset();
 
 	FractionManipulation();
 
-
-	return 0;
+	ReportTestResult(nrOfFailedTestCases, "bitset arithmetic", "~");
+	return nrOfFailedTestCases;
 }
-catch (char* msg) {
-	cerr << msg << endl;
-	return 1;
+catch (char* e) {
+	cerr << e << endl;
+	return -1;
 }

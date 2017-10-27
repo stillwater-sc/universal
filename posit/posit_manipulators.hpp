@@ -171,40 +171,6 @@ void ReportPositScales() {
 	std::cout << std::endl;
 }
 
-template<size_t nbits, size_t es>
-void ReportUnaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case
-		<< " " << op << " "	
-		<< std::setw(10) << lhs
-		<< " != "
-		<< std::setw(10) << pref << " instead it yielded "
-		<< std::setw(10) << presult
-		<< " " << components_to_string(presult) << std::endl;
-}
-
-template<size_t nbits, size_t es>
-void ReportBinaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case
-		<< std::setw(10) << lhs
-		<< " " << op << " "
-		<< std::setw(10) << rhs
-		<< " != "
-		<< std::setw(10) << pref <<    " instead it yielded "
-		<< std::setw(10) << presult
-		<< " " << components_to_string(presult) << std::endl;
-}
-
-template<size_t nbits, size_t es>
-void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-	std::cerr << test_case
-		<< std::setw(10) << lhs
-		<< " " << op << " "
-		<< std::setw(10) << rhs
-		<< " == "
-		<< std::setw(10) << presult << " reference value is "
-		<< std::setw(10) << pref
-		<< " " << components_to_string(presult) << std::endl;
-}
 
 // enumerate all addition cases for a posit configuration
 template<size_t nbits, size_t es>
@@ -242,15 +208,4 @@ int ValidateAddition(std::string error_tag, bool bReportIndividualTestCases) {
 	}
 
 	return nrOfFailedTests;
-}
-
-// test reporting helper
-void ReportTestResult(int nrOfFailedTests, std::string posit_cfg, std::string op)
-{
-	if (nrOfFailedTests > 0) {
-		std::cout << posit_cfg << " " << op << " FAIL " << nrOfFailedTests << " failed test cases" << std::endl;
-	}
-	else {
-		std::cout << posit_cfg << " " << op << " PASS" << std::endl;
-	}
 }

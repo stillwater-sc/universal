@@ -9,6 +9,8 @@
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
+#include "../tests/test_helpers.hpp"
+#include "../tests/posit_test_helpers.hpp"
 
 using namespace std;
 
@@ -19,6 +21,7 @@ Standard posits with nbits = 16 have 1 exponent bit.
 int main(int argc, char** argv)
 try
 {
+	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
 	cout << "Standard posit<16,1> configuration tests" << endl;
 
@@ -30,7 +33,10 @@ try
 
 	// this is too much (many hours) so disabling
 	// ReportTestResult(ValidateAddition<16, 1>("Posit<16,`> addition failed: ", bReportIndividualTestCases), "posit<16,1>", "addition");
+	nrOfFailedTestCases++; // we don't have any yet
+	return nrOfFailedTestCases;
 }
 catch (char* e) {
 	cerr << e << endl;
+	return -1;
 }

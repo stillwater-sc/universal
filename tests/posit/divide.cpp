@@ -18,13 +18,17 @@ using namespace std;
 int main(int argc, char** argv)
 try 
 {
+	int nrOfFailedTestCases = 0;
+
 	posit<5,1> pa, pb, pdiv;
 	pa = 1.0f;
 	pb = 1.0f;
 	pdiv = pa / pb;
 	cout << pa << " " << pb << " " << pdiv << endl;
-	return 0;
-
+	
+	// we don't have any tests yet
+	nrOfFailedTestCases++;
+	return nrOfFailedTestCases;
 }
 catch (char* msg) {
 	cerr << msg << endl;
