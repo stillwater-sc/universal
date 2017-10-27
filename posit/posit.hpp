@@ -32,6 +32,16 @@ template<size_t fbits>
 class value {
 public:
 	value() : _sign(false), _scale(0), _nrOfBits(fbits) {}
+
+	value(int8_t initial_value) {
+		*this = initial_value;
+	}
+	value(int16_t initial_value) {
+		*this = initial_value;
+	}
+	value(int32_t initial_value) {
+		*this = initial_value;
+	}
 	value(int64_t initial_value) {
 		*this = initial_value;
 	}
@@ -983,7 +993,7 @@ public:
 			if (tmp.none()) {
 				// special case = +-inf
 				_sign = true;
-				_regime.setZero();
+				_regime.setInfinite();
 				_exponent.reset();
 				_fraction.reset();
 				special = true;
