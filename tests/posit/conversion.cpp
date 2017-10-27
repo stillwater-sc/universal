@@ -12,38 +12,6 @@
 
 using namespace std;
 
-bool ValidateValue_8() {
-	const size_t fbits = 8;
-	const int NR_TEST_CASES = 12;
-	float input[NR_TEST_CASES] = {
-		0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024
-	};
-	float golden_scales[NR_TEST_CASES] = {
-		0, 0, 1, 2, 3,  4,  5,  6,   7,   8,   9,   10
-	};
-	float golden_answer[NR_TEST_CASES] = {
-		0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024
-	};
-
-	bool bValid = true;
-	for (int i = 0; i < NR_TEST_CASES; i++) {
-		value<fbits> v;
-		v = input[i];
-		if (fabs(v.to_double() - golden_answer[i]) > 0.00000001) {
-			cerr << "FAIL [" << setw(2) << i << "] input " << input[i] << " ref = " << golden_answer[i] << " != value<8> " << setw(5) << v  << endl;
-			bValid = false;
-		}
-	}
-	for (int i = 2; i < NR_TEST_CASES; i++) {
-		value<fbits> v;
-		v = 1.0 / input[i];
-		if (fabs(v.to_double() - (1.0 / golden_answer[i])) > 0.00000001) {
-			cerr << "FAIL [" << setw(2) << NR_TEST_CASES + i << "] input " << 1.0/input[i] << " ref = " << 1.0/golden_answer[i] << " != value<8> " << setw(5) << v << endl;
-			bValid = false;
-		}
-	}
-	return bValid;
-}
 
 /*
 POSIT<3,0>
@@ -440,8 +408,8 @@ int main()
 	ReportPositScales();
 
 	{
-		cout << "Value configuration validation" << endl;
-		TestConversionResult(ValidateValue_8(), "value<8>");
+		// testing initializing constructor
+		posit<5, 1> test(1ull);
 
 		cout << "Posit Configuration validation" << endl;
 		TestConversionResult(ValidatePosit_3_0(), "posit<3,0>");

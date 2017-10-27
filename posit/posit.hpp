@@ -35,6 +35,9 @@ public:
 	value(int64_t initial_value) {
 		*this = initial_value;
 	}
+	value(uint64_t initial_value) {
+		*this = initial_value;
+	}
 	value(float initial_value) {
 		*this = initial_value;
 	}
@@ -171,9 +174,14 @@ public:
 		_nan = false;
 		_fraction.reset();
 	}
-	double sign_value() const {
-		return (_sign ? -1.0 : 1.0);
-	}
+	bool isNegative() {	return _sign; }
+	bool isZero() { return _zero; }
+	bool isInfinite() { return _inf; }
+	bool isNaN() { return _nan; }
+	bool sign() const { return _sign; }
+	int scale() const { return _scale; }
+	std::bitset<fbits> fraction() const { return _fraction; }
+	double sign_value() const {	return (_sign ? -1.0 : 1.0); }
 	double scale_value() const {
 		double v = 0.0;
 		if (_zero) return v;
@@ -543,8 +551,17 @@ public:
 	posit<nbits, es>(int64_t initial_value) {
 		*this = initial_value;
 	}
-	posit<nbits, es>(const posit& p) {
-		*this = p;
+	posit<nbits, es>(uint64_t initial_value) {
+		*this = initial_value;
+	}
+	posit<nbits, es>(float initial_value) {
+		*this = initial_value;
+	}
+	posit<nbits, es>(double initial_value) {
+		*this = initial_value;
+	}
+	posit<nbits, es>(const posit& rhs) {
+		*this = rhs;
 	}
 	posit<nbits, es>& operator=(int8_t rhs) {
 		*this = int64_t(rhs);
@@ -560,105 +577,68 @@ public:
 	}
 	posit<nbits, es>& operator=(int64_t rhs) {
 		reset();
-		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
-
-		bool _sign = (0x8000000000000000 & rhs);  // 1 is negative, 0 is positive
-		if (_sign) {
-			// process negative number: process 2's complement of the input
-			unsigned int _scale = findMostSignificantBit(-rhs) - 1;
-			uint64_t _fraction_without_hidden_bit = (-rhs << (64 - _scale));
-			std::bitset<nbits-2> _fraction = copy_integer_fraction<nbits-2>(_fraction_without_hidden_bit);
-			convert_to_posit(_sign, _scale, _fraction);
+		value<nbits - 2> v(rhs);
+		if (v.isZero()) {
+			_sign = false;
+			_regime.setZero();
+			return *this;
+		}
+		else if (v.isNegative()) {
+			convert_to_posit(v);
 			take_2s_complement();
 		}
 		else {
-			// process positive number
-			if (rhs != 0) {
-				unsigned int _scale = findMostSignificantBit(rhs) - 1;
-				uint64_t _fraction_without_hidden_bit = (rhs << (64 - _scale));
-				std::bitset<nbits-2> _fraction = copy_integer_fraction<nbits-2>(_fraction_without_hidden_bit);
-				convert_to_posit(_sign, _scale, _fraction);
-			}
+			convert_to_posit(v);
 		}
 		return *this;
 	}
 	posit<nbits, es>& operator=(uint64_t rhs) {
 		reset();
-		if (rhs != 0) {
-			unsigned int _scale = findMostSignificantBit(rhs) - 1;
-			uint64_t _fraction_without_hidden_bit = (rhs << (64 - _scale));
-			std::bitset<nbits-2> _fraction = copy_integer_fraction<nbits-2>(_fraction_without_hidden_bit);
-			convert_to_posit(false, _scale, _fraction);
+		value<nbits - 2> v(rhs);
+		if (v.isZero()) {
+			_sign = false;
+			_regime.setZero();
+			return *this;
 		}
-		decode();
+		convert_to_posit(v);
 		return *this;
 	}
 	posit<nbits, es>& operator=(const float rhs) {
 		reset();
-		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
-
-		switch (std::fpclassify(rhs)) {
-		case FP_ZERO:
+		value<nbits - 2> v;
+		v = rhs;
+		if (v.isZero()) {
 			_sign = false;
 			_regime.setZero();
-			break;
-		case FP_INFINITE:
+			return *this;
+		}
+		if (v.isInfinite()) {
 			_sign = true;
 			_regime.setZero();
 			_raw_bits.set(nbits - 1, true);
-			break;
-		case FP_NAN:
-			std::cerr << "float is NAN: returning 0" << std::endl;
-			break;
-		case FP_SUBNORMAL:
-			std::cerr << "TODO: subnormal number: returning 0" << std::endl;
-			break;
-		case FP_NORMAL:
-			{
-				if (rhs == 0.0) break;  // 0 is a special case
-				bool _negative = extract_sign(rhs);
-				int _scale = extract_exponent(rhs) - 1;
-				uint32_t _23b_fraction_without_hidden_bit = extract_fraction(rhs);
-				std::bitset<nbits-2> _fraction = extract_float_fraction<nbits-2>(_23b_fraction_without_hidden_bit);
-				if (_trace_conversion) std::cout << "float " << rhs << " sign " << _negative << " scale " << _scale << " 23b fraction 0x" << std::hex << _23b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
-				convert_to_posit(_negative, _scale, _fraction);
-			}
-			break;
+			return *this;
 		}
+		convert_to_posit(v);
+
 		return *this;
 	}
 	posit<nbits, es>& operator=(const double rhs) {
 		reset();
-		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
-
-		switch (std::fpclassify(rhs)) {
-		case FP_ZERO:
+		value<nbits - 2> v;
+		v = rhs;
+		if (v.isZero()) {
 			_sign = false;
 			_regime.setZero();
-			break;
-		case FP_INFINITE:
+			return *this;
+		}
+		if (v.isInfinite()) {
 			_sign = true;
 			_regime.setZero();
 			_raw_bits.set(nbits - 1, true);
-			break;
-		case FP_NAN:
-			std::cerr << "float is NAN" << std::endl;
-			break;
-		case FP_SUBNORMAL:
-			std::cerr << "TODO: subnormal number" << std::endl;
-			break;
-		case FP_NORMAL:
-			{
-				if (rhs == 0.0) break;  // 0 is a special case
-				bool _negative = extract_sign(rhs);
-				int _scale = extract_exponent(rhs) - 1;
-				uint64_t _52b_fraction_without_hidden_bit = extract_fraction(rhs);
-				std::bitset<nbits-2> _fraction = extract_double_fraction<nbits-2>(_52b_fraction_without_hidden_bit);
-				if (_trace_conversion) std::cout << "double " << rhs << "sign " << _negative << " scale " << _scale << " 52b fraction 0x" << std::hex << _52b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
-				convert_to_posit(_negative, _scale, _fraction);
-			}
-			break;
+			return *this;
 		}
+		convert_to_posit(v);
+
 		return *this;
 	}
 	posit<nbits, es>& operator=(const posit& rhs) {
@@ -810,7 +790,7 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator++() {
-		*this = *this + posit<nbits, es>(1);
+		*this = *this + posit<nbits, es>(int64_t(1));
 		return *this;
 	}
 	posit<nbits, es> operator++(int) {
@@ -1153,9 +1133,13 @@ public:
 		return _regime.scale() + _exponent.scale();
 	}
 
+
 	// this routine will not allocate 0 or infinity due to the test on (0,minpos], and [maxpos,inf)
 	// TODO: is that the right functionality? right now the special cases are deal with in the
 	// assignment operators for integer/float/double. I don't like that distribution of knowledge.
+	void convert_to_posit(value<nbits-2>& v) {
+		convert_to_posit(v.sign(), v.scale(), v.fraction());
+	}	
 	void convert_to_posit(bool _negative, int _scale, std::bitset<nbits-2>& _frac) {
 		reset();
 		if (_trace_conversion) std::cout << "sign " << (_negative ? "-1 " : " 1 ") << "scale " << _scale << " fraction " << _frac << std::endl;

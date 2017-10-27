@@ -198,7 +198,7 @@ int main(int argc, char** argv)
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<5, 0>(-0.625f,  4.000f);
 	GenerateTestCase<5, 0>(-0.500f,  4.000f);
-	return 0;
+
 
 	/*
 	// previous bugs that where hand traced
