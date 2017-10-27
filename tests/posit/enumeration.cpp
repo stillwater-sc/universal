@@ -17,6 +17,15 @@ using namespace std;
 int main(int argc, char** argv)
 try 
 {
+
+	posit<4, 0> pa, pb, psum;
+	pa = 0.25f;
+	pb = 0.5f;
+	psum = pb + pa;
+	cout << components_to_string(psum) << endl;
+	
+	return 0;
+
 	const size_t nbits = 5;
 	const size_t es = 1;
 	// generate minpos

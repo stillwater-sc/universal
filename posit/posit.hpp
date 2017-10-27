@@ -81,6 +81,7 @@ public:
 			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 			//take_2s_complement();
 			_nrOfBits = fbits;
+			if (_trace_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 		}
 		else {
 			// process positive number
@@ -89,12 +90,16 @@ public:
 				uint64_t _fraction_without_hidden_bit = (rhs << (64 - _scale));
 				_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 				_nrOfBits = fbits;
+				if (_trace_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
+
 			}
 		}
 		return *this;
 	}
 	value<fbits>& operator=(uint64_t rhs) {
 		reset();
+		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
+
 		if (rhs == 0) {
 			_zero = true;
 		}
@@ -104,6 +109,7 @@ public:
 			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 			_nrOfBits = fbits;
 		}
+		if (_trace_conversion) std::cout << "uint64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 		return *this;
 	}
 	value<fbits>& operator=(float rhs) {
@@ -162,7 +168,7 @@ public:
 			uint64_t _52b_fraction_without_hidden_bit = extract_fraction(rhs);
 			_fraction = extract_double_fraction<fbits>(_52b_fraction_without_hidden_bit);
 			_nrOfBits = fbits;
-			if (_trace_conversion) std::cout << "float " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _52b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
+			if (_trace_conversion) std::cout << "double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _52b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 		}
 		break;
 		}

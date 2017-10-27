@@ -193,7 +193,7 @@ void GenerateTestCase(double da, double db) {
 
 int main(int argc, char** argv)
 {
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<5, 0>(-0.625f,  4.000f);
