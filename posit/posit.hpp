@@ -603,10 +603,9 @@ public:
 		convert_to_posit(v);
 		return *this;
 	}
-	posit<nbits, es>& operator=(const float rhs) {
+	posit<nbits, es>& operator=(float rhs) {
 		reset();
-		value<nbits - 2> v;
-		v = rhs;
+		value<nbits - 2> v(rhs);
 		if (v.isZero()) {
 			_sign = false;
 			_regime.setZero();
@@ -622,10 +621,9 @@ public:
 
 		return *this;
 	}
-	posit<nbits, es>& operator=(const double rhs) {
+	posit<nbits, es>& operator=(double rhs) {
 		reset();
-		value<nbits - 2> v;
-		v = rhs;
+		value<nbits - 2> v(rhs);
 		if (v.isZero()) {
 			_sign = false;
 			_regime.setZero();
@@ -1140,7 +1138,7 @@ public:
 	void convert_to_posit(value<nbits-2>& v) {
 		convert_to_posit(v.sign(), v.scale(), v.fraction());
 	}	
-	void convert_to_posit(bool _negative, int _scale, std::bitset<nbits-2>& _frac) {
+	void convert_to_posit(bool _negative, int _scale, std::bitset<nbits-2> _frac) {
 		reset();
 		if (_trace_conversion) std::cout << "sign " << (_negative ? "-1 " : " 1 ") << "scale " << _scale << " fraction " << _frac << std::endl;
 

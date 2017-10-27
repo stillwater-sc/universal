@@ -409,7 +409,7 @@ int main()
 
 	{
 		// testing initializing constructor
-		posit<5, 1> test(1ull);
+		// posit<5, 1> test(1ull);
 
 		cout << "Posit Configuration validation" << endl;
 		TestConversionResult(ValidatePosit_3_0(), "posit<3,0>");
