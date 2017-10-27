@@ -29,7 +29,7 @@ try
 	const size_t nbits = 5;
 	const size_t es = 1;
 	// generate minpos
-	posit<nbits, es> p_minpos(0ull);
+	posit<nbits, es> p_minpos(uint64_t(0));
 	p_minpos++; // next posit to ZERO
 
 	// generate maxpos  FAILING....
@@ -44,7 +44,7 @@ try
 	cout << "minpos : " << p_minpos << " maxpos : " << p_maxpos << " "  << endl;
 
 	cout << "State space enumeration" << endl;
-	posit<nbits, es> p(0ull);
+	posit<nbits, es> p(uint64_t(0));
 	for (int i = 0; i < uint32_t(1) << nbits; i++) {
 		cout << components_to_string(p) << endl;
 		p++;
