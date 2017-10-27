@@ -95,7 +95,10 @@ public:
 	}
 	value<fbits>& operator=(uint64_t rhs) {
 		reset();
-		if (rhs != 0) {
+		if (rhs == 0) {
+			_zero = true;
+		}
+		else {
 			_scale = findMostSignificantBit(rhs) - 1;
 			uint64_t _fraction_without_hidden_bit = (rhs << (64 - _scale));
 			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
@@ -103,7 +106,7 @@ public:
 		}
 		return *this;
 	}
-	value<fbits>& operator=(const float rhs) {
+	value<fbits>& operator=(float rhs) {
 		reset();
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
@@ -134,7 +137,7 @@ public:
 		}
 		return *this;
 	}
-	value<fbits>& operator=(const double rhs) {
+	value<fbits>& operator=(double rhs) {
 		reset();
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
@@ -294,6 +297,12 @@ public:
 	void setZero() {
 		_Bits.reset();
 		_RegimeBits = nbits - 1;
+		_k = 1 - static_cast<int>(nbits);   // by design: this simplifies increment/decrement
+	}
+	void setInfinite() {
+		_Bits.reset();
+		_RegimeBits = nbits - 1;
+		_k = static_cast<int>(nbits) - 1;   // by design: this simplifies increment/decrement
 	}
 	// construct the regime bit pattern given a number's scale and returning the number of regime bits
 	unsigned int assign_regime_pattern(bool sign, int k) {
@@ -613,7 +622,7 @@ public:
 		}
 		if (v.isInfinite()) {
 			_sign = true;
-			_regime.setZero();
+			_regime.setInfinite();
 			_raw_bits.set(nbits - 1, true);
 			return *this;
 		}
@@ -631,7 +640,7 @@ public:
 		}
 		if (v.isInfinite()) {
 			_sign = true;
-			_regime.setZero();
+			_regime.setInfinite();
 			_raw_bits.set(nbits - 1, true);
 			return *this;
 		}
@@ -788,7 +797,7 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator++() {
-		*this = *this + posit<nbits, es>(int64_t(1));
+		increment();
 		return *this;
 	}
 	posit<nbits, es> operator++(int) {
@@ -1131,7 +1140,21 @@ public:
 		return _regime.scale() + _exponent.scale();
 	}
 
+	// step up to the next posit in the projection
+	void increment() {
+		bool carry = _fraction.increment();
+		if (carry && es > 0) {
+			carry = _exponent.increment();
+		}
+		if (carry) _regime.increment();
+		// store raw bit representation
+		_raw_bits = (_sign ? twos_complement(collect()) : collect());
+		_raw_bits.set(nbits - 1, _sign);
+	}
+	// step down to the previous posit in the projection
+	void decrement() {
 
+	}
 	// this routine will not allocate 0 or infinity due to the test on (0,minpos], and [maxpos,inf)
 	// TODO: is that the right functionality? right now the special cases are deal with in the
 	// assignment operators for integer/float/double. I don't like that distribution of knowledge.
