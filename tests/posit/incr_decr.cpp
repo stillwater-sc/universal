@@ -115,6 +115,32 @@ try
 		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<8, 1>("Increment failed", bReportIndividualTestCases), "posit<8,1>", "operator++");
 		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<8, 2>("Increment failed", bReportIndividualTestCases), "posit<8,2>", "operator++");
 		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<8, 3>("Increment failed", bReportIndividualTestCases), "posit<8,3>", "operator++");
+
+		// AD/DA adapted data path configurations
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<10, 0>("Increment failed", bReportIndividualTestCases), "posit<10,0>", "operator++");
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<10, 1>("Increment failed", bReportIndividualTestCases), "posit<10,1>", "operator++");
+
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<12, 0>("Increment failed", bReportIndividualTestCases), "posit<12,0>", "operator++");
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<12, 1>("Increment failed", bReportIndividualTestCases), "posit<12,1>", "operator++");
+
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<14, 0>("Increment failed", bReportIndividualTestCases), "posit<14,0>", "operator++");
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<14, 1>("Increment failed", bReportIndividualTestCases), "posit<14,1>", "operator++");
+
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<15, 0>("Increment failed", bReportIndividualTestCases), "posit<15,0>", "operator++");
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<15, 1>("Increment failed", bReportIndividualTestCases), "posit<15,1>", "operator++");
+
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<16, 0>("Increment failed", bReportIndividualTestCases), "posit<16,0>", "operator++");
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<16, 1>("Increment failed", bReportIndividualTestCases), "posit<16,1>", "operator++");
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<16, 2>("Increment failed", bReportIndividualTestCases), "posit<16,2>", "operator++");
+
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<18, 0>("Increment failed", bReportIndividualTestCases), "posit<18,0>", "operator++");
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<18, 1>("Increment failed", bReportIndividualTestCases), "posit<18,1>", "operator++");
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<18, 2>("Increment failed", bReportIndividualTestCases), "posit<18,2>", "operator++");
+
+		nrOfFailedTestCases += ReportTestResult(ValidateIncrement<20, 1>("Increment failed", bReportIndividualTestCases), "posit<20,1>", "operator++");
+		//nrOfFailedTestCases += ReportTestResult(ValidateIncrement<24, 1>("Increment failed", bReportIndividualTestCases), "posit<24,1>", "operator++");
+
+
 	}
 
 	{
@@ -143,6 +169,29 @@ try
 		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<8, 1>("Decrement failed", bReportIndividualTestCases), "posit<8,1>", "operator--");
 		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<8, 2>("Decrement failed", bReportIndividualTestCases), "posit<8,2>", "operator--");
 		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<8, 3>("Decrement failed", bReportIndividualTestCases), "posit<8,3>", "operator--");
+
+		// AD/DA adapted data path configurations
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<10, 0>("Decrement failed", bReportIndividualTestCases), "posit<10,0>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<10, 1>("Decrement failed", bReportIndividualTestCases), "posit<10,1>", "operator--");
+
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<12, 0>("Decrement failed", bReportIndividualTestCases), "posit<12,0>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<12, 1>("Decrement failed", bReportIndividualTestCases), "posit<12,1>", "operator--");
+
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<14, 0>("Decrement failed", bReportIndividualTestCases), "posit<14,0>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<14, 1>("Decrement failed", bReportIndividualTestCases), "posit<14,1>", "operator--");
+
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<15, 0>("Decrement failed", bReportIndividualTestCases), "posit<15,0>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<15, 1>("Decrement failed", bReportIndividualTestCases), "posit<15,1>", "operator--");
+
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<16, 0>("Decrement failed", bReportIndividualTestCases), "posit<16,0>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<16, 1>("Decrement failed", bReportIndividualTestCases), "posit<16,1>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<16, 2>("Decrement failed", bReportIndividualTestCases), "posit<16,2>", "operator--");
+
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<18, 0>("Decrement failed", bReportIndividualTestCases), "posit<18,0>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<18, 1>("Decrement failed", bReportIndividualTestCases), "posit<18,1>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<18, 2>("Decrement failed", bReportIndividualTestCases), "posit<18,2>", "operator--");
+
+		nrOfFailedTestCases += ReportTestResult(ValidateDecrement<20, 1>("Decrement failed", bReportIndividualTestCases), "posit<20,1>", "operator--");
 
 	}
 	return nrOfFailedTestCases;
