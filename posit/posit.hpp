@@ -9,6 +9,7 @@
 #include <iostream>
 
 #include "../bitset/bitset_helpers.hpp"
+#include "../bitset/bitset_arithmetic.hpp"
 #include "posit_regime_lookup.hpp"
 #include "posit_helpers.hpp"
 
@@ -814,7 +815,7 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator++() {
-		increment();
+		increment_posit();
 		return *this;
 	}
 	posit<nbits, es> operator++(int) {
@@ -823,6 +824,7 @@ public:
 		return tmp;
 	}
 	posit<nbits, es>& operator--() {
+		decrement_posit();
 		return *this;
 	}
 	posit<nbits, es> operator--(int) {
@@ -1155,9 +1157,8 @@ public:
 		// scale = useed ^ k * 2^e 
 		return _regime.scale() + _exponent.scale();
 	}
-
-	// step up to the next posit in the projection
-	void increment() {
+	// project to the next 'larger' posit: this is 'pushing away' from zero, projecting to the next bigger scale
+	void project_up() {
 		bool carry = _fraction.increment();
 		if (carry && es > 0) {
 			carry = _exponent.increment();
@@ -1167,9 +1168,17 @@ public:
 		_raw_bits = (_sign ? twos_complement(collect()) : collect());
 		_raw_bits.set(nbits - 1, _sign);
 	}
-	// step down to the previous posit in the projection
-	void decrement() {
-
+	// step up to the next posit in a lexicographical order
+	void increment_posit() {
+		std::bitset<nbits> raw(_raw_bits);
+		increment_twos_complement(raw);
+		decode(raw);
+	}
+	// step down to the previous posit in a lexicographical order
+	void decrement_posit() {
+		std::bitset<nbits> raw(_raw_bits);
+		decrement_twos_complement(raw);
+		decode(raw);
 	}
 	// this routine will not allocate 0 or infinity due to the test on (0,minpos], and [maxpos,inf)
 	// TODO: is that the right functionality? right now the special cases are deal with in the
@@ -1187,16 +1196,7 @@ public:
 		unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
 		unsigned int remaining_bits    = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
 		bool round_up = _fraction.assign_fraction(remaining_bits, _frac);
-		if (round_up) {
-			bool carry = _fraction.increment();
-			if (carry && es > 0) {
-				carry = _exponent.increment();
-			}
-			if (carry) _regime.increment();
-		}
-		// store raw bit representation
-		_raw_bits = (_sign ? twos_complement(collect()) : collect());
-		_raw_bits.set(nbits - 1, _sign);
+		if (round_up) project_up();
 		if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
 	}
 

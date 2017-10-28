@@ -129,11 +129,11 @@ inline std::istream& operator>> (std::istream& istr, const fraction<nfbits>& f) 
 }
 
 template<size_t nfbits>
-inline bool operator==(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return lhs._Bits == rhs._Bits; }
+inline bool operator==(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return lhs._NrOfBits == rhs._NrOfBits && lhs._Bits == rhs._Bits; }
 template<size_t nfbits>
 inline bool operator!=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nfbits>
-inline bool operator< (const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return lhs._FractionBits == rhs._FractionBits && lhs._Bits < rhs._Bits; }
+inline bool operator< (const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return lhs._NrOfBits <= rhs._NrOfBits && lhs._Bits < rhs._Bits; }
 template<size_t nfbits>
 inline bool operator> (const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return  operator< (rhs, lhs); }
 template<size_t nfbits>
@@ -163,11 +163,11 @@ inline std::istream& operator>> (std::istream& istr, const posit<nbits, es>& p) 
 }
 
 template<size_t nbits, size_t es>
-inline bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._regime == rhs._regime && lhs._exponent == rhs._exponent && lhs._fraction == rhs._fraction; }
+inline bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._raw_bits == rhs._raw_bits; }
 template<size_t nbits, size_t es>
 inline bool operator!=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nbits, size_t es>
-inline bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._regime < rhs._regime && lhs._exponent < rhs._exponent && lhs._fraction < rhs._fraction; }
+inline bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._raw_bits < rhs._raw_bits; }
 template<size_t nbits, size_t es>
 inline bool operator> (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return  operator< (rhs, lhs); }
 template<size_t nbits, size_t es>
