@@ -493,7 +493,7 @@ public:
 	}
 	void set(const std::bitset<fbits>& raw, int nrOfFractionBits) {
 		_Bits = raw;
-		_NrOfBits = (fbits > nrOfFractionBits ? fbits : nrOfFractionBits);
+		_NrOfBits = (fbits < nrOfFractionBits ? fbits : nrOfFractionBits);
 	}
 	// copy the remaining bits into the fraction
 	bool assign_fraction(unsigned int remaining_bits, std::bitset<fbits>& _fraction) {
@@ -567,7 +567,8 @@ private:
 /*
  class posit represents arbitrary configuration posits and their basic arithmetic operations (add/sub, mul/div)
  */
-template<size_t nbits, size_t es> class posit {
+template<size_t nbits, size_t es> 
+class posit {
 public:
 	posit<nbits, es>() {
 		reset();
@@ -1010,7 +1011,6 @@ public:
 				_fraction.reset();
 				special = true;
 			}
-
 		}
 		if (!special) {
 			if (_sign) tmp = twos_complement(tmp);
