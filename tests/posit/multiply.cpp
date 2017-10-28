@@ -11,23 +11,42 @@
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
+#include "../tests/test_helpers.hpp"
+#include "../tests/posit_test_helpers.hpp"
 
 using namespace std;
+
+// generate specific test case that you can trace with the trace conditions in posit.h
+// for most bugs they are traceable with _trace_conversion and _trace_mul
+template<size_t nbits, size_t es>
+void GenerateTestCase(float fa, float fb) {
+	posit<nbits, es> pa, pb, pref, pmul;
+	pa = fa;
+	pb = fb;
+	pref = fa * fb;
+	pmul = pa * pb;
+	cout << "reference " << pref << " result " << pdif << endl << endl;
+}
+
+template<size_t nbits, size_t es>
+void GenerateTestCase(double da, double db) {
+	posit<nbits, es> pa, pb, pref, pmul;
+	pa = da;
+	pb = db;
+	pref = da * db;
+	pmul = pa * pb;
+	cout << "reference " << pref << " result " << pmul << endl << endl;
+}
 
 
 int main(int argc, char** argv)
 try 
 {
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	posit<5, 1> pa, pb, pmul;
-	pa = 1.0f;
-	pb = 1.0f;
-	pmul = pa * pb;
-	cout << pa << " " << pb << " " << pmul << endl;
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>("multiplication", bReportIndividualTestCases), "posit<3,0>", "multiplication");
 
-	// we don't have any tests yet
-	nrOfFailedTestCases++;
 	return nrOfFailedTestCases;
 }
 catch (char* msg) {

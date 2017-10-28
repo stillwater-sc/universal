@@ -248,3 +248,33 @@ int ValidateSubtraction(std::string error_tag, bool bReportIndividualTestCases) 
 	return nrOfFailedTests;
 }
 
+
+template<size_t nbits, size_t es>
+int ValidateMultiplication(std::string tag, bool bReportIndividualTestCases) {
+	int nrOfFailedTests = 0;
+	const size_t NR_OF_TESTCASES = (unsigned(1) << nbits);
+
+	posit<nbits, es> pa, pb, pmul, pref;
+	double da, db, dref;
+	for (int i = 0; i < NR_OF_TESTCASES; i++) {
+		pa.set_raw_bits(i);
+		da = pa.to_double();
+		for (int j = 0; j < NR_OF_TESTCASES; j++) {
+			pb.set_raw_bits(j);
+			db = pb.to_double();
+			pmul = pa * pb;
+			dref = da * db;
+			pref = dref;
+			if (fabs(pmul.to_double() - pref.to_double()) > 0.000000001) {
+				if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pref, pmul);
+				nrOfFailedTests++;
+			}
+			else {
+				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
+
