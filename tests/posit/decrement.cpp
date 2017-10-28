@@ -38,19 +38,19 @@ template<size_t nbits, size_t es>
 int ValidateDecrement(std::string tag, bool bReportIndividualTestCases)
 {
 	const size_t NrOfReals = (unsigned(1) << nbits);
-	const size_t NrOfPositiveReals = (unsigned(1) << (nbits - 1));
-	const size_t NrOfNegativeReals = (unsigned(1) << (nbits - 1));
+	std::vector< posit<nbits, es> > set;
+	GenerateOrderedPositSet(set); // this has -inf at the first position
 
 	int nrOfFailedTestCases = 0;
 
 	posit<nbits, es> p, ref;
-	// from zero to inf via negative regime, back to zero via positive regime
-	for (int i = NrOfReals - 1; i >= 0; i--) {
-		p.set_raw_bits(i);
+	// from maxpos to -maxpos through zero
+	for (typename std::vector < posit<nbits, es> >::iterator it = set.end()-1; it != set.begin()+1; it--) {
+		p = *it;
 		p--;
-		ref.set_raw_bits(i - 1);
+		ref = *(it - 1);
 		if (p != ref) {
-			if (bReportIndividualTestCases) cout << tag << " FAIL [" << i << "] " << p << " != " << ref << endl;
+			if (bReportIndividualTestCases) cout << tag << " FAIL " << p << " != " << ref << endl;
 			nrOfFailedTestCases++;
 		}
 	}
