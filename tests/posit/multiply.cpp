@@ -7,7 +7,6 @@
 #include "stdafx.h"
 
 #include "../../bitset/bitset_helpers.hpp"
-#include "../../posit/posit_regime_lookup.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
@@ -25,7 +24,7 @@ void GenerateTestCase(float fa, float fb) {
 	pb = fb;
 	pref = fa * fb;
 	pmul = pa * pb;
-	cout << "reference " << pref << " result " << pdif << endl << endl;
+	cout << "reference " << pref << " result " << pmul << endl << endl;
 }
 
 template<size_t nbits, size_t es>

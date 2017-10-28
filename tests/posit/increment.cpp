@@ -21,7 +21,7 @@ using namespace std;
 template<size_t nbits, size_t es>
 void GenerateOrderedPositSet(std::vector<posit<nbits, es>>& set) {
 	const size_t NR_OF_REALS = (unsigned(1) << nbits);
-	std::vector<posit<nbits, es>> s(NR_OF_REALS);
+	std::vector< posit<nbits, es> > s(NR_OF_REALS);
 	posit<nbits, es> p;
 	// generate raw set, remove infinite as it is not 'reachable' through arithmetic operations
 	for (int i = 0; i < NR_OF_REALS; i++) {
@@ -38,14 +38,14 @@ template<size_t nbits, size_t es>
 int ValidateIncrement(std::string tag, bool bReportIndividualTestCases)
 {
 	const size_t NrOfReals = (unsigned(1) << nbits);
-	std::vector<posit<nbits, es>> set;
+	std::vector< posit<nbits, es> > set;
 	GenerateOrderedPositSet(set);  // this has -inf at first position
 
 	int nrOfFailedTestCases = 0;
 
 	posit<nbits, es> p, ref;
 	// from -maxpos to maxpos through zero
-	for (std::vector < posit<nbits, es> >::iterator it = set.begin() + 1; it != set.end()-1; it++) {
+	for (typename std::vector < posit<nbits, es> >::iterator it = set.begin() + 1; it != set.end()-1; it++) {
 		p = *it;
 		p++;
 		ref = *(it + 1);

@@ -21,7 +21,7 @@ using namespace std;
 template<size_t nbits, size_t es>
 void GenerateOrderedPositSet(std::vector<posit<nbits, es>>& set) {
 	const size_t NR_OF_REALS = (unsigned(1) << nbits);
-	std::vector<posit<nbits, es>> s(NR_OF_REALS);
+	std::vector< posit<nbits, es> > s(NR_OF_REALS);
 	posit<nbits, es> p;
 	// generate raw set, remove infinite as it is not 'reachable' through arithmetic operations
 	for (int i = 0; i < NR_OF_REALS; i++) {

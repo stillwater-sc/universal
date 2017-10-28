@@ -10,13 +10,13 @@
 
 #include "../bitset/bitset_helpers.hpp"
 #include "../bitset/bitset_arithmetic.hpp"
+#include "posit_regime_lookup.hpp"
+#include "posit_helpers.hpp"
 #include "trace_constants.hpp"
 #include "value.hpp"
 #include "fraction.hpp"
 #include "exponent.hpp"
 #include "regime.hpp"
-#include "posit_regime_lookup.hpp"
-#include "posit_helpers.hpp"
 
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 
