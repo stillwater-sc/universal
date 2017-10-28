@@ -12,7 +12,6 @@
 #include "posit_regime_lookup.hpp"
 #include "posit_helpers.hpp"
 
-const uint8_t POSIT_ROUND_DOWN = 0;
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 // set intermediate result reporting
 const bool _trace_decode     = false;
