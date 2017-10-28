@@ -98,6 +98,9 @@ int ValidateBitsetMultiplication() {
 			if (bref != bmul) {
 				nrOfFailedTestCases++;
 			}
+			//cout << "ref  " << ref << " = " << i << " * " << j << endl;
+			//cout << "bref " << bref << endl;
+			//cout << "bmul " << bmul << endl;
 		}
 	}
 	return nrOfFailedTestCases;
