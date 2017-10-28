@@ -44,7 +44,7 @@ try
 
 	cout << "Exponent tests" << endl;
 
-	exponent<es> e1, e2;
+	exponent<nbits, es> e1, e2;
 
 	return nrOfFailedTests;
 }
