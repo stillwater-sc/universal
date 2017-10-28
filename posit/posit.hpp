@@ -167,7 +167,8 @@ public:
 		constexpr size_t adder_size = nbits - 1;
 		constexpr size_t fract_size = nbits - 2;
 		// align the fractions, and produce right extended fractions in r1 and r2 with hidden bits explicit
-		std::bitset<adder_size> r1, r2, sum; // fraction is at most nbits-3 bits, but we need to incorporate one sticky bit for rounding decisions, and a leading slot for the hidden bit
+		std::bitset<adder_size> r1, r2; // fraction is at most nbits-3 bits, but we need to incorporate one sticky bit for rounding decisions, and a leading slot for the hidden bit
+		std::bitset<adder_size+1> sum;
 		std::bitset<fract_size> result_fraction; // fraction part of the sum
 		
 		// with sign/magnitude adders it is customary to organize the computation 

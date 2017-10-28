@@ -12,7 +12,7 @@
 
 using namespace std;
 
-int BinaryConversions() {
+int Conversions() {
 	const size_t nbits = 33;
 	int nrOfFailedTestCases = 0;
 	std::bitset<nbits> a, b, ref, sum;
@@ -36,111 +36,161 @@ int BinaryConversions() {
 	const size_t nnbits = 9;
 	std::bitset<nnbits> c, ref2;
 	c = convert_to_bitset<9,int8_t>(int8_t(-128));  // this looks like -1 for a 9bit posit
-	cout << "c                = " << to_binary(c) << endl;
+	cout << "c                   = " << to_binary(c) << endl;
 	ref2 = convert_to_bitset<nnbits, uint64_t>(uint64_t(0x180));
 	nrOfFailedTestCases += (c != ref2 ? 1 : 0);
 
 	c = twos_complement(c);							// this looks like  1 for a 9bit posit
-	cout << "2's Complement   = " << to_binary(c) << endl;
+	cout << "2's Complement      = " << to_binary(c) << endl;
 	ref2 = convert_to_bitset<nnbits, uint64_t>(uint64_t(0x080));
 	nrOfFailedTestCases += (c != ref2 ? 1 : 0);
 
 	std::bitset<9> d;
 	d = convert_to_bitset<9,int64_t>(int64_t(int8_t(-128)));
-	cout << "d                = " << to_binary(d) << endl;
+	cout << "d                   = " << to_binary(d) << endl;
 	d = twos_complement(d);
-	cout << "2's complement   = " << to_binary(d) << endl;
+	cout << "2's complement      = " << to_binary(d) << endl;
 	cout << endl;
 	nrOfFailedTestCases += (c != d ? 1 : 0);
 
 	return nrOfFailedTestCases;
 }
 
+template<size_t nbits>
+int ValidateBitsetAddition() {
+	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	int nrOfFailedTestCases = 0;
+	bool carry;
+	std::bitset<nbits> a, b;
+	std::bitset<nbits+1> bsum, bref;
+	int ref;
 
+	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+		a = convert_to_bitset<nbits, unsigned>(i);
+		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+			b = convert_to_bitset<nbits, unsigned>(j);
+			ref = i + j;
+			bref = convert_to_bitset<nbits + 1, unsigned>(ref);
+			carry = add_unsigned(a, b, bsum);
+			if (bref != bsum) {
+				nrOfFailedTestCases++;
+			}
+		}
+	}
+	return nrOfFailedTestCases;
+}
 
 template<size_t nbits>
-void add_fractions(int f1_scale, std::bitset<nbits> f1, int f2_scale, std::bitset<nbits> f2, int& sum_scale, std::bitset<nbits>& sum) {
-	// fraction operations that are part of adding posits
-	cout << "add fractions" << endl;
-	cout << "f1 scale " << f1_scale << " value " << to_hex(f1) << endl;
-	cout << "f2 scale " << f2_scale << " value " << to_hex(f2) << endl;
+int ValidateBitsetMultiplication() {
+	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	int nrOfFailedTestCases = 0;
+	std::bitset<nbits> a, b;
+	std::bitset<2*nbits + 1> bmul, bref;
+	int ref;
 
-	// scale the smaller number to the bigger number by right shifting the difference
-	// fractions are right extended, and the hidden bit becomes the msb
-	f1.set(nbits - 1);
-	f2.set(nbits - 1);
-	int diff = f1_scale - f2_scale;
-	cout << "scale difference is " << diff << endl;
-
-	if (diff < 0) {
-		f1 >>= -diff;	// denormalize
+	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+		a = convert_to_bitset<nbits, unsigned>(i);
+		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+			b = convert_to_bitset<nbits, unsigned>(j);
+			ref = i * j;
+			bref = convert_to_bitset<2*nbits + 1, unsigned>(ref);
+			multiply_unsigned(a, b, bmul);
+			if (bref != bmul) {
+				nrOfFailedTestCases++;
+			}
+		}
 	}
-	else {
-		f2 >>= diff;	// denormalize
-	}
-	cout << "f1  : " << f1 << endl;
-	cout << "f2  : " << f2 << endl;
-
-	bool carry = add_unsigned(f1, f2, sum);
-	cout << "sum : " << sum << " carry : " << (carry ? 1 : 0) << endl; 
-
-	sum_scale = (f1_scale > f2_scale ? f1_scale : f2_scale);
-	sum_scale = f1_scale + (carry ? 1 : 0);
-	sum >>= (carry ? 1 : 0);
+	return nrOfFailedTestCases;
 }
 
-bool FractionManipulation()
+// ? what is this trying to test TODO
+int IncrementRightAdjustedBitset()
 {
-	bool bValid = true;
-	const size_t posit_nbits = 16;
-	const size_t fraction_nbits = posit_nbits - 2;
-	int f1_scale = 5;
+	const size_t nbits = 5;
+	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	int nrOfFailedTestCases = 0;
 
-	cout << "Fraction manipulation" << endl;
-	std::bitset<fraction_nbits> f1 = convert_to_bitset<fraction_nbits,uint64_t>(uint64_t(0x1fff));
-	int f2_scale = 3;
-	std::bitset<fraction_nbits> f2 = convert_to_bitset<fraction_nbits,uint64_t>(uint64_t(0xf));
-	int sum_scale = 0;
-	std::bitset<fraction_nbits> sum;
-	add_fractions<fraction_nbits>(f1_scale, f1, f2_scale, f2, sum_scale, sum);
-	cout << "sum : " << sum << " sum_scale : " << sum_scale << endl;
-	cout << endl;
-	return bValid;
-}
-
-bool IncrementRightAdjustedBitset()
-{
-	bool bValid = true;
-	const size_t size = 5;
-	std::bitset<size> r1, ref;
+	std::bitset<nbits> r1, ref;
 	bool carry;
 
 	cout << "Increments" << endl;
-	for (int i = 0; i < size; i++) {
+	for (int i = 0; i < nbits; i++) {
 		r1.reset();
-		r1.set(size - 1 - i, true);
+		r1.set(nbits - 1 - i, true);
 		carry = false;
 		cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- input" << endl;
 		carry = increment_unsigned(r1, i);
 		cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- result" << endl;
 	}
-	cout << endl;
-	return bValid;
+
+	return nrOfFailedTestCases;
+}
+
+template<size_t src_size, size_t tgt_size>
+int VerifyCopyInto() {
+	int nrOfFailedTestCases = 0;
+
+	std::bitset<src_size> operand;
+	std::bitset<tgt_size> addend;
+	std::bitset<tgt_size> reference;
+	
+	// use a programmatic pattern of alternating bits
+	// so it is easy to spot any differences
+	for (int i = 0; i < src_size; i = i + 2) {
+		reference.set(i, true);
+		operand.set(i, true);
+	}
+
+	for (int i = 0; i < tgt_size - src_size; i++) {
+		copy_into<src_size, tgt_size>(operand, i, addend);
+
+		if (reference != addend) {
+			nrOfFailedTestCases++;
+			cout << "result   : " << addend << endl;
+			cout << "reference: " << reference << endl;
+		}
+
+		reference <<= 1; // each time around the loop, shift left by 1	
+	}
+
+	return nrOfFailedTestCases;
+}
+
+template<size_t src_size, size_t tgt_size>
+int VerifyAccumulation() {
+	int nrOfFailedTestCases = 0;
+
+	return nrOfFailedTestCases;
 }
 
 int main(int argc, char** argv)
 try {
 	int nrOfFailedTestCases = 0;
 
-	cout << "Arithmetic experiments on bitsets" << endl;
+	cout << "Test of operators on bitsets" << endl;
+	nrOfFailedTestCases += Conversions();
 
-	nrOfFailedTestCases += BinaryConversions();
+	cout << "Register management" << endl;
+	nrOfFailedTestCases += VerifyCopyInto<3, 7>();
+	nrOfFailedTestCases += VerifyCopyInto<4, 7>();
+	nrOfFailedTestCases += VerifyCopyInto<8, 16>();
 
-	IncrementRightAdjustedBitset();
+	cout << "Arithmetic: addition" << endl;
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetAddition<3>(), "bitset<3>", "+");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetAddition<4>(), "bitset<4>", "+");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetAddition<5>(), "bitset<5>", "+");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetAddition<6>(), "bitset<6>", "+");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetAddition<7>(), "bitset<7>", "+");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetAddition<8>(), "bitset<8>", "+");
 
-	FractionManipulation();
+	cout << "Arithmetic: multiplication" << endl;
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<3>(), "bitset<3>", "*");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<4>(), "bitset<4>", "*");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<5>(), "bitset<5>", "*");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<6>(), "bitset<6>", "*");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<7>(), "bitset<7>", "*");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<8>(), "bitset<8>", "*");
 
-	ReportTestResult(nrOfFailedTestCases, "bitset arithmetic", "~");
 	return nrOfFailedTestCases;
 }
 catch (char* e) {

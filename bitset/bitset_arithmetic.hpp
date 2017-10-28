@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-// this is the comparison for a two's complement number only
+// this comparison is for a two's complement number only
 template<size_t nbits>
 bool operator< (const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs) {
 	// comparison of the sign bit
@@ -21,7 +21,7 @@ bool operator< (const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs) {
 
 // add bitsets a and b and return in bitset sum. Return true if there is a carry generated.
 template<size_t nbits>
-bool add_unsigned(std::bitset<nbits> a, std::bitset<nbits> b, std::bitset<nbits>& sum) {
+bool add_unsigned(std::bitset<nbits> a, std::bitset<nbits> b, std::bitset<nbits+1>& sum) {
 	uint8_t carry = 0;  // ripple carry
 	for (int i = 0; i < nbits; i++) {
 		uint8_t _a = a[i];
@@ -30,7 +30,45 @@ bool add_unsigned(std::bitset<nbits> a, std::bitset<nbits> b, std::bitset<nbits>
 		carry = _slice >> 1;
 		sum[i] = (0x1 & _slice);
 	}
+	sum.set(nbits, carry);
 	return carry;
+}
+
+template<size_t src_size, size_t tgt_size>
+void copy_into(std::bitset<src_size>& src, unsigned int shift, std::bitset<tgt_size>& tgt) {
+	tgt.reset();
+	for (int i = 0; i < src_size; i++) { tgt.set(i+shift, src[i]); }
+}
+
+template<size_t src_size, size_t tgt_size>
+bool accumulate(const std::bitset<src_size>& addend, std::bitset<tgt_size>& accumulator) {
+	uint8_t carry = 0;  // ripple carry
+	for (int i = 0; i < src_size; i++) {
+		uint8_t _a = addend[i];
+		uint8_t _b = accumulator[i];
+		uint8_t _slice = _a + _b + carry;
+		carry = _slice >> 1;
+		accumulator[i] = (0x1 & _slice);
+	}
+	accumulator.set(src_size, carry);
+	return carry;
+}
+
+// multiply bitsets a and b and return in bitset mul. Return true if there is a carry generated.
+template<size_t nbits>
+void multiply_unsigned(std::bitset<nbits> a, std::bitset<nbits> b, std::bitset<2*nbits + 1>& accumulator) {
+	bool carry = false;
+	std::bitset<2 * nbits> addend;
+	accumulator.reset();
+	if (a.test(0)) {
+		copy_into<nbits, 2 * nbits+1>(b, 0, accumulator);
+	}
+	for (int i = 1; i < nbits; i++) {
+		if (a.test(i)) {
+			copy_into<nbits, 2 * nbits>(b, i, addend);
+			accumulate(addend, accumulator);
+		}
+	}
 }
 
 // increment the input bitset in place, and return true if there is a carry generated.
