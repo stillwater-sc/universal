@@ -8,6 +8,8 @@
 
 #include "stdafx.h"
 
+#include <vector>
+
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit_regime_lookup.hpp"
 #include "../../posit/posit.hpp"

@@ -6,6 +6,8 @@
 
 #include "stdafx.h"
 
+#include <vector>
+
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"

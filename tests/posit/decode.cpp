@@ -6,6 +6,7 @@
 
 #include "stdafx.h"
 #include <sstream>
+#include <vector>
 
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
