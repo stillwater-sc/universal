@@ -6,6 +6,8 @@
 
 #include "stdafx.h"
 
+#include <vector>
+
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
@@ -20,16 +22,31 @@ Standard posits with nbits = 128 have 4 exponent bits.
 
 int main(int argc, char** argv)
 try {
+	const size_t RND_TEST_CASES = 100000;
+
+	const size_t nbits = 128;
+	const size_t es = 4;
+
 	int nrOfFailedTestCases = 0;
-	const size_t nbits = 32;
-	const size_t es = 2;
-	posit<nbits, es> p;
+	bool bReportIndividualTestCases = false;
+	std::string tag = " posit<128,4>";
 
 	cout << "Standard posit<128,4> configuration tests" << endl;
+	posit<nbits, es> p;
+	cout << spec_to_string(p) << endl << endl;
 
-	cout << spec_to_string(p) << endl;
+	throw("128bit posits are not supported yet");
 
-	nrOfFailedTestCases++; // we don't have any yet
+	cout << "Arithmetic test randoms" << endl;
+	cout << "Addition      :                 " << RND_TEST_CASES << " randoms" << endl;
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<128, 4>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
+	cout << "Subtraction   :                 " << RND_TEST_CASES << " randoms" << endl;
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<128, 4>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
+	cout << "Multiplication:                 " << RND_TEST_CASES << " randoms" << endl;
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<128, 4>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
+	//cout << "Division      :                 " << RND_TEST_CASES << " randoms" << endl;
+	//nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<128, 4>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
+
 	return nrOfFailedTestCases;
 }
 catch (char* e) {
