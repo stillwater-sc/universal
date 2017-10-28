@@ -10,6 +10,7 @@
 
 #include "../bitset/bitset_helpers.hpp"
 #include "../bitset/bitset_arithmetic.hpp"
+#include "trace_constants.hpp"
 #include "value.hpp"
 #include "fraction.hpp"
 #include "exponent.hpp"
@@ -18,12 +19,7 @@
 #include "posit_helpers.hpp"
 
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
-// set intermediate result reporting
-const bool _trace_decode     = false;
-const bool _trace_rounding   = false;
-const bool _trace_conversion = false;
-const bool _trace_add        = false;
-const bool _trace_mult       = false;
+
 
 // double value representation of the useed value of a posit<nbits, es>
 template<size_t nbits, size_t es>
