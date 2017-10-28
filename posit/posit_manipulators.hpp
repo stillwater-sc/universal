@@ -209,3 +209,42 @@ int ValidateAddition(std::string error_tag, bool bReportIndividualTestCases) {
 
 	return nrOfFailedTests;
 }
+
+// enumerate all subtraction cases for a posit configuration
+template<size_t nbits, size_t es>
+int ValidateSubtraction(std::string error_tag, bool bReportIndividualTestCases) {
+	const int NR_TEST_CASES = (1 << nbits);
+	int nrOfFailedTests = 0;
+	posit<nbits, es> pa, pb, pref, pdif;
+
+	double input_values[NR_TEST_CASES];
+	for (int i = 0; i < NR_TEST_CASES; i++) {
+		pref.set_raw_bits(i);
+		input_values[i] = pref.to_double();
+	}
+	double fa, fb;
+	for (int i = 1; i < NR_TEST_CASES; i++) {
+		fa = input_values[i];
+		pa = fa;
+		for (int j = 2; j < NR_TEST_CASES; j++) {
+			fb = input_values[j];
+			pb = fb;
+			pdif = pa - pb;
+			pref = fa - fb;
+			if (fabs(pdif.to_double() - pref.to_double()) > 0.0001) {
+				// 				std::cout << "pa " << pa << " pb " << pb << " psum " << psum << " pref " << pref << std::endl;
+				// 				std::cout << "fa " << fa << " fb " << fb << "  sum " << fa + fb << " pref " << pref << std::endl;
+				if (bReportIndividualTestCases)
+					ReportBinaryArithmeticError("FAIL", "-", pa, pb, pref, pdif);
+				nrOfFailedTests++;
+				// 				throw "Falsch.";
+			}
+			else {
+				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, pdif);
+			}
+		}
+	}
+
+	return nrOfFailedTests;
+}
+
