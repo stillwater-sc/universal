@@ -393,37 +393,40 @@ bool ValidatePosit_6_0()
 	return bValid;
 }
 
-void TestConversionResult(bool bValid, string descriptor)
+int TestConversionResult(bool bValid, string descriptor)
 {
-	if (!bValid) {
-		cout << descriptor << " conversions FAIL" << endl;
+	if (bValid) {
+		cout << descriptor << " conversions PASS" << endl;
+		return 0;
 	}
 	else {
-		cout << descriptor << " conversions PASS" << endl;
+		cout << descriptor << " conversions FAIL" << endl;
 	}
+	return 1;
 }
 
 int main()
+try
 {
-	ReportPositScales();
+	// testing initializing constructor
+	// posit<5, 1> test(1ull);
 
-	{
-		// testing initializing constructor
-		// posit<5, 1> test(1ull);
+	cout << "Posit Configuration validation" << endl;
+	TestConversionResult(ValidatePosit_3_0(), "posit<3,0>");
+	TestConversionResult(ValidatePosit_4_0(), "posit<4,0>");
+	TestConversionResult(ValidatePosit_4_1(), "posit<4,1>");
+	TestConversionResult(ValidatePosit_5_0(), "posit<5,0>");
+	TestConversionResult(ValidatePosit_5_1(), "posit<5,1>");
+	TestConversionResult(ValidatePosit_5_2(), "posit<5,2>");
+	TestConversionResult(ValidatePosit_6_0(), "posit<6,0>");
+	//TestConversionResult(ValidatePosit_6_1(), "posit<6,1>");
 
-		cout << "Posit Configuration validation" << endl;
-		TestConversionResult(ValidatePosit_3_0(), "posit<3,0>");
-		TestConversionResult(ValidatePosit_4_0(), "posit<4,0>");
-		TestConversionResult(ValidatePosit_4_1(), "posit<4,1>");
-		TestConversionResult(ValidatePosit_5_0(), "posit<5,0>");
-		TestConversionResult(ValidatePosit_5_1(), "posit<5,1>");
-		TestConversionResult(ValidatePosit_5_2(), "posit<5,2>");
-		TestConversionResult(ValidatePosit_6_0(), "posit<6,0>");
-		//TestConversionResult(ValidatePosit_6_1(), "posit<6,1>");
-
-		cout << endl;
-	}
+	cout << endl;
 
 	return 0;
+}
+catch (char* e) {
+	cerr << e << endl;
+	return -1;
 }
 
