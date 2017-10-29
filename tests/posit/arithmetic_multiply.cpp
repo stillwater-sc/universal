@@ -1,4 +1,4 @@
-// multiply.cpp: functional tests for multiplication
+// arithmetic_multiply.cpp: functional tests for multiplication
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //

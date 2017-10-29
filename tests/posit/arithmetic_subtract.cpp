@@ -1,4 +1,4 @@
-// subtract.cpp: functional tests for subtraction
+// arithmetic_subtract.cpp: functional tests for subtraction
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //

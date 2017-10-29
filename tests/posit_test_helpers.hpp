@@ -6,12 +6,23 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 template<size_t nbits, size_t es>
-void ReportUnaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+void ReportUnaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 	std::cerr << test_case
 		<< " " << op << " "	
-		<< std::setw(10) << lhs
+		<< std::setw(10) << rhs
 		<< " != "
 		<< std::setw(10) << pref << " instead it yielded "
+		<< std::setw(10) << presult
+		<< " " << components_to_string(presult) << std::endl;
+}
+
+template<size_t nbits, size_t es>
+void ReportUnaryArithmeticSuccess(std::string test_case, std::string op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+	std::cerr << test_case
+		<< " " << op << " "
+		<< std::setw(10) << rhs
+		<< " == "
+		<< std::setw(10) << pref << " reference value is "
 		<< std::setw(10) << presult
 		<< " " << components_to_string(presult) << std::endl;
 }
@@ -44,6 +55,159 @@ template<size_t nbits, size_t es>
 void ReportDecodeError(std::string test_case, const posit<nbits, es>& actual, double golden_value) {
 	std::cerr << test_case << " actual " << actual << " required " << golden_value << std::endl;
 }
+
+/////////////////////////////// VALIDATION TEST SUITES ////////////////////////////////
+
+// enerate all negation cases for a posit configuration: executes within 10 sec till about nbits = 14
+template<size_t nbits, size_t es>
+int ValidateNegation(std::string tag, bool bReportIndividualTestCases) {
+	const int NR_TEST_CASES = (1 << nbits);
+	int nrOfFailedTests = 0;
+	posit<nbits, es> pa, pneg, pref;
+
+	double input_values[NR_TEST_CASES];
+	for (int i = 0; i < NR_TEST_CASES; i++) {
+		pref.set_raw_bits(i);
+		input_values[i] = pref.to_double();
+	}
+	double da;
+	for (int i = 1; i < NR_TEST_CASES; i++) {
+		pa.set_raw_bits(i);
+		pneg = -pa;
+		// generate reference
+		da = pa.to_double();
+		pref = -da;
+		if (fabs(pneg.to_double() - pref.to_double()) > 0.000000001) {
+			nrOfFailedTests++;
+			if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "-", pa, pref, pneg);
+		}
+		else {
+			if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "-", pa, pref, pneg);
+		}
+	}
+	return nrOfFailedTests;
+}
+
+// enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
+template<size_t nbits, size_t es>
+int ValidateAddition(std::string error_tag, bool bReportIndividualTestCases) {
+	const int NR_POSITS = (unsigned(1) << nbits);
+	int nrOfFailedTests = 0;
+	posit<nbits, es> pa, pb, psum, pref;
+
+	double da, db;
+	for (int i = 1; i < NR_POSITS; i++) {
+		pa.set_raw_bits(i);
+		da = pa.to_double();
+		for (int j = 2; j < NR_POSITS; j++) {
+			pb.set_raw_bits(j);
+			db = pb.to_double();
+			psum = pa + pb;
+			pref = da + db;
+			if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
+				nrOfFailedTests++;
+				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
+			}
+			else {
+				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
+			}
+		}
+	}
+
+	return nrOfFailedTests;
+}
+
+// enumerate all subtraction cases for a posit configuration: is within 10sec till about nbits = 14
+template<size_t nbits, size_t es>
+int ValidateSubtraction(std::string error_tag, bool bReportIndividualTestCases) {
+	const int NR_POSITS = (1 << nbits);
+	int nrOfFailedTests = 0;
+	posit<nbits, es> pa, pb, pref, pdif;
+
+	double da, db;
+	for (int i = 1; i < NR_POSITS; i++) {
+		pa.set_raw_bits(i);
+		da = pa.to_double();
+		for (int j = 2; j < NR_POSITS; j++) {
+			pb.set_raw_bits(j);
+			db = pb.to_double();
+			pdif = pa - pb;
+			pref = da - db;
+			if (fabs(pdif.to_double() - pref.to_double()) > 0.0001) {
+				nrOfFailedTests++;
+				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", pa, pb, pref, pdif);
+			}
+			else {
+				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-", pa, pb, pref, pdif);
+			}
+		}
+	}
+
+	return nrOfFailedTests;
+}
+
+// enumerate all multiplication cases for a posit configuration: is within 10sec till about nbits = 14
+template<size_t nbits, size_t es>
+int ValidateMultiplication(std::string tag, bool bReportIndividualTestCases) {
+	int nrOfFailedTests = 0;
+	const size_t NR_POSITS = (unsigned(1) << nbits);
+
+	posit<nbits, es> pa, pb, pmul, pref;
+	double da, db;
+	for (int i = 0; i < NR_POSITS; i++) {
+		pa.set_raw_bits(i);
+		da = pa.to_double();
+		for (int j = 0; j < NR_POSITS; j++) {
+			pb.set_raw_bits(j);
+			db = pb.to_double();
+			pmul = pa * pb;
+			pref = da * db;
+			if (fabs(pmul.to_double() - pref.to_double()) > 0.000000001) {
+				if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pref, pmul);
+				nrOfFailedTests++;
+			}
+			else {
+				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
+// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
+template<size_t nbits, size_t es>
+int ValidateDivision(std::string tag, bool bReportIndividualTestCases) {
+	int nrOfFailedTests = 0;
+	const size_t NR_POSITS = (unsigned(1) << nbits);
+
+	posit<nbits, es> pa, pb, pdiv, pref;
+	double da, db;
+	for (int i = 0; i < NR_POSITS; i++) {
+		pa.set_raw_bits(i);
+		da = pa.to_double();
+		for (int j = 0; j < NR_POSITS; j++) {
+			pb.set_raw_bits(j);
+			db = pb.to_double();
+			pdiv = pa / pb;
+			pref = da / db;
+			if (fabs(pdiv.to_double() - pref.to_double()) > 0.000000001) {
+				if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+				nrOfFailedTests++;
+			}
+			else {
+				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", pa, pb, pref, pdiv);
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
+//////////////////////////////////// RANDOMIZED TEST SUITE FOR BINARY OPERATORS ////////////////////////
+
+// for testing posit configs that are > 14-15, we need a more efficient approach.
+// One simple, brute force approach is to generate randoms.
+// A more white box approach is to focus on the testcases 
+// where something special happens in the posit arithmetic, such as rounding.
 
 // operation opcodes
 const int OPCODE_NOP = 0;
