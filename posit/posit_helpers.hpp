@@ -173,7 +173,7 @@ std::bitset<nbits> copy_integer_fraction(uint64_t _fraction_without_hidden_bit) 
 template<size_t nbits>
 std::string to_binary_(int64_t number) {
 	std::stringstream ss;
-	uint64_t mask = (uint64_t(1) << nbits - 1);
+	uint64_t mask = uint64_t(1) << (nbits - 1);                // parenthesis to avoid clang's prio warning
 	for (int i = nbits - 1; i >= 0; --i) {
 		ss << (mask & number ? "1" : "0");
 		mask >>= 1;
