@@ -369,17 +369,16 @@ public:
 		_Bits.set(nbits - 1, _sign);
 		int msb = nbits - 2;
 		for (unsigned int i = 0; i < nrRegimeBits; i++) {
-			_Bits.set(msb--, r[nbits - 2 - i]);
+			_Bits.set(std::size_t(msb--), r[nbits - 2 - i]);
+		}
+		if (msb < 0) 
+                    return _Bits;
+		for (unsigned int i = 0; i < nrExponentBits && msb >= 0; i++) {
+			_Bits.set(std::size_t(msb--), e[es - 1 - i]);
 		}
 		if (msb < 0) return _Bits;
-		for (unsigned int i = 0; i < nrExponentBits; i++) {
-			if (msb < 0) break;
-			_Bits.set(msb--, e[es - 1 - i]);
-		}
-		if (msb < 0) return _Bits;
-		for (unsigned int i = 0; i < nrFractionBits; i++) {
-			if (msb < 0) break;
-			_Bits.set(msb--, f[nbits - 3 - i]);
+		for (unsigned int i = 0; i < nrFractionBits && msb >= 0; i++) {
+			_Bits.set(std::size_t(msb--), f[nbits - 3 - i]);
 		}
 		return _Bits;
 	}

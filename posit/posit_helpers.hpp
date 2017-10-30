@@ -17,7 +17,7 @@ inline uint64_t two_to_the_power(uint64_t n) {
 }
 
 // find the most significant bit set: first bit is at position 1, so that no bits set returns 0
-unsigned int findMostSignificantBit(uint64_t x) {
+inline unsigned int findMostSignificantBit(uint64_t x) {
 	// find the first non-zero bit
 	static const unsigned int bval[] =
 	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
@@ -30,7 +30,7 @@ unsigned int findMostSignificantBit(uint64_t x) {
 	return base + bval[x];
 }
 
-unsigned int findMostSignificantBit(int64_t x) {
+inline unsigned int findMostSignificantBit(int64_t x) {
 	// find the first non-zero bit
 	static const unsigned int bval[] =
 	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
@@ -44,7 +44,7 @@ unsigned int findMostSignificantBit(int64_t x) {
 	return base + bval[tmp];
 }
 
-unsigned int findMostSignificantBit(int32_t x) {
+inline unsigned int findMostSignificantBit(int32_t x) {
 	// find the first non-zero bit
 	static const unsigned int bval[] =
 	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
@@ -57,7 +57,7 @@ unsigned int findMostSignificantBit(int32_t x) {
 	return base + bval[tmp];
 }
 
-unsigned int findMostSignificantBit(int16_t x) {
+inline unsigned int findMostSignificantBit(int16_t x) {
 	// find the first non-zero bit
 	static const unsigned int bval[] =
 	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
@@ -69,7 +69,7 @@ unsigned int findMostSignificantBit(int16_t x) {
 	return base + bval[tmp];
 }
 
-unsigned int findMostSignificantBit(int8_t x) {
+inline unsigned int findMostSignificantBit(int8_t x) {
 	// find the first non-zero bit
 	static const unsigned int bval[] =
 	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
@@ -81,7 +81,7 @@ unsigned int findMostSignificantBit(int8_t x) {
 }
 
 // FLOAT component extractions
-bool extract_sign(float f) {
+inline bool extract_sign(float f) {
 	return (uint32_t(0x80000000ul) & *(uint32_t*)&f);
 }
 
@@ -91,24 +91,24 @@ int extract_exponent(float f) {
 	return exponent;
 }
 
-uint32_t extract_fraction(float f) {
+inline uint32_t extract_fraction(float f) {
 	int exponent;
 	float fraction = frexpf(f, &exponent);
 	return (uint32_t(0x007FFFFFul) & *(uint32_t*)&fraction);
 }
 
 // DOUBLE component extractions
-bool extract_sign(double f) {
+inline bool extract_sign(double f) {
 	return (uint64_t(0x8000000000000000ull) & *(uint64_t*)&f);
 }
 
-int extract_exponent(double f) {
+inline int extract_exponent(double f) {
 	int exponent;
 	frexp(f, &exponent);
 	return exponent;
 }
 
-uint64_t extract_fraction(double f) {
+inline uint64_t extract_fraction(double f) {
 	int exponent;
 	double fraction = frexp(f, &exponent);
 	return (uint64_t(0x000FFFFFFFFFFFFFull) & *(uint64_t*)&fraction);
@@ -173,7 +173,7 @@ std::string to_binary_(int64_t number) {
 }
 
 // full binary representation of a signed 64-bit number
-std::string to_binary(int64_t number) {
+inline std::string to_binary(int64_t number) {
 	std::stringstream ss;
 	unsigned int msb = findMostSignificantBit(number) - 1;
 	uint64_t mask = (uint64_t(1) << msb);

@@ -46,10 +46,10 @@ public:
 		_Bits.reset();
 		_NrOfBits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
 		if (_NrOfBits > 0) {
-			unsigned int exponent = (es > 0 ? msb % (1 << es) : 0);
+			unsigned int my_exponent = (es > 0 ? msb % (1 << es) : 0);
 			uint64_t mask = (uint64_t(1) << es) >> 1;  // (es - 1) can be negative, causing a compilation warning
 			for (unsigned int i = 0; i < _NrOfBits; i++) {
-				_Bits[es - 1 - i] = exponent & mask;
+				_Bits[es - 1 - i] = my_exponent & mask;
 				mask >>= 1;
 			}
 		}

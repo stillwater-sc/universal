@@ -48,7 +48,7 @@ std::string to_binary(std::bitset<nbits> bits) {
 	std::stringstream ss;
 	int msb = nbits; // compilation warning work-around for nbits = 0
 	for (int i = msb - 1; i >= 0; --i) {
-		ss << (bits[i] ? "1" : "0");
+		ss << (bits[std::size_t(i)] ? "1" : "0");
 	}
 	return ss.str();
 }
