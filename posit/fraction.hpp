@@ -90,6 +90,7 @@ private:
 	unsigned int       _NrOfBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
+	// Without the template (i.e. only own operators are friends) we get linker errors
 	template<size_t nfbits>
 	friend std::ostream& operator<< (std::ostream& ostr, const fraction<nfbits>& f);
 	template<size_t nfbits>
