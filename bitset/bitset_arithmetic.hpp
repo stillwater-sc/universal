@@ -35,9 +35,10 @@ bool add_unsigned(std::bitset<nbits> a, std::bitset<nbits> b, std::bitset<nbits+
 }
 
 template<size_t src_size, size_t tgt_size>
-void copy_into(std::bitset<src_size>& src, unsigned int shift, std::bitset<tgt_size>& tgt) {
+void copy_into(std::bitset<src_size>& src, size_t shift, std::bitset<tgt_size>& tgt) {
 	tgt.reset();
-	for (int i = 0; i < src_size; i++) { tgt.set(i+shift, src[i]); }
+	for (size_t i = 0; i < src_size; i++) 
+            tgt.set(i+shift, src[i]); 
 }
 
 template<size_t src_size, size_t tgt_size>
@@ -110,7 +111,7 @@ template<size_t nbits>
 void increment_twos_complement(std::bitset<nbits>& number) {
 	uint8_t carry = 1;  // ripple carry
 	uint8_t _a, _slice;
-	for (int i = 0; i < nbits; i++) {
+	for (size_t i = 0; i < nbits; i++) {
 		_a = number[i];
 		_slice = _a + 0 + carry;
 		carry = _slice >> 1;

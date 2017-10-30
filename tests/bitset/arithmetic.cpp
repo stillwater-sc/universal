@@ -117,7 +117,7 @@ int IncrementRightAdjustedBitset()
 	bool carry;
 
 	cout << "Increments" << endl;
-	for (int i = 0; i < nbits; i++) {
+	for (std::size_t i = 0; i < nbits; i++) {
 		r1.reset();
 		r1.set(nbits - 1 - i, true);
 		carry = false;

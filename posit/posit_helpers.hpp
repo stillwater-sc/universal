@@ -81,8 +81,10 @@ inline unsigned int findMostSignificantBit(int8_t x) {
 }
 
 // FLOAT component extractions
-inline bool extract_sign(float f) {
-	return (uint32_t(0x80000000ul) & *(uint32_t*)&f);
+inline bool extract_sign(float f) 
+{
+        static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
+	return uint32_t(0x80000000ul) & reinterpret_cast<uint32_t&>(f);
 }
 
 int extract_exponent(float f) {
@@ -91,27 +93,34 @@ int extract_exponent(float f) {
 	return exponent;
 }
 
-inline uint32_t extract_fraction(float f) {
+inline uint32_t extract_fraction(float f) 
+{
+        static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
 	int exponent;
 	float fraction = frexpf(f, &exponent);
-	return (uint32_t(0x007FFFFFul) & *(uint32_t*)&fraction);
+	return uint32_t(0x007FFFFFul) & reinterpret_cast<uint32_t&>(fraction);
 }
 
 // DOUBLE component extractions
-inline bool extract_sign(double f) {
-	return (uint64_t(0x8000000000000000ull) & *(uint64_t*)&f);
+inline bool extract_sign(double f) 
+{
+        static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
+	return uint64_t(0x8000000000000000ull) & reinterpret_cast<uint64_t&>(f);
 }
 
-inline int extract_exponent(double f) {
+inline int extract_exponent(double f) 
+{
 	int exponent;
 	frexp(f, &exponent);
 	return exponent;
 }
 
-inline uint64_t extract_fraction(double f) {
+inline uint64_t extract_fraction(double f) 
+{
+        static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
 	int exponent;
 	double fraction = frexp(f, &exponent);
-	return (uint64_t(0x000FFFFFFFFFFFFFull) & *(uint64_t*)&fraction);
+	return uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(fraction);
 }
 
 // integral type to bitset transformations

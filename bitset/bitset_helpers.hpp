@@ -10,7 +10,7 @@
 template<size_t sign_magnitude>
 std::bitset<sign_magnitude> ones_complement(std::bitset<sign_magnitude> number) {
 	std::bitset<sign_magnitude> complement;
-	for (int i = 0; i < sign_magnitude; i++) {
+	for (size_t i = 0; i < sign_magnitude; i++) {
 		complement.set(i, !number[i]);
 	}
 	return complement;
@@ -22,7 +22,7 @@ std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
 	std::bitset<nbits> complement;
 	uint8_t _slice = 0;
 	uint8_t carry = 1;
-	for (int i = 0; i < nbits; i++) {
+	for (size_t i = 0; i < nbits; i++) {
 		_slice = uint8_t(!number[i]) + carry;
 		carry = _slice >> 1;
 		complement[i] = (0x1 & _slice);
@@ -36,7 +36,7 @@ template<size_t nbits, class Type>
 std::bitset<nbits> convert_to_bitset(Type number) {
 	std::bitset<nbits> _Bits; 
 	uint64_t mask = uint64_t(1);
-	for (int i = 0; i < nbits; i++) {
+	for (std::size_t i = 0; i < nbits; i++) {
 		_Bits[i] = mask & number;
 		mask <<= 1;
 	}

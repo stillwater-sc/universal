@@ -23,9 +23,10 @@ const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 
 // double value representation of the useed value of a posit<nbits, es>
 template<size_t nbits, size_t es>
-double useed() {
+double useed() 
+{
 	return double(uint64_t(1) << (uint64_t(1) << es));
-};
+}
 
 /*
  class posit represents arbitrary configuration posits and their basic arithmetic operations (add/sub, mul/div)

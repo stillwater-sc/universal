@@ -82,22 +82,22 @@ public:
 		if (k < 0) {
 			_k = int8_t(-k < nbits-2 ? k : -(static_cast<int>(nbits) - 2)); // constrain regime to minpos
 			k = -_k - 1;
-			uint64_t regime = REGIME_BITS[k];
+			uint64_t my_regime = REGIME_BITS[k];
 			uint64_t mask = REGIME_BITS[0];
 			_RegimeBits = (k < nbits - 2 ? k + 2 : nbits - 1);
 			for (unsigned int i = 0; i < _RegimeBits; i++) {
-				_Bits[nbits - 2 - i] = !(regime & mask);
+				_Bits[nbits - 2 - i] = !(my_regime & mask);
 				mask >>= 1;
 			}
 
 		}
 		else {
 			_k = int8_t(k < nbits - 2 ? k : nbits - 2); // constrain regime to maxpos
-			uint64_t regime = REGIME_BITS[k];
+			uint64_t my_regime = REGIME_BITS[k];
 			uint64_t mask = REGIME_BITS[0];
-			_RegimeBits = (k < nbits - 2 ? k + 2 : nbits - 1);
+			_RegimeBits = (std::size_t(k) < nbits - 2 ? k + 2 : nbits - 1);
 			for (unsigned int i = 0; i < _RegimeBits; i++) {
-				_Bits[nbits - 2 - i] = regime & mask;
+				_Bits[nbits - 2 - i] = my_regime & mask;
 				mask >>= 1;
 			}
 

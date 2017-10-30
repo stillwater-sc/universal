@@ -36,7 +36,7 @@ public:
 	std::bitset<fbits> get() const {
 		return _Bits;
 	}
-	void set(const std::bitset<fbits>& raw, int nrOfFractionBits) {
+	void set(const std::bitset<fbits>& raw, std::size_t nrOfFractionBits) {
 		_Bits = raw;
 		_NrOfBits = (fbits < nrOfFractionBits ? fbits : nrOfFractionBits);
 	}
