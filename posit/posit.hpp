@@ -34,6 +34,10 @@ double useed()
 template<size_t nbits, size_t es> 
 class posit {
 public:
+	static constexpr size_t rbits = nbits - 1;
+	static constexpr size_t ebits = es;
+	static constexpr size_t fbits = nbits - 2;
+
 	posit<nbits, es>() {
 		reset();
 		validate();
@@ -669,7 +673,7 @@ private:
 	bool				   _sign;       // decoded posit representation
 	regime<nbits, es>	   _regime;		// decoded posit representation
 	exponent<nbits, es>    _exponent;	// decoded posit representation
-	fraction<nbits-2>	   _fraction;	// decoded posit representation
+	fraction<fbits> 	   _fraction;	// decoded posit representation
 
 	// HELPER methods
 	void align_numbers(int lhs_scale, const std::bitset<nbits>& lhs, int rhs_scale, const std::bitset<nbits>& rhs, int& scale, std::bitset<nbits>& r1, std::bitset<nbits>& r2) {
