@@ -92,7 +92,7 @@ int ValidateIncrement(std::string tag, bool bReportIndividualTestCases)
 		p++;
 		ref = *(it + 1);
 		if (p != ref) {
-			if (bReportIndividualTestCases) cout << tag << " FAIL " << p << " != " << ref << endl;
+			if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
 			nrOfFailedTestCases++;
 		}
 	}
@@ -117,7 +117,7 @@ int ValidateDecrement(std::string tag, bool bReportIndividualTestCases)
 		p--;
 		ref = *(it - 1);
 		if (p != ref) {
-			if (bReportIndividualTestCases) cout << tag << " FAIL " << p << " != " << ref << endl;
+			if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
 			nrOfFailedTestCases++;
 		}
 	}
@@ -143,7 +143,7 @@ int ValidatePostfix(std::string tag, bool bReportIndividualTestCases)
 		p++;
 		ref = *(it + 1);
 		if (p != ref) {
-			if (bReportIndividualTestCases) cout << tag << " FAIL " << p << " != " << ref << endl;
+			if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
 			nrOfFailedTestCases++;
 		}
 	}
@@ -169,7 +169,7 @@ int ValidatePrefix(std::string tag, bool bReportIndividualTestCases)
 		++p;
 		ref = *(it + 1);
 		if (p != ref) {
-			if (bReportIndividualTestCases) cout << tag << " FAIL " << p << " != " << ref << endl;
+			if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
 			nrOfFailedTestCases++;
 		}
 	}
