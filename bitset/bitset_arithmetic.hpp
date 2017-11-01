@@ -178,6 +178,8 @@ bool subtract_signed_magnitude(std::bitset<nbits> a, std::bitset<nbits> b, std::
 	return false;
 }
 
+/*
+first attempt to abstract a reusable adder structure for FP addition experiments and error-free linear algebra
 template<size_t input_bits>
 bool adder_unit(
 	bool r1_sign, int r1_scale,	const std::bitset<input_bits>& r1_fraction,
@@ -242,3 +244,4 @@ bool adder_unit(
 	if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum " << sum << " fraction " << result_fraction << std::endl;
 
 }
+*/
