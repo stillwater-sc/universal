@@ -37,7 +37,7 @@ public:
 	static constexpr size_t rbits = nbits - 1;
 	static constexpr size_t ebits = es;
 	static constexpr size_t mnbits = 3 + es;                   // Min # of non-fraction bits: 1sign, 2+regime, es
-	// static constexpr size_t fbits = nbits - 3;
+// 	static constexpr size_t fbits = nbits - 3;
 	static constexpr size_t fbits = mnbits > nbits ? 0 : nbits - mnbits; // avoid negative 
 
 	posit<nbits, es>() {
@@ -195,8 +195,10 @@ public:
 		int scale_of_result;
 		// we need to determine the biggest operand
 		using std::abs;
+		// Wouldn't it suffice to compare the scales?
 		bool rhs_bigger = (abs(to_double()) < abs(rhs.to_double()));		//    TODO: need to do this in native posit integer arithmetic
-		int diff = lhs_scale - rhs_scale;
+		int diff = lhs_scale - rhs_scale;                         // To be removed
+#if 0
 		if (rhs_bigger) {
 			rhs._fraction.normalize(r1);	  // <-- rhs is bigger operand
 			_fraction.denormalize(diff, r2);  // denormalize the smaller operand
@@ -211,6 +213,18 @@ public:
 			r1_sign = _sign;
 			r2_sign = rhs._sign;
 		}
+#else
+                scale_of_result = std::max(lhs_scale, rhs_scale);
+                r1 = _fraction.template nshift<adder_size>(lhs_scale - scale_of_result + 2);
+                r2 = rhs._fraction.template nshift<adder_size>(rhs_scale - scale_of_result + 2);
+                r1_sign = _sign;
+                r2_sign = rhs._sign;
+                
+                if (rhs_bigger) {
+                    std::swap(r1, r2);
+                    std::swap(r1_sign, r2_sign);
+                } 
+#endif
 
 		if (_trace_add) {
 			std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1  " << r1 << " diff " << diff << std::endl;

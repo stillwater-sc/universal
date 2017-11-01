@@ -5,6 +5,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <algorithm>
+
+#include "exceptions.hpp"
+
 // fraction is spec'ed with the size of the posit it belongs to.
 // However, the size of the fraction segment is nbits-3, but we maintain an extra guard bit, so the size of the actual fraction we manage is nbits-2
 template<size_t fbits>
@@ -60,6 +64,42 @@ public:
 		}
 		return round_up;
 	}
+	
+	/// Normalized shift (e.g., for addition).
+	template <size_t Size>
+	std::bitset<Size> nshift(long shift) const 
+	{
+            std::bitset<Size> number;
+            
+            // Check range
+            if (fbits + shift >= Size)
+                throw shift_too_large{};
+                
+            const long hpos = fbits + shift;              // position of hidden bit
+            
+            // If hidden bit is LSB or beyond just set uncertainty bit and call it a day
+            if (hpos <= 0) {
+                number[0] = true;
+                return number;
+            }
+                
+            number[hpos] = true;                   // hidden bit now safely set
+            
+            // Copy fraction bits into certain part
+            for (long npos = hpos - 1, fpos = fbits - 1; npos > 0 && fpos > 0; --npos, --fpos)
+                number[npos] = _Bits[fpos];
+                
+            // Set uncertainty bit
+            bool uncertainty = false;
+            for (long fpos = std::min(long(fbits)-1, -shift); fpos >= 0 && !uncertainty; --fpos)
+                uncertainty |= _Bits[fpos];
+            number[0] = uncertainty;
+            return number;
+        }
+	
+	
+	
+	
 	// normalize the fraction and return its fraction in the argument: add a sticky bit and two guard bits to the result
 	void normalize(std::bitset<fbits+3>& number) const {
 		number.set(fbits, true); // set hidden bit
