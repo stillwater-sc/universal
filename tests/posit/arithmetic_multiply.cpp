@@ -46,6 +46,8 @@ try
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
+	GenerateTestCase<3,0>(0.5f, 0.0f);
+	return 0;
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>("multiplication", bReportIndividualTestCases), "posit<3,0>", "multiplication");
 
 	return nrOfFailedTestCases;

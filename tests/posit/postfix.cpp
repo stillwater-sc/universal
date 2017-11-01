@@ -14,50 +14,9 @@
 #include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
+#include "../tests/posit_test_helpers.hpp"
 
 using namespace std;
-
-// Generate ordered set from -maxpos to +maxpos for a particular posit config <nbits, es>
-template<size_t nbits, size_t es>
-void GenerateOrderedPositSet(std::vector<posit<nbits, es>>& set) {
-	const size_t NR_OF_REALS = (unsigned(1) << nbits);
-	std::vector< posit<nbits, es> > s(NR_OF_REALS);
-	posit<nbits, es> p;
-	// generate raw set, remove infinite as it is not 'reachable' through arithmetic operations
-	for (int i = 0; i < NR_OF_REALS; i++) {
-		p.set_raw_bits(i);
-		s[i] = p;
-	}
-	// sort the set
-	std::sort(s.begin(), s.end());
-	set = s;
-}
-
-// validate the increment operator++
-template<size_t nbits, size_t es>
-int ValidatePostfix(std::string tag, bool bReportIndividualTestCases)
-{
-	const size_t NrOfReals = (unsigned(1) << nbits);
-	std::vector< posit<nbits, es> > set;
-	GenerateOrderedPositSet(set);  // this has -inf at first position
-
-	int nrOfFailedTestCases = 0;
-
-	posit<nbits, es> p, ref;
-	// from -maxpos to maxpos through zero
-	for (typename std::vector < posit<nbits, es> >::iterator it = set.begin() + 1; it != set.end()-1; it++) {
-		p = *it;
-		p++;
-		ref = *(it + 1);
-		if (p != ref) {
-			if (bReportIndividualTestCases) cout << tag << " FAIL " << p << " != " << ref << endl;
-			nrOfFailedTestCases++;
-		}
-	}
-
-	return nrOfFailedTestCases;
-}
-
 
 int main(int argc, char** argv)
 try
@@ -65,19 +24,51 @@ try
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+
+	// integer example
+	int i = 0;
+	cout << i << " " << --i << " " << i << " " << i++ << " " << i << endl;
+	cout << i << " " << i++ << " " << i << endl;
+	i = 0;
+	cout << --i << " " << --i << " " << --i << endl;
+	i = 0;
+	cout << --(--(--i)) << endl;
+	i = 0;
+	cout << ------i << " " << endl;
+
+	// equivalent posit example
 	const size_t nbits = 4;
-	const size_t es = 0;
-	posit<nbits, es> p = 0.0f;
-	--(--(--(p++)++)++);
-	if (!p.isZero()) nrOfFailedTestCases++;
-	++(++(++(p--)--)--);
-	if (!p.isZero()) nrOfFailedTestCases++;
-	--p++;
-	if (!p.isZero()) nrOfFailedTestCases++;
-	----------p++++++++++;
-	if (!p.isZero()) nrOfFailedTestCases++;
-	p++++++++++;
-	if (p != posit<nbits, es>(1.0f)) nrOfFailedTestCases++;
+	const size_t es = 0;	
+	posit<nbits, es> result, p = 0.0f;
+	cout << p << " " << --p << " " << p << " " << p++ << " " << p << endl;
+	cout << p << " " << p++ << " " << p << endl;
+	p = 0.0f;
+	cout << --p << " " << --p << " " << --p << endl;
+	p = 0.0f;
+	cout << --(--(--p)) << endl;
+
+	p = 0.0f;
+	result = --p++;
+	cout << "result " << result << endl;
+	if (!p.isZero()) {
+		cout << "FAIL 1 " << p << endl; nrOfFailedTestCases++;
+	}	
+	p = 0.0f; --(--(--(p++)++)++);
+	if (!p.isZero()) {
+		cout << "FAIL 2 " << p << endl; nrOfFailedTestCases++;
+	}
+	p = 0.0f; ++(++(++(p--)--)--);
+	if (!p.isZero()) {
+		cout << "FAIL 3 " << p << endl; nrOfFailedTestCases++;
+	}
+	p = 0.0f; ----------p++++++++++;
+	if (!p.isZero()) {
+		cout << "FAIL 4 " << p << endl; nrOfFailedTestCases++;
+	}
+	p = 0.0f; p++++++++++;
+	if (p != posit<nbits, es>(1.0f)) {
+		cout << "FAIL 5 " << p << endl; nrOfFailedTestCases++;
+	}
 
 	nrOfFailedTestCases += ReportTestResult(ValidatePostfix<3, 0>("Increment failed", bReportIndividualTestCases), "posit<3,0>", "posit++");
 

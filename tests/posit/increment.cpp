@@ -14,50 +14,9 @@
 #include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
+#include "../tests/posit_test_helpers.hpp"
 
 using namespace std;
-
-// Generate ordered set from -maxpos to +maxpos for a particular posit config <nbits, es>
-template<size_t nbits, size_t es>
-void GenerateOrderedPositSet(std::vector<posit<nbits, es>>& set) {
-	const size_t NR_OF_REALS = (unsigned(1) << nbits);
-	std::vector< posit<nbits, es> > s(NR_OF_REALS);
-	posit<nbits, es> p;
-	// generate raw set, remove infinite as it is not 'reachable' through arithmetic operations
-	for (int i = 0; i < NR_OF_REALS; i++) {
-		p.set_raw_bits(i);
-		s[i] = p;
-	}
-	// sort the set
-	std::sort(s.begin(), s.end());
-	set = s;
-}
-
-// validate the increment operator++
-template<size_t nbits, size_t es>
-int ValidateIncrement(std::string tag, bool bReportIndividualTestCases)
-{
-	const size_t NrOfReals = (unsigned(1) << nbits);
-	std::vector< posit<nbits, es> > set;
-	GenerateOrderedPositSet(set);  // this has -inf at first position
-
-	int nrOfFailedTestCases = 0;
-
-	posit<nbits, es> p, ref;
-	// from -maxpos to maxpos through zero
-	for (typename std::vector < posit<nbits, es> >::iterator it = set.begin() + 1; it != set.end()-1; it++) {
-		p = *it;
-		p++;
-		ref = *(it + 1);
-		if (p != ref) {
-			if (bReportIndividualTestCases) cout << tag << " FAIL " << p << " != " << ref << endl;
-			nrOfFailedTestCases++;
-		}
-	}
-
-	return nrOfFailedTestCases;
-}
-
 
 int main(int argc, char** argv)
 try
