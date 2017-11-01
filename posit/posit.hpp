@@ -322,6 +322,21 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator*=(const posit& rhs) {
+		if (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
+		if (isZero()) {
+			return *this;
+		}
+		else if (rhs.isZero()) {
+			*this = rhs;
+			return *this;
+		}
+		else if (isInfinite()) {
+			return *this;
+		}
+		else if (rhs.isInfinite()) {
+			*this = rhs;
+			return *this;
+		}
 		return *this;
 	}
 	posit<nbits, es>& operator/=(const posit& rhs) {
@@ -585,6 +600,10 @@ public:
 		if (isInfinite())
 			return INFINITY;
 		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
+	}
+	value<fbits> convert_to_scientific_notation() const {
+		value<fbits> v(_sign, scale(), get_fraction().get(), isZero());
+		return v;
 	}
 	// collect the posit components into a bitset
 	std::bitset<nbits> collect() {

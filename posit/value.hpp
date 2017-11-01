@@ -9,8 +9,8 @@
 template<size_t fbits>
 class value {
 public:
-	value() : _sign(false), _scale(0), _nrOfBits(fbits) {}
-
+	value() : _sign(false), _scale(0), _nrOfBits(fbits), _inf(false), _nan(false), _zero(true) {}
+	value(bool sign, int scale, std::bitset<fbits> fraction_without_hidden_bit, bool zero = true) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(false), _nan(false), _zero(zero) {}
 	value(int8_t initial_value) {
 		*this = initial_value;
 	}
