@@ -59,7 +59,7 @@ try
 	GenerateTestCase<5, 0>( 0.250f,  0.375f);
 	*/
 
-#if 0
+#if 1
 	nrOfFailedTests += ReportTestResult(ValidateAddition<3, 0>("Posit<3,0> addition failed: ", bReportIndividualTestCases), "posit<3,0>", "addition");
 
 	nrOfFailedTests += ReportTestResult(ValidateAddition<4, 0>("Posit<4,0> addition failed: ", bReportIndividualTestCases), "posit<4,0>", "addition");

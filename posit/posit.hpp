@@ -252,7 +252,7 @@ public:
                 std::bitset<fbits> rounded_fraction;
                 
                 assert(shift >= -1);
-                // With larger value round first to take extra bit into consideration
+                // With larger value just round without shift
                 if (shift == -1) {
                     result_fraction[result_size-1] = false; // carry is new hidden bit
                     rounded_fraction = round<fbits>(result_fraction, 3);

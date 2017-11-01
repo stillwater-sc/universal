@@ -5,21 +5,21 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-// // posit decode and conversion
-// constexpr bool _trace_decode     = false;
-// constexpr bool _trace_conversion = false;
-// constexpr bool _trace_rounding   = false;
-// 
-// // arithmetic operator tracing
-// constexpr bool _trace_add        = false;
+// posit decode and conversion
+constexpr bool _trace_decode     = false;
+constexpr bool _trace_conversion = false;
+constexpr bool _trace_rounding   = false;
+
+// arithmetic operator tracing
+constexpr bool _trace_add        = false;
 constexpr bool _trace_sub        = false;
 constexpr bool _trace_mul        = false;
 constexpr bool _trace_div        = false;
 
-// posit decode and conversion
-constexpr bool _trace_decode     = true;
-constexpr bool _trace_conversion = true;
-constexpr bool _trace_rounding   = true;
-
-// arithmetic operator tracing
-constexpr bool _trace_add        = true;
+// // posit decode and conversion
+// constexpr bool _trace_decode     = true;
+// constexpr bool _trace_conversion = true;
+// constexpr bool _trace_rounding   = true;
+// 
+// // arithmetic operator tracing
+// constexpr bool _trace_add        = true;

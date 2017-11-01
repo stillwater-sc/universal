@@ -72,7 +72,7 @@ public:
             std::bitset<Size> number;
             
             // Check range
-            if (fbits + shift >= Size)
+            if (long(fbits) + shift >= long(Size))
                 throw shift_too_large{};
                 
             const long hpos = fbits + shift;              // position of hidden bit
