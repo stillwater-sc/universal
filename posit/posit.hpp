@@ -232,7 +232,7 @@ public:
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
                 
                 // std::bitset<fbits> rounded_fraction;
-                int shift = 0;
+                long shift = 0;
                 if (carry) {
                     if (r1_sign == r2_sign)   // the carry implies that we have a bigger number than r1
                         shift = -1;
@@ -243,7 +243,7 @@ public:
                             shift++;
                 }
                 
-                if (shift >= adder_size) { // we have actual 0                            
+                if (shift >= long(adder_size)) {            // we have actual 0                            
                     reset();
                     return *this;
                 }

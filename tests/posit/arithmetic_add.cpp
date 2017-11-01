@@ -47,9 +47,11 @@ try
 	bool bReportIndividualTestCases = false;
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<5, 0>(-0.625f,  4.000f);
-	GenerateTestCase<5, 0>(-0.500f,  4.000f);
+// 	GenerateTestCase<5, 0>(-0.625f,  4.000f);
+// 	GenerateTestCase<5, 0>(-0.500f,  4.000f);
 
+// 	GenerateTestCase<3, 0>(1.0f,  1.0f);
+//      GenerateTestCase<4, 0>(0.25f,  0.75f);
 
 	/*
 	// previous bugs that where hand traced
