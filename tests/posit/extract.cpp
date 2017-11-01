@@ -57,11 +57,13 @@ long double frexp(long double in, int* exponent)
 */
 template<size_t nbits, size_t es>
 posit<nbits, es> extract(float f) {
+	posit<nbits, es> p;
 	bool _sign = extract_sign(f);
 	int _scale = extract_exponent(f) - 1;		// exponent is for an unnormalized number 0.1234*2^exp
 	uint32_t _23b_fraction_without_hidden_bit = extract_fraction(f);
-	std::bitset<nbits-2> _fraction = extract_float_fraction<nbits-2>(_23b_fraction_without_hidden_bit);
-	posit<nbits, es> p;
+	constexpr size_t fbits = p.fbits;
+	std::bitset<fbits> _fraction = extract_float_fraction<fbits>(_23b_fraction_without_hidden_bit);
+
 	p.convert_to_posit(_sign, _scale, _fraction);
 	return p;
 }

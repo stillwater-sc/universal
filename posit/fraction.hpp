@@ -43,13 +43,16 @@ public:
 	// copy the remaining bits into the fraction
 	bool assign_fraction(unsigned int remaining_bits, std::bitset<fbits>& _fraction) {
 		bool round_up = false;
+		if (fbits == 0) return false;
 		if (remaining_bits > 0 && fbits > 0) {
 			_NrOfBits = 0;
 			for (unsigned int i = 0; i < remaining_bits; i++) {
 				_Bits[fbits - 1 - i] = _fraction[fbits - 1 - i];
 				_NrOfBits++;
 			}
-			round_up = _fraction[fbits - 1 - remaining_bits];
+			if (fbits > remaining_bits) {
+				round_up = _fraction[fbits - 1 - remaining_bits];
+			}		
 		}
 		else {
 			round_up = _fraction[fbits - 1];
@@ -57,8 +60,8 @@ public:
 		}
 		return round_up;
 	}
-	// normalize the fraction and return its fraction in the argument
-	void normalize(std::bitset<fbits+1>& number) const {
+	// normalize the fraction and return its fraction in the argument: add a sticky bit and two guard bits to the result
+	void normalize(std::bitset<fbits+3>& number) const {
 		number.set(fbits, true); // set hidden bit
 		for (int i = 0; i < fbits; i++) {
 			number.set(i, _Bits[i]);
@@ -69,7 +72,7 @@ public:
 	*   0.000h_bbbb_bbbb_bbbb_b... number
 	*  >-.----<                    shift of 4
 	*/
-	void denormalize(int shift, std::bitset<fbits+1>& number) const {
+	void denormalize(int shift, std::bitset<fbits+3>& number) const {
 		number.reset();
 		if (fbits == 0) return;
 		if (shift < 0) shift = -shift;

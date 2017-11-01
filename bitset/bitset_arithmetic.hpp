@@ -41,6 +41,14 @@ void copy_into(std::bitset<src_size>& src, size_t shift, std::bitset<tgt_size>& 
             tgt.set(i+shift, src[i]); 
 }
 
+// truncate right-side
+template<size_t src_size, size_t tgt_size>
+void truncate(std::bitset<src_size>& src, std::bitset<tgt_size>& tgt) {
+	tgt.reset();
+	for (size_t i = 0; i < tgt_size; i++)
+		tgt.set(tgt_size - 1 - i, src[src_size - 1 - i]);
+}
+
 template<size_t src_size, size_t tgt_size>
 bool accumulate(const std::bitset<src_size>& addend, std::bitset<tgt_size>& accumulator) {
 	uint8_t carry = 0;  // ripple carry
@@ -168,4 +176,69 @@ bool subtract_signed_magnitude(std::bitset<nbits> a, std::bitset<nbits> b, std::
 	bool sign_b = b.test(nbits - 1);
 	std::cerr << "subtract_signed_magnitude not implemented yet" << std::endl;
 	return false;
+}
+
+template<size_t input_bits>
+bool adder_unit(
+	bool r1_sign, int r1_scale,	const std::bitset<input_bits>& r1_fraction,
+	bool r2_sign, int r2_scale, const std::bitset<input_bits>& r2_fraction,
+	std::bitset<input_bits + 1>& sum) {
+
+
+	if (_trace_add) {
+		std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1  " << r1 << " diff " << diff << std::endl;
+		std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2  " << r2 << std::endl;
+	}
+
+	if (r1_sign != r2_sign) r2 = twos_complement(r2);
+	bool carry = add_unsigned<adder_size>(r1, r2, sum);
+
+	if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
+	if (carry) {
+		if (r1_sign == r2_sign) {
+			// the carry implies that we have a bigger number than r1
+			scale_of_result++;
+			// and that the first fraction bits came after a hidden bit at the carry position in the adder result register
+			for (int i = 0; i < fract_size; i++) {
+				result_fraction[i] = sum[i + 1];
+			}
+		}
+		else {
+			// the carry implies that we have a smaller number than r1
+			// find the hidden bit 
+			int shift = 0;  // shift in addition to removal of hidden bit
+			for (int i = adder_size - 1; i >= 0; i--) {
+				if (sum.test(i)) {
+					// hidden_bit is at position i
+					break;
+				}
+				else {
+					shift++;
+				}
+			}
+			if (shift < adder_size) {
+				// adjust the scale
+				scale_of_result -= shift;
+				// and extract the fraction, leaving the hidden bit behind
+				for (int i = fract_size - 1; i >= shift; i--) {
+					result_fraction[i] = sum[i - shift];  // fract_size is already 1 smaller than adder_size so we get the implied hidden bit removal automatically
+				}
+			}
+			else {
+				// we have actual 0
+				reset();
+				return *this;
+			}
+		}
+	}
+	else {
+		// no carry implies that the scale remains the same
+		// and that the first fraction bits came after a hidden bit at nbits-2 position in the adder result register
+		for (int i = 0; i < nbits - 2; i++) {
+			result_fraction[i] = sum[i];
+		}
+	}
+
+	if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum " << sum << " fraction " << result_fraction << std::endl;
+
 }

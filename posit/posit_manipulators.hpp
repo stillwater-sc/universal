@@ -102,7 +102,7 @@ void GeneratePositTable(std::ostream& ostr)
 		myPosit.set_raw_bits(i);
 		regime<nbits,es>   r = myPosit.get_regime();
 		exponent<nbits,es> e = myPosit.get_exponent();
-		fraction<nbits-2> f = myPosit.get_fraction();
+		fraction<myPosit.fbits>    f = myPosit.get_fraction();
 		ostr << std::setw(4) << i << ": "
 			<< std::setw(bin_column) << myPosit.get()
 			<< std::setw(bin_column) << myPosit.get_decoded()

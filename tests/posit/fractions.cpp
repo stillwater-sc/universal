@@ -15,8 +15,10 @@ using namespace std;
 int main()
 try
 {
-	const size_t nbits = 5;
+	const size_t nbits = 3;
 	const size_t es = 0;
+	posit<3, 0> trouble;
+	trouble = 1.0f;
 
 	int nrOfFailedTestCases = 0;
 

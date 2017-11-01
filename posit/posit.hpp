@@ -36,7 +36,7 @@ class posit {
 public:
 	static constexpr size_t rbits = nbits - 1;
 	static constexpr size_t ebits = es;
-	static constexpr size_t fbits = nbits - 2;
+	static constexpr size_t fbits = nbits - 3;
 
 	posit<nbits, es>() {
 		reset();
@@ -71,7 +71,7 @@ public:
 	}
 	posit<nbits, es>& operator=(int64_t rhs) {
 		reset();
-		value<nbits - 2> v(rhs);
+		value<fbits> v(rhs);
 		if (v.isZero()) {
 			_sign = false;
 			_regime.setZero();
@@ -88,7 +88,7 @@ public:
 	}
 	posit<nbits, es>& operator=(uint64_t rhs) {
 		reset();
-		value<nbits - 2> v(rhs);
+		value<fbits> v(rhs);
 		if (v.isZero()) {
 			_sign = false;
 			_regime.setZero();
@@ -99,7 +99,7 @@ public:
 	}
 	posit<nbits, es>& operator=(float rhs) {
 		reset();
-		value<nbits - 2> v(rhs);
+		value<fbits> v(rhs);
 		if (v.isZero()) {
 			_sign = false;
 			_regime.setZero();
@@ -117,7 +117,7 @@ public:
 	}
 	posit<nbits, es>& operator=(double rhs) {
 		reset();
-		value<nbits - 2> v(rhs);
+		value<fbits> v(rhs);
 		if (v.isZero()) {
 			_sign = false;
 			_regime.setZero();
@@ -169,12 +169,12 @@ public:
 			return *this;
 		}
 
-		constexpr size_t adder_size = nbits - 1;
-		constexpr size_t fract_size = nbits - 2;
+		constexpr size_t adder_size = fbits + 3;  // add a stick bit and two guard bits
+		constexpr size_t result_size = adder_size + 1;
 		// align the fractions, and produce right extended fractions in r1 and r2 with hidden bits explicit
-		std::bitset<adder_size> r1, r2; // fraction is at most nbits-3 bits, but we need to incorporate one sticky bit for rounding decisions, and a leading slot for the hidden bit
+		std::bitset<adder_size> r1, r2; // fraction is at most nbits-3 bits, but we need to incorporate one sticky bit and two guard bits for rounding decisions, and a leading slot for the hidden bit
 		std::bitset<adder_size+1> sum;
-		std::bitset<fract_size> result_fraction; // fraction part of the sum
+		std::bitset<result_size> result_fraction; // fraction part of the sum
 		
 		// with sign/magnitude adders it is customary to organize the computation 
 		// along the four quadrants of sign combinations
@@ -224,7 +224,7 @@ public:
 				// the carry implies that we have a bigger number than r1
 				scale_of_result++; 
 				// and that the first fraction bits came after a hidden bit at the carry position in the adder result register
-				for (int i = 0; i < fract_size; i++) {
+				for (int i = 0; i < result_size; i++) {
 					result_fraction[i] = sum[i+1];
 				}
 			}
@@ -245,7 +245,7 @@ public:
 					// adjust the scale
 					scale_of_result -= shift;
 					// and extract the fraction, leaving the hidden bit behind
-					for (int i = fract_size - 1; i >= shift ; i--) {
+					for (int i = result_size - 1; i >= shift ; i--) {
 						result_fraction[i] = sum[i - shift];  // fract_size is already 1 smaller than adder_size so we get the implied hidden bit removal automatically
 					}
 				}
@@ -263,9 +263,11 @@ public:
 				result_fraction[i] = sum[i];
 			}
 		}
-		
-		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum " << sum << " fraction " << result_fraction << std::endl;
-		convert_to_posit(r1_sign, scale_of_result, result_fraction);
+		std::bitset<fbits> truncated_fraction;
+		truncate<result_size, fbits>(result_fraction, truncated_fraction);		
+		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum " << sum << " fraction " << result_fraction << "truncated " << truncated_fraction << std::endl;
+
+		convert_to_posit(r1_sign, scale_of_result, truncated_fraction);
 		return *this;
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
@@ -356,18 +358,18 @@ public:
 	exponent<nbits,es> get_exponent() const {
 		return _exponent;
 	}
-	fraction<nbits-2> get_fraction() const {
+	fraction<fbits>    get_fraction() const {
 		return _fraction;
 	}
 	std::bitset<nbits> get() const {
 		return _raw_bits;
 	}
 	std::bitset<nbits> get_decoded() const {
-		std::bitset<nbits-1> r = _regime.get();
+		std::bitset<rbits> r = _regime.get();
 		unsigned int nrRegimeBits = _regime.nrBits();
 		std::bitset<es> e = _exponent.get();
 		unsigned int nrExponentBits = _exponent.nrBits();
-		std::bitset<nbits-2> f = _fraction.get();
+		std::bitset<fbits> f = _fraction.get();
 		unsigned int nrFractionBits = _fraction.nrBits();
 
 		std::bitset<nbits> _Bits;
@@ -383,7 +385,7 @@ public:
 		}
 		if (msb < 0) return _Bits;
 		for (unsigned int i = 0; i < nrFractionBits && msb >= 0; i++) {
-			_Bits.set(std::size_t(msb--), f[nbits - 3 - i]);
+			_Bits.set(std::size_t(msb--), f[fbits - 1 - i]);
 		}
 		return _Bits;
 	}
@@ -506,12 +508,12 @@ public:
 			// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
 			// If the fraction is empty, we have a fraction of nbits-3 0 bits
 			// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
-			std::bitset<nbits-2> _frac;
+			std::bitset<fbits> _frac;
 			msb = msb - nrExponentBits;
 			unsigned int nrFractionBits = (msb < 0 ? 0 : msb + 1);
 			if (msb >= 0) {
 				for (int i = msb; i >= 0; --i) {
-					_frac[nbits - 3 - (msb - i)] = tmp[i];
+					_frac[fbits - 1 - (msb - i)] = tmp[i];
 				}
 			}
 			_fraction.set(_frac, nrFractionBits);
@@ -544,11 +546,11 @@ public:
 	}
 	// collect the posit components into a bitset
 	std::bitset<nbits> collect() {
-		std::bitset<nbits - 1> r = _regime.get();
+		std::bitset<rbits> r = _regime.get();
 		unsigned int nrRegimeBits = _regime.nrBits();
 		std::bitset<es> e = _exponent.get();
 		unsigned int nrExponentBits = _exponent.nrBits();
-		std::bitset<nbits-2> f = _fraction.get();
+		std::bitset<fbits> f = _fraction.get();
 		unsigned int nrFractionBits = _fraction.nrBits();
 		std::bitset<nbits> raw_bits;
 		// collect
@@ -564,7 +566,7 @@ public:
 		}
 		if (msb >= 0) {
 			for (unsigned int i = 0; i < nrFractionBits; i++) {
-				raw_bits.set(msb--, f[nbits - 3 - i]);
+				raw_bits.set(msb--, f[fbits - 1 - i]);
 			}
 		}
 		return raw_bits;
@@ -572,11 +574,11 @@ public:
 	// given a decoded posit, take its 2's complement
 	void take_2s_complement() {
 		// transform back through 2's complement
-		std::bitset<nbits - 1> r = _regime.get();
+		std::bitset<rbits> r = _regime.get();
 		unsigned int nrRegimeBits = _regime.nrBits();
 		std::bitset<es> e = _exponent.get();
 		unsigned int nrExponentBits = _exponent.nrBits();
-		std::bitset<nbits-2> f = _fraction.get();
+		std::bitset<fbits> f = _fraction.get();
 		unsigned int nrFractionBits = _fraction.nrBits();
 		std::bitset<nbits> raw_bits;
 		// collect
@@ -592,7 +594,7 @@ public:
 		}
 		if (msb >= 0) {
 			for (unsigned int i = 0; i < nrFractionBits; i++) {
-				raw_bits.set(msb--, f[nbits - 3 - i]);
+				raw_bits.set(msb--, f[fbits - 1 - i]);
 			}
 		}
 		// transform
@@ -611,9 +613,10 @@ public:
 			_exponent.set(exponent_bits, nrExponentBits);
 		}
 		if (nrFractionBits > 0) {
-			std::bitset<nbits-2> fraction_bits;
+			std::bitset<fbits> fraction_bits;   // was nbits - 2
 			for (unsigned int i = 0; i < nrFractionBits; i++) {
-				fraction_bits.set(nbits - 3 - i, raw_bits[nbits - 2 - nrRegimeBits - nrExponentBits - i]);
+				// fraction_bits.set(nbits - 3 - i, raw_bits[nbits - 2 - nrRegimeBits - nrExponentBits - i]);
+				fraction_bits.set(fbits - 1 - i, raw_bits[nbits - 2 - nrRegimeBits - nrExponentBits - i]);
 			}
 			_fraction.set(fraction_bits, nrFractionBits);
 		}
@@ -651,10 +654,10 @@ public:
 	// this routine will not allocate 0 or infinity due to the test on (0,minpos], and [maxpos,inf)
 	// TODO: is that the right functionality? right now the special cases are deal with in the
 	// assignment operators for integer/float/double. I don't like that distribution of knowledge.
-	void convert_to_posit(value<nbits-2>& v) {
+	void convert_to_posit(value<fbits>& v) {
 		convert_to_posit(v.sign(), v.scale(), v.fraction());
 	}	
-	void convert_to_posit(bool _negative, int _scale, std::bitset<nbits-2> _frac) {
+	void convert_to_posit(bool _negative, int _scale, std::bitset<fbits> _frac) {
 		reset();
 		if (_trace_conversion) std::cout << "sign " << (_negative ? "-1 " : " 1 ") << "scale " << _scale << " fraction " << _frac << std::endl;
 
