@@ -4,6 +4,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <bitset>
+
+#include "../posit/exceptions.hpp"
+
 // this comparison is for a two's complement number only
 template<size_t nbits>
 bool operator< (const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs) {
@@ -48,6 +52,58 @@ void truncate(std::bitset<src_size>& src, std::bitset<tgt_size>& tgt) {
 	for (size_t i = 0; i < tgt_size; i++)
 		tgt.set(tgt_size - 1 - i, src[src_size - 1 - i]);
 }
+
+template<size_t tgt_size, size_t src_size>
+struct round_t
+{
+    static std::bitset<tgt_size> eval(const std::bitset<src_size>& src, size_t n)
+    {
+        static_assert(src_size > 0 && tgt_size > 0, "We don't bother with empty sets.");
+        if (n >= src_size)
+            throw round_off_all{};
+        
+        // look for cut-off leading bits
+        for (size_t leading = tgt_size + n; leading < src_size; ++leading)
+            if (src[leading])
+                throw cut_off_leading_bit{};
+        
+        std::bitset<tgt_size> result( (src >> n).to_ullong() ); // convert to size_t to deal with different sizes
+        
+        if (n > 0 && src[n-1]) {                                // round up potentially if first cut-off bit is true
+            bool more_bits = false;
+            for (long i = 0; i + 1 < n && !more_bits; ++i)
+                more_bits |= src[i];
+            if (more_bits) {
+                result = result.to_ullong() + 1;
+            } else {                                            // tie: round up odd number
+                if (result[0])
+                    result = result.to_ullong() + 1;
+            }        
+        }
+        return result;
+    }
+};
+
+template<size_t src_size>
+struct round_t<0, src_size>
+{
+    static std::bitset<0> eval(const std::bitset<src_size>&, size_t)
+    {
+        return {};
+    }
+};
+    
+    
+    
+/// Round off \p n last bits of bitset \p src. Round to nearest resulting in potentially smaller bitset.
+template<size_t tgt_size, size_t src_size>
+std::bitset<tgt_size> round(const std::bitset<src_size>& src, size_t n) 
+{
+    return round_t<tgt_size, src_size>::eval(src, n);
+};
+
+
+
 
 template<size_t src_size, size_t tgt_size>
 bool accumulate(const std::bitset<src_size>& addend, std::bitset<tgt_size>& accumulator) {

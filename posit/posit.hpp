@@ -159,14 +159,11 @@ public:
 		if (isZero()) {
 			*this = rhs;
 			return *this;
-		}
-		else if (rhs.isZero()) {
+		} else if (rhs.isZero()) {
 			return *this;
-		}
-		if (isInfinite()) {
+		} else if (isInfinite()) {
 			return *this;
-		}
-		else if (rhs.isInfinite()) {
+		} else if (rhs.isInfinite()) {
 			*this = rhs;
 			return *this;
 		}
@@ -175,8 +172,7 @@ public:
 		constexpr size_t result_size = adder_size + 1;
 		// align the fractions, and produce right extended fractions in r1 and r2 with hidden bits explicit
 		std::bitset<adder_size> r1, r2; // fraction is at most nbits-3 bits, but we need to incorporate one sticky bit and two guard bits for rounding decisions, and a leading slot for the hidden bit
-		std::bitset<adder_size+1> sum;
-		std::bitset<result_size> result_fraction; // fraction part of the sum
+		std::bitset<result_size> sum, result_fraction; // fraction part of the sum
 		
 		// with sign/magnitude adders it is customary to organize the computation 
 		// along the four quadrants of sign combinations
@@ -187,17 +183,16 @@ public:
 		// to simplify the result processing
 		bool r1_sign, r2_sign;	
 
+		int lhs_scale = scale(), rhs_scale = rhs.scale(), scale_of_result= std::max(lhs_scale, rhs_scale);
+		// we need to determine the biggest operand
+
+		// Wouldn't it suffice to compare the scales?
+		bool rhs_bigger = std::abs(to_double()) < std::abs(rhs.to_double());		//    TODO: need to do this in native posit integer arithmetic
+		int diff = lhs_scale - rhs_scale;                         // To be removed
+		
 		// we need to order the operands in terms of scale, 
 		// with the largest scale taking the r1 slot
 		// and the smaller operand aligned to the larger in r2.
-		int lhs_scale = scale();
-		int rhs_scale = rhs.scale();
-		int scale_of_result;
-		// we need to determine the biggest operand
-		using std::abs;
-		// Wouldn't it suffice to compare the scales?
-		bool rhs_bigger = (abs(to_double()) < abs(rhs.to_double()));		//    TODO: need to do this in native posit integer arithmetic
-		int diff = lhs_scale - rhs_scale;                         // To be removed
 #if 0
 		if (rhs_bigger) {
 			rhs._fraction.normalize(r1);	  // <-- rhs is bigger operand
@@ -214,7 +209,6 @@ public:
 			r2_sign = rhs._sign;
 		}
 #else
-                scale_of_result = std::max(lhs_scale, rhs_scale);
                 r1 = _fraction.template nshift<adder_size>(lhs_scale - scale_of_result + 2);
                 r2 = rhs._fraction.template nshift<adder_size>(rhs_scale - scale_of_result + 2);
                 r1_sign = _sign;
@@ -235,28 +229,49 @@ public:
 		bool carry = add_unsigned<adder_size>(r1, r2, sum);
 
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
+                
+      
+      
+                // std::bitset<fbits> rounded_fraction;
+                int shift = 0;
+                if (carry) {
+                    if (r1_sign == r2_sign) {  // the carry implies that we have a bigger number than r1
+                        shift = -1;
+                    } else {
+                        // the carry implies that we added a complement and have a smaller number than r1                        
+                        // find the hidden bit (in the complement)
+                        for (int i = adder_size - 1; i >= 0 && !sum[i]; i--)
+                            shift++;
+                        if (shift >= adder_size) { // we have actual 0                            
+                            reset();
+                            return *this;
+                        }
+                    }                        
+                }                 
+                scale_of_result -= shift;
+                result_fraction = sum << shift;
+                result_fraction[result_size-1] = false;     // get rid of a possible complement bit
+                result_fraction[result_size-2] = false;     // turn off hidden bit
+                
+                auto rounded_fraction = round<fbits>(result_fraction, 2);
+                
+#if 0      
 		if (carry) {
 			if (r1_sign == r2_sign) {
 				// the carry implies that we have a bigger number than r1
 				scale_of_result++; 
 				// and that the first fraction bits came after a hidden bit at the carry position in the adder result register
-				for (int i = 0; i < result_size; i++) {
-					result_fraction[i] = sum[i+1];
-				}
+				result_fraction = sum >> 1;                             // no rounding yet
+// 				for (int i = 0; i < result_size; i++) {
+// 					result_fraction[i] = sum[i+1];
+// 				}
 			}
 			else {
 				// the carry implies that we have a smaller number than r1
 				// find the hidden bit 
-				int shift = 0;  // shift in addition to removal of hidden bit
-				for (int i = adder_size - 1; i >= 0; i--) {
-					if (sum.test(i)) {
-						// hidden_bit is at position i
-						break;
-					}
-					else {
-						shift++;
-					}
-				}
+				int shift = 0; // shift in addition to removal of hidden bit     
+				for (int i = adder_size - 1; i >= 0 && !sum.test(i); i--) // until hidden bit at i
+                                    shift++;
 				if (shift < adder_size) {
 					// adjust the scale
 					scale_of_result -= shift;
@@ -280,10 +295,14 @@ public:
 			}
 		}
 		std::bitset<fbits> truncated_fraction;
-		truncate<result_size, fbits>(result_fraction, truncated_fraction);		
+		truncate<result_size, fbits>(result_fraction, truncated_fraction);	
+		
+		
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum " << sum << " fraction " << result_fraction << "truncated " << truncated_fraction << std::endl;
 
 		convert_to_posit(r1_sign, scale_of_result, truncated_fraction);
+#endif		
+		convert_to_posit(r1_sign, scale_of_result, rounded_fraction);
 		return *this;
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
