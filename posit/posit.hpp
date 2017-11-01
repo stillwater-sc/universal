@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <cmath>
+#include <cassert>
 #include <iostream>
 
 #include "../bitset/bitset_helpers.hpp"
@@ -230,31 +231,37 @@ public:
 
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
                 
-      
-      
                 // std::bitset<fbits> rounded_fraction;
                 int shift = 0;
                 if (carry) {
-                    if (r1_sign == r2_sign) {  // the carry implies that we have a bigger number than r1
+                    if (r1_sign == r2_sign)   // the carry implies that we have a bigger number than r1
                         shift = -1;
-                    } else {
+                    else 
                         // the carry implies that we added a complement and have a smaller number than r1                        
                         // find the hidden bit (in the complement)
                         for (int i = adder_size - 1; i >= 0 && !sum[i]; i--)
                             shift++;
-                        if (shift >= adder_size) { // we have actual 0                            
-                            reset();
-                            return *this;
-                        }
-                    }                        
-                }                 
+                }
+                
+                if (shift >= adder_size) { // we have actual 0                            
+                    reset();
+                    return *this;
+                }
+                
                 scale_of_result -= shift;
-                result_fraction = sum << shift;
-                result_fraction[result_size-1] = false;     // get rid of a possible complement bit
-                result_fraction[result_size-2] = false;     // turn off hidden bit
+                std::bitset<fbits> rounded_fraction;
                 
-                auto rounded_fraction = round<fbits>(result_fraction, 2);
-                
+                assert(shift >= -1);
+                // With larger value round first to take extra bit into consideration
+                if (shift == -1) {
+                    result_fraction[result_size-1] = false; // carry is new hidden bit
+                    rounded_fraction = round<fbits>(result_fraction, 3);
+                } else {                
+                    result_fraction = sum << shift;
+                    result_fraction[result_size-1] = false;     // get rid of a possible complement bit
+                    result_fraction[result_size-2] = false;     // turn off hidden bit
+                    rounded_fraction = round<fbits>(result_fraction, 2);
+                } 
 #if 0      
 		if (carry) {
 			if (r1_sign == r2_sign) {
