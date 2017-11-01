@@ -86,7 +86,7 @@ public:
             number[hpos] = true;                   // hidden bit now safely set
             
             // Copy fraction bits into certain part
-            for (long npos = hpos - 1, fpos = fbits - 1; npos > 0 && fpos > 0; --npos, --fpos)
+            for (long npos = hpos - 1, fpos = long(fbits) - 1; npos >= 0 && fpos >= 0; --npos, --fpos)
                 number[npos] = _Bits[fpos];
                 
             // Set uncertainty bit
