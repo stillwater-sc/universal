@@ -36,7 +36,9 @@ class posit {
 public:
 	static constexpr size_t rbits = nbits - 1;
 	static constexpr size_t ebits = es;
-	static constexpr size_t fbits = nbits - 3;
+	static constexpr size_t mnbits = 3 + es;                   // Min # of non-fraction bits: 1sign, 2+regime, es
+	// static constexpr size_t fbits = nbits - 3;
+	static constexpr size_t fbits = mnbits > nbits ? 0 : nbits - mnbits; // avoid negative 
 
 	posit<nbits, es>() {
 		reset();
