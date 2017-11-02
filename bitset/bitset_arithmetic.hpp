@@ -53,6 +53,19 @@ void truncate(std::bitset<src_size>& src, std::bitset<tgt_size>& tgt) {
 		tgt.set(tgt_size - 1 - i, src[src_size - 1 - i]);
 }
 
+template<size_t from, size_t to, size_t src_size>
+std::bitset<to - from> fixed_subset(const std::bitset<src_size>& src)
+{
+    static_assert(from <= to, "from cannot be larger than to.");
+    static_assert(to <= src_size, "to is larger than src_size");
+    
+    std::bitset<to - from> result;
+    for (size_t i = 0, end = to - from; i < end; ++i)
+        result[i] = src[i + from];
+    return result;
+}
+
+
 template<size_t tgt_size, size_t src_size>
 struct round_t
 {
@@ -74,10 +87,12 @@ struct round_t
             for (long i = 0; i + 1 < n && !more_bits; ++i)
                 more_bits |= src[i];
             if (more_bits) {
-                result = result.to_ullong() + 1;
+                result = result.to_ullong() + 1;                // increment_unsigned is ambiguous 
             } else {                                            // tie: round up odd number
+#ifndef POSIT_ROUND_TIES_TO_ZERO                            // TODO: evil hack to be removed later
                 if (result[0])
                     result = result.to_ullong() + 1;
+#endif
             }        
         }
         return result;

@@ -1,9 +1,15 @@
+#pragma once
+
 //  posit_test_helpers.cpp : functions to aid in testing and test reporting on posit types.
 // Needs to be included after posit type is declared.
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+
+#include <iostream>
+#include <typeinfo>
+
 
 template<size_t nbits, size_t es>
 void ReportUnaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
@@ -226,6 +232,11 @@ int ValidateAddition(std::string error_tag, bool bReportIndividualTestCases) {
 			pref = da + db;
 			if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
 				nrOfFailedTests++;
+#ifdef POSIT_THROW_FOR_INCORRECT_CALCULATION
+                                std::cout << "Error adding " << da << " and " << db << " with " << typeid(pa).name() 
+                                          << ", returned " << psum << std::endl;
+                                throw 7;
+#endif
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
 			}
 			else {
