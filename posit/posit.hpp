@@ -346,7 +346,7 @@ public:
 		value<mbits> result;
 		multiply(v1, v2, result);
 		// this path rounds each multiply
-		value<fbits> rounded = result.round_to<fbits>();
+		value<fbits> rounded = result.template round_to<fbits>();
 		convert_to_posit(rounded);
 		return *this;
 	}
