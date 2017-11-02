@@ -43,7 +43,7 @@ void GenerateTestCase(double da, double db) {
 int main(int argc, char** argv)
 try 
 {
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	float fa, fb;
@@ -63,6 +63,18 @@ try
 
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>("multiplication", bReportIndividualTestCases), "posit<3,0>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>("multiplication", bReportIndividualTestCases), "posit<4,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 1>("multiplication", bReportIndividualTestCases), "posit<4,1>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 0>("multiplication", bReportIndividualTestCases), "posit<5,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 1>("multiplication", bReportIndividualTestCases), "posit<5,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 2>("multiplication", bReportIndividualTestCases), "posit<5,2>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 0>("multiplication", bReportIndividualTestCases), "posit<6,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 1>("multiplication", bReportIndividualTestCases), "posit<6,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 2>("multiplication", bReportIndividualTestCases), "posit<6,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 3>("multiplication", bReportIndividualTestCases), "posit<6,3>", "multiplication");
 
 	return nrOfFailedTestCases;
 }
