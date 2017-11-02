@@ -312,7 +312,6 @@ bool multiply_unit(
 	bool r2_sign, int r2_scale, const std::bitset<input_bits>& r2_fraction,
 	std::bitset<input_bits + 1>& sum) {
 
-
 	if (_trace_mul) {
 		std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1  " << r1 << " diff " << diff << std::endl;
 		std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2  " << r2 << std::endl;

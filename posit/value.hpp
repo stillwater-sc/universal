@@ -162,6 +162,15 @@ public:
 		}
 		return *this;
 	}
+	// common case, use conversions for NaN and INFINITE
+	void set(bool sign, int scale, std::bitset<fbits> fraction_without_hidden_bit, bool zero) {
+		_sign     = sign;
+		_scale    = scale;
+		_fraction = fraction_without_hidden_bit;
+		_zero     = zero;
+		_inf      = false;
+		_nan      = false;
+	}
 	void reset() {
 		_sign  = false;
 		_scale = 0;
@@ -198,6 +207,14 @@ public:
 	double to_double() const {
 		return sign_value() * scale_value() * (1.0 + fraction_value());
 	}
+	template<size_t tgt_size>
+	value<tgt_size> round_to() {
+		value<tgt_size> result;
+		std::bitset<tgt_size> rounded_fraction;
+		result.set(sign(), scale(), rounded_fraction, isZero());
+		// round the fraction
+		return result;
+	}
 private:
 	bool				_sign;
 	int					_scale;
@@ -226,3 +243,4 @@ private:
 	template<size_t nfbits>
 	friend bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs);
 };
+

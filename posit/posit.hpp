@@ -40,6 +40,8 @@ public:
 	static constexpr size_t mnbits = 3 + es;                   // Min # of non-fraction bits: 1sign, 2+regime, es
 // 	static constexpr size_t fbits = nbits - 3;
 	static constexpr size_t fbits = mnbits > nbits ? 0 : nbits - mnbits; // avoid negative 
+	static constexpr size_t abits = fbits + 3;     // size of the adder output
+	static constexpr size_t mbits = 2 * fbits + 1; // size of the multiplier output
 
 	posit<nbits, es>() {
 		reset();
@@ -108,7 +110,7 @@ public:
 			_regime.setZero();
 			return *this;
 		}
-		if (v.isInfinite()) {
+		if (v.isInfinite() || v.isNaN()) {  // posit's encode NaN as -inf
 			_sign = true;
 			_regime.setInfinite();
 			_raw_bits.set(nbits - 1, true);
@@ -126,7 +128,7 @@ public:
 			_regime.setZero();
 			return *this;
 		}
-		if (v.isInfinite()) {
+		if (v.isInfinite() || v.isNaN()) {  // posit's encode NaN as -inf
 			_sign = true;
 			_regime.setInfinite();
 			_raw_bits.set(nbits - 1, true);
@@ -323,20 +325,29 @@ public:
 	}
 	posit<nbits, es>& operator*=(const posit& rhs) {
 		if (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
-		if (isZero()) {
-			return *this;
-		}
-		else if (rhs.isZero()) {
-			*this = rhs;
-			return *this;
-		}
-		else if (isInfinite()) {
+		// since we are encoding error conditions as -inf, we need to process -inf condition first
+		if (isInfinite()) {
 			return *this;
 		}
 		else if (rhs.isInfinite()) {
 			*this = rhs;
 			return *this;
 		}
+		else if (isZero()) {
+			return *this;
+		}
+		else if (rhs.isZero()) {
+			*this = rhs;
+			return *this;
+		}
+		value<fbits> v1, v2;
+		v1 = convert_to_scientific_notation();
+		v2 = rhs.convert_to_scientific_notation();
+		value<mbits> result;
+		multiply(v1, v2, result);
+		// this path rounds each multiply
+		value<fbits> rounded = result.round_to<fbits>();
+		convert_to_posit(rounded);
 		return *this;
 	}
 	posit<nbits, es>& operator/=(const posit& rhs) {
@@ -601,6 +612,7 @@ public:
 			return INFINITY;
 		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
 	}
+	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	value<fbits> convert_to_scientific_notation() const {
 		value<fbits> v(_sign, scale(), get_fraction().get(), isZero());
 		return v;
@@ -744,6 +756,17 @@ private:
 
 	}
 
+	void multiply(const value<fbits>& v1, const value<fbits>& v2, value<mbits>& result) {
+		bool new_sign = v1.sign() ^ v2.sign();
+		int new_scale = v1.scale() + v2.scale();
+		std::bitset<mbits> result_fraction;
+		if (fbits > 0) {
+			multiply_unsigned(v1.fraction(), v2.fraction(), result_fraction);
+		}
+		if (_trace_mul) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
+		// TODO: how do you recognize the special case of zero?
+		result.set(new_sign, new_scale, result_fraction, false);
+	}
 
     // template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t ees>

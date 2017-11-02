@@ -50,9 +50,11 @@ int main()
 {
 	ReportPositScales();
 
-	posit<16, 1> p;
+	const size_t nbits = 16;
+	const size_t es = 1;
+	posit<nbits, es> p;
 	value<p.fbits> v;
-	p = 1.0e-12f;
+	p = 0.5e-5f;
 	v = p.convert_to_scientific_notation();
 	cout << p << " " << v << endl;
 
