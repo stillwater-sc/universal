@@ -89,8 +89,10 @@ struct round_t
             if (more_bits) {
                 result = result.to_ullong() + 1;                // increment_unsigned is ambiguous 
             } else {                                            // tie: round up odd number
+#ifndef POSIT_ROUND_TIES_TO_ZERO                            // TODO: evil hack to be removed later
                 if (result[0])
                     result = result.to_ullong() + 1;
+#endif
             }        
         }
         return result;

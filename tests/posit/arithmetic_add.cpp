@@ -8,8 +8,9 @@
 
 #include <vector>
 
-#define POSIT_THROW_FOR_INCORRECT_CALCULATION               // to stop at first addition bugs
-#define POSIT_VERBOSE_OUTPUT                                // trace everything
+// #define POSIT_THROW_FOR_INCORRECT_CALCULATION               // to stop at first addition bugs
+// #define POSIT_VERBOSE_OUTPUT                                // trace everything
+#define POSIT_ROUND_TIES_TO_ZERO                            // In tie case round toward zero (for consistency with Theo's tests)
 
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit_regime_lookup.hpp"
@@ -55,7 +56,9 @@ try
 
 // 	GenerateTestCase<3, 0>(1.0f,  1.0f);
 //      GenerateTestCase<4, 0>(0.25f,  0.75f);
-        GenerateTestCase<4, 0>(0.25f,  1.5f);
+//         GenerateTestCase<4, 0>(0.25f,  1.5f);
+//         GenerateTestCase<4, 0>(0.75f,  0.75f);
+        GenerateTestCase<4, 0>(0.75f,  2.0f);
 
 	/*
 	// previous bugs that where hand traced
