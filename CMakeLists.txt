@@ -20,7 +20,6 @@ trace_variable(CMAKE_MODULE_PATH)
 list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake") 
 trace_variable(CMAKE_PREFIX_PATH)
 
-  
 # Must be located in root dir, doesn't work in tests
 if (UNIVERSAL_ENABLE_TESTS)
     enable_testing()
@@ -33,6 +32,10 @@ if (Boost_FOUND)
 	message(STATUS "Including Boost_INCLUDE_DIR " ${Boost_INCLUDE_DIR})
 	include_directories(${Boost_INCLUDE_DIR})
 endif (BOOST_FOUND)
+
+find_package(MTL REQUIRED)
+include_directories(${MTL_INCLUDE_DIRS})
+add_definitions(${MTL_CXX_DEFINITIONS})
 
 # Set posit include directory
 include_directories("./posit")
