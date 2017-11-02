@@ -254,8 +254,8 @@ public:
                 assert(shift >= -1);
                 // With larger value just round without shift
                 if (shift == -1) {
-                    result_fraction[result_size-1] = false; // carry is new hidden bit
-                    rounded_fraction = round<fbits>(result_fraction, 3);
+                    sum[result_size-1] = false; // carry is new hidden bit
+                    rounded_fraction = round<fbits>(sum, 3);
                 } else {                
                     result_fraction = sum << shift;
                     result_fraction[result_size-1] = false;     // get rid of a possible complement bit
