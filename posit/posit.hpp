@@ -259,8 +259,16 @@ public:
                 } else {                
                     result_fraction = sum << shift;
                     result_fraction[result_size-1] = false;     // get rid of a possible complement bit
-                    result_fraction[result_size-2] = false;     // turn off hidden bit
-                    rounded_fraction = round<fbits>(result_fraction, 2);
+                    auto rounded = round<result_size-2>(result_fraction, 2);
+                    constexpr size_t carry_pos = result_size-3;
+                    if (rounded[carry_pos]) {           // scale increased in rounding
+                        ++scale_of_result;
+                        // carry_pos is new hidden bit, copy behind this except last bit
+                        rounded_fraction = fixed_subset<1, carry_pos>(rounded);
+                    } else {
+                        // hidden bit didn't moved, copy last bits
+                        rounded_fraction = fixed_subset<0, carry_pos-1>(rounded);
+                    }
                 } 
 #if 0      
 		if (carry) {
