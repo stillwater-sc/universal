@@ -112,7 +112,9 @@ template<size_t nfbits>
 inline std::ostream& operator<<(std::ostream& ostr, const fraction<nfbits>& f) {
 	unsigned int nrOfFractionBitsProcessed = 0;
 	if (nfbits > 0) {
-		for (int i = nfbits - 1; i >= 0; --i) {
+		int upperbound = nfbits;
+		upperbound--;
+		for (int i = upperbound; i >= 0; --i) {
 			if (f._NrOfBits > nrOfFractionBitsProcessed++) {
 				ostr << (f._Bits[i] ? "1" : "0");
 			}
