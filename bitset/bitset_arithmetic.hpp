@@ -315,4 +315,26 @@ bool adder_unit(
 	if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum " << sum << " fraction " << result_fraction << std::endl;
 
 }
+
+
+// multiply two scientific notiation values
+// new sign     = multiply signs
+// new exponent = add exponents
+// new fraction = multiply fractions
+template<size_t input_bits>
+bool multiply_unit(
+	bool r1_sign, int r1_scale, const std::bitset<input_bits>& r1_fraction,
+	bool r2_sign, int r2_scale, const std::bitset<input_bits>& r2_fraction,
+	std::bitset<input_bits + 1>& sum) {
+
+	if (_trace_mul) {
+		std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1  " << r1 << " diff " << diff << std::endl;
+		std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2  " << r2 << std::endl;
+	}
+
+	if (r1_sign != r2_sign) r2 = twos_complement(r2);
+	bool carry = add_unsigned<adder_size>(r1, r2, sum);
+
+	if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
+}
 */

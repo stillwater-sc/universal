@@ -46,6 +46,22 @@ try
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
+	float fa, fb;
+	fa = 2.0f; fb = -1.0f;
+	cout << fa << " * " << fb << " = " << fa*fb << endl;
+	GenerateTestCase<3,0>(fa, fb);
+
+	double da, db;
+	posit<3, 0> pa, pb, pmul, pref;
+	pa.set_raw_bits(0);
+	da = pa.to_double();
+	pb.set_raw_bits(4);
+	db = pb.to_double();
+	pmul = pa * pb;
+	pref = da * db;
+	cout << pa << " * " << pb << " == " << pmul << " ref " << pref << " result " << da*db << endl;
+
+
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>("multiplication", bReportIndividualTestCases), "posit<3,0>", "multiplication");
 
 	return nrOfFailedTestCases;

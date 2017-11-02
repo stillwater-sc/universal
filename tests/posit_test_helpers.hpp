@@ -64,6 +64,126 @@ void ReportDecodeError(std::string test_case, const posit<nbits, es>& actual, do
 
 /////////////////////////////// VALIDATION TEST SUITES ////////////////////////////////
 
+
+// Generate ordered set from -maxpos to +maxpos for a particular posit config <nbits, es>
+template<size_t nbits, size_t es>
+void GenerateOrderedPositSet(std::vector<posit<nbits, es>>& set) {
+	const size_t NR_OF_REALS = (unsigned(1) << nbits);
+	std::vector< posit<nbits, es> > s(NR_OF_REALS);
+	posit<nbits, es> p;
+	// generate raw set, remove infinite as it is not 'reachable' through arithmetic operations
+	for (int i = 0; i < NR_OF_REALS; i++) {
+		p.set_raw_bits(i);
+		s[i] = p;
+	}
+	// sort the set
+	std::sort(s.begin(), s.end());
+	set = s;
+}
+
+// validate the increment operator++
+template<size_t nbits, size_t es>
+int ValidateIncrement(std::string tag, bool bReportIndividualTestCases)
+{
+	const size_t NrOfReals = (unsigned(1) << nbits);
+	std::vector< posit<nbits, es> > set;
+	GenerateOrderedPositSet(set);  // this has -inf at first position
+
+	int nrOfFailedTestCases = 0;
+
+	posit<nbits, es> p, ref;
+	// from -maxpos to maxpos through zero
+	for (typename std::vector < posit<nbits, es> >::iterator it = set.begin() + 1; it != set.end() - 1; it++) {
+		p = *it;
+		p++;
+		ref = *(it + 1);
+		if (p != ref) {
+			if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
+			nrOfFailedTestCases++;
+		}
+	}
+
+	return nrOfFailedTestCases;
+}
+
+// validate the decrement operator--
+template<size_t nbits, size_t es>
+int ValidateDecrement(std::string tag, bool bReportIndividualTestCases)
+{
+	const size_t NrOfReals = (unsigned(1) << nbits);
+	std::vector< posit<nbits, es> > set;
+	GenerateOrderedPositSet(set); // this has -inf at the first position
+
+	int nrOfFailedTestCases = 0;
+
+	posit<nbits, es> p, ref;
+	// from maxpos to -maxpos through zero
+	for (typename std::vector < posit<nbits, es> >::iterator it = set.end() - 1; it != set.begin() + 1; it--) {
+		p = *it;
+		p--;
+		ref = *(it - 1);
+		if (p != ref) {
+			if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
+			nrOfFailedTestCases++;
+		}
+	}
+
+	return nrOfFailedTestCases;
+}
+
+
+// validate the postfix operator++
+template<size_t nbits, size_t es>
+int ValidatePostfix(std::string tag, bool bReportIndividualTestCases)
+{
+	const size_t NrOfReals = (unsigned(1) << nbits);
+	std::vector< posit<nbits, es> > set;
+	GenerateOrderedPositSet(set);  // this has -inf at first position
+
+	int nrOfFailedTestCases = 0;
+
+	posit<nbits, es> p, ref;
+	// from -maxpos to maxpos through zero
+	for (typename std::vector < posit<nbits, es> >::iterator it = set.begin() + 1; it != set.end() - 1; it++) {
+		p = *it;
+		p++;
+		ref = *(it + 1);
+		if (p != ref) {
+			if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
+			nrOfFailedTestCases++;
+		}
+	}
+
+	return nrOfFailedTestCases;
+}
+
+
+// validate the prefix operator++
+template<size_t nbits, size_t es>
+int ValidatePrefix(std::string tag, bool bReportIndividualTestCases)
+{
+	const size_t NrOfReals = (unsigned(1) << nbits);
+	std::vector< posit<nbits, es> > set;
+	GenerateOrderedPositSet(set);  // this has -inf at first position
+
+	int nrOfFailedTestCases = 0;
+
+	posit<nbits, es> p, ref;
+	// from -maxpos to maxpos through zero
+	for (typename std::vector < posit<nbits, es> >::iterator it = set.begin() + 1; it != set.end() - 1; it++) {
+		p = *it;
+		++p;
+		ref = *(it + 1);
+		if (p != ref) {
+			if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
+			nrOfFailedTestCases++;
+		}
+	}
+
+	return nrOfFailedTestCases;
+}
+
+
 // enerate all negation cases for a posit configuration: executes within 10 sec till about nbits = 14
 template<size_t nbits, size_t es>
 int ValidateNegation(std::string tag, bool bReportIndividualTestCases) {

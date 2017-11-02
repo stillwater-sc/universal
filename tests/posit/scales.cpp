@@ -7,6 +7,7 @@
 #include "stdafx.h"
 
 #include "../../posit/posit.hpp"
+#include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
 
 using namespace std;
@@ -48,6 +49,15 @@ void printScaleFactors(uint64_t scale_factors[MAX_ES][MAX_K]) {
 int main()
 {
 	ReportPositScales();
+
+	const size_t nbits = 16;
+	const size_t es = 1;
+	posit<nbits, es> p;
+	value<p.fbits> v;
+	p = 0.5e-5f;
+	v = p.convert_to_scientific_notation();
+	cout << p << " " << v << endl;
+
 
 	/*
 	   it is easier to work with scales than with absolute values
