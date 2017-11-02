@@ -12,6 +12,8 @@
 
 using namespace std;
 
+#define USE_POSIT
+
 int main(int argc, char** argv)
 try 
 {
@@ -19,12 +21,18 @@ try
 	const size_t es = 1;
 	const size_t vecSize = 32;
 
-	typedef mtl::dense2D<double>       Matrix;
-	typedef mtl::dense_vector<double>  Vector;
+#ifdef USE_POSIT
+	typedef mtl::dense2D< posit<8, 0> >      Matrix;
+	typedef mtl::dense_vector< posit<8, 0> > Vector;
+#else
+	typedef mtl::dense2D<float>       Matrix;
+	typedef mtl::dense_vector<float>  Vector;
+#endif
 
-	Matrix                             A(4, 4), L(4, 4), U(4, 4), AA(4, 4);
-	Vector	       					   v(4);
-	double 							   c = 1.0;
+
+	Matrix  A(4, 4), L(4, 4), U(4, 4), AA(4, 4);
+	Vector	 v(4);
+	double 	 c = 1.0;
 
 	for (unsigned i = 0; i < 4; i++)
 		for (unsigned j = 0; j < 4; j++) {
