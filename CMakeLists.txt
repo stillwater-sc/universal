@@ -28,9 +28,10 @@ if (UNIVERSAL_ENABLE_TESTS)
 endif()
 
 find_package(Boost)
-if (BOOST_FOUND)
-# 	include_directories($(Boost_INCLUDE_DIRECTORY))
-	include_directories(${Boost_INCLUDE_DIRS})
+message(STATUS "Boost_FOUND " ${Boost_FOUND})
+if (Boost_FOUND)
+	message(STATUS "Including Boost_INCLUDE_DIR " ${Boost_INCLUDE_DIR})
+	include_directories(${Boost_INCLUDE_DIR})
 endif (BOOST_FOUND)
 
 # Set posit include directory
