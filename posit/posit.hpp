@@ -708,12 +708,12 @@ public:
 	// project to the next 'larger' posit: this is 'pushing away' from zero, projecting to the next bigger scale
 	void project_up() {
 		bool carry = _fraction.increment();
-		if (carry && es > 0) {
+		if (carry && es > 0)
 			carry = _exponent.increment();
-		}
-		if (carry) _regime.increment();
+		if (carry) 
+                        _regime.increment();
 		// store raw bit representation
-		_raw_bits = (_sign ? twos_complement(collect()) : collect());
+		_raw_bits = _sign ? twos_complement(collect()) : collect();
 		_raw_bits.set(nbits - 1, _sign);
 	}
 	// step up to the next posit in a lexicographical order
@@ -742,9 +742,10 @@ public:
 		_sign = _negative;	
 		unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, (_scale >> es));
 		unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
-		unsigned int remaining_bits    = (nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0);
+		unsigned int remaining_bits    = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
 		bool round_up = _fraction.assign_fraction(remaining_bits, _frac);
-		if (round_up) project_up();
+		if (round_up) 
+                    project_up();
 		if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
 	}
 
