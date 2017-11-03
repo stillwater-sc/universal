@@ -35,19 +35,40 @@ double useed()
  */
 template<size_t nbits, size_t es> 
 class posit {
+    static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
+    
+        template <typename T>
+	posit<nbits, es>& float_assign(const T& rhs) {
+                constexpr int dfbits = std::numeric_limits<T>::digits - 1;
+		value<dfbits> v(rhs);
+
+		reset();
+		
+		if (v.isZero()) {
+			_sign = false;
+			_regime.setZero();
+			return *this;
+		}
+		if (v.isInfinite() || v.isNaN()) {  // posit's encode NaN as -inf
+			_sign = true;
+			_regime.setInfinite();
+			_raw_bits.set(nbits - 1, true);
+			return *this;
+		}
+		convert_to_posit(v);
+		return *this;
+	}
+    
+    
+    
 public:
 	static constexpr size_t rbits = nbits - 1;
 	static constexpr size_t ebits = es;
-	static constexpr size_t mnbits = 3 + es;                   // Min # of non-fraction bits: 1sign, 2+regime, es
-// 	static constexpr size_t fbits = nbits - 3;
-	static constexpr size_t fbits = mnbits > nbits ? 0 : nbits - mnbits; // avoid negative 
+	static constexpr size_t fbits = nbits - 3 - es;          
 	static constexpr size_t abits = fbits + 3;     // size of the adder output
 	static constexpr size_t mbits = 2 * fbits + 1; // size of the multiplier output
 
-	posit<nbits, es>() {
-		reset();
-		validate();
-	}
+	posit<nbits, es>() : _sign(false) {}
 	
 	posit(const posit&) = default;
 	posit(posit&&) = default;
@@ -108,46 +129,10 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(float rhs) {
-		reset();
-		value<fbits> v(rhs);
-		if (v.isZero()) {
-			_sign = false;
-			_regime.setZero();
-			return *this;
-		}
-		if (v.isInfinite() || v.isNaN()) {  // posit's encode NaN as -inf
-			_sign = true;
-			_regime.setInfinite();
-			_raw_bits.set(nbits - 1, true);
-			return *this;
-		}
-		convert_to_posit(v);
-
-		return *this;
+                return float_assign(rhs);
 	}
 	posit<nbits, es>& operator=(double rhs) {
-#             ifdef POSIT_USE_LONG_VALUE_IN_CONVERSION
-                constexpr int dfbits = std::numeric_limits<double>::digits - 1;
-		value<dfbits> v(rhs);
-#             else
-		value<fbits> v(rhs);
-#             endif
-
-		reset();
-		
-		if (v.isZero()) {
-			_sign = false;
-			_regime.setZero();
-			return *this;
-		}
-		if (v.isInfinite() || v.isNaN()) {  // posit's encode NaN as -inf
-			_sign = true;
-			_regime.setInfinite();
-			_raw_bits.set(nbits - 1, true);
-			return *this;
-		}
-		convert_to_posit(v);
-		return *this;
+                return float_assign(rhs);
 	}
 	posit<nbits, es> operator-() const {
 		if (isZero()) {
@@ -477,11 +462,6 @@ public:
 			_Bits.set(std::size_t(msb--), f[fbits - 1 - i]);
 		}
 		return _Bits;
-	}
-	void validate() {
-		if (nbits < es + 3) {
-			throw "Requested es is too large for nbits";
-		}
 	}
 
 	// MODIFIERS
