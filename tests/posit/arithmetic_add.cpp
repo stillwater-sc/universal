@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#define POSIT_THROW_FOR_INCORRECT_CALCULATION               // to stop at first addition bugs
+// #define POSIT_THROW_FOR_INCORRECT_CALCULATION               // to stop at first addition bugs
 // #define POSIT_VERBOSE_OUTPUT                                // trace everything
 // #define POSIT_ROUND_TIES_TO_ZERO                            // In tie case round toward zero (for consistency with Theo's tests)
 #define POSIT_USE_LONG_VALUE_IN_CONVERSION                  // Use all mantissa bit in value and round later
@@ -62,8 +62,8 @@ try
 //         posit<4, 0> p = 2.75;
 //         GenerateTestCase<4, 0>(0.75f,  2.0f);
         
-        posit<3, 0> p2 = 1.5;
-        GenerateTestCase<3, 0>(0.5f,  1.0f);
+        posit<5, 1> p = -1.625;
+        GenerateTestCase<5, 1>(0.375f, -2.0f);              // need one more bit at the end
 
 	/*
 	// previous bugs that where hand traced
