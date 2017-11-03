@@ -26,15 +26,16 @@ try
 
 
 	// integer example
-	int i = 0;
-	cout << i << " " << --i << " " << i << " " << i++ << " " << i << endl;
-	cout << i << " " << i++ << " " << i << endl;
-	i = 0;
-	cout << --i << " " << --i << " " << --i << endl;
-	i = 0;
-	cout << --(--(--i)) << endl;
-	i = 0;
-	cout << ------i << " " << endl;
+	// DON'T
+// 	int i = 0;
+// 	cout << i << " " << --i << " " << i << " " << i++ << " " << i << endl;
+// 	cout << i << " " << i++ << " " << i << endl;
+// 	i = 0;
+// 	cout << --i << " " << --i << " " << --i << endl;
+// 	i = 0;
+// 	cout << --(--(--i)) << endl;
+// 	i = 0;
+// 	cout << ------i << " " << endl;
 
 	// equivalent posit example
 	const size_t nbits = 4;

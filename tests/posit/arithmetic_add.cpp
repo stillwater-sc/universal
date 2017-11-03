@@ -58,6 +58,7 @@ try
 //      GenerateTestCase<4, 0>(0.25f,  0.75f);
 //         GenerateTestCase<4, 0>(0.25f,  1.5f);
 //         GenerateTestCase<4, 0>(0.75f,  0.75f);
+        posit<4, 0> p = 2.75;
         GenerateTestCase<4, 0>(0.75f,  2.0f);
 
 	/*

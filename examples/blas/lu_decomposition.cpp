@@ -12,7 +12,8 @@
 
 using namespace std;
 
-#define USE_POSIT
+// Turn it of for now
+// #define USE_POSIT
 
 int main(int argc, char** argv)
 try 

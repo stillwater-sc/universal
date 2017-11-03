@@ -47,6 +47,13 @@ public:
 		reset();
 		validate();
 	}
+	
+	posit(const posit&) = default;
+	posit(posit&&) = default;
+	
+	posit& operator=(const posit&) = default;
+	posit& operator=(posit&&) = default;
+	
 	posit<nbits, es>(int64_t initial_value) {
 		*this = initial_value;
 	}
@@ -58,9 +65,6 @@ public:
 	}
 	posit<nbits, es>(double initial_value) {
 		*this = initial_value;
-	}
-	posit<nbits, es>(const posit& rhs) {
-		*this = rhs;
 	}
 	posit<nbits, es>& operator=(int8_t rhs) {
 		*this = int64_t(rhs);
@@ -136,14 +140,6 @@ public:
 		}
 		convert_to_posit(v);
 
-		return *this;
-	}
-	posit<nbits, es>& operator=(const posit& rhs) {
-		_raw_bits = rhs._raw_bits;
-		_sign     = rhs._sign;
-		_regime   = rhs._regime;
-		_exponent = rhs._exponent;
-		_fraction = rhs._fraction;
 		return *this;
 	}
 	posit<nbits, es> operator-() const {

@@ -14,18 +14,14 @@
 template<size_t fbits>
 class fraction {
 public:
-	fraction() {
-		_Bits.reset();
-	}
-	fraction(const fraction& f) {
-		_Bits = f._Bits;
-		_NrOfBits = f._NrOfBits;
-	}
-	fraction& operator=(const fraction& f) {
-		_Bits = f._Bits;
-		_NrOfBits = f._NrOfBits;
-		return *this;
-	}
+	fraction() : _Bits(), _NrOfBits(0) {}
+
+	fraction(const fraction& f) = default;
+	fraction(fraction&& f) = default;
+	
+	fraction& operator=(const fraction& f) = default;
+	fraction& operator=(fraction&& f) = default;
+	
 	void reset() {
 		_NrOfBits = 0;
 		_Bits.reset();

@@ -12,15 +12,14 @@ public:
 	exponent() {
 		reset();
 	}
-	exponent(const exponent& e) {
-		_Bits = e._Bits;
-		_NrOfBits = e._NrOfBits;
-	}
-	exponent& operator=(const exponent& e) {
-		_Bits = e._Bits;
-		_NrOfBits = e._NrOfBits;
-		return *this;
-	}
+	
+	exponent(const exponent& r) = default;
+	exponent(exponent&& r) = default;
+
+	exponent& operator=(const exponent& r) = default;
+	exponent& operator=(exponent&& r) = default;
+	
+	
 	void reset() {
 		_NrOfBits = 0;
 		_Bits.reset();
