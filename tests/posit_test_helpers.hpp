@@ -232,11 +232,6 @@ int ValidateAddition(std::string error_tag, bool bReportIndividualTestCases) {
 			pref = da + db;
 			if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
 				nrOfFailedTests++;
-#ifdef POSIT_THROW_FOR_INCORRECT_CALCULATION
-                                std::cout << "Error adding " << da << " and " << db << " with " << typeid(pa).name() 
-                                          << ", returned " << psum << ", should return " << pref << std::endl;
-                                throw 7;
-#endif
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
 			}
 			else {
