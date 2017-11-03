@@ -174,7 +174,7 @@ public:
 			return *this;
 		}
 
-		constexpr size_t adder_size = fbits + 3;  // add a stick bit and two guard bits
+		constexpr size_t adder_size = fbits + 4;  // add a stick bit and three guard bits
 		constexpr size_t result_size = adder_size + 1;
 		// align the fractions, and produce right extended fractions in r1 and r2 with hidden bits explicit
 		std::bitset<adder_size> r1, r2; // fraction is at most nbits-3 bits, but we need to incorporate one sticky bit and two guard bits for rounding decisions, and a leading slot for the hidden bit
@@ -215,8 +215,8 @@ public:
 			r2_sign = rhs._sign;
 		}
 #else
-                r1 = _fraction.template nshift<adder_size>(lhs_scale - scale_of_result + 2);
-                r2 = rhs._fraction.template nshift<adder_size>(rhs_scale - scale_of_result + 2);
+                r1 = _fraction.template nshift<adder_size>(lhs_scale - scale_of_result + 3);
+                r2 = rhs._fraction.template nshift<adder_size>(rhs_scale - scale_of_result + 3);
                 r1_sign = _sign;
                 r2_sign = rhs._sign;
                 
