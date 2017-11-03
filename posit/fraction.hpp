@@ -40,7 +40,36 @@ public:
 		_Bits = raw;
 		_NrOfBits = (fbits < nrOfFractionBits ? fbits : nrOfFractionBits);
 	}
-	// copy the remaining bits into the fraction
+	/// Copy the bits into the fraction. Rounds away from zero.	
+	template <size_t FBits>
+	bool assign(unsigned int remaining_bits, std::bitset<FBits>& _fraction, size_t hpos = FBits) 
+	{
+                if (hpos > FBits)
+                    throw hpos_too_large{};
+                    
+                if (remaining_bits > fbits)
+                    throw rbits_too_large{};
+                    
+                reset();                                    // In any case
+        
+		// if input is empty -> reset
+		if (FBits == 0 || hpos == 0)
+                    return false;
+		
+		// if my fraction is empty -> check whether to round up (first bit after hidden bit)
+		if (fbits == 0 || remaining_bits == 0) 
+                    return hpos > 0 && _fraction[hpos-1];                                        
+                
+		long   ipos = hpos - 1;
+		for (size_t i = 0, fpos = fbits - 1; i < remaining_bits && ipos >= 0; ++i, --fpos, --ipos, ++_NrOfBits) 
+                    _Bits[fpos] = _fraction[ipos];
+		
+		// If we one or more bit in the input -> use it for round_up decision
+		return ipos >= 0 && _fraction[ipos];
+	}
+	
+	
+	/// Copy the bits into the fraction. Rounds away from zero. TODO: probably superseded by assign	
 	bool assign_fraction(unsigned int remaining_bits, std::bitset<fbits>& _fraction) {
 		bool round_up = false;
 		if (fbits == 0) return false;

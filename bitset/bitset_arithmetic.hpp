@@ -83,17 +83,22 @@ struct round_t
         std::bitset<tgt_size> result( (src >> n).to_ullong() ); // convert to size_t to deal with different sizes
         
         if (n > 0 && src[n-1]) {                                // round up potentially if first cut-off bit is true
+#         ifdef POSIT_ROUND_TIES_AWAY_FROM_ZERO             // TODO: Evil hack to be consistent with assign_fraction, for testing only
+            result = result.to_ullong() + 1;
+#         else            
+            
             bool more_bits = false;
             for (long i = 0; i + 1 < n && !more_bits; ++i)
                 more_bits |= src[i];
             if (more_bits) {
                 result = result.to_ullong() + 1;                // increment_unsigned is ambiguous 
             } else {                                            // tie: round up odd number
-#ifndef POSIT_ROUND_TIES_TO_ZERO                            // TODO: evil hack to be removed later
+#             ifndef POSIT_ROUND_TIES_TO_ZERO               // TODO: evil hack to be removed later
                 if (result[0])
                     result = result.to_ullong() + 1;
-#endif
-            }        
+#             endif
+            }
+#         endif
         }
         return result;
     }
@@ -110,7 +115,9 @@ struct round_t<0, src_size>
     
     
     
-/// Round off \p n last bits of bitset \p src. Round to nearest resulting in potentially smaller bitset.
+/** Round off \p n last bits of bitset \p src. Round to nearest resulting in potentially smaller bitset.
+ *  Doesn't return carry bit in case of overflow while rounding up! TODO: Check whether we need carry or we require an extra bit for this case.
+ */
 template<size_t tgt_size, size_t src_size>
 std::bitset<tgt_size> round(const std::bitset<src_size>& src, size_t n) 
 {

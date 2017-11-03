@@ -14,6 +14,18 @@ struct shift_too_large
     shift_too_large(const std::string& error = "Shift value too large for given bitset.") : std::runtime_error(error) {}
 };
 
+struct hpos_too_large
+  : std::runtime_error
+{
+    hpos_too_large(const std::string& error = "Position of hidden bit too large for given bitset.") : std::runtime_error(error) {}
+};
+
+struct rbits_too_large
+  : std::runtime_error
+{
+    rbits_too_large(const std::string& error = "Number of remaining bits too large for this fraction.") : std::runtime_error(error) {}
+};
+
 struct cut_off_leading_bit
   : std::runtime_error
 {

@@ -240,6 +240,7 @@ public:
                         for (int i = adder_size - 1; i >= 0 && !sum[i]; i--)
                             shift++;
                 }
+                assert(shift >= -1);
                 
                 if (shift >= long(adder_size)) {            // we have actual 0                            
                     reset();
@@ -247,6 +248,12 @@ public:
                 }
                 
                 scale_of_result -= shift;
+                int hpos = result_size - 2 - shift;         // position hidden bit 
+                convert(r1_sign, scale_of_result, sum, hpos);
+                return *this;
+                
+                
+#if 0                
                 std::bitset<fbits> rounded_fraction;
                 
                 assert(shift >= -1);
@@ -268,6 +275,11 @@ public:
                         rounded_fraction = fixed_subset<0, carry_pos-1>(rounded);
                     }
                 } 
+                
+		convert_to_posit(r1_sign, scale_of_result, rounded_fraction);
+		return *this;
+# endif                
+                
 #if 0      
 		if (carry) {
 			if (r1_sign == r2_sign) {
@@ -315,8 +327,6 @@ public:
 
 		convert_to_posit(r1_sign, scale_of_result, truncated_fraction);
 #endif		
-		convert_to_posit(r1_sign, scale_of_result, rounded_fraction);
-		return *this;
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
 		if (isInfinite() && rhs.isInfinite()) {
@@ -740,7 +750,7 @@ public:
 
 		// construct the posit
 		_sign = _negative;	
-		unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, (_scale >> es));
+		unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
 		unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
 		unsigned int remaining_bits    = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
 		bool round_up = _fraction.assign_fraction(remaining_bits, _frac);
@@ -748,6 +758,28 @@ public:
                     project_up();
 		if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
 	}
+	
+	/** Generalized conversion function (could replace convert_to_posit). \p _frac is fraction of arbitrary size with hidden bit at \p hpos.
+         *  \p hpos == \p FBits means that hidden bit in front of \p _frac, i.e. \p _frac is a pure fraction without hidden bit.
+         *  
+         * 
+         */
+	template <size_t FBits>
+	void convert(bool _negative, int _scale, std::bitset<FBits> _frac, int hpos) 
+	{
+            reset();
+            if (_trace_conversion) std::cout << "sign " << (_negative ? "-1 " : " 1 ") << "scale " << _scale << " fraction " << _frac << std::endl;
+                
+            // construct the posit
+            _sign = _negative;
+            unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
+            unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
+            unsigned int remaining_bits    = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
+            bool round_up = _fraction.assign(remaining_bits, _frac, hpos);
+            if (round_up)
+                project_up();
+            if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;            
+        }
 
 private:
 	std::bitset<nbits>     _raw_bits;	// raw bit representation
