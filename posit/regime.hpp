@@ -9,22 +9,14 @@
 template<size_t nbits, size_t es>
 class regime {
 public:
-	regime() {
-		_Bits.reset();
-		_k = 0;
-		_RegimeBits = 0;
-	}
-	regime(const regime& r) {
-		_Bits = r._Bits;
-		_k = r._k;
-		_RegimeBits = r._RegimeBits;
-	}
-	regime& operator= (const regime& r) {
-		_Bits = r._Bits;
-		_k = r._k;
-		_RegimeBits = r._RegimeBits;
-		return *this;
-	}
+	regime() : _Bits(), _k(0), _RegimeBits(0) {}
+	
+	regime(const regime& r) = default;
+	regime(regime&& r) = default;
+
+	regime& operator=(const regime& r) = default;
+	regime& operator=(regime&& r) = default;
+	
 	void reset() {
 		_k = 0;
 		_RegimeBits = 0;
@@ -34,7 +26,7 @@ public:
 		return _RegimeBits;
 	}
 	int scale() const {
-		return (int(_k) << es);
+		return int(_k) << es;
 	}
 	// return the k-value of the regime: useed ^ k
 	int regime_k() const {
