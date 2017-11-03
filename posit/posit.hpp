@@ -76,10 +76,18 @@ public:
 	posit& operator=(const posit&) = default;
 	posit& operator=(posit&&) = default;
 	
+	/// Construct posit from its components
+        // should we worry about the raw bits ???
+	posit(bool sign, const regime<nbits, es>& r, const exponent<nbits, es>& e, const fraction<fbits>& f)
+          : _sign(sign), _regime(r), _exponent(e), _fraction(f) {}
+	
 	posit<nbits, es>(int64_t initial_value) {
 		*this = initial_value;
 	}
 	posit<nbits, es>(uint64_t initial_value) {
+		*this = initial_value;
+	}
+	posit<nbits, es>(int32_t initial_value) {
 		*this = initial_value;
 	}
 	posit<nbits, es>(float initial_value) {

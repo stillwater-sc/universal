@@ -7,13 +7,16 @@
 // enable the mathematical constants in cmath: old-style preprocessor magic which isn't best practice anymore
 #include "stdafx.h"
 
+#include <iostream>
+#include <typeinfo>
+
 #include <boost/numeric/mtl/mtl.hpp>
 #include <posit>
 
 using namespace std;
 
 // Turn it of for now
-// #define USE_POSIT
+#define USE_POSIT
 
 int main(int argc, char** argv)
 try 
@@ -34,7 +37,11 @@ try
 	Matrix  A(4, 4), L(4, 4), U(4, 4), AA(4, 4);
 	Vector	 v(4);
 	double 	 c = 1.0;
+	
+        // Considered as matrix. 
+	std::cout << "Shape of A is " << typeid(mtl::ashape::ashape<Matrix>::type).name() << '\n';
 
+#if 1	
 	for (unsigned i = 0; i < 4; i++)
 		for (unsigned j = 0; j < 4; j++) {
 			U[i][j] = i <= j ? c * (i + j + 2) : (0);
@@ -75,7 +82,7 @@ try
 
 	Vector v5(lu_adjoint_solve(AA, b));
 	std::cout << "v5 is " << v5 << "\n";
-
+#endif
 	return 0;
 
 }
