@@ -23,11 +23,11 @@ try
 	const size_t vecSize = 32;
 
 #ifdef USE_POSIT
-	typedef mtl::dense2D< posit<8, 0> >      Matrix;
-	typedef mtl::dense_vector< posit<8, 0> > Vector;
+	using Matrix = mtl::dense2D< posit<8, 0> >;
+	using Vector = mtl::dense_vector< posit<8, 0> >;
 #else
-	typedef mtl::dense2D<float>       Matrix;
-	typedef mtl::dense_vector<float>  Vector;
+	using Matrix = mtl::dense2D<float>;
+	using Vector = mtl::dense_vector<float>;
 #endif
 
 
