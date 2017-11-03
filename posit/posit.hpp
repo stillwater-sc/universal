@@ -145,7 +145,19 @@ public:
 		negated.decode(twos_complement(_raw_bits));
 		return negated;
 	}
-	posit<nbits, es>& operator+=(const posit& rhs) {
+	
+	
+	
+	posit<nbits, es>& operator+=(const posit& rhs) 
+	{
+		// with sign/magnitude adders it is customary to organize the computation 
+		// along the four quadrants of sign combinations
+		//  + + = +
+		//  + - =   lhs > rhs ? + : -
+		//  - + =   lhs > rhs ? - : +
+		//  - - = -
+		// to simplify the result processing
+     
 		if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		if (isZero()) {
 			*this = rhs;
@@ -158,58 +170,37 @@ public:
 			*this = rhs;
 			return *this;
 		}
-
-		// align the fractions, and produce right extended fractions in r1 and r2 with hidden bits explicit
-		std::bitset<abits> r1, r2; // fraction is at most nbits-3 bits, but we need to incorporate one sticky bit and two guard bits for rounding decisions, and a leading slot for the hidden bit
-		std::bitset<abits+1> sum, result_fraction; // fraction part of the sum
 		
-		// with sign/magnitude adders it is customary to organize the computation 
-		// along the four quadrants of sign combinations
-		//  + + = +
-		//  + - =   lhs > rhs ? + : -
-		//  - + =   lhs > rhs ? - : +
-		//  - - = -
-		// to simplify the result processing
-		bool r1_sign, r2_sign;	
-
 		int lhs_scale = scale(), rhs_scale = rhs.scale(), scale_of_result= std::max(lhs_scale, rhs_scale);
-		// we need to determine the biggest operand
-
-		// Wouldn't it suffice to compare the scales?
-		bool rhs_bigger = std::abs(to_double()) < std::abs(rhs.to_double());		//    TODO: need to do this in native posit integer arithmetic
-		int diff = lhs_scale - rhs_scale;                         // To be removed
 		
-		// we need to order the operands in terms of scale, 
-		// with the largest scale taking the r1 slot
-		// and the smaller operand aligned to the larger in r2.
-                r1 = _fraction.template nshift<abits>(lhs_scale - scale_of_result + 3);
-                r2 = rhs._fraction.template nshift<abits>(rhs_scale - scale_of_result + 3);
-                r1_sign = _sign;
-                r2_sign = rhs._sign;
+		// align the fractions
+                std::bitset<abits> r1 = _fraction.template nshift<abits>(lhs_scale - scale_of_result + 3), 
+                                   r2 = rhs._fraction.template nshift<abits>(rhs_scale - scale_of_result + 3);
+                bool r1_sign = _sign, r2_sign = rhs._sign;
                 
-                if (rhs_bigger) {
+                 if (std::abs(to_double()) < std::abs(rhs.to_double())) { //  TODO: should compare as posits directly
                     std::swap(r1, r2);
                     std::swap(r1_sign, r2_sign);
                 } 
 
 		if (_trace_add) {
-			std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1  " << r1 << " diff " << diff << std::endl;
+			std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1  " << r1 << std::endl;
 			std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2  " << r2 << std::endl;
 		}
 		
-		if (r1_sign != r2_sign) r2 = twos_complement(r2);
-		bool carry = add_unsigned<abits>(r1, r2, sum);
+		if (r1_sign != r2_sign) 
+                    r2 = twos_complement(r2);
+                std::bitset<abits+1> sum;
+		const bool carry = add_unsigned(r1, r2, sum);
 
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
                 
-                // std::bitset<fbits> rounded_fraction;
                 long shift = 0;
                 if (carry) {
                     if (r1_sign == r2_sign)   // the carry implies that we have a bigger number than r1
                         shift = -1;
                     else 
-                        // the carry implies that we added a complement and have a smaller number than r1                        
-                        // find the hidden bit (in the complement)
+                        // the carry means r2 as complement, result < r1, must find hidden bit (in the complement)
                         for (int i = abits - 1; i >= 0 && !sum[i]; i--)
                             shift++;
                 }
