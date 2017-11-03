@@ -8,9 +8,10 @@
 
 #include <vector>
 
-// #define POSIT_THROW_FOR_INCORRECT_CALCULATION               // to stop at first addition bugs
+#define POSIT_THROW_FOR_INCORRECT_CALCULATION               // to stop at first addition bugs
 // #define POSIT_VERBOSE_OUTPUT                                // trace everything
-#define POSIT_ROUND_TIES_TO_ZERO                            // In tie case round toward zero (for consistency with Theo's tests)
+// #define POSIT_ROUND_TIES_TO_ZERO                            // In tie case round toward zero (for consistency with Theo's tests)
+#define POSIT_USE_LONG_VALUE_IN_CONVERSION                  // Use all mantissa bit in value and round later
 
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit_regime_lookup.hpp"
@@ -58,8 +59,11 @@ try
 //      GenerateTestCase<4, 0>(0.25f,  0.75f);
 //         GenerateTestCase<4, 0>(0.25f,  1.5f);
 //         GenerateTestCase<4, 0>(0.75f,  0.75f);
-        posit<4, 0> p = 2.75;
-        GenerateTestCase<4, 0>(0.75f,  2.0f);
+//         posit<4, 0> p = 2.75;
+//         GenerateTestCase<4, 0>(0.75f,  2.0f);
+        
+        posit<3, 0> p2 = 1.5;
+        GenerateTestCase<3, 0>(0.5f,  1.0f);
 
 	/*
 	// previous bugs that where hand traced

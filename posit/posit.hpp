@@ -8,6 +8,7 @@
 #include <cmath>
 #include <cassert>
 #include <iostream>
+#include <limits>
 
 #include "../bitset/bitset_helpers.hpp"
 #include "../bitset/bitset_arithmetic.hpp"
@@ -125,8 +126,15 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(double rhs) {
-		reset();
+#             ifdef POSIT_USE_LONG_VALUE_IN_CONVERSION
+                constexpr int dfbits = std::numeric_limits<double>::digits - 1;
+		value<dfbits> v(rhs);
+#             else
 		value<fbits> v(rhs);
+#             endif
+
+		reset();
+		
 		if (v.isZero()) {
 			_sign = false;
 			_regime.setZero();
@@ -139,7 +147,6 @@ public:
 			return *this;
 		}
 		convert_to_posit(v);
-
 		return *this;
 	}
 	posit<nbits, es> operator-() const {
@@ -744,6 +751,11 @@ public:
 	void convert_to_posit(value<fbits>& v) {
 		convert_to_posit(v.sign(), v.scale(), v.fraction());
 	}	
+	// Generalized version
+	template <size_t FBits>
+	void convert_to_posit(const value<FBits>& v) {
+            convert(v.sign(), v.scale(), v.fraction(), FBits);
+        }
 	void convert_to_posit(bool _negative, int _scale, std::bitset<fbits> _frac) {
 		reset();
 		if (_trace_conversion) std::cout << "sign " << (_negative ? "-1 " : " 1 ") << "scale " << _scale << " fraction " << _frac << std::endl;
@@ -760,7 +772,7 @@ public:
 	}
 	
 	/** Generalized conversion function (could replace convert_to_posit). \p _frac is fraction of arbitrary size with hidden bit at \p hpos.
-         *  \p hpos == \p FBits means that hidden bit in front of \p _frac, i.e. \p _frac is a pure fraction without hidden bit.
+         *  \p hpos == \p FBits means that the hidden bit is in front of \p _frac, i.e. \p _frac is a pure fraction without hidden bit.
          *  
          * 
          */
