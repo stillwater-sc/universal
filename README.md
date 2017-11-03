@@ -4,6 +4,15 @@ Universal Number Arithmetic
 # How to build
 
 The universal numbers software library is built with cmake. Install the latest cmake (https://cmake.org/download).
+Other prerequisites are BOOST and MTL.
+
+Download and install BOOST: [boost](http://www.boost.org/users/download/)
+Download and install MTL4: [MTL4](http://simunova.com/node/145)
+
+Create a CMAKE variable for Boost_INCLUDE_DIR where you installed BOOST (for example: Boost_INCLUDE_DIR=/usr/local/boost_1_65_1).
+Create a CMAKE variable for MTL_DIR where you installed MTL (for example: MTL_DIR=/usr/local/mtl/share/mtl).
+
+Now we are ready to build the universal library.
 
 ```
 > git clone https://github.com/stillwater-sc/universal
