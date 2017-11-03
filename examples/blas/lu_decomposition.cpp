@@ -40,8 +40,13 @@ try
 	
         // Considered as matrix. 
 	std::cout << "Shape of A is " << typeid(mtl::ashape::ashape<Matrix>::type).name() << '\n';
-
-#if 1	
+	
+	posit<8, 0> p3 = 3.0;
+	bool b = p3 <= 4.0;
+	posit<8, 0> p4 = 1 * p3;
+        // std::cout << "p3 < 4: " << std::boolalpha << p3 <= 4.0 << std::endl;
+	
+#if 0	
 	for (unsigned i = 0; i < 4; i++)
 		for (unsigned j = 0; j < 4; j++) {
 			U[i][j] = i <= j ? c * (i + j + 2) : (0);
