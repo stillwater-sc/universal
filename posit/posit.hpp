@@ -517,6 +517,9 @@ public:
 			return INFINITY;
 		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
 	}
+	
+	operator double() const { return to_double(); }
+	
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	value<fbits> convert_to_scientific_notation() const {
 		value<fbits> v(_sign, scale(), get_fraction().get(), isZero());
