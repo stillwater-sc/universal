@@ -25,11 +25,13 @@ using namespace std;
 template<size_t nbits, size_t es>
 void GenerateTestCase(float fa, float fb) {
 	posit<nbits, es> pa, pb, pref, pdif;
+	float fref;
 	pa = fa;
 	pb = fb;
-	pref = fa - fb;
+	fref = fa - fb;
+	pref = fref;
 	pdif = pa - pb;
-	cout << "reference " << pref << " result " << pdif << endl << endl;
+	cout << "input " << fref << " posit reference " << pref << " result " << pdif << endl << endl;
 }
 
 template<size_t nbits, size_t es>
@@ -48,9 +50,7 @@ try {
 	bool bReportIndividualTestCases = false;
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<5, 0>(-0.625f,  4.000f);
-	GenerateTestCase<5, 0>(-0.500f,  4.000f);
-
+	// GenerateTestCase<5, 0>(INFINITY,  INFINITY);
 
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<3, 0>("Posit<3,0> subtraction failed: ", bReportIndividualTestCases), "posit<3,0>", "subtraction");
 

@@ -225,11 +225,14 @@ public:
                 return *this;                
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
-		if (isInfinite() && rhs.isInfinite()) {
-			reset();  // IN FP this operation is a NAN, but will return a 0
-		}
-		else {
-		*this += -rhs;
+		// In FP subtractions involving INFINITY respond with a NaN, posits encode to -inf
+		if (isInfinite()) {
+			return *this;
+		} else if (rhs.isInfinite()) {
+			*this = rhs;
+			return *this;  
+		} else {
+		   *this += -rhs;
 		}
 		return *this;
 	}
