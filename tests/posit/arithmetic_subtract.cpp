@@ -76,6 +76,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 2>("Posit<8,2> subtraction failed: ", bReportIndividualTestCases), "posit<8,2>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 3>("Posit<8,3> subtraction failed: ", bReportIndividualTestCases), "posit<8,3>", "subtraction");
 
+#ifdef STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<10, 1>("Posit<10,1> subtraction failed: ", bReportIndividualTestCases), "posit<10,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<12, 1>("Posit<12,1> subtraction failed: ", bReportIndividualTestCases), "posit<12,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<14, 1>("Posit<14,1> subtraction failed: ", bReportIndividualTestCases), "posit<14,1>", "subtraction");
+#endif
+
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {

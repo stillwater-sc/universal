@@ -42,29 +42,25 @@ class posit {
 		constexpr int dfbits = std::numeric_limits<T>::digits - 1;
 		value<dfbits> v(rhs);
 
-		reset();
 		// special case processing
 		if (v.isZero()) {
 			_sign = false;
 			_regime.setZero();
+			_exponent.reset();
+			_fraction.reset();
+			_raw_bits.reset();
 			return *this;
 		}
 		if (v.isInfinite() || v.isNaN()) {  // posit's encode NaN as -inf
 			_sign = true;
 			_regime.setInfinite();
+			_exponent.reset();
+			_fraction.reset();
+			_raw_bits.reset();
 			_raw_bits.set(nbits - 1, true);
 			return *this;
 		}
-		_sign = v.sign();
-		int k = v.scale() >> es;
-		if ( _regime.check_inward_projection(_sign, k) ) {
-			// we are projecting to minpos/maxpos
-			_regime.assign_regime_pattern(_sign, k);
-			// store raw bit representation
-			_raw_bits = _sign ? twos_complement(collect()) : collect();
-			_raw_bits.set(nbits - 1, _sign);
-			return *this;
-		}
+
 		convert_to_posit(v);
 		return *this;
 	}
@@ -684,7 +680,18 @@ public:
             if (_trace_conversion) std::cout << "sign " << (_negative ? "-1 " : " 1 ") << "scale " << _scale << " fraction " << _frac << std::endl;
                 
             // construct the posit
-            _sign = _negative;
+			_sign = _negative;
+			int k = _scale >> es;
+			// interpolation rule checks
+			if (_regime.check_inward_projection(_sign, k)) {    // regime dominated
+				// we are projecting to minpos/maxpos
+				_regime.assign_regime_pattern(_sign, k);
+				// store raw bit representation
+				_raw_bits = _sign ? twos_complement(collect()) : collect();
+				_raw_bits.set(nbits - 1, _sign);
+				return;  // we are done
+			}
+
             unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
             unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
             unsigned int remaining_bits    = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;

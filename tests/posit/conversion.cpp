@@ -435,8 +435,8 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	// individual testcases you can trace by hand
-	float reference = 0.999999f;
-	posit<3, 0> p = reference;
+	float reference = 0.12499f;
+	posit<4, 1> p = reference;
 	GenerateTestCase(p, reference);
 
 	cout << "Posit conversion validation" << endl;

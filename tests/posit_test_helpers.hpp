@@ -106,7 +106,7 @@ int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
 
 	// execute the test
 	int nrOfFailedTests = 0;
-	const double eps = 0.000000001;
+	const double eps = 0.00001;
 	double da, input;
 	posit<nbits, es> pa;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
