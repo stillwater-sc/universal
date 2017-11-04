@@ -6,6 +6,9 @@
 
 #include "stdafx.h"
 
+// if you want to trace the posit intermediate results
+//#define POSIT_VERBOSE_OUTPUT
+
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
@@ -14,7 +17,7 @@
 
 using namespace std;
 
-
+#if 0
 /*
 POSIT<3,0>
    #           Binary         Decoded         k-value            sign                        regime        exponent        fraction                         value
@@ -31,7 +34,7 @@ bool ValidatePosit_3_0()
 {
 	const int NR_TEST_CASES = 15;
 	float input[NR_TEST_CASES] = {
-		INFINITY, -100000.0f, -3.00f, -2.0f, -1.75f, -1.5f, -1.25f, -1.0f, -0.8f, -0.75f, -0.60f, -0.5f, -0.25f, -0.00000001f, 0.0f
+		INFINITY, -100000.0f, -3.00f, -2.0f, -1.75f, -1.5f, -1.25f, -1.0f, -0.8f, -0.75f, -0.60f, -0.5f, -0.25f, -0.0000000001f, 0.0f
 	};
 	string rounding[NR_TEST_CASES] = {
 		 "no"   ,    "down" , "down",  "no",   "up",  "up", "down",  "no",  "up",   "up", "down",  "no",   "up", "no"
@@ -48,13 +51,19 @@ bool ValidatePosit_3_0()
 			cerr << "FAIL [" << setw(2) << i << "] input " << input[i] << " ref = " << golden_answer[i] << " != posit<3,0> " << setw(5) << p << " rounding " << rounding[i] << endl;
 			bValid = false;
 		}
+		else {
+			cerr << "PASS [" << setw(2) << i << "] input " << input[i] << " ref = " << golden_answer[i] << " == posit<3,0> " << setw(5) << p << " rounding " << rounding[i] << endl;
+		}
 	}
 	for (int i = 1; i < NR_TEST_CASES; i++) {
 		posit<3, 0> p;
 		p = -input[i];
 		if (fabs(p.to_double() + golden_answer[i]) > 0.00000001) {
-			cerr << "FAIL [" << setw(2) << NR_TEST_CASES+i << "] input " << -input[i] << " ref = " << -golden_answer[i] << " != posit<3,0> " << setw(5) << p << " rounding " << rounding[i] << endl;
+			cerr << "FAIL [" << setw(2) << NR_TEST_CASES + i << "] input " << -input[i] << " ref = " << -golden_answer[i] << " != posit<3,0> " << setw(5) << p << " rounding " << rounding[i] << endl;
 			bValid = false;
+		}
+		else {
+			cerr << "PASS [" << setw(2) << NR_TEST_CASES + i << "] input " << -input[i] << " ref = " << -golden_answer[i] << " == posit<3,0> " << setw(5) << p << " rounding " << rounding[i] << endl;
 		}
 	}
 	return bValid;
@@ -406,19 +415,64 @@ int TestConversionResult(bool bValid, string descriptor)
 	}
 	return 1;
 }
+#endif
+
+// generate specific test case that you can trace with the trace conditions in posit.h
+// for most bugs they are traceable with _trace_conversion and _trace_add
+template<size_t nbits, size_t es>
+void GenerateTestCase(const posit<nbits, es>& p, float reference) {
+	cout << "reference " << reference << " result " << p << endl << endl;
+}
+
+template<size_t nbits, size_t es>
+void GenerateTestCase(const posit<nbits, es>& p, double reference) {
+	cout << "reference " << reference << " result " << p << endl << endl;
+}
 
 int main()
 try {
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	// testing initializing constructor
-	// posit<5, 1> test(1ull);
+	// individual testcases you can trace by hand
+	float reference = 0.999999f;
+	posit<3, 0> p = reference;
+	GenerateTestCase(p, reference);
 
 	cout << "Posit conversion validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<3,0>("Posit<3,0> conversion failed", bReportIndividualTestCases), "posit<3,0>", "conversion");
-#if 0
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<3, 0>("Posit<3,0> conversion failed", bReportIndividualTestCases), "posit<3,0>", "conversion");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<4, 0>("Posit<4,0> conversion failed", bReportIndividualTestCases), "posit<4,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<4, 1>("Posit<4,1> conversion failed", bReportIndividualTestCases), "posit<4,1>", "conversion");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 0>("Posit<5,0> conversion failed", bReportIndividualTestCases), "posit<5,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 1>("Posit<5,1> conversion failed", bReportIndividualTestCases), "posit<5,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 2>("Posit<5,2> conversion failed", bReportIndividualTestCases), "posit<5,2>", "conversion");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<6, 0>("Posit<6,0> conversion failed", bReportIndividualTestCases), "posit<6,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<6, 1>("Posit<6,1> conversion failed", bReportIndividualTestCases), "posit<6,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<6, 2>("Posit<6,2> conversion failed", bReportIndividualTestCases), "posit<6,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<6, 3>("Posit<6,3> conversion failed", bReportIndividualTestCases), "posit<6,3>", "conversion");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<7, 0>("Posit<7,0> conversion failed", bReportIndividualTestCases), "posit<7,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<7, 1>("Posit<7,1> conversion failed", bReportIndividualTestCases), "posit<7,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<7, 2>("Posit<7,2> conversion failed", bReportIndividualTestCases), "posit<7,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<7, 3>("Posit<7,3> conversion failed", bReportIndividualTestCases), "posit<7,3>", "conversion");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 0>("Posit<8,0> conversion failed", bReportIndividualTestCases), "posit<8,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 1>("Posit<8,1> conversion failed", bReportIndividualTestCases), "posit<8,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 2>("Posit<8,2> conversion failed", bReportIndividualTestCases), "posit<8,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 3>("Posit<8,3> conversion failed", bReportIndividualTestCases), "posit<8,3>", "conversion");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<10, 0>("Posit<10,0> conversion failed", bReportIndividualTestCases), "posit<10,0>", "conversion");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<16, 0>("Posit<16,0> conversion failed", bReportIndividualTestCases), "posit<16,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<16, 1>("Posit<16,1> conversion failed", bReportIndividualTestCases), "posit<16,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<16, 2>("Posit<16,2> conversion failed", bReportIndividualTestCases), "posit<16,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<16, 3>("Posit<16,3> conversion failed", bReportIndividualTestCases), "posit<16,3>", "conversion");
+
+#if 0	
 	TestConversionResult(ValidatePosit_3_0(), "posit<3,0>");
 	TestConversionResult(ValidatePosit_4_0(), "posit<4,0>");
 	TestConversionResult(ValidatePosit_4_1(), "posit<4,1>");

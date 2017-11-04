@@ -25,7 +25,7 @@ const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 
 // double value representation of the useed value of a posit<nbits, es>
 template<size_t nbits, size_t es>
-double useed() 
+double useed()
 {
 	return double(uint64_t(1) << (uint64_t(1) << es));
 }
@@ -33,17 +33,17 @@ double useed()
 /*
  class posit represents arbitrary configuration posits and their basic arithmetic operations (add/sub, mul/div)
  */
-template<size_t nbits, size_t es> 
+template<size_t nbits, size_t es>
 class posit {
-    static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
-    
-        template <typename T>
+	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
+
+	template <typename T>
 	posit<nbits, es>& float_assign(const T& rhs) {
-                constexpr int dfbits = std::numeric_limits<T>::digits - 1;
+		constexpr int dfbits = std::numeric_limits<T>::digits - 1;
 		value<dfbits> v(rhs);
 
 		reset();
-		
+		// special case processing
 		if (v.isZero()) {
 			_sign = false;
 			_regime.setZero();
@@ -53,6 +53,16 @@ class posit {
 			_sign = true;
 			_regime.setInfinite();
 			_raw_bits.set(nbits - 1, true);
+			return *this;
+		}
+		_sign = v.sign();
+		int k = v.scale() >> es;
+		if ( _regime.check_inward_projection(_sign, k) ) {
+			// we are projecting to minpos/maxpos
+			_regime.assign_regime_pattern(_sign, k);
+			// store raw bit representation
+			_raw_bits = _sign ? twos_complement(collect()) : collect();
+			_raw_bits.set(nbits - 1, _sign);
 			return *this;
 		}
 		convert_to_posit(v);

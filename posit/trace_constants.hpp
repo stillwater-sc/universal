@@ -18,7 +18,8 @@ constexpr bool _trace_sub        = false;
 constexpr bool _trace_mul        = false;
 constexpr bool _trace_div        = false;
 
-# else 
+# else // !POSIT_VERBOSE_OUTPUT
+
 // posit decode and conversion
 constexpr bool _trace_decode     = true;
 constexpr bool _trace_conversion = true;

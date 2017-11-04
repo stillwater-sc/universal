@@ -101,39 +101,94 @@ int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
 	// we are going to generate a test set that consists of all posit configs and their midpoints
 	// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 	const int NR_TEST_CASES = (1 << (nbits + 1));
+	const int HALF = (1 << nbits);
 	posit<nbits + 1, es> pref, pprev, pnext;
 
 	// execute the test
 	int nrOfFailedTests = 0;
+	const double eps = 0.000000001;
 	double da, input;
 	posit<nbits, es> pa;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
 		pref.set_raw_bits(i);
 		da = pref.to_double();	
 		if (i % 2) {
-			// for odd values, we are between posit values, so we create the round-up and round-down cases
-			// round-up
-			input = da + 0.000000001;
-			pa = input;
-			pnext.set_raw_bits(i + 1);
-			nrOfFailedTests += Compare(input, pnext.to_double(), pa.to_double(), bReportIndividualTestCases);
-			// round-down
-			input = da - 0.000000001;
-			pa = input;
-			pprev.set_raw_bits(i - 1);
-			nrOfFailedTests += Compare(input, pprev.to_double(), pa.to_double(), bReportIndividualTestCases);
+			if (i == 1) {
+				// special case of projecting to +minpos
+				// even the -delta goes to +minpos
+				input = da - eps;
+				pa = input;
+				pnext.set_raw_bits(i + 1);
+				nrOfFailedTests += Compare(input, pa.to_double(), pnext.to_double(), bReportIndividualTestCases);
+				input = da + eps;
+				pa = input;
+				nrOfFailedTests += Compare(input, pa.to_double(), pnext.to_double(), bReportIndividualTestCases);
+
+			}
+			else if (i == HALF - 1) {
+				// special case of projecting to +maxpos
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(HALF - 2);
+				nrOfFailedTests += Compare(input, pa.to_double(), pprev.to_double(), bReportIndividualTestCases);
+			}
+			else if (i == HALF + 1) {
+				// special case of projecting to -maxpos
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(HALF + 2);
+				nrOfFailedTests += Compare(input, pa.to_double(), pprev.to_double(), bReportIndividualTestCases);
+			}
+			else if (i == NR_TEST_CASES - 1) {
+				// special case of projecting to -minpos
+				// even the +delta goes to -minpos
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(i - 1);
+				nrOfFailedTests += Compare(input, pa.to_double(), pprev.to_double(), bReportIndividualTestCases);
+				input = da + eps;
+				pa = input;
+				nrOfFailedTests += Compare(input, pa.to_double(), pprev.to_double(), bReportIndividualTestCases);
+			}
+			else {
+				// for odd values, we are between posit values, so we create the round-up and round-down cases
+				// round-down
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(i - 1);
+				nrOfFailedTests += Compare(input, pa.to_double(), pprev.to_double(), bReportIndividualTestCases);
+				// round-up
+				input = da + eps;
+				pa = input;
+				pnext.set_raw_bits(i + 1); 
+				nrOfFailedTests += Compare(input, pa.to_double(), pnext.to_double(), bReportIndividualTestCases);
+			}
 		} 
 		else {
-			// for the even values, we generate the round to actual cases
-			// round-up
-			input = da + 0.000000001;
-			pa = input;
-			nrOfFailedTests += Compare(input, da, pa.to_double(), bReportIndividualTestCases);
-			if (i > 0) {
-				// round-down
-				input = da - 0.000000001;
+			// for the even values, we generate the round-to-actual cases
+			if (i == 0) {
+				// special case of projecting to +minpos
+				input = da + eps;
 				pa = input;
-				nrOfFailedTests += Compare(input, da, pa.to_double(), bReportIndividualTestCases);
+				pnext.set_raw_bits(i + 2);
+				nrOfFailedTests += Compare(input, pa.to_double(), pnext.to_double(), bReportIndividualTestCases);
+			} 
+			else if(i == NR_TEST_CASES - 2) {
+				// special case of projecting to -minpos
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(NR_TEST_CASES - 2);
+				nrOfFailedTests += Compare(input, pa.to_double(), pprev.to_double(), bReportIndividualTestCases);
+			}
+			else {
+				// round-up
+				input = da - eps;
+				pa = input;
+				nrOfFailedTests += Compare(input, pa.to_double(), da, bReportIndividualTestCases);
+				// round-down
+				input = da + eps;
+				pa = input;
+				nrOfFailedTests += Compare(input, pa.to_double(), da, bReportIndividualTestCases);
 			}
 		}
 	}
