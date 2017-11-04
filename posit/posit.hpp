@@ -619,6 +619,29 @@ public:
 		// scale = useed ^ k * 2^e 
 		return _regime.scale() + _exponent.scale();
 	}
+	// special case check for projecting values between (0, minpos] to minpos and [maxpos, inf) to maxpos
+	bool check_inward_projection(bool sign, int k) {
+		bool bSpecial = false;
+		if (k < 0) {
+			bSpecial = (-k <= nbits - 2 ? false : true);
+		}
+		else {
+			bSpecial = (k <= nbits - 3 ? false : true);
+		}
+		return bSpecial;
+	}
+	bool check_exponent_range(bool sign, int k) {
+		// TODO: this is not working as a mechanism yet
+		return false;
+		bool bSpecial = false;
+		if (k < 0) {
+			bSpecial = (-k <= nbits - 3 ? false : true);
+		}
+		else {
+			bSpecial = (k <= nbits - 4 ? false : true);
+		}
+		return bSpecial;
+	}
 	// project to the next 'larger' posit: this is 'pushing away' from zero, projecting to the next bigger scale
 	void project_up() {
 		bool carry = _fraction.increment();
@@ -683,23 +706,36 @@ public:
 			_sign = _negative;
 			int k = _scale >> es;
 			// interpolation rule checks
-			if (_regime.check_inward_projection(_sign, k)) {    // regime dominated
+			if (check_inward_projection(_sign, k)) {    // regime dominated
+				if (_trace_conversion) std::cout << "inward projection" << std::endl;
 				// we are projecting to minpos/maxpos
 				_regime.assign_regime_pattern(_sign, k);
 				// store raw bit representation
 				_raw_bits = _sign ? twos_complement(collect()) : collect();
 				_raw_bits.set(nbits - 1, _sign);
-				return;  // we are done
+				// we are done
+			} 
+			else if (check_exponent_range(_sign, k)) {  // exponent dominated
+				if (_trace_conversion) std::cout << "geometric rounding" << std::endl;
+				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
+				unsigned int nr_of_exp_bits = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
+				// store raw bit representation
+				_raw_bits = _sign ? twos_complement(collect()) : collect();
+				_raw_bits.set(nbits - 1, _sign);
+				// we are done
+			}
+			else {										// fraction dominated
+				if (_trace_conversion) std::cout << "arithmetric rounding" << std::endl;
+				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
+				unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
+				unsigned int remaining_bits    = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
+				bool round_up = _fraction.assign(remaining_bits, _frac, hpos);
+				if (round_up) project_up();
+				// store raw bit representation
+				_raw_bits = _sign ? twos_complement(collect()) : collect();
+				_raw_bits.set(nbits - 1, _sign);
 			}
 
-            unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
-            unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
-            unsigned int remaining_bits    = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
-            bool round_up = _fraction.assign(remaining_bits, _frac, hpos);
-            if (round_up) project_up();
-			// store raw bit representation
-			_raw_bits = _sign ? twos_complement(collect()) : collect();
-			_raw_bits.set(nbits - 1, _sign);
             if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;            
         }
 

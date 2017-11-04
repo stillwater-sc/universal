@@ -434,42 +434,56 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+#if 0
 	// individual testcases you can trace by hand
-	float reference = 0.12499f;
-	posit<4, 1> p = reference;
-	GenerateTestCase(p, reference);
+	float reference;
+	posit<4, 1> p;
 
+	reference = 0.0625f;
+	p = reference;
+	reference = 0.1249f;
+	p = reference;
+	reference = 0.1251f;
+	p = reference;
+	reference = 0.249999999f;
+	p = reference;
+
+	reference = 4.000001f;
+	p = reference;
+	//return 0;
+	GenerateTestCase(p, reference);
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<4, 1>("Posit<4,1> conversion failed", bReportIndividualTestCases), "posit<4,1>", "conversion");
+
+	return 0;
+#endif
 	cout << "Posit conversion validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<3, 0>("Posit<3,0> conversion failed", bReportIndividualTestCases), "posit<3,0>", "conversion");
-
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<4, 0>("Posit<4,0> conversion failed", bReportIndividualTestCases), "posit<4,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<4, 1>("Posit<4,1> conversion failed", bReportIndividualTestCases), "posit<4,1>", "conversion");
-
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 0>("Posit<5,0> conversion failed", bReportIndividualTestCases), "posit<5,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 1>("Posit<5,1> conversion failed", bReportIndividualTestCases), "posit<5,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 2>("Posit<5,2> conversion failed", bReportIndividualTestCases), "posit<5,2>", "conversion");
-
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<6, 0>("Posit<6,0> conversion failed", bReportIndividualTestCases), "posit<6,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<6, 1>("Posit<6,1> conversion failed", bReportIndividualTestCases), "posit<6,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<6, 2>("Posit<6,2> conversion failed", bReportIndividualTestCases), "posit<6,2>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<6, 3>("Posit<6,3> conversion failed", bReportIndividualTestCases), "posit<6,3>", "conversion");
-
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<7, 0>("Posit<7,0> conversion failed", bReportIndividualTestCases), "posit<7,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<7, 1>("Posit<7,1> conversion failed", bReportIndividualTestCases), "posit<7,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<7, 2>("Posit<7,2> conversion failed", bReportIndividualTestCases), "posit<7,2>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<7, 3>("Posit<7,3> conversion failed", bReportIndividualTestCases), "posit<7,3>", "conversion");
-
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 0>("Posit<8,0> conversion failed", bReportIndividualTestCases), "posit<8,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 1>("Posit<8,1> conversion failed", bReportIndividualTestCases), "posit<8,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 2>("Posit<8,2> conversion failed", bReportIndividualTestCases), "posit<8,2>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 3>("Posit<8,3> conversion failed", bReportIndividualTestCases), "posit<8,3>", "conversion");
-
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 0>("Posit<8,0> conversion failed", bReportIndividualTestCases), "posit<8,0>", "conversion");	
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<10, 0>("Posit<10,0> conversion failed", bReportIndividualTestCases), "posit<10,0>", "conversion");
-
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<16, 0>("Posit<16,0> conversion failed", bReportIndividualTestCases), "posit<16,0>", "conversion");
+
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<4, 1>("Posit<4,1> conversion failed", bReportIndividualTestCases), "posit<4,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 1>("Posit<5,1> conversion failed", bReportIndividualTestCases), "posit<5,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<6, 1>("Posit<6,1> conversion failed", bReportIndividualTestCases), "posit<6,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<7, 1>("Posit<7,1> conversion failed", bReportIndividualTestCases), "posit<7,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 1>("Posit<8,1> conversion failed", bReportIndividualTestCases), "posit<8,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<16, 1>("Posit<16,1> conversion failed", bReportIndividualTestCases), "posit<16,1>", "conversion");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 2>("Posit<5,2> conversion failed", bReportIndividualTestCases), "posit<5,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<6, 2>("Posit<6,2> conversion failed", bReportIndividualTestCases), "posit<6,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<7, 2>("Posit<7,2> conversion failed", bReportIndividualTestCases), "posit<7,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 2>("Posit<8,2> conversion failed", bReportIndividualTestCases), "posit<8,2>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<16, 2>("Posit<16,2> conversion failed", bReportIndividualTestCases), "posit<16,2>", "conversion");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<6, 3>("Posit<6,3> conversion failed", bReportIndividualTestCases), "posit<6,3>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<7, 3>("Posit<7,3> conversion failed", bReportIndividualTestCases), "posit<7,3>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 3>("Posit<8,3> conversion failed", bReportIndividualTestCases), "posit<8,3>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<16, 3>("Posit<16,3> conversion failed", bReportIndividualTestCases), "posit<16,3>", "conversion");
 
 #if 0	

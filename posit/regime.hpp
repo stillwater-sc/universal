@@ -68,17 +68,6 @@ public:
 		_RegimeBits = nbits - 1;
 		_k = static_cast<int>(nbits) - 1;   // by design: this simplifies increment/decrement
 	}
-	// special case check for projecting values between (0, minpos] to minpos and [maxpos, inf) to maxpos
-	bool check_inward_projection(bool sign, int k) {
-		bool bSpecial = false;
-		if (k < 0) {
-			bSpecial = (-k <= nbits - 2 ? false : true);
-		}
-		else {
-			bSpecial = (k <= nbits - 2 ? false : true);
-		}
-		return bSpecial;
-	}
 	// construct the regime bit pattern given a number's scale and returning the number of regime bits
 	unsigned int assign_regime_pattern(bool sign, int k) {
 		_Bits.reset();
