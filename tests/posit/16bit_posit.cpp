@@ -28,7 +28,7 @@ try {
 	const size_t es = 1;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	std::string tag = " posit<16,1>";
 
 	cout << "Standard posit<16,1> configuration tests" << endl;

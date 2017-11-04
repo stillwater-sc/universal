@@ -473,30 +473,32 @@ const int OPCODE_MUL = 3;
 const int OPCODE_DIV = 4;
 
 template<size_t nbits, size_t es>
-void execute(int opcode, double da, double db, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& preference, posit<nbits, es>& presult) {
+void execute(int opcode, double da, double db, posit<nbits, es>& preference, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& presult) {
+	double reference;
 	switch (opcode) {
 	default:
 	case OPCODE_NOP:
 		preference.reset();
 		presult.reset();
-		break;
+		return;
 	case OPCODE_ADD:
 		presult = pa + pb;
-		preference = da + db;
+		reference = da + db;	
 		break;
 	case OPCODE_SUB:
 		presult = pa - pb;
-		preference = da - db;
+		reference = da - db;
 		break;
 	case OPCODE_MUL:
 		presult = pa * pb;
-		preference = da * db;
+		reference = da * db;
 		break;
 	case OPCODE_DIV:
 		presult = pa / pb;
-		preference = da / db;
+		reference = da / db;
 		break;
 	}
+	preference = reference;
 }
 
 // generate a random set of operands to test the binary operators for a posit configuration
@@ -542,14 +544,14 @@ int ValidateThroughRandoms(std::string tag, bool bReportIndividualTestCases, int
 		ib = std::rand() % SIZE_STATE_SPACE;
 		db = operand_values[ib];
 		pb = db;
-		execute(opcode, da, db, pa, pb, preference, presult);
+		execute(opcode, da, db, preference, pa, pb, presult);
 		if (fabs(presult.to_double() - preference.to_double()) > 0.000000001) {
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", operation_string, pa, pb, preference, presult);
 
 		}
 		else {
-			if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, pa, pb, preference, presult);
+			//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, pa, pb, preference, presult);
 		}
 	}
 

@@ -626,9 +626,6 @@ public:
 			carry = _exponent.increment();
 		if (carry) 
                         _regime.increment();
-		// store raw bit representation
-		_raw_bits = _sign ? twos_complement(collect()) : collect();
-		_raw_bits.set(nbits - 1, _sign);
 	}
 	// step up to the next posit in a lexicographical order
 	void increment_posit() {
@@ -665,6 +662,9 @@ public:
 		bool round_up = _fraction.assign_fraction(remaining_bits, _frac);
 		if (round_up) 
                     project_up();
+		// store raw bit representation
+		_raw_bits = _sign ? twos_complement(collect()) : collect();
+		_raw_bits.set(nbits - 1, _sign);
 		if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
 	}
 	
@@ -696,8 +696,10 @@ public:
             unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
             unsigned int remaining_bits    = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
             bool round_up = _fraction.assign(remaining_bits, _frac, hpos);
-            if (round_up)
-                project_up();
+            if (round_up) project_up();
+			// store raw bit representation
+			_raw_bits = _sign ? twos_complement(collect()) : collect();
+			_raw_bits.set(nbits - 1, _sign);
             if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;            
         }
 
