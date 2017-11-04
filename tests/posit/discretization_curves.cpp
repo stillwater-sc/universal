@@ -17,19 +17,18 @@ using namespace std;
 
 
 int main(int argc, char** argv)
-{
-	try {
+try {
+	int nrOfFailedTestCases = 0;
+
 		cout << "Discretization Curves" << endl;
 
 		// generate a CSV file for different posit comparisons:
 		// compare posits with the same exponent structure but vary nbits = 3 till 12
 		// compare posits with the same nbits, but vary es from 0 to 4
-	}
-	catch (char* e) {
-		cerr << e << endl;
-	}
-	
 
-
-	return 0;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }

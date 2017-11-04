@@ -19,8 +19,7 @@
 using namespace std;
 
 int main(int argc, char** argv)
-try
-{
+try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -83,9 +82,9 @@ try
 
 	}
 
-	return nrOfFailedTestCases;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }

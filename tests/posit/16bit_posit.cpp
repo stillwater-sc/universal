@@ -21,8 +21,7 @@ Standard posits with nbits = 16 have 1 exponent bit.
 */
 
 int main(int argc, char** argv)
-try
-{
+try {
 	const size_t RND_TEST_CASES = 100000;
 
 	const size_t nbits = 16;
@@ -46,9 +45,9 @@ try
 	//cout << "Division      :                 " << RND_TEST_CASES << " randoms" << endl;
 	//nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
 
-	return nrOfFailedTestCases;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* e) {
-	cerr << e << endl;
-	return -1;
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }

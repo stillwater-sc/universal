@@ -13,8 +13,7 @@
 using namespace std;
 
 int main()
-try
-{
+try {
 	const size_t nbits = 3;
 	const size_t es = 0;
 	posit<3, 0> trouble;
@@ -26,9 +25,9 @@ try
 
 	nrOfFailedTestCases++; // we don't have any yet
 
-	return nrOfFailedTestCases;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }

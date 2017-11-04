@@ -67,7 +67,9 @@ struct posit_test1
 };
 
 int main(int argc, char** argv)
-{
+try {
+	int nrOfFailedTestCases = 0;
+
     cout << "This is the posit selector test.\n";
     
     nbits_variant nbitsv = nbits_tag<4>{};                  // init to avoid trouble without cmd line args
@@ -87,5 +89,9 @@ int main(int argc, char** argv)
     // And now it all boils down to this:
     nested_apply_visitor(posit_test1{}, nbitsv, esv);
     
-    return 0;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }

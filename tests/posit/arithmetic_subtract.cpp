@@ -43,9 +43,8 @@ void GenerateTestCase(double da, double db) {
 }
 
 int main(int argc, char** argv)
-try
-{
-	int nrOfFailedTests = 0;
+try {
+	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
 
 	// generate individual testcases to hand trace/debug
@@ -53,35 +52,33 @@ try
 	GenerateTestCase<5, 0>(-0.500f,  4.000f);
 
 
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<3, 0>("Posit<3,0> subtraction failed: ", bReportIndividualTestCases), "posit<3,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<3, 0>("Posit<3,0> subtraction failed: ", bReportIndividualTestCases), "posit<3,0>", "subtraction");
 
-#if 0
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<4, 0>("Posit<4,0> subtraction failed: ", bReportIndividualTestCases), "posit<4,0>", "subtraction");
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<4, 1>("Posit<4,1> subtraction failed: ", bReportIndividualTestCases), "posit<4,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<4, 0>("Posit<4,0> subtraction failed: ", bReportIndividualTestCases), "posit<4,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<4, 1>("Posit<4,1> subtraction failed: ", bReportIndividualTestCases), "posit<4,1>", "subtraction");
 
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<5, 0>("Posit<5,0> subtraction failed: ", bReportIndividualTestCases), "posit<5,0>", "subtraction");
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<5, 1>("Posit<5,1> subtraction failed: ", bReportIndividualTestCases), "posit<5,1>", "subtraction");
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<5, 2>("Posit<5,2> subtraction failed: ", bReportIndividualTestCases), "posit<5,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<5, 0>("Posit<5,0> subtraction failed: ", bReportIndividualTestCases), "posit<5,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<5, 1>("Posit<5,1> subtraction failed: ", bReportIndividualTestCases), "posit<5,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<5, 2>("Posit<5,2> subtraction failed: ", bReportIndividualTestCases), "posit<5,2>", "subtraction");
 
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<6, 0>("Posit<6,0> subtraction failed: ", bReportIndividualTestCases), "posit<6,0>", "subtraction");
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<6, 1>("Posit<6,1> subtraction failed: ", bReportIndividualTestCases), "posit<6,1>", "subtraction");
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<6, 2>("Posit<6,2> subtraction failed: ", bReportIndividualTestCases), "posit<6,2>", "subtraction");
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<6, 3>("Posit<6,3> subtraction failed: ", bReportIndividualTestCases), "posit<6,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 0>("Posit<6,0> subtraction failed: ", bReportIndividualTestCases), "posit<6,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 1>("Posit<6,1> subtraction failed: ", bReportIndividualTestCases), "posit<6,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 2>("Posit<6,2> subtraction failed: ", bReportIndividualTestCases), "posit<6,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 3>("Posit<6,3> subtraction failed: ", bReportIndividualTestCases), "posit<6,3>", "subtraction");
 
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<7, 0>("Posit<7,0> subtraction failed: ", bReportIndividualTestCases), "posit<7,0>", "subtraction");
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<7, 1>("Posit<7,1> subtraction failed: ", bReportIndividualTestCases), "posit<7,1>", "subtraction");
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<7, 2>("Posit<7,2> subtraction failed: ", bReportIndividualTestCases), "posit<7,2>", "subtraction");
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<7, 3>("Posit<7,3> subtraction failed: ", bReportIndividualTestCases), "posit<7,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 0>("Posit<7,0> subtraction failed: ", bReportIndividualTestCases), "posit<7,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 1>("Posit<7,1> subtraction failed: ", bReportIndividualTestCases), "posit<7,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 2>("Posit<7,2> subtraction failed: ", bReportIndividualTestCases), "posit<7,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 3>("Posit<7,3> subtraction failed: ", bReportIndividualTestCases), "posit<7,3>", "subtraction");
 
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<8, 0>("Posit<8,0> subtraction failed: ", bReportIndividualTestCases), "posit<8,0>", "subtraction");
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<8, 1>("Posit<8,1> subtraction failed: ", bReportIndividualTestCases), "posit<8,1>", "subtraction");
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<8, 2>("Posit<8,2> subtraction failed: ", bReportIndividualTestCases), "posit<8,2>", "subtraction");
-	nrOfFailedTests += ReportTestResult(ValidateSubtraction<8, 3>("Posit<8,3> subtraction failed: ", bReportIndividualTestCases), "posit<8,3>", "subtraction");
-#endif
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 0>("Posit<8,0> subtraction failed: ", bReportIndividualTestCases), "posit<8,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 1>("Posit<8,1> subtraction failed: ", bReportIndividualTestCases), "posit<8,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 2>("Posit<8,2> subtraction failed: ", bReportIndividualTestCases), "posit<8,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 3>("Posit<8,3> subtraction failed: ", bReportIndividualTestCases), "posit<8,3>", "subtraction");
 
-	return nrOfFailedTests;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* e) {
-	cerr << e << endl;
-	return -1;
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }

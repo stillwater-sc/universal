@@ -19,8 +19,7 @@
 using namespace std;
 
 int main(int argc, char** argv)
-try
-{
+try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -76,9 +75,9 @@ try
 	nrOfFailedTestCases += ReportTestResult(ValidatePostfix<4, 0>("Increment failed", bReportIndividualTestCases), "posit<4,0>", "posit++");
 	nrOfFailedTestCases += ReportTestResult(ValidatePostfix<4, 1>("Increment failed", bReportIndividualTestCases), "posit<4,1>", "posit++");
 
-	return nrOfFailedTestCases;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }

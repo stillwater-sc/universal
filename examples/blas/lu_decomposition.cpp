@@ -19,8 +19,7 @@ using namespace std;
 #define USE_POSIT
 
 int main(int argc, char** argv)
-try 
-{
+try {
 	const size_t nbits = 16;
 	const size_t es = 1;
 	const size_t vecSize = 32;
@@ -88,10 +87,10 @@ try
 	Vector v5(lu_adjoint_solve(AA, b));
 	std::cout << "v5 is " << v5 << "\n";
 #endif
-	return 0;
-
+	int nrOfFailedTestCases = 0;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }

@@ -19,8 +19,7 @@
 using namespace std;
 
 int main(int argc, char** argv)
-try
-{
+try {
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
@@ -83,9 +82,9 @@ try
 		//nrOfFailedTestCases += ReportTestResult(ValidateDecrement<32, 2>("Decrement failed", bReportIndividualTestCases), "posit<32,2>", "operator--");
 	}
 
-	return nrOfFailedTestCases;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }

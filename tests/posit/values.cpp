@@ -55,9 +55,9 @@ bool ValidateValue() {
 }
 
 int main()
-try
-{
+try {
 	const size_t nbits = 32;
+	int nrOfFailedTestCases = 0;
 
 	value<nbits> v1(-0.125f), v2(1.5f);
 	cout << v1 << endl;
@@ -77,9 +77,9 @@ try
 	cout << "Value configuration validation" << endl;
 	TestConversionResult(ValidateValue<8>(), "value<8>");
 
-	return 0;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }

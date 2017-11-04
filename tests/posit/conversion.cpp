@@ -406,8 +406,9 @@ int TestConversionResult(bool bValid, string descriptor)
 }
 
 int main()
-try
-{
+try {
+	int nrOfFailedTestCases = 0;
+
 	// testing initializing constructor
 	// posit<5, 1> test(1ull);
 
@@ -423,10 +424,10 @@ try
 
 	cout << endl;
 
-	return 0;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* e) {
-	cerr << e << endl;
-	return -1;
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }
 

@@ -194,9 +194,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<7>(), "bitset<7>", "*");
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<8>(), "bitset<8>", "*");
 
-	return nrOfFailedTestCases;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* e) {
 	cerr << e << endl;
-	return -1;
+	return EXIT_FAILURE;
 }

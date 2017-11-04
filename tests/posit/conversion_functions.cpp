@@ -264,7 +264,9 @@ void PositFloatConversion()
 }
 
 int main()
-{
+try {
+	int nrOfFailedTestCases = 0;
+
 	ReportPositScales();
 	PositIntegerConversion();
 	PositFloatConversion();
@@ -273,7 +275,12 @@ int main()
 	}
 	ConversionExamplesPositiveRegime();
 	ConversionExamplesNegativeRegime();
-	return 0;
+
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }
 
 

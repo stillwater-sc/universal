@@ -40,23 +40,23 @@ void GenerateTestCase(double da, double db) {
 }
 
 int main(int argc, char** argv)
-try 
-{
-	int nrOfFailedTests = 0;
+try {
+	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
 
 	// generate individual testcases to hand trace/debug
 	//GenerateTestCase<5, 0>(-0.625f, 4.000f);
 	//GenerateTestCase<5, 0>(-0.500f, 4.000f);
 
-	nrOfFailedTests += ReportTestResult(ValidateDivision<3, 0>("Posit<3,0> division failed: ", bReportIndividualTestCases), "posit<3,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>("Posit<3,0> division failed: ", bReportIndividualTestCases), "posit<3,0>", "division");
 
-	nrOfFailedTests += ReportTestResult(ValidateDivision<4, 0>("Posit<4,0> division failed: ", bReportIndividualTestCases), "posit<4,0>", "division");
-	nrOfFailedTests += ReportTestResult(ValidateDivision<4, 1>("Posit<4,1> division failed: ", bReportIndividualTestCases), "posit<4,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 0>("Posit<4,0> division failed: ", bReportIndividualTestCases), "posit<4,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 1>("Posit<4,1> division failed: ", bReportIndividualTestCases), "posit<4,1>", "division");
 
-	return nrOfFailedTests;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }
+

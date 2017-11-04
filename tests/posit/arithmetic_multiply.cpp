@@ -41,8 +41,7 @@ void GenerateTestCase(double da, double db) {
 
 
 int main(int argc, char** argv)
-try 
-{
+try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -76,9 +75,10 @@ try
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 2>("multiplication", bReportIndividualTestCases), "posit<6,2>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 3>("multiplication", bReportIndividualTestCases), "posit<6,3>", "multiplication");
 
-	return nrOfFailedTestCases;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }
+

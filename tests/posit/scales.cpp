@@ -47,7 +47,9 @@ void printScaleFactors(uint64_t scale_factors[MAX_ES][MAX_K]) {
 
 
 int main()
-{
+try {
+	int nrOfFailedTestCases = 0;
+
 	ReportPositScales();
 
 	const size_t nbits = 16;
@@ -65,7 +67,11 @@ int main()
 	printScaleFactors(GENERATED_SCALE_FACTORS);
 	*/
     
-	return 0;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }
 
 
