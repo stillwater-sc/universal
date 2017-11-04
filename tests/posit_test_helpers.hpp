@@ -6,10 +6,29 @@
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <vector>
 #include <iostream>
 #include <typeinfo>
 
+void ReportConversionError(std::string test_case, std::string op, double input, double reference, double result) {
+	std::cerr << test_case
+		<< " " << op << " "
+		<< std::setw(10) << input
+		<< " did not convert to "
+		<< std::setw(10) << reference << " instead it yielded "
+		<< std::setw(10) << result
+		<< std::endl;
+}
+
+void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, double result) {
+	std::cerr << test_case
+		<< " " << op << " "
+		<< std::setw(10) << input
+		<< " did     convert to "
+		<< std::setw(10) << result << " reference value is "
+		<< std::setw(10) << reference
+		<< std::endl;
+}
 
 template<size_t nbits, size_t es>
 void ReportUnaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
@@ -28,8 +47,8 @@ void ReportUnaryArithmeticSuccess(std::string test_case, std::string op, const p
 		<< " " << op << " "
 		<< std::setw(10) << rhs
 		<< " == "
-		<< std::setw(10) << pref << " reference value is "
-		<< std::setw(10) << presult
+		<< std::setw(10) << presult << " reference value is "
+		<< std::setw(10) << pref
 		<< " " << components_to_string(presult) << std::endl;
 }
 
@@ -64,6 +83,62 @@ void ReportDecodeError(std::string test_case, const posit<nbits, es>& actual, do
 
 /////////////////////////////// VALIDATION TEST SUITES ////////////////////////////////
 
+int Compare(double input, double result, double reference, bool bReportIndividualTestCases) {
+	int fail = 0;
+	if (fabs(result - reference) > 0.000000001) {
+		fail++;
+		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, result);
+	}
+	else {
+		if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, result);
+	}
+	return fail;
+}
+
+// enumerate all conversion cases for a posit configuration
+template<size_t nbits, size_t es>
+int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
+	// we are going to generate a test set that consists of all posit configs and their midpoints
+	// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
+	const int NR_TEST_CASES = (1 << (nbits + 1));
+	posit<nbits + 1, es> pref, pprev, pnext;
+
+	// execute the test
+	int nrOfFailedTests = 0;
+	double da, input;
+	posit<nbits, es> pa;
+	for (int i = 0; i < NR_TEST_CASES; i++) {
+		pref.set_raw_bits(i);
+		da = pref.to_double();	
+		if (i % 2) {
+			// for odd values, we are between posit values, so we create the round-up and round-down cases
+			// round-up
+			input = da + 0.000000001;
+			pa = input;
+			pnext.set_raw_bits(i + 1);
+			nrOfFailedTests += Compare(input, pnext.to_double(), pa.to_double(), bReportIndividualTestCases);
+			// round-down
+			input = da - 0.000000001;
+			pa = input;
+			pprev.set_raw_bits(i - 1);
+			nrOfFailedTests += Compare(input, pprev.to_double(), pa.to_double(), bReportIndividualTestCases);
+		} 
+		else {
+			// for the even values, we generate the round to actual cases
+			// round-up
+			input = da + 0.000000001;
+			pa = input;
+			nrOfFailedTests += Compare(input, da, pa.to_double(), bReportIndividualTestCases);
+			if (i > 0) {
+				// round-down
+				input = da - 0.000000001;
+				pa = input;
+				nrOfFailedTests += Compare(input, da, pa.to_double(), bReportIndividualTestCases);
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
 
 // Generate ordered set from -maxpos to +maxpos for a particular posit config <nbits, es>
 template<size_t nbits, size_t es>

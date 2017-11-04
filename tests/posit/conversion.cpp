@@ -9,6 +9,8 @@
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
+#include "../tests/test_helpers.hpp"
+#include "../tests/posit_test_helpers.hpp"
 
 using namespace std;
 
@@ -407,12 +409,16 @@ int TestConversionResult(bool bValid, string descriptor)
 
 int main()
 try {
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	// testing initializing constructor
 	// posit<5, 1> test(1ull);
 
-	cout << "Posit Configuration validation" << endl;
+	cout << "Posit conversion validation" << endl;
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<3,0>("Posit<3,0> conversion failed", bReportIndividualTestCases), "posit<3,0>", "conversion");
+#if 0
 	TestConversionResult(ValidatePosit_3_0(), "posit<3,0>");
 	TestConversionResult(ValidatePosit_4_0(), "posit<4,0>");
 	TestConversionResult(ValidatePosit_4_1(), "posit<4,1>");
@@ -420,7 +426,7 @@ try {
 	TestConversionResult(ValidatePosit_5_1(), "posit<5,1>");
 	TestConversionResult(ValidatePosit_5_2(), "posit<5,2>");
 	TestConversionResult(ValidatePosit_6_0(), "posit<6,0>");
-	//TestConversionResult(ValidatePosit_6_1(), "posit<6,1>");
+#endif
 
 	cout << endl;
 
