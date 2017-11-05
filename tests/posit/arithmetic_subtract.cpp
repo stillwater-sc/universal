@@ -60,35 +60,37 @@ try {
 #endif
 
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<3, 0>("Posit<3,0> subtraction failed: ", bReportIndividualTestCases), "posit<3,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<3, 0>("Subtraction failed: ", bReportIndividualTestCases), "posit<3,0>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<4, 0>("Posit<4,0> subtraction failed: ", bReportIndividualTestCases), "posit<4,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<4, 1>("Posit<4,1> subtraction failed: ", bReportIndividualTestCases), "posit<4,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<4, 0>("Subtraction failed: ", bReportIndividualTestCases), "posit<4,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<4, 1>("Subtraction failed: ", bReportIndividualTestCases), "posit<4,1>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<5, 0>("Posit<5,0> subtraction failed: ", bReportIndividualTestCases), "posit<5,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<5, 1>("Posit<5,1> subtraction failed: ", bReportIndividualTestCases), "posit<5,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<5, 2>("Posit<5,2> subtraction failed: ", bReportIndividualTestCases), "posit<5,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<5, 0>("Subtraction failed: ", bReportIndividualTestCases), "posit<5,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<5, 1>("Subtraction failed: ", bReportIndividualTestCases), "posit<5,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<5, 2>("Subtraction failed: ", bReportIndividualTestCases), "posit<5,2>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 0>("Posit<6,0> subtraction failed: ", bReportIndividualTestCases), "posit<6,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 1>("Posit<6,1> subtraction failed: ", bReportIndividualTestCases), "posit<6,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 2>("Posit<6,2> subtraction failed: ", bReportIndividualTestCases), "posit<6,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 3>("Posit<6,3> subtraction failed: ", bReportIndividualTestCases), "posit<6,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 0>("Subtraction failed: ", bReportIndividualTestCases), "posit<6,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 1>("Subtraction failed: ", bReportIndividualTestCases), "posit<6,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 2>("Subtraction failed: ", bReportIndividualTestCases), "posit<6,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 3>("Subtraction failed: ", bReportIndividualTestCases), "posit<6,3>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 0>("Posit<7,0> subtraction failed: ", bReportIndividualTestCases), "posit<7,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 1>("Posit<7,1> subtraction failed: ", bReportIndividualTestCases), "posit<7,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 2>("Posit<7,2> subtraction failed: ", bReportIndividualTestCases), "posit<7,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 3>("Posit<7,3> subtraction failed: ", bReportIndividualTestCases), "posit<7,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 0>("Subtraction failed: ", bReportIndividualTestCases), "posit<7,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 1>("Subtraction failed: ", bReportIndividualTestCases), "posit<7,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 2>("Subtraction failed: ", bReportIndividualTestCases), "posit<7,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 3>("Subtraction failed: ", bReportIndividualTestCases), "posit<7,3>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 0>("Posit<8,0> subtraction failed: ", bReportIndividualTestCases), "posit<8,0>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 1>("Posit<8,1> subtraction failed: ", bReportIndividualTestCases), "posit<8,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 2>("Posit<8,2> subtraction failed: ", bReportIndividualTestCases), "posit<8,2>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 3>("Posit<8,3> subtraction failed: ", bReportIndividualTestCases), "posit<8,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 0>("Subtraction failed: ", bReportIndividualTestCases), "posit<8,0>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 1>("Subtraction failed: ", bReportIndividualTestCases), "posit<8,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 2>("Subtraction failed: ", bReportIndividualTestCases), "posit<8,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 3>("Subtraction failed: ", bReportIndividualTestCases), "posit<8,3>", "subtraction");
+
+
 
 #if STRESS_TESTING
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<10, 1>("Posit<10,1> subtraction failed: ", bReportIndividualTestCases), "posit<10,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<12, 1>("Posit<12,1> subtraction failed: ", bReportIndividualTestCases), "posit<12,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<14, 1>("Posit<14,1> subtraction failed: ", bReportIndividualTestCases), "posit<14,1>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<16, 1>("Posit<16,1> subtraction failed: ", bReportIndividualTestCases), "posit<16,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<10, 1>("Subtraction failed: ", bReportIndividualTestCases), "posit<10,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<12, 1>("Subtraction failed: ", bReportIndividualTestCases), "posit<12,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<14, 1>("Subtraction failed: ", bReportIndividualTestCases), "posit<14,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<16, 1>("Subtraction failed: ", bReportIndividualTestCases), "posit<16,1>", "subtraction");
 #endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

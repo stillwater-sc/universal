@@ -358,7 +358,7 @@ int ValidateNegation(std::string tag, bool bReportIndividualTestCases) {
 
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
 template<size_t nbits, size_t es>
-int ValidateAddition(std::string error_tag, bool bReportIndividualTestCases) {
+int ValidateAddition(std::string tag, bool bReportIndividualTestCases) {
 	const int NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pb, psum, pref;
@@ -387,7 +387,7 @@ int ValidateAddition(std::string error_tag, bool bReportIndividualTestCases) {
 
 // enumerate all subtraction cases for a posit configuration: is within 10sec till about nbits = 14
 template<size_t nbits, size_t es>
-int ValidateSubtraction(std::string error_tag, bool bReportIndividualTestCases) {
+int ValidateSubtraction(std::string tag, bool bReportIndividualTestCases) {
 	const int NR_POSITS = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pb, pref, pdif;

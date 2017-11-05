@@ -40,36 +40,55 @@ void GenerateTestCase(double da, double db) {
 	cout << "reference " << pref << " result " << psum << endl << endl;
 }
 
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 0
+
 int main(int argc, char** argv)
 try {
-	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
+	int nrOfFailedTestCases = 0;
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>("Posit<3,0> addition failed: ", bReportIndividualTestCases), "posit<3,0>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 0>("Posit<4,0> addition failed: ", bReportIndividualTestCases), "posit<4,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 1>("Posit<4,1> addition failed: ", bReportIndividualTestCases), "posit<4,1>", "addition");
+#if MANUAL_TESTING
+	// generate individual testcases to hand trace/debug
+	GenerateTestCase<5, 0>(INFINITY, INFINITY);
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 0>("Posit<5,0> addition failed: ", bReportIndividualTestCases), "posit<5,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 1>("Posit<5,1> addition failed: ", bReportIndividualTestCases), "posit<5,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 2>("Posit<5,2> addition failed: ", bReportIndividualTestCases), "posit<5,2>", "addition");
+#endif
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 0>("Posit<6,0> addition failed: ", bReportIndividualTestCases), "posit<6,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 1>("Posit<6,1> addition failed: ", bReportIndividualTestCases), "posit<6,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 2>("Posit<6,2> addition failed: ", bReportIndividualTestCases), "posit<6,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 3>("Posit<6,3> addition failed: ", bReportIndividualTestCases), "posit<6,3>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 0>("Posit<7,0> addition failed: ", bReportIndividualTestCases), "posit<7,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 1>("Posit<7,1> addition failed: ", bReportIndividualTestCases), "posit<7,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 2>("Posit<7,2> addition failed: ", bReportIndividualTestCases), "posit<7,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 3>("Posit<7,3> addition failed: ", bReportIndividualTestCases), "posit<7,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>("Addition failed: ", bReportIndividualTestCases), "posit<3,0>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 0>("Posit<8,0> addition failed: ", bReportIndividualTestCases), "posit<8,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 1>("Posit<8,1> addition failed: ", bReportIndividualTestCases), "posit<8,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>("Posit<8,2> addition failed: ", bReportIndividualTestCases), "posit<8,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 3>("Posit<8,3> addition failed: ", bReportIndividualTestCases), "posit<8,3>", "addition");
-	// very long running, so disabled
-	//ReportTestResult(ValidateAddition<16, 1>("Posit<16,1> addition failed: ", bReportIndividualTestCases), "posit<16,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 0>("Addition failed: ", bReportIndividualTestCases), "posit<4,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 1>("Addition failed: ", bReportIndividualTestCases), "posit<4,1>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 0>("Addition failed: ", bReportIndividualTestCases), "posit<5,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 1>("Addition failed: ", bReportIndividualTestCases), "posit<5,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 2>("Addition failed: ", bReportIndividualTestCases), "posit<5,2>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 0>("Addition failed: ", bReportIndividualTestCases), "posit<6,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 1>("Addition failed: ", bReportIndividualTestCases), "posit<6,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 2>("Addition failed: ", bReportIndividualTestCases), "posit<6,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 3>("Addition failed: ", bReportIndividualTestCases), "posit<6,3>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 0>("Addition failed: ", bReportIndividualTestCases), "posit<7,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 1>("Addition failed: ", bReportIndividualTestCases), "posit<7,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 2>("Addition failed: ", bReportIndividualTestCases), "posit<7,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 3>("Addition failed: ", bReportIndividualTestCases), "posit<7,3>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 0>("Addition failed: ", bReportIndividualTestCases), "posit<8,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 1>("Addition failed: ", bReportIndividualTestCases), "posit<8,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>("Addition failed: ", bReportIndividualTestCases), "posit<8,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 3>("Addition failed: ", bReportIndividualTestCases), "posit<8,3>", "addition");
+
+
+
+#if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<10, 1>("Addition failed: ", bReportIndividualTestCases), "posit<10,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<12, 1>("Addition failed: ", bReportIndividualTestCases), "posit<12,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<14, 1>("Addition failed: ", bReportIndividualTestCases), "posit<14,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<16, 1>("Addition failed: ", bReportIndividualTestCases), "posit<16,1>", "addition");
+#endif
+
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
