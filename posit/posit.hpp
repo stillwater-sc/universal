@@ -20,6 +20,8 @@
 #include "exponent.hpp"
 #include "regime.hpp"
 
+#define MULTIPLY_WITH_FRACTION_WITH_HIDDEN_BIT
+
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 
 
@@ -70,9 +72,14 @@ class posit {
 public:
 	static constexpr size_t rbits = nbits - 1;
 	static constexpr size_t ebits = es;
-	static constexpr size_t fbits = nbits - 3 - es;          
+	static constexpr size_t fbits = nbits - 3 - es;  
 	static constexpr size_t abits = fbits + 4;     // size of the addend
+#ifdef MULTIPLY_WITH_FRACTION_WITH_HIDDEN_BIT
+	static constexpr size_t fhbits = fbits + 1;    // size of fraction + hidden bit
+	static constexpr size_t mbits = 2 * fhbits + 1; // size of the multiplier output
+#else
 	static constexpr size_t mbits = 2 * fbits + 1; // size of the multiplier output
+#endif
 
 	posit<nbits, es>() : _sign(false) {}
 	
@@ -265,8 +272,8 @@ public:
 		value<mbits> result;
 		multiply(v1, v2, result);
 		// this path rounds each multiply
-		value<fbits> rounded = result.template round_to<fbits>();
-		convert_to_posit(rounded);
+		//value<fbits> rounded = result.template round_to<fbits>();
+		convert_to_posit(result);
 		return *this;
 	}
 	posit<nbits, es>& operator/=(const posit& rhs) {
@@ -620,7 +627,7 @@ public:
 		return _regime.scale() + _exponent.scale();
 	}
 	// special case check for projecting values between (0, minpos] to minpos and [maxpos, inf) to maxpos
-	bool check_inward_projection(bool sign, int k) {
+	bool check_inward_projection_range(bool sign, int k) {
 		bool bSpecial = false;
 		if (k < 0) {
 			bSpecial = (-k <= nbits - 2 ? false : true);
@@ -630,15 +637,15 @@ public:
 		}
 		return bSpecial;
 	}
-	bool check_exponent_range(bool sign, int k) {
+	bool check_exponent_range(bool sign, int scale) {
 		// TODO: this is not working as a mechanism yet
 		return false;
 		bool bSpecial = false;
-		if (k < 0) {
-			bSpecial = (-k <= nbits - 3 ? false : true);
+		if (scale < 0) {
+			bSpecial = (-scale <= nbits - 3 ? false : true);
 		}
 		else {
-			bSpecial = (k <= nbits - 4 ? false : true);
+			bSpecial = (scale > nbits - es - 1 && scale < nbits ? false : true);
 		}
 		return bSpecial;
 	}
@@ -706,7 +713,7 @@ public:
 			_sign = _negative;
 			int k = _scale >> es;
 			// interpolation rule checks
-			if (check_inward_projection(_sign, k)) {    // regime dominated
+			if (check_inward_projection_range(_sign, k)) {    // regime dominated
 				if (_trace_conversion) std::cout << "inward projection" << std::endl;
 				// we are projecting to minpos/maxpos
 				_regime.assign_regime_pattern(_sign, k);
@@ -715,7 +722,7 @@ public:
 				_raw_bits.set(nbits - 1, _sign);
 				// we are done
 			} 
-			else if (check_exponent_range(_sign, k)) {  // exponent dominated
+			else if (check_exponent_range(_sign, _scale)) {  // exponent dominated
 				if (_trace_conversion) std::cout << "geometric rounding" << std::endl;
 				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
 				unsigned int nr_of_exp_bits = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
@@ -729,6 +736,7 @@ public:
 				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
 				unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
 				unsigned int remaining_bits    = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
+				// incorrect test for geometric rounding if (nr_of_exp_bits > 0 && remaining_bits == 0) std::cout << "geometric rounding" << std::endl;
 				bool round_up = _fraction.assign(remaining_bits, _frac, hpos);
 				if (round_up) project_up();
 				// store raw bit representation
@@ -747,17 +755,36 @@ private:
 	fraction<fbits> 	   _fraction;	// decoded posit representation
 
 	// HELPER methods
-	void align_numbers(int lhs_scale, const std::bitset<nbits>& lhs, int rhs_scale, const std::bitset<nbits>& rhs, int& scale, std::bitset<nbits>& r1, std::bitset<nbits>& r2) {
-
-	}
-
+	// multiply two values
 	void multiply(const value<fbits>& v1, const value<fbits>& v2, value<mbits>& result) {
 		bool new_sign = v1.sign() ^ v2.sign();
 		int new_scale = v1.scale() + v2.scale();
 		std::bitset<mbits> result_fraction;
+#ifdef MULTIPLY_WITH_FRACTION_WITH_HIDDEN_BIT
+		// fractions are without hidden bit, but the mul needs the hidden bit
+		std::bitset<fhbits> operand1, operand2;
+		operand1.set(fhbits-1, true); // hidden bit
+		operand2.set(fhbits-1, true);
+		std::bitset<fbits> v1_frac = v1.fraction();
+		std::bitset<fbits> v2_frac = v2.fraction();
+		for (int i = 0; i < fbits; i++) {
+			operand1.set(i, v1_frac[i]);
+			operand2.set(i, v2_frac[i]);
+		}
+		if (fhbits > 0) {
+			multiply_unsigned(operand1, operand2, result_fraction);
+		}
+		if (_trace_mul) std::cout << "result_fraction " << result_fraction << std::endl;
+		// shift hidden bit out
+		while (!result_fraction.test(mbits - 1)) {
+			result_fraction <<= 1;
+		}
+		result_fraction <<= 1;
+#else
 		if (fbits > 0) {
 			multiply_unsigned(v1.fraction(), v2.fraction(), result_fraction);
 		}
+#endif
 		if (_trace_mul) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
 		// TODO: how do you recognize the special case of zero?
 		result.set(new_sign, new_scale, result_fraction, false);

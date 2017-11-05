@@ -44,13 +44,21 @@ void GenerateTestCase(double da, double db) {
 	cout << "reference " << pref << " result " << pdif << endl << endl;
 }
 
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 0
+
 int main(int argc, char** argv)
 try {
-	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
+	int nrOfFailedTestCases = 0;
 
+
+#if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	// GenerateTestCase<5, 0>(INFINITY,  INFINITY);
+	GenerateTestCase<5, 0>(INFINITY,  INFINITY);
+
+#endif
+
 
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<3, 0>("Posit<3,0> subtraction failed: ", bReportIndividualTestCases), "posit<3,0>", "subtraction");
 
@@ -76,10 +84,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 2>("Posit<8,2> subtraction failed: ", bReportIndividualTestCases), "posit<8,2>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<8, 3>("Posit<8,3> subtraction failed: ", bReportIndividualTestCases), "posit<8,3>", "subtraction");
 
-#ifdef STRESS_TESTING
+#if STRESS_TESTING
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<10, 1>("Posit<10,1> subtraction failed: ", bReportIndividualTestCases), "posit<10,1>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<12, 1>("Posit<12,1> subtraction failed: ", bReportIndividualTestCases), "posit<12,1>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<14, 1>("Posit<14,1> subtraction failed: ", bReportIndividualTestCases), "posit<14,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<16, 1>("Posit<16,1> subtraction failed: ", bReportIndividualTestCases), "posit<16,1>", "subtraction");
 #endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -10,23 +10,33 @@
 #include <iostream>
 #include <typeinfo>
 
-void ReportConversionError(std::string test_case, std::string op, double input, double reference, double result) {
+int GetExponent(int scale, int es) {
+	if (es > 0) {
+		return scale % es;
+	}
+	return scale;
+}
+template<size_t nbits, size_t es>
+void ReportConversionError(std::string test_case, std::string op, double input, double reference, const posit<nbits,es>& presult) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(10) << input
 		<< " did not convert to "
 		<< std::setw(10) << reference << " instead it yielded "
-		<< std::setw(10) << result
+		<< std::setw(10) << presult.to_double()
+		<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << (presult.scale()>>es) << "   exp= " << std::setw(3) << GetExponent(presult.scale(), es)
 		<< std::endl;
 }
 
-void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, double result) {
+template<size_t nbits, size_t es>
+void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const posit<nbits, es>& presult) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(10) << input
 		<< " did     convert to "
-		<< std::setw(10) << result << " reference value is "
-		<< std::setw(10) << reference
+		<< std::setw(10) << presult.to_double() << " reference value is "
+		<< std::setw(10) << reference	
+		<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << (presult.scale() >> es) << "   exp= " << std::setw(3) << GetExponent(presult.scale(), es)
 		<< std::endl;
 }
 
@@ -83,14 +93,16 @@ void ReportDecodeError(std::string test_case, const posit<nbits, es>& actual, do
 
 /////////////////////////////// VALIDATION TEST SUITES ////////////////////////////////
 
-int Compare(double input, double result, double reference, bool bReportIndividualTestCases) {
+template<size_t nbits, size_t es>
+int Compare(double input, const posit<nbits, es>& presult, double reference, bool bReportIndividualTestCases) {
 	int fail = 0;
+	double result = presult.to_double();
 	if (fabs(result - reference) > 0.000000001) {
 		fail++;
-		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, result);
+		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, presult);
 	}
 	else {
-		if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, result);
+		if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
 	}
 	return fail;
 }
@@ -119,10 +131,10 @@ int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
 				input = da - eps;
 				pa = input;
 				pnext.set_raw_bits(i + 1);
-				nrOfFailedTests += Compare(input, pa.to_double(), pnext.to_double(), bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, pa, pnext.to_double(), bReportIndividualTestCases);
 				input = da + eps;
 				pa = input;
-				nrOfFailedTests += Compare(input, pa.to_double(), pnext.to_double(), bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, pa, pnext.to_double(), bReportIndividualTestCases);
 
 			}
 			else if (i == HALF - 1) {
@@ -130,14 +142,14 @@ int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
 				input = da - eps;
 				pa = input;
 				pprev.set_raw_bits(HALF - 2);
-				nrOfFailedTests += Compare(input, pa.to_double(), pprev.to_double(), bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
 			}
 			else if (i == HALF + 1) {
 				// special case of projecting to -maxpos
 				input = da - eps;
 				pa = input;
 				pprev.set_raw_bits(HALF + 2);
-				nrOfFailedTests += Compare(input, pa.to_double(), pprev.to_double(), bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
 			}
 			else if (i == NR_TEST_CASES - 1) {
 				// special case of projecting to -minpos
@@ -145,10 +157,10 @@ int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
 				input = da - eps;
 				pa = input;
 				pprev.set_raw_bits(i - 1);
-				nrOfFailedTests += Compare(input, pa.to_double(), pprev.to_double(), bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
 				input = da + eps;
 				pa = input;
-				nrOfFailedTests += Compare(input, pa.to_double(), pprev.to_double(), bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
 			}
 			else {
 				// for odd values, we are between posit values, so we create the round-up and round-down cases
@@ -156,12 +168,12 @@ int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
 				input = da - eps;
 				pa = input;
 				pprev.set_raw_bits(i - 1);
-				nrOfFailedTests += Compare(input, pa.to_double(), pprev.to_double(), bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
 				// round-up
 				input = da + eps;
 				pa = input;
 				pnext.set_raw_bits(i + 1); 
-				nrOfFailedTests += Compare(input, pa.to_double(), pnext.to_double(), bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, pa, pnext.to_double(), bReportIndividualTestCases);
 			}
 		} 
 		else {
@@ -171,24 +183,24 @@ int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
 				input = da + eps;
 				pa = input;
 				pnext.set_raw_bits(i + 2);
-				nrOfFailedTests += Compare(input, pa.to_double(), pnext.to_double(), bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, pa, pnext.to_double(), bReportIndividualTestCases);
 			} 
 			else if(i == NR_TEST_CASES - 2) {
 				// special case of projecting to -minpos
 				input = da - eps;
 				pa = input;
 				pprev.set_raw_bits(NR_TEST_CASES - 2);
-				nrOfFailedTests += Compare(input, pa.to_double(), pprev.to_double(), bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
 			}
 			else {
 				// round-up
 				input = da - eps;
 				pa = input;
-				nrOfFailedTests += Compare(input, pa.to_double(), da, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, pa, da, bReportIndividualTestCases);
 				// round-down
 				input = da + eps;
 				pa = input;
-				nrOfFailedTests += Compare(input, pa.to_double(), da, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, pa, da, bReportIndividualTestCases);
 			}
 		}
 	}
@@ -423,7 +435,7 @@ int ValidateMultiplication(std::string tag, bool bReportIndividualTestCases) {
 				nrOfFailedTests++;
 			}
 			else {
-				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
+				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
 			}
 		}
 	}

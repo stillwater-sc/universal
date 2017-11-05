@@ -39,19 +39,54 @@ void GenerateTestCase(double da, double db) {
 	cout << "reference " << pref << " result " << pdiv << endl << endl;
 }
 
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 0
+
 int main(int argc, char** argv)
 try {
-	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
+	int nrOfFailedTestCases = 0;
 
+
+#if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	//GenerateTestCase<5, 0>(-0.625f, 4.000f);
-	//GenerateTestCase<5, 0>(-0.500f, 4.000f);
+	GenerateTestCase<5, 0>(4.000f, -2.0f);
+	GenerateTestCase<5, 0>(4.000f,  0.5f);
 
-	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>("Posit<3,0> division failed: ", bReportIndividualTestCases), "posit<3,0>", "division");
+#endif
+	
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>("division", bReportIndividualTestCases), "posit<3,0>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 0>("Posit<4,0> division failed: ", bReportIndividualTestCases), "posit<4,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 1>("Posit<4,1> division failed: ", bReportIndividualTestCases), "posit<4,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 0>("division", bReportIndividualTestCases), "posit<4,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 1>("division", bReportIndividualTestCases), "posit<4,1>", "division");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<5, 0>("division", bReportIndividualTestCases), "posit<5,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<5, 1>("division", bReportIndividualTestCases), "posit<5,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<5, 2>("division", bReportIndividualTestCases), "posit<5,2>", "division");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<6, 0>("division", bReportIndividualTestCases), "posit<6,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<6, 1>("division", bReportIndividualTestCases), "posit<6,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<6, 2>("division", bReportIndividualTestCases), "posit<6,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<6, 3>("division", bReportIndividualTestCases), "posit<6,3>", "division");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<7, 0>("division", bReportIndividualTestCases), "posit<7,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<7, 1>("division", bReportIndividualTestCases), "posit<7,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<7, 2>("division", bReportIndividualTestCases), "posit<7,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<7, 3>("division", bReportIndividualTestCases), "posit<7,3>", "division");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<8, 0>("division", bReportIndividualTestCases), "posit<8,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<8, 1>("division", bReportIndividualTestCases), "posit<8,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<8, 2>("division", bReportIndividualTestCases), "posit<8,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<8, 3>("division", bReportIndividualTestCases), "posit<8,3>", "division");
+
+
+#if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<10, 0>("division", bReportIndividualTestCases), "posit<10,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<12, 1>("division", bReportIndividualTestCases), "posit<12,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<14, 1>("division", bReportIndividualTestCases), "posit<14,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<16, 1>("division", bReportIndividualTestCases), "posit<16,1>", "division");
+
+#endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
