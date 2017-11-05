@@ -8,6 +8,8 @@
 
 #include <vector>
 
+//#define POSIT_VERBOSE_OUTPUT
+
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
@@ -39,31 +41,22 @@ void GenerateTestCase(double da, double db) {
 	cout << "reference " << pref << " result " << pmul << endl << endl;
 }
 
+#define MANUAL_TESTING 0
 
 int main(int argc, char** argv)
-try 
-{
+try {	
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+
+#if MANUAL_TESTING
 	float fa, fb;
-	fa = 2.0f; fb = -1.0f;
+	fa = 0.725f; fb = 0.75f;
 	cout << fa << " * " << fb << " = " << fa*fb << endl;
-	GenerateTestCase<3,0>(fa, fb);
-
-	double da, db;
-	posit<3, 0> pa, pb, pmul, pref;
-	pa.set_raw_bits(0);
-	da = pa.to_double();
-	pb.set_raw_bits(4);
-	db = pb.to_double();
-	pmul = pa * pb;
-	pref = da * db;
-	cout << pa << " * " << pb << " == " << pmul << " ref " << pref << " result " << da*db << endl;
-
+	GenerateTestCase<4,0>(fa, fb);
+#endif
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>("multiplication", bReportIndividualTestCases), "posit<3,0>", "multiplication");
-
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>("multiplication", bReportIndividualTestCases), "posit<4,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 1>("multiplication", bReportIndividualTestCases), "posit<4,1>", "multiplication");
 
@@ -76,9 +69,20 @@ try
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 2>("multiplication", bReportIndividualTestCases), "posit<6,2>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 3>("multiplication", bReportIndividualTestCases), "posit<6,3>", "multiplication");
 
-	return nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 0>("multiplication", bReportIndividualTestCases), "posit<7,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 1>("multiplication", bReportIndividualTestCases), "posit<7,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 2>("multiplication", bReportIndividualTestCases), "posit<7,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 3>("multiplication", bReportIndividualTestCases), "posit<7,3>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8, 0>("multiplication", bReportIndividualTestCases), "posit<8,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8, 1>("multiplication", bReportIndividualTestCases), "posit<8,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8, 2>("multiplication", bReportIndividualTestCases), "posit<8,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8, 3>("multiplication", bReportIndividualTestCases), "posit<8,3>", "multiplication");
+
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }
+

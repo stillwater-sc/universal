@@ -69,50 +69,46 @@ posit<nbits, es> extract(float f) {
 }
 
 int main()
-try
-{
+try {
 	const size_t nbits = 4;
 	const size_t es = 0;
 	const size_t size = 128;
-
+	int nrOfFailedTestCases = 0;
 	posit<nbits,es> myPosit;
+	float f;
+	bool sign;
+	int exponent;
+	uint32_t fraction;
+	std::bitset<nbits> _fraction;
 
 	cout << "Conversion tests" << endl;
 
 
 	cout << "Positive regime" << endl;
-	try {
-		float f = 4.0f;
-		bool sign = extract_sign(f);
-		int exponent = extract_exponent(f);
-		uint32_t fraction = extract_fraction(f);
-		std::bitset<nbits> _fraction = extract_float_fraction<nbits>(fraction);
-		cout << "f " << f << "sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
+	f = 4.0f;
+	sign = extract_sign(f);
+	exponent = extract_exponent(f);
+	fraction = extract_fraction(f);
+	_fraction = extract_float_fraction<nbits>(fraction);
+	cout << "f " << f << "sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
 
-		myPosit = extract<nbits, es>(f);
-		cout << "posit<" << nbits << "," << es << "> = " << myPosit << endl;
-		cout << "posit<" << nbits << "," << es << "> = " << components_to_string(myPosit) << endl;
-	}
-	catch (char* msg) {
-		cerr << endl << msg << endl;
-	}
+	myPosit = extract<nbits, es>(f);
+	cout << "posit<" << nbits << "," << es << "> = " << myPosit << endl;
+	cout << "posit<" << nbits << "," << es << "> = " << components_to_string(myPosit) << endl;
+
 
 	cout << "Negative Regime" << endl;
-	try {
-		float f = -4.0f;
-		bool sign = extract_sign(f);
-		int exponent = extract_exponent(f);
-		uint32_t fraction = extract_fraction(f);
-		std::bitset<nbits> _fraction = extract_float_fraction<nbits>(fraction);
-		cout << "f " << f << "sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
+	f = -4.0f;
+	sign = extract_sign(f);
+	exponent = extract_exponent(f);
+	fraction = extract_fraction(f);
+	_fraction = extract_float_fraction<nbits>(fraction);
+	cout << "f " << f << "sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
 
-		myPosit = extract<nbits, es>(f);
-		cout << "posit<" << nbits << "," << es << "> = " << myPosit << endl;
-		cout << "posit<" << nbits << "," << es << "> = " << components_to_string(myPosit) << endl;
-	}
-	catch (char* msg) {
-		cerr << endl << msg << endl;
-	}
+	myPosit = extract<nbits, es>(f);
+	cout << "posit<" << nbits << "," << es << "> = " << myPosit << endl;
+	cout << "posit<" << nbits << "," << es << "> = " << components_to_string(myPosit) << endl;
+
 
 	// regime
 	// posit<3,#>
@@ -181,11 +177,11 @@ try
 	//  5 s-1111110
 	//  6 s-1111111
 
-	return 0;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }
 
 // REGIME BITS

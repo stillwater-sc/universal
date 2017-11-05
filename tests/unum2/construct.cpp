@@ -8,7 +8,14 @@
 
 using namespace std;
 
-int main(int argc, char* argv[]) {
+int main(int argc, char* argv[]) 
+try {
+	int nrOfFailedTestCases = 0;
+
 	cerr << "TBD" << endl;
-	return 0;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }

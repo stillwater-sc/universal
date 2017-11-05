@@ -20,20 +20,19 @@ int ValidateRegimeOperations() {
 }
 
 int main()
-try
-{
+try {
 	const size_t nbits = 5;
 	const size_t es = 0;
 
-	int nrOfFailedTests = 0;
+	int nrOfFailedTestCases = 0;
 
 	cout << "Regime tests" << endl;
 
 
 
-	return nrOfFailedTests;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }

@@ -6,10 +6,39 @@
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <vector>
 #include <iostream>
 #include <typeinfo>
 
+int GetExponent(int scale, int es) {
+	if (es > 0) {
+		return scale % es;
+	}
+	return scale;
+}
+template<size_t nbits, size_t es>
+void ReportConversionError(std::string test_case, std::string op, double input, double reference, const posit<nbits,es>& presult) {
+	std::cerr << test_case
+		<< " " << op << " "
+		<< std::setw(10) << input
+		<< " did not convert to "
+		<< std::setw(10) << reference << " instead it yielded "
+		<< std::setw(10) << presult.to_double()
+		<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << (presult.scale()>>es) << "   exp= " << std::setw(3) << GetExponent(presult.scale(), es)
+		<< std::endl;
+}
+
+template<size_t nbits, size_t es>
+void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const posit<nbits, es>& presult) {
+	std::cerr << test_case
+		<< " " << op << " "
+		<< std::setw(10) << input
+		<< " did     convert to "
+		<< std::setw(10) << presult.to_double() << " reference value is "
+		<< std::setw(10) << reference	
+		<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << (presult.scale() >> es) << "   exp= " << std::setw(3) << GetExponent(presult.scale(), es)
+		<< std::endl;
+}
 
 template<size_t nbits, size_t es>
 void ReportUnaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
@@ -28,8 +57,8 @@ void ReportUnaryArithmeticSuccess(std::string test_case, std::string op, const p
 		<< " " << op << " "
 		<< std::setw(10) << rhs
 		<< " == "
-		<< std::setw(10) << pref << " reference value is "
-		<< std::setw(10) << presult
+		<< std::setw(10) << presult << " reference value is "
+		<< std::setw(10) << pref
 		<< " " << components_to_string(presult) << std::endl;
 }
 
@@ -64,6 +93,119 @@ void ReportDecodeError(std::string test_case, const posit<nbits, es>& actual, do
 
 /////////////////////////////// VALIDATION TEST SUITES ////////////////////////////////
 
+template<size_t nbits, size_t es>
+int Compare(double input, const posit<nbits, es>& presult, double reference, bool bReportIndividualTestCases) {
+	int fail = 0;
+	double result = presult.to_double();
+	if (fabs(result - reference) > 0.000000001) {
+		fail++;
+		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, presult);
+	}
+	else {
+		if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
+	}
+	return fail;
+}
+
+// enumerate all conversion cases for a posit configuration
+template<size_t nbits, size_t es>
+int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
+	// we are going to generate a test set that consists of all posit configs and their midpoints
+	// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
+	const int NR_TEST_CASES = (1 << (nbits + 1));
+	const int HALF = (1 << nbits);
+	posit<nbits + 1, es> pref, pprev, pnext;
+
+	// execute the test
+	int nrOfFailedTests = 0;
+	const double eps = 0.00001;
+	double da, input;
+	posit<nbits, es> pa;
+	for (int i = 0; i < NR_TEST_CASES; i++) {
+		pref.set_raw_bits(i);
+		da = pref.to_double();	
+		if (i % 2) {
+			if (i == 1) {
+				// special case of projecting to +minpos
+				// even the -delta goes to +minpos
+				input = da - eps;
+				pa = input;
+				pnext.set_raw_bits(i + 1);
+				nrOfFailedTests += Compare(input, pa, pnext.to_double(), bReportIndividualTestCases);
+				input = da + eps;
+				pa = input;
+				nrOfFailedTests += Compare(input, pa, pnext.to_double(), bReportIndividualTestCases);
+
+			}
+			else if (i == HALF - 1) {
+				// special case of projecting to +maxpos
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(HALF - 2);
+				nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
+			}
+			else if (i == HALF + 1) {
+				// special case of projecting to -maxpos
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(HALF + 2);
+				nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
+			}
+			else if (i == NR_TEST_CASES - 1) {
+				// special case of projecting to -minpos
+				// even the +delta goes to -minpos
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(i - 1);
+				nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
+				input = da + eps;
+				pa = input;
+				nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
+			}
+			else {
+				// for odd values, we are between posit values, so we create the round-up and round-down cases
+				// round-down
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(i - 1);
+				nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
+				// round-up
+				input = da + eps;
+				pa = input;
+				pnext.set_raw_bits(i + 1); 
+				nrOfFailedTests += Compare(input, pa, pnext.to_double(), bReportIndividualTestCases);
+			}
+		} 
+		else {
+			// for the even values, we generate the round-to-actual cases
+			if (i == 0) {
+				// special case of projecting to +minpos
+				input = da + eps;
+				pa = input;
+				pnext.set_raw_bits(i + 2);
+				nrOfFailedTests += Compare(input, pa, pnext.to_double(), bReportIndividualTestCases);
+			} 
+			else if(i == NR_TEST_CASES - 2) {
+				// special case of projecting to -minpos
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(NR_TEST_CASES - 2);
+				nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
+			}
+			else {
+				// round-up
+				input = da - eps;
+				pa = input;
+				nrOfFailedTests += Compare(input, pa, da, bReportIndividualTestCases);
+				// round-down
+				input = da + eps;
+				pa = input;
+				nrOfFailedTests += Compare(input, pa, da, bReportIndividualTestCases);
+			}
+		}
+	}
+	return nrOfFailedTests;
+}
 
 // Generate ordered set from -maxpos to +maxpos for a particular posit config <nbits, es>
 template<size_t nbits, size_t es>
@@ -232,11 +374,6 @@ int ValidateAddition(std::string error_tag, bool bReportIndividualTestCases) {
 			pref = da + db;
 			if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
 				nrOfFailedTests++;
-#ifdef POSIT_THROW_FOR_INCORRECT_CALCULATION
-                                std::cout << "Error adding " << da << " and " << db << " with " << typeid(pa).name() 
-                                          << ", returned " << psum << ", should return " << pref << std::endl;
-                                throw 7;
-#endif
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
 			}
 			else {
@@ -298,7 +435,7 @@ int ValidateMultiplication(std::string tag, bool bReportIndividualTestCases) {
 				nrOfFailedTests++;
 			}
 			else {
-				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
+				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
 			}
 		}
 	}
@@ -348,30 +485,32 @@ const int OPCODE_MUL = 3;
 const int OPCODE_DIV = 4;
 
 template<size_t nbits, size_t es>
-void execute(int opcode, double da, double db, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& preference, posit<nbits, es>& presult) {
+void execute(int opcode, double da, double db, posit<nbits, es>& preference, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& presult) {
+	double reference;
 	switch (opcode) {
 	default:
 	case OPCODE_NOP:
 		preference.reset();
 		presult.reset();
-		break;
+		return;
 	case OPCODE_ADD:
 		presult = pa + pb;
-		preference = da + db;
+		reference = da + db;	
 		break;
 	case OPCODE_SUB:
 		presult = pa - pb;
-		preference = da - db;
+		reference = da - db;
 		break;
 	case OPCODE_MUL:
 		presult = pa * pb;
-		preference = da * db;
+		reference = da * db;
 		break;
 	case OPCODE_DIV:
 		presult = pa / pb;
-		preference = da / db;
+		reference = da / db;
 		break;
 	}
+	preference = reference;
 }
 
 // generate a random set of operands to test the binary operators for a posit configuration
@@ -417,14 +556,14 @@ int ValidateThroughRandoms(std::string tag, bool bReportIndividualTestCases, int
 		ib = std::rand() % SIZE_STATE_SPACE;
 		db = operand_values[ib];
 		pb = db;
-		execute(opcode, da, db, pa, pb, preference, presult);
+		execute(opcode, da, db, preference, pa, pb, presult);
 		if (fabs(presult.to_double() - preference.to_double()) > 0.000000001) {
 			nrOfFailedTests++;
 			if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", operation_string, pa, pb, preference, presult);
 
 		}
 		else {
-			if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, pa, pb, preference, presult);
+			//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, pa, pb, preference, presult);
 		}
 	}
 

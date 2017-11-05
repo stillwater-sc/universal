@@ -36,11 +36,11 @@ log_e(10)		M_LN10		2.30258509299404568402
 const double pi = 3.14159265358979323846;  // best practice for C++
 
 int main(int argc, char** argv)
-try 
-{
+try {
 	const size_t nbits = 16;
 	const size_t es = 1;
 	const size_t vecSize = 32;
+	int nrOfFailedTestCases = 0;
 
 	posit<nbits, es> p;
 	vector< posit<nbits, es> > sinusoid(vecSize), weights(vecSize);
@@ -58,10 +58,10 @@ try
 		fir += sinusoid[i] * weights[i];
 	}
 	cout << "Value is " << fir << endl;
-	return 0;
 
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }

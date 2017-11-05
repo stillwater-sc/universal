@@ -44,9 +44,12 @@ using namespace std;
 0 0
 */
 
-int main() {
+int main() 
+try {
 	posit<16, 2> p;
 	bitset<16> raw;
+	int nrOfFailedTestCases = 0;
+
 	// 1152921504606846976
 	raw.reset();
 	// positive regime infinity - 1
@@ -128,5 +131,9 @@ int main() {
 	raw[1] = false;			// 0
 	p.set(raw); 	cout << p << " 0" << endl;
 
-    	return 0;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }

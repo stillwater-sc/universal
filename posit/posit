@@ -8,5 +8,6 @@
 #include "posit.hpp"
 #include "posit_operators.hpp"
 #include "posit_manipulators.hpp"
+#include "posit_functions.hpp"
 
 #endif

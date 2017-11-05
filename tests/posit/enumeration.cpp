@@ -15,8 +15,8 @@ using namespace std;
 
 
 int main(int argc, char** argv)
-try 
-{
+try {
+	int nrOfFailedTestCases = 0;
 
 	posit<4, 0> pa, pb, psum;
 	pa = 0.25f;
@@ -49,10 +49,9 @@ try
 		cout << components_to_string(p) << endl;
 		p++;
 	}
-	return 0;
-
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }

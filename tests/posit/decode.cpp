@@ -45,8 +45,7 @@ int ValidateDecode() {
 }
 
 int main(int argc, char** argv)
-try
-{
+try {
 	const size_t nbits = 8;
 	const size_t es = 1;
 	posit<nbits, es> myPosit;
@@ -54,9 +53,9 @@ try
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDecode<4, 0>(), "b2p", "decode");
 
-	return nrOfFailedTestCases;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* e) {
-	cerr << e << endl;
-	return -1;
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }

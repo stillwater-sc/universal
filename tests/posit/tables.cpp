@@ -27,7 +27,9 @@ using namespace std;
 
 int main(int argc, char** argv)
 try {
-	cout << "Valid posit configurations" << endl;
+	int nrOfFailedTestCases = 0;
+
+	cout << "Generate posit configurations" << endl;
 
 	posit<6, 2> p;
 	p.set_raw_bits(0x25);
@@ -58,9 +60,9 @@ try {
 	GeneratePositTable<8, 3>(cout);
 	GeneratePositTable<8, 4>(cout);
 
-	return 0;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* e) {
-	cerr << e << endl;
-	return 1;
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }

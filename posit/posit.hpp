@@ -20,12 +20,14 @@
 #include "exponent.hpp"
 #include "regime.hpp"
 
+#define MULTIPLY_WITH_FRACTION_WITH_HIDDEN_BIT
+
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 
 
 // double value representation of the useed value of a posit<nbits, es>
 template<size_t nbits, size_t es>
-double useed() 
+double useed()
 {
 	return double(uint64_t(1) << (uint64_t(1) << es));
 }
@@ -33,21 +35,53 @@ double useed()
 /*
  class posit represents arbitrary configuration posits and their basic arithmetic operations (add/sub, mul/div)
  */
-template<size_t nbits, size_t es> 
+template<size_t nbits, size_t es>
 class posit {
+	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
+
+	template <typename T>
+	posit<nbits, es>& float_assign(const T& rhs) {
+		constexpr int dfbits = std::numeric_limits<T>::digits - 1;
+		value<dfbits> v(rhs);
+
+		// special case processing
+		if (v.isZero()) {
+			_sign = false;
+			_regime.setZero();
+			_exponent.reset();
+			_fraction.reset();
+			_raw_bits.reset();
+			return *this;
+		}
+		if (v.isInfinite() || v.isNaN()) {  // posit's encode NaN as -inf
+			_sign = true;
+			_regime.setInfinite();
+			_exponent.reset();
+			_fraction.reset();
+			_raw_bits.reset();
+			_raw_bits.set(nbits - 1, true);
+			return *this;
+		}
+
+		convert_to_posit(v);
+		return *this;
+	}
+    
+    
+    
 public:
 	static constexpr size_t rbits = nbits - 1;
 	static constexpr size_t ebits = es;
-	static constexpr size_t mnbits = 3 + es;                   // Min # of non-fraction bits: 1sign, 2+regime, es
-// 	static constexpr size_t fbits = nbits - 3;
-	static constexpr size_t fbits = mnbits > nbits ? 0 : nbits - mnbits; // avoid negative 
-	static constexpr size_t abits = fbits + 3;     // size of the adder output
+	static constexpr size_t fbits = nbits - 3 - es;  
+	static constexpr size_t abits = fbits + 4;     // size of the addend
+#ifdef MULTIPLY_WITH_FRACTION_WITH_HIDDEN_BIT
+	static constexpr size_t fhbits = fbits + 1;    // size of fraction + hidden bit
+	static constexpr size_t mbits = 2 * fhbits + 1; // size of the multiplier output
+#else
 	static constexpr size_t mbits = 2 * fbits + 1; // size of the multiplier output
+#endif
 
-	posit<nbits, es>() {
-		reset();
-		validate();
-	}
+	posit<nbits, es>() : _sign(false) {}
 	
 	posit(const posit&) = default;
 	posit(posit&&) = default;
@@ -55,10 +89,18 @@ public:
 	posit& operator=(const posit&) = default;
 	posit& operator=(posit&&) = default;
 	
+	/// Construct posit from its components
+        // should we worry about the raw bits ???
+	posit(bool sign, const regime<nbits, es>& r, const exponent<nbits, es>& e, const fraction<fbits>& f)
+          : _sign(sign), _regime(r), _exponent(e), _fraction(f) {}
+	
 	posit<nbits, es>(int64_t initial_value) {
 		*this = initial_value;
 	}
 	posit<nbits, es>(uint64_t initial_value) {
+		*this = initial_value;
+	}
+	posit<nbits, es>(int32_t initial_value) {
 		*this = initial_value;
 	}
 	posit<nbits, es>(float initial_value) {
@@ -108,46 +150,10 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(float rhs) {
-		reset();
-		value<fbits> v(rhs);
-		if (v.isZero()) {
-			_sign = false;
-			_regime.setZero();
-			return *this;
-		}
-		if (v.isInfinite() || v.isNaN()) {  // posit's encode NaN as -inf
-			_sign = true;
-			_regime.setInfinite();
-			_raw_bits.set(nbits - 1, true);
-			return *this;
-		}
-		convert_to_posit(v);
-
-		return *this;
+                return float_assign(rhs);
 	}
 	posit<nbits, es>& operator=(double rhs) {
-#             ifdef POSIT_USE_LONG_VALUE_IN_CONVERSION
-                constexpr int dfbits = std::numeric_limits<double>::digits - 1;
-		value<dfbits> v(rhs);
-#             else
-		value<fbits> v(rhs);
-#             endif
-
-		reset();
-		
-		if (v.isZero()) {
-			_sign = false;
-			_regime.setZero();
-			return *this;
-		}
-		if (v.isInfinite() || v.isNaN()) {  // posit's encode NaN as -inf
-			_sign = true;
-			_regime.setInfinite();
-			_raw_bits.set(nbits - 1, true);
-			return *this;
-		}
-		convert_to_posit(v);
-		return *this;
+                return float_assign(rhs);
 	}
 	posit<nbits, es> operator-() const {
 		if (isZero()) {
@@ -160,7 +166,19 @@ public:
 		negated.decode(twos_complement(_raw_bits));
 		return negated;
 	}
-	posit<nbits, es>& operator+=(const posit& rhs) {
+	
+	
+	
+	posit<nbits, es>& operator+=(const posit& rhs) 
+	{
+		// with sign/magnitude adders it is customary to organize the computation 
+		// along the four quadrants of sign combinations
+		//  + + = +
+		//  + - =   lhs > rhs ? + : -
+		//  - + =   lhs > rhs ? - : +
+		//  - - = -
+		// to simplify the result processing
+     
 		if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		if (isZero()) {
 			*this = rhs;
@@ -173,174 +191,61 @@ public:
 			*this = rhs;
 			return *this;
 		}
-
-		constexpr size_t adder_size = fbits + 4;  // add a stick bit and three guard bits
-		constexpr size_t result_size = adder_size + 1;
-		// align the fractions, and produce right extended fractions in r1 and r2 with hidden bits explicit
-		std::bitset<adder_size> r1, r2; // fraction is at most nbits-3 bits, but we need to incorporate one sticky bit and two guard bits for rounding decisions, and a leading slot for the hidden bit
-		std::bitset<result_size> sum, result_fraction; // fraction part of the sum
 		
-		// with sign/magnitude adders it is customary to organize the computation 
-		// along the four quadrants of sign combinations
-		//  + + = +
-		//  + - =   lhs > rhs ? + : -
-		//  - + =   lhs > rhs ? - : +
-		//  - - = -
-		// to simplify the result processing
-		bool r1_sign, r2_sign;	
-
 		int lhs_scale = scale(), rhs_scale = rhs.scale(), scale_of_result= std::max(lhs_scale, rhs_scale);
-		// we need to determine the biggest operand
-
-		// Wouldn't it suffice to compare the scales?
-		bool rhs_bigger = std::abs(to_double()) < std::abs(rhs.to_double());		//    TODO: need to do this in native posit integer arithmetic
-		int diff = lhs_scale - rhs_scale;                         // To be removed
 		
-		// we need to order the operands in terms of scale, 
-		// with the largest scale taking the r1 slot
-		// and the smaller operand aligned to the larger in r2.
-#if 0
-		if (rhs_bigger) {
-			rhs._fraction.normalize(r1);	  // <-- rhs is bigger operand
-			_fraction.denormalize(diff, r2);  // denormalize the smaller operand
-			scale_of_result = rhs_scale;
-			r1_sign = rhs._sign;
-			r2_sign = _sign;
-		}
-		else {
-			_fraction.normalize(r1);			  // <-- lhs bigger operand
-			rhs._fraction.denormalize(diff, r2);  // denormalize the smaller operand
-			scale_of_result = lhs_scale;
-			r1_sign = _sign;
-			r2_sign = rhs._sign;
-		}
-#else
-                r1 = _fraction.template nshift<adder_size>(lhs_scale - scale_of_result + 3);
-                r2 = rhs._fraction.template nshift<adder_size>(rhs_scale - scale_of_result + 3);
-                r1_sign = _sign;
-                r2_sign = rhs._sign;
+		// align the fractions
+                std::bitset<abits> r1 = _fraction.template nshift<abits>(lhs_scale - scale_of_result + 3), 
+                                   r2 = rhs._fraction.template nshift<abits>(rhs_scale - scale_of_result + 3);
+                bool r1_sign = _sign, r2_sign = rhs._sign;
                 
-                if (rhs_bigger) {
+                 if (std::abs(to_double()) < std::abs(rhs.to_double())) { //  TODO: should compare as posits directly
                     std::swap(r1, r2);
                     std::swap(r1_sign, r2_sign);
                 } 
-#endif
 
 		if (_trace_add) {
-			std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1  " << r1 << " diff " << diff << std::endl;
+			std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1  " << r1 << std::endl;
 			std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2  " << r2 << std::endl;
 		}
 		
-		if (r1_sign != r2_sign) r2 = twos_complement(r2);
-		bool carry = add_unsigned<adder_size>(r1, r2, sum);
+		if (r1_sign != r2_sign) 
+                    r2 = twos_complement(r2);
+                std::bitset<abits+1> sum;
+		const bool carry = add_unsigned(r1, r2, sum);
 
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
                 
-                // std::bitset<fbits> rounded_fraction;
                 long shift = 0;
                 if (carry) {
                     if (r1_sign == r2_sign)   // the carry implies that we have a bigger number than r1
                         shift = -1;
                     else 
-                        // the carry implies that we added a complement and have a smaller number than r1                        
-                        // find the hidden bit (in the complement)
-                        for (int i = adder_size - 1; i >= 0 && !sum[i]; i--)
+                        // the carry means r2 as complement, result < r1, must find hidden bit (in the complement)
+                        for (int i = abits - 1; i >= 0 && !sum[i]; i--)
                             shift++;
                 }
                 assert(shift >= -1);
                 
-                if (shift >= long(adder_size)) {            // we have actual 0                            
+                if (shift >= long(abits)) {            // we have actual 0                            
                     reset();
                     return *this;
                 }
                 
                 scale_of_result -= shift;
-                int hpos = result_size - 2 - shift;         // position hidden bit 
+                const int hpos = abits - 1 - shift;         // position hidden bit 
                 convert(r1_sign, scale_of_result, sum, hpos);
-                return *this;
-                
-                
-#if 0                
-                std::bitset<fbits> rounded_fraction;
-                
-                assert(shift >= -1);
-                // With larger value just round without shift
-                if (shift == -1) {
-                    sum[result_size-1] = false; // carry is new hidden bit
-                    rounded_fraction = round<fbits>(sum, 3);
-                } else {                
-                    result_fraction = sum << shift;
-                    result_fraction[result_size-1] = false;     // get rid of a possible complement bit
-                    auto rounded = round<result_size-2>(result_fraction, 2);
-                    constexpr size_t carry_pos = result_size-3;
-                    if (rounded[carry_pos]) {           // scale increased in rounding
-                        ++scale_of_result;
-                        // carry_pos is new hidden bit, copy behind this except last bit
-                        rounded_fraction = fixed_subset<1, carry_pos>(rounded);
-                    } else {
-                        // hidden bit didn't moved, copy last bits
-                        rounded_fraction = fixed_subset<0, carry_pos-1>(rounded);
-                    }
-                } 
-                
-		convert_to_posit(r1_sign, scale_of_result, rounded_fraction);
-		return *this;
-# endif                
-                
-#if 0      
-		if (carry) {
-			if (r1_sign == r2_sign) {
-				// the carry implies that we have a bigger number than r1
-				scale_of_result++; 
-				// and that the first fraction bits came after a hidden bit at the carry position in the adder result register
-				result_fraction = sum >> 1;                             // no rounding yet
-// 				for (int i = 0; i < result_size; i++) {
-// 					result_fraction[i] = sum[i+1];
-// 				}
-			}
-			else {
-				// the carry implies that we have a smaller number than r1
-				// find the hidden bit 
-				int shift = 0; // shift in addition to removal of hidden bit     
-				for (int i = adder_size - 1; i >= 0 && !sum.test(i); i--) // until hidden bit at i
-                                    shift++;
-				if (shift < adder_size) {
-					// adjust the scale
-					scale_of_result -= shift;
-					// and extract the fraction, leaving the hidden bit behind
-					for (int i = result_size - 1; i >= shift ; i--) {
-						result_fraction[i] = sum[i - shift];  // fract_size is already 1 smaller than adder_size so we get the implied hidden bit removal automatically
-					}
-				}
-				else {
-					// we have actual 0
-					reset();
-					return *this;
-				}				
-			}
-		}
-		else {
-			// no carry implies that the scale remains the same
-			// and that the first fraction bits came after a hidden bit at nbits-2 position in the adder result register
-			for (int i = 0; i < nbits - 2; i++) {
-				result_fraction[i] = sum[i];
-			}
-		}
-		std::bitset<fbits> truncated_fraction;
-		truncate<result_size, fbits>(result_fraction, truncated_fraction);	
-		
-		
-		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum " << sum << " fraction " << result_fraction << "truncated " << truncated_fraction << std::endl;
-
-		convert_to_posit(r1_sign, scale_of_result, truncated_fraction);
-#endif		
+                return *this;                
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
-		if (isInfinite() && rhs.isInfinite()) {
-			reset();  // IN FP this operation is a NAN, but will return a 0
-		}
-		else {
-		*this += -rhs;
+		// In FP subtractions involving INFINITY respond with a NaN, posits encode to -inf
+		if (isInfinite()) {
+			return *this;
+		} else if (rhs.isInfinite()) {
+			*this = rhs;
+			return *this;  
+		} else {
+		   *this += -rhs;
 		}
 		return *this;
 	}
@@ -367,8 +272,8 @@ public:
 		value<mbits> result;
 		multiply(v1, v2, result);
 		// this path rounds each multiply
-		value<fbits> rounded = result.template round_to<fbits>();
-		convert_to_posit(rounded);
+		//value<fbits> rounded = result.template round_to<fbits>();
+		convert_to_posit(result);
 		return *this;
 	}
 	posit<nbits, es>& operator/=(const posit& rhs) {
@@ -477,11 +382,6 @@ public:
 			_Bits.set(std::size_t(msb--), f[fbits - 1 - i]);
 		}
 		return _Bits;
-	}
-	void validate() {
-		if (nbits < es + 3) {
-			throw "Requested es is too large for nbits";
-		}
 	}
 
 	// MODIFIERS
@@ -633,6 +533,10 @@ public:
 			return INFINITY;
 		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
 	}
+	
+	// Maybe remove explicit, LU compiles then, but we have lots of double computation then
+	explicit operator double() const { return to_double(); }
+	
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	value<fbits> convert_to_scientific_notation() const {
 		value<fbits> v(_sign, scale(), get_fraction().get(), isZero());
@@ -722,6 +626,29 @@ public:
 		// scale = useed ^ k * 2^e 
 		return _regime.scale() + _exponent.scale();
 	}
+	// special case check for projecting values between (0, minpos] to minpos and [maxpos, inf) to maxpos
+	bool check_inward_projection_range(bool sign, int k) {
+		bool bSpecial = false;
+		if (k < 0) {
+			bSpecial = (-k <= nbits - 2 ? false : true);
+		}
+		else {
+			bSpecial = (k <= nbits - 3 ? false : true);
+		}
+		return bSpecial;
+	}
+	bool check_exponent_range(bool sign, int scale) {
+		// TODO: this is not working as a mechanism yet
+		return false;
+		bool bSpecial = false;
+		if (scale < 0) {
+			bSpecial = (-scale <= nbits - 3 ? false : true);
+		}
+		else {
+			bSpecial = (scale > nbits - es - 1 && scale < nbits ? false : true);
+		}
+		return bSpecial;
+	}
 	// project to the next 'larger' posit: this is 'pushing away' from zero, projecting to the next bigger scale
 	void project_up() {
 		bool carry = _fraction.increment();
@@ -729,9 +656,6 @@ public:
 			carry = _exponent.increment();
 		if (carry) 
                         _regime.increment();
-		// store raw bit representation
-		_raw_bits = _sign ? twos_complement(collect()) : collect();
-		_raw_bits.set(nbits - 1, _sign);
 	}
 	// step up to the next posit in a lexicographical order
 	void increment_posit() {
@@ -768,6 +692,9 @@ public:
 		bool round_up = _fraction.assign_fraction(remaining_bits, _frac);
 		if (round_up) 
                     project_up();
+		// store raw bit representation
+		_raw_bits = _sign ? twos_complement(collect()) : collect();
+		_raw_bits.set(nbits - 1, _sign);
 		if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
 	}
 	
@@ -783,13 +710,40 @@ public:
             if (_trace_conversion) std::cout << "sign " << (_negative ? "-1 " : " 1 ") << "scale " << _scale << " fraction " << _frac << std::endl;
                 
             // construct the posit
-            _sign = _negative;
-            unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
-            unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
-            unsigned int remaining_bits    = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
-            bool round_up = _fraction.assign(remaining_bits, _frac, hpos);
-            if (round_up)
-                project_up();
+			_sign = _negative;
+			int k = _scale >> es;
+			// interpolation rule checks
+			if (check_inward_projection_range(_sign, k)) {    // regime dominated
+				if (_trace_conversion) std::cout << "inward projection" << std::endl;
+				// we are projecting to minpos/maxpos
+				_regime.assign_regime_pattern(_sign, k);
+				// store raw bit representation
+				_raw_bits = _sign ? twos_complement(collect()) : collect();
+				_raw_bits.set(nbits - 1, _sign);
+				// we are done
+			} 
+			else if (check_exponent_range(_sign, _scale)) {  // exponent dominated
+				if (_trace_conversion) std::cout << "geometric rounding" << std::endl;
+				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
+				unsigned int nr_of_exp_bits = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
+				// store raw bit representation
+				_raw_bits = _sign ? twos_complement(collect()) : collect();
+				_raw_bits.set(nbits - 1, _sign);
+				// we are done
+			}
+			else {										// fraction dominated
+				if (_trace_conversion) std::cout << "arithmetric rounding" << std::endl;
+				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
+				unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
+				unsigned int remaining_bits    = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
+				// incorrect test for geometric rounding if (nr_of_exp_bits > 0 && remaining_bits == 0) std::cout << "geometric rounding" << std::endl;
+				bool round_up = _fraction.assign(remaining_bits, _frac, hpos);
+				if (round_up) project_up();
+				// store raw bit representation
+				_raw_bits = _sign ? twos_complement(collect()) : collect();
+				_raw_bits.set(nbits - 1, _sign);
+			}
+
             if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;            
         }
 
@@ -801,17 +755,36 @@ private:
 	fraction<fbits> 	   _fraction;	// decoded posit representation
 
 	// HELPER methods
-	void align_numbers(int lhs_scale, const std::bitset<nbits>& lhs, int rhs_scale, const std::bitset<nbits>& rhs, int& scale, std::bitset<nbits>& r1, std::bitset<nbits>& r2) {
-
-	}
-
+	// multiply two values
 	void multiply(const value<fbits>& v1, const value<fbits>& v2, value<mbits>& result) {
 		bool new_sign = v1.sign() ^ v2.sign();
 		int new_scale = v1.scale() + v2.scale();
 		std::bitset<mbits> result_fraction;
+#ifdef MULTIPLY_WITH_FRACTION_WITH_HIDDEN_BIT
+		// fractions are without hidden bit, but the mul needs the hidden bit
+		std::bitset<fhbits> operand1, operand2;
+		operand1.set(fhbits-1, true); // hidden bit
+		operand2.set(fhbits-1, true);
+		std::bitset<fbits> v1_frac = v1.fraction();
+		std::bitset<fbits> v2_frac = v2.fraction();
+		for (int i = 0; i < fbits; i++) {
+			operand1.set(i, v1_frac[i]);
+			operand2.set(i, v2_frac[i]);
+		}
+		if (fhbits > 0) {
+			multiply_unsigned(operand1, operand2, result_fraction);
+		}
+		if (_trace_mul) std::cout << "result_fraction " << result_fraction << std::endl;
+		// shift hidden bit out
+		while (!result_fraction.test(mbits - 1)) {
+			result_fraction <<= 1;
+		}
+		result_fraction <<= 1;
+#else
 		if (fbits > 0) {
 			multiply_unsigned(v1.fraction(), v2.fraction(), result_fraction);
 		}
+#endif
 		if (_trace_mul) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
 		// TODO: how do you recognize the special case of zero?
 		result.set(new_sign, new_scale, result_fraction, false);

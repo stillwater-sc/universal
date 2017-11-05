@@ -245,10 +245,10 @@ bool ValidateDoubleRoundingUpPosit_4_1()
 }
 
 int main(int argc, char** argv)
-{
-	//ReportPositScales();
+try {
+	int nrOfFailedTestCases = 0;
 
-	try {
+	//ReportPositScales();
 
 		TestPositRounding(ValidateFloatRoundingPosit_4_0(), "posit<4,0>", "float rounding");
 		TestPositRounding(ValidateDoubleRoundingPosit_4_0(), "posit<4,0>", "double rounding");
@@ -256,10 +256,10 @@ int main(int argc, char** argv)
 		TestPositRounding(ValidateDoubleRoundingDownPosit_4_1(), "posit<4,1>", "double rounding down");
 		TestPositRounding(ValidateDoubleRoundingUpPosit_4_1(), "posit<4,1>", "double rounding up");
 
-	}
-	catch (char* e) {
-		cerr << e << endl;
-	}
 
-	return 0;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }

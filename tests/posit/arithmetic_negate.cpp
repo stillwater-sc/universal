@@ -39,45 +39,45 @@ void GenerateTestCase(double da) {
 }
 
 int main(int argc, char** argv)
-try
-{
-	int nrOfFailedTests = 0;
+try {
+	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
 
 	// generate individual testcases to hand trace/debug
 	//GenerateTestCase<5, 0>(-0.625f);
 	//GenerateTestCase<5, 0>(-0.500f);
 
-	nrOfFailedTests += ReportTestResult(ValidateNegation<3, 0>("Posit<3,0> negation failed: ", bReportIndividualTestCases), "posit<3,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<3, 0>("Posit<3,0> negation failed: ", bReportIndividualTestCases), "posit<3,0>", "negation");
 
-	nrOfFailedTests += ReportTestResult(ValidateNegation<4, 0>("Posit<4,0> negation failed: ", bReportIndividualTestCases), "posit<4,0>", "negation");
-	nrOfFailedTests += ReportTestResult(ValidateNegation<4, 1>("Posit<4,1> negation failed: ", bReportIndividualTestCases), "posit<4,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<4, 0>("Posit<4,0> negation failed: ", bReportIndividualTestCases), "posit<4,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<4, 1>("Posit<4,1> negation failed: ", bReportIndividualTestCases), "posit<4,1>", "negation");
 
-	nrOfFailedTests += ReportTestResult(ValidateNegation<5, 0>("Posit<5,0> negation failed: ", bReportIndividualTestCases), "posit<5,0>", "negation");
-	nrOfFailedTests += ReportTestResult(ValidateNegation<5, 1>("Posit<5,1> negation failed: ", bReportIndividualTestCases), "posit<5,1>", "negation");
-	nrOfFailedTests += ReportTestResult(ValidateNegation<5, 2>("Posit<5,2> negation failed: ", bReportIndividualTestCases), "posit<5,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 0>("Posit<5,0> negation failed: ", bReportIndividualTestCases), "posit<5,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 1>("Posit<5,1> negation failed: ", bReportIndividualTestCases), "posit<5,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 2>("Posit<5,2> negation failed: ", bReportIndividualTestCases), "posit<5,2>", "negation");
 
-	nrOfFailedTests += ReportTestResult(ValidateNegation<6, 0>("Posit<6,0> negation failed: ", bReportIndividualTestCases), "posit<6,0>", "negation");
-	nrOfFailedTests += ReportTestResult(ValidateNegation<6, 1>("Posit<6,1> negation failed: ", bReportIndividualTestCases), "posit<6,1>", "negation");
-	nrOfFailedTests += ReportTestResult(ValidateNegation<6, 2>("Posit<6,2> negation failed: ", bReportIndividualTestCases), "posit<6,2>", "negation");
-	nrOfFailedTests += ReportTestResult(ValidateNegation<6, 3>("Posit<6,3> negation failed: ", bReportIndividualTestCases), "posit<6,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 0>("Posit<6,0> negation failed: ", bReportIndividualTestCases), "posit<6,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 1>("Posit<6,1> negation failed: ", bReportIndividualTestCases), "posit<6,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 2>("Posit<6,2> negation failed: ", bReportIndividualTestCases), "posit<6,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 3>("Posit<6,3> negation failed: ", bReportIndividualTestCases), "posit<6,3>", "negation");
 
-	nrOfFailedTests += ReportTestResult(ValidateNegation<7, 0>("Posit<7,0> negation failed: ", bReportIndividualTestCases), "posit<7,0>", "negation");
-	nrOfFailedTests += ReportTestResult(ValidateNegation<7, 1>("Posit<7,1> negation failed: ", bReportIndividualTestCases), "posit<7,1>", "negation");
-	nrOfFailedTests += ReportTestResult(ValidateNegation<7, 2>("Posit<7,2> negation failed: ", bReportIndividualTestCases), "posit<7,2>", "negation");
-	nrOfFailedTests += ReportTestResult(ValidateNegation<7, 3>("Posit<7,3> negation failed: ", bReportIndividualTestCases), "posit<7,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 0>("Posit<7,0> negation failed: ", bReportIndividualTestCases), "posit<7,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 1>("Posit<7,1> negation failed: ", bReportIndividualTestCases), "posit<7,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 2>("Posit<7,2> negation failed: ", bReportIndividualTestCases), "posit<7,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 3>("Posit<7,3> negation failed: ", bReportIndividualTestCases), "posit<7,3>", "negation");
 
-	nrOfFailedTests += ReportTestResult(ValidateNegation<8, 0>("Posit<8,0> negation failed: ", bReportIndividualTestCases), "posit<8,0>", "negation");
-	nrOfFailedTests += ReportTestResult(ValidateNegation<8, 1>("Posit<8,1> negation failed: ", bReportIndividualTestCases), "posit<8,1>", "negation");
-	nrOfFailedTests += ReportTestResult(ValidateNegation<8, 2>("Posit<8,2> negation failed: ", bReportIndividualTestCases), "posit<8,2>", "negation");
-	nrOfFailedTests += ReportTestResult(ValidateNegation<8, 3>("Posit<8,3> negation failed: ", bReportIndividualTestCases), "posit<8,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 0>("Posit<8,0> negation failed: ", bReportIndividualTestCases), "posit<8,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 1>("Posit<8,1> negation failed: ", bReportIndividualTestCases), "posit<8,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 2>("Posit<8,2> negation failed: ", bReportIndividualTestCases), "posit<8,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 3>("Posit<8,3> negation failed: ", bReportIndividualTestCases), "posit<8,3>", "negation");
 
 
-	nrOfFailedTests += ReportTestResult(ValidateNegation<16, 1>("Posit<16,1> negation failed: ", bReportIndividualTestCases), "posit<16,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<16, 1>("Posit<16,1> negation failed: ", bReportIndividualTestCases), "posit<16,1>", "negation");
 	
-	return nrOfFailedTests;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* e) {
-	cerr << e << endl;
-	return -1;
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }
+

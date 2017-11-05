@@ -21,15 +21,14 @@ Standard posits with nbits = 16 have 1 exponent bit.
 */
 
 int main(int argc, char** argv)
-try
-{
+try {
 	const size_t RND_TEST_CASES = 100000;
 
 	const size_t nbits = 16;
 	const size_t es = 1;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	std::string tag = " posit<16,1>";
 
 	cout << "Standard posit<16,1> configuration tests" << endl;
@@ -41,14 +40,14 @@ try
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
 	cout << "Subtraction   :                 " << RND_TEST_CASES << " randoms" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
-	cout << "Multiplication:                 " << RND_TEST_CASES << " randoms" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
+//	cout << "Multiplication:                 " << RND_TEST_CASES << " randoms" << endl;
+//	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
 	//cout << "Division      :                 " << RND_TEST_CASES << " randoms" << endl;
 	//nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
 
-	return nrOfFailedTestCases;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* e) {
-	cerr << e << endl;
-	return -1;
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }

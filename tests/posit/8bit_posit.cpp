@@ -21,8 +21,7 @@ Standard posits with nbits = 8 have no exponent bits.
 */
 
 int main(int argc, char** argv)
-try
-{
+try {
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
 	cout << "Standard posit<8,0> configuration tests" << endl;
@@ -34,9 +33,10 @@ try
 	cout << spec_to_string(p) << endl;
 
 	nrOfFailedTestCases = ReportTestResult(ValidateAddition<8,0>("Posit<8,0> addition failed: ", bReportIndividualTestCases), "posit<8,0>", "addition") ;
-	return nrOfFailedTestCases;
+
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* e) {
-	cerr << e << endl;
-	return -1;
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }

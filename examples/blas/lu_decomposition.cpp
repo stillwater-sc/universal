@@ -7,6 +7,9 @@
 // enable the mathematical constants in cmath: old-style preprocessor magic which isn't best practice anymore
 #include "stdafx.h"
 
+#include <iostream>
+#include <typeinfo>
+
 #include <boost/numeric/mtl/mtl.hpp>
 #include <posit>
 
@@ -16,25 +19,33 @@ using namespace std;
 #define USE_POSIT
 
 int main(int argc, char** argv)
-try 
-{
+try {
 	const size_t nbits = 16;
 	const size_t es = 1;
 	const size_t vecSize = 32;
 
 #ifdef USE_POSIT
-	typedef mtl::dense2D< posit<8, 0> >      Matrix;
-	typedef mtl::dense_vector< posit<8, 0> > Vector;
+	using Matrix = mtl::dense2D< posit<8, 0> >;
+	using Vector = mtl::dense_vector< posit<8, 0> >;
 #else
-	typedef mtl::dense2D<float>       Matrix;
-	typedef mtl::dense_vector<float>  Vector;
+	using Matrix = mtl::dense2D<float>;
+	using Vector = mtl::dense_vector<float>;
 #endif
 
 
 	Matrix  A(4, 4), L(4, 4), U(4, 4), AA(4, 4);
 	Vector	 v(4);
 	double 	 c = 1.0;
-
+	
+        // Considered as matrix. 
+	std::cout << "Shape of A is " << typeid(mtl::ashape::ashape<Matrix>::type).name() << '\n';
+	
+	posit<8, 0> p3 = 3.0;
+	bool cmp = p3 <= 4.0;
+	posit<8, 0> p4 = 1 * p3;
+        // std::cout << "p3 < 4: " << std::boolalpha << p3 <= 4.0 << std::endl;
+	
+#if 1	
 	for (unsigned i = 0; i < 4; i++)
 		for (unsigned j = 0; j < 4; j++) {
 			U[i][j] = i <= j ? c * (i + j + 2) : (0);
@@ -75,11 +86,11 @@ try
 
 	Vector v5(lu_adjoint_solve(AA, b));
 	std::cout << "v5 is " << v5 << "\n";
-
-	return 0;
-
+#endif
+	int nrOfFailedTestCases = 0;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {
 	cerr << msg << endl;
-	return 1;
+	return EXIT_FAILURE;
 }

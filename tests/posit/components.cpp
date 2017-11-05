@@ -12,10 +12,11 @@
 using namespace std;
 
 int main()
-{
+try {
 	const size_t nbits = 8;
 	const size_t es = 2;
 	const bool _sign = false; // positive regime
+	int nrOfFailedTestCases = 0;
 
 	posit<nbits, es> p;
 
@@ -55,7 +56,11 @@ int main()
 
 		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime << " " << test_exponent << " " << test_fraction << endl;
 	}
-	return 0;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+}
+catch (char* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
 }
 
 
