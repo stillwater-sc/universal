@@ -46,20 +46,11 @@ class posit {
 
 		// special case processing
 		if (v.isZero()) {
-			_sign = false;
-			_regime.setZero();
-			_exponent.reset();
-			_fraction.reset();
-			_raw_bits.reset();
+			setToZero();
 			return *this;
 		}
 		if (v.isInfinite() || v.isNaN()) {  // posit's encode NaN as -inf
-			_sign = true;
-			_regime.setInfinite();
-			_exponent.reset();
-			_fraction.reset();
-			_raw_bits.reset();
-			_raw_bits.set(nbits - 1, true);
+			setToInfinite();
 			return *this;
 		}
 
@@ -90,9 +81,13 @@ public:
 	posit& operator=(posit&&) = default;
 	
 	/// Construct posit from its components
-        // should we worry about the raw bits ???
+        // should we worry about the raw bits ???  yes, raw_bits are used for incr/decr and 2's complement operators
 	posit(bool sign, const regime<nbits, es>& r, const exponent<nbits, es>& e, const fraction<fbits>& f)
-          : _sign(sign), _regime(r), _exponent(e), _fraction(f) {}
+          : _sign(sign), _regime(r), _exponent(e), _fraction(f) {
+		// generate raw bit representation
+		_raw_bits = _sign ? twos_complement(collect()) : collect();
+		_raw_bits.set(nbits - 1, _sign);
+	}
 	
 	posit<nbits, es>(int64_t initial_value) {
 		*this = initial_value;
@@ -122,11 +117,9 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(int64_t rhs) {
-		reset();
+		setToZero();
 		value<fbits> v(rhs);
 		if (v.isZero()) {
-			_sign = false;
-			_regime.setZero();
 			return *this;
 		}
 		else if (v.isNegative()) {
@@ -139,11 +132,9 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(uint64_t rhs) {
-		reset();
+		setToZero();
 		value<fbits> v(rhs);
 		if (v.isZero()) {
-			_sign = false;
-			_regime.setZero();
 			return *this;
 		}
 		convert_to_posit(v);
@@ -228,7 +219,7 @@ public:
                 assert(shift >= -1);
                 
                 if (shift >= long(abits)) {            // we have actual 0                            
-                    reset();
+                    setToZero();
                     return *this;
                 }
                 
@@ -277,6 +268,31 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator/=(const posit& rhs) {
+		if (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
+		// since we are encoding error conditions as -inf, we need to process -inf condition first
+		if (isInfinite()) {
+			return *this;
+		}
+		else if (rhs.isInfinite()) {
+			*this = rhs;
+			return *this;
+		}
+		else if (isZero()) {
+			return *this;
+		}
+		else if (rhs.isZero()) {
+			setToInfinite();
+			*this;
+			return *this;
+		}
+		value<fbits> v1, v2;
+		v1 = convert_to_scientific_notation();
+		v2 = rhs.convert_to_scientific_notation();
+		value<mbits> result;
+		multiply(v1, v2, result);
+		// this path rounds each multiply
+		//value<fbits> rounded = result.template round_to<fbits>();
+		convert_to_posit(result); 
 		return *this;
 	}
 	posit<nbits, es>& operator++() {
@@ -298,6 +314,9 @@ public:
 		return tmp;
 	}
 
+	posit<nbits, es>& reciprocate(const posit& rhs) {
+		
+	}
 	// SELECTORS
 	bool isInfinite() const {
 		return (_sign & _regime.isZero());
@@ -385,12 +404,20 @@ public:
 	}
 
 	// MODIFIERS
-	void reset() {
+	void setToZero() {
 		_raw_bits.reset();
 		_sign = false;
 		_regime.reset();
 		_exponent.reset();
 		_fraction.reset();
+	}
+	void setToInfinite() {
+		_sign = true;
+		_regime.setInfinite();
+		_exponent.reset();
+		_fraction.reset();
+		_raw_bits.reset();
+		_raw_bits.set(nbits - 1, true);
 	}
 	posit<nbits, es>&  set(const std::bitset<nbits>& raw_bits) {
 		decode(raw_bits);
@@ -398,7 +425,7 @@ public:
 	}
 	// Set the raw bits of the posit given a binary pattern
 	posit<nbits,es>& set_raw_bits(uint64_t value) {
-		reset();
+		setToZero();
 		std::bitset<nbits> raw_bits;
 		unsigned long mask = 1;
 		for ( int i = 0; i < nbits; i++ ) {
@@ -681,7 +708,7 @@ public:
             convert(v.sign(), v.scale(), v.fraction(), FBits);
         }
 	void convert_to_posit(bool _negative, int _scale, std::bitset<fbits> _frac) {
-		reset();
+		setToZero();
 		if (_trace_conversion) std::cout << "sign " << (_negative ? "-1 " : " 1 ") << "scale " << _scale << " fraction " << _frac << std::endl;
 
 		// construct the posit
@@ -706,7 +733,7 @@ public:
 	template <size_t FBits>
 	void convert(bool _negative, int _scale, std::bitset<FBits> _frac, int hpos) 
 	{
-            reset();
+            setToZero();
             if (_trace_conversion) std::cout << "sign " << (_negative ? "-1 " : " 1 ") << "scale " << _scale << " fraction " << _frac << std::endl;
                 
             // construct the posit

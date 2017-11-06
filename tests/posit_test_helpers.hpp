@@ -491,8 +491,8 @@ void execute(int opcode, double da, double db, posit<nbits, es>& preference, con
 	switch (opcode) {
 	default:
 	case OPCODE_NOP:
-		preference.reset();
-		presult.reset();
+		preference.setToZero();
+		presult.setToZero();
 		return;
 	case OPCODE_ADD:
 		presult = pa + pb;

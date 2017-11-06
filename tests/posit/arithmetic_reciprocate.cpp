@@ -8,7 +8,7 @@
 
 #include <vector>
 
-#define POSIT_VERBOSE_
+#define POSIT_VERBOSE_OUTPUT
 
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit_regime_lookup.hpp"
@@ -40,42 +40,60 @@ void GenerateTestCase(double da) {
 	cout << "reference " << pref << " result " << preciprocal << endl << endl;
 }
 
+
+#define MANUAL_TESTING 1
+#define STRESS_TESTING 0
+
 int main(int argc, char** argv)
 try {
-	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
+	int nrOfFailedTestCases = 0;
 
+
+#if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
+
+	float fa, fb;
+	fa = 0.725f; fb = 0.75f;
+	cout << fa << " * " << fb << " = " << fa*fb << endl;
+	GenerateTestCase<4, 0>(fa);
 	//GenerateTestCase<5, 0>(-0.625f);
 	//GenerateTestCase<5, 0>(-0.500f);
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<3, 0>("Posit<3,0> negation failed: ", bReportIndividualTestCases), "posit<3,0>", "negation");
+#else
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<4, 0>("Posit<4,0> negation failed: ", bReportIndividualTestCases), "posit<4,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<4, 1>("Posit<4,1> negation failed: ", bReportIndividualTestCases), "posit<4,1>", "negation");
+	std::string tag = "Reciprocation failed: ";
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 0>("Posit<5,0> negation failed: ", bReportIndividualTestCases), "posit<5,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 1>("Posit<5,1> negation failed: ", bReportIndividualTestCases), "posit<5,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 2>("Posit<5,2> negation failed: ", bReportIndividualTestCases), "posit<5,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "reciprocation");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 0>("Posit<6,0> negation failed: ", bReportIndividualTestCases), "posit<6,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 1>("Posit<6,1> negation failed: ", bReportIndividualTestCases), "posit<6,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 2>("Posit<6,2> negation failed: ", bReportIndividualTestCases), "posit<6,2>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 3>("Posit<6,3> negation failed: ", bReportIndividualTestCases), "posit<6,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "reciprocation");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 0>("Posit<7,0> negation failed: ", bReportIndividualTestCases), "posit<7,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 1>("Posit<7,1> negation failed: ", bReportIndividualTestCases), "posit<7,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 2>("Posit<7,2> negation failed: ", bReportIndividualTestCases), "posit<7,2>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 3>("Posit<7,3> negation failed: ", bReportIndividualTestCases), "posit<7,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "reciprocation");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 0>("Posit<8,0> negation failed: ", bReportIndividualTestCases), "posit<8,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 1>("Posit<8,1> negation failed: ", bReportIndividualTestCases), "posit<8,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 2>("Posit<8,2> negation failed: ", bReportIndividualTestCases), "posit<8,2>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 3>("Posit<8,3> negation failed: ", bReportIndividualTestCases), "posit<8,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "reciprocation");
 
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "reciprocation");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<16, 1>("Posit<16,1> negation failed: ", bReportIndividualTestCases), "posit<16,1>", "negation");
-	
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "reciprocation");
+
+#if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "reciprocation");
+#endif
+
+#endif
+
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char* msg) {

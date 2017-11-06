@@ -42,6 +42,7 @@ void GenerateTestCase(double da, double db) {
 }
 
 #define MANUAL_TESTING 0
+#define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {	
@@ -50,34 +51,51 @@ try {
 
 
 #if MANUAL_TESTING
+	// generate individual testcases to hand trace/debug
+
 	float fa, fb;
 	fa = 0.725f; fb = 0.75f;
 	cout << fa << " * " << fb << " = " << fa*fb << endl;
 	GenerateTestCase<4,0>(fa, fb);
 #endif
 
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>("multiplication", bReportIndividualTestCases), "posit<3,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>("multiplication", bReportIndividualTestCases), "posit<4,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 1>("multiplication", bReportIndividualTestCases), "posit<4,1>", "multiplication");
+	std::string tag = "Multiplication failed: ";
 
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 0>("multiplication", bReportIndividualTestCases), "posit<5,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 1>("multiplication", bReportIndividualTestCases), "posit<5,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 2>("multiplication", bReportIndividualTestCases), "posit<5,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 0>("multiplication", bReportIndividualTestCases), "posit<6,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 1>("multiplication", bReportIndividualTestCases), "posit<6,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 2>("multiplication", bReportIndividualTestCases), "posit<6,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 3>("multiplication", bReportIndividualTestCases), "posit<6,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 0>("multiplication", bReportIndividualTestCases), "posit<7,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 1>("multiplication", bReportIndividualTestCases), "posit<7,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 2>("multiplication", bReportIndividualTestCases), "posit<7,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 3>("multiplication", bReportIndividualTestCases), "posit<7,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8, 0>("multiplication", bReportIndividualTestCases), "posit<8,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8, 1>("multiplication", bReportIndividualTestCases), "posit<8,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8, 2>("multiplication", bReportIndividualTestCases), "posit<8,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8, 3>("multiplication", bReportIndividualTestCases), "posit<8,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "multiplication");
+
+
+
+
+#if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "multiplication");
+
+#endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
