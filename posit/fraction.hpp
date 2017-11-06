@@ -41,7 +41,7 @@ public:
 		_NrOfBits = (fbits < nrOfFractionBits ? fbits : nrOfFractionBits);
 	}
 	// get a fixed point number by making the hidden bit explicit: useful for multiply units
-	std::bitset<fbits + 1> get_fixed_point() {
+	std::bitset<fbits + 1> get_fixed_point() const {
 		std::bitset<fbits + 1> fixed_point_number;
 		fixed_point_number.set(fbits, true); // make hidden bit explicit
 		for (unsigned int i = 0; i < fbits; i++) {

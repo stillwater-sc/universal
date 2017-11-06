@@ -762,15 +762,9 @@ private:
 		std::bitset<mbits> result_fraction;
 #ifdef MULTIPLY_WITH_FRACTION_WITH_HIDDEN_BIT
 		// fractions are without hidden bit, but the mul needs the hidden bit
-		std::bitset<fhbits> operand1, operand2;
-		operand1.set(fhbits-1, true); // hidden bit
-		operand2.set(fhbits-1, true);
-		std::bitset<fbits> v1_frac = v1.fraction();
-		std::bitset<fbits> v2_frac = v2.fraction();
-		for (int i = 0; i < fbits; i++) {
-			operand1.set(i, v1_frac[i]);
-			operand2.set(i, v2_frac[i]);
-		}
+		std::bitset<fhbits> operand1 = v1.get_fixed_point();
+		std::bitset<fhbits> operand2 = v2.get_fixed_point();
+	
 		if (fhbits > 0) {
 			multiply_unsigned(operand1, operand2, result_fraction);
 		}

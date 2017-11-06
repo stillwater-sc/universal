@@ -9,6 +9,7 @@
 template<size_t fbits>
 class value {
 public:
+	static constexpr size_t fhbits = fbits + 1;    // size of the fixed point number with hidden bit made explicity
 	value() : _sign(false), _scale(0), _nrOfBits(fbits), _inf(false), _nan(false), _zero(true) {}
 	value(bool sign, int scale, std::bitset<fbits> fraction_without_hidden_bit, bool zero = true) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(false), _nan(false), _zero(zero) {}
 	value(int8_t initial_value) {
@@ -187,6 +188,15 @@ public:
 	bool sign() const { return _sign; }
 	int scale() const { return _scale; }
 	std::bitset<fbits> fraction() const { return _fraction; }
+	// get a fixed point number by making the hidden bit explicit: useful for multiply units
+	std::bitset<fhbits> get_fixed_point() const {
+		std::bitset<fbits + 1> fixed_point_number;
+		fixed_point_number.set(fbits, true); // make hidden bit explicit
+		for (unsigned int i = 0; i < fbits; i++) {
+			fixed_point_number[i] = _fraction[i];
+		}
+		return fixed_point_number;
+	}
 	double sign_value() const {	return (_sign ? -1.0 : 1.0); }
 	double scale_value() const {
 		double v = 0.0;
