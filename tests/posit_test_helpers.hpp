@@ -16,6 +16,7 @@ int GetExponent(int scale, int es) {
 	}
 	return scale;
 }
+
 template<size_t nbits, size_t es>
 void ReportConversionError(std::string test_case, std::string op, double input, double reference, const posit<nbits,es>& presult) {
 	std::cerr << test_case

@@ -36,13 +36,22 @@ public:
 	std::bitset<fbits> get() const {
 		return _Bits;
 	}
-	void set(const std::bitset<fbits>& raw, std::size_t nrOfFractionBits) {
+	void set(const std::bitset<fbits>& raw, std::size_t nrOfFractionBits = fbits) {
 		_Bits = raw;
 		_NrOfBits = (fbits < nrOfFractionBits ? fbits : nrOfFractionBits);
 	}
+	// get a fixed point number by making the hidden bit explicit: useful for multiply units
+	std::bitset<fbits + 1> get_fixed_point() {
+		std::bitset<fbits + 1> fixed_point_number;
+		fixed_point_number.set(fbits, true); // make hidden bit explicit
+		for (unsigned int i = 0; i < fbits; i++) {
+			fixed_point_number[i] = _Bits[i];
+		}
+		return fixed_point_number;
+	}
 	/// Copy the bits into the fraction. Rounds away from zero.	
 	template <size_t FBits>
-	bool assign(unsigned int remaining_bits, std::bitset<FBits>& _fraction, size_t hpos = FBits) 
+	bool assign(unsigned int remaining_bits, std::bitset<FBits>& _fraction, std::size_t hpos = FBits) 
 	{
                 if (hpos > FBits)
                     throw hpos_too_large{};
