@@ -32,11 +32,17 @@ double useed()
 	return double(uint64_t(1) << (uint64_t(1) << es));
 }
 
+// Forward definitions
+template<size_t nbits, size_t es> class posit;
+template<size_t nbits, size_t es> posit<nbits, es> abs(const posit<nbits, es>& p);
+
+
 /*
  class posit represents arbitrary configuration posits and their basic arithmetic operations (add/sub, mul/div)
  */
 template<size_t nbits, size_t es>
-class posit {
+class posit 
+{
 	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
 
 	template <typename T>
@@ -199,7 +205,10 @@ public:
                                    r2 = rhs._fraction.template nshift<abits>(rhs_scale - scale_of_result + 3);
                 bool r1_sign = _sign, r2_sign = rhs._sign;
                 
-                 if (std::abs(to_double()) < std::abs(rhs.to_double())) { //  TODO: should compare as posits directly
+
+                if (std::abs(to_double()) < std::abs(rhs.to_double())) { //  TODO: should compare as posits directly
+//                 asm( "int $3" ); // Stop debugger here :-D
+//                 if (abs(*this) < abs(rhs)) {   
                     std::swap(r1, r2);
                     std::swap(r1_sign, r2_sign);
                 } 
@@ -794,3 +803,11 @@ private:
 	template<size_t nnbits, size_t ees>
 	friend bool operator>=(const posit<nnbits, ees>& lhs, const posit<nnbits, ees>& rhs);
 };
+
+/// Magnitude of a posit (same with sign bit turned off).
+template<size_t nbits, size_t es> 
+posit<nbits, es> abs(const posit<nbits, es>& p)
+{
+    return posit<nbits, es>(false, p.get_regime(), p.get_exponent(), p.get_fraction());
+}
+
