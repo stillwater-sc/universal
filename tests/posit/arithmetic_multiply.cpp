@@ -54,11 +54,14 @@ try {
 	// generate individual testcases to hand trace/debug
 
 	float fa, fb;
-	fa = 0.725f; fb = 0.75f;
+	fa = 0.75f; fb = 0.75f;
 	cout << fa << " * " << fb << " = " << fa*fb << endl;
 	GenerateTestCase<4,0>(fa, fb);
-#endif
 
+	//nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>("Manual Testing: ", true), "posit<4,0>", "multiplication");
+
+#else
+	
 	std::string tag = "Multiplication failed: ";
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "multiplication");
@@ -86,7 +89,6 @@ try {
 
 
 
-
 #if STRESS_TESTING
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "multiplication");
@@ -94,6 +96,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "multiplication");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "multiplication");
+
+#endif
 
 #endif
 
