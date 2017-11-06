@@ -31,7 +31,7 @@ message(STATUS "Boost_FOUND " ${Boost_FOUND})
 if (Boost_FOUND)
 	message(STATUS "Including Boost_INCLUDE_DIR " ${Boost_INCLUDE_DIR})
 	include_directories(${Boost_INCLUDE_DIR})
-endif (BOOST_FOUND)
+endif (Boost_FOUND)
 
 find_package(MTL REQUIRED)
 include_directories(${MTL_INCLUDE_DIRS})
