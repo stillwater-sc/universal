@@ -238,16 +238,7 @@ public:
                 return *this;                
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
-		// In FP subtractions involving INFINITY respond with a NaN, posits encode to -inf
-		if (isInfinite()) {
-			return *this;
-		} else if (rhs.isInfinite()) {
-			*this = rhs;
-			return *this;  
-		} else {
-		   *this += -rhs;
-		}
-		return *this;
+                return *this += -rhs;
 	}
 	posit<nbits, es>& operator*=(const posit& rhs) {
 		if (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
