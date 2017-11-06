@@ -39,7 +39,7 @@ void GenerateTestCase(double da, double db) {
 	cout << "reference " << pref << " result " << pdiv << endl << endl;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -52,6 +52,8 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<5, 0>(4.000f, -2.0f);
 	GenerateTestCase<5, 0>(4.000f,  0.5f);
+
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>("Manual Testing", true), "posit<3,0>", "division");
 
 #else
 

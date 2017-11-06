@@ -334,11 +334,6 @@ int ValidateNegation(std::string tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pneg, pref;
 
-	double input_values[NR_TEST_CASES];
-	for (int i = 0; i < NR_TEST_CASES; i++) {
-		pref.set_raw_bits(i);
-		input_values[i] = pref.to_double();
-	}
 	double da;
 	for (int i = 1; i < NR_TEST_CASES; i++) {
 		pa.set_raw_bits(i);
@@ -438,6 +433,32 @@ int ValidateMultiplication(std::string tag, bool bReportIndividualTestCases) {
 			else {
 				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
 			}
+		}
+	}
+	return nrOfFailedTests;
+}
+
+// enerate all reciprocation cases for a posit configuration: executes within 10 sec till about nbits = 14
+template<size_t nbits, size_t es>
+int ValidateReciprocation(std::string tag, bool bReportIndividualTestCases) {
+	const int NR_TEST_CASES = (1 << nbits);
+	int nrOfFailedTests = 0;
+	posit<nbits, es> pa, preciprocal, preference;
+
+	double da;
+	for (int i = 1; i < NR_TEST_CASES; i++) {
+		pa.set_raw_bits(i);
+		// generate reference
+		da = pa.to_double();
+		preference = 1.0 / da;		
+		preciprocal = pa.reciprocate();
+
+		if (fabs(preciprocal.to_double() - preference.to_double()) > 0.000000001) {
+			nrOfFailedTests++;
+			if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "reciprocate", pa, preference, preciprocal);
+		}
+		else {
+			if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "reciprocate", pa, preference, preciprocal);
 		}
 	}
 	return nrOfFailedTests;

@@ -88,7 +88,10 @@ public:
 		_raw_bits = _sign ? twos_complement(collect()) : collect();
 		_raw_bits.set(nbits - 1, _sign);
 	}
-	
+	/// Construct posit from raw bits
+	posit(const std::bitset<nbits>& raw_bits) {
+		*this = set(raw_bits);
+	}
 	posit<nbits, es>(int64_t initial_value) {
 		*this = initial_value;
 	}
@@ -282,16 +285,14 @@ public:
 		}
 		else if (rhs.isZero()) {
 			setToInfinite();
-			*this;
 			return *this;
 		}
 		value<fbits> v1, v2;
 		v1 = convert_to_scientific_notation();
-		v2 = rhs.convert_to_scientific_notation();
+		posit<nbits, es> reciprocal = rhs.reciprocate();
+		v2 = reciprocal.convert_to_scientific_notation();
 		value<mbits> result;
 		multiply(v1, v2, result);
-		// this path rounds each multiply
-		//value<fbits> rounded = result.template round_to<fbits>();
 		convert_to_posit(result); 
 		return *this;
 	}
@@ -314,8 +315,15 @@ public:
 		return tmp;
 	}
 
-	posit<nbits, es>& reciprocate(const posit& rhs) {
-		
+	posit<nbits, es> reciprocate() const {
+		// special case of inf
+		if (isInfinite()) {
+			return posit<nbits, es>();
+		}
+		bool old_sign = _sign;
+		std::bitset<nbits> raw_bits = twos_complement(_raw_bits);
+		raw_bits.set(nbits-1, old_sign);		
+		return posit<nbits, es>(raw_bits);
 	}
 	// SELECTORS
 	bool isInfinite() const {
