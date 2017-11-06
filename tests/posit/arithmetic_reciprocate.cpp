@@ -52,14 +52,11 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-
-	float fa;
-	fa = INFINITY;
-	GenerateTestCase<4, 0>(fa);
-	//GenerateTestCase<5, 0>(-0.625f);
-	//GenerateTestCase<5, 0>(-0.500f);
-
-	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 0>("Manual testing", true), "posit<5,0>", "reciprocation");
+	GenerateTestCase<5, 0>(0.625f);
+	GenerateTestCase<5, 0>(0.75f);
+	GenerateTestCase<5, 0>(1.25f);
+	GenerateTestCase<5, 0>(1.5f);
+	//nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 0>("Manual testing", true), "posit<5,0>", "reciprocation");
 #else
 
 	std::string tag = "Reciprocation failed: ";

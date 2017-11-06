@@ -316,6 +316,7 @@ public:
 	}
 
 	posit<nbits, es> reciprocate() const {
+		if (_trace_reciprocate) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
 		// special case of inf
 		if (isInfinite()) {
 			return posit<nbits, es>();
