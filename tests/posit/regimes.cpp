@@ -33,26 +33,40 @@ int ValidateRegimeOperations(std::string tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTestCases = 0;
 
 	regime<nbits, es> r;
-	for (int i = -NR_TEST_CASES; i < NR_TEST_CASES+1; i++) {
-		int reference = r.regime_size(i);
-		int nrRegimeBits = r.assign_regime_pattern(i);	
+	for (int k = -NR_TEST_CASES; k < NR_TEST_CASES+1; k++) {
+		int reference = r.regime_size(k);
+		int nrRegimeBits = r.assign_regime_pattern(k);	
 		if (nrRegimeBits != reference) {
 			nrOfFailedTestCases++;
-			if (bReportIndividualTestCases) cout << "FAIL: k = " << setw(3) << i << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << endl;
+			if (bReportIndividualTestCases) cout << "FAIL: k = " << setw(3) << k << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << endl;
 		}	
 		else {
-			//if (bReportIndividualTestCases) cout << "PASS: k = " << setw(3) << i << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << endl;
+			//if (bReportIndividualTestCases) cout << "PASS: k = " << setw(3) << k << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << endl;
 		}
 	}
 
 	return nrOfFailedTestCases;
 }
 
-int main()
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 0
+
+int main(int argc, char** argv)
 try {
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+
+#if MANUAL_TESTING
+
+	// generate individual testcases to hand trace/debug
+	regime<10, 2> r;
+	for (int k = -7; k < 9; k++) {
+		int regime_size = r.assign_regime_pattern(k);
+		cout << "k = " << setw(3) << k << " regime is " << r << " regime size is " << regime_size << " bits" << endl;
+	}
+
+#else
 	std::string tag = "Regime conversion failed";
 
 	cout << "Regime tests" << endl;
@@ -80,6 +94,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<8, 1>(tag, bReportIndividualTestCases), "regime<8,1>", "regime");
 	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<8, 2>(tag, bReportIndividualTestCases), "regime<8,2>", "regime");
 	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<8, 3>(tag, bReportIndividualTestCases), "regime<8,3>", "regime");
+
+#endif
+
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

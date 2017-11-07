@@ -19,31 +19,41 @@ int ValidateExponentOperations() {
 	return nrOfFailedTestCases;
 }
 
-int main()
-try {
-	const size_t nbits = 5;
-	const size_t es = 0;
+#define MANUAL_TESTING 1
+#define STRESS_TESTING 0
 
+int main(int argc, char** argv)
+try {
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	posit<nbits,es> pa, pb, psum, pres;
-	float fa, fb, fres;
-	fa = -0.125f;
-	fb = 1.5f;
-	pa = fa;
-	pb = fb;
-	fres = fa + fb;
-	psum = pa + pb;
-	pres = fres;
-	cout << pa << " " << pb << " " << psum << " " << pres << " " << fres << endl;
 
-	cout << components_to_string(pa) << endl;
-	cout << components_to_string(pb) << endl;
-	cout << components_to_string(pres) << endl;
+#if MANUAL_TESTING
+
+	// generate individual testcases to hand trace/debug
+	cout << "Manual Exponent tests" << endl;
+	constexpr size_t nbits = 6;
+	constexpr size_t es = 2;
+	regime<nbits, es> r;
+	exponent<nbits, es> e;
+	for (int scale = -16; scale < 17; scale++) {
+		int regime_size = r.assign_regime_pattern(scale >> es);
+		int exp_size = e.assign_exponent_bits(scale, regime_size);
+		if (scale < 0) {
+			cout << "in value = " << setw(12) << 1.0/(unsigned(1) << -scale) << " scale = " << setw(3) << scale << " r(" << r << ")  e(" << e << ")     projected value " << r.value() * e.value() << endl;
+		}
+		else {
+			cout << "in value = " << setw(12) << (unsigned(1) << scale)      << " scale = " << setw(3) << scale << " r(" << r << ")  e(" << e << ")     projected value " << r.value() * e.value() << endl;
+		}
+	}
+
+#else
 
 	cout << "Exponent tests" << endl;
 
 	exponent<nbits, es> e1, e2;
+
+#endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
