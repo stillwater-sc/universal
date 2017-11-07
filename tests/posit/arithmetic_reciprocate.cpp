@@ -87,9 +87,9 @@ try {
 
 #if STRESS_TESTING
 	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "reciprocation");
-#endif
+#endif // STRESS_TESTING
 
-#endif
+#endif // MANUAL_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

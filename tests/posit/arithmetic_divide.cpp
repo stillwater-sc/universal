@@ -8,6 +8,8 @@
 
 #include <vector>
 
+//#define POSIT_VERBOSE_OUTPUT
+
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
@@ -90,9 +92,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "division");
 
-#endif
+#endif // STRESS_TESTING
 
-#endif
+#endif // MANUAL_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
