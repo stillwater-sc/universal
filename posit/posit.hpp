@@ -12,7 +12,6 @@
 
 #include "../bitset/bitset_helpers.hpp"
 #include "../bitset/bitset_arithmetic.hpp"
-#include "posit_regime_lookup.hpp"
 #include "posit_helpers.hpp"
 #include "trace_constants.hpp"
 #include "value.hpp"
@@ -510,7 +509,7 @@ public:
 		}
 		if (!special) {
 			if (_sign) tmp = twos_complement(tmp);
-			unsigned int nrRegimeBits = _regime.assign_regime_pattern(_sign, decode_regime(tmp));
+			unsigned int nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 
 			// get the exponent bits
 			// start of exponent is nbits - (sign_bit + regime_bits)
@@ -722,7 +721,7 @@ public:
 
 		// construct the posit
 		_sign = _negative;	
-		unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
+		unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_scale >> es);
 		unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
 		unsigned int remaining_bits    = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
 		bool round_up = _fraction.assign_fraction(remaining_bits, _frac);
@@ -752,7 +751,7 @@ public:
 			if (check_inward_projection_range(_sign, k)) {    // regime dominated
 				if (_trace_conversion) std::cout << "inward projection" << std::endl;
 				// we are projecting to minpos/maxpos
-				_regime.assign_regime_pattern(_sign, k);
+				_regime.assign_regime_pattern(k);
 				// store raw bit representation
 				_raw_bits = _sign ? twos_complement(collect()) : collect();
 				_raw_bits.set(nbits - 1, _sign);
@@ -760,7 +759,7 @@ public:
 			} 
 			else if (check_exponent_range(_sign, _scale)) {  // exponent dominated
 				if (_trace_conversion) std::cout << "geometric rounding" << std::endl;
-				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
+				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_scale >> es);
 				unsigned int nr_of_exp_bits = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
 				// store raw bit representation
 				_raw_bits = _sign ? twos_complement(collect()) : collect();
@@ -769,7 +768,7 @@ public:
 			}
 			else {										// fraction dominated
 				if (_trace_conversion) std::cout << "arithmetric rounding" << std::endl;
-				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_sign, _scale >> es);
+				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_scale >> es);
 				unsigned int nr_of_exp_bits    = _exponent.assign_exponent_bits(_scale, nr_of_regime_bits);
 				unsigned int remaining_bits    = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
 				// incorrect test for geometric rounding if (nr_of_exp_bits > 0 && remaining_bits == 0) std::cout << "geometric rounding" << std::endl;

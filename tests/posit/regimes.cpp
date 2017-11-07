@@ -9,26 +9,70 @@
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
+#include "../tests/test_helpers.hpp"
 
 using namespace std;
 
+/*
+Regime range example for a posit<6,es>
+     regime      scale
+     00000          ~   value is either 0 or inf
+	 00001         -4
+	 0001-         -3
+	 001--         -2
+	 01---         -1
+	 10---          0
+	 110--          1
+	 1110-          2
+	 11110          3
+	 11111          4
+*/
 template<size_t nbits, size_t es>
-int ValidateRegimeOperations() {
+int ValidateRegimeOperations(std::string tag, bool bReportIndividualTestCases) {
+	const int NR_TEST_CASES = nbits;
 	int nrOfFailedTestCases = 0;
+
+	regime<nbits, es> r;
+	for (int i = -NR_TEST_CASES; i < NR_TEST_CASES+1; i++) {
+		int nrRegimeBits = r.assign_regime_pattern(i);
+		cout << "k = " << setw(3) << i << " regime is " << r << " nr bits " << nrRegimeBits << endl;
+	}
 
 	return nrOfFailedTestCases;
 }
 
 int main()
 try {
-	const size_t nbits = 5;
-	const size_t es = 0;
-
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
+
+	std::string tag = "Regime conversion failed";
 
 	cout << "Regime tests" << endl;
 
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<3, 0>(tag, bReportIndividualTestCases), "regime<3,0>", "regime");
 
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<4, 0>(tag, bReportIndividualTestCases), "regime<4,0>", "regime");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<4, 1>(tag, bReportIndividualTestCases), "regime<4,1>", "regime");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<5, 0>(tag, bReportIndividualTestCases), "regime<5,0>", "regime");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<5, 1>(tag, bReportIndividualTestCases), "regime<5,1>", "regime");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<5, 2>(tag, bReportIndividualTestCases), "regime<5,2>", "regime");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<6, 0>(tag, bReportIndividualTestCases), "regime<6,0>", "regime");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<6, 1>(tag, bReportIndividualTestCases), "regime<6,1>", "regime");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<6, 2>(tag, bReportIndividualTestCases), "regime<6,2>", "regime");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<6, 3>(tag, bReportIndividualTestCases), "regime<6,3>", "regime");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<7, 0>(tag, bReportIndividualTestCases), "regime<7,0>", "regime");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<7, 1>(tag, bReportIndividualTestCases), "regime<7,1>", "regime");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<7, 2>(tag, bReportIndividualTestCases), "regime<7,2>", "regime");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<7, 3>(tag, bReportIndividualTestCases), "regime<7,3>", "regime");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<8, 0>(tag, bReportIndividualTestCases), "regime<8,0>", "regime");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<8, 1>(tag, bReportIndividualTestCases), "regime<8,1>", "regime");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<8, 2>(tag, bReportIndividualTestCases), "regime<8,2>", "regime");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<8, 3>(tag, bReportIndividualTestCases), "regime<8,3>", "regime");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

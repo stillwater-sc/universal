@@ -4,7 +4,6 @@
 #define _POSIT_
 
 #include "../bitset/bitset_helpers.hpp"
-#include "posit_regime_lookup.hpp"
 #include "posit.hpp"
 #include "posit_operators.hpp"
 #include "posit_manipulators.hpp"

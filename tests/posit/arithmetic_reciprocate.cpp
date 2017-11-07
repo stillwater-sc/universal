@@ -11,7 +11,6 @@
 //#define POSIT_VERBOSE_OUTPUT
 
 #include "../../bitset/bitset_helpers.hpp"
-#include "../../posit/posit_regime_lookup.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
