@@ -34,8 +34,15 @@ int ValidateRegimeOperations(std::string tag, bool bReportIndividualTestCases) {
 
 	regime<nbits, es> r;
 	for (int i = -NR_TEST_CASES; i < NR_TEST_CASES+1; i++) {
-		int nrRegimeBits = r.assign_regime_pattern(i);
-		cout << "k = " << setw(3) << i << " regime is " << r << " nr bits " << nrRegimeBits << endl;
+		int reference = r.regime_size(i);
+		int nrRegimeBits = r.assign_regime_pattern(i);	
+		if (nrRegimeBits != reference) {
+			nrOfFailedTestCases++;
+			if (bReportIndividualTestCases) cout << "FAIL: k = " << setw(3) << i << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << endl;
+		}	
+		else {
+			//if (bReportIndividualTestCases) cout << "PASS: k = " << setw(3) << i << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << endl;
+		}
 	}
 
 	return nrOfFailedTestCases;
@@ -43,7 +50,7 @@ int ValidateRegimeOperations(std::string tag, bool bReportIndividualTestCases) {
 
 int main()
 try {
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Regime conversion failed";

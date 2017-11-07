@@ -68,13 +68,17 @@ public:
 		_RegimeBits = nbits - 1;
 		_k = static_cast<int>(nbits) - 1;   // by design: this simplifies increment/decrement
 	}
+	// return the size of a regime encoding for a particular k value
+	int regime_size(int k) {
+		if (k < 0) k = -k - 1;
+		return (k < nbits - 2 ? k + 2 : nbits - 1);
+	}
 	// construct the regime bit pattern given a number's useed scale, that is, k represents the useed factors of the number
 	// k is the unifying abstraction between decoding a posit and converting a float value.
 	// Return the number of regime bits. 
 	// Usage example: say value is 1024 -> sign = false (not negative), scale is 10: assign_regime_pattern(false, scale >> es)
 	// because useed = 2^es and thus a value of scale 'scale' will contain (scale >> es) number of useed factors
 	unsigned int assign_regime_pattern(int k) {
-#if 1
 		if (k < 0) { // south-east quadrant: patterns 00001---
 			_k = int8_t(-k < nbits - 2 ? k : -(static_cast<int>(nbits) - 2)); // constrain regime to minpos
 			k = -_k - 1;
@@ -99,32 +103,6 @@ public:
 				_RegimeBits = nbits - 1;
 			}
 		}
-
-#else
-		if (k < 0) {
-			_k = int8_t(-k < nbits-2 ? k : -(static_cast<int>(nbits) - 2)); // constrain regime to minpos
-			k = -_k - 1;
-			uint64_t my_regime = REGIME_BITS[k];
-			uint64_t mask = REGIME_BITS[0];
-			_RegimeBits = (k < nbits - 2 ? k + 2 : nbits - 1);
-			for (unsigned int i = 0; i < _RegimeBits; i++) {
-				_Bits[nbits - 2 - i] = !(my_regime & mask);
-				mask >>= 1;
-			}
-
-		}
-		else {
-			_k = int8_t(k < nbits - 2 ? k : nbits - 2); // constrain regime to maxpos
-			uint64_t my_regime = REGIME_BITS[k];
-			uint64_t mask = REGIME_BITS[0];
-			_RegimeBits = (std::size_t(k) < nbits - 2 ? k + 2 : nbits - 1);
-			for (unsigned int i = 0; i < _RegimeBits; i++) {
-				_Bits[nbits - 2 - i] = my_regime & mask;
-				mask >>= 1;
-			}
-		}
-#endif
-
 		return _RegimeBits;
 	}
 	bool increment() {
