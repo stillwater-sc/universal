@@ -48,6 +48,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+	std::string tag = "Reciprocation failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -58,7 +59,6 @@ try {
 	//nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 0>("Manual testing", true), "posit<5,0>", "reciprocation");
 #else
 
-	std::string tag = "Reciprocation failed: ";
 
 	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "reciprocation");
 

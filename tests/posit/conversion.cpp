@@ -37,7 +37,7 @@ void GenerateTestCase(float input, double reference, const posit<nbits, es>& pre
 	cout << endl;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -49,33 +49,31 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	float input, reference;
+	double input, reference;
+	
+
+#if PREVIOUS_FAILURE_INPUTS
 	posit<4, 1> p;
-#if 0
 	input = 0.0625f; reference = 0.0625f; 
-	p = input;	
-	GenerateTestCase(input, reference, p);
-	input = 0.1249f; reference = 0.0625f; 
-	p = input;	
-	GenerateTestCase(input, reference, p);
-	input = 0.1251f; reference = 0.25f;   
-	p = input;	
-	GenerateTestCase(input, reference, p);
-	input = 0.249999999f; reference = 0.25f; 
-	p = input; 
-	GenerateTestCase(input, reference, p);
-	input = 4.000001f; reference = 4.0f; 
-	p = input; 
-	GenerateTestCase(input, reference, p);
+	input = 0.1249f; reference = 0.0625f;
+	input = 0.1251f; reference = 0.25f;
+	input = 0.249999999f; reference = 0.25f;
+	input = 4.000001f; reference = 4.0f;
 #endif
-	posit<4, 0> p4_0;
-	input = 0.37501f; reference = 0.5f;
-	p4_0 = input;
-	GenerateTestCase(input, reference, p4_0);
-	// return 0;
+	posit<5, 2> p;
+	input = 0.000966562f;
+	input     = 0.0005f;
+	reference = 0.000244141f;
+	p = input;	
+	GenerateTestCase(input, reference, p);
+	//return 0;
+	// manual exhaustive testing
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 2>(tag, true), "posit<5,2>", "conversion");
+	//nrOfFailedTestCases += ReportTestResult(ValidateConversion<6, 3>(tag, true), "posit<6,3>", "conversion");
+	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<4, 0>(tag, true), "posit<4,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<4, 1>(tag, true), "posit<4,1>", "conversion"); return 0; 
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<4, 1>(tag, true), "posit<4,1>", "conversion"); 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 0>(tag, true), "posit<5,0>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 1>(tag, true), "posit<5,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 2>(tag, true), "posit<5,2>", "conversion");
@@ -84,7 +82,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 1>("Posit<6,1> addition failed: ", bReportIndividualTestCases), "posit<6,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 2>("Posit<6,2> addition failed: ", bReportIndividualTestCases), "posit<6,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 3>("Posit<6,3> addition failed: ", bReportIndividualTestCases), "posit<6,3>", "addition");
-
 	return 0;
 
 #else

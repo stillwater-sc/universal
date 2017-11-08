@@ -47,14 +47,17 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+	std::string tag = "Addition failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<5, 0>(INFINITY, INFINITY);
 
+	// manual exhaustive test
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 3>("Manual Testing", bReportIndividualTestCases), "posit<6,3>", "addition");
 #else
 
-	std::string tag = "Addition failed: ";
+	cout << "Posit addition validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "addition");
 
@@ -87,9 +90,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "addition");
-#endif
+#endif  // STRESS_TESTING
 
-#endif
+#endif  // MANUAL_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

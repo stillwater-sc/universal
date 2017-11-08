@@ -48,7 +48,8 @@ int main(int argc, char** argv)
 try {	
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-
+	
+	std::string tag = "Multiplication failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -61,8 +62,9 @@ try {
 	//nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>("Manual Testing: ", true), "posit<4,0>", "multiplication");
 
 #else
-	
-	std::string tag = "Multiplication failed: ";
+
+
+	cout << "Posit multiplication validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "multiplication");
@@ -97,9 +99,9 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "multiplication");
 
-#endif
+#endif  // STRESS_TESTING
 
-#endif
+#endif  // MANUAL_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

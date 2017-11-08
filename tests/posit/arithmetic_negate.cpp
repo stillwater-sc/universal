@@ -36,42 +36,59 @@ void GenerateTestCase(double da) {
 	pneg = -pa;
 	cout << "reference " << pref << " result " << pneg << endl << endl;
 }
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
-	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
+	int nrOfFailedTestCases = 0;
 
+	std::string tag = "Negation failed: ";
+
+#if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 	//GenerateTestCase<5, 0>(-0.625f);
 	//GenerateTestCase<5, 0>(-0.500f);
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<3, 0>("Posit<3,0> negation failed: ", bReportIndividualTestCases), "posit<3,0>", "negation");
+	//nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 0>("Manual Testing: ", true), "posit<5,0>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<4, 0>("Posit<4,0> negation failed: ", bReportIndividualTestCases), "posit<4,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<4, 1>("Posit<4,1> negation failed: ", bReportIndividualTestCases), "posit<4,1>", "negation");
-
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 0>("Posit<5,0> negation failed: ", bReportIndividualTestCases), "posit<5,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 1>("Posit<5,1> negation failed: ", bReportIndividualTestCases), "posit<5,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 2>("Posit<5,2> negation failed: ", bReportIndividualTestCases), "posit<5,2>", "negation");
-
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 0>("Posit<6,0> negation failed: ", bReportIndividualTestCases), "posit<6,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 1>("Posit<6,1> negation failed: ", bReportIndividualTestCases), "posit<6,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 2>("Posit<6,2> negation failed: ", bReportIndividualTestCases), "posit<6,2>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 3>("Posit<6,3> negation failed: ", bReportIndividualTestCases), "posit<6,3>", "negation");
-
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 0>("Posit<7,0> negation failed: ", bReportIndividualTestCases), "posit<7,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 1>("Posit<7,1> negation failed: ", bReportIndividualTestCases), "posit<7,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 2>("Posit<7,2> negation failed: ", bReportIndividualTestCases), "posit<7,2>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 3>("Posit<7,3> negation failed: ", bReportIndividualTestCases), "posit<7,3>", "negation");
-
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 0>("Posit<8,0> negation failed: ", bReportIndividualTestCases), "posit<8,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 1>("Posit<8,1> negation failed: ", bReportIndividualTestCases), "posit<8,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 2>("Posit<8,2> negation failed: ", bReportIndividualTestCases), "posit<8,2>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 3>("Posit<8,3> negation failed: ", bReportIndividualTestCases), "posit<8,3>", "negation");
+#else
 
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<16, 1>("Posit<16,1> negation failed: ", bReportIndividualTestCases), "posit<16,1>", "negation");
+	cout << "Posit negation validation" << endl;
+
+
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "negation");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "negation");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "negation");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "negation");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "negation");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "negation");
+
+#if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "negation");
+
+#endif  // STRESS_TESTING
+
+#endif  // MANUAL_TESTING
 	
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

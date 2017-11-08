@@ -51,14 +51,16 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+	std::string tag = "Subtraction failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<5, 0>(INFINITY,  INFINITY);
 
+	// manual exhaustive testing
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 3>("Manual Testing", bReportIndividualTestCases), "posit<6,3>", "subtraction");
 #else
 
-	std::string tag = "Subtraction failed: ";
 
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "subtraction");
 

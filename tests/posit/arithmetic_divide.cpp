@@ -49,6 +49,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+	std::string tag = "Division failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -59,7 +60,7 @@ try {
 
 #else
 
-	std::string tag = "Division failed: ";
+	cout << "Posit division validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "division");
 
