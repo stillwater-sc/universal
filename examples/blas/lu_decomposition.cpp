@@ -37,15 +37,6 @@ try {
 	Vector	 v(4);
 	double 	 c = 1.0;
 	
-        // Considered as matrix. 
-	std::cout << "Shape of A is " << typeid(mtl::ashape::ashape<Matrix>::type).name() << '\n';
-	
-	posit<8, 0> p3 = 3.0;
-	bool cmp = p3 <= 4.0;
-	posit<8, 0> p4 = 1 * p3;
-        // std::cout << "p3 < 4: " << std::boolalpha << p3 <= 4.0 << std::endl;
-	
-#if 1	
 	for (unsigned i = 0; i < 4; i++)
 		for (unsigned j = 0; j < 4; j++) {
 			U[i][j] = i <= j ? c * (i + j + 2) : (0);
@@ -86,9 +77,9 @@ try {
 
 	Vector v5(lu_adjoint_solve(AA, b));
 	std::cout << "v5 is " << v5 << "\n";
-#endif
+
 	int nrOfFailedTestCases = 0;
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 }
 catch (char* msg) {
 	cerr << msg << endl;
