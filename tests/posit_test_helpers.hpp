@@ -12,19 +12,23 @@
 
 int GetExponent(int scale, int es) {
 	if (es > 0) {
-		return scale % es;
+		return scale > 0 ? scale % es : -scale % es;
 	}
 	return scale;
 }
 
+static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
+
 template<size_t nbits, size_t es>
 void ReportConversionError(std::string test_case, std::string op, double input, double reference, const posit<nbits,es>& presult) {
+	unsigned width = 15;
 	std::cerr << test_case
 		<< " " << op << " "
-		<< std::setw(10) << input
+		<< std::setw(FLOAT_TABLE_WIDTH) << input
 		<< " did not convert to "
-		<< std::setw(10) << reference << " instead it yielded "
-		<< std::setw(10) << presult.to_double()
+		<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
+		<< std::setw(FLOAT_TABLE_WIDTH) << presult.to_double()
+		<< "  raw " << std::setw(nbits) << presult.get()
 		<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << (presult.scale()>>es) << "   exp= " << std::setw(3) << GetExponent(presult.scale(), es)
 		<< std::endl;
 }
@@ -33,10 +37,11 @@ template<size_t nbits, size_t es>
 void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const posit<nbits, es>& presult) {
 	std::cerr << test_case
 		<< " " << op << " "
-		<< std::setw(10) << input
+		<< std::setw(FLOAT_TABLE_WIDTH) << input
 		<< " did     convert to "
-		<< std::setw(10) << presult.to_double() << " reference value is "
-		<< std::setw(10) << reference	
+		<< std::setw(FLOAT_TABLE_WIDTH) << presult.to_double() << " reference value is "
+		<< std::setw(FLOAT_TABLE_WIDTH) << reference
+		<< "  raw " << std::setw(nbits) << presult.get()
 		<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << (presult.scale() >> es) << "   exp= " << std::setw(3) << GetExponent(presult.scale(), es)
 		<< std::endl;
 }
@@ -45,10 +50,10 @@ template<size_t nbits, size_t es>
 void ReportUnaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 	std::cerr << test_case
 		<< " " << op << " "	
-		<< std::setw(10) << rhs
+		<< std::setw(FLOAT_TABLE_WIDTH) << rhs
 		<< " != "
-		<< std::setw(10) << pref << " instead it yielded "
-		<< std::setw(10) << presult
+		<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
+		<< std::setw(FLOAT_TABLE_WIDTH) << presult
 		<< " " << components_to_string(presult) << std::endl;
 }
 
@@ -56,34 +61,34 @@ template<size_t nbits, size_t es>
 void ReportUnaryArithmeticSuccess(std::string test_case, std::string op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 	std::cerr << test_case
 		<< " " << op << " "
-		<< std::setw(10) << rhs
+		<< std::setw(FLOAT_TABLE_WIDTH) << rhs
 		<< " == "
-		<< std::setw(10) << presult << " reference value is "
-		<< std::setw(10) << pref
+		<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
+		<< std::setw(FLOAT_TABLE_WIDTH) << pref
 		<< " " << components_to_string(presult) << std::endl;
 }
 
 template<size_t nbits, size_t es>
 void ReportBinaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 	std::cerr << test_case
-		<< std::setw(10) << lhs
+		<< std::setw(FLOAT_TABLE_WIDTH) << lhs
 		<< " " << op << " "
-		<< std::setw(10) << rhs
+		<< std::setw(FLOAT_TABLE_WIDTH) << rhs
 		<< " != "
-		<< std::setw(10) << pref <<    " instead it yielded "
-		<< std::setw(10) << presult
+		<< std::setw(FLOAT_TABLE_WIDTH) << pref <<    " instead it yielded "
+		<< std::setw(FLOAT_TABLE_WIDTH) << presult
 		<< " " << components_to_string(presult) << std::endl;
 }
 
 template<size_t nbits, size_t es>
 void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 	std::cerr << test_case
-		<< std::setw(10) << lhs
+		<< std::setw(FLOAT_TABLE_WIDTH) << lhs
 		<< " " << op << " "
-		<< std::setw(10) << rhs
+		<< std::setw(FLOAT_TABLE_WIDTH) << rhs
 		<< " == "
-		<< std::setw(10) << presult << " reference value is "
-		<< std::setw(10) << pref
+		<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
+		<< std::setw(FLOAT_TABLE_WIDTH) << pref
 		<< " " << components_to_string(presult) << std::endl;
 }
 
@@ -103,7 +108,7 @@ int Compare(double input, const posit<nbits, es>& presult, double reference, boo
 		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, presult);
 	}
 	else {
-		if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
+		// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
 	}
 	return fail;
 }

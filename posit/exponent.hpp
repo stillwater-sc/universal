@@ -66,7 +66,9 @@ public:
 		else {
 			if (es > 0) {
 				unsigned int my_exponent = scale % (1 << es);
-				rounding_mode = my_exponent > 0 ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN;
+				uint64_t mask = (uint64_t(1) << es) >> 1;  // work-around: (es - 1) can be negative, causing a compilation warning
+				bool rounding_bit = my_exponent & mask;
+				rounding_mode = rounding_bit ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN;
 			}
 		}
 		return rounding_mode;

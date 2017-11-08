@@ -673,7 +673,7 @@ public:
 		if (carry && es > 0)
 			carry = _exponent.increment();
 		if (carry) 
-                        _regime.increment();
+                    _regime.increment();
 	}
 	// step up to the next posit in a lexicographical order
 	void increment_posit() {
@@ -747,16 +747,18 @@ public:
 			} 
 			else {
 				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_scale >> es);
+				bool carry = false;
 				switch (_exponent.assign_exponent_bits(_scale, nr_of_regime_bits)) {
 				case GEOMETRIC_ROUND_UP:
-					_regime.increment();
+					carry = _exponent.increment();
+					if (carry)
+						_regime.increment();
 					break;
 				case GEOMETRIC_ROUND_DOWN:
 					break;
 				case ARITHMETIC_ROUNDING:
 					unsigned int nr_of_exp_bits = _exponent.nrBits();
 					unsigned int remaining_bits = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
-					// incorrect test for geometric rounding if (nr_of_exp_bits > 0 && remaining_bits == 0) std::cout << "geometric rounding" << std::endl;
 					bool round_up = _fraction.assign(remaining_bits, _frac, hpos);
 					if (round_up) project_up();
 				}

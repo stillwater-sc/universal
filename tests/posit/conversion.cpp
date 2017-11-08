@@ -21,7 +21,7 @@ using namespace std;
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es>
 void GenerateTestCase(float input, float reference, const posit<nbits, es>& presult) {
-	if (fabs(presult.to_double()) - std::fabs(reference) > 0.000000001) 
+	if (fabs(presult.to_double() - reference) > 0.000000001) 
 		ReportConversionError("test_case", "=", input, reference, presult);
 	else
 		ReportConversionSuccess("test_case", "=", input, reference, presult);
@@ -29,15 +29,15 @@ void GenerateTestCase(float input, float reference, const posit<nbits, es>& pres
 }
 
 template<size_t nbits, size_t es>
-void GenerateTestCase(float input, double reference, const posit<nbits, es>& presult) {
-	if (fabs(presult.to_double()) - std::fabs(reference) > 0.000000001)
+void GenerateTestCase(double input, double reference, const posit<nbits, es>& presult) {
+	if (fabs(presult.to_double() - reference) > 0.000000001)
 		ReportConversionError("test_case", "=", input, reference, presult);
 	else
 		ReportConversionSuccess("test_case", "=", input, reference, presult);
 	cout << endl;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -59,15 +59,24 @@ try {
 	input = 0.1251f; reference = 0.25f;
 	input = 0.249999999f; reference = 0.25f;
 	input = 4.000001f; reference = 4.0f;
+	posit<5, 2> p;
+	input = 32.0001; reference = 64; 
+	input = 63.9999; reference = 64; 
+	input = 128.0001; reference = 256;
+	input = 255.9999; reference = 256;
+	input = 256.0001; reference = 256;
+	input = 1023.9999; reference = 256;
 #endif
 	posit<5, 2> p;
-	input = 0.000966562f;
-	input     = 0.0005f;
-	reference = 0.000244141f;
+	input = 0.50001; reference = 0.5;
+	p = input;
+	GenerateTestCase(input, reference, p);
+	input = 0.74999; reference = 0.5;
 	p = input;	
 	GenerateTestCase(input, reference, p);
-	//return 0;
+	// return 0;
 	// manual exhaustive testing
+	tag = "Manual Testing";
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 2>(tag, true), "posit<5,2>", "conversion");
 	//nrOfFailedTestCases += ReportTestResult(ValidateConversion<6, 3>(tag, true), "posit<6,3>", "conversion");
 	return 0;
