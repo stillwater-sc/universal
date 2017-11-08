@@ -5,6 +5,11 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+
+static constexpr int GEOMETRIC_ROUND_DOWN = -1;
+static constexpr int ARITHMETIC_ROUNDING  =  0;
+static constexpr int GEOMETRIC_ROUND_UP   =  1;
+
 // exponent
 template<size_t nbits, size_t es>
 class exponent {
@@ -40,8 +45,10 @@ public:
 		_Bits = raw;
 		_NrOfBits = nrOfExponentBits;
 	}
-	// calculate the exponent given a number's scale and the number of regime bits, returning the number of exponent bits assigned
-	unsigned int assign_exponent_bits(unsigned int scale, unsigned int nr_of_regime_bits) {
+	// calculate the exponent given a number's scale and the number of regime bits, 
+	// returning a flag that indicates if we need to geometrically round up
+	int assign_exponent_bits(int scale, unsigned int nr_of_regime_bits) {
+		int rounding_mode = ARITHMETIC_ROUNDING;
 		_Bits.reset();
 		_NrOfBits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
 		if (_NrOfBits > 0) {
@@ -51,8 +58,17 @@ public:
 				_Bits[es - 1 - i] = my_exponent & mask;
 				mask >>= 1;
 			}
+			if (_NrOfBits < es) {
+				rounding_mode = my_exponent & mask ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN; // check the next bit to see if we need to geometric round
+			}
 		}
-		return _NrOfBits;
+		else {
+			if (es > 0) {
+				unsigned int my_exponent = scale % (1 << es);
+				rounding_mode = my_exponent > 0 ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN;
+			}
+		}
+		return rounding_mode;
 	}
 	bool increment() {
 		return increment_unsigned(_Bits, _NrOfBits);

@@ -64,7 +64,7 @@ posit<nbits, es> extract(float f) {
 	constexpr size_t fbits = p.fbits;
 	std::bitset<fbits> _fraction = extract_float_fraction<fbits>(_23b_fraction_without_hidden_bit);
 
-	p.convert_to_posit(_sign, _scale, _fraction);
+	p.convert(_sign, _scale, _fraction, fbits);
 	return p;
 }
 
