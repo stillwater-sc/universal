@@ -35,9 +35,9 @@ try {
 	// exponent component of the posit
 	exponent<nbits, es> test_exponent;
 	for (int scale = -bound; scale < bound; scale++) {
-		int k = scale >> es;
+		int k = test_regime.calculate_k_value(scale);
 		unsigned int nrOfRegimeBits = test_regime.assign_regime_pattern(k);
-		unsigned int nrOfExponentBits = test_exponent.assign_exponent_bits(scale, nrOfRegimeBits);
+		unsigned int nrOfExponentBits = test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
 		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime << " " << test_exponent << endl;
 	}
 
@@ -50,9 +50,9 @@ try {
 	unsigned int nrOfFractionBits = 3;
 	test_fraction.set(_fraction, nrOfFractionBits);	
 	for (int scale = -bound; scale < bound; scale++) {
-		int k = scale >> es;
+		int k = test_regime.calculate_k_value(scale);;
 		unsigned int nrOfRegimeBits = test_regime.assign_regime_pattern(k);
-		unsigned int nrOfExponentBits = test_exponent.assign_exponent_bits(scale, nrOfRegimeBits);
+		unsigned int nrOfExponentBits = test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
 
 		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime << " " << test_exponent << " " << test_fraction << endl;
 	}

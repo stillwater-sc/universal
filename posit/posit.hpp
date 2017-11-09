@@ -20,6 +20,7 @@
 #include "regime.hpp"
 
 #define MULTIPLY_WITH_FRACTION_WITH_HIDDEN_BIT
+#define INCREMENT_POSIT_CARRY_CHAIN
 
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 
@@ -372,6 +373,9 @@ public:
 
 	int				   regime_k() const {
 		return _regime.regime_k();
+	}
+	int                calculate_k(int scale) const {
+		return _regime.calculate_k_value(scale);
 	}
 	regime<nbits, es>  get_regime() const {
 		return _regime;
@@ -730,6 +734,7 @@ public:
                 
             // construct the posit
 			_sign = _negative;
+			int k = _regime.calculate_k_value(_scale);
 			// interpolation rule checks
 			if (check_inward_projection_range(_scale)) {    // regime dominated
 				if (_trace_conversion) std::cout << "inward projection" << std::endl;
@@ -743,11 +748,12 @@ public:
 			else {
 				unsigned int nr_of_regime_bits = _regime.assign_from_scale(_scale);
 				bool carry = false;
-				switch (_exponent.assign_exponent_bits(_scale, nr_of_regime_bits)) {
+				switch (_exponent.assign_exponent_bits(_scale, k, nr_of_regime_bits)) {
 				case GEOMETRIC_ROUND_UP:
+#ifdef INCREMENT_POSIT_CARRY_CHAIN
 					carry = _exponent.increment();
-					if (carry)
-						_regime.increment();
+					if (carry)_regime.increment();
+#endif // INCREMENT_POSIT_CARRY_CHAIN
 					break;
 				case GEOMETRIC_ROUND_DOWN:
 					break;

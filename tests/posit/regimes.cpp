@@ -74,19 +74,30 @@ int ValidateInwardProjection(std::string tag, bool bReportIndividualTestCases) {
 template<size_t nbits, size_t es>
 int ValidateRegimeScales(std::string tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
-	unsigned useed_scale = unsigned(1) << es;
+	int useed_scale = int(1) << es;  // int because we are doing int math with it
 
-	posit<nbits, es> p;
-	// k represents the regime encoding 
+	regime<nbits, es> r1, r2;
+	posit<nbits, es> p; // for check_inward_projection_range
+	// scale represents the binary scale of a value to test
 	int size = int(nbits);
-	for (int k = -size + 1; k < size - 1; k++) {
+	for (int k = (-size + 1); k <= (size - 1); k++) {
 		int scale = k*useed_scale;
-		cout << "k = " << setw(3) << k << " scale = " << setw(3) << scale << " inward projection range " << p.check_inward_projection_range(k*useed_scale) << endl;
+		r1.assign_from_scale(scale);
+		r2.assign_regime_pattern(k);
+		if (r1 != r2) {
+			nrOfFailedTests++;
+			std::cout << "k = " << setw(3) << k 
+				<< " scale = " << setw(3) << scale 
+				<< " calc k " << setw(3) << r1.calculate_k_value(scale) 
+				<< " bits " << r1 << ":" << r2 
+				<< " clamp " << p.check_inward_projection_range(scale) << std::endl;
+		}
+
 	}
 	return nrOfFailedTests;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -107,13 +118,20 @@ try {
 	}
 #endif
 
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "regimes");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "regimes");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "regimes");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "regimes");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "regimes");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "regimes");
+	return 0;
 	nrOfFailedTestCases += ReportTestResult(ValidateInwardProjection<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "regimes");
 	nrOfFailedTestCases += ReportTestResult(ValidateInwardProjection<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "regimes");
 	nrOfFailedTestCases += ReportTestResult(ValidateInwardProjection<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "regimes");
 	nrOfFailedTestCases += ReportTestResult(ValidateInwardProjection<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "regimes");
 
 #else
-
+	ReportPositScales();
 
 	cout << "Regime tests" << endl;
 
@@ -142,12 +160,41 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<8, 2>(tag, bReportIndividualTestCases), "regime<8,2>", "regime");
 	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<8, 3>(tag, bReportIndividualTestCases), "regime<8,3>", "regime");
 
-
 	// TEST REGIME CONVERSION
-	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "regimes");
-	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "regimes");
-	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "regimes");
-	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "regimes");
+	// DIFFERENT WAY TO TEST REGIME CONSTRUCTION
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "scales");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "scales");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<16, 3>(tag, bReportIndividualTestCases), "posit<16,3>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<16, 4>(tag, bReportIndividualTestCases), "posit<16,4>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<16, 5>(tag, bReportIndividualTestCases), "posit<16,5>", "scales");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<32, 0>(tag, bReportIndividualTestCases), "posit<32,0>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<32, 1>(tag, bReportIndividualTestCases), "posit<32,1>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<32, 2>(tag, bReportIndividualTestCases), "posit<32,2>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<32, 3>(tag, bReportIndividualTestCases), "posit<32,3>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<32, 4>(tag, bReportIndividualTestCases), "posit<32,4>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<32, 5>(tag, bReportIndividualTestCases), "posit<32,5>", "scales");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<64, 0>(tag, bReportIndividualTestCases), "posit<64,0>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<64, 1>(tag, bReportIndividualTestCases), "posit<64,1>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<64, 2>(tag, bReportIndividualTestCases), "posit<64,2>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<64, 3>(tag, bReportIndividualTestCases), "posit<64,3>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<64, 4>(tag, bReportIndividualTestCases), "posit<64,4>", "scales");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<64, 5>(tag, bReportIndividualTestCases), "posit<64,5>", "scales");
 #endif
 
 

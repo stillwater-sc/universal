@@ -75,12 +75,12 @@ public:
 		_k = static_cast<int>(nbits) - 1;   // by design: this simplifies increment/decrement
 	}
 	// return the size of a regime encoding for a particular k value
-	int regime_size(int k) {
+	int regime_size(int k) const {
 		if (k < 0) k = -k - 1;
 		return (k < nbits - 2 ? k + 2 : nbits - 1);
 	}
 	// calculate the unconstrained k factor
-	int calculate_k_value(int scale) {
+	int calculate_k_value(int scale) const {
 		int k = scale < 0 ? -(-scale >> es) : (scale >> es);
 		return k;
 	}

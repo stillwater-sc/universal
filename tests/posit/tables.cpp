@@ -44,7 +44,7 @@ try {
 	GeneratePositTable<5, 0>(cout);
 	GeneratePositTable<5, 1>(cout);
 	GeneratePositTable<5, 2>(cout);
-
+	return 0;
 	GeneratePositTable<6, 0>(cout);
 	GeneratePositTable<6, 1>(cout);
 	GeneratePositTable<6, 2>(cout);

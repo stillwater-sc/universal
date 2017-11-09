@@ -14,7 +14,7 @@ int GetExponent(int scale, int es) {
 	if (es > 0) {
 		return scale > 0 ? scale % es : -scale % es;
 	}
-	return scale;
+	return 0;
 }
 
 static constexpr unsigned FLOAT_TABLE_WIDTH = 15;

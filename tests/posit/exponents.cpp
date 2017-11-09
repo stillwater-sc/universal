@@ -37,8 +37,9 @@ try {
 	regime<nbits, es> r;
 	exponent<nbits, es> e;
 	for (int scale = -16; scale < 17; scale++) {
+		int k = r.calculate_k_value(scale);
 		int regime_size = r.assign_regime_pattern(scale >> es);
-		int exp_size = e.assign_exponent_bits(scale, regime_size);
+		int exp_size = e.assign_exponent_bits(scale, k, regime_size);
 		if (scale < 0) {
 			cout << "in value = " << setw(12) << 1.0/(unsigned(1) << -scale) << " scale = " << setw(3) << scale << " r(" << r << ")  e(" << e << ")     projected value " << r.value() * e.value() << endl;
 		}

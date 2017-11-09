@@ -46,36 +46,43 @@ public:
 		_NrOfBits = nrOfExponentBits;
 	}
 	// calculate the exponent given a number's scale and the number of regime bits, 
-	// returning a flag that indicates if we need to geometrically round up
-	int assign_exponent_bits(int scale, unsigned int nr_of_regime_bits) {
+	// returning an indicator which type of rounding is required to complete the posit
+	int assign_exponent_bits(int scale, int k, unsigned int nr_of_regime_bits) {
 		int rounding_mode = ARITHMETIC_ROUNDING;
-		int useed_scale = 1 << es;
-		scale = scale < 0 ? -scale + useed_scale : scale;
 		_Bits.reset();
+		// we need to get to an adjusted scale that encodes regime and exponent
+		// value scale = useed ^ k * 2 ^ exponent = 2^(k*2^es) * 2^e -> k*2^es + e
+		// e = scale - k*2^es
+		int raw = scale - k*(1 << es);
+		unsigned int my_exponent = raw < 0 ? -raw : raw;
+		// convert value into bitset
+		uint64_t mask = uint64_t(1);
+		for (unsigned i = 0; i < es; i++) {
+			_Bits[i] = my_exponent & mask;
+			mask <<= 1;
+		}
 		_NrOfBits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
 		if (_NrOfBits > 0) {
-			unsigned int my_exponent = (es > 0 ? scale % (1 << es) : 0);
-			uint64_t mask = (uint64_t(1) << es) >> 1;  // work-around: (es - 1) can be negative, causing a compilation warning
-			for (unsigned int i = 0; i < _NrOfBits; i++) {
-				_Bits[es - 1 - i] = my_exponent & mask;
-				mask >>= 1;
-			}
 			if (_NrOfBits < es) {
-				rounding_mode = my_exponent & mask ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN; // check the next bit to see if we need to geometric round
+				rounding_mode = _Bits[es - 1 - _NrOfBits] ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN; // check the next bit to see if we need to geometric round
 			}
 		}
 		else {
 			if (es > 0) {
-				unsigned int my_exponent = scale % (1 << es);
-				uint64_t mask = (uint64_t(1) << es) >> 1;  // work-around: (es - 1) can be negative, causing a compilation warning
-				bool rounding_bit = my_exponent & mask;
-				rounding_mode = rounding_bit ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN;
+				rounding_mode = _Bits[es-1] ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN;
+			}
+			else {
+				// use the fraction to determine rounding as this posit doesn't have an exponent field
 			}
 		}
 		return rounding_mode;
 	}
 	bool increment() {
-		return increment_unsigned(_Bits, _NrOfBits);
+		bool carry = false;
+		if (es > 0) {
+			carry = increment_unsigned(_Bits, es);
+		}
+		return carry;
 	}
 private:
 	std::bitset<es> _Bits;
