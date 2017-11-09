@@ -49,7 +49,8 @@ public:
 	// returning a flag that indicates if we need to geometrically round up
 	int assign_exponent_bits(int scale, unsigned int nr_of_regime_bits) {
 		int rounding_mode = ARITHMETIC_ROUNDING;
-		scale = scale < 0 ? -scale : scale;
+		int useed_scale = 1 << es;
+		scale = scale < 0 ? -scale + useed_scale : scale;
 		_Bits.reset();
 		_NrOfBits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
 		if (_NrOfBits > 0) {

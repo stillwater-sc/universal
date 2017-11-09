@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 // if you want to trace the posit intermediate results
-//#define POSIT_VERBOSE_OUTPUT
+#define POSIT_VERBOSE_OUTPUT
 
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
@@ -37,7 +37,7 @@ void GenerateTestCase(double input, double reference, const posit<nbits, es>& pr
 	cout << endl;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -51,6 +51,28 @@ try {
 	// generate individual testcases to hand trace/debug
 	double input, reference;
 	
+#if 0
+	cout << "-1 >> 2 =" << (-1 >> 2) << endl;
+	cout << "-2 >> 2 =" << (-2 >> 2) << endl;
+	cout << "-3 >> 2 =" << (-3 >> 2) << endl;
+	cout << "-4 >> 2 =" << (-4 >> 2) << endl;
+	cout << "-5 >> 2 =" << (-5 >> 2) << endl;
+	cout << "-6 >> 2 =" << (-6 >> 2) << endl;
+	cout << "-7 >> 2 =" << (-7 >> 2) << endl;
+	cout << "-8 >> 2 =" << (-8 >> 2) << endl;
+	cout << "-9 >> 2 =" << (-9 >> 2) << endl;
+	cout << "-10 >> 2 =" << (-10 >> 2) << endl;
+	cout << " 1 >> 2 =" << ( 1 >> 2) << endl;
+	cout << " 2 >> 2 =" << ( 2 >> 2) << endl;
+	cout << " 3 >> 2 =" << ( 3 >> 2) << endl;
+	cout << " 4 >> 2 =" << ( 4 >> 2) << endl;
+	cout << " 5 >> 2 =" << ( 5 >> 2) << endl;
+	cout << " 6 >> 2 =" << ( 6 >> 2) << endl;
+	cout << " 7 >> 2 =" << ( 7 >> 2) << endl;
+	cout << " 8 >> 2 =" << ( 8 >> 2) << endl;
+	cout << " 9 >> 2 =" << ( 9 >> 2) << endl;
+	cout << "10 >> 2 =" << (10 >> 2) << endl;
+#endif
 
 #if PREVIOUS_FAILURE_INPUTS
 	posit<4, 1> p;
@@ -68,13 +90,19 @@ try {
 	input = 1023.9999; reference = 256;
 #endif
 	posit<5, 2> p;
+	input = 8.0; reference = 8.0;
+	p = input;
+	GenerateTestCase(input, reference, p);
+	input = 0.5; reference = 0.5;
+	p = input;
+	GenerateTestCase(input, reference, p);
 	input = 0.50001; reference = 0.5;
 	p = input;
 	GenerateTestCase(input, reference, p);
 	input = 0.74999; reference = 0.5;
 	p = input;	
 	GenerateTestCase(input, reference, p);
-	// return 0;
+	return 0;
 	// manual exhaustive testing
 	tag = "Manual Testing";
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<5, 2>(tag, true), "posit<5,2>", "conversion");

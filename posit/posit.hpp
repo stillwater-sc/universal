@@ -657,15 +657,11 @@ public:
 		return _regime.scale() + _exponent.scale();
 	}
 	// special case check for projecting values between (0, minpos] to minpos and [maxpos, inf) to maxpos
-	bool check_inward_projection_range(bool sign, int k) {
-		bool bSpecial = false;
-		if (k < 0) {
-			bSpecial = (-k <= nbits - 2 ? false : true);
-		}
-		else {
-			bSpecial = (k <= nbits - 3 ? false : true);
-		}
-		return bSpecial;
+	bool check_inward_projection_range(int scale) {
+		// calculate the k factor
+		int k = scale < 0 ?	-(-scale >> es) : (scale >> es);
+		int posit_size = int(nbits);
+		return k < 0 ? k <= -posit_size + 1 : k >= posit_size - 1;
 	}
 	// project to the next 'larger' posit: this is 'pushing away' from zero, projecting to the next bigger scale
 	void project_up() {
@@ -734,19 +730,18 @@ public:
                 
             // construct the posit
 			_sign = _negative;
-			int k = _scale >> es;
 			// interpolation rule checks
-			if (check_inward_projection_range(_sign, k)) {    // regime dominated
+			if (check_inward_projection_range(_scale)) {    // regime dominated
 				if (_trace_conversion) std::cout << "inward projection" << std::endl;
 				// we are projecting to minpos/maxpos
-				_regime.assign_regime_pattern(k);
+				_regime.assign_from_scale(_scale);
 				// store raw bit representation
 				_raw_bits = _sign ? twos_complement(collect()) : collect();
 				_raw_bits.set(nbits - 1, _sign);
 				// we are done
 			} 
 			else {
-				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(_scale >> es);
+				unsigned int nr_of_regime_bits = _regime.assign_from_scale(_scale);
 				bool carry = false;
 				switch (_exponent.assign_exponent_bits(_scale, nr_of_regime_bits)) {
 				case GEOMETRIC_ROUND_UP:

@@ -28,6 +28,12 @@ public:
 	int scale() const {
 		return int(_k) << es;
 	}
+	int maxpos_scale() {
+		return (nbits - 2) * (1 << es);
+	}
+	int minpos_scale() {
+		return static_cast<int>(2 - nbits) * (1 << es);
+	}
 	// return the k-value of the regime: useed ^ k
 	int regime_k() const {
 		return _k;
@@ -72,6 +78,21 @@ public:
 	int regime_size(int k) {
 		if (k < 0) k = -k - 1;
 		return (k < nbits - 2 ? k + 2 : nbits - 1);
+	}
+	// calculate the unconstrained k factor
+	int calculate_k_value(int scale) {
+		int k = scale < 0 ? -(-scale >> es) : (scale >> es);
+		return k;
+	}
+	unsigned int assign_from_scale(int scale) {
+		// constrain the scale to range [minpos, maxpos]
+		if (scale < 0) {
+			scale = scale > minpos_scale() ? scale : minpos_scale();
+		}
+		else {
+			scale = scale < maxpos_scale() ? scale : maxpos_scale();
+		}
+		return assign_regime_pattern(calculate_k_value(scale));
 	}
 	// construct the regime bit pattern given a number's useed scale, that is, k represents the useed factors of the number
 	// k is the unifying abstraction between decoding a posit and converting a float value.

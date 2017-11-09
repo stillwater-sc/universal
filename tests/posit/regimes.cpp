@@ -48,7 +48,45 @@ int ValidateRegimeOperations(std::string tag, bool bReportIndividualTestCases) {
 	return nrOfFailedTestCases;
 }
 
-#define MANUAL_TESTING 0
+
+template<size_t nbits, size_t es>
+int ValidateInwardProjection(std::string tag, bool bReportIndividualTestCases) {
+	int nrOfFailedTests = 0;
+	unsigned useed_scale = unsigned(1) << es;
+
+	posit<nbits, es> p;
+	// k represents the regime encoding 
+	int size = int(nbits);
+	for (int k = -size + 1; k <= size - 1; k++) {
+		int scale = k*useed_scale;
+		bool inward = p.check_inward_projection_range(k*useed_scale);
+		bool reference = k < 0 ? k == -size + 1 : k == size - 1;
+		if (inward != reference) {
+			nrOfFailedTests++;
+			cout << "FAIL : k = " << setw(3) << k << " scale = " << setw(3) << scale << " inward projection range " << inward << " reference " << reference << endl;
+		}	
+		cout << "k = " << setw(3) << k << " scale = " << setw(3) << scale << " inward projection range " << inward << endl;
+
+	}
+	return nrOfFailedTests;
+}
+
+template<size_t nbits, size_t es>
+int ValidateRegimeScales(std::string tag, bool bReportIndividualTestCases) {
+	int nrOfFailedTests = 0;
+	unsigned useed_scale = unsigned(1) << es;
+
+	posit<nbits, es> p;
+	// k represents the regime encoding 
+	int size = int(nbits);
+	for (int k = -size + 1; k < size - 1; k++) {
+		int scale = k*useed_scale;
+		cout << "k = " << setw(3) << k << " scale = " << setw(3) << scale << " inward projection range " << p.check_inward_projection_range(k*useed_scale) << endl;
+	}
+	return nrOfFailedTests;
+}
+
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -56,21 +94,30 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+	std::string tag = "Regime conversion failed";
 
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
+#if 0
 	regime<10, 2> r;
 	for (int k = -7; k < 9; k++) {
 		int regime_size = r.assign_regime_pattern(k);
 		cout << "k = " << setw(3) << k << " regime is " << r << " regime size is " << regime_size << " bits" << endl;
 	}
+#endif
+
+	nrOfFailedTestCases += ReportTestResult(ValidateInwardProjection<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "regimes");
+	nrOfFailedTestCases += ReportTestResult(ValidateInwardProjection<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "regimes");
+	nrOfFailedTestCases += ReportTestResult(ValidateInwardProjection<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "regimes");
+	nrOfFailedTestCases += ReportTestResult(ValidateInwardProjection<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "regimes");
 
 #else
-	std::string tag = "Regime conversion failed";
+
 
 	cout << "Regime tests" << endl;
 
+	// TEST REGIME DECODE
 	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<3, 0>(tag, bReportIndividualTestCases), "regime<3,0>", "regime");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<4, 0>(tag, bReportIndividualTestCases), "regime<4,0>", "regime");
@@ -95,6 +142,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<8, 2>(tag, bReportIndividualTestCases), "regime<8,2>", "regime");
 	nrOfFailedTestCases += ReportTestResult(ValidateRegimeOperations<8, 3>(tag, bReportIndividualTestCases), "regime<8,3>", "regime");
 
+
+	// TEST REGIME CONVERSION
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "regimes");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "regimes");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "regimes");
+	nrOfFailedTestCases += ReportTestResult(ValidateRegimeScales<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "regimes");
 #endif
 
 

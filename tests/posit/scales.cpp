@@ -9,6 +9,7 @@
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
+#include "../tests/test_helpers.hpp"
 
 using namespace std;
 
@@ -46,12 +47,22 @@ void printScaleFactors(uint64_t scale_factors[MAX_ES][MAX_K]) {
 }
 
 
-int main()
+
+#define MANUAL_TESTING 1
+#define STRESS_TESTING 0
+
+int main(int argc, char** argv)
 try {
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	ReportPositScales();
+	std::string tag = "Posit Scales failed";
 
+#if MANUAL_TESTING
+	// generate individual testcases to hand trace/debug
+	// double input, reference;
+
+#if 0
 	const size_t nbits = 16;
 	const size_t es = 1;
 	posit<nbits, es> p;
@@ -59,13 +70,25 @@ try {
 	p = 0.5e-5f;
 	v = p.convert_to_scientific_notation();
 	cout << p << " " << v << endl;
+#endif
 
 
-	/*
-	   it is easier to work with scales than with absolute values
-	generateScaleFactorLookupTable();
-	printScaleFactors(GENERATED_SCALE_FACTORS);
-	*/
+#else
+
+	ReportPositScales();
+
+#ifdef STRESS_TEST
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "conversion");
+
+
+#endif // STRESS_TESTING
+
+
+#endif // MANUAL_TESTING
+
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
     
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
