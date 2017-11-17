@@ -81,7 +81,7 @@ public:
 	}
 	// calculate the unconstrained k factor
 	int calculate_k_value(int scale) const {
-		int k = scale < 0 ? -(-scale >> es) : (scale >> es);
+		int k = scale < 0 ? -(-scale >> es) - 1 : (scale >> es);
 		return k;
 	}
 	unsigned int assign_from_scale(int scale) {

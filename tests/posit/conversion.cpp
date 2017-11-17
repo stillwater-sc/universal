@@ -204,7 +204,8 @@ try {
 	// manual exhaustive testing
 	tag = "Manual Testing";
 
-	//GenerateLogicPatternsForDebug<4, 0>();	
+	GenerateLogicPatternsForDebug<3, 0>();
+	GenerateLogicPatternsForDebug<4, 0>();	
 	GenerateLogicPatternsForDebug<4, 1>();
 	GenerateLogicPatternsForDebug<5, 1>();
 	//GenerateLogicPatternsForDebug<6, 2>();
