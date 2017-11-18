@@ -1,4 +1,9 @@
+# Build directory
 build
+
+# KDE IDE config caches
 .kdev4
 *.kdev4
 
+# Log files
+*.log
