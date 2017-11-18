@@ -1,5 +1,9 @@
-// posit standard header
 #pragma once
+// posit standard header
+//
+// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _POSIT_
 #define _POSIT_
 
@@ -8,5 +12,7 @@
 #include "posit_operators.hpp"
 #include "posit_manipulators.hpp"
 #include "posit_functions.hpp"
+#include "quire.hpp"
+#include "quire_operators.hpp"
 
 #endif
