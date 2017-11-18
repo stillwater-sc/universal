@@ -1,5 +1,5 @@
 #pragma once 
-// posit_operators.hpp: definition of posit operators and helpers
+// posit_operators.hpp: definition of posit and posit component operators
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
@@ -7,7 +7,7 @@
 
 #include <limits>
 
-// ARITHMETIC OPERATORS
+// POSIT BINARY ARITHMETIC OPERATORS
 template<size_t nbits, size_t es>
 inline posit<nbits,es> operator+(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> sum = lhs;
@@ -36,7 +36,7 @@ inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, const posit<nbits
 	return ratio;
 }
 
-// COMPONENT operators
+// POSIT COMPONENT operators
 
 /////////////////  REGIME
 template<size_t nbits, size_t es>
@@ -180,7 +180,7 @@ template<size_t nbits, size_t es>
 inline bool operator>=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator< (lhs, rhs); }
 
 
-// value operators
+// VALUE operators
 
 ////////////////////// VALUE
 template<size_t nfbits>
