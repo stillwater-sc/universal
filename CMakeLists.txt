@@ -26,17 +26,6 @@ if (UNIVERSAL_ENABLE_TESTS)
     # include(Dart)
 endif()
 
-find_package(Boost)
-message(STATUS "Boost_FOUND " ${Boost_FOUND})
-if (Boost_FOUND)
-	message(STATUS "Including Boost_INCLUDE_DIR " ${Boost_INCLUDE_DIR})
-	include_directories(${Boost_INCLUDE_DIR})
-endif (Boost_FOUND)
-
-find_package(MTL REQUIRED)
-include_directories(${MTL_INCLUDE_DIRS})
-add_definitions(${MTL_CXX_DEFINITIONS})
-
 # Set posit include directory
 include_directories("./posit")
 
@@ -67,6 +56,5 @@ add_subdirectory("tests/unum")
 add_subdirectory("tests/unum2")
 add_subdirectory("tests/bitset")
 add_subdirectory("tests/posit")
-add_subdirectory("tests/utilities")
 add_subdirectory("examples/blas")
 add_subdirectory("examples/dsp")
