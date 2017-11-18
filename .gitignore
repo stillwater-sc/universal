@@ -1,6 +1,9 @@
 # Build directory
 build
 
+# VS IDE config caches
+.vs
+
 # KDE IDE config caches
 .kdev4
 *.kdev4
