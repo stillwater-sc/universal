@@ -25,12 +25,13 @@ void copy(int64_t n, const vector_T& x, int64_t incx, vector_T& y, int64_t incy)
 }
 
 // dot product: the operator vector::x[index] is limited to uint32_t, so the arguments are limited to uint32_t as well
-template<typename result_T, typename x_T, typename y_T>
-result_T dot(uint32_t n, const x_T& x, uint32_t incx, const y_T& y, uint32_t incy) {
+// since we do not support arbitrary posit configuration conversions, the element type of the vectors x and y are declared to be the same.
+template<typename result_T, typename element_T>
+result_T dot(uint32_t n, const std::vector<element_T>& x, uint32_t incx, const std::vector<element_T>& y, uint32_t incy) {
 	result_T result = 0;
 	uint32_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
-		result += x[ix] * y[iy];
+		result += (result_T)(x[ix] * y[iy]);
 	}
 	return result;
 }

@@ -164,7 +164,7 @@ void GenerateTestCase(double input, double reference, const posit<nbits, es>& pr
 	cout << endl;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -204,12 +204,16 @@ try {
 	// manual exhaustive testing
 	tag = "Manual Testing";
 
-	GenerateLogicPatternsForDebug<3, 0>();
-	GenerateLogicPatternsForDebug<4, 0>();	
-	GenerateLogicPatternsForDebug<4, 1>();
-	GenerateLogicPatternsForDebug<5, 1>();
+	//GenerateLogicPatternsForDebug<3, 0>();
+	//GenerateLogicPatternsForDebug<4, 0>();	
+	//GenerateLogicPatternsForDebug<4, 1>();
+	//GenerateLogicPatternsForDebug<5, 1>();
 	//GenerateLogicPatternsForDebug<6, 2>();
 	//GenerateLogicPatternsForDebug<7, 3>();
+	GenerateLogicPatternsForDebug<8, 0>();
+	// return 0;
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 0>(tag, true), "posit<8,0>", "conversion");
 	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<4, 1>(tag, true), "posit<4,1>", "conversion");

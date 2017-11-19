@@ -167,8 +167,6 @@ public:
 		return negated;
 	}
 	
-	
-	
 	posit<nbits, es>& operator+=(const posit& rhs) 
 	{
 		// with sign/magnitude adders it is customary to organize the computation 
@@ -560,6 +558,9 @@ public:
 		}	
 		return value;
 	}
+	float to_float() const {
+		return (float)to_double();
+	}
 	double to_double() const {
 		if (isZero())
 			return 0.0;
@@ -568,9 +569,10 @@ public:
 		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
 	}
 	
-	// Maybe remove explicit, LU compiles then, but we have lots of double computation then
+	// Maybe remove explicit, MTL compiles, but we have lots of double computation then
 	explicit operator double() const { return to_double(); }
-	
+	explicit operator float() const { return to_float(); }
+
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	value<fbits> convert_to_scientific_notation() const {
 		value<fbits> v(_sign, scale(), get_fraction().get(), isZero());
