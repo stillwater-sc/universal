@@ -26,7 +26,7 @@ public:
 		return _RegimeBits;
 	}
 	int scale() const {
-		return int(_k) << es;
+		return _k > 0 ? int(_k) * (1 << es) : -(int(-_k) * (1 << es));
 	}
 	int maxpos_scale() {
 		return (nbits - 2) * (1 << es);
@@ -64,12 +64,12 @@ public:
 		_Bits = raw;
 		_RegimeBits = nrOfRegimeBits;
 	}
-	void setZero() {
+	void setToZero() {
 		_Bits.reset();
 		_RegimeBits = nbits - 1;
 		_k = 1 - static_cast<int>(nbits);   // by design: this simplifies increment/decrement
 	}
-	void setInfinite() {
+	void setToInfinite() {
 		_Bits.reset();
 		_RegimeBits = nbits - 1;
 		_k = static_cast<int>(nbits) - 1;   // by design: this simplifies increment/decrement

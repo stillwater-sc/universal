@@ -6,9 +6,12 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 
-static constexpr int GEOMETRIC_ROUND_DOWN = -1;
-static constexpr int ARITHMETIC_ROUNDING  =  0;
-static constexpr int GEOMETRIC_ROUND_UP   =  1;
+static constexpr int GEOMETRIC_ROUND_DOWN   = -2;
+static constexpr int ARITHMETIC_ROUND_DOWN  = -1;
+static constexpr int NO_ADDITIONAL_ROUNDING =  0;
+static constexpr int ARITHMETIC_ROUND_UP    =  1;
+static constexpr int GEOMETRIC_ROUND_UP     =  2;
+static constexpr int ARITHMETIC_ROUNDING    =  5;
 
 // exponent
 template<size_t nbits, size_t es>
@@ -48,7 +51,7 @@ public:
 	// calculate the exponent given a number's scale and the number of regime bits, 
 	// returning an indicator which type of rounding is required to complete the posit
 	int assign_exponent_bits(int scale, int k, unsigned int nr_of_regime_bits) {
-		int rounding_mode = ARITHMETIC_ROUNDING;
+		int rounding_mode = NO_ADDITIONAL_ROUNDING;
 		_Bits.reset();
 		// we need to get to an adjusted scale that encodes regime and exponent
 		// value scale = useed ^ k * 2 ^ exponent = 2^(k*2^es) * 2^e -> k*2^es + e
@@ -66,13 +69,25 @@ public:
 			if (_NrOfBits < es) {
 				rounding_mode = _Bits[es - 1 - _NrOfBits] ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN; // check the next bit to see if we need to geometric round
 			}
+			else {
+				if (nbits - 1 - nr_of_regime_bits - es > 0) {
+					// use the fraction to determine rounding as this posit has fraction bits
+					rounding_mode = ARITHMETIC_ROUNDING;
+				}
+				else {
+					// this posit is in the geometric regime and has consumed all the bits
+					rounding_mode = ARITHMETIC_ROUNDING; //  NO_ADDITIONAL_ROUNDING;
+				}
+			}
 		}
 		else {
+			// we ran out of bits
 			if (es > 0) {
 				rounding_mode = _Bits[es-1] ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN;
 			}
 			else {
-				// use the fraction to determine rounding as this posit doesn't have an exponent field
+				// this posit doesn't have an exponent field
+				rounding_mode = NO_ADDITIONAL_ROUNDING;
 			}
 		}
 		return rounding_mode;

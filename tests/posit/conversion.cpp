@@ -197,7 +197,25 @@ try {
 	input = 0.74999; reference = 0.5;
 #endif
 	posit<4, 1> p;
-	input = 0.99; reference = 1.0;
+	input = 0.2499; reference = 0.25;
+	p = input;
+	GenerateTestCase(input, reference, p);
+	input = 0.1251; reference = 0.25;
+	p = input;
+	GenerateTestCase(input, reference, p);
+	input = 0.125; reference = 0.25;
+	p = input;
+	GenerateTestCase(input, reference, p);
+	input = 3.99; reference = 4.0;
+	p = input;
+	GenerateTestCase(input, reference, p);
+	input = 4.01; reference = 4.0;
+	p = input;
+	GenerateTestCase(input, reference, p);
+	input = 7.99; reference = 4.0;
+	p = input;
+	GenerateTestCase(input, reference, p);
+	input = 8.01; reference = 16.0;
 	p = input;
 	GenerateTestCase(input, reference, p);
 	// return 0;

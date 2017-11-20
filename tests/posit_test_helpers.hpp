@@ -10,13 +10,6 @@
 #include <iostream>
 #include <typeinfo>
 
-int GetExponent(int scale, int es) {
-	if (es > 0) {
-		return scale > 0 ? scale % es : -scale % es;
-	}
-	return 0;
-}
-
 static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 template<size_t nbits, size_t es>
@@ -29,7 +22,7 @@ void ReportConversionError(std::string test_case, std::string op, double input, 
 		<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
 		<< std::setw(FLOAT_TABLE_WIDTH) << presult.to_double()
 		<< "  raw " << std::setw(nbits) << presult.get()
-		<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << (presult.scale()>>es) << "   exp= " << std::setw(3) << GetExponent(presult.scale(), es)
+		<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << presult.regime_k() << "   exp= " << std::setw(3) << presult.exp()
 		<< std::endl;
 }
 
@@ -42,7 +35,7 @@ void ReportConversionSuccess(std::string test_case, std::string op, double input
 		<< std::setw(FLOAT_TABLE_WIDTH) << presult.to_double() << " reference value is "
 		<< std::setw(FLOAT_TABLE_WIDTH) << reference
 		<< "  raw " << std::setw(nbits) << presult.get()
-		<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << (presult.scale() >> es) << "   exp= " << std::setw(3) << GetExponent(presult.scale(), es)
+		<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << presult.regime_k() << "   exp= " << std::setw(3) << presult.exp()
 		<< std::endl;
 }
 

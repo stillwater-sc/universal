@@ -432,15 +432,15 @@ public:
 
 	// MODIFIERS
 	void setToZero() {
-		_raw_bits.reset();
 		_sign = false;
-		_regime.reset();
+		_regime.setToZero();
 		_exponent.reset();
 		_fraction.reset();
+		_raw_bits.reset();
 	}
 	void setToInfinite() {
 		_sign = true;
-		_regime.setInfinite();
+		_regime.setToInfinite();
 		_exponent.reset();
 		_fraction.reset();
 		_raw_bits.reset();
@@ -679,6 +679,9 @@ public:
 		// scale = useed ^ k * 2^e 
 		return _regime.scale() + _exponent.scale();
 	}
+	unsigned int exp() const {
+		return _exponent.scale();
+	}
 	// special case check for projecting values between (0, minpos] to minpos and [maxpos, inf) to maxpos
 	bool check_inward_projection_range(int scale) {
 		// calculate the k factor
@@ -774,7 +777,7 @@ public:
 					if (carry)_regime.increment();
 #endif // INCREMENT_POSIT_CARRY_CHAIN
 					break;
-				case GEOMETRIC_ROUND_DOWN:
+				case NO_ADDITIONAL_ROUNDING:
 					break;
 				case ARITHMETIC_ROUNDING:
 					unsigned int nr_of_exp_bits = _exponent.nrBits();
