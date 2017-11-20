@@ -196,7 +196,7 @@ try {
 	input = 0.50001; reference = 0.5;
 	input = 0.74999; reference = 0.5;
 #endif
-	posit<8, 0> p;
+	posit<4, 1> p;
 	input = 0.99; reference = 1.0;
 	p = input;
 	GenerateTestCase(input, reference, p);
@@ -206,12 +206,13 @@ try {
 
 	//GenerateLogicPatternsForDebug<3, 0>();
 	//GenerateLogicPatternsForDebug<4, 0>();	
-	//GenerateLogicPatternsForDebug<4, 1>();
+	GenerateLogicPatternsForDebug<4, 1>();
 	//GenerateLogicPatternsForDebug<5, 1>();
 	//GenerateLogicPatternsForDebug<6, 2>();
 	//GenerateLogicPatternsForDebug<7, 3>();
 	//GenerateLogicPatternsForDebug<8, 0>();
-	// return 0;
+	//GenerateLogicPatternsForDebug<8, 1>();
+	 return 0;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 0>(tag, true), "posit<8,0>", "conversion");
 	return 0;

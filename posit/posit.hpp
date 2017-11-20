@@ -386,6 +386,10 @@ public:
 		// -> (scale >> es) = (k*2^es + exp) >> es
 		// -> (scale >> es) = k + (exp >> es) -> k = (scale >> es)
 		int k = scale < 0 ? -(-scale >> es) : (scale >> es);
+		if (k == 0 && scale < 0) {
+			// project back to south-east quadrant
+			k = -1;
+		}
 		return k;
 	}
 	regime<nbits, es>  get_regime() const {
