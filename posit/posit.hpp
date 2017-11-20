@@ -340,19 +340,19 @@ public:
 	double useed_value() const {
 		return double(uint64_t(1) << useed_scale());
 	}
-	double maxpos_value() {
+	double maxpos_value() const {
 		return pow(double(useed_value()), double(nbits-2));
 	}
-	double minpos_value() {
+	double minpos_value() const {
 		return pow(double(useed_value()), double(static_cast<int>(2-nbits)));
 	}
 	int useed_scale() const {
 		return (uint32_t(1) << es);
 	}
-	int maxpos_scale() {
+	int maxpos_scale() const {
 		return (nbits - 2) * (1 << es);
 	}
-	int minpos_scale() {
+	int minpos_scale() const {
 		return static_cast<int>(2 - nbits) * (1 << es);
 	}
 
@@ -372,8 +372,21 @@ public:
 	int				   regime_k() const {
 		return _regime.regime_k();
 	}
+	// calculate the constrained k value
 	int                calculate_k(int scale) const {
-		return _regime.calculate_k_value(scale);
+		// constrain the scale to range [minpos, maxpos]
+		if (scale < 0) {
+			scale = scale > minpos_scale() ? scale : minpos_scale();
+		}
+		else {
+			scale = scale < maxpos_scale() ? scale : maxpos_scale();
+		}
+		// bad int k = scale < 0 ? -(-scale >> es) - 1 : (scale >> es);
+		// the scale of a posit is  2 ^ scale = useed ^ k * 2 ^ exp
+		// -> (scale >> es) = (k*2^es + exp) >> es
+		// -> (scale >> es) = k + (exp >> es) -> k = (scale >> es)
+		int k = scale < 0 ? -(-scale >> es) : (scale >> es);
+		return k;
 	}
 	regime<nbits, es>  get_regime() const {
 		return _regime;
@@ -736,19 +749,19 @@ public:
                 
             // construct the posit
 			_sign = _negative;
-			int k = _regime.calculate_k_value(_scale);
+			int k = calculate_k(_scale);
 			// interpolation rule checks
 			if (check_inward_projection_range(_scale)) {    // regime dominated
 				if (_trace_conversion) std::cout << "inward projection" << std::endl;
 				// we are projecting to minpos/maxpos
-				_regime.assign_from_scale(_scale);
+				_regime.assign_regime_pattern(k);
 				// store raw bit representation
 				_raw_bits = _sign ? twos_complement(collect()) : collect();
 				_raw_bits.set(nbits - 1, _sign);
 				// we are done
 			} 
 			else {
-				unsigned int nr_of_regime_bits = _regime.assign_from_scale(_scale);
+				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(k);
 				bool carry = false;
 				switch (_exponent.assign_exponent_bits(_scale, k, nr_of_regime_bits)) {
 				case GEOMETRIC_ROUND_UP:

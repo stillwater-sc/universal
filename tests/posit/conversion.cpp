@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 // if you want to trace the posit intermediate results
-//#define POSIT_VERBOSE_OUTPUT
+// #define POSIT_VERBOSE_OUTPUT
 
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_operators.hpp"
@@ -164,7 +164,7 @@ void GenerateTestCase(double input, double reference, const posit<nbits, es>& pr
 	cout << endl;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -196,11 +196,11 @@ try {
 	input = 0.50001; reference = 0.5;
 	input = 0.74999; reference = 0.5;
 #endif
-	posit<4, 1> p;
-	input = 0.04; reference = 0.0625;
+	posit<8, 0> p;
+	input = 0.99; reference = 1.0;
 	p = input;
 	GenerateTestCase(input, reference, p);
-	//return 0;
+	// return 0;
 	// manual exhaustive testing
 	tag = "Manual Testing";
 
@@ -210,7 +210,7 @@ try {
 	//GenerateLogicPatternsForDebug<5, 1>();
 	//GenerateLogicPatternsForDebug<6, 2>();
 	//GenerateLogicPatternsForDebug<7, 3>();
-	GenerateLogicPatternsForDebug<8, 0>();
+	//GenerateLogicPatternsForDebug<8, 0>();
 	// return 0;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 0>(tag, true), "posit<8,0>", "conversion");
