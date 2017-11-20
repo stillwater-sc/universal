@@ -123,6 +123,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const fraction<nfbits>& f) {
 			}
 		}
 	}
+	if (nrOfFractionBitsProcessed == 0) ostr << "~"; // for proper alignment in tables
 	return ostr;
 }
 

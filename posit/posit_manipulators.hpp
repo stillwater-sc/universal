@@ -82,9 +82,11 @@ void GeneratePositTable(std::ostream& ostr)
 
 	const size_t index_column = 5;
 	const size_t bin_column = 16;
-	const size_t k_column = 16;
-	const size_t sign_column = 16;
-	const size_t regime_column = 30;
+	const size_t k_column = 8;
+	const size_t sign_column = 8;
+	const size_t scale_column = 8;
+	const size_t regime_value_column = 30;
+	const size_t regime_column = 16;
 	const size_t exponent_column = 16;
 	const size_t fraction_column = 16;
 	const size_t value_column = 30;
@@ -92,8 +94,10 @@ void GeneratePositTable(std::ostream& ostr)
 	ostr << std::setw(index_column) << " # "
 		<< std::setw(bin_column) << " Binary"
 		<< std::setw(bin_column) << " Decoded"
-		<< std::setw(k_column) << " k-value"
+		<< std::setw(k_column) << " k"
 		<< std::setw(sign_column) << "sign"
+		<< std::setw(scale_column) << "scale"
+//		<< std::setw(regime_value_column) << " regime"
 		<< std::setw(regime_column) << " regime"
 		<< std::setw(exponent_column) << " exponent"
 		<< std::setw(fraction_column) << " fraction"
@@ -108,7 +112,9 @@ void GeneratePositTable(std::ostream& ostr)
 			<< std::setw(bin_column) << myPosit.get_decoded()
 			<< std::setw(k_column) << myPosit.regime_k()
 			<< std::setw(sign_column) << myPosit.sign_value()
-			<< std::setw(regime_column) << std::setprecision(22) << r.value() << std::setprecision(0)
+			<< std::setw(scale_column) << myPosit.scale()
+//			<< std::setw(regime_value_column) << std::setprecision(22) << r.value() << std::setprecision(0)
+			<< std::setw(regime_column) << std::right << r
 			<< std::setw(exponent_column) << std::right << e 
 			<< std::setw(fraction_column) << std::right << f
 			<< std::setw(value_column) << std::setprecision(22) << myPosit.to_double() << std::setprecision(0)
