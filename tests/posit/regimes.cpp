@@ -82,13 +82,12 @@ int ValidateRegimeScales(std::string tag, bool bReportIndividualTestCases) {
 	int size = int(nbits);
 	for (int k = (-size + 1); k <= (size - 1); k++) {
 		int scale = k*useed_scale;
-		r1.assign_from_scale(scale);
 		r2.assign_regime_pattern(k);
 		if (r1 != r2) {
 			nrOfFailedTests++;
 			std::cout << "k = " << setw(3) << k 
 				<< " scale = " << setw(3) << scale 
-				<< " calc k " << setw(3) << r1.calculate_k_value(scale) 
+				<< " calc k " << setw(3) << r1.regime_k() 
 				<< " bits " << r1 << ":" << r2 
 				<< " clamp " << p.check_inward_projection_range(scale) << std::endl;
 		}
