@@ -15,8 +15,8 @@ using namespace std;
 
 /*
 Regime range example for a posit<6,es>
-     regime      scale
-     00000          ~   value is either 0 or inf
+	 regime      scale
+	 00000          ~   value is either 0 or inf
 	 00001         -4
 	 0001-         -3
 	 001--         -2
@@ -33,13 +33,13 @@ int ValidateRegimeOperations(std::string tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTestCases = 0;
 
 	regime<nbits, es> r;
-	for (int k = -NR_TEST_CASES; k < NR_TEST_CASES+1; k++) {
+	for (int k = -NR_TEST_CASES; k < NR_TEST_CASES + 1; k++) {
 		int reference = r.regime_size(k);
-		int nrRegimeBits = r.assign_regime_pattern(k);	
+		int nrRegimeBits = r.assign_regime_pattern(k);
 		if (nrRegimeBits != reference) {
 			nrOfFailedTestCases++;
 			if (bReportIndividualTestCases) cout << "FAIL: k = " << setw(3) << k << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << endl;
-		}	
+		}
 		else {
 			//if (bReportIndividualTestCases) cout << "PASS: k = " << setw(3) << k << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << endl;
 		}
@@ -64,7 +64,7 @@ int ValidateInwardProjection(std::string tag, bool bReportIndividualTestCases) {
 		if (inward != reference) {
 			nrOfFailedTests++;
 			cout << "FAIL : k = " << setw(3) << k << " scale = " << setw(3) << scale << " inward projection range " << inward << " reference " << reference << endl;
-		}	
+		}
 		cout << "k = " << setw(3) << k << " scale = " << setw(3) << scale << " inward projection range " << inward << endl;
 
 	}
@@ -76,19 +76,24 @@ int ValidateRegimeScales(std::string tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	int useed_scale = int(1) << es;  // int because we are doing int math with it
 
-	regime<nbits, es> r1, r2;
+	regime<nbits, es> r1;
 	posit<nbits, es> p; // for check_inward_projection_range
 	// scale represents the binary scale of a value to test
 	int size = int(nbits);
 	for (int k = (-size + 1); k <= (size - 1); k++) {
 		int scale = k*useed_scale;
-		r2.assign_regime_pattern(k);
-		if (r1 != r2) {
+		r1.assign_regime_pattern(k);
+		if (r1.scale() != scale) {
+			if (p.check_inward_projection_range(scale)) {
+				if (r1.scale() == (k - 1)*useed_scale || r1.scale() == (k + 1)*useed_scale) {
+					continue;
+				}
+			}	
 			nrOfFailedTests++;
-			std::cout << "k = " << setw(3) << k 
-				<< " scale = " << setw(3) << scale 
-				<< " calc k " << setw(3) << r1.regime_k() 
-				<< " bits " << r1 << ":" << r2 
+			std::cout << "k = " << setw(3) << k
+				<< " scale = " << setw(3) << scale
+				<< " calc k " << setw(3) << r1.regime_k()
+				<< " bits " << r1 << ":scale=" << r1.scale()
 				<< " clamp " << p.check_inward_projection_range(scale) << std::endl;
 		}
 
