@@ -164,7 +164,7 @@ void GenerateTestCase(double input, double reference, const posit<nbits, es>& pr
 	cout << endl;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -209,7 +209,8 @@ try {
 	input = 0.06251; reference = 0.0625;
 	p = input;
 	GenerateTestCase(input, reference, p);
-	input = 0.2499; reference = 0.25;
+
+	input = 0.1249; reference = 0.0625;
 	p = input;
 	GenerateTestCase(input, reference, p);
 	input = 0.1251; reference = 0.25;
@@ -218,6 +219,10 @@ try {
 	input = 0.125; reference = 0.25;
 	p = input;
 	GenerateTestCase(input, reference, p);
+	input = 0.2499; reference = 0.25;
+	p = input;
+	GenerateTestCase(input, reference, p);
+
 	input = 3.99; reference = 4.0;
 	p = input;
 	GenerateTestCase(input, reference, p);
@@ -237,7 +242,7 @@ try {
 	//GenerateLogicPatternsForDebug<3, 0>();
 	//GenerateLogicPatternsForDebug<4, 0>();	
 	GenerateLogicPatternsForDebug<4, 1>();
-	//GenerateLogicPatternsForDebug<5, 1>();
+	GenerateLogicPatternsForDebug<5, 1>();
 	//GenerateLogicPatternsForDebug<6, 2>();
 	//GenerateLogicPatternsForDebug<7, 3>();
 	//GenerateLogicPatternsForDebug<8, 0>();
