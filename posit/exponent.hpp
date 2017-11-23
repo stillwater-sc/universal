@@ -91,9 +91,10 @@ public:
 				std::cout << "no exp left: " << (rounding_mode == GEOMETRIC_ROUND_UP ? " geo-up " : " geo-dw ");
 			}
 			else {
-				// this posit doesn't have an exponent field
-				rounding_mode = NO_ADDITIONAL_ROUNDING;
-				std::cout << "no rounding no e field ";
+				// this posit doesn't have an exponent field, 
+				// so we need to look at the fraction to see if we need to round up or down
+				rounding_mode = ARITHMETIC_ROUNDING;
+				std::cout << "ar rounding no e field ";
 			}
 		}
 		return rounding_mode;

@@ -44,7 +44,7 @@ void GenerateLogicPatternsForDebug() {
 
 	// execute the test
 	int nrOfFailedTests = 0;
-	const double eps = 0.0000000001;  // TODO for big posits, eps is important to resolve differences
+	const double eps = 1.0e-10;  // TODO for big posits, eps is important to resolve differences
 	double da, input;
 	posit<nbits, es> pa;
 	std::cout << spec_to_string(pa) << std::endl;
@@ -197,6 +197,18 @@ try {
 	input = 0.74999; reference = 0.5;
 #endif
 	posit<4, 1> p;
+	input = 0.015625; reference = 0.0625;
+	p = input;
+	GenerateTestCase(input, reference, p);
+	input = 0.03125; reference = 0.0625;
+	p = input;
+	GenerateTestCase(input, reference, p);
+	input = 0.0624; reference = 0.0625;
+	p = input;
+	GenerateTestCase(input, reference, p);
+	input = 0.06251; reference = 0.0625;
+	p = input;
+	GenerateTestCase(input, reference, p);
 	input = 0.2499; reference = 0.25;
 	p = input;
 	GenerateTestCase(input, reference, p);
