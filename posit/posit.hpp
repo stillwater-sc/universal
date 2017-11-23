@@ -696,6 +696,8 @@ public:
 		return _exponent.scale();
 	}
 	// special case check for projecting values between (0, minpos] to minpos and [maxpos, inf) to maxpos
+	// DO NOT USE the k value for this, as the k value encodes the useed regions and thus is too coarse to make this decision
+	// Using the scale directly is the simplest expression of the inward projection test.
 	bool check_inward_projection_range(int scale) {
 		// calculate the max k factor for this posit config
 		int posit_size = nbits;
