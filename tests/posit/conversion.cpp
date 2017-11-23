@@ -44,7 +44,7 @@ void GenerateLogicPatternsForDebug() {
 
 	// execute the test
 	int nrOfFailedTests = 0;
-	const double eps = 0.0000000001;  // TODO for big posits, eps is important to resolve differences
+	const double eps = 1.0e-10;  // TODO for big posits, eps is important to resolve differences
 	double da, input;
 	posit<nbits, es> pa;
 	std::cout << spec_to_string(pa) << std::endl;
@@ -222,7 +222,7 @@ try {
 	// manual exhaustive testing
 	tag = "Manual Testing";
 
-	//GenerateLogicPatternsForDebug<3, 0>();
+	GenerateLogicPatternsForDebug<3, 0>();
 	//GenerateLogicPatternsForDebug<4, 0>();	
 	GenerateLogicPatternsForDebug<4, 1>();
 	//GenerateLogicPatternsForDebug<5, 1>();

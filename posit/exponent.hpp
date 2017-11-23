@@ -86,8 +86,9 @@ public:
 				rounding_mode = _Bits[es-1] ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN;
 			}
 			else {
-				// this posit doesn't have an exponent field
-				rounding_mode = NO_ADDITIONAL_ROUNDING;
+				// this posit doesn't have an exponent field, 
+				// so we need to look at the fraction to see if we need to round up or down
+				rounding_mode = ARITHMETIC_ROUNDING;
 			}
 		}
 		return rounding_mode;
