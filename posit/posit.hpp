@@ -781,6 +781,7 @@ public:
 				_raw_bits = _sign ? twos_complement(collect()) : collect();
 				_raw_bits.set(nbits - 1, _sign);
 				// we are done
+				std::cout << "projection  rounding ";
 			} 
 			else {
 				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(k);

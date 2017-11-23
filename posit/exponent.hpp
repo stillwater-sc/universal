@@ -68,15 +68,19 @@ public:
 		if (_NrOfBits > 0) {
 			if (_NrOfBits < es) {
 				rounding_mode = _Bits[es - 1 - _NrOfBits] ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN; // check the next bit to see if we need to geometric round
+				std::cout << "truncated exp" << (rounding_mode == GEOMETRIC_ROUND_UP ? " geo-up " : " geo-dw ");
 			}
 			else {
 				if (nbits - 1 - nr_of_regime_bits - es > 0) {
 					// use the fraction to determine rounding as this posit has fraction bits
 					rounding_mode = ARITHMETIC_ROUNDING;
+					std::cout << "arithmetic  rounding ";
+
 				}
 				else {
 					// this posit is in the geometric regime and has consumed all the bits
 					rounding_mode = ARITHMETIC_ROUNDING; //  NO_ADDITIONAL_ROUNDING;
+					std::cout << "no rounding alltaken ";
 				}
 			}
 		}
@@ -84,11 +88,13 @@ public:
 			// we ran out of bits
 			if (es > 0) {
 				rounding_mode = _Bits[es-1] ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN;
+				std::cout << "no exp left: " << (rounding_mode == GEOMETRIC_ROUND_UP ? " geo-up " : " geo-dw ");
 			}
 			else {
 				// this posit doesn't have an exponent field, 
 				// so we need to look at the fraction to see if we need to round up or down
 				rounding_mode = ARITHMETIC_ROUNDING;
+				std::cout << "ar rounding no e field ";
 			}
 		}
 		return rounding_mode;
