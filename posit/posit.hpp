@@ -392,6 +392,19 @@ public:
 		}
 		return k;
 	}
+	// calculate the unconstrained k value
+	int                calculate_unconstrained_k(int scale) const {
+		// the scale of a posit is  2 ^ scale = useed ^ k * 2 ^ exp
+		// -> (scale >> es) = (k*2^es + exp) >> es
+		// -> (scale >> es) = k + (exp >> es) 
+		// -> k = (scale >> es)
+		int k = scale < 0 ? -(-scale >> es) : (scale >> es);
+		if (k == 0 && scale < 0) {
+			// project back to south-east quadrant
+			k = -1;
+		}
+		return k;
+	}
 	regime<nbits, es>  get_regime() const {
 		return _regime;
 	}
@@ -684,10 +697,10 @@ public:
 	}
 	// special case check for projecting values between (0, minpos] to minpos and [maxpos, inf) to maxpos
 	bool check_inward_projection_range(int scale) {
-		// calculate the k factor
-		int k = scale < 0 ?	-(-scale >> es) : (scale >> es);
-		int posit_size = int(nbits);
-		return k < 0 ? k <= -posit_size + 1 : k >= posit_size - 1;
+		// calculate the max k factor for this posit config
+		int posit_size = nbits;
+		int k = scale < 0 ?	-(posit_size - 2) : (posit_size - 2);
+		return scale < 0 ? scale < k*(1<<es) : scale > k*(1<<es);
 	}
 	// project to the next 'larger' posit: this is 'pushing away' from zero, projecting to the next bigger scale
 	void project_up() {
@@ -756,7 +769,7 @@ public:
                 
             // construct the posit
 			_sign = _negative;
-			int k = calculate_k(_scale);
+			int k = calculate_unconstrained_k(_scale);
 			// interpolation rule checks
 			if (check_inward_projection_range(_scale)) {    // regime dominated
 				if (_trace_conversion) std::cout << "inward projection" << std::endl;
