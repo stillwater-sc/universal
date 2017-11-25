@@ -14,14 +14,16 @@ using namespace std;
 int main(int argc, char** argv)
 try {
 	if (argc != 2) {
-		cerr << "Show the sign/scale/fraction components of a float.    Usage: fc float_value" << endl;
+		cerr << "Show the sign/scale/fraction components of a float." << endl;
+	    cerr << "Usage: fc float_value" << endl;
+		cerr << "Example: fc 0.03124999" << endl;
+		cerr << "float: 0.03124999068677425384521484375 Sign: 0 Scale: -6 Fraction: b11111111111111111111011" << endl;
 		return 1;
 	}
-	float f = atof(argv[1]);
+	float f = float(atof(argv[1]));
 	value<23> v(f);
-	cout << components(v) << endl;
+	cout << "float: " << setprecision(40) << f << components(v) << endl;
 	return 0;
-
 }
 catch (char* msg) {
 	cerr << msg << endl;
