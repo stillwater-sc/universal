@@ -181,10 +181,10 @@ public:
 		_nan = false;
 		_fraction.reset();
 	}
-	bool isNegative() {	return _sign; }
-	bool isZero() { return _zero; }
-	bool isInfinite() { return _inf; }
-	bool isNaN() { return _nan; }
+	bool isNegative() const {	return _sign; }
+	bool isZero() const { return _zero; }
+	bool isInfinite() const { return _inf; }
+	bool isNaN() const { return _nan; }
 	bool sign() const { return _sign; }
 	int scale() const { return _scale; }
 	std::bitset<fbits> fraction() const { return _fraction; }
@@ -197,7 +197,7 @@ public:
 		}
 		return fixed_point_number;
 	}
-	double sign_value() const {	return (_sign ? -1.0 : 1.0); }
+	double sign_value() const { return (_sign ? -1.0 : 1.0); }
 	double scale_value() const {
 		double v = 0.0;
 		if (_zero) return v;
@@ -206,9 +206,9 @@ public:
 			v = double(uint64_t(1) << _scale);
 		}
 		else {
-			v = double(1.0)/double(uint64_t(1) << -_scale);
+			v = double(1.0) / double(uint64_t(1) << -_scale);
 		}
-		return v;  
+		return v;
 	}
 	double fraction_value() const {
 		// TODO: this fails when fbits > 64 and we cannot represent the fraction by a 64bit unsigned integer
@@ -254,3 +254,48 @@ private:
 	friend bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs);
 };
 
+////////////////////// VALUE operators
+template<size_t nfbits>
+inline std::ostream& operator<<(std::ostream& ostr, const value<nfbits>& v) {
+	if (v._inf) {
+		ostr << FP_INFINITE;
+	}
+	else {
+		ostr << v.to_double();
+	}
+	return ostr;
+}
+
+template<size_t nfbits>
+inline std::istream& operator>> (std::istream& istr, const value<nfbits>& v) {
+	istr >> v._fraction;
+	return istr;
+}
+
+template<size_t nfbits>
+inline bool operator==(const value<nfbits>& lhs, const value<nfbits>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._fraction == rhs._fraction && lhs._nrOfBits == rhs._nrOfBits; }
+template<size_t nfbits>
+inline bool operator!=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nfbits>
+inline bool operator< (const value<nfbits>& lhs, const value<nfbits>& rhs) { return lhs.to_double() < rhs.to_double(); }
+template<size_t nfbits>
+inline bool operator> (const value<nfbits>& lhs, const value<nfbits>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nfbits>
+inline bool operator<=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator> (lhs, rhs); }
+template<size_t nfbits>
+inline bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator< (lhs, rhs); }
+
+template<size_t fbits>
+inline std::string components(const value<fbits>& v) {
+	std::stringstream s;
+	if (v.isZero()) {
+		s << " zero b" << std::setw(fbits) << v.fraction();
+		return s.str();
+	}
+	else if (v.isInfinite()) {
+		s << " infinite b" << std::setw(fbits) << v.fraction();
+		return s.str();
+	}
+	s << " Sign: " << v.sign() << " Scale: " << v.scale() << " Fraction: b" << v.fraction();
+	return s.str();
+}

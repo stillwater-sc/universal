@@ -12,7 +12,7 @@
 
 #include "../bitset/bitset_helpers.hpp"
 #include "../bitset/bitset_arithmetic.hpp"
-#include "posit_helpers.hpp"
+#include "bit_functions.hpp"
 #include "trace_constants.hpp"
 #include "value.hpp"
 #include "fraction.hpp"
@@ -866,7 +866,70 @@ private:
 	friend bool operator>=(const posit<nnbits, ees>& lhs, const posit<nnbits, ees>& rhs);
 };
 
-/// Magnitude of a posit (same with sign bit turned off).
+////////////////// POSIT operators
+template<size_t nbits, size_t es>
+inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
+	if (p.isZero()) {
+		ostr << double(0.0);
+		return ostr;
+	}
+	else if (p.isInfinite()) {
+		ostr << std::numeric_limits<double>::infinity();
+		return ostr;
+	}
+	ostr << p.to_double();
+	return ostr;
+}
+
+template<size_t nbits, size_t es>
+inline std::istream& operator>> (std::istream& istr, const posit<nbits, es>& p) {
+	istr >> p._Bits;
+	return istr;
+}
+
+template<size_t nbits, size_t es>
+inline bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._raw_bits == rhs._raw_bits; }
+template<size_t nbits, size_t es>
+inline bool operator!=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nbits, size_t es>
+inline bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._raw_bits < rhs._raw_bits; }
+template<size_t nbits, size_t es>
+inline bool operator> (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nbits, size_t es>
+inline bool operator<=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator> (lhs, rhs); }
+template<size_t nbits, size_t es>
+inline bool operator>=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator< (lhs, rhs); }
+
+// POSIT BINARY ARITHMETIC OPERATORS
+template<size_t nbits, size_t es>
+inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+	posit<nbits, es> sum = lhs;
+	sum += rhs;
+	return sum;
+}
+
+template<size_t nbits, size_t es>
+inline posit<nbits, es> operator-(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+	posit<nbits, es> diff = lhs;
+	diff -= rhs;
+	return diff;
+}
+
+template<size_t nbits, size_t es>
+inline posit<nbits, es> operator*(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+	posit<nbits, es> mul = lhs;
+	mul *= rhs;
+	return mul;
+}
+
+template<size_t nbits, size_t es>
+inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+	posit<nbits, es> ratio = lhs;
+	ratio /= rhs;
+	return ratio;
+}
+
+/// Magnitude of a posit (equivalent to turning the sign bit off).
 template<size_t nbits, size_t es> 
 posit<nbits, es> abs(const posit<nbits, es>& p)
 {

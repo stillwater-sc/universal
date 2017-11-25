@@ -129,3 +129,38 @@ private:
 	template<size_t nnbits, size_t ees>
 	friend bool operator>=(const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
 };
+
+/////////////////// EXPONENT operators
+template<size_t nbits, size_t es>
+inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e) {
+	unsigned int nrOfExponentBitsProcessed = 0;
+	for (int i = int(es) - 1; i >= 0; --i) {
+		if (e._NrOfBits > nrOfExponentBitsProcessed++) {
+			ostr << (e._Bits[i] ? "1" : "0");
+		}
+		else {
+			ostr << "-";
+		}
+	}
+	if (nrOfExponentBitsProcessed == 0) ostr << "~"; // for proper alignment in tables
+	return ostr;
+}
+
+template<size_t nbits, size_t es>
+inline std::istream& operator>> (std::istream& istr, const exponent<nbits, es>& e) {
+	istr >> e._Bits;
+	return istr;
+}
+
+template<size_t nbits, size_t es>
+inline bool operator==(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return lhs._Bits == rhs._Bits && lhs._NrOfBits == rhs._NrOfBits; }
+template<size_t nbits, size_t es>
+inline bool operator!=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nbits, size_t es>
+inline bool operator< (const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return lhs._NrOfBits == rhs._NrOfBits && lhs._Bits < rhs._Bits; }
+template<size_t nbits, size_t es>
+inline bool operator> (const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nbits, size_t es>
+inline bool operator<=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator> (lhs, rhs); }
+template<size_t nbits, size_t es>
+inline bool operator>=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator< (lhs, rhs); }

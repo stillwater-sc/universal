@@ -10,7 +10,6 @@
 // #define POSIT_VERBOSE_OUTPUT
 
 #include "../../posit/posit.hpp"
-#include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
@@ -196,6 +195,9 @@ try {
 	input = 0.50001; reference = 0.5;
 	input = 0.74999; reference = 0.5;
 #endif
+	value<52> v(0.031250001);
+	cout << components(v) << endl;
+	return 0;
 	posit<4, 1> p;
 	input = 0.015625; reference = 0.0625;
 	p = input;

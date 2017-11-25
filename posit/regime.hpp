@@ -146,3 +146,37 @@ private:
 	template<size_t nnbits, size_t ees>
 	friend bool operator>=(const regime<nnbits, ees>& lhs, const regime<nnbits, ees>& rhs);
 };
+
+/////////////////  REGIME operators
+template<size_t nbits, size_t es>
+inline std::ostream& operator<<(std::ostream& ostr, const regime<nbits, es>& r) {
+	unsigned int nrOfRegimeBitsProcessed = 0;
+	for (int i = nbits - 2; i >= 0; --i) {
+		if (r._RegimeBits > nrOfRegimeBitsProcessed++) {
+			ostr << (r._Bits[i] ? "1" : "0");
+		}
+		else {
+			ostr << "-";
+		}
+	}
+	return ostr;
+}
+
+template<size_t nbits, size_t es>
+inline std::istream& operator>> (std::istream& istr, const regime<nbits, es>& r) {
+	istr >> r._Bits;
+	return istr;
+}
+
+template<size_t nbits, size_t es>
+inline bool operator==(const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return lhs._Bits == rhs._Bits && lhs._RegimeBits == rhs._RegimeBits; }
+template<size_t nbits, size_t es>
+inline bool operator!=(const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nbits, size_t es>
+inline bool operator< (const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return lhs._RegimeBits == rhs._RegimeBits && lhs._Bits < rhs._Bits; }
+template<size_t nbits, size_t es>
+inline bool operator> (const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nbits, size_t es>
+inline bool operator<=(const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return !operator> (lhs, rhs); }
+template<size_t nbits, size_t es>
+inline bool operator>=(const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return !operator< (lhs, rhs); }

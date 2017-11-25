@@ -6,8 +6,9 @@
 
 #include "stdafx.h"
 
-#include "../../posit/posit.hpp"
-#include "../../posit/posit_operators.hpp"
+#include "../../posit/trace_constants.hpp"
+#include "../../posit/bit_functions.hpp"
+#include "../../posit/value.hpp"
 
 using namespace std;
 

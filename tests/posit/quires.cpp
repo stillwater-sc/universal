@@ -7,7 +7,6 @@
 #include "stdafx.h"
 
 #include "../../posit/posit.hpp"
-#include "../../posit/posit_operators.hpp"
 #include "../../posit/quire.hpp"
 #include "../../posit/quire_operators.hpp"
 

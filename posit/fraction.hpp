@@ -186,3 +186,43 @@ private:
 	template<size_t nfbits>
 	friend bool operator>=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs);
 };
+
+////////////////////// FRACTION operators
+template<size_t nfbits>
+inline std::ostream& operator<<(std::ostream& ostr, const fraction<nfbits>& f) {
+	unsigned int nrOfFractionBitsProcessed = 0;
+	if (nfbits > 0) {
+		int upperbound = nfbits;
+		upperbound--;
+		for (int i = upperbound; i >= 0; --i) {
+			if (f._NrOfBits > nrOfFractionBitsProcessed++) {
+				ostr << (f._Bits[i] ? "1" : "0");
+			}
+			else {
+				ostr << "-";
+			}
+		}
+	}
+	if (nrOfFractionBitsProcessed == 0) ostr << "~"; // for proper alignment in tables
+	return ostr;
+}
+
+template<size_t nfbits>
+inline std::istream& operator>> (std::istream& istr, const fraction<nfbits>& f) {
+	istr >> f._Bits;
+	return istr;
+}
+
+template<size_t nfbits>
+inline bool operator==(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return lhs._NrOfBits == rhs._NrOfBits && lhs._Bits == rhs._Bits; }
+template<size_t nfbits>
+inline bool operator!=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nfbits>
+inline bool operator< (const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return lhs._NrOfBits <= rhs._NrOfBits && lhs._Bits < rhs._Bits; }
+template<size_t nfbits>
+inline bool operator> (const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nfbits>
+inline bool operator<=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return !operator> (lhs, rhs); }
+template<size_t nfbits>
+inline bool operator>=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return !operator< (lhs, rhs); }
+

@@ -8,7 +8,6 @@
 #include <sstream>
 
 #include "../../posit/posit.hpp"
-#include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
 
 using namespace std;

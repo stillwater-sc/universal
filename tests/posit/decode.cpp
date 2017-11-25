@@ -9,7 +9,6 @@
 #include <vector>
 
 #include "../../posit/posit.hpp"
-#include "../../posit/posit_operators.hpp"
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
 

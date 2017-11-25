@@ -12,7 +12,6 @@
 
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"
-#include "../../posit/posit_operators.hpp"
 #include "../../posit/posit_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
