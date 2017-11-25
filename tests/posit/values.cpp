@@ -55,6 +55,11 @@ bool ValidateValue() {
 	return bValid;
 }
 
+template<size_t fbits>
+void PrintValue(float f, const value<fbits>& v) {
+	cout << "float: " << setw(fbits) << f << components(v) << endl;
+}
+
 int main()
 try {
 	const size_t nbits = 32;
@@ -77,6 +82,34 @@ try {
 
 	cout << "Value configuration validation" << endl;
 	TestConversionResult(ValidateValue<8>(), "value<8>");
+
+	cout << "Conversion values of importance" << endl;
+	/*
+	no exp left : geo-dw d          0.125  result          0.0625  scale = -4  k = -2  exp = -  0001 00010          0.0625     PASS
+	no rounding alltaken u          0.125  result             0.5  scale = -1  k = -1  exp = 1  0011 00100            0.25 FAIL
+	no rounding alltaken u           0.25  result               1  scale =  0  k = -1  exp = 0  0100 00100            0.25 FAIL
+	no rounding alltaken d           0.25  result            0.25  scale = -2  k = -1  exp = 0  0010 00100            0.25     PASS
+	no rounding alltaken u          -0.25  result           -0.25  scale=  -2  k=  -1  exp=   0  1110 11100           -0.25     PASS
+	no rounding alltaken d          -0.25  result              -1  scale=   0  k=  -1  exp=   0  1100 11100           -0.25 FAIL
+	no rounding alltaken d         -0.125  result            -0.5  scale=  -1  k=  -1  exp=   1  1101 11100           -0.25 FAIL
+	no exp left:  geo-dw u         -0.125  result         -0.0625  scale=  -4  k=  -2  exp=   -  1111 11110         -0.0625     PASS
+	*/
+	float f;
+	value<23> v;
+	f =  0.12499f; v = f; PrintValue(f, v);
+	f =  0.12500f; v = f; PrintValue(f, v);
+	f =  0.12501f; v = f; PrintValue(f, v);
+	f =  0.24999f; v = f; PrintValue(f, v);
+	f =  0.25000f; v = f; PrintValue(f, v);
+	f =  0.25001f; v = f; PrintValue(f, v);
+	f = -0.25001f; v = f; PrintValue(f, v);
+	f = -0.25000f; v = f; PrintValue(f, v);
+	f = -0.24999f; v = f; PrintValue(f, v);
+	f = -0.12501f; v = f; PrintValue(f, v);
+	f = -0.12500f; v = f; PrintValue(f, v);
+	f = -0.12499f; v = f; PrintValue(f, v);
+
+
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

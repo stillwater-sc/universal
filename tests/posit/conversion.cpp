@@ -178,26 +178,31 @@ try {
 	double input, reference;
 	
 #if PREVIOUS_FAILURE_INPUTS
-	posit<4, 1> p;
-	input = 0.0625f; reference = 0.0625f; 
-	input = 0.1249f; reference = 0.0625f;
-	input = 0.1251f; reference = 0.25f;
-	input = 0.249999999f; reference = 0.25f;
-	input = 4.000001f; reference = 4.0f;
-	posit<5, 2> p;
-	input = 32.0001; reference = 64; 
-	input = 63.9999; reference = 64; 
-	input = 128.0001; reference = 256;
-	input = 255.9999; reference = 256;
-	input = 256.0001; reference = 256;
-	input = 1023.9999; reference = 256;
-	input = 0.5; reference = 0.5;
-	input = 0.50001; reference = 0.5;
-	input = 0.74999; reference = 0.5;
+	/*
+	conversion failures for <4,1>
+	no exp left : geo-dw d          0.125  result          0.0625  scale = -4  k = -2  exp = -  0001 00010          0.0625     PASS
+	no rounding alltaken u          0.125  result             0.5  scale = -1  k = -1  exp = 1  0011 00100            0.25 FAIL
+	no rounding alltaken u           0.25  result               1  scale =  0  k = -1  exp = 0  0100 00100            0.25 FAIL
+	no rounding alltaken d           0.25  result            0.25  scale = -2  k = -1  exp = 0  0010 00100            0.25     PASS
+	no rounding alltaken u          -0.25  result           -0.25  scale=  -2  k=  -1  exp=   0  1110 11100           -0.25     PASS
+	no rounding alltaken d          -0.25  result              -1  scale=   0  k=  -1  exp=   0  1100 11100           -0.25 FAIL
+	no rounding alltaken d         -0.125  result            -0.5  scale=  -1  k=  -1  exp=   1  1101 11100           -0.25 FAIL
+	no exp left:  geo-dw u         -0.125  result         -0.0625  scale=  -4  k=  -2  exp=   -  1111 11110         -0.0625     PASS
+	// incoming values and their corresponding bits
+	float:            0.1249900013 Sign: 0 Scale: -4 Fraction: b11111111111101011000010
+	float:                   0.125 Sign: 0 Scale: -3 Fraction: b00000000000000000000000
+	float:            0.1250099987 Sign: 0 Scale: -3 Fraction: b00000000000001010011111
+	float:            0.2499900013 Sign: 0 Scale: -3 Fraction: b11111111111110101100001
+	float:                    0.25 Sign: 0 Scale: -2 Fraction: b00000000000000000000000
+	float:            0.2500100136 Sign: 0 Scale: -2 Fraction: b00000000000000101010000
+	float:           -0.2500100136 Sign: 1 Scale: -2 Fraction: b00000000000000101010000
+	float:                   -0.25 Sign: 1 Scale: -2 Fraction: b00000000000000000000000
+	float:           -0.2499900013 Sign: 1 Scale: -3 Fraction: b11111111111110101100001
+	float:           -0.1250099987 Sign: 1 Scale: -3 Fraction: b00000000000001010011111
+	float:                  -0.125 Sign: 1 Scale: -3 Fraction: b00000000000000000000000
+	float:           -0.1249900013 Sign: 1 Scale: -4 Fraction: b11111111111101011000010
+	 */
 #endif
-	value<52> v(0.031250001);
-	cout << components(v) << endl;
-	return 0;
 	posit<4, 1> p;
 	input = 0.015625; reference = 0.0625;
 	p = input;
