@@ -12,6 +12,5 @@
 #include "posit_manipulators.hpp"
 #include "posit_functions.hpp"
 #include "quire.hpp"
-#include "quire_operators.hpp"
 
 #endif

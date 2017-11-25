@@ -8,7 +8,6 @@
 
 #include "../../posit/posit.hpp"
 #include "../../posit/quire.hpp"
-#include "../../posit/quire_operators.hpp"
 
 using namespace std;
 
@@ -38,7 +37,49 @@ void GenerateTestCase(int input, const quire<nbits, es, capacity>& reference, co
 	cout << endl;
 }
 
-#define MANUAL_TESTING 0
+template<size_t nbits, size_t es, size_t capacity>
+void GenerateUnsignedIntAssignments() {
+	quire<nbits, es, capacity> q;
+	unsigned upper_range = q.upper_range();
+	cout << "Upper range = " << upper_range << endl;
+	uint64_t i;
+	q = 0; cout << q << endl;
+	unsigned v = 1;
+	for (i = 1; i < uint64_t(1) << (upper_range + capacity); i <<= 1) {
+		q = i;
+		cout << q << endl;
+	}
+	i <<= 1;
+	try {
+		q = i;
+	}
+	catch (char* msg) {
+		cerr << "Caught the exception: " << msg << ". Value was " << i << endl;
+	}
+}
+
+template<size_t nbits, size_t es, size_t capacity>
+void GenerateSignedIntAssignments() {
+	quire<nbits, es, capacity> q;
+	unsigned upper_range = q.upper_range();
+	cout << "Upper range = " << upper_range << endl;
+	int64_t i, upper_limit = -(int64_t(1) << (upper_range + capacity));
+	q = 0; cout << q << endl;
+	unsigned v = 1;
+	for (i = -1; i > upper_limit; i *= 2) {
+		q = i;
+		cout << q << endl;
+	}
+	i <<= 1;
+	try {
+		q = i;
+	}
+	catch (char* msg) {
+		cerr << "Caught the exception: " << msg << ". Value was " << i << endl;
+	}
+}
+
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main()
@@ -49,6 +90,15 @@ try {
 	std::string tag = "Quire Accumulation failed";
 
 #if MANUAL_TESTING
+	const size_t nbits = 4;
+	const size_t es = 1;
+	const size_t capacity = 2; // for testing the accumulation capacity of the quire can be small
+
+	GenerateUnsignedIntAssignments<nbits, es, capacity>();
+	GenerateSignedIntAssignments<nbits, es, capacity>();
+	//GenerateUnsignedIntAssignments<8, 2, capacity>();
+
+
 
 #else
 

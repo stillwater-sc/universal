@@ -13,8 +13,9 @@ class quire {
 public:
 	static constexpr size_t escale = size_t(1) << es;         // 2^es
 	static constexpr size_t range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
+	static constexpr size_t fixed_point = range >> 1;         // position of the fixed point
 	static constexpr size_t qbits = range + capacity;         // size of the quire minus the sign bit: we are managing the sign explicitly
-	quire() : _sign(false), _accu(0) {}
+	quire() : _sign(false), _capacity(0), _upper(0), _lower(0) {}
 	quire(int8_t initial_value) {
 		*this = initial_value;
 	}
@@ -36,12 +37,14 @@ public:
 	quire(double initial_value) {
 		*this = initial_value;
 	}
-	quire(const value& rhs) {
+	template<size_t fbits>
+	quire(const value<fbits>& rhs) {
 		*this = rhs;
 	}
-	quire& operator=(const value& rhs) {
+	template<size_t fbits>
+	quire& operator=(const value<fbits>& rhs) {
 		_sign = rhs._sign;
-		_accu = rhs._accu;
+		int scale = rhs.scale();
 		return *this;
 	}
 	quire& operator=(int8_t rhs) {
@@ -58,10 +61,52 @@ public:
 	}
 	quire& operator=(int64_t rhs) {
 		reset();
+		// transform to sign-magnitude
+		_sign = rhs & 0x8000000000000000;
+		uint64_t magnitude;
+		magnitude = _sign ? -rhs : rhs;
+		unsigned msb = findMostSignificantBit(magnitude);
+		if (msb > fixed_point + capacity) {
+			throw "Assigned value too large for quire";
+		}
+		else {
+			// copy the value into the quire
+			unsigned i, c;
+			uint64_t mask = uint64_t(1);
+			for (i = 0; i < msb && i < fixed_point; i++) {
+				_upper[i] = magnitude & mask;
+				mask <<= 1;
+			}
+			if (msb >= fixed_point) {
+				for (i = fixed_point, c = 0; i < msb && i < fixed_point + capacity; i++, c++) {
+					_capacity[c] = magnitude & mask;
+					mask <<= 1;
+				}
+			}
+		}
 		return *this;
 	}
 	quire& operator=(uint64_t rhs) {
 		reset();
+		unsigned msb = findMostSignificantBit(rhs);
+		if (msb > fixed_point + capacity) {
+			throw "Assigned value too large for quire";
+		}
+		else {
+			// copy the value into the quire
+			unsigned i, c;
+			uint64_t mask = uint64_t(1);
+			for (i = 0; i < msb && i < fixed_point; i++) {
+				_upper[i] = rhs & mask;
+				mask <<= 1;
+			}
+			if (msb >= fixed_point) {
+				for (i = fixed_point, c = 0; i < msb && i < fixed_point + capacity; i++, c++) {
+					_capacity[c] = rhs & mask;
+					mask <<= 1;
+				}
+			}
+		}
 		return *this;
 	}
 	quire& operator=(float rhs) {
@@ -72,11 +117,18 @@ public:
 		reset();
 		return *this;
 	}
+	
 	void reset() {
 		_sign  = false;
-		_accu.reset();
+		_lower.reset();
+		_upper.reset();
+		_capacity.reset();
 	}
-	bool isNegative() {	return _sign; }
+	size_t dynamic_range() const { return range; }
+	size_t upper_range() const { return fixed_point; }
+	size_t capacity_range() const { return capacity; }
+	bool isNegative() const { return _sign; }
+	bool isZero() const { return _capacity.none() && _upper.none() && _lower.none(); }
 
 	double sign_value() const {	return (_sign ? -1.0 : 1.0); }
 	double to_double() const {
@@ -84,8 +136,9 @@ public:
 	}
 
 private:
-	bool				_sign;
-	std::bitset<qbits>	_accu;
+	bool				     _sign;
+	std::bitset<fixed_point> _lower, _upper;
+	std::bitset<capacity>    _capacity;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t nes, size_t ncapacity>
@@ -106,4 +159,57 @@ private:
 	template<size_t nnbits, size_t nes, size_t ncapacity>
 	friend bool operator>=(const quire<nnbits, nes, ncapacity>& lhs, const quire<nnbits, nes, ncapacity>& rhs);
 };
+
+
+// QUIRE BINARY ARITHMETIC OPERATORS
+template<size_t nbits, size_t es, size_t capacity>
+inline quire<nbits, es, capacity> operator+(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) {
+	quire<nbits, es, capacity> sum = lhs;
+	sum += rhs;
+	return sum;
+}
+
+
+////////////////// QUIRE operators
+template<size_t nbits, size_t es, size_t capacity>
+inline std::ostream& operator<<(std::ostream& ostr, const quire<nbits, es, capacity>& q) {
+	ostr << (q._sign ? "-1" : " 1") << ": " << q._capacity << "_" << q._upper << "." << q._lower;
+	return ostr;
+}
+
+template<size_t nbits, size_t es, size_t capacity>
+inline std::istream& operator>> (std::istream& istr, const quire<nbits, es, capacity>& q) {
+	istr >> q._accu;
+	return istr;
+}
+
+template<size_t nbits, size_t es, size_t capacity>
+inline bool operator==(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return lhs._sign == rhs._sign && ._capacity == rhs._capacity && lhs._upper == rhs._upper && lhs._lower == rhs._lower; }
+template<size_t nbits, size_t es, size_t capacity>
+inline bool operator!=(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nbits, size_t es, size_t capacity>
+inline bool operator< (const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { 
+	bool bSmaller = false;
+	if (!lhs._sign && rhs._sign) {
+		bSmaller = true;
+	}
+	else if (lhs._sign == rhs._sign) {
+		if (lhs._capacity < rhs._capacity) {
+			bSmaller = true;
+		}
+		else if (lhs._capacity == rhs._capacity && lhs._upper < rhs._upper) {
+			bSmaller = true;
+		}
+		else if (lhs._capacity == rhs._capacity && lhs._upper == rhs._upper && lhs._lower < rhs._lower) {
+			bSmaller = true;
+		}
+	}
+	return bSmaller;
+}
+template<size_t nbits, size_t es, size_t capacity>
+inline bool operator> (const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nbits, size_t es, size_t capacity>
+inline bool operator<=(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return !operator> (lhs, rhs) || lhs == rhs; }
+template<size_t nbits, size_t es, size_t capacity>
+inline bool operator>=(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return !operator< (lhs, rhs) || lhs == rhs; }
 

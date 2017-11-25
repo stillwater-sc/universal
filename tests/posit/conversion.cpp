@@ -180,10 +180,10 @@ try {
 #if PREVIOUS_FAILURE_INPUTS
 	/*
 	conversion failures for <4,1>
-	no exp left : geo-dw d          0.125  result          0.0625  scale = -4  k = -2  exp = -  0001 00010          0.0625     PASS
-	no rounding alltaken u          0.125  result             0.5  scale = -1  k = -1  exp = 1  0011 00100            0.25 FAIL
-	no rounding alltaken u           0.25  result               1  scale =  0  k = -1  exp = 0  0100 00100            0.25 FAIL
-	no rounding alltaken d           0.25  result            0.25  scale = -2  k = -1  exp = 0  0010 00100            0.25     PASS
+	no exp left : geo-dw d          0.125  result          0.0625  scale=  -4  k=  -2  exp=   -  0001 00010          0.0625     PASS
+	no rounding alltaken u          0.125  result             0.5  scale=  -1  k=  -1  exp=   1  0011 00100            0.25 FAIL
+	no rounding alltaken u           0.25  result               1  scale=   0  k=  -1  exp=   0  0100 00100            0.25 FAIL
+	no rounding alltaken d           0.25  result            0.25  scale= - 2  k=  -1  exp=   0  0010 00100            0.25     PASS
 	no rounding alltaken u          -0.25  result           -0.25  scale=  -2  k=  -1  exp=   0  1110 11100           -0.25     PASS
 	no rounding alltaken d          -0.25  result              -1  scale=   0  k=  -1  exp=   0  1100 11100           -0.25 FAIL
 	no rounding alltaken d         -0.125  result            -0.5  scale=  -1  k=  -1  exp=   1  1101 11100           -0.25 FAIL
