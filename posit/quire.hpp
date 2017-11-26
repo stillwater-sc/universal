@@ -13,7 +13,7 @@ class quire {
 public:
 	static constexpr size_t escale = size_t(1) << es;         // 2^es
 	static constexpr size_t range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
-	static constexpr size_t fixed_point = range >> 1;         // position of the fixed point
+	static constexpr size_t half_range = range >> 1;          // position of the fixed point
 	static constexpr size_t qbits = range + capacity;         // size of the quire minus the sign bit: we are managing the sign explicitly
 	quire() : _sign(false), _capacity(0), _upper(0), _lower(0) {}
 	quire(int8_t initial_value) {
@@ -41,10 +41,45 @@ public:
 	quire(const value<fbits>& rhs) {
 		*this = rhs;
 	}
+	// TODO: we are clamping the values of the RHS to be withing the dynamic range of the posit
+	// TODO: however, on the upper side we also have the capacity bits, which gives us the opportunity to accept larger scale values than the dynamic range of the posit.
+	// TODO: is that a good idea?
 	template<size_t fbits>
 	quire& operator=(const value<fbits>& rhs) {
-		_sign = rhs._sign;
-		int scale = rhs.scale();
+		reset();
+		_sign = rhs.sign();
+		int i,f, scale = rhs.scale();
+		if (scale >= int(half_range)) {
+			throw "RHS value too large for quire";
+		}
+		if (scale < -int(half_range)) {
+			throw "RHS value too small for quire";
+		}
+		std::bitset<fbits+1> fraction = rhs.get_fixed_point();
+		// divide bits between upper and lower accumulator
+		if (scale - int(fbits) >= 0) {
+			// all upper accumulator
+			for (i = scale, f = int(fbits); i >= 0 && f >= 0; i--, f--) {
+				_upper[i] = fraction[f];
+			}
+		}
+		else if (scale < 0) {
+			// all lower accumulator
+			for (i = half_range + scale, f = int(fbits); i >= 0 && f >= 0; i--, f--) {
+				_lower[i] = fraction[f];
+			}
+		}
+		else {
+			// part upper, and part lower accumulator
+			// first assign the bits in the upper accumulator
+			for (i = scale, f = int(fbits); i >= 0 && f >= 0; i--, f--) {
+				_upper[i] = fraction[f];
+			}
+			// next assign the bits in the lower accumulator
+			for (i = half_range - 1; i >= 0 && f >= 0; i--, f--) {
+				_lower[i] = fraction[f];
+			}
+		}
 		return *this;
 	}
 	quire& operator=(int8_t rhs) {
@@ -67,7 +102,7 @@ public:
 		magnitude = _sign ? -rhs : rhs;
 		unsigned msb = findMostSignificantBit(magnitude);
 		if (msb > fixed_point + capacity) {
-			throw "Assigned value too large for quire";
+			throw "RHS value too large for quire";
 		}
 		else {
 			// copy the value into the quire
@@ -117,7 +152,10 @@ public:
 		reset();
 		return *this;
 	}
-	
+	template<size_t fbits>
+	quire& operator+=(const value<fbits>& rhs) {
+		return *this;
+	}
 	void reset() {
 		_sign  = false;
 		_lower.reset();
@@ -125,7 +163,8 @@ public:
 		_capacity.reset();
 	}
 	size_t dynamic_range() const { return range; }
-	size_t upper_range() const { return fixed_point; }
+	size_t upper_range() const { return half_range; }
+	size_t lower_range() const { return half_range; }
 	size_t capacity_range() const { return capacity; }
 	bool isNegative() const { return _sign; }
 	bool isZero() const { return _capacity.none() && _upper.none() && _lower.none(); }
@@ -137,7 +176,7 @@ public:
 
 private:
 	bool				     _sign;
-	std::bitset<fixed_point> _lower, _upper;
+	std::bitset<half_range>  _lower, _upper;  // to demonstrate potential hw concurrency for high performance quires
 	std::bitset<capacity>    _capacity;
 
 	// template parameters need names different from class template parameters (for gcc and clang)

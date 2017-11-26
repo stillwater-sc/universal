@@ -75,7 +75,29 @@ void GenerateSignedIntAssignments() {
 		q = i;
 	}
 	catch (char* msg) {
-		cerr << "Caught the exception: " << msg << ". Value was " << i << endl;
+		cerr << "Caught the exception: " << msg << ". RHS was " << i << endl;
+	}
+}
+
+template<size_t nbits, size_t es, size_t capacity, size_t fbits = 1>
+void GenerateValueAssignments() {
+	quire<nbits, es, capacity> q;
+	int upper_range = q.upper_range();
+	int lower_range = q.lower_range();
+	cout << "Max scale = " << upper_range-1 << " Minimum scale = " << -lower_range << endl;
+	int scale;
+	value<fbits> v;
+	double d = pow(2.0, upper_range);
+	for (scale = upper_range; scale >= -lower_range - 1; scale--) {
+		v = d;
+		try {
+			q = v;
+			cout << setw(10) << v << q << endl;
+		}
+		catch (char* msg) {
+			cerr << "Caught the exception: " << msg << ". RHS was " << v << " " << components(v) << endl;
+		}
+		d /= 2.0;
 	}
 }
 
@@ -93,12 +115,13 @@ try {
 	const size_t nbits = 4;
 	const size_t es = 1;
 	const size_t capacity = 2; // for testing the accumulation capacity of the quire can be small
+	const size_t fbits = 50;
 
-	GenerateUnsignedIntAssignments<nbits, es, capacity>();
-	GenerateSignedIntAssignments<nbits, es, capacity>();
+	//GenerateUnsignedIntAssignments<nbits, es, capacity>();
+	//GenerateSignedIntAssignments<nbits, es, capacity>();
 	//GenerateUnsignedIntAssignments<8, 2, capacity>();
 
-
+	GenerateValueAssignments<nbits, es, capacity, fbits>();
 
 #else
 
