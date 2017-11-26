@@ -136,7 +136,7 @@ public:
 				mask <<= 1;
 			}
 			if (msb >= half_range) {
-				for (i = fixed_point, c = 0; i < msb && i < half_range + capacity; i++, c++) {
+				for (i = half_range, c = 0; i < msb && i < half_range + capacity; i++, c++) {
 					_capacity[c] = rhs & mask;
 					mask <<= 1;
 				}
@@ -327,7 +327,7 @@ inline std::istream& operator>> (std::istream& istr, const quire<nbits, es, capa
 }
 
 template<size_t nbits, size_t es, size_t capacity>
-inline bool operator==(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return lhs._sign == rhs._sign && ._capacity == rhs._capacity && lhs._upper == rhs._upper && lhs._lower == rhs._lower; }
+inline bool operator==(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return lhs._sign == rhs._sign && lhs._capacity == rhs._capacity && lhs._upper == rhs._upper && lhs._lower == rhs._lower; }
 template<size_t nbits, size_t es, size_t capacity>
 inline bool operator!=(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nbits, size_t es, size_t capacity>
