@@ -145,11 +145,15 @@ public:
 		return *this;
 	}
 	quire& operator=(float rhs) {
-		reset();
+		constexpr int float_bits = std::numeric_limits<float>::digits - 1;
+		value<float_bits> v(rhs);
+		*this = v;
 		return *this;
 	}
 	quire& operator=(double rhs) {
-		reset();
+		constexpr int double_bits = std::numeric_limits<double>::digits - 1;
+		value<double_bits> v(rhs);
+		*this = v;
 		return *this;
 	}
 	template<size_t fbits>

@@ -115,13 +115,23 @@ try {
 	const size_t nbits = 4;
 	const size_t es = 1;
 	const size_t capacity = 2; // for testing the accumulation capacity of the quire can be small
-	const size_t fbits = 50;
+	const size_t fbits = 5;
 
 	//GenerateUnsignedIntAssignments<nbits, es, capacity>();
 	//GenerateSignedIntAssignments<nbits, es, capacity>();
 	//GenerateUnsignedIntAssignments<8, 2, capacity>();
 
 	GenerateValueAssignments<nbits, es, capacity, fbits>();
+
+	cout << endl;
+	cout << "Nothing prohibiting us from creating quires for float and double arithmetic" << endl;
+	float f = 1.555555555555e-10f;
+	quire<10, 2, 2> fquire(f);
+	cout << "float:  " << setw(15) << f << " " << fquire << endl;
+
+	double d = 1.555555555555e16;
+	quire<10, 2, 2> dquire(d);
+	cout << "double: " << setw(15) << d << " " << dquire << endl;
 
 #else
 
