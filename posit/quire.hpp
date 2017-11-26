@@ -101,19 +101,19 @@ public:
 		uint64_t magnitude;
 		magnitude = _sign ? -rhs : rhs;
 		unsigned msb = findMostSignificantBit(magnitude);
-		if (msb > fixed_point + capacity) {
+		if (msb > half_range + capacity) {
 			throw "RHS value too large for quire";
 		}
 		else {
 			// copy the value into the quire
 			unsigned i, c;
 			uint64_t mask = uint64_t(1);
-			for (i = 0; i < msb && i < fixed_point; i++) {
+			for (i = 0; i < msb && i < half_range; i++) {
 				_upper[i] = magnitude & mask;
 				mask <<= 1;
 			}
-			if (msb >= fixed_point) {
-				for (i = fixed_point, c = 0; i < msb && i < fixed_point + capacity; i++, c++) {
+			if (msb >= half_range) {
+				for (i = half_range, c = 0; i < msb && i < half_range + capacity; i++, c++) {
 					_capacity[c] = magnitude & mask;
 					mask <<= 1;
 				}
@@ -124,19 +124,19 @@ public:
 	quire& operator=(uint64_t rhs) {
 		reset();
 		unsigned msb = findMostSignificantBit(rhs);
-		if (msb > fixed_point + capacity) {
+		if (msb > half_range + capacity) {
 			throw "Assigned value too large for quire";
 		}
 		else {
 			// copy the value into the quire
 			unsigned i, c;
 			uint64_t mask = uint64_t(1);
-			for (i = 0; i < msb && i < fixed_point; i++) {
+			for (i = 0; i < msb && i < half_range; i++) {
 				_upper[i] = rhs & mask;
 				mask <<= 1;
 			}
-			if (msb >= fixed_point) {
-				for (i = fixed_point, c = 0; i < msb && i < fixed_point + capacity; i++, c++) {
+			if (msb >= half_range) {
+				for (i = fixed_point, c = 0; i < msb && i < half_range + capacity; i++, c++) {
 					_capacity[c] = rhs & mask;
 					mask <<= 1;
 				}
@@ -158,6 +158,106 @@ public:
 	}
 	template<size_t fbits>
 	quire& operator+=(const value<fbits>& rhs) {
+		int i, f, scale = rhs.scale();
+		if (scale >= int(half_range)) {
+			throw "RHS value too large for quire";
+		}
+		if (scale < -int(half_range)) {
+			throw "RHS value too small for quire";
+		}
+		if (rhs.sign()) {
+			// subtract
+			throw "TBD";
+		}
+		else {
+			// add
+			// scale is the location of the msb in the fixed point representation
+			// so scale  =  0 is the hidden bit at location 0, scale 1 = bit 1, etc.
+			// and scale = -1 is the first bit of the fraction
+			// we manage scale >= 0 in the _upper accumulator, and scale < 0 in the _lower accumulator
+			int lsb = scale - int(fbits) - 1;
+			uint8_t carry = 0;
+			std::bitset<fbits + 1> fraction = rhs.get_fixed_point();
+			// divide bits between upper and lower accumulator
+			if (lsb >= 0) {	// all upper accumulator
+				carry = 0;
+				for (i = scale - int(fbits) - 1, f = 0; i <= scale && f <= int(fbits); i++, f++) {
+					uint8_t _a = _upper[i];
+					uint8_t _b = fraction[f];
+					uint8_t _slice = _a + _b + carry;
+					carry = _slice >> 1;
+					_upper[i] = (0x1 & _slice);
+				}
+				while (carry && i < half_range + capacity) {
+					uint8_t _a = _upper[i];
+					uint8_t _slice = _a + carry;
+					carry = _slice >> 1;
+					_upper[i] = (0x1 & _slice);
+					i++;
+				}
+			}
+			else if (scale < 0) {		// all lower accumulator
+				carry = 0;
+				int lsb = int(half_range) + scale - int(fbits);
+				int qlsb = lsb > 0 ? lsb : 0;
+				int flsb = lsb >= 0 ? 0 : -lsb;
+				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
+					uint8_t _a = _lower[i];
+					uint8_t _b = fraction[f];
+					uint8_t _slice = _a + _b + carry;
+					carry = _slice >> 1;
+					_lower[i] = (0x1 & _slice);
+				}
+				while (carry && i < half_range) {
+					uint8_t _a = _lower[i];
+					uint8_t _slice = _a + carry;
+					carry = _slice >> 1;
+					_lower[i] = (0x1 & _slice);
+					i++;
+				}
+				if (carry) {  // carry propagate to the _upper accumulator
+					// need to increment the _upper
+					i = 0;
+					while (carry && i < half_range + capacity) {
+						uint8_t _a = _upper[i];
+						uint8_t _slice = _a + carry;
+						carry = _slice >> 1;
+						_upper[i] = (0x1 & _slice);
+						i++;
+					}
+				}
+			}
+			else {
+				// part upper, and part lower accumulator
+				// first add the lower accumulator component
+				carry = 0;
+				lsb = int(half_range) + lsb + 1; // remember lsb is negative in this block
+				int qlsb = lsb > 0 ? lsb : 0;
+				int flsb = lsb >= 0 ? 0 : -lsb;
+				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
+					uint8_t _a = _lower[i];
+					uint8_t _b = fraction[f];
+					uint8_t _slice = _a + _b + carry;
+					carry = _slice >> 1;
+					_lower[i] = (0x1 & _slice);
+				}
+				// next add the bits in the upper accumulator
+				for (i = 0; i <= scale && f <= int(fbits); i++, f++) {
+					uint8_t _a = _upper[i];
+					uint8_t _b = fraction[f];
+					uint8_t _slice = _a + _b + carry;
+					carry = _slice >> 1;
+					_upper[i] = (0x1 & _slice);
+				}
+				while (carry && i < half_range + capacity) {
+					uint8_t _a = _upper[i];
+					uint8_t _slice = _a + carry;
+					carry = _slice >> 1;
+					_upper[i] = (0x1 & _slice);
+					i++;
+				}
+			}
+		}
 		return *this;
 	}
 	void reset() {

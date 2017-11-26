@@ -133,6 +133,32 @@ try {
 	quire<10, 2, 2> dquire(d);
 	cout << "double: " << setw(15) << d << " " << dquire << endl;
 
+	cout << endl;
+	cout << "Addition" << endl;
+	quire<nbits, es, capacity> q;
+	value<5> v(32.0);
+	q += v;
+	cout << q << endl;
+	q += v;
+	cout << q << endl;
+
+	q = 0;
+	v = 0.5;
+	q += v;
+	cout << q << endl;
+	q += v;
+	cout << q << endl;
+
+	q = 0;
+	v = 3.875 + 0.0625; cout << "v " << components(v) << endl;
+	q += v;
+	cout << q << endl;
+	q += v;
+	cout << q << endl;
+	q += v;
+	cout << q << endl;
+
+
 #else
 
 	cout << "Quire validation" << endl;
