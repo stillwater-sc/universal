@@ -1,4 +1,4 @@
-// blas_l1_dot.cpp example program contrasting a BLAS L1 ?dot routine between FLOAT and POSIT
+// l1_dot.cpp: example program contrasting a BLAS L1 ?dot routine between FLOAT and POSIT
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //

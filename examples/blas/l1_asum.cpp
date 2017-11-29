@@ -1,4 +1,4 @@
-// blas_l1_asum.cpp example program contrasting a BLAS L1 ?asum routine between FLOAT and POSIT
+// l1_asum.cpp: example program contrasting a BLAS L1 ?asum routine between FLOAT and POSIT
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //

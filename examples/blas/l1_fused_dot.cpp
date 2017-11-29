@@ -1,4 +1,4 @@
-// fused-dot-product.cpp example program showing a fused-dot product for error free linear algebra
+// l1_fused_dot.cpp: example program showing a fused-dot product for error free linear algebra
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
