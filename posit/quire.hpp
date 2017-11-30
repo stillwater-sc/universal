@@ -156,6 +156,11 @@ public:
 		*this = v;
 		return *this;
 	}
+
+	quire& operator+=(const posit<nbits,es>& rhs) {
+		*this += rhs.convert_to_scientific_notation();
+		return *this;
+	}
 	template<size_t fbits>
 	quire& operator+=(const value<fbits>& rhs) {
 		int i, f, scale = rhs.scale();
