@@ -59,9 +59,12 @@ public:
 		return *this;
 	}
 	value<fbits>& operator=(int64_t rhs) {
-		reset();
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
-
+		if (rhs == 0) {
+			setToZero();
+			return *this;
+		}
+		reset();
 		_sign = (0x8000000000000000 & rhs);  // 1 is negative, 0 is positive
 		if (_sign) {
 			// process negative number: process 2's complement of the input
@@ -80,19 +83,17 @@ public:
 				_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 				_nrOfBits = fbits;
 				if (_trace_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
-
 			}
 		}
 		return *this;
 	}
 	value<fbits>& operator=(uint64_t rhs) {
-		reset();
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
-
 		if (rhs == 0) {
-			_zero = true;
+			setToZero();
 		}
 		else {
+			reset();
 			_scale = findMostSignificantBit(rhs) - 1;
 			uint64_t _fraction_without_hidden_bit = (rhs << (64 - _scale));
 			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
@@ -178,6 +179,15 @@ public:
 		_nrOfBits = 0;
 		_inf = false;
 		_zero = false;
+		_nan = false;
+		_fraction.reset();
+	}
+	void setToZero() {
+		_sign = false;
+		_scale = 0;
+		_nrOfBits = fbits;
+		_inf = false;
+		_zero = true;
 		_nan = false;
 		_fraction.reset();
 	}
