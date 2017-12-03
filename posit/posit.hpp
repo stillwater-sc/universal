@@ -216,9 +216,9 @@ public:
 			std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2  " << r2 << std::endl;
 		}
 		
-		if (r1_sign != r2_sign) 
-                    r2 = twos_complement(r2);
-                std::bitset<abits+1> sum;
+		if (r1_sign != r2_sign) r2 = twos_complement(r2);
+        
+		std::bitset<abits+1> sum;
 		const bool carry = add_unsigned(r1, r2, sum);
 
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
@@ -787,7 +787,7 @@ public:
 				_raw_bits = _sign ? twos_complement(collect()) : collect();
 				_raw_bits.set(nbits - 1, _sign);
 				// we are done
-				std::cout << "projection  rounding ";
+				if (_trace_rounding) std::cout << "projection  rounding ";
 			} 
 			else {
 				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(k);
