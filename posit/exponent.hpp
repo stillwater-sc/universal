@@ -6,6 +6,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 
+namespace sw {
+namespace unum {
+
 static constexpr int GEOMETRIC_ROUND_DOWN   = -2;
 static constexpr int ARITHMETIC_ROUND_DOWN  = -1;
 static constexpr int NO_ADDITIONAL_ROUNDING =  0;
@@ -164,3 +167,7 @@ template<size_t nbits, size_t es>
 inline bool operator<=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator> (lhs, rhs); }
 template<size_t nbits, size_t es>
 inline bool operator>=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator< (lhs, rhs); }
+
+}  // namespace unum
+
+}  // namespace sw

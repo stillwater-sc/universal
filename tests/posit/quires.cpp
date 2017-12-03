@@ -10,6 +10,8 @@
 #include "../../posit/quire.hpp"
 
 using namespace std;
+using namespace sw::unum;
+
 
 int TestQuireAccumulationResult(int nrOfFailedTests, string descriptor)
 {

@@ -10,6 +10,7 @@
 #include "../../posit/posit_manipulators.hpp"
 
 using namespace std;
+using namespace sw::unum;
 
 template<size_t nbits, size_t es>
 void checkSpecialCases(posit<nbits, es> p) {

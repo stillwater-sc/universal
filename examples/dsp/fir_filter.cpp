@@ -12,6 +12,7 @@
 #include <posit>
 
 using namespace std;
+using namespace sw::unum;
 
 /*
 

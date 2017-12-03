@@ -17,6 +17,7 @@
 #include "../tests/posit_test_helpers.hpp"
 
 using namespace std;
+using namespace sw::unum;
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add

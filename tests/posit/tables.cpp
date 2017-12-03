@@ -11,6 +11,7 @@
 #include "../../posit/posit_manipulators.hpp"
 
 using namespace std;
+using namespace sw::unum;
 
 /*
   Posit values are a combination of 

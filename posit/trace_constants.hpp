@@ -5,8 +5,12 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-# ifndef POSIT_VERBOSE_OUTPUT
 
+namespace sw {
+namespace unum {
+
+
+# ifndef POSIT_VERBOSE_OUTPUT
 // posit decode and conversion
 constexpr bool _trace_decode      = false;
 constexpr bool _trace_conversion  = false;
@@ -34,3 +38,8 @@ constexpr bool _trace_div         = true;
 constexpr bool _trace_reciprocate = true;
 
 # endif
+
+
+}  // namespace unum
+
+}  // namespace sw

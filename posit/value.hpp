@@ -5,6 +5,11 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+
+namespace sw {
+namespace unum {
+
+
 // template class representing a value in scientific notation, using a template size for the fraction bits
 template<size_t fbits>
 class value {
@@ -309,3 +314,8 @@ inline std::string components(const value<fbits>& v) {
 	s << " Sign: " << v.sign() << " Scale: " << v.scale() << " Fraction: b" << v.fraction();
 	return s.str();
 }
+
+
+}  // namespace unum
+
+}  // namespace sw

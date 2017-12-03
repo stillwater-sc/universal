@@ -5,6 +5,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+namespace sw {
+	namespace unum {
+
 // template class representing a quire associated with a posit configuration
 // nbits and es are the same as the posit configuration, 
 // capacity indicates the power of 2 number of accumulations the quire can support
@@ -361,3 +364,6 @@ inline bool operator<=(const quire<nbits, es, capacity>& lhs, const quire<nbits,
 template<size_t nbits, size_t es, size_t capacity>
 inline bool operator>=(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return !operator< (lhs, rhs) || lhs == rhs; }
 
+}  // namespace unum
+
+}  // namespace sw

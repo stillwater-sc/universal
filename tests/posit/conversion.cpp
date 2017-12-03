@@ -15,6 +15,7 @@
 #include "../tests/posit_test_helpers.hpp"
 
 using namespace std;
+using namespace sw::unum;
 
 template<size_t nbits, size_t es>
 void GenerateLogicPattern(double input, const posit<nbits, es>& presult, const posit<nbits+1, es>& pnext) {

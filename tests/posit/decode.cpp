@@ -13,6 +13,8 @@
 #include "../tests/posit_test_helpers.hpp"
 
 using namespace std;
+using namespace sw::unum;
+
 
 /*
   Posit values are a combination of

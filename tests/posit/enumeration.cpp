@@ -10,7 +10,7 @@
 #include "../../posit/posit_manipulators.hpp"
 
 using namespace std;
-
+using namespace sw::unum;
 
 int main(int argc, char** argv)
 try {

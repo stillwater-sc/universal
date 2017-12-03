@@ -10,6 +10,7 @@
 #include "../../posit/posit_manipulators.hpp"
 
 using namespace std;
+using namespace sw::unum;
 
 template<size_t nbits>
 void transform_into_sign_scale_fraction(int64_t value) {

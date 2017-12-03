@@ -10,6 +10,7 @@
 #include "../../posit/posit_manipulators.hpp"
 
 using namespace std;
+using namespace sw::unum;
 
 template<size_t es>
 int ValidateExponentOperations() {

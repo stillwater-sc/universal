@@ -9,6 +9,7 @@
 #include <posit>
 
 using namespace std;
+using namespace sw::unum;
 
 // receive a float and print its components
 int main(int argc, char** argv)

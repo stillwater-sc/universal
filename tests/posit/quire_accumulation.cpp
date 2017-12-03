@@ -10,6 +10,8 @@
 #include "../../posit/quire.hpp"
 
 using namespace std;
+using namespace sw::unum;
+
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0

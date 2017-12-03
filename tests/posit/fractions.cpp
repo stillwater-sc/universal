@@ -12,7 +12,7 @@
 #include "../tests/test_helpers.hpp"
 
 using namespace std;
-
+using namespace sw::unum;
 
 template<size_t fbits>
 void ReportError(std::string test_case, std::string op, double input, double reference, const fraction<fbits>& _fraction) {

@@ -11,6 +11,8 @@
 #include "../tests/test_helpers.hpp"
 
 using namespace std;
+using namespace sw::unum;
+
 
 constexpr unsigned int MAX_ES = 5;
 constexpr unsigned int MAX_K = 10;

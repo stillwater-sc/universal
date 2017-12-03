@@ -11,6 +11,7 @@
 #include "../../posit/posit_manipulators.hpp"
 
 using namespace std;
+using namespace sw::unum;
 
 /*
   Generator of a single lookup table for reciprocals of any posit configuration with 16 or fewer bits.

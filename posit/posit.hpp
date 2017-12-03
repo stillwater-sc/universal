@@ -22,6 +22,12 @@
 #define MULTIPLY_WITH_FRACTION_WITH_HIDDEN_BIT
 #define INCREMENT_POSIT_CARRY_CHAIN
 
+
+namespace sw {
+	namespace unum {
+
+
+
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 
 
@@ -936,3 +942,7 @@ posit<nbits, es> abs(const posit<nbits, es>& p)
     return posit<nbits, es>(false, p.get_regime(), p.get_exponent(), p.get_fraction());
 }
 
+
+	}  // namespace unum
+
+}  // namespace sw

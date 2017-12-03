@@ -9,6 +9,7 @@
 #include "../../posit/posit.hpp"
 
 using namespace std;
+using namespace sw::unum;
 
 int main()
 try {

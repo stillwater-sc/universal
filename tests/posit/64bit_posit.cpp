@@ -14,6 +14,7 @@
 #include "../tests/posit_test_helpers.hpp"
 
 using namespace std;
+using namespace sw::unum;
 
 /*
 Standard posits with nbits = 64 have 3 exponent bits.

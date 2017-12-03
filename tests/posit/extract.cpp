@@ -10,6 +10,7 @@
 #include "../../posit/posit_manipulators.hpp"
 
 using namespace std;
+using namespace sw::unum;
 
 uint64_t regime_lookup[8] = {
 	0x0ULL,

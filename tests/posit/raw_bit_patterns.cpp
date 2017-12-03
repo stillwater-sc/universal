@@ -10,6 +10,7 @@
 #include "../../posit/posit.hpp"
 
 using namespace std;
+using namespace sw::unum;
 
 /* OUTPUT
 72057594037927936

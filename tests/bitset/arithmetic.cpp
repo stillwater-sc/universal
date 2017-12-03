@@ -11,6 +11,7 @@
 #include "../../bitset/bitset_helpers.hpp"
 
 using namespace std;
+using namespace sw::unum;
 
 int Conversions() {
 	const size_t nbits = 33;

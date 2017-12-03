@@ -9,6 +9,9 @@
 
 #include "exceptions.hpp"
 
+namespace sw {
+namespace unum {
+
 // fraction is spec'ed with the size of the posit it belongs to.
 // However, the size of the fraction segment is nbits-3, but we maintain an extra guard bit, so the size of the actual fraction we manage is nbits-2
 template<size_t fbits>
@@ -226,3 +229,6 @@ inline bool operator<=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs)
 template<size_t nfbits>
 inline bool operator>=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return !operator< (lhs, rhs); }
 
+}  // namespace unum
+
+}  // namespace sw

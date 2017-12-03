@@ -12,6 +12,8 @@
 #include "blas.hpp"
 
 using namespace std;
+using namespace sw::unum;
+using namespace sw::blas;
 
 int main(int argc, char** argv)
 try {

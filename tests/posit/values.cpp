@@ -11,6 +11,7 @@
 #include "../../posit/value.hpp"
 
 using namespace std;
+using namespace sw::unum;
 
 void TestConversionResult(bool bValid, string descriptor)
 {

@@ -11,6 +11,8 @@
 #include "../tests/test_helpers.hpp"
 
 using namespace std;
+using namespace sw::unum;
+
 
 /*
 Regime range example for a posit<6,es>
