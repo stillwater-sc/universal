@@ -7,6 +7,10 @@
 
 // number representation is sign-magnitude, sign is msb
 
+#include <bitset>
+#include <sstream>
+
+
 namespace sw {
 	namespace unum {
 		template<size_t sign_magnitude>
