@@ -19,12 +19,12 @@ try {
 	    cerr << "Usage: fc float_value" << endl;
 		cerr << "Example: fc 0.03124999" << endl;
 		cerr << "float: 0.03124999068677425384521484375 Sign: 0 Scale: -6 Fraction: b11111111111111111111011" << endl;
-		return 1;
+		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
 	float f = float(atof(argv[1]));
 	value<23> v(f);
 	cout << "float: " << setprecision(40) << f << components(v) << endl;
-	return 0;
+	return EXIT_SUCCESS;
 }
 catch (char* msg) {
 	cerr << msg << endl;
