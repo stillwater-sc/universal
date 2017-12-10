@@ -1,4 +1,4 @@
-// conversion_functions.cpp : api experiments for conversion algorithms
+﻿// conversion_functions.cpp : api experiments for conversion algorithms
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
@@ -18,10 +18,12 @@ void checkSpecialCases(posit<nbits, es> p) {
 }
 
 void ConversionExamplesPositiveRegime() {
-	posit<5, 1> p0, p1, p2, p3, p4, p5, p6;
+	const size_t nbits = 5;
+	const size_t es = 1;
+	posit<nbits, es> p0, p1, p2, p3, p4, p5, p6;
 
-	cout << "Minpos = " << setprecision(21) << p0.minpos_value() << endl;
-	cout << "Maxpos = " << p0.maxpos_value() << setprecision(0) << endl;
+	cout << "Minpos = " << setprecision(21) << minpos_value<nbits,es>() << endl;
+	cout << "Maxpos = " << maxpos_value<nbits,es>() << setprecision(0) << endl;
 
 	int64_t number = 1;
 	for (int i = 0; i < 8; i++) {
@@ -42,10 +44,12 @@ void ConversionExamplesPositiveRegime() {
 }
 
 void ConversionExamplesNegativeRegime() {
-	posit<5, 1> p0, p1, p2, p3, p4, p5, p6;
+	const size_t nbits = 5;
+	const size_t es = 1;
+	posit<nbits, es> p0, p1, p2, p3, p4, p5, p6;
 
-	cout << "Minpos = " << setprecision(21) << p0.minpos_value() << endl;
-	cout << "Maxpos = " << p0.maxpos_value() << setprecision(0) << endl;
+	cout << "Minpos = " << setprecision(21) << minpos_value<nbits, es>() << endl;
+	cout << "Maxpos = " << maxpos_value<nbits, es>() << setprecision(0) << endl;
 
 	p0 = 0;  checkSpecialCases(p0);
 	p1 = -1;  cout << "p1 " << p1 << endl;
@@ -136,6 +140,87 @@ void EnumerationTests() {
 	for (int i = 0; i < 32; i++) {
 		cout << setw(10) << hex << i << setw(5) << base_fraction(i) << endl;
 	}
+}
+
+/*
+p[x_] := Module[{s, y, r, e, f, run, reg, esval, nf, len, fv, sb, pt, blast, bafter, bsticky, rb, ptt, p},
+s     = Boole[x < 0];
+y     = Max[minpos, Min[maxpos, Abs[x]]];
+r     = Boole[y ≥ 1];
+e     = Floor[Log[2, y]];
+f     = y / 2^e - 1;
+run   = Abs[Floor[e / 2^es]] + r;
+reg   = BitOr[BitShiftLeft[r * (2run - 1), 1], BitXor[1, r]];
+esval = Mod[e, 2^es];
+nf    = Max[0, (nbits + 1) - (2 + run + es)];
+len   = 1 + Max[nbits + 1, 2 + run + es];
+fv    = Floor[f * 2^nf];
+sb    = Boole[f * 2^nf > fv];
+pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
+blast   = BitGet[pt, len - nbits];
+bafter  = BitGet[pt, len - nbits - 1];
+bsticky = Boole[BitAnd[2len-nbits-1 - 1, pt] > 0];
+rb      = BitOr[BitAnd[blast, bafter], BitAnd[bafter, bsticky]];
+ptt     = BitShiftRight[pt, len - nbits] + rb;
+BitXor[s * (2^nbits - 1), ptt] + s]
+ */
+template<size_t nbits, size_t es>
+void convert_to_posit(float x) {
+	cout << "<" << nbits << "," << es << ">" << endl;
+	// obtain the sign/scale/fraction representation of a float
+	constexpr int nrfbits = std::numeric_limits<float>::digits - 1;
+	value<nrfbits> v(x);
+	// ignore for the sake of clarity the special cases 0 and inf
+	bool sign = v.sign();
+	int scale = v.scale();
+	std::bitset<nrfbits> fraction = v.fraction();
+	cout << v << " = " << components(v) << endl;
+
+	float minpos = (float)minpos_value<nbits, es>();
+	float maxpos = (float)maxpos_value<nbits, es>();
+
+	cout << "Abs(x)   = " << (float)std::abs(x) << endl;
+	float y = std::max<float>(minpos, std::min<float>(maxpos, (float)std::abs(x)));
+	cout << "y        = " << y << endl;
+	bool r = (y >= 1.0f);
+	cout << "r        = " << (r ? "1" : "0") << endl;
+	float e = std::floor(std::log2(y));
+	cout << "e        = " << e << endl;
+	float f = x / float(pow(2.0, scale)) - 1.0f;
+	cout << "f        = " << f << endl;
+	cout << "fraction = " << fraction << endl;
+
+	int k = calculate_k<nbits, es>(scale);
+	cout << "k        = " << k << endl;
+
+	regime<nbits, es> _regime;
+	unsigned nr_of_regime_bits = _regime.assign_regime_pattern(k);
+	cout << "regime   = " << _regime << endl;
+
+	exponent<nbits, es> _exponent;
+	//_exponent.assign_exponent_bits(scale, k, nr_of_regime_bits);
+	_exponent.assign_exponent_bits(scale, k, 2);
+	cout << "exponent = " << _exponent << endl;
+	unsigned esval = scale % (uint32_t(1) << es);
+	cout << "esval    = " << esval << endl;
+
+	unsigned nf = std::max<unsigned>(0, (nbits + 1) - (1 + nr_of_regime_bits + es));
+	cout << "nf       = " << nf << endl;
+	unsigned len = 1 + std::max<unsigned>((nbits + 1), (1 + nr_of_regime_bits + es));
+	cout << "len      = " << len << endl;
+	unsigned fv = fraction.to_ulong() << nf;
+	cout << "fv       = " << fv << endl;
+	bool sb = ((f * (unsigned(1) << nf)) > fv);
+	cout << "sb       = " << (sb ? "1" : "0") << endl;
+	
+	/*
+	//pt = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
+	std::bitset<2 + nbits + es> pt;
+	unsigned bPtr = 0;
+	pt.set(bPtr++, sb);
+	copy_into<(fv, 1, pt);
+	*/
+
 }
 
 void basic_algorithm_for_conversion() {
@@ -263,11 +348,27 @@ void PositFloatConversion()
 	cout << endl;
 }
 
+#define MANUAL_TESTING 1
+#define STRESS_TESTING 0
+
 int main()
 try {
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+	std::string tag = "Conversion failed: ";
+
+#if MANUAL_TESTING
+	const size_t nbits = 8;
+	const size_t es = 1;
+	float f1 = float(minpos_value<nbits, es>());
+	convert_to_posit<nbits,es>(f1);
+
+#else
 	ReportPositScales();
+
+#if STRESS_TESTING
+	
 	PositIntegerConversion();
 	PositFloatConversion();
 	if (!TestPositInitialization()) {
@@ -275,6 +376,9 @@ try {
 	}
 	ConversionExamplesPositiveRegime();
 	ConversionExamplesNegativeRegime();
+#endif // STRESS_TESTING
+
+#endif // MANUAL_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
