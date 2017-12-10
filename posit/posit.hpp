@@ -30,12 +30,83 @@ namespace sw {
 
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 
+// calculate exponential scale of useed
+template<size_t nbits, size_t es>
+int useed_scale() {
+	return (uint32_t(1) << es);
+}
+
+// calculate exponential scale of maxpos
+template<size_t nbits, size_t es>
+int maxpos_scale() {
+	return (nbits - 2) * (1 << es);
+}
+
+// calculate exponential scale of minpos
+template<size_t nbits, size_t es>
+int minpos_scale() {
+	return static_cast<int>(2 - nbits) * (1 << es);
+}
+
+// calculate the constrained k value
+template<size_t nbits, size_t es>
+int calculate_k(int scale) {
+	// constrain the scale to range [minpos, maxpos]
+	if (scale < 0) {
+		scale = scale > minpos_scale<nbits, es>() ? scale : minpos_scale<nbits, es>();
+	}
+	else {
+		scale = scale < maxpos_scale<nbits, es>() ? scale : maxpos_scale<nbits, es>();
+	}
+	// bad int k = scale < 0 ? -(-scale >> es) - 1 : (scale >> es);
+	// the scale of a posit is  2 ^ scale = useed ^ k * 2 ^ exp
+	// -> (scale >> es) = (k*2^es + exp) >> es
+	// -> (scale >> es) = k + (exp >> es) -> k = (scale >> es)
+	int k = scale < 0 ? -(-scale >> es) : (scale >> es);
+	if (k == 0 && scale < 0) {
+		// project back to south-east quadrant
+		k = -1;
+	}
+	return k;
+}
+
+// calculate the unconstrained k value
+template<size_t nbits, size_t es>
+int calculate_unconstrained_k(int scale) {
+	// the scale of a posit is  2 ^ scale = useed ^ k * 2 ^ exp
+	// -> (scale >> es) = (k*2^es + exp) >> es
+	// -> (scale >> es) = k + (exp >> es) 
+	// -> k = (scale >> es)
+	int k = scale < 0 ? -(-scale >> es) : (scale >> es);
+	if (k == 0 && scale < 0) {
+		// project back to south-east quadrant
+		k = -1;
+	}
+	return k;
+}
 
 // double value representation of the useed value of a posit<nbits, es>
 template<size_t nbits, size_t es>
-double useed()
-{
+double useed() {
 	return double(uint64_t(1) << (uint64_t(1) << es));
+}
+
+// calculate the value of useed
+template<size_t nbits, size_t es>
+double useed_value() {
+	return double(uint64_t(1) << useed_scale<nbits, es>());
+}
+
+// calculate the value of maxpos
+template<size_t nbits, size_t es>
+double maxpos_value() {
+	return pow(double(useed_value<nbits, es>()), double(nbits - 2));
+}
+
+// calculate the value of minpos
+template<size_t nbits, size_t es>
+double minpos_value() {
+	return pow(double(useed_value<nbits, es>()), double(static_cast<int>(2 - nbits)));
 }
 
 // Forward definitions
@@ -156,7 +227,7 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(float rhs) {
-                return float_assign(rhs);
+		return float_assign(rhs);
 	}
 	posit<nbits, es>& operator=(double rhs) {
                 return float_assign(rhs);
@@ -223,26 +294,26 @@ public:
 
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
                 
-                long shift = 0;
-                if (carry) {
-                    if (r1_sign == r2_sign)   // the carry implies that we have a bigger number than r1
-                        shift = -1;
-                    else 
-                        // the carry means r2 as complement, result < r1, must find hidden bit (in the complement)
-                        for (int i = abits - 1; i >= 0 && !sum[i]; i--)
-                            shift++;
-                }
-                assert(shift >= -1);
+		long shift = 0;
+		if (carry) {
+			if (r1_sign == r2_sign)   // the carry implies that we have a bigger number than r1
+				shift = -1;
+			else 
+				// the carry means r2 as complement, result < r1, must find hidden bit (in the complement)
+				for (int i = abits - 1; i >= 0 && !sum[i]; i--)
+					shift++;
+		}
+		assert(shift >= -1);
                 
-                if (shift >= long(abits)) {            // we have actual 0                            
-                    setToZero();
-                    return *this;
-                }
+		if (shift >= long(abits)) {            // we have actual 0                            
+			setToZero();
+			return *this;
+		}
                 
-                scale_of_result -= shift;
-                const int hpos = abits - 1 - shift;         // position hidden bit 
-                convert(r1_sign, scale_of_result, sum, hpos);
-                return *this;                
+		scale_of_result -= shift;
+		const int hpos = abits - 1 - shift;         // position hidden bit 
+		convert(r1_sign, scale_of_result, sum, hpos);
+		return *this;                
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
                 return *this += -rhs;
@@ -343,24 +414,6 @@ public:
 	bool isPositive() const {
 		return !_sign;
 	}
-	double useed_value() const {
-		return double(uint64_t(1) << useed_scale());
-	}
-	double maxpos_value() const {
-		return pow(double(useed_value()), double(nbits-2));
-	}
-	double minpos_value() const {
-		return pow(double(useed_value()), double(static_cast<int>(2-nbits)));
-	}
-	int useed_scale() const {
-		return (uint32_t(1) << es);
-	}
-	int maxpos_scale() const {
-		return (nbits - 2) * (1 << es);
-	}
-	int minpos_scale() const {
-		return static_cast<int>(2 - nbits) * (1 << es);
-	}
 
 	int	   sign_value() const {
 		return (_sign ? -1 : 1);
@@ -377,39 +430,6 @@ public:
 
 	int				   regime_k() const {
 		return _regime.regime_k();
-	}
-	// calculate the constrained k value
-	int                calculate_k(int scale) const {
-		// constrain the scale to range [minpos, maxpos]
-		if (scale < 0) {
-			scale = scale > minpos_scale() ? scale : minpos_scale();
-		}
-		else {
-			scale = scale < maxpos_scale() ? scale : maxpos_scale();
-		}
-		// bad int k = scale < 0 ? -(-scale >> es) - 1 : (scale >> es);
-		// the scale of a posit is  2 ^ scale = useed ^ k * 2 ^ exp
-		// -> (scale >> es) = (k*2^es + exp) >> es
-		// -> (scale >> es) = k + (exp >> es) -> k = (scale >> es)
-		int k = scale < 0 ? -(-scale >> es) : (scale >> es);
-		if (k == 0 && scale < 0) {
-			// project back to south-east quadrant
-			k = -1;
-		}
-		return k;
-	}
-	// calculate the unconstrained k value
-	int                calculate_unconstrained_k(int scale) const {
-		// the scale of a posit is  2 ^ scale = useed ^ k * 2 ^ exp
-		// -> (scale >> es) = (k*2^es + exp) >> es
-		// -> (scale >> es) = k + (exp >> es) 
-		// -> k = (scale >> es)
-		int k = scale < 0 ? -(-scale >> es) : (scale >> es);
-		if (k == 0 && scale < 0) {
-			// project back to south-east quadrant
-			k = -1;
-		}
-		return k;
 	}
 	regime<nbits, es>  get_regime() const {
 		return _regime;
@@ -777,7 +797,7 @@ public:
                 
             // construct the posit
 			_sign = _negative;
-			int k = calculate_unconstrained_k(_scale);
+			int k = calculate_unconstrained_k<nbits, es>(_scale);
 			// interpolation rule checks
 			if (check_inward_projection_range(_scale)) {    // regime dominated
 				if (_trace_conversion) std::cout << "inward projection" << std::endl;

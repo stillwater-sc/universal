@@ -18,10 +18,12 @@ void checkSpecialCases(posit<nbits, es> p) {
 }
 
 void BasicOperators() {
-	posit<16, 1> p1, p2, p3, p4, p5, p6;
+	const size_t nbits = 16;
+	const size_t es = 1;
+	posit<nbits, es> p1, p2, p3, p4, p5, p6;
 
-	double minpos = p1.minpos_value();
-	double maxpos = p1.maxpos_value();
+	double minpos = minpos_value<nbits, es>();
+	double maxpos = maxpos_value<nbits, es>();
 
 	p1 = 0;  checkSpecialCases(p1);
 	p1 = 1;  checkSpecialCases(p1);

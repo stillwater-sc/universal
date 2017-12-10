@@ -311,7 +311,7 @@ inline std::string components(const value<fbits>& v) {
 		s << " infinite b" << std::setw(fbits) << v.fraction();
 		return s.str();
 	}
-	s << " Sign: " << v.sign() << " Scale: " << v.scale() << " Fraction: b" << v.fraction();
+	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
 	return s.str();
 }
 

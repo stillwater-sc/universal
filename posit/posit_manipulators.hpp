@@ -21,9 +21,9 @@ namespace sw {
 		std::string spec_to_string(posit<nbits, es> p) {
 			std::stringstream ss;
 			ss << " posit<" << std::setw(2) << nbits << "," << es << "> ";
-			ss << "useed scale " << std::setw(4) << p.useed_scale() << "     ";
-			ss << "minpos scale " << std::setw(10) << p.minpos_scale() << "     ";
-			ss << "maxpos scale " << std::setw(10) << p.maxpos_scale();
+			ss << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
+			ss << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
+			ss << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>();
 			return ss.str();
 		}
 
