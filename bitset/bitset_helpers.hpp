@@ -13,16 +13,18 @@
 
 namespace sw {
 	namespace unum {
-		template<size_t sign_magnitude>
-		std::bitset<sign_magnitude> ones_complement(std::bitset<sign_magnitude> number) {
-			std::bitset<sign_magnitude> complement;
-			for (size_t i = 0; i < sign_magnitude; i++) {
+
+		// calculate the 1's complement of a sign-magnitude encoded number
+		template<size_t nbits>
+		std::bitset<nbits> ones_complement(std::bitset<nbits> number) {
+			std::bitset<nbits> complement;
+			for (size_t i = 0; i < nbits; i++) {
 				complement.set(i, !number[i]);
 			}
 			return complement;
 		}
 
-
+		// calculate the 2's complement of a 2's complement encoded number
 		template<size_t nbits>
 		std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
 			std::bitset<nbits> complement;
@@ -73,12 +75,13 @@ namespace sw {
 			return std::string(str);
 		}
 
-		template<size_t sign_magnitude>
-		std::string signed_magnitude_to_binary(std::bitset<sign_magnitude> bits) {
+		// convert a sign/magnitude number to a string
+		template<size_t nbits>
+		std::string sign_magnitude_to_string(std::bitset<nbits> bits) {
 			std::stringstream ss;
-			ss << (bits[sign_magnitude - 1] ? "n-" : "p-");
-			if (sign_magnitude < 2) return ss.str();
-			for (int i = sign_magnitude - 2; i >= 0; --i) {
+			ss << (bits[nbits - 1] ? "n-" : "p-");
+			if (nbits < 2) return ss.str();
+			for (int i = nbits - 2; i >= 0; --i) {
 				ss << (bits[i] ? "1" : "0");
 			}
 			return ss.str();

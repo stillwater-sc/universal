@@ -25,7 +25,7 @@ void GenerateLogicPattern(double input, const posit<nbits, es>& presult, const p
 	std::cout << setw(VALUE_WIDTH) << input << " "
 		<< " result " << setw(VALUE_WIDTH) << presult 
 		<< "  scale= " << std::setw(3) << presult.scale() 
-		<< "  k= " << std::setw(3) << presult.calculate_k(v.scale())
+		<< "  k= " << std::setw(3) << calculate_k<nbits, es>(v.scale())
 		<< "  exp= " << std::setw(3) << presult.get_exponent() << "  "
 		<< presult.get() << " " 
 		<< pnext.get() << " "

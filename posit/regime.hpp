@@ -31,12 +31,7 @@ public:
 	int scale() const {
 		return _k > 0 ? int(_k) * (1 << es) : -(int(-_k) * (1 << es));
 	}
-	int maxpos_scale() {
-		return (nbits - 2) * (1 << es);
-	}
-	int minpos_scale() {
-		return static_cast<int>(2 - nbits) * (1 << es);
-	}
+
 	// return the k-value of the regime: useed ^ k
 	int regime_k() const {
 		return _k;
@@ -85,7 +80,7 @@ public:
 	// construct the regime bit pattern given a number's useed scale, that is, k represents the useed factors of the number
 	// k is the unifying abstraction between decoding a posit and converting a float value.
 	// Return the number of regime bits. 
-	// Usage example: say value is 1024 -> sign = false (not negative), scale is 10: assign_regime_pattern(false, scale >> es)
+	// Usage example: say value is 1024 -> sign = false (not negative), scale is 10: assign_regime_pattern(scale >> es)
 	// because useed = 2^es and thus a value of scale 'scale' will contain (scale >> es) number of useed factors
 	unsigned int assign_regime_pattern(int k) {
 		if (k < 0) { // south-east quadrant: patterns 00001---

@@ -42,6 +42,7 @@ namespace sw {
 			return carry;
 		}
 
+		// copy a bitset into a bigger bitset starting at position indicated by the shift value
 		template<size_t src_size, size_t tgt_size>
 		void copy_into(std::bitset<src_size>& src, size_t shift, std::bitset<tgt_size>& tgt) {
 			tgt.reset();
@@ -60,7 +61,7 @@ namespace sw {
 		template<size_t from, size_t to, size_t src_size>
 		std::bitset<to - from> fixed_subset(const std::bitset<src_size>& src)
 		{
-			static_assert(from <= to, "from cannot be larger than to.");
+			static_assert(from <= to, "from cannot be larger than to");
 			static_assert(to <= src_size, "to is larger than src_size");
 
 			std::bitset<to - from> result;

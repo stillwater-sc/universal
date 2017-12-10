@@ -38,7 +38,7 @@ try {
 	regime<nbits, es> r;
 	exponent<nbits, es> e;
 	for (int scale = -16; scale < 17; scale++) {
-		int k = p.calculate_k(scale);
+		int k = calculate_k<nbits, es>(scale);
 		int regime_size = r.assign_regime_pattern(scale >> es);
 		int exp_size = e.assign_exponent_bits(scale, k, regime_size);
 		if (scale < 0) {
