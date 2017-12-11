@@ -186,11 +186,16 @@ namespace sw {
 		// full binary representation of a signed 64-bit number
 		inline std::string to_binary(int64_t number) {
 			std::stringstream ss;
-			unsigned int msb = findMostSignificantBit(number) - 1;
-			uint64_t mask = (uint64_t(1) << msb);
-			for (int i = msb; i >= 0; --i) {
-				ss << (mask & number ? "1" : "0");
-				mask >>= 1;
+			unsigned int msb = findMostSignificantBit(number);
+			if (msb == 0) {
+				ss << "-";
+			}
+			else {
+				uint64_t mask = (uint64_t(1) << msb);
+				for (int i = msb; i >= 0; --i) {
+					ss << (mask & number ? "1" : "0");
+					mask >>= 1;
+				}
 			}
 			return ss.str();
 		}
