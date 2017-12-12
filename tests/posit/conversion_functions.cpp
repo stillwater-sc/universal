@@ -386,6 +386,16 @@ void convert_to_posit(float x) {
 	cout << "blast    = " << blast << endl;
 	cout << "bafter   = " << bafter << endl;
 	cout << "bsticky  = " << bsticky << endl;
+
+	bool rb = (blast & bafter) | (bafter & bsticky);
+	cout << "rb       = " << rb << endl;
+	std::bitset<pt_len> ptt = pt_bits;
+	ptt >>= (len - nbits);
+	cout << "ptt      = " << ptt << endl;
+	if (rb) {
+		increment_bitset(ptt);
+	}
+	cout << "final    = " << LowerSegment(ptt, nbits) << endl;
 }
 
 template<size_t nbits, size_t es>

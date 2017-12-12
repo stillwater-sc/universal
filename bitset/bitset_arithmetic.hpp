@@ -176,7 +176,7 @@ namespace sw {
 
 		// increment the input bitset in place, and return true if there is a carry generated.
 		template<size_t nbits>
-		bool increment_unsigned(std::bitset<nbits>& number) {
+		bool increment_bitset(std::bitset<nbits>& number) {
 			uint8_t carry = 1;  // ripple carry
 			uint8_t _a, _slice;
 			for (int i = 0; i < nbits; i++) {
