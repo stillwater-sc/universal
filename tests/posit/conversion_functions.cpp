@@ -316,8 +316,8 @@ ptt     = BitShiftRight[pt, len - nbits] + rb;
 BitXor[s * (2^nbits - 1), ptt] + s]
  */
 template<size_t nbits, size_t es>
-void convert_to_posit(float x) {
-	cout << "<" << nbits << "," << es << ">" << endl;
+void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
+	cout << "convert to posit<" << nbits << "," << es << ">" << endl;
 	// obtain the sign/scale/fraction representation of a float
 	constexpr int nrfbits = std::numeric_limits<float>::digits - 1;
 	value<nrfbits> v(x);
@@ -330,7 +330,6 @@ void convert_to_posit(float x) {
 	float minpos = (float)minpos_value<nbits, es>();
 	float maxpos = (float)maxpos_value<nbits, es>();
 
-
 	const size_t pt_len = nbits + 3 + es;
 	std::bitset<pt_len> pt_bits;
 	std::bitset<pt_len> regime;
@@ -338,33 +337,36 @@ void convert_to_posit(float x) {
 	std::bitset<pt_len> fraction;
 	std::bitset<pt_len> sticky_bit;
 
-	cout << "Abs(x)   = " << (float)std::abs(x) << endl;
+	bool s = (x < 0);
+	if (bPrintIntermediateSteps) cout << "s        = " << (s ? "negative" : "positive") << endl;
+	if (bPrintIntermediateSteps) cout << "x        = " << (float)x << endl;
+	if (bPrintIntermediateSteps) cout << "Abs(x)   = " << (float)std::abs(x) << endl;
 	float y = std::max<float>(minpos, std::min<float>(maxpos, (float)std::abs(x)));
-	cout << "y        = " << y << endl;
+	if (bPrintIntermediateSteps) cout << "y        = " << y << endl;
 	bool r = (y >= 1.0f);
-	cout << "r        = " << (r ? "1" : "0") << endl;
+	if (bPrintIntermediateSteps) cout << "r        = " << (r ? "1" : "0") << endl;
 	float e = std::floor(std::log2(y));
-	cout << "e        = " << e << endl;
-	float f = x / float(pow(2.0, scale)) - 1.0f;
-	cout << "f        = " << f << endl;
-	cout << "bits     = " << bits << endl;
+	if (bPrintIntermediateSteps) cout << "e        = " << e << endl;
+	float f = y / float(pow(2.0, scale)) - 1.0f;
+	if (bPrintIntermediateSteps) cout << "f        = " << f << endl;
+	if (bPrintIntermediateSteps) cout << "bits     = " << bits << endl;
 	int run = (int)std::abs(std::floor(e / pow(2, es))) + r;
-	cout << "run      = " << run << endl;
+	if (bPrintIntermediateSteps) cout << "run      = " << run << endl;
 	// reg   = BitOr[BitShiftLeft[r * (2^run - 1), 1], BitXor[1, r]];
 	regime.set(0, 1 ^ r);
 	for (int i = 1; i <= run; i++) regime.set(i, r);
-	cout << "reg      = " << LowerSegment(regime,run) << endl;
+	if (bPrintIntermediateSteps) cout << "reg      = " << LowerSegment(regime,run) << endl;
 	unsigned esval = scale % (uint32_t(1) << es);
-	cout << "esval    = " << esval << endl;
+	if (bPrintIntermediateSteps) cout << "esval    = " << esval << endl;
 	exponent = convert_to_bitset<pt_len>(esval);
 	unsigned nf = std::max<unsigned>(0, (nbits + 1) - (2 + run + es));
-	cout << "nf       = " << nf << endl;
+	if (bPrintIntermediateSteps) cout << "nf       = " << nf << endl;
 	unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
-	cout << "len      = " << len << endl;
+	if (bPrintIntermediateSteps) cout << "len      = " << len << endl;
 	unsigned fv = (unsigned)std::floor((double)(f * (unsigned(1) << nf)));
-	cout << "fv       = " << to_binary(int64_t(fv)) << endl;
+	if (bPrintIntermediateSteps) cout << "fv       = " << to_binary(int64_t(fv)) << endl;
 	bool sb = ((f * (unsigned(1) << nf)) > fv);
-	cout << "sb       = " << (sb ? "1" : "0") << endl;
+	if (bPrintIntermediateSteps) cout << "sb       = " << (sb ? "1" : "0") << endl;
 
 	// construct the bigger posit
 	// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
@@ -378,24 +380,23 @@ void convert_to_posit(float x) {
 	pt_bits |= fraction;
 	pt_bits |= sticky_bit;
 
-	cout << "pt bits  = " << LowerSegment(pt_bits, 2+run+es) << endl;
+	if (bPrintIntermediateSteps) cout << "pt bits  = " << LowerSegment(pt_bits, 2+run+es) << endl;
 
 	bool blast = pt_bits.test(len - nbits);
 	bool bafter = pt_bits.test(len - nbits - 1);
 	bool bsticky = Any(pt_bits, len - nbits - 1 - 1);
-	cout << "blast    = " << blast << endl;
-	cout << "bafter   = " << bafter << endl;
-	cout << "bsticky  = " << bsticky << endl;
+	if (bPrintIntermediateSteps) cout << "blast    = " << blast << endl;
+	if (bPrintIntermediateSteps) cout << "bafter   = " << bafter << endl;
+	if (bPrintIntermediateSteps) cout << "bsticky  = " << bsticky << endl;
 
 	bool rb = (blast & bafter) | (bafter & bsticky);
 	cout << "rb       = " << rb << endl;
 	std::bitset<pt_len> ptt = pt_bits;
 	ptt >>= (len - nbits);
-	cout << "ptt      = " << ptt << endl;
-	if (rb) {
-		increment_bitset(ptt);
-	}
-	cout << "final    = " << LowerSegment(ptt, nbits) << endl;
+	if (bPrintIntermediateSteps) cout << "ptt      = " << ptt << endl;
+	if (rb) increment_bitset(ptt);
+	if (s) ptt = twos_complement(ptt);
+	cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits-1) << endl;
 }
 
 template<size_t nbits, size_t es>
@@ -539,6 +540,61 @@ void PositFloatConversion()
 	cout << endl;
 }
 
+constexpr int SE_QUANDRANT = 0;
+constexpr int NE_QUANDRANT = 1;
+constexpr int NW_QUANDRANT = 2;
+constexpr int SW_QUANDRANT = 3;
+
+template<size_t nbits, size_t es>
+void GeometricMeanSample(int quadrant) {
+	posit<nbits, es> p;
+	cout << endl << endl << "-------------------------------------------" << endl;
+	cout << spec_to_string(p) << endl;
+	cout << components_to_string(p) << endl;
+
+	int index;
+	float sign_factor = 1.0;
+	switch (quadrant) {
+	case SE_QUANDRANT:
+		index = 1;
+		break;
+	case NE_QUANDRANT:
+		index = ( int(1) << (nbits-1) ) - 2;
+		break;
+	case NW_QUANDRANT:
+		index = (int(1) << (nbits - 1) ) + 1;
+		sign_factor = -1.0;
+		break;
+	case SW_QUANDRANT:
+		index = -2;
+		sign_factor = -1.0;
+		break;
+	}
+	p.set_raw_bits(index);		cout << components_to_string(p) << endl; 	float f1 = p.to_float();
+	p.set_raw_bits(index+1);	cout << components_to_string(p) << endl;	float f2 = p.to_float();
+	p.set_raw_bits(index+2);	cout << components_to_string(p) << endl;	float f3 = p.to_float();
+
+	float eps = f1 / 100000.0;
+	float f_mineps, f, f_pluseps;
+	f = sign_factor * std::sqrt(f1 * f2);
+	f_mineps = (float)(f - eps);
+	f_pluseps = (float)(f + eps);
+	value<23> v_mineps(f_mineps);
+	value<23> v(f);
+	value<23> v_pluseps(f_pluseps);
+	cout << "geometric mean - eps: " << f_mineps  << " " << components(v_mineps) << endl;
+	cout << "geometric mean      : " << f         << " " << components(v) << endl;
+	cout << "geometric mean + eps: " << f_pluseps << " " << components(v_pluseps) << endl;
+	convert_to_posit<nbits, es>(f_mineps);
+	convert_to_posit<nbits, es>(f);
+	convert_to_posit<nbits, es>(f_pluseps);
+
+	posit<nbits, es> p1(f1), p2(f2), p3(f3);
+	cout << components_to_string(p1) << endl;
+	cout << components_to_string(p2) << endl;
+	cout << components_to_string(p3) << endl;
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -559,36 +615,11 @@ try {
 	00000010      00000010 Sign :  1 Regime :  -5 Exponent :     1 Fraction :        1 Value :     0.0009765625
 	00000011      00000011 Sign :  1 Regime :  -5 Exponent :     2 Fraction :        1 Value :      0.001953125
 	*/
-	posit<nbits, es> p;
-	cout << spec_to_string(p) << endl;
-	cout << components_to_string(p) << endl;
-	p.set_raw_bits(1);	cout << components_to_string(p) << endl; 	float f1 = p.to_float();
-	p.set_raw_bits(2);	cout << components_to_string(p) << endl;	float f2 = p.to_float();
-	p.set_raw_bits(3);	cout << components_to_string(p) << endl;	float f3 = p.to_float();
 
-	float f_mineps, f, f_pluseps;
-	f         = std::sqrt(f1 * f2);
-	f_mineps  = (float)(f - 0.000000001);
-	f_pluseps = (float)(f + 0.000000001);
-	value<23> v_mineps(f_mineps);
-	value<23> v(f);
-	value<23> v_pluseps(f_pluseps);
-	cout << "geometric mean - eps: " << f_mineps  << " " << components(v_mineps) << endl;
-	cout << "geometric mean      : " << f         << " " << components(v) << endl;
-	cout << "geometric mean + eps: " << f_pluseps << " " << components(v_pluseps) << endl;
-	/*
-	geometric mean - eps: 0.000488280 (+,-12,11111111111111111011110)
-	geometric mean      : 0.000488281 (+,-11,00000000000000000000000)
-	geometric mean + eps: 0.000488282 (+,-11,00000000000000000010001)
-	*/
-	convert_to_posit<nbits, es>(f_mineps);
-	convert_to_posit<nbits, es>(f);	
-	convert_to_posit<nbits, es>(f_pluseps);
-
-	posit<nbits, es> p1(f1), p2(f2), p3(f3);
-	cout << components_to_string(p1) << endl;
-	cout << components_to_string(p2) << endl;
-	cout << components_to_string(p3) << endl;
+	GeometricMeanSample<nbits, es>(SE_QUANDRANT);
+	GeometricMeanSample<nbits, es>(NE_QUANDRANT);
+	GeometricMeanSample<nbits, es>(NW_QUANDRANT);
+	GeometricMeanSample<nbits, es>(SW_QUANDRANT);
 
 #else
 	ReportPositScales();
