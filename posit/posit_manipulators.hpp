@@ -30,6 +30,7 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		std::string components_to_string(const posit<nbits, es>& p) {
 			std::stringstream ss;
+			/*
 			if (p.isZero()) {
 				ss << " zero    " << std::setw(103) << "b" << p.get();
 				return ss.str();
@@ -37,7 +38,7 @@ namespace sw {
 			else if (p.isInfinite()) {
 				ss << " infinite" << std::setw(103) << "b" << p.get();
 				return ss.str();
-			}
+			}*/
 
 			ss << std::setw(14) << p.get() << std::setw(14) << p.get_decoded()
 				<< " Sign : " << std::setw(2) << p.sign_value()
