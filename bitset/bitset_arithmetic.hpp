@@ -50,6 +50,16 @@ namespace sw {
 				tgt.set(i + shift, src[i]);
 		}
 
+		// copy a slice of a bitset into a bigger bitset starting at position indicated by the shift value
+		template<size_t src_size, size_t tgt_size>
+		void copy_slice_into(std::bitset<src_size>& src, std::bitset<tgt_size>& tgt, size_t begin = 0, size_t end = src_size, size_t shift = 0) {
+			// do NOT reset the target!!!
+			if (end <= src_size) throw("end cannot be larger than src_size");
+			if (end + shift < tgt_size) throw("range plus shift cannot be larger than tgt_size");
+			for (size_t i = begin; i < end; i++)
+				tgt.set(i + shift, src[i]);
+		}
+
 		// truncate right-side
 		template<size_t src_size, size_t tgt_size>
 		void truncate(std::bitset<src_size>& src, std::bitset<tgt_size>& tgt) {

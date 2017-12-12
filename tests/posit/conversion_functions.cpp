@@ -142,6 +142,157 @@ void EnumerationTests() {
 	}
 }
 
+template<size_t nbits, size_t es>
+void GenerateLogicPattern(double input, const posit<nbits, es>& presult, const posit<nbits + 1, es>& pnext) {
+	const int VALUE_WIDTH = 15;
+	bool fail = fabs(presult.to_double() - pnext.to_double()) > 0.000000001;
+	value<52> v(input);
+	std::cout << setw(VALUE_WIDTH) << input << " "
+		<< " result " << setw(VALUE_WIDTH) << presult
+		<< "  scale= " << std::setw(3) << presult.scale()
+		<< "  k= " << std::setw(3) << calculate_k<nbits, es>(v.scale())
+		<< "  exp= " << std::setw(3) << presult.get_exponent() << "  "
+		<< presult.get() << " "
+		<< pnext.get() << " "
+		<< setw(VALUE_WIDTH) << pnext << " "
+		<< (fail ? "FAIL" : "    PASS")
+		<< std::endl;
+}
+
+template<size_t nbits, size_t es>
+void GenerateLogicPatternsForDebug() {
+	// we are going to generate a test set that consists of all posit configs and their midpoints
+	// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
+	const int NR_TEST_CASES = (1 << (nbits + 1));
+	const int HALF = (1 << nbits);
+	posit<nbits + 1, es> pref, pprev, pnext;
+
+	// execute the test
+	int nrOfFailedTests = 0;
+	const double eps = 1.0e-10;  // TODO for big posits, eps is important to resolve differences
+	double da, input;
+	posit<nbits, es> pa;
+	std::cout << spec_to_string(pa) << std::endl;
+	for (int i = 0; i < NR_TEST_CASES; i++) {
+		pref.set_raw_bits(i);
+		da = pref.to_double();
+		if (i % 2) {
+			if (i == 1) {
+				// special case of projecting to +minpos
+				// even the -delta goes to +minpos
+				input = da - eps;
+				pa = input;
+				pnext.set_raw_bits(i + 1);
+				std::cout << "p"; // indicate that this needs to 'project'
+				GenerateLogicPattern(input, pa, pnext);
+				input = da + eps;
+				pa = input;
+				std::cout << "p"; // indicate that this needs to 'project'
+				GenerateLogicPattern(input, pa, pnext);
+
+			}
+			else if (i == HALF - 1) {
+				// special case of projecting to +maxpos
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(HALF - 2);
+				std::cout << "p"; // indicate that this needs to 'project'
+				GenerateLogicPattern(input, pa, pprev);
+			}
+			else if (i == HALF + 1) {
+				// special case of projecting to -maxpos
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(HALF + 2);
+				std::cout << "p"; // indicate that this needs to 'project'
+				GenerateLogicPattern(input, pa, pprev);
+			}
+			else if (i == NR_TEST_CASES - 1) {
+				// special case of projecting to -minpos
+				// even the +delta goes to -minpos
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(i - 1);
+				std::cout << "p"; // indicate that this needs to 'project'
+				GenerateLogicPattern(input, pa, pprev);
+				input = da + eps;
+				pa = input;
+				std::cout << "p"; // indicate that this needs to 'project'
+				GenerateLogicPattern(input, pa, pprev);
+			}
+			else {
+				// for odd values, we are between posit values, so we create the round-up and round-down cases
+				// round-down
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(i - 1);
+				std::cout << "d"; // indicate that this needs to round down
+				GenerateLogicPattern(input, pa, pprev);
+				// round-up
+				input = da + eps;
+				pa = input;
+				pnext.set_raw_bits(i + 1);
+				std::cout << "u"; // indicate that this needs to round up
+				GenerateLogicPattern(input, pa, pnext);
+			}
+		}
+		else {
+			// for the even values, we generate the round-to-actual cases
+			if (i == 0) {
+				// special case of projecting to +minpos
+				input = da + eps;
+				pa = input;
+				pnext.set_raw_bits(i + 2);
+				std::cout << "p"; // indicate that this needs to 'project'
+				GenerateLogicPattern(input, pa, pnext);
+			}
+			else if (i == NR_TEST_CASES - 2) {
+				// special case of projecting to -minpos
+				input = da - eps;
+				pa = input;
+				pprev.set_raw_bits(NR_TEST_CASES - 2);
+				std::cout << "p"; // indicate that this needs to 'project'
+				GenerateLogicPattern(input, pa, pprev);
+			}
+			else {
+				// round-up
+				input = da - eps;
+				pa = input;
+				std::cout << "u"; // indicate that this needs to round up
+				GenerateLogicPattern(input, pa, pref);
+				// round-down
+				input = da + eps;
+				pa = input;
+				std::cout << "d"; // indicate that this needs to round down
+				GenerateLogicPattern(input, pa, pref);
+			}
+		}
+	}
+}
+
+template<size_t nbits>
+std::string LowerSegment(std::bitset<nbits>& bits, unsigned msb) {
+	std::stringstream ss;
+	for (int i = msb; i >= 0; i--) {
+		if (bits.test(i)) {
+			ss << "1";
+		}
+		else {
+			ss << "0";
+		}
+	}
+	return ss.str();
+}
+
+template<size_t nbits>
+bool Any(const std::bitset<nbits>& bits, unsigned msb) {
+	bool running = false;
+	for (int i = msb; i >= 0; i--) {
+		running |= bits.test(i);
+	}
+	return running;
+}
+
 /*
 p[x_] := Module[{s, y, r, e, f, run, reg, esval, nf, len, fv, sb, pt, blast, bafter, bsticky, rb, ptt, p},
 s     = Boole[x < 0];
@@ -150,7 +301,7 @@ r     = Boole[y ≥ 1];
 e     = Floor[Log[2, y]];
 f     = y / 2^e - 1;
 run   = Abs[Floor[e / 2^es]] + r;
-reg   = BitOr[BitShiftLeft[r * (2run - 1), 1], BitXor[1, r]];
+reg   = BitOr[BitShiftLeft[r * (2^run - 1), 1], BitXor[1, r]];
 esval = Mod[e, 2^es];
 nf    = Max[0, (nbits + 1) - (2 + run + es)];
 len   = 1 + Max[nbits + 1, 2 + run + es];
@@ -173,11 +324,19 @@ void convert_to_posit(float x) {
 	// ignore for the sake of clarity the special cases 0 and inf
 	bool sign = v.sign();
 	int scale = v.scale();
-	std::bitset<nrfbits> fraction = v.fraction();
+	std::bitset<nrfbits> bits = v.fraction();
 	cout << v << " = " << components(v) << endl;
 
 	float minpos = (float)minpos_value<nbits, es>();
 	float maxpos = (float)maxpos_value<nbits, es>();
+
+
+	const size_t pt_len = nbits + 3 + es;
+	std::bitset<pt_len> pt_bits;
+	std::bitset<pt_len> regime;
+	std::bitset<pt_len> exponent;
+	std::bitset<pt_len> fraction;
+	std::bitset<pt_len> sticky_bit;
 
 	cout << "Abs(x)   = " << (float)std::abs(x) << endl;
 	float y = std::max<float>(minpos, std::min<float>(maxpos, (float)std::abs(x)));
@@ -188,39 +347,61 @@ void convert_to_posit(float x) {
 	cout << "e        = " << e << endl;
 	float f = x / float(pow(2.0, scale)) - 1.0f;
 	cout << "f        = " << f << endl;
-	cout << "fraction = " << fraction << endl;
+	cout << "bits     = " << bits << endl;
+	int run = (int)std::abs(std::floor(e / pow(2, es))) + r;
+	cout << "run      = " << run << endl;
+	// reg   = BitOr[BitShiftLeft[r * (2^run - 1), 1], BitXor[1, r]];
+	regime.set(0, 1 ^ r);
+	for (int i = 1; i <= run; i++) regime.set(i, r);
+	cout << "reg      = " << LowerSegment(regime,run) << endl;
+	unsigned esval = scale % (uint32_t(1) << es);
+	cout << "esval    = " << esval << endl;
+	exponent = convert_to_bitset<pt_len>(esval);
+	unsigned nf = std::max<unsigned>(0, (nbits + 1) - (2 + run + es));
+	cout << "nf       = " << nf << endl;
+	unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
+	cout << "len      = " << len << endl;
+	unsigned fv = (unsigned)std::floor((double)(f * (unsigned(1) << nf)));
+	cout << "fv       = " << to_binary(int64_t(fv)) << endl;
+	bool sb = ((f * (unsigned(1) << nf)) > fv);
+	cout << "sb       = " << (sb ? "1" : "0") << endl;
 
+	// construct the bigger posit
+	// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
+	regime   <<= es + nf + 1;
+	exponent <<= nf + 1;
+	fraction <<= 1;
+	sticky_bit.set(0, sb);
+
+	pt_bits |= regime;
+	pt_bits |= exponent;
+	pt_bits |= fraction;
+	pt_bits |= sticky_bit;
+
+	cout << "pt bits  = " << LowerSegment(pt_bits, 2+run+es) << endl;
+
+	bool blast = pt_bits.test(len - nbits);
+	bool bafter = pt_bits.test(len - nbits - 1);
+	bool bsticky = Any(pt_bits, len - nbits - 1 - 1);
+	cout << "blast    = " << blast << endl;
+	cout << "bafter   = " << bafter << endl;
+	cout << "bsticky  = " << bsticky << endl;
+}
+
+template<size_t nbits, size_t es>
+void posit_component_conversion(float x) {
 	int k = calculate_k<nbits, es>(scale);
 	cout << "k        = " << k << endl;
-
 	regime<nbits, es> _regime;
 	unsigned nr_of_regime_bits = _regime.assign_regime_pattern(k);
-	cout << "regime   = " << _regime << endl;
-
+	cout << "regime   = " << _regime << " rbits " << nr_of_regime_bits << endl;
 	exponent<nbits, es> _exponent;
 	//_exponent.assign_exponent_bits(scale, k, nr_of_regime_bits);
 	_exponent.assign_exponent_bits(scale, k, 2);
 	cout << "exponent = " << _exponent << endl;
-	unsigned esval = scale % (uint32_t(1) << es);
-	cout << "esval    = " << esval << endl;
-
-	unsigned nf = std::max<unsigned>(0, (nbits + 1) - (1 + nr_of_regime_bits + es));
-	cout << "nf       = " << nf << endl;
-	unsigned len = 1 + std::max<unsigned>((nbits + 1), (1 + nr_of_regime_bits + es));
-	cout << "len      = " << len << endl;
-	unsigned fv = fraction.to_ulong() << nf;
-	cout << "fv       = " << fv << endl;
-	bool sb = ((f * (unsigned(1) << nf)) > fv);
-	cout << "sb       = " << (sb ? "1" : "0") << endl;
-	
-	/*
-	//pt = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
-	std::bitset<2 + nbits + es> pt;
-	unsigned bPtr = 0;
-	pt.set(bPtr++, sb);
-	copy_into<(fv, 1, pt);
-	*/
-
+	fraction<nbits + 1 + es> _fraction;
+	_fraction.assign(nf, bits);
+	cout << "ff       = " << _fraction << endl;
 }
 
 void basic_algorithm_for_conversion() {
@@ -361,11 +542,50 @@ try {
 #if MANUAL_TESTING
 	const size_t nbits = 8;
 	const size_t es = 1;
-	float f1 = float(minpos_value<nbits, es>());
-	convert_to_posit<nbits,es>(f1);
+	/*
+	posit< 8,1> useed scale     2     minpos scale        -12     maxpos scale         12
+	00000000      00000000 Sign :  1 Regime :   0 Exponent :     1 Fraction :        1 Value :                0
+	00000001      00000001 Sign :  1 Regime :  -6 Exponent :     1 Fraction :        1 Value :   0.000244140625
+	00000010      00000010 Sign :  1 Regime :  -5 Exponent :     1 Fraction :        1 Value :     0.0009765625
+	00000011      00000011 Sign :  1 Regime :  -5 Exponent :     2 Fraction :        1 Value :      0.001953125
+	*/
+	posit<nbits, es> p;
+	cout << spec_to_string(p) << endl;
+	cout << components_to_string(p) << endl;
+	p.set_raw_bits(1);	cout << components_to_string(p) << endl; 	float f1 = p.to_float();
+	p.set_raw_bits(2);	cout << components_to_string(p) << endl;	float f2 = p.to_float();
+	p.set_raw_bits(3);	cout << components_to_string(p) << endl;	float f3 = p.to_float();
+
+	float f_mineps, f, f_pluseps;
+	f         = std::sqrt(f1 * f2);
+	f_mineps  = (float)(f - 0.000000001);
+	f_pluseps = (float)(f + 0.000000001);
+	value<23> v_mineps(f_mineps);
+	value<23> v(f);
+	value<23> v_pluseps(f_pluseps);
+	cout << "geometric mean - eps: " << f_mineps  << " " << components(v_mineps) << endl;
+	cout << "geometric mean      : " << f         << " " << components(v) << endl;
+	cout << "geometric mean + eps: " << f_pluseps << " " << components(v_pluseps) << endl;
+	/*
+	geometric mean - eps: 0.000488280 (+,-12,11111111111111111011110)
+	geometric mean      : 0.000488281 (+,-11,00000000000000000000000)
+	geometric mean + eps: 0.000488282 (+,-11,00000000000000000010001)
+	*/
+	convert_to_posit<nbits, es>(f_mineps);
+	convert_to_posit<nbits, es>(f);	
+	convert_to_posit<nbits, es>(f_pluseps);
+
+	posit<nbits, es> p1(f1), p2(f2), p3(f3);
+	cout << components_to_string(p1) << endl;
+	cout << components_to_string(p2) << endl;
+	cout << components_to_string(p3) << endl;
 
 #else
 	ReportPositScales();
+
+	GenerateLogicPatternsForDebug<5, 0>();
+	GenerateLogicPatternsForDebug<5, 1>();
+	GenerateLogicPatternsForDebug<5, 2>();
 
 #if STRESS_TESTING
 	
