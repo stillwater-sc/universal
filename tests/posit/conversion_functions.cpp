@@ -546,7 +546,7 @@ constexpr int NW_QUANDRANT = 2;
 constexpr int SW_QUANDRANT = 3;
 
 template<size_t nbits, size_t es>
-void GeometricMeanSample(int quadrant, bool bPrintIntermediateSteps = true) {
+void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
 	posit<nbits, es> p;
 	cout << endl << endl << "-------------------------------------------" << endl;
 	cout << spec_to_string(p) << endl;
@@ -576,15 +576,24 @@ void GeometricMeanSample(int quadrant, bool bPrintIntermediateSteps = true) {
 
 	float eps = float(f1 / 100000.0);
 	float f_mineps, f, f_pluseps;
-	f = sign_factor * std::sqrt(f1 * f2);
+	std::string roundingType;
+	if (es > 0) {
+		// geometric rounding in this region
+		f = sign_factor * std::sqrt(f1 * f2);
+		roundingType = "geometric";
+	} else {
+		// arithmetic rounding in this region
+		f = (float)((f1 + f2)/2.0);
+		roundingType = "arithmetic";
+	}
 	f_mineps = (float)(f - eps);
 	f_pluseps = (float)(f + eps);
 	value<23> v_mineps(f_mineps);
 	value<23> v(f);
 	value<23> v_pluseps(f_pluseps);
-	cout << "geometric mean - eps: " << f_mineps  << " " << components(v_mineps) << endl;
-	cout << "geometric mean      : " << f         << " " << components(v) << endl;
-	cout << "geometric mean + eps: " << f_pluseps << " " << components(v_pluseps) << endl;
+	cout << roundingType << " mean - eps: " << f_mineps  << " " << components(v_mineps) << endl;
+	cout << roundingType << " mean      : " << f         << " " << components(v) << endl;
+	cout << roundingType << " mean + eps: " << f_pluseps << " " << components(v_pluseps) << endl;
 	convert_to_posit<nbits, es>(f_mineps, bPrintIntermediateSteps);
 	convert_to_posit<nbits, es>(f, bPrintIntermediateSteps);
 	convert_to_posit<nbits, es>(f_pluseps, bPrintIntermediateSteps);
@@ -608,18 +617,11 @@ try {
 #if MANUAL_TESTING
 	const size_t nbits = 8;
 	const size_t es = 0;
-	/*
-	posit< 8,1> useed scale     2     minpos scale        -12     maxpos scale         12
-	00000000      00000000 Sign :  1 Regime :   0 Exponent :     1 Fraction :        1 Value :                0
-	00000001      00000001 Sign :  1 Regime :  -6 Exponent :     1 Fraction :        1 Value :   0.000244140625
-	00000010      00000010 Sign :  1 Regime :  -5 Exponent :     1 Fraction :        1 Value :     0.0009765625
-	00000011      00000011 Sign :  1 Regime :  -5 Exponent :     2 Fraction :        1 Value :      0.001953125
-	*/
 
-	GeometricMeanSample<nbits, es>(SE_QUANDRANT);
-	GeometricMeanSample<nbits, es>(NE_QUANDRANT);
-	GeometricMeanSample<nbits, es>(NW_QUANDRANT);
-	GeometricMeanSample<nbits, es>(SW_QUANDRANT);
+	GenerateTestSample<nbits, es>(SE_QUANDRANT);
+	GenerateTestSample<nbits, es>(NE_QUANDRANT);
+	GenerateTestSample<nbits, es>(NW_QUANDRANT);
+	GenerateTestSample<nbits, es>(SW_QUANDRANT);
 
 #else
 	ReportPositScales();
