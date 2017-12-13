@@ -359,12 +359,12 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	unsigned esval = scale % (uint32_t(1) << es);
 	if (bPrintIntermediateSteps) cout << "esval    = " << esval << endl;
 	exponent = convert_to_bitset<pt_len>(esval);
-	unsigned nf = std::max<unsigned>(0, (nbits + 1) - (2 + run + es));
+	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 	if (bPrintIntermediateSteps) cout << "nf       = " << nf << endl;
 	unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
 	if (bPrintIntermediateSteps) cout << "len      = " << len << endl;
-	unsigned fv = (unsigned)std::floor((double)(f * (unsigned(1) << nf)));
-	if (bPrintIntermediateSteps) cout << "fv       = " << to_binary(int64_t(fv)) << endl;
+	float fv = (float)std::floor((double)(f * (unsigned(1) << nf)));
+	if (bPrintIntermediateSteps) cout << "fv       = " << fv << endl;
 	bool sb = ((f * (unsigned(1) << nf)) > fv);
 	if (bPrintIntermediateSteps) cout << "sb       = " << (sb ? "1" : "0") << endl;
 
@@ -546,7 +546,7 @@ constexpr int NW_QUANDRANT = 2;
 constexpr int SW_QUANDRANT = 3;
 
 template<size_t nbits, size_t es>
-void GeometricMeanSample(int quadrant) {
+void GeometricMeanSample(int quadrant, bool bPrintIntermediateSteps = true) {
 	posit<nbits, es> p;
 	cout << endl << endl << "-------------------------------------------" << endl;
 	cout << spec_to_string(p) << endl;
@@ -574,7 +574,7 @@ void GeometricMeanSample(int quadrant) {
 	p.set_raw_bits(index+1);	cout << components_to_string(p) << endl;	float f2 = p.to_float();
 	p.set_raw_bits(index+2);	cout << components_to_string(p) << endl;	float f3 = p.to_float();
 
-	float eps = f1 / 100000.0;
+	float eps = float(f1 / 100000.0);
 	float f_mineps, f, f_pluseps;
 	f = sign_factor * std::sqrt(f1 * f2);
 	f_mineps = (float)(f - eps);
@@ -585,9 +585,9 @@ void GeometricMeanSample(int quadrant) {
 	cout << "geometric mean - eps: " << f_mineps  << " " << components(v_mineps) << endl;
 	cout << "geometric mean      : " << f         << " " << components(v) << endl;
 	cout << "geometric mean + eps: " << f_pluseps << " " << components(v_pluseps) << endl;
-	convert_to_posit<nbits, es>(f_mineps);
-	convert_to_posit<nbits, es>(f);
-	convert_to_posit<nbits, es>(f_pluseps);
+	convert_to_posit<nbits, es>(f_mineps, bPrintIntermediateSteps);
+	convert_to_posit<nbits, es>(f, bPrintIntermediateSteps);
+	convert_to_posit<nbits, es>(f_pluseps, bPrintIntermediateSteps);
 
 	posit<nbits, es> p1(f1), p2(f2), p3(f3);
 	cout << components_to_string(p1) << endl;
@@ -607,7 +607,7 @@ try {
 
 #if MANUAL_TESTING
 	const size_t nbits = 8;
-	const size_t es = 1;
+	const size_t es = 0;
 	/*
 	posit< 8,1> useed scale     2     minpos scale        -12     maxpos scale         12
 	00000000      00000000 Sign :  1 Regime :   0 Exponent :     1 Fraction :        1 Value :                0
