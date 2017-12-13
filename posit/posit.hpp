@@ -27,7 +27,6 @@ namespace sw {
 	namespace unum {
 
 
-
 const uint8_t POSIT_ROUND_TO_NEAREST = 1;
 
 // calculate exponential scale of useed
@@ -88,7 +87,7 @@ int calculate_unconstrained_k(int scale) {
 // double value representation of the useed value of a posit<nbits, es>
 template<size_t nbits, size_t es>
 double useed() {
-	return double(uint64_t(1) << (uint64_t(1) << es));
+	return std::pow(2.0, std::pow(2.0, es));
 }
 
 // calculate the value of useed
