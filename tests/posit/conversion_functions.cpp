@@ -154,6 +154,14 @@ std::string LowerSegment(std::bitset<nbits>& bits, unsigned msb) {
 	}
 	return ss.str();
 }
+template<size_t nbits, size_t src_size>
+std::bitset<nbits> CopyInto(std::bitset<src_size>& src) {
+	std::bitset<nbits> tgt;
+	for (int i = nbits - 1; i >= 0; i--) {
+		tgt.set(i, src[i]);
+	}
+	return tgt;
+}
 
 template<size_t nbits>
 bool Any(const std::bitset<nbits>& bits, unsigned msb) {
@@ -273,6 +281,68 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	if (rb) increment_bitset(ptt);
 	if (s) ptt = twos_complement(ptt);
 	cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits-1) << endl;
+}
+
+template<size_t nbits, size_t es, size_t nrfbits>
+posit<nbits, es> convert_to_posit(value<nrfbits> v) {
+	cout << "convert to posit<" << nbits << "," << es << ">" << endl;
+	// ignore for the sake of clarity the special cases 0 and inf
+	std::bitset<nrfbits> bits = v.fraction();
+
+	float minpos = (float)minpos_value<nbits, es>();
+	float maxpos = (float)maxpos_value<nbits, es>();
+
+	const size_t pt_len = nbits + 3 + es;
+	std::bitset<pt_len> pt_bits;
+	std::bitset<pt_len> regime;
+	std::bitset<pt_len> exponent;
+	std::bitset<pt_len> fraction;
+	std::bitset<pt_len> sticky_bit;
+
+	bool s = v.sign();
+	int e = v.scale();
+	bool r = (e >= 0);
+
+	unsigned run = (r ? 1 + (e >> es) : -e >> es);
+	regime.set(0, 1 ^ r);
+	for (unsigned i = 1; i <= run; i++) regime.set(i, r);
+
+	unsigned esval = e % (uint32_t(1) << es);
+	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
+
+	//float f = y / float(pow(2.0, scale)) - 1.0f;
+	//float fv = (float)std::floor((double)(f * (unsigned(1) << nf)));
+	//bool sb = ((f * (unsigned(1) << nf)) > fv);
+	bool sb = Any(bits, nrfbits - nf);
+
+	// construct the untruncated posit
+	// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
+	regime <<= es + nf + 1;
+	exponent <<= nf + 1;
+	fraction <<= 1;
+	sticky_bit.set(0, sb);
+
+	pt_bits |= regime;
+	pt_bits |= exponent;
+	pt_bits |= fraction;
+	pt_bits |= sticky_bit;
+
+	unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
+	bool blast = pt_bits.test(len - nbits);
+	bool bafter = pt_bits.test(len - nbits - 1);
+	bool bsticky = Any(pt_bits, len - nbits - 1 - 1);
+
+	bool rb = (blast & bafter) | (bafter & bsticky);
+
+	std::bitset<pt_len> ptt = pt_bits;
+	ptt >>= (len - nbits);
+	if (rb) increment_bitset(ptt);
+	if (s) ptt = twos_complement(ptt);
+	cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits - 1) << endl;
+	
+	posit<nbits, es> p;
+	p.set(CopyInto<nbits,pt_len>(ptt));
+	return p;
 }
 
 // basic concept is that we are building a 'maximum size' posit, apply the rounding to it
@@ -440,11 +510,16 @@ try {
 	const size_t es = 0;
 	bool bPrintIntermediateResults = true;
 
-	GenerateTestSample<nbits, es>(SE_QUANDRANT, bPrintIntermediateResults);
+	//GenerateTestSample<nbits, es>(SE_QUANDRANT, bPrintIntermediateResults);
 	//GenerateTestSample<nbits, es>(NE_QUANDRANT, bPrintIntermediateResults);
 	//GenerateTestSample<nbits, es>(NW_QUANDRANT, bPrintIntermediateResults);
 	//GenerateTestSample<nbits, es>(SW_QUANDRANT, bPrintIntermediateResults);
 
+	constexpr size_t nrfbits = std::numeric_limits<float>::digits - 1;
+	float f = 1.0f;
+	value<nrfbits> v(f);
+	posit<nbits, es> p = convert_to_posit<nbits, es>(v);
+	cout << "f = " << f << " v = " << v << " p = " << p << endl;
 
 #else
 	ReportPositScales();
