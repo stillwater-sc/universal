@@ -80,7 +80,7 @@ int ValidateRoundingAssessment(std::string tag, bool bReportIndividualTestCases)
 	fraction<fbits> _fraction;
 	std::bitset<fbits> bits = convert_to_bitset<fbits, uint32_t>(0x50);
 	for (unsigned i = 0; i < fbits; i++) {
-		bool rb = _fraction.assign2(i, bits, fbits - i);
+		bool rb = _fraction.assign2(i, bits);
 		cout << "nf = " << i << " " << bits << " fraction " << _fraction << " " << (rb ? "up" : "dn") << endl;
 	}
 

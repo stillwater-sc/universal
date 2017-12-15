@@ -83,16 +83,15 @@ public:
 	template <size_t FBits>
 	bool assign2(unsigned int remaining_bits, std::bitset<FBits>& _fraction)
 	{
-		if (hpos > FBits)
-			throw hpos_too_large{};
-
 		if (remaining_bits > fbits)
 			throw rbits_too_large{};
 
 		reset();                                    // In any case
 												// if input is empty -> reset
-		if (FBits == 0 || hpos == 0)
+		if (FBits == 0)
 			return false;
+
+		unsigned hpos = fbits - remaining_bits;
 
 		// if my fraction is empty -> check whether to round up (first bit after hidden bit)
 		if (fbits == 0 || remaining_bits == 0)
