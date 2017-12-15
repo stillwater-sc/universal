@@ -51,6 +51,17 @@ public:
 		_Bits = raw;
 		_NrOfBits = nrOfExponentBits;
 	}
+	// calculate the exponent given a number's scale: esval = Mod[scale, 2^es];
+	void assign(int scale) {
+		_Bits.reset();
+		unsigned int my_exponent = scale < 0 ? -scale >> es : scale >> es;
+		// convert value into bitset
+		uint32_t mask = uint32_t(1);  // es will be small, so pick a single word sized mask for efficiency
+		for (unsigned i = 0; i < es; i++) {
+			_Bits[i] = my_exponent & mask;
+			mask <<= 1;
+		}
+	}
 	// calculate the exponent given a number's scale and the number of regime bits, 
 	// returning an indicator which type of rounding is required to complete the posit
 	int assign_exponent_bits(int scale, int k, unsigned int nr_of_regime_bits) {

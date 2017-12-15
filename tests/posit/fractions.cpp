@@ -73,8 +73,21 @@ int ValidateFixedPointNumber(std::string tag, bool bReportIndividualTestCases)
 	return nrOfFailedTests;
 }
 
+template<size_t fbits>
+int ValidateRoundingAssessment(std::string tag, bool bReportIndividualTestCases) {
+	int nrOfFailedTests = 0;
 
-#define MANUAL_TESTING 0
+	fraction<fbits> _fraction;
+	std::bitset<fbits> bits = convert_to_bitset<fbits, uint32_t>(0x50);
+	for (unsigned i = 0; i < fbits; i++) {
+		bool rb = _fraction.assign2(i, bits, fbits - i);
+		cout << "nf = " << i << " " << bits << " fraction " << _fraction << " " << (rb ? "up" : "dn") << endl;
+	}
+
+	return nrOfFailedTests;
+}
+
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -86,6 +99,7 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 	ValidateFixedPointNumber<4>("Hello", true);
+	ValidateRoundingAssessment<8>("", true);
 
 #else
 
