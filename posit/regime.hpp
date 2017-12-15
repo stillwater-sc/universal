@@ -8,7 +8,7 @@
 namespace sw {
 namespace unum {
 
-// template class representing the regime
+// template class representing the regime using <nbits,es> of the containing posit
 template<size_t nbits, size_t es>
 class regime {
 public:
@@ -25,7 +25,7 @@ public:
 		_RegimeBits = 0;
 		_Bits.reset();
 	}
-	unsigned int nrBits() const {
+	unsigned nrBits() const {
 		return _RegimeBits;
 	}
 	int scale() const {
@@ -33,8 +33,12 @@ public:
 	}
 
 	// return the k-value of the regime: useed ^ k
-	int regime_k() const {
+	inline int regime_k() const {
 		return _k;
+	}
+	// the length of the run of the regime
+	inline int regime_run() const {
+		return _run;
 	}
 	double value() const {
 		double scale;
@@ -76,6 +80,15 @@ public:
 	int regime_size(int k) const {
 		if (k < 0) k = -k - 1;
 		return (k < nbits - 2 ? k + 2 : nbits - 1);
+	}
+	unsigned assign(int scale) {
+		bool r = scale > 0;
+		_k = calculate_k<nbits,es>(scale);
+		_run = (r ? 1 + (scale >> es) : -scale >> es);
+		r ? _Bits.set() : _Bits.reset();
+		_Bits.set(nbits - 1 - _run - 1, 1 ^ r); // termination bit		
+		_RegimeBits = _run + 1;
+		return _RegimeBits;
 	}
 	// construct the regime bit pattern given a number's useed scale, that is, k represents the useed factors of the number
 	// k is the unifying abstraction between decoding a posit and converting a float value.
@@ -123,6 +136,7 @@ public:
 private:
 	std::bitset<nbits - 1>	_Bits;
 	int8_t					_k;
+	uint8_t					_run;
 	unsigned int			_RegimeBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
