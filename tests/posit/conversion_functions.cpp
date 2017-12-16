@@ -244,7 +244,9 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	exponent = convert_to_bitset<pt_len>(esval);
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 	if (bPrintIntermediateSteps) cout << "nf       = " << nf << endl;
-
+	// copy the most significant nf fraction bits into fraction
+	for (int i = 0; i < (int)nf; i++) fraction[i] = bits[nrfbits - 1 - i];
+	if (bPrintIntermediateSteps) cout << "fraction = " << fraction << endl;
 	float fv = (float)std::floor((double)(f * (unsigned(1) << nf)));
 	if (bPrintIntermediateSteps) cout << "fv       = " << fv << endl;
 	bool sb = ((f * (unsigned(1) << nf)) > fv);
@@ -310,6 +312,11 @@ posit<nbits, es> convert_to_posit(value<nrfbits> v) {
 	unsigned esval = e % (uint32_t(1) << es);
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 
+	cout << bits << endl;
+	// copy the most significant nf fraction bits into fraction
+	for (int i = 0; i < (int)nf; i++) fraction[i] = bits[nrfbits - 1 - i];
+	cout << fraction << endl;
+	
 	//float f = y / float(pow(2.0, scale)) - 1.0f;
 	//float fv = (float)std::floor((double)(f * (unsigned(1) << nf)));
 	//bool sb = ((f * (unsigned(1) << nf)) > fv);
@@ -334,8 +341,9 @@ posit<nbits, es> convert_to_posit(value<nrfbits> v) {
 
 	bool rb = (blast & bafter) | (bafter & bsticky);
 
-	std::bitset<pt_len> ptt = pt_bits;
-	ptt >>= (len - nbits);
+	std::bitset<pt_len> ptt;
+	truncate(pt_bits, ptt);
+	//ptt >>= (len - nbits);
 	if (rb) increment_bitset(ptt);
 	if (s) ptt = twos_complement(ptt);
 	cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits - 1) << endl;
@@ -368,7 +376,7 @@ void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
 	bool sb = _fraction.assign(nf, v.fraction(), nf+1);  // assign and create sticky bit
 	if (bPrintIntermediateSteps) cout << "sb       = " << sb << endl;
 	// 	assess if we need to round up the truncated posit
-	{
+/*
 		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
 		if (bPrintIntermediateSteps) cout << "len      = " << len << endl;
 		if (bPrintIntermediateSteps) cout << "blast at = " << len - nbits << endl;
@@ -382,13 +390,13 @@ void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
 		if (bPrintIntermediateSteps) cout << "rb       = " << rb << endl;
 		std::bitset<pt_len> ptt = pt_bits;
 		ptt >>= (len - nbits);
-	}
+
 	if (roundUp) {
 		bool carry = _fraction.increment();
 		if (carry && es > 0) carry = _exponent.increment();
 		if (carry) carry = _regime.increment();
 		if (carry) cout << "Error" << endl;
-	}
+	}		*/
 }
 
 
@@ -510,16 +518,26 @@ try {
 	const size_t es = 0;
 	bool bPrintIntermediateResults = true;
 
-	//GenerateTestSample<nbits, es>(SE_QUANDRANT, bPrintIntermediateResults);
-	//GenerateTestSample<nbits, es>(NE_QUANDRANT, bPrintIntermediateResults);
-	//GenerateTestSample<nbits, es>(NW_QUANDRANT, bPrintIntermediateResults);
-	//GenerateTestSample<nbits, es>(SW_QUANDRANT, bPrintIntermediateResults);
+	GenerateTestSample<nbits, es>(SE_QUANDRANT, bPrintIntermediateResults);
+	GenerateTestSample<nbits, es>(NE_QUANDRANT, bPrintIntermediateResults);
+	GenerateTestSample<nbits, es>(NW_QUANDRANT, bPrintIntermediateResults);
+	GenerateTestSample<nbits, es>(SW_QUANDRANT, bPrintIntermediateResults);
+	return 0;
 
+	posit<nbits, es> p1, p2;
+	p1.set_raw_bits(1);
+	p2.set_raw_bits(2);
+	float mean = (p1.to_float() + p2.to_float()) / 2.0f;
+	float mean_pluseps = mean + (mean / 100000.0f);  // need to round up to p2
+	cout << "p1 " << p1 << " p2 " << p2 << " mean " << mean << " mean+eps " << mean_pluseps << endl;
+	cout << components_to_string(p1) << endl;
+	cout << components_to_string(p2) << endl;
 	constexpr size_t nrfbits = std::numeric_limits<float>::digits - 1;
-	float f = 1.0f;
-	value<nrfbits> v(f);
+	value<nrfbits> v(mean_pluseps);
 	posit<nbits, es> p = convert_to_posit<nbits, es>(v);
-	cout << "f = " << f << " v = " << v << " p = " << p << endl;
+	cout << "f = " << mean_pluseps << " v = " << v << " p = " << p << endl;
+
+	convert_to_posit<nbits, es>(mean_pluseps, true);
 
 #else
 	ReportPositScales();

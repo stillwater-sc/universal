@@ -94,7 +94,6 @@ namespace sw {
 			return number;
 		}
 
-
 	} // namespace unum
 
 } // namespace sw
