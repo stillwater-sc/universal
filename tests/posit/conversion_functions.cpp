@@ -163,15 +163,6 @@ std::bitset<nbits> CopyInto(std::bitset<src_size>& src) {
 	return tgt;
 }
 
-template<size_t nbits>
-bool Any(const std::bitset<nbits>& bits, unsigned msb) {
-	bool running = false;
-	for (int i = msb; i >= 0; i--) {
-		running |= bits.test(i);
-	}
-	return running;
-}
-
 /*
 p[x_] := Module[{s, y, r, e, f, run, reg, esval, nf, len, fv, sb, pt, blast, bafter, bsticky, rb, ptt, p},
 s     = Boole[x < 0];
@@ -270,7 +261,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	if (bPrintIntermediateSteps) cout << "blast at = " << len - nbits << endl;
 	bool blast = pt_bits.test(len - nbits);
 	bool bafter = pt_bits.test(len - nbits - 1);
-	bool bsticky = Any(pt_bits, len - nbits - 1 - 1);
+	bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
 	if (bPrintIntermediateSteps) cout << "blast    = " << blast << endl;
 	if (bPrintIntermediateSteps) cout << "bafter   = " << bafter << endl;
 	if (bPrintIntermediateSteps) cout << "bsticky  = " << bsticky << endl;
@@ -311,8 +302,6 @@ posit<nbits, es> convert_to_posit(value<nrfbits> v) {
 
 	unsigned esval = e % (uint32_t(1) << es);
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
-
-	cout << bits << endl;
 	// copy the most significant nf fraction bits into fraction
 	for (int i = 0; i < (int)nf; i++) fraction[i] = bits[nrfbits - 1 - i];
 	cout << fraction << endl;
@@ -320,7 +309,7 @@ posit<nbits, es> convert_to_posit(value<nrfbits> v) {
 	//float f = y / float(pow(2.0, scale)) - 1.0f;
 	//float fv = (float)std::floor((double)(f * (unsigned(1) << nf)));
 	//bool sb = ((f * (unsigned(1) << nf)) > fv);
-	bool sb = Any(bits, nrfbits - nf);
+	bool sb = anyAfter(bits, nrfbits - 1 - nf);
 
 	// construct the untruncated posit
 	// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
@@ -337,19 +326,22 @@ posit<nbits, es> convert_to_posit(value<nrfbits> v) {
 	unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
 	bool blast = pt_bits.test(len - nbits);
 	bool bafter = pt_bits.test(len - nbits - 1);
-	bool bsticky = Any(pt_bits, len - nbits - 1 - 1);
+	bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
 
 	bool rb = (blast & bafter) | (bafter & bsticky);
 
-	std::bitset<pt_len> ptt;
+	pt_bits <<= pt_len - len;
+	std::bitset<nbits> ptt;
 	truncate(pt_bits, ptt);
+	cout << "pt   " << pt_bits << endl;
+	cout << "ptt  " << ptt << endl;
 	//ptt >>= (len - nbits);
 	if (rb) increment_bitset(ptt);
 	if (s) ptt = twos_complement(ptt);
 	cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits - 1) << endl;
 	
 	posit<nbits, es> p;
-	p.set(CopyInto<nbits,pt_len>(ptt));
+	p.set(ptt);
 	return p;
 }
 
@@ -517,12 +509,12 @@ try {
 	const size_t nbits = 8;
 	const size_t es = 0;
 	bool bPrintIntermediateResults = true;
-
+/*
 	GenerateTestSample<nbits, es>(SE_QUANDRANT, bPrintIntermediateResults);
 	GenerateTestSample<nbits, es>(NE_QUANDRANT, bPrintIntermediateResults);
 	GenerateTestSample<nbits, es>(NW_QUANDRANT, bPrintIntermediateResults);
 	GenerateTestSample<nbits, es>(SW_QUANDRANT, bPrintIntermediateResults);
-	return 0;
+*/
 
 	posit<nbits, es> p1, p2;
 	p1.set_raw_bits(1);

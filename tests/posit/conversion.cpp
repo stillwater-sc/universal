@@ -264,7 +264,7 @@ try {
 	no exp left:  geo-dw p   -0.000244141  result    -0.000244141  scale= -12  k=  -3  exp=   --  11111 111110    -0.000244141     PASS
 
 	 */
-#endif
+
 	posit<4, 1> p;
 	input = 0.015625; reference = 0.0625;
 	p = input;
@@ -304,7 +304,8 @@ try {
 	input = 8.01; reference = 16.0;
 	p = input;
 	GenerateTestCase(input, reference, p);
-	// return 0;
+#endif
+
 	// manual exhaustive testing
 	tag = "Manual Testing";
 
@@ -312,12 +313,12 @@ try {
 	//GenerateLogicPatternsForDebug<4, 0>();	
 	//GenerateLogicPatternsForDebug<4, 1>();
 	//GenerateLogicPatternsForDebug<5, 1>();
-	GenerateLogicPatternsForDebug<5, 2>();
+	//GenerateLogicPatternsForDebug<5, 2>();
 	//GenerateLogicPatternsForDebug<6, 2>();
 	//GenerateLogicPatternsForDebug<7, 3>();
 	//GenerateLogicPatternsForDebug<8, 0>();
-	//GenerateLogicPatternsForDebug<8, 1>();
-	 return 0;
+	GenerateLogicPatternsForDebug<8, 1>();
+	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 0>(tag, true), "posit<8,0>", "conversion");
 	return 0;
