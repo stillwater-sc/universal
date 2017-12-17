@@ -721,6 +721,7 @@ public:
 		return _exponent.scale();
 	}
 	// special case check for projecting values between (0, minpos] to minpos and [maxpos, inf) to maxpos
+	// Returns true if the scale is too small or too large for this posit config
 	// DO NOT USE the k value for this, as the k value encodes the useed regions and thus is too coarse to make this decision
 	// Using the scale directly is the simplest expression of the inward projection test.
 	bool check_inward_projection_range(int scale) {
@@ -753,7 +754,8 @@ public:
 	// Generalized version
 	template <size_t FBits>
 	void convert_to_posit(const value<FBits>& v) {
-            convert(v.sign(), v.scale(), v.fraction(), FBits);
+            //convert(v.sign(), v.scale(), v.fraction(), FBits);
+			convert(v.sign(), v.scale(), v.fraction());
         }
 
 #if 0   // DEPRECATED
@@ -833,6 +835,78 @@ public:
 
             if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;            
         }
+
+	
+	template<size_t fbits>
+	void convert(bool sign, int scale, std::bitset<fbits> frac) {
+		setToZero();
+		if (_trace_conversion) std::cout << "sign " << (sign ? "-1 " : " 1 ") << "scale " << scale << " fraction " << frac << std::endl;
+
+		// construct the posit
+		_sign = sign;
+		int k = calculate_unconstrained_k<nbits, es>(scale);
+		// interpolation rule checks
+		if (check_inward_projection_range(scale)) {    // regime dominated
+			if (_trace_conversion) std::cout << "inward projection" << std::endl;
+			// we are projecting to minpos/maxpos
+			_regime.assign_regime_pattern(k);
+			// store raw bit representation
+			_raw_bits = _sign ? twos_complement(collect()) : collect();
+			_raw_bits.set(nbits - 1, _sign);
+			// we are done
+			if (_trace_rounding) std::cout << "projection  rounding ";
+		}
+		else {
+			const size_t pt_len = nbits + 3 + es;
+			std::bitset<pt_len> pt_bits;
+			std::bitset<pt_len> regime;
+			std::bitset<pt_len> exponent;
+			std::bitset<pt_len> fraction;
+			std::bitset<pt_len> sticky_bit;
+
+			bool s = sign;
+			int e = scale;
+			bool r = (e >= 0);
+
+			unsigned run = (r ? 1 + (e >> es) : -e >> es);
+			regime.set(0, 1 ^ r);
+			for (unsigned i = 1; i <= run; i++) regime.set(i, r);
+
+			unsigned esval = e % (uint32_t(1) << es);
+			unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
+			// copy the most significant nf fraction bits into fraction
+			for (int i = 0; i < (int)nf; i++) fraction[i] = frac[fbits - 1 - i];
+
+			bool sb = anyAfter(frac, fbits - 1 - nf);
+
+			// construct the untruncated posit
+			// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
+			regime <<= es + nf + 1;
+			exponent <<= nf + 1;
+			fraction <<= 1;
+			sticky_bit.set(0, sb);
+
+			pt_bits |= regime;
+			pt_bits |= exponent;
+			pt_bits |= fraction;
+			pt_bits |= sticky_bit;
+
+			unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
+			bool blast = pt_bits.test(len - nbits);
+			bool bafter = pt_bits.test(len - nbits - 1);
+			bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
+
+			bool rb = (blast & bafter) | (bafter & bsticky);
+
+			pt_bits <<= pt_len - len;
+			std::bitset<nbits> ptt;
+			truncate(pt_bits, ptt);
+
+			if (rb) increment_bitset(ptt);
+			if (s) ptt = twos_complement(ptt);
+			decode(ptt);
+		}
+	}
 
 private:
 	std::bitset<nbits>     _raw_bits;	// raw bit representation

@@ -94,6 +94,15 @@ namespace sw {
 			return number;
 		}
 
+		template<size_t nbits>
+		bool anyAfter(const std::bitset<nbits>& bits, unsigned msb) {
+			bool running = false;
+			for (int i = msb; i >= 0; i--) {
+				running |= bits.test(i);
+			}
+			return running;
+		}
+
 	} // namespace unum
 
 } // namespace sw
