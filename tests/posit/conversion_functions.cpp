@@ -222,7 +222,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	if (bPrintIntermediateSteps) cout << "bits     = " << bits << endl;
 	int run = (int)std::abs(std::floor(e / pow(2, es))) + r;
 	if (bPrintIntermediateSteps) cout << "run      = " << run << endl;
-	unsigned _run = (r ? 1 + (scale >> es) : -scale >> es);
+	unsigned _run = (r ? 1 + (scale >> es) : -(scale >> es));
 	if (bPrintIntermediateSteps) cout << "_run     = " << _run << endl;
 	// reg   = BitOr[BitShiftLeft[r * (2^run - 1), 1], BitXor[1, r]];
 	regime.set(0, 1 ^ r);
@@ -296,7 +296,7 @@ posit<nbits, es> convert_to_posit(value<nrfbits> v) {
 	int e = v.scale();
 	bool r = (e >= 0);
 
-	unsigned run = (r ? 1 + (e >> es) : -e >> es);
+	unsigned run = (r ? 1 + (e >> es) : -(e >> es));
 	regime.set(0, 1 ^ r);
 	for (unsigned i = 1; i <= run; i++) regime.set(i, r);
 
@@ -516,6 +516,7 @@ try {
 	GenerateTestSample<nbits, es>(SW_QUANDRANT, bPrintIntermediateResults);
 */
 
+	/*
 	posit<nbits, es> p1, p2;
 	p1.set_raw_bits(1);
 	p2.set_raw_bits(2);
@@ -530,6 +531,19 @@ try {
 	cout << "f = " << mean_pluseps << " v = " << v << " p = " << p << endl;
 
 	convert_to_posit<nbits, es>(mean_pluseps, true);
+	*/
+
+	float input, reference;
+	input = 0.000976562f;
+	posit<8, 1> p(input);
+	reference = 0.000976563f;
+	convert_to_posit<8, 1>(input, true);
+	value<23> v(input);
+	convert_to_posit<8, 1>(v);
+
+	cout << std::floor(-5.5) << endl;
+	int scale = -11;
+	cout << (scale >> 1) << endl;
 
 #else
 	ReportPositScales();
