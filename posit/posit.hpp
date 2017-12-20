@@ -868,7 +868,7 @@ public:
 			int e = scale;
 			bool r = (e >= 0);
 
-			unsigned run = (r ? 1 + (e >> es) : -e >> es);
+			unsigned run = (r ? 1 + (e >> es) : -(e >> es));
 			regime.set(0, 1 ^ r);
 			for (unsigned i = 1; i <= run; i++) regime.set(i, r);
 
