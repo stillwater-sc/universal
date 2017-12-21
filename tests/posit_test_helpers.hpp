@@ -121,12 +121,19 @@ namespace sw {
 
 			// execute the test
 			int nrOfFailedTests = 0;
-			const double eps = 0.00001;
+			double minpos = minpos_value<nbits+1, es>();
+			double eps;
 			double da, input;
 			posit<nbits, es> pa;
 			for (int i = 0; i < NR_TEST_CASES; i++) {
 				pref.set_raw_bits(i);
 				da = pref.to_double();
+				if (i == 0) {
+					eps = minpos / 2.0;
+				}
+				else {
+					eps = da > 0 ? da * 1.0e-6 : da * -1.0e-6;
+				}
 				if (i % 2) {
 					if (i == 1) {
 						// special case of projecting to +minpos

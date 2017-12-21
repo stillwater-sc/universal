@@ -44,13 +44,20 @@ void GenerateLogicPatternsForDebug() {
 
 	// execute the test
 	int nrOfFailedTests = 0;
-	const double eps = 1.0e-10;  // TODO for big posits, eps is important to resolve differences
+	double minpos = minpos_value<nbits+1, es>();
+	double eps = 1.0e-10;
 	double da, input;
 	posit<nbits, es> pa;
 	std::cout << spec_to_string(pa) << std::endl;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
 		pref.set_raw_bits(i);
 		da = pref.to_double();
+		if (i == 0) {
+			eps = minpos / 2.0;
+		}
+		else {
+			eps = da > 0 ? da * 1.0e-6 : da * -1.0e-6;
+		}	
 		if (i % 2) {
 			if (i == 1) {
 				// special case of projecting to +minpos
@@ -64,7 +71,6 @@ void GenerateLogicPatternsForDebug() {
 				pa = input;
 				std::cout << "p"; // indicate that this needs to 'project'
 				GenerateLogicPattern(input, pa, pnext);
-
 			}
 			else if (i == HALF - 1) {
 				// special case of projecting to +maxpos
@@ -177,10 +183,12 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 	double input, reference;
-
-	input = 0.01757815f;
-	posit<8, 1> p(input);
-	reference = 0.0195313f;
+	double ONEMEG = 1024.0 * 1024.0;
+	double FOURMEG = 4.0 * ONEMEG;
+	double SIXTEENMEG = 16.0 * ONEMEG;
+	input = FOURMEG + 1.0;
+	posit<8, 2> p(input);
+	reference = SIXTEENMEG;
 	GenerateTestCase(input, reference, p);
 	
 #if PREVIOUS_FAILURE_INPUTS
@@ -322,7 +330,8 @@ try {
 	//GenerateLogicPatternsForDebug<6, 2>();
 	//GenerateLogicPatternsForDebug<7, 3>();
 	//GenerateLogicPatternsForDebug<8, 0>();
-	GenerateLogicPatternsForDebug<8, 1>();
+	//GenerateLogicPatternsForDebug<8, 1>();
+	GenerateLogicPatternsForDebug<8, 2>();
 	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 0>(tag, true), "posit<8,0>", "conversion");
