@@ -164,7 +164,7 @@ void GenerateTestCase(double input, double reference, const posit<nbits, es>& pr
 	cout << endl;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -178,9 +178,9 @@ try {
 	// generate individual testcases to hand trace/debug
 	double input, reference;
 
-	input = 0.000976562f; 
+	input = 0.01757815f;
 	posit<8, 1> p(input);
-	reference = 0.000976563f;
+	reference = 0.0195313f;
 	GenerateTestCase(input, reference, p);
 	
 #if PREVIOUS_FAILURE_INPUTS
@@ -322,7 +322,7 @@ try {
 	//GenerateLogicPatternsForDebug<6, 2>();
 	//GenerateLogicPatternsForDebug<7, 3>();
 	//GenerateLogicPatternsForDebug<8, 0>();
-	//GenerateLogicPatternsForDebug<8, 1>();
+	GenerateLogicPatternsForDebug<8, 1>();
 	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<8, 0>(tag, true), "posit<8,0>", "conversion");

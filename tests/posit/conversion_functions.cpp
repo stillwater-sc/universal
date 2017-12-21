@@ -154,6 +154,12 @@ std::string LowerSegment(std::bitset<nbits>& bits, unsigned msb) {
 	}
 	return ss.str();
 }
+template<size_t src_size, size_t nbits>
+void CopyLowerSegment(std::bitset<src_size>& src, std::bitset<nbits>& tgt, unsigned msb = nbits-1) {
+	for (int i = msb; i >= 0; i--) {
+		tgt[i] = src[i];
+	}
+}
 template<size_t nbits, size_t src_size>
 std::bitset<nbits> CopyInto(std::bitset<src_size>& src) {
 	std::bitset<nbits> tgt;
@@ -236,7 +242,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 	if (bPrintIntermediateSteps) cout << "nf       = " << nf << endl;
 	// copy the most significant nf fraction bits into fraction
-	for (int i = 0; i < (int)nf; i++) fraction[i] = bits[nrfbits - 1 - i];
+	for (int i = 0; i < (int)nf; i++) fraction[i] = bits[nrfbits - nf + i];
 	if (bPrintIntermediateSteps) cout << "fraction = " << fraction << endl;
 	float fv = (float)std::floor((double)(f * (unsigned(1) << nf)));
 	if (bPrintIntermediateSteps) cout << "fv       = " << fv << endl;
@@ -250,13 +256,21 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	fraction <<= 1;
 	sticky_bit.set(0, sb);
 
+	if (bPrintIntermediateSteps) {
+		cout << "regime   = " << regime << endl;
+		cout << "exponent = " << exponent << endl;
+		cout << "fraction = " << fraction << endl;
+		cout << "sticky   = " << sticky_bit << endl;
+	}
 	pt_bits |= regime;
 	pt_bits |= exponent;
 	pt_bits |= fraction;
 	pt_bits |= sticky_bit;
 
-	if (bPrintIntermediateSteps) cout << "pt bits  = " << LowerSegment(pt_bits, 2+run+es) << endl;
+	if (bPrintIntermediateSteps) cout << "pt bits  = " << pt_bits << endl;
+	if (bPrintIntermediateSteps) cout << "pt bits  = " << LowerSegment(pt_bits, 2 + run + es) << endl;
 	unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
+	if (bPrintIntermediateSteps) cout << "pt_len   = " << pt_len << endl;
 	if (bPrintIntermediateSteps) cout << "len      = " << len << endl;
 	if (bPrintIntermediateSteps) cout << "blast at = " << len - nbits << endl;
 	bool blast = pt_bits.test(len - nbits);
@@ -274,10 +288,16 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	if (rb) increment_bitset(ptt);
 	if (s) ptt = twos_complement(ptt);
 	cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits-1) << endl;
+
+	std::bitset<nbits> ptt_t;
+	CopyLowerSegment(ptt, ptt_t);
+	posit<nbits, es> p;
+	p.set(ptt_t);
+	cout << "p = " << components_to_string(p) << endl;
 }
 
 template<size_t nbits, size_t es, size_t nrfbits>
-posit<nbits, es> convert_to_posit(value<nrfbits> v) {
+posit<nbits, es> convert_to_posit(value<nrfbits> v, bool bPrintIntermediateSteps = false) {
 	cout << "convert to posit<" << nbits << "," << es << ">" << endl;
 	// ignore for the sake of clarity the special cases 0 and inf
 	std::bitset<nrfbits> bits = v.fraction();
@@ -301,10 +321,10 @@ posit<nbits, es> convert_to_posit(value<nrfbits> v) {
 	for (unsigned i = 1; i <= run; i++) regime.set(i, r);
 
 	unsigned esval = e % (uint32_t(1) << es);
+	exponent = convert_to_bitset<pt_len>(esval);
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 	// copy the most significant nf fraction bits into fraction
-	for (int i = 0; i < (int)nf; i++) fraction[i] = bits[nrfbits - 1 - i];
-	cout << fraction << endl;
+	for (int i = 0; i < (int)nf; i++) fraction[i] = bits[nrfbits - nf + i];
 	
 	//float f = y / float(pow(2.0, scale)) - 1.0f;
 	//float fv = (float)std::floor((double)(f * (unsigned(1) << nf)));
@@ -322,6 +342,7 @@ posit<nbits, es> convert_to_posit(value<nrfbits> v) {
 	pt_bits |= exponent;
 	pt_bits |= fraction;
 	pt_bits |= sticky_bit;
+	cout << "pt_bits  = " << pt_bits << endl;
 
 	unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
 	bool blast = pt_bits.test(len - nbits);
@@ -333,15 +354,41 @@ posit<nbits, es> convert_to_posit(value<nrfbits> v) {
 	pt_bits <<= pt_len - len;
 	std::bitset<nbits> ptt;
 	truncate(pt_bits, ptt);
-	cout << "pt   " << pt_bits << endl;
-	cout << "ptt  " << ptt << endl;
+	cout << "ptt      = " << ptt << endl;
 	//ptt >>= (len - nbits);
 	if (rb) increment_bitset(ptt);
 	if (s) ptt = twos_complement(ptt);
+	if (bPrintIntermediateSteps) {
+		cout << "s        = " << (s ? "1" : "0") << endl;
+		cout << "e        = " << e << endl;
+		cout << "r        = " << (r ? "1" : "0") << endl;
+		cout << "run      = " << run << endl;
+		cout << "reg      = " << regime << endl;
+		cout << "esval    = " << esval << endl;
+		cout << "nf       = " << nf << endl;
+		cout << "bits     = " << bits << endl;
+		cout << "fraction = " << fraction << endl;
+		cout << "sb       = " << sb << endl;
+		cout << "pt_len   = " << pt_len << endl;
+		cout << "len      = " << len << endl;
+		cout << "blast at = " << len - nbits << endl;
+		cout << "regime   = " << regime << endl;
+		cout << "exponent = " << exponent << endl;
+		cout << "fraction = " << fraction << endl;
+		cout << "sticky   = " << sticky_bit << endl;
+		cout << "pt_bits  = " << pt_bits << endl;
+		cout << "blast    = " << blast << endl;
+		cout << "bafter   = " << bafter << endl;
+		cout << "bsticky  = " << bsticky << endl;
+		cout << "rb       = " << rb << endl;
+
+		cout << "ptt      = " << ptt << endl;
+	}
 	cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits - 1) << endl;
 	
 	posit<nbits, es> p;
 	p.set(ptt);
+	cout << "p = " << p.to_float() << endl;
 	return p;
 }
 
@@ -534,16 +581,16 @@ try {
 	*/
 
 	float input, reference;
-	input = 0.000976562f;
+	input = 0.0175781f;
+	input = 0.01757815f;
+	input = 0.0175782f;
+	input = 0.0195312f;
+	//input = 0.0195313f;
 	posit<8, 1> p(input);
-	reference = 0.000976563f;
+	reference = 0.0195313f;
 	convert_to_posit<8, 1>(input, true);
 	value<23> v(input);
-	convert_to_posit<8, 1>(v);
-
-	cout << std::floor(-5.5) << endl;
-	int scale = -11;
-	cout << (scale >> 1) << endl;
+	convert_to_posit<8, 1>(v, true);
 
 #else
 	ReportPositScales();
