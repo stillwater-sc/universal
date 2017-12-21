@@ -873,9 +873,10 @@ public:
 			for (unsigned i = 1; i <= run; i++) regime.set(i, r);
 
 			unsigned esval = e % (uint32_t(1) << es);
+			exponent = convert_to_bitset<pt_len>(esval);
 			unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 			// copy the most significant nf fraction bits into fraction
-			for (int i = 0; i < (int)nf; i++) fraction[i] = frac[fbits - 1 - i];
+			for (int i = 0; i < (int)nf; i++) fraction[i] = frac[fbits - nf + i];
 
 			bool sb = anyAfter(frac, fbits - 1 - nf);
 
