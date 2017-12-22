@@ -553,7 +553,7 @@ try {
 	std::string tag = "Conversion failed: ";
 
 #if MANUAL_TESTING
-	const size_t nbits = 8;
+	const size_t nbits = 5;
 	const size_t es = 0;
 	bool bPrintIntermediateResults = true;
 /*
@@ -563,34 +563,7 @@ try {
 	GenerateTestSample<nbits, es>(SW_QUANDRANT, bPrintIntermediateResults);
 */
 
-	/*
-	posit<nbits, es> p1, p2;
-	p1.set_raw_bits(1);
-	p2.set_raw_bits(2);
-	float mean = (p1.to_float() + p2.to_float()) / 2.0f;
-	float mean_pluseps = mean + (mean / 100000.0f);  // need to round up to p2
-	cout << "p1 " << p1 << " p2 " << p2 << " mean " << mean << " mean+eps " << mean_pluseps << endl;
-	cout << components_to_string(p1) << endl;
-	cout << components_to_string(p2) << endl;
-	constexpr size_t nrfbits = std::numeric_limits<float>::digits - 1;
-	value<nrfbits> v(mean_pluseps);
-	posit<nbits, es> p = convert_to_posit<nbits, es>(v);
-	cout << "f = " << mean_pluseps << " v = " << v << " p = " << p << endl;
-
-	convert_to_posit<nbits, es>(mean_pluseps, true);
-	*/
-
-	float input, reference;
-	input = 0.0175781f;
-	input = 0.01757815f;
-	input = 0.0175782f;
-	input = 0.0195312f;
-	//input = 0.0195313f;
-	posit<8, 1> p(input);
-	reference = 0.0195313f;
-	convert_to_posit<8, 1>(input, true);
-	value<23> v(input);
-	convert_to_posit<8, 1>(v, true);
+	GeneratePositTable<5, 0>(cout);
 
 #else
 	ReportPositScales();

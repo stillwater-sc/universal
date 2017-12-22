@@ -243,6 +243,7 @@ public:
 		//  - + =   lhs > rhs ? - : +
 		//  - - = -
 		// to simplify the result processing
+		// By assigning the biggest absolute value to R1, the sign of the result will be sign of lhs.
      
 		if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		if (isZero()) {
@@ -284,10 +285,10 @@ public:
                 
 		long shift = 0;
 		if (carry) {
-			if (r1_sign == r2_sign)   // the carry & signs= implies that we have a number bigger than r1
+			if (r1_sign == r2_sign)   // the carry && signs= implies that we have a number bigger than r1
 				shift = -1;
 			else 
-				// the carry & signs!= implies r2 is complement, result < r1, must find hidden bit (in the complement)
+				// the carry && signs!= implies r2 is complement, result < r1, must find hidden bit (in the complement)
 				for (int i = abits - 1; i >= 0 && !sum[i]; i--)
 					shift++;
 		}
@@ -300,7 +301,13 @@ public:
                 
 		scale_of_result -= shift;
 		const int hpos = abits - 1 - shift;         // position hidden bit 
+#ifdef ALGO1
 		convert(r1_sign, scale_of_result, sum, hpos);
+#else
+		sum <<= abits - hpos + 1;
+		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum " << sum << std::endl;
+		convert(r1_sign, scale_of_result, sum);
+#endif
 		return *this;                
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
