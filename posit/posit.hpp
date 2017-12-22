@@ -19,9 +19,7 @@
 #include "exponent.hpp"
 #include "regime.hpp"
 
-#define MULTIPLY_WITH_FRACTION_WITH_HIDDEN_BIT
 #define INCREMENT_POSIT_CARRY_CHAIN
-
 
 namespace sw {
 	namespace unum {
@@ -140,19 +138,13 @@ class posit
 		return *this;
 	}
     
-    
-    
 public:
 	static constexpr size_t rbits = nbits - 1;
 	static constexpr size_t ebits = es;
 	static constexpr size_t fbits = nbits - 3 - es;  
-	static constexpr size_t abits = fbits + 4;     // size of the addend
-#ifdef MULTIPLY_WITH_FRACTION_WITH_HIDDEN_BIT
-	static constexpr size_t fhbits = fbits + 1;    // size of fraction + hidden bit
-	static constexpr size_t mbits = 2 * fhbits + 1; // size of the multiplier output
-#else
-	static constexpr size_t mbits = 2 * fbits + 1; // size of the multiplier output
-#endif
+	static constexpr size_t abits = fbits + 4;       // size of the addend
+	static constexpr size_t fhbits = fbits + 1;      // size of fraction + hidden bit
+	static constexpr size_t mbits  = 2 * fhbits + 1; // size of the multiplier output
 
 	posit<nbits, es>() : _sign(false) {}
 	
@@ -163,7 +155,6 @@ public:
 	posit& operator=(posit&&) = default;
 	
 	/// Construct posit from its components
-        // should we worry about the raw bits ???  yes, raw_bits are used for incr/decr and 2's complement operators
 	posit(bool sign, const regime<nbits, es>& r, const exponent<nbits, es>& e, const fraction<fbits>& f)
           : _sign(sign), _regime(r), _exponent(e), _fraction(f) {
 		// generate raw bit representation
@@ -269,17 +260,15 @@ public:
 		int lhs_scale = scale(), rhs_scale = rhs.scale(), scale_of_result= std::max(lhs_scale, rhs_scale);
 		
 		// align the fractions
-                std::bitset<abits> r1 = _fraction.template nshift<abits>(lhs_scale - scale_of_result + 3), 
-                                   r2 = rhs._fraction.template nshift<abits>(rhs_scale - scale_of_result + 3);
-                bool r1_sign = _sign, r2_sign = rhs._sign;
+        std::bitset<abits> r1 = _fraction.template nshift<abits>(lhs_scale - scale_of_result + 3), 
+                           r2 = rhs._fraction.template nshift<abits>(rhs_scale - scale_of_result + 3);
+        bool r1_sign = _sign, r2_sign = rhs._sign;
                 
 
-                if (std::abs(to_double()) < std::abs(rhs.to_double())) { //  TODO: should compare as posits directly
-//                 asm( "int $3" ); // Stop debugger here :-D
-//                 if (abs(*this) < abs(rhs)) {   
-                    std::swap(r1, r2);
-                    std::swap(r1_sign, r2_sign);
-                } 
+        if (sw::unum::abs(*this) < sw::unum::abs(rhs)) {
+            std::swap(r1, r2);
+            std::swap(r1_sign, r2_sign);
+        } 
 
 		if (_trace_add) {
 			std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1  " << r1 << std::endl;
@@ -295,10 +284,10 @@ public:
                 
 		long shift = 0;
 		if (carry) {
-			if (r1_sign == r2_sign)   // the carry implies that we have a bigger number than r1
+			if (r1_sign == r2_sign)   // the carry & signs= implies that we have a number bigger than r1
 				shift = -1;
 			else 
-				// the carry means r2 as complement, result < r1, must find hidden bit (in the complement)
+				// the carry & signs!= implies r2 is complement, result < r1, must find hidden bit (in the complement)
 				for (int i = abits - 1; i >= 0 && !sum[i]; i--)
 					shift++;
 		}
@@ -922,7 +911,7 @@ private:
 		bool new_sign = v1.sign() ^ v2.sign();
 		int new_scale = v1.scale() + v2.scale();
 		std::bitset<mbits> result_fraction;
-#ifdef MULTIPLY_WITH_FRACTION_WITH_HIDDEN_BIT
+
 		// fractions are without hidden bit, but the mul needs the hidden bit
 		std::bitset<fhbits> operand1 = v1.get_fixed_point();
 		std::bitset<fhbits> operand2 = v2.get_fixed_point();
@@ -936,11 +925,7 @@ private:
 			result_fraction <<= 1;
 		}
 		result_fraction <<= 1;
-#else
-		if (fbits > 0) {
-			multiply_unsigned(v1.fraction(), v2.fraction(), result_fraction);
-		}
-#endif
+
 		if (_trace_mul) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
 		// TODO: how do you recognize the special case of zero?
 		result.set(new_sign, new_scale, result_fraction, false);
@@ -1031,8 +1016,7 @@ inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, const posit<nbits
 
 /// Magnitude of a posit (equivalent to turning the sign bit off).
 template<size_t nbits, size_t es> 
-posit<nbits, es> abs(const posit<nbits, es>& p)
-{
+posit<nbits, es> abs(const posit<nbits, es>& p) {
     return posit<nbits, es>(false, p.get_regime(), p.get_exponent(), p.get_fraction());
 }
 

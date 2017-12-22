@@ -6,7 +6,9 @@
 
 #include "stdafx.h"
 
-#include <vector>
+// when you define POSIT_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
+//#define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_ADD
 
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"
@@ -39,22 +41,23 @@ void GenerateTestCase(double da, double db) {
 	cout << "reference " << pref << " result " << psum << endl << endl;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Addition failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<5, 0>(INFINITY, INFINITY);
+	GenerateTestCase<6, 3>(INFINITY, INFINITY);
+	GenerateTestCase<6, 3>(0.5, 0.5);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 3>("Manual Testing", bReportIndividualTestCases), "posit<6,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 0>("Manual Testing", bReportIndividualTestCases), "posit<6,3>", "addition");
 #else
 
 	cout << "Posit addition validation" << endl;

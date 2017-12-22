@@ -3,12 +3,11 @@
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include <iostream>
-
 #include "stdafx.h"
 
-#include <vector>
+// when you define POSIT_VERBOSE_OUTPUT executing an SUB the code will print intermediate results
+//#define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_SUB
 
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"
