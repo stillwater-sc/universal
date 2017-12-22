@@ -41,12 +41,12 @@ void GenerateTestCase(double da, double db) {
 	cout << "reference " << pref << " result " << psum << endl << endl;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Addition failed: ";
@@ -54,7 +54,7 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<6, 3>(INFINITY, INFINITY);
-	GenerateTestCase<6, 3>(0.5, 0.5);
+	GenerateTestCase<5, 0>(1.0, 0.125);
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 0>("Manual Testing", bReportIndividualTestCases), "posit<6,3>", "addition");
@@ -85,8 +85,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "addition");
-
-
 
 #if STRESS_TESTING
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "addition");
