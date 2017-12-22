@@ -6,7 +6,8 @@
 
 #include "stdafx.h"
 
-#include <vector>
+//#define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_CONVERSION
 
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"

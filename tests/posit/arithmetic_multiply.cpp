@@ -6,9 +6,9 @@
 
 #include "stdafx.h"
 
-#include <vector>
-
+// when you define POSIT_VERBOSE_OUTPUT executing an MUL the code will print intermediate results
 //#define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_MUL
 
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"

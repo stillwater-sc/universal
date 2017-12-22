@@ -6,9 +6,9 @@
 
 #include "stdafx.h"
 
-#include <vector>
-
+// when you define POSIT_VERBOSE_OUTPUT executing an DIV the code will print intermediate results
 //#define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_DIV
 
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"
