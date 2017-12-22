@@ -25,17 +25,25 @@ constexpr bool _trace_reciprocate = false;
 
 # else // !POSIT_VERBOSE_OUTPUT
 
-#ifndef POSIT_TRACE_CONVERSION
 // posit decode and conversion
-constexpr bool _trace_decode      = false;
-constexpr bool _trace_conversion  = false;
-constexpr bool _trace_rounding    = false;
+
+#ifndef POSIT_TRACE_DECODED
+constexpr bool _trace_decode = false;
 #else
-// posit decode and conversion
-constexpr bool _trace_decode      = true;
-constexpr bool _trace_conversion  = true;
-constexpr bool _trace_rounding    = true;
-#endif // !POSIT_VERBOSE_CONVERSION
+constexpr bool _trace_decode = true;
+#endif
+
+#ifndef POSIT_TRACE_CONVERSION
+constexpr bool _trace_conversion = false;
+#else
+constexpr bool _trace_conversion = true;
+#endif
+
+#ifndef POSIT_TRACE_ROUNDING
+constexpr bool _trace_rounding = false;
+#else
+constexpr bool _trace_rounding = true;
+#endif
 
 // arithmetic operator tracing
 #ifndef POSIT_TRACE_ADD
