@@ -25,9 +25,10 @@ void BasicOperators() {
 	double minpos = minpos_value<nbits, es>();
 	double maxpos = maxpos_value<nbits, es>();
 
-	p1 = 0;  checkSpecialCases(p1);
-	p1 = 1;  checkSpecialCases(p1);
-	p2 = 2;  checkSpecialCases(p2);
+	p1 = 0;
+	//p1 = (int8_t)-1;  TODO: this triggers an assert because the number of bits of the fraction of the input is smaller than nf in the conversion
+	p1 = 1;
+	p2 = 2;
 
 	p3 = p1 + p2;
 	p4 = p2 - p1;

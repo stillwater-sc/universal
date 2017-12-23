@@ -181,20 +181,53 @@ public:
 		*this = initial_value;
 	}
 	posit<nbits, es>& operator=(int8_t rhs) {
-		*this = int64_t(rhs);
+		setToZero();
+		value<8> v(rhs);
+		if (v.isZero()) {
+			return *this;
+		}
+		else if (v.isNegative()) {
+			convert_to_posit(v);
+			take_2s_complement();
+		}
+		else {
+			convert_to_posit(v);
+		}
 		return *this;
 	}
 	posit<nbits, es>& operator=(int16_t rhs) {
-		*this = int64_t(rhs);
+		setToZero();
+		value<16> v(rhs);
+		if (v.isZero()) {
+			return *this;
+		}
+		else if (v.isNegative()) {
+			convert_to_posit(v);
+			take_2s_complement();
+		}
+		else {
+			convert_to_posit(v);
+		}
 		return *this;
 	}
 	posit<nbits, es>& operator=(int32_t rhs) {
-		*this = int64_t(rhs);
+		setToZero();
+		value<32> v(rhs);
+		if (v.isZero()) {
+			return *this;
+		}
+		else if (v.isNegative()) {
+			convert_to_posit(v);
+			take_2s_complement();
+		}
+		else {
+			convert_to_posit(v);
+		}
 		return *this;
 	}
 	posit<nbits, es>& operator=(int64_t rhs) {
 		setToZero();
-		value<fbits> v(rhs);
+		value<64> v(rhs);
 		if (v.isZero()) {
 			return *this;
 		}
@@ -209,7 +242,7 @@ public:
 	}
 	posit<nbits, es>& operator=(uint64_t rhs) {
 		setToZero();
-		value<fbits> v(rhs);
+		value<64> v(rhs);
 		if (v.isZero()) {
 			return *this;
 		}
@@ -751,9 +784,9 @@ public:
 	// Generalized version
 	template <size_t FBits>
 	void convert_to_posit(const value<FBits>& v) {
-            //convert(v.sign(), v.scale(), v.fraction(), FBits);
-			convert(v.sign(), v.scale(), v.fraction());
-        }
+        //convert(v.sign(), v.scale(), v.fraction(), FBits);
+		convert(v.sign(), v.scale(), v.fraction());
+    }
 
 #if 0   // DEPRECATED
 	// this routine will not allocate 0 or infinity due to the test on (0,minpos], and [maxpos,inf)
@@ -872,6 +905,8 @@ public:
 			unsigned esval = e % (uint32_t(1) << es);
 			exponent = convert_to_bitset<pt_len>(esval);
 			unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
+			// TODO: what needs to be done if nf > fbits?
+			assert(nf <= fbits);
 			// copy the most significant nf fraction bits into fraction
 			for (int i = 0; i < (int)nf; i++) fraction[i] = frac[fbits - nf + i];
 
