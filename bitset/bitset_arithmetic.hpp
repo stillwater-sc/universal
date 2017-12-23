@@ -27,19 +27,32 @@ namespace sw {
 			return false;
 		}
 
-		// add bitsets a and b and return in bitset sum. Return true if there is a carry generated.
+		// add bitsets a and b and return result in bitset sum. Return true if there is a carry generated.
 		template<size_t nbits>
 		bool add_unsigned(std::bitset<nbits> a, std::bitset<nbits> b, std::bitset<nbits + 1>& sum) {
-			uint8_t carry = 0;  // ripple carry
+			bool carry = false;  // ripple carry
 			for (int i = 0; i < nbits; i++) {
-				uint8_t _a = a[i];
-				uint8_t _b = b[i];
-				uint8_t _slice = _a + _b + carry;
-				carry = _slice >> 1;
-				sum[i] = (0x1 & _slice);
+				bool _a = a[i];
+				bool _b = b[i];
+				sum[i] = _a ^ _b ^ carry;
+				carry = (_a & _b) | carry & (_a ^ _b);
 			}
 			sum.set(nbits, carry);
 			return carry;
+		}
+
+		// subtract bitsets a and b and return result in bitset dif. Return true if there is a borrow generated.
+		template<size_t nbits>
+		bool subtract_unsigned(std::bitset<nbits> a, std::bitset<nbits> b, std::bitset<nbits + 1>& dif) {
+			bool borrow = false;  // ripple borrow
+			for (int i = 0; i < nbits; i++) {
+				bool _a = a[i];
+				bool _b = b[i];
+				dif[i] = _a ^ _b ^ borrow;
+				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+			}
+			dif.set(nbits, borrow);
+			return borrow;
 		}
 
 		// copy a bitset into a bigger bitset starting at position indicated by the shift value
