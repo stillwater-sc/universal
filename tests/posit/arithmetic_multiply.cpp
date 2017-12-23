@@ -23,30 +23,34 @@ using namespace sw::unum;
 // for most bugs they are traceable with _trace_conversion and _trace_mul
 template<size_t nbits, size_t es>
 void GenerateTestCase(float fa, float fb) {
+	float fref;
 	posit<nbits, es> pa, pb, pref, pmul;
 	pa = fa;
 	pb = fb;
-	pref = fa * fb;
+	fref = fa * fb;
+	pref = fref;
 	pmul = pa * pb;
-	cout << "reference " << pref << " result " << pmul << endl << endl;
+	cout << "float reference " << fref << ":    reference conversion " << pref << " result " << pmul << endl << endl;
 }
 
 template<size_t nbits, size_t es>
 void GenerateTestCase(double da, double db) {
+	double dref;
 	posit<nbits, es> pa, pb, pref, pmul;
 	pa = da;
 	pb = db;
-	pref = da * db;
+	dref = da * db;
+	pref = dref;
 	pmul = pa * pb;
-	cout << "reference " << pref << " result " << pmul << endl << endl;
+	cout << "double reference " << dref << ":   reference conversion " << pref << " result " << pmul << endl << endl;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {	
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 	
 	std::string tag = "Multiplication failed: ";
@@ -54,12 +58,15 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 
-	float fa, fb;
-	fa = 0.75f; fb = 0.75f;
-	cout << fa << " * " << fb << " = " << fa*fb << endl;
-	GenerateTestCase<4,0>(fa, fb);
+	float fa, fb, fref;
+	fa = 0.5f; fb = 0.5f; fref = 0.25f;
+	GenerateTestCase<3,0>(fa, fb);
 
-	//nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>("Manual Testing: ", true), "posit<4,0>", "multiplication");
+	GeneratePositTable<3, 0>(cout);
+
+	//nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<3,0>", "multiplication");
+	//nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<4,0>", "multiplication");
+	//nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<5,0>", "multiplication");
 
 #else
 
