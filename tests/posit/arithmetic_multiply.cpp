@@ -62,9 +62,9 @@ try {
 	fa = 0.5f; fb = 0.5f; fref = 0.25f;
 	GenerateTestCase<3,0>(fa, fb);
 
-	GeneratePositTable<3, 0>(cout);
+	//GeneratePositTable<3, 0>(cout);
 
-	//nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<3,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<3,0>", "multiplication");
 	//nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<4,0>", "multiplication");
 	//nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<5,0>", "multiplication");
 

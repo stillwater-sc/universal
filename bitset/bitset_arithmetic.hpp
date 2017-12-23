@@ -44,7 +44,7 @@ namespace sw {
 
 		// copy a bitset into a bigger bitset starting at position indicated by the shift value
 		template<size_t src_size, size_t tgt_size>
-		void copy_into(std::bitset<src_size>& src, size_t shift, std::bitset<tgt_size>& tgt) {
+		void copy_into(const std::bitset<src_size>& src, size_t shift, std::bitset<tgt_size>& tgt) {
 			tgt.reset();
 			for (size_t i = 0; i < src_size; i++)
 				tgt.set(i + shift, src[i]);
@@ -157,19 +157,19 @@ namespace sw {
 			return carry;
 		}
 
-		// multiply bitsets a and b and return in bitset mul. Return true if there is a carry generated.
-		template<size_t nbits>
-		void multiply_unsigned(std::bitset<nbits> a, std::bitset<nbits> b, std::bitset<2 * nbits + 1>& accumulator) {
-			bool carry = false;
-			std::bitset<2 * nbits> addend;
-			accumulator.reset();
+		// multiply bitsets a and b and return in bitset result.
+		template<size_t operand_size>
+		void multiply_unsigned(const std::bitset<operand_size>& a, const std::bitset<operand_size>& b, std::bitset<2*operand_size>& result) {
+			constexpr size_t result_size = 2 * operand_size;
+			std::bitset<result_size> addend;
+			result.reset();
 			if (a.test(0)) {
-				copy_into<nbits, 2 * nbits + 1>(b, 0, accumulator);
+				copy_into<operand_size, result_size>(b, 0, result);
 			}
-			for (int i = 1; i < nbits; i++) {
+			for (int i = 1; i < operand_size; i++) {
 				if (a.test(i)) {
-					copy_into<nbits, 2 * nbits>(b, i, addend);
-					accumulate(addend, accumulator);
+					copy_into<operand_size, result_size>(b, i, addend);
+					accumulate(addend, result);
 				}
 			}
 		}
