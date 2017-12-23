@@ -315,6 +315,7 @@ public:
 	}
 	posit<nbits, es>& operator*=(const posit& rhs) {
 		if (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
+		if (_trace_mul) std::cout << *this << " * " << rhs << std::endl;
 		// since we are encoding error conditions as -inf, we need to process -inf condition first
 		if (isInfinite()) {
 			return *this;
@@ -915,24 +916,25 @@ private:
 	// HELPER methods
 	// multiply two values
 	void multiply(const value<fbits>& v1, const value<fbits>& v2, value<mbits>& result) {
+		static_assert(fhbits > 0, "posit configuration does not support multiplication");
+		if (_trace_mul) std::cout << "v1  " << components(v1) << std::endl << "v2  " << components(v2) << std::endl;
 		bool new_sign = v1.sign() ^ v2.sign();
 		int new_scale = v1.scale() + v2.scale();
 		std::bitset<mbits> result_fraction;
 
-		// fractions are without hidden bit, but the mul needs the hidden bit
-		std::bitset<fhbits> operand1 = v1.get_fixed_point();
-		std::bitset<fhbits> operand2 = v2.get_fixed_point();
-	
-		if (fhbits > 0) {
-			multiply_unsigned(operand1, operand2, result_fraction);
-		}
-		if (_trace_mul) std::cout << "result_fraction " << result_fraction << std::endl;
-		// shift hidden bit out
-		while (!result_fraction.test(mbits - 1)) {
-			result_fraction <<= 1;
-		}
-		result_fraction <<= 1;
+		// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
+		std::bitset<fhbits> r1 = v1.get_fixed_point();
+		std::bitset<fhbits> r2 = v2.get_fixed_point();
+		multiply_unsigned(r1, r2, result_fraction);
 
+		if (_trace_mul) std::cout << "r1  " << r1 << std::endl << "r2  " << r2 << std::endl << "res " << result_fraction << std::endl;
+		int hbitAt = findMostSignificantBit(result_fraction);
+		if (hbitAt >= 0) {
+			int shift = mbits - hbitAt;
+			result_fraction <<= shift;    // shift hidden bit out
+			if (_trace_mul) std::cout << "hbitAt " << hbitAt << " shift " << shift << std::endl;
+			new_scale += shift-1;    // mbits is 1 too big to receive an overflow bit
+		}
 		if (_trace_mul) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
 		// TODO: how do you recognize the special case of zero?
 		result.set(new_sign, new_scale, result_fraction, false);

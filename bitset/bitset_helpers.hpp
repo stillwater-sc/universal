@@ -14,6 +14,19 @@
 namespace sw {
 	namespace unum {
 
+		// find the MSB, return position if found, return -1 if no bits are set
+		template<size_t nbits>
+		int findMostSignificantBit(const std::bitset<nbits>& bits) {
+			int msb = -1; // indicative of no bits set
+			for (int i = nbits - 1; i >= 0; i--) {
+				if (bits.test(i)) {
+					msb = i;
+					break;
+				}
+			}
+			return msb;
+		}
+
 		// calculate the 1's complement of a sign-magnitude encoded number
 		template<size_t nbits>
 		std::bitset<nbits> ones_complement(std::bitset<nbits> number) {

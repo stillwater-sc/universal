@@ -562,7 +562,12 @@ try {
 	GenerateTestSample<nbits, es>(NW_QUANDRANT, bPrintIntermediateResults);
 	GenerateTestSample<nbits, es>(SW_QUANDRANT, bPrintIntermediateResults);
 */
-
+	float f1 = 1.125f;
+	float f2 = 1.126f;
+	float f3 = 1.25f;
+	convert_to_posit<nbits, es>(f1, true);
+	convert_to_posit<nbits, es>(f2, true);
+	convert_to_posit<nbits, es>(f3, true);
 	GeneratePositTable<5, 0>(cout);
 
 #else
