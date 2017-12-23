@@ -45,7 +45,7 @@ void GenerateTestCase(double da, double db) {
 	cout << "double reference " << dref << ":   reference conversion " << pref << " result " << pmul << endl << endl;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -58,18 +58,17 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 
-	float fa, fb, fref;
-	fa = 0.5f; fb = 0.5f; fref = 0.25f;
-	GenerateTestCase<3,0>(fa, fb);
+	float fa, fb;
+	fa = 0.25f; fb = 1.0f;
+	GenerateTestCase<4,0>(fa, fb);
 
 	//GeneratePositTable<3, 0>(cout);
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<3,0>", "multiplication");
-	//nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<4,0>", "multiplication");
-	//nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<5,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<4,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<5,0>", "multiplication");
 
 #else
-
 
 	cout << "Posit multiplication validation" << endl;
 
@@ -97,13 +96,14 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "multiplication");
 
 
-
 #if STRESS_TESTING
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<10, 2>(tag, bReportIndividualTestCases), "posit<10,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<10, 3>(tag, bReportIndividualTestCases), "posit<10,1>", "multiplication");
+
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "multiplication");
-
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "multiplication");
 
 #endif  // STRESS_TESTING

@@ -8,6 +8,7 @@
 #include "targetver.h"
 
 #include <stdio.h>
+#include <assert.h>
 //#include <tchar.h>
 #include <cstdint>	// uint8_t, etc.
 #include <string>
