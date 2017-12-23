@@ -144,7 +144,7 @@ public:
 	static constexpr size_t fbits = nbits - 3 - es;  
 	static constexpr size_t abits = fbits + 4;       // size of the addend
 	static constexpr size_t fhbits = fbits + 1;      // size of fraction + hidden bit
-	static constexpr size_t mbits  = 2 * fhbits + 1; // size of the multiplier output
+	static constexpr size_t mbits  = 2 * fhbits;     // size of the multiplier output
 
 	posit<nbits, es>() : _sign(false) {}
 	
@@ -957,19 +957,25 @@ private:
 		int new_scale = v1.scale() + v2.scale();
 		std::bitset<mbits> result_fraction;
 
-		// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
-		std::bitset<fhbits> r1 = v1.get_fixed_point();
-		std::bitset<fhbits> r2 = v2.get_fixed_point();
-		multiply_unsigned(r1, r2, result_fraction);
+		if (fbits > 3) {
+			// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
+			std::bitset<fhbits> r1 = v1.get_fixed_point();
+			std::bitset<fhbits> r2 = v2.get_fixed_point();
+			multiply_unsigned(r1, r2, result_fraction);
 
-		if (_trace_mul) std::cout << "r1  " << r1 << std::endl << "r2  " << r2 << std::endl << "res " << result_fraction << std::endl;
-		int hbitAt = findMostSignificantBit(result_fraction);
-		if (hbitAt >= 0) {
-			int shift = mbits - hbitAt;
-			result_fraction <<= shift;    // shift hidden bit out
-			if (_trace_mul) std::cout << "hbitAt " << hbitAt << " shift " << shift << std::endl;
-			new_scale += shift-1;    // mbits is 1 too big to receive an overflow bit
+			if (_trace_mul) std::cout << "r1  " << r1 << std::endl << "r2  " << r2 << std::endl << "res " << result_fraction << std::endl;
+			int hbitAt = findMostSignificantBit(result_fraction);
+			if (hbitAt >= 0) {
+				int shift = mbits - hbitAt;
+				result_fraction <<= shift;    // shift hidden bit out
+				if (_trace_mul) std::cout << "hbitAt " << hbitAt << " shift " << shift << std::endl;
+				new_scale += shift;
+			}
 		}
+		else {   // posit<3,0> is pure sign and scale
+
+		}
+
 		if (_trace_mul) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
 		// TODO: how do you recognize the special case of zero?
 		result.set(new_sign, new_scale, result_fraction, false);
