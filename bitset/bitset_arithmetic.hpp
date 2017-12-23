@@ -153,7 +153,6 @@ namespace sw {
 				carry = _slice >> 1;
 				accumulator[i] = (0x1 & _slice);
 			}
-			accumulator.set(src_size, carry);
 			return carry;
 		}
 
@@ -169,7 +168,8 @@ namespace sw {
 			for (int i = 1; i < operand_size; i++) {
 				if (a.test(i)) {
 					copy_into<operand_size, result_size>(b, i, addend);
-					accumulate(addend, result);
+					bool carry = accumulate(addend, result);   // we should never have a carry
+					assert(carry == false);
 				}
 			}
 		}

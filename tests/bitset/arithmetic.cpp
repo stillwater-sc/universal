@@ -86,7 +86,7 @@ int ValidateBitsetMultiplication() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	std::bitset<nbits> a, b;
-	std::bitset<2*nbits + 1> bmul, bref;
+	std::bitset<2*nbits> bmul, bref;
 	int ref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -94,7 +94,7 @@ int ValidateBitsetMultiplication() {
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 			b = convert_to_bitset<nbits, unsigned>(j);
 			ref = i * j;
-			bref = convert_to_bitset<2*nbits + 1, unsigned>(ref);
+			bref = convert_to_bitset<2*nbits, unsigned>(ref);
 			multiply_unsigned(a, b, bmul);
 			if (bref != bmul) {
 				nrOfFailedTestCases++;

@@ -957,25 +957,25 @@ private:
 		int new_scale = v1.scale() + v2.scale();
 		std::bitset<mbits> result_fraction;
 
-		if (fbits > 3) {
+		if (nbits > 3) {
 			// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
 			std::bitset<fhbits> r1 = v1.get_fixed_point();
 			std::bitset<fhbits> r2 = v2.get_fixed_point();
 			multiply_unsigned(r1, r2, result_fraction);
 
 			if (_trace_mul) std::cout << "r1  " << r1 << std::endl << "r2  " << r2 << std::endl << "res " << result_fraction << std::endl;
-			int hbitAt = findMostSignificantBit(result_fraction);
-			if (hbitAt >= 0) {
-				int shift = mbits - hbitAt;
-				result_fraction <<= shift;    // shift hidden bit out
-				if (_trace_mul) std::cout << "hbitAt " << hbitAt << " shift " << shift << std::endl;
-				new_scale += shift;
+			// check if the radix point needs to shift
+			int shift = 2;
+			if (result_fraction.test(mbits - 1)) {
+				shift = 1;
+				if (_trace_mul) std::cout << " shift " << shift << std::endl;
+				new_scale += 1;
 			}
+			result_fraction <<= shift;    // shift hidden bit out	
 		}
 		else {   // posit<3,0> is pure sign and scale
 
 		}
-
 		if (_trace_mul) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
 		// TODO: how do you recognize the special case of zero?
 		result.set(new_sign, new_scale, result_fraction, false);
