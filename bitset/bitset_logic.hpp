@@ -39,7 +39,7 @@ namespace sw {
 
 		// this comparison is for unsigned numbers only
 		template<size_t nbits>
-		bool lessThan_unsigned (const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs) {
+		bool operator< (const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs) {
 			// compare remaining bits
 			for (int i = nbits - 1; i >= 0; --i) {
 				if (lhs[i] == 0 && rhs[i] == 1)	return true;
