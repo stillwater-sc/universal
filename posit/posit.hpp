@@ -11,6 +11,7 @@
 #include <limits>
 
 #include "../bitset/bitset_helpers.hpp"
+#include "../bitset/bitset_logic.hpp"
 #include "../bitset/bitset_arithmetic.hpp"
 #include "bit_functions.hpp"
 #include "trace_constants.hpp"
@@ -24,8 +25,12 @@
 namespace sw {
 	namespace unum {
 
+// Forward definitions
+template<size_t nbits, size_t es> class posit;
+template<size_t nbits, size_t es> posit<nbits, es> abs(const posit<nbits, es>& p);
 
-const uint8_t POSIT_ROUND_TO_NEAREST = 1;
+
+// universal information functions to provide details regarding the properties of a posit configuration
 
 // calculate exponential scale of useed
 template<size_t nbits, size_t es>
@@ -106,9 +111,20 @@ double minpos_value() {
 	return pow(double(useed_value<nbits, es>()), double(static_cast<int>(2 - nbits)));
 }
 
-// Forward definitions
-template<size_t nbits, size_t es> class posit;
-template<size_t nbits, size_t es> posit<nbits, es> abs(const posit<nbits, es>& p);
+// this comparison is for a two's complement number only, for example, the raw bits of a posit
+template<size_t nbits>
+bool lessThan(const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs) {
+	// comparison of the sign bit
+	if (lhs[nbits - 1] == 0 && rhs[nbits - 1] == 1)	return false;
+	if (lhs[nbits - 1] == 1 && rhs[nbits - 1] == 0) return true;
+	// sign is equal, compare the remaining bits
+	for (int i = nbits - 2; i >= 0; --i) {
+		if (lhs[i] == 0 && rhs[i] == 1)	return true;
+		if (lhs[i] == 1 && rhs[i] == 0) return false;
+	}
+	// numbers are equal
+	return false;
+}
 
 
 /*
@@ -1027,11 +1043,19 @@ inline bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs)
 template<size_t nbits, size_t es>
 inline bool operator!=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nbits, size_t es>
-inline bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._raw_bits < rhs._raw_bits; }
+inline bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+	if (lhs.isInfinite()) {
+		return false;
+	}
+	if (rhs.isInfinite()) {
+		return true;
+	}
+	return lessThan(lhs._raw_bits, rhs._raw_bits); 
+}
 template<size_t nbits, size_t es>
-inline bool operator> (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return  operator< (rhs, lhs); }
+bool operator> (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return operator< (rhs, lhs); }
 template<size_t nbits, size_t es>
-inline bool operator<=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator> (lhs, rhs); }
+inline bool operator<=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return operator< (lhs, rhs) || operator==(lhs, rhs); }
 template<size_t nbits, size_t es>
 inline bool operator>=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator< (lhs, rhs); }
 

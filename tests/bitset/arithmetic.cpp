@@ -7,6 +7,7 @@
 #include "stdafx.h"
 #include <sstream>
 #include "../tests/test_helpers.hpp"
+#include "../../bitset/bitset_logic.hpp"
 #include "../../bitset/bitset_arithmetic.hpp"
 #include "../../bitset/bitset_helpers.hpp"
 

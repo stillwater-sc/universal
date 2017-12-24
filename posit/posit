@@ -7,8 +7,6 @@
 #ifndef _POSIT_
 #define _POSIT_
 
-
-#include "../bitset/bitset_helpers.hpp"
 #include "posit.hpp"
 #include "posit_manipulators.hpp"
 #include "posit_functions.hpp"
