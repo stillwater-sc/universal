@@ -88,7 +88,7 @@ template<size_t nbits>
 int ValidateBitsetSubtraction() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	bool carry;
+	bool borrow = false;
 	std::bitset<nbits> a, b;
 	std::bitset<nbits + 1> bsub, bref;
 	int ref;
@@ -99,7 +99,7 @@ int ValidateBitsetSubtraction() {
 			b = convert_to_bitset<nbits, unsigned>(j);
 			ref = i - j;
 			bref = convert_to_bitset<nbits + 1, unsigned>(ref);
-			carry = subtract_unsigned(a, b, bsub);
+			borrow = subtract_unsigned(a, b, bsub);
 			if (bref != bsub) {
 				nrOfFailedTestCases++;
 			}
@@ -208,13 +208,15 @@ try {
 
 #if MANUAL_TESTING
 	const size_t nbits = 4;
-	std::bitset<nbits> a = convert_to_bitset<nbits, uint32_t>(11);
-	std::bitset<nbits> b = convert_to_bitset<nbits, uint32_t>(4);
+	std::bitset<nbits> a = convert_to_bitset<nbits, uint32_t>(4);
+	std::bitset<nbits> b = convert_to_bitset<nbits, uint32_t>(11);
 	std::bitset<nbits+1> diff;
 	bool borrow = subtract_unsigned(a, b, diff);
 	cout << diff << " borrow " << borrow << endl;
 	bool carry = add_unsigned(a, twos_complement(b), diff);
 	cout << diff << " carry  " << carry << endl;
+
+	//ValidateBitsetSubtraction<3>();
 
 #else
 
