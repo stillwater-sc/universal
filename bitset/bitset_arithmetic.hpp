@@ -12,21 +12,6 @@ namespace sw {
 	namespace unum {
 
 
-		// this comparison is for a two's complement number only
-		template<size_t nbits>
-		bool operator< (const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs) {
-			// comparison of the sign bit
-			if (lhs[nbits - 1] == 0 && rhs[nbits - 1] == 1)	return false;
-			if (lhs[nbits - 1] == 1 && rhs[nbits - 1] == 0) return true;
-			// sign is equal, compare the remaining bits
-			for (int i = nbits - 2; i >= 0; --i) {
-				if (lhs[i] == 0 && rhs[i] == 1)	return true;
-				if (lhs[i] == 1 && rhs[i] == 0) return false;
-			}
-			// numbers are equal
-			return false;
-		}
-
 		// add bitsets a and b and return result in bitset sum. Return true if there is a carry generated.
 		template<size_t nbits>
 		bool add_unsigned(std::bitset<nbits> a, std::bitset<nbits> b, std::bitset<nbits + 1>& sum) {
