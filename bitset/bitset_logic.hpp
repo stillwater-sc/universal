@@ -49,7 +49,41 @@ namespace sw {
 			return false;
 		}
 
+		// this comparison is for unsigned numbers only
+		template<size_t nbits>
+		bool operator<= (const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs) {
+			// compare remaining bits
+			for (int i = nbits - 1; i >= 0; --i) {
+				if (lhs[i] == 0 && rhs[i] == 1)	return true;
+				if (lhs[i] == 1 && rhs[i] == 0) return false;
+			}
+			// numbers are equal
+			return true;
+		}
 
+		// this comparison is for unsigned numbers only
+		template<size_t nbits>
+		bool operator> (const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs) {
+			// compare remaining bits
+			for (int i = nbits - 1; i >= 0; --i) {
+				if (lhs[i] == 0 && rhs[i] == 1)	return false;
+				if (lhs[i] == 1 && rhs[i] == 0) return true;
+			}
+			// numbers are equal
+			return false;
+		}
+
+		// this comparison is for unsigned numbers only
+		template<size_t nbits>
+		bool operator>= (const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs) {
+			// compare remaining bits
+			for (int i = nbits - 1; i >= 0; --i) {
+				if (lhs[i] == 0 && rhs[i] == 1)	return false;
+				if (lhs[i] == 1 && rhs[i] == 0) return true;
+			}
+			// numbers are equal
+			return true;
+		}
 
 	} // namespace unum
 
