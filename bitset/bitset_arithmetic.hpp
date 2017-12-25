@@ -139,7 +139,7 @@ namespace sw {
 		};
 
 
-
+		// accumulate the addend to a running accumulator
 		template<size_t src_size, size_t tgt_size>
 		bool accumulate(const std::bitset<src_size>& addend, std::bitset<tgt_size>& accumulator) {
 			bool carry = 0;  // ripple carry
@@ -150,18 +150,6 @@ namespace sw {
 				carry = (_a & _b) | carry & (_a ^ _b);
 			}
 			return carry;
-		}
-
-		template<size_t src_size, size_t tgt_size>
-		bool subtract(const std::bitset<src_size>& subtractand, std::bitset<tgt_size>& accumulator) {
-			bool borrow = 0;  // ripple carry
-			for (int i = 0; i < src_size; i++) {
-				bool _a = subtractand[i];
-				bool _b = accumulator[i];
-				accumulator[i] = _a ^ _b ^ borrow;
-				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
-			}
-			return borrow;
 		}
 
 		// multiply bitsets a and b and return result in bitset result.
@@ -182,6 +170,20 @@ namespace sw {
 			}
 		}
 
+
+		// subtract a subtractand from a running accumulator
+		template<size_t src_size, size_t tgt_size>
+		bool subtract(std::bitset<tgt_size>& accumulator, const std::bitset<src_size>& subtractand) {
+			bool borrow = 0;  // ripple carry
+			for (int i = 0; i < src_size; i++) {
+				bool _a = accumulator[i];
+				bool _b = subtractand[i];
+				accumulator[i] = _a ^ _b ^ borrow;
+				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+			}
+			return borrow;
+		}
+
 		// divide bitsets a and b and return result in bitset result.
 		template<size_t operand_size>
 		void divide_unsigned(const std::bitset<operand_size>& a, const std::bitset<operand_size>& b, std::bitset<2 * operand_size>& result) {
@@ -189,20 +191,28 @@ namespace sw {
 			std::bitset<result_size> subtractand, accumulator;
 			result.reset();
 			copy_into<operand_size, result_size>(a, operand_size, accumulator);
-			for (int i = operand_size-1; i >= 0; --i) {
-				copy_into<operand_size, result_size>(b, i, subtractand);
-				std::cout << "accumulator " << accumulator << std::endl;
-				std::cout << "subtractand " << subtractand << std::endl;
-				if (subtractand < accumulator) {
-					copy_into<operand_size, result_size>(b, i, subtractand);
-					bool borrow = subtract(subtractand, accumulator);
-					//assert(borrow == false);
-					result.set(i);
+			int msb = findMostSignificantBit(b);
+			if (msb < 0) {
+				// dividing by 0
+			}
+			else {
+				int shift = operand_size - msb - 1;
+				// prepare the subtractand
+				copy_into<operand_size, result_size>(b, operand_size, subtractand);
+				subtractand <<= shift;
+				for (int i = result_size-msb-1; i >= operand_size; --i) {
+					//std::cout << "accumulator " << accumulator << std::endl;
+					//std::cout << "subtractand " << subtractand << std::endl;
+					if (subtractand <= accumulator) {
+						bool borrow = subtract(accumulator, subtractand);
+						//assert(borrow == false);
+						result.set(i);
+					}
+					else {
+						result.reset(i);
+					}
+					subtractand >>= 1;
 				}
-				else {
-					result.reset(i);
-				}
-				std::cout << "result      " << result << std::endl;
 			}
 		}
 

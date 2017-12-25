@@ -155,10 +155,8 @@ int ValidateBitsetDivision() {
 			divide_unsigned(a, b, bdiv);
 			if (bref != bdiv) {
 				nrOfFailedTestCases++;
+				std::cout << "reference " << ref << " actual " << bref << " bdiv " << bdiv << std::endl;
 			}
-			//cout << "ref  " << ref << " = " << i << " * " << j << endl;
-			//cout << "bref " << bref << endl;
-			//cout << "bdiv " << bdiv << endl;
 		}
 	}
 	return nrOfFailedTestCases;
@@ -224,7 +222,7 @@ int VerifyAccumulation() {
 	return nrOfFailedTestCases;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -235,23 +233,27 @@ try {
 
 #if MANUAL_TESTING
 	const size_t nbits = 8;
-	std::bitset<nbits> a = convert_to_bitset<nbits, uint32_t>(20);
-	std::bitset<nbits> b = convert_to_bitset<nbits, uint32_t>(4);
+	std::bitset<nbits> a = convert_to_bitset<nbits, uint32_t>(55);
+	std::bitset<nbits> b = convert_to_bitset<nbits, uint32_t>(5);
+	std::bitset<nbits> r = convert_to_bitset<nbits, uint32_t>(11);
 	std::bitset<nbits+1> sum, diff;
-	bool borrow = subtract_unsigned(a, b, diff);
-	cout << diff << " borrow " << borrow << endl;
-	bool carry = add_unsigned(a, twos_complement(b), diff);
-	cout << diff << " carry  " << carry << endl;
+	//bool borrow = subtract_unsigned(a, b, diff);
+	//cout << diff << " borrow " << borrow << endl;
+	//bool carry = add_unsigned(a, twos_complement(b), diff);
+	//cout << diff << " carry  " << carry << endl;
 	std::bitset<2 * nbits> mul, div;
-	multiply_unsigned(a, b, mul);
-	cout << "mul " << mul << endl;
-	//divide_unsigned(a, b, div);
-	//cout << "div " << div << endl;
+	//multiply_unsigned(a, b, mul);
+	//cout << "mul " << mul << endl;
+	cout << "a   " << a << endl;
+	cout << "b   " << b << endl;
+	cout << "ref " << r << endl;
+	divide_unsigned(a, b, div);
+	cout << "div " << div << endl;
 
 	//nrOfFailedTestCases += ReportTestResult(ValidateBitsetAddition<3>(), "bitset<3>", "+");
 	//nrOfFailedTestCases += ReportTestResult(ValidateBitsetSubtraction<3>(), "bitset<3>", "-");
 	//nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<3>(), "bitset<3>", "*");
-	//nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<3>(), "bitset<3>", "/");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<3>(), "bitset<3>", "/");
 
 #else
 
