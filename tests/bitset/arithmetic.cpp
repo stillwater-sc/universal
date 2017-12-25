@@ -152,7 +152,8 @@ int ValidateBitsetDivision() {
 			b = convert_to_bitset<nbits, unsigned>(j);
 			ref = i / j;
 			bref = convert_to_bitset<2 * nbits, unsigned>(ref);
-			divide_unsigned(a, b, bdiv);
+			divide_unsigned(a, b, bdiv); // integer divide with 2nbits with radix point at nbits
+			bdiv >>= nbits;   // integer divide so shift right to radix point
 			if (bref != bdiv) {
 				nrOfFailedTestCases++;
 				std::cout << "reference " << ref << " actual " << bref << " bdiv " << bdiv << std::endl;
@@ -222,7 +223,7 @@ int VerifyAccumulation() {
 	return nrOfFailedTestCases;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -237,22 +238,22 @@ try {
 	std::bitset<nbits> b = convert_to_bitset<nbits, uint32_t>(5);
 	std::bitset<nbits> r = convert_to_bitset<nbits, uint32_t>(11);
 	std::bitset<nbits+1> sum, diff;
-	//bool borrow = subtract_unsigned(a, b, diff);
-	//cout << diff << " borrow " << borrow << endl;
-	//bool carry = add_unsigned(a, twos_complement(b), diff);
-	//cout << diff << " carry  " << carry << endl;
+	bool borrow = subtract_unsigned(a, b, diff);
+	cout << diff << " borrow " << borrow << endl;
+	bool carry = add_unsigned(a, twos_complement(b), diff);
+	cout << diff << " carry  " << carry << endl;
 	std::bitset<2 * nbits> mul, div;
-	//multiply_unsigned(a, b, mul);
-	//cout << "mul " << mul << endl;
+	multiply_unsigned(a, b, mul);
+	cout << "mul " << mul << endl;
 	cout << "a   " << a << endl;
 	cout << "b   " << b << endl;
 	cout << "ref " << r << endl;
 	divide_unsigned(a, b, div);
 	cout << "div " << div << endl;
 
-	//nrOfFailedTestCases += ReportTestResult(ValidateBitsetAddition<3>(), "bitset<3>", "+");
-	//nrOfFailedTestCases += ReportTestResult(ValidateBitsetSubtraction<3>(), "bitset<3>", "-");
-	//nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<3>(), "bitset<3>", "*");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetAddition<3>(), "bitset<3>", "+");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetSubtraction<3>(), "bitset<3>", "-");
+	nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<3>(), "bitset<3>", "*");
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<3>(), "bitset<3>", "/");
 
 #else
@@ -289,9 +290,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<7>(), "bitset<7>", "*");
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<8>(), "bitset<8>", "*");
 
-
-#if STRESS_TESTING
-
 	cout << "Arithmetic: division" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<3>(), "bitset<3>", "/");
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<4>(), "bitset<4>", "/");
@@ -299,6 +297,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<6>(), "bitset<6>", "/");
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<7>(), "bitset<7>", "/");
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<8>(), "bitset<8>", "/");
+
+#if STRESS_TESTING
+
 
 #endif // STRESS_TESTING
 
