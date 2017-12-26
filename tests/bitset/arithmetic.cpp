@@ -229,7 +229,7 @@ int main(int argc, char** argv)
 try {
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Conversion failed";
+	std::string tag = "Bitset arithmetic operation failed";
 
 #if MANUAL_TESTING
 	const size_t nbits = 8;
