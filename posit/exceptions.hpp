@@ -26,12 +26,6 @@ struct rbits_too_large
     rbits_too_large(const std::string& error = "Number of remaining bits too large for this fraction.") : std::runtime_error(error) {}
 };
 
-struct cut_off_leading_bit
-  : std::runtime_error
-{
-    cut_off_leading_bit(const std::string& error = "A leading significat bit is cut off.") : std::runtime_error(error) {}
-};
-
 struct round_off_all
   : std::runtime_error
 {
