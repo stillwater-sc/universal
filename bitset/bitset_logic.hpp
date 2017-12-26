@@ -6,7 +6,7 @@
 
 #include <bitset>
 
-#include "../posit/exceptions.hpp"
+#include "exceptions.hpp"
 
 namespace sw {
 	namespace unum {

@@ -143,7 +143,7 @@ int ValidateBitsetDivision() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	std::bitset<nbits> a, b;
-	std::bitset<2 * nbits> bdiv, bref;
+	std::bitset<nbits> bdiv, bref;
 	int ref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -151,9 +151,8 @@ int ValidateBitsetDivision() {
 		for (unsigned j = 1; j < NR_TEST_CASES; j++) {
 			b = convert_to_bitset<nbits, unsigned>(j);
 			ref = i / j;
-			bref = convert_to_bitset<2 * nbits, unsigned>(ref);
-			divide_unsigned(a, b, bdiv); // integer divide with 2nbits with radix point at nbits
-			bdiv >>= nbits;   // integer divide so shift right to radix point
+			bref = convert_to_bitset<nbits, unsigned>(ref);
+			integer_divide_unsigned(a, b, bdiv);
 			if (bref != bdiv) {
 				nrOfFailedTestCases++;
 				std::cout << "reference " << ref << " actual " << bref << " bdiv " << bdiv << std::endl;
@@ -242,13 +241,14 @@ try {
 	cout << diff << " borrow " << borrow << endl;
 	bool carry = add_unsigned(a, twos_complement(b), diff);
 	cout << diff << " carry  " << carry << endl;
-	std::bitset<2 * nbits> mul, div;
+	std::bitset<2 * nbits> mul;
 	multiply_unsigned(a, b, mul);
 	cout << "mul " << mul << endl;
 	cout << "a   " << a << endl;
 	cout << "b   " << b << endl;
 	cout << "ref " << r << endl;
-	divide_unsigned(a, b, div);
+	std::bitset<nbits> div;
+	integer_divide_unsigned(a, b, div);
 	cout << "div " << div << endl;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetAddition<3>(), "bitset<3>", "+");
@@ -291,6 +291,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<8>(), "bitset<8>", "*");
 
 	cout << "Arithmetic: division" << endl;
+	std::bitset<8> a, b, c;
+
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<3>(), "bitset<3>", "/");
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<4>(), "bitset<4>", "/");
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<5>(), "bitset<5>", "/");
