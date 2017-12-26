@@ -787,13 +787,13 @@ public:
 	// step up to the next posit in a lexicographical order
 	void increment_posit() {
 		std::bitset<nbits> raw(_raw_bits);
-		increment_twos_complement(raw);
+		increment_bitset(raw);
 		decode(raw);
 	}
 	// step down to the previous posit in a lexicographical order
 	void decrement_posit() {
 		std::bitset<nbits> raw(_raw_bits);
-		decrement_twos_complement(raw);
+		decrement_bitset(raw);
 		decode(raw);
 	}
 	

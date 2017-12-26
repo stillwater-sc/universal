@@ -11,16 +11,17 @@
 namespace sw {
 	namespace unum {
 
+		//////////////////////////////////////////////////////////////////////////////////////
+		// increment and decrement
 
 		// increment the input bitset in place, and return true if there is a carry generated.
 		template<size_t nbits>
 		bool increment_bitset(std::bitset<nbits>& number) {
 			bool carry = true;  // ripple carry
-			bool _a;
 			for (int i = 0; i < nbits; i++) {
 				bool _a = number[i];
 				number[i] = _a ^ carry;
-				carry = (_a & false) | carry & (_a ^ false);
+				carry = carry & (_a ^ false);
 			}
 			return carry;
 		}
@@ -33,50 +34,30 @@ namespace sw {
 		// [1 1 0 0] nrBits = 3 is the word [1 1 0], etc.
 		template<size_t nbits>
 		bool increment_unsigned(std::bitset<nbits>& number, int nrBits = nbits - 1) {
-			uint8_t carry = 1;  // ripple carry
-			uint8_t _a, _slice;
+			bool carry = 1;  // ripple carry
 			int lsb = nbits - nrBits;
 			for (int i = lsb; i < nbits; i++) {
-				_a = number[i];
-				_slice = _a + 0 + carry;
-				carry = _slice >> 1;
-				number[i] = (0x1 & _slice);
+				bool _a = number[i];
+				number[i] = _a ^ carry;
+				carry = (_a & false) | carry & (_a ^ false);
 			}
 			return carry;
 		}
 
-		// increment the input bitset in place, assuming it is representing a 2's complement number
+		// decrement the input bitset in place, and return true if there is a borrow generated.
 		template<size_t nbits>
-		void increment_twos_complement_(std::bitset<nbits>& number) {
-			uint8_t carry = 1;  // ripple carry
-			uint8_t _a, _slice;
-			for (size_t i = 0; i < nbits; i++) {
-				_a = number[i];
-				_slice = _a + 0 + carry;
-				carry = _slice >> 1;
-				number[i] = (0x1 & _slice);
-			}
-			// ignore any carry bits
-		}
-
-		// decrement the input bitset in place, assuming it is representing a 2's complement number
-		template<size_t nbits>
-		void decrement_twos_complement(std::bitset<nbits>& number) {
-			std::bitset<nbits> minus_one;
-			minus_one.set();
-			uint8_t carry = 0;  // ripple carry
-			uint8_t _a, _b, _slice;
+		bool decrement_bitset(std::bitset<nbits>& number) {
+			bool borrow = true;
 			for (int i = 0; i < nbits; i++) {
-				_a = number[i];
-				_b = minus_one[i];
-				_slice = _a + _b + carry;
-				carry = _slice >> 1;
-				number[i] = (0x1 & _slice);
+				bool _a = number[i];
+				number[i] = _a ^ borrow;
+				borrow = (!(!_a ^ true) & borrow);
 			}
-			// ignore any carry bits
+			return borrow;
 		}
 
-
+		//////////////////////////////////////////////////////////////////////////////////////
+		// add and subtract
 
 		// add bitsets a and b and return result in bitset sum. Return true if there is a carry generated.
 		template<size_t nbits>
@@ -138,6 +119,9 @@ namespace sw {
 			return false;
 		}
 
+		////////////////////////////////////////////////////////////////////////////////////////
+		// bitset copy and slice operators
+
 		// copy a bitset into a bigger bitset starting at position indicated by the shift value
 		template<size_t src_size, size_t tgt_size>
 		void copy_into(const std::bitset<src_size>& src, size_t shift, std::bitset<tgt_size>& tgt) {
@@ -156,14 +140,6 @@ namespace sw {
 				tgt.set(i + shift, src[i]);
 		}
 
-		// truncate right-side
-		template<size_t src_size, size_t tgt_size>
-		void truncate(std::bitset<src_size>& src, std::bitset<tgt_size>& tgt) {
-			tgt.reset();
-			for (size_t i = 0; i < tgt_size; i++)
-				tgt.set(tgt_size - 1 - i, src[src_size - 1 - i]);
-		}
-
 		template<size_t from, size_t to, size_t src_size>
 		std::bitset<to - from> fixed_subset(const std::bitset<src_size>& src) {
 			static_assert(from <= to, "from cannot be larger than to");
@@ -175,6 +151,8 @@ namespace sw {
 			return result;
 		}
 
+		//////////////////////////////////////////////////////////////////////////////////////
+		// multiply and divide
 
 		// accumulate the addend to a running accumulator
 		template<size_t src_size, size_t tgt_size>
@@ -284,6 +262,18 @@ namespace sw {
 			}
 		}
 
+		//////////////////////////////////////////////////////////////////////////////////////
+		// truncating and rounding
+
+		// truncate right-side
+		template<size_t src_size, size_t tgt_size>
+		void truncate(std::bitset<src_size>& src, std::bitset<tgt_size>& tgt) {
+			tgt.reset();
+			for (size_t i = 0; i < tgt_size; i++)
+				tgt.set(tgt_size - 1 - i, src[src_size - 1 - i]);
+		}
+
+		// round
 		template<size_t tgt_size, size_t src_size>
 		struct round_t
 		{
