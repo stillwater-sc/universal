@@ -251,6 +251,14 @@ try {
 	integer_divide_unsigned(a, b, div);
 	cout << "div " << div << endl;
 
+	std::bitset<2 * nbits+1> div_with_fraction;
+	a = convert_to_bitset<nbits, uint32_t>(0x80);  // representing 1.0000000
+	b = convert_to_bitset<nbits, uint32_t>(0x81);  // representing 1.0000001
+	divide_with_fraction(a, b, div_with_fraction);
+	cout << "a   " << a << endl;
+	cout << "b   " << b << endl;
+	cout << "div with fraction " << div_with_fraction << endl;
+
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetAddition<3>(), "bitset<3>", "+");
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetSubtraction<3>(), "bitset<3>", "-");
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetMultiplication<3>(), "bitset<3>", "*");
@@ -292,6 +300,12 @@ try {
 
 	cout << "Arithmetic: division" << endl;
 	std::bitset<8> a, b, c;
+	try {
+		integer_divide_unsigned(a, b, c); // divide by zero
+	}
+	catch (runtime_error& e) {
+		cout << "Properly caught exception: " << e.what() << endl;
+	}
 
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<3>(), "bitset<3>", "/");
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<4>(), "bitset<4>", "/");
