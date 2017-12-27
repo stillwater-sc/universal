@@ -13,6 +13,7 @@
 #include "../bitset/bitset_helpers.hpp"
 #include "../bitset/bitset_logic.hpp"
 #include "../bitset/bitset_arithmetic.hpp"
+#include "exceptions.hpp"
 #include "bit_functions.hpp"
 #include "trace_constants.hpp"
 #include "value.hpp"
@@ -393,20 +394,21 @@ public:
 	posit<nbits, es>& operator/=(const posit& rhs) {
 		if (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 		// since we are encoding error conditions as -inf, we need to process -inf condition first
-		if (isInfinite()) {
-			return *this;
-		}
-		else if (rhs.isInfinite()) {
-			*this = rhs;
-			return *this;
-		}
-		else if (isZero()) {
-			return *this;
-		}
-		else if (rhs.isZero()) {
+		if (rhs.isZero()) {
 			setToInfinite();
 			return *this;
+			//throw divide_by_zero{};
 		}
+		
+		if (isZero() || isInfinite()) {
+			return *this;
+		}
+
+		if (rhs.isInfinite()) {
+			setToZero();
+			return *this;
+		}
+
 		value<fbits> v1, v2;
 		v1 = convert_to_scientific_notation();
 		posit<nbits, es> reciprocal = rhs.reciprocate();
@@ -437,14 +439,29 @@ public:
 
 	posit<nbits, es> reciprocate() const {
 		if (_trace_reciprocate) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
+		posit<nbits, es> p;
 		// special case of inf
 		if (isInfinite()) {
-			return posit<nbits, es>();
+			p.setToZero();
+			return p;
 		}
+		if (isZero()) {
+			p.setToInfinite();
+			return p;
+		}
+		// compute the reciprocal
 		bool old_sign = _sign;
-		std::bitset<nbits> raw_bits = twos_complement(_raw_bits);
-		raw_bits.set(nbits-1, old_sign);		
-		return posit<nbits, es>(raw_bits);
+		std::bitset<nbits> raw_bits;
+		if (isPowerOf2()) {
+			raw_bits = twos_complement(_raw_bits);
+			raw_bits.set(nbits-1, old_sign);
+			p.set(raw_bits);
+		}
+		else {
+			// TODO: remove short cut and replace with bit operations
+			p = 1.0 / to_double();
+		}
+		return p;
 	}
 	// SELECTORS
 	bool isInfinite() const {
@@ -458,6 +475,9 @@ public:
 	}
 	bool isPositive() const {
 		return !_sign;
+	}
+	bool isPowerOf2() const {
+		return _fraction.none();
 	}
 
 	int	   sign_value() const {

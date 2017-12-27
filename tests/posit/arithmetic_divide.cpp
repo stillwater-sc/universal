@@ -57,6 +57,7 @@ try {
 	GenerateTestCase<5, 0>(4.000f,  0.5f);
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>("Manual Testing", true), "posit<3,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 0>("Manual Testing", true), "posit<4,0>", "division");
 
 #else
 
