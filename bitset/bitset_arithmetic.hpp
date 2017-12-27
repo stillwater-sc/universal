@@ -215,11 +215,8 @@ namespace sw {
 				subtractand = b;
 				subtractand <<= shift;
 				for (int i = operand_size-msb-1; i >= 0; --i) {
-					//std::cout << "accumulator " << accumulator << std::endl;
-					//std::cout << "subtractand " << subtractand << std::endl;
 					if (subtractand <= accumulator) {
 						bool borrow = subtract(accumulator, subtractand);
-						//assert(borrow == false);
 						result.set(i);
 					}
 					else {
@@ -230,13 +227,14 @@ namespace sw {
 			}
 		}
 
-		// divide bitsets a and b and return result in bitset result.
-		template<size_t operand_size>
-		void divide_unsigned_(const std::bitset<operand_size>& a, const std::bitset<operand_size>& b, std::bitset<2 * operand_size>& result) {
-			constexpr size_t result_size = 2 * operand_size;
+		// divide bitsets a and b and return result in bitset result. 
+		// By providing more bits in the result, the algorithm will fill these with fraction bits if available.
+		// Radix point must be maintained by calling function.
+		template<size_t operand_size, size_t result_size>
+		void divide_with_fraction(const std::bitset<operand_size>& a, const std::bitset<operand_size>& b, std::bitset<result_size>& result) {
 			std::bitset<result_size> subtractand, accumulator;
 			result.reset();
-			copy_into<operand_size, result_size>(a, operand_size, accumulator);
+			copy_into<operand_size, result_size>(a, result_size - operand_size, accumulator);
 			int msb = findMostSignificantBit(b);
 			if (msb < 0) {
 				throw integer_divide_by_zero{};
@@ -244,11 +242,11 @@ namespace sw {
 			else {
 				int shift = operand_size - msb - 1;
 				// prepare the subtractand
-				copy_into<operand_size, result_size>(b, operand_size, subtractand);
+				copy_into<operand_size, result_size>(b, result_size - operand_size, subtractand);
 				subtractand <<= shift;
-				for (int i = result_size - msb - 1; i >= operand_size; --i) {
-					//std::cout << "accumulator " << accumulator << std::endl;
-					//std::cout << "subtractand " << subtractand << std::endl;
+				for (int i = result_size - msb - 1; i >= 0; --i) {
+					std::cout << "accumulator " << accumulator << std::endl;
+					std::cout << "subtractand " << subtractand << std::endl;
 					if (subtractand <= accumulator) {
 						bool borrow = subtract(accumulator, subtractand);
 						//assert(borrow == false);
@@ -257,6 +255,7 @@ namespace sw {
 					else {
 						result.reset(i);
 					}
+					std::cout << "result      " << result << std::endl;
 					subtractand >>= 1;
 				}
 			}
