@@ -8,6 +8,12 @@
 #include <exception>
 #include <string>
 
+struct divide_by_zero
+	: std::runtime_error
+{
+	divide_by_zero(const std::string& error = "Divide by zero.") : std::runtime_error(error) {}
+};
+
 struct shift_too_large
   : std::runtime_error
 {

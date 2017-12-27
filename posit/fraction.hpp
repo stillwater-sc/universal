@@ -25,17 +25,18 @@ public:
 	fraction& operator=(const fraction& f) = default;
 	fraction& operator=(fraction&& f) = default;
 	
+	// selectors
+	bool none() const {	return _Bits.none(); }
+	unsigned int nrBits() const { return _NrOfBits;	}
+	// TODO: this fails when fbits > 64 and we cannot represent the fraction by a 64bit unsigned integer
+	double value() const { return double(_Bits.to_ullong()) / double(uint64_t(1) << (fbits));	}
+
+	// modifiers
 	void reset() {
 		_NrOfBits = 0;
 		_Bits.reset();
 	}
-	unsigned int nrBits() const {
-		return _NrOfBits;
-	}
-	double value() const {
-		// TODO: this fails when fbits > 64 and we cannot represent the fraction by a 64bit unsigned integer
-		return double(_Bits.to_ullong()) / double(uint64_t(1) << (fbits));
-	}
+
 	std::bitset<fbits> get() const {
 		return _Bits;
 	}
