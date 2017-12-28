@@ -251,13 +251,17 @@ try {
 	integer_divide_unsigned(a, b, div);
 	cout << "div " << div << endl;
 
-	std::bitset<2 * nbits+1> div_with_fraction;
+	constexpr size_t result_size = 2 * nbits + 3;
+	std::bitset<result_size> div_with_fraction;
 	a = convert_to_bitset<nbits, uint32_t>(0x80);  // representing 1.0000000
-	b = convert_to_bitset<nbits, uint32_t>(0x81);  // representing 1.0000001
+	b = convert_to_bitset<nbits, uint32_t>(0xA0);  // representing 1.0100000
 	divide_with_fraction(a, b, div_with_fraction);
-	cout << "a   " << a << endl;
-	cout << "b   " << b << endl;
+	cout << "a      " << a << endl;
+	cout << "b      " << b << endl;
 	cout << "div with fraction " << div_with_fraction << endl;
+	// radix point comes out at at result_size - operand_size
+	div_with_fraction <<= result_size - nbits;
+	cout << "result " << div_with_fraction << endl;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetAddition<3>(), "bitset<3>", "+");
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetSubtraction<3>(), "bitset<3>", "-");

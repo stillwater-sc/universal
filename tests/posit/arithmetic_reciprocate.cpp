@@ -27,7 +27,7 @@ void GenerateTestCase(float fa) {
 	pa = fa;
 	preference = 1.0f / fa;
 	preciprocal = pa.reciprocate();
-	cout << "reference " << preference << " result " << preciprocal << endl << endl;
+	cout << "input " << fa << " reference 1/fa " << preference << " result " << preciprocal << endl << endl;
 }
 
 template<size_t nbits, size_t es>
@@ -36,11 +36,11 @@ void GenerateTestCase(double da) {
 	pa = da;
 	preference = 1.0 / da;
 	preciprocal = pa.reciprocate();
-	cout << "reference " << preference << " result " << preciprocal << endl << endl;
+	cout << "input " << da << " reference " << preference << " result " << preciprocal << endl << endl;
 }
 
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -51,12 +51,16 @@ try {
 	std::string tag = "Reciprocation failed: ";
 
 #if MANUAL_TESTING
+
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<5, 0>(0.625f);
 	GenerateTestCase<5, 0>(0.75f);
 	GenerateTestCase<5, 0>(1.25f);
 	GenerateTestCase<5, 0>(1.5f);
-	//nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 0>("Manual testing", true), "posit<5,0>", "reciprocation");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 0>("Manual testing", true), "posit<5,0>", "reciprocation");
+
+
 #else
 
 

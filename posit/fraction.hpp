@@ -115,6 +115,7 @@ public:
 		return running;
 	}
 
+#if 0
 	/// Copy the bits into the fraction. Rounds away from zero. TODO: probably superseded by assign	
 	bool assign_fraction_(unsigned int remaining_bits, std::bitset<fbits>& _fraction) {
 		bool round_up = false;
@@ -135,7 +136,8 @@ public:
 		}
 		return round_up;
 	}
-	
+#endif 
+
 	/// Normalized shift (e.g., for addition).
 	template <size_t Size>
 	std::bitset<Size> nshift(long shift) const 
