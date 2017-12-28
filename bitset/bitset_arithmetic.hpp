@@ -245,8 +245,8 @@ namespace sw {
 				copy_into<operand_size, result_size>(b, result_size - operand_size, subtractand);
 				subtractand <<= shift;
 				for (int i = result_size - msb - 1; i >= 0; --i) {
-					std::cout << "accumulator " << accumulator << std::endl;
-					std::cout << "subtractand " << subtractand << std::endl;
+					//std::cout << "accumulator " << accumulator << std::endl;
+					//std::cout << "subtractand " << subtractand << std::endl;
 					if (subtractand <= accumulator) {
 						bool borrow = subtract(accumulator, subtractand);
 						//assert(borrow == false);
@@ -255,7 +255,7 @@ namespace sw {
 					else {
 						result.reset(i);
 					}
-					std::cout << "result      " << result << std::endl;
+					//std::cout << "result      " << result << std::endl;
 					subtractand >>= 1;
 				}
 			}
