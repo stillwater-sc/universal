@@ -1,6 +1,10 @@
 # Build directory
 build
 
+# CLion IDE config caches
+.idea
+cmake-build-debug
+
 # VS IDE config caches
 .vs
 
