@@ -25,3 +25,9 @@ struct iteration_bound_too_large
 {
 	iteration_bound_too_large(const std::string& error = "Iteration bound too large") : std::runtime_error(error) {}
 };
+
+struct round_off_all
+	: std::runtime_error
+{
+	round_off_all(const std::string& error = "Cannot round off all bits (or more).") : std::runtime_error(error) {}
+};
