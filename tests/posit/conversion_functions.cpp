@@ -412,7 +412,7 @@ void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 	if (bPrintIntermediateSteps) cout << "nf       = " << nf << endl;
 	fraction<23> _fraction;
-	bool sb = _fraction.assign(nf, v.fraction(), nf+1);  // assign and create sticky bit
+	bool sb = _fraction.template assign<23>(nf, v.fraction(), nf+1);  // assign and create sticky bit
 	if (bPrintIntermediateSteps) cout << "sb       = " << sb << endl;
 	// 	assess if we need to round up the truncated posit
 /*
