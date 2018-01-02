@@ -106,8 +106,8 @@ public:
 		return ipos >= 0 && sticky<FBits>(_fraction, ipos);
 	}
 
-	template<size_t fbits>
-	bool sticky(const std::bitset<fbits>& bits, unsigned msb) {
+	template<size_t FBits>
+	bool sticky(const std::bitset<FBits>& bits, unsigned msb) {
 		bool running = false;
 		for (int i = msb; i >= 0; i--) {
 			running |= bits.test(i);
