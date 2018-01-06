@@ -43,7 +43,7 @@ namespace sw {
 
 			int nrOfFailedTests = 0;
 
-			vector<TestCase<nbits, es>> test_cases;
+			std::vector< TestCase<nbits, es> > test_cases;
 			// minpos + minpos = minpos?
 			TestCase<nbits, es> test;
 			test.a = sw::unum::posit<nbits, es>(sw::unum::minpos_value<nbits, es>());
@@ -87,7 +87,7 @@ namespace sw {
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, padd);
 				}
-				cout << pa.get() << ", " << pb.get() << ", " << pref.get() << endl;
+				std::cout << pa.get() << ", " << pb.get() << ", " << pref.get() << std::endl;
 			}
 			return nrOfFailedTests;
 		}
@@ -101,7 +101,7 @@ namespace sw {
 
 			int nrOfFailedTests = 0;
 
-			vector<TestCase<nbits, es>> test_cases;
+			std::vector< TestCase<nbits, es> > test_cases;
 			// minpos + minpos = minpos?
 			TestCase<nbits, es> test;
 			test.a = sw::unum::posit<nbits, es>(sw::unum::minpos_value<nbits, es>());
@@ -145,7 +145,7 @@ namespace sw {
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psub);
 				}
-				cout << pa.get() << ", " << pb.get() << ", " << pref.get() << endl;
+				std::cout << pa.get() << ", " << pb.get() << ", " << pref.get() << std::endl;
 			}
 			return nrOfFailedTests;
 		}
@@ -157,7 +157,7 @@ namespace sw {
 
 			int nrOfFailedTests = 0;
 
-			vector<TestCase<nbits, es>> test_cases;
+			std::vector< TestCase<nbits, es> > test_cases;
 			// minpos * minpos = minpos
 			// minpos * maxpos = 1.0
 			TestCase<nbits, es> test;
@@ -190,7 +190,7 @@ namespace sw {
 				else {
 					// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
 				}
-				cout << pa.get() << ", " << pb.get() << ", " << pref.get() << endl;
+				std::cout << pa.get() << ", " << pb.get() << ", " << pref.get() << std::endl;
 			}
 			return nrOfFailedTests;
 		}
@@ -205,7 +205,7 @@ namespace sw {
 
 			int nrOfFailedTests = 0;
 
-			vector<TestCase<nbits, es>> test_cases;
+			std::vector< TestCase<nbits, es> > test_cases;
 			// minpos + minpos = minpos?
 			TestCase<nbits, es> test;
 			test.a = sw::unum::posit<nbits, es>(sw::unum::minpos_value<nbits, es>());
@@ -249,7 +249,7 @@ namespace sw {
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, pdiv);
 				}
-				cout << pa.get() << ", " << pb.get() << ", " << pref.get() << endl;
+				std::cout << pa.get() << ", " << pb.get() << ", " << pref.get() << std::endl;
 			}
 			return nrOfFailedTests;
 		}
@@ -268,8 +268,8 @@ namespace sw {
 			//if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
 			// report test cases: input operand -> posit bit pattern
 			sw::unum::value<std::numeric_limits< double >::digits> vi(input), vr(reference);
-			cout.precision(std::numeric_limits< double >::max_digits10);
-			cout << input << ", " << sw::unum::to_binary(input) << ", " << components(vi) << "\n" << reference << ", " << sw::unum::to_binary(reference) << ", " << components(vr) << "," << presult.get() << endl;
+			std::cout.precision(std::numeric_limits< double >::max_digits10);
+			std::cout << input << ", " << sw::unum::to_binary(input) << ", " << components(vi) << "\n" << reference << ", " << sw::unum::to_binary(reference) << ", " << components(vr) << "," << presult.get() << std::endl;
 
 			return fail;
 		}
@@ -313,23 +313,23 @@ namespace sw {
 			sw::unum::posit<nbits + 1, es> p;  // need to generate them in the context of the posit that is nbits+1
 											   // around 1.0
 			p = 1.0; p--; raw_bits = p.get();
-			cout << "raw bits for  1.0-eps: " << raw_bits << " ull " << raw_bits.to_ullong() << endl;
+			std::cout << "raw bits for  1.0-eps: " << raw_bits << " ull " << raw_bits.to_ullong() << std::endl;
 			test_patterns[0] = raw_bits.to_ullong();
 			p = 1.0; raw_bits = p.get();
-			cout << "raw bits for  1.00000: " << raw_bits << " ull " << raw_bits.to_ullong() << endl;
+			std::cout << "raw bits for  1.00000: " << raw_bits << " ull " << raw_bits.to_ullong() << std::endl;
 			test_patterns[1] = raw_bits.to_ullong();
 			p = 1.0; p++; raw_bits = p.get();
-			cout << "raw bits for  1.0+eps: " << raw_bits << " ull " << raw_bits.to_ullong() << endl;
+			std::cout << "raw bits for  1.0+eps: " << raw_bits << " ull " << raw_bits.to_ullong() << std::endl;
 			test_patterns[2] = raw_bits.to_ullong();
 			// around -1.0
 			p = -1.0; p--; raw_bits = p.get();
-			cout << "raw bits for -1.0-eps: " << raw_bits << " ull " << raw_bits.to_ullong() << " posit : " << p << endl;
+			std::cout << "raw bits for -1.0-eps: " << raw_bits << " ull " << raw_bits.to_ullong() << " posit : " << p << std::endl;
 			test_patterns[3] = raw_bits.to_ullong();
 			p = -1.0; raw_bits = p.get();
-			cout << "raw bits for -1.00000: " << raw_bits << " ull " << raw_bits.to_ullong() << " posit : " << p << endl;
+			std::cout << "raw bits for -1.00000: " << raw_bits << " ull " << raw_bits.to_ullong() << " posit : " << p << std::endl;
 			test_patterns[4] = raw_bits.to_ullong();
 			p = -1.0; p++; raw_bits = p.get();
-			cout << "raw bits for -1.0+eps: " << raw_bits << " ull " << raw_bits.to_ullong() << " posit : " << p << endl;
+			std::cout << "raw bits for -1.0+eps: " << raw_bits << " ull " << raw_bits.to_ullong() << " posit : " << p << std::endl;
 			test_patterns[5] = raw_bits.to_ullong();
 
 			// second are the exponentiol ranges from/to minpos/maxpos
@@ -351,9 +351,9 @@ namespace sw {
 				test_patterns[index++] = STATE_SPACE - single_quadrant_cases + i;
 			}
 #if 0
-			cout << "Generated test patterns" << endl;
+			std::cout << "Generated test patterns" << std::endl;
 			for (int i = 0; i < single_quadrant_cases + cases_around_plusminus_one; i++) {
-				cout << "[" << setw(3) << i << "] = " << test_patterns[i] << endl;
+				std::cout << "[" << setw(3) << i << "] = " << test_patterns[i] << std::endl;
 			}
 #endif
 			const int64_t NR_TEST_CASES = cases_around_plusminus_one + 4 * single_quadrant_cases;
@@ -369,7 +369,8 @@ namespace sw {
 			for (int64_t index = 0; index < NR_TEST_CASES; index++) {
 				uint64_t i = test_patterns[index];
 				pref.set_raw_bits(i);
-				cout << "Test case [" << index << "] = " << i << " b" << sw::unum::to_binary(pref.get().to_ullong()) << "  >>>>>>>>>>>>>>>  Reference Seed value: " << pref << endl;
+				uint64_t ref = pref.get().to_ullong();
+				std::cout << "Test case [" << index << "] = " << i << " b" << sw::unum::to_binary(ref) << "  >>>>>>>>>>>>>>>  Reference Seed value: " << pref << std::endl;
 
 				da = pref.to_double();
 				if (i == 0) {
