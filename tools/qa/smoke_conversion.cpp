@@ -1,4 +1,4 @@
-// smoke.cpp: generate smoke tests
+// smoke_conversion.cpp: generate smoke tests for posit conversion/rounding
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
@@ -203,33 +203,6 @@ namespace sw {
 			return nrOfFailedTests;
 		}
 
-		template<size_t nbits, size_t es>
-		int SmokeTestMultiplication(std::string tag, bool bReportIndividualTestCases) {
-			int nrOfFailedTests = 0;
-			const size_t NR_POSITS = (unsigned(1) << nbits);
-
-			sw::unum::posit<nbits, es> pa, pb, pmul, pref;
-			double da, db;
-			for (int i = 0; i < NR_POSITS; i++) {
-				pa.set_raw_bits(i);
-				da = pa.to_double();
-				for (int j = 0; j < NR_POSITS; j++) {
-					pb.set_raw_bits(j);
-					db = pb.to_double();
-					pmul = pa * pb;
-					pref = da * db;
-					if (fabs(pmul.to_double() - pref.to_double()) > 0.000000001) {
-						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pref, pmul);
-						nrOfFailedTests++;
-					}
-					else {
-						if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
-					}
-				}
-			}
-			return nrOfFailedTests;
-		}
-
 	}
 }
 
@@ -239,13 +212,7 @@ try {
 	typedef std::numeric_limits< double > dbl;
 	cout << "double max digits " << dbl::max_digits10 << endl;
 
-	if (argc != 2) {
-		cerr << "Generate smoke tests." << endl;
-		cerr << "Usage: smoke operator" << endl;
-		return EXIT_SUCCESS;   // signal successful completion for ctest
-	}
-	string operation = argv[1];
-	cout << "Generating smoke tests for operation -" << operation << "-" << endl;
+	cout << "Generating smoke tests for posit conversion/rounding" << endl;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
@@ -260,11 +227,6 @@ try {
 	std::cout << "It took " << elapsed << " seconds." << std::endl;
 	std::cout << "Performance " << (uint32_t)(upper_limit / (1000 * elapsed)) << " Ksamples/s" << std::endl;
 	std::cout << std::endl;
-
-
-
-
-	//nrOfFailedTestCases = sw::qa::SmokeTestMultiplication<5, 2>("smoke testing", bReportIndividualTestCases);
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
