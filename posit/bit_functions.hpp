@@ -200,6 +200,42 @@ namespace sw {
 			return ss.str();
 		}
 
+		// full binary representation of a float number
+		inline std::string to_binary(float number) {
+			std::stringstream ss;
+
+			uint32_t bits = *(uint32_t*) &number;
+			unsigned int msb = 31;
+			uint64_t mask = (uint64_t(1) << msb);
+			ss << (mask & bits ? "1|" : "0|");
+			msb--;
+			for (int i = msb; i >= 0; --i) {
+				if (i == 22) ss << "|";
+				ss << (mask & bits ? "1" : "0");
+				mask >>= 1;
+			}
+
+			return ss.str();
+		}
+
+		// full binary representation of a double number
+		inline std::string to_binary(double number) {
+			std::stringstream ss;
+
+			uint64_t bits = *(uint64_t*)&number;
+			unsigned int msb = 63;
+			uint64_t mask = (uint64_t(1) << msb);
+			ss << (mask & bits ? "1|" : "0|");
+			msb--;
+			for (int i = msb; i >= 0; --i) {
+				if (i == 51) ss << "|";
+				ss << (mask & bits ? "1" : "0");
+				mask >>= 1;
+			}
+
+			return ss.str();
+		}
+
 	}  // namespace unum
 
 }  // namespace sw
