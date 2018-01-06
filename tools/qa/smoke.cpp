@@ -19,6 +19,8 @@ smoke tests focus on the boundary cases of posit arithmetic.
 There are four regions where the number of exponent bits vary
  */
 
+#include <limits>
+
 namespace sw {
 	namespace qa {
 		template<size_t nbits, size_t es>
@@ -30,7 +32,11 @@ namespace sw {
 				if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, presult);
 			}
 			else {
-				if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
+				//if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
+				// report test cases: input operand -> posit bit pattern
+				sw::unum::value<std::numeric_limits< double >::digits> vi(input), vr(reference);
+				cout.precision(std::numeric_limits< double >::max_digits10);
+				cout << input << ", " << sw::unum::to_binary(input) << ", " << components(vi) << "\n" << reference << ", " << sw::unum::to_binary(reference) << ", " << components(vr) << "," << presult.get() << endl;
 			}
 			return fail;
 		}
@@ -38,6 +44,7 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		int SmokeTestConversion(std::string tag, bool bReportIndividualTestCases) {
+			static_assert(nbits >= 16, "Use exhaustive testing for posits smaller than 16");
 			// we are going to generate a test set that consists of all edge case posit configs and their midpoints
 			// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 
@@ -54,6 +61,12 @@ namespace sw {
 			// es = 3:   0/minpos, 2, 4, 8 exponent configs  -> 16 special cases
 			// es = 4:   0/minpos, 2, 4, 8, 16 exp configs   -> 32 special cases
 			// -> 2^(es+1) special cases
+			//
+			// plus the region around 1 that puts the most pressure on the conversion algorithm's precision
+			// --1, 1, and 1++, so three extra cases per half.
+			// Because we need to recognize the -minpos case, which happens to be all 1's, and is the last
+			// test case in exhaustive testing, we need to have that test case end up in the last entry
+			// of the test case array.
 			constexpr size_t cases = size_t(1) << (es + 2);
 			int64_t test_patterns[cases];
 			for (int64_t i = 0; i < cases; i++) {
@@ -72,7 +85,7 @@ namespace sw {
 			sw::unum::posit<nbits, es> pa;
 			for (int64_t i = 0; i < NR_TEST_CASES; i++) {
 				pref.set_raw_bits(i);
-				cout << pref << endl;
+				cout << "Reference value: " << pref << endl;
 
 				da = pref.to_double();
 				if (i == 0) {
@@ -197,6 +210,8 @@ namespace sw {
 
 int main(int argc, char** argv)
 try {
+	typedef std::numeric_limits< double > dbl;
+	cout << "double max digits " << dbl::max_digits10 << endl;
 
 	if (argc != 2) {
 		cerr << "Generate smoke tests." << endl;
@@ -212,7 +227,7 @@ try {
 	float upper_limit = int64_t(1) << 17;
 	using namespace std::chrono;
 	steady_clock::time_point t1 = steady_clock::now();
-	nrOfFailedTestCases = sw::qa::SmokeTestConversion<5, 2>("smoke testing", bReportIndividualTestCases);
+	nrOfFailedTestCases = sw::qa::SmokeTestConversion<16, 2>("smoke testing", bReportIndividualTestCases);
 	steady_clock::time_point t2 = steady_clock::now();
 	duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 	double elapsed = time_span.count();
