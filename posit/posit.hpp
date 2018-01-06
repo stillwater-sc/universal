@@ -40,7 +40,7 @@ template<size_t nbits, size_t es> posit<nbits, es> abs(const posit<nbits, es>& p
 template<size_t nbits, size_t es>
 class posit 
 {
-	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
+//	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
 
 	template <typename T>
 	posit<nbits, es>& float_assign(const T& rhs) {
