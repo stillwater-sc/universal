@@ -23,6 +23,7 @@ There are four regions where the number of exponent bits vary
 
 namespace sw {
 	namespace qa {
+
 		template<size_t nbits, size_t es>
 		int Compare(double input, const sw::unum::posit<nbits, es>& presult, double reference, bool bReportIndividualTestCases) {
 			int fail = 0;
@@ -31,20 +32,21 @@ namespace sw {
 				fail++;
 				if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, presult);
 			}
-			else {
+
 				//if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
 				// report test cases: input operand -> posit bit pattern
 				sw::unum::value<std::numeric_limits< double >::digits> vi(input), vr(reference);
 				cout.precision(std::numeric_limits< double >::max_digits10);
 				cout << input << ", " << sw::unum::to_binary(input) << ", " << components(vi) << "\n" << reference << ", " << sw::unum::to_binary(reference) << ", " << components(vr) << "," << presult.get() << endl;
-			}
+
 			return fail;
 		}
 
 
 		template<size_t nbits, size_t es>
 		int SmokeTestConversion(std::string tag, bool bReportIndividualTestCases) {
-			static_assert(nbits >= 16, "Use exhaustive testing for posits smaller than 16");
+			//static_assert(nbits >= 16, "Use exhaustive testing for posits smaller than 16");
+			static_assert(nbits < 64, "TODO: smoke test algorithm only works for nibts < 64");
 			// we are going to generate a test set that consists of all edge case posit configs and their midpoints
 			// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 
@@ -70,27 +72,51 @@ namespace sw {
 			constexpr size_t single_quadrant_cases = size_t(1) << (es + 2);
 			constexpr size_t cases_around_plusminus_one = 6;
 			constexpr size_t cases = cases_around_plusminus_one + 4 * single_quadrant_cases;
+			const int64_t STATE_SPACE = uint64_t(1) << (nbits+1);
+			const int64_t HALF = uint64_t(1) << nbits;  // <--- raw bit value of infinite for a posit<nbits+1,es>
 			// generate the special patterns
 			uint64_t test_patterns[cases];
 			// first patterns around +/- 1
 			std::bitset<nbits+1> raw_bits;
 			sw::unum::posit<nbits+1, es> p;  // need to generate them in the context of the posit that is nbits+1
-			p = 1.0f; raw_bits = p.get(); cout << "raw bits for 1.0: " << raw_bits << " ull " << raw_bits.to_ullong() << endl;
-			test_patterns[1] = raw_bits.to_ullong();
-			p--; raw_bits = p.get(); cout << "raw bits for 1.0-eps: " << raw_bits << " ull " << raw_bits.to_ullong() << endl;
+			// around 1.0
+			p = 1.0; p--; raw_bits = p.get();
+			cout << "raw bits for  1.0-eps: " << raw_bits << " ull " << raw_bits.to_ullong() << endl;
 			test_patterns[0] = raw_bits.to_ullong();
-			p = 1.0f;
-			p++; raw_bits = p.get(); cout << "raw bits for 1.0+eps: " << raw_bits << " ull " << raw_bits.to_ullong() << endl;
+			p = 1.0; raw_bits = p.get();
+			cout << "raw bits for  1.00000: " << raw_bits << " ull " << raw_bits.to_ullong() << endl;
+			test_patterns[1] = raw_bits.to_ullong();
+			p = 1.0; p++; raw_bits = p.get(); 
+			cout << "raw bits for  1.0+eps: " << raw_bits << " ull " << raw_bits.to_ullong() << endl;
 			test_patterns[2] = raw_bits.to_ullong();
-			p = -1.0f; raw_bits = p.get();
-			test_patterns[4] = raw_bits.to_ullong();
-			p--; raw_bits = p.get();
+			// around -1.0
+			p = -1.0; p--; raw_bits = p.get();
+			cout << "raw bits for -1.0-eps: " << raw_bits << " ull " << raw_bits.to_ullong() << " posit : " << p << endl;
 			test_patterns[3] = raw_bits.to_ullong();
-			p = -1.0f;
-			p++; raw_bits = p.get();
+			p = -1.0; raw_bits = p.get();
+			cout << "raw bits for -1.00000: " << raw_bits << " ull " << raw_bits.to_ullong() << " posit : " << p << endl;
+			test_patterns[4] = raw_bits.to_ullong();
+			p = -1.0; p++; raw_bits = p.get();
+			cout << "raw bits for -1.0+eps: " << raw_bits << " ull " << raw_bits.to_ullong() << " posit : " << p << endl;
 			test_patterns[5] = raw_bits.to_ullong();
+
+			// second are the exponentiol ranges from/to minpos/maxpos
+			// south-east region
+			int index = 6;
 			for (int64_t i = 0; i < single_quadrant_cases; i++) {
-				test_patterns[i + cases_around_plusminus_one] = i;
+				test_patterns[index++] = i;
+			}
+			// north-east region
+			for (int64_t i = 0; i < single_quadrant_cases; i++) {
+				test_patterns[index++] = HALF - single_quadrant_cases + i;
+			}
+			// north-west region
+			for (int64_t i = 0; i < single_quadrant_cases; i++) {
+				test_patterns[index++] = HALF + i;
+			}
+			// south-east region
+			for (int64_t i = 0; i < single_quadrant_cases; i++) {
+				test_patterns[index++] = STATE_SPACE - single_quadrant_cases + i;
 			}
 #if 0
 			cout << "Generated test patterns" << endl;
@@ -98,8 +124,8 @@ namespace sw {
 				cout << "[" << setw(3) << i << "] = " << test_patterns[i] << endl;
 			}
 #endif
-			const int64_t NR_TEST_CASES = cases_around_plusminus_one + single_quadrant_cases;
-			const int64_t HALF = cases + 1;
+			const int64_t NR_TEST_CASES = cases_around_plusminus_one + 4*single_quadrant_cases;
+
 			sw::unum::posit<nbits + 1, es> pref, pprev, pnext;
 
 			// execute the test
@@ -111,14 +137,14 @@ namespace sw {
 			for (int64_t index = 0; index < NR_TEST_CASES; index++) {
 				uint64_t i = test_patterns[index];
 				pref.set_raw_bits(i);
-				cout << "Reference value: " << pref << endl;
+				cout << "Test case [" << index << "] = " << i << " b" << sw::unum::to_binary(pref.get().to_ullong()) << "  >>>>>>>>>>>>>>>  Reference Seed value: " << pref << endl;
 
 				da = pref.to_double();
 				if (i == 0) {
 					eps = minpos / 2.0;
 				}
 				else {
-					eps = da > 0 ? da * 1.0e-6 : da * -1.0e-6;
+					eps = da > 0 ? da * 1.0e-9 : da * -1.0e-9;
 				}
 				if (i % 2) {
 					if (i == 1) {
@@ -147,7 +173,7 @@ namespace sw {
 						pprev.set_raw_bits(HALF + 2);
 						nrOfFailedTests += sw::qa::Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
 					}
-					else if (i == NR_TEST_CASES - 1) {
+					else if (i == STATE_SPACE - 1) {
 						// special case of projecting to -minpos
 						// even the +delta goes to -minpos
 						input = da - eps;
@@ -181,11 +207,11 @@ namespace sw {
 						pnext.set_raw_bits(i + 2);
 						nrOfFailedTests += sw::qa::Compare(input, pa, pnext.to_double(), bReportIndividualTestCases);
 					}
-					else if (i == NR_TEST_CASES - 2) {
+					else if (i == STATE_SPACE - 2) {
 						// special case of projecting to -minpos
 						input = da - eps;
 						pa = input;
-						pprev.set_raw_bits(NR_TEST_CASES - 2);
+						pprev.set_raw_bits(STATE_SPACE - 2);
 						nrOfFailedTests += sw::qa::Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
 					}
 					else {
@@ -220,7 +246,7 @@ try {
 	float upper_limit = int64_t(1) << 17;
 	using namespace std::chrono;
 	steady_clock::time_point t1 = steady_clock::now();
-	nrOfFailedTestCases = sw::qa::SmokeTestConversion<16, 2>("smoke testing", bReportIndividualTestCases);
+	nrOfFailedTestCases = sw::qa::SmokeTestConversion<32, 2>("smoke testing", bReportIndividualTestCases);
 	steady_clock::time_point t2 = steady_clock::now();
 	duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 	double elapsed = time_span.count();

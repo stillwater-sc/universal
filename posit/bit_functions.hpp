@@ -199,6 +199,23 @@ namespace sw {
 			}
 			return ss.str();
 		}
+		// full binary representation of a unsigned 64-bit number
+		inline std::string to_binary(uint64_t number) {
+			std::stringstream ss;
+			unsigned int msb = findMostSignificantBit(number);
+			if (msb == 0) {
+				ss << "-";
+			}
+			else {
+				uint64_t mask = (uint64_t(1) << msb);
+				for (int i = msb; i >= 0; --i) {
+					ss << (mask & number ? "1" : "0");
+					if (i > 0 && i % 4 == 0) ss << "_";
+					mask >>= 1;
+				}
+			}
+			return ss.str();
+		}
 
 		// full binary representation of a float number
 		inline std::string to_binary(float number) {
