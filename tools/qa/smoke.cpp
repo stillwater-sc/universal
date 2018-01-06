@@ -54,10 +54,10 @@ namespace sw {
 			// north-west  -> [-maxpos - -1.0)
 			// south-west  -> (-1.0    - -minpos)
 
-			// on the minpos/maxpos side there are 2* 2^(es+1) patterns that carry special rounding behavior
-			// es = 0:   0, minpos                           ->  2 special cases
-			// es = 1:   0, minpos, 2 exponent configs       ->  4 special cases
-			// es = 2:   0, minpos, 2, 4 exponent configs    ->  8 special cases
+			// on each minpos/maxpos side there are 2^(es+1) patterns that carry special rounding behavior
+			// es = 0:   0/minpos                            ->  2 special cases
+			// es = 1:   0/minpos, 2 exponent configs        ->  4 special cases
+			// es = 2:   0/minpos, 2, 4 exponent configs     ->  8 special cases
 			// es = 3:   0/minpos, 2, 4, 8 exponent configs  -> 16 special cases
 			// es = 4:   0/minpos, 2, 4, 8, 16 exp configs   -> 32 special cases
 			// -> 2^(es+1) special cases
@@ -67,13 +67,38 @@ namespace sw {
 			// Because we need to recognize the -minpos case, which happens to be all 1's, and is the last
 			// test case in exhaustive testing, we need to have that test case end up in the last entry
 			// of the test case array.
-			constexpr size_t cases = size_t(1) << (es + 2);
-			int64_t test_patterns[cases];
-			for (int64_t i = 0; i < cases; i++) {
-				test_patterns[i] = i;
+			constexpr size_t single_quadrant_cases = size_t(1) << (es + 2);
+			constexpr size_t cases_around_plusminus_one = 6;
+			constexpr size_t cases = cases_around_plusminus_one + 4 * single_quadrant_cases;
+			// generate the special patterns
+			uint64_t test_patterns[cases];
+			// first patterns around +/- 1
+			std::bitset<nbits+1> raw_bits;
+			sw::unum::posit<nbits+1, es> p;  // need to generate them in the context of the posit that is nbits+1
+			p = 1.0f; raw_bits = p.get(); cout << "raw bits for 1.0: " << raw_bits << " ull " << raw_bits.to_ullong() << endl;
+			test_patterns[1] = raw_bits.to_ullong();
+			p--; raw_bits = p.get(); cout << "raw bits for 1.0-eps: " << raw_bits << " ull " << raw_bits.to_ullong() << endl;
+			test_patterns[0] = raw_bits.to_ullong();
+			p = 1.0f;
+			p++; raw_bits = p.get(); cout << "raw bits for 1.0+eps: " << raw_bits << " ull " << raw_bits.to_ullong() << endl;
+			test_patterns[2] = raw_bits.to_ullong();
+			p = -1.0f; raw_bits = p.get();
+			test_patterns[4] = raw_bits.to_ullong();
+			p--; raw_bits = p.get();
+			test_patterns[3] = raw_bits.to_ullong();
+			p = -1.0f;
+			p++; raw_bits = p.get();
+			test_patterns[5] = raw_bits.to_ullong();
+			for (int64_t i = 0; i < single_quadrant_cases; i++) {
+				test_patterns[i + cases_around_plusminus_one] = i;
 			}
-			// generate those patterns
-			const int64_t NR_TEST_CASES = cases;
+#if 0
+			cout << "Generated test patterns" << endl;
+			for (int i = 0; i < single_quadrant_cases + cases_around_plusminus_one; i++) {
+				cout << "[" << setw(3) << i << "] = " << test_patterns[i] << endl;
+			}
+#endif
+			const int64_t NR_TEST_CASES = cases_around_plusminus_one + single_quadrant_cases;
 			const int64_t HALF = cases + 1;
 			sw::unum::posit<nbits + 1, es> pref, pprev, pnext;
 
@@ -83,7 +108,8 @@ namespace sw {
 			double eps;
 			double da, input;
 			sw::unum::posit<nbits, es> pa;
-			for (int64_t i = 0; i < NR_TEST_CASES; i++) {
+			for (int64_t index = 0; index < NR_TEST_CASES; index++) {
+				uint64_t i = test_patterns[index];
 				pref.set_raw_bits(i);
 				cout << "Reference value: " << pref << endl;
 
