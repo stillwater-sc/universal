@@ -401,6 +401,19 @@ public:
 	bool isZero() const {
 		return (!_sign & _regime.isZero());
 	}
+	bool isOne() const { // pattern 010000....
+		std::bitset<nbits> tmp(_raw_bits);
+		tmp.set(nbits - 2, false);
+		bool oneBitSet = tmp.none();
+		return !_sign & oneBitSet;
+	}
+	bool isMinusOne() const { // pattern 110000...
+		std::bitset<nbits> tmp(_raw_bits);
+		tmp.set(nbits - 1, false);
+		tmp.set(nbits - 2, false);
+		bool oneBitSet = tmp.none();
+		return _sign & oneBitSet;
+	}
 	bool isNegative() const {
 		return _sign;
 	}
@@ -427,6 +440,7 @@ public:
 	int				   regime_k() const {
 		return _regime.regime_k();
 	}
+	bool               get_sign() const { return _sign;  }
 	regime<nbits, es>  get_regime() const {
 		return _regime;
 	}
@@ -463,6 +477,27 @@ public:
 			_Bits.set(std::size_t(msb--), f[fbits - 1 - i]);
 		}
 		return _Bits;
+	}
+	std::string        get_quadrant() const {
+		posit<nbits, es> pOne, pMinusOne;
+		if (_sign) {
+			// west
+			if (*this < pMinusOne) {
+				return "south-west";
+			}
+			else {
+				return "north-west";
+			}
+		}
+		else {
+			// east
+			if (*this < pOne) {
+				return "south-east";
+			}
+			else {
+				return "north-east";
+			}
+		}
 	}
 
 	// MODIFIERS
@@ -834,10 +869,10 @@ public:
         }
 
 	
-	template<size_t fbits>
-	void convert(bool sign, int scale, std::bitset<fbits> frac) {
+	template<size_t input_fbits>
+	void convert(bool sign, int scale, std::bitset<input_fbits> input_fraction) {
 		setToZero();
-		if (_trace_conversion) std::cout << "sign " << (sign ? "-1 " : " 1 ") << "scale " << scale << " fraction " << frac << std::endl;
+		if (_trace_conversion) std::cout << "sign " << (sign ? "-1 " : " 1 ") << "scale " << scale << " fraction " << input_fraction << std::endl;
 
 		// construct the posit
 		_sign = sign;
@@ -873,11 +908,12 @@ public:
 			exponent = convert_to_bitset<pt_len>(esval);
 			unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 			// TODO: what needs to be done if nf > fbits?
-			assert(nf <= fbits);
+			assert(nf <= input_fbits);
+			//assert(nf <= fbits); // TODO: can this condition occur? Is it important?
 			// copy the most significant nf fraction bits into fraction
-			for (int i = 0; i < (int)nf; i++) fraction[i] = frac[fbits - nf + i];
+			for (unsigned i = 0; i < nf; i++) fraction[i] = input_fraction[input_fbits - nf + i];
 
-			bool sb = anyAfter(frac, fbits - 1 - nf);
+			bool sb = anyAfter(input_fraction, input_fbits - 1 - nf);
 
 			// construct the untruncated posit
 			// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
