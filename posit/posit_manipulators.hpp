@@ -30,17 +30,8 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		std::string components_to_string(const posit<nbits, es>& p) {
 			std::stringstream ss;
-			/*
-			if (p.isZero()) {
-				ss << " zero    " << std::setw(103) << "b" << p.get();
-				return ss.str();
-			}
-			else if (p.isInfinite()) {
-				ss << " infinite" << std::setw(103) << "b" << p.get();
-				return ss.str();
-			}*/
-
-			ss << std::setw(14) << p.get() << std::setw(14) << p.get_decoded()
+			// TODO: hardcoded field width is governed by pretty printing posit tables, which by construction will always be small posits
+			ss << std::setw(14) << p.get() << " " << std::setw(14) << p.get_decoded()
 				<< " Sign : " << std::setw(2) << p.sign_value()
 				<< " Regime : " << std::setw(3) << p.regime_k()
 				<< " Exponent : " << std::setw(5) << p.get_exponent().value()
@@ -53,6 +44,7 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		std::string component_values_to_string(posit<nbits, es> p) {
 			std::stringstream ss;
+			// TODO: hardcoded field sizes
 			if (p.isZero()) {
 				ss << " zero    " << std::setw(103) << "b" << p.get();
 				return ss.str();
@@ -73,6 +65,19 @@ namespace sw {
 			return ss.str();
 		}
 
+		template<size_t nbits, size_t es>
+		std::string pretty_print(const posit<nbits, es>& p, int printPrecision) {
+			std::stringstream ss;
+			ss << "raw: " << p.get() << " decoded: " << p.get_decoded() << " "
+				<< p.get_quadrant() << " "
+				<< (p.get_sign() ? "negative r" : "positive r")
+				<< p.get_regime() << " e"
+				<< p.get_exponent() << " f"
+				<< p.get_fraction() << " : value "
+				<< std::setprecision(printPrecision) << p
+				<< std::setprecision(0);
+			return ss.str();
+		}
 
 		// generate a full binary representation table for a given posit configuration
 		template<size_t nbits, size_t es>
