@@ -910,13 +910,8 @@ public:
 			// TODO: what needs to be done if nf > fbits?
 			//assert(nf <= input_fbits);
 			// copy the most significant nf fraction bits into fraction
-			if (nf <= input_fbits) {
-				for (unsigned i = 0; i < nf; i++) fraction[i] = input_fraction[input_fbits - nf + i];
-			}
-			else {
-				unsigned lsb = nf - input_fbits;
-				for (unsigned i = lsb; i < nf; i++) fraction[i] = input_fraction[input_fbits - nf + i];
-			}
+			unsigned lsb = nf <= input_fbits ? 0 : nf - input_fbits;
+			for (unsigned i = lsb; i < nf; i++) fraction[i] = input_fraction[input_fbits - nf + i];
 
 			bool sb = anyAfter(input_fraction, input_fbits - 1 - nf);
 
