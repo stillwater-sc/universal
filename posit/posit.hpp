@@ -479,7 +479,7 @@ public:
 		return _Bits;
 	}
 	std::string        get_quadrant() const {
-		posit<nbits, es> pOne, pMinusOne;
+		posit<nbits, es> pOne(1), pMinusOne(-1);
 		if (_sign) {
 			// west
 			if (*this > pMinusOne) {
@@ -908,10 +908,15 @@ public:
 			exponent = convert_to_bitset<pt_len>(esval);
 			unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 			// TODO: what needs to be done if nf > fbits?
-			assert(nf <= input_fbits);
-			//assert(nf <= fbits); // TODO: can this condition occur? Is it important?
+			//assert(nf <= input_fbits);
 			// copy the most significant nf fraction bits into fraction
-			for (unsigned i = 0; i < nf; i++) fraction[i] = input_fraction[input_fbits - nf + i];
+			if (nf <= input_fbits) {
+				for (unsigned i = 0; i < nf; i++) fraction[i] = input_fraction[input_fbits - nf + i];
+			}
+			else {
+				unsigned lsb = nf - input_fbits;
+				for (unsigned i = lsb; i < nf; i++) fraction[i] = input_fraction[input_fbits - nf + i];
+			}
 
 			bool sb = anyAfter(input_fraction, input_fbits - 1 - nf);
 
