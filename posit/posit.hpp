@@ -482,20 +482,20 @@ public:
 		posit<nbits, es> pOne, pMinusOne;
 		if (_sign) {
 			// west
-			if (*this < pMinusOne) {
-				return "south-west";
+			if (*this > pMinusOne) {
+				return "SW";
 			}
 			else {
-				return "north-west";
+				return "NW";
 			}
 		}
 		else {
 			// east
 			if (*this < pOne) {
-				return "south-east";
+				return "SE";
 			}
 			else {
-				return "north-east";
+				return "NE";
 			}
 		}
 	}

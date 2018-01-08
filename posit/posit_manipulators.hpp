@@ -68,6 +68,43 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		std::string pretty_print(const posit<nbits, es>& p, int printPrecision) {
 			std::stringstream ss;
+			ss << ( p.get_sign() ? "s1 r" : "s0 r" );
+			std::bitset<nbits-1> r = p.get_regime().get();
+			int regimeBits = p.get_regime().nrBits();
+			int nrOfRegimeBitsProcessed = 0;
+			for (int i = nbits - 2; i >= 0; --i) {
+				if (regimeBits > nrOfRegimeBitsProcessed++) {
+					ss << (r[i] ? "1" : "0");
+				}
+			}
+			ss << " e";
+			std::bitset<es> e = p.get_exponent().get();
+			int exponentBits = p.get_exponent().nrBits();
+			int nrOfExponentBitsProcessed = 0;
+			for (int i = es - 1; i >= 0; --i) {
+				if (exponentBits > nrOfExponentBitsProcessed++) {
+					ss << (e[i] ? "1" : "0");
+				}
+			}
+			ss << " f";
+			std::bitset<p.fbits> f = p.get_fraction().get();
+			int fractionBits = p.get_fraction().nrBits();
+			int nrOfFractionBitsProcessed = 0;
+			for (int i = p.fbits - 1; i >= 0; --i) {
+				if (fractionBits > nrOfFractionBitsProcessed++) {
+					ss << (f[i] ? "1" : "0");
+				}
+			}
+			ss << " q";
+			ss << p.get_quadrant() << " v"
+				<< std::setprecision(printPrecision) << p
+				<< std::setprecision(0);
+			return ss.str();
+		}
+
+		template<size_t nbits, size_t es>
+		std::string info_print(const posit<nbits, es>& p, int printPrecision) {
+			std::stringstream ss;
 			ss << "raw: " << p.get() << " decoded: " << p.get_decoded() << " "
 				<< p.get_quadrant() << " "
 				<< (p.get_sign() ? "negative r" : "positive r")
