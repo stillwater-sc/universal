@@ -514,6 +514,7 @@ namespace sw {
 		const int OPCODE_SUB = 2;
 		const int OPCODE_MUL = 3;
 		const int OPCODE_DIV = 4;
+		const int OPCODE_RAN = 5;
 
 		template<size_t nbits, size_t es>
 		void execute(int opcode, double da, double db, posit<nbits, es>& preference, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& presult) {
