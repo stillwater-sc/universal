@@ -4,7 +4,7 @@
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <random>
 #include <limits>
 
 namespace sw {
@@ -37,42 +37,52 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int SmokeTestAddition(std::string tag, bool bReportIndividualTestCases) {
 			static_assert(nbits >= 16, "Use exhaustive testing for posits smaller than 16");
-			static_assert(nbits < 64, "TODO: smoke test algorithm only works for nbits < 64");
+			static_assert(nbits < 64, "TODO: smoke test algorithm only works for nbits <= 64");
+
+			constexpr size_t fbits = nbits - 3 - es;
+			constexpr size_t enumeration = fbits > 5 ? 5 : fbits;
 
 			const uint64_t STATE_SPACE = (uint64_t(1) << nbits);
 
 			int nrOfFailedTests = 0;
 
 			std::vector< TestCase<nbits, es> > test_cases;
-			// minpos + minpos = minpos?
+			// minpos + minpos = minpos
 			TestCase<nbits, es> test;
 			test.a = sw::unum::posit<nbits, es>(sw::unum::minpos_value<nbits, es>());
 			test.b = sw::unum::posit<nbits, es>(sw::unum::minpos_value<nbits, es>());
 			test_cases.push_back(test);
-			for (int i = 0; i < int(1) << (es + 1); i++) {
+			// all the cases that enumerate the state space of the exponent bits
+			for (int i = 0; i < int(1) << (es + 2); i++) {
 				test.a++; test.b++;
 				test_cases.push_back(test);
 			}
 			test.a = sw::unum::posit<nbits, es>(sw::unum::maxpos_value<nbits, es>());
 			test.b = sw::unum::posit<nbits, es>(sw::unum::maxpos_value<nbits, es>());
 			test_cases.push_back(test);
-			for (int i = 0; i < int(1) << (es + 1); i++) {
+			for (int i = 0; i < int(1) << (es + 2); i++) {
 				test.a--; test.b--;
 				test_cases.push_back(test);
 			}
 			test.a = 1.0;
 			test.b = 1.0;
 			test_cases.push_back(test);
-			constexpr size_t fbits = nbits - 3 - es;
-			constexpr size_t enumeration = fbits > 5 ? 5 : fbits;
+			for (int i = 0; i < int(1) << enumeration; i++) {
+				test.a--; test.b++;
+				test_cases.push_back(test);
+			}
+			test.a = 0.5;
+			test.b = 2.0;
+			test_cases.push_back(test);
 			for (int i = 0; i < int(1) << enumeration; i++) {
 				test.a--; test.b++;
 				test_cases.push_back(test);
 			}
 
-
+			// execute and output the test vector
 			sw::unum::posit<nbits, es> pa, pb, padd, pref;
 			double da, db;
+			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
 			for (size_t i = 0; i < test_cases.size(); i++) {
 				pa = test_cases[i].a;
 				da = pa.to_double();
@@ -97,6 +107,9 @@ namespace sw {
 			static_assert(nbits >= 16, "Use exhaustive testing for posits smaller than 16");
 			static_assert(nbits < 64, "TODO: smoke test algorithm only works for nbits < 64");
 
+			constexpr size_t fbits = nbits - 3 - es;
+			constexpr size_t enumeration = fbits > 5 ? 5 : fbits;
+
 			const uint64_t STATE_SPACE = (uint64_t(1) << nbits);
 
 			int nrOfFailedTests = 0;
@@ -107,28 +120,34 @@ namespace sw {
 			test.a = sw::unum::posit<nbits, es>(sw::unum::minpos_value<nbits, es>());
 			test.b = sw::unum::posit<nbits, es>(sw::unum::minpos_value<nbits, es>());
 			test_cases.push_back(test);
-			for (int i = 0; i < int(1) << (es + 1); i++) {
+			for (int i = 0; i < int(1) << (es + 2); i++) {
 				test.a++; test.b++;
 				test_cases.push_back(test);
 			}
 			test.a = sw::unum::posit<nbits, es>(sw::unum::maxpos_value<nbits, es>());
 			test.b = sw::unum::posit<nbits, es>(sw::unum::maxpos_value<nbits, es>());
 			test_cases.push_back(test);
-			for (int i = 0; i < int(1) << (es + 1); i++) {
+			for (int i = 0; i < int(1) << (es + 2); i++) {
 				test.a--; test.b--;
 				test_cases.push_back(test);
 			}
 			test.a = 1.0;
 			test.b = 1.0;
 			test_cases.push_back(test);
-			constexpr size_t fbits = nbits - 3 - es;
-			constexpr size_t enumeration = fbits > 5 ? 5 : fbits;
+			for (int i = 0; i < int(1) << enumeration; i++) {
+				test.a--; test.b++;
+				test_cases.push_back(test);
+			}
+			test.a = 0.5;
+			test.b = 2.0;
+			test_cases.push_back(test);
 			for (int i = 0; i < int(1) << enumeration; i++) {
 				test.a--; test.b++;
 				test_cases.push_back(test);
 			}
 
-
+			// execute and output the test vector
+			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
 			sw::unum::posit<nbits, es> pa, pb, psub, pref;
 			double da, db;
 			for (size_t i = 0; i < test_cases.size(); i++) {
@@ -155,6 +174,9 @@ namespace sw {
 			static_assert(nbits >= 16, "Use exhaustive testing for posits smaller than 16");
 			static_assert(nbits < 64, "TODO: smoke test algorithm only works for nbits < 64");
 
+			constexpr size_t fbits = nbits - 3 - es;
+			constexpr size_t enumeration = fbits > 5 ? 5 : fbits;
+
 			int nrOfFailedTests = 0;
 
 			std::vector< TestCase<nbits, es> > test_cases;
@@ -169,11 +191,20 @@ namespace sw {
 			test.a = sw::unum::posit<nbits, es>(sw::unum::maxpos_value<nbits, es>());
 			test_cases.push_back(test);
 			test.a = sw::unum::posit<nbits, es>(sw::unum::minpos_value<nbits, es>());
-			for (int i = 0; i < int(1) << (es + 1); i++) {
+			for (int i = 0; i < int(1) << (es + 2); i++) {
 				test.a++; test.b--;
 				test_cases.push_back(test);
 			}
+			test.a = 0.5;
+			test.b = 2.0;
+			test_cases.push_back(test);
+			for (int i = 0; i < int(1) << enumeration; i++) {
+				test.a--; test.b++;
+				test_cases.push_back(test);
+			}
 
+			// execute and output the test vector
+			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
 			sw::unum::posit<nbits, es> pa, pb, pmul, pref;
 			double da, db;
 			for (size_t i = 0; i < test_cases.size(); i++) {
@@ -201,6 +232,9 @@ namespace sw {
 			static_assert(nbits >= 16, "Use exhaustive testing for posits smaller than 16");
 			static_assert(nbits < 64, "TODO: smoke test algorithm only works for nbits < 64");
 
+			constexpr size_t fbits = nbits - 3 - es;
+			constexpr size_t enumeration = fbits > 5 ? 5 : fbits;
+
 			const size_t STATE_SPACE = (unsigned(1) << nbits);
 
 			int nrOfFailedTests = 0;
@@ -225,14 +259,13 @@ namespace sw {
 			test.a = 1.0;
 			test.b = 1.0;
 			test_cases.push_back(test);
-			constexpr size_t fbits = nbits - 3 - es;
-			constexpr size_t enumeration = fbits > 5 ? 5 : fbits;
 			for (int i = 0; i < int(1) << enumeration; i++) {
 				test.a--; test.b++;
 				test_cases.push_back(test);
 			}
 
-
+			// execute and output the test vector
+			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
 			sw::unum::posit<nbits, es> pa, pb, pdiv, pref;
 			double da, db;
 			for (size_t i = 0; i < test_cases.size(); i++) {
@@ -360,7 +393,8 @@ namespace sw {
 
 			sw::unum::posit<nbits + 1, es> pref, pprev, pnext;
 
-			// execute the test
+			// execute and output the test vector
+			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
 			int nrOfFailedTests = 0;
 			double minpos = sw::unum::minpos_value<nbits + 1, es>();
 			double eps;
@@ -538,15 +572,22 @@ namespace sw {
 				break;
 			}
 			// generate the full state space set of valid posit values
+			std::random_device rd;     //Get a random seed from the OS entropy device, or whatever
+			std::mt19937_64 eng(rd()); //Use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
+									   //Define the distribution, by default it goes from 0 to MAX(unsigned long long)
+			std::uniform_int_distribution<unsigned long long> distr;
 			std::vector<double> operand_values(SIZE_STATE_SPACE);
 			for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
-				presult.set_raw_bits(std::rand());
+				presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as posit encoding
 				operand_values[i] = presult.to_double();
 			}
+
+			// execute and output the test vector
+			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
 			double da, db;
 			unsigned ia, ib;  // random indices for picking operands to test
 			for (unsigned i = 1; i < nrOfRandoms; i++) {
-				ia = std::rand() % SIZE_STATE_SPACE;
+				ia = std::rand() % SIZE_STATE_SPACE; 
 				da = operand_values[ia];
 				pa = da;
 				ib = std::rand() % SIZE_STATE_SPACE;

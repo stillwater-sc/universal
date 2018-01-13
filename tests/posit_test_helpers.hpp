@@ -9,6 +9,8 @@
 #include <vector>
 #include <iostream>
 #include <typeinfo>
+#include <random>
+#include <limits>
 
 namespace sw {
 	namespace unum {
@@ -574,9 +576,13 @@ namespace sw {
 				break;
 			}
 			// generate the full state space set of valid posit values
+			std::random_device rd;     //Get a random seed from the OS entropy device, or whatever
+			std::mt19937_64 eng(rd()); //Use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
+									   //Define the distribution, by default it goes from 0 to MAX(unsigned long long)
+			std::uniform_int_distribution<unsigned long long> distr;
 			std::vector<double> operand_values(SIZE_STATE_SPACE);
 			for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
-				presult.set_raw_bits(std::rand());
+				presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as posit encoding
 				operand_values[i] = presult.to_double();
 			}
 			double da, db;
