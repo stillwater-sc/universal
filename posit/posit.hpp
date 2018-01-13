@@ -527,7 +527,7 @@ public:
 		unsigned long mask = 1;
 		for ( int i = 0; i < nbits; i++ ) {
 			raw_bits.set(i,(value & mask));
-			mask = mask << 1;
+			mask <<= 1;
 		}
 		// decode to cache the posit number interpretation
 		decode(raw_bits);
