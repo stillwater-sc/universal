@@ -83,6 +83,7 @@ namespace sw {
 			sw::unum::posit<nbits, es> pa, pb, padd, pref;
 			double da, db;
 			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
+			std::cout << setw(nbits) << "Operand A  " << " + " << setw(nbits) << "Operand B  " << " = " << setw(nbits) << "Golden Reference  " << " " << setw(nbits/4) << "HEX " << std::endl;
 			for (size_t i = 0; i < test_cases.size(); i++) {
 				pa = test_cases[i].a;
 				da = pa.to_double();
@@ -97,7 +98,7 @@ namespace sw {
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, padd);
 				}
-				std::cout << pa.get() << " + " << pb.get() << " = " << pref.get() << std::endl;
+				std::cout << pa.get() << " + " << pb.get() << " = " << pref.get() << " " << sw::unum::to_hex(pref.get()) << std::endl;
 			}
 			return nrOfFailedTests;
 		}
@@ -148,6 +149,8 @@ namespace sw {
 
 			// execute and output the test vector
 			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
+			std::cout << setw(nbits) << "Operand A  " << " - " << setw(nbits) << "Operand B  " << " = " << setw(nbits) << "Golden Reference  " << " " << setw(nbits / 4) << "HEX " << std::endl;
+
 			sw::unum::posit<nbits, es> pa, pb, psub, pref;
 			double da, db;
 			for (size_t i = 0; i < test_cases.size(); i++) {
@@ -164,7 +167,7 @@ namespace sw {
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psub);
 				}
-				std::cout << pa.get() << " - " << pb.get() << " = " << pref.get() << std::endl;
+				std::cout << pa.get() << " - " << pb.get() << " = " << pref.get() << " " << sw::unum::to_hex(pref.get()) << std::endl;
 			}
 			return nrOfFailedTests;
 		}
@@ -205,6 +208,8 @@ namespace sw {
 
 			// execute and output the test vector
 			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
+			std::cout << setw(nbits) << "Operand A  " << " * " << setw(nbits) << "Operand B  " << " = " << setw(nbits) << "Golden Reference  " << " " << setw(nbits / 4) << "HEX " << std::endl;
+
 			sw::unum::posit<nbits, es> pa, pb, pmul, pref;
 			double da, db;
 			for (size_t i = 0; i < test_cases.size(); i++) {
@@ -221,7 +226,7 @@ namespace sw {
 				else {
 					// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
 				}
-				std::cout << pa.get() << " * " << pb.get() << " = " << pref.get() << std::endl;
+				std::cout << pa.get() << " * " << pb.get() << " = " << pref.get() << " " << sw::unum::to_hex(pref.get()) << std::endl;
 			}
 			return nrOfFailedTests;
 		}
@@ -266,6 +271,8 @@ namespace sw {
 
 			// execute and output the test vector
 			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
+			std::cout << setw(nbits) << "Operand A  " << " / " << setw(nbits) << "Operand B  " << " = " << setw(nbits) << "Golden Reference  " << " " << setw(nbits / 4) << "HEX " << std::endl;
+
 			sw::unum::posit<nbits, es> pa, pb, pdiv, pref;
 			double da, db;
 			for (size_t i = 0; i < test_cases.size(); i++) {
@@ -282,7 +289,7 @@ namespace sw {
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, pdiv);
 				}
-				std::cout << pa.get() << " / " << pb.get() << " = " << pref.get() << std::endl;
+				std::cout << pa.get() << " / " << pb.get() << " = " << pref.get() << " " << sw::unum::to_hex(pref.get()) << std::endl;
 			}
 			return nrOfFailedTests;
 		}
@@ -395,6 +402,7 @@ namespace sw {
 
 			// execute and output the test vector
 			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
+
 			int nrOfFailedTests = 0;
 			double minpos = sw::unum::minpos_value<nbits + 1, es>();
 			double eps;
@@ -547,7 +555,7 @@ namespace sw {
 		int SmokeTestRandoms(std::string tag, int opcode, uint32_t nrOfRandoms) {
 			const size_t SIZE_STATE_SPACE = nrOfRandoms;
 			int nrOfFailedTests = 0;
-			sw::unum::posit<nbits, es> pa, pb, presult, preference;
+			sw::unum::posit<nbits, es> pa, pb, presult, pref;
 
 			if (opcode == OPCODE_RAN) {
 				// generate a random operator
@@ -584,6 +592,8 @@ namespace sw {
 
 			// execute and output the test vector
 			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
+			std::cout << setw(nbits) << "Operand A  " << " " << operation_string <<  " " << setw(nbits) << "Operand B  " << " = " << setw(nbits) << "Golden Reference  " << " " << setw(nbits / 4) << "HEX " << std::endl;
+
 			double da, db;
 			unsigned ia, ib;  // random indices for picking operands to test
 			for (unsigned i = 1; i < nrOfRandoms; i++) {
@@ -593,15 +603,15 @@ namespace sw {
 				ib = std::rand() % SIZE_STATE_SPACE;
 				db = operand_values[ib];
 				pb = db;
-				sw::qa::execute(opcode, da, db, preference, pa, pb, presult);
-				if (fabs(presult.to_double() - preference.to_double()) > 0.000000001) {
+				sw::qa::execute(opcode, da, db, pref, pa, pb, presult);
+				if (fabs(presult.to_double() - pref.to_double()) > 0.000000001) {
 					nrOfFailedTests++;
-					ReportBinaryArithmeticError("FAIL", operation_string, pa, pb, preference, presult);
+					ReportBinaryArithmeticError("FAIL", operation_string, pa, pb, pref, presult);
 				}
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, pa, pb, preference, presult);
 				}
-				std::cout << pa.get() << " " << operation_string << " " << pb.get() << " = " << preference.get() << std::endl;
+				std::cout << pa.get() << " " << operation_string << " " << pb.get() << " = " << pref.get() << " " << sw::unum::to_hex(pref.get()) << std::endl;
 			}
 
 			return nrOfFailedTests;
