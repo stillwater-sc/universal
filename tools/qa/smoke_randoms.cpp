@@ -27,7 +27,9 @@ try {
 	float upper_limit = int64_t(1) << 17;
 	using namespace std::chrono;
 	steady_clock::time_point t1 = steady_clock::now();
-	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<32,2>("random smoke testing", sw::qa::OPCODE_ADD, 100);
+	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<32, 2>("random smoke testing", sw::qa::OPCODE_ADD, 100);
+	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<32, 2>("random smoke testing", sw::qa::OPCODE_SUB, 100);
+	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<32, 2>("random smoke testing", sw::qa::OPCODE_MUL, 100);
 	steady_clock::time_point t2 = steady_clock::now();
 	duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 	double elapsed = time_span.count();
