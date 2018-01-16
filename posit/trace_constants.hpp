@@ -25,6 +25,17 @@ constexpr bool _trace_reciprocate = false;
 
 # else // !POSIT_VERBOSE_OUTPUT
 
+#ifdef POSIT_TRACE_ALL
+#define POSIT_TRACE_DECODED
+#define POSIT_TRACE_CONVERSION
+#define POSIT_TRACE_ROUNDING
+#define POSIT_TRACE_ADD
+#define POSIT_TRACE_SUB
+#define POSIT_TRACE_MUL
+#define POSIT_TRACE_DIV
+#define POSIT_TRACE_RECIPROCATE
+#endif
+
 // posit decode and conversion
 
 #ifndef POSIT_TRACE_DECODED

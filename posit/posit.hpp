@@ -22,8 +22,6 @@
 #include "exponent.hpp"
 #include "regime.hpp"
 
-#define INCREMENT_POSIT_CARRY_CHAIN
-
 namespace sw {
 	namespace unum {
 
@@ -228,8 +226,8 @@ public:
         } 
 
 		if (_trace_add) {
-			std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1  " << r1 << std::endl;
-			std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2  " << r2 << std::endl;
+			std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1       " << r1 << std::endl;
+			std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
 		}
 		
 		if (r1_sign != r2_sign) r2 = twos_complement(r2);
@@ -237,7 +235,7 @@ public:
 		std::bitset<abits+1> sum;
 		const bool carry = add_unsigned(r1, r2, sum);
 
-		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum " << sum << std::endl;
+		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum      " << sum << std::endl;
                 
 		long shift = 0;
 		if (carry) {
@@ -261,7 +259,7 @@ public:
 		convert(r1_sign, scale_of_result, sum, hpos);
 #else
 		sum <<= abits - hpos + 1;
-		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum " << sum << std::endl;
+		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum      " << sum << std::endl;
 		convert(r1_sign, scale_of_result, sum);
 #endif
 		return *this;                
@@ -815,7 +813,7 @@ public:
 		_raw_bits.set(nbits - 1, _sign);
 		if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
 	}
-#endif
+
 
 	/** Generalized conversion function (could replace convert_to_posit). \p _frac is fraction of arbitrary size with hidden bit at \p hpos.
          *  \p hpos == \p FBits means that the hidden bit is in front of \p _frac, i.e. \p _frac is a pure fraction without hidden bit.
@@ -823,56 +821,58 @@ public:
          * 
          */
 	template <size_t FBits>
-	void convert(bool _negative, int _scale, std::bitset<FBits> _frac, int hpos) 
-	{
-            setToZero();
-            if (_trace_conversion) std::cout << "sign " << (_negative ? "-1 " : " 1 ") << "scale " << _scale << " fraction " << _frac << std::endl;
+	void convert(bool _negative, int _scale, std::bitset<FBits> _frac, int hpos) {
+		if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+        setToZero();
+        if (_trace_conversion) std::cout << "sign " << (_negative ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << _frac << std::endl;
                 
-            // construct the posit
-			_sign = _negative;
-			int k = calculate_unconstrained_k<nbits, es>(_scale);
-			// interpolation rule checks
-			if (check_inward_projection_range(_scale)) {    // regime dominated
-				if (_trace_conversion) std::cout << "inward projection" << std::endl;
-				// we are projecting to minpos/maxpos
-				_regime.assign_regime_pattern(k);
-				// store raw bit representation
-				_raw_bits = _sign ? twos_complement(collect()) : collect();
-				_raw_bits.set(nbits - 1, _sign);
-				// we are done
-				if (_trace_rounding) std::cout << "projection  rounding ";
-			} 
-			else {
-				unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(k);
-				bool carry = false;
-				switch (_exponent.assign_exponent_bits(_scale, k, nr_of_regime_bits)) {
-				case GEOMETRIC_ROUND_UP:
+        // construct the posit
+		_sign = _negative;
+		int k = calculate_unconstrained_k<nbits, es>(_scale);
+		// interpolation rule checks
+		if (check_inward_projection_range(_scale)) {    // regime dominated
+			if (_trace_conversion) std::cout << "inward projection" << std::endl;
+			// we are projecting to minpos/maxpos
+			_regime.assign_regime_pattern(k);
+			// store raw bit representation
+			_raw_bits = _sign ? twos_complement(collect()) : collect();
+			_raw_bits.set(nbits - 1, _sign);
+			// we are done
+			if (_trace_rounding) std::cout << "projection  rounding ";
+		} 
+		else {
+			unsigned int nr_of_regime_bits = _regime.assign_regime_pattern(k);
+			bool carry = false;
+			switch (_exponent.assign_exponent_bits(_scale, k, nr_of_regime_bits)) {
+			case GEOMETRIC_ROUND_UP:
 #ifdef INCREMENT_POSIT_CARRY_CHAIN
-					carry = _exponent.increment();
-					if (carry)_regime.increment();
+				carry = _exponent.increment();
+				if (carry)_regime.increment();
 #endif // INCREMENT_POSIT_CARRY_CHAIN
-					break;
-				case NO_ADDITIONAL_ROUNDING:
-					break;
-				case ARITHMETIC_ROUNDING:
-					unsigned int nr_of_exp_bits = _exponent.nrBits();
-					unsigned int remaining_bits = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
-					bool round_up = _fraction.assign(remaining_bits, _frac, hpos);
-					if (round_up) project_up();
-				}
-				// store raw bit representation
-				_raw_bits = _sign ? twos_complement(collect()) : collect();
-				_raw_bits.set(nbits - 1, _sign);
+				break;
+			case NO_ADDITIONAL_ROUNDING:
+				break;
+			case ARITHMETIC_ROUNDING:
+				unsigned int nr_of_exp_bits = _exponent.nrBits();
+				unsigned int remaining_bits = nbits - 1 - nr_of_regime_bits - nr_of_exp_bits > 0 ? nbits - 1 - nr_of_regime_bits - nr_of_exp_bits : 0;
+				bool round_up = _fraction.assign(remaining_bits, _frac, hpos);
+				if (round_up) project_up();
 			}
+			// store raw bit representation
+			_raw_bits = _sign ? twos_complement(collect()) : collect();
+			_raw_bits.set(nbits - 1, _sign);
+		}
 
-            if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;            
-        }
+        if (_trace_conversion) std::cout << "raw bits: "  << _raw_bits << " posit bits: "  << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;            
+    }
 
-	
+#endif	
+
 	template<size_t input_fbits>
 	void convert(bool sign, int scale, std::bitset<input_fbits> input_fraction) {
 		setToZero();
-		if (_trace_conversion) std::cout << "sign " << (sign ? "-1 " : " 1 ") << "scale " << scale << " fraction " << input_fraction << std::endl;
+		if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+		if (_trace_conversion) std::cout << "sign " << (sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << scale << " fraction " << input_fraction << std::endl;
 
 		// construct the posit
 		_sign = sign;

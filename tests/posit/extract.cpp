@@ -64,7 +64,7 @@ posit<nbits, es> extract(float f) {
 	constexpr size_t fbits = p.fbits;
 	std::bitset<fbits> _fraction = extract_float_fraction<fbits>(_23b_fraction_without_hidden_bit);
 
-	p.convert(_sign, _scale, _fraction, fbits);
+	p.convert(_sign, _scale, _fraction);
 	return p;
 }
 
@@ -90,7 +90,7 @@ try {
 	exponent = extract_exponent(f);
 	fraction = extract_fraction(f);
 	_fraction = extract_float_fraction<nbits>(fraction);
-	cout << "f " << f << "sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
+	cout << "f " << f << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
 
 	myPosit = extract<nbits, es>(f);
 	cout << "posit<" << nbits << "," << es << "> = " << myPosit << endl;
@@ -103,7 +103,7 @@ try {
 	exponent = extract_exponent(f);
 	fraction = extract_fraction(f);
 	_fraction = extract_float_fraction<nbits>(fraction);
-	cout << "f " << f << "sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
+	cout << "f " << f << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
 
 	myPosit = extract<nbits, es>(f);
 	cout << "posit<" << nbits << "," << es << "> = " << myPosit << endl;

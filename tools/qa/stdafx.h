@@ -12,7 +12,8 @@
 #include <cstdint>	// uint8_t, etc.
 #include <string>
 #include <iostream>
-#include <sstream>
+#include <fstream>
 #include <iomanip>
 #include <cmath>        // for frexp/frexpf
 #include <bitset>
+#include <direct.h>
