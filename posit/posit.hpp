@@ -187,81 +187,84 @@ public:
 		negated.decode(twos_complement(_raw_bits));
 		return negated;
 	}
-	
-	posit<nbits, es>& operator+=(const posit& rhs) 
-	{
+	void add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits+1>& result) {
 		// with sign/magnitude adders it is customary to organize the computation 
 		// along the four quadrants of sign combinations
 		//  + + = +
 		//  + - =   lhs > rhs ? + : -
 		//  - + =   lhs > rhs ? - : +
 		//  - - = -
-		// to simplify the result processing
-		// By assigning the biggest absolute value to R1, the sign of the result will be sign of lhs.
-     
-		if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
-		if (isZero()) {
-			*this = rhs;
-			return *this;
-		} else if (rhs.isZero()) {
-			return *this;
-		} else if (isInfinite()) {
-			return *this;
-		} else if (rhs.isInfinite()) {
-			*this = rhs;
-			return *this;
-		}
-		
-		int lhs_scale = scale(), rhs_scale = rhs.scale(), scale_of_result= std::max(lhs_scale, rhs_scale);
-		
-		// align the fractions
-        std::bitset<abits> r1 = _fraction.template nshift<abits>(lhs_scale - scale_of_result + 3), 
-                           r2 = rhs._fraction.template nshift<abits>(rhs_scale - scale_of_result + 3);
-        bool r1_sign = _sign, r2_sign = rhs._sign;
-                
+		// to simplify the result processing assign the biggest 
+		// absolute value to R1, then the sign of the result will be sign of lhs.
 
-        if (sw::unum::abs(*this) < sw::unum::abs(rhs)) {
-            std::swap(r1, r2);
-            std::swap(r1_sign, r2_sign);
-        } 
+		if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+		if (lhs.isInfinite() || rhs.isInfinite()) {
+			result.setToInfinite();
+			return;
+		}
+		int lhs_scale = scale(), rhs_scale = rhs.scale(), scale_of_result = std::max(lhs_scale, rhs_scale);
+
+		// align the fractions
+		std::bitset<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
+		std::bitset<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
+		bool r1_sign = lhs.sign(), r2_sign = rhs.sign();
+
+		if (sw::unum::abs(lhs) < sw::unum::abs(rhs)) {
+			std::swap(r1, r2);
+			std::swap(r1_sign, r2_sign);
+		}
 
 		if (_trace_add) {
 			std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1       " << r1 << std::endl;
 			std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
 		}
-		
+
 		if (r1_sign != r2_sign) r2 = twos_complement(r2);
-        
-		std::bitset<abits+1> sum;
+
+		std::bitset<abits + 1> sum;
 		const bool carry = add_unsigned(r1, r2, sum);
 
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum      " << sum << std::endl;
-                
+
 		long shift = 0;
 		if (carry) {
 			if (r1_sign == r2_sign)   // the carry && signs= implies that we have a number bigger than r1
 				shift = -1;
-			else 
+			else
 				// the carry && signs!= implies r2 is complement, result < r1, must find hidden bit (in the complement)
 				for (int i = abits - 1; i >= 0 && !sum[i]; i--)
 					shift++;
 		}
 		assert(shift >= -1);
-                
+
 		if (shift >= long(abits)) {            // we have actual 0                            
-			setToZero();
-			return *this;
+			sum.reset();
+			result.set(false, 0, sum, true, false, false);
+			return;
 		}
-                
+
 		scale_of_result -= shift;
 		const int hpos = abits - 1 - shift;         // position hidden bit 
-#ifdef ALGO1
-		convert(r1_sign, scale_of_result, sum, hpos);
-#else
 		sum <<= abits - hpos + 1;
 		if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum      " << sum << std::endl;
-		convert(r1_sign, scale_of_result, sum);
-#endif
+		result.set(r1_sign, scale_of_result, sum, false, false, false);
+	}
+	// we model a hw pipeline
+	posit<nbits, es>& operator+=(const posit& rhs) {
+		value<fbits> a, b;
+		normalize(a);
+		rhs.normalize(b);
+		value<abits+1> sum;
+		add(a, b, sum);
+		if (sum.isZero()) {
+			setToZero();
+		}
+		else if (sum.isInfinite()) {
+			setToInfinite();
+		}
+		else {
+			convert(sum.sign(), sum.scale(), sum.fraction());
+		}
 		return *this;                
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
@@ -660,8 +663,10 @@ public:
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	value<fbits> convert_to_scientific_notation() const {
-		value<fbits> v(_sign, scale(), get_fraction().get(), isZero());
-		return v;
+		return value<fbits>(_sign, scale(), get_fraction().get(), isZero(), isInfinite());
+	}
+	void normalize(value<fbits>& v) const {
+		v.set(_sign, scale(), _fraction.get(), isZero(), isInfinite());
 	}
 	// collect the posit components into a bitset
 	std::bitset<nbits> collect() {
@@ -956,6 +961,14 @@ private:
 	void multiply(const value<fbits>& v1, const value<fbits>& v2, value<mbits>& result) {
 		static_assert(fhbits > 0, "posit configuration does not support multiplication");
 		if (_trace_mul) std::cout << "v1  " << components(v1) << std::endl << "v2  " << components(v2) << std::endl;
+		if (v1.isZero() || v2.isZero()) {
+			result.setToZero();
+			return;
+		}
+		if (v1.isInfinite() || v2.isInfinite()) {
+			result.setToInfinite();
+			return;
+		}
 		bool new_sign = v1.sign() ^ v2.sign();
 		int new_scale = v1.scale() + v2.scale();
 		std::bitset<mbits> result_fraction;
@@ -980,8 +993,8 @@ private:
 
 		}
 		if (_trace_mul) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
-		// TODO: how do you recognize the special case of zero?
-		result.set(new_sign, new_scale, result_fraction, false);
+
+		result.set(new_sign, new_scale, result_fraction, false, false, false);
 	}
 
     // template parameters need names different from class template parameters (for gcc and clang)
