@@ -81,7 +81,7 @@ namespace sw {
 			std::bitset<es> e = p.get_exponent().get();
 			int exponentBits = p.get_exponent().nrBits();
 			int nrOfExponentBitsProcessed = 0;
-			for (int i = es - 1; i >= 0; --i) {
+			for (int i = int(es) - 1; i >= 0; --i) {
 				if (exponentBits > nrOfExponentBitsProcessed++) {
 					ss << (e[i] ? "1" : "0");
 				}
