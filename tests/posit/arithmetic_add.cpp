@@ -42,7 +42,7 @@ void GenerateTestCase(double da, double db) {
 	cout << "reference " << pref << " result " << psum << endl << endl;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -62,15 +62,18 @@ try {
 	pb.set_raw_bits(uint64_t(0b10000001));
 	da = pa.to_double();
 	db = pb.to_double();
-	cout << setprecision(20) << da << " " << db << endl;
+	std::cout << setprecision(20) << da << " " << db << std::endl;
 	psum = pa + pb;
-	cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum.to_double() << endl;
+	std::cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum.to_double() << std::endl;
 	psum = da + db;
-	cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum.to_double() << endl;
+	std::cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum.to_double() << std::endl;
 	GenerateTestCase<8, 4>(da, db);
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>("Manual Testing", true), "posit<8,4>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(tag, true, OPCODE_ADD, 1000), "posit<64,2>", "addition");
+
 #else
 
 	cout << "Posit addition validation" << endl;

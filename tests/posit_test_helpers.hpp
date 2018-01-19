@@ -80,6 +80,18 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
+		void ReportBinaryArithmeticErrorInBinary(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+			std::cerr << test_case << std::setprecision(20)
+				<< std::setw(nbits) << lhs.get()
+				<< " " << op << " "
+				<< std::setw(nbits) << rhs.get()
+				<< " != "
+				<< std::setw(nbits) << pref.get() << " instead it yielded "
+				<< std::setw(nbits) << presult.get()
+				<< " " << pretty_print(presult,20) << std::endl;
+		}
+
+		template<size_t nbits, size_t es>
 		void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 			std::cerr << test_case
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
@@ -597,7 +609,7 @@ namespace sw {
 				execute(opcode, da, db, preference, pa, pb, presult);
 				if (fabs(presult.to_double() - preference.to_double()) > 0.000000001) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", operation_string, pa, pb, preference, presult);
+					if (bReportIndividualTestCases) ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, preference, presult);
 
 				}
 				else {
