@@ -10,6 +10,34 @@
 #include <iostream>
 #include <limits>
 
+#if defined(__clang__)
+/* Clang/LLVM. ---------------------------------------------- */
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+/* Intel ICC/ICPC. ------------------------------------------ */
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+/* GNU GCC/G++. --------------------------------------------- */
+typedef __float128 quadruple;
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+/* Hewlett-Packard C/aC++. ---------------------------------- */
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+/* IBM XL C/C++. -------------------------------------------- */
+
+#elif defined(_MSC_VER)
+/* Microsoft Visual Studio. --------------------------------- */
+typedef long double quadruple;
+
+#elif defined(__PGI)
+/* Portland Group PGCC/PGCPP. ------------------------------- */
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+/* Oracle Solaris Studio. ----------------------------------- */
+
+#endif
+
 // Posits encode error conditions as NaR (Not a Real), propagating the error through arithmetic operations is preferred
 
 #include "../bitset/bitset_helpers.hpp"
@@ -467,7 +495,7 @@ public:
 	posit<nbits,es>& set_raw_bits(uint64_t value) {
 		setToZero();
 		std::bitset<nbits> raw_bits;
-		unsigned long mask = 1;
+		uint64_t mask = 1;
 		for ( int i = 0; i < nbits; i++ ) {
 			raw_bits.set(i,(value & mask));
 			mask <<= 1;
@@ -578,7 +606,7 @@ public:
 		if (isZero()) return 0;
 		if (isNaR()) throw "NaR (Not a Real)";
 		// returning the integer representation of a posit only works for [1,NaR) and is approximate
-		return int64_t(to_double());
+		return int64_t(to_double());   // TODO: this does not generate 64 bits of precision
 	}
 	float   to_float() const {
 		return (float)to_double();
@@ -587,6 +615,15 @@ public:
 		if (isZero())	return 0.0;
 		if (isNaR())	return INFINITY;
 		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
+	}
+	quadruple to_quadruple() const {
+		if (isZero())  return 0.0;
+		if (isNaR())   return INFINITY;
+		quadruple s = sign_value();
+		quadruple r = regime_value(); // regime value itself will fit in a double
+		quadruple e = exponent_value(); // same with exponent
+		quadruple f = 1.0 + _fraction.to_quadruple();
+		return s * r * e * f;
 	}
 	
 	// Maybe remove explicit, MTL compiles, but we have lots of double computation then

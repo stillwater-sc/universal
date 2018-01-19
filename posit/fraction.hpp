@@ -29,7 +29,8 @@ public:
 	bool none() const {	return _Bits.none(); }
 	unsigned int nrBits() const { return _NrOfBits;	}
 	// TODO: this fails when fbits > 64 and we cannot represent the fraction by a 64bit unsigned integer
-	double value() const { return double(_Bits.to_ullong()) / double(uint64_t(1) << (fbits));	}
+	double value() const { return double(_Bits.to_ullong()) / double(uint64_t(1) << fbits);	}
+	quadruple to_quadruple() const { return quadruple(_Bits.to_ullong()) / quadruple(uint64_t(1) << fbits);  }
 
 	// modifiers
 	void reset() {
