@@ -83,7 +83,7 @@ namespace sw {
 			sw::unum::posit<nbits, es> pa, pb, padd, pref;
 			double da, db;
 			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
-			std::cout << setw(nbits) << "Operand A  " << " + " << setw(nbits) << "Operand B  " << " = " << setw(nbits) << "Golden Reference  " << " " << setw(nbits/4) << "HEX " << std::endl;
+			std::cout << std::setw(nbits) << "Operand A  " << " + " << std::setw(nbits) << "Operand B  " << " = " << std::setw(nbits) << "Golden Reference  " << " " << std::setw(nbits/4) << "HEX " << std::endl;
 			for (size_t i = 0; i < test_cases.size(); i++) {
 				pa = test_cases[i].a;
 				da = pa.to_double();
@@ -149,7 +149,7 @@ namespace sw {
 
 			// execute and output the test vector
 			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
-			std::cout << setw(nbits) << "Operand A  " << " - " << setw(nbits) << "Operand B  " << " = " << setw(nbits) << "Golden Reference  " << " " << setw(nbits / 4) << "HEX " << std::endl;
+			std::cout << std::setw(nbits) << "Operand A  " << " - " << std::setw(nbits) << "Operand B  " << " = " << std::setw(nbits) << "Golden Reference  " << " " << std::setw(nbits / 4) << "HEX " << std::endl;
 
 			sw::unum::posit<nbits, es> pa, pb, psub, pref;
 			double da, db;
@@ -208,7 +208,7 @@ namespace sw {
 
 			// execute and output the test vector
 			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
-			std::cout << setw(nbits) << "Operand A  " << " * " << setw(nbits) << "Operand B  " << " = " << setw(nbits) << "Golden Reference  " << " " << setw(nbits / 4) << "HEX " << std::endl;
+			std::cout << std::setw(nbits) << "Operand A  " << " * " << std::setw(nbits) << "Operand B  " << " = " << std::setw(nbits) << "Golden Reference  " << " " << std::setw(nbits / 4) << "HEX " << std::endl;
 
 			sw::unum::posit<nbits, es> pa, pb, pmul, pref;
 			double da, db;
@@ -271,7 +271,7 @@ namespace sw {
 
 			// execute and output the test vector
 			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
-			std::cout << setw(nbits) << "Operand A  " << " / " << setw(nbits) << "Operand B  " << " = " << setw(nbits) << "Golden Reference  " << " " << setw(nbits / 4) << "HEX " << std::endl;
+			std::cout << std::setw(nbits) << "Operand A  " << " / " << std::setw(nbits) << "Operand B  " << " = " << std::setw(nbits) << "Golden Reference  " << " " << std::setw(nbits / 4) << "HEX " << std::endl;
 
 			sw::unum::posit<nbits, es> pa, pb, pdiv, pref;
 			double da, db;
@@ -393,7 +393,7 @@ namespace sw {
 #if 0
 			std::cout << "Generated test patterns" << std::endl;
 			for (int i = 0; i < single_quadrant_cases + cases_around_plusminus_one; i++) {
-				std::cout << "[" << setw(3) << i << "] = " << test_patterns[i] << std::endl;
+				std::cout << "[" << std::setw(3) << i << "] = " << test_patterns[i] << std::endl;
 			}
 #endif
 			const int64_t NR_TEST_CASES = cases_around_plusminus_one + 4 * single_quadrant_cases;
@@ -592,7 +592,7 @@ namespace sw {
 
 			// execute and output the test vector
 			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
-			std::cout << setw(nbits) << "Operand A  " << " " << operation_string <<  " " << setw(nbits) << "Operand B  " << " = " << setw(nbits) << "Golden Reference  " << " " << setw(nbits / 4) << "HEX " << std::endl;
+			std::cout << std::setw(nbits) << "Operand A  " << " " << operation_string <<  " " << std::setw(nbits) << "Operand B  " << " = " << std::setw(nbits) << "Golden Reference  " << " " << std::setw(nbits / 4) << "HEX " << std::endl;
 
 			double da, db;
 			unsigned ia, ib;  // random indices for picking operands to test
