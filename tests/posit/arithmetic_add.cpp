@@ -38,6 +38,7 @@ void GenerateTestCase(double da, double db) {
 	pb = db;
 	pref = da + db;
 	psum = pa + pb;
+	cout << setprecision(std::numeric_limits<double>::max_digits10);
 	cout << "reference " << pref << " result " << psum << endl << endl;
 }
 
@@ -53,8 +54,20 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<6, 3>(INFINITY, INFINITY);
-	GenerateTestCase<3, 0>(0.5f, INFINITY);
+	//GenerateTestCase<6, 3>(INFINITY, INFINITY);
+	//GenerateTestCase<8, 4>(0.5f, -0.5f);
+	double da, db;
+	posit<8, 4> pa, pb, psum;
+	pa.set_raw_bits(uint64_t(0b00000001));
+	pb.set_raw_bits(uint64_t(0b10000001));
+	da = pa.to_double();
+	db = pb.to_double();
+	cout << setprecision(20) << da << " " << db << endl;
+	psum = pa + pb;
+	cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum.to_double() << endl;
+	psum = da + db;
+	cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum.to_double() << endl;
+	GenerateTestCase<8, 4>(da, db);
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>("Manual Testing", true), "posit<8,4>", "addition");
@@ -85,7 +98,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "addition");
-	//nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<16,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<24, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<24,1>", "addition");

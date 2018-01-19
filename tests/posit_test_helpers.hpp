@@ -69,7 +69,7 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		void ReportBinaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-			std::cerr << test_case
+			std::cerr << test_case << std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs

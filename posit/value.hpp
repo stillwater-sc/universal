@@ -260,16 +260,8 @@ namespace sw {
 			}
 			double sign_value() const { return (_sign ? -1.0 : 1.0); }
 			double scale_value() const {
-				double v = 0.0;
-				if (_zero) return v;
-				// TODO: breaks when _scale is larger than 64
-				if (_scale >= 0) {
-					v = double(uint64_t(1) << _scale);
-				}
-				else {
-					v = double(1.0) / double(uint64_t(1) << -_scale);
-				}
-				return v;
+				if (_zero) return 0.0;
+				return std::pow(2.0, _scale);
 			}
 			double fraction_value() const {
 				// TODO: this fails when fbits > 64 and we cannot represent the fraction by a 64bit unsigned integer
@@ -365,6 +357,70 @@ namespace sw {
 		template<size_t nfbits>
 		value<nfbits> abs(const value<nfbits>& v) {
 			return value<nfbits>(false, v.scale(), v.fraction(), v.isZero());
+		}
+
+		// add module
+		template<size_t fbits, size_t abits>
+		void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 1>& result) {
+			// with sign/magnitude adders it is customary to organize the computation 
+			// along the four quadrants of sign combinations
+			//  + + = +
+			//  + - =   lhs > rhs ? + : -
+			//  - + =   lhs > rhs ? - : +
+			//  - - = -
+			// to simplify the result processing assign the biggest 
+			// absolute value to R1, then the sign of the result will be sign of lhs.
+
+			if (lhs.isInfinite() || rhs.isInfinite()) {
+				result.setToInfinite();
+				return;
+			}
+			int lhs_scale = lhs.scale(), rhs_scale = rhs.scale(), scale_of_result = std::max(lhs_scale, rhs_scale);
+
+			// align the fractions
+			std::bitset<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
+			std::bitset<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
+			bool r1_sign = lhs.sign(), r2_sign = rhs.sign();
+
+			if (sw::unum::abs(lhs) < sw::unum::abs(rhs)) {
+				std::swap(r1, r2);
+				std::swap(r1_sign, r2_sign);
+			}
+
+			if (_trace_add || _trace_sub) {
+				std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1       " << r1 << std::endl;
+				std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
+			}
+
+			if (r1_sign != r2_sign) r2 = twos_complement(r2);
+
+			std::bitset<abits + 1> sum;
+			const bool carry = add_unsigned(r1, r2, sum);
+
+			if (_trace_add || _trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum      " << sum << std::endl;
+
+			long shift = 0;
+			if (carry) {
+				if (r1_sign == r2_sign)   // the carry && signs= implies that we have a number bigger than r1
+					shift = -1;
+				else
+					// the carry && signs!= implies r2 is complement, result < r1, must find hidden bit (in the complement)
+					for (int i = abits - 1; i >= 0 && !sum[i]; i--)
+						shift++;
+			}
+			assert(shift >= -1);
+
+			if (shift >= long(abits)) {            // we have actual 0                            
+				sum.reset();
+				result.set(false, 0, sum, true, false, false);
+				return;
+			}
+
+			scale_of_result -= shift;
+			const int hpos = abits - 1 - shift;         // position of the hidden bit 
+			sum <<= abits - hpos + 1;
+			if (_trace_add || _trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum      " << sum << std::endl;
+			result.set(r1_sign, scale_of_result, sum, false, false, false);
 		}
 
 }  // namespace unum
