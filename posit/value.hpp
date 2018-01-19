@@ -432,7 +432,7 @@ namespace sw {
 		void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbits>& result) {
 			static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
 			if (_trace_mul) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
-#ifdef POSIT_PROPAGATE_INFINITE
+
 			if (lhs.isInfinite() || rhs.isInfinite()) {
 				result.setToInfinite();
 				return;
@@ -441,16 +441,7 @@ namespace sw {
 				result.setToZero();
 				return;
 			}
-#else
-			if (lhs.isZero() || rhs.isZero()) {
-				result.setToZero();
-				return;
-			}
-			if (lhs.isInfinite() || rhs.isInfinite()) {
-				result.setToInfinite();
-				return;
-			}
-#endif
+
 			bool new_sign = lhs.sign() ^ rhs.sign();
 			int new_scale = lhs.scale() + rhs.scale();
 			std::bitset<mbits> result_fraction;

@@ -17,7 +17,7 @@ using namespace sw::unum;
 /*
 Regime range example for a posit<6,es>
 	 regime      scale
-	 00000          ~   value is either 0 or inf
+	 00000          ~   associated with either 0 or NaR (Not a Real)
 	 00001         -4
 	 0001-         -3
 	 001--         -2

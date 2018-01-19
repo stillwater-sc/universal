@@ -10,9 +10,7 @@
 #include <iostream>
 #include <limits>
 
-// Posits encode error conditions as +-INFINITE, propagating the error through arithmetic operations is preferred
-// When defined the semantics of 0 * INFINITE = INFINITE, otherwise 0 * INFINITE = 0
-#define POSIT_PROPAGATE_INFINITE
+// Posits encode error conditions as NaR (Not a Real), propagating the error through arithmetic operations is preferred
 
 #include "../bitset/bitset_helpers.hpp"
 #include "../bitset/bitset_logic.hpp"
@@ -35,7 +33,6 @@ template<size_t nbits, size_t es> posit<nbits, es> abs(const posit<nbits, es>& p
 
 
 
-
 /*
  class posit represents arbitrary configuration posits and their basic arithmetic operations (add/sub, mul/div)
  */
@@ -54,8 +51,8 @@ class posit
 			setToZero();
 			return *this;
 		}
-		if (v.isInfinite() || v.isNaN()) {  // posit's encode NaN as -inf
-			setToInfinite();
+		if (v.isInfinite() || v.isNaN()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
+			setToNaR();
 			return *this;
 		}
 
@@ -184,7 +181,7 @@ public:
 		if (isZero()) {
 			return *this;
 		}
-		if (isInfinite()) {
+		if (isNaR()) {
 			return *this;
 		}
 		posit<nbits, es> negated;
@@ -208,7 +205,7 @@ public:
 			setToZero();
 		}
 		else if (sum.isInfinite()) {
-			setToInfinite();
+			setToNaR();
 		}
 		else {
 			convert(sum.sign(), sum.scale(), sum.fraction());
@@ -236,7 +233,7 @@ public:
 			setToZero();
 		}
 		else if (product.isInfinite()) {
-			setToInfinite();
+			setToNaR();
 		}
 		else {
 			convert(product.sign(), product.scale(), product.fraction());
@@ -245,18 +242,18 @@ public:
 	}
 	posit<nbits, es>& operator/=(const posit& rhs) {
 		if (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
-		// since we are encoding error conditions as -inf, we need to process -inf condition first
+		// since we are encoding error conditions as NaR (Not a Real), we need to process that condition first
 		if (rhs.isZero()) {
-			setToInfinite();
+			setToNaR();
 			return *this;
 			//throw divide_by_zero{};
 		}
 		
-		if (isZero() || isInfinite()) {
+		if (isZero() || isNaR()) {
 			return *this;
 		}
 
-		if (rhs.isInfinite()) {
+		if (rhs.isNaR()) {
 			setToZero();
 			return *this;
 		}
@@ -292,13 +289,13 @@ public:
 	posit<nbits, es> reciprocate() const {
 		if (_trace_reciprocate) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
 		posit<nbits, es> p;
-		// special case of inf
-		if (isInfinite()) {
+		// special case of NaR (Not a Real)
+		if (isNaR()) {
 			p.setToZero();
 			return p;
 		}
 		if (isZero()) {
-			p.setToInfinite();
+			p.setToNaR();
 			return p;
 		}
 		// compute the reciprocal
@@ -341,7 +338,7 @@ public:
 		return p;
 	}
 	// SELECTORS
-	bool isInfinite() const {
+	bool isNaR() const {
 		return (_sign & _regime.isZero());
 	}
 	bool isZero() const {
@@ -454,7 +451,7 @@ public:
 		_fraction.reset();
 		_raw_bits.reset();
 	}
-	void setToInfinite() {
+	void setToNaR() {
 		_sign = true;
 		_regime.setToInfinite();
 		_exponent.reset();
@@ -558,7 +555,7 @@ public:
 			std::bitset<nbits> tmp(raw_bits);
 			tmp.reset(nbits - 1);
 			if (tmp.none()) {			
-				setToInfinite();  // special case = +-inf
+				setToNaR();  // special case = NaR (Not a Real)
 			}
 			else {
 				extract_fields(raw_bits);
@@ -579,26 +576,16 @@ public:
 	}
 	int64_t to_int64() const {
 		if (isZero()) return 0;
-		if (isInfinite()) throw "inf";
-		// returning the integer representation of a posit only works for [1,inf) and is approximate
-		int64_t value;
-		int s = scale();
-		if (s < 0) {
-			value = (_fraction.get().to_ullong() >> -s);
-		}
-		else {
-			value = (_fraction.get().to_ullong() << s);
-		}	
-		return value;
+		if (isNaR()) throw "NaR (Not a Real)";
+		// returning the integer representation of a posit only works for [1,NaR) and is approximate
+		return int64_t(to_double());
 	}
-	float to_float() const {
+	float   to_float() const {
 		return (float)to_double();
 	}
-	double to_double() const {
-		if (isZero())
-			return 0.0;
-		if (isInfinite())
-			return INFINITY;
+	double  to_double() const {
+		if (isZero())	return 0.0;
+		if (isNaR())	return INFINITY;
 		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
 	}
 	
@@ -608,10 +595,10 @@ public:
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	value<fbits> convert_to_scientific_notation() const {
-		return value<fbits>(_sign, scale(), get_fraction().get(), isZero(), isInfinite());
+		return value<fbits>(_sign, scale(), get_fraction().get(), isZero(), isNaR());
 	}
 	void normalize(value<fbits>& v) const {
-		v.set(_sign, scale(), _fraction.get(), isZero(), isInfinite());
+		v.set(_sign, scale(), _fraction.get(), isZero(), isNaR());
 	}
 	// collect the posit components into a bitset
 	std::bitset<nbits> collect() {
@@ -929,8 +916,8 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 		ostr << double(0.0);
 		return ostr;
 	}
-	else if (p.isInfinite()) {
-		ostr << std::numeric_limits<double>::infinity();
+	else if (p.isNaR()) {
+		ostr << "NaR";
 		return ostr;
 	}
 	ostr << p.to_double();
@@ -949,10 +936,10 @@ template<size_t nbits, size_t es>
 inline bool operator!=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nbits, size_t es>
 inline bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
-	if (lhs.isInfinite()) {
+	if (lhs.isNaR()) {
 		return false;
 	}
-	if (rhs.isInfinite()) {
+	if (rhs.isNaR()) {
 		return true;
 	}
 	return lessThan(lhs._raw_bits, rhs._raw_bits); 
