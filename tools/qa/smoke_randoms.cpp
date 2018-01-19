@@ -14,12 +14,28 @@
 
 using namespace std;
 
+template<size_t nbits, size_t es>
+int GenerateSmokeTests(bool bReportIndividualTestCases) {
+	int nrOfFailedTestCases = 0;
+	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_ADD, 100);
+	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_SUB, 100);
+	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_MUL, 100);
+	//nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_DIV, 100);
+	return nrOfFailedTestCases;
+}
+
+// Generate smoke tests for different posit configurations
+// Usage: qa_smoke_randoms 16/24/32/48/64
 int main(int argc, char** argv)
 try {
 	typedef std::numeric_limits< double > dbl;
-	cout << "double max digits " << dbl::max_digits10 << endl;
+	cerr << "double max digits " << dbl::max_digits10 << endl;
 
-	cout << "Generating random smoke tests" << endl;
+	int posit_size = 32;  // default
+	if (argc == 2) {
+		posit_size = std::stoi(argv[1]);
+	}
+	cerr << "Generating random smoke tests" << endl;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
@@ -27,9 +43,28 @@ try {
 	float upper_limit = int64_t(1) << 17;
 	using namespace std::chrono;
 	steady_clock::time_point t1 = steady_clock::now();
-	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<32, 2>("random smoke testing", sw::qa::OPCODE_ADD, 100);
-	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<32, 2>("random smoke testing", sw::qa::OPCODE_SUB, 100);
-	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<32, 2>("random smoke testing", sw::qa::OPCODE_MUL, 100);
+
+	switch (posit_size) {
+	case 16:
+		nrOfFailedTestCases = GenerateSmokeTests<16, 1>(bReportIndividualTestCases);
+		break;
+	case 24:
+		nrOfFailedTestCases = GenerateSmokeTests<24, 1>(bReportIndividualTestCases);
+		break;
+	case 32:
+		nrOfFailedTestCases = GenerateSmokeTests<32, 2>(bReportIndividualTestCases);
+		break;
+	case 48:
+		nrOfFailedTestCases = GenerateSmokeTests<48, 2>(bReportIndividualTestCases);
+		break;
+	case 64:
+		nrOfFailedTestCases = GenerateSmokeTests<64, 3>(bReportIndividualTestCases);
+		break;
+	default:
+		nrOfFailedTestCases = 1;
+	}
+
+
 	steady_clock::time_point t2 = steady_clock::now();
 	duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 	double elapsed = time_span.count();

@@ -14,18 +14,18 @@
 
 using namespace std;
 
-/*
-smoke tests focus on the boundary cases of posit arithmetic.
-
-There are four regions where the number of exponent bits vary
- */
-
+// Generate smoke tests for different posit configurations
+// Usage: qa_smoke_add 16/24/32/48/64
 int main(int argc, char** argv)
 try {
 	typedef std::numeric_limits< double > dbl;
-	cout << "double max digits " << dbl::max_digits10 << endl;
+	cerr << "double max_digits10 " << dbl::max_digits10 << endl;
 
-	cout << "Generating smoke tests for posit addition" << endl;
+	int posit_size = 32;  // default
+	if (argc == 2) {
+		posit_size = std::stoi(argv[1]);
+	}
+	cerr << "Generating smoke tests for posit addition" << endl;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
@@ -33,7 +33,28 @@ try {
 	float upper_limit = int64_t(1) << 17;
 	using namespace std::chrono;
 	steady_clock::time_point t1 = steady_clock::now();
-	nrOfFailedTestCases = sw::qa::SmokeTestAddition<32, 2>("smoke testing", bReportIndividualTestCases);
+
+	switch (posit_size) {
+	case 16:
+		nrOfFailedTestCases = sw::qa::SmokeTestAddition<16, 1>("smoke testing", bReportIndividualTestCases);
+		break;
+	case 24:
+		nrOfFailedTestCases = sw::qa::SmokeTestAddition<24, 1>("smoke testing", bReportIndividualTestCases);
+		break;
+	case 32:
+		nrOfFailedTestCases = sw::qa::SmokeTestAddition<32, 2>("smoke testing", bReportIndividualTestCases);
+		break;
+	case 48:
+		nrOfFailedTestCases = sw::qa::SmokeTestAddition<48, 2>("smoke testing", bReportIndividualTestCases);
+		break;
+	case 64:
+		nrOfFailedTestCases = sw::qa::SmokeTestAddition<64, 3>("smoke testing", bReportIndividualTestCases);
+		break;
+	default:
+		nrOfFailedTestCases = 1;
+	}
+	
+
 	steady_clock::time_point t2 = steady_clock::now();
 	duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 	double elapsed = time_span.count();
