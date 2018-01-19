@@ -10,6 +10,10 @@
 #include <iostream>
 #include <limits>
 
+// Posits encode error conditions as +-INFINITE, propagating the error through arithmetic operations is preferred
+// When defined the semantics of 0 * INFINITE = INFINITE, otherwise 0 * INFINITE = 0
+#define POSIT_PROPAGATE_INFINITE
+
 #include "../bitset/bitset_helpers.hpp"
 #include "../bitset/bitset_logic.hpp"
 #include "../bitset/bitset_arithmetic.hpp"
@@ -188,7 +192,7 @@ public:
 		return negated;
 	}
 
-	// we model a hw pipeline
+	// we model a hw pipeline with register assignments, functional block, and conversion
 	posit<nbits, es>& operator+=(const posit& rhs) {
 		if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 		value<abits + 1> sum;
@@ -216,31 +220,27 @@ public:
         return *this += -rhs;
 	}
 	posit<nbits, es>& operator*=(const posit& rhs) {
+		static_assert(fhbits > 0, "posit configuration does not support multiplication");
 		if (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
-		if (_trace_mul) std::cout << *this << " * " << rhs << std::endl;
-		// since we are encoding error conditions as -inf, we need to process -inf condition first
-		if (isInfinite()) {
-			return *this;
+
+		value<mbits> product;
+		value<fbits> a, b;
+		// transform the inputs into (sign,scale,fraction) triples
+		normalize(a);
+		rhs.normalize(b);
+
+		module_multiply(a, b, product);    // multiply the two inputs
+
+		// special case handling on the output
+		if (product.isZero()) {
+			setToZero();
 		}
-		else if (rhs.isInfinite()) {
-			*this = rhs;
-			return *this;
+		else if (product.isInfinite()) {
+			setToInfinite();
 		}
-		else if (isZero()) {
-			return *this;
+		else {
+			convert(product.sign(), product.scale(), product.fraction());
 		}
-		else if (rhs.isZero()) {
-			*this = rhs;
-			return *this;
-		}
-		value<fbits> v1, v2;
-		v1 = convert_to_scientific_notation();
-		v2 = rhs.convert_to_scientific_notation();
-		value<mbits> result;
-		multiply(v1, v2, result);
-		// this path rounds each multiply
-		//value<fbits> rounded = result.template round_to<fbits>();
-		convert_to_posit(result);
 		return *this;
 	}
 	posit<nbits, es>& operator/=(const posit& rhs) {
@@ -266,7 +266,7 @@ public:
 		posit<nbits, es> reciprocal = rhs.reciprocate();
 		v2 = reciprocal.convert_to_scientific_notation();
 		value<mbits> result;
-		multiply(v1, v2, result);
+		module_multiply(v1, v2, result);
 		convert_to_posit(result); 
 		return *this;
 	}
@@ -902,46 +902,6 @@ private:
 	fraction<fbits> 	   _fraction;	// decoded posit representation
 
 	// HELPER methods
-	// multiply two values
-	void multiply(const value<fbits>& v1, const value<fbits>& v2, value<mbits>& result) {
-		static_assert(fhbits > 0, "posit configuration does not support multiplication");
-		if (_trace_mul) std::cout << "v1  " << components(v1) << std::endl << "v2  " << components(v2) << std::endl;
-		if (v1.isZero() || v2.isZero()) {
-			result.setToZero();
-			return;
-		}
-		if (v1.isInfinite() || v2.isInfinite()) {
-			result.setToInfinite();
-			return;
-		}
-		bool new_sign = v1.sign() ^ v2.sign();
-		int new_scale = v1.scale() + v2.scale();
-		std::bitset<mbits> result_fraction;
-
-		if (nbits > 3) {
-			// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
-			std::bitset<fhbits> r1 = v1.get_fixed_point();
-			std::bitset<fhbits> r2 = v2.get_fixed_point();
-			multiply_unsigned(r1, r2, result_fraction);
-
-			if (_trace_mul) std::cout << "r1  " << r1 << std::endl << "r2  " << r2 << std::endl << "res " << result_fraction << std::endl;
-			// check if the radix point needs to shift
-			int shift = 2;
-			if (result_fraction.test(mbits - 1)) {
-				shift = 1;
-				if (_trace_mul) std::cout << " shift " << shift << std::endl;
-				new_scale += 1;
-			}
-			result_fraction <<= shift;    // shift hidden bit out	
-		}
-		else {   // posit<3,0> is pure sign and scale
-
-		}
-		if (_trace_mul) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
-
-		result.set(new_sign, new_scale, result_fraction, false, false, false);
-	}
-
     // template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t ees>
 	friend std::ostream& operator<< (std::ostream& ostr, const posit<nnbits, ees>& p);
