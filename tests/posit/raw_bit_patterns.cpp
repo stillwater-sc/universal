@@ -54,7 +54,7 @@ try {
 	raw.reset();
 	// positive regime infinity - 1
 	cout << setprecision(34);
-	raw[15] = 1;							// inf
+	raw[15] = 1;							// NaR (Not a Real)
 	p.set(raw); 	cout << p << endl;
 	raw.set();
 	raw[15] = false;						// 72057594037927936			

@@ -197,7 +197,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	// obtain the sign/scale/fraction representation of a float
 	constexpr int nrfbits = std::numeric_limits<float>::digits - 1;
 	value<nrfbits> v(x);
-	// ignore for the sake of clarity the special cases 0 and inf
+	// ignore for the sake of clarity the special cases 0 and NaR (Not a Real)
 	bool sign = v.sign();
 	int scale = v.scale();
 	std::bitset<nrfbits> bits = v.fraction();
@@ -299,7 +299,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 template<size_t nbits, size_t es, size_t nrfbits>
 posit<nbits, es> convert_to_posit(value<nrfbits> v, bool bPrintIntermediateSteps = false) {
 	cout << "convert to posit<" << nbits << "," << es << ">" << endl;
-	// ignore for the sake of clarity the special cases 0 and inf
+	// ignore for the sake of clarity the special cases 0 and NaR (Not a Real)
 	std::bitset<nrfbits> bits = v.fraction();
 
 	float minpos = (float)minpos_value<nbits, es>();

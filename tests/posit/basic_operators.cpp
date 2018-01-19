@@ -14,7 +14,7 @@ using namespace sw::unum;
 
 template<size_t nbits, size_t es>
 void checkSpecialCases(posit<nbits, es> p) {
-	cout << "posit is " << (p.isZero() ? "zero " : "non-zero ") << (p.isPositive() ? "positive " : "negative ") << (p.isInfinite() ? "+-infinite" : "not infinite") << endl;
+	cout << "posit is " << (p.isZero() ? "zero " : "non-zero ") << (p.isPositive() ? "positive " : "negative ") << (p.isNaR() ? "Not a Real" : "Its a Real") << endl;
 }
 
 void BasicOperators() {

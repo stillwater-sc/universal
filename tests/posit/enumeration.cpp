@@ -30,7 +30,7 @@ try {
 	posit<nbits, es> p_minpos(uint64_t(0));
 	p_minpos++; // next posit to ZERO
 
-	// generate maxpos  FAILING....
+	// generate maxpos via INFINITE
 	float inf = FP_INFINITE;
 	posit<5,1> p_maxpos(inf);
 	p_maxpos = inf;
