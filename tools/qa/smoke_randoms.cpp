@@ -35,7 +35,7 @@ try {
 	if (argc == 2) {
 		posit_size = std::stoi(argv[1]);
 	}
-	cerr << "Generating random smoke tests" << endl;
+	cerr << "Generating random smoke tests for posits of size " << posit_size << endl;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
