@@ -6,6 +6,7 @@
 
 #include "stdafx.h"
 
+#include "../../posit/exceptions.hpp"
 #include "../../posit/trace_constants.hpp"
 #include "../../posit/bit_functions.hpp"
 #include "../../posit/value.hpp"
