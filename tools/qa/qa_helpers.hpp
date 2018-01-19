@@ -37,12 +37,10 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int SmokeTestAddition(std::string tag, bool bReportIndividualTestCases) {
 			static_assert(nbits >= 16, "Use exhaustive testing for posits smaller than 16");
-			static_assert(nbits < 64, "TODO: smoke test algorithm only works for nbits <= 64");
+			static_assert(nbits <= 64, "TODO: smoke test algorithm only works for nbits <= 64");
 
 			constexpr size_t fbits = nbits - 3 - es;
 			constexpr size_t enumeration = fbits > 5 ? 5 : fbits;
-
-			const uint64_t STATE_SPACE = (uint64_t(1) << nbits);
 
 			int nrOfFailedTests = 0;
 
@@ -106,12 +104,10 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int SmokeTestSubtraction(std::string tag, bool bReportIndividualTestCases) {
 			static_assert(nbits >= 16, "Use exhaustive testing for posits smaller than 16");
-			static_assert(nbits < 64, "TODO: smoke test algorithm only works for nbits < 64");
+			static_assert(nbits <= 64, "TODO: smoke test algorithm only works for nbits <= 64");
 
 			constexpr size_t fbits = nbits - 3 - es;
 			constexpr size_t enumeration = fbits > 5 ? 5 : fbits;
-
-			const uint64_t STATE_SPACE = (uint64_t(1) << nbits);
 
 			int nrOfFailedTests = 0;
 
@@ -175,7 +171,7 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int SmokeTestMultiplication(std::string tag, bool bReportIndividualTestCases) {
 			static_assert(nbits >= 16, "Use exhaustive testing for posits smaller than 16");
-			static_assert(nbits < 64, "TODO: smoke test algorithm only works for nbits < 64");
+			static_assert(nbits <= 64, "TODO: smoke test algorithm only works for nbits <= 64");
 
 			constexpr size_t fbits = nbits - 3 - es;
 			constexpr size_t enumeration = fbits > 5 ? 5 : fbits;
@@ -235,12 +231,10 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int SmokeTestDivision(std::string tag, bool bReportIndividualTestCases) {
 			static_assert(nbits >= 16, "Use exhaustive testing for posits smaller than 16");
-			static_assert(nbits < 64, "TODO: smoke test algorithm only works for nbits < 64");
+			static_assert(nbits <= 64, "TODO: smoke test algorithm only works for nbits <= 64");
 
 			constexpr size_t fbits = nbits - 3 - es;
 			constexpr size_t enumeration = fbits > 5 ? 5 : fbits;
-
-			const size_t STATE_SPACE = (unsigned(1) << nbits);
 
 			int nrOfFailedTests = 0;
 
@@ -606,7 +600,7 @@ namespace sw {
 				sw::qa::execute(opcode, da, db, pref, pa, pb, presult);
 				if (fabs(presult.to_double() - pref.to_double()) > 0.000000001) {
 					nrOfFailedTests++;
-					ReportBinaryArithmeticError("FAIL", operation_string, pa, pb, pref, presult);
+					ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, pref, presult);
 				}
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, pa, pb, preference, presult);
