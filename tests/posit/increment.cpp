@@ -17,11 +17,22 @@
 using namespace std;
 using namespace sw::unum;
 
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 0
+
 int main(int argc, char** argv)
 try {
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
+#if MANUAL_TESTING
+	std::vector< posit<3, 0> > set;
+	GenerateOrderedPositSet<3, 0>(set);
+	for (typename std::vector< posit<3, 0> >::iterator it = set.begin(); it != set.end(); it++) {
+		std::cout << it->get() << " " << *it << std::endl;
+	}
+
+#else
 	// INCREMENT tests
 	cout << endl << "INCREMENT tests" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateIncrement<3, 0>("Increment failed", bReportIndividualTestCases), "posit<3,0>", "operator++");
@@ -47,6 +58,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateIncrement<8, 1>("Increment failed", bReportIndividualTestCases), "posit<8,1>", "operator++");
 	nrOfFailedTestCases += ReportTestResult(ValidateIncrement<8, 2>("Increment failed", bReportIndividualTestCases), "posit<8,2>", "operator++");
 	nrOfFailedTestCases += ReportTestResult(ValidateIncrement<8, 3>("Increment failed", bReportIndividualTestCases), "posit<8,3>", "operator++");
+
+#endif // MANUAL_TESTING
 
 	if (argc == 2 && std::string(argv[1]) == std::string("-l")) {
 		// AD/DA adapted data path configurations
