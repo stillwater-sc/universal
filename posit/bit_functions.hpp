@@ -83,11 +83,7 @@ namespace sw {
 		}
 
 		// FLOAT component extractions
-		inline bool extract_sign(float f) 
-		{
-				static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
-			return uint32_t(0x80000000ul) & reinterpret_cast<uint32_t&>(f);
-		}
+		inline bool extract_sign(float f) {	return f < 0.0f; }
 
 		int extract_exponent(float f) {
 			int exponent;
@@ -104,11 +100,7 @@ namespace sw {
 		}
 
 		// DOUBLE component extractions
-		inline bool extract_sign(double f) 
-		{
-				static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
-			return uint64_t(0x8000000000000000ull) & reinterpret_cast<uint64_t&>(f);
-		}
+		inline bool extract_sign(double f) { return f < 0.0; }
 
 		inline int extract_exponent(double f) 
 		{
@@ -126,11 +118,7 @@ namespace sw {
 		}
 
 		// LONG DOUBLE component extractions
-		inline bool extract_sign(long double f) 
-		{
-				static_assert(sizeof(long double) == 16, "This function only works when long double is 128 bit.");
-			return uint64_t(0x8000000000000000ull) & reinterpret_cast<uint64_t&>(f);
-		}
+		inline bool extract_sign(long double f) { return f < 0.0; }
 
 		inline int extract_exponent(long double f) 
 		{
@@ -138,12 +126,6 @@ namespace sw {
 			frexp(f, &exponent);
 			return exponent;
 		}
-
-		typedef struct __uint128 {
-		    uint64_t upper;
-		    uint64_t lower;
-		} uint128;
-
 
 		// integral type to bitset transformations
 
@@ -177,6 +159,11 @@ namespace sw {
 			return _fraction;
 		}
 
+		// 128 bit unsigned int mapped to two uint64_t elements
+		typedef struct __uint128 {
+			uint64_t upper;
+			uint64_t lower;
+		} uint128;
 
 		// take in a long double mapped to two uint64_t elements
 		template<size_t nbits>

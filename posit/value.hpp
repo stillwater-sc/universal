@@ -172,7 +172,7 @@ namespace sw {
 				}
 				return *this;
 			}
-			value<fbits>& operator=(quadruple rhs) {
+			value<fbits>& operator=(long double rhs) {
 				reset();
 				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
