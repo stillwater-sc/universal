@@ -172,6 +172,38 @@ namespace sw {
 				}
 				return *this;
 			}
+			value<fbits>& operator=(quadruple rhs) {
+				reset();
+				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
+
+				switch (std::fpclassify((long double)rhs)) {
+				case FP_ZERO:
+					_nrOfBits = fbits;
+					_zero = true;
+					break;
+				case FP_INFINITE:
+					_inf = true;
+					break;
+				case FP_NAN:
+					_nan = true;
+					break;
+				case FP_SUBNORMAL:
+					std::cerr << "TODO: subnormal number: returning 0" << std::endl;
+					break;
+				case FP_NORMAL:
+				{
+					_sign = extract_sign((long double) rhs);
+					//_scale = extract_exponent((long double) rhs) - 1;
+    					long double fraction_value = std::frexp((long double)rhs, &_scale);
+    					uint128* pFractionBits = (uint128*)&fraction_value;
+					_fraction = extract_long_double_fraction<fbits>(pFractionBits);
+					_nrOfBits = fbits;
+					if (_trace_conversion) std::cout << "long double " << (long double)rhs << " sign " << _sign << " scale " << _scale << " 112b fraction b" << _fraction << std::dec << std::endl;
+				}
+				break;
+				}
+				return *this;
+			}
 
 			// modifiers
 			void reset() {
