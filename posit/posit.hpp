@@ -616,12 +616,12 @@ public:
 	}
 	double  to_double() const {
 		if (isZero())	return 0.0;
-		if (isNaR())	return INFINITY;
+		if (isNaR())	return NAN;
 		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
 	}
 	quadruple to_quadruple() const {
 		if (isZero())  return 0.0;
-		if (isNaR())   return INFINITY;
+		if (isNaR())   return NAN;
 		quadruple s = sign_value();
 		quadruple r = regime_value(); // regime value itself will fit in a double
 		quadruple e = exponent_value(); // same with exponent
