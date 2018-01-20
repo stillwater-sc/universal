@@ -72,7 +72,7 @@ class posit
 	template <typename T>
 	posit<nbits, es>& float_assign(const T& rhs) {
 		constexpr int dfbits = std::numeric_limits<T>::digits - 1;
-		value<dfbits> v(rhs);
+		value<dfbits> v((T)rhs);
 
 		// special case processing
 		if (v.isZero()) {
