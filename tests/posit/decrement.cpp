@@ -17,12 +17,22 @@
 using namespace std;
 using namespace sw::unum;
 
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
+#if MANUAL_TESTING
+	std::vector< posit<3, 0> > set;
+	GenerateOrderedPositSet<3, 0>(set);
+	for (typename std::vector< posit<3, 0> >::iterator it = set.begin(); it != set.end(); it++) {
+		std::cout << it->get() << " " << *it << std::endl;
+	}
+
+#else
 	// DECREMENT tests
 	cout << endl << "DECREMENT tests" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<3, 0>("Decrement failed", bReportIndividualTestCases), "posit<3,0>", "operator--");
@@ -43,11 +53,16 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<7, 1>("Decrement failed", bReportIndividualTestCases), "posit<7,1>", "operator--");
 	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<7, 2>("Decrement failed", bReportIndividualTestCases), "posit<7,2>", "operator--");
 	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<7, 3>("Decrement failed", bReportIndividualTestCases), "posit<7,3>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<7, 4>("Decrement failed", bReportIndividualTestCases), "posit<7,4>", "operator--");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<8, 0>("Decrement failed", bReportIndividualTestCases), "posit<8,0>", "operator--");
 	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<8, 1>("Decrement failed", bReportIndividualTestCases), "posit<8,1>", "operator--");
 	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<8, 2>("Decrement failed", bReportIndividualTestCases), "posit<8,2>", "operator--");
 	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<8, 3>("Decrement failed", bReportIndividualTestCases), "posit<8,3>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<8, 4>("Decrement failed", bReportIndividualTestCases), "posit<8,4>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<8, 5>("Decrement failed", bReportIndividualTestCases), "posit<8,5>", "operator--");
+
+#endif // MANUAL_TESTING
 
 	// long running
 	if (argc == 2 && std::string(argv[1]) == std::string("-l")) {

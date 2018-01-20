@@ -234,13 +234,15 @@ namespace sw {
 		// Generate ordered set from -maxpos to +maxpos for a particular posit config <nbits, es>
 		template<size_t nbits, size_t es>
 		void GenerateOrderedPositSet(std::vector<posit<nbits, es>>& set) {
-			const size_t NR_OF_REALS = (unsigned(1) << nbits);
-			std::vector< posit<nbits, es> > s(NR_OF_REALS);
+			const size_t NR_OF_REALS = (unsigned(1) << nbits);		// don't do this for state spaces larger than 4G
+			std::vector< posit<nbits, es> > s(NR_OF_REALS-1);
 			posit<nbits, es> p;
 			// generate raw set, remove infinite as it is not 'reachable' through arithmetic operations
+			size_t k = 0;
 			for (int i = 0; i < NR_OF_REALS; i++) {
 				p.set_raw_bits(i);
-				s[i] = p;
+				if (p.isNaR()) continue;
+				s[k++] = p;
 			}
 			// sort the set
 			std::sort(s.begin(), s.end());
@@ -253,7 +255,7 @@ namespace sw {
 		{
 			const size_t NrOfReals = (unsigned(1) << nbits);
 			std::vector< posit<nbits, es> > set;
-			GenerateOrderedPositSet(set);  // this has -inf at first position
+			GenerateOrderedPositSet(set);  // this has -maxpos at first position and NaR removed
 
 			int nrOfFailedTestCases = 0;
 
@@ -278,7 +280,7 @@ namespace sw {
 		{
 			const size_t NrOfReals = (unsigned(1) << nbits);
 			std::vector< posit<nbits, es> > set;
-			GenerateOrderedPositSet(set); // this has -inf at the first position
+			GenerateOrderedPositSet(set); // this has -maxpos at the first position and NaR removed
 
 			int nrOfFailedTestCases = 0;
 
@@ -304,7 +306,7 @@ namespace sw {
 		{
 			const size_t NrOfReals = (unsigned(1) << nbits);
 			std::vector< posit<nbits, es> > set;
-			GenerateOrderedPositSet(set);  // this has -inf at first position
+			GenerateOrderedPositSet(set);  // this has -maxpos at first position and NaR removed
 
 			int nrOfFailedTestCases = 0;
 
@@ -330,7 +332,7 @@ namespace sw {
 		{
 			const size_t NrOfReals = (unsigned(1) << nbits);
 			std::vector< posit<nbits, es> > set;
-			GenerateOrderedPositSet(set);  // this has -inf at first position
+			GenerateOrderedPositSet(set);  // this has -maxpos at first position and NaR removed
 
 			int nrOfFailedTestCases = 0;
 
@@ -350,7 +352,7 @@ namespace sw {
 		}
 
 
-		// enerate all negation cases for a posit configuration: executes within 10 sec till about nbits = 14
+		// enumerate all negation cases for a posit configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateNegation(std::string tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
