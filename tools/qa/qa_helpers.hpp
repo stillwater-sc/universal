@@ -585,7 +585,8 @@ namespace sw {
 			std::cout << "Size of quadruple type is: " << 8*sizeof(quadruple) << "bits" << std::endl;
 
 			if (nbits - es - 1 > 52) {
-				std::vector<quadruple> operand_values(SIZE_STATE_SPACE);
+				//std::vector<quadruple> operand_values(SIZE_STATE_SPACE);
+				std::vector<double> operand_values(SIZE_STATE_SPACE);
 				// inject minpos/maxpos and -minpos/-maxpos in the samples
 				presult = 1.0;
 				operand_values[0] = presult.to_quadruple();
@@ -616,7 +617,8 @@ namespace sw {
 				std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
 				std::cout << std::setw(nbits) << "Operand A  " << " " << operation_string << " " << std::setw(nbits) << "Operand B  " << " = " << std::setw(nbits) << "Golden Reference  " << " " << std::setw(nbits / 4) << "HEX " << std::endl;
 
-				quadruple qa, qb;
+				//quadruple qa, qb;
+				double qa, qb;
 				unsigned ia, ib;  // random indices for picking operands to test
 				for (unsigned i = 1; i < nrOfRandoms; i++) {
 					ia = uniform(eng) % SIZE_STATE_SPACE;
@@ -625,7 +627,9 @@ namespace sw {
 					ib = uniform(eng) % SIZE_STATE_SPACE;
 					qb = operand_values[ib];
 					pb = qb;
-					sw::qa::execute<nbits,es,quadruple>(opcode, qa, qb, pref, pa, pb, presult);
+					//sw::qa::execute<nbits,es,quadruple>(opcode, qa, qb, pref, pa, pb, presult);
+					sw::qa::execute<nbits,es,double>(opcode, qa, qb, pref, pa, pb, presult);
+					//if (fabs(presult.to_quadruple() - pref.to_quadruple()) > 0.000000001) {
 					if (fabs(presult.to_double() - pref.to_double()) > 0.000000001) {
 						nrOfFailedTests++;
 						ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, pref, presult);

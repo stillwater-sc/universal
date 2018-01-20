@@ -137,9 +137,9 @@ public:
 		*this = initial_value;
 	}
 	posit<nbits, es>& operator=(int8_t rhs) {
-		setToZero();
 		value<8> v(rhs);
 		if (v.isZero()) {
+			setToZero();
 			return *this;
 		}
 		else if (v.isNegative()) {
@@ -152,9 +152,9 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(int16_t rhs) {
-		setToZero();
 		value<16> v(rhs);
 		if (v.isZero()) {
+			setToZero();
 			return *this;
 		}
 		else if (v.isNegative()) {
@@ -167,9 +167,9 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(int32_t rhs) {
-		setToZero();
 		value<32> v(rhs);
 		if (v.isZero()) {
+			setToZero();
 			return *this;
 		}
 		else if (v.isNegative()) {
@@ -182,9 +182,9 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(int64_t rhs) {
-		setToZero();
 		value<64> v(rhs);
 		if (v.isZero()) {
+			setToZero();
 			return *this;
 		}
 		else if (v.isNegative()) {
@@ -197,7 +197,6 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(uint64_t rhs) {
-		reset();
 		value<64> v(rhs);
 		convert_to_posit(v);
 		return *this;
