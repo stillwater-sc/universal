@@ -155,12 +155,19 @@ try {
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
-	posit<nbits, es> a(0), b(-2);
-
-	bool gt = a > b; 
-	bool let = a <= b;
-	std::cout << gt << " " << let << endl;
-
+	double a = NAN;
+	double b = INFINITY;
+	double c = NAN;
+	posit<nbits, es> pa(a), pb(b), pc(c);
+	std::cout << pa << " " << pb << " " << pc << std::endl;
+	
+	bool ref = a < b;
+	std::cout << (a == b) << " " << (pa == pb) << std::endl;
+	std::cout << (a != b) << " " << (pa != pb) << std::endl;
+	std::cout << (a <= b) << " " << (pa <= pb) << std::endl;
+	std::cout << (a >= b) << " " << (pa >= pb) << std::endl;
+	std::cout << (a <  b) << " " << (pa <  pb) << std::endl;
+	std::cout << (a  > b) << " " << (pa  > pb) << std::endl;
 
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<3, 0>(), "posit<3,0>", "==");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<3, 0>(), "posit<3,0>", "!=");

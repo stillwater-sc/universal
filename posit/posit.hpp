@@ -59,7 +59,9 @@ namespace sw {
 template<size_t nbits, size_t es> class posit;
 template<size_t nbits, size_t es> posit<nbits, es> abs(const posit<nbits, es>& p);
 
-
+// Not A Real is the posit encoding for INFINITY and arithmetic errors that can propagate
+// can be used to initialize a posit, i.e., posit<nbits,es>(NAR), or posit<nbits,es> p = NAR
+#define NAR INFINITY
 
 /*
  class posit represents arbitrary configuration posits and their basic arithmetic operations (add/sub, mul/div)
@@ -67,7 +69,8 @@ template<size_t nbits, size_t es> posit<nbits, es> abs(const posit<nbits, es>& p
 template<size_t nbits, size_t es>
 class posit 
 {
-//	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
+	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
+	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
 
 	template <typename T>
 	posit<nbits, es>& float_assign(const T& rhs) {
@@ -96,7 +99,7 @@ public:
 	static constexpr size_t fhbits = fbits + 1;      // size of fraction + hidden bit
 	static constexpr size_t mbits  = 2 * fhbits;     // size of the multiplier output
 
-	posit<nbits, es>() : _sign(false) {}
+	posit<nbits, es>() { setToZero();  }
 	
 	posit(const posit&) = default;
 	posit(posit&&) = default;
@@ -128,6 +131,9 @@ public:
 		*this = initial_value;
 	}
 	posit<nbits, es>(double initial_value) {
+		*this = initial_value;
+	}
+	posit<nbits, es>(long double initial_value) {
 		*this = initial_value;
 	}
 	posit<nbits, es>& operator=(int8_t rhs) {
@@ -971,25 +977,32 @@ inline std::istream& operator>> (std::istream& istr, const posit<nbits, es>& p) 
 }
 
 template<size_t nbits, size_t es>
-inline bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return lhs._raw_bits == rhs._raw_bits; }
+inline bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { 
+	if (lhs.isNaR() && rhs.isNaR()) return false;
+	return lhs._raw_bits == rhs._raw_bits;
+}
 template<size_t nbits, size_t es>
 inline bool operator!=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nbits, size_t es>
 inline bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
-	if (lhs.isNaR()) {
-		return false;
-	}
-	if (rhs.isNaR()) {
-		return true;
-	}
+	if (lhs.isNaR() || rhs.isNaR()) return false;
 	return lessThan(lhs._raw_bits, rhs._raw_bits); 
 }
 template<size_t nbits, size_t es>
-bool operator> (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return operator< (rhs, lhs); }
+inline bool operator> (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { 
+	if (lhs.isNaR() || rhs.isNaR()) return false; 
+	return operator< (rhs, lhs); 
+}
 template<size_t nbits, size_t es>
-inline bool operator<=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return operator< (lhs, rhs) || operator==(lhs, rhs); }
+inline bool operator<=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { 
+	if (lhs.isNaR() || rhs.isNaR()) return false; 
+	return operator< (lhs, rhs) || operator==(lhs, rhs); 
+}
 template<size_t nbits, size_t es>
-inline bool operator>=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator< (lhs, rhs); }
+inline bool operator>=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { 
+	if (lhs.isNaR() || rhs.isNaR()) return false; 
+	return !operator< (lhs, rhs); 
+}
 
 // POSIT BINARY ARITHMETIC OPERATORS
 template<size_t nbits, size_t es>
