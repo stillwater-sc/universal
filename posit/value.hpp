@@ -41,6 +41,9 @@ namespace sw {
 			value(double initial_value) {
 				*this = initial_value;
 			}
+			value(long double initial_value) {
+				*this = initial_value;
+			}
 			value(const value& rhs) {
 				*this = rhs;
 			}
