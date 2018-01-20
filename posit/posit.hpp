@@ -18,7 +18,7 @@
 
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
-typedef __float128 quadruple;
+typedef long double quadruple;
 
 #elif defined(__HP_cc) || defined(__HP_aCC)
 /* Hewlett-Packard C/aC++. ---------------------------------- */
