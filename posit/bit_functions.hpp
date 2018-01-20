@@ -125,6 +125,26 @@ namespace sw {
 			return uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(fraction);
 		}
 
+		// LONG DOUBLE component extractions
+		inline bool extract_sign(long double f) 
+		{
+				static_assert(sizeof(long double) == 16, "This function only works when long double is 128 bit.");
+			return uint64_t(0x8000000000000000ull) & reinterpret_cast<uint64_t&>(f);
+		}
+
+		inline int extract_exponent(long double f) 
+		{
+			int exponent;
+			frexp(f, &exponent);
+			return exponent;
+		}
+
+		typedef struct __uint128 {
+		    uint64_t upper;
+		    uint64_t lower;
+		} uint128;
+
+
 		// integral type to bitset transformations
 
 		// we are using a full nbits sized bitset even though nbits-3 is the maximum fraction
@@ -152,6 +172,27 @@ namespace sw {
 			unsigned int ub = (nbits < 52 ? nbits : 52);
 			for (unsigned int i = 0; i < ub; i++) {
 				_fraction[nbits - 1 - i] = _52b_fraction_without_hidden_bit & mask;
+				mask >>= 1;
+			}
+			return _fraction;
+		}
+
+
+		// take in a long double mapped to two uint64_t elements
+		template<size_t nbits>
+		std::bitset<nbits> extract_long_double_fraction(uint128* _112b_fraction_without_hidden_bit) {
+			std::bitset<nbits> _fraction;
+			int msb = nbits - 1;
+			uint64_t mask = uint64_t(0x0000800000000000ull);
+			unsigned int ub = (nbits < 48 ? nbits : 48); // 48 bits in the upper half
+			for (unsigned int i = 0; i < ub; i++) {
+				_fraction[msb--] = _112b_fraction_without_hidden_bit->upper & mask;
+				mask >>= 1;
+			}
+			mask = uint64_t(0x8000000000000000ull);
+			ub = (nbits < 112-48 ? nbits : 112-48); // max 64 bits in the lower half
+			for (unsigned int i = 0; i < ub; i++) {
+				_fraction[msb--] = _112b_fraction_without_hidden_bit->lower & mask;
 				mask >>= 1;
 			}
 			return _fraction;

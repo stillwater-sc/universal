@@ -205,6 +205,9 @@ public:
 	posit<nbits, es>& operator=(double rhs) {
                 return float_assign(rhs);
 	}
+	posit<nbits, es>& operator=(quadruple rhs) {
+                return float_assign(rhs);
+	}
 	posit<nbits, es> operator-() const {
 		if (isZero()) {
 			return *this;
@@ -622,7 +625,7 @@ public:
 		quadruple s = sign_value();
 		quadruple r = regime_value(); // regime value itself will fit in a double
 		quadruple e = exponent_value(); // same with exponent
-		quadruple f = 1.0 + _fraction.to_quadruple();
+		quadruple f = quadruple(1.0) + _fraction.to_quadruple();
 		return s * r * e * f;
 	}
 	

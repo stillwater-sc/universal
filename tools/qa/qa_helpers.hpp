@@ -578,6 +578,9 @@ namespace sw {
 			std::mt19937_64 eng(rd()); //Use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 									   //Define the distribution, by default it goes from 0 to MAX(unsigned long long)
 			std::uniform_int_distribution<unsigned long long> distr;
+			std::cout << "Size of float     type is: " << 8*sizeof(float) << "bits" << std::endl;
+			std::cout << "Size of double    type is: " << 8*sizeof(double) << "bits" << std::endl;
+			std::cout << "Size of quadruple type is: " << 8*sizeof(quadruple) << "bits" << std::endl;
 			std::vector<quadruple> operand_values(SIZE_STATE_SPACE);
 			for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
 				presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as posit encoding
@@ -588,7 +591,7 @@ namespace sw {
 			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
 			std::cout << std::setw(nbits) << "Operand A  " << " " << operation_string <<  " " << std::setw(nbits) << "Operand B  " << " = " << std::setw(nbits) << "Golden Reference  " << " " << std::setw(nbits / 4) << "HEX " << std::endl;
 
-			double da, db;
+			quadruple da, db;
 			unsigned ia, ib;  // random indices for picking operands to test
 			for (unsigned i = 1; i < nrOfRandoms; i++) {
 				ia = std::rand() % SIZE_STATE_SPACE; 
