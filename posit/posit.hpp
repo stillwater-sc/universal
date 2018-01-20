@@ -70,7 +70,7 @@ template<size_t nbits, size_t es>
 class posit 
 {
 	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
-//	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
+	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
 
 	template <typename T>
 	posit<nbits, es>& float_assign(const T& rhs) {
@@ -197,11 +197,8 @@ public:
 		return *this;
 	}
 	posit<nbits, es>& operator=(uint64_t rhs) {
-		setToZero();
+		reset();
 		value<64> v(rhs);
-		if (v.isZero()) {
-			return *this;
-		}
 		convert_to_posit(v);
 		return *this;
 	}
@@ -209,11 +206,13 @@ public:
 		return float_assign(rhs);
 	}
 	posit<nbits, es>& operator=(double rhs) {
-                return float_assign(rhs);
+        return float_assign(rhs);
 	}
 	posit<nbits, es>& operator=(quadruple rhs) {
-                return float_assign(rhs);
+        return float_assign(rhs);
 	}
+	
+	// prefix operator
 	posit<nbits, es> operator-() const {
 		if (isZero()) {
 			return *this;
@@ -481,6 +480,13 @@ public:
 	}
 
 	// MODIFIERS
+	void clear() {
+		_sign = false;
+		_regime.reset();
+		_exponent.reset();
+		_fraction.reset();
+		_raw_bits.reset();
+	}
 	void setToZero() {
 		_sign = false;
 		_regime.setToZero();
@@ -496,13 +502,13 @@ public:
 		_raw_bits.reset();
 		_raw_bits.set(nbits - 1, true);
 	}
-	posit<nbits, es>&  set(const std::bitset<nbits>& raw_bits) {
+	posit<nbits, es>& set(const std::bitset<nbits>& raw_bits) {
 		decode(raw_bits);
 		return *this;
 	}
 	// Set the raw bits of the posit given a binary pattern
 	posit<nbits,es>& set_raw_bits(uint64_t value) {
-		setToZero();
+		clear();
 		std::bitset<nbits> raw_bits;
 		uint64_t mask = 1;
 		for ( int i = 0; i < nbits; i++ ) {
@@ -767,7 +773,6 @@ public:
 	// Generalized version
 	template <size_t FBits>
 	void convert_to_posit(const value<FBits>& v) {
-        //convert(v.sign(), v.scale(), v.fraction(), FBits);
 		convert(v.sign(), v.scale(), v.fraction());
     }
 
@@ -853,7 +858,7 @@ public:
 
 	template<size_t input_fbits>
 	void convert(bool sign, int scale, std::bitset<input_fbits> input_fraction) {
-		setToZero();
+		clear();
 		if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 		if (_trace_conversion) std::cout << "sign " << (sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << scale << " fraction " << input_fraction << std::endl;
 

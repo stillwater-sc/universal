@@ -513,9 +513,9 @@ namespace sw {
 		const int OPCODE_DIV = 4;
 		const int OPCODE_RAN = 5;
 
-		template<size_t nbits, size_t es>
-		void execute(int opcode, double da, double db, sw::unum::posit<nbits, es>& preference, const sw::unum::posit<nbits, es>& pa, const sw::unum::posit<nbits, es>& pb, sw::unum::posit<nbits, es>& presult) {
-			double reference;
+		template<size_t nbits, size_t es, typename Ty>
+		void execute(int opcode, Ty a, Ty b, sw::unum::posit<nbits, es>& preference, const sw::unum::posit<nbits, es>& pa, const sw::unum::posit<nbits, es>& pb, sw::unum::posit<nbits, es>& presult) {
+			Ty reference;
 			switch (opcode) {
 			default:
 			case OPCODE_NOP:
@@ -524,19 +524,19 @@ namespace sw {
 				return;
 			case OPCODE_ADD:
 				presult = pa + pb;
-				reference = da + db;
+				reference = a + b;
 				break;
 			case OPCODE_SUB:
 				presult = pa - pb;
-				reference = da - db;
+				reference = a - b;
 				break;
 			case OPCODE_MUL:
 				presult = pa * pb;
-				reference = da * db;
+				reference = a * b;
 				break;
 			case OPCODE_DIV:
 				presult = pa / pb;
-				reference = da / db;
+				reference = a / b;
 				break;
 			}
 			preference = reference;
@@ -547,12 +547,14 @@ namespace sw {
 		// We will then execute the binary operator nrOfRandom combinations.
 		template<size_t nbits, size_t es>
 		int SmokeTestRandoms(std::string tag, int opcode, uint32_t nrOfRandoms) {
+			static_assert(nbits <= 64, "SmokeTestRandoms only works for nbits <= 64");
+			int max_digits10 = std::numeric_limits<double>::max_digits10;
 			const size_t SIZE_STATE_SPACE = nrOfRandoms;
 			int nrOfFailedTests = 0;
 			sw::unum::posit<nbits, es> pa, pb, presult, pref;
 
 			if (opcode == OPCODE_RAN) {
-				// generate a random operator
+				// TODO: generate a random operator
 			}
 			std::string operation_string;
 			switch (opcode) {
@@ -577,39 +579,116 @@ namespace sw {
 			std::random_device rd;     //Get a random seed from the OS entropy device, or whatever
 			std::mt19937_64 eng(rd()); //Use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 									   //Define the distribution, by default it goes from 0 to MAX(unsigned long long)
-			std::uniform_int_distribution<unsigned long long> distr;
+			std::uniform_int_distribution<unsigned long long> uniform;
 			std::cout << "Size of float     type is: " << 8*sizeof(float) << "bits" << std::endl;
 			std::cout << "Size of double    type is: " << 8*sizeof(double) << "bits" << std::endl;
 			std::cout << "Size of quadruple type is: " << 8*sizeof(quadruple) << "bits" << std::endl;
-			std::vector<quadruple> operand_values(SIZE_STATE_SPACE);
-			for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
-				presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as posit encoding
-				operand_values[i] = presult.to_quadruple();
+
+			if (nbits - es - 1 > 52) {
+				std::vector<quadruple> operand_values(SIZE_STATE_SPACE);
+				// inject minpos/maxpos and -minpos/-maxpos in the samples
+				presult = 1.0;
+				operand_values[0] = presult.to_quadruple();
+				presult = -1.0;
+				operand_values[1] = presult.to_quadruple();
+				presult.set_raw_bits(1);
+				operand_values[2] = presult.to_quadruple();
+				presult--; presult--;
+				operand_values[3] = presult.to_quadruple();
+				presult.setToNaR();
+				presult++;
+				operand_values[4] = presult.to_quadruple();
+				presult.setToNaR();
+				presult++;
+				operand_values[5] = presult.to_quadruple();
+				for (uint32_t i = 6; i < SIZE_STATE_SPACE; i++) {
+					presult.set_raw_bits(uniform(eng));  // take the bottom nbits bits as posit encoding: works for nbits<=64
+					operand_values[i] = presult.to_quadruple();
+				}
+
+				/*
+				for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
+					std::cout << std::setprecision(max_digits10) << operand_values[i] << std::endl;
+				}
+				*/
+
+				// execute and output the test vector
+				std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
+				std::cout << std::setw(nbits) << "Operand A  " << " " << operation_string << " " << std::setw(nbits) << "Operand B  " << " = " << std::setw(nbits) << "Golden Reference  " << " " << std::setw(nbits / 4) << "HEX " << std::endl;
+
+				quadruple qa, qb;
+				unsigned ia, ib;  // random indices for picking operands to test
+				for (unsigned i = 1; i < nrOfRandoms; i++) {
+					ia = uniform(eng) % SIZE_STATE_SPACE;
+					qa = operand_values[ia];
+					pa = qa;
+					ib = uniform(eng) % SIZE_STATE_SPACE;
+					qb = operand_values[ib];
+					pb = qb;
+					sw::qa::execute<nbits,es,quadruple>(opcode, qa, qb, pref, pa, pb, presult);
+					if (fabs(presult.to_double() - pref.to_double()) > 0.000000001) {
+						nrOfFailedTests++;
+						ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, pref, presult);
+					}
+					else {
+						//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, pa, pb, preference, presult);
+					}
+					std::cout << pa.get() << " " << operation_string << " " << pb.get() << " = " << pref.get() << " " << sw::unum::to_hex(pref.get()) << std::endl;
+				}
+			}
+			else {
+				std::vector<double> operand_values(SIZE_STATE_SPACE);
+				// inject minpos/maxpos and -minpos/-maxpos in the samples
+				presult = 1.0;
+				operand_values[0] = presult.to_quadruple();
+				presult = -1.0;
+				operand_values[1] = presult.to_quadruple();
+				presult.set_raw_bits(1);
+				operand_values[2] = presult.to_quadruple();
+				presult--; presult--;
+				operand_values[3] = presult.to_quadruple();
+				presult.setToNaR();
+				presult++;
+				operand_values[4] = presult.to_quadruple();
+				presult.setToNaR();
+				presult++;
+				operand_values[5] = presult.to_quadruple();
+				for (uint32_t i = 6; i < SIZE_STATE_SPACE; i++) {
+					presult.set_raw_bits(uniform(eng));  // take the bottom nbits bits as posit encoding: works for nbits<=64
+					operand_values[i] = presult.to_quadruple();
+				}
+
+				/*
+				for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
+				std::cout << std::setprecision(max_digits10) << operand_values[i] << std::endl;
+				}
+				*/
+
+				// execute and output the test vector
+				std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
+				std::cout << std::setw(nbits) << "Operand A  " << " " << operation_string <<  " " << std::setw(nbits) << "Operand B  " << " = " << std::setw(nbits) << "Golden Reference  " << " " << std::setw(nbits / 4) << "HEX " << std::endl;
+
+				double da, db;
+				unsigned ia, ib;  // random indices for picking operands to test
+				for (unsigned i = 1; i < nrOfRandoms; i++) {
+					ia = uniform(eng) % SIZE_STATE_SPACE; 
+					da = operand_values[ia];
+					pa = da;
+					ib = uniform(eng) % SIZE_STATE_SPACE;
+					db = operand_values[ib];
+					pb = db;
+					sw::qa::execute<nbits,es,double>(opcode, da, db, pref, pa, pb, presult);
+					if (fabs(presult.to_double() - pref.to_double()) > 0.000000001) {
+						nrOfFailedTests++;
+						ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, pref, presult);
+					}
+					else {
+						//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, pa, pb, preference, presult);
+					}
+					std::cout << pa.get() << " " << operation_string << " " << pb.get() << " = " << pref.get() << " " << sw::unum::to_hex(pref.get()) << std::endl;
+				}
 			}
 
-			// execute and output the test vector
-			std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
-			std::cout << std::setw(nbits) << "Operand A  " << " " << operation_string <<  " " << std::setw(nbits) << "Operand B  " << " = " << std::setw(nbits) << "Golden Reference  " << " " << std::setw(nbits / 4) << "HEX " << std::endl;
-
-			quadruple da, db;
-			unsigned ia, ib;  // random indices for picking operands to test
-			for (unsigned i = 1; i < nrOfRandoms; i++) {
-				ia = std::rand() % SIZE_STATE_SPACE; 
-				da = operand_values[ia];
-				pa = da;
-				ib = std::rand() % SIZE_STATE_SPACE;
-				db = operand_values[ib];
-				pb = db;
-				sw::qa::execute(opcode, da, db, pref, pa, pb, presult);
-				if (fabs(presult.to_double() - pref.to_double()) > 0.000000001) {
-					nrOfFailedTests++;
-					ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, pref, presult);
-				}
-				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, pa, pb, preference, presult);
-				}
-				std::cout << pa.get() << " " << operation_string << " " << pb.get() << " = " << pref.get() << " " << sw::unum::to_hex(pref.get()) << std::endl;
-			}
 
 			return nrOfFailedTests;
 		}
