@@ -6,7 +6,7 @@
 #include "stdafx.h"
 
 // when you define POSIT_VERBOSE_OUTPUT executing an SUB the code will print intermediate results
-//#define POSIT_VERBOSE_OUTPUT
+#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_SUB
 
 #include "../../bitset/bitset_helpers.hpp"
@@ -20,29 +20,19 @@ using namespace sw::unum;
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es>
-void GenerateTestCase(float fa, float fb) {
+template<size_t nbits, size_t es, typename Ty>
+void GenerateTestCase(Ty a, Ty b) {
+	Ty reference;
 	posit<nbits, es> pa, pb, pref, pdif;
-	float fref;
-	pa = fa;
-	pb = fb;
-	fref = fa - fb;
-	pref = fref;
+	pa = a;
+	pb = b;
+	reference = a - b;
+	pref = reference;
 	pdif = pa - pb;
-	cout << "input " << fref << " posit reference " << pref << " result " << pdif << endl << endl;
+	cout << "input " << reference << " posit reference " << pref << " result " << pdif << endl << endl;
 }
 
-template<size_t nbits, size_t es>
-void GenerateTestCase(double da, double db) {
-	posit<nbits, es> pa, pb, pref, pdif;
-	pa = da;
-	pb = db;
-	pref = da - db;
-	pdif = pa - pb;
-	cout << "reference " << pref << " result " << pdif << endl << endl;
-}
-
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -54,12 +44,13 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<5, 0>(INFINITY,  INFINITY);
+	GenerateTestCase<3, 0>(0.5, 1.0);
 
 	// manual exhaustive testing
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 3>("Manual Testing", bReportIndividualTestCases), "posit<6,3>", "subtraction");
-#else
+	std::string positCfg = "posit<3,0>";
+	//nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<3, 0>("Manual Testing", true), positCfg, "subtraction");
 
+#else
 
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "subtraction");
 
