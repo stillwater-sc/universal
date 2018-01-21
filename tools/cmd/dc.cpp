@@ -6,7 +6,7 @@
 
 #include "stdafx.h"
 
-#include <posit>
+#include <value>
 
 using namespace std;
 using namespace sw::unum;
