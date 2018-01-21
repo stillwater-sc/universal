@@ -20,9 +20,9 @@ try {
 
 	if (argc != 2) {
 		cerr << "Show the sign/scale/fraction components of a double." << endl;
-		cerr << "Usage: dc double_value" << endl;
+		cerr << "Usage: ldc double_value" << endl;
 		cerr << "Example: ldc 0.03124999" << endl;
-		cerr << "long double: 0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)" << endl;
+		cerr << "long double: 0.0312499899999999983247 (+,-6,000000000000000000000000000000000011111111111110000000000000000)" << endl;
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}
 	long double q = atof(argv[1]);

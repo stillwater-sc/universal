@@ -1,10 +1,11 @@
 #pragma once
-// posit.hpp: definition of arbitrary posit number configurations
+// value.hpp: definition of a (sign, scale, fraction) representation of an approximation to a real value
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <cassert>
+#include <limits>
 
 namespace sw {
 	namespace unum {
