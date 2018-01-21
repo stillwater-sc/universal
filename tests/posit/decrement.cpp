@@ -26,13 +26,22 @@ try {
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
-	std::vector< posit<3, 0> > set;
-	GenerateOrderedPositSet<3, 0>(set);
-	for (typename std::vector< posit<3, 0> >::iterator it = set.begin(); it != set.end(); it++) {
+	const size_t nbits = 5;
+	const size_t es = 0;
+	const std::string positConfig = "posit<5,0>";
+	std::vector< posit<nbits, es> > set;
+	GenerateOrderedPositSet<nbits, es>(set);
+	for (typename std::vector< posit<nbits, es> >::iterator it = set.begin(); it != set.end(); it++) {
 		std::cout << it->get() << " " << *it << std::endl;
 	}
 
+	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<nbits, es>("Decrement failed", bReportIndividualTestCases), positConfig, "operator++");
+
 #else
+	// Note: increment/decrement depend on the 2's complement ordering of the posit encoding
+	// This implies that this functionality is independent of the <nbits,es> configuration of the posit.
+	// Otherwise stated, an enumeration of tests for different posit configurations is a bit superfluous.
+
 	// DECREMENT tests
 	cout << endl << "DECREMENT tests" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<3, 0>("Decrement failed", bReportIndividualTestCases), "posit<3,0>", "operator--");
