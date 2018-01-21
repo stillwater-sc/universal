@@ -982,29 +982,24 @@ inline std::istream& operator>> (std::istream& istr, const posit<nbits, es>& p) 
 
 template<size_t nbits, size_t es>
 inline bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { 
-	if (lhs.isNaR() && rhs.isNaR()) return false;
 	return lhs._raw_bits == rhs._raw_bits;
 }
 template<size_t nbits, size_t es>
 inline bool operator!=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nbits, size_t es>
 inline bool operator< (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
-	if (lhs.isNaR() || rhs.isNaR()) return false;
 	return lessThan(lhs._raw_bits, rhs._raw_bits); 
 }
 template<size_t nbits, size_t es>
 inline bool operator> (const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { 
-	if (lhs.isNaR() || rhs.isNaR()) return false; 
 	return operator< (rhs, lhs); 
 }
 template<size_t nbits, size_t es>
 inline bool operator<=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { 
-	if (lhs.isNaR() || rhs.isNaR()) return false; 
 	return operator< (lhs, rhs) || operator==(lhs, rhs); 
 }
 template<size_t nbits, size_t es>
 inline bool operator>=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) { 
-	if (lhs.isNaR() || rhs.isNaR()) return false; 
 	return !operator< (lhs, rhs); 
 }
 

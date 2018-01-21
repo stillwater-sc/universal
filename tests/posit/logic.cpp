@@ -12,132 +12,207 @@
 using namespace std;
 using namespace sw::unum;
 
-template<size_t nbits, size_t es>
-int ValidatePositLogicLessThan() {
-	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
-	int nrOfFailedTestCases = 0;
-	posit<nbits, es> a, b;
-	bool ref, pref;
 
-	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitset<nbits, unsigned>(i);
-		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitset<nbits, unsigned>(j);
-			ref = a.to_double() < b.to_double();
-			pref = a < b;
-			if (ref != pref) {
-				nrOfFailedTestCases++;
-				std::cout << a << " < " << b << " fails: reference is " << ref << " actual is " << pref << std::endl;
-			}
-		}
-	}
-	return nrOfFailedTestCases;
-}
-
-template<size_t nbits, size_t es>
-int ValidatePositLogicGreaterThan() {
-	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
-	int nrOfFailedTestCases = 0;
-	posit<nbits, es> a, b;
-	bool ref, pref;
-
-	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitset<nbits, unsigned>(i);
-		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitset<nbits, unsigned>(j);
-			ref = a.to_double() > b.to_double();
-			pref = a > b;
-			if (ref != pref) {
-				nrOfFailedTestCases++;
-				std::cout << a << " > " << b << " fails: reference is " << ref << " actual is " << pref << std::endl;
-			}
-		}
-	}
-	return nrOfFailedTestCases;
-}
-
+// Posit equal diverges from IEEE float in dealing with INFINITY/NAN
+// Posit NaR can be checked for equality/inequality
 template<size_t nbits, size_t es>
 int ValidatePositLogicEqual() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	posit<nbits, es> a, b;
-	bool ref, pref;
+	bool ref, presult;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitset<nbits, unsigned>(i);
+		a.set_raw_bits(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitset<nbits, unsigned>(j);
-			ref = a.to_double() == b.to_double();
-			pref = a == b;
-			if (ref != pref) {
+			b.set_raw_bits(j);
+			// set the golden reference
+			if (a.isNaR() && b.isNaR()) {
+				// special case of posit equality
+				ref = true;
+			}
+			else {
+				// same behavior as IEEE floats
+				ref = a.to_double() == b.to_double();
+			}
+
+			presult = a == b;
+			if (ref != presult) {
 				nrOfFailedTestCases++;
-				std::cout << a << " == " << b << " fails: reference is " << ref << " actual is " << pref << std::endl;
+				std::cout << a << " == " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
 			}
 		}
 	}
 	return nrOfFailedTestCases;
 }
 
+// Posit not-equal diverges from IEEE float in dealing with INFINITY/NAN
+// Posit NaR can be checked for equality/inequality
 template<size_t nbits, size_t es>
 int ValidatePositLogicNotEqual() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	posit<nbits, es> a, b;
-	bool ref, pref;
+	bool ref, presult;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitset<nbits, unsigned>(i);
+		a.set_raw_bits(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitset<nbits, unsigned>(j);
-			ref = a.to_double() != b.to_double();
-			pref = a != b;
-			if (ref != pref) {
+			b.set_raw_bits(j);
+
+			// set the golden reference
+			if (a.isNaR() && b.isNaR()) {
+				// special case of posit equality
+				ref = false;
+			}
+			else {
+				// same behavior as IEEE floats
+				ref = a.to_double() != b.to_double();
+			}
+
+			presult = a != b;
+
+			if (ref != presult) {
 				nrOfFailedTestCases++;
-				std::cout << a << " != " << b << " fails: reference is " << ref << " actual is " << pref << std::endl;
+				std::cout << a << " != " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
 			}
 		}
 	}
 	return nrOfFailedTestCases;
 }
 
+// Posit less-than diverges from IEEE float in dealing with INFINITY/NAN
+// Posit NaR is smaller than any other value
+template<size_t nbits, size_t es>
+int ValidatePositLogicLessThan() {
+	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	int nrOfFailedTestCases = 0;
+	posit<nbits, es> a, b;
+	bool ref, presult;
+
+	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+		a.set_raw_bits(i);
+		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+			b.set_raw_bits(j);
+
+			// generate the golden reference
+			if (a.isNaR() && !b.isNaR()) {
+				// special case of posit NaR
+				ref = true;
+			}
+			else {
+				// same behavior as IEEE floats
+				ref = a.to_double() < b.to_double();
+			}
+
+			presult = a < b;
+			if (ref != presult) {
+				nrOfFailedTestCases++;
+				std::cout << a << " < " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
+			}
+		}
+	}
+	return nrOfFailedTestCases;
+}
+
+// Posit greater-than diverges from IEEE float in dealing with INFINITY/NAN
+// Any number is greater-than posit NaR
+template<size_t nbits, size_t es>
+int ValidatePositLogicGreaterThan() {
+	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+	int nrOfFailedTestCases = 0;
+	posit<nbits, es> a, b;
+	bool ref, presult;
+
+	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+		a.set_raw_bits(i);
+		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+			b.set_raw_bits(j);
+
+			// generate the golden reference
+			if (!a.isNaR() && b.isNaR()) {
+				// special case of posit NaR
+				ref = true;
+			}
+			else {
+				// same behavior as IEEE floats
+				ref = a.to_double() > b.to_double();
+			}
+
+			presult = a > b;
+			if (ref != presult) {
+				nrOfFailedTestCases++;
+				std::cout << a << " > " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
+			}
+		}
+	}
+	return nrOfFailedTestCases;
+}
+
+// Posit less-or-equal-than diverges from IEEE float in dealing with INFINITY/NAN
+// Posit NaR is smaller or equal than any other value
 template<size_t nbits, size_t es>
 int ValidatePositLogicLessOrEqualThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	posit<nbits, es> a, b;
-	bool ref, pref;
+	bool ref, presult;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitset<nbits, unsigned>(i);
+		a.set_raw_bits(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitset<nbits, unsigned>(j);
-			ref = a.to_double() <= b.to_double();
-			pref = a <= b;
-			if (ref != pref) {
+			b.set_raw_bits(j);
+
+			// set the golden reference
+			if (a.isNaR()) {
+				// special case of posit <= for NaR
+				ref = true;
+			}
+			else {
+				// same behavior as IEEE floats
+				ref = a.to_double() <= b.to_double();
+			}
+
+			presult = a <= b;
+
+			if (ref != presult) {
 				nrOfFailedTestCases++;
-				std::cout << a << " <= " << b << " fails: reference is " << ref << " actual is " << pref << std::endl;
+				std::cout << a << " <= " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
 			}
 		}
 	}
 	return nrOfFailedTestCases;
 }
 
+// Posit greater-or-equal-than diverges from IEEE float in dealing with INFINITY/NAN
+// Any number is greater-or-equal-than posit NaR
 template<size_t nbits, size_t es>
 int ValidatePositLogicGreaterOrEqualThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	posit<nbits, es> a, b;
-	bool ref, pref;
+	bool ref, presult;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitset<nbits, unsigned>(i);
+		a.set_raw_bits(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitset<nbits, unsigned>(j);
-			ref = a.to_double() >= b.to_double();
-			pref = a >= b;
-			if (ref != pref) {
+			b.set_raw_bits(j);
+
+			// set the golden reference
+			if (b.isNaR()) {
+				// special case of posit >= for NaR
+				ref = true;
+			}
+			else {
+				// same behavior as IEEE floats
+				ref = a.to_double() >= b.to_double();
+			}
+
+			presult = a >= b;
+
+			if (ref != presult) {
 				nrOfFailedTestCases++;
-				std::cout << a << " >= " << b << " fails: reference is " << ref << " actual is " << pref << std::endl;
+				std::cout << a << " >= " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
 			}
 		}
 	}
@@ -155,19 +230,21 @@ try {
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
-	double a = NAN;
-	double b = INFINITY;
-	double c = NAN;
-	posit<nbits, es> pa(a), pb(b), pc(c);
+	double nan = NAN;
+	double inf = INFINITY;
+	double normal = 0;
+	posit<nbits, es> pa(nan), pb(inf), pc(normal);
 	std::cout << pa << " " << pb << " " << pc << std::endl;
 	
-	bool ref = a < b;
-	std::cout << (a == b) << " " << (pa == pb) << std::endl;
-	std::cout << (a != b) << " " << (pa != pb) << std::endl;
-	std::cout << (a <= b) << " " << (pa <= pb) << std::endl;
-	std::cout << (a >= b) << " " << (pa >= pb) << std::endl;
-	std::cout << (a <  b) << " " << (pa <  pb) << std::endl;
-	std::cout << (a  > b) << " " << (pa  > pb) << std::endl;
+	// showcasing the differences between posit and IEEE float
+	std::cout << (nan == nan) << " " << (pa == pa) << std::endl;
+	std::cout << (inf == inf) << " " << (pb == pb) << std::endl;
+	std::cout << (nan != nan) << " " << (pa != pb) << std::endl;
+	std::cout << (inf != inf) << " " << (pb != pb) << std::endl;
+	std::cout << (nan <= normal) << " " << (pa <= pc) << std::endl;
+	std::cout << (nan >= normal) << " " << (pa >= pc) << std::endl;
+	std::cout << (inf <  normal) << " " << (pa <  pc) << std::endl;
+	std::cout << (inf  > normal) << " " << (pa  > pc) << std::endl;
 
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<3, 0>(), "posit<3,0>", "==");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<3, 0>(), "posit<3,0>", "!=");
