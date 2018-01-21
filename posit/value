@@ -7,6 +7,7 @@
 #ifndef _VALUE_
 #define _VALUE_
 
+#include "exceptions.hpp"
 #include "bit_functions.hpp"
 #include "trace_constants.hpp"
 #include "value.hpp"
