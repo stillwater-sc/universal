@@ -35,7 +35,7 @@ try {
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}
 	double d      = atof(argv[1]);
-	float f       = d;
+	float f       = (float)d;
 	long double q = d;
 	value<f_fbits> vf(f);
 	value<d_fbits> vd(d);

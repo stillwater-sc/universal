@@ -196,14 +196,25 @@ namespace sw {
 					break;
 				case FP_NORMAL:
 				{
-					_sign = extract_sign((long double) rhs);
-					//_scale = extract_exponent((long double) rhs) - 1;
-    				long double fraction_value = std::frexp((long double)rhs, &_scale);
-					_scale -= 1;
-    				uint128* pFractionBits = (uint128*)&fraction_value;
-					_fraction = extract_long_double_fraction<fbits>(pFractionBits);
-					_nrOfBits = fbits;
-					if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 112b fraction b" << _fraction << std::dec << std::endl;
+					if (sizeof(long double) == 16) {
+						_sign = extract_sign((long double) rhs);
+						//_scale = extract_exponent((long double) rhs) - 1;
+    					long double fraction_value = std::frexp((long double)rhs, &_scale);
+						_scale -= 1;
+    					uint128* pFractionBits = (uint128*)&fraction_value;
+						_fraction = extract_long_double_fraction<fbits>(pFractionBits);
+						_nrOfBits = fbits;
+						if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 112b fraction b" << _fraction << std::dec << std::endl;
+					}
+					else if (sizeof(long double) == 8) {
+						// we are just a double
+						_sign = extract_sign((double)rhs);
+						_scale = extract_exponent((double)rhs) - 1;
+						uint64_t _52b_fraction_without_hidden_bit = extract_fraction((double)rhs);
+						_fraction = extract_double_fraction<fbits>(_52b_fraction_without_hidden_bit);
+						_nrOfBits = fbits;
+						if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _52b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
+					}						
 				}
 				break;
 				}
