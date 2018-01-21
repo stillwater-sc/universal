@@ -60,7 +60,7 @@ template<size_t nbits, size_t es> class posit;
 template<size_t nbits, size_t es> posit<nbits, es> abs(const posit<nbits, es>& p);
 
 // Not A Real is the posit encoding for INFINITY and arithmetic errors that can propagate
-// can be used to initialize a posit, i.e., posit<nbits,es>(NAR), or posit<nbits,es> p = NAR
+// The symbol NAR can be used to initialize a posit, i.e., posit<nbits,es>(NAR), or posit<nbits,es> p = NAR
 #define NAR INFINITY
 
 /*
@@ -235,7 +235,7 @@ public:
 
 		module_add<fbits,abits>(a, b, sum);		// add the two inputs
 
-		// special case handling on the output
+		// special case handling of the result
 		if (sum.isZero()) {
 			setToZero();
 		}
@@ -243,13 +243,31 @@ public:
 			setToNaR();
 		}
 		else {
-			convert(sum.sign(), sum.scale(), sum.fraction());
+			convert(sum);
 		}
 		return *this;                
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
 		if (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
-        return *this += -rhs;
+		value<abits + 1> difference;
+		value<fbits> a, b;
+		// transform the inputs into (sign,scale,fraction) triples
+		normalize(a);
+		rhs.normalize(b);
+
+		module_subtract<fbits, abits>(a, b, difference);	// add the two inputs
+
+		// special case handling of the result
+		if (difference.isZero()) {
+			setToZero();
+		}
+		else if (difference.isInfinite()) {
+			setToNaR();
+		}
+		else {
+			convert(difference);
+		}
+		return *this;
 	}
 	posit<nbits, es>& operator*=(const posit& rhs) {
 		static_assert(fhbits > 0, "posit configuration does not support multiplication");
