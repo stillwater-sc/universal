@@ -21,24 +21,15 @@ using namespace sw::unum;
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es>
-void GenerateTestCase(float fa) {
-	posit<nbits, es> pa, preference, preciprocal;
-	pa = fa;
-	preference = 1.0f / fa;
+template<size_t nbits, size_t es, typename Ty>
+void GenerateTestCase(Ty a) {
+	Ty reference;
+	posit<nbits, es> pa, preciprocal;
+	pa = a;
+	reference = (Ty)1.0 / a;
 	preciprocal = pa.reciprocate();
-	cout << "input " << fa << " reference 1/fa " << preference << " result " << preciprocal << endl << endl;
+	cout << "input " << a << " reference 1/fa " << reference << " result " << preciprocal << endl << endl;
 }
-
-template<size_t nbits, size_t es>
-void GenerateTestCase(double da) {
-	posit<nbits, es> pa, preference, preciprocal;
-	pa = da;
-	preference = 1.0 / da;
-	preciprocal = pa.reciprocate();
-	cout << "input " << da << " reference " << preference << " result " << preciprocal << endl << endl;
-}
-
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -53,12 +44,18 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<5, 0>(0.625f);
-	GenerateTestCase<5, 0>(0.75f);
-	GenerateTestCase<5, 0>(1.25f);
-	GenerateTestCase<5, 0>(1.5f);
+	const size_t nbits = 16;
+	const size_t es = 0;
+	posit<nbits, es> p(0.625);
+	cout << p.get() << " " << p << endl;
+	GenerateTestCase<nbits, es, float>(0.625f);
+	p = 1.6;
+	cout << p.get() << " " << p << endl;
+	//GenerateTestCase<nbits, es, double>(0.75f);
+	//GenerateTestCase<nbits, es, long double>(1.25f);
+	//GenerateTestCase<nbits, es, float>(1.5f);
 
-	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 0>("Manual testing", true), "posit<5,0>", "reciprocation");
+	//nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 0>("Manual testing", true), "posit<5,0>", "reciprocation");
 
 
 #else

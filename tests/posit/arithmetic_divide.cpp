@@ -21,27 +21,18 @@ using namespace sw::unum;
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es>
-void GenerateTestCase(float fa, float fb) {
-	posit<nbits, es> pa, pb, pref, pdiv;
-	pa = fa;
-	pb = fb;
-	pref = fa / fb;
+template<size_t nbits, size_t es, typename Ty>
+void GenerateTestCase(Ty a, Ty b) {
+	Ty reference;
+	posit<nbits, es> pa, pb, pdiv;
+	pa = a;
+	pb = b;
+	reference = a / b;
 	pdiv = pa / pb;
-	cout << "reference " << pref << " result " << pdiv << endl << endl;
+	cout << "reference " << reference << " result " << pdiv << endl << endl;
 }
 
-template<size_t nbits, size_t es>
-void GenerateTestCase(double da, double db) {
-	posit<nbits, es> pa, pb, pref, pdiv;
-	pa = da;
-	pb = db;
-	pref = da / db;
-	pdiv = pa / pb;
-	cout << "reference " << pref << " result " << pdiv << endl << endl;
-}
-
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -53,11 +44,17 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<5, 0>(4.000f, -2.0f);
-	GenerateTestCase<5, 0>(4.000f,  0.5f);
+	const size_t nbits = 20;
+	const size_t es = 0;
+	float a = 91.34375f;
+	float b = 0.14453125f;
+	posit<nbits, es> pa(a), pb(b);
+	std::cout << pa.get() << " / " << pb.get() << std::endl;
+	GenerateTestCase<nbits, es, float>(91.34375f, 0.14453125);
+	
 
-	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>("Manual Testing", true), "posit<3,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 0>("Manual Testing", true), "posit<4,0>", "division");
+	//nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>("Manual Testing", true), "posit<3,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<8, 0>("Manual Testing", true), "posit<8,0>", "division");
 
 #else
 

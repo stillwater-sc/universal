@@ -21,28 +21,18 @@ using namespace sw::unum;
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es>
-void GenerateTestCase(float fa, float fb) {
-	posit<nbits, es> pa, pb, pref, psum;
-	pa = fa;
-	pb = fb;
-	pref = fa + fb;
+template<size_t nbits, size_t es, typename Ty>
+void GenerateTestCase(Ty a, Ty b) {
+	Ty reference;
+	posit<nbits, es> pa, pb, psum;
+	pa = a;
+	pb = b;
+	reference = a + b;
 	psum = pa + pb;
-	cout << "reference " << pref << " result " << psum << endl << endl;
+	cout << "reference " << reference << " result " << psum << endl << endl;
 }
 
-template<size_t nbits, size_t es>
-void GenerateTestCase(double da, double db) {
-	posit<nbits, es> pa, pb, pref, psum;
-	pa = da;
-	pb = db;
-	pref = da + db;
-	psum = pa + pb;
-	cout << setprecision(std::numeric_limits<double>::max_digits10);
-	cout << "reference " << pref << " result " << psum << endl << endl;
-}
-
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -54,8 +44,9 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	//GenerateTestCase<6, 3>(INFINITY, INFINITY);
-	//GenerateTestCase<8, 4>(0.5f, -0.5f);
+	GenerateTestCase<6, 3, double>(INFINITY, INFINITY);
+	GenerateTestCase<8, 4, float>(0.5f, -0.5f);
+
 	double da, db;
 	posit<8, 4> pa, pb, psum;
 	pa.set_raw_bits(uint64_t(0b00000001));
