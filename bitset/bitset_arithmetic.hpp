@@ -201,7 +201,7 @@ namespace sw {
 
 		// divide bitsets a and b and return result in bitset result.
 		template<size_t operand_size>
-		void integer_divide_unsigned(const std::bitset<operand_size>& a, const std::bitset<operand_size>& b, std::bitset<operand_size>& result) {
+		void integer_divide_unsigned(const std::bitset<operand_size>& a, const std::bitset<operand_size>& b, std::bitset<2 * operand_size>& result) {
 			std::bitset<operand_size> subtractand, accumulator;
 			result.reset();
 			accumulator = a;
