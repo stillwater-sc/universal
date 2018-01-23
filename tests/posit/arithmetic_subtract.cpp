@@ -7,7 +7,7 @@
 
 // when you define POSIT_VERBOSE_OUTPUT executing an SUB the code will print intermediate results
 #define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_SUB
+//#define POSIT_TRACE_SUB
 
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"
@@ -29,11 +29,13 @@ void GenerateTestCase(Ty a, Ty b) {
 	reference = a - b;
 	pref = reference;
 	pdif = pa - pb;
-	cout << "input " << reference << " posit reference " << pref << " result " << pdif << endl << endl;
+	cout << pa << " - " << pb << " ref "  << reference << " posit ref " << pref << " actual " << pdif << endl << endl;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
+
+#include "../bitset_test_helpers.hpp"
 
 int main(int argc, char** argv)
 try {
@@ -43,12 +45,19 @@ try {
 	std::string tag = "Subtraction failed: ";
 
 #if MANUAL_TESTING
+
+	//ValidateBitsetSubtraction<4>(true);
+
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<3, 0>(0.5, 1.0);
+	GenerateTestCase<4, 0>(0.25, 0.75);
+	GenerateTestCase<4, 0>(0.25, -0.75);
+	//GenerateTestCase<8, 0>(1.0, 0.25);
+	//GenerateTestCase<8, 0>(1.0, 0.125);
+	//GenerateTestCase<8, 0>(1.0, 1.0);
 
 	// manual exhaustive testing
-	std::string positCfg = "posit<3,0>";
-	//nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<3, 0>("Manual Testing", true), positCfg, "subtraction");
+	std::string positCfg = "posit<4,0>";
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<4, 0>("Manual Testing", true), positCfg, "subtraction");
 
 #else
 

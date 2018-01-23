@@ -419,9 +419,9 @@ namespace sw {
 			//  + + = +
 			//  + - =   lhs > rhs ? + : -
 			//  - + =   lhs > rhs ? - : +
-			//  - - = -
+			//  - - = 
 			// to simplify the result processing assign the biggest 
-			// absolute value to R1, then the sign of the result will be sign of lhs.
+			// absolute value to R1, then the sign of the result will be sign of the value in R1.
 
 			if (lhs.isInfinite() || rhs.isInfinite()) {
 				result.setToInfinite();
@@ -433,32 +433,36 @@ namespace sw {
 			std::bitset<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
 			std::bitset<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
 			bool r1_sign = lhs.sign(), r2_sign = rhs.sign();
+			bool signs_are_different = r1_sign != r2_sign;
 
-			if (sw::unum::abs(lhs) < sw::unum::abs(rhs)) {
+			if (signs_are_different && sw::unum::abs(lhs) < sw::unum::abs(rhs)) {
 				std::swap(r1, r2);
 				std::swap(r1_sign, r2_sign);
 			}
+
+			if (signs_are_different) r2 = twos_complement(r2);
 
 			if (_trace_add) {
 				std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1       " << r1 << std::endl;
 				std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
 			}
 
-			if (r1_sign != r2_sign) r2 = twos_complement(r2);
-
 			std::bitset<abits + 1> sum;
 			const bool carry = add_unsigned(r1, r2, sum);
 
-			if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum      " << sum << std::endl;
+			if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
 
 			long shift = 0;
 			if (carry) {
-				if (r1_sign == r2_sign)   // the carry && signs= implies that we have a number bigger than r1
+				if (r1_sign == r2_sign) {  // the carry && signs== implies that we have a number bigger than r1
 					shift = -1;
-				else
+				} 
+				else {
 					// the carry && signs!= implies r2 is complement, result < r1, must find hidden bit (in the complement)
-					for (int i = abits - 1; i >= 0 && !sum[i]; i--)
+					for (int i = abits - 1; i >= 0 && !sum[i]; i--) {
 						shift++;
+					}
+				}
 			}
 			assert(shift >= -1);
 
@@ -471,21 +475,72 @@ namespace sw {
 			scale_of_result -= shift;
 			const int hpos = abits - 1 - shift;         // position of the hidden bit 
 			sum <<= abits - hpos + 1;
-			if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum      " << sum << std::endl;
+			if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
 			result.set(r1_sign, scale_of_result, sum, false, false, false);
 		}
 
-		// subtract module
+		// subtract module: use ADDER
 		template<size_t fbits, size_t abits>
 		void module_subtract(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 1>& result) {
-			// with sign/magnitude adders it is customary to organize the computation 
-			// along the four quadrants of sign combinations
-			//  + + =   lhs > rhs ? + : -
-			//  + - = +  
-			//  - + = -
-			//  - - =   lhs > rhs ? - : +
-			// to simplify the result processing assign the biggest 
-			// absolute value to R1, then the sign of the result will be sign of lhs.
+			if (lhs.isInfinite() || rhs.isInfinite()) {
+				result.setToInfinite();
+				return;
+			}
+			int lhs_scale = lhs.scale(), rhs_scale = rhs.scale(), scale_of_result = std::max(lhs_scale, rhs_scale);
+
+			// align the fractions
+			std::bitset<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
+			std::bitset<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
+			bool r1_sign = lhs.sign(), r2_sign = !rhs.sign();
+			bool signs_are_different = r1_sign != r2_sign;
+
+			if (sw::unum::abs(lhs) < sw::unum::abs(rhs)) {
+				std::swap(r1, r2);
+				std::swap(r1_sign, r2_sign);
+			}
+
+			if (signs_are_different) r2 = twos_complement(r2);
+
+			if (_trace_sub) {
+				std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1       " << r1 << std::endl;
+				std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
+			}
+
+			std::bitset<abits + 1> sum;
+			const bool carry = add_unsigned(r1, r2, sum);
+
+			if (_trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
+
+			long shift = 0;
+			if (carry) {
+				if (r1_sign == r2_sign) {  // the carry && signs== implies that we have a number bigger than r1
+					shift = -1;
+				}
+				else {
+					// the carry && signs!= implies r2 is complement, result < r1, must find hidden bit (in the complement)
+					for (int i = abits - 1; i >= 0 && !sum[i]; i--) {
+						shift++;
+					}
+				}
+			}
+			assert(shift >= -1);
+
+			if (shift >= long(abits)) {            // we have actual 0                            
+				sum.reset();
+				result.set(false, 0, sum, true, false, false);
+				return;
+			}
+
+			scale_of_result -= shift;
+			const int hpos = abits - 1 - shift;         // position of the hidden bit 
+			sum <<= abits - hpos + 1;
+			if (_trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
+			result.set(r1_sign, scale_of_result, sum, false, false, false);
+		}
+
+		// subtract module using SUBTRACTOR: CURRENTLY BROKEN FOR UNKNOWN REASON
+		template<size_t fbits, size_t abits>
+		void module_subtract_BROKEN(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 1>& result) {
 
 			if (lhs.isInfinite() || rhs.isInfinite()) {
 				result.setToInfinite();
@@ -497,33 +552,28 @@ namespace sw {
 			std::bitset<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
 			std::bitset<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
 			bool r1_sign = lhs.sign(), r2_sign = rhs.sign();
+			bool signs_are_equal = r1_sign == r2_sign;
 
-			if (sw::unum::abs(lhs) < sw::unum::abs(rhs)) {
-				// swapping implies multiplying by -1, or flipping the sign bits
-				std::swap(r1, r2);
-				bool tmp = r1_sign;	r1_sign = !r2_sign; r2_sign = !tmp;
-			}
+			if (r1_sign) r1 = twos_complement(r1);
+			if (r1_sign) r2 = twos_complement(r2);
 
 			if (_trace_sub) {
 				std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1       " << r1 << std::endl;
 				std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
 			}
 
-			if (r1_sign != r2_sign) r2 = twos_complement(r2);
-
 			std::bitset<abits + 1> difference;
 			const bool borrow = subtract_unsigned(r1, r2, difference);
 
-			if (_trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " borrow" << std::setw(3) << (borrow ? 1 : 0) << " differ   " << difference << std::endl;
+			if (_trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " borrow" << std::setw(3) << (borrow ? 1 : 0) << " diff    " << difference << std::endl;
 
 			long shift = 0;
-			if (borrow) {
-				if (r1_sign == r2_sign)   // the borrow && signs= implies that we have a number bigger than r1
-					shift = -1;
-				else
-					// the borrow && signs!= implies r2 is complement, result < r1, must find hidden bit (in the complement)
-					for (int i = abits - 1; i >= 0 && !difference[i]; i--)
-						shift++;
+			if (borrow) {   // we have a negative value result
+				difference = twos_complement(difference);
+			}
+			// find hidden bit
+			for (int i = abits - 1; i >= 0 && difference[i]; i--) {
+				shift++;
 			}
 			assert(shift >= -1);
 
@@ -536,8 +586,8 @@ namespace sw {
 			scale_of_result -= shift;
 			const int hpos = abits - 1 - shift;         // position of the hidden bit 
 			difference <<= abits - hpos + 1;
-			if (_trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " differ   " << difference << std::endl;
-			result.set(r1_sign, scale_of_result, difference, false, false, false);
+			if (_trace_sub) std::cout << (borrow ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " result  " << difference << std::endl;
+			result.set(borrow, scale_of_result, difference, false, false, false);
 		}
 
 		// multiply module
