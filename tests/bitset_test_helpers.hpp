@@ -4,6 +4,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+namespace sw {
+
+namespace unum {
 
 template<size_t nbits, size_t rbits>
 void ReportBinaryArithmeticError(std::string test_case, std::string op, const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs, const std::bitset<rbits>& ref, const std::bitset<rbits>& result) {
@@ -145,3 +148,7 @@ int ValidateBitsetDivision(bool bReportIndividualTestCases = false) {
 	}
 	return nrOfFailedTestCases;
 }
+
+} // namespace unum
+
+} // namespace sw
