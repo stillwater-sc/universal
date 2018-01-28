@@ -6,7 +6,9 @@
 
 #include "stdafx.h"
 
-#include "../../posit/posit.hpp"
+#include "../../posit/bit_functions.hpp"
+#include "../../posit/trace_constants.hpp"
+#include "../../posit/value.hpp"
 #include "../../posit/quire.hpp"
 
 using namespace std;
