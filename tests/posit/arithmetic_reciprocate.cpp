@@ -31,7 +31,7 @@ void GenerateTestCase(Ty a) {
 	cout << "input " << a << " reference 1/fa " << reference << " result " << preciprocal << endl << endl;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -44,18 +44,18 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	const size_t nbits = 16;
-	const size_t es = 0;
-	posit<nbits, es> p(0.625);
-	cout << p.get() << " " << p << endl;
-	GenerateTestCase<nbits, es, float>(0.625f);
-	p = 1.6;
-	cout << p.get() << " " << p << endl;
-	//GenerateTestCase<nbits, es, double>(0.75f);
-	//GenerateTestCase<nbits, es, long double>(1.25f);
-	//GenerateTestCase<nbits, es, float>(1.5f);
 
-	//nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 0>("Manual testing", true), "posit<5,0>", "reciprocation");
+	GenerateTestCase<4, 0, double>(0.75);
+	GenerateTestCase<5, 0, double>(0.75);
+	GenerateTestCase<6, 0, double>(0.75);
+	GenerateTestCase<16, 0, double>(0.75);
+	posit<16, 0> p(1 / 0.75);
+	cout << p.get() << " " << pretty_print(p, 17) << endl;
+
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<3, 0>("Manual testing", true), "posit<3,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<4, 0>("Manual testing", true), "posit<4,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<4, 1>("Manual testing", true), "posit<4,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 2>("Manual testing", true), "posit<5,2>", "reciprocation");
 
 
 #else

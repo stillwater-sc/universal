@@ -70,7 +70,7 @@ template<size_t nbits, size_t es>
 class posit 
 {
 	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
-	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
+//	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
 
 	template <typename T>
 	posit<nbits, es>& float_assign(const T& rhs) {
@@ -382,25 +382,28 @@ public:
 			frac.set(operand_size - 1, true);
 			constexpr size_t reciprocal_size = 2 * fbits + 3;
 			std::bitset<reciprocal_size> reciprocal;
-			std::cout << "one    " << one << std::endl;
-			std::cout << "frac   " << frac << std::endl;
 			divide_with_fraction(one, frac, reciprocal);
-			std::cout << "recip  " << reciprocal << std::endl;
+			if (_trace_reciprocate) {
+				std::cout << "one    " << one << std::endl;
+				std::cout << "frac   " << frac << std::endl;
+				std::cout << "recip  " << reciprocal << std::endl;
+			}
+
 			// radix point falls at operand size == reciprocal_size - operand_size - 1
 			reciprocal <<= operand_size - 1;
-			std::cout << "frac   " << reciprocal << std::endl;
+			if (_trace_reciprocate) std::cout << "frac   " << reciprocal << std::endl;
 			int new_scale = -scale();
 			int msb = findMostSignificantBit(reciprocal);
 			if (msb > 0) {
 				int shift = reciprocal_size - msb;
 				reciprocal <<= shift;
 				new_scale -= (shift-1);
-				std::cout << "result " << reciprocal << std::endl;
+				if (_trace_reciprocate) std::cout << "result " << reciprocal << std::endl;
 			}
-			std::bitset<operand_size> tr;
-			truncate(reciprocal, tr);
-			std::cout << "tr     " << tr << std::endl;
-			p.convert(_sign, new_scale, tr);
+			//std::bitset<operand_size> tr;
+			//truncate(reciprocal, tr);
+			//std::cout << "tr     " << tr << std::endl;
+			p.convert(_sign, new_scale, reciprocal);
 		}
 		return p;
 	}
