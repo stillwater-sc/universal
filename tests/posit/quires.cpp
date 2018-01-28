@@ -138,6 +138,12 @@ try {
 	quire<10, 2, 2> dquire(d);
 	std::cout << "double: " << setw(15) << d << " " << dquire << std::endl;
 
+	/* pattern to use posits with a quire
+	posit<10, 2> p = 1.555555555555e16;
+	quire<10, 2, 2> pquire(p.convert_to_scientific_notation());
+	std::cout << "posit:  " << setw(15) << d << " " << dquire << std::endl;
+	*/
+
 	std::cout << std::endl;
 	std::cout << "Addition" << std::endl;
 	quire<nbits, es, capacity> q;
