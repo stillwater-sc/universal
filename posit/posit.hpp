@@ -70,7 +70,7 @@ template<size_t nbits, size_t es>
 class posit 
 {
 	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
-//	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
+	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
 
 	template <typename T>
 	posit<nbits, es>& float_assign(const T& rhs) {
@@ -380,7 +380,7 @@ public:
 			std::bitset<operand_size> frac;
 			copy_into(_fraction.get(), 0, frac);
 			frac.set(operand_size - 1, true);
-			constexpr size_t reciprocal_size = 2 * fbits + 3;
+			constexpr size_t reciprocal_size = 3 * fbits + 4;
 			std::bitset<reciprocal_size> reciprocal;
 			divide_with_fraction(one, frac, reciprocal);
 			if (_trace_reciprocate) {
