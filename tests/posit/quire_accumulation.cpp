@@ -34,13 +34,14 @@ try {
 	p1 = 1; ++p1;
 	p2 = 1; --p2;
 	std::cout << "p1 : " << p1 << " p2 : " << p2 << endl;
-	q1 += p1 + p2;
+	//q1 += p1 + p2;    // if we allow posits to be added
+	q1 += (p1 + p2).convert_to_scientific_notation();  // if we force scientific values (sign, scale, fraction) inputs
 	cout << "q  : " << q1 << endl;
 	minpos = 0; ++minpos;
 	maxpos = INFINITY; --maxpos;
 	cout << "minpos : " << minpos << " maxpos : " << maxpos << endl;
 	cout << "minpos * p1 = " << minpos * p1 << " minpos * p2 = " << minpos * p2 << endl;
-	q2 += maxpos * (minpos * p1 + minpos * p2);
+	q2 += (maxpos * (minpos * p1 + minpos * p2)).convert_to_scientific_notation();
 	cout << "q  : " << q2 << endl;
 #else
 
@@ -56,7 +57,11 @@ try {
 #endif // MANUAL_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* msg) {
-	cerr << "Exception thrown: " << msg << endl;
+catch (char const* msg) {
+	cerr << msg << endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	cerr << "Caught unknown exception" << endl;
 	return EXIT_FAILURE;
 }

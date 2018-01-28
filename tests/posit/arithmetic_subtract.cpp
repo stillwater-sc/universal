@@ -49,11 +49,11 @@ try {
 	//ValidateBitsetSubtraction<4>(true);
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<4, 0>(0.25, 0.75);
-	GenerateTestCase<4, 0>(0.25, -0.75);
-	//GenerateTestCase<8, 0>(1.0, 0.25);
-	//GenerateTestCase<8, 0>(1.0, 0.125);
-	//GenerateTestCase<8, 0>(1.0, 1.0);
+	GenerateTestCase<4, 0, double>(0.25, 0.75);
+	GenerateTestCase<4, 0, double>(0.25, -0.75);
+	//GenerateTestCase<8, 0, double>(1.0, 0.25);
+	//GenerateTestCase<8, 0, double>(1.0, 0.125);
+	//GenerateTestCase<8, 0, double>(1.0, 1.0);
 
 	// manual exhaustive testing
 	std::string positCfg = "posit<4,0>";
@@ -110,7 +110,11 @@ try {
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* msg) {
+catch (char const* msg) {
 	cerr << msg << endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	cerr << "Caught unknown exception" << endl;
 	return EXIT_FAILURE;
 }

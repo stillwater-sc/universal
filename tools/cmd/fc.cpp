@@ -31,7 +31,11 @@ try {
 	cout << "float: " << setprecision(max_digits10) << f << " " << components(v) << endl;
 	return EXIT_SUCCESS;
 }
-catch (char* msg) {
+catch (char const* msg) {
 	cerr << msg << endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	cerr << "Caught unknown exception" << endl;
 	return EXIT_FAILURE;
 }

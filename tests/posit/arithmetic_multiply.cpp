@@ -21,28 +21,16 @@ using namespace sw::unum;
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_mul
-template<size_t nbits, size_t es>
-void GenerateTestCase(float fa, float fb) {
-	float fref;
+template<size_t nbits, size_t es, typename Ty>
+void GenerateTestCase(Ty fa, Ty fb) {
+	Ty ref;
 	posit<nbits, es> pa, pb, pref, pmul;
 	pa = fa;
 	pb = fb;
-	fref = fa * fb;
-	pref = fref;
+	ref = fa * fb;
+	pref = ref;
 	pmul = pa * pb;
-	cout << "float reference " << fref << ":    reference conversion " << pref << " result " << pmul << endl << endl;
-}
-
-template<size_t nbits, size_t es>
-void GenerateTestCase(double da, double db) {
-	double dref;
-	posit<nbits, es> pa, pb, pref, pmul;
-	pa = da;
-	pb = db;
-	dref = da * db;
-	pref = dref;
-	pmul = pa * pb;
-	cout << "double reference " << dref << ":   reference conversion " << pref << " result " << pmul << endl << endl;
+	cout << "reference " << ref << ":    reference conversion " << pref << " result " << pmul << endl << endl;
 }
 
 #define MANUAL_TESTING 0
@@ -52,7 +40,9 @@ int main(int argc, char** argv)
 try {	
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
-	
+
+	cout << "Posit multiplication validation" << endl;
+
 	std::string tag = "Multiplication failed: ";
 
 #if MANUAL_TESTING
@@ -62,15 +52,13 @@ try {
 	fa = 0.0f; fb = INFINITY;
 	std::cout << fa << " " << fb << std::endl;
 
-	GenerateTestCase<4,0>(fa, fb);
+	GenerateTestCase<4,0, float>(fa, fb);
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<3,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<4,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<5,0>", "multiplication");
 
 #else
-
-	cout << "Posit multiplication validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "multiplication");
@@ -127,8 +115,12 @@ try {
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* msg) {
+catch (char const* msg) {
 	cerr << msg << endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	cerr << "Caught unknown exception" << endl;
 	return EXIT_FAILURE;
 }
 

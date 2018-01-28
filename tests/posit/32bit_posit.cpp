@@ -42,13 +42,17 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 2>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
 	cout << "Multiplication:                 " << RND_TEST_CASES << " randoms" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 2>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
-	//cout << "Division      :                 " << RND_TEST_CASES << " randoms" << endl;
-	//nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 2>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
+	cout << "Division      :                 " << RND_TEST_CASES << " randoms" << endl;
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 2>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* msg) {
+catch (char const* msg) {
 	cerr << msg << endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	cerr << "Caught unknown exception" << endl;
 	return EXIT_FAILURE;
 }
 

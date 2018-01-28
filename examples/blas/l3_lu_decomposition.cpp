@@ -27,7 +27,11 @@ try {
 	int nrOfFailedTestCases = 0;
 	return nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 }
-catch (char* msg) {
+catch (char const* msg) {
 	cerr << msg << endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	cerr << "Caught unknown exception" << endl;
 	return EXIT_FAILURE;
 }
