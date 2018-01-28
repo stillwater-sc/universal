@@ -634,8 +634,8 @@ namespace sw {
 		}
 
 		// divide module
-		template<size_t fbits, size_t mbits>
-		void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<mbits>& result) {
+		template<size_t fbits, size_t divbits>
+		void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbits>& result) {
 			static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
 			if (_trace_div) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
 
@@ -650,25 +650,30 @@ namespace sw {
 
 			bool new_sign = lhs.sign() ^ rhs.sign();
 			int new_scale = lhs.scale() - rhs.scale();
-			std::bitset<mbits> result_fraction;
+			std::bitset<divbits> result_fraction;
 
 			if (fbits > 0) {
 				// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
 				std::bitset<fhbits> r1 = lhs.get_fixed_point();
 				std::bitset<fhbits> r2 = rhs.get_fixed_point();
 				divide_with_fraction(r1, r2, result_fraction);
-				if (_trace_div) std::cout << "r1  " << r1 << std::endl << "r2  " << r2 << std::endl << "res " << result_fraction << std::endl;
+				if (_trace_div) std::cout << "r1     " << r1 << std::endl << "r2     " << r2 << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;
 				// check if the radix point needs to shift
-				int shift = 2;
-				if (result_fraction.test(mbits - 1)) {
-					shift = 1;
-					if (_trace_div) std::cout << " shift " << shift << std::endl;
-					new_scale += 1;
+				// radix point is at divbits - fhbits
+				int msb = divbits - fhbits;
+				int shift = fhbits;
+				if (!result_fraction.test(msb)) {
+					msb--; shift++;
+					while (!result_fraction.test(msb)) { // search for the first 1
+						msb--; shift++;
+					}
 				}
-				result_fraction <<= shift;    // shift hidden bit out	
+				result_fraction <<= shift;    // shift hidden bit out
+				new_scale -= (shift - fhbits);
+				if (_trace_div) std::cout << "shift  " << shift << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;;
 			}
 			else {   // posit<3,0>, <4,1>, <5,2>, <6,3>, <7,4> etc are pure sign and scale
-					 // multiply the hidden bits together, i.e. 1*1: we know the answer a priori
+					 // no need to multiply the hidden bits together, i.e. 1*1: we know the answer a priori
 			}
 			if (_trace_div) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
 

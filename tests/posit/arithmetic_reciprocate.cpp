@@ -41,6 +41,8 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+	cout << "Posit reciprocate validation" << endl;
+
 	std::string tag = "Reciprocation failed: ";
 
 #if MANUAL_TESTING
