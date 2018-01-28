@@ -32,11 +32,21 @@ try {
 
 	cout << spec_to_string(p) << endl;
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAddition<8,0>("Posit<8,0> addition failed: ", bReportIndividualTestCases), "posit<8,0>", "addition") ;
+	nrOfFailedTestCases = ReportTestResult(ValidateAddition<8,0>("Posit<8,0> addition failed: ", bReportIndividualTestCases), "posit<8,0>", "add") ;
+	nrOfFailedTestCases = ReportTestResult(ValidateSubtraction<8, 0>("Posit<8,0> subtraction failed: ", bReportIndividualTestCases), "posit<8,0>", "subtract");
+	nrOfFailedTestCases = ReportTestResult(ValidateMultiplication<8, 0>("Posit<8,0> multiplication failed: ", bReportIndividualTestCases), "posit<8,0>", "multiply");
+	nrOfFailedTestCases = ReportTestResult(ValidateDivision<8, 0>("Posit<8,0> division failed: ", bReportIndividualTestCases), "posit<8,0>", "divide");
+	nrOfFailedTestCases = ReportTestResult(ValidateNegation<8, 0>("Posit<8,0> negation failed: ", bReportIndividualTestCases), "posit<8,0>", "negate");
+	nrOfFailedTestCases = ReportTestResult(ValidateReciprocation<8, 0>("Posit<8,0> reciprocation failed: ", bReportIndividualTestCases), "posit<8,0>", "reciprocate");
+
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* msg) {
+catch (char const* msg) {
 	cerr << msg << endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	cerr << "Caught unknown exception" << endl;
 	return EXIT_FAILURE;
 }

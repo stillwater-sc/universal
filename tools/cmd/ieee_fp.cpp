@@ -49,7 +49,11 @@ try {
 	cout << "long double: " << setprecision(q_prec) << setw(width) << q << " " << components(vq) << endl;
 	return EXIT_SUCCESS;
 }
-catch (char* msg) {
+catch (char const* msg) {
 	cerr << msg << endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	cerr << "Caught unknown exception" << endl;
 	return EXIT_FAILURE;
 }

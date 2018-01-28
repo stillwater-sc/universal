@@ -57,26 +57,15 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+	std::cout << "Experiments with the scale of numbers" << std::endl;
+
 	std::string tag = "Posit Scales failed";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	// double input, reference;
-
-#if 0
-	const size_t nbits = 16;
-	const size_t es = 1;
-	posit<nbits, es> p;
-	value<p.fbits> v;
-	p = 0.5e-5f;
-	v = p.convert_to_scientific_notation();
-	cout << p << " " << v << endl;
-#endif
-
+	ReportPositScales();
 
 #else
-
-	ReportPositScales();
 
 #ifdef STRESS_TEST
 
@@ -93,8 +82,12 @@ try {
     
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* msg) {
+catch (char const* msg) {
 	cerr << msg << endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+	cerr << "Caught unknown exception" << endl;
 	return EXIT_FAILURE;
 }
 
