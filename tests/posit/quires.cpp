@@ -7,6 +7,7 @@
 #include "stdafx.h"
 
 #include "../../posit/bit_functions.hpp"
+#include "../../posit/exceptions.hpp"
 #include "../../posit/trace_constants.hpp"
 #include "../../posit/value.hpp"
 #include "../../posit/quire.hpp"
@@ -177,7 +178,7 @@ try {
 #endif // MANUAL_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
-catch (char* msg) {
+catch (char const* msg) {
 	cerr << msg << endl;
 	return EXIT_FAILURE;
 }
