@@ -76,7 +76,7 @@ namespace sw {
 				<< " != "
 				<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
 				<< std::setw(FLOAT_TABLE_WIDTH) << presult
-				<< " " << components_to_string(presult) << std::endl;
+				<< " " << pref.get() << " vs " << presult.get() << std::endl;
 		}
 
 		template<size_t nbits, size_t es>

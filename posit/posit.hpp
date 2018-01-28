@@ -92,12 +92,13 @@ class posit
 	}
     
 public:
-	static constexpr size_t rbits = nbits - 1;
-	static constexpr size_t ebits = es;
-	static constexpr size_t fbits = nbits - 3 - es;  
-	static constexpr size_t abits = fbits + 4;       // size of the addend
-	static constexpr size_t fhbits = fbits + 1;      // size of fraction + hidden bit
-	static constexpr size_t mbits  = 2 * fhbits;     // size of the multiplier output
+	static constexpr size_t rbits   = nbits - 1;
+	static constexpr size_t ebits   = es;
+	static constexpr size_t fbits   = nbits - 3 - es;  
+	static constexpr size_t abits   = fbits + 4;       // size of the addend
+	static constexpr size_t fhbits  = fbits + 1;       // size of fraction + hidden bit
+	static constexpr size_t mbits   = 2 * fhbits;      // size of the multiplier output
+	static constexpr size_t divbits = 3 * fhbits + 4;  // size of the divider output
 
 	posit<nbits, es>() { setToZero();  }
 	
@@ -311,7 +312,7 @@ public:
 			return *this;
 		}
 
-		value<mbits> ratio;   // multiply and divide are symmetric
+		value<divbits> ratio;
 		value<fbits> a, b;
 		// transform the inputs into (sign,scale,fraction) triples
 		normalize(a);
@@ -329,7 +330,7 @@ public:
 			setToNaR();  // this can't happen as we would project back onto maxpos
 		}
 		else {
-			convert<mbits>(ratio);
+			convert<divbits>(ratio);
 		}
 
 		return *this;

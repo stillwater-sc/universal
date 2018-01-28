@@ -23,16 +23,17 @@ using namespace sw::unum;
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
-	Ty reference;
-	posit<nbits, es> pa, pb, pdiv;
+	Ty ref;
+	posit<nbits, es> pa, pb, pref, pdiv;
 	pa = a;
 	pb = b;
-	reference = a / b;
+	ref = a / b;
+	pref = ref;
 	pdiv = pa / pb;
-	cout << "reference " << reference << " result " << pdiv << endl << endl;
+	cout << "input " << a << " reference " << ref << " pref " << pref << " result " << pdiv << endl << endl;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -44,16 +45,19 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	const size_t nbits = 20;
+	const size_t nbits = 5;
 	const size_t es = 0;
-	float a = 91.34375f;
-	float b = 0.14453125f;
+	float a = 0.125f;
+	float b = 0.125f;
 	posit<nbits, es> pa(a), pb(b);
 	std::cout << pa.get() << " / " << pb.get() << std::endl;
-	GenerateTestCase<nbits, es, float>(91.34375f, 0.14453125);
+	GenerateTestCase<nbits, es, float>(a, b);
 	
+	//return 0;
 
-	//nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>("Manual Testing", true), "posit<3,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>("Manual Testing", true), "posit<3,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 0>("Manual Testing", true), "posit<4,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<5, 0>("Manual Testing", true), "posit<5,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<8, 0>("Manual Testing", true), "posit<8,0>", "division");
 
 #else

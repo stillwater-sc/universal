@@ -66,7 +66,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		std::string pretty_print(const posit<nbits, es>& p, int printPrecision) {
+		std::string pretty_print(const posit<nbits, es>& p, int printPrecision = std::numeric_limits<double>::max_digits10) {
 			std::stringstream ss;
 			ss << ( p.get_sign() ? "s1 r" : "s0 r" );
 			std::bitset<nbits-1> r = p.get_regime().get();
