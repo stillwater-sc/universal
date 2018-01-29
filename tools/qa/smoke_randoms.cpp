@@ -20,7 +20,7 @@ int GenerateSmokeTests(bool bReportIndividualTestCases) {
 	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_ADD, 100);
 	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_SUB, 100);
 	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_MUL, 100);
-	//nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_DIV, 100);
+	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_DIV, 100);
 	return nrOfFailedTestCases;
 }
 
