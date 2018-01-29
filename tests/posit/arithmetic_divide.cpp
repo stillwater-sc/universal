@@ -33,6 +33,93 @@ void GenerateTestCase(Ty a, Ty b) {
 	cout << "input " << a << " reference " << ref << " pref " << pref << " result " << pdiv << endl << endl;
 }
 
+template<size_t nbits, size_t es>
+void GenerateWorstCaseDivision() {
+	std::stringstream posit_descriptor;
+	posit_descriptor << "posit<" << nbits << ", " << es << ">";
+	posit<nbits, es> p_plus_eps(1), p_minus_eps(1), p_result;
+	p_plus_eps++;
+	p_minus_eps--;
+	p_result = p_plus_eps / p_minus_eps;
+	if (es < 2) {
+		std::cout << posit_descriptor.str() << " minpos = " << std::fixed << std::setprecision(nbits) << minpos_value<nbits, es>() << std::dec << ::endl;
+	}
+	else {
+		std::cout << posit_descriptor.str() << " minpos = " << setprecision(nbits) << minpos_value<nbits, es>() << std::endl;
+
+	}
+	std::cout << p_plus_eps.get() << " / " << p_minus_eps.get() << " = " << p_result.get() << std::endl;
+	std::cout << std::setprecision(nbits - 2) << std::setw(nbits) << p_plus_eps.to_double() << " / " << std::setw(nbits) << p_minus_eps.to_double() << " = " << std::setw(nbits) << p_result.to_double() << std::endl;
+	std::cout << std::endl;
+}
+
+/*
+Posit division validation
+posit<8, 0> minpos = 0.01562500
+01000001 / 00111111 = 01000010
+1.031250 / 0.984375 = 1.062500
+
+posit<12, 0> minpos = 0.000976562500
+010000000001 / 001111111111 = 010000000010
+1.0019531250 / 0.9990234375 = 1.0039062500
+
+posit<16, 1> minpos = 0.0000000037252903
+0100000000000001 / 0011111111111111 = 0100000000000010
+1.00024414062500 / 0.99987792968750 = 1.00048828125000
+
+posit<20, 1> minpos = 0.00000000001455191523
+01000000000000000001 / 00111111111111111111 = 01000000000000000010
+1.000015258789062500 / 0.999992370605468750 = 1.000030517578125000
+
+posit<24, 1> minpos = 0.000000000000056843418861
+010000000000000000000001 / 001111111111111111111111 = 010000000000000000000010
+1.0000009536743164062500 / 0.9999995231628417968750 = 1.0000019073486328125000
+
+posit<28, 1> minpos = 0.0000000000000002220446049250
+0100000000000000000000000001 / 0011111111111111111111111111 = 0100000000000000000000000010
+1.00000005960464477539062500 / 0.99999997019767761230468750 = 1.00000011920928955078125000
+
+posit<32, 1> minpos = 0.00000000000000000086736173798840
+01000000000000000000000000000001 / 00111111111111111111111111111111 = 01000000000000000000000000000010
+1.000000003725290298461914062500 / 0.999999998137354850769042968750 = 1.000000007450580596923828125000
+
+posit<32, 2> minpos = 0.00000000000000000000000000000000
+01000000000000000000000000000001 / 00111111111111111111111111111111 = 01000000000000000000000000000010
+1.000000007450580596923828125000 / 0.999999996274709701538085937500 = 1.000000014901161193847656250000
+
+posit<40, 2> minpos = 0.0000000000000000000000000000000000000000
+0100000000000000000000000000000000000001 / 0011111111111111111111111111111111111111 = 0100000000000000000000000000000000000010
+1.00000000002910383045673370361328125000 / 0.99999999998544808477163314819335937500 = 1.00000000005820766091346740722656250000
+
+posit<48, 2> minpos = 0.000000000000000000000000000000000000000000000000
+010000000000000000000000000000000000000000000001 / 001111111111111111111111111111111111111111111111 = 010000000000000000000000000000000000000000000010
+1.0000000000001136868377216160297393798828125000 / 0.9999999999999431565811391919851303100585937500 = 1.0000000000002273736754432320594787597656250000
+
+posit<56, 2> minpos = 0.00000000000000000000000000000000000000000000000000000000
+01000000000000000000000000000000000000000000000000000001 / 00111111111111111111111111111111111111111111111111111111 = 01000000000000000000000000000000000000000000000000000010
+1.000000000000000444089209850062616169452667236328125000 / 0.999999999999999777955395074968691915273666381835937500 = 1.000000000000000888178419700125232338905334472656250000
+
+posit<60, 3> minpos = 0.000000000000000000000000000000000000000000000000000000000000
+010000000000000000000000000000000000000000000000000000000001 / 001111111111111111111111111111111111111111111111111111111111 = 010000000000000000000000000000000000000000000000000000000010
+1.0000000000000000000000000000000000000000000000000000000000 / 1.0000000000000000000000000000000000000000000000000000000000 = 1.0000000000000000000000000000000000000000000000000000000000
+
+last one posit<60,3> shows doubles aren't enough to represent these posit values and the values get rounded to 1.0
+*/
+void EnumerateToughDivisions() {
+	GenerateWorstCaseDivision<8, 0>();
+	GenerateWorstCaseDivision<12, 0>();
+	GenerateWorstCaseDivision<16, 1>();
+	GenerateWorstCaseDivision<20, 1>();
+	GenerateWorstCaseDivision<24, 1>();
+	GenerateWorstCaseDivision<28, 1>();
+	GenerateWorstCaseDivision<32, 1>();
+	GenerateWorstCaseDivision<32, 2>();
+	GenerateWorstCaseDivision<40, 2>();
+	GenerateWorstCaseDivision<48, 2>();
+	GenerateWorstCaseDivision<56, 2>();
+	GenerateWorstCaseDivision<60, 3>();
+}
+
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
@@ -41,19 +128,15 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+	cout << "Posit division validation" << endl;
+
 	std::string tag = "Division failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	const size_t nbits = 5;
-	const size_t es = 0;
-	float a = 0.125f;
-	float b = 0.125f;
-	posit<nbits, es> pa(a), pb(b);
-	std::cout << pa.get() << " / " << pb.get() << std::endl;
-	GenerateTestCase<nbits, es, float>(a, b);
-	
-	//return 0;
+	const size_t nbits = 16;
+	const size_t es = 1;
+	//GenerateTestCase<nbits, es, float>(a, b);
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>("Manual Testing", true), "posit<3,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 0>("Manual Testing", true), "posit<4,0>", "division");
@@ -61,8 +144,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<8, 0>("Manual Testing", true), "posit<8,0>", "division");
 
 #else
-
-	cout << "Posit division validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "division");
 
