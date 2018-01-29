@@ -30,7 +30,10 @@ void GenerateTestCase(Ty a, Ty b) {
 	ref = a / b;
 	pref = ref;
 	pdiv = pa / pb;
-	cout << "input " << a << " reference " << ref << " pref " << pref << " result " << pdiv << endl << endl;
+	std::cout << std::setprecision(nbits - 2);
+	std::cout << std::setw(nbits) << a << " / " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
+	std::cout << pa.get() << " / " << pb.get() << " = " << pdiv.get() << " (reference: " << pref.get() << ")" << std::endl;
+	std::cout << std::setprecision(5) << std::endl;
 }
 
 template<size_t nbits, size_t es>
@@ -136,7 +139,18 @@ try {
 	// generate individual testcases to hand trace/debug
 	const size_t nbits = 16;
 	const size_t es = 1;
-	//GenerateTestCase<nbits, es, float>(a, b);
+	double a, b;
+	a = 0.9999999999;
+	b = 1.0000000001;
+	b = 0.5000000001;
+	GenerateTestCase<16, 1, double>(a, b);
+	GenerateTestCase<20, 1, double>(a, b);
+	GenerateTestCase<32, 1, double>(a, b);
+	GenerateTestCase<40, 1, double>(a, b);
+	GenerateTestCase<48, 1, double>(a, b);
+
+	// Generate the worst fraction pressure for different posit configurations
+	EnumerateToughDivisions();
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>("Manual Testing", true), "posit<3,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 0>("Manual Testing", true), "posit<4,0>", "division");
