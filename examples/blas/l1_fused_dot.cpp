@@ -38,12 +38,12 @@ const double pi = 3.14159265358979323846;  // best practice for C++
 
 template<typename Ty>
 Ty minValue(const std::vector<Ty>& samples) {
-	std::vector<Ty>::const_iterator it = min_element(samples.begin(), samples.end());
+	typename std::vector<Ty>::const_iterator it = min_element(samples.begin(), samples.end());
 	return *it;
 }
 template<typename Ty>
 Ty maxValue(const std::vector<Ty>& samples) {
-	std::vector<Ty>::const_iterator it = max_element(samples.begin(), samples.end());
+	typename std::vector<Ty>::const_iterator it = max_element(samples.begin(), samples.end());
 	return *it;
 }
 template<typename Ty>
@@ -70,7 +70,7 @@ void DisplaySignal(ostream& ostr, const std::vector<Ty>& samples) {
 	// create a horizontal display
 	int cnt = 0;
 	ostr << fixed << setprecision(3);
-	for (std::vector<Ty>::const_iterator it = samples.begin(); it != samples.end(); it++) {
+	for (typename std::vector<Ty>::const_iterator it = samples.begin(); it != samples.end(); it++) {
 		ostr << setw(3) << cnt++ << " " << setw(6) << float(*it) << " ";
 		DisplaySample(ostr, *it, min, max);
 	}
