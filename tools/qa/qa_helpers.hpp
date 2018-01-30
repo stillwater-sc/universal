@@ -589,22 +589,22 @@ namespace sw {
 				std::vector<double> operand_values(SIZE_STATE_SPACE);
 				// inject minpos/maxpos and -minpos/-maxpos in the samples
 				presult = 1.0;
-				operand_values[0] = presult.to_quadruple();
+				operand_values[0] = presult.to_long_double();
 				presult = -1.0;
-				operand_values[1] = presult.to_quadruple();
+				operand_values[1] = presult.to_long_double();
 				presult.set_raw_bits(1);
-				operand_values[2] = presult.to_quadruple();
+				operand_values[2] = presult.to_long_double();
 				presult--; presult--;
-				operand_values[3] = presult.to_quadruple();
+				operand_values[3] = presult.to_long_double();
 				presult.setToNaR();
 				presult++;
-				operand_values[4] = presult.to_quadruple();
+				operand_values[4] = presult.to_long_double();
 				presult.setToNaR();
 				presult++;
-				operand_values[5] = presult.to_quadruple();
+				operand_values[5] = presult.to_long_double();
 				for (uint32_t i = 6; i < SIZE_STATE_SPACE; i++) {
 					presult.set_raw_bits(uniform(eng));  // take the bottom nbits bits as posit encoding: works for nbits<=64
-					operand_values[i] = presult.to_quadruple();
+					operand_values[i] = presult.to_long_double();
 				}
 
 				/*
@@ -644,22 +644,22 @@ namespace sw {
 				std::vector<double> operand_values(SIZE_STATE_SPACE);
 				// inject minpos/maxpos and -minpos/-maxpos in the samples
 				presult = 1.0;
-				operand_values[0] = presult.to_quadruple();
+				operand_values[0] = presult.to_long_double();
 				presult = -1.0;
-				operand_values[1] = presult.to_quadruple();
+				operand_values[1] = presult.to_long_double();
 				presult.set_raw_bits(1);
-				operand_values[2] = presult.to_quadruple();
+				operand_values[2] = presult.to_long_double();
 				presult--; presult--;
-				operand_values[3] = presult.to_quadruple();
+				operand_values[3] = presult.to_long_double();
 				presult.setToNaR();
 				presult++;
-				operand_values[4] = presult.to_quadruple();
+				operand_values[4] = presult.to_long_double();
 				presult.setToNaR();
 				presult++;
-				operand_values[5] = presult.to_quadruple();
+				operand_values[5] = presult.to_long_double();
 				for (uint32_t i = 6; i < SIZE_STATE_SPACE; i++) {
 					presult.set_raw_bits(uniform(eng));  // take the bottom nbits bits as posit encoding: works for nbits<=64
-					operand_values[i] = presult.to_quadruple();
+					operand_values[i] = presult.to_long_double();
 				}
 
 				/*

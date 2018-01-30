@@ -652,21 +652,30 @@ public:
 		// we are storing both the raw bit representation and the decoded form
 		// so no need to transform back via 2's complement of regime/exponent/fraction
 	}
-	int64_t to_int64() const {
+	int         to_int() const {
 		if (isZero()) return 0;
 		if (isNaR()) throw "NaR (Not a Real)";
-		// returning the integer representation of a posit only works for [1,NaR) and is approximate
-		return int64_t(to_double());   // TODO: this does not generate 64 bits of precision
+		return int(to_float());
 	}
-	float   to_float() const {
+	long        to_long() const {
+		if (isZero()) return 0;
+		if (isNaR()) throw "NaR (Not a Real)";
+		return long(to_double());
+	}
+	long long   to_long_long() const {
+		if (isZero()) return 0;
+		if (isNaR()) throw "NaR (Not a Real)";
+		return long(to_long_double());
+	}
+	float       to_float() const {
 		return (float)to_double();
 	}
-	double  to_double() const {
+	double      to_double() const {
 		if (isZero())	return 0.0;
 		if (isNaR())	return NAN;
 		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
 	}
-	quadruple to_quadruple() const {
+	long double to_long_double() const {
 		if (isZero())  return 0.0;
 		if (isNaR())   return NAN;
 		quadruple s = sign_value();
@@ -677,8 +686,12 @@ public:
 	}
 	
 	// Maybe remove explicit, MTL compiles, but we have lots of double computation then
+	explicit operator long double() const { return to_long_double(); }
 	explicit operator double() const { return to_double(); }
 	explicit operator float() const { return to_float(); }
+	explicit operator long long() const { return to_long_long(); }
+	explicit operator long() const { return to_long(); }
+	explicit operator int() const { return to_int(); }
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	value<fbits> convert_to_scientific_notation() const {
@@ -994,6 +1007,40 @@ posit<nbits, es> abs(const posit<nbits, es>& p) {
     return posit<nbits, es>(false, p.get_regime(), p.get_exponent(), p.get_fraction());
 }
 
+// QUIRE OPERATORS
+
+
+template<size_t nbits, size_t es>
+value<nbits - es + 2> quire_add(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+	static constexpr size_t fbits = nbits - 3 - es;
+	static constexpr size_t abits = fbits + 4;       // size of the addend
+	value<abits + 1> sum;
+	value<fbits> a, b;
+	// transform the inputs into (sign,scale,fraction) triples
+	a.set(lhs.get_sign(), lhs.scale(), lhs.get_fraction().get(), lhs.isZero(), lhs.isNaR());;
+	b.set(rhs.get_sign(), rhs.scale(), rhs.get_fraction().get(), rhs.isZero(), rhs.isNaR());;
+
+	module_add<fbits, abits>(a, b, sum);		// add the two inputs
+
+	return sum;
+}
+
+template<size_t nbits, size_t es>
+value<2*(nbits - 2 - es)> quire_mul(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+	static constexpr size_t fbits = nbits - 3 - es;
+	static constexpr size_t fhbits = fbits + 1;       // size of fraction + hidden bit
+	static constexpr size_t mbits = 2 * fhbits;      // size of the multiplier output
+
+	value<mbits> product;
+	value<fbits> a, b;
+	// transform the inputs into (sign,scale,fraction) triples
+	a.set(lhs.get_sign(), lhs.scale(), lhs.get_fraction().get(), lhs.isZero(), lhs.isNaR());;
+	b.set(rhs.get_sign(), rhs.scale(), rhs.get_fraction().get(), rhs.isZero(), rhs.isNaR());;
+
+	module_multiply(a, b, product);    // multiply the two inputs
+
+	return product;
+}
 
 	}  // namespace unum
 
