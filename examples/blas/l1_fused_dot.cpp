@@ -36,6 +36,47 @@ log_e(10)		M_LN10		2.30258509299404568402
 
 const double pi = 3.14159265358979323846;  // best practice for C++
 
+template<typename Ty>
+Ty minValue(const std::vector<Ty>& samples) {
+	std::vector<Ty>::const_iterator it = min_element(samples.begin(), samples.end());
+	return *it;
+}
+template<typename Ty>
+Ty maxValue(const std::vector<Ty>& samples) {
+	std::vector<Ty>::const_iterator it = max_element(samples.begin(), samples.end());
+	return *it;
+}
+template<typename Ty>
+ostream& DisplaySample(ostream& ostr, const Ty& value, const Ty& min, const Ty& max) {
+	// min is 0 stars
+	// 0   is 40 stars
+	// max is 80 stars
+	int maxStars = 80;
+	float sample = float(value);
+	float range = float(max - min);
+	float midPoint = range/2.0f;
+	float portion = (sample + midPoint)/range;
+	int ub = int(maxStars * portion);
+	for (int i = 0; i < ub; i++) {
+		ostr << "*";
+	}
+	return ostr << std::endl;
+}
+
+template<typename Ty>
+void DisplaySignal(ostream& ostr, const std::vector<Ty>& samples) {
+	Ty min = minValue(samples);
+	Ty max = maxValue(samples);
+	// create a horizontal display
+	int cnt = 0;
+	ostr << fixed << setprecision(3);
+	for (std::vector<Ty>::const_iterator it = samples.begin(); it != samples.end(); it++) {
+		ostr << setw(3) << cnt++ << " " << setw(6) << float(*it) << " ";
+		DisplaySample(ostr, *it, min, max);
+	}
+	ostr << setprecision(17);
+}
+
 int main(int argc, char** argv)
 try {
 	const size_t nbits = 16;
@@ -54,11 +95,14 @@ try {
 		cosinusoid[i] = p;
 	}
 
+	DisplaySignal(std::cout, sinusoid);
+
+	minpos_value<nbits, es>();
 	// dot product
-	posit<nbits, es> dot_product;
+	quire<nbits, es, 2> dot_product;
 	dot_product = 0.0f;
 	for (int i = 0; i < vecSize; i++) {
-		dot_product += sinusoid[i] * cosinusoid[i];
+		dot_product += quire_mul(sinusoid[i], cosinusoid[i]);
 	}
 
 	cout << "Dot product is " << dot_product << endl;

@@ -104,5 +104,6 @@ namespace sw {
 			// numbers are equal
 			return false;
 		}
+
 	}
 }
