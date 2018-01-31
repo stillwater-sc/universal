@@ -21,19 +21,19 @@ namespace sw {
 			static constexpr size_t fhbits = fbits + 1;    // size of the fixed point number with hidden bit made explicity
 			value() : _sign(false), _scale(0), _nrOfBits(fbits), _zero(true), _inf(false), _nan(false) {}
 			value(bool sign, int scale, const std::bitset<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
-			value(int8_t initial_value) {
+			value(signed char initial_value) {
 				*this = initial_value;
 			}
-			value(int16_t initial_value) {
+			value(short initial_value) {
 				*this = initial_value;
 			}
-			value(int32_t initial_value) {
+			value(int initial_value) {
 				*this = initial_value;
 			}
-			value(int64_t initial_value) {
+			value(long long initial_value) {
 				*this = initial_value;
 			}
-			value(uint64_t initial_value) {
+			value(unsigned long long initial_value) {
 				*this = initial_value;
 			}
 			value(float initial_value) {
@@ -58,19 +58,19 @@ namespace sw {
 				_nan      = rhs._nan;
 				return *this;
 			}
-			value<fbits>& operator=(int8_t rhs) {
+			value<fbits>& operator=(signed char rhs) {
 				*this = int64_t(rhs);
 				return *this;
 			}
-			value<fbits>& operator=(int16_t rhs) {
+			value<fbits>& operator=(short rhs) {
 				*this = int64_t(rhs);
 				return *this;
 			}
-			value<fbits>& operator=(int32_t rhs) {
+			value<fbits>& operator=(int rhs) {
 				*this = int64_t(rhs);
 				return *this;
 			}
-			value<fbits>& operator=(int64_t rhs) {
+			value<fbits>& operator=(long long rhs) {
 				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 				if (rhs == 0) {
 					setToZero();
@@ -99,7 +99,7 @@ namespace sw {
 				}
 				return *this;
 			}
-			value<fbits>& operator=(uint64_t rhs) {
+			value<fbits>& operator=(unsigned long long rhs) {
 				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 				if (rhs == 0) {
 					setToZero();
@@ -313,18 +313,31 @@ namespace sw {
 				}
 				return fixed_point_number;
 			}
-			double sign_value() const { return (_sign ? -1.0 : 1.0); }
-			double scale_value() const {
-				if (_zero) return 0.0;
-				return std::pow(2.0, _scale);
+			int sign_value() const { return (_sign ? -1 : 1); }
+			long double scale_value() const {
+				if (_zero) return (long double)(0.0);
+				return std::pow((long double)2.0, (long double)_scale);
 			}
-			double fraction_value() const {
-				// TODO: this fails when fbits > 64 and we cannot represent the fraction by a 64bit unsigned integer
-				return double(_fraction.to_ullong()) / double(uint64_t(1) << (fbits));
+			long double fraction_value() const {
+				if (_zero) return (long double)0.0;
+				long double v = 1.0;
+				long double scale = 0.5;
+				for (int i = fbits - 1; i >= 0; i--) {
+					if (_fraction.test(i)) v += scale;
+					scale *= 0.5;
+					if (scale == 0.0) break;
+				}
+				return v;
 			}
-			double to_double() const {
-				return sign_value() * scale_value() * (1.0 + fraction_value());
+			long double to_long_double() const {
+				return sign_value() * scale_value() * fraction_value();
 			}
+
+			// Maybe remove explicit
+			explicit operator long double() const { return to_long_double(); }
+			explicit operator double() const { return to_long_double(); }
+			explicit operator float() const { return to_long_double(); }
+
 			template<size_t tgt_size>
 			value<tgt_size> round_to() {
 				value<tgt_size> result;
@@ -369,7 +382,7 @@ namespace sw {
 				ostr << FP_INFINITE;
 			}
 			else {
-				ostr << v.to_double();
+				ostr << (long double)v;
 			}
 			return ostr;
 		}
@@ -381,11 +394,11 @@ namespace sw {
 		}
 
 		template<size_t nfbits>
-		inline bool operator==(const value<nfbits>& lhs, const value<nfbits>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._fraction == rhs._fraction && lhs._nrOfBits == rhs._nrOfBits; }
+		inline bool operator==(const value<nfbits>& lhs, const value<nfbits>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._fraction == rhs._fraction && lhs._nrOfBits == rhs._nrOfBits && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
 		template<size_t nfbits>
 		inline bool operator!=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator==(lhs, rhs); }
 		template<size_t nfbits>
-		inline bool operator< (const value<nfbits>& lhs, const value<nfbits>& rhs) { return lhs.to_double() < rhs.to_double(); }
+		inline bool operator< (const value<nfbits>& lhs, const value<nfbits>& rhs) { return lhs.to_long_double() < rhs.to_long_double(); }
 		template<size_t nfbits>
 		inline bool operator> (const value<nfbits>& lhs, const value<nfbits>& rhs) { return  operator< (rhs, lhs); }
 		template<size_t nfbits>
