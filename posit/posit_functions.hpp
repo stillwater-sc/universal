@@ -81,13 +81,13 @@ namespace sw {
 		// calculate the value of maxpos
 		template<size_t nbits, size_t es>
 		long double maxpos_value() {
-			return pow(long double(useed_value<nbits, es>()), long double(nbits - 2));
+			return std::pow((long double)(useed_value<nbits, es>()), (long double)(nbits - 2));
 		}
 
 		// calculate the value of minpos
 		template<size_t nbits, size_t es>
 		long double minpos_value() {
-			return pow(long double(useed_value<nbits, es>()), long double(static_cast<int>(2 - nbits)));
+			return std::pow((long double)(useed_value<nbits, es>()), (long double)(static_cast<int>(2 - nbits)));
 		}
 
 		// this comparison is for a two's complement number only, for example, the raw bits of a posit
