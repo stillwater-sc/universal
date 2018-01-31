@@ -100,6 +100,12 @@ void GenerateValueAssignments() {
 		try {
 			q = v;
 			std::cout << setw(10) << v << q << std::endl;
+			value<q.qbits> r = q.to_value();
+			double in = v.to_double();
+			double out = r.to_double();
+			if (std::abs(in - out) > 0.0000001) { 
+				std::cerr << "quire value conversion failed: " << components(v) << " != " << components(r) << std::endl; 
+			}
 		}
 		catch (char const* msg) {
 			std::cerr << "Caught the exception: " << msg << ". RHS was " << v << " " << components(v) << std::endl;
