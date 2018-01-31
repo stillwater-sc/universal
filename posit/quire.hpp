@@ -19,6 +19,7 @@ public:
 	static constexpr size_t half_range = range >> 1;          // position of the fixed point
 	static constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
 	static constexpr size_t qbits = range + capacity;         // size of the quire minus the sign bit: we are managing the sign explicitly
+	
 	quire() : _sign(false), _capacity(0), _upper(0), _lower(0) {}
 	quire(int8_t initial_value) {
 		*this = initial_value;
@@ -418,8 +419,44 @@ public:
 	// Return value of the sign bit: true indicates a negative number, false a positive number or zero
 	bool get_sign() const { return _sign; }
 	float sign_value() const {	return (_sign ? -1.0 : 1.0); }
-	double to_double() const {
-		return 0.0; // TODO
+	value<qbits> to_value() const {
+		// find the MSB and build the fraction
+		std::bitset<qbits> fraction;
+		bool isZero = false;
+		bool isNaR = false;   // TODO
+		int i;
+		int qbit = int(qbits);
+		int fbit = qbit - 1;
+		int scale = qbits;
+		for (i = int(capacity) - 1; i >= 0; i--, qbit--) {
+			if (scale == qbits) {
+				if (_capacity.test(i)) scale = qbit - int(half_range);
+			}
+			else {
+				fraction[fbit--] = _capacity[i];
+			}
+		}
+		for (i = int(upper_range) - 1; i >= 0; i--, qbit--) {
+			if (scale == qbits) {
+				if (_upper.test(i)) scale = qbit - int(half_range);
+			}
+			else {
+				fraction[fbit--] = _upper[i];
+			}
+		}
+		for (i = int(half_range) - 1; i >= 0; i--, qbit--) {
+			if (scale == qbits) {
+				if (_lower.test(i)) scale = qbit - int(half_range);
+			}
+			else {
+				fraction[fbit--] = _lower[i];
+			}
+		}
+		if (scale == qbits) {
+			isZero = true;
+			scale = 0;
+		}
+		return value<qbits>(_sign, scale, fraction, isZero, isNaR);
 	}
 
 private:

@@ -28,15 +28,22 @@ namespace sw {
 		// dot product: the operator vector::x[index] is limited to uint32_t, so the arguments are limited to uint32_t as well
 		// since we do not support arbitrary posit configuration conversions, the element type of the vectors x and y are declared to be the same.
 		// TODO: investigate if the vector<> index is always a 32bit entity?
-		template<typename result_T, typename element_T>
-		result_T dot(uint32_t n, const std::vector<element_T>& x, uint32_t incx, const std::vector<element_T>& y, uint32_t incy) {
-			result_T result = 0;
+		template<typename Ty>
+		Ty dot(uint32_t n, const std::vector<Ty>& x, uint32_t incx, const std::vector<Ty>& y, uint32_t incy) {
+			Ty product = 0;
 			uint32_t ix, iy;
 			for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
-				result_T partial = (result_T)(x[ix] * y[iy]);
-				result += partial;
+				product += x[ix] * y[iy];
 			}
-			return result;
+			return product;
+		}
+
+		template<typename Qy, typename Ty>
+		void fused_dot(Qy& sum_of_products, uint32_t n, const std::vector<Ty>& x, uint32_t incx, const std::vector<Ty>& y, uint32_t incy) {
+			uint32_t ix, iy;
+			for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
+				sum_of_products += sw::unum::quire_mul(x[ix], y[iy]);
+			}
 		}
 
 		// rotation of points in the plane

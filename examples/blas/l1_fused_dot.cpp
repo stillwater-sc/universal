@@ -9,7 +9,12 @@
 #include "stdafx.h"
 
 #include <vector>
+
+#define POSIT_TRACE_DEBUG
+#define POSIT_TRACE_MUL
 #include <posit>
+
+#include "blas.hpp"
 
 using namespace std;
 using namespace sw::unum;
@@ -81,31 +86,39 @@ int main(int argc, char** argv)
 try {
 	const size_t nbits = 16;
 	const size_t es = 1;
-	const size_t vecSize = 32;
+	const size_t capacity = 10;   // 2^10 accumulations of maxpos^2
+	const size_t vecSize = 1024;
 
 	int nrOfFailedTestCases = 0;
 
+	float f;
+	vector< float > fsinusoid(vecSize), fcosinusoid(vecSize);
 	posit<nbits, es> p;
-	vector< posit<nbits,es> > sinusoid(vecSize), cosinusoid(vecSize);
+	vector< posit<nbits,es> > psinusoid(vecSize), pcosinusoid(vecSize);
 
 	for (int i = 0; i < vecSize; i++) {
-		p = sin( (float(i) / float(vecSize)) *2.0 * pi);
-		sinusoid[i] = p;
-		p = cos((float(i) / float(vecSize)) *2.0 * pi);
-		cosinusoid[i] = p;
+		//f = 0.99999f; 
+		f = sin((float(i) / float(vecSize)) *2.0 * pi);
+		fsinusoid[i] = f;
+		psinusoid[i] = f;
+		//f = 0.99999f; 
+		f = cos((float(i) / float(vecSize)) *2.0 * pi);
+		fcosinusoid[i] = f;
+		pcosinusoid[i] = f;
 	}
 
-	DisplaySignal(std::cout, sinusoid);
+	//DisplaySignal(std::cout, sinusoid);
+	//DisplaySignal(std::cout, cosinusoid);
 
-	minpos_value<nbits, es>();
-	// dot product
-	quire<nbits, es, 2> dot_product;
-	dot_product = 0.0f;
-	for (int i = 0; i < vecSize; i++) {
-		dot_product += quire_mul(sinusoid[i], cosinusoid[i]);
-	}
+	long double minpos = minpos_value<nbits, es>();
+	quire<nbits, es, capacity> q;
+	q.clear();
+	sw::blas::fused_dot(q, vecSize, psinusoid, 1, pcosinusoid, 1);
+	value<q.qbits> r = q.to_value();
+	cout << "Fused Dot product is   " << q.to_value() << endl;
 
-	cout << "Dot product is " << dot_product << endl;
+	f = sw::blas::dot(vecSize, fsinusoid, 1, fcosinusoid, 1);
+	cout << "Regular Dot product is " << f << endl;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
