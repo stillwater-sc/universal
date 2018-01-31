@@ -20,7 +20,7 @@ namespace sw {
 		public:
 			static constexpr size_t fhbits = fbits + 1;    // size of the fixed point number with hidden bit made explicity
 			value() : _sign(false), _scale(0), _nrOfBits(fbits), _zero(true), _inf(false), _nan(false) {}
-			value(bool sign, int scale, std::bitset<fbits> fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
+			value(bool sign, int scale, const std::bitset<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
 			value(int8_t initial_value) {
 				*this = initial_value;
 			}
@@ -221,6 +221,9 @@ namespace sw {
 				return *this;
 			}
 
+			value<fbits> operator-() const {				
+				return value<fbits>(!_sign, _scale, _fraction, _zero, _inf);
+			}
 			// modifiers
 			void reset() {
 				_sign  = false;

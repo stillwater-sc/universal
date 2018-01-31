@@ -7,6 +7,7 @@
 #include "stdafx.h"
 
 #include "../../posit/bit_functions.hpp"
+#include "../../posit/posit_functions.hpp"
 #include "../../posit/exceptions.hpp"
 #include "../../posit/trace_constants.hpp"
 #include "../../posit/value.hpp"
@@ -14,7 +15,6 @@
 
 using namespace std;
 using namespace sw::unum;
-
 
 int TestQuireAccumulationResult(int nrOfFailedTests, string descriptor)
 {
@@ -87,14 +87,16 @@ void GenerateSignedIntAssignments() {
 template<size_t nbits, size_t es, size_t capacity, size_t fbits = 1>
 void GenerateValueAssignments() {
 	quire<nbits, es, capacity> q;
-	int upper_range = q.upper_range();
-	int lower_range = q.lower_range();
-	std::cout << "Max scale = " << upper_range-1 << " Minimum scale = " << -lower_range << std::endl;
-	int scale;
-	value<fbits> v;
-	double d = pow(2.0, upper_range);
-	for (scale = upper_range; scale >= -lower_range - 1; scale--) {
-		v = d;
+
+	// report some parameters about the posit and quire configuration
+	int max_scale = q.max_scale();
+	int min_scale = q.min_scale();
+	std::cout << "Maximum scale  = " << max_scale << " Minimum scale  = " << min_scale << " Dynamic range = " << q.dynamic_range() << std::endl;
+	std::cout << "Maxpos Squared = " << maxpos_scale<nbits,es>() * 2 << " Minpos Squared = " << minpos_scale<nbits, es>() * 2 << std::endl;
+
+	// cover the scales with one order outside of the dynamic range of the quire configuration (minpos^2 and maxpos^2)
+	for (int scale = max_scale + 1; scale >= min_scale - 1; scale--) {  // extend by 1 max and min scale to test edge of the quire
+		value<fbits> v = pow(2.0, scale);
 		try {
 			q = v;
 			std::cout << setw(10) << v << q << std::endl;
@@ -102,7 +104,6 @@ void GenerateValueAssignments() {
 		catch (char const* msg) {
 			std::cerr << "Caught the exception: " << msg << ". RHS was " << v << " " << components(v) << std::endl;
 		}
-		d /= 2.0;
 	}
 }
 
@@ -145,29 +146,66 @@ try {
 	*/
 
 	std::cout << std::endl;
-	std::cout << "Addition" << std::endl;
+	// nbits = 4, es = 1, capacity = 2
+	//  17 16   15 14 13 12 11 10  9  8    7  6  5  4  3  2  1  0
+	// [ 0  0    0  0  0  0  0  0  0  0    0  0  0  0  0  0  0  0 ]
 	quire<nbits, es, capacity> q;
-	value<5> v(32.0);
-	q += v;
-	std::cout << q << std::endl;
-	q += v;
-	std::cout << q << std::endl;
+	value<5> maxpos, maxpos_squared, minpos, minpos_squared;
+	long double dmax = sw::unum::maxpos_value<nbits, es>();
+	maxpos = dmax;
+	maxpos_squared = dmax*dmax;
+	std::cout << "maxpos * maxpos = " << components(maxpos_squared) << std::endl;
+	long double dmin = sw::unum::minpos_value<nbits, es>();
+	minpos = dmin;
+	minpos_squared = dmin*dmin;
+	std::cout << "minpos * minpos = " << components(minpos_squared) << std::endl;
+	value<5> c(maxpos_squared);
 
+	std::cout << "Add/Subtract propagating carry/borrows to and from capacity segment" << std::endl;
+	q.clear();
+	value<5> v(64);
+	q += v;		std::cout << q << std::endl;
+	q += v;		std::cout << q << std::endl;
+	q += v;		std::cout << q << std::endl;
+	q += v;		std::cout << q << std::endl;
+	q += v;		std::cout << q << std::endl;
+	q += v;		std::cout << q << std::endl;
+	q += v;		std::cout << q << std::endl;
+	q += v;		std::cout << q << " <- entering capacity bits" << std::endl;
+	q += c;		std::cout << q << " <- adding maxpos^2" << std::endl;
+	q += c;     std::cout << q << " <- flipping another capacity bit" << std::endl;
+	q += -c;	std::cout << q << " <- subtracting maxpos^2" << std::endl;
+	q += -c;	std::cout << q << " <- subtracting maxpos^2" << std::endl;
+	q += -v;	std::cout << q << " <- removing the capacity bit" << std::endl;
+	q += -v;	std::cout << q << std::endl;
+	q += -v;	std::cout << q << std::endl;
+	q += -v;	std::cout << q << std::endl;
+	q += -v;	std::cout << q << std::endl;
+	q += -v;	std::cout << q << std::endl;
+	q += -v;	std::cout << q << std::endl;
+	q += -v;	std::cout << q << " <- should be zero" << std::endl;
+
+	std::cout << "Add/Subtract propagating carry/borrows across lower/upper accumulators" << std::endl;
 	q = 0;
 	v = 0.5;
-	q += v;
-	std::cout << q << std::endl;
-	q += v;
-	std::cout << q << std::endl;
+	q += v;		std::cout << q << std::endl;
+	q += v;		std::cout << q << std::endl;
+	q += v;		std::cout << q << std::endl;
+	q += v;		std::cout << q << std::endl;
+	q += -v;	std::cout << q << std::endl;
+	q += -v;	std::cout << q << std::endl;
+	q += -v;	std::cout << q << std::endl;
+	q += -v;	std::cout << q << " <- should be zero" << std::endl;
 
-	q = 0;
-	v = 3.875 + 0.0625; std::cout << "v " << components(v) << std::endl;
-	q += v;
-	std::cout << q << std::endl;
-	q += v;
-	std::cout << q << std::endl;
-	q += v;
-	std::cout << q << std::endl;
+	std::cout << "Add/Subtract propagating carry/borrows across lower/upper accumulators" << std::endl;
+	q.clear();  // equivalent to q = 0, but more articulate/informative
+	v = 3.875 + 0.0625; std::cout << "v " << components(v) << std::endl; // the input value is 11.1111 so hidden + 5 fraction bits
+	q += v;		std::cout << q << std::endl;
+	q += v;		std::cout << q << std::endl;
+	q += v;		std::cout << q << std::endl;
+	q += -v;	std::cout << q << std::endl;
+	q += -v;	std::cout << q << std::endl;
+	q += -v;	std::cout << q << " <- should be zero" << std::endl;
 
 
 #else
