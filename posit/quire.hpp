@@ -173,6 +173,7 @@ public:
 	*/
 	template<size_t fbits>
 	quire& operator+=(const value<fbits>& rhs) {
+		if (rhs.isZero()) return *this;
 		int i, f, scale = rhs.scale();
 		if (scale >  int(half_range)) {
 			throw "RHS value too large for quire";
@@ -284,8 +285,7 @@ public:
 						borrow = borrow & !_a;
 						i++;
 					}
-				}
-				
+				}			
 			}
 		}
 		else {			// add

@@ -84,41 +84,58 @@ void DisplaySignal(ostream& ostr, const std::vector<Ty>& samples) {
 
 int main(int argc, char** argv)
 try {
-	const size_t nbits = 16;
-	const size_t es = 1;
-	const size_t capacity = 10;   // 2^10 accumulations of maxpos^2
-	const size_t vecSize = 1024;
+	static constexpr size_t nbits = 16;
+	static constexpr size_t es = 1;
+	static constexpr size_t capacity = 6;   // 2^3 accumulations of maxpos^2
+	static constexpr size_t vecSizePwr = 0;
+	static constexpr size_t vecSize = (size_t(1) << vecSizePwr);
 
 	int nrOfFailedTestCases = 0;
 
 	float f;
-	vector< float > fsinusoid(vecSize), fcosinusoid(vecSize);
+	vector< float > funiform(vecSize), fminpos(vecSize), fmaxpos(vecSize);
 	posit<nbits, es> p;
-	vector< posit<nbits,es> > psinusoid(vecSize), pcosinusoid(vecSize);
+	vector< posit<nbits,es> > puniform(vecSize), pminpos(vecSize), pmaxpos(vecSize);
 
 	for (int i = 0; i < vecSize; i++) {
-		//f = 0.99999f; 
-		f = sin((float(i) / float(vecSize)) *2.0 * pi);
-		fsinusoid[i] = f;
-		psinusoid[i] = f;
-		//f = 0.99999f; 
-		f = cos((float(i) / float(vecSize)) *2.0 * pi);
-		fcosinusoid[i] = f;
-		pcosinusoid[i] = f;
+		puniform[i] = funiform[i] = 1.0f;
+		pminpos[i] = sw::unum::minpos_value<nbits, es>();
+		pmaxpos[i] = sw::unum::maxpos_value<nbits, es>();
+
+		fminpos[i] = (float)pminpos[i];
+		fmaxpos[i] = (float)pmaxpos[i];
 	}
 
-	//DisplaySignal(std::cout, sinusoid);
-	//DisplaySignal(std::cout, cosinusoid);
+	int width = std::numeric_limits<double>::max_digits10;
+	int minp_scale = sw::unum::minpos_scale<nbits, es>();
+	int maxp_scale = sw::unum::maxpos_scale<nbits, es>();
+	int minpos_dot_product_scale = vecSizePwr + minp_scale;
+	int maxpos_dot_product_scale = vecSizePwr + maxp_scale;
+	//cout << fixed << setprecision(width);
+	cout << "posit<" << nbits << ", " << es << ">  quire<" << nbits << ", " << es << ", " << capacity << ">" << endl;
+	cout << "Vector size                      " << setw(width + 2) << vecSize << endl;
+	cout << "Reference uniform dot uniform    " << setw(width + 2) << vecSize << endl;
+	cout << "Reference minpos   scale         " << setw(width + 2) << minp_scale << endl;
+	cout << "Reference minpos^2 scale of dot  " << setw(width + 2) << minpos_dot_product_scale << endl;
+	cout << "Reference maxpos   scale         " << setw(width + 2) << maxp_scale << endl;
+	cout << "Reference maxpos^2 scale of dot  " << setw(width + 2) << maxpos_dot_product_scale << endl;
 
-	long double minpos = minpos_value<nbits, es>();
 	quire<nbits, es, capacity> q;
+	cout << "Fused dot products" << endl;
+	sw::blas::fused_dot(q, vecSize, puniform, 1, puniform, 1);
+	cout << "uniform * uniform   " << setw(23) << q.to_value() << endl;
 	q.clear();
-	sw::blas::fused_dot(q, vecSize, psinusoid, 1, pcosinusoid, 1);
-	value<q.qbits> r = q.to_value();
-	cout << "Fused Dot product is   " << q.to_value() << endl;
+	sw::blas::fused_dot(q, vecSize, pminpos, 1, pminpos, 1);
+	cout << "minpos dot minpos   " << setw(23) << q.to_value() << endl;
+	q.clear();
+	sw::blas::fused_dot(q, vecSize, pmaxpos, 1, pmaxpos, 1);
+	cout << "maxpos dot maxpos   " << setw(23) << q.to_value() << endl;
+	q.clear();
+	sw::blas::fused_dot(q, vecSize, pminpos, 1, pmaxpos, 1);  // each product equals 1
+	cout << "minpos dot maxpos   " << setw(23) << q.to_value() << endl;
 
-	f = sw::blas::dot(vecSize, fsinusoid, 1, fcosinusoid, 1);
-	cout << "Regular Dot product is " << f << endl;
+	f = sw::blas::dot(vecSize, funiform, 1, funiform, 1);
+	cout << "Regular Dot product is " << setw(23) << f << endl;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

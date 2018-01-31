@@ -70,14 +70,14 @@ try {
 
 	randomVectorFillAroundOneEPS(vecSize, x);  //	sampleVector("x", x);
 	randomVectorFillAroundOneEPS(vecSize, y);  // 	sampleVector("y", y);
-	result = sw::blas::dot<double,float>(vecSize, x, 1, y, 1);
+	result = sw::blas::dot(vecSize, x, 1, y, 1);
 	cout << "DOT product is " << setprecision(20) << result << endl;
 
 	using Posit = sw::unum::posit<nbits, es>;
 	vector<Posit> px(vecSize), py(vecSize);
 	randomVectorFillAroundOneEPS(vecSize, px);  //	sampleVector("px", px);
 	randomVectorFillAroundOneEPS(vecSize, py);  // 	sampleVector("py", py);
-	result = sw::blas::dot<double, Posit>(vecSize, px, 1, py, 1);
+	result = (double)sw::blas::dot(vecSize, px, 1, py, 1);
 	cout << "DOT product is " << setprecision(20) << result << endl;
 	sampleVector("px", px);  // <-- currently shows bad conversions....
 

@@ -41,7 +41,7 @@ bool ValidateValue() {
 	for (int i = 0; i < NR_TEST_CASES; i++) {
 		value<fbits> v;
 		v = input[i];
-		if (fabs(v.to_double() - golden_answer[i]) > 0.00000001) {
+		if (fabs(v.to_long_double() - golden_answer[i]) > 0.00000001) {
 			cerr << "FAIL [" << setw(2) << i << "] input " << input[i] << " ref = " << golden_answer[i] << " != " << setw(5) << v << endl;
 			bValid = false;
 		}
@@ -49,7 +49,7 @@ bool ValidateValue() {
 	for (int i = 2; i < NR_TEST_CASES; i++) {
 		value<fbits> v;
 		v = 1.0 / input[i];
-		if (fabs(v.to_double() - (1.0 / golden_answer[i])) > 0.00000001) {
+		if (fabs(v.to_long_double() - (1.0 / golden_answer[i])) > 0.00000001) {
 			cerr << "FAIL [" << setw(2) << NR_TEST_CASES + i << "] input " << 1.0 / input[i] << " ref = " << 1.0 / golden_answer[i] << " != " << setw(5) << v << endl;
 			bValid = false;
 		}
