@@ -8,7 +8,7 @@
 
 #include "../../posit/bit_functions.hpp"
 #include "../../float/float_functions.hpp"
-#include "../../float/exceptions.hpp"
+#include "../../posit/exceptions.hpp"
 #include "../../posit/value.hpp"
 #include "../../float/quire.hpp"
 
@@ -28,7 +28,6 @@ int TestQuireAccumulationResult(int nrOfFailedTests, string descriptor)
 
 template<typename Ty, size_t capacity>
 int ValidateQuireAccumulation() {
-	const size_t NR_TEST_CASES = size_t(1) << nbits;
 
 	int nrOfFailedTests = 0;
 

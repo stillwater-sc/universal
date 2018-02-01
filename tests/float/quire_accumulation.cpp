@@ -7,6 +7,7 @@
 #include "stdafx.h"
 
 #include "../../bitset/bitset_helpers.hpp"
+#include "../../posit/exceptions.hpp"
 #include "../../posit/value.hpp"
 #include "../../float/quire.hpp"
 

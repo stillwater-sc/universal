@@ -341,7 +341,7 @@ namespace sw {
 			const int64_t STATE_SPACE = uint64_t(1) << (nbits + 1);
 			const int64_t HALF = uint64_t(1) << nbits;  // <--- raw bit value of infinite for a posit<nbits+1,es>
 														// generate the special patterns
-			uint64_t test_patterns[cases];
+			unsigned long long test_patterns[cases];
 			// first patterns around +/- 1
 			std::bitset<nbits + 1> raw_bits;
 			sw::unum::posit<nbits + 1, es> p;  // need to generate them in the context of the posit that is nbits+1
@@ -403,9 +403,9 @@ namespace sw {
 			double da, input;
 			sw::unum::posit<nbits, es> pa;
 			for (int64_t index = 0; index < NR_TEST_CASES; index++) {
-				uint64_t i = test_patterns[index];
+				unsigned long long i = test_patterns[index];
 				pref.set_raw_bits(i);
-				uint64_t ref = pref.get().to_ullong();
+				unsigned long long ref = pref.get().to_ullong();
 				std::cout << "Test case [" << index << "] = " << i << " b" << sw::unum::to_binary(ref) << "  >>>>>>>>>>>>>>>  Reference Seed value: " << pref << std::endl;
 
 				da = pref.to_double();

@@ -71,7 +71,7 @@ try {
 	cout << v1 << endl;
 	cout << v2 << endl;
 
-	int64_t n1, n2;
+	long long n1, n2;
 	n1 =  1234567890123456;
 	n2 = -123456789012345;
 	v1 = n1;

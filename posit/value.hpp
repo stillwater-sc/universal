@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
 #include <limits>
+#include "bit_functions.hpp"
 #include "trace_constants.hpp"
 
 namespace sw {
@@ -60,15 +61,15 @@ namespace sw {
 				return *this;
 			}
 			value<fbits>& operator=(signed char rhs) {
-				*this = int64_t(rhs);
+				*this = (long long)(rhs);
 				return *this;
 			}
 			value<fbits>& operator=(short rhs) {
-				*this = int64_t(rhs);
+				*this = (long long)(rhs);
 				return *this;
 			}
 			value<fbits>& operator=(int rhs) {
-				*this = int64_t(rhs);
+				*this = (long long)(rhs);
 				return *this;
 			}
 			value<fbits>& operator=(long long rhs) {
@@ -323,7 +324,7 @@ namespace sw {
 				if (_zero) return (long double)0.0;
 				long double v = 1.0;
 				long double scale = 0.5;
-				for (int i = fbits - 1; i >= 0; i--) {
+				for (int i = int(fbits) - 1; i >= 0; i--) {
 					if (_fraction.test(i)) v += scale;
 					scale *= 0.5;
 					if (scale == 0.0) break;

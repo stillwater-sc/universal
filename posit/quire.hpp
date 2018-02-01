@@ -103,7 +103,7 @@ public:
 		clear();
 		// transform to sign-magnitude
 		_sign = rhs & 0x8000000000000000;
-		uint64_t magnitude;
+		unsigned long long magnitude;
 		magnitude = _sign ? -rhs : rhs;
 		unsigned msb = findMostSignificantBit(magnitude);
 		if (msb > half_range + capacity) {
@@ -126,7 +126,7 @@ public:
 		}
 		return *this;
 	}
-	quire& operator=(uint64_t rhs) {
+	quire& operator=(unsigned long long rhs) {
 		reset();
 		unsigned msb = findMostSignificantBit(rhs);
 		if (msb > half_range + capacity) {
