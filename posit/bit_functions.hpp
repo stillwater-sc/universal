@@ -186,7 +186,7 @@ namespace sw {
 		}
 
 		template<size_t nbits>
-		std::bitset<nbits> copy_integer_fraction(uint64_t _fraction_without_hidden_bit) {
+		std::bitset<nbits> copy_integer_fraction(unsigned long long _fraction_without_hidden_bit) {
 			std::bitset<nbits> _fraction;
 			uint64_t mask = uint64_t(0x8000000000000000ull);
 			unsigned int ub = (nbits < 64 ? nbits : 64);
@@ -201,7 +201,7 @@ namespace sw {
 
 		// nbits binary representation of a signed 64-bit number
 		template<size_t nbits>
-		std::string to_binary_(int64_t number) {
+		std::string to_binary_(long long int number) {
 			std::stringstream ss;
 			uint64_t mask = uint64_t(1) << (nbits - 1);                // parenthesis to avoid clang's prio warning
 			for (int i = nbits - 1; i >= 0; --i) {
@@ -212,7 +212,7 @@ namespace sw {
 		}
 
 		// full binary representation of a signed 64-bit number
-		inline std::string to_binary(int64_t number) {
+		inline std::string to_binary(long long int number) {
 			std::stringstream ss;
 			unsigned int msb = findMostSignificantBit(number);
 			if (msb == 0) {
@@ -228,7 +228,7 @@ namespace sw {
 			return ss.str();
 		}
 		// full binary representation of a unsigned 64-bit number
-		inline std::string to_binary(uint64_t number) {
+		inline std::string to_binary(unsigned long long number) {
 			std::stringstream ss;
 			unsigned int msb = findMostSignificantBit(number);
 			if (msb == 0) {

@@ -89,23 +89,23 @@ public:
 		}
 		return *this;
 	}
-	quire& operator=(int8_t rhs) {
-		*this = int64_t(rhs);
+	quire& operator=(signed char rhs) {
+		*this = (long long)(rhs);
 		return *this;
 	}
-	quire& operator=(int16_t rhs) {
-		*this = int64_t(rhs);
+	quire& operator=(short int rhs) {
+		*this = (long long)(rhs);
 		return *this;
 	}
-	quire& operator=(int32_t rhs) {
-		*this = int64_t(rhs);
+	quire& operator=(int rhs) {
+		*this = (long long)(rhs);
 		return *this;
 	}
-	quire& operator=(int64_t rhs) {
+	quire& operator=(long long rhs) {
 		clear();
 		// transform to sign-magnitude
 		_sign = rhs & 0x8000000000000000;
-		uint64_t magnitude;
+		unsigned long long magnitude;
 		magnitude = _sign ? -rhs : rhs;
 		unsigned msb = sw::unum::findMostSignificantBit(magnitude);
 		if (msb > half_range + capacity) {
@@ -128,9 +128,9 @@ public:
 		}
 		return *this;
 	}
-	quire& operator=(uint64_t rhs) {
+	quire& operator=(long long unsigned rhs) {
 		reset();
-		unsigned msb = findMostSignificantBit(rhs);
+		unsigned msb = sw::unum::findMostSignificantBit(rhs);
 		if (msb > half_range + capacity) {
 			throw "Assigned value too large for quire";
 		}

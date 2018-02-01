@@ -136,8 +136,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateInwardProjection<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "regimes");
 
 #else
-	ReportPositScales();
-
 	cout << "Regime tests" << endl;
 
 	// TEST REGIME DECODE

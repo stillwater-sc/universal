@@ -13,10 +13,10 @@ using namespace std;
 using namespace sw::unum;
 
 template<size_t nbits>
-void transform_into_sign_scale_fraction(int64_t value) {
+void transform_into_sign_scale_fraction(long long value) {
 	bool _sign = (0x8000000000000000 & value);
 	unsigned int _scale = findMostSignificantBit(value) - 1;
-	uint64_t _fraction_without_hidden_bit = (value << (64 - _scale));
+	unsigned long long _fraction_without_hidden_bit = (value << (64 - _scale));
 	std::bitset<nbits - 3> _fraction = copy_integer_fraction<nbits>(_fraction_without_hidden_bit);
 	cout << "Value    " << value << endl << "Binary   " << to_binary(value) << endl;
 	cout << "Sign     " << _sign << endl << "Scale    " << _scale << endl << "Fraction " << _fraction << endl;
