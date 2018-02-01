@@ -51,11 +51,12 @@ macro (compile_all testing prefix)
     endforeach (source)
 endmacro (compile_all)
 
-
+add_subdirectory("tests/float")
 add_subdirectory("tests/unum")
 add_subdirectory("tests/unum2")
 add_subdirectory("tests/bitset")
 add_subdirectory("tests/posit")
+add_subdirectory("tests/valid")
 add_subdirectory("tools/cmd")
 add_subdirectory("tools/qa")
 add_subdirectory("examples/blas")
