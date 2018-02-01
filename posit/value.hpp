@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
 #include <limits>
+#include "trace_constants.hpp"
 
 namespace sw {
 	namespace unum {
