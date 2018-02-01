@@ -107,6 +107,7 @@ namespace sw {
 			return number;
 		}
 
+		// sticky bit representation of all the bits from [msb, lsb], that is, msb is included
 		template<size_t nbits>
 		bool anyAfter(const std::bitset<nbits>& bits, unsigned msb) {
 			bool running = false;
