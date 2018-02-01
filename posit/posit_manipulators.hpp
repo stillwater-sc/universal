@@ -20,7 +20,7 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		std::string spec_to_string(posit<nbits, es> p) {
 			std::stringstream ss;
-			ss << " posit<" << std::setw(2) << nbits << "," << es << "> ";
+			ss << " posit<" << std::setw(3) << nbits << "," << es << "> ";
 			ss << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
 			ss << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
 			ss << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>();
@@ -167,60 +167,7 @@ namespace sw {
 			}
 		}
 
-		// print scales of different posit configurations
-		// useed = 2^(2^es) and thus is just a function of the exponent configuration
-		// maxpos = useed^(nbits-2)
-		// minpos = useed^(2-nbits)
-		void ReportPositScales() {
-			posit<3, 0> p3_0;
-			posit<4, 0> p4_0;
-			posit<4, 1> p4_1;
-			posit<5, 0> p5_0;
-			posit<5, 1> p5_1;
-			posit<5, 2> p5_2;
-			posit<6, 0> p6_0;
-			posit<6, 1> p6_1;
-			posit<6, 2> p6_2;
-			posit<6, 3> p6_3;
-			posit<7, 0> p7_0;
-			posit<7, 1> p7_1;
-			posit<7, 2> p7_2;
-			posit<7, 3> p7_3;
-			posit<7, 4> p7_4;
-			posit<8, 0> p8_0;
-			posit<16, 1> p16_1;
-			posit<32, 2> p32_2;
-			posit<64, 3> p64_3;
 
-			std::cout << "Posit specificiation examples and their ranges:" << std::endl;
-			std::cout << "Small, specialized posit configurations" << std::endl;
-			std::cout << "nbits = 3" << std::endl;
-			std::cout << spec_to_string(p3_0) << std::endl;
-			std::cout << "nbits = 4" << std::endl;
-			std::cout << spec_to_string(p4_0) << std::endl;
-			std::cout << spec_to_string(p4_1) << std::endl;
-			std::cout << "nbits = 5" << std::endl;
-			std::cout << spec_to_string(p5_0) << std::endl;
-			std::cout << spec_to_string(p5_1) << std::endl;
-			std::cout << spec_to_string(p5_2) << std::endl;
-			std::cout << "nbits = 6" << std::endl;
-			std::cout << spec_to_string(p6_0) << std::endl;
-			std::cout << spec_to_string(p6_1) << std::endl;
-			std::cout << spec_to_string(p6_2) << std::endl;
-			std::cout << spec_to_string(p6_3) << std::endl;
-			std::cout << "nbits = 7" << std::endl;
-			std::cout << spec_to_string(p7_0) << std::endl;
-			std::cout << spec_to_string(p7_1) << std::endl;
-			std::cout << spec_to_string(p7_2) << std::endl;
-			std::cout << spec_to_string(p7_3) << std::endl;
-			std::cout << spec_to_string(p7_4) << std::endl;
-			std::cout << "Standard posit configurations" << std::endl;
-			std::cout << spec_to_string(p8_0) << std::endl;
-			std::cout << spec_to_string(p16_1) << std::endl;
-			std::cout << spec_to_string(p32_2) << std::endl;
-			std::cout << spec_to_string(p64_3) << std::endl;
-			std::cout << std::endl;
-		}
 
 	}  // namespace unum
 
