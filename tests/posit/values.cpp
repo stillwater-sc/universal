@@ -6,6 +6,7 @@
 
 #include "stdafx.h"
 
+#include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/exceptions.hpp"
 #include "../../posit/trace_constants.hpp"
 #include "../../posit/bit_functions.hpp"
@@ -111,7 +112,27 @@ try {
 	f = -0.12500f; v = f; PrintValue(f, v);
 	f = -0.12499f; v = f; PrintValue(f, v);
 
-
+	cout << "Rounding" << endl;
+	std::bitset<8> fraction;
+	fraction = 0x55;
+	value<8> r8(false, 0, fraction, false, false);
+	cout << "Value is " << r8 << " components are " << components(r8) << endl;
+	value<7> r7 = r8.round_to<7>();
+	cout << "Value is " << r7 << " components are " << components(r7) << endl;
+	value<6> r6 = r8.round_to<6>();
+	cout << "Value is " << r6 << " components are " << components(r6) << endl;
+	value<5> r5 = r8.round_to<5>();
+	cout << "Value is " << r5 << " components are " << components(r5) << endl;
+	value<4> r4 = r8.round_to<4>();
+	cout << "Value is " << r4 << " components are " << components(r4) << endl;
+	value<3> r3 = r8.round_to<3>();
+	cout << "Value is " << r3 << " components are " << components(r3) << endl;
+	value<2> r2 = r8.round_to<2>();
+	cout << "Value is " << r2 << " components are " << components(r2) << endl;
+	value<1> r1 = r8.round_to<1>();
+	cout << "Value is " << r1 << " components are " << components(r1) << endl;
+	value<0> r0 = r8.round_to<0>();
+	cout << "Value is " << r0 << " components are " << components(r0) << endl;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
 #include <limits>
+
 #include "bit_functions.hpp"
 #include "trace_constants.hpp"
 
@@ -16,11 +17,11 @@ namespace sw {
 		template<size_t fbits> class value;
 		template<size_t fbits> value<fbits> abs(const value<fbits>& v);
 
-		// template class representing a value in scientific notation, using a template size for the fraction bits
+		// template class representing a value in scientific notation, using a template size for the number of fraction bits
 		template<size_t fbits>
 		class value {
 		public:
-			static constexpr size_t fhbits = fbits + 1;    // size of the fixed point number with hidden bit made explicity
+			static constexpr size_t fhbits = fbits + 1;    // number of fraction bits including the hidden bit
 			value() : _sign(false), _scale(0), _nrOfBits(fbits), _zero(true), _inf(false), _nan(false) {}
 			value(bool sign, int scale, const std::bitset<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
 			value(signed char initial_value) {
@@ -223,9 +224,11 @@ namespace sw {
 				return *this;
 			}
 
+			// operators
 			value<fbits> operator-() const {				
 				return value<fbits>(!_sign, _scale, _fraction, _zero, _inf);
 			}
+
 			// modifiers
 			void reset() {
 				_sign  = false;
@@ -337,16 +340,46 @@ namespace sw {
 
 			// Maybe remove explicit
 			explicit operator long double() const { return to_long_double(); }
-			explicit operator double() const { return to_long_double(); }
-			explicit operator float() const { return to_long_double(); }
+			explicit operator double() const { return (double)to_long_double(); }
+			explicit operator float() const { return (float)to_long_double(); }
 
 			template<size_t tgt_size>
 			value<tgt_size> round_to() {
-				value<tgt_size> result;
 				std::bitset<tgt_size> rounded_fraction;
-				result.set(sign(), scale(), rounded_fraction, isZero());
-				// round the fraction
-				return result;
+				if (tgt_size == 0) {
+					bool round_up = false;
+					if (fbits >= 2) {
+						bool blast = _fraction[int(fbits) - 1];
+						bool sb = anyAfter(_fraction, int(fbits) - 2);
+						if (blast && sb) round_up = true;
+					}
+					else if (fbits == 1) {
+						round_up = _fraction[0];
+					}
+					return value<tgt_size>(_sign, (round_up ? _scale + 1 : _scale), rounded_fraction, _zero, _inf);
+				}
+				else {
+					if (!_zero || !_inf) {
+						if (tgt_size < fbits) {
+							int rb = int(tgt_size) - 1;
+							int lb = int(fbits) - int(tgt_size) - 1;
+							for (int i = int(fbits) - 1; i > lb; i--, rb--) {
+								rounded_fraction[rb] = _fraction[i];
+							}
+							bool blast = _fraction[lb];
+							bool sb = false;
+							if (lb > 0) sb = anyAfter(_fraction, lb-1);
+							if (blast || sb) rounded_fraction[0] = true;
+						}
+						else {
+							int rb = int(tgt_size) - 1;
+							for (int i = int(fbits) - 1; i >= 0; i--, rb--) {
+								rounded_fraction[rb] = _fraction[i];
+							}
+						}
+					}
+				}
+				return value<tgt_size>(_sign, _scale, rounded_fraction, _zero, _inf);
 			}
 		private:
 			bool				_sign;

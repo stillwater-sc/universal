@@ -12,6 +12,7 @@
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
+typedef long double quadruple;
 
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
 /* Intel ICC/ICPC. ------------------------------------------ */
