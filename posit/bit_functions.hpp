@@ -19,7 +19,7 @@ namespace sw {
 		}
 
 		// find the most significant bit set: first bit is at position 1, so that no bits set returns 0
-		inline unsigned int findMostSignificantBit(uint64_t x) {
+		inline unsigned int findMostSignificantBit(unsigned long long x) {
 			// find the first non-zero bit
 			static const unsigned int bval[] =
 			{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
@@ -32,7 +32,7 @@ namespace sw {
 			return base + bval[x];
 		}
 
-		inline unsigned int findMostSignificantBit(int64_t x) {
+		inline unsigned int findMostSignificantBit(long long x) {
 			// find the first non-zero bit
 			static const unsigned int bval[] =
 			{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
@@ -46,7 +46,7 @@ namespace sw {
 			return base + bval[tmp];
 		}
 
-		inline unsigned int findMostSignificantBit(int32_t x) {
+		inline unsigned int findMostSignificantBit(int x) {
 			// find the first non-zero bit
 			static const unsigned int bval[] =
 			{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
@@ -59,7 +59,7 @@ namespace sw {
 			return base + bval[tmp];
 		}
 
-		inline unsigned int findMostSignificantBit(int16_t x) {
+		inline unsigned int findMostSignificantBit(short x) {
 			// find the first non-zero bit
 			static const unsigned int bval[] =
 			{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
@@ -71,7 +71,7 @@ namespace sw {
 			return base + bval[tmp];
 		}
 
-		inline unsigned int findMostSignificantBit(int8_t x) {
+		inline unsigned int findMostSignificantBit(signed char x) {
 			// find the first non-zero bit
 			static const unsigned int bval[] =
 			{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
