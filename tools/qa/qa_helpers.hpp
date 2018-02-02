@@ -582,7 +582,7 @@ namespace sw {
 			std::uniform_int_distribution<unsigned long long> uniform;
 			std::cout << "Size of float     type is: " << 8*sizeof(float) << "bits" << std::endl;
 			std::cout << "Size of double    type is: " << 8*sizeof(double) << "bits" << std::endl;
-			std::cout << "Size of quadruple type is: " << 8*sizeof(quadruple) << "bits" << std::endl;
+			std::cout << "Size of quadruple type is: " << 8*sizeof(long double) << "bits" << std::endl;
 
 			if (nbits - es - 1 > 52) {
 				//std::vector<quadruple> operand_values(SIZE_STATE_SPACE);
