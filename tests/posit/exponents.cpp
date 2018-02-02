@@ -39,8 +39,8 @@ try {
 	exponent<nbits, es> e;
 	for (int scale = -16; scale < 17; scale++) {
 		int k = calculate_k<nbits, es>(scale);
-		int regime_size = r.assign_regime_pattern(scale >> es);
-		int exp_size = e.assign_exponent_bits(scale, k, regime_size);
+		size_t regime_size = r.assign_regime_pattern(scale >> es);
+		size_t exp_size = e.assign_exponent_bits(scale, k, regime_size);
 		if (scale < 0) {
 			cout << "in value = " << setw(12) << 1.0/(unsigned(1) << -scale) << " scale = " << setw(3) << scale << " r(" << r << ")  e(" << e << ")     projected value " << r.value() * e.value() << endl;
 		}

@@ -67,10 +67,11 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		std::string pretty_print(const posit<nbits, es>& p, int printPrecision = std::numeric_limits<double>::max_digits10) {
+			static constexpr size_t fbits = nbits - 3 - es;  // TODO: is there a better solution to gain access to the posit's fbits value?
 			std::stringstream ss;
 			ss << ( p.get_sign() ? "s1 r" : "s0 r" );
 			std::bitset<nbits-1> r = p.get_regime().get();
-			int regimeBits = p.get_regime().nrBits();
+			int regimeBits = (int)p.get_regime().nrBits();
 			int nrOfRegimeBitsProcessed = 0;
 			for (int i = nbits - 2; i >= 0; --i) {
 				if (regimeBits > nrOfRegimeBitsProcessed++) {
@@ -79,7 +80,7 @@ namespace sw {
 			}
 			ss << " e";
 			std::bitset<es> e = p.get_exponent().get();
-			int exponentBits = p.get_exponent().nrBits();
+			int exponentBits = (int)p.get_exponent().nrBits();
 			int nrOfExponentBitsProcessed = 0;
 			for (int i = int(es) - 1; i >= 0; --i) {
 				if (exponentBits > nrOfExponentBitsProcessed++) {
@@ -87,8 +88,8 @@ namespace sw {
 				}
 			}
 			ss << " f";
-			std::bitset<p.fbits> f = p.get_fraction().get();
-			int fractionBits = p.get_fraction().nrBits();
+			std::bitset<fbits> f = p.get_fraction().get();
+			int fractionBits = (int)p.get_fraction().nrBits();
 			int nrOfFractionBitsProcessed = 0;
 			for (int i = p.fbits - 1; i >= 0; --i) {
 				if (fractionBits > nrOfFractionBitsProcessed++) {

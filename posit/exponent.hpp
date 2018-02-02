@@ -35,7 +35,7 @@ public:
 		_NrOfBits = 0;
 		_Bits.reset();
 	}
-	unsigned int nrBits() const {
+	size_t nrBits() const {
 		return _NrOfBits;
 	}
 	int scale() const {
@@ -47,7 +47,7 @@ public:
 	std::bitset<es> get() const {
 		return _Bits;
 	}
-	void set(const std::bitset<es>& raw, int nrOfExponentBits) {
+	void set(const std::bitset<es>& raw, size_t nrOfExponentBits) {
 		_Bits = raw;
 		_NrOfBits = nrOfExponentBits;
 	}
@@ -64,16 +64,16 @@ public:
 	}
 	// calculate the exponent given a number's scale and the number of regime bits, 
 	// returning an indicator which type of rounding is required to complete the posit
-	int assign_exponent_bits(int scale, int k, unsigned int nr_of_regime_bits) {
+	int assign_exponent_bits(int scale, int k, size_t nr_of_regime_bits) {
 		int rounding_mode = NO_ADDITIONAL_ROUNDING;
 		_Bits.reset();
 		// we need to get to an adjusted scale that encodes regime and exponent
 		// value scale = useed ^ k * 2 ^ exponent = 2^(k*2^es) * 2^e -> k*2^es + e
 		// e = scale - k*2^es
 		int raw = scale - k*(1 << es);
-		unsigned int my_exponent = raw < 0 ? -raw : raw;
+		size_t my_exponent = raw < 0 ? -raw : raw;
 		// convert value into bitset
-		uint64_t mask = uint64_t(1);
+		size_t mask = 0x1;
 		for (unsigned i = 0; i < es; i++) {
 			_Bits[i] = my_exponent & mask;
 			mask <<= 1;
@@ -122,7 +122,7 @@ public:
 	}
 private:
 	std::bitset<es> _Bits;
-	unsigned int	_NrOfBits;
+	size_t			_NrOfBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t ees>

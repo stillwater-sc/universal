@@ -470,25 +470,25 @@ public:
 	}
 	std::bitset<nbits> get_decoded() const {
 		std::bitset<rbits> r = _regime.get();
-		unsigned int nrRegimeBits = _regime.nrBits();
+		size_t nrRegimeBits = _regime.nrBits();
 		std::bitset<es> e = _exponent.get();
-		unsigned int nrExponentBits = _exponent.nrBits();
+		size_t nrExponentBits = _exponent.nrBits();
 		std::bitset<fbits> f = _fraction.get();
-		unsigned int nrFractionBits = _fraction.nrBits();
+		size_t nrFractionBits = _fraction.nrBits();
 
 		std::bitset<nbits> _Bits;
 		_Bits.set(nbits - 1, _sign);
 		int msb = nbits - 2;
-		for (unsigned int i = 0; i < nrRegimeBits; i++) {
+		for (size_t i = 0; i < nrRegimeBits; i++) {
 			_Bits.set(std::size_t(msb--), r[nbits - 2 - i]);
 		}
 		if (msb < 0) 
                     return _Bits;
-		for (unsigned int i = 0; i < nrExponentBits && msb >= 0; i++) {
+		for (size_t i = 0; i < nrExponentBits && msb >= 0; i++) {
 			_Bits.set(std::size_t(msb--), e[es - 1 - i]);
 		}
 		if (msb < 0) return _Bits;
-		for (unsigned int i = 0; i < nrFractionBits && msb >= 0; i++) {
+		for (size_t i = 0; i < nrFractionBits && msb >= 0; i++) {
 			_Bits.set(std::size_t(msb--), f[fbits - 1 - i]);
 		}
 		return _Bits;
@@ -591,17 +591,17 @@ public:
 	void extract_fields(const std::bitset<nbits>& raw_bits) {
 		std::bitset<nbits> tmp(raw_bits);
 		if (_sign) tmp = twos_complement(tmp);
-		unsigned int nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
+		size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 
 		// get the exponent bits
 		// start of exponent is nbits - (sign_bit + regime_bits)
-		int32_t msb = nbits - 1 - (1 + nrRegimeBits);
-		unsigned int nrExponentBits = 0;
+		int msb = int(int(nbits) - 1 - (1 + nrRegimeBits));
+		size_t nrExponentBits = 0;
 		if (es > 0) {
 			std::bitset<es> _exp;
 			if (msb >= 0 && es > 0) {
 				nrExponentBits = (msb >= es - 1 ? es : msb + 1);
-				for (unsigned int i = 0; i < nrExponentBits; i++) {
+				for (size_t i = 0; i < nrExponentBits; i++) {
 					_exp[es - 1 - i] = tmp[msb - i];
 				}
 			}
@@ -615,8 +615,8 @@ public:
 		// If the fraction is empty, we have a fraction of nbits-3 0 bits
 		// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
 		std::bitset<fbits> _frac;
-		msb = msb - nrExponentBits;
-		unsigned int nrFractionBits = (msb < 0 ? 0 : msb + 1);
+		msb = msb - int(nrExponentBits);
+		size_t nrFractionBits = (msb < 0 ? 0 : msb + 1);
 		if (msb >= 0) {
 			for (int i = msb; i >= 0; --i) {
 				_frac[fbits - 1 - (msb - i)] = tmp[i];
@@ -704,25 +704,25 @@ public:
 	// collect the posit components into a bitset
 	std::bitset<nbits> collect() {
 		std::bitset<rbits> r = _regime.get();
-		unsigned int nrRegimeBits = _regime.nrBits();
+		size_t nrRegimeBits = _regime.nrBits();
 		std::bitset<es> e = _exponent.get();
-		unsigned int nrExponentBits = _exponent.nrBits();
+		size_t nrExponentBits = _exponent.nrBits();
 		std::bitset<fbits> f = _fraction.get();
-		unsigned int nrFractionBits = _fraction.nrBits();
+		size_t nrFractionBits = _fraction.nrBits();
 		std::bitset<nbits> raw_bits;
 		// collect
 		raw_bits.set(nbits - 1, _sign);
-		int msb = nbits - 2;
-		for (unsigned int i = 0; i < nrRegimeBits; i++) {
+		int msb = int(nbits) - 2;
+		for (size_t i = 0; i < nrRegimeBits; i++) {
 			raw_bits.set(msb--, r[nbits - 2 - i]);
 		}
 		if (msb >= 0) {
-			for (unsigned int i = 0; i < nrExponentBits; i++) {
+			for (size_t i = 0; i < nrExponentBits; i++) {
 				raw_bits.set(msb--, e[es - 1 - i]);
 			}
 		}
 		if (msb >= 0) {
-			for (unsigned int i = 0; i < nrFractionBits; i++) {
+			for (size_t i = 0; i < nrFractionBits; i++) {
 				raw_bits.set(msb--, f[fbits - 1 - i]);
 			}
 		}
@@ -732,25 +732,25 @@ public:
 	void take_2s_complement() {
 		// transform back through 2's complement
 		std::bitset<rbits> r = _regime.get();
-		unsigned int nrRegimeBits = _regime.nrBits();
+		size_t nrRegimeBits = _regime.nrBits();
 		std::bitset<es> e = _exponent.get();
-		unsigned int nrExponentBits = _exponent.nrBits();
+		size_t nrExponentBits = _exponent.nrBits();
 		std::bitset<fbits> f = _fraction.get();
-		unsigned int nrFractionBits = _fraction.nrBits();
+		size_t nrFractionBits = _fraction.nrBits();
 		std::bitset<nbits> raw_bits;
 		// collect
-		raw_bits.set(nbits - 1, _sign);
-		int msb = nbits - 2;
-		for (unsigned int i = 0; i < nrRegimeBits; i++) {
+		raw_bits.set(int(nbits) - 1, _sign);
+		int msb = int(nbits) - 2;
+		for (size_t i = 0; i < nrRegimeBits; i++) {
 			raw_bits.set(msb--, r[nbits - 2 - i]);
 		}
 		if (msb >= 0) {
-			for (unsigned int i = 0; i < nrExponentBits; i++) {
+			for (size_t i = 0; i < nrExponentBits; i++) {
 				raw_bits.set(msb--, e[es - 1 - i]);
 			}
 		}
 		if (msb >= 0) {
-			for (unsigned int i = 0; i < nrFractionBits; i++) {
+			for (size_t i = 0; i < nrFractionBits; i++) {
 				raw_bits.set(msb--, f[fbits - 1 - i]);
 			}
 		}
@@ -764,14 +764,14 @@ public:
 		_regime.set(regime_bits, nrRegimeBits);
 		if (es > 0 && nrExponentBits > 0) {
 			std::bitset<es> exponent_bits;
-			for (unsigned int i = 0; i < nrExponentBits; i++) {
+			for (size_t i = 0; i < nrExponentBits; i++) {
 				exponent_bits.set(es - 1 - i, raw_bits[nbits - 2 - nrRegimeBits - i]);
 			}
 			_exponent.set(exponent_bits, nrExponentBits);
 		}
 		if (nrFractionBits > 0) {
 			std::bitset<fbits> fraction_bits;   // was nbits - 2
-			for (unsigned int i = 0; i < nrFractionBits; i++) {
+			for (size_t i = 0; i < nrFractionBits; i++) {
 				// fraction_bits.set(nbits - 3 - i, raw_bits[nbits - 2 - nrRegimeBits - nrExponentBits - i]);
 				fraction_bits.set(fbits - 1 - i, raw_bits[nbits - 2 - nrRegimeBits - nrExponentBits - i]);
 			}

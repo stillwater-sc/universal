@@ -26,7 +26,7 @@ namespace sw {
 		// calculate exponential scale of minpos
 		template<size_t nbits, size_t es>
 		int minpos_scale() {
-			return static_cast<int>(2 - nbits) * (1 << es);
+			return static_cast<int>(2 - int(nbits)) * (1 << es);
 		}
 
 		// calculate the constrained k value
@@ -87,7 +87,7 @@ namespace sw {
 		// calculate the value of minpos
 		template<size_t nbits, size_t es>
 		long double minpos_value() {
-			return std::pow((long double)(useed_value<nbits, es>()), (long double)(static_cast<int>(2 - nbits)));
+			return std::pow((long double)(useed_value<nbits, es>()), (long double)(static_cast<int>(2 - int(nbits))));
 		}
 
 		// this comparison is for a two's complement number only, for example, the raw bits of a posit

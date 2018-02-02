@@ -546,7 +546,7 @@ namespace sw {
 		// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 		// We will then execute the binary operator nrOfRandom combinations.
 		template<size_t nbits, size_t es>
-		int SmokeTestRandoms(std::string tag, int opcode, uint32_t nrOfRandoms) {
+		int SmokeTestRandoms(std::string tag, int opcode, unsigned int nrOfRandoms) {
 			static_assert(nbits <= 64, "SmokeTestRandoms only works for nbits <= 64");
 			int max_digits10 = std::numeric_limits<double>::max_digits10;
 			const size_t SIZE_STATE_SPACE = nrOfRandoms;
@@ -619,7 +619,7 @@ namespace sw {
 
 				//quadruple qa, qb;
 				double qa, qb;
-				unsigned ia, ib;  // random indices for picking operands to test
+				unsigned long long ia, ib;  // random indices for picking operands to test
 				for (unsigned i = 1; i < nrOfRandoms; i++) {
 					ia = uniform(eng) % SIZE_STATE_SPACE;
 					qa = operand_values[ia];
@@ -673,7 +673,7 @@ namespace sw {
 				std::cout << std::setw(nbits) << "Operand A  " << " " << operation_string <<  " " << std::setw(nbits) << "Operand B  " << " = " << std::setw(nbits) << "Golden Reference  " << " " << std::setw(nbits / 4) << "HEX " << std::endl;
 
 				double da, db;
-				unsigned ia, ib;  // random indices for picking operands to test
+				unsigned long long ia, ib;  // random indices for picking operands to test
 				for (unsigned i = 1; i < nrOfRandoms; i++) {
 					ia = uniform(eng) % SIZE_STATE_SPACE; 
 					da = operand_values[ia];
@@ -692,9 +692,9 @@ namespace sw {
 					std::cout << pa.get() << " " << operation_string << " " << pb.get() << " = " << pref.get() << " " << sw::unum::to_hex(pref.get()) << std::endl;
 				}
 			}
-
-
 			return nrOfFailedTests;
 		}
-	}
-}
+
+
+	}; // namespace qa
+};  // namespace sw

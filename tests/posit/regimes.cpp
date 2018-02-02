@@ -36,7 +36,7 @@ int ValidateRegimeOperations(std::string tag, bool bReportIndividualTestCases) {
 	regime<nbits, es> r;
 	for (int k = -NR_TEST_CASES; k < NR_TEST_CASES + 1; k++) {
 		int reference = r.regime_size(k);
-		int nrRegimeBits = r.assign_regime_pattern(k);
+		size_t nrRegimeBits = r.assign_regime_pattern(k);
 		if (nrRegimeBits != reference) {
 			nrOfFailedTestCases++;
 			if (bReportIndividualTestCases) cout << "FAIL: k = " << setw(3) << k << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << endl;

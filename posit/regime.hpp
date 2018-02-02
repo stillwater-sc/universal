@@ -25,7 +25,7 @@ public:
 		_RegimeBits = 0;
 		_Bits.reset();
 	}
-	unsigned nrBits() const {
+	size_t nrBits() const {
 		return _RegimeBits;
 	}
 	int scale() const {
@@ -62,7 +62,7 @@ public:
 	std::bitset<nbits - 1> get() const {
 		return _Bits;
 	}
-	void set(const std::bitset<nbits - 1>& raw, unsigned int nrOfRegimeBits) {
+	void set(const std::bitset<nbits - 1>& raw, size_t nrOfRegimeBits) {
 		_Bits = raw;
 		_RegimeBits = nrOfRegimeBits;
 	}
@@ -81,7 +81,7 @@ public:
 		if (k < 0) k = -k - 1;
 		return (k < nbits - 2 ? k + 2 : nbits - 1);
 	}
-	unsigned assign(int scale) {
+	size_t assign(int scale) {
 		bool r = scale > 0;
 		_k = calculate_k<nbits,es>(scale);
 		_run = (r ? 1 + (scale >> es) : -scale >> es);
@@ -95,7 +95,7 @@ public:
 	// Return the number of regime bits. 
 	// Usage example: say value is 1024 -> sign = false (not negative), scale is 10: assign_regime_pattern(scale >> es)
 	// because useed = 2^es and thus a value of scale 'scale' will contain (scale >> es) number of useed factors
-	unsigned int assign_regime_pattern(int k) {
+	size_t assign_regime_pattern(int k) {
 		if (k < 0) { // south-east quadrant: patterns 00001---
 			_k = int8_t(-k < nbits - 2 ? k : -(static_cast<int>(nbits) - 2)); // constrain regime to minpos
 			k = -_k - 1;
@@ -135,9 +135,9 @@ public:
 	}
 private:
 	std::bitset<nbits - 1>	_Bits;
-	int8_t					_k;
-	uint8_t					_run;
-	unsigned int			_RegimeBits;
+	signed char				_k;
+	unsigned char			_run;
+	size_t					_RegimeBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t ees>
