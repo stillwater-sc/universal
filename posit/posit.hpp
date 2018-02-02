@@ -69,8 +69,8 @@ template<size_t nbits, size_t es> posit<nbits, es> abs(const posit<nbits, es>& p
  class posit represents arbitrary configuration posits and their basic arithmetic operations (add/sub, mul/div)
  */
 template<size_t nbits, size_t es>
-class posit 
-{
+class posit {
+
 	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
 //	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
 
