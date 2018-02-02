@@ -224,9 +224,6 @@ int ValidatePositLogicGreaterOrEqualThan() {
 
 int main()
 try {
-	const size_t nbits = 8;
-	const size_t es = 2;
-	const bool _sign = false; // positive regime
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
@@ -270,10 +267,13 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<7, 1>(), "posit<7,1>", "==");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<7, 2>(), "posit<7,2>", "==");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<7, 3>(), "posit<7,3>", "==");
+	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<7, 4>(), "posit<7,4>", "==");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 0>(), "posit<8,0>", "==");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 1>(), "posit<8,1>", "==");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 2>(), "posit<8,2>", "==");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 3>(), "posit<8,3>", "==");
+	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 4>(), "posit<8,4>", "==");
+	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 5>(), "posit<8,5>", "==");
 
 	cout << "Logic: operator!=()" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<3, 0>(), "posit<3,0>", "!=");
@@ -376,6 +376,13 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<8, 3>(), "posit<8,3>", ">=");
 
 #if STRESS_TESTING
+
+	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<16, 1>(), "posit<16,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<16, 1>(), "posit<16,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<16, 1>(), "posit<16,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<16, 1>(), "posit<16,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<16, 1>(), "posit<16,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<16, 1>(), "posit<16,1>", ">=");
 
 #endif // STRESS_TESTING
 
