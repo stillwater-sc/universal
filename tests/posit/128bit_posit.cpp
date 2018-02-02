@@ -21,7 +21,7 @@ Standard posits with nbits = 128 have 4 exponent bits.
 int main(int argc, char** argv)
 #if 0                                                       // Deal with this later
 try {
-	const size_t RND_TEST_CASES = 100000;
+	const size_t RND_TEST_CASES = 10000;
 
 	const size_t nbits = 128;
 	const size_t es = 4;
@@ -34,17 +34,13 @@ try {
 	posit<nbits, es> p;
 	cout << spec_to_string(p) << endl << endl;
 
-	throw("128bit posits are not supported yet");
+	throw("128bit posits are not yet supported");
 
-	cout << "Arithmetic test randoms" << endl;
-	cout << "Addition      :                 " << RND_TEST_CASES << " randoms" << endl;
+	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<128, 4>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
-	cout << "Subtraction   :                 " << RND_TEST_CASES << " randoms" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<128, 4>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
-	cout << "Multiplication:                 " << RND_TEST_CASES << " randoms" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<128, 4>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
-	//cout << "Division      :                 " << RND_TEST_CASES << " randoms" << endl;
-	//nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<128, 4>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<128, 4>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

@@ -34,14 +34,10 @@ try {
 	posit<nbits, es> p;
 	cout << spec_to_string(p) << endl << endl;
 
-	cout << "Arithmetic test randoms" << endl;
-	cout << "Addition      :                 " << RND_TEST_CASES << " randoms" << endl;
+	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 3>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
-	cout << "Subtraction   :                 " << RND_TEST_CASES << " randoms" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 3>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
-	cout << "Multiplication:                 " << RND_TEST_CASES << " randoms" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 3>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");
-	cout << "Division      :                 " << RND_TEST_CASES << " randoms" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 3>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division      ");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
