@@ -11,6 +11,7 @@ namespace sw {
 
 		// universal information functions to provide details regarding the properties of a posit configuration
 
+#if TEMPLATIZED_TYPE
 		// calculate exponential scale of maxpos
 		template<typename Ty>
 		int maxpos_scale() {
@@ -34,6 +35,31 @@ namespace sw {
 		long double minpos_value() {
 			return 0;
 		}
+#else 
+		// calculate exponential scale of maxpos
+		template<size_t nbits, size_t es>
+		int maxpos_scale() {
+			return 0;
+		}
+
+		// calculate exponential scale of minpos
+		template<size_t nbits, size_t es>
+		int minpos_scale() {
+			return 0;
+		}
+
+		// calculate the value of maxpos
+		template<size_t nbits, size_t es>
+		long double maxpos_value() {
+			return 0;
+		}
+
+		// calculate the value of minpos
+		template<size_t nbits, size_t es>
+		long double minpos_value() {
+			return 0;
+		}
+#endif // TEMPLATIZED_TYPE
 
 	}
 }

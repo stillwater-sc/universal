@@ -10,13 +10,18 @@ namespace sw {
 
 // template class representing a quire associated with an ieee float configuration
 // capacity indicates the power of 2 number of accumulations the quire can support
-template<typename Ty, size_t capacity = 30>
+template<size_t nbits, size_t es, size_t capacity = 30>
 class quire {
 public:
 	// fixed-point representation of a float multiply requires 1 + 2*(2^ebits + mbits), where ebits and mbits are the number of bits in exponent and mantissa, respectively
-	static constexpr size_t ebits = 8; // std::numeric_limits<Ty>::max_exponent;
-	static constexpr size_t mbits = 23; // std::numeric_limits<Ty>::digits;
-	static constexpr size_t escale = 30; // 1 + mbits + (size_t(1) << ebits);
+//	type	size	ebits	mbits	exponent range	capacity	quire size	total
+//	float	 32		 8		 24		256				30			561			  591
+//	double	 64		11		 53		2048			30			4203		 4233
+//	lng dbl	128		15		113		32768			30			65763		65793
+
+	static constexpr size_t ebits = es;
+	static constexpr size_t mbits = nbits - es;
+	static constexpr size_t escale = (size_t(1) << es) + mbits + 1;
 	static constexpr size_t range = escale; 		  // dynamic range of the float configuration
 	static constexpr size_t half_range = range >> 1;          // position of the fixed point
 	static constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
@@ -462,13 +467,16 @@ private:
 	std::bitset<upper_range>  _upper;  
 	std::bitset<capacity>     _capacity;
 
+#if TEMPLATIZED_TYPE
+	//  when we figure out how to templatize the extraction of exponent bits from type
+
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<typename TTy, size_t ncapacity>
 	friend std::ostream& operator<< (std::ostream& ostr, const quire<TTy,ncapacity>& q);
 	template<typename TTy, size_t ncapacity>
 	friend std::istream& operator>> (std::istream& istr, quire<TTy, ncapacity>& q);
 
-	template<typename TTy, size_t ncapacity>
+	template<size_t nnbits, size_t nes, size_t ncapacity>
 	friend bool operator==(const quire<TTy, ncapacity>& lhs, const quire<TTy, ncapacity>& rhs);
 	template<typename TTy, size_t ncapacity>
 	friend bool operator!=(const quire<TTy, ncapacity>& lhs, const quire<TTy, ncapacity>& rhs);
@@ -480,8 +488,32 @@ private:
 	friend bool operator<=(const quire<TTy, ncapacity>& lhs, const quire<TTy, ncapacity>& rhs);
 	template<typename TTy, size_t ncapacity>
 	friend bool operator>=(const quire<TTy, ncapacity>& lhs, const quire<TTy, ncapacity>& rhs);
+
+#else
+
+	// template parameters need names different from class template parameters (for gcc and clang)
+	template<size_t nnbits, size_t nes, size_t ncapacity>
+	friend std::ostream& operator<< (std::ostream& ostr, const quire<nnbits, nes, ncapacity>& q);
+	template<size_t nnbits, size_t nes, size_t ncapacity>
+	friend std::istream& operator>> (std::istream& istr, quire<nnbits, nes, ncapacity>& q);
+
+	template<size_t nnbits, size_t nes, size_t ncapacity>
+	friend bool operator==(const quire<nnbits, nes, ncapacity>& lhs, const quire<nnbits, nes, ncapacity>& rhs);
+	template<size_t nnbits, size_t nes, size_t ncapacity>
+	friend bool operator!=(const quire<nnbits, nes, ncapacity>& lhs, const quire<nnbits, nes, ncapacity>& rhs);
+	template<size_t nnbits, size_t nes, size_t ncapacity>
+	friend bool operator< (const quire<nnbits, nes, ncapacity>& lhs, const quire<nnbits, nes, ncapacity>& rhs);
+	template<size_t nnbits, size_t nes, size_t ncapacity>
+	friend bool operator> (const quire<nnbits, nes, ncapacity>& lhs, const quire<nnbits, nes, ncapacity>& rhs);
+	template<size_t nnbits, size_t nes, size_t ncapacity>
+	friend bool operator<=(const quire<nnbits, nes, ncapacity>& lhs, const quire<nnbits, nes, ncapacity>& rhs);
+	template<size_t nnbits, size_t nes, size_t ncapacity>
+	friend bool operator>=(const quire<nnbits, nes, ncapacity>& lhs, const quire<nnbits, nes, ncapacity>& rhs);
+
+#endif // TEMPLATIZED_TYPE
 };
 
+#if TEMPLATIZED_TYPE
 
 // QUIRE BINARY ARITHMETIC OPERATORS
 template<typename Ty, size_t capacity>
@@ -534,6 +566,61 @@ template<typename Ty, size_t capacity>
 inline bool operator<=(const quire<Ty, capacity>& lhs, const quire<Ty, capacity>& rhs) { return !operator> (lhs, rhs) || lhs == rhs; }
 template<typename Ty, size_t capacity>
 inline bool operator>=(const quire<Ty, capacity>& lhs, const quire<Ty, capacity>& rhs) { return !operator< (lhs, rhs) || lhs == rhs; }
+
+#else
+
+// QUIRE BINARY ARITHMETIC OPERATORS
+template<size_t nbits, size_t es, size_t capacity>
+inline quire<nbits, es, capacity> operator+(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) {
+	quire<Ty, capacity> sum = lhs;
+	sum += rhs;
+	return sum;
+}
+
+
+////////////////// QUIRE operators
+template<size_t nnbits, size_t nes, size_t capacity>
+inline std::ostream& operator<<(std::ostream& ostr, const quire<nnbits, nes, capacity>& q) {
+	ostr << (q._sign ? "-1" : " 1") << ": " << q._capacity << "_" << q._upper << "." << q._lower;
+	return ostr;
+}
+
+template<size_t nnbits, size_t nes, size_t capacity>
+inline std::istream& operator>> (std::istream& istr, const quire<nnbits, nes, capacity>& q) {
+	istr >> q._accu;
+	return istr;
+}
+
+template<size_t nbits, size_t es, size_t capacity>
+inline bool operator==(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return lhs._sign == rhs._sign && lhs._capacity == rhs._capacity && lhs._upper == rhs._upper && lhs._lower == rhs._lower; }
+template<size_t nbits, size_t es, size_t capacity>
+inline bool operator!=(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return !operator==(lhs, rhs); }
+template<size_t nbits, size_t es, size_t capacity>
+inline bool operator< (const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) {
+	bool bSmaller = false;
+	if (!lhs._sign && rhs._sign) {
+		bSmaller = true;
+	}
+	else if (lhs._sign == rhs._sign) {
+		if (lhs._capacity < rhs._capacity) {
+		bSmaller = true;
+	}
+	else if (lhs._capacity == rhs._capacity && lhs._upper < rhs._upper) {
+		bSmaller = true;
+	}
+	else if (lhs._capacity == rhs._capacity && lhs._upper == rhs._upper && lhs._lower < rhs._lower) {
+		bSmaller = true;
+	}
+}
+return bSmaller;
+}
+template<size_t nbits, size_t es, size_t capacity>
+inline bool operator> (const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return  operator< (rhs, lhs); }
+template<size_t nbits, size_t es, size_t capacity>
+inline bool operator<=(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return !operator> (lhs, rhs) || lhs == rhs; }
+template<size_t nbits, size_t es, size_t capacity>
+inline bool operator>=(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return !operator< (lhs, rhs) || lhs == rhs; }
+#endif
 
 }  // namespace ieee
 

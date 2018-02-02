@@ -6,6 +6,9 @@
 
 #include "stdafx.h"
 
+// till we figure out how to derive sizes from types
+#define TEMPLATIZED_TYPE 0
+
 #include "../../posit/bit_functions.hpp"
 #include "../../float/float_functions.hpp"
 #include "../../posit/exceptions.hpp"
@@ -26,7 +29,7 @@ int TestQuireAccumulationResult(int nrOfFailedTests, string descriptor)
 	return nrOfFailedTests;
 }
 
-template<typename Ty, size_t capacity>
+template<size_t nbits, size_t es, size_t capacity>
 int ValidateQuireAccumulation() {
 
 	int nrOfFailedTests = 0;
@@ -34,21 +37,21 @@ int ValidateQuireAccumulation() {
 	return nrOfFailedTests;
 }
 
-template<typename Ty, size_t capacity>
-void GenerateTestCase(int input, const quire<Ty, capacity>& reference, const quire<Ty, capacity>& qresult) {
+template<size_t nbits, size_t es, size_t capacity>
+void GenerateTestCase(int input, const quire<nbits, es, capacity>& reference, const quire<nbits, es, capacity>& qresult) {
 
 	std::cout << std::endl;
 }
 
-template<typename Ty, size_t capacity, size_t fbits = 1>
+template<size_t nbits, size_t es, size_t capacity, size_t fbits = 1>
 void GenerateValueAssignments() {
-	quire<Ty, capacity> q;
+	quire<nbits, es, capacity> q;
 
 	// report some parameters about the posit and quire configuration
 	int max_scale = q.max_scale();
 	int min_scale = q.min_scale();
 	std::cout << "Maximum scale  = " << max_scale << " Minimum scale  = " << min_scale << " Dynamic range = " << q.dynamic_range() << std::endl;
-	std::cout << "Maxpos Squared = " << maxpos_scale<Ty>() * 2 << " Minpos Squared = " << minpos_scale<Ty>() * 2 << std::endl;
+	std::cout << "Maxpos Squared = " << maxpos_scale<nbits,es>() * 2 << " Minpos Squared = " << minpos_scale<nbits,es>() * 2 << std::endl;
 
 	// cover the scales with one order outside of the dynamic range of the quire configuration (minpos^2 and maxpos^2)
 	for (int scale = max_scale + 1; scale >= min_scale - 1; scale--) {  // extend by 1 max and min scale to test edge of the quire
@@ -80,6 +83,9 @@ try {
 	std::string tag = "Quire Accumulation failed";
 
 #if MANUAL_TESTING
+	// float
+	const size_t nbits = 32;
+	const size_t es = 8;
 	const size_t capacity = 2; // for testing the accumulation capacity of the quire can be small
 	const size_t fbits = 5;
 
@@ -87,37 +93,35 @@ try {
 	//GenerateSignedIntAssignments<nbits, es, capacity>();
 	//GenerateUnsignedIntAssignments<8, 2, capacity>();
 
-	GenerateValueAssignments<float, capacity, fbits>();
+	GenerateValueAssignments<nbits, es, capacity, fbits>();
 
 	std::cout << endl;
 	std::cout << "Creating quires for float and double arithmetic" << std::endl;
 	float f = 1.555555555555e-10f;
-	sw::ieee::quire<float, 2> fquire(f);
+	sw::ieee::quire<32, 8, 2> fquire(f);
 	std::cout << "float:  " << setw(15) << f << " " << fquire << std::endl;
 
 	double d = 1.555555555555e16;
-	sw::ieee::quire<double, 2> dquire(d);
+	sw::ieee::quire<64, 11, 2> dquire(d);
 	std::cout << "double: " << setw(15) << d << " " << dquire << std::endl;
 
 	std::cout << std::endl;
-	// nbits = 4, es = 1, capacity = 2
-	//  17 16   15 14 13 12 11 10  9  8    7  6  5  4  3  2  1  0
-	// [ 0  0    0  0  0  0  0  0  0  0    0  0  0  0  0  0  0  0 ]
-	quire<float, capacity> q;
-	sw::unum::value<5> maxpos, maxpos_squared, minpos, minpos_squared;
-	float dmax = (float)sw::ieee::maxpos_value<float>();
+	// quire for float nbits= 32 es = 8
+	quire<32, 8, capacity> q;
+	sw::unum::value<54> maxpos, maxpos_squared, minpos, minpos_squared;
+	double dmax = std::numeric_limits<float>::max();
 	maxpos = dmax;
 	maxpos_squared = dmax*dmax;
 	std::cout << "maxpos * maxpos = " << sw::unum::components(maxpos_squared) << std::endl;
-	float dmin = (float)sw::ieee::minpos_value<float>();
+	double dmin = std::numeric_limits<float>::min();
 	minpos = dmin;
 	minpos_squared = dmin*dmin;
 	std::cout << "minpos * minpos = " << sw::unum::components(minpos_squared) << std::endl;
-	sw::unum::value<5> c(maxpos_squared);
+	sw::unum::value<54> c(maxpos_squared);
 
 	std::cout << "Add/Subtract propagating carry/borrows to and from capacity segment" << std::endl;
 	q.clear();
-	sw::unum::value<5> v(64);
+	sw::unum::value<54> v = maxpos;
 	q += v;		std::cout << q << std::endl;
 	q += v;		std::cout << q << std::endl;
 	q += v;		std::cout << q << std::endl;
