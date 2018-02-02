@@ -572,7 +572,7 @@ inline bool operator>=(const quire<Ty, capacity>& lhs, const quire<Ty, capacity>
 // QUIRE BINARY ARITHMETIC OPERATORS
 template<size_t nbits, size_t es, size_t capacity>
 inline quire<nbits, es, capacity> operator+(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) {
-	quire<Ty, capacity> sum = lhs;
+	quire<nbits, es, capacity> sum = lhs;
 	sum += rhs;
 	return sum;
 }
