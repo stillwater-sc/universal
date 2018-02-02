@@ -7,6 +7,8 @@
 #include "stdafx.h"
 
 #include "../../bitset/bitset_helpers.hpp"
+#include "../../posit/exceptions.hpp"
+#include "../../posit/value.hpp"
 #include "../../valid/valid.hpp"
 #include "../../valid/valid_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
@@ -35,17 +37,15 @@ int main(int argc, char** argv)
 try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
+	std::string tag = "Addition failed: ";
 
 	cout << "Valid addition validation" << endl;
-
-	std::string tag = "Addition failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 
 
 #else
-
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>(tag, bReportIndividualTestCases), "valid<3,0>", "addition");
 
