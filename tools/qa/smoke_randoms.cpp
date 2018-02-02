@@ -17,10 +17,10 @@ using namespace std;
 template<size_t nbits, size_t es>
 int GenerateSmokeTests(bool bReportIndividualTestCases) {
 	int nrOfFailedTestCases = 0;
-	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_ADD, 100);
-	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_SUB, 100);
-	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_MUL, 100);
-	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_DIV, 100);
+	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_ADD, 100u);
+	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_SUB, 100u);
+	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_MUL, 100u);
+	nrOfFailedTestCases = sw::qa::SmokeTestRandoms<nbits, es>("random smoke testing", sw::qa::OPCODE_DIV, 100u);
 	return nrOfFailedTestCases;
 }
 

@@ -585,8 +585,7 @@ namespace sw {
 			std::cout << "Size of quadruple type is: " << 8*sizeof(long double) << "bits" << std::endl;
 
 			if (nbits - es - 1 > 52) {
-				//std::vector<quadruple> operand_values(SIZE_STATE_SPACE);
-				std::vector<double> operand_values(SIZE_STATE_SPACE);
+				std::vector<long double> operand_values(SIZE_STATE_SPACE);
 				// inject minpos/maxpos and -minpos/-maxpos in the samples
 				presult = 1.0;
 				operand_values[0] = presult.to_long_double();
@@ -617,20 +616,18 @@ namespace sw {
 				std::cout << "posit<" << nbits << "," << es << ">" << std::endl;
 				std::cout << std::setw(nbits) << "Operand A  " << " " << operation_string << " " << std::setw(nbits) << "Operand B  " << " = " << std::setw(nbits) << "Golden Reference  " << " " << std::setw(nbits / 4) << "HEX " << std::endl;
 
-				//quadruple qa, qb;
-				double qa, qb;
-				unsigned long long ia, ib;  // random indices for picking operands to test
-				for (unsigned i = 1; i < nrOfRandoms; i++) {
-					ia = uniform(eng) % SIZE_STATE_SPACE;
+				long double qa, qb;
+				unsigned int ia, ib;  // random indices for picking operands to test
+				for (unsigned int i = 1; i < nrOfRandoms; i++) {
+					ia = (unsigned int)(uniform(eng) % SIZE_STATE_SPACE);
 					qa = operand_values[ia];
 					pa = qa;
-					ib = uniform(eng) % SIZE_STATE_SPACE;
+					ib = (unsigned int)(uniform(eng) % SIZE_STATE_SPACE);
 					qb = operand_values[ib];
 					pb = qb;
-					//sw::qa::execute<nbits,es,quadruple>(opcode, qa, qb, pref, pa, pb, presult);
+
 					sw::qa::execute<nbits,es,double>(opcode, qa, qb, pref, pa, pb, presult);
-					//if (fabs(presult.to_quadruple() - pref.to_quadruple()) > 0.000000001) {
-					if (fabs(presult.to_double() - pref.to_double()) > 0.000000001) {
+					if (fabs(presult.to_long_double() - pref.to_long_double()) > 0.000000001) {
 						nrOfFailedTests++;
 						ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, pref, presult);
 					}
@@ -673,12 +670,12 @@ namespace sw {
 				std::cout << std::setw(nbits) << "Operand A  " << " " << operation_string <<  " " << std::setw(nbits) << "Operand B  " << " = " << std::setw(nbits) << "Golden Reference  " << " " << std::setw(nbits / 4) << "HEX " << std::endl;
 
 				double da, db;
-				unsigned long long ia, ib;  // random indices for picking operands to test
-				for (unsigned i = 1; i < nrOfRandoms; i++) {
-					ia = uniform(eng) % SIZE_STATE_SPACE; 
+				unsigned int ia, ib;  // random indices for picking operands to test
+				for (unsigned int i = 1; i < nrOfRandoms; i++) {
+					ia = (unsigned int)(uniform(eng) % SIZE_STATE_SPACE);
 					da = operand_values[ia];
 					pa = da;
-					ib = uniform(eng) % SIZE_STATE_SPACE;
+					ib = (unsigned int)(uniform(eng) % SIZE_STATE_SPACE);
 					db = operand_values[ib];
 					pb = db;
 					sw::qa::execute<nbits,es,double>(opcode, da, db, pref, pa, pb, presult);
