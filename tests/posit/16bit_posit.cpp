@@ -7,9 +7,8 @@
 #include "stdafx.h"
 
 #include <vector>
+#include <posit.hpp>
 
-#include "../../posit/posit.hpp"
-#include "../../posit/posit_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
 
