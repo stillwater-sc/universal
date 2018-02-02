@@ -5,6 +5,12 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <limits>
+
+namespace sw {
+
+	namespace unum {
+
 template<size_t nbits, size_t es>
 class valid {
 
@@ -152,7 +158,7 @@ private:
 };
 
 
-////////////////// VALID operators
+// VALID operators
 template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const valid<nbits, es>& p) {
 	if (p.isZero()) {
@@ -172,3 +178,7 @@ inline std::istream& operator>> (std::istream& istr, const valid<nbits, es>& p) 
 	istr >> p._Bits;
 	return istr;
 }
+
+	};  // namespace unum
+
+}; // namespace sw
