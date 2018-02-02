@@ -12,10 +12,11 @@
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
-typedef long double quadruple;
+typedef long double __quadruple;
 
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
 /* Intel ICC/ICPC. ------------------------------------------ */
+typedef long double __quadruple;
 
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
@@ -29,7 +30,7 @@ typedef long double quadruple;
 
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
-typedef long double quadruple;
+typedef long double __quadruple;
 
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
@@ -71,7 +72,7 @@ template<size_t nbits, size_t es>
 class posit 
 {
 	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
-	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
+//	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
 
 	template <typename T>
 	posit<nbits, es>& float_assign(const T& rhs) {
@@ -120,15 +121,22 @@ public:
 	posit(const std::bitset<nbits>& raw_bits) {
 		*this = set(raw_bits);
 	}
-	posit<nbits, es>(int64_t initial_value) {
+	posit<nbits, es>(signed char initial_value) {
 		*this = initial_value;
 	}
-	posit<nbits, es>(uint64_t initial_value) {
+	posit<nbits, es>(short initial_value) {
 		*this = initial_value;
 	}
-	posit<nbits, es>(int32_t initial_value) {
+	posit<nbits, es>(int initial_value) {
 		*this = initial_value;
 	}
+	posit<nbits, es>(long long initial_value) {
+		*this = initial_value;
+	}
+	posit<nbits, es>(unsigned long long initial_value) {
+		*this = initial_value;
+	}
+
 	posit<nbits, es>(float initial_value) {
 		*this = initial_value;
 	}
@@ -138,7 +146,7 @@ public:
 	posit<nbits, es>(long double initial_value) {
 		*this = initial_value;
 	}
-	posit<nbits, es>& operator=(int8_t rhs) {
+	posit<nbits, es>& operator=(signed char rhs) {
 		value<8> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -153,7 +161,7 @@ public:
 		}
 		return *this;
 	}
-	posit<nbits, es>& operator=(int16_t rhs) {
+	posit<nbits, es>& operator=(short rhs) {
 		value<16> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -168,7 +176,7 @@ public:
 		}
 		return *this;
 	}
-	posit<nbits, es>& operator=(int32_t rhs) {
+	posit<nbits, es>& operator=(int rhs) {
 		value<32> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -183,7 +191,7 @@ public:
 		}
 		return *this;
 	}
-	posit<nbits, es>& operator=(int64_t rhs) {
+	posit<nbits, es>& operator=(long long rhs) {
 		value<64> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -198,7 +206,7 @@ public:
 		}
 		return *this;
 	}
-	posit<nbits, es>& operator=(uint64_t rhs) {
+	posit<nbits, es>& operator=(unsigned long long rhs) {
 		value<64> v(rhs);
 		convert(v);
 		return *this;
@@ -209,7 +217,7 @@ public:
 	posit<nbits, es>& operator=(double rhs) {
         return float_assign(rhs);
 	}
-	posit<nbits, es>& operator=(quadruple rhs) {
+	posit<nbits, es>& operator=(long double rhs) {
         return float_assign(rhs);
 	}
 	
@@ -439,16 +447,16 @@ public:
 		return _fraction.none();
 	}
 
-	int	   sign_value() const {
+	inline int	   sign_value() const {
 		return (_sign ? -1 : 1);
 	}
-	double regime_value() const {
+	inline double regime_value() const {
 		return _regime.value();
 	}
-	double exponent_value() const {
+	inline double exponent_value() const {
 		return _exponent.value();
 	}
-	double fraction_value() const {
+	inline long double fraction_value() const {
 		return _fraction.value();
 	}
 
@@ -516,21 +524,21 @@ public:
 	}
 
 	// MODIFIERS
-	void clear() {
+	inline void clear() {
 		_sign = false;
 		_regime.reset();
 		_exponent.reset();
 		_fraction.reset();
 		_raw_bits.reset();
 	}
-	void setToZero() {
+	inline void setToZero() {
 		_sign = false;
 		_regime.setToZero();
 		_exponent.reset();
 		_fraction.reset();
 		_raw_bits.reset();
 	}
-	void setToNaR() {
+	inline void setToNaR() {
 		_sign = true;
 		_regime.setToInfinite();
 		_exponent.reset();
@@ -653,6 +661,8 @@ public:
 		// we are storing both the raw bit representation and the decoded form
 		// so no need to transform back via 2's complement of regime/exponent/fraction
 	}
+	
+	// Conversion functions
 	int         to_int() const {
 		if (isZero()) return 0;
 		if (isNaR()) throw "NaR (Not a Real)";
@@ -679,10 +689,10 @@ public:
 	long double to_long_double() const {
 		if (isZero())  return 0.0;
 		if (isNaR())   return NAN;
-		quadruple s = sign_value();
-		quadruple r = regime_value(); // regime value itself will fit in a double
-		quadruple e = exponent_value(); // same with exponent
-		quadruple f = quadruple(1.0) + _fraction.to_quadruple();
+		int s = sign_value();
+		double r = regime_value(); // regime value itself will fit in a double
+		double e = exponent_value(); // same with exponent
+		long double f = (long double)(1.0) + _fraction.value();
 		return s * r * e * f;
 	}
 	

@@ -28,9 +28,19 @@ public:
 	// selectors
 	bool none() const {	return _Bits.none(); }
 	size_t nrBits() const { return _NrOfBits;	}
-	// TODO: this fails when fbits > 64 and we cannot represent the fraction by a 64bit unsigned integer
-	double value() const { return double(_Bits.to_ullong()) / double(uint64_t(1) << fbits);	}
-	quadruple to_quadruple() const { return quadruple(_Bits.to_ullong()) / quadruple(uint64_t(1) << fbits);  }
+	// fractions are assumed to have a hidden bit, the case where they do not must be managed by the container of the fraction
+	// calculate the value of the fraction ignoring the hidden bit. So a fraction of 1010 has the value 0.5+0.125=5/8
+	long double value() const { 
+		long double v = 0.0;
+		if (_Bits.none()) return v;
+		long double scale = 0.5;
+		for (int i = int(fbits) - 1; i >= 0; i--) {
+			if (_Bits.test(i)) v += scale;
+			scale *= (long double)0.5;
+			if (scale == 0.0) break;
+		}
+		return v;
+	}
 
 	// modifiers
 	void reset() {
@@ -54,7 +64,7 @@ public:
 		}
 		return fixed_point_number;
 	}
-	/// Copy the bits into the fraction. Rounds away from zero.	
+	// Copy the bits into the fraction. Rounds away from zero.	
 	template <size_t FBits>
 	bool assign(unsigned int remaining_bits, std::bitset<FBits>& _fraction, std::size_t hpos = FBits) 
 	{
