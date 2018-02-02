@@ -87,7 +87,7 @@ try {
 	static constexpr size_t nbits = 16;
 	static constexpr size_t es = 1;
 	static constexpr size_t capacity = 6;   // 2^3 accumulations of maxpos^2
-	static constexpr size_t vecSizePwr = 0;
+	static constexpr size_t vecSizePwr = 5;
 	static constexpr size_t vecSize = (size_t(1) << vecSizePwr);
 
 	int nrOfFailedTestCases = 0;
