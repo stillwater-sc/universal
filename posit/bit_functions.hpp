@@ -85,7 +85,7 @@ namespace sw {
 		// FLOAT component extractions
 		inline bool extract_sign(float f) {	return f < 0.0f; }
 
-		int extract_exponent(float f) {
+		inline int extract_exponent(float f) {
 			int exponent;
 			frexpf(f, &exponent);
 			return exponent;
