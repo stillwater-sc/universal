@@ -8,7 +8,9 @@
 
 // if you want to trace the posit intermediate results
 // #define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_CONVERT
 
+// minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
