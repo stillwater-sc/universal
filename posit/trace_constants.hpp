@@ -22,11 +22,12 @@ constexpr bool _trace_sub         = false;
 constexpr bool _trace_mul         = false;
 constexpr bool _trace_div         = false;
 constexpr bool _trace_reciprocate = false;
+constexpr bool _trace_sqrt        = false;
 
 # else // !POSIT_VERBOSE_OUTPUT
 
 #ifdef POSIT_TRACE_ALL
-#define POSIT_TRACE_DECODED
+#define POSIT_TRACE_DECODE
 #define POSIT_TRACE_CONVERSION
 #define POSIT_TRACE_ROUNDING
 #define POSIT_TRACE_ADD
@@ -34,11 +35,12 @@ constexpr bool _trace_reciprocate = false;
 #define POSIT_TRACE_MUL
 #define POSIT_TRACE_DIV
 #define POSIT_TRACE_RECIPROCATE
+#define POSIT_TRACE_SQRT
 #endif
 
 // posit decode and conversion
 
-#ifndef POSIT_TRACE_DECODED
+#ifndef POSIT_TRACE_DECODE
 constexpr bool _trace_decode = false;
 #else
 constexpr bool _trace_decode = true;
@@ -85,6 +87,12 @@ constexpr bool _trace_div = true;
 constexpr bool _trace_reciprocate = false;
 #else
 constexpr bool _trace_reciprocate = true;
+#endif
+
+#ifndef POSIT_TRACE_SQRT
+constexpr bool _trace_sqrt = false;
+#else
+constexpr bool _trace_sqrt = true;
 #endif
 
 
