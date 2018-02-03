@@ -72,8 +72,8 @@ template<size_t nbits, size_t es>
 class posit {
 
 	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
-	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
-	static_assert((sizeof(long double) == 16) && (std::numeric_limits<long double>::digits == 113), "C++ math library for long double does not support 128-bit quad precision floats.");
+//	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
+//	static_assert((sizeof(long double) == 16) && (std::numeric_limits<long double>::digits < 113), "C++ math library for long double does not support 128-bit quad precision floats.");
 
 	template <typename T>
 	posit<nbits, es>& float_assign(const T& rhs) {
