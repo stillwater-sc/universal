@@ -82,6 +82,24 @@ namespace sw {
 			return base + bval[tmp];
 		}
 
+		template<typename Ty>
+		void extract_fp_components(Ty fp, bool& sign, int* exponent, Ty& fraction) {
+			if (fp < 0.0) sign = true;
+			long double ld;
+			if (typeid(fp) == typeid(ld)) {
+				fraction = frexpl(fp, exponent);
+			}
+			else if (typeid(fp) == typeid(double)) {
+				fraction = frexp(fp, exponent);
+			}
+			else if (typeid(fp) == typeid(float)) {
+				fraction = frexpf(fp, exponent);
+			}
+			else {
+				throw "Asking to deconstruct a non-floating point type";
+			}
+		}
+
 		// FLOAT component extractions
 		inline bool extract_sign(float f) {	return f < 0.0f; }
 
