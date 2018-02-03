@@ -12,249 +12,52 @@
 using namespace std;
 using namespace sw::unum;
 
-template<size_t nbits>
-void transform_into_sign_scale_fraction(long long value) {
-	bool _sign = (0x8000000000000000 & value);
-	unsigned int _scale = findMostSignificantBit(value) - 1;
-	unsigned long long _fraction_without_hidden_bit = (value << (64 - _scale));
-	std::bitset<nbits - 3> _fraction = copy_integer_fraction<nbits>(_fraction_without_hidden_bit);
-	cout << "Value    " << value << endl << "Binary   " << to_binary(value) << endl;
-	cout << "Sign     " << _sign << endl << "Scale    " << _scale << endl << "Fraction " << _fraction << endl;
-}
-
-void TestPositRounding(bool bValid, string posit_cfg, string op)
-{
-	if (!bValid) {
-		cout << posit_cfg << " " << op << " FAIL" << endl;
-	}
-	else {
-		cout << posit_cfg << " " << op << " PASS" << endl;
-	}
-}
-
 /*
-POSIT<4,0>
- #           Binary         k-value            sign          regime        exponent        fraction           value
- 0:             0000              -3               1           0.125               -               0               0
- 1:             0001              -2               1            0.25               -               0            0.25
- 2:             0010              -1               1             0.5               -               0             0.5
- 3:             0011              -1               1             0.5               -               1            0.75
- 4:             0100               0               1               1               -               0               1
- 5:             0101               0               1               1               -               1             1.5
- 6:             0110               1               1               2               -               0               2
- 7:             0111               2               1               4               -               0               4
- 8:             1000               3              -1               8               -               0             NaR
- 9:             1001               2              -1               4               -               0              -4
-10:             1010               1              -1               2               -               0              -2
-11:             1011               0              -1               1               -               1            -1.5
-12:             1100               0              -1               1               -               0              -1
-13:             1101              -1              -1             0.5               -               1           -0.75
-14:             1110              -1              -1             0.5               -               0            -0.5
-15:             1111              -2              -1            0.25               -               0           -0.25
+oparand a     op	    operand b	Theo's code	John's Mathematica code
+0x9368de2d	 minus (-)	0x75bd5593	89fc9c28	0x7573e376
+0xaddfa756	 minus (-)	0x51215708	a65f2827	0xc80fe5e0
+0xe556134f	 minus (-)	0x42ff7483	bccb3c17	0x42ca251d
+0xf7d37f28	 minus (-)	0x6301e2a4	9cfe1903	0x6301de4b
+0x59f71c3c	 minus (-)	0x4df90e86	54f1b135	0x5d755fde
+0xd8ce471f	 minus (-)	0x6fbd0a92	90420252	0x6fbc1776
+0x18f27112	 minus (-)	0x4f5ccac7	b0b6fefd	0x4f70948b
 */
-bool ValidateFloatRoundingPosit_4_0()
-{
-	float input[9] = {
-		0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f, 100.0f
-	};
-	float golden_answer[8] = {
-		0.25f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f
-	};
 
-	bool bValid = true;
-	posit<4, 0> p;
-	float arithmetic_mean;
-	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = float((input[i] + input[i + 1] - 0.0001) / 2.0f);
-		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
-		p = arithmetic_mean;
-		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
-			cerr << "Posit rounding failed: golden value = " << golden_answer[i] << " != posit<4,0> " << components_to_string(p) << endl;
-			bValid = false;
-		}
-	}
-
-	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = float((-input[i] - input[i + 1] + 0.0001) / 2.0f);
-		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
-		p = arithmetic_mean;
-		if (fabs(p.to_double() + golden_answer[i]) > 0.0001) {
-			cerr << "Posit rounding failed: golden value = " << golden_answer[i] << " != posit<4,0> " << components_to_string(p) << endl;
-			bValid = false;
-		}
-	}
-
-	return bValid;
-}
-bool ValidateDoubleRoundingPosit_4_0()
-{
-	float input[9] = {
-		0.0f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f, 100.0f
-	};
-	float golden_answer[8] = {
-		0.25f, 0.25f, 0.5f, 0.75f, 1.0f, 1.5f, 2.0f, 4.0f
-	};
-
-	bool bValid = true;
-	posit<4, 0> p;
-	double arithmetic_mean;
-	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = (input[i] + input[i + 1] - 0.000005) / 2.0f;
-		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
-		p = arithmetic_mean;
-		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
-			cerr << "Posit rounding failed: golden value = " << golden_answer[i] << " != posit<4,0> " << components_to_string(p) << endl;
-			bValid = false;
-		}
-	}
-
-	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = (-input[i] - input[i + 1] + 0.000005) / 2.0f;
-		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
-		p = arithmetic_mean;
-		if (fabs(p.to_double() + golden_answer[i]) > 0.0001) {
-			cerr << "Posit rounding failed: golden value = " << golden_answer[i] << " != posit<4,0> " << components_to_string(p) << endl;
-			bValid = false;
-		}
-	}
-
-	return bValid;
-}
-
-/*
-POSIT<4,1>
- #           Binary         k-value            sign          regime        exponent        fraction           value
- 0:             0000              -3               1        0.015625               0               -               0
- 1:             0001              -2               1          0.0625               0               -          0.0625
- 2:             0010              -1               1            0.25               0               -            0.25
- 3:             0011              -1               1            0.25               1               -             0.5
- 4:             0100               0               1               1               0               -               1
- 5:             0101               0               1               1               1               -               2
- 6:             0110               1               1               4               0               -               4
- 7:             0111               2               1              16               0               -              16
- 8:             1000               3              -1              64               0               -             NaR
- 9:             1001               2              -1              16               0               -             -16
-10:             1010               1              -1               4               0               -              -4
-11:             1011               0              -1               1               1               -              -2
-12:             1100               0              -1               1               0               -              -1
-13:             1101              -1              -1            0.25               1               -            -0.5
-14:             1110              -1              -1            0.25               0               -           -0.25
-15:             1111              -2              -1          0.0625               0               -         -0.0625
-*/
-bool ValidateFloatRoundingPosit_4_1()
-{
-	float input[9] = {
-		0.0, 0.0625, 0.25, 0.5, 1.0, 2.0, 4.0, 16.0, 100.0f
-	};
-	float golden_answer[8] = {
-		0.0625f, 0.0625f, 0.25, 0.5, 1.0, 2.0, 4.0, 16.0
-	};
-
-	bool bValid = true;
-	posit<4, 1> p;
-	float arithmetic_mean;
-	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = float((input[i] + input[i + 1] - 0.0001) / 2.0f);
-		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
-		p = arithmetic_mean;
-		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
-			cerr << "Posit rounding failed: golden value = " << golden_answer[i] << " != posit<4,1> " << components_to_string(p) << endl;
-			bValid = false;
-		}
-	}
-
-	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = float((-input[i] - input[i + 1] + 0.0001) / 2.0f);
-		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
-		p = arithmetic_mean;
-		if (fabs(p.to_double() + golden_answer[i]) > 0.0001) {
-			cerr << "Posit rounding failed: golden value = " << golden_answer[i] << " != posit<4,1> " << components_to_string(p) << endl;
-			bValid = false;
-		}
-	}
-
-	return bValid;
-}
-bool ValidateDoubleRoundingDownPosit_4_1()
-{
-	float input[9] = {
-		0.0, 0.0625, 0.25, 0.5, 1.0, 2.0, 4.0, 16.0, 100.0f
-	};
-	float golden_answer[8] = {
-		0.0625f, 0.0625, 0.25, 0.5, 1.0, 2.0, 4.0, 16.0
-	};
-
-	bool bValid = true;
-	posit<4, 1> p;
-	double arithmetic_mean;
-	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = double((input[i] + input[i + 1] - 0.0001) / 2.0f);
-		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
-		p = arithmetic_mean;
-		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
-			cerr << "Posit rounding failed: golden value = " << golden_answer[i] << " != posit<4,1> " << components_to_string(p) << endl;
-			bValid = false;
-		}
-	}
-
-	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = double((-input[i] - input[i + 1] + 0.0001) / 2.0f);
-		//cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
-		p = arithmetic_mean;
-		if (fabs(p.to_double() + golden_answer[i]) > 0.0001) {
-			cerr << "Posit rounding failed: golden value = " << golden_answer[i] << " != posit<4,1> " << components_to_string(p) << endl;
-			bValid = false;
-		}
-	}
-
-	return bValid;
-}
-bool ValidateDoubleRoundingUpPosit_4_1()
-{
-	float input[9] = {
-		0.0, 0.0625, 0.25, 0.5, 1.0, 2.0, 4.0, 16.0, 100.0f
-	};
-	float golden_answer[8] = {
-		0.0625f, 0.25, 0.5, 1.0, 2.0, 4.0, 16.0f, 16.0f
-	};
-
-	bool bValid = true;
-	posit<4, 1> p;
-	double arithmetic_mean;
-	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = double((input[i] + input[i + 1] + 0.000005) / 2.0f);
-		cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
-		p = arithmetic_mean;
-		if (fabs(p.to_double() - golden_answer[i]) > 0.0001) {
-			cerr << "Posit rounding failed: golden value = " << golden_answer[i] << " != posit<4,1> " << components_to_string(p) << endl;
-			bValid = false;
-		}
-	}
-
-	for (int i = 0; i < 8; i++) {
-		arithmetic_mean = double((-input[i] - input[i + 1] - 0.000005) / 2.0f);
-		cout << setw(3) << i << " : arithmetic mean = " << arithmetic_mean << endl;
-		p = arithmetic_mean;
-		if (fabs(p.to_double() + golden_answer[i]) > 0.0001) {
-			cerr << "Posit rounding failed: golden value = " << golden_answer[i] << " != posit<4,1> " << components_to_string(p) << endl;
-			bValid = false;
-		}
-	}
-
-	return bValid;
+// generate specific test case that you can trace with the trace conditions in posit.h
+// for most bugs they are traceable with _trace_conversion and _trace_sub
+template<size_t nbits, size_t es>
+void GenerateTestCase(const posit<nbits,es>& pa, const posit<nbits,es>& pb, const posit<nbits, es>& psecondary) {
+	double da, db, dref;
+	posit<nbits, es> pref, pdif;
+	da = (double)pa;
+	db = double(pb);
+	dref = da - db;
+	pref = dref;
+	pdif = pa - pb;
+	cout << setprecision(17);
+	cout << "0x" << to_hex(pa.get()) << " - 0x" << to_hex(pb.get()) << "             decimal " << pa << " - " << pb << endl;
+	cout << "dref   " << setw(20) << dref << endl;
+	cout << "pref   " << setw(20) << pref << "  " << pref.get() << endl;
+	cout << "actual " << setw(20) << pdif << "  " << pdif.get() << endl;
+	cout << "second " << setw(20) << psecondary << "  " << psecondary.get() << endl;
+	cout << setprecision(5);
 }
 
 int main(int argc, char** argv)
 try {
+	const size_t nbits = 32;
+	const size_t es = 2;
+
 	int nrOfFailedTestCases = 0;
 
-	//ReportPositScales();
-
-		TestPositRounding(ValidateFloatRoundingPosit_4_0(), "posit<4,0>", "float rounding");
-		TestPositRounding(ValidateDoubleRoundingPosit_4_0(), "posit<4,0>", "double rounding");
-		TestPositRounding(ValidateFloatRoundingPosit_4_1(), "posit<4,1>", "float rounding");
-		TestPositRounding(ValidateDoubleRoundingDownPosit_4_1(), "posit<4,1>", "double rounding down");
-		TestPositRounding(ValidateDoubleRoundingUpPosit_4_1(), "posit<4,1>", "double rounding up");
+	posit<32, 2> pa, pb, pmathematica;
+	pa.set_raw_bits(0x9368de2d);	pb.set_raw_bits(0x75bd5593);	pmathematica.set_raw_bits(0x7573e376);	GenerateTestCase<nbits, es>(-pa, pb, pmathematica);
+	pa.set_raw_bits(0xaddfa756);	pb.set_raw_bits(0x51215708);	pmathematica.set_raw_bits(0xc80fe5e0);	GenerateTestCase<nbits, es>(-pa, pb, pmathematica);
+	pa.set_raw_bits(0xe556134f);	pb.set_raw_bits(0x42ff7483);	pmathematica.set_raw_bits(0x42ca251d);	GenerateTestCase<nbits, es>(-pa, pb, pmathematica);
+	pa.set_raw_bits(0xf7d37f28);	pb.set_raw_bits(0x6301e2a4);	pmathematica.set_raw_bits(0x6301de4b);	GenerateTestCase<nbits, es>(-pa, pb, pmathematica);
+	pa.set_raw_bits(0x59f71c3c);	pb.set_raw_bits(0x4df90e86);	pmathematica.set_raw_bits(0x5d755fde);	GenerateTestCase<nbits, es>(-pa, pb, pmathematica);
+	pa.set_raw_bits(0xd8ce471f);	pb.set_raw_bits(0x6fbd0a92);	pmathematica.set_raw_bits(0x6fbc1776);	GenerateTestCase<nbits, es>(-pa, pb, pmathematica);
+	pa.set_raw_bits(0x18f27112);	pb.set_raw_bits(0x4f5ccac7);	pmathematica.set_raw_bits(0x4f70948b);	GenerateTestCase<nbits, es>(-pa, pb, pmathematica);
 
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
