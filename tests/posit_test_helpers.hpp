@@ -85,29 +85,41 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		void ReportBinaryArithmeticErrorInBinary(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 			std::cerr << test_case << " "
-				<< std::setprecision(20)
 				<< std::setw(nbits) << lhs.get()
 				<< " " << op << " "
 				<< std::setw(nbits) << rhs.get()
 				<< " != "
 				<< std::setw(nbits) << pref.get() << " instead it yielded "
 				<< std::setw(nbits) << presult.get()
-				<< std::setprecision(5)
 				<< " " << pretty_print(presult,20) << std::endl;
 		}
 
 		template<size_t nbits, size_t es>
 		void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 			std::cerr << test_case << " "
+				<< std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
 				<< " == "
 				<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
 				<< std::setw(FLOAT_TABLE_WIDTH) << pref
-				<< " " << components_to_string(presult) << std::endl;
+				<< " " << pref.get() << " vs " << presult.get() 
+				<< std::setprecision(5)
+				<< std::endl;
 		}
 
+		template<size_t nbits, size_t es>
+		void ReportBinaryArithmeticSuccessInBinary(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+			std::cerr << test_case << " "
+				<< std::setw(nbits) << lhs.get()
+				<< " " << op << " "
+				<< std::setw(nbits) << rhs.get()
+				<< " == "
+				<< std::setw(nbits) << presult.get() << " reference value is "
+				<< std::setw(nbits) << pref.get()
+				<< " " << pretty_print(presult,20) << std::endl;
+		}
 		template<size_t nbits, size_t es>
 		void ReportDecodeError(std::string test_case, const posit<nbits, es>& actual, double golden_value) {
 			std::cerr << test_case << " actual " << actual << " required " << golden_value << std::endl;
@@ -622,13 +634,16 @@ namespace sw {
 				ib = std::rand() % SIZE_STATE_SPACE;
 				db = operand_values[ib];
 				pb = db;
+				// in case you have numeric_limits<long double>::digits trouble... this will show that
+				std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " pa " << pa << std::endl;
+				std::cout << "sizeof db: " << sizeof(db) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value db " << db << " at index " << ia << " pa " << pb << std::endl;
 				execute(opcode, da, db, pa, pb, preference, presult);
 				if (presult != preference) {
 					nrOfFailedTests++;
 					if (bReportIndividualTestCases) ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, preference, presult);
 				}
 				else {
-					if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, pa, pb, preference, presult);
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccessInBinary("PASS", operation_string, pa, pb, preference, presult);
 				}
 			}
 
