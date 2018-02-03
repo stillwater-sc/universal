@@ -69,31 +69,36 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		void ReportBinaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-			std::cerr << test_case << std::setprecision(20)
+			std::cerr << test_case << " " 
+				<< std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
 				<< " != "
 				<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
 				<< std::setw(FLOAT_TABLE_WIDTH) << presult
-				<< " " << pref.get() << " vs " << presult.get() << std::endl;
+				<< " " << pref.get() << " vs " << presult.get() 
+				<< std::setprecision(5)
+				<< std::endl;
 		}
 
 		template<size_t nbits, size_t es>
 		void ReportBinaryArithmeticErrorInBinary(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-			std::cerr << test_case << std::setprecision(20)
+			std::cerr << test_case << " "
+				<< std::setprecision(20)
 				<< std::setw(nbits) << lhs.get()
 				<< " " << op << " "
 				<< std::setw(nbits) << rhs.get()
 				<< " != "
 				<< std::setw(nbits) << pref.get() << " instead it yielded "
 				<< std::setw(nbits) << presult.get()
+				<< std::setprecision(5)
 				<< " " << pretty_print(presult,20) << std::endl;
 		}
 
 		template<size_t nbits, size_t es>
 		void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
-			std::cerr << test_case
+			std::cerr << test_case << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
@@ -543,7 +548,7 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		void execute(int opcode, long double da, long double db, posit<nbits, es>& preference, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& presult) {
-			double reference;
+			long double reference;
 			switch (opcode) {
 			default:
 			case OPCODE_NOP:
