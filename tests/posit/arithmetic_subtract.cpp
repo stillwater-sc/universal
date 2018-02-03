@@ -6,9 +6,10 @@
 #include "stdafx.h"
 
 // when you define POSIT_VERBOSE_OUTPUT executing an SUB the code will print intermediate results
-#define POSIT_VERBOSE_OUTPUT
-//#define POSIT_TRACE_SUB
+//#define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_SUB
 
+// minimum set of include files to reflect source code dependencies
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
@@ -19,7 +20,7 @@ using namespace std;
 using namespace sw::unum;
 
 // generate specific test case that you can trace with the trace conditions in posit.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
+// for most bugs they are traceable with _trace_conversion and _trace_sub
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty reference;

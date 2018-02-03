@@ -8,6 +8,10 @@
 #include <sstream>
 #include <vector>
 
+#define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_DECODE
+
+// minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"

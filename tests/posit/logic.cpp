@@ -1,11 +1,12 @@
-// components.cpp : tests for regime/exponent/fraction components of a posit
+// logic.cpp : tests for logic operators between posits
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "stdafx.h"
 
+// minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
 #include "../tests/test_helpers.hpp"
 
