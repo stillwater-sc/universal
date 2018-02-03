@@ -200,14 +200,21 @@ namespace sw {
 				case FP_NORMAL:
 				{
 					if (sizeof(long double) == 16) {
-						_sign = extract_sign((long double) rhs);
-						//_scale = extract_exponent((long double) rhs) - 1;
-    					long double fraction_value = std::frexp((long double)rhs, &_scale);
-						_scale -= 1;
-    					uint128* pFractionBits = (uint128*)&fraction_value;
-						_fraction = extract_long_double_fraction<fbits>(pFractionBits);
+						long double _v;
+						extract_fp_components(rhs, _sign, &_scale, _v);
+						uint128* _p = (uint128*)&_v;
+						std::cout << "fraction " << _v << std::endl;
+						std::cout << "lower    " << hex << _p->lower << std::endl;
+						std::cout << "upper    " << hex << _p->upper << std::endl;
+						if (fbits <= 64) {
+							uint64_t mask = 1ull;
+							for (unsigned int i = 0; i < fbits; i++) {
+								_fraction[fbits - 1 - i] = _p->lower & mask;
+								mask >>= 1;
+							}
+						}
 						_nrOfBits = fbits;
-						if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 112b fraction b" << _fraction << std::dec << std::endl;
+						if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " " << fbits << " b fraction b" << _fraction << std::dec << std::endl;
 					}
 					else if (sizeof(long double) == 8) {
 						// we are just a double

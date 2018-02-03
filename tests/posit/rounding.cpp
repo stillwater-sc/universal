@@ -63,20 +63,8 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	// FAIL 1100000000000000 + 1001100000000000 != 1001011010101011 instead it yielded 1001011100000000 s1 r110 e1 f00100000000 qNW v - 9
-	posit<16, 1> pa, pb, psum, pref;
-	pa.set_raw_bits(0b1100000000000000);
-	pb.set_raw_bits(0b1001100000000000);
-	pref.set_raw_bits(0b1001011010101011);
-	psum = pa + pb;
-	cout << pa << " " << pb << " = " << psum << " should be " << pref << endl;
-
-	// FAIL 0101000000000000 + 1101000000000000 != 0101000000000000 instead it yielded 0100100000000000 s0 r10 e0 f100000000000 qNE v1.5
-	pa.set_raw_bits(0b0101000000000000);
-	pb.set_raw_bits(0b1101000000000000);
-	pref.set_raw_bits(0b0101000000000000);
-	psum = pa + pb;
-	cout << pa << " " << pb << " = " << psum << " should be " << pref << endl;
+	long double ld = 1.234567890123456789;
+	posit<64, 2> p(ld);
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
