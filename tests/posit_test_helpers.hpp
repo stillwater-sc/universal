@@ -547,7 +547,7 @@ namespace sw {
 		const int OPCODE_RAN = 5;
 
 		template<size_t nbits, size_t es>
-		void execute(int opcode, long double da, long double db, posit<nbits, es>& preference, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& presult) {
+		void execute(int opcode, long double da, long double db, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& preference, posit<nbits, es>& presult) {
 			long double reference;
 			switch (opcode) {
 			default:
@@ -622,7 +622,7 @@ namespace sw {
 				ib = std::rand() % SIZE_STATE_SPACE;
 				db = operand_values[ib];
 				pb = db;
-				execute(opcode, da, db, preference, pa, pb, presult);
+				execute(opcode, da, db, pa, pb, preference, presult);
 				if (presult != preference) {
 					nrOfFailedTests++;
 					if (bReportIndividualTestCases) ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, preference, presult);
