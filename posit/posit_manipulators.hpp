@@ -91,7 +91,7 @@ namespace sw {
 			std::bitset<fbits> f = p.get_fraction().get();
 			int fractionBits = (int)p.get_fraction().nrBits();
 			int nrOfFractionBitsProcessed = 0;
-			for (int i = p.fbits - 1; i >= 0; --i) {
+			for (int i = int(p.fbits) - 1; i >= 0; --i) {
 				if (fractionBits > nrOfFractionBitsProcessed++) {
 					ss << (f[i] ? "1" : "0");
 				}
