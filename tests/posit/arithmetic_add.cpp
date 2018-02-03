@@ -33,7 +33,7 @@ void GenerateTestCase(Ty a, Ty b) {
 	cout << "reference " << reference << " result " << psum << endl << endl;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -62,10 +62,11 @@ try {
 	GenerateTestCase<8, 4>(da, db);
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>("Manual Testing", true), "posit<3,0>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>("Manual Testing", true), "posit<3,0>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>("Manual Testing", true), "posit<8,4>", "addition");
 
-	//nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(tag, true, OPCODE_ADD, 1000), "posit<64,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, true, OPCODE_ADD, 1000), "posit<16,1>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(tag, true, OPCODE_ADD, 1000), "posit<64,2>", "addition");
 
 #else
 
