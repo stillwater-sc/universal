@@ -85,8 +85,7 @@ namespace sw {
 		template<typename Ty>
 		void extract_fp_components(Ty fp, bool& sign, int* exponent, Ty& fraction) {
 			if (fp < 0.0) sign = true;
-			long double ld;
-			if (typeid(fp) == typeid(ld)) {
+			if (typeid(fp) == typeid(long double)) {
 				fraction = frexpl(fp, exponent);
 			}
 			else if (typeid(fp) == typeid(double)) {
