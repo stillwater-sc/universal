@@ -16,7 +16,7 @@ using namespace sw::unum;
 template<size_t nbits, size_t es>
 void GenerateLogicPattern(double input, const posit<nbits, es>& presult, const posit<nbits + 1, es>& pnext) {
 	const int VALUE_WIDTH = 15;
-	bool fail = fabs(presult.to_double() - pnext.to_double()) > 0.000000001;
+	bool fail = presult != pnext;
 	value<52> v(input);
 	std::cout << setw(VALUE_WIDTH) << input << " "
 		<< " result " << setw(VALUE_WIDTH) << presult
@@ -46,7 +46,7 @@ void GenerateLogicPatternsForDebug() {
 	std::cout << spec_to_string(pa) << std::endl;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
 		pref.set_raw_bits(i);
-		da = pref.to_double();
+		da = double(pref);
 		if (i % 2) {
 			if (i == 1) {
 				// special case of projecting to +minpos

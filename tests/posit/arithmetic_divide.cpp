@@ -53,7 +53,7 @@ void GenerateWorstCaseDivision() {
 
 	}
 	std::cout << p_plus_eps.get() << " / " << p_minus_eps.get() << " = " << p_result.get() << std::endl;
-	std::cout << std::setprecision(nbits - 2) << std::setw(nbits) << p_plus_eps.to_double() << " / " << std::setw(nbits) << p_minus_eps.to_double() << " = " << std::setw(nbits) << p_result.to_double() << std::endl;
+	std::cout << std::setprecision(nbits - 2) << std::setw(nbits) << p_plus_eps << " / " << std::setw(nbits) << p_minus_eps << " = " << std::setw(nbits) << p_result << std::endl;
 	std::cout << std::endl;
 }
 

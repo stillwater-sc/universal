@@ -22,7 +22,7 @@ using namespace sw::unum;
 template<size_t nbits, size_t es>
 void GenerateLogicPattern(double input, const posit<nbits, es>& presult, const posit<nbits+1, es>& pnext) {
 	const int VALUE_WIDTH = 15;
-	bool fail = fabs(presult.to_double() - pnext.to_double()) > 0.000000001;
+	bool fail = presult != pnext;
 	value<52> v(input);
 	std::cout << setw(VALUE_WIDTH) << input << " "
 		<< " result " << setw(VALUE_WIDTH) << presult 
@@ -53,7 +53,7 @@ void GenerateLogicPatternsForDebug() {
 	std::cout << spec_to_string(pa) << std::endl;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
 		pref.set_raw_bits(i);
-		da = pref.to_double();
+		da = double(pref);
 		if (i == 0) {
 			eps = minpos / 2.0;
 		}
@@ -156,7 +156,7 @@ void GenerateLogicPatternsForDebug() {
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es>
 void GenerateTestCase(float input, float reference, const posit<nbits, es>& presult) {
-	if (fabs(presult.to_double() - reference) > 0.000000001) 
+	if (fabs(double(presult) - reference) > 0.000000001) 
 		ReportConversionError("test_case", "=", input, reference, presult);
 	else
 		ReportConversionSuccess("test_case", "=", input, reference, presult);
@@ -165,7 +165,7 @@ void GenerateTestCase(float input, float reference, const posit<nbits, es>& pres
 
 template<size_t nbits, size_t es>
 void GenerateTestCase(double input, double reference, const posit<nbits, es>& presult) {
-	if (fabs(presult.to_double() - reference) > 0.000000001)
+	if (fabs(double(presult) - reference) > 0.000000001)
 		ReportConversionError("test_case", "=", input, reference, presult);
 	else
 		ReportConversionSuccess("test_case", "=", input, reference, presult);

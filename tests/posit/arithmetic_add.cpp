@@ -52,13 +52,13 @@ try {
 	posit<8, 4> pa, pb, psum;
 	pa.set_raw_bits(uint64_t(0b00000001));
 	pb.set_raw_bits(uint64_t(0b10000001));
-	da = pa.to_double();
-	db = pb.to_double();
+	da = double(pa);
+	db = double(pb);
 	std::cout << setprecision(20) << da << " " << db << std::endl;
 	psum = pa + pb;
-	std::cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum.to_double() << std::endl;
+	std::cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum << std::endl;
 	psum = da + db;
-	std::cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum.to_double() << std::endl;
+	std::cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum << std::endl;
 	GenerateTestCase<8, 4>(da, db);
 
 	// manual exhaustive test

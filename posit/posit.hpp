@@ -72,7 +72,7 @@ template<size_t nbits, size_t es>
 class posit {
 
 	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
-//	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
+	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
 
 	template <typename T>
 	posit<nbits, es>& float_assign(const T& rhs) {
@@ -294,15 +294,13 @@ public:
 		if (rhs.isZero()) {
 			setToNaR();
 			return *this;
-			//throw divide_by_zero{};
+			//throw divide_by_zero{};    not throwing is a quiet signalling NaR
 		}
-		
-		if (isZero() || isNaR()) {
-			return *this;
-		}
-
 		if (rhs.isNaR()) {
 			setToNaR();
+			return *this;
+		}		
+		if (isZero() || isNaR()) {
 			return *this;
 		}
 
@@ -353,7 +351,7 @@ public:
 		posit<nbits, es> p;
 		// special case of NaR (Not a Real)
 		if (isNaR()) {
-			p.setToZero();
+			p.setToNaR();
 			return p;
 		}
 		if (isZero()) {
@@ -647,39 +645,7 @@ public:
 		// so no need to transform back via 2's complement of regime/exponent/fraction
 	}
 	
-	// Conversion functions
-	int         to_int() const {
-		if (isZero()) return 0;
-		if (isNaR()) throw "NaR (Not a Real)";
-		return int(to_float());
-	}
-	long        to_long() const {
-		if (isZero()) return 0;
-		if (isNaR()) throw "NaR (Not a Real)";
-		return long(to_double());
-	}
-	long long   to_long_long() const {
-		if (isZero()) return 0;
-		if (isNaR()) throw "NaR (Not a Real)";
-		return long(to_long_double());
-	}
-	float       to_float() const {
-		return (float)to_double();
-	}
-	double      to_double() const {
-		if (isZero())	return 0.0;
-		if (isNaR())	return NAN;
-		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
-	}
-	long double to_long_double() const {
-		if (isZero())  return 0.0;
-		if (isNaR())   return NAN;
-		int s = sign_value();
-		double r = regime_value(); // regime value itself will fit in a double
-		double e = exponent_value(); // same with exponent
-		long double f = (long double)(1.0) + _fraction.value();
-		return s * r * e * f;
-	}
+
 	
 	// Maybe remove explicit, MTL compiles, but we have lots of double computation then
 	explicit operator long double() const { return to_long_double(); }
@@ -904,6 +870,41 @@ private:
 	fraction<fbits> 	   _fraction;	// decoded posit representation
 
 	// HELPER methods
+	// Conversion functions
+	int         to_int() const {
+		if (isZero()) return 0;
+		if (isNaR()) throw "NaR (Not a Real)";
+		return int(to_float());
+	}
+	long        to_long() const {
+		if (isZero()) return 0;
+		if (isNaR()) throw "NaR (Not a Real)";
+		return long(to_double());
+	}
+	long long   to_long_long() const {
+		if (isZero()) return 0;
+		if (isNaR()) throw "NaR (Not a Real)";
+		return long(to_long_double());
+	}
+	float       to_float() const {
+		return (float)to_double();
+	}
+	double      to_double() const {
+		if (isZero())	return 0.0;
+		if (isNaR())	return NAN;
+		return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
+	}
+	long double to_long_double() const {
+		if (isZero())  return 0.0;
+		if (isNaR())   return NAN;
+		int s = sign_value();
+		double r = regime_value(); // regime value itself will fit in a double
+		double e = exponent_value(); // same with exponent
+		long double f = (long double)(1.0) + _fraction.value();
+		return s * r * e * f;
+	}
+
+	// friend functions
     // template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t ees>
 	friend std::ostream& operator<< (std::ostream& ostr, const posit<nnbits, ees>& p);

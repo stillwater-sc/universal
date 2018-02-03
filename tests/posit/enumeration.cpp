@@ -36,7 +36,6 @@ try {
 	p_maxpos = inf;
 	cout << components_to_string(p_maxpos) << endl;
 	p_maxpos--; // previous posit to INFINITE
-	p_maxpos.to_double();
 	cout << components_to_string(p_maxpos) << endl;
 
 	cout << "minpos : " << p_minpos << " maxpos : " << p_maxpos << " "  << endl;

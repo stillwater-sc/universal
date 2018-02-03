@@ -41,7 +41,7 @@ int ValidateDecode() {
 	posit<4, 0> pa;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
 		pa.set_raw_bits(uint64_t(i));
-		if (fabs(pa.to_double() - golden_values[i]) > 0.0001) {
+		if (fabs(double(pa) - golden_values[i]) > 0.0001) {
 			ReportDecodeError("Posit<4,0> decode failed: ", pa, golden_values[i]);
 			nrOfFailedTestCases++;
 		}

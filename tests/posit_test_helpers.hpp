@@ -26,7 +26,7 @@ namespace sw {
 				<< std::setw(FLOAT_TABLE_WIDTH) << input
 				<< " did not convert to "
 				<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
-				<< std::setw(FLOAT_TABLE_WIDTH) << presult.to_double()
+				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
 				<< "  raw " << std::setw(nbits) << presult.get()
 				<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << presult.regime_k() << "   exp= " << std::setw(3) << presult.exp()
 				<< std::endl;
@@ -38,7 +38,7 @@ namespace sw {
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << input
 				<< " did     convert to "
-				<< std::setw(FLOAT_TABLE_WIDTH) << presult.to_double() << " reference value is "
+				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult) << " reference value is "
 				<< std::setw(FLOAT_TABLE_WIDTH) << reference
 				<< "  raw " << std::setw(nbits) << presult.get()
 				<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << presult.regime_k() << "   exp= " << std::setw(3) << presult.exp()
@@ -113,7 +113,7 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int Compare(double input, const posit<nbits, es>& presult, double reference, bool bReportIndividualTestCases) {
 			int fail = 0;
-			double result = presult.to_double();
+			double result = double(presult);
 			if (fabs(result - reference) > 0.000000001) {
 				fail++;
 				if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, presult);
@@ -141,7 +141,7 @@ namespace sw {
 			posit<nbits, es> pa;
 			for (int i = 0; i < NR_TEST_CASES; i++) {
 				pref.set_raw_bits(i);
-				da = pref.to_double();
+				da = double(pref);
 				if (i == 0) {
 					eps = minpos / 2.0;
 				}
@@ -155,10 +155,10 @@ namespace sw {
 						input = da - eps;
 						pa = input;
 						pnext.set_raw_bits(i + 1);
-						nrOfFailedTests += Compare(input, pa, pnext.to_double(), bReportIndividualTestCases);
+						nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
 						input = da + eps;
 						pa = input;
-						nrOfFailedTests += Compare(input, pa, pnext.to_double(), bReportIndividualTestCases);
+						nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
 
 					}
 					else if (i == HALF - 1) {
@@ -166,14 +166,14 @@ namespace sw {
 						input = da - eps;
 						pa = input;
 						pprev.set_raw_bits(HALF - 2);
-						nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
+						nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
 					}
 					else if (i == HALF + 1) {
 						// special case of projecting to -maxpos
 						input = da - eps;
 						pa = input;
 						pprev.set_raw_bits(HALF + 2);
-						nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
+						nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
 					}
 					else if (i == NR_TEST_CASES - 1) {
 						// special case of projecting to -minpos
@@ -181,10 +181,10 @@ namespace sw {
 						input = da - eps;
 						pa = input;
 						pprev.set_raw_bits(i - 1);
-						nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
+						nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
 						input = da + eps;
 						pa = input;
-						nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
+						nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
 					}
 					else {
 						// for odd values, we are between posit values, so we create the round-up and round-down cases
@@ -192,12 +192,12 @@ namespace sw {
 						input = da - eps;
 						pa = input;
 						pprev.set_raw_bits(i - 1);
-						nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
+						nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
 						// round-up
 						input = da + eps;
 						pa = input;
 						pnext.set_raw_bits(i + 1);
-						nrOfFailedTests += Compare(input, pa, pnext.to_double(), bReportIndividualTestCases);
+						nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
 					}
 				}
 				else {
@@ -207,14 +207,14 @@ namespace sw {
 						input = da + eps;
 						pa = input;
 						pnext.set_raw_bits(i + 2);
-						nrOfFailedTests += Compare(input, pa, pnext.to_double(), bReportIndividualTestCases);
+						nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
 					}
 					else if (i == NR_TEST_CASES - 2) {
 						// special case of projecting to -minpos
 						input = da - eps;
 						pa = input;
 						pprev.set_raw_bits(NR_TEST_CASES - 2);
-						nrOfFailedTests += Compare(input, pa, pprev.to_double(), bReportIndividualTestCases);
+						nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
 					}
 					else {
 						// round-up
@@ -362,9 +362,9 @@ namespace sw {
 				pa.set_raw_bits(i);
 				pneg = -pa;
 				// generate reference
-				da = pa.to_double();
+				da = double(pa);
 				pref = -da;
-				if (fabs(pneg.to_double() - pref.to_double()) > 0.000000001) {
+				if (pneg != pref) {
 					nrOfFailedTests++;
 					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "-", pa, pref, pneg);
 				}
@@ -385,13 +385,13 @@ namespace sw {
 			double da, db;
 			for (int i = 1; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
-				da = pa.to_double();
+				da = double(pa);
 				for (int j = 2; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
-					db = pb.to_double();
+					db = double(pb);
 					psum = pa + pb;
 					pref = da + db;
-					if (fabs(psum.to_double() - pref.to_double()) > 0.0001) {
+					if (psum != pref) {
 						nrOfFailedTests++;
 						if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
 					}
@@ -414,13 +414,13 @@ namespace sw {
 			double da, db;
 			for (int i = 1; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
-				da = pa.to_double();
+				da = double(pa);
 				for (int j = 2; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
-					db = pb.to_double();
+					db = double(pb);
 					pdif = pa - pb;
 					pref = da - db;
-					if (fabs(pdif.to_double() - pref.to_double()) > 0.0001) {
+					if (pdif != pref) {
 						nrOfFailedTests++;
 						if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", pa, pb, pref, pdif);
 					}
@@ -443,13 +443,13 @@ namespace sw {
 			double da, db;
 			for (int i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
-				da = pa.to_double();
+				da = double(pa);
 				for (int j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
-					db = pb.to_double();
+					db = double(pb);
 					pmul = pa * pb;
 					pref = da * db;
-					if (fabs(pmul.to_double() - pref.to_double()) > 0.000000001) {
+					if (pmul != pref) {
 						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pref, pmul);
 						nrOfFailedTests++;
 					}
@@ -472,11 +472,16 @@ namespace sw {
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				// generate reference
-				da = pa.to_double();
-				preference = 1.0 / da;
+				if (pa.isNaR()) {
+					preference.setToNaR();
+				}
+				else {
+					da = double(pa);
+					preference = 1.0 / da;
+				}
 				preciprocal = pa.reciprocate();
 
-				if (fabs(preciprocal.to_double() - preference.to_double()) > 0.000000001) {
+				if (preciprocal != preference) {
 					nrOfFailedTests++;
 					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "reciprocate", pa, preference, preciprocal);
 				}
@@ -497,13 +502,19 @@ namespace sw {
 			double da, db;
 			for (int i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
-				da = pa.to_double();
+				da = double(pa);
 				for (int j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
-					db = pb.to_double();
+					if (pb.isNaR()) {
+						pref.setToNaR();
+					}
+					else {
+						db = double(pb);
+						pref = da / db;
+					}
 					pdiv = pa / pb;
-					pref = da / db;
-					if (fabs(pdiv.to_double() - pref.to_double()) > 0.000000001) {
+
+					if (pdiv != pref) {
 						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
 						nrOfFailedTests++;
 					}
@@ -531,7 +542,7 @@ namespace sw {
 		const int OPCODE_RAN = 5;
 
 		template<size_t nbits, size_t es>
-		void execute(int opcode, double da, double db, posit<nbits, es>& preference, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& presult) {
+		void execute(int opcode, long double da, long double db, posit<nbits, es>& preference, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& presult) {
 			double reference;
 			switch (opcode) {
 			default:
@@ -592,12 +603,12 @@ namespace sw {
 			std::mt19937_64 eng(rd()); //Use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 									   //Define the distribution, by default it goes from 0 to MAX(unsigned long long)
 			std::uniform_int_distribution<unsigned long long> distr;
-			std::vector<double> operand_values(SIZE_STATE_SPACE);
+			std::vector<long double> operand_values(SIZE_STATE_SPACE);
 			for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
 				presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as posit encoding
-				operand_values[i] = presult.to_double();
+				operand_values[i] = (long double)(presult);
 			}
-			double da, db;
+			long double da, db;
 			unsigned ia, ib;  // random indices for picking operands to test
 			for (unsigned i = 1; i < nrOfRandoms; i++) {
 				ia = std::rand() % SIZE_STATE_SPACE;
@@ -607,10 +618,9 @@ namespace sw {
 				db = operand_values[ib];
 				pb = db;
 				execute(opcode, da, db, preference, pa, pb, presult);
-				if (fabs(presult.to_double() - preference.to_double()) > 0.000000001) {
+				if (presult != preference) {
 					nrOfFailedTests++;
 					if (bReportIndividualTestCases) ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, preference, presult);
-
 				}
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, pa, pb, preference, presult);
@@ -621,6 +631,7 @@ namespace sw {
 		}
 
 
-	} // namespace unum
-} // namespace sw
+	}; // namespace unum
+
+}; // namespace sw
 

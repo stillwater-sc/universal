@@ -34,7 +34,7 @@ int ValidatePositLogicEqual() {
 			}
 			else {
 				// same behavior as IEEE floats
-				ref = a.to_double() == b.to_double();
+				ref = double(a) == double(b);
 			}
 
 			presult = a == b;
@@ -68,7 +68,7 @@ int ValidatePositLogicNotEqual() {
 			}
 			else {
 				// same behavior as IEEE floats
-				ref = a.to_double() != b.to_double();
+				ref = double(a) != double(b);
 			}
 
 			presult = a != b;
@@ -103,7 +103,7 @@ int ValidatePositLogicLessThan() {
 			}
 			else {
 				// same behavior as IEEE floats
-				ref = a.to_double() < b.to_double();
+				ref = double(a) < double(b);
 			}
 
 			presult = a < b;
@@ -137,7 +137,7 @@ int ValidatePositLogicGreaterThan() {
 			}
 			else {
 				// same behavior as IEEE floats
-				ref = a.to_double() > b.to_double();
+				ref = double(a) > double(b);
 			}
 
 			presult = a > b;
@@ -171,7 +171,7 @@ int ValidatePositLogicLessOrEqualThan() {
 			}
 			else {
 				// same behavior as IEEE floats
-				ref = a.to_double() <= b.to_double();
+				ref = double(a) <= double(b);
 			}
 
 			presult = a <= b;
@@ -206,7 +206,7 @@ int ValidatePositLogicGreaterOrEqualThan() {
 			}
 			else {
 				// same behavior as IEEE floats
-				ref = a.to_double() >= b.to_double();
+				ref = double(a) >= double(b);
 			}
 
 			presult = a >= b;
