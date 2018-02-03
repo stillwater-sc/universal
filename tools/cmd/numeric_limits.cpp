@@ -44,6 +44,27 @@ try {
 	cout << "         double      " << setw(4) << d_fbits     << " bits" << endl;
 	cout << "         long double " << setw(4) << q_fbits     << " bits" << endl;
 
+	union {
+		long double da;
+		char        bytes[16];
+	} ld;
+	bool        sign = false;
+	int         exponent = 0;
+	long double fraction = 0;
+	ld.da = 1.234567890123456789;
+	sw::unum::extract_fp_components(ld.da, sign, &exponent, fraction);
+	cout << "value    " << setprecision(q_prec) << ld.da << setprecision(f_prec) << endl;
+	cout << "hex      ";
+	cout << hex << setfill('0');
+	for (int i = 15; i >= 0; i--) {
+		cout << setw(2) << (int)(uint8_t)ld.bytes[i] << " ";
+	}
+	cout << dec << endl;
+	cout << "sign     " << (sign ? "-" : "+") << endl;
+	cout << "exponent " << exponent << endl;
+	cout << "fraction " << fraction << endl;
+
+
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
