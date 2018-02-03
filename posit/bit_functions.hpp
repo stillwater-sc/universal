@@ -7,7 +7,8 @@
 
 #include <iostream>
 #include <iomanip>
-#include <cmath>  // for frexp/frexpf
+#include <typeinfo> // for typeid
+#include <cmath>    // for frexpf/frexp/frexpl  float/double/long double fraction/exponent extraction
 
 // This file contains functions that DO NOT use the posit type.
 // If you have helpers that use the posit type, add them to the file posit_manipulators.hpp
