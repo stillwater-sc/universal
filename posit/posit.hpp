@@ -102,7 +102,7 @@ public:
 	static constexpr size_t mbits   = 2 * fhbits;      // size of the multiplier output
 	static constexpr size_t divbits = 3 * fhbits + 4;  // size of the divider output
 
-	posit<nbits, es>() { setToZero();  }
+	posit() { setToZero();  }
 	
 	posit(const posit&) = default;
 	posit(posit&&) = default;
@@ -121,32 +121,17 @@ public:
 	posit(const std::bitset<nbits>& raw_bits) {
 		*this = set(raw_bits);
 	}
-	posit<nbits, es>(signed char initial_value) {
-		*this = initial_value;
-	}
-	posit<nbits, es>(short initial_value) {
-		*this = initial_value;
-	}
-	posit<nbits, es>(int initial_value) {
-		*this = initial_value;
-	}
-	posit<nbits, es>(long long initial_value) {
-		*this = initial_value;
-	}
-	posit<nbits, es>(unsigned long long initial_value) {
-		*this = initial_value;
-	}
-
-	posit<nbits, es>(float initial_value) {
-		*this = initial_value;
-	}
-	posit<nbits, es>(double initial_value) {
-		*this = initial_value;
-	}
-	posit<nbits, es>(long double initial_value) {
-		*this = initial_value;
-	}
-	posit<nbits, es>& operator=(signed char rhs) {
+	// initializers for native types
+	posit(signed char initial_value)        { *this = initial_value; }
+	posit(short initial_value)              { *this = initial_value; }
+	posit(int initial_value)                { *this = initial_value; }
+	posit(long long initial_value)          { *this = initial_value; }
+	posit(unsigned long long initial_value) { *this = initial_value; }
+	posit(float initial_value)              { *this = initial_value; }
+	posit(double initial_value)             { *this = initial_value; }
+	posit(long double initial_value)        { *this = initial_value; }
+	// assignment operators for native types
+	posit& operator=(signed char rhs) {
 		value<8> v(rhs);
 		if (v.isZero()) {
 			setToZero();
