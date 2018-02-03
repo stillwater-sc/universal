@@ -24,7 +24,7 @@ void GeneratePositReciprocalLookupTable(std::ostream& os) {
 	double v,rv;
 	for (size_t i = 0; i < NR_OF_ENTRIES; i++) {
 		p.set_raw_bits(i);
-		v = p.to_double();
+		v = double(p);
 		rv = 1.0 / v;
 		r = rv;
 		// os << p << " reciprocal of " << v << " is " << rv << " : " << r << std::endl;
