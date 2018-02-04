@@ -440,7 +440,7 @@ public:
 	inline double exponent_value() const {
 		return _exponent.value();
 	}
-	inline long double fraction_value() const {
+	inline double fraction_value() const {
 		return _fraction.value();
 	}
 
