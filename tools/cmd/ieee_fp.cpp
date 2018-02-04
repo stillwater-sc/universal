@@ -24,7 +24,7 @@ try {
 	constexpr int q_fbits = std::numeric_limits<long double>::digits - 1;
 
 	if (argc != 2) {
-		cerr << "Show the sign/scale/fraction components of a double." << endl;
+		cerr << "Show the truncated value and (sign/scale/fraction) components of different floating point types." << endl;
 		cerr << "Usage: ieee_fp float_value" << endl;
 		cerr << "Example: ieee_fp 0.03124999" << endl;
                 cerr << "input value:                0.03124999" << endl;
