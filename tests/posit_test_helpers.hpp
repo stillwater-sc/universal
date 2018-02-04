@@ -392,6 +392,31 @@ namespace sw {
 			return nrOfFailedTests;
 		}
 
+		// enumerate all SQRT cases for a posit configuration: executes within 10 sec till about nbits = 14
+		template<size_t nbits, size_t es>
+		int ValidateSqrt(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, psqrt, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				psqrt = sw::unum::sqrt(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::sqrt(da);
+				if (psqrt != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "sqrt", pa, pref, psqrt);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "sqrt", pa, pref, psqrt);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
 		// enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateAddition(std::string tag, bool bReportIndividualTestCases) {
