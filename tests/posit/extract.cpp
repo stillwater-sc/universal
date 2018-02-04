@@ -29,14 +29,23 @@ Double: SEEEEEEE EEEEMMMM MMMMMMMM MMMMMMMM MMMMMMMM MMMMMMMM MMMMMMMM MMMMMMMM
 3.	The exponent field contains 127 plus the true exponent for single-precision, or 1023 plus the true exponent for double precision.
 4.	The first bit of the mantissa is typically assumed to be 1.f, where f is the field of fraction bits.
 
+*/
+
 #define FLOAT_SIGN_MASK      0x80000000
 #define FLOAT_EXPONENT_MASK  0x7F800000
 #define FLOAT_MANTISSA_MASK  0x007FFFFF
+
+#define FLOAT_ALTERNATING_BITS_SIGNIFICANT_5 0x00555555
+#define FLOAT_ALTERNATING_BITS_SIGNIFICANT_A 0x002AAAAA
 
 #define DOUBLE_SIGN_MASK     0x8000000000000000
 #define DOUBLE_EXPONENT_MASK 0x7FF0000000000000
 #define DOUBLE_MANTISSA_MASK 0x000FFFFFFFFFFFFF
 
+#define DOUBLE_ALTERNATING_BITS_SIGNIFICANT_5 0x0005555555555555
+#define DOUBLE_ALTERNATING_BITS_SIGNIFICANT_A 0x000AAAAAAAAAAAAA
+
+/*
 In the Standard C++ library there are several functions that manipulate these components:
 in the header <cmath>
 frexp returns the exponent in exponent and the fraction in the return value
@@ -55,14 +64,36 @@ double frexp(double in, int* exponent)
 long double frexp(long double in, int* exponent)
 
 */
+
+
+
 template<size_t nbits, size_t es>
 posit<nbits, es> extract(float f) {
+	constexpr size_t fbits = posit<nbits, es>::fbits;
 	posit<nbits, es> p;
-	bool _sign = extract_sign(f);
-	int _scale = extract_exponent(f) - 1;		// exponent is for an unnormalized number 0.1234*2^exp
-	uint32_t _23b_fraction_without_hidden_bit = extract_fraction(f);
-	constexpr size_t fbits = p.fbits;
-	std::bitset<fbits> _fraction = extract_float_fraction<fbits>(_23b_fraction_without_hidden_bit);
+	bool		 _sign;
+	int		 _scale;
+	float		 _fr;
+	uint32_t	 _23b_fraction_without_hidden_bit;
+
+	extract_fp_components(f, _sign, _scale, _fr, _23b_fraction_without_hidden_bit);
+	std::bitset<fbits> _fraction = extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
+
+	p.convert(_sign, _scale, _fraction);
+	return p;
+}
+
+template<size_t nbits, size_t es>
+posit<nbits, es> extract(double d) {
+	constexpr size_t fbits = posit<nbits, es>::fbits;
+	posit<nbits, es> p;
+	bool		 _sign;
+	int		 _scale;
+	float		 _fr;
+	uint32_t	 _52b_fraction_without_hidden_bit;
+
+	extract_fp_components(d, _sign, _scale, _fr, _52b_fraction_without_hidden_bit);
+	std::bitset<fbits> _fraction = extract_23b_fraction<fbits>(_52b_fraction_without_hidden_bit);
 
 	p.convert(_sign, _scale, _fraction);
 	return p;
@@ -70,44 +101,72 @@ posit<nbits, es> extract(float f) {
 
 int main()
 try {
-	const size_t nbits = 4;
-	const size_t es = 0;
-	const size_t size = 128;
+	const size_t nbits = 32;
+	const size_t es = 2;
+
 	int nrOfFailedTestCases = 0;
-	posit<nbits,es> myPosit;
-	float f;
-	bool sign;
-	int exponent;
-	uint32_t fraction;
+	posit<nbits,es>    p;
+	bool 		   sign;
+	int		   exponent;
+	float		   fr;
+	unsigned int	   fraction;
 	std::bitset<nbits> _fraction;
 
 	cout << "Conversion tests" << endl;
 
-
-	cout << "Positive regime" << endl;
-	f = 4.0f;
-	sign = extract_sign(f);
-	exponent = extract_exponent(f);
-	fraction = extract_fraction(f);
-	_fraction = extract_float_fraction<nbits>(fraction);
-	cout << "f " << f << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
-
-	myPosit = extract<nbits, es>(f);
-	cout << "posit<" << nbits << "," << es << "> = " << myPosit << endl;
-	cout << "posit<" << nbits << "," << es << "> = " << components_to_string(myPosit) << endl;
+	union {
+		float f;
+		unsigned int i;
+	} uf;
 
 
-	cout << "Negative Regime" << endl;
-	f = -4.0f;
-	sign = extract_sign(f);
-	exponent = extract_exponent(f);
-	fraction = extract_fraction(f);
-	_fraction = extract_float_fraction<nbits>(fraction);
-	cout << "f " << f << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
+	uf.i = FLOAT_ALTERNATING_BITS_SIGNIFICANT_5 | !FLOAT_SIGN_MASK;
+	cout << "Positive Regime: float value: " << uf.f << endl;
+	extract_fp_components(uf.f, sign, exponent, fr, fraction);
+	_fraction = extract_23b_fraction<nbits>(fraction);
+	cout << "f " << uf.f << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
 
-	myPosit = extract<nbits, es>(f);
-	cout << "posit<" << nbits << "," << es << "> = " << myPosit << endl;
-	cout << "posit<" << nbits << "," << es << "> = " << components_to_string(myPosit) << endl;
+	p = extract<nbits, es>(uf.f);
+	cout << "posit<" << nbits << "," << es << "> = " << p << endl;
+	cout << "posit<" << nbits << "," << es << "> = " << components_to_string(p) << endl;
+
+
+	uf.i = FLOAT_ALTERNATING_BITS_SIGNIFICANT_5 | FLOAT_SIGN_MASK;
+	cout << "Negative Regime: float value: " << uf.f << endl;
+	extract_fp_components(uf.f, sign, exponent, fr, fraction);
+	_fraction = extract_23b_fraction<nbits>(fraction);
+	cout << "f " << uf.f << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
+
+	p = extract<nbits, es>(uf.f);
+	cout << "posit<" << nbits << "," << es << "> = " << p << endl;
+	cout << "posit<" << nbits << "," << es << "> = " << components_to_string(p) << endl;
+
+	union {
+		double d;
+		unsigned long long i;
+	} ud;
+
+
+	ud.i = DOUBLE_ALTERNATING_BITS_SIGNIFICANT_5 | !DOUBLE_SIGN_MASK;
+	cout << "Positive Regime: float value: " << ud.d << endl;
+	extract_fp_components(ud.d, sign, exponent, fr, fraction);
+	_fraction = extract_52b_fraction<nbits>(fraction);
+	cout << "d " << ud.d << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
+
+	p = extract<nbits, es>(ud.d);
+	cout << "posit<" << nbits << "," << es << "> = " << p << endl;
+	cout << "posit<" << nbits << "," << es << "> = " << components_to_string(p) << endl;
+
+
+	ud.i = DOUBLE_ALTERNATING_BITS_SIGNIFICANT_5 | DOUBLE_SIGN_MASK;
+	cout << "Negative Regime: float value: " << ud.d << endl;
+	extract_fp_components(ud.d, sign, exponent, fr, fraction);
+	_fraction = extract_52b_fraction<nbits>(fraction);
+	cout << "d " << ud.d << " sign " << (sign ? -1 : 1) << " exponent " << exponent << " fraction " << fraction << endl;
+
+	p = extract<nbits, es>(uf.f);
+	cout << "posit<" << nbits << "," << es << "> = " << p << endl;
+	cout << "posit<" << nbits << "," << es << "> = " << components_to_string(p) << endl;
 
 
 	// regime

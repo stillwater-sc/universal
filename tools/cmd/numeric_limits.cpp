@@ -19,17 +19,17 @@ try {
 	constexpr int d_prec = std::numeric_limits<double>::max_digits10;
 	constexpr int q_prec = std::numeric_limits<long double>::max_digits10;
 
-	constexpr int uint8_bits = std::numeric_limits<unsigned char>::digits;
+	constexpr int uint8_bits  = std::numeric_limits<unsigned char>::digits;
 	constexpr int uint16_bits = std::numeric_limits<unsigned short>::digits;
 	constexpr int uint32_bits = std::numeric_limits<unsigned int>::digits;
 	constexpr int uint64_bits = std::numeric_limits<unsigned long long>::digits;
-	constexpr int int8_bits = std::numeric_limits<signed char>::digits;
-	constexpr int int16_bits = std::numeric_limits<short>::digits;
-	constexpr int int32_bits = std::numeric_limits<int>::digits;
-	constexpr int int64_bits = std::numeric_limits<long long>::digits;
-	constexpr int f_fbits = std::numeric_limits<float>::digits;
-	constexpr int d_fbits = std::numeric_limits<double>::digits;
-	constexpr int q_fbits = std::numeric_limits<long double>::digits;
+	constexpr int int8_bits   = std::numeric_limits<signed char>::digits;
+	constexpr int int16_bits  = std::numeric_limits<short>::digits;
+	constexpr int int32_bits  = std::numeric_limits<int>::digits;
+	constexpr int int64_bits  = std::numeric_limits<long long>::digits;
+	constexpr int f_fbits     = std::numeric_limits<float>::digits;
+	constexpr int d_fbits     = std::numeric_limits<double>::digits;
+	constexpr int q_fbits     = std::numeric_limits<long double>::digits;
 
 	cout << "Number of bits in native types" << endl;
 	cout << "unsigned char        " << setw(4) << uint8_bits  << " bits" << endl;
@@ -48,11 +48,14 @@ try {
 		long double da;
 		char        bytes[16];
 	} ld;
-	bool        sign = false;
-	int         exponent = 0;
-	long double fraction = 0;
 	ld.da = 1.234567890123456789;
-	sw::unum::extract_fp_components(ld.da, sign, &exponent, fraction);
+
+	bool        sign  	    = false;
+	int         scale 	    = 0;
+	long double fr    	    = 0;
+	unsigned long long fraction = 0;
+	sw::unum::extract_fp_components(ld.da, sign, scale, fr, fraction);
+
 	cout << "value    " << setprecision(q_prec) << ld.da << setprecision(f_prec) << endl;
 	cout << "hex      ";
 	cout << hex << setfill('0');
@@ -61,7 +64,7 @@ try {
 	}
 	cout << dec << endl;
 	cout << "sign     " << (sign ? "-" : "+") << endl;
-	cout << "exponent " << exponent << endl;
+	cout << "scale    " << scale << endl;
 	cout << "fraction " << fraction << endl;
 
 
