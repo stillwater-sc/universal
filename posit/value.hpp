@@ -137,8 +137,8 @@ namespace sw {
 					break;
 				case FP_NORMAL:
 				{
-					_sign = extract_sign(rhs);
-					_scale = extract_exponent(rhs) - 1;
+					float _v;
+					extract_fp_components(rhs, _sign, &_scale, _v);
 					uint32_t _23b_fraction_without_hidden_bit = extract_fraction(rhs);
 					_fraction = extract_float_fraction<fbits>(_23b_fraction_without_hidden_bit);
 					_nrOfBits = fbits;
@@ -168,8 +168,8 @@ namespace sw {
 					break;
 				case FP_NORMAL:
 				{
-					_sign = extract_sign(rhs);
-					_scale = extract_exponent(rhs) - 1;
+					double _v;
+					extract_fp_components(rhs, _sign, &_scale, _v);
 					uint64_t _52b_fraction_without_hidden_bit = extract_fraction(rhs);
 					_fraction = extract_double_fraction<fbits>(_52b_fraction_without_hidden_bit);
 					_nrOfBits = fbits;
@@ -326,14 +326,15 @@ namespace sw {
 				return fixed_point_number;
 			}
 			int sign_value() const { return (_sign ? -1 : 1); }
-			long double scale_value() const {
+			double scale_value() const {
 				if (_zero) return (long double)(0.0);
 				return std::pow((long double)2.0, (long double)_scale);
 			}
-			long double fraction_value() const {
+			template<typename Ty = double>
+			Ty fraction_value() const {
 				if (_zero) return (long double)0.0;
-				long double v = 1.0;
-				long double scale = 0.5;
+				Ty v = 1.0;
+				Ty scale = 0.5;
 				for (int i = int(fbits) - 1; i >= 0; i--) {
 					if (_fraction.test(i)) v += scale;
 					scale *= 0.5;
@@ -342,13 +343,18 @@ namespace sw {
 				return v;
 			}
 			long double to_long_double() const {
-				return sign_value() * scale_value() * fraction_value();
+				return sign_value() * scale_value() * fraction_value<long double>();
 			}
-
+			double to_double() const {
+				return sign_value() * scale_value() * fraction_value<double>();
+			}
+			float to_float() const {
+				return sign_value() * scale_value() * fraction_value<float>();
+			}
 			// Maybe remove explicit
 			explicit operator long double() const { return to_long_double(); }
-			explicit operator double() const { return (double)to_long_double(); }
-			explicit operator float() const { return (float)to_long_double(); }
+			explicit operator double() const { return to_double(); }
+			explicit operator float() const { return to_float(); }
 
 			template<size_t tgt_size>
 			value<tgt_size> round_to() {

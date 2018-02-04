@@ -83,66 +83,33 @@ namespace sw {
 			return base + bval[tmp];
 		}
 
-		template<typename Ty>
-		void extract_fp_components(Ty fp, bool& sign, int* exponent, Ty& fraction) {
-			if (fp < 0.0) sign = true;
-			if (typeid(Ty) == typeid(long double)) {
-				fraction = frexpl(fp, exponent);
-			}
-			else if (typeid(Ty) == typeid(double)) {
-				fraction = frexp(fp, exponent);
-			}
-			else if (typeid(Ty) == typeid(float)) {
-				fraction = frexpf(fp, exponent);
-			}
-			else {
-				throw "Asking to deconstruct a non-floating point type";
-			}
+		// floating point component extractions
+		inline void extract_fp_components(float fp, bool& sign, int* exponent, float& fraction) {
+			sign = fp < 0.0 ? true : false;
+			fraction = frexpf(fp, exponent);
+		}
+		inline void extract_fp_components(double fp, bool& sign, int* exponent, double& fraction) {
+			sign = fp < 0.0 ? true : false;
+			fraction = frexp(fp, exponent);
+		}
+		inline void extract_fp_components(long double fp, bool& sign, int* exponent, long double& fraction) {
+			sign = fp < 0.0 ? true : false;
+			fraction = frexpl(fp, exponent);
 		}
 
-		// FLOAT component extractions
-		inline bool extract_sign(float f) {	return f < 0.0f; }
 
-		inline int extract_exponent(float f) {
-			int exponent;
-			frexpf(f, &exponent);
-			return exponent;
-		}
-
-		inline uint32_t extract_fraction(float f) 
-		{
+		inline uint32_t extract_fraction(float f) {
 				static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
 			int exponent;
 			float fraction = frexpf(f, &exponent);
 			return uint32_t(0x007FFFFFul) & reinterpret_cast<uint32_t&>(fraction);
 		}
 
-		// DOUBLE component extractions
-		inline bool extract_sign(double f) { return f < 0.0; }
-
-		inline int extract_exponent(double f) 
-		{
-			int exponent;
-			frexp(f, &exponent);
-			return exponent;
-		}
-
-		inline uint64_t extract_fraction(double f) 
-		{
+		inline uint64_t extract_fraction(double f) {
 				static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
 			int exponent;
 			double fraction = frexp(f, &exponent);
 			return uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(fraction);
-		}
-
-		// LONG DOUBLE component extractions
-		inline bool extract_sign(long double f) { return f < 0.0; }
-
-		inline int extract_exponent(long double f) 
-		{
-			int exponent;
-			frexp(f, &exponent);
-			return exponent;
 		}
 
 		// integral type to bitset transformations

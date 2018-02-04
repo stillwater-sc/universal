@@ -48,18 +48,50 @@ try {
 	GenerateTestCase<6, 3, double>(INFINITY, INFINITY);
 	GenerateTestCase<8, 4, float>(0.5f, -0.5f);
 
-	double da, db;
-	posit<8, 4> pa, pb, psum;
-	pa.set_raw_bits(uint64_t(0b00000001));
-	pb.set_raw_bits(uint64_t(0b10000001));
-	da = double(pa);
-	db = double(pb);
-	std::cout << setprecision(20) << da << " " << db << std::endl;
-	psum = pa + pb;
-	std::cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum << std::endl;
-	psum = da + db;
-	std::cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum << std::endl;
-	GenerateTestCase<8, 4>(da, db);
+	{
+		double da, db;
+		posit<8, 4> pa, pb, psum;
+		pa.set_raw_bits(uint64_t(0b00000001));
+		pb.set_raw_bits(uint64_t(0b10000001));
+		da = double(pa);
+		db = double(pb);
+		std::cout << "double values: " << setprecision(20) << da << " + " << db << " = " << da+db << std::endl;
+		psum = pa + pb;
+		std::cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum << std::endl;
+		psum = da + db;
+		std::cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum << std::endl;
+		GenerateTestCase<8, 4>(da, db);
+	}
+
+	{
+		// FAIL 1001111101101000 + 0010000000001010 != 1001111111101001 instead it yielded 1001111111101000
+		posit<16, 1> pa, pb, psum, pref, podd;
+		pa.set_raw_bits(0b1001111101101000);
+		pb.set_raw_bits(0b0010000000001010);
+		podd.set_raw_bits(0b1001111111101001);
+		double da, db;
+		da = (double)pa;
+		db = double(pb);
+		psum = pa + pb;
+		pref = da + db;
+		cout << pa << " + " << pb << " = " << psum << " vs " << pref << " guidance " << podd << endl;
+		cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " vs " << pref.get() << " guidance " << podd.get() << endl;
+	}
+
+	{
+		// FAIL 0110010010111000 + 1001111100101011 != 0100111100011100 instead it yielded 0100111100011000
+		posit<16, 1> pa, pb, psum, pref, podd;
+		pa.set_raw_bits(0b0110010010111000);
+		pb.set_raw_bits(0b1001111100101011);
+		podd.set_raw_bits(0b0100111100011100);
+		double da, db;
+		da = (double)pa;
+		db = double(pb);
+		psum = pa + pb;
+		pref = da + db;
+		cout << pa << " + " << pb << " = " << psum << " vs " << pref << " guidance " << podd << endl;
+		cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " vs " << pref.get() << " guidance " << podd.get() << endl;
+	}
 
 	// manual exhaustive test
 //	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>("Manual Testing", true), "posit<3,0>", "addition");
