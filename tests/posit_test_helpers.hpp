@@ -559,8 +559,8 @@ namespace sw {
 		const int OPCODE_RAN = 5;
 
 		template<size_t nbits, size_t es>
-		void execute(int opcode, long double da, long double db, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& preference, posit<nbits, es>& presult) {
-			long double reference;
+		void execute(int opcode, double da, double db, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& preference, posit<nbits, es>& presult) {
+			double reference;
 			switch (opcode) {
 			default:
 			case OPCODE_NOP:
