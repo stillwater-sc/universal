@@ -139,7 +139,9 @@ namespace sw {
 				{
 					float _fr;
 					unsigned int _23b_fraction_without_hidden_bit;
-					extract_fp_components(rhs, _sign, _scale, _fr, _23b_fraction_without_hidden_bit);
+					int _exponent;
+					extract_fp_components(rhs, _sign, _exponent, _fr, _23b_fraction_without_hidden_bit);
+					_scale = _exponent - 1;
 					_fraction = extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
 					_nrOfBits = fbits;
 					if (_trace_conversion) std::cout << "float " << rhs << " sign " << _sign << " scale " << _scale << " 23b fraction 0x" << std::hex << _23b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
@@ -170,7 +172,9 @@ namespace sw {
 				{
 					double _fr;
 					unsigned long long _52b_fraction_without_hidden_bit;
-					extract_fp_components(rhs, _sign, _scale, _fr, _52b_fraction_without_hidden_bit);
+					int _exponent;
+					extract_fp_components(rhs, _sign, _exponent, _fr, _52b_fraction_without_hidden_bit);
+					_scale = _exponent - 1;
 					_fraction = extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
 					_nrOfBits = fbits;
 					if (_trace_conversion) std::cout << "double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _52b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
@@ -201,7 +205,9 @@ namespace sw {
 				{
 					double _fr;
 					unsigned long long _64b_fraction_without_hidden_bit;
-					extract_fp_components(rhs, _sign, _scale, _fr, _64b_fraction_without_hidden_bit);
+					int _exponent;
+					extract_fp_components(rhs, _sign, _exponent, _fr, _64b_fraction_without_hidden_bit);
+					_scale = _exponent - 1;
 					_fraction = extract_64b_fraction<fbits>(_64b_fraction_without_hidden_bit);
 					_nrOfBits = fbits;
 					if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " " << fbits << " b fraction b" << _fraction << std::dec << std::endl;
