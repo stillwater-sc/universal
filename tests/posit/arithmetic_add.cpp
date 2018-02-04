@@ -24,16 +24,21 @@ using namespace sw::unum;
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
-	Ty reference;
-	posit<nbits, es> pa, pb, psum;
+	Ty ref;
+	posit<nbits, es> pa, pb, pref, psum;
 	pa = a;
 	pb = b;
-	reference = a + b;
+	ref = a + b;
+	pref = ref;
 	psum = pa + pb;
-	cout << "reference " << reference << " result " << psum << endl << endl;
+	std::cout << std::setprecision(nbits - 2);
+	std::cout << std::setw(nbits) << a << " + " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
+	std::cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " (reference: " << pref.get() << ")   " ;
+	std::cout << (pref == psum ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << std::setprecision(5);
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -47,55 +52,12 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<6, 3, double>(INFINITY, INFINITY);
 	GenerateTestCase<8, 4, float>(0.5f, -0.5f);
+	GenerateTestCase<3, 0>(0.5f, 1.0f);
 
-	{
-		double da, db;
-		posit<8, 4> pa, pb, psum;
-		pa.set_raw_bits(uint64_t(0b00000001));
-		pb.set_raw_bits(uint64_t(0b10000001));
-		da = double(pa);
-		db = double(pb);
-		std::cout << "double values: " << setprecision(20) << da << " + " << db << " = " << da+db << std::endl;
-		psum = pa + pb;
-		std::cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum << std::endl;
-		psum = da + db;
-		std::cout << to_binary(pa.get()) << " + " << to_binary(pb.get()) << " = " << to_binary(psum.get()) << " value " << psum << std::endl;
-		GenerateTestCase<8, 4>(da, db);
-	}
-
-	{
-		// FAIL 1001111101101000 + 0010000000001010 != 1001111111101001 instead it yielded 1001111111101000
-		posit<16, 1> pa, pb, psum, pref, podd;
-		pa.set_raw_bits(0b1001111101101000);
-		pb.set_raw_bits(0b0010000000001010);
-		podd.set_raw_bits(0b1001111111101001);
-		double da, db;
-		da = (double)pa;
-		db = double(pb);
-		psum = pa + pb;
-		pref = da + db;
-		cout << pa << " + " << pb << " = " << psum << " vs " << pref << " guidance " << podd << endl;
-		cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " vs " << pref.get() << " guidance " << podd.get() << endl;
-	}
-
-	{
-		// FAIL 0110010010111000 + 1001111100101011 != 0100111100011100 instead it yielded 0100111100011000
-		posit<16, 1> pa, pb, psum, pref, podd;
-		pa.set_raw_bits(0b0110010010111000);
-		pb.set_raw_bits(0b1001111100101011);
-		podd.set_raw_bits(0b0100111100011100);
-		double da, db;
-		da = (double)pa;
-		db = double(pb);
-		psum = pa + pb;
-		pref = da + db;
-		cout << pa << " + " << pb << " = " << psum << " vs " << pref << " guidance " << podd << endl;
-		cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " vs " << pref.get() << " guidance " << podd.get() << endl;
-	}
 
 	// manual exhaustive test
-//	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>("Manual Testing", true), "posit<3,0>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>("Manual Testing", true), "posit<8,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>("Manual Testing", true), "posit<3,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>("Manual Testing", true), "posit<8,4>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, true, OPCODE_ADD, 1000), "posit<16,1>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(tag, true, OPCODE_ADD, 1000), "posit<64,2>", "addition");
