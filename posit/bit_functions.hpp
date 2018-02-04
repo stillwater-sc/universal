@@ -179,8 +179,8 @@ namespace sw {
 
 		// 128 bit unsigned int mapped to two uint64_t elements
 		typedef struct __uint128 {
-			uint64_t upper;
 			uint64_t lower;
+			uint64_t upper;
 		} uint128;
 
 		// take in a long double mapped to two uint64_t elements

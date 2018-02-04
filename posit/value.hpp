@@ -204,8 +204,8 @@ namespace sw {
 						extract_fp_components(rhs, _sign, &_scale, _v);
 						uint128* _p = (uint128*)&_v;
 						std::cout << "fraction " << _v << std::endl;
-						std::cout << "lower    " << hex << _p->lower << std::endl;
-						std::cout << "upper    " << hex << _p->upper << std::endl;
+						std::cout << "lower    " << std::hex << _p->lower << std::endl;
+						std::cout << "upper    " << std::hex << _p->upper << std::endl;
 						if (fbits <= 64) {
 							uint64_t mask = 1ull;
 							for (unsigned int i = 0; i < fbits; i++) {
