@@ -60,6 +60,7 @@ namespace sw {
 // Forward definitions
 template<size_t nbits, size_t es> class posit;
 template<size_t nbits, size_t es> posit<nbits, es> abs(const posit<nbits, es>& p);
+template<size_t nbits, size_t es> posit<nbits, es> sqrt(const posit<nbits, es>& p);
 
 // Not A Real is the posit encoding for INFINITY and arithmetic errors that can propagate
 // The symbol NAR can be used to initialize a posit, i.e., posit<nbits,es>(NAR), or posit<nbits,es> p = NAR
