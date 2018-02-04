@@ -38,7 +38,7 @@ manage information and discussions around the use of unums.
 
 [Unum-computing Google Group](https://groups.google.com/forum/#!forum/unum-computing)
 
-# Issues with IEEE Floats
+# Issues with IEEE floats
 1. **Wasted Bit Patterns** - 32-bit IEEE floating point has around sixteen million ways to represent Not-A-Number
 (NaN) while 64-bit floating point has nine quadrillion. A NaN is an exception value for invalid operations such as division by zero.
 2. **Mathematically Incorrect** - The format specifies two zeroes - a negative and positive zero - which have different behaviors. - Loss of associative and distributive law due to rounding after each operation. This loss of associative and distributive arithmetic behavior creates irreproducible result of concurrent programs that use IEEE floating point. This is particularly problematic for embedded and control applications.
@@ -52,7 +52,7 @@ digits is fixed. Denormalized numbers are characterized by a decreased number of
 the gap between zero and the least non-zero values). The counterpart for gradual underflow is gradual overflow
 which does not exist in IEEE floating points.
 
-# Advantages of Posits
+# Advantages of posits: better, faster, cheaper, and less power: perfect for AI, DSP, HPC, Cloud, and embedded
 1. **Economical** - No bit patterns are redundant. There is one representation for infinity denoted as ± inf and zero.
 All other bit patterns are valid distinct non-zero real numbers. ± inf serves as a replacement for NaN.
 2. **Mathematical Elegant** - There is only one representation for zero, and the encoding is symmetric around 1.0. Associative and distributive laws are supported through deferred rounding via the quire, enabling reproducible linear algebra algorithms in any concurrency environment.
