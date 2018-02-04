@@ -23,15 +23,19 @@ using namespace sw::unum;
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_mul
 template<size_t nbits, size_t es, typename Ty>
-void GenerateTestCase(Ty fa, Ty fb) {
+void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
 	posit<nbits, es> pa, pb, pref, pmul;
-	pa = fa;
-	pb = fb;
-	ref = fa * fb;
+	pa = a;
+	pb = b;
+	ref = a * b;
 	pref = ref;
 	pmul = pa * pb;
-	cout << "reference " << ref << ":    reference conversion " << pref << " result " << pmul << endl << endl;
+	std::cout << std::setprecision(nbits - 2);
+	std::cout << std::setw(nbits) << a << " * " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
+	std::cout << pa.get() << " * " << pb.get() << " = " << pmul.get() << " (reference: " << pref.get() << ")   ";
+	std::cout << (pref == pmul ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << std::setprecision(5);
 }
 
 #define MANUAL_TESTING 0
@@ -52,8 +56,8 @@ try {
 	float fa, fb;
 	fa = 0.0f; fb = INFINITY;
 	std::cout << fa << " " << fb << std::endl;
-
 	GenerateTestCase<4,0, float>(fa, fb);
+	GenerateTestCase<16, 1, float>(float(minpos_value<16, 1>()), float(maxpos_value<16, 1>()));
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<3,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<4,0>", "multiplication");

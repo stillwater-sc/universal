@@ -33,8 +33,9 @@ void GenerateTestCase(Ty a, Ty b) {
 	pdiv = pa / pb;
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " / " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << pa.get() << " / " << pb.get() << " = " << pdiv.get() << " (reference: " << pref.get() << ")" << std::endl;
-	std::cout << std::setprecision(5) << std::endl;
+	std::cout << pa.get() << " / " << pb.get() << " = " << pdiv.get() << " (reference: " << pref.get() << ")   ";
+	std::cout << (pref == pdiv ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << std::setprecision(5);
 }
 
 template<size_t nbits, size_t es>
