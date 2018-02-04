@@ -1,4 +1,4 @@
-// 64bit_posit.cpp: Functionality tests for standard 64-bit posits
+// 48bit_posit.cpp: Functionality tests for extended standard 48-bit posits
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
@@ -16,21 +16,21 @@ using namespace std;
 using namespace sw::unum;
 
 /*
-Standard posit with nbits = 64 have es = 3 exponent bits.
+Extended Standard posit with nbits = 48 have es = 2 exponent bits.
 */
 
 int main(int argc, char** argv)
 try {
-	const size_t RND_TEST_CASES = 100000;
+	const size_t RND_TEST_CASES = 150000;
 
-	const size_t nbits = 64;
-	const size_t es = 3;
+	const size_t nbits = 48;
+	const size_t es = 2;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<64,3>";
+	std::string tag = " posit<48,2>";
 
-	cout << "Standard posit<64,3> configuration tests" << endl;
+	cout << "Extended Standard posit<48,2> configuration tests" << endl;
 
 	posit<nbits, es> p;
 	cout << spec_to_string(p) << endl << endl;
@@ -51,3 +51,4 @@ catch (...) {
 	cerr << "Caught unknown exception" << endl;
 	return EXIT_FAILURE;
 }
+
