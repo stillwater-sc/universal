@@ -1,13 +1,13 @@
 #pragma once
 // bit_functions.hpp: definitions of helper functions for bit operations on integers and floats
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <iostream>
+#include <sstream>
 #include <iomanip>
-#include <typeinfo> // for typeid
+#include <limits>
 #include <cmath>    // for frexpf/frexp/frexpl  float/double/long double fraction/exponent extraction
 
 // This file contains functions that DO NOT use the posit type.
@@ -84,32 +84,30 @@ namespace sw {
 		}
 
 		// floating point component extractions
-		inline void extract_fp_components(float fp, bool& sign, int* exponent, float& fraction) {
-			sign = fp < 0.0 ? true : false;
-			fraction = frexpf(fp, exponent);
+		inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& _fr, unsigned int& _fraction) {
+			static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
+			_sign = fp < 0.0 ? true : false;
+			_fr = frexpf(fp, &_exponent);
+			_fraction = uint32_t(0x007FFFFFul) & reinterpret_cast<uint32_t&>(_fr);
 		}
-		inline void extract_fp_components(double fp, bool& sign, int* exponent, double& fraction) {
-			sign = fp < 0.0 ? true : false;
-			fraction = frexp(fp, exponent);
+		inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double& _fr, unsigned long long& _fraction) {
+			static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
+			_sign = fp < 0.0 ? true : false;
+			_fr = frexp(fp, &_exponent);
+			_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
 		}
-		inline void extract_fp_components(long double fp, bool& sign, int* exponent, long double& fraction) {
-			sign = fp < 0.0 ? true : false;
-			fraction = frexpl(fp, exponent);
-		}
-
-
-		inline uint32_t extract_fraction(float f) {
-				static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
-			int exponent;
-			float fraction = frexpf(f, &exponent);
-			return uint32_t(0x007FFFFFul) & reinterpret_cast<uint32_t&>(fraction);
-		}
-
-		inline uint64_t extract_fraction(double f) {
-				static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
-			int exponent;
-			double fraction = frexp(f, &exponent);
-			return uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(fraction);
+		inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
+			static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
+			if (sizeof(long double) == 8) { // it is just a double
+				_sign = fp < 0.0 ? true : false;
+				_fr = frexpl(fp, &_exponent);
+				_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+			}
+			else if (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
+				_sign = fp < 0.0 ? true : false;
+				_fr = frexpl(fp, &_exponent);
+				_fraction = uint64_t(0xFFFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+			}
 		}
 
 		// integral type to bitset transformations
@@ -121,7 +119,7 @@ namespace sw {
 		// of fraction bits.
 
 		template<size_t nbits>
-		std::bitset<nbits> extract_float_fraction(uint32_t _23b_fraction_without_hidden_bit) {
+		std::bitset<nbits> extract_23b_fraction(uint32_t _23b_fraction_without_hidden_bit) {
 			std::bitset<nbits> _fraction;
 			uint32_t mask = uint32_t(0x00400000ul);
 			unsigned int ub = (nbits < 23 ? nbits : 23);
@@ -133,12 +131,24 @@ namespace sw {
 		}
 
 		template<size_t nbits>
-		std::bitset<nbits> extract_double_fraction(uint64_t _52b_fraction_without_hidden_bit) {
+		std::bitset<nbits> extract_52b_fraction(uint64_t _52b_fraction_without_hidden_bit) {
 			std::bitset<nbits> _fraction;
 			uint64_t mask = uint64_t(0x0008000000000000ull);
 			unsigned int ub = (nbits < 52 ? nbits : 52);
 			for (unsigned int i = 0; i < ub; i++) {
 				_fraction[nbits - 1 - i] = _52b_fraction_without_hidden_bit & mask;
+				mask >>= 1;
+			}
+			return _fraction;
+		}
+
+		template<size_t nbits>
+		std::bitset<nbits> extract_64b_fraction(uint64_t _64b_fraction_without_hidden_bit) {
+			std::bitset<nbits> _fraction;
+			uint64_t mask = uint64_t(0x8000000000000000ull);
+			unsigned int ub = (nbits < 64 ? nbits : 64);
+			for (unsigned int i = 0; i < ub; i++) {
+				_fraction[nbits - 1 - i] = _64b_fraction_without_hidden_bit & mask;
 				mask >>= 1;
 			}
 			return _fraction;
