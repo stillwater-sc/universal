@@ -8,7 +8,7 @@ Install the latest cmake [cmake](https://cmake.org/download).
 
 The library is a pure template library without any further dependencies.
 
-Now we are ready to build the universal library.
+Simply clone the github repo, and you are ready to build the universal library.
 
 ```
 > git clone https://github.com/stillwater-sc/universal
@@ -18,6 +18,94 @@ Now we are ready to build the universal library.
 > make test
 
 ```
+The library builds a set of useful command utilities, which can be found in the directory ".../build/tools/cmd".
+
+```
+>:~/dev/universal/build$ make cmd_ieee_fp
+Scanning dependencies of target cmd_ieee_fp
+[ 50%] Building CXX object tools/cmd/CMakeFiles/cmd_ieee_fp.dir/ieee_fp.cpp.o
+[100%] Linking CXX executable cmd_ieee_fp
+[100%] Built target cmd_ieee_fp
+>:~/dev/universal/build$ tools/cmd/cmd_ieee_fp 1.234567890123456789012
+input value:   1.234567890123456789012
+      float:                1.23456788 (+,0,00111100000011001010010)
+     double:        1.2345678901234567 (+,0,0011110000001100101001000010100011000101100111111011)
+long double:    1.23456789012345669043 (+,0,000000000000001111000000110010100100001010001100010110011111101)
+```
+The command _cmd_ieee_fp_ is very handy to quickly determine how your development environment represents (truncates) a specific value. There are also the specific commands _cmd_fc_, _cmd_dc_, and _cmd_ldc_, which focus on float, double, and long double representations respectively.
+
+There is also a command _cmd_pc_ to help you visualize and compare the posit component fields for a given value:
+```
+>:~/dev/universal/build$ make cmd_pc
+Scanning dependencies of target cmd_pc
+[100%] Building CXX object tools/cmd/CMakeFiles/cmd_pc.dir/pc.cpp.o
+[100%] Linking CXX executable cmd_pc
+[100%] Built target cmd_pc
+>:~/dev/universal/build$ tools/cmd/cmd_pc 1.234567890123456789012
+posit< 8,0> = s0 r10 e f01000 qNE v1.25
+posit< 8,1> = s0 r10 e0 f0100 qNE v1.25
+posit< 8,2> = s0 r10 e00 f010 qNE v1.25
+posit< 8,3> = s0 r10 e000 f01 qNE v1.25
+posit<16,1> = s0 r10 e0 f001111000001 qNE v1.234619140625
+posit<16,2> = s0 r10 e00 f00111100000 qNE v1.234375
+posit<16,3> = s0 r10 e000 f0011110000 qNE v1.234375
+posit<32,1> = s0 r10 e0 f0011110000001100101001000011 qNE v1.2345678918063641
+posit<32,2> = s0 r10 e00 f001111000000110010100100001 qNE v1.2345678880810738
+posit<32,3> = s0 r10 e000 f00111100000011001010010001 qNE v1.2345678955316544
+posit<48,1> = s0 r10 e0 f00111100000011001010010000101000110001011010 qNE v1.2345678901234578
+posit<48,2> = s0 r10 e00 f0011110000001100101001000010100011000101101 qNE v1.2345678901234578
+posit<48,3> = s0 r10 e000 f001111000000110010100100001010001100010110 qNE v1.2345678901233441
+posit<64,1> = s0 r10 e0 f001111000000110010100100001010001100010110011111101100000000 qNE v1.2345678901234567
+posit<64,2> = s0 r10 e00 f00111100000011001010010000101000110001011001111110110000000 qNE v1.2345678901234567
+posit<64,3> = s0 r10 e000 f0011110000001100101001000010100011000101100111111011000000 qNE v1.2345678901234567
+posit<64,4> = s0 r10 e0000 f001111000000110010100100001010001100010110011111101100000 qNE v1.2345678901234567
+```
+
+The fields are prefixed by their first characters, for example, "posit<16,2> = s0 r10 e00 f00111100000 qNE v1.234375"
+- sign     field = s0, indicating a positive number
+- regime   field = r10, indicates the first regime
+- exponent field = e00, indicates two bits of exponent, both 0
+- fraction field = f00111100000, a full set of fraction bits
+
+The field values are followed by a quadrant descriptor and a value representation in decimal:
+
+- qNE            = North-East Quadrant, representing a number in the range "[1, maxpos]"
+- v1.234375      = the value representation of the posit projection
+
+# Verification Suite
+
+Normally, the verification suite is run as part of the _make test_ command in the build directory. However, it is possible to run specific components of the test suite, for example, to validate algorithmic changes to more complex arithmetic functions, such as square root, exponent, logarithm, and trigonometric functions.
+
+Here is an example:
+```
+>:~/dev/universal/build$ make posit_32bit_posit
+Scanning dependencies of target posit_32bit_posit
+[100%] Building CXX object tests/posit/CMakeFiles/posit_32bit_posit.dir/32bit_posit.cpp.o
+[100%] Linking CXX executable posit_32bit_posit
+[100%] Built target posit_32bit_posit
+>:~/dev/universal/build$ tests/posit/posit_32bit_posit
+Standard posit<32,2> configuration tests
+ posit< 32,2> useed scale     4     minpos scale       -120     maxpos scale        120
+
+Arithmetic tests 200000 randoms each
+ posit<32,2> addition       PASS
+ posit<32,2> subtraction    PASS
+ posit<32,2> multiplication PASS
+ posit<32,2> division       PASS
+```
+
+# Structure of the tree
+
+The universal library contains a set of functionality groups to deal with different number systems. In the examples shows above, we have seen the ".../universal/posit" group and its test suite, ".../universal/tests/posit". Here is a complete list:
+
+- *universal/posit* - contains the implementation of the posit number system
+- *universal/valid* - contains the implementation of the valid number system
+- *universal/unum* - contains the implementation of the unum Type I number system (TBD)
+- *universal/unum2* - contains the implementation of the unum Type II number system (TBD)
+- *universal/float* - contains the implementation of the IEEE floating point augmentations for reproducible computation
+- *universal/bitset* - contains the implementation of an abitrary integer number system
+
+And each of these functionality groups have an associated test suite located in ".../universal/tests/..."
 
 # Background information
 
