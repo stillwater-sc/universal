@@ -63,7 +63,7 @@ posit<64,4> = s0 r10 e0000 f0011110000001100101001000010100011000101100111111011
 
 The fields are prefixed by their first characters, for example, "posit<16,2> = s0 r10 e00 f00111100000 qNE v1.234375"
 - sign     field = s0, indicating a positive number
-- regime   field = r10, indicates the first regime
+- regime   field = r10, indicates the first positive regime, named regime 0
 - exponent field = e00, indicates two bits of exponent, both 0
 - fraction field = f00111100000, a full set of fraction bits
 
@@ -71,6 +71,9 @@ The field values are followed by a quadrant descriptor and a value representatio
 
 - qNE            = North-East Quadrant, representing a number in the range "[1, maxpos]"
 - v1.234375      = the value representation of the posit projection
+
+The positive regime for a posit shows a very specific structure, as can be seen in the image blow:
+![regime structure](background/img/positive_regimes.png)
 
 # Verification Suite
 
@@ -96,7 +99,7 @@ Arithmetic tests 200000 randoms each
 
 # Structure of the tree
 
-The universal library contains a set of functionality groups to deal with different number systems. In the examples shows above, we have seen the ".../universal/posit" group and its test suite, ".../universal/tests/posit". Here is a complete list:
+The universal library contains a set of functionality groups to deal with different number systems. In the examples shown above, we have seen the ".../universal/posit" group and its test suite, ".../universal/tests/posit". Here is a complete list:
 
 - *universal/posit* - contains the implementation of the posit number system
 - *universal/valid* - contains the implementation of the valid number system
@@ -118,6 +121,26 @@ A posit offers more accuracy and a larger dynamic range than floats with the sam
 
 In _valid_ mode, a unum represents a range of real numbers and can be used to rigorously bound answers 
 much like interval arithmetic does.
+
+Nothing informs better about global structure as a set of images, here is a progression of increasing posit configurations.
+
+The _seed_ posit:
+![seed posit](background/img/posit_2_0.png)
+
+_posit<3,0>_:
+![posit<3,0>](background/img/posit_3_0.png)
+
+_posit<4,1>_:
+![posit<4,1>](background/img/posit_4_1.png)
+
+_posit<5,1>_:
+![posit<5,1>](background/img/posit_5_1.png)
+
+_posit<6,1>_:
+![posit<6,1>](background/img/posit_6_1.png)
+
+_posit<7,1>_:
+![posit<7,1>](background/img/posit_7_1.png)
 
 The unum format is a public domain specification, and there are a collection of web resources that
 manage information and discussions around the use of unums.
