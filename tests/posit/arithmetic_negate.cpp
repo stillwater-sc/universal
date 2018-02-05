@@ -70,14 +70,22 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "negation");
 	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "negation");
 	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "negation");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "negation");
 	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "negation");
 	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "negation");
 	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "negation");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "negation");
 
 #if STRESS_TESTING
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<20, 1>(tag, bReportIndividualTestCases), "posit<20,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<24, 1>(tag, bReportIndividualTestCases), "posit<24,1>", "negation");
 
 #endif  // STRESS_TESTING
 

@@ -97,8 +97,14 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "reciprocation");
 	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "reciprocation");
 
-#if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "reciprocation");
 	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "reciprocation");
+
+#if STRESS_TESTING
+
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<20, 1>(tag, bReportIndividualTestCases), "posit<20,1>", "reciprocation");
+
 #endif // STRESS_TESTING
 
 #endif // MANUAL_TESTING
