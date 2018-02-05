@@ -54,9 +54,9 @@ try {
 	GenerateTestCase<8, 4, float>(0.5f, -0.5f);
 	GenerateTestCase<3, 0>(0.5f, 1.0f);
 
-
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>("Manual Testing", true), "posit<3,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 0>("Manual Testing", true), "posit<5,0>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>("Manual Testing", true), "posit<8,4>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, true, OPCODE_ADD, 1000), "posit<16,1>", "addition");
