@@ -195,6 +195,13 @@ public:
 	}
 	posit<nbits, es>& operator=(unsigned long long rhs) {
 		value<64> v(rhs);
+		if (v.isZero()) {
+			setToZero();
+			return *this;
+		}
+		else {
+			convert(v);
+		}
 		convert(v);
 		return *this;
 	}
@@ -224,12 +231,23 @@ public:
 	// we model a hw pipeline with register assignments, functional block, and conversion
 	posit<nbits, es>& operator+=(const posit& rhs) {
 		if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+		// special case handling of the inputs
+		if (isNaR() || rhs.isNaR()) {
+			setToNaR();
+			return *this;
+		}
+		if (isZero()) {
+			*this = rhs;
+			return *this;
+		}
+		if (rhs.isZero()) return *this;
+
+		// arithmetic operation
 		value<abits + 1> sum;
 		value<fbits> a, b;
 		// transform the inputs into (sign,scale,fraction) triples
 		normalize(a);
 		rhs.normalize(b);
-
 		module_add<fbits,abits>(a, b, sum);		// add the two inputs
 
 		// special case handling of the result
@@ -246,12 +264,23 @@ public:
 	}
 	posit<nbits, es>& operator-=(const posit& rhs) {
 		if (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
+		// special case handling of the inputs
+		if (isNaR() || rhs.isNaR()) {
+			setToNaR();
+			return *this;
+		}
+		if (isZero()) {
+			*this = -rhs;
+			return *this;
+		}
+		if (rhs.isZero()) return *this;
+
+		// arithmetic operation
 		value<abits + 1> difference;
 		value<fbits> a, b;
 		// transform the inputs into (sign,scale,fraction) triples
 		normalize(a);
 		rhs.normalize(b);
-
 		module_subtract<fbits, abits>(a, b, difference);	// add the two inputs
 
 		// special case handling of the result
@@ -269,7 +298,17 @@ public:
 	posit<nbits, es>& operator*=(const posit& rhs) {
 		static_assert(fhbits > 0, "posit configuration does not support multiplication");
 		if (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
+		// special case handling of the inputs
+		if (isNaR() || rhs.isNaR()) {
+			setToNaR();
+			return *this;
+		}
+		if (isZero() || rhs.isZero()) {
+			setToZero();
+			return *this;
+		}
 
+		// arithmetic operation
 		value<mbits> product;
 		value<fbits> a, b;
 		// transform the inputs into (sign,scale,fraction) triples

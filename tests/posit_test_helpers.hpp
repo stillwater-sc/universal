@@ -425,10 +425,10 @@ namespace sw {
 			posit<nbits, es> pa, pb, psum, pref;
 
 			double da, db;
-			for (int i = 1; i < NR_POSITS; i++) {
+			for (int i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
 				da = double(pa);
-				for (int j = 2; j < NR_POSITS; j++) {
+				for (int j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
 					db = double(pb);
 					psum = pa + pb;
@@ -438,7 +438,7 @@ namespace sw {
 						if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
 					}
 					else {
-						//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
+						if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
 					}
 				}
 			}
@@ -454,10 +454,10 @@ namespace sw {
 			posit<nbits, es> pa, pb, pref, pdif;
 
 			double da, db;
-			for (int i = 1; i < NR_POSITS; i++) {
+			for (int i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
 				da = double(pa);
-				for (int j = 2; j < NR_POSITS; j++) {
+				for (int j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
 					db = double(pb);
 					pdif = pa - pb;
@@ -511,7 +511,7 @@ namespace sw {
 			posit<nbits, es> pa, preciprocal, preference;
 
 			double da;
-			for (int i = 1; i < NR_TEST_CASES; i++) {
+			for (int i = 0; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				// generate reference
 				if (pa.isNaR()) {
