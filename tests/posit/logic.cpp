@@ -252,6 +252,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<3, 0>(), "posit<3,0>", ">=");
 
 #else
+	posit<16, 1> p;
 
 	cout << "Logic: operator==()" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<3, 0>(), "posit<3,0>", "==");
@@ -275,7 +276,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 3>(), "posit<8,3>", "==");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 4>(), "posit<8,4>", "==");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 5>(), "posit<8,5>", "==");
-
+	if (!(p == 0)) { nrOfFailedTestCases++; }
+	if (!(p == 0.0f)) { nrOfFailedTestCases++; }
+	if (!(p == 0.0)) { nrOfFailedTestCases++; }
+	
 	cout << "Logic: operator!=()" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<3, 0>(), "posit<3,0>", "!=");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<4, 0>(), "posit<4,0>", "!=");
@@ -295,6 +299,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<8, 1>(), "posit<8,1>", "!=");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<8, 2>(), "posit<8,2>", "!=");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<8, 3>(), "posit<8,3>", "!=");
+	if (p != 0) { nrOfFailedTestCases++; }
+	if (p != 0.0f) { nrOfFailedTestCases++; }
 
 	std::cout << "Logic: operator<()" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<3, 0>(), "posit<3,0>", "<");
@@ -315,6 +321,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<8, 1>(), "posit<8,1>", "<");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<8, 2>(), "posit<8,2>", "<");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<8, 3>(), "posit<8,3>", "<");
+	if (p < 0) { nrOfFailedTestCases++; }
+	if (p < 0.0) { nrOfFailedTestCases++; }
 
 	std::cout << "Logic: operator<=()" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<3, 0>(), "posit<3,0>", "<=");
@@ -335,6 +343,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<8, 1>(), "posit<8,1>", "<=");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<8, 2>(), "posit<8,2>", "<=");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<8, 3>(), "posit<8,3>", "<=");
+	if (!(p <= 0)) { nrOfFailedTestCases++; }
+	if (!(p <= 0.0f)) { nrOfFailedTestCases++; }
 
 	std::cout << "Logic: operator>()" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<3, 0>(), "posit<3,0>", ">");
@@ -355,6 +365,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<8, 1>(), "posit<8,1>", ">");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<8, 2>(), "posit<8,2>", ">");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<8, 3>(), "posit<8,3>", ">");
+	if (!(p > 0)) { nrOfFailedTestCases++; }
+	if (!(p > 0.0f)) { nrOfFailedTestCases++; }
 
 	std::cout << "Logic: operator>=()" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<3, 0>(), "posit<3,0>", ">=");
@@ -375,6 +387,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<8, 1>(), "posit<8,1>", ">=");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<8, 2>(), "posit<8,2>", ">=");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<8, 3>(), "posit<8,3>", ">=");
+	if (!(p >= 0)) { nrOfFailedTestCases++; }
+	if (!(p >= 0.0)) { nrOfFailedTestCases++; }
 
 #if STRESS_TESTING
 
