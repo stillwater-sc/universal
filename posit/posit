@@ -7,6 +7,8 @@
 #ifndef _POSIT_
 #define _POSIT_
 
+// enable/disable the ability to use literals in binary logic and arithmetic operators
+#define POSIT_ENABLE_LITERALS 1
 #include "posit.hpp"
 #include "posit_manipulators.hpp"
 #include "posit_functions.hpp"

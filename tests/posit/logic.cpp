@@ -7,6 +7,7 @@
 #include "stdafx.h"
 
 // minimum set of include files to reflect source code dependencies
+#define POSIT_ENABLE_LITERALS 1
 #include "../../posit/posit.hpp"
 #include "../tests/test_helpers.hpp"
 
