@@ -93,16 +93,21 @@ try {
 	//GenerateSignedIntAssignments<nbits, es, capacity>();
 	//GenerateUnsignedIntAssignments<8, 2, capacity>();
 
-	GenerateValueAssignments<nbits, es, capacity, fbits>();
+	//GenerateValueAssignments<nbits, es, capacity, fbits>();
+
+	typedef sw::ieee::quire<32, 8, 2> QuireFloat;
+	typedef sw::ieee::quire<64, 11, 2> QuireDouble;
 
 	std::cout << endl;
 	std::cout << "Creating quires for float and double arithmetic" << std::endl;
 	float f = 1.555555555555e-10f;
-	sw::ieee::quire<32, 8, 2> fquire(f);
+	QuireFloat fquire(f);
+	cout << "quire<32, 8, 2>: qbits: " << QuireFloat::qbits << " dynamic range: " << QuireFloat::escale << " lower range: " << QuireFloat::half_range << " upper range: " << QuireFloat::upper_range << endl;
 	std::cout << "float:  " << setw(15) << f << " " << fquire << std::endl;
 
 	double d = 1.555555555555e16;
-	sw::ieee::quire<64, 11, 2> dquire(d);
+	QuireDouble dquire(d);
+	cout << "quire<64, 11, 2>: qbits: " << QuireDouble::qbits << " dynamic range: " << QuireDouble::escale << " lower range: " << QuireDouble::half_range << " upper range: " << QuireDouble::upper_range << endl;
 	std::cout << "double: " << setw(15) << d << " " << dquire << std::endl;
 
 	std::cout << std::endl;

@@ -21,7 +21,7 @@ public:
 
 	static constexpr size_t ebits = es;
 	static constexpr size_t mbits = nbits - es;
-	static constexpr size_t escale = (size_t(1) << es) + mbits + 1;
+	static constexpr size_t escale = 2*((size_t(1) << es) + mbits + 1);
 	static constexpr size_t range = escale; 		  // dynamic range of the float configuration
 	static constexpr size_t half_range = range >> 1;          // position of the fixed point
 	static constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
