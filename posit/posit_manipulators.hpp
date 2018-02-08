@@ -163,7 +163,7 @@ namespace sw {
 					<< std::setw(regime_column) << std::right << r
 					<< std::setw(exponent_column) << std::right << e 
 					<< std::setw(fraction_column) << std::right << f
-					<< std::setw(value_column) << std::setprecision(22) << double(myPosit) << std::setprecision(0)
+					<< std::setw(value_column) << std::setprecision(22) << myPosit << std::setprecision(0)
 					<< std::endl;
 			}
 		}

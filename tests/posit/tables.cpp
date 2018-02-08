@@ -44,7 +44,7 @@ try {
 	GeneratePositTable<5, 0>(cout);
 	GeneratePositTable<5, 1>(cout);
 	GeneratePositTable<5, 2>(cout);
-	return 0;
+
 	GeneratePositTable<6, 0>(cout);
 	GeneratePositTable<6, 1>(cout);
 	GeneratePositTable<6, 2>(cout);
@@ -53,12 +53,14 @@ try {
 	GeneratePositTable<7, 1>(cout);
 	GeneratePositTable<7, 2>(cout);
 	GeneratePositTable<7, 3>(cout);
+	GeneratePositTable<7, 4>(cout);
 
 	GeneratePositTable<8, 0>(cout);
 	GeneratePositTable<8, 1>(cout);
 	GeneratePositTable<8, 2>(cout);
 	GeneratePositTable<8, 3>(cout);
 	GeneratePositTable<8, 4>(cout);
+	GeneratePositTable<8, 5>(cout);
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
