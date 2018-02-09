@@ -48,6 +48,7 @@ try {
 	GeneratePositTable<6, 0>(cout);
 	GeneratePositTable<6, 1>(cout);
 	GeneratePositTable<6, 2>(cout);
+	GeneratePositTable<6, 3>(cout);
 
 	GeneratePositTable<7, 0>(cout);
 	GeneratePositTable<7, 1>(cout);
