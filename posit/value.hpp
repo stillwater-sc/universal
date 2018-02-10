@@ -267,6 +267,7 @@ namespace sw {
 				_nrOfBits = fbits;	
 				_fraction.reset();
 			}
+			inline void setExponent(int e) { _scale = e; }
 			inline bool isNegative() const { return _sign; }
 			inline bool isZero() const { return _zero; }
 			inline bool isInfinite() const { return _inf; }
@@ -335,7 +336,7 @@ namespace sw {
 				return sign_value() * scale_value() * fraction_value<double>();
 			}
 			float to_float() const {
-				return sign_value() * scale_value() * fraction_value<float>();
+				return float(sign_value() * scale_value() * fraction_value<float>());
 			}
 			// Maybe remove explicit
 			explicit operator long double() const { return to_long_double(); }
