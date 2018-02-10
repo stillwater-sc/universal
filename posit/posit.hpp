@@ -519,6 +519,7 @@ public:
 	int				   regime_k() const {
 		return _regime.regime_k();
 	}
+	int                get_scale() const { return _regime.scale() + _exponent.scale(); }
 	bool               get_sign() const { return _sign;  }
 	regime<nbits, es>  get_regime() const {
 		return _regime;

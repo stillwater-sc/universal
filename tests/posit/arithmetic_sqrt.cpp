@@ -21,6 +21,21 @@
 using namespace std;
 using namespace sw::unum;
 
+template<size_t nbits, size_t es>
+void GenerateSqrtTable() {
+	constexpr unsigned int NR_POSITS = (unsigned int(1) << (nbits-1)); // no need for negative posits
+
+	std::cout << setprecision(20);
+	posit<nbits, es> p;
+	for (unsigned int i = 0; i < NR_POSITS; i++) {
+		p.set_raw_bits(i);
+		double ref = std::sqrt(double(p));
+		posit<nbits, es> psqrt(ref);
+		std::cout << p.get() << " " << psqrt.get() << "      " << p << " " << psqrt << " ref: " << ref << std::endl;
+	}
+	std::cout << setprecision(5);
+}
+
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
@@ -53,12 +68,44 @@ try {
 	GenerateTestCase<6, 3, double>(INFINITY);
 	GenerateTestCase<16, 0, float>(0.5f);
 
-	//double square_root = sw::unum::babylonian(16.0);
-	//cout << square_root << endl;
+#if LATER
+	GenerateSqrtTable<3, 0>();
+	GenerateSqrtTable<4, 0>();
+	GenerateSqrtTable<4, 1>();
+	GenerateSqrtTable<5, 0>();
+	GenerateSqrtTable<5, 1>();
+	GenerateSqrtTable<5, 2>();
+	GenerateSqrtTable<6, 0>();
+	GenerateSqrtTable<6, 1>();
+	GenerateSqrtTable<6, 2>();
+	GenerateSqrtTable<6, 3>();
+	GenerateSqrtTable<7, 0>();
+#endif
+
+	// std::sqrt(negative) returns a -NaN(ind)
+	cout << setprecision(17);
+	float base = 0.5f;
+	for (int i = 0; i < 32; i++) {
+		float square = base*base;
+		float root = sw::unum::my_test_sqrt(square);
+		cout << "base " << base << " root " << root << endl;
+		base *= 2.0f;
+	}
+	cout << "sqrt(2.0) " << sw::unum::my_test_sqrt(2.0f) << endl;
+
+	cout << endl;
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<3, 0>("Manual Testing", true), "posit<3,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<8, 4>("Manual Testing", true), "posit<8,4>", "sqrt");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<4, 0>("Manual Testing", true), "posit<4,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<4, 1>("Manual Testing", true), "posit<4,1>", "sqrt");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<5, 0>("Manual Testing", true), "posit<5,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<5, 1>("Manual Testing", true), "posit<5,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<5, 2>("Manual Testing", true), "posit<5,2>", "sqrt");
+
+	//nrOfFailedTestCases += ReportTestResult(ValidateSqrt<8, 4>("Manual Testing", true), "posit<8,4>", "sqrt");
 
 #else
 
