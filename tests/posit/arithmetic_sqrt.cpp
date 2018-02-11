@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 // when you define POSIT_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
-//#define POSIT_VERBOSE_OUTPUT
+#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_SQRT
 
 // minimum set of include files to reflect source code dependencies
@@ -65,10 +65,12 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<6, 3, double>(INFINITY);
-	GenerateTestCase<16, 0, float>(0.5f);
+	//GenerateTestCase<6, 3, double>(INFINITY);
+	my_test_sqrt(0.25f);
+	GenerateTestCase<4, 0, float>(0.25f);
+	return 0;
 
-#if LATER
+#if 0
 	GenerateSqrtTable<3, 0>();
 	GenerateSqrtTable<4, 0>();
 	GenerateSqrtTable<4, 1>();

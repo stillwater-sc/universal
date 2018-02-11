@@ -312,6 +312,19 @@ namespace sw {
 				}
 				return fixed_point_number;
 			}
+			// get the fraction value including the implicit hidden bit (this is at an exponent level 1 smaller)
+			template<typename Ty = double>
+			Ty get_implicit_fraction_value() const {
+				if (_zero) return (long double)0.0;
+				Ty v = 1.0;
+				Ty scale = 0.5;
+				for (int i = int(fbits) - 1; i >= 0; i--) {
+					if (_fraction.test(i)) v += scale;
+					scale *= 0.5;
+					if (scale == 0.0) break;
+				}
+				return v;
+			}
 			int sign_value() const { return (_sign ? -1 : 1); }
 			double scale_value() const {
 				if (_zero) return (long double)(0.0);
