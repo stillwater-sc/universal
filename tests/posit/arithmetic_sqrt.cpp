@@ -23,7 +23,7 @@ using namespace sw::unum;
 
 template<size_t nbits, size_t es>
 void GenerateSqrtTable() {
-	constexpr unsigned int NR_POSITS = (unsigned int(1) << (nbits-1)); // no need for negative posits
+	constexpr unsigned int NR_POSITS = (unsigned(1) << (nbits-1)); // no need for negative posits
 
 	std::cout << setprecision(20);
 	posit<nbits, es> p;
