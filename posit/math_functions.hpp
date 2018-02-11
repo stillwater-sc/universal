@@ -69,12 +69,16 @@ namespace sw {
 
 
 		float my_test_sqrt(float a) {
+			if (_trace_sqrt) std::cout << "----------------------- TEST SQRT -----------------------" << std::endl;
+
 			bool s;
 			int e;
-			float f;
+			float fr;
 			unsigned int _fraction;
-			extract_fp_components(a, s, e, f, _fraction);
-
+			extract_fp_components(a, s, e, fr, _fraction);
+			if (_trace_sqrt) std::cout << "f          " << a << std::endl;
+			if (_trace_sqrt) std::cout << "e          " << e << std::endl;
+			if (_trace_sqrt) std::cout << "fr         " << fr << std::endl;
 			// onemme = 1.0 - machine epsilon
 			union {
 				float f;
@@ -84,26 +88,30 @@ namespace sw {
 			float onemme = m.f;
 
 			// y0 to 7.04 bits
-			double y = 0.41731 + 0.59016 * f;
+			double y = 0.41731 + 0.59016 * fr;
+			if (_trace_sqrt) std::cout << "y0         " << y << std::endl;
 
 			// y1 to 15.08 bits
-			double z = y + f / y;
+			double z = y + fr / y;
+			if (_trace_sqrt) std::cout << "y1         " << z << std::endl;
 
 			// y2 to 31.16 bits
-			y = 0.25*z + f / z;
+			y = 0.25*z + fr / z;
+			if (_trace_sqrt) std::cout << "y2         " << y << std::endl;
 
 			// Include sqrt(2) factor for odd exponents, and
 			// ensure(0.5 <= y) and (y < 1.0).
 			// Otherwise, exponent calculation is incorrect
 			if (e % 2) {
 				y = y * 0.707106781186547524400844362104;
+				if (_trace_sqrt) std::cout << "y*sqrt0.5  " << y << std::endl;
 				y = (y < 0.5 ? 0.5 : y);  // max(y, 0.5)
 				e = e + 1;
 			}
 			else {
 				y = (y < onemme ? y : onemme); //  min(y, onemme);
 			}
-
+			if (_trace_sqrt) std::cout << "y adjusted " << y << std::endl;
 			// update exponent to undo range reduction.
 			value<23> v(y);
 			v.setExponent((e >> 1) - 1);
@@ -113,14 +121,24 @@ namespace sw {
 		// fast sqrt at a given posit configuration. Does not work for small posits
 		template<size_t nbits, size_t es, size_t fbits> 
 		value<fbits> fast_sqrt(value<fbits>& v) {
+			if (_trace_sqrt) std::cout << "---------------------------  SQRT -----------------------" << std::endl;
 			static_assert(nbits >= 16, "fast_sqrt requires posit configurations nbits >= 16");
-			posit<nbits, es> f = v.fraction_value();
-			posit<nbits, es> y = posit<nbits, es>(0.41731f) + posit<nbits, es>(0.59016f) * f;
-			posit<nbits, es> z = y + f / y;
-			y = posit<nbits, es>(0.25f) * z + f / z;
-			int e = v.scale();
+			posit<nbits, es> fr = v.fraction_value()*0.5;
+			int e = v.scale()+1;
+			posit<nbits, es> y = posit<nbits, es>(0.41731f) + posit<nbits, es>(0.59016f) * fr;
+			posit<nbits, es> z = y + fr / y;
+			if (_trace_sqrt) {
+				std::cout << "fr         " << fr << std::endl;
+				std::cout << "e          " << e << std::endl;
+				std::cout << "y0         " << y << std::endl;
+				std::cout << "y1         " << z << std::endl;
+			}
+			y = posit<nbits, es>(0.25f) * z + fr / z;
+			if (_trace_sqrt) std::cout << "y2         " << y << std::endl;
+
 			if (e % 2) {
 				y *= posit<nbits, es>(0.707106781186547524400844362104);
+				if (_trace_sqrt) std::cout << "y*sqrt0.5  " << y << std::endl;
 				y = (y < posit<nbits, es>(0.5f) ? posit<nbits, es>(0.5f) : y);
 				e += 1;
 			}
@@ -129,8 +147,11 @@ namespace sw {
 				onemme = --one;
 				y = (y < one ? y : onemme);
 			}
+			if (_trace_sqrt) std::cout << "y adjusted " << y << std::endl;
+
 			value<fbits> vsqrt = y.convert_to_scientific_notation();
 			vsqrt.setExponent((e >> 1) - 1);
+			if (_trace_sqrt) cout << "vsqrt      " << vsqrt << endl;
 			return vsqrt;
 		}
 
@@ -144,12 +165,14 @@ namespace sw {
 
 // TODO: we could also do lookup tables for small posits: seems more appropriate
 
-				// for small posits use 16bit posits to do the calculation while keeping the es config the same
-				constexpr size_t anbits = nbits > 16 ? nbits : 16;
-				constexpr size_t fbits = posit<anbits,es>::fbits;
-				value<fbits> v(a.get_fraction().value());
-				value<fbits> vsqrt = fast_sqrt<anbits, es, fbits>(v);
-				p.convert(v);
+			// for small posits use 16bit posits to do the calculation while keeping the es config the same
+			constexpr size_t anbits = nbits > 32 ? nbits : 32;
+			constexpr size_t fbits = posit<anbits,es>::fbits;
+			value<fbits> v;
+			a.normalize_to(v);
+			//std::cout << "a " << a << " v " << v << std::endl;
+			value<fbits> vsqrt = fast_sqrt<anbits, es, fbits>(v);
+			p.convert(v);
 
 			return p;
 		}
