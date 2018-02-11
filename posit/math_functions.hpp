@@ -122,14 +122,15 @@ namespace sw {
 		template<size_t nbits, size_t es, size_t fbits> 
 		value<fbits> fast_sqrt(value<fbits>& v) {
 			if (_trace_sqrt) std::cout << "---------------------------  SQRT -----------------------" << std::endl;
-			static_assert(nbits >= 16, "fast_sqrt requires posit configurations nbits >= 16");
+//			static_assert(nbits >= 16, "fast_sqrt requires posit configurations nbits >= 16");
 			posit<nbits, es> fr = v.fraction_value()*0.5;
 			int e = v.scale()+1;
 			posit<nbits, es> y = posit<nbits, es>(0.41731f) + posit<nbits, es>(0.59016f) * fr;
 			posit<nbits, es> z = y + fr / y;
 			if (_trace_sqrt) {
-				std::cout << "fr         " << fr << std::endl;
+				std::cout << "f          " << v << std::endl;
 				std::cout << "e          " << e << std::endl;
+				std::cout << "fr         " << fr << std::endl;
 				std::cout << "y0         " << y << std::endl;
 				std::cout << "y1         " << z << std::endl;
 			}
@@ -166,13 +167,12 @@ namespace sw {
 // TODO: we could also do lookup tables for small posits: seems more appropriate
 
 			// for small posits use 16bit posits to do the calculation while keeping the es config the same
-			constexpr size_t anbits = nbits > 32 ? nbits : 32;
+			constexpr size_t anbits = nbits > 33 ? nbits : 33;
 			constexpr size_t fbits = posit<anbits,es>::fbits;
 			value<fbits> v;
 			a.normalize_to(v);
-			//std::cout << "a " << a << " v " << v << std::endl;
 			value<fbits> vsqrt = fast_sqrt<anbits, es, fbits>(v);
-			p.convert(v);
+			p.convert(vsqrt);
 
 			return p;
 		}

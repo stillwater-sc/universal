@@ -7,7 +7,7 @@
 #include "stdafx.h"
 
 // when you define POSIT_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
-#define POSIT_VERBOSE_OUTPUT
+//#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_SQRT
 
 // minimum set of include files to reflect source code dependencies
@@ -53,12 +53,12 @@ void GenerateTestCase(Ty a) {
 	std::cout << std::setprecision(5);
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Addition failed: ";
@@ -68,9 +68,28 @@ try {
 	//GenerateTestCase<6, 3, double>(INFINITY);
 	my_test_sqrt(0.25f);
 	GenerateTestCase<4, 0, float>(0.25f);
-	return 0;
 
 #if 0
+	float f = 0.25f;
+	bool sign;
+	int e;
+	float fr;
+	unsigned fraction;
+	std::bitset<23> fraction_bits; 
+	
+	f = 16.0f;
+	for (int i = 0; i < 16; i++) {
+		extract_fp_components(f, sign, e, fr, fraction);
+		cout << (sign ? "(-," : "(+,") << e << "," << fr << ")" << endl;
+		//fraction_bits = convert_to_bitset<23>(fraction);
+		//cout << (sign ? "(-," : "(+,") << e << "," << fraction_bits << ")   " << fr << endl;
+		value<23> v(f);
+		cout << components(v) << "   " << setw(17) << v << endl;
+		f *= 0.5;
+	}
+#endif
+
+#if GENERATE_SQRT_TABLES
 	GenerateSqrtTable<3, 0>();
 	GenerateSqrtTable<4, 0>();
 	GenerateSqrtTable<4, 1>();
@@ -84,6 +103,7 @@ try {
 	GenerateSqrtTable<7, 0>();
 #endif
 
+#if CHECK_REFERENCE_SQRT_ALGORITHM
 	// std::sqrt(negative) returns a -NaN(ind)
 	cout << setprecision(17);
 	float base = 0.5f;
@@ -94,6 +114,7 @@ try {
 		base *= 2.0f;
 	}
 	cout << "sqrt(2.0) " << sw::unum::my_test_sqrt(2.0f) << endl;
+#endif
 
 	cout << endl;
 
@@ -139,6 +160,29 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "sqrt");
 	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "sqrt");
 	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "sqrt");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 3>(tag, bReportIndividualTestCases), "posit<9,3>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 4>(tag, bReportIndividualTestCases), "posit<9,4>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 5>(tag, bReportIndividualTestCases), "posit<9,5>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 6>(tag, bReportIndividualTestCases), "posit<9,6>", "sqrt");
+	
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "sqrt");
+	// fails due to regime representation not being able to be represented by double
+	// nrOfFailedTestCases += ReportTestResult(ValidateSqrt<10, 7>(tag, bReportIndividualTestCases), "posit<10,7>", "sqrt");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "sqrt");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "sqrt");
+
 
 #if STRESS_TESTING
 	// nbits=64 requires long double compiler support
