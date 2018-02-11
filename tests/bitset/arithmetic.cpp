@@ -77,7 +77,7 @@ int IncrementRightAdjustedBitset()
 		r1.set(nbits - 1 - i, true);
 		carry = false;
 		cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- input" << endl;
-		carry = increment_unsigned(r1, i);
+		carry = increment_unsigned(r1, int(i));
 		cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- result" << endl;
 	}
 

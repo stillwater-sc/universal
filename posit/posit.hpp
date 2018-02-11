@@ -519,6 +519,7 @@ public:
 	int				   regime_k() const {
 		return _regime.regime_k();
 	}
+	int                get_scale() const { return _regime.scale() + _exponent.scale(); }
 	bool               get_sign() const { return _sign;  }
 	regime<nbits, es>  get_regime() const {
 		return _regime;
@@ -734,6 +735,14 @@ public:
 	}
 	void normalize(value<fbits>& v) const {
 		v.set(_sign, scale(), _fraction.get(), isZero(), isNaR());
+	}
+	template<size_t tgt_fbits>
+	void normalize_to(value<tgt_fbits>& v) const {
+		std::bitset<tgt_fbits> _fr;
+		std::bitset<fbits> _src = _fraction.get();
+		int tgt, src;
+		for (tgt = int(tgt_fbits) - 1, src = int(fbits) - 1; tgt >= 0, src >= 0; tgt--, src--) _fr[tgt] = _src[src];
+		v.set(_sign, scale(), _fr, isZero(), isNaR());
 	}
 	// collect the posit components into a bitset
 	std::bitset<nbits> collect() {

@@ -267,6 +267,7 @@ namespace sw {
 				_nrOfBits = fbits;	
 				_fraction.reset();
 			}
+			inline void setExponent(int e) { _scale = e; }
 			inline bool isNegative() const { return _sign; }
 			inline bool isZero() const { return _zero; }
 			inline bool isInfinite() const { return _inf; }
@@ -311,6 +312,19 @@ namespace sw {
 				}
 				return fixed_point_number;
 			}
+			// get the fraction value including the implicit hidden bit (this is at an exponent level 1 smaller)
+			template<typename Ty = double>
+			Ty get_implicit_fraction_value() const {
+				if (_zero) return (long double)0.0;
+				Ty v = 1.0;
+				Ty scale = 0.5;
+				for (int i = int(fbits) - 1; i >= 0; i--) {
+					if (_fraction.test(i)) v += scale;
+					scale *= 0.5;
+					if (scale == 0.0) break;
+				}
+				return v;
+			}
 			int sign_value() const { return (_sign ? -1 : 1); }
 			double scale_value() const {
 				if (_zero) return (long double)(0.0);
@@ -335,7 +349,7 @@ namespace sw {
 				return sign_value() * scale_value() * fraction_value<double>();
 			}
 			float to_float() const {
-				return sign_value() * scale_value() * fraction_value<float>();
+				return float(sign_value() * scale_value() * fraction_value<float>());
 			}
 			// Maybe remove explicit
 			explicit operator long double() const { return to_long_double(); }
