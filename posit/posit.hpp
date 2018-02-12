@@ -579,7 +579,16 @@ public:
 			}
 		}
 	}
-
+	long long          get_encoding_as_integer() const {
+		if (nbits > 64) throw "encoding cannot be represented by a 64bit integer";
+		long long as_integer = 0;
+		unsigned long long mask = 1;
+		for (unsigned i = 0; i < nbits; i++) {
+			if (_raw_bits[i]) as_integer |= mask;
+			mask <<= 1;
+		}
+		return as_integer;
+	}
 	// MODIFIERS
 	inline void clear() {
 		_sign = false;

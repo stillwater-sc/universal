@@ -6,6 +6,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include "sqrt_tables.hpp"
+
 namespace sw {
 	namespace unum {
 
@@ -67,7 +69,7 @@ namespace sw {
 		and possibly a single multiplication and/or addition.
 		*/
 
-
+		// reference for fast direct sqrt method
 		float my_test_sqrt(float a) {
 			if (_trace_sqrt) std::cout << "----------------------- TEST SQRT -----------------------" << std::endl;
 
@@ -118,7 +120,7 @@ namespace sw {
 			return v.to_float();
 		}
 
-		// fast sqrt at a given posit configuration. Does not work for small posits
+		// fast sqrt at a given posit configuration.
 		template<size_t nbits, size_t es, size_t fbits> 
 		value<fbits> fast_sqrt(value<fbits>& v) {
 			if (_trace_sqrt) std::cout << "---------------------------  SQRT -----------------------" << std::endl;
@@ -156,6 +158,7 @@ namespace sw {
 			return vsqrt;
 		}
 
+		// sqrt for arbitrary posit
 		template<size_t nbits, size_t es>
 		posit<nbits, es> sqrt(const posit<nbits, es>& a) {
 			posit<nbits, es> p;
@@ -164,9 +167,7 @@ namespace sw {
 				return p;
 			}
 
-// TODO: we could also do lookup tables for small posits: seems more appropriate
-
-			// for small posits use 16bit posits to do the calculation while keeping the es config the same
+			// for small posits use a more precise posit to do the calculation while keeping the es config the same
 			constexpr size_t anbits = nbits > 33 ? nbits : 33;
 			constexpr size_t fbits = posit<anbits,es>::fbits;
 			value<fbits> v;
@@ -176,6 +177,7 @@ namespace sw {
 
 			return p;
 		}
+
 
 	};  // namespace unum
 
