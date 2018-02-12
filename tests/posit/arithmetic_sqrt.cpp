@@ -21,21 +21,6 @@
 using namespace std;
 using namespace sw::unum;
 
-template<size_t nbits, size_t es>
-void GenerateSqrtTable() {
-	constexpr unsigned int NR_POSITS = (unsigned(1) << (nbits-1)); // no need for negative posits
-
-	std::cout << setprecision(20);
-	posit<nbits, es> p;
-	for (unsigned int i = 0; i < NR_POSITS; i++) {
-		p.set_raw_bits(i);
-		double ref = std::sqrt(double(p));
-		posit<nbits, es> psqrt(ref);
-		std::cout << p.get() << " " << psqrt.get() << "      " << p << " " << psqrt << " ref: " << ref << std::endl;
-	}
-	std::cout << setprecision(5);
-}
-
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
@@ -55,6 +40,7 @@ void GenerateTestCase(Ty a) {
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
+
 
 int main(int argc, char** argv)
 try {
