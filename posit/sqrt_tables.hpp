@@ -16,7 +16,7 @@ namespace sw {
 		void GenerateSqrtTable() {
 			constexpr unsigned int NR_POSITS = (unsigned(1) << (nbits - 1)); // no need for negative posits
 
-			std::cout << setprecision(20);
+			std::cout << std::setprecision(20);
 			posit<nbits, es> p;
 			for (unsigned int i = 0; i < NR_POSITS; i++) {
 				p.set_raw_bits(i);
@@ -24,7 +24,7 @@ namespace sw {
 				posit<nbits, es> psqrt(ref);
 				std::cout << p.get() << " " << psqrt.get() << "      " << p << " " << psqrt << " ref: " << ref << std::endl;
 			}
-			std::cout << setprecision(5);
+			std::cout << std::setprecision(5);
 		}
 
 		// roots for posit<3,0>
