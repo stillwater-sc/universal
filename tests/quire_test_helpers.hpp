@@ -27,7 +27,7 @@ namespace sw {
 			return nrOfFailedTests;
 		}
 
-		//static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
+		static constexpr unsigned QUIRE_TABLE_WIDTH = 15;
 
 		template<size_t nbits, size_t es>
 		void ReportQuireNonZeroError(std::string test_result, std::string op, size_t nrOfElements, const posit<nbits, es>& seed, const posit<nbits, es>& presult) {
@@ -37,8 +37,8 @@ namespace sw {
 				<< " vector size " << nrOfElements
 				<< " seed " << seed << " "
 				<< " != "
-				<< std::setw(FLOAT_TABLE_WIDTH) << 0 << " instead it yielded "
-				<< std::setw(FLOAT_TABLE_WIDTH) << presult
+				<< std::setw(QUIRE_TABLE_WIDTH) << 0 << " instead it yielded "
+				<< std::setw(QUIRE_TABLE_WIDTH) << presult
 				<< " " << 0 << " vs " << presult.get()
 				<< std::setprecision(5)
 				<< std::endl;
@@ -51,7 +51,7 @@ namespace sw {
 				<< " " << op
 				<< " vector size " << nrOfElements
 				<< " seed " << seed << " "
-				<< std::setw(FLOAT_TABLE_WIDTH) << presult
+				<< std::setw(QUIRE_TABLE_WIDTH) << presult
 				<< " " << presult.get()
 				<< std::setprecision(5)
 				<< std::endl;
@@ -116,7 +116,7 @@ namespace sw {
 				value<fbits> v = pow(2.0, scale);
 				try {
 					q = v;
-					std::cout << setw(10) << v << q << std::endl;
+					std::cout << std::setw(10) << v << q << std::endl;
 					value<q.qbits> r = q.to_value();
 					double in = (double)v;
 					double out = (double)r;
@@ -175,7 +175,7 @@ namespace sw {
 #if CONFIRM_PATTERNS
 			std::cout << hex;
 			for (std::vector<uint64_t>::const_iterator it = patterns.begin(); it != patterns.end(); it++) {
-				std::cout << setw(3) << right << *it << std::endl;
+				std::cout << std::setw(3) << right << *it << std::endl;
 			}
 			std::cout << dec;
 #endif

@@ -23,7 +23,7 @@ using namespace sw::unum;
 
 template<size_t nbits, size_t es>
 void PrintTestVector(std::ostream& ostr, const std::vector< posit<nbits,es> >& pv) {
-	for (std::vector< posit<nbits,es> >::const_iterator it = pv.begin(); it != pv.end(); it++) {
+	for (typename std::vector< posit<nbits,es> >::const_iterator it = pv.begin(); it != pv.end(); it++) {
 		ostr << *it << std::endl;
 	}
 }
