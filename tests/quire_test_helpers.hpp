@@ -237,17 +237,15 @@ namespace sw {
 		// use a well-defined set of vectors with a known fused dot-product result
 		// the biggest stress are vectors where the first half is accumulating and the second half is subtracting
 		template<size_t nbits, size_t es, size_t capacity>
-		int ValidateQuireAccumulation(bool bReportIndividualTestCases, size_t vectorSize, const posit<nbits,es>& seed) {
+		int ValidateQuireAccumulation(bool bReportIndividualTestCases, const std::vector< posit<nbits, es> >& t) {
 			int nrOfFailedTests = 0;
 
 			posit<nbits, es> pa, pb, ponemme, ponepme, pmul;
 			quire<nbits, es, capacity> q;
 
-			std::vector< posit<nbits, es> > t = GenerateVectorForZeroValueFDP(vectorSize, seed);
-
 			// accumulate a progressively larger product result
 			// starting from minpos^2
-			for (size_t i = 0; i < vectorSize; i++) {
+			for (size_t i = 0; i < t.size(); i++) {
 				pa = t[i];
 				//std::cout << "posit pattern: " << pattern << std::endl;
 
@@ -266,10 +264,10 @@ namespace sw {
 
 			if (!presult.isZero()) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportQuireNonZeroError("FAIL", "fdp", vectorSize, seed, presult);
+				if (bReportIndividualTestCases)	ReportQuireNonZeroError("FAIL", "fdp", t.size(), t[0], presult);
 			}
 			else {
-				if (bReportIndividualTestCases) ReportQuireNonZeroSuccess("PASS", "fdp", vectorSize, seed, presult);
+				if (bReportIndividualTestCases) ReportQuireNonZeroSuccess("PASS", "fdp", t.size(), t[0], presult);
 				//std::cout << to_hex(q0.get()) << " " << to_hex(pa.get()) << " " << to_hex(pb.get()) << " " << to_hex(q.get()) << " " << to_hex(presult.get()) << std::endl;
 			}
 

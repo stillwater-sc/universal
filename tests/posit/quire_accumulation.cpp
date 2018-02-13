@@ -28,6 +28,15 @@ void PrintTestVector(std::ostream& ostr, const std::vector< posit<nbits,es> >& p
 	}
 }
 
+template<size_t nbits, size_t es, size_t capacity>
+int GenerateQuireAccumulationTestCase(bool bReportIndividualTestCases, size_t nrOfElements, const posit<nbits,es>& seed) {
+	int nrOfFailedTestCases = 0;
+	std::stringstream ss;
+	ss << "quire<" << nbits << "," << es << "," << capacity << ">";
+	std::vector< posit<nbits, es> > t = GenerateVectorForZeroValueFDP(nrOfElements, seed);
+	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<nbits, es, capacity>(bReportIndividualTestCases, t), ss.str(), "accumulation");
+	return nrOfFailedTestCases;
+}
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
@@ -47,25 +56,34 @@ try {
 //	t = GenerateVectorForZeroValueFDP(16, maxpos<16,1>());
 //	PrintTestVector(cout, t);
 
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8,1>()), "quire<8,1,2>", "accumulation");
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
 
 #else
 
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<8, 0, 2>(bReportIndividualTestCases, 16, minpos<8, 0>()), "quire<8,0,2>", "accumulation");
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>()), "quire<8,1,2>", "accumulation");
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<8, 2, 2>(bReportIndividualTestCases, 16, minpos<8, 2>()), "quire<8,2,2>", "accumulation");
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 2>(bReportIndividualTestCases, 16, minpos<8, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 2>(bReportIndividualTestCases, 16, minpos<8, 2>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 5>(bReportIndividualTestCases, 16, maxpos<8, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 5>(bReportIndividualTestCases, 16, maxpos<8, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 5>(bReportIndividualTestCases, 16, maxpos<8, 2>());
 
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<16, 0, 2>(bReportIndividualTestCases, 256, minpos<16, 0>()), "quire<16,0,2>", "accumulation");
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<16, 1, 2>(bReportIndividualTestCases, 256, minpos<16, 1>()), "quire<16,1,2>", "accumulation");
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<16, 2, 2>(bReportIndividualTestCases, 256, minpos<16, 2>()), "quire<16,2,2>", "accumulation");
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 2>(bReportIndividualTestCases, 256, minpos<16, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 2>(bReportIndividualTestCases, 256, minpos<16, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 2>(bReportIndividualTestCases, 256, minpos<16, 2>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 5>(bReportIndividualTestCases, 16, maxpos<16, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 5>(bReportIndividualTestCases, 16, maxpos<16, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 5>(bReportIndividualTestCases, 16, maxpos<16, 2>());
 
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<24, 0, 2>(bReportIndividualTestCases, 4096, minpos<24, 0>()), "quire<24,0,2>", "accumulation");
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<24, 1, 2>(bReportIndividualTestCases, 4096, minpos<24, 1>()), "quire<24,1,2>", "accumulation");
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<24, 2, 2>(bReportIndividualTestCases, 4096, minpos<24, 2>()), "quire<24,2,2>", "accumulation");
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 0, 2>(bReportIndividualTestCases, 4096, minpos<24, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 1, 2>(bReportIndividualTestCases, 4096, minpos<24, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 2, 2>(bReportIndividualTestCases, 4096, minpos<24, 2>());
 
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<32, 0, 2>(bReportIndividualTestCases, 65536, minpos<32, 0>()), "quire<32,0,2>", "accumulation");
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<32, 1, 2>(bReportIndividualTestCases, 65536, minpos<32, 1>()), "quire<32,1,2>", "accumulation");
-	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<32, 2, 2>(bReportIndividualTestCases, 65536, minpos<32, 2>()), "quire<32,2,2>", "accumulation");
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 2>(bReportIndividualTestCases, 65536, minpos<32, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 2>(bReportIndividualTestCases, 65536, minpos<32, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 2>(bReportIndividualTestCases, 65536, minpos<32, 2>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 5>(bReportIndividualTestCases, 16, maxpos<32, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 5>(bReportIndividualTestCases, 16, maxpos<32, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 5>(bReportIndividualTestCases, 16, maxpos<32, 2>());
 
 #ifdef STRESS_TESTING
 
