@@ -18,7 +18,7 @@ public:
 	static constexpr size_t range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
 	static constexpr size_t half_range = range >> 1;          // position of the fixed point
 	static constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
-	static constexpr size_t qbits = range + capacity;         // size of the quire minus the sign bit: we are managing the sign explicitly
+	static constexpr size_t qbits = range + capacity;     // size of the quire minus the sign bit: we are managing the sign explicitly
 	
 	quire() : _sign(false), _capacity(0), _upper(0), _lower(0) {}
 	quire(int8_t initial_value) {
@@ -419,6 +419,23 @@ public:
 	// Return value of the sign bit: true indicates a negative number, false a positive number or zero
 	bool get_sign() const { return _sign; }
 	float sign_value() const {	return (_sign ? -1.0 : 1.0); }
+	std::bitset<qbits+1> get() const {
+		std::bitset<qbits+1> q;
+		int msb = 0;
+		for (int i = 0; i < half_range; i++) {
+			q[msb] = _lower[i];
+			msb++;
+		}
+		for (int i = 0; i < upper_range; i++) {
+			q[msb] = _upper[i];
+			msb++;
+		}
+		for (int i = 0; i < capacity; i++) {
+			q[msb] = _capacity[i];
+			msb++;
+		}
+		return q;
+	}
 	value<qbits> to_value() const {
 		// find the MSB and build the fraction
 		std::bitset<qbits> fraction;

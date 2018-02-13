@@ -1,40 +1,21 @@
 ﻿//  quires.cpp : test suite for quires
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "stdafx.h"
 
-#include "../../posit/bit_functions.hpp"
-#include "../../posit/posit_functions.hpp"
-#include "../../posit/exceptions.hpp"
-#include "../../posit/trace_constants.hpp"
-#include "../../posit/value.hpp"
+// type definitions for the important types, posit<> and quire<>
+#include "../../posit/posit.hpp"
 #include "../../posit/quire.hpp"
+// test support functions
+#include "../tests/quire_test_helpers.hpp"
 
 using namespace std;
 using namespace sw::unum;
 
-int TestQuireAccumulationResult(int nrOfFailedTests, string descriptor)
-{
-	if (nrOfFailedTests > 0) {
-		std::cout << descriptor << " quire accumulation FAIL" << std::endl;
-	}
-	else {
-		std::cout << descriptor << " quire accumulation PASS" << std::endl;
-	}
-	return nrOfFailedTests;
-}
 
-template<size_t nbits, size_t es, size_t capacity>
-int ValidateQuireAccumulation() {
-	const size_t NR_TEST_CASES = size_t(1) << nbits;
-
-	int nrOfFailedTests = 0;
-
-	return nrOfFailedTests;
-}
 
 template<size_t nbits, size_t es, size_t capacity>
 void GenerateTestCase(int input, const quire<nbits, es, capacity>& reference, const quire<nbits, es, capacity>& qresult) {
@@ -42,76 +23,6 @@ void GenerateTestCase(int input, const quire<nbits, es, capacity>& reference, co
 	std::cout << std::endl;
 }
 
-template<size_t nbits, size_t es, size_t capacity>
-void GenerateUnsignedIntAssignments() {
-	quire<nbits, es, capacity> q;
-	unsigned upper_range = q.upper_range();
-	std::cout << "Upper range = " << upper_range << std::endl;
-	uint64_t i;
-	q = 0; std::cout << q << std::endl;
-	unsigned v = 1;
-	for (i = 1; i < uint64_t(1) << (upper_range + capacity); i <<= 1) {
-		q = i;
-		std::cout << q << std::endl;
-	}
-	i <<= 1;
-	try {
-		q = i;
-	}
-	catch (char const* msg) {
-		std::cerr << "Caught the exception: " << msg << ". Value was " << i << std::endl;
-	}
-}
-
-template<size_t nbits, size_t es, size_t capacity>
-void GenerateSignedIntAssignments() {
-	quire<nbits, es, capacity> q;
-	unsigned upper_range = q.upper_range();
-	std::cout << "Upper range = " << upper_range << std::endl;
-	int64_t i, upper_limit = -(int64_t(1) << (upper_range + capacity));
-	q = 0; std::cout << q << std::endl;
-	unsigned v = 1;
-	for (i = -1; i > upper_limit; i *= 2) {
-		q = i;
-		std::cout << q << std::endl;
-	}
-	i <<= 1;
-	try {
-		q = i;
-	}
-	catch (char const* msg) {
-		std::cerr << "Caught the exception: " << msg << ". RHS was " << i << std::endl;
-	}
-}
-
-template<size_t nbits, size_t es, size_t capacity, size_t fbits = 1>
-void GenerateValueAssignments() {
-	quire<nbits, es, capacity> q;
-
-	// report some parameters about the posit and quire configuration
-	int max_scale = q.max_scale();
-	int min_scale = q.min_scale();
-	std::cout << "Maximum scale  = " << max_scale << " Minimum scale  = " << min_scale << " Dynamic range = " << q.dynamic_range() << std::endl;
-	std::cout << "Maxpos Squared = " << maxpos_scale<nbits,es>() * 2 << " Minpos Squared = " << minpos_scale<nbits, es>() * 2 << std::endl;
-
-	// cover the scales with one order outside of the dynamic range of the quire configuration (minpos^2 and maxpos^2)
-	for (int scale = max_scale + 1; scale >= min_scale - 1; scale--) {  // extend by 1 max and min scale to test edge of the quire
-		value<fbits> v = pow(2.0, scale);
-		try {
-			q = v;
-			std::cout << setw(10) << v << q << std::endl;
-			value<q.qbits> r = q.to_value();
-			double in = (double)v;
-			double out = (double)r;
-			if (std::abs(in - out) > 0.0000001) { 
-				std::cerr << "quire value conversion failed: " << components(v) << " != " << components(r) << std::endl; 
-			}
-		}
-		catch (char const* msg) {
-			std::cerr << "Caught the exception: " << msg << ". RHS was " << v << " " << components(v) << std::endl;
-		}
-	}
-}
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0

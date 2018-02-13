@@ -78,6 +78,8 @@ namespace sw {
 template<size_t nbits, size_t es> class posit;
 template<size_t nbits, size_t es> posit<nbits, es> abs(const posit<nbits, es>& p);
 template<size_t nbits, size_t es> posit<nbits, es> sqrt(const posit<nbits, es>& p);
+template<size_t nbits, size_t es> posit<nbits, es> minpos();
+template<size_t nbits, size_t es> posit<nbits, es> maxpos();
 
 // Not A Real is the posit encoding for INFINITY and arithmetic errors that can propagate
 // The symbol NAR can be used to initialize a posit, i.e., posit<nbits,es>(NAR), or posit<nbits,es> p = NAR
@@ -874,9 +876,17 @@ public:
 	// Generalized version
 	template <size_t FBits>
 	inline void convert(const value<FBits>& v) {
+		if (v.isZero()) {
+			setToZero();
+			return;
+		}
+		if (v.isNaN() || v.isInfinite()) {
+			setToNaR();
+			return;
+		}
 		convert(v.sign(), v.scale(), v.fraction());
     }
-
+	// convert assumes that ZERO and NaR cases are handled. Only non-zero and non-NaR values are allowed.
 	template<size_t input_fbits>
 	void convert(bool sign, int scale, std::bitset<input_fbits> input_fraction) {
 		clear();
@@ -1238,10 +1248,27 @@ inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, double rhs) {
 
 #endif // POSIT_ENABLE_LITERALS
 
-/// Magnitude of a posit (equivalent to turning the sign bit off).
+// Magnitude of a posit (equivalent to turning the sign bit off).
 template<size_t nbits, size_t es> 
 posit<nbits, es> abs(const posit<nbits, es>& p) {
     return posit<nbits, es>(false, p.get_regime(), p.get_exponent(), p.get_fraction());
+}
+
+// generate a posit representing minpos
+template<size_t nbits, size_t es>
+posit<nbits, es> minpos() {
+	posit<nbits, es> p;
+	p++;
+	return p;
+}
+
+// generate a posit representing maxpos
+template<size_t nbits, size_t es>
+posit<nbits, es> maxpos() {
+	posit<nbits, es> p;
+	p.setToNaR();
+	--p;
+	return p;
 }
 
 // QUIRE OPERATORS
