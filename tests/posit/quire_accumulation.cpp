@@ -1,19 +1,44 @@
 ﻿//  quire_accumulations.cpp : computational path experiments with quires
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "stdafx.h"
 
+// set to 1 if you want to generate hw test vectors
+#define HARDWARE_QA_OUTPUT 0
+
+// type definitions for the important types, posit<> and quire<>
 #include "../../posit/posit.hpp"
 #include "../../posit/quire.hpp"
+// test support functions
+#include "../tests/test_helpers.hpp"
+#include "../tests/posit_test_helpers.hpp"
+#include "../tests/quire_test_helpers.hpp"
+
 
 using namespace std;
 using namespace sw::unum;
 
+template<size_t nbits, size_t es>
+void PrintTestVector(std::ostream& ostr, const std::vector< posit<nbits,es> >& pv) {
+	for (typename std::vector< posit<nbits,es> >::const_iterator it = pv.begin(); it != pv.end(); it++) {
+		ostr << *it << std::endl;
+	}
+}
 
-#define MANUAL_TESTING 1
+template<size_t nbits, size_t es, size_t capacity>
+int GenerateQuireAccumulationTestCase(bool bReportIndividualTestCases, size_t nrOfElements, const posit<nbits,es>& seed) {
+	int nrOfFailedTestCases = 0;
+	std::stringstream ss;
+	ss << "quire<" << nbits << "," << es << "," << capacity << ">";
+	std::vector< posit<nbits, es> > t = GenerateVectorForZeroValueFDP(nrOfElements, seed);
+	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<nbits, es, capacity>(bReportIndividualTestCases, t), ss.str(), "accumulation");
+	return nrOfFailedTestCases;
+}
+
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main()
@@ -21,32 +46,44 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+	cout << "Quire experiments" << endl;
+
 	std::string tag = "Quire Accumulation failed";
 
 #if MANUAL_TESTING
-	const size_t nbits = 8;
-	const size_t es = 1;
-	const size_t capacity = 2; // for testing the accumulation capacity of the quire can be small
-	const size_t fbits = 5;
+	std::vector< posit<16, 1> > t;
 
-	posit<nbits, es> p1, p2, minpos, maxpos;
-	quire<nbits, es, 2> q1, q2;
-	p1 = 1; ++p1;
-	p2 = 1; --p2;
-	std::cout << "p1 : " << p1 << " p2 : " << p2 << endl;
-	//q1 += p1 + p2;    // if we allow posits to be added
-	q1 += (p1 + p2).convert_to_scientific_notation();  // if we force scientific values (sign, scale, fraction) inputs
-	cout << "q  : " << q1 << endl;
-	minpos = 0; ++minpos;
-	maxpos = INFINITY; --maxpos;
-	cout << "minpos : " << minpos << " maxpos : " << maxpos << endl;
-	cout << "minpos * p1 = " << minpos * p1 << " minpos * p2 = " << minpos * p2 << endl;
-	q2 += (maxpos * (minpos * p1 + minpos * p2)).convert_to_scientific_notation();
-	cout << "q  : " << q2 << endl;
+//	t = GenerateVectorForZeroValueFDP(16, maxpos<16,1>());
+//	PrintTestVector(cout, t);
+
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
+
 #else
 
-	cout << "Quire experiments" << endl;
-	
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 2>(bReportIndividualTestCases, 16, minpos<8, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 2>(bReportIndividualTestCases, 16, minpos<8, 2>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 0, 5>(bReportIndividualTestCases, 16, maxpos<8, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 5>(bReportIndividualTestCases, 16, maxpos<8, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 2, 5>(bReportIndividualTestCases, 16, maxpos<8, 2>());
+
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 2>(bReportIndividualTestCases, 256, minpos<16, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 2>(bReportIndividualTestCases, 256, minpos<16, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 2>(bReportIndividualTestCases, 256, minpos<16, 2>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 0, 5>(bReportIndividualTestCases, 16, maxpos<16, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 1, 5>(bReportIndividualTestCases, 16, maxpos<16, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<16, 2, 5>(bReportIndividualTestCases, 16, maxpos<16, 2>());
+
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 0, 2>(bReportIndividualTestCases, 4096, minpos<24, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 1, 2>(bReportIndividualTestCases, 4096, minpos<24, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<24, 2, 2>(bReportIndividualTestCases, 4096, minpos<24, 2>());
+
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 2>(bReportIndividualTestCases, 65536, minpos<32, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 2>(bReportIndividualTestCases, 65536, minpos<32, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 2>(bReportIndividualTestCases, 65536, minpos<32, 2>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 0, 5>(bReportIndividualTestCases, 16, maxpos<32, 0>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 1, 5>(bReportIndividualTestCases, 16, maxpos<32, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<32, 2, 5>(bReportIndividualTestCases, 16, maxpos<32, 2>());
 
 #ifdef STRESS_TESTING
 
