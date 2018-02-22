@@ -9,7 +9,7 @@
 #include "stdafx.h"
 
 // when you define POSIT_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
-#define POSIT_VERBOSE_OUTPUT
+//#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_CONVERSION
 
 #include <posit>
@@ -166,6 +166,18 @@ try {
 		cout << setprecision(30) << fixed << ld << setprecision(6) << endl;
 		cout << pretty_print(E_pos) << endl;
 
+
+		int _exp;
+		union {
+		    long double fr;
+		    unsigned char bytes[16];
+		} u;
+		u.fr = frexpl(ld, &_exp);
+		cout << "bytes of fraction: " << hex;
+		for (int i = 15; i >= 0; i--) {
+			cout << setw(2) << unsigned(u.bytes[i]) << " ";
+		}
+		cout << dec << endl;
 	}
 	return 0;
 
