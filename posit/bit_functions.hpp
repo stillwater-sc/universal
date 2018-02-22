@@ -106,7 +106,7 @@ namespace sw {
 			else if (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
 				_sign = fp < 0.0 ? true : false;
 				_fr = frexpl(fp, &_exponent);
-				_fraction = uint64_t(0xFFFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+				_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
 			}
 		}
 
@@ -143,12 +143,12 @@ namespace sw {
 		}
 
 		template<size_t nbits>
-		std::bitset<nbits> extract_64b_fraction(uint64_t _64b_fraction_without_hidden_bit) {
+		std::bitset<nbits> extract_63b_fraction(uint64_t _63b_fraction_without_hidden_bit) {
 			std::bitset<nbits> _fraction;
-			uint64_t mask = uint64_t(0x8000000000000000ull);
-			unsigned int ub = (nbits < 64 ? nbits : 64);
+			uint64_t mask = uint64_t(0x4000000000000000ull);
+			unsigned int ub = (nbits < 63 ? nbits : 63);
 			for (unsigned int i = 0; i < ub; i++) {
-				_fraction[nbits - 1 - i] = _64b_fraction_without_hidden_bit & mask;
+				_fraction[nbits - 1 - i] = _63b_fraction_without_hidden_bit & mask;
 				mask >>= 1;
 			}
 			return _fraction;
