@@ -100,7 +100,7 @@ namespace sw {
 			static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
 			if (sizeof(long double) == 8) { // it is just a double
 				_sign = fp < 0.0 ? true : false;
-				_fr = frexpl(fp, &_exponent);
+				_fr = frexp(double(fp), &_exponent);
 				_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
 			}
 			else if (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {

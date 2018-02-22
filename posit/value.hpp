@@ -203,14 +203,25 @@ namespace sw {
 					break;
 				case FP_NORMAL:
 				{
-					double _fr;
+					long double _fr;
 					unsigned long long _64b_fraction_without_hidden_bit;
 					int _exponent;
 					extract_fp_components(rhs, _sign, _exponent, _fr, _64b_fraction_without_hidden_bit);
 					_scale = _exponent - 1;
-					_fraction = extract_64b_fraction<fbits>(_64b_fraction_without_hidden_bit);
+					// how to interpret the fraction bits: TODO: this should be a static compile-time code block
+					if (sizeof(long double) == 8) {
+						// we are just a double and thus only have 52bits of fraction
+						_fraction = extract_52b_fraction<fbits>(_64b_fraction_without_hidden_bit);
+						if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _64b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
+
+					}
+					else if (sizeof(long double) == 16) {
+						// how to differentiate between 80bit and 128bit formats?
+						_fraction = extract_64b_fraction<fbits>(_64b_fraction_without_hidden_bit);
+						if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 64b fraction 0x" << std::hex << _64b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
+
+					}
 					_nrOfBits = fbits;
-					if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " " << fbits << " b fraction b" << _fraction << std::dec << std::endl;
 				}
 				break;
 				}
