@@ -82,10 +82,64 @@ void SolveCrout(const std::vector<Ty>& LU, const std::vector<Ty>& b, std::vector
 		Ty sum = 0.0;
 		for (int k = 0; k < i; ++k) sum += LU[i*d + k] * y[k];
 		y[i] = (b[i] - sum) / LU[i*d + i];
+
 	}
 	for (int i = d - 1; i >= 0; --i) {
 		Ty sum = 0.0;
-		for (int k = i + 1; k < d; ++k) sum += LU[i*d + k] * x[k];
+		for (int k = i + 1; k < d; ++k) {
+			cout << "lu[] = " << LU[i*d+k] << " x[" << k << "] = " << x[k] << endl;
+			sum += LU[i*d + k] * x[k];
+		}
+		cout << "sum " << sum << endl;
+		x[i] = (y[i] - sum); // not dividing by diagonals
+	}
+}
+
+template<size_t nbits, size_t es, size_t capacity = 10>
+void CroutFDP(int d, std::vector< posit<nbits, es> >& S, std::vector< posit<nbits, es> >& D) {
+	for (int k = 0; k < d; ++k) {
+		for (int i = k; i < d; ++i) {
+			quire<nbits, es, capacity> q = 0.0;
+			//for (int p = 0; p < k; ++p) q += D[i*d + p] * D[p*d + k];   if we had expression templates for the quire
+			for (int p = 0; p < k; ++p) q += quire_mul(D[i*d + p], D[p*d + k]);
+			posit<nbits, es> sum;
+			sum.convert(q.to_value());   // one and only rounding step of the fused-dot product
+			D[i*d + k] = S[i*d + k] - sum; // not dividing by diagonals
+		}
+		for (int j = k + 1; j < d; ++j) {
+			quire<nbits, es, capacity> q = 0.0;
+			//for (int p = 0; p < k; ++p) q += D[k*d + p] * D[p*d + j];   if we had expression templates for the quire
+			for (int p = 0; p < k; ++p) q += quire_mul(D[k*d + p], D[p*d + j]);
+			posit<nbits, es> sum;
+			sum.convert(q.to_value());   // one and only rounding step of the fused-dot product
+			D[k*d + j] = (S[k*d + j] - sum) / D[k*d + k];
+		}
+	}
+}
+
+// SolveCrout takes an LU decomposition, LU, and a right hand side vector, b, and produces a result, x.
+template<size_t nbits, size_t es, size_t capacity = 10>
+void SolveCroutFDP(const std::vector< posit<nbits, es> >& LU, const std::vector< posit<nbits, es> >& b, std::vector< posit<nbits, es> >& x) {
+	int d = (int)b.size();
+	std::vector< posit<nbits, es> > y(d);
+	for (int i = 0; i < d; ++i) {
+		quire<nbits, es, capacity> q = 0.0;
+		// for (int k = 0; k < i; ++k) q += LU[i*d + k] * y[k];   if we had expression templates for the quire
+		for (int k = 0; k < i; ++k) q += quire_mul(LU[i*d + k], y[k]);
+		posit<nbits, es> sum;
+		sum.convert(q.to_value());   // one and only rounding step of the fused-dot product
+		y[i] = (b[i] - sum) / LU[i*d + i];
+	}
+	for (int i = d - 1; i >= 0; --i) {
+		quire<nbits, es, capacity> q = 0.0;
+		// for (int k = i + 1; k < d; ++k) q += LU[i*d + k] * x[k];   if we had expression templates for the quire
+		for (int k = i + 1; k < d; ++k) {
+			cout << "lu[] = " << LU[i*d + k] << " x[" << k << "] = " << x[k] << endl;
+			q += quire_mul(LU[i*d + k], x[k]);
+		}
+		posit<nbits, es> sum;
+		sum.convert(q.to_value());   // one and only rounding step of the fused-dot product
+		cout << "sum " << sum << endl;
 		x[i] = (y[i] - sum); // not dividing by diagonals
 	}
 }
@@ -144,11 +198,11 @@ void CholeskyRow(int d, std::vector<Ty>& S, std::vector<Ty>& D) {
 	for (int k = 0; k<d; ++k) {
 		for (int j = 0; j<d; ++j) {
 			Ty sum = 0.;
-			for (int p = 0; p<j; ++p)sum += D[k*d + p] * D[j*d + p];
+			for (int p = 0; p<j; ++p) sum += D[k*d + p] * D[j*d + p];
 			D[k*d + j] = (S[k*d + j] - sum) / D[j*d + j];
 		}
 		Ty sum = 0.;
-		for (int p = 0; p<k; ++p)sum += D[k*d + p] * D[k*d + p];
+		for (int p = 0; p<k; ++p) sum += D[k*d + p] * D[k*d + p];
 		D[k*d + k] = sqrt(S[k*d + k] - sum);
 	}
 }
@@ -182,43 +236,65 @@ void EnumerateTestCases() {
 }
 
 template<typename Ty>
-void CompareDecompositions(int d, std::vector<Ty>& A, std::vector<Ty>& b) {
-	std::vector<Ty> LU(d*d);
-	Crout<Ty>(d, A, LU);
-	cout << "Crout";
-	coutMatrix<Ty>("LU", LU);
-	// solve for a particular RHS, b
+void CompareDecompositions(bool useQuire, int d, std::vector<Ty>& A, std::vector<Ty>& b) {
 	std::vector<Ty> x(d);
-	SolveCrout<Ty>(LU, b, x);
-	cout << "solveCrout";
-	coutVector<Ty>("Solution", x);
+	std::vector<Ty> LU(d*d);
 
-	cout << endl;
+	if (useQuire) {
+		CroutFDP(d, A, LU);
+		SolveCroutFDP(LU, b, x);
+		coutMatrix("CroutFDP LU", LU);
+		coutVector("Solution", x);
 
-	Doolittle<Ty>(d, A, LU);
-	cout << "Doolittle";
-	coutMatrix<Ty>("LU", LU);
-	SolveDoolittle<Ty>(LU, b, x);
-	cout << "solveDoolittle";
-	coutVector<Ty>("Solution", x);
+		cout << endl;
+#if 0
+		DoolittleFDP(d, A, LU);
+		SolveDoolittleFDP(LU, b, x);
+		coutMatrix("DoolittleFDP LU", LU);
+		coutVector("Solution", x);
 
-	cout << endl;
+		cout << endl;
 
-	Cholesky(d, A, LU);
-	cout << "Cholesky";
-	coutMatrix<Ty>("LU", LU);
-	SolveCholesky<Ty>(LU, b, x);
-	cout << "solveCholesky";
-	coutVector<Ty>("Solution", x);
+		CholeskyFDP(d, A, LU);
+		SolveCholeskyFDP(LU, b, x);
+		coutMatrix("CholeskyFDP Decomposition", LU);
+		coutVector("Solution", x);
+#endif
+
+	}
+	else {
+		Crout(d, A, LU);
+		SolveCrout(LU, b, x);
+		coutMatrix("Crout LU", LU);
+		coutVector("Solution", x);
+
+		cout << endl;
+#if 0
+		Doolittle(d, A, LU);
+		SolveDoolittle(LU, b, x);
+		coutMatrix("Doolittle LU", LU);
+		coutVector("Solution", x);
+
+		cout << endl;
+
+		Cholesky(d, A, LU);
+		SolveCholesky(LU, b, x);
+		coutMatrix("Cholesky Decomposition", LU);
+		coutVector("Solution", x);
+#endif
+	}
+
 }
 
 int main(int argc, char** argv)
 try {
-	const size_t nbits = 16;
+	const size_t nbits = 28;
 	const size_t es = 1;
 
 	//typedef float MyType;
-	typedef posit<30, 1> MyType;
+	typedef posit<nbits, es> MyType;
+	MyType p;
+	cout << "Using " << spec_to_string(p) << endl;
 
 	// We want to solve the system Ax=b
 	int d = 5;
@@ -230,7 +306,11 @@ try {
 		2.,1.,5.,1.,8. };
 
 	std::vector<MyType> b = { 9, 7, 18, 13, 17 }; //  { -2.0, 4.0, 3.0, -5.0, 1.0 };
-	CompareDecompositions(d, A, b);
+	cout << "LinearSolve WITHOUT fused-dot product" << endl;
+	CompareDecompositions(false, d, A, b); 
+	cout << endl << ">>>>>>>>>>>>>>>>" << endl;
+	cout << "LinearSolve WITH fused-dot product" << endl;
+	CompareDecompositions(true, d, A, b);
 
 	int nrOfFailedTestCases = 0;
 	return nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS;
