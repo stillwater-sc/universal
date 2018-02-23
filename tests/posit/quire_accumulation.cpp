@@ -38,7 +38,7 @@ int GenerateQuireAccumulationTestCase(bool bReportIndividualTestCases, size_t nr
 	return nrOfFailedTestCases;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main()
@@ -56,7 +56,20 @@ try {
 //	t = GenerateVectorForZeroValueFDP(16, maxpos<16,1>());
 //	PrintTestVector(cout, t);
 
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
+	quire<16, 1, 2> q = 0xAAAA;
+	value<20> v;
+	v = 0xAAAB;
+	cout << "quire: " << q << endl;
+	cout << "value: " << v.get_fixed_point() << endl;
+	cout << (q < v ? "correct" : "incorrect") << endl;
+	cout << (q > v ? "incorrect" : "correct") << endl;
+	v = 0xAAAA;
+	cout << v.get_fixed_point() << endl;
+	cout << (q == v ? "correct" : "incorrect") << endl;
+
+	bool bSame = q == v;
+
+	//nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
 
 #else
 
