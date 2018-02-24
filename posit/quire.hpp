@@ -185,11 +185,11 @@ public:
 	template<size_t fbits>
 	quire& operator+=(const value<fbits>& rhs) {
 		if (rhs.isZero()) return *this;
-		int i, f, scale = rhs.scale();
-		if (scale >  int(half_range)) {
+
+		if (rhs.scale() >  int(half_range)) {
 			throw "RHS value too large for quire";
 		}
-		if (scale < -int(half_range)) {
+		if (rhs.scale() < -int(half_range)) {
 			throw "RHS value too small for quire";
 		}
 		// sign/magnitude classification
@@ -199,221 +199,27 @@ public:
 		// (+a) + (-b)                       -(b - a)    +(a - b)   +(a - b)
 		// (-a) + (+b)                       +(b - a)    +(a - b)   -(a - b)
 		// (-a) + (-b)      -(a + b)
-
-		if (rhs.sign()) {			// subtract
-			// lsb in the quire of the lowest bit of the explicit fixed point value including the hidden bit of the fraction
-			int lsb = scale - int(fbits);  
-			bool borrow = false;
-			std::bitset<fbits + 1> fraction = rhs.get_fixed_point();
-			// divide bits between upper and lower accumulator
-			if (scale < 0) {		// all lower accumulator
-				int lsb = int(half_range) + scale - int(fbits);
-				int qlsb = lsb > 0 ? lsb : 0;
-				int flsb = lsb >= 0 ? 0 : -lsb;
-				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
-					bool _a = _lower[i];
-					bool _b = fraction[f];
-					_lower[i] = _a ^ _b ^ borrow;
-					borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
-				}
-				// propagate any borrows to the end of the lower accumulator
-				while (borrow && i < half_range) {
-					bool _a = _lower[i];
-					_lower[i] = _a ^ borrow;
-					borrow = borrow & !_a;
-					i++;
-				}
-				if (borrow) { // borrow propagate to the _upper accumulator
-							  // need to decrement the _upper
-					i = 0;
-					while (borrow && i < upper_range) {
-						bool _a = _upper[i];
-						_upper[i] = _a ^ borrow;
-						borrow = borrow & !_a;
-						i++;
-					}
-					if (borrow) {
-						// propagate the borrow into the capacity segment
-						i = 0;
-						while (borrow && i < capacity) {
-							bool _a = _capacity[i];
-							_capacity[i] = _a ^ borrow;
-							borrow = borrow & !_a;
-							i++;
-						}
-					}
-				}
-			}
-			else if (lsb >= 0) {	// all upper accumulator
-				for (i = lsb, f = 0; i <= scale && f <= int(fbits); i++, f++) {
-					bool _a = _upper[i];
-					bool _b = fraction[f];
-					_upper[i] = _a ^ _b ^ borrow;
-					borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
-				}
-				// propagate any borrows to the end of the upper accumulator
-				while (borrow && i < upper_range) {
-					bool _a = _upper[i];
-					_upper[i] = _a ^ borrow;
-					borrow = borrow & !_a;
-					i++;
-				}
-				if (borrow) {
-					// propagate the borrow into the capacity segment
-					i = 0;
-					while (borrow && i < capacity) {
-						bool _a = _capacity[i];
-						_capacity[i] = _a ^ borrow;
-						borrow = borrow & !_a;
-						i++;
-					}
-				}
-			}
-			else {   // lsb < 0 && scale >= 0
-				// part upper, and part lower accumulator
-				// first add the lower accumulator component
-				lsb = int(half_range) + lsb; // remember lsb is negative in this block
-				int qlsb = lsb > 0 ? lsb : 0;
-				int flsb = lsb >= 0 ? 0 : -lsb;
-				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
-					bool _a = _lower[i];
-					bool _b = fraction[f];
-					_lower[i] = _a ^ _b ^ borrow;
-					borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
-				}
-				// next add the bits in the upper accumulator
-				for (i = 0; i <= scale && f <= int(fbits); i++, f++) {
-					bool _a = _upper[i];
-					bool _b = fraction[f];
-					_upper[i] = _a ^ _b ^ borrow;
-					borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
-				}
-				// propagate any borrows to the end of the upper accumulator
-				while (borrow && i < upper_range) {
-					bool _a = _upper[i];
-					_upper[i] = _a ^ borrow;
-					borrow = borrow & !_a;
-					i++;
-				}
-				if (borrow) {
-					// propagate the borrow into the capacity segment
-					i = 0;
-					while (borrow && i < capacity) {
-						bool _a = _capacity[i];
-						_capacity[i] = _a ^ borrow;
-						borrow = borrow & !_a;
-						i++;
-					}
-				}			
-			}
+		if (_sign == rhs.sign()) {
+			// _sign stays the same, so nothing new to assign
+			add_value(rhs);
 		}
-		else {			// add
-			// scale is the location of the msb in the fixed point representation
-			// so scale  =  0 is the hidden bit at location 0, scale 1 = bit 1, etc.
-			// and scale = -1 is the first bit of the fraction
-			// we manage scale >= 0 in the _upper accumulator, and scale < 0 in the _lower accumulator
-			int lsb = scale - int(fbits);
-			bool carry = false;
-			std::bitset<fbits + 1> fraction = rhs.get_fixed_point();
-			// divide bits between upper and lower accumulator
-			if (scale < 0) {		// all lower accumulator
-				int lsb = int(half_range) + scale - int(fbits);
-				int qlsb = lsb > 0 ? lsb : 0;
-				int flsb = lsb >= 0 ? 0 : -lsb;
-				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
-					bool _a = _lower[i];
-					bool _b = fraction[f];
-					_lower[i] = _a ^ _b ^ carry;
-					carry = (_a & _b) | carry & (_a ^ _b);
-				}
-				// propagate any carries to the end of the lower accumulator
-				while (carry && i < half_range) {
-					bool _a = _lower[i];
-					_lower[i] = _a ^ carry;
-					carry = carry & _a;
-					i++;
-				}
-				if (carry) {  // carry propagate to the _upper accumulator
-							  // need to increment the _upper
-					i = 0;
-					while (carry && i < upper_range) {
-						bool _a = _upper[i];
-						_upper[i] = _a ^ carry;
-						carry = carry & _a;
-						i++;
-					}
-					if (carry) {
-						// next add the bits to the capacity segment
-						i = 0;
-						while (carry && i < capacity) {
-							bool _a = _capacity[i];
-							_capacity[i] = _a ^ carry;
-							carry = carry & _a;
-							i++;
-						}
-					}
-				}
+		else {
+			// subtract magnitudes
+			int cmp = CompareMagnitude(rhs);
+			if (cmp < 0) {
+				_sign = rhs.sign();
+				// we know that the value of the quire is less than the incoming value, so it is safe to swap the values
+				value<fbits> subtractend = this->to_value().round_to<fbits>();
+				*this = rhs;
+				subtract_value(subtractend);
 			}
-			else if (lsb >= 0) {	// all upper accumulator
-				for (i = lsb, f = 0; i <= scale && f <= int(fbits); i++, f++) {
-					bool _a = _upper[i];
-					bool _b = fraction[f];
-					_upper[i] = _a ^ _b ^ carry;
-					carry = (_a & _b) | carry & (_a ^ _b);
-				}
-				while (carry && i < int(upper_range)) {
-					bool _a = _upper[i];
-					_upper[i] = _a ^ carry;
-					carry = carry & _a;
-					i++;
-				}
-				if (carry) {
-					// next add the bits to the capacity segment
-					i = 0;
-					while (carry && i < capacity) {
-						bool _a = _capacity[i];
-						_capacity[i] = _a ^ carry;
-						carry = carry & _a;
-						i++;
-					}
-				}
+			else if (cmp > 0) {
+				// _sign stays the same
+				subtract_value(rhs);
 			}
-			else {  // lsb < 0 && scale > 0
-				// part upper, and part lower accumulator
-				// first add the lower accumulator component
-				lsb = int(half_range) + lsb; // remember lsb is negative in this block
-				int qlsb = lsb > 0 ? lsb : 0;
-				int flsb = lsb >= 0 ? 0 : -lsb;
-				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
-					bool _a = _lower[i];
-					bool _b = fraction[f];
-					_lower[i] = _a ^ _b ^ carry;
-					carry = (_a & _b) | carry & (_a ^ _b);
-				}
-				// next add the bits in the upper accumulator
-				for (i = 0; i <= scale && f <= int(fbits); i++, f++) {
-					bool _a = _upper[i];
-					bool _b = fraction[f];
-					_upper[i] = _a ^ _b ^ carry;
-					carry = (_a & _b) | carry & (_a ^ _b);
-				}
-				// propagate any carries to the end of the upper accumulator
-				while (carry && i < int(upper_range)) {
-					bool _a = _upper[i];
-					_upper[i] = _a ^ carry;
-					carry = carry & _a;
-					i++;
-				}
-				// next add the bits to the capacity segment
-				if (carry) {
-					i = 0;
-					while (carry && i < capacity) {
-						bool _a = _capacity[i];
-						_capacity[i] = _a ^ carry;
-						carry = carry & _a;
-						i++;
-					}
-				}
+			else {
+				_sign = false;
+				subtract_value(rhs);
 			}
 		}
 		return *this;
@@ -422,15 +228,18 @@ public:
 	// Subtract a normalized value from the quire value
 	template<size_t fbits>
 	quire& operator-=(const value<fbits>& rhs) {
-		*this += -rhs;
+		return *this += -rhs;
 	}
-	
+	// bit addressing operator
 	bool operator[](int index) const {
 		if (index < int(radix_point)) return _lower[index];
 		if (index < int(radix_point) + int(upper_range)) return _upper[index - int(radix_point)];
 		if (index < int(radix_point) + int(upper_range) + int(capacity)) return _capacity[index - int(radix_point) - int(upper_range)];
 		throw "index out of range";
 	}
+
+	// Modifiers
+
 	// state management operators
 	// reset the state of a quire to zero
 	void reset() {
@@ -441,7 +250,24 @@ public:
 	}
 	// semantic sugar: clear the state of a quire to zero
 	void clear() { reset(); }
+	void set_sign(bool v) { _sign = v; }
 
+	// Selectors
+	
+	// Compare magnitudes between quire and value: returns -1 if q < v, 0 if q == v, and 1 if q > v
+	template<size_t fbits>
+	int CompareMagnitude(const value<fbits>& v) {
+		// inefficient as we are copying a whole quire just to reset the sign bit, but we are leveraging the comparison logic
+		quire<nbits, es, capacity> absq = abs(*this);
+		value<fbits> absv = abs(v);
+		if (absq < absv) {
+			return -1;
+		}
+		else if (absq > absv) {
+			return 1;
+		}
+		return 0;
+	}
 	// query functions for quire attributes
 	int dynamic_range() const { return range; }
 	int max_scale() const { return upper_range; }
@@ -530,12 +356,236 @@ public:
 		}
 		return false;
 	}
+
 private:
 	bool				      _sign;
 	// segmented accumulator to demonstrate potential hw concurrency for high performance quires
 	std::bitset<half_range>   _lower;
 	std::bitset<upper_range>  _upper;  
 	std::bitset<capacity>     _capacity;
+
+	// add a value to the quire
+	template<size_t fbits>
+	void add_value(const value<fbits>& v) {
+		// scale is the location of the msb in the fixed point representation
+		// so scale  =  0 is the hidden bit at location 0, scale 1 = bit 1, etc.
+		// and scale = -1 is the first bit of the fraction
+		// we manage scale >= 0 in the _upper accumulator, and scale < 0 in the _lower accumulator
+		int lsb = v.scale() - int(fbits);
+		bool carry = false;
+		std::bitset<fbits + 1> fraction = v.get_fixed_point();
+		int i, f;  // bit pointers, i pointing to the quire bits, f pointing to the fraction bits of rhs
+		// divide bits between upper and lower accumulator
+		if (v.scale() < 0) {		// all lower accumulator
+			int lsb = int(half_range) + v.scale() - int(fbits);
+			int qlsb = lsb > 0 ? lsb : 0;
+			int flsb = lsb >= 0 ? 0 : -lsb;
+			for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
+				bool _a = _lower[i];
+				bool _b = fraction[f];
+				_lower[i] = _a ^ _b ^ carry;
+				carry = (_a & _b) | carry & (_a ^ _b);
+			}
+			// propagate any carries to the end of the lower accumulator
+			while (carry && i < half_range) {
+				bool _a = _lower[i];
+				_lower[i] = _a ^ carry;
+				carry = carry & _a;
+				i++;
+			}
+			if (carry) {  // carry propagate to the _upper accumulator
+						  // need to increment the _upper
+				i = 0;
+				while (carry && i < upper_range) {
+					bool _a = _upper[i];
+					_upper[i] = _a ^ carry;
+					carry = carry & _a;
+					i++;
+				}
+				if (carry) {
+					// next add the bits to the capacity segment
+					i = 0;
+					while (carry && i < capacity) {
+						bool _a = _capacity[i];
+						_capacity[i] = _a ^ carry;
+						carry = carry & _a;
+						i++;
+					}
+				}
+			}
+		}
+		else if (lsb >= 0) {	// all upper accumulator
+			for (i = lsb, f = 0; i <= v.scale() && f <= int(fbits); i++, f++) {
+				bool _a = _upper[i];
+				bool _b = fraction[f];
+				_upper[i] = _a ^ _b ^ carry;
+				carry = (_a & _b) | carry & (_a ^ _b);
+			}
+			while (carry && i < int(upper_range)) {
+				bool _a = _upper[i];
+				_upper[i] = _a ^ carry;
+				carry = carry & _a;
+				i++;
+			}
+			if (carry) {
+				// next add the bits to the capacity segment
+				i = 0;
+				while (carry && i < capacity) {
+					bool _a = _capacity[i];
+					_capacity[i] = _a ^ carry;
+					carry = carry & _a;
+					i++;
+				}
+			}
+		}
+		else {  // lsb < 0 && scale > 0
+				// part upper, and part lower accumulator
+				// first add the lower accumulator component
+			lsb = int(half_range) + lsb; // remember lsb is negative in this block
+			int qlsb = lsb > 0 ? lsb : 0;
+			int flsb = lsb >= 0 ? 0 : -lsb;
+			for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
+				bool _a = _lower[i];
+				bool _b = fraction[f];
+				_lower[i] = _a ^ _b ^ carry;
+				carry = (_a & _b) | carry & (_a ^ _b);
+			}
+			// next add the bits in the upper accumulator
+			for (i = 0; i <= v.scale() && f <= int(fbits); i++, f++) {
+				bool _a = _upper[i];
+				bool _b = fraction[f];
+				_upper[i] = _a ^ _b ^ carry;
+				carry = (_a & _b) | carry & (_a ^ _b);
+			}
+			// propagate any carries to the end of the upper accumulator
+			while (carry && i < int(upper_range)) {
+				bool _a = _upper[i];
+				_upper[i] = _a ^ carry;
+				carry = carry & _a;
+				i++;
+			}
+			// next add the bits to the capacity segment
+			if (carry) {
+				i = 0;
+				while (carry && i < capacity) {
+					bool _a = _capacity[i];
+					_capacity[i] = _a ^ carry;
+					carry = carry & _a;
+					i++;
+				}
+			}
+		}
+	}
+	// subtract a value from the quire
+	template<size_t fbits>
+	void subtract_value(const value<fbits>& v) {
+		// lsb in the quire of the lowest bit of the explicit fixed point value including the hidden bit of the fraction
+		int lsb = v.scale() - int(fbits);
+		bool borrow = false;
+		std::bitset<fbits + 1> fraction = v.get_fixed_point();
+		int i, f;  // bit pointers, i pointing to the quire bits, f pointing to the fraction bits of rhs
+		// divide bits between upper and lower accumulator
+		if (v.scale() < 0) {		// all lower accumulator
+			int lsb = int(half_range) + v.scale() - int(fbits);
+			int qlsb = lsb > 0 ? lsb : 0;
+			int flsb = lsb >= 0 ? 0 : -lsb;
+			for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
+				bool _a = _lower[i];
+				bool _b = fraction[f];
+				_lower[i] = _a ^ _b ^ borrow;
+				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+			}
+			// propagate any borrows to the end of the lower accumulator
+			while (borrow && i < half_range) {
+				bool _a = _lower[i];
+				_lower[i] = _a ^ borrow;
+				borrow = borrow & !_a;
+				i++;
+			}
+			if (borrow) { // borrow propagate to the _upper accumulator
+						  // need to decrement the _upper
+				i = 0;
+				while (borrow && i < upper_range) {
+					bool _a = _upper[i];
+					_upper[i] = _a ^ borrow;
+					borrow = borrow & !_a;
+					i++;
+				}
+				if (borrow) {
+					// propagate the borrow into the capacity segment
+					i = 0;
+					while (borrow && i < capacity) {
+						bool _a = _capacity[i];
+						_capacity[i] = _a ^ borrow;
+						borrow = borrow & !_a;
+						i++;
+					}
+				}
+			}
+		}
+		else if (lsb >= 0) {	// all upper accumulator
+			for (i = lsb, f = 0; i <= v.scale() && f <= int(fbits); i++, f++) {
+				bool _a = _upper[i];
+				bool _b = fraction[f];
+				_upper[i] = _a ^ _b ^ borrow;
+				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+			}
+			// propagate any borrows to the end of the upper accumulator
+			while (borrow && i < upper_range) {
+				bool _a = _upper[i];
+				_upper[i] = _a ^ borrow;
+				borrow = borrow & !_a;
+				i++;
+			}
+			if (borrow) {
+				// propagate the borrow into the capacity segment
+				i = 0;
+				while (borrow && i < capacity) {
+					bool _a = _capacity[i];
+					_capacity[i] = _a ^ borrow;
+					borrow = borrow & !_a;
+					i++;
+				}
+			}
+		}
+		else {   // lsb < 0 && scale >= 0
+				 // part upper, and part lower accumulator
+				 // first add the lower accumulator component
+			lsb = int(half_range) + lsb; // remember lsb is negative in this block
+			int qlsb = lsb > 0 ? lsb : 0;
+			int flsb = lsb >= 0 ? 0 : -lsb;
+			for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
+				bool _a = _lower[i];
+				bool _b = fraction[f];
+				_lower[i] = _a ^ _b ^ borrow;
+				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+			}
+			// next add the bits in the upper accumulator
+			for (i = 0; i <= v.scale() && f <= int(fbits); i++, f++) {
+				bool _a = _upper[i];
+				bool _b = fraction[f];
+				_upper[i] = _a ^ _b ^ borrow;
+				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+			}
+			// propagate any borrows to the end of the upper accumulator
+			while (borrow && i < upper_range) {
+				bool _a = _upper[i];
+				_upper[i] = _a ^ borrow;
+				borrow = borrow & !_a;
+				i++;
+			}
+			if (borrow) {
+				// propagate the borrow into the capacity segment
+				i = 0;
+				while (borrow && i < capacity) {
+					bool _a = _capacity[i];
+					_capacity[i] = _a ^ borrow;
+					borrow = borrow & !_a;
+					i++;
+				}
+			}
+		}
+	}
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t nes, size_t ncapacity>
@@ -556,7 +606,7 @@ private:
 	template<size_t nnbits, size_t nes, size_t ncapacity>
 	friend bool operator>=(const quire<nnbits, nes, ncapacity>& lhs, const quire<nnbits, nes, ncapacity>& rhs);
 
-	// magnitude comparison
+	// value comparisons
 	template<size_t nnbits, size_t nes, size_t ncapacity, size_t nfbits>
 	friend bool operator==(const quire<nnbits, nes, ncapacity>& q, const value<nfbits>& v);
 	template<size_t nnbits, size_t nes, size_t ncapacity, size_t nfbits >
@@ -566,6 +616,13 @@ private:
 
 };
 
+// Magnitude of a quire
+template<size_t nbits, size_t es, size_t capacity>
+quire<nbits, es, capacity> abs(const quire<nbits, es, capacity>& q) {
+	quire<nbits, es, capacity> magnitude(q);
+	magnitude.set_sign(false);
+	return magnitude;
+}
 
 // QUIRE BINARY ARITHMETIC OPERATORS
 template<size_t nbits, size_t es, size_t capacity>
