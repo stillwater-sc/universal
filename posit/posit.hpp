@@ -505,10 +505,10 @@ public:
 		return _fraction.none();
 	}
 
-	inline int	   sign_value() const {
+	inline int	      sign_value() const {
 		return (_sign ? -1 : 1);
 	}
-	inline double regime_value() const {
+	inline double   regime_value() const {
 		return _regime.value();
 	}
 	inline double exponent_value() const {
@@ -742,6 +742,9 @@ public:
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	value<fbits> convert_to_scientific_notation() const {
+		return value<fbits>(_sign, scale(), get_fraction().get(), isZero(), isNaR());
+	}
+	value<fbits> to_value() const {
 		return value<fbits>(_sign, scale(), get_fraction().get(), isZero(), isNaR());
 	}
 	void normalize(value<fbits>& v) const {
@@ -1280,6 +1283,9 @@ value<nbits - es + 2> quire_add(const posit<nbits, es>& lhs, const posit<nbits, 
 	static constexpr size_t abits = fbits + 4;       // size of the addend
 	value<abits + 1> sum;
 	value<fbits> a, b;
+
+	if (lhs.isZero() && rhs.isZero()) return sum;
+
 	// transform the inputs into (sign,scale,fraction) triples
 	a.set(lhs.get_sign(), lhs.scale(), lhs.get_fraction().get(), lhs.isZero(), lhs.isNaR());;
 	b.set(rhs.get_sign(), rhs.scale(), rhs.get_fraction().get(), rhs.isZero(), rhs.isNaR());;
@@ -1292,11 +1298,14 @@ value<nbits - es + 2> quire_add(const posit<nbits, es>& lhs, const posit<nbits, 
 template<size_t nbits, size_t es>
 value<2*(nbits - 2 - es)> quire_mul(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	static constexpr size_t fbits = nbits - 3 - es;
-	static constexpr size_t fhbits = fbits + 1;       // size of fraction + hidden bit
+	static constexpr size_t fhbits = fbits + 1;      // size of fraction + hidden bit
 	static constexpr size_t mbits = 2 * fhbits;      // size of the multiplier output
 
 	value<mbits> product;
-	value<fbits> a, b;
+	value<fbits> a, b;	
+	
+	if (lhs.isZero() || rhs.isZero()) return product;
+
 	// transform the inputs into (sign,scale,fraction) triples
 	a.set(lhs.get_sign(), lhs.scale(), lhs.get_fraction().get(), lhs.isZero(), lhs.isNaR());;
 	b.set(rhs.get_sign(), rhs.scale(), rhs.get_fraction().get(), rhs.isZero(), rhs.isNaR());;
