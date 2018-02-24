@@ -208,8 +208,8 @@ public:
 			int cmp = CompareMagnitude(rhs);
 			if (cmp < 0) {
 				_sign = rhs.sign();
-				// we know that the value of the quire is less than the incoming value, so it is safe to swap the values
-				value<fbits> subtractend = this->to_value().round_to<fbits>();
+				// TODO: is there a way to NOT have to swap the whole quire?
+				value<qbits> subtractend = this->to_value();
 				*this = rhs;
 				subtract_value(subtractend);
 			}
@@ -702,7 +702,7 @@ inline bool operator< (const quire<nbits, es, capacity>& q, const value<fbits>& 
 			std::bitset<fbits + 1> fixed = v.get_fixed_point();
 			int i, f;  // bit pointers, i for the quire, f for the fraction in v
 			bool undecided = true;
-			for (i = quire<nbits, es, capacity>::radix_point + qscale, f = int(fbits); i >= 0, f >= 0; --i, --f) {
+			for (i = quire<nbits, es, capacity>::radix_point + qscale, f = int(fbits); i >= 0 && f >= 0; --i, --f) {
 				if (!q[i] && fixed[f]) {
 					bSmaller = true;
 					undecided = false;
@@ -737,7 +737,7 @@ inline bool operator> (const quire<nbits, es, capacity>& q, const value<fbits>& 
 			std::bitset<fbits + 1> fixed_point = v.get_fixed_point();
 			int i, f;  // bit pointers, i for the quire, f for the fraction in v
 			bool undecided = true;
-			for (i = quire<nbits, es, capacity>::radix_point + qscale, f = int(fbits); i >= 0, f >= 0; --i, --f) {
+			for (i = quire<nbits, es, capacity>::radix_point + qscale, f = int(fbits); i >= 0 && f >= 0; --i, --f) {
 				if (q[i] && !fixed_point[f]) {
 					bBigger = true;
 					undecided = false;

@@ -505,10 +505,10 @@ public:
 		return _fraction.none();
 	}
 
-	inline int	   sign_value() const {
+	inline int	      sign_value() const {
 		return (_sign ? -1 : 1);
 	}
-	inline double regime_value() const {
+	inline double   regime_value() const {
 		return _regime.value();
 	}
 	inline double exponent_value() const {
@@ -742,6 +742,9 @@ public:
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	value<fbits> convert_to_scientific_notation() const {
+		return value<fbits>(_sign, scale(), get_fraction().get(), isZero(), isNaR());
+	}
+	value<fbits> to_value() const {
 		return value<fbits>(_sign, scale(), get_fraction().get(), isZero(), isNaR());
 	}
 	void normalize(value<fbits>& v) const {
