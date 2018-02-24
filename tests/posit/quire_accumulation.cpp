@@ -38,6 +38,49 @@ int GenerateQuireAccumulationTestCase(bool bReportIndividualTestCases, size_t nr
 	return nrOfFailedTestCases;
 }
 
+int ValidateQuireMagnitudeComparison() {
+	quire<16, 1, 2> q = 0xAAAA;
+	value<20> v;
+	v = 0xAAAB;
+	cout << "quire: " << q << endl;
+	cout << "value: " << v.get_fixed_point() << " " << components(v) << endl;
+	cout << (q < v ? "correct" : "incorrect") << endl;
+	cout << (q > v ? "incorrect" : "correct") << endl;
+	v = 0xAAAA;
+	cout << "value: " << v.get_fixed_point() << " " << components(v) << endl;
+	cout << (q == v ? "correct" : "incorrect") << endl;
+	return 0;
+}
+
+template<size_t nbits, size_t es, size_t capacity = 2>
+int ValidateSignMagnitudeTransitions() {
+	int nrOfFailedTestCases = 0;
+
+	// moving through the four quadrants of a sign/magnitue adder/subtractor
+	posit<nbits, es> minpos, next_code_above_minpos, maxpos, next_code_below_maxpos;
+	minpos = next_code_above_minpos = minpos_value<nbits, es>();
+	next_code_above_minpos++;
+	maxpos = next_code_below_maxpos = maxpos_value<nbits, es>();
+	next_code_below_maxpos--;
+	cout << "minpos         " << minpos.get() << " " << minpos << endl;
+	cout << "minpos++       " << next_code_above_minpos.get() << " " << next_code_above_minpos << endl;
+	cout << "maxpos--       " << next_code_below_maxpos.get() << " " << next_code_below_maxpos << endl;
+	cout << "maxpos         " << maxpos.get() << " " << maxpos << endl;
+
+	quire<nbits, es, capacity> q;
+	// start in the positive, SE quadrant with minpos^2
+	q += quire_mul(minpos, minpos);
+	cout << q << endl;
+	// move to the negative SW quadrant by adding negative value that is bigger
+	q += quire_mul(next_code_above_minpos, -next_code_above_minpos);
+	cout << q << endl;
+	// remove minpos^2 from the quire by subtracting it
+	q -= quire_mul(minpos, minpos);
+	cout << q << endl;
+
+	return nrOfFailedTestCases;
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -56,18 +99,18 @@ try {
 //	t = GenerateVectorForZeroValueFDP(16, maxpos<16,1>());
 //	PrintTestVector(cout, t);
 
-	quire<16, 1, 2> q = 0xAAAA;
-	value<20> v;
-	v = 0xAAAB;
-	cout << "quire: " << q << endl;
-	cout << "value: " << v.get_fixed_point() << endl;
-	cout << (q < v ? "correct" : "incorrect") << endl;
-	cout << (q > v ? "incorrect" : "correct") << endl;
-	v = 0xAAAA;
-	cout << v.get_fixed_point() << endl;
-	cout << (q == v ? "correct" : "incorrect") << endl;
+	quire<8, 1, 2> q;
+	posit<8, 1> minpos = minpos_value<8, 1>();
+	q += quire_mul(minpos, minpos);
+	value<3> v3 = q.to_value().round_to<3>();
+	value<5> v5 = q.to_value().round_to<5>();
+	value<7> v7 = q.to_value().round_to<7>();
+	cout << components(v3) << endl;
+	cout << components(v5) << endl;
+	cout << components(v7) << endl;
 
-	bool bSame = q == v;
+	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<8, 1>();
+
 
 	//nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
 
