@@ -200,26 +200,26 @@ public:
 		// (-a) + (+b)                       +(b - a)    +(a - b)   -(a - b)
 		// (-a) + (-b)      -(a + b)
 		if (_sign == rhs.sign()) {
-			// _sign stays the same, so nothing new to assign
 			add_value(rhs);
+			// _sign stays the same, so nothing new to assign
 		}
 		else {
 			// subtract magnitudes
 			int cmp = CompareMagnitude(rhs);
 			if (cmp < 0) {
-				_sign = rhs.sign();
 				// TODO: is there a way to NOT have to swap the whole quire?
 				value<qbits> subtractend = this->to_value();
 				*this = rhs;
 				subtract_value(subtractend);
+				_sign = rhs.sign();
 			}
 			else if (cmp > 0) {
-				// _sign stays the same
 				subtract_value(rhs);
+				// _sign stays the same
 			}
 			else {
-				_sign = false;
 				subtract_value(rhs);
+				_sign = false;
 			}
 		}
 		return *this;
@@ -280,11 +280,11 @@ public:
 		for (; msb >= 0; msb--) {
 			if (_capacity.test(msb)) break;
 		}
-		if (msb > 0) return msb + upper_range;
+		if (msb >= 0) return msb + upper_range;
 		for (msb = int(upper_range) - 1; msb >= 0; msb--) {
 			if (_upper.test(msb)) break;
 		}
-		if (msb > 0) return msb;
+		if (msb >= 0) return msb;
 		for (int i = int(half_range) - 1; i >= 0; i--, msb--) {
 			if (_lower.test(i)) break;
 		}
@@ -367,6 +367,7 @@ private:
 	// add a value to the quire
 	template<size_t fbits>
 	void add_value(const value<fbits>& v) {
+		if (v.isZero()) return;
 		// scale is the location of the msb in the fixed point representation
 		// so scale  =  0 is the hidden bit at location 0, scale 1 = bit 1, etc.
 		// and scale = -1 is the first bit of the fraction
@@ -479,6 +480,7 @@ private:
 	// subtract a value from the quire
 	template<size_t fbits>
 	void subtract_value(const value<fbits>& v) {
+		if (v.isZero()) return;
 		// lsb in the quire of the lowest bit of the explicit fixed point value including the hidden bit of the fraction
 		int lsb = v.scale() - int(fbits);
 		bool borrow = false;
