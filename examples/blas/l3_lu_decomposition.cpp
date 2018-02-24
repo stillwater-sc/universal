@@ -87,10 +87,10 @@ void SolveCrout(const std::vector<Ty>& LU, const std::vector<Ty>& b, std::vector
 	for (int i = d - 1; i >= 0; --i) {
 		Ty sum = 0.0;
 		for (int k = i + 1; k < d; ++k) {
-			cout << "lu[] = " << LU[i*d+k] << " x[" << k << "] = " << x[k] << endl;
+			//cout << "lu[] = " << LU[i*d+k] << " x[" << k << "] = " << x[k] << endl;
 			sum += LU[i*d + k] * x[k];
 		}
-		cout << "sum " << sum << endl;
+		//cout << "sum " << sum << endl;
 		x[i] = (y[i] - sum); // not dividing by diagonals
 	}
 }
@@ -134,12 +134,12 @@ void SolveCroutFDP(const std::vector< posit<nbits, es> >& LU, const std::vector<
 		quire<nbits, es, capacity> q = 0.0;
 		// for (int k = i + 1; k < d; ++k) q += LU[i*d + k] * x[k];   if we had expression templates for the quire
 		for (int k = i + 1; k < d; ++k) {
-			cout << "lu[] = " << LU[i*d + k] << " x[" << k << "] = " << x[k] << endl;
+			//cout << "lu[] = " << LU[i*d + k] << " x[" << k << "] = " << x[k] << endl;
 			q += quire_mul(LU[i*d + k], x[k]);
 		}
 		posit<nbits, es> sum;
 		sum.convert(q.to_value());   // one and only rounding step of the fused-dot product
-		cout << "sum " << sum << endl;
+		//cout << "sum " << sum << endl;
 		x[i] = (y[i] - sum); // not dividing by diagonals
 	}
 }

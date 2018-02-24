@@ -150,7 +150,7 @@ int ValidateSignMagnitudeTransitions() {
 	return nrOfFailedTestCases;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main()
@@ -178,11 +178,22 @@ try {
 	cout << components(v3) << endl;
 	cout << components(v5) << endl;
 	cout << components(v7) << endl;
+
+	// test correct handling of 0
+	quire<8, 1, 2> q = 1;
+	cout << q << endl;
+	posit<8, 1> one = 1;
+	posit<8, 1> aThird = 0.3333333333333333333333333333333333333333333;
+	value< posit<8, 1>::mbits > mul = quire_mul(aThird, -one);
+	cout << components(mul) << endl;
+	q += quire_mul(aThird, -one);
+	cout << q << endl;
+	value<8> result = q.to_value().round_to<8>();
+	cout << result << " " << components(result) << endl;
 #endif
 
 	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<8, 1>();
-
-
+	
 	//nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
 
 #else
