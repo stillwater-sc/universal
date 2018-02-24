@@ -55,28 +55,97 @@ int ValidateQuireMagnitudeComparison() {
 template<size_t nbits, size_t es, size_t capacity = 2>
 int ValidateSignMagnitudeTransitions() {
 	int nrOfFailedTestCases = 0;
+	cout << "Quire configuration: quire<" << nbits << ", " << es << ", " << capacity << ">" << endl;
 
 	// moving through the four quadrants of a sign/magnitue adder/subtractor
-	posit<nbits, es> minpos, next_code_above_minpos, maxpos, next_code_below_maxpos;
-	minpos = next_code_above_minpos = minpos_value<nbits, es>();
-	next_code_above_minpos++;
-	maxpos = next_code_below_maxpos = maxpos_value<nbits, es>();
-	next_code_below_maxpos--;
+	posit<nbits, es> minpos, min2, min3, min4;
+	minpos = sw::unum::minpos<nbits, es>();     // ...0001
+	min2 = minpos; min2++;                  // ...0010
+	min3 = minpos; min3++; min3++;          // ...0011
+	min4 = minpos; min4++; min4++; min4++;  // ...0100
+	posit<nbits, es> maxpos, max2, max3, max4;
+	maxpos = maxpos_value<nbits, es>();     // 01..111
+	max2 = maxpos; --max2;                  // 01..110
+	max3 = max2; --max3;                    // 01..101
+	max4 = max3; --max4;                    // 01..100
+
+	cout << endl;
+	cout << "Posit range extremes:" << endl;
 	cout << "minpos         " << minpos.get() << " " << minpos << endl;
-	cout << "minpos++       " << next_code_above_minpos.get() << " " << next_code_above_minpos << endl;
-	cout << "maxpos--       " << next_code_below_maxpos.get() << " " << next_code_below_maxpos << endl;
+	cout << "min2           " << min2.get() << " " << min2 << endl;
+	cout << "min3           " << min3.get() << " " << min3 << endl;
+	cout << "min4           " << min4.get() << " " << min4 << endl;
+	cout << "..." << endl;
+	cout << "max4           " << max4.get() << " " << max4 << endl;
+	cout << "max3           " << max3.get() << " " << max3 << endl;
+	cout << "max2           " << max2.get() << " " << max2 << endl;
 	cout << "maxpos         " << maxpos.get() << " " << maxpos << endl;
 
+	cout << endl;
+
+	cout << "Quire experiments: sign/magnitude transitions at the range extremes" << endl;
+
 	quire<nbits, es, capacity> q;
+	cout << q << "                                               <-- start at zero" << endl;
 	// start in the positive, SE quadrant with minpos^2
 	q += quire_mul(minpos, minpos);
-	cout << q << endl;
+	cout << q << " q += minpos^2  minpos = " << minpos.get() << " " << components(minpos.to_value()) << endl;
 	// move to the negative SW quadrant by adding negative value that is bigger
-	q += quire_mul(next_code_above_minpos, -next_code_above_minpos);
-	cout << q << endl;
+	q += quire_mul(min2, -min2);
+	cout << q << " q += min2^2    min2   = " << min2.get() << " " << components(min2.to_value()) << endl;
 	// remove minpos^2 from the quire by subtracting it
 	q -= quire_mul(minpos, minpos);
-	cout << q << endl;
+	cout << q << " q -= minpos^2  minpos = " << minpos.get() << " " << components(minpos.to_value()) << endl;
+	// move back into posit, SE quadrant by adding the next bigger product
+	q += quire_mul(min3, min3);
+	cout << q << " q += min3^2    min3   = " << min3.get() << " " << components(min3.to_value()) << endl;
+	// remove the min2^2 from the quire by subtracting it
+	q -= quire_mul(min2, min2);
+	cout << q << " q -= min2^2    min2   = " << min2.get() << " " << components(min2.to_value()) << endl;
+	// add a -maxpos^2, to flip it again
+	q += quire_mul(maxpos, -maxpos);
+	cout << q << " q += -maxpos^2 maxpos = " << maxpos.get() << " " << components(maxpos.to_value()) << endl;
+	// subtract min3^2 to propagate the carry
+	q -= quire_mul(min3, min3);
+	cout << q << " q -= min3^2    min3   = " << min3.get() << " " << components(min3.to_value()) << endl;
+	// remove min2^2 remenants
+	q += quire_mul(min2, min2);
+	cout << q << " q += min2^2    min2   = " << min2.get() << " " << components(min2.to_value()) << endl;
+	q += quire_mul(min2, min2);
+	cout << q << " q += min2^2    min2   = " << min2.get() << " " << components(min2.to_value()) << endl;
+	// borrow propagate
+	q += quire_mul(minpos, minpos);
+	cout << q << " q += minpos^2  minpos = " << minpos.get() << " " << components(minpos.to_value()) << endl;
+	// flip the max3 bit
+	q += quire_mul(max3, max3);
+	cout << q << " q += max3^2    max3   = " << max3.get() << " " << components(max3.to_value()) << endl;
+	// add maxpos^2 to be left with max3^2
+	q += quire_mul(maxpos, maxpos);
+	cout << q << " q += maxpos^2  maxpos = " << maxpos.get() << " " << components(maxpos.to_value()) << endl;
+	// subtract max2^2 to flip the sign again
+	q -= quire_mul(max2, max2);
+	cout << q << " q -= max2^2    max2   = " << max2.get() << " " << components(max2.to_value()) << endl;
+	// remove the max3^2 remenants
+	q -= quire_mul(max3, max3);
+	cout << q << " q -= max3^2    max3   = " << max3.get() << " " << components(max3.to_value()) << endl;
+	// remove the minpos^2 bits
+	q -= quire_mul(minpos, minpos);
+	cout << q << " q -= minpos^2  minpos = " << minpos.get() << " " << components(minpos.to_value()) << endl;
+	// add maxpos^2 to be left with max2^2 and flipped back to positive quadrant
+	q += quire_mul(maxpos, maxpos);
+	cout << q << " q += maxpos^2  maxpos = " << maxpos.get() << " " << components(maxpos.to_value()) << endl;
+	// add max2^2 to remove its remenants
+	q += quire_mul(max2, max2);
+	cout << q << " q += max2^2    max2   = " << max2.get() << " " << components(max2.to_value()) << endl;
+	// subtract minpos^2 to propagate the borrow across the quire
+	q -= quire_mul(minpos, minpos);
+	cout << q << " q -= minpos^2  minpos = " << minpos.get() << " " << components(minpos.to_value()) << endl;
+	// subtract maxpos^2 to flip the sign and be left with minpos^2
+	q -= quire_mul(maxpos, maxpos);
+	cout << q << " q -= maxpos^2  maxpos = " << maxpos.get() << " " << components(maxpos.to_value()) << endl;
+	// add minpos^2 to get to zero
+	q += quire_mul(minpos, minpos);
+	cout << q << " q += minpos^2  minpos = " << minpos.get() << " " << components(minpos.to_value()) << " <-- back to zero" << endl;
 
 	return nrOfFailedTestCases;
 }
@@ -99,6 +168,7 @@ try {
 //	t = GenerateVectorForZeroValueFDP(16, maxpos<16,1>());
 //	PrintTestVector(cout, t);
 
+#if 0
 	quire<8, 1, 2> q;
 	posit<8, 1> minpos = minpos_value<8, 1>();
 	q += quire_mul(minpos, minpos);
@@ -108,6 +178,7 @@ try {
 	cout << components(v3) << endl;
 	cout << components(v5) << endl;
 	cout << components(v7) << endl;
+#endif
 
 	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<8, 1>();
 
