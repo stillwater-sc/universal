@@ -6,8 +6,8 @@
 
 #include "stdafx.h"
 
-#include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/exceptions.hpp"
+#include "../../bitblock/bitblock.hpp"
 #include "../../posit/trace_constants.hpp"
 #include "../../posit/bit_functions.hpp"
 #include "../../posit/value.hpp"
@@ -113,7 +113,7 @@ try {
 	f = -0.12499f; v = f; PrintValue(f, v);
 
 	cout << "Rounding" << endl;
-	std::bitset<8> fraction;
+	bitblock<8> fraction;
 	fraction = 0x55;
 	value<8> r8(false, 0, fraction, false, false);
 	cout << "Value is " << r8 << " components are " << components(r8) << endl;

@@ -58,11 +58,8 @@ typedef __128bitdd double_double;
 #endif
 
 // Posits encode error conditions as NaR (Not a Real), propagating the error through arithmetic operations is preferred
-
-#include "../bitset/bitset_helpers.hpp"
-#include "../bitset/bitset_logic.hpp"
-#include "../bitset/bitset_arithmetic.hpp"
 #include "exceptions.hpp"
+#include "../bitblock/bitblock.hpp"
 #include "bit_functions.hpp"
 #include "trace_constants.hpp"
 #include "posit_functions.hpp"
@@ -435,7 +432,7 @@ public:
 		}
 		// compute the reciprocal
 		bool old_sign = _sign;
-		std::bitset<nbits> raw_bits;
+		bitblock<nbits> raw_bits;
 		if (isPowerOf2()) {
 			raw_bits = twos_complement(_raw_bits);
 			raw_bits.set(nbits-1, old_sign);
@@ -443,13 +440,13 @@ public:
 		}
 		else {
 			constexpr size_t operand_size = fhbits;
-			std::bitset<operand_size> one;
+			bitblock<operand_size> one;
 			one.set(operand_size - 1, true);
-			std::bitset<operand_size> frac;
+			bitblock<operand_size> frac;
 			copy_into(_fraction.get(), 0, frac);
 			frac.set(operand_size - 1, true);
 			constexpr size_t reciprocal_size = 3 * fbits + 4;
-			std::bitset<reciprocal_size> reciprocal;
+			bitblock<reciprocal_size> reciprocal;
 			divide_with_fraction(one, frac, reciprocal);
 			if (_trace_reciprocate) {
 				std::cout << "one    " << one << std::endl;
@@ -483,13 +480,13 @@ public:
 		return (!_sign & _regime.isZero());
 	}
 	bool isOne() const { // pattern 010000....
-		std::bitset<nbits> tmp(_raw_bits);
+		bitblock<nbits> tmp(_raw_bits);
 		tmp.set(nbits - 2, false);
 		bool oneBitSet = tmp.none();
 		return !_sign & oneBitSet;
 	}
 	bool isMinusOne() const { // pattern 110000...
-		std::bitset<nbits> tmp(_raw_bits);
+		bitblock<nbits> tmp(_raw_bits);
 		tmp.set(nbits - 1, false);
 		tmp.set(nbits - 2, false);
 		bool oneBitSet = tmp.none();
@@ -532,18 +529,18 @@ public:
 	fraction<fbits>    get_fraction() const {
 		return _fraction;
 	}
-	std::bitset<nbits> get() const {
+	bitblock<nbits>    get() const {
 		return _raw_bits;
 	}
-	std::bitset<nbits> get_decoded() const {
-		std::bitset<rbits> r = _regime.get();
+	bitblock<nbits>    get_decoded() const {
+		bitblock<rbits> r = _regime.get();
 		size_t nrRegimeBits = _regime.nrBits();
-		std::bitset<es> e = _exponent.get();
+		bitblock<es> e = _exponent.get();
 		size_t nrExponentBits = _exponent.nrBits();
-		std::bitset<fbits> f = _fraction.get();
+		bitblock<fbits> f = _fraction.get();
 		size_t nrFractionBits = _fraction.nrBits();
 
-		std::bitset<nbits> _Bits;
+		bitblock<nbits> _Bits;
 		_Bits.set(nbits - 1, _sign);
 		int msb = nbits - 2;
 		for (size_t i = 0; i < nrRegimeBits; i++) {
@@ -614,14 +611,14 @@ public:
 		_raw_bits.reset();
 		_raw_bits.set(nbits - 1, true);
 	}
-	posit<nbits, es>& set(const std::bitset<nbits>& raw_bits) {
+	posit<nbits, es>& set(const bitblock<nbits>& raw_bits) {
 		decode(raw_bits);
 		return *this;
 	}
 	// Set the raw bits of the posit given a binary pattern
 	posit<nbits,es>& set_raw_bits(uint64_t value) {
 		clear();
-		std::bitset<nbits> raw_bits;
+		bitblock<nbits> raw_bits;
 		uint64_t mask = 1;
 		for ( int i = 0; i < nbits; i++ ) {
 			raw_bits.set(i,(value & mask));
@@ -631,7 +628,7 @@ public:
 		decode(raw_bits);
 		return *this;
 	}
-	int decode_regime(std::bitset<nbits>& raw_bits) {
+	int decode_regime(bitblock<nbits>& raw_bits) {
 		// let m be the number of identical bits in the regime
 		int m = 0;   // regime runlength counter
 		int k = 0;   // converted regime scale
@@ -664,8 +661,8 @@ public:
 	// decode takes the raw bits representing a posit coming from memory
 	// and decodes the regime, the exponent, and the fraction.
 	// This function has the functionality of the posit register-file load.
-	void extract_fields(const std::bitset<nbits>& raw_bits) {
-		std::bitset<nbits> tmp(raw_bits);
+	void extract_fields(const bitblock<nbits>& raw_bits) {
+		bitblock<nbits> tmp(raw_bits);
 		if (_sign) tmp = twos_complement(tmp);
 		size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 
@@ -674,7 +671,7 @@ public:
 		int msb = int(int(nbits) - 1 - (1 + nrRegimeBits));
 		size_t nrExponentBits = 0;
 		if (es > 0) {
-			std::bitset<es> _exp;
+			bitblock<es> _exp;
 			if (msb >= 0 && es > 0) {
 				nrExponentBits = (msb >= es - 1 ? es : msb + 1);
 				for (size_t i = 0; i < nrExponentBits; i++) {
@@ -690,7 +687,7 @@ public:
 		// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
 		// If the fraction is empty, we have a fraction of nbits-3 0 bits
 		// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
-		std::bitset<fbits> _frac;
+		bitblock<fbits> _frac;
 		msb = msb - int(nrExponentBits);
 		size_t nrFractionBits = (msb < 0 ? 0 : msb + 1);
 		if (msb >= 0) {
@@ -700,7 +697,7 @@ public:
 		}
 		_fraction.set(_frac, nrFractionBits);
 	}
-	void decode(const std::bitset<nbits>& raw_bits) {
+	void decode(const bitblock<nbits>& raw_bits) {
 		_raw_bits = raw_bits;	// store the raw bits for reference
 		// check special cases
 		_sign     = raw_bits.test(nbits - 1);
@@ -752,21 +749,21 @@ public:
 	}
 	template<size_t tgt_fbits>
 	void normalize_to(value<tgt_fbits>& v) const {
-		std::bitset<tgt_fbits> _fr;
-		std::bitset<fbits> _src = _fraction.get();
+		bitblock<tgt_fbits> _fr;
+		bitblock<fbits> _src = _fraction.get();
 		int tgt, src;
 		for (tgt = int(tgt_fbits) - 1, src = int(fbits) - 1; tgt >= 0, src >= 0; tgt--, src--) _fr[tgt] = _src[src];
 		v.set(_sign, scale(), _fr, isZero(), isNaR());
 	}
 	// collect the posit components into a bitset
-	std::bitset<nbits> collect() {
-		std::bitset<rbits> r = _regime.get();
+	bitblock<nbits> collect() {
+		bitblock<rbits> r = _regime.get();
 		size_t nrRegimeBits = _regime.nrBits();
-		std::bitset<es> e = _exponent.get();
+		bitblock<es> e = _exponent.get();
 		size_t nrExponentBits = _exponent.nrBits();
-		std::bitset<fbits> f = _fraction.get();
+		bitblock<fbits> f = _fraction.get();
 		size_t nrFractionBits = _fraction.nrBits();
-		std::bitset<nbits> raw_bits;
+		bitblock<nbits> raw_bits;
 		// collect
 		raw_bits.set(nbits - 1, _sign);
 		int msb = int(nbits) - 2;
@@ -788,13 +785,13 @@ public:
 	// given a decoded posit, take its 2's complement
 	void take_2s_complement() {
 		// transform back through 2's complement
-		std::bitset<rbits> r = _regime.get();
+		bitblock<rbits> r = _regime.get();
 		size_t nrRegimeBits = _regime.nrBits();
-		std::bitset<es> e = _exponent.get();
+		bitblock<es> e = _exponent.get();
 		size_t nrExponentBits = _exponent.nrBits();
-		std::bitset<fbits> f = _fraction.get();
+		bitblock<fbits> f = _fraction.get();
 		size_t nrFractionBits = _fraction.nrBits();
-		std::bitset<nbits> raw_bits;
+		bitblock<nbits> raw_bits;
 		// collect
 		raw_bits.set(int(nbits) - 1, _sign);
 		int msb = int(nbits) - 2;
@@ -814,20 +811,20 @@ public:
 		// transform
 		raw_bits = twos_complement(raw_bits);
 		// distribute
-		std::bitset<nbits - 1> regime_bits;
+		bitblock<nbits - 1> regime_bits;
 		for (unsigned int i = 0; i < nrRegimeBits; i++) {
 			regime_bits.set(nbits - 2 - i, raw_bits[nbits - 2 - i]);
 		}
 		_regime.set(regime_bits, nrRegimeBits);
 		if (es > 0 && nrExponentBits > 0) {
-			std::bitset<es> exponent_bits;
+			bitblock<es> exponent_bits;
 			for (size_t i = 0; i < nrExponentBits; i++) {
 				exponent_bits.set(es - 1 - i, raw_bits[nbits - 2 - nrRegimeBits - i]);
 			}
 			_exponent.set(exponent_bits, nrExponentBits);
 		}
 		if (nrFractionBits > 0) {
-			std::bitset<fbits> fraction_bits;   // was nbits - 2
+			bitblock<fbits> fraction_bits;   // was nbits - 2
 			for (size_t i = 0; i < nrFractionBits; i++) {
 				// fraction_bits.set(nbits - 3 - i, raw_bits[nbits - 2 - nrRegimeBits - nrExponentBits - i]);
 				fraction_bits.set(fbits - 1 - i, raw_bits[nbits - 2 - nrRegimeBits - nrExponentBits - i]);
@@ -865,13 +862,13 @@ public:
 	}
 	// step up to the next posit in a lexicographical order
 	void increment_posit() {
-		std::bitset<nbits> raw(_raw_bits);
+		bitblock<nbits> raw(_raw_bits);
 		increment_bitset(raw);
 		decode(raw);
 	}
 	// step down to the previous posit in a lexicographical order
 	void decrement_posit() {
-		std::bitset<nbits> raw(_raw_bits);
+		bitblock<nbits> raw(_raw_bits);
 		decrement_bitset(raw);
 		decode(raw);
 	}
@@ -891,7 +888,7 @@ public:
     }
 	// convert assumes that ZERO and NaR cases are handled. Only non-zero and non-NaR values are allowed.
 	template<size_t input_fbits>
-	void convert(bool sign, int scale, std::bitset<input_fbits> input_fraction) {
+	void convert(bool sign, int scale, bitblock<input_fbits> input_fraction) {
 		clear();
 		if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 		if (_trace_conversion) std::cout << "sign " << (sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << scale << " fraction " << input_fraction << std::endl;
@@ -912,11 +909,11 @@ public:
 		}
 		else {
 			const size_t pt_len = nbits + 3 + es;
-			std::bitset<pt_len> pt_bits;
-			std::bitset<pt_len> regime;
-			std::bitset<pt_len> exponent;
-			std::bitset<pt_len> fraction;
-			std::bitset<pt_len> sticky_bit;
+			bitblock<pt_len> pt_bits;
+			bitblock<pt_len> regime;
+			bitblock<pt_len> exponent;
+			bitblock<pt_len> fraction;
+			bitblock<pt_len> sticky_bit;
 
 			bool s = sign;
 			int e = scale;
@@ -927,7 +924,7 @@ public:
 			for (unsigned i = 1; i <= run; i++) regime.set(i, r);
 
 			unsigned esval = e % (uint32_t(1) << es);
-			exponent = convert_to_bitset<pt_len>(esval);
+			exponent = convert_to_bitblock<pt_len>(esval);
 			unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 			// TODO: what needs to be done if nf > fbits?
 			//assert(nf <= input_fbits);
@@ -957,7 +954,7 @@ public:
 			bool rb = (blast & bafter) | (bafter & bsticky);
 
 			pt_bits <<= pt_len - len;
-			std::bitset<nbits> ptt;
+			bitblock<nbits> ptt;
 			truncate(pt_bits, ptt);
 
 			if (rb) increment_bitset(ptt);
@@ -967,7 +964,7 @@ public:
 	}
 
 private:
-	std::bitset<nbits>     _raw_bits;	// raw bit representation
+	bitblock<nbits>        _raw_bits;	// raw bit representation
 	bool				   _sign;       // decoded posit representation
 	regime<nbits, es>	   _regime;		// decoded posit representation
 	exponent<nbits, es>    _exponent;	// decoded posit representation

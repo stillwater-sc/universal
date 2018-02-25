@@ -42,7 +42,7 @@ try {
 	}
 
 	// fraction component of the posit
-	std::bitset<nbits-2> _fraction;
+	bitblock<nbits-2> _fraction;
 	_fraction.set(nbits - 3, true);
 	_fraction.set(nbits - 4, false);
 	_fraction.set(nbits - 5, true);

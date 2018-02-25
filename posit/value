@@ -8,6 +8,7 @@
 #define _VALUE_
 
 #include "exceptions.hpp"
+#include "../bitblock/bitblock.hpp"
 #include "bit_functions.hpp"
 #include "trace_constants.hpp"
 #include "value.hpp"

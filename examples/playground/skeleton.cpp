@@ -134,7 +134,7 @@ namespace sw {
 				}
 			}
 
-			std::bitset<posit<nbits,es>::fbits> f = p.get_fraction().get();
+			bitblock<posit<nbits,es>::fbits> f = p.get_fraction().get();
 			int fractionBits = (int)p.get_fraction().nrBits();
 			int nrOfFractionBitsProcessed = 0;
 			for (int i = int(p.fbits) - 1; i >= 0; --i) {

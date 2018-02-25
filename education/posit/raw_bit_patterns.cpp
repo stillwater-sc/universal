@@ -15,7 +15,7 @@ using namespace sw::unum;
 template<size_t nbits, size_t es>
 void EnumerateRegimePatterns() {
 	posit<nbits, es> p;
-	bitset<nbits> raw;
+	bitblock<nbits> raw;
 
 	std::cout << "posit<" << nbits << ", " << es << ">" << std::endl;
 
@@ -103,7 +103,7 @@ void ManualPatternSet() {
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 2;
 	posit<nbits, es> p;
-	bitset<nbits> raw;
+	bitblock<nbits> raw;
 
 	// 1152921504606846976
 	raw.reset();

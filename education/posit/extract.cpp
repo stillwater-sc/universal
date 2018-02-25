@@ -77,7 +77,7 @@ posit<nbits, es> extract(float f) {
 	uint32_t	 _23b_fraction_without_hidden_bit;
 
 	extract_fp_components(f, _sign, _scale, _fr, _23b_fraction_without_hidden_bit);
-	std::bitset<fbits> _fraction = extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
+	bitblock<fbits> _fraction = extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
 
 	p.convert(_sign, _scale, _fraction);
 	return p;
@@ -93,7 +93,7 @@ posit<nbits, es> extract(double d) {
 	unsigned long long	_52b_fraction_without_hidden_bit;
 
 	extract_fp_components(d, _sign, _scale, _fr, _52b_fraction_without_hidden_bit);
-	std::bitset<fbits> _fraction = extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
+	bitblock<fbits> _fraction = extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
 
 	p.convert(_sign, _scale, _fraction);
 	return p;
@@ -112,7 +112,7 @@ try {
 	unsigned int		ulfraction;
 	double				dfr;
 	unsigned long long	ullfraction;
-	std::bitset<nbits> _fraction;
+	bitblock<nbits>     _fraction;
 
 	cout << "Conversion tests" << endl;
 

@@ -8,10 +8,10 @@
 #include "targetver.h"
 
 #include <stdio.h>
+#include <assert.h>
 //#include <tchar.h>
 #include <cstdint>	// uint8_t, etc.
 #include <string>
 #include <iostream>
-#include <sstream>
 #include <iomanip>
-#include <cmath>        // for frexp/frexpf
+#include <sstream>
