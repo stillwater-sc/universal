@@ -169,6 +169,79 @@ std::bitset<nbits> CopyInto(std::bitset<src_size>& src) {
 	return tgt;
 }
 
+// calculate the 2's complement of a 2's complement encoded number
+template<size_t nbits>
+std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
+	std::bitset<nbits> complement;
+	uint8_t _slice = 0;
+	uint8_t carry = 1;
+	for (size_t i = 0; i < nbits; i++) {
+		_slice = uint8_t(!number[i]) + carry;
+		carry = _slice >> 1;
+		complement[i] = (0x1 & _slice);
+	}
+	return complement;
+}
+
+template<size_t nbits>
+bool increment_unsigned(std::bitset<nbits>& number, int nrBits = nbits - 1) {
+	bool carry = 1;  // ripple carry
+	int lsb = nbits - nrBits;
+	for (int i = lsb; i < nbits; i++) {
+		bool _a = number[i];
+		number[i] = _a ^ carry;
+		carry = (_a & false) | carry & (_a ^ false);
+	}
+	return carry;
+}
+
+// increment the input bitset in place, and return true if there is a carry generated.
+template<size_t nbits>
+bool increment_bitset(std::bitset<nbits>& number) {
+	bool carry = true;  // ripple carry
+	for (int i = 0; i < nbits; i++) {
+		bool _a = number[i];
+		number[i] = _a ^ carry;
+		carry = carry & (_a ^ false);
+	}
+	return carry;
+}
+
+// decrement the input bitset in place, and return true if there is a borrow generated.
+template<size_t nbits>
+bool decrement_bitset(std::bitset<nbits>& number) {
+	bool borrow = true;
+	for (int i = 0; i < nbits; i++) {
+		bool _a = number[i];
+		number[i] = _a ^ borrow;
+		borrow = (!(!_a ^ true) & borrow);
+	}
+	return borrow;
+}
+
+// DANGER: this depends on the implicit type conversion of number to a uint64_t to sign extent a 2's complement number system
+// if nbits > 64 then this code breaks.
+template<size_t nbits, class Type>
+std::bitset<nbits> convert_to_bitset(Type number) {
+	std::bitset<nbits> _Bits;
+	uint64_t mask = uint64_t(1);
+	for (std::size_t i = 0; i < nbits; i++) {
+		_Bits[i] = mask & number;
+		mask <<= 1;
+	}
+	return _Bits;
+}
+
+// sticky bit representation of all the bits from [msb, lsb], that is, msb is included
+template<size_t nbits>
+bool anyAfter(const std::bitset<nbits>& bits, unsigned msb) {
+	bool running = false;
+	for (int i = msb; i >= 0; i--) {
+		running |= bits.test(i);
+	}
+	return running;
+}
+
 /*
 p[x_] := Module[{s, y, r, e, f, run, reg, esval, nf, len, fv, sb, pt, blast, bafter, bsticky, rb, ptt, p},
 s     = Boole[x < 0];
@@ -292,7 +365,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	std::bitset<nbits> ptt_t;
 	CopyLowerSegment(ptt, ptt_t);
 	posit<nbits, es> p;
-	p.set(ptt_t);
+	p.set_raw_bits(ptt_t.to_ullong());
 	cout << "p = " << components_to_string(p) << endl;
 }
 
@@ -411,7 +484,7 @@ void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
 	if (bPrintIntermediateSteps) cout << "exponent = " << _exponent << endl;
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 	if (bPrintIntermediateSteps) cout << "nf       = " << nf << endl;
-	std::bitset<23> fraction_bitset = v.fraction();
+	bitblock<23> fraction_bitset = v.fraction();
 	fraction<23> _fraction;
 	bool sb = _fraction.assign<23>(nf, fraction_bitset, nf+1);  // assign and create sticky bit
 	if (bPrintIntermediateSteps) cout << "sb       = " << sb << endl;
@@ -436,7 +509,8 @@ void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
 		if (carry && es > 0) carry = _exponent.increment();
 		if (carry) carry = _regime.increment();
 		if (carry) cout << "Error" << endl;
-	}		*/
+	}		
+*/
 }
 
 

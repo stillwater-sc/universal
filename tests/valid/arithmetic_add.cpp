@@ -6,8 +6,8 @@
 
 #include "stdafx.h"
 
-#include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/exceptions.hpp"
+#include "../../bitblock/bitblock.hpp"
 #include "../../posit/value.hpp"
 #include "../../valid/valid.hpp"
 #include "../../valid/valid_manipulators.hpp"

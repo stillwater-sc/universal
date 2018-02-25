@@ -23,7 +23,7 @@ namespace sw {
 		public:
 			static constexpr size_t fhbits = fbits + 1;    // number of fraction bits including the hidden bit
 			value() : _sign(false), _scale(0), _nrOfBits(fbits), _zero(true), _inf(false), _nan(false) {}
-			value(bool sign, int scale, const std::bitset<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
+			value(bool sign, int scale, const bitblock<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
 			value(signed char initial_value) {
 				*this = initial_value;
 			}
@@ -243,7 +243,7 @@ namespace sw {
 				_nan = false;
 				_fraction.reset();
 			}
-			void set(bool sign, int scale, std::bitset<fbits> fraction_without_hidden_bit, bool zero, bool inf, bool nan = false) {
+			void set(bool sign, int scale, bitblock<fbits> fraction_without_hidden_bit, bool zero, bool inf, bool nan = false) {
 				_sign     = sign;
 				_scale    = scale;
 				_fraction = fraction_without_hidden_bit;
@@ -285,11 +285,11 @@ namespace sw {
 			inline bool isNaN() const { return _nan; }
 			inline bool sign() const { return _sign; }
 			inline int scale() const { return _scale; }
-			std::bitset<fbits> fraction() const { return _fraction; }
+			bitblock<fbits> fraction() const { return _fraction; }
 			/// Normalized shift (e.g., for addition).
 			template <size_t Size>
-			std::bitset<Size> nshift(long shift) const {
-				std::bitset<Size> number;
+			bitblock<Size> nshift(long shift) const {
+				bitblock<Size> number;
 
 				// Check range
 				if (long(fbits) + shift >= long(Size))
@@ -315,8 +315,8 @@ namespace sw {
 				return number;
 			}
 			// get a fixed point number by making the hidden bit explicit: useful for multiply units
-			std::bitset<fhbits> get_fixed_point() const {
-				std::bitset<fbits + 1> fixed_point_number;
+			bitblock<fhbits> get_fixed_point() const {
+				bitblock<fbits + 1> fixed_point_number;
 				fixed_point_number.set(fbits, true); // make hidden bit explicit
 				for (unsigned int i = 0; i < fbits; i++) {
 					fixed_point_number[i] = _fraction[i];
@@ -369,7 +369,7 @@ namespace sw {
 
 			template<size_t tgt_size>
 			value<tgt_size> round_to() {
-				std::bitset<tgt_size> rounded_fraction;
+				bitblock<tgt_size> rounded_fraction;
 				if (tgt_size == 0) {
 					bool round_up = false;
 					if (fbits >= 2) {
@@ -408,7 +408,7 @@ namespace sw {
 		private:
 			bool				_sign;
 			int					_scale;
-			std::bitset<fbits>	_fraction;
+			bitblock<fbits>	    _fraction;
 			int					_nrOfBits;  // in case the fraction is smaller than the full fbits
 			bool                _inf;
 			bool                _zero;
@@ -505,8 +505,8 @@ namespace sw {
 			int lhs_scale = lhs.scale(), rhs_scale = rhs.scale(), scale_of_result = std::max(lhs_scale, rhs_scale);
 
 			// align the fractions
-			std::bitset<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
-			std::bitset<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
+			bitblock<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
+			bitblock<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
 			bool r1_sign = lhs.sign(), r2_sign = rhs.sign();
 			bool signs_are_different = r1_sign != r2_sign;
 
@@ -522,7 +522,7 @@ namespace sw {
 				std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
 			}
 
-			std::bitset<abits + 1> sum;
+			bitblock<abits + 1> sum;
 			const bool carry = add_unsigned(r1, r2, sum);
 
 			if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
@@ -564,8 +564,8 @@ namespace sw {
 			int lhs_scale = lhs.scale(), rhs_scale = rhs.scale(), scale_of_result = std::max(lhs_scale, rhs_scale);
 
 			// align the fractions
-			std::bitset<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
-			std::bitset<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
+			bitblock<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
+			bitblock<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
 			bool r1_sign = lhs.sign(), r2_sign = !rhs.sign();
 			bool signs_are_different = r1_sign != r2_sign;
 
@@ -581,7 +581,7 @@ namespace sw {
 				std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
 			}
 
-			std::bitset<abits + 1> sum;
+			bitblock<abits + 1> sum;
 			const bool carry = add_unsigned(r1, r2, sum);
 
 			if (_trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
@@ -624,8 +624,8 @@ namespace sw {
 			int lhs_scale = lhs.scale(), rhs_scale = rhs.scale(), scale_of_result = std::max(lhs_scale, rhs_scale);
 
 			// align the fractions
-			std::bitset<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
-			std::bitset<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
+			bitblock<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
+			bitblock<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
 			bool r1_sign = lhs.sign(), r2_sign = rhs.sign();
 			bool signs_are_equal = r1_sign == r2_sign;
 
@@ -637,7 +637,7 @@ namespace sw {
 				std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
 			}
 
-			std::bitset<abits + 1> difference;
+			bitblock<abits + 1> difference;
 			const bool borrow = subtract_unsigned(r1, r2, difference);
 
 			if (_trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " borrow" << std::setw(3) << (borrow ? 1 : 0) << " diff    " << difference << std::endl;
@@ -682,12 +682,12 @@ namespace sw {
 
 			bool new_sign = lhs.sign() ^ rhs.sign();
 			int new_scale = lhs.scale() + rhs.scale();
-			std::bitset<mbits> result_fraction;
+			bitblock<mbits> result_fraction;
 
 			if (fbits > 0) {
 				// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
-				std::bitset<fhbits> r1 = lhs.get_fixed_point();
-				std::bitset<fhbits> r2 = rhs.get_fixed_point();
+				bitblock<fhbits> r1 = lhs.get_fixed_point();
+				bitblock<fhbits> r2 = rhs.get_fixed_point();
 				multiply_unsigned(r1, r2, result_fraction);
 
 				if (_trace_mul) std::cout << "r1  " << r1 << std::endl << "r2  " << r2 << std::endl << "res " << result_fraction << std::endl;
@@ -725,12 +725,12 @@ namespace sw {
 
 			bool new_sign = lhs.sign() ^ rhs.sign();
 			int new_scale = lhs.scale() - rhs.scale();
-			std::bitset<divbits> result_fraction;
+			bitblock<divbits> result_fraction;
 
 			if (fbits > 0) {
 				// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
-				std::bitset<fhbits> r1 = lhs.get_fixed_point();
-				std::bitset<fhbits> r2 = rhs.get_fixed_point();
+				bitblock<fhbits> r1 = lhs.get_fixed_point();
+				bitblock<fhbits> r2 = rhs.get_fixed_point();
 				divide_with_fraction(r1, r2, result_fraction);
 				if (_trace_div) std::cout << "r1     " << r1 << std::endl << "r2     " << r2 << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;
 				// check if the radix point needs to shift

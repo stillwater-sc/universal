@@ -6,7 +6,6 @@
 
 #include "stdafx.h"
 
-#include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
@@ -34,7 +33,7 @@ int ValidateFractionValue(std::string tag, bool bReportIndividualTestCases)
 	fraction<fbits> _fraction;
 	double divisor = uint64_t(1) << fbits;
 	for (uint64_t i = 0; i < NR_OF_FRACTIONS; i++) {
-		std::bitset<fbits> bits = convert_to_bitset<fbits, uint64_t>(i);
+		bitblock<fbits> bits = convert_to_bitblock<fbits, uint64_t>(i);
 		_fraction.set(bits);  // use default nr of fraction bits to be full size
 		// fraction value is the 'fraction' of the operand: (fraction to ull)/2^fbits
 		double v = _fraction.value();
@@ -56,9 +55,9 @@ int ValidateFixedPointNumber(std::string tag, bool bReportIndividualTestCases)
 
 	double divisor = uint64_t(1) << fbits;
 	fraction<fbits> _fraction;
-	std::bitset<fbits + 1> _fixed_point;
+	bitblock<fbits + 1> _fixed_point;
 	for (uint64_t i = 0; i < NR_OF_FRACTIONS; i++) {
-		std::bitset<fbits> bits = convert_to_bitset<fbits, uint64_t>(i);
+		bitblock<fbits> bits = convert_to_bitblock<fbits, uint64_t>(i);
 		_fraction.set(bits);  // use default nr of fraction bits to be full size
 							  // fraction value is the 'fraction' of the operand: (fraction to ull)/2^fbits
 		double v = 1.0 + _fraction.value();
@@ -78,7 +77,7 @@ int ValidateRoundingAssessment(std::string tag, bool bReportIndividualTestCases)
 	int nrOfFailedTests = 0;
 
 	fraction<fbits> _fraction;
-	std::bitset<fbits> bits = convert_to_bitset<fbits, uint32_t>(0x50);
+	bitblock<fbits> bits = convert_to_bitblock<fbits, uint32_t>(0x50);
 	for (unsigned i = 0; i < fbits; i++) {
 		bool rb = _fraction.assign2(i, bits);
 		cout << "nf = " << i << " " << bits << " fraction " << _fraction << " " << (rb ? "up" : "dn") << endl;
