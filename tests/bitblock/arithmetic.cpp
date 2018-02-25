@@ -132,7 +132,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Bitset arithmetic operation failed";
+	std::string tag = "Bitblock arithmetic operation failed";
 
 #if MANUAL_TESTING
 	const size_t nbits = 8;
