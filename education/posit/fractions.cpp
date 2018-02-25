@@ -33,7 +33,7 @@ int ValidateFractionValue(std::string tag, bool bReportIndividualTestCases)
 	fraction<fbits> _fraction;
 	double divisor = uint64_t(1) << fbits;
 	for (uint64_t i = 0; i < NR_OF_FRACTIONS; i++) {
-		std::bitset<fbits> bits = convert_to_bitset<fbits, uint64_t>(i);
+		bitblock<fbits> bits = convert_to_bitblock<fbits, uint64_t>(i);
 		_fraction.set(bits);  // use default nr of fraction bits to be full size
 		// fraction value is the 'fraction' of the operand: (fraction to ull)/2^fbits
 		double v = _fraction.value();

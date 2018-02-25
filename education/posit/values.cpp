@@ -6,8 +6,8 @@
 
 #include "stdafx.h"
 
-#include "../../bitblock/bitblock.hpp"
 #include "../../posit/exceptions.hpp"
+#include "../../bitblock/bitblock.hpp"
 #include "../../posit/trace_constants.hpp"
 #include "../../posit/bit_functions.hpp"
 #include "../../posit/value.hpp"

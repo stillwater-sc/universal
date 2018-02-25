@@ -7,6 +7,7 @@
 #include "stdafx.h"
 
 #include "../tests/test_helpers.hpp"
+#include "../../posit/exceptions.hpp"
 #include "../../bitblock/bitblock.hpp"
 
 

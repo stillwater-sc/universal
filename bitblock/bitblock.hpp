@@ -6,9 +6,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // this should be removed when we have made the transition away from std::bitset to sw::unum::bitblock
+#include <cassert>
 #include <bitset>
-
-#include "exceptions.hpp"
 
 namespace sw {
 	namespace unum {
@@ -29,7 +28,7 @@ namespace sw {
 				return (bitblock&) std::bitset<nbits>::operator=(rhs);
 			}
 
-			void setToZero() { reset(); }
+			void setToZero() { std::bitset<nbits>::reset(); }
 		};
 
 		// logic operators

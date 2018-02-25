@@ -9,10 +9,10 @@
 // till we figure out how to derive sizes from types
 #define TEMPLATIZED_TYPE 0
 
+#include "../../posit/exceptions.hpp"
 #include "../../bitblock/bitblock.hpp"
 #include "../../posit/bit_functions.hpp"
 #include "../../float/float_functions.hpp"
-#include "../../posit/exceptions.hpp"
 #include "../../posit/value.hpp"
 #include "../../float/quire.hpp"
 

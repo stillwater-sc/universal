@@ -8,14 +8,14 @@
 #include <exception>
 #include <string>
 
-struct divide_by_zero
-	: std::runtime_error
+struct divide_by_zero 
+  : std::runtime_error
 {
 	divide_by_zero(const std::string& error = "Divide by zero.") : std::runtime_error(error) {}
 };
 
-struct integer_divide_by_zero
-	: std::runtime_error
+struct integer_divide_by_zero 
+  : std::runtime_error
 {
 	integer_divide_by_zero(const std::string& error = "Integer divide by zero.") : std::runtime_error(error) {}
 };
@@ -36,4 +36,22 @@ struct rbits_too_large
   : std::runtime_error
 {
     rbits_too_large(const std::string& error = "Number of remaining bits too large for this fraction.") : std::runtime_error(error) {}
+};
+
+struct cut_off_leading_bit
+  : std::runtime_error
+{
+    cut_off_leading_bit(const std::string& error = "A leading significant bit is cut off.") : std::runtime_error(error) {}
+};
+
+struct iteration_bound_too_large
+  : std::runtime_error
+{
+    iteration_bound_too_large(const std::string& error = "Iteration bound is too large.") : std::runtime_error(error) {}
+};
+
+struct round_off_all
+  : std::runtime_error
+{
+    round_off_all(const std::string& error = "Cannot round off all bits.") : std::runtime_error(error) {}
 };
