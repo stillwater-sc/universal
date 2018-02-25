@@ -151,10 +151,10 @@ int ValidateBitsetLogicGreaterOrEqualThan() {
 
 int main()
 try {
-	const size_t nbits = 8;
-	const size_t es = 2;
-	const bool _sign = false; // positive regime
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
+
+	std::string tag = "Bitblock logic operation failed";
 
 #if MANUAL_TESTING
 	bitblock<nbits> a, b = convert_to_bitblock<nbits, uint32_t>(-2);
