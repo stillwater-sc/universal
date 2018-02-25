@@ -10,7 +10,6 @@
 #define POSIT_TRACE_SUB
 
 // minimum set of include files to reflect source code dependencies
-#include "../../bitset/bitset_helpers.hpp"
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
@@ -39,8 +38,6 @@ void GenerateTestCase(Ty a, Ty b) {
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
-
-#include "../bitset_test_helpers.hpp"
 
 int main(int argc, char** argv)
 try {

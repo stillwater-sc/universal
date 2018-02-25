@@ -11,7 +11,6 @@
 #define POSIT_TRACE_ADD
 
 // minimum set of include files to reflect source code dependencies
-#include "../../bitset/bitset_helpers.hpp"
 // enable/disable the ability to use literals in binary logic and arithmetic operators
 #define POSIT_ENABLE_LITERALS 1
 #include "../../posit/posit.hpp"

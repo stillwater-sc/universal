@@ -1,4 +1,4 @@
-// components.cpp : tests for regime/exponent/fraction components of a posit
+//  logic.cpp : test suite for bitset logic operators
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //

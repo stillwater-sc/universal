@@ -14,6 +14,12 @@ struct divide_by_zero
 	divide_by_zero(const std::string& error = "Divide by zero.") : std::runtime_error(error) {}
 };
 
+struct integer_divide_by_zero
+	: std::runtime_error
+{
+	integer_divide_by_zero(const std::string& error = "Integer divide by zero.") : std::runtime_error(error) {}
+};
+
 struct shift_too_large
   : std::runtime_error
 {

@@ -7,14 +7,11 @@
 
 #include "targetver.h"
 
-#include <cassert>
 #include <stdio.h>
+#include <assert.h>
 //#include <tchar.h>
 #include <cstdint>	// uint8_t, etc.
-#include <cmath>        // for frexp/frexpf
-
 #include <string>
 #include <iostream>
-#include <sstream>
 #include <iomanip>
-#include <sstream>
+#include <bitset>

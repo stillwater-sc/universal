@@ -44,10 +44,10 @@ public:
 	double value() const {
 		return double(uint64_t(1) << scale());
 	}
-	std::bitset<es> get() const {
+	bitblock<es> get() const {
 		return _Bits;
 	}
-	void set(const std::bitset<es>& raw, size_t nrOfExponentBits) {
+	void set(const bitblock<es>& raw, size_t nrOfExponentBits) {
 		_Bits = raw;
 		_NrOfBits = nrOfExponentBits;
 	}
@@ -121,7 +121,7 @@ public:
 		return carry;
 	}
 private:
-	std::bitset<es> _Bits;
+	bitblock<es>    _Bits;
 	size_t			_NrOfBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)

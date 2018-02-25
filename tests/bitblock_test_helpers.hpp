@@ -1,4 +1,4 @@
-//  bitset_test_helpers.cpp : bitset-based arithmetic test helpers
+//  bitblock_test_helpers.cpp : bitblock-based arithmetic test helpers
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
@@ -9,7 +9,7 @@ namespace sw {
 namespace unum {
 
 template<size_t nbits, size_t rbits>
-void ReportBinaryArithmeticError(std::string test_case, std::string op, const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs, const std::bitset<rbits>& ref, const std::bitset<rbits>& result) {
+void ReportBinaryArithmeticError(std::string test_case, std::string op, const bitblock<nbits>& lhs, const bitblock<nbits>& rhs, const bitblock<rbits>& ref, const bitblock<rbits>& result) {
 	constexpr size_t OPERAND_COLUMN_WIDTH = nbits;
 	constexpr size_t RESULT_COLUMN_WIDTH = rbits;
 	std::cerr << test_case << " "
@@ -23,7 +23,7 @@ void ReportBinaryArithmeticError(std::string test_case, std::string op, const st
 }
 
 template<size_t nbits, size_t rbits>
-void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs, const std::bitset<rbits>& ref, const std::bitset<rbits>& result) {
+void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const bitblock<nbits>& lhs, const bitblock<nbits>& rhs, const bitblock<rbits>& ref, const bitblock<rbits>& result) {
 	constexpr size_t OPERAND_COLUMN_WIDTH = nbits;
 	constexpr size_t RESULT_COLUMN_WIDTH = rbits;
 	std::cerr << test_case << " "
@@ -42,16 +42,16 @@ int ValidateBitsetAddition(bool bReportIndividualTestCases = false) {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	bool carry;
-	std::bitset<nbits> a, b;
-	std::bitset<nbits + 1> bsum, bref;
+	bitblock<nbits> a, b;
+	bitblock<nbits + 1> bsum, bref;
 	int ref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitset<nbits, unsigned>(i);
+		a = convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitset<nbits, unsigned>(j);
+			b = convert_to_bitblock<nbits, unsigned>(j);
 			ref = i + j;
-			bref = convert_to_bitset<nbits + 1, unsigned>(ref);
+			bref = convert_to_bitblock<nbits + 1, unsigned>(ref);
 			carry = add_unsigned(a, b, bsum);
 			if (bref != bsum) {
 				nrOfFailedTestCases++;
@@ -70,16 +70,16 @@ int ValidateBitsetSubtraction(bool bReportIndividualTestCases = false) {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	bool borrow = false;
-	std::bitset<nbits> a, b;
-	std::bitset<nbits + 1> bsub, bref;
+	bitblock<nbits> a, b;
+	bitblock<nbits + 1> bsub, bref;
 	int ref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitset<nbits, unsigned>(i);
+		a = convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitset<nbits, unsigned>(j);
+			b = convert_to_bitblock<nbits, unsigned>(j);
 			ref = i - j;
-			bref = convert_to_bitset<nbits + 1, unsigned>(ref);
+			bref = convert_to_bitblock<nbits + 1, unsigned>(ref);
 			borrow = subtract_unsigned(a, b, bsub);
 			if (bref != bsub) {
 				nrOfFailedTestCases++;
@@ -98,16 +98,16 @@ int ValidateBitsetMultiplication(bool bReportIndividualTestCases = false) {
 	constexpr size_t rbits = 2 * nbits;
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	std::bitset<nbits> a, b;
-	std::bitset<rbits> bmul, bref;
+	bitblock<nbits> a, b;
+	bitblock<rbits> bmul, bref;
 	int ref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitset<nbits, unsigned>(i);
+		a = convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitset<nbits, unsigned>(j);
+			b = convert_to_bitblock<nbits, unsigned>(j);
 			ref = i * j;
-			bref = convert_to_bitset<rbits, unsigned>(ref);
+			bref = convert_to_bitblock<rbits, unsigned>(ref);
 			multiply_unsigned(a, b, bmul);
 			if (bref != bmul) {
 				nrOfFailedTestCases++;
@@ -126,16 +126,16 @@ int ValidateBitsetDivision(bool bReportIndividualTestCases = false) {
 	constexpr size_t rbits = 2 * nbits;
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	std::bitset<nbits> a, b;
-	std::bitset<rbits> bdiv, bref;
+	bitblock<nbits> a, b;
+	bitblock<rbits> bdiv, bref;
 	int ref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitset<nbits, unsigned>(i);
+		a = convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 1; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitset<nbits, unsigned>(j);
+			b = convert_to_bitblock<nbits, unsigned>(j);
 			ref = i / j;
-			bref = convert_to_bitset<rbits, unsigned>(ref);
+			bref = convert_to_bitblock<rbits, unsigned>(ref);
 			integer_divide_unsigned(a, b, bdiv);
 			if (bref != bdiv) {
 				nrOfFailedTestCases++;

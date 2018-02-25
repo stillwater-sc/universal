@@ -48,16 +48,16 @@ public:
 		_Bits.reset();
 	}
 
-	std::bitset<fbits> get() const {
+	bitblock<fbits> get() const {
 		return _Bits;
 	}
-	void set(const std::bitset<fbits>& raw, std::size_t nrOfFractionBits = fbits) {
+	void set(const bitblock<fbits>& raw, std::size_t nrOfFractionBits = fbits) {
 		_Bits = raw;
 		_NrOfBits = (fbits < nrOfFractionBits ? fbits : nrOfFractionBits);
 	}
 	// get a fixed point number by making the hidden bit explicit: useful for multiply units
-	std::bitset<fbits + 1> get_fixed_point() const {
-		std::bitset<fbits + 1> fixed_point_number;
+	bitblock<fbits + 1> get_fixed_point() const {
+		bitblock<fbits + 1> fixed_point_number;
 		fixed_point_number.set(fbits, true); // make hidden bit explicit
 		for (unsigned int i = 0; i < fbits; i++) {
 			fixed_point_number[i] = _Bits[i];
@@ -66,7 +66,7 @@ public:
 	}
 	// Copy the bits into the fraction. Rounds away from zero.	
 	template <size_t FBits>
-	bool assign(unsigned int remaining_bits, std::bitset<FBits>& _fraction, std::size_t hpos = FBits) 
+	bool assign(unsigned int remaining_bits, bitblock<FBits>& _fraction, std::size_t hpos = FBits)
 	{
         if (hpos > FBits)
             throw hpos_too_large{};
@@ -93,7 +93,7 @@ public:
 	}
 
 	template <size_t FBits>
-	bool assign2(unsigned int remaining_bits, std::bitset<FBits>& _fraction)
+	bool assign2(unsigned int remaining_bits, bitblock<FBits>& _fraction)
 	{
 		if (remaining_bits > fbits)
 			throw rbits_too_large{};
@@ -118,7 +118,7 @@ public:
 	}
 
 	template<size_t FBits>
-	bool sticky(const std::bitset<FBits>& bits, unsigned msb) {
+	bool sticky(const bitblock<FBits>& bits, unsigned msb) {
 		bool running = false;
 		for (int i = msb; i >= 0; i--) {
 			running |= bits.test(i);
@@ -151,9 +151,9 @@ public:
 
 	/// Normalized shift (e.g., for addition).
 	template <size_t Size>
-	std::bitset<Size> nshift(long shift) const 
+	bitblock<Size> nshift(long shift) const
 	{
-            std::bitset<Size> number;
+		bitblock<Size> number;
             
             // Check range
             if (long(fbits) + shift >= long(Size))
@@ -185,7 +185,7 @@ public:
 	
 	
 	// normalize the fraction and return its fraction in the argument: add a sticky bit and two guard bits to the result
-	void normalize(std::bitset<fbits+3>& number) const {
+	void normalize(bitblock<fbits+3>& number) const {
 		number.set(fbits, true); // set hidden bit
 		for (int i = 0; i < fbits; i++) {
 			number.set(i, _Bits[i]);
@@ -196,7 +196,7 @@ public:
 	*   0.000h_bbbb_bbbb_bbbb_b... number
 	*  >-.----<                    shift of 4
 	*/
-	void denormalize(int shift, std::bitset<fbits+3>& number) const {
+	void denormalize(int shift, bitblock<fbits+3>& number) const {
 		number.reset();
 		if (fbits == 0) return;
 		if (shift < 0) shift = -shift;
@@ -213,7 +213,7 @@ public:
 private:
 	// maximum size fraction is <nbits - one sign bit - minimum two regime bits>
 	// but we maintain 1 guard bit for rounding decisions
-	std::bitset<fbits> _Bits;
+	bitblock<fbits>    _Bits;
 	size_t             _NrOfBits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
