@@ -28,7 +28,7 @@ public:
 	static constexpr size_t qbits = range + capacity;     // size of the quire minus the sign bit: we are managing the sign explicitly
 	
 	// Constructors
-	quire() : _sign(false), _capacity(0), _upper(0), _lower(0) {}
+	quire() : _sign(false) { _capacity.reset(); _upper.reset(); _lower.reset(); }
 	quire(int8_t initial_value) {
 		*this = initial_value;
 	}
@@ -294,8 +294,8 @@ public:
 	// Return value of the sign bit: true indicates a negative number, false a positive number or zero
 	bool sign() const { return _sign; }
 	float sign_value() const {	return (_sign ? -1.0 : 1.0); }
-	std::bitset<qbits+1> get() const {
-		std::bitset<qbits+1> q;
+	bitblock<qbits+1> get() const {
+		bitblock<qbits+1> q;
 		int msb = 0;
 		for (int i = 0; i < half_range; i++) {
 			q[msb] = _lower[i];
@@ -313,7 +313,7 @@ public:
 	}
 	value<qbits> to_value() const {
 		// find the MSB and build the fraction
-		std::bitset<qbits> fraction;
+		bitblock<qbits> fraction;
 		bool isZero = false;
 		bool isNaR = false;   // TODO
 		int i;
@@ -358,11 +358,11 @@ public:
 	}
 
 private:
-	bool				      _sign;
+	bool				   _sign;
 	// segmented accumulator to demonstrate potential hw concurrency for high performance quires
-	std::bitset<half_range>   _lower;
-	std::bitset<upper_range>  _upper;  
-	std::bitset<capacity>     _capacity;
+	bitblock<half_range>   _lower;
+	bitblock<upper_range>  _upper;
+	bitblock<capacity>     _capacity;
 
 	// add a value to the quire
 	template<size_t fbits>
