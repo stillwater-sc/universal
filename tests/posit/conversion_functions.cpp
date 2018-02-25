@@ -484,7 +484,7 @@ void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
 	if (bPrintIntermediateSteps) cout << "exponent = " << _exponent << endl;
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 	if (bPrintIntermediateSteps) cout << "nf       = " << nf << endl;
-	std::bitset<23> fraction_bitset = v.fraction();
+	bitblock<23> fraction_bitset = v.fraction();
 	fraction<23> _fraction;
 	bool sb = _fraction.assign<23>(nf, fraction_bitset, nf+1);  // assign and create sticky bit
 	if (bPrintIntermediateSteps) cout << "sb       = " << sb << endl;
@@ -509,7 +509,8 @@ void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
 		if (carry && es > 0) carry = _exponent.increment();
 		if (carry) carry = _regime.increment();
 		if (carry) cout << "Error" << endl;
-	}		*/
+	}		
+*/
 }
 
 
