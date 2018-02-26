@@ -9,7 +9,7 @@ Install the latest cmake [cmake](https://cmake.org/download).
 
 The library is a pure template library without any further dependencies.
 
-Simply clone the github repo, and you are ready to build the universal library.
+Simply clone the github repo, and you are ready to build the universal library. What you are building are tools to work with floats and posits, educational programs that highlight the use of the posit library, and the posit verification suite. Make test (or better yet ctest -j 16 (or how many cores you have)) will run the posit verification suite and can be used as a regression capability. This will take several minutes but will touch all the corners of the posit functionality.
 
 ```
 > git clone https://github.com/stillwater-sc/universal
