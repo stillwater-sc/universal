@@ -5,6 +5,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <sstream>
+
 // this should be removed when we have made the transition away from std::bitset to sw::unum::bitblock
 #include <cassert>
 #include <bitset>
