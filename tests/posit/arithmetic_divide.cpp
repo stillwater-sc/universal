@@ -124,6 +124,38 @@ void EnumerateToughDivisions() {
 	GenerateWorstCaseDivision<60, 3>();
 }
 
+/*
+As we discussed, I think the following cases are tricky for the divide function. I discovered them when trying to approximate x/y with x times (1/y). All are in the <16,1> environment, so you should be able to test them easily.
+
+Let
+
+A = posit represented by integer 20479 (value is 8191/4096 = 1.999755859375)
+B = posit represented by integer 2 (value is 1/67108864 = 0.00000001490116119384765625)
+C = posit represented by integer 16383 (value is 8191/8192 = 0.9998779296875)
+D = posit represented by integer 16385 (value is 4097/4096 = 1.000244140625)
+
+Then the divide routine should return the following:
+
+B / A = posit represented by integer 2 (that is, the division leaves B unchanged)
+A / B = posit represented by integer 32766 (value is 67108864)
+C / D = posit represented by integer 16381 (value is 0.996337890625)
+D / C = posit represented by integer 16386 (value is 1.00048828125)
+
+Notice that multiplying the B/A and A/B results gives 1 exactly, but multiplying the C/D and D/C results gives 1.000121891498565673828125.
+*/
+void ToughDivisions2() {
+	posit<16, 1> a, b, c, d;
+	a.set_raw_bits(20479);
+	b.set_raw_bits(2);
+	c.set_raw_bits(16383);
+	d.set_raw_bits(16385);
+
+	GenerateTestCase<16, 1>(b, a);
+	GenerateTestCase<16, 1>(a, b);
+	GenerateTestCase<16, 1>(c, d);
+	GenerateTestCase<16, 1>(d, c);
+}
+
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
@@ -138,6 +170,11 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
+
+	ToughDivisions2();
+
+	return 0;
+
 	const size_t nbits = 16;
 	const size_t es = 1;
 	double a, b;
@@ -149,6 +186,8 @@ try {
 	GenerateTestCase<32, 1, double>(a, b);
 	GenerateTestCase<40, 1, double>(a, b);
 	GenerateTestCase<48, 1, double>(a, b);
+
+
 
 	// Generate the worst fraction pressure for different posit configurations
 	EnumerateToughDivisions();
