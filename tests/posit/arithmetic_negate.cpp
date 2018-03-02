@@ -51,7 +51,10 @@ try {
 #else
 
 
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "negation");
+
 	nrOfFailedTestCases += ReportTestResult(ValidateNegation<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(ValidateNegation<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "negation");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateNegation<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "negation");
 	nrOfFailedTestCases += ReportTestResult(ValidateNegation<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "negation");
