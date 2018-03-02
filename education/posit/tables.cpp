@@ -31,12 +31,10 @@ try {
 
 	cout << "Generate posit configurations" << endl;
 
-	posit<6, 2> p;
-	p.set_raw_bits(0x25);
-	exponent<6, 2> exponent = p.get_exponent();
-	cout << p << " " << components_to_string(p) << " " << exponent << endl;
+	GeneratePositTable<2, 0>(cout);
 
 	GeneratePositTable<3, 0>(cout);
+	GeneratePositTable<3, 1>(cout);
 
 	GeneratePositTable<4, 0>(cout);		
 	GeneratePositTable<4, 1>(cout);

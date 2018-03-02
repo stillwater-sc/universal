@@ -37,7 +37,7 @@ void GenerateTestCase(Ty a) {
 	std::cout << std::setprecision(5);
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 
@@ -52,7 +52,11 @@ try {
 	// generate individual testcases to hand trace/debug
 	//GenerateTestCase<6, 3, double>(INFINITY);
 	my_test_sqrt(0.25f);
-	GenerateTestCase<4, 0, float>(0.25f);
+	GenerateTestCase<3, 1, float>(4.0f);
+	posit<3, 1> p(2.0000000001f);
+	cout << p.get() << endl;
+
+	return 0;
 
 #if 0
 	float f = 0.25f;
@@ -99,12 +103,16 @@ try {
 		base *= 2.0f;
 	}
 	cout << "sqrt(2.0) " << sw::unum::my_test_sqrt(2.0f) << endl;
+
 #endif
 
 	cout << endl;
 
 	// manual exhaustive test
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<2, 0>("Manual Testing", true), "posit<2,0>", "sqrt");
+
 	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<3, 0>("Manual Testing", true), "posit<3,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<3, 1>("Manual Testing", true), "posit<3,1>", "sqrt");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<4, 0>("Manual Testing", true), "posit<4,0>", "sqrt");
 	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<4, 1>("Manual Testing", true), "posit<4,1>", "sqrt");
@@ -119,7 +127,10 @@ try {
 
 	cout << "Posit addition validation" << endl;
 
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "sqrt");
+
 	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "sqrt");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "sqrt");
 	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "sqrt");
