@@ -55,6 +55,7 @@ try {
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>("Manual Testing", true), "posit<3,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 1>("Manual Testing", true), "posit<3,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 0>("Manual Testing", true), "posit<5,0>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>("Manual Testing", true), "posit<8,4>", "addition");
 
@@ -65,7 +66,10 @@ try {
 
 	cout << "Posit addition validation" << endl;
 
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "addition");
+
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "addition");
