@@ -636,7 +636,8 @@ public:
 		int k = 0;   // converted regime scale
 		if (raw_bits[nbits - 2] == 1) {   // run length of 1's
 			m = 1;   // if a run of 1's k = m - 1
-			for (int i = nbits - 3; i >= 0; --i) {
+			int start = (nbits == 2 ? nbits - 2 : nbits - 3);
+			for (int i = start; i >= 0; --i) {
 				if (raw_bits[i] == 1) {
 					m++;
 				}
@@ -648,7 +649,8 @@ public:
 		}
 		else {
 			m = 1;  // if a run of 0's k = -m
-			for (int i = nbits - 3; i >= 0; --i) {
+			int start = (nbits == 2 ? nbits - 2 : nbits - 3);
+			for (int i = start; i >= 0; --i) {
 				if (raw_bits[i] == 0) {
 					m++;
 				}
