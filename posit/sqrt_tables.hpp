@@ -29,12 +29,30 @@ namespace sw {
 
 		// roots for posit<3,0>
 		//   v   r       v   r          high precision root
-		//  000 000      0   0     ref: 0
-		//  001 001      0.5 0.5   ref: 0.70710678118654757274
+		//  000 000      0   0     ref : 0
+		//  001 001      0.5 0.5   ref : 0.70710678118654757274
 		//	010 010      1   1     ref : 1
 		//	011 010      2   1     ref : 1.4142135623730951455
 		posit<3, 0> sqrt(const posit<3, 0>& a) {
 			posit<3, 0> p;
+			if (a.isNegative() || a.isNaR()) {
+				p.setToNaR();
+				return p;
+			}
+			unsigned roots[4] = { 0, 1, 2, 2 };
+			unsigned root = roots[a.get_encoding_as_integer()];
+			p.set_raw_bits(root);
+			return p;
+		}
+
+		// roots for posit<3,1>
+		//   v   r       v   r          high precision root
+		//  000 000      0    0     ref : 0
+		//  001 001      0.25 0.5   ref : 0.5
+		//	010 010      1   1      ref : 1
+		//	011 010      4   1      ref : 1
+		posit<3, 1> sqrt(const posit<3, 1>& a) {
+			posit<3, 1> p;
 			if (a.isNegative() || a.isNaR()) {
 				p.setToNaR();
 				return p;
