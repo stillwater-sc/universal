@@ -7,9 +7,8 @@
 #include "stdafx.h"
 
 // when you define POSIT_VERBOSE_OUTPUT executing an MUL the code will print intermediate results
-#define POSIT_VERBOSE_OUTPUT
-//#define POSIT_TRACE_MUL
-#define POSIT_TRACE_CONVERSION
+//#define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_MUL
 
 // minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
@@ -123,15 +122,20 @@ try {
 	*/
 
 	DifficultRoundingCases();
-	return 0;
+	
 
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<2, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<2,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<3,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 1>("Manual Testing: ", bReportIndividualTestCases), "posit<3,1>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<4,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 0>("Manual Testing: ", bReportIndividualTestCases), "posit<5,0>", "multiplication");
 
 #else
 
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "multiplication");
+
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "multiplication");
+
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "multiplication");
 

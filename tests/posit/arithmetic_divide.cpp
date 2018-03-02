@@ -192,14 +192,19 @@ try {
 	// Generate the worst fraction pressure for different posit configurations
 	EnumerateToughDivisions();
 
-	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>("Manual Testing", true), "posit<3,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<2, 0>("Manual Testing", true), "posit<2,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>("Manual Testing", true), "posit<3,0>", "division");	
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 1>("Manual Testing", true), "posit<3,1>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 0>("Manual Testing", true), "posit<4,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<5, 0>("Manual Testing", true), "posit<5,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<8, 0>("Manual Testing", true), "posit<8,0>", "division");
 
 #else
 
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "division");
+
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "division");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "division");
