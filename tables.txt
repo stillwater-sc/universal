@@ -1,15 +1,30 @@
 Generate posit configurations
--128         100101         111011 Sign : -1 Regime :   1 Exponent :     8 Fraction :        1 Value :             -128 11
+Generate Posit Lookup table for a POSIT<2,0>
+   #           Binary         Decoded       k    sign   scale          regime        exponent        fraction                         value
+   0:               00              00      -1       1      -1               0               ~               ~                             0
+   1:               01              01       0       1       0               1               ~               ~                             1
+   2:               10              10       1      -1       1               0               ~               ~                           NaR
+   3:               11              11       0      -1       0               1               ~               ~                            -1
 Generate Posit Lookup table for a POSIT<3,0>
    #           Binary         Decoded       k    sign   scale          regime        exponent        fraction                         value
-   0:              000             000      -2       1      -2               00               ~               ~                             0
-   1:              001             001      -1       1      -1               01               ~               ~                           0.5
-   2:              010             010       0       1       0               10               ~               ~                             1
-   3:              011             011       1       1       1               11               ~               ~                             2
-   4:              100             100       2      -1       2               00               ~               ~                           NaR
-   5:              101             111       1      -1       1               11               ~               ~                            -2
-   6:              110             110       0      -1       0               10               ~               ~                            -1
-   7:              111             101      -1      -1      -1               01               ~               ~                          -0.5
+   0:              000             000      -2       1      -2               00               ~               -                             0
+   1:              001             001      -1       1      -1               01               ~               -                           0.5
+   2:              010             010       0       1       0               10               ~               -                             1
+   3:              011             011       1       1       1               11               ~               -                             2
+   4:              100             100       2      -1       2               00               ~               -                           NaR
+   5:              101             111       1      -1       1               11               ~               -                            -2
+   6:              110             110       0      -1       0               10               ~               -                            -1
+   7:              111             101      -1      -1      -1               01               ~               -                          -0.5
+Generate Posit Lookup table for a POSIT<3,1>
+   #           Binary         Decoded       k    sign   scale          regime        exponent        fraction                         value
+   0:              000             000      -2       1      -4               00               -               ~                             0
+   1:              001             001      -1       1      -2               01               -               ~                          0.25
+   2:              010             010       0       1       0               10               -               ~                             1
+   3:              011             011       1       1       2               11               -               ~                             4
+   4:              100             100       2      -1       4               00               -               ~                           NaR
+   5:              101             111       1      -1       2               11               -               ~                            -4
+   6:              110             110       0      -1       0               10               -               ~                            -1
+   7:              111             101      -1      -1      -2               01               -               ~                         -0.25
 Generate Posit Lookup table for a POSIT<4,0>
    #           Binary         Decoded       k    sign   scale          regime        exponent        fraction                         value
    0:             0000            0000      -3       1      -3               000               ~               -                             0

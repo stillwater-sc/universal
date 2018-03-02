@@ -91,7 +91,7 @@ template<size_t nbits, size_t es> posit<nbits, es> maxpos();
 template<size_t nbits, size_t es>
 class posit {
 
-	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
+	static_assert(es + 2 <= nbits, "Value for 'es' is too large for this 'nbits' value");
 //	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
 //	static_assert((sizeof(long double) == 16) && (std::numeric_limits<long double>::digits < 113), "C++ math library for long double does not support 128-bit quad precision floats.");
 
@@ -115,13 +115,15 @@ class posit {
 	}
     
 public:
-	static constexpr size_t rbits   = nbits - 1;
-	static constexpr size_t ebits   = es;
-	static constexpr size_t fbits   = nbits - 3 - es;  
-	static constexpr size_t abits   = fbits + 4;       // size of the addend
-	static constexpr size_t fhbits  = fbits + 1;       // size of fraction + hidden bit
-	static constexpr size_t mbits   = 2 * fhbits;      // size of the multiplier output
-	static constexpr size_t divbits = 3 * fhbits + 4;  // size of the divider output
+	static constexpr size_t sbits   = 1;                          // number of sign bits:     specified
+	static constexpr size_t rbits   = nbits - sbits;              // maximum number of regime bits:   derived
+	static constexpr size_t ebits   = es;                         // maximum number of exponent bits: specified
+	static constexpr size_t fbits   = (rbits <= 2 ? nbits - 2 - es : nbits - 3 - es);             // maximum number of fraction bits: derived
+	static constexpr size_t fhbits  = fbits + 1;                  // maximum number of fraction + one hidden bit
+
+	static constexpr size_t abits   = fhbits + 3;                 // size of the addend
+	static constexpr size_t mbits   = 2 * fhbits;                 // size of the multiplier output
+	static constexpr size_t divbits = 3 * fhbits + 4;             // size of the divider output
 
 	posit() { setToZero();  }
 	
