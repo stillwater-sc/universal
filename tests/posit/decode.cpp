@@ -1,12 +1,10 @@
 // decode.cpp: functional tests of the posit decode method
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
-#include <sstream>
-#include <vector>
+#include "common.hpp"
 
 #define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_DECODE
@@ -15,10 +13,6 @@
 #include "../../posit/posit.hpp"
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
-
-using namespace std;
-using namespace sw::unum;
-
 
 /*
   Posit values are a combination of
@@ -38,7 +32,7 @@ int ValidateDecode() {
 	};
 
 	int nrOfFailedTestCases = 0;
-	posit<4, 0> pa;
+	sw::unum::posit<4, 0> pa;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
 		pa.set_raw_bits(uint64_t(i));
 		if (fabs(double(pa) - golden_values[i]) > 0.0001) {
@@ -51,6 +45,9 @@ int ValidateDecode() {
 
 int main(int argc, char** argv)
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	const size_t nbits = 8;
 	const size_t es = 1;
 	posit<nbits, es> myPosit;
@@ -61,10 +58,10 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << '\n';
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << '\n';
 	return EXIT_FAILURE;
 }

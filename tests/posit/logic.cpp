@@ -4,16 +4,12 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 // minimum set of include files to reflect source code dependencies
 #define POSIT_ENABLE_LITERALS 1
 #include "../../posit/posit.hpp"
 #include "../tests/test_helpers.hpp"
-
-using namespace std;
-using namespace sw::unum;
-
 
 // Posit equal diverges from IEEE float in dealing with INFINITY/NAN
 // Posit NaR can be checked for equality/inequality
@@ -21,7 +17,7 @@ template<size_t nbits, size_t es>
 int ValidatePositLogicEqual() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	posit<nbits, es> a, b;
+	sw::unum::posit<nbits, es> a, b;
 	bool ref, presult;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -54,7 +50,7 @@ template<size_t nbits, size_t es>
 int ValidatePositLogicNotEqual() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	posit<nbits, es> a, b;
+	sw::unum::posit<nbits, es> a, b;
 	bool ref, presult;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -89,7 +85,7 @@ template<size_t nbits, size_t es>
 int ValidatePositLogicLessThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	posit<nbits, es> a, b;
+	sw::unum::posit<nbits, es> a, b;
 	bool ref, presult;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -123,7 +119,7 @@ template<size_t nbits, size_t es>
 int ValidatePositLogicGreaterThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	posit<nbits, es> a, b;
+	sw::unum::posit<nbits, es> a, b;
 	bool ref, presult;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -157,7 +153,7 @@ template<size_t nbits, size_t es>
 int ValidatePositLogicLessOrEqualThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	posit<nbits, es> a, b;
+	sw::unum::posit<nbits, es> a, b;
 	bool ref, presult;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -192,7 +188,7 @@ template<size_t nbits, size_t es>
 int ValidatePositLogicGreaterOrEqualThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	posit<nbits, es> a, b;
+	sw::unum::posit<nbits, es> a, b;
 	bool ref, presult;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -226,6 +222,9 @@ int ValidatePositLogicGreaterOrEqualThan() {
 
 int main()
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
@@ -466,11 +465,11 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << '\n';
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << '\n';
 	return EXIT_FAILURE;
 }
 

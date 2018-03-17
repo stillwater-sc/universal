@@ -1,10 +1,10 @@
 // arithmetic_divide.cpp: functional tests for division
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 // when you define POSIT_VERBOSE_OUTPUT executing an DIV the code will print intermediate results
 //#define POSIT_VERBOSE_OUTPUT
@@ -16,15 +16,12 @@
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
 
-using namespace std;
-using namespace sw::unum;
-
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
-	posit<nbits, es> pa, pb, pref, pdiv;
+	sw::unum::posit<nbits, es> pa, pb, pref, pdiv;
 	pa = a;
 	pb = b;
 	ref = a / b;
@@ -41,15 +38,15 @@ template<size_t nbits, size_t es>
 void GenerateWorstCaseDivision() {
 	std::stringstream posit_descriptor;
 	posit_descriptor << "posit<" << nbits << ", " << es << ">";
-	posit<nbits, es> p_plus_eps(1), p_minus_eps(1), p_result;
+	sw::unum::posit<nbits, es> p_plus_eps(1), p_minus_eps(1), p_result;
 	p_plus_eps++;
 	p_minus_eps--;
 	p_result = p_plus_eps / p_minus_eps;
 	if (es < 2) {
-		std::cout << posit_descriptor.str() << " minpos = " << std::fixed << std::setprecision(nbits) << minpos_value<nbits, es>() << std::dec << ::endl;
+		std::cout << posit_descriptor.str() << " minpos = " << std::fixed << std::setprecision(nbits) << sw::unum::minpos_value<nbits, es>() << std::dec << std::endl;
 	}
 	else {
-		std::cout << posit_descriptor.str() << " minpos = " << setprecision(nbits) << minpos_value<nbits, es>() << std::endl;
+		std::cout << posit_descriptor.str() << " minpos = " << std::setprecision(nbits) << sw::unum::minpos_value<nbits, es>() << std::endl;
 
 	}
 	std::cout << p_plus_eps.get() << " / " << p_minus_eps.get() << " = " << p_result.get() << std::endl;
@@ -144,7 +141,7 @@ D / C = posit represented by integer 16386 (value is 1.00048828125)
 Notice that multiplying the B/A and A/B results gives 1 exactly, but multiplying the C/D and D/C results gives 1.000121891498565673828125.
 */
 void ToughDivisions2() {
-	posit<16, 1> a, b, c, d;
+	sw::unum::posit<16, 1> a, b, c, d;
 	a.set_raw_bits(20479);
 	b.set_raw_bits(2);
 	c.set_raw_bits(16383);
@@ -161,6 +158,9 @@ void ToughDivisions2() {
 
 int main(int argc, char** argv)
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -256,11 +256,11 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << '\n';
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << '\n';
 	return EXIT_FAILURE;
 }
 
