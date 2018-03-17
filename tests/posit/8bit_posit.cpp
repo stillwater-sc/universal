@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 #include <vector>
 #include <posit>
@@ -12,15 +12,15 @@
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
 
-using namespace std;
-using namespace sw::unum;
-
 /*
 Standard posits with nbits = 8 have no exponent bits, i.e. es = 0.
 */
 
 int main(int argc, char** argv)
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	const size_t RND_TEST_CASES = 0;  // no randoms, 8-bit posits can be done exhaustively
 
 	const size_t nbits = 8;
@@ -46,10 +46,10 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << '\n';
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << '\n';
 	return EXIT_FAILURE;
 }

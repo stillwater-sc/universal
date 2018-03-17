@@ -1,10 +1,10 @@
 ﻿//  quires.cpp : test suite for IEEE float quires
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 // till we figure out how to derive sizes from types
 #define TEMPLATIZED_TYPE 0
@@ -16,10 +16,7 @@
 #include "../../posit/value.hpp"
 #include "../../float/quire.hpp"
 
-using namespace std;
-using namespace sw::ieee;
-
-int TestQuireAccumulationResult(int nrOfFailedTests, string descriptor)
+int TestQuireAccumulationResult(int nrOfFailedTests, std::string descriptor)
 {
 	if (nrOfFailedTests > 0) {
 		std::cout << descriptor << " quire accumulation FAIL" << std::endl;
@@ -39,14 +36,14 @@ int ValidateQuireAccumulation() {
 }
 
 template<size_t nbits, size_t es, size_t capacity>
-void GenerateTestCase(int input, const quire<nbits, es, capacity>& reference, const quire<nbits, es, capacity>& qresult) {
+void GenerateTestCase(int input, const sw::ieee::quire<nbits, es, capacity>& reference, const sw::ieee::quire<nbits, es, capacity>& qresult) {
 
 	std::cout << std::endl;
 }
 
 template<size_t nbits, size_t es, size_t capacity, size_t fbits = 1>
 void GenerateValueAssignments() {
-	quire<nbits, es, capacity> q;
+	sw::ieee::quire<nbits, es, capacity> q;
 
 	// report some parameters about the posit and quire configuration
 	int max_scale = q.max_scale();
@@ -78,6 +75,9 @@ void GenerateValueAssignments() {
 
 int main()
 try {
+	using namespace std;
+	using namespace sw::ieee;
+
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -187,10 +187,10 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << '\n';
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << '\n';
 	return EXIT_FAILURE;
 }
