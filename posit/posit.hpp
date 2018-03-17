@@ -169,7 +169,7 @@ public:
 		}
 		return *this;
 	}
-	posit<nbits, es>& operator=(short rhs) {
+	posit& operator=(short rhs) {
 		value<16> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -184,7 +184,7 @@ public:
 		}
 		return *this;
 	}
-	posit<nbits, es>& operator=(int rhs) {
+	posit& operator=(int rhs) {
 		value<32> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -199,7 +199,7 @@ public:
 		}
 		return *this;
 	}
-	posit<nbits, es>& operator=(long long rhs) {
+	posit& operator=(long long rhs) {
 		value<64> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -214,7 +214,7 @@ public:
 		}
 		return *this;
 	}
-	posit<nbits, es>& operator=(unsigned long long rhs) {
+	posit& operator=(unsigned long long rhs) {
 		value<64> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -226,16 +226,22 @@ public:
 		convert(v);
 		return *this;
 	}
-	posit<nbits, es>& operator=(float rhs) {
+	posit& operator=(float rhs) {
 		return float_assign(rhs);
 	}
-	posit<nbits, es>& operator=(double rhs) {
+	posit& operator=(double rhs) {
 		return float_assign(rhs);
 	}
-	posit<nbits, es>& operator=(long double rhs) {
+	posit& operator=(long double rhs) {
        		return float_assign(rhs);
 	}
-	
+	// assignment for value type
+	template<size_t vbits>
+	posit& operator=(const value<vbits>& rhs) {
+		clear();
+		convert(rhs);
+		return *this;
+	}
 	// prefix operator
 	posit<nbits, es> operator-() const {
 		if (isZero()) {
@@ -517,23 +523,16 @@ public:
 		return _fraction.value();
 	}
 
-	int				   regime_k() const {
-		return _regime.regime_k();
-	}
+	// how many shifts represent the regime?
+	// regime = useed ^ k = 2 ^ (k*(2 ^ e))
+	// scale = useed ^ k * 2^e 
 	int                get_scale() const { return _regime.scale() + _exponent.scale(); }
 	bool               get_sign() const { return _sign;  }
-	regime<nbits, es>  get_regime() const {
-		return _regime;
-	}
-	exponent<nbits,es> get_exponent() const {
-		return _exponent;
-	}
-	fraction<fbits>    get_fraction() const {
-		return _fraction;
-	}
-	bitblock<nbits>    get() const {
-		return _raw_bits;
-	}
+	regime<nbits, es>  get_regime() const {	return _regime;	}
+	int				   regime_k() const { return _regime.regime_k(); }
+	exponent<nbits,es> get_exponent() const { return _exponent;	}
+	fraction<fbits>    get_fraction() const { return _fraction;	}
+	bitblock<nbits>    get() const { return _raw_bits; }
 	bitblock<nbits>    get_decoded() const {
 		bitblock<rbits> r = _regime.get();
 		size_t nrRegimeBits = _regime.nrBits();
@@ -749,7 +748,7 @@ public:
 		return value<fbits>(_sign, scale(), get_fraction().get(), isZero(), isNaR());
 	}
 	void normalize(value<fbits>& v) const {
-		v.set(_sign, scale(), _fraction.get(), isZero(), isNaR());
+		v.set(_sign, get_scale(), _fraction.get(), isZero(), isNaR());
 	}
 	template<size_t tgt_fbits>
 	void normalize_to(value<tgt_fbits>& v) const {
@@ -757,7 +756,7 @@ public:
 		bitblock<fbits> _src = _fraction.get();
 		int tgt, src;
 		for (tgt = int(tgt_fbits) - 1, src = int(fbits) - 1; tgt >= 0, src >= 0; tgt--, src--) _fr[tgt] = _src[src];
-		v.set(_sign, scale(), _fr, isZero(), isNaR());
+		v.set(_sign, get_scale(), _fr, isZero(), isNaR());
 	}
 	// collect the posit components into a bitset
 	bitblock<nbits> collect() {
@@ -838,9 +837,7 @@ public:
 	}
 	// scale returns the shifts to normalize the number =  regime + exponent shifts
 	int scale() const {
-		// how many shifts represent the regime?
-		// regime = useed ^ k = 2 ^ (k*(2 ^ e))
-		// scale = useed ^ k * 2^e 
+
 		return _regime.scale() + _exponent.scale();
 	}
 	unsigned int exp() const {
@@ -1274,6 +1271,69 @@ posit<nbits, es> maxpos() {
 	--p;
 	return p;
 }
+
+// Atomic fused operators
+
+// FMA: fused multiply-add:  a*b + c
+template<size_t nbits, size_t es>
+value<1 + 2 * (nbits - es)> fma(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c) {
+	constexpr size_t fbits = nbits - 3 - es;
+	constexpr size_t fhbits = fbits + 1;      // size of fraction + hidden bit
+	constexpr size_t mbits = 2 * fhbits;      // size of the multiplier output
+	constexpr size_t abits = mbits + 4;       // size of the addend
+
+
+	// first the multiply
+	value<mbits> product;
+	value<fbits> va, vb, ctmp;
+
+	if (!a.isZero() && !b.isZero()) {
+		// transform the inputs into (sign,scale,fraction) triples
+		va.set(a.get_sign(), a.scale(), a.get_fraction().get(), a.isZero(), a.isNaR());;
+		vb.set(b.get_sign(), b.scale(), b.get_fraction().get(), b.isZero(), b.isNaR());;
+
+		module_multiply(va, vb, product);    // multiply the two inputs
+	}
+//	if (c.isZero()) return product;	// product isn't the right size
+	// second, the add
+	ctmp.set(c.get_sign(), c.scale(), c.get_fraction().get(), c.isZero(), c.isNaR());
+	value<mbits> vc;
+	vc.template right_extend<fbits,mbits>(ctmp);
+	value<abits+1> sum;
+	module_add<mbits,abits>(product, vc, sum);
+
+	return sum;
+}
+
+// FAM: fused add-multiply: (a + b) * c
+template<size_t nbits, size_t es>
+value<2 * (nbits - 2 - es)> fam(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c) {
+	constexpr size_t fbits = nbits - 3 - es;
+	constexpr size_t abits = fbits + 4;       // size of the addend
+	constexpr size_t fhbits = fbits + 1;      // size of fraction + hidden bit
+	constexpr size_t mbits = 2 * fhbits;      // size of the multiplier output
+
+	// first the add
+	value<abits> sum;
+	value<fbits> va, vb, vc;
+
+	if (!a.isZero() || !b.isZero()) {
+		// transform the inputs into (sign,scale,fraction) triples
+		va.set(a.get_sign(), a.scale(), a.get_fraction().get(), a.isZero(), a.isNaR());;
+		vb.set(b.get_sign(), b.scale(), b.get_fraction().get(), b.isZero(), b.isNaR());;
+
+		module_add(va, vb, sum);    // multiply the two inputs
+	}
+	// second the multiply
+	value<mbits> product;
+	if (c.isZero()) return product;
+	vc.set(c.get_size(), c.scale(), c.get_fraction().get(), c.isZero(), c.isNaR());
+	module_multiply(sum, c, product);
+
+	value<abits + 1> sum;
+}
+
+// FMMA: fused multiply-multiply-add
 
 // QUIRE OPERATORS
 // Why are they defined here and not in quire.hpp? TODO
