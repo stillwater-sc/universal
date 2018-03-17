@@ -14,14 +14,14 @@ void GenerateLogicPattern(double input, const sw::unum::posit<nbits, es>& presul
 	const int VALUE_WIDTH = 15;
 	bool fail = presult != pnext;
 	sw::unum::value<52> v(input);
-	std::cout << setw(VALUE_WIDTH) << input << " "
-		<< " result " << setw(VALUE_WIDTH) << presult
+	std::cout << std::setw(VALUE_WIDTH) << input << " "
+		<< " result " << std::setw(VALUE_WIDTH) << presult
 		<< "  scale= " << std::setw(3) << presult.scale()
-		<< "  k= " << std::setw(3) << calculate_k<nbits, es>(v.scale())
+		<< "  k= " << std::setw(3) << sw::unum::calculate_k<nbits, es>(v.scale())
 		<< "  exp= " << std::setw(3) << presult.get_exponent() << "  "
 		<< presult.get() << " "
 		<< pnext.get() << " "
-		<< setw(VALUE_WIDTH) << pnext << " "
+		<< std::setw(VALUE_WIDTH) << pnext << " "
 		<< (fail ? "FAIL" : "    PASS")
 		<< std::endl;
 }
@@ -370,12 +370,14 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 
 template<size_t nbits, size_t es, size_t nrfbits>
 sw::unum::posit<nbits, es> convert_to_posit(sw::unum::value<nrfbits> v, bool bPrintIntermediateSteps = false) {
+	using namespace std;
+
 	cout << "convert to posit<" << nbits << "," << es << ">" << endl;
 	// ignore for the sake of clarity the special cases 0 and NaR (Not a Real)
 	std::bitset<nrfbits> bits = v.fraction();
 
-	float minpos = (float)minpos_value<nbits, es>();
-	float maxpos = (float)maxpos_value<nbits, es>();
+	float minpos = (float)sw::unum::minpos_value<nbits, es>();
+	float maxpos = (float)sw::unum::maxpos_value<nbits, es>();
 
 	const size_t pt_len = nbits + 3 + es;
 	std::bitset<pt_len> pt_bits;
@@ -458,7 +460,7 @@ sw::unum::posit<nbits, es> convert_to_posit(sw::unum::value<nrfbits> v, bool bPr
 	}
 	cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits - 1) << endl;
 	
-	posit<nbits, es> p;
+	sw::unum::posit<nbits, es> p;
 	p.set(ptt);
 	cout << "p = " << p.to_float() << endl;
 	return p;
@@ -468,38 +470,38 @@ sw::unum::posit<nbits, es> convert_to_posit(sw::unum::value<nrfbits> v, bool bPr
 // and then apply the nbits constraint to truncate to the final posit size.
 template<size_t nbits, size_t es>
 void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
-	value<23> v(x);
+	sw::unum::value<23> v(x);
 	bool sign = v.sign();
 	int scale = v.scale();
 	
 	unsigned run = (scale >= 0 ? 1 + (scale >> es) : -scale >> es);
-	int k = calculate_k<nbits, es>(scale);
-	if (bPrintIntermediateSteps) cout << "k        = " << k << endl;
-	regime<nbits, es> _regime;
+	int k = sw::unum::calculate_k<nbits, es>(scale);
+	if (bPrintIntermediateSteps) std::cout << "k        = " << k << std::endl;
+	sw::unum::regime<nbits, es> _regime;
 	unsigned nr_of_regime_bits = _regime.assign(scale);
-	if (bPrintIntermediateSteps) cout << "regime   = " << _regime << " rbits " << nr_of_regime_bits << endl;
-	exponent<nbits, es> _exponent;
+	if (bPrintIntermediateSteps) std::cout << "regime   = " << _regime << " rbits " << nr_of_regime_bits << std::endl;
+	sw::unum::exponent<nbits, es> _exponent;
 	_exponent.assign(scale);
-	if (bPrintIntermediateSteps) cout << "exponent = " << _exponent << endl;
+	if (bPrintIntermediateSteps) std::cout << "exponent = " << _exponent << std::endl;
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
-	if (bPrintIntermediateSteps) cout << "nf       = " << nf << endl;
-	bitblock<23> fraction_bitset = v.fraction();
-	fraction<23> _fraction;
+	if (bPrintIntermediateSteps) std::cout << "nf       = " << nf << std::endl;
+	sw::unum::bitblock<23> fraction_bitset = v.fraction();
+	sw::unum::fraction<23> _fraction;
 	bool sb = _fraction.assign<23>(nf, fraction_bitset, nf+1);  // assign and create sticky bit
-	if (bPrintIntermediateSteps) cout << "sb       = " << sb << endl;
+	if (bPrintIntermediateSteps) std::cout << "sb       = " << sb << std::endl;
 	// 	assess if we need to round up the truncated posit
 /*
 		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
-		if (bPrintIntermediateSteps) cout << "len      = " << len << endl;
-		if (bPrintIntermediateSteps) cout << "blast at = " << len - nbits << endl;
+		if (bPrintIntermediateSteps) std::cout << "len      = " << len << std::endl;
+		if (bPrintIntermediateSteps) std::cout << "blast at = " << len - nbits << std::endl;
 		bool blast = pt_bits.test(len - nbits);
 		bool bafter = pt_bits.test(len - nbits - 1);
 		bool bsticky = Any(pt_bits, len - nbits - 1 - 1);
-		if (bPrintIntermediateSteps) cout << "blast    = " << blast << endl;
-		if (bPrintIntermediateSteps) cout << "bafter   = " << bafter << endl;
-		if (bPrintIntermediateSteps) cout << "bsticky  = " << bsticky << endl;
+		if (bPrintIntermediateSteps) std::cout << "blast    = " << blast << std::endl;
+		if (bPrintIntermediateSteps) std::cout << "bafter   = " << bafter << std::endl;
+		if (bPrintIntermediateSteps) std::cout << "bsticky  = " << bsticky << std::endl;
 		bool rb = (blast & bafter) | (bafter & bsticky);
-		if (bPrintIntermediateSteps) cout << "rb       = " << rb << endl;
+		if (bPrintIntermediateSteps) std::cout << "rb       = " << rb << std::endl;
 		std::bitset<pt_len> ptt = pt_bits;
 		ptt >>= (len - nbits);
 
@@ -507,7 +509,7 @@ void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
 		bool carry = _fraction.increment();
 		if (carry && es > 0) carry = _exponent.increment();
 		if (carry) carry = _regime.increment();
-		if (carry) cout << "Error" << endl;
+		if (carry) std::cout << "Error" << std::endl;
 	}		
 */
 }
@@ -556,6 +558,9 @@ constexpr int SW_QUANDRANT = 3;
 
 template<size_t nbits, size_t es>
 void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
+	using namespace std;
+	using namespace sw::unum;
+
 	posit<nbits, es> p;
 	cout << endl << endl << "-------------------------------------------" << endl;
 	cout << spec_to_string(p) << endl;

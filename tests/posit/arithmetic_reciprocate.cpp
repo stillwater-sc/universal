@@ -27,7 +27,7 @@ void GenerateTestCase(Ty a) {
 	reference = (Ty)1.0 / a;
 	pref = reference;
 	preciprocal = pa.reciprocate();
-	cout << "input " << a << " reference 1/fa " << reference << " pref " << pref << " result " << preciprocal << endl << endl;
+	std::cout << "input " << a << " reference 1/fa " << reference << " pref " << pref << " result " << preciprocal << std::endl << std::endl;
 }
 
 #define MANUAL_TESTING 0
