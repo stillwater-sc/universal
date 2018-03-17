@@ -49,14 +49,14 @@ void GenerateValueAssignments() {
 	int max_scale = q.max_scale();
 	int min_scale = q.min_scale();
 	std::cout << "Maximum scale  = " << max_scale << " Minimum scale  = " << min_scale << " Dynamic range = " << q.dynamic_range() << std::endl;
-	std::cout << "Maxpos Squared = " << maxpos_scale<nbits,es>() * 2 << " Minpos Squared = " << minpos_scale<nbits,es>() * 2 << std::endl;
+	std::cout << "Maxpos Squared = " << sw::ieee::maxpos_scale<nbits,es>() * 2 << " Minpos Squared = " << sw::ieee::minpos_scale<nbits,es>() * 2 << std::endl;
 
 	// cover the scales with one order outside of the dynamic range of the quire configuration (minpos^2 and maxpos^2)
 	for (int scale = max_scale + 1; scale >= min_scale - 1; scale--) {  // extend by 1 max and min scale to test edge of the quire
 		sw::unum::value<fbits> v = pow(2.0, scale);
 		try {
 			q = v;
-			std::cout << setw(10) << v << q << std::endl;
+			std::cout << std::setw(10) << v << q << std::endl;
 			sw::unum::value<q.qbits> r = q.to_value();
 			double in = (double)v;
 			double out = (double)r;

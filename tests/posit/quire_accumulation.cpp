@@ -19,7 +19,7 @@
 
 template<size_t nbits, size_t es>
 void PrintTestVector(std::ostream& ostr, const std::vector< sw::unum::posit<nbits,es> >& pv) {
-	for (typename std::vector< posit<nbits,es> >::const_iterator it = pv.begin(); it != pv.end(); it++) {
+	for (typename std::vector< sw::unum::posit<nbits,es> >::const_iterator it = pv.begin(); it != pv.end(); it++) {
 		ostr << *it << std::endl;
 	}
 }
@@ -53,20 +53,23 @@ int ValidateQuireMagnitudeComparison() {
 
 template<size_t nbits, size_t es, size_t capacity = 2>
 int ValidateSignMagnitudeTransitions() {
+	using namespace std;
+	using namespace sw::unum;
+
 	int nrOfFailedTestCases = 0;
-	cout << "Quire configuration: quire<" << nbits << ", " << es << ", " << capacity << ">" << endl;
+	std::cout << "Quire configuration: quire<" << nbits << ", " << es << ", " << capacity << ">" << std::endl;
 
 	// moving through the four quadrants of a sign/magnitue adder/subtractor
-	posit<nbits, es> minpos, min2, min3, min4;
-	minpos = sw::unum::minpos<nbits, es>();     // ...0001
-	min2 = minpos; min2++;                  // ...0010
-	min3 = minpos; min3++; min3++;          // ...0011
-	min4 = minpos; min4++; min4++; min4++;  // ...0100
+	sw::unum::posit<nbits, es> minpos, min2, min3, min4;
+	minpos = sw::unum::minpos<nbits, es>();       // ...0001
+	min2 = minpos; min2++;                        // ...0010
+	min3 = minpos; min3++; min3++;                // ...0011
+	min4 = minpos; min4++; min4++; min4++;        // ...0100
 	posit<nbits, es> maxpos, max2, max3, max4;
-	maxpos = maxpos_value<nbits, es>();     // 01..111
-	max2 = maxpos; --max2;                  // 01..110
-	max3 = max2; --max3;                    // 01..101
-	max4 = max3; --max4;                    // 01..100
+	maxpos = sw::unum::maxpos_value<nbits, es>(); // 01..111
+	max2 = maxpos; --max2;                        // 01..110
+	max3 = max2; --max3;                          // 01..101
+	max4 = max3; --max4;                          // 01..100
 
 	cout << endl;
 	cout << "Posit range extremes:" << endl;

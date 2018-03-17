@@ -21,14 +21,14 @@ void GenerateLogicPattern(double input, const sw::unum::posit<nbits, es>& presul
 	const int VALUE_WIDTH = 15;
 	bool fail = presult != pnext;
 	sw::unum::value<52> v(input);
-	std::cout << setw(VALUE_WIDTH) << input << " "
-		<< " result " << setw(VALUE_WIDTH) << presult 
+	std::cout << std::setw(VALUE_WIDTH) << input << " "
+		<< " result " << std::setw(VALUE_WIDTH) << presult 
 		<< "  scale= " << std::setw(3) << presult.scale() 
-		<< "  k= " << std::setw(3) << calculate_k<nbits, es>(v.scale())
+		<< "  k= " << std::setw(3) << sw::unum::calculate_k<nbits, es>(v.scale())
 		<< "  exp= " << std::setw(3) << presult.get_exponent() << "  "
 		<< presult.get() << " " 
 		<< pnext.get() << " "
-		<< setw(VALUE_WIDTH) << pnext << " "
+		<< std::setw(VALUE_WIDTH) << pnext << " "
 		<< (fail ? "FAIL" : "    PASS")
 		<< std::endl;
 }
@@ -43,7 +43,7 @@ void GenerateLogicPatternsForDebug() {
 
 	// execute the test
 	int nrOfFailedTests = 0;
-	double minpos = minpos_value<nbits+1, es>();
+	double minpos = sw::unum::minpos_value<nbits+1, es>();
 	double eps = 1.0e-10;
 	double da, input;
 	sw::unum::posit<nbits, es> pa;
@@ -157,7 +157,7 @@ void GenerateTestCase(float input, float reference, const sw::unum::posit<nbits,
 		ReportConversionError("test_case", "=", input, reference, presult);
 	else
 		ReportConversionSuccess("test_case", "=", input, reference, presult);
-	cout << endl;
+	std::cout << std::endl;
 }
 
 template<size_t nbits, size_t es>
@@ -166,7 +166,7 @@ void GenerateTestCase(double input, double reference, const sw::unum::posit<nbit
 		ReportConversionError("test_case", "=", input, reference, presult);
 	else
 		ReportConversionSuccess("test_case", "=", input, reference, presult);
-	cout << endl;
+	std::cout << std::endl;
 }
 
 #define MANUAL_TESTING 0

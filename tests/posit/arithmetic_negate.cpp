@@ -23,7 +23,7 @@ void GenerateTestCase(Ty fa) {
 	pa = fa;
 	pref = -fa;
 	pneg = -pa;
-	cout << "reference " << pref << " result " << pneg << endl << endl;
+	std::cout << "reference " << pref << " result " << pneg << std::endl << std::endl;
 }
 
 #define MANUAL_TESTING 0

@@ -1329,11 +1329,17 @@ value<2 * (nbits - 2 - es)> fam(const posit<nbits, es>& a, const posit<nbits, es
 	if (c.isZero()) return product;
 	vc.set(c.get_size(), c.scale(), c.get_fraction().get(), c.isZero(), c.isNaR());
 	module_multiply(sum, c, product);
-
-	value<abits + 1> sum;
+	return product;
 }
 
-// FMMA: fused multiply-multiply-add
+// FMMA: fused multiply-multiply-add: (a * b) +/- (c * d)
+template<size_t nbits, size_t es>
+value<nbits> fmma(const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& c, const posit<nbits, es>& d, bool opIsAdd = true)
+{
+	// todo: implement
+	value<nbits> result;
+	return result;
+}
 
 // QUIRE OPERATORS
 // Why are they defined here and not in quire.hpp? TODO
