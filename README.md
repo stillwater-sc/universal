@@ -89,7 +89,7 @@ The core limitations of IEEE floating point are caused by two key problems of th
 - irreproducibility in the context of concurrency
 
 The complete list of issues that are holding back IEEE floating point formats:
-1. **Wasted Bit Patterns** - 32-bit IEEE floating point has around sixteen million ways to represent NaN (Not-A-Number), while 64-bit floating point has nine quadrillion. A NaN is an exception value for invalid operations such as division by zero.
+1. **Wasted Bit Patterns** - 32-bit IEEE floating point has around eight million ways to represent NaN (Not-A-Number), while 64-bit floating point has two quadrillion, that is approximately 2.251x10^15 to be more exact. A NaN is an exception value to represent undefined or invalid results, such as the result of a division by zero.
 2. **Mathematically Incorrect** - The format specifies two zeroes - a negative and positive zero - which have different behaviors. - Loss of associative and distributive law due to rounding after each operation. This loss of associative and distributive arithmetic behavior creates irreproducible result of concurrent programs that use IEEE floating point. This is particularly problematic for embedded and control applications.
 3. **Overflows to ± inf and underflows to 0** - Overflowing to ± inf increases the relative error by an infinite factor, while underflowing to 0 loses sign information.
 4. **Unused dynamic range** - The dynamic range of double precision floats is a whopping 2^2047, whereas most numerical software is architected to operate around 1.0.
