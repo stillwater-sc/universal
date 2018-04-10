@@ -1,23 +1,14 @@
-﻿//  extract.cpp : extract a posit from a float
+﻿// extract.cpp : extracting IEEE floating point components and relate them to posit components
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
-
-#include "../../posit/posit.hpp"
-#include "../../posit/posit_manipulators.hpp"
+#include "common.hpp"
+#include <posit>
 
 using namespace std;
 using namespace sw::unum;
-
-uint64_t regime_lookup[8] = {
-	0x0ULL,
-	0x1ULL,
-	0x2ULL
-};
-
 
 /*
 Laid out as bits, floating point numbers look like this:
@@ -65,8 +56,6 @@ long double frexp(long double in, int* exponent)
 
 */
 
-
-
 template<size_t nbits, size_t es>
 posit<nbits, es> extract(float f) {
 	constexpr size_t fbits = posit<nbits, es>::fbits;
@@ -104,7 +93,6 @@ try {
 	const size_t nbits = 32;
 	const size_t es = 2;
 
-	int nrOfFailedTestCases = 0;
 	posit<nbits,es>		p;
 	bool 				sign;
 	int					exponent;
@@ -170,75 +158,7 @@ try {
 	cout << "posit<" << nbits << "," << es << "> = " << p << endl;
 	cout << "posit<" << nbits << "," << es << "> = " << components_to_string(p) << endl;
 
-
-	// regime
-	// posit<3,#>
-	// -2 s-00
-	// -1 s-01
-	//  0 s-10
-	//  1 s-11
-
-	// posit<4,#>
-	// -3 s-000
-	// -2 s-001
-	// -1 s-01#
-	//  0 s-10#
-	//  1 s-110
-	//  2 s-111
-
-	// posit<5,#>
-	// -4 s-0000
-	// -3 s-0001
-	// -2 s-001#
-	// -1 s-01##
-	//  0 s-10##
-	//  1 s-110#
-	//  2 s-1110
-	//  3 s-1111
-
-	// posit<6,#>
-	// -5 s-00000
-	// -4 s-00001
-	// -3 s-0001#
-	// -2 s-001##
-	// -1 s-01###
-	//  0 s-10###
-	//  1 s-110##
-	//  2 s-1110#
-	//  3 s-11110
-	//  4 s-11111
-
-	// posit<7,#>
-	// -6 s-000000
-	// -5 s-000001
-	// -4 s-00001#
-	// -3 s-0001##
-	// -2 s-001###
-	// -1 s-01####
-	//  0 s-10####
-	//  1 s-110###
-	//  2 s-1110##
-	//  3 s-11110#
-	//  4 s-111110
-	//  5 s-111111
-
-	// posit<8,#>
-	// -7 s-0000000
-	// -6 s-0000001
-	// -5 s-000001#
-	// -4 s-00001##
-	// -3 s-0001###
-	// -2 s-001####
-	// -1 s-01#####
-	//  0 s-10#####
-	//  1 s-110####
-	//  2 s-1110###
-	//  3 s-11110##
-	//  4 s-111110#
-	//  5 s-1111110
-	//  6 s-1111111
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	cerr << msg << endl;

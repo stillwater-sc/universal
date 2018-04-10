@@ -1,34 +1,17 @@
-﻿//  exponents.cpp : tests on posit exponents
+﻿//  exponents.cpp : examples of working with posit exponents
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
+#include <posit>
 
-#include "../../posit/posit.hpp"
-#include "../../posit/posit_manipulators.hpp"
-
-using namespace std;
-using namespace sw::unum;
-
-template<size_t es>
-int ValidateExponentOperations() {
-	int nrOfFailedTestCases = 0;
-
-	return nrOfFailedTestCases;
-}
-
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
+// examples of how regime and exponent are related to the scale of a posit
 int main(int argc, char** argv)
 try {
-	bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
-
-
-#if MANUAL_TESTING
+	using namespace std;
+	using namespace sw::unum;
 
 	// generate individual testcases to hand trace/debug
 	cout << "Manual Exponent tests" << endl;
@@ -49,21 +32,13 @@ try {
 		}
 	}
 
-#else
-
-	cout << "Exponent tests" << endl;
-
-	exponent<nbits, es> e1, e2;
-
-#endif
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

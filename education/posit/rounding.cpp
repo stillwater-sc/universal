@@ -1,13 +1,11 @@
-// rounding.cpp: functional tests for rounding (projecting) values to posits
+// rounding.cpp: examples of rounding (projecting) values with/to posits
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
-
-#include "../../posit/posit.hpp"
-#include "../../posit/posit_manipulators.hpp"
+#include "common.hpp"
+#include <posit>
 
 using namespace std;
 using namespace sw::unum;
