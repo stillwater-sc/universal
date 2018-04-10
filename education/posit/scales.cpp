@@ -4,11 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
-
-#include "../../posit/posit.hpp"
-#include "../../posit/posit_manipulators.hpp"
-#include "../tests/test_helpers.hpp"
+#include "common.hpp"
+#include <posit>
 
 using namespace std;
 using namespace sw::unum;
