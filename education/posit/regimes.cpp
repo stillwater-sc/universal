@@ -69,9 +69,9 @@ int ValidateInwardProjection(std::string tag, bool bReportIndividualTestCases) {
 		bool reference = k < 0 ? k == -size + 1 : k == size - 1;
 		if (inward != reference) {
 			nrOfFailedTests++;
-			std::cout << "FAIL : k = " << setw(3) << k << " scale = " << std::setw(3) << scale << " inward projection range " << inward << " reference " << reference << std::endl;
+			std::cout << "FAIL : k = " << std::setw(3) << k << " scale = " << std::setw(3) << scale << " inward projection range " << inward << " reference " << reference << std::endl;
 		}
-		std::cout << "k = " << setw(3) << k << " scale = " << std::setw(3) << scale << " inward projection range " << inward << std::endl;
+		std::cout << "k = " << std::setw(3) << k << " scale = " << std::setw(3) << scale << " inward projection range " << inward << std::endl;
 
 	}
 	return nrOfFailedTests;
