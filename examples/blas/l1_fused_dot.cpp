@@ -6,7 +6,7 @@
 
 // enable the mathematical constants in cmath: old-style preprocessor magic which isn't best practice anymore
 #define _USE_MATH_DEFINES
-#include "stdafx.h"
+#include "common.hpp"
 
 #include <vector>
 
