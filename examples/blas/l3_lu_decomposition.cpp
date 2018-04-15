@@ -301,7 +301,7 @@ void Cholesky(std::vector<Ty>& S, std::vector<Ty>& D) {
 // This version could be more efficient on some architectures
 // Use solveCholesky for both Cholesky decompositions
 template<typename Ty>
-void CholeskyRow(int d, std::vector<Ty>& S, std::vector<Ty>& D) {
+void CholeskyRow(std::vector<Ty>& S, std::vector<Ty>& D) {
 	size_t d = size_t(std::sqrt(S.size()));
 	assert(S.size() == d*d);
 	assert(D.size() == d*d);
