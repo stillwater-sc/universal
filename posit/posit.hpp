@@ -1,7 +1,7 @@
 #pragma once
 // posit.hpp: definition of arbitrary posit number configurations
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -88,33 +88,17 @@ template<size_t nbits, size_t es> posit<nbits, es> maxpos();
 /*
  class posit represents arbitrary configuration posits and their basic arithmetic operations (add/sub, mul/div)
  */
-template<size_t nbits, size_t es>
+template<size_t _nbits, size_t _es>
 class posit {
 
-	static_assert(es + 2 <= nbits, "Value for 'es' is too large for this 'nbits' value");
+	static_assert(_es + 2 <= _nbits, "Value for 'es' is too large for this 'nbits' value");
 //	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
 //	static_assert((sizeof(long double) == 16) && (std::numeric_limits<long double>::digits < 113), "C++ math library for long double does not support 128-bit quad precision floats.");
 
-	template <typename T>
-	posit<nbits, es>& float_assign(const T& rhs) {
-		constexpr int dfbits = std::numeric_limits<T>::digits - 1;
-		value<dfbits> v((T)rhs);
-
-		// special case processing
-		if (v.isZero()) {
-			setToZero();
-			return *this;
-		}
-		if (v.isInfinite() || v.isNaN()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
-			setToNaR();
-			return *this;
-		}
-
-		convert(v);
-		return *this;
-	}
     
 public:
+	static constexpr size_t nbits   = _nbits;
+	static constexpr size_t es      = _es;
 	static constexpr size_t sbits   = 1;                          // number of sign bits:     specified
 	static constexpr size_t rbits   = nbits - sbits;              // maximum number of regime bits:   derived
 	static constexpr size_t ebits   = es;                         // maximum number of exponent bits: specified
@@ -965,11 +949,11 @@ public:
 	}
 
 private:
-	bitblock<nbits>        _raw_bits;	// raw bit representation
-	bool				   _sign;       // decoded posit representation
-	regime<nbits, es>	   _regime;		// decoded posit representation
-	exponent<nbits, es>    _exponent;	// decoded posit representation
-	fraction<fbits> 	   _fraction;	// decoded posit representation
+	bitblock<nbits>      _raw_bits;	// raw bit representation
+	bool		     _sign;     // decoded posit representation
+	regime<nbits, es>    _regime;	// decoded posit representation
+	exponent<nbits, es>  _exponent;	// decoded posit representation
+	fraction<fbits>      _fraction;	// decoded posit representation
 
 	// HELPER methods
 	// Conversion functions
@@ -1004,6 +988,24 @@ private:
 		double e = exponent_value(); // same with exponent
 		long double f = (long double)(1.0) + _fraction.value();
 		return s * r * e * f;
+	}
+	template <typename T>
+	posit<nbits, es>& float_assign(const T& rhs) {
+		constexpr int dfbits = std::numeric_limits<T>::digits - 1;
+		value<dfbits> v((T)rhs);
+
+		// special case processing
+		if (v.isZero()) {
+			setToZero();
+			return *this;
+		}
+		if (v.isInfinite() || v.isNaN()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
+			setToNaR();
+			return *this;
+		}
+
+		convert(v);
+		return *this;
 	}
 
 	// friend functions
