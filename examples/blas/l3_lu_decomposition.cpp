@@ -8,8 +8,10 @@
 #include "common.hpp"
 
 #include <vector>
+#define POSIT_VERBOSE_OUTPUT
+#define QUIRE_TRACE_ADD
 #include <posit>
-//#include "math_functions.hpp"
+#include "blas.hpp"
 
 // can the ratio a/b be represented exactly
 bool isRepresentable(int a, int b) {
@@ -19,120 +21,6 @@ bool isRepresentable(int a, int b) {
 	return a % b == 0;
 }
 
-template<typename Ty>
-Ty dot(const std::vector<Ty>& x, const std::vector<Ty>& y) {
-	// preconditions
-	size_t d = x.size();
-	assert(x.size() == d);
-	assert(y.size() == d);
-	Ty sum = 0;
-	for (size_t i = 0; i < d; ++i) {
-		sum += x[i] * y[i];
-	}
-	return sum;
-}
-
-template<size_t nbits, size_t es, size_t capacity = 10>
-sw::unum::posit<nbits, es> fused_dot(const std::vector< sw::unum::posit<nbits, es> >& x, const std::vector< sw::unum::posit<nbits, es> >& y) {
-	// preconditions
-	size_t d = x.size();
-	assert(x.size() == d);
-	assert(y.size() == d);
-	sw::unum::quire<nbits, es, capacity> q = 0;
-	for (size_t i = 0; i < d; ++i) {
-		q += quire_mul(x[i], y[i]);
-	}
-	sw::unum::posit<nbits, es> sum;
-	sum.convert(q.to_value());     // one and only rounding step of the fused-dot product
-	return sum;
-}
-
-template<typename Ty>
-void matvec(const std::vector<Ty>& A, const std::vector<Ty>& x, std::vector<Ty>& b) {
-	// preconditions
-	size_t d = x.size();
-	assert(A.size() == d*d);
-	assert(b.size() == d);
-	for (size_t i = 0; i < d; ++i) {
-		b[i] = 0;
-		for (size_t j = 0; j < d; ++j) {
-			//std::cout << "b[" << i << "] = " << b[i] << std::endl;
-			//std::cout << "A[" << i << "][" << j << "] = " << A[i*d + j] << std::endl;
-			//std::cout << "x[" << j << "] = " << x[j] << std::endl;
-			b[i] = b[i] + A[i*d + j] * x[j];
-		}
-		//std::cout << "b[" << i << "] = " << b[i] << std::endl;
-	}
-}
-
-template<size_t nbits, size_t es>
-void matvec(const std::vector< sw::unum::posit<nbits, es> >& A, const std::vector< sw::unum::posit<nbits, es> >& x, std::vector< sw::unum::posit<nbits, es> >& b) {
-	// preconditions
-	size_t d = x.size();
-	assert(A.size() == d*d);
-	assert(b.size() == d);
-	for (size_t i = 0; i < d; ++i) {
-		b[i] = 0;
-		for (size_t j = 0; j < d; ++j) {
-			//std::cout << "b[" << i << "] = " << b[i] << std::endl;
-			//std::cout << "A[" << i << "][" << j << "] = " << A[i*d + j] << std::endl;
-			//std::cout << "x[" << j << "] = " << x[j] << std::endl;
-			b[i] = b[i] + A[i*d + j] * x[j];
-		}
-		//std::cout << "b[" << i << "] = " << b[i] << std::endl;
-	}
-}
-
-template<typename Ty>
-void matmul(const std::vector<Ty>& A, const std::vector<Ty>& B, std::vector<Ty>& C) {
-	// preconditions
-	int d = int(std::sqrt(A.size()));
-	assert(A.size() == d*d);
-	assert(B.size() == d*d);
-	assert(C.size() == d*d);
-	for (int i = 0; i < d; ++i) {
-		for (int j = 0; j < d; ++j) {
-			C[i*d + j] = Ty(0);
-			for (int k = 0; k < d; ++k) {
-				C[i*d + j] = C[i*d + j] + A[i*d + k] * B[k*d + j];
-			}
-		}
-	}
-}
-
-template<typename Ty>
-void eye(std::vector<Ty>& I) {
-	// preconditions
-	int d = int(std::sqrt(I.size()));
-	assert(I.size() == d*d);
-	for (int i = 0; i < d; ++i) {
-		for (int j = 0; j < d; ++j) {
-			I[i*d + j] = (i == j ? Ty(1) : Ty(0));
-		}
-	}
-}
-
-// These functions print matrices and vectors in a nice format
-template<typename Ty>
-void coutMatrix(const std::string& name, const std::vector<Ty>& m) {
-	size_t d = size_t(std::sqrt(m.size()));
-	std::cout << "Matrix: " << name << " is " << d << "x" << d << std::endl;
-	std::cout << std::setprecision(17);
-	for (size_t i = 0; i<d; ++i) {
-		for (size_t j = 0; j<d; ++j) std::cout << std::setw(20) << m[i*d + j];
-		std::cout << std::endl;
-	}
-	std::cout << std::setprecision(5);
-}
-
-template<typename Ty>
-void coutVector(const std::string& name, const std::vector<Ty>& v) {
-	size_t d = v.size();
-	std::cout << "Vector: " << name << " is of size " << d << " elements" << std::endl;
-	std::cout << std::setprecision(17);
-	for (size_t j = 0; j<d; ++j) std::cout << std::setw(20) << v[j];
-	std::cout << std::setprecision(5) << std::endl;
-}
 
 // The following compact LU factorization schemes are described
 // in Dahlquist, Bjorck, Anderson 1974 "Numerical Methods".
@@ -349,7 +237,7 @@ template<size_t nbits, size_t es, size_t capacity = 10>
 void ComparePositDecompositions(std::vector< sw::unum::posit<nbits, es> >& A, std::vector< sw::unum::posit<nbits, es> >& x, std::vector< sw::unum::posit<nbits, es> >& b) {
 	size_t d = b.size();
 	assert(A.size() == d*d);
-
+	using namespace sw::blas;
 	std::vector< sw::unum::posit<nbits, es> > LU(d*d);
 
 	{
@@ -363,8 +251,8 @@ void ComparePositDecompositions(std::vector< sw::unum::posit<nbits, es> >& A, st
 		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
 
 		SolveCrout(LU, b, x);
-		coutMatrix("Crout LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Crout LU", LU);
+		printVector(std::cout, "Solution", x);
 	}
 
 	std::cout << std::endl;
@@ -379,12 +267,12 @@ void ComparePositDecompositions(std::vector< sw::unum::posit<nbits, es> >& A, st
 		std::cout << "Doolittle took " << elapsed << " seconds." << std::endl;
 		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
 		SolveCrout(LU, b, x);
-		coutMatrix("Doolittle LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Doolittle LU", LU);
+		printVector(std::cout, "Solution", x);
 
 		SolveDoolittle(LU, b, x);
-		coutMatrix("Doolittle LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Doolittle LU", LU);
+		printVector(std::cout, "Solution", x);
 	}
 
 
@@ -400,12 +288,12 @@ void ComparePositDecompositions(std::vector< sw::unum::posit<nbits, es> >& A, st
 		std::cout << "Cholesky took " << elapsed << " seconds." << std::endl;
 		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
 		SolveCrout(LU, b, x);
-		coutMatrix("Cholesky LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Cholesky LU", LU);
+		printVector(std::cout, "Solution", x);
 
 		SolveCholesky(LU, b, x);
-		coutMatrix("Cholesky LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Cholesky LU", LU);
+		printVector(std::cout, "Solution", x);
 	}
 #endif
 }
@@ -415,7 +303,7 @@ template<typename Ty>
 void CompareIEEEDecompositions(std::vector<Ty>& A, std::vector<Ty>& x, std::vector<Ty>& b) {
 	size_t d = b.size();
 	assert(A.size() == d*d);
-
+	using namespace sw::blas;
 	std::vector<Ty> LU(d*d);
 
 	{
@@ -429,8 +317,8 @@ void CompareIEEEDecompositions(std::vector<Ty>& A, std::vector<Ty>& x, std::vect
 		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
 
 		SolveCrout(LU, b, x);
-		coutMatrix("Crout LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Crout LU", LU);
+		printVector(std::cout, "Solution", x);
 	}
 
 
@@ -446,12 +334,12 @@ void CompareIEEEDecompositions(std::vector<Ty>& A, std::vector<Ty>& x, std::vect
 		std::cout << "Doolittle took " << elapsed << " seconds." << std::endl;
 		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
 		SolveCrout(LU, b, x);
-		coutMatrix("Doolittle LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Doolittle LU", LU);
+		printVector(std::cout, "Solution", x);
 
 		SolveDoolittle(LU, b, x);
-		coutMatrix("Doolittle LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Doolittle LU", LU);
+		printVector(std::cout, "Solution", x);
 	}
 
 
@@ -467,12 +355,12 @@ void CompareIEEEDecompositions(std::vector<Ty>& A, std::vector<Ty>& x, std::vect
 		std::cout << "Cholesky took " << elapsed << " seconds." << std::endl;
 		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
 		SolveCrout(LU, b, x);
-		coutMatrix("Cholesky LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Cholesky LU", LU);
+		printVector(std::cout, "Solution", x);
 
 		SolveCholesky(LU, b, x);
-		coutMatrix("Cholesky LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Cholesky LU", LU);
+		printVector(std::cout, "Solution", x);
 	}
 }
 
@@ -544,10 +432,12 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
+	using namespace sw::blas;
 
 	// a 32-bit float and a <27,1> posit have the same number of significand bits around 1.0
-	const size_t nbits = 27;
-	const size_t es = 1;
+	constexpr size_t nbits    = 27;
+	constexpr size_t es       =  1;
+	constexpr size_t capacity = 10;
 
 	typedef float            IEEEType;
 	typedef posit<nbits, es> PositType;
@@ -558,38 +448,64 @@ try {
 	float epsplus = 1.0f + eps;
 	// We want to solve the system Ax=b
 	int d = 5;
-	vector<IEEEType> Aieee = { 
-		2.,1.,1.,3.,2.,
-		1.,2.,2.,1.,1.,
-		1.,2.,9.,1.,5.,
-		3.,1.,1.,7.,1.,
-		2.,1.,5.,1.,8. };
+	vector<IEEEType> Uieee = {     // define the upper triangular matrix
+		1.0, 2.0, 3.0, 4.0, 5.0,
+		0.0, 1.0, 2.0, 3.0, 4.0,
+		0.0, 0.0, 1.0, 2.0, 3.0,
+		0.0, 0.0, 0.0, 1.0, 2.0,
+		0.0, 0.0, 0.0, 0.0, 1.0,
+	};
+	vector<IEEEType> Lieee = {     // define the lower triangular matrix
+		1.0, 0.0, 0.0, 0.0, 0.0,
+		2.0, 1.0, 0.0, 0.0, 0.0,
+		3.0, 2.0, 1.0, 0.0, 0.0,
+		4.0, 3.0, 2.0, 1.0, 0.0,
+		5.0, 4.0, 3.0, 2.0, 1.0,
+	};
+	vector<IEEEType> Aieee(d*d);
+	matmul(Lieee, Uieee, Aieee);   // construct the A matrix to solve
 	// define a difficult solution
 	vector<IEEEType> xieee = {
-		epsminus,
 		epsplus,
-		epsminus,
 		epsplus,
-		epsminus  };
+		epsplus,
+		epsplus,
+		epsplus
+	};
 	vector<IEEEType> bieee(d);
-	matvec(Aieee, xieee, bieee);
+	matvec(Aieee, xieee, bieee);   // construct the right hand side
 
-	vector<PositType> Aposit = {
-		2.,1.,1.,3.,2.,
-		1.,2.,2.,1.,1.,
-		1.,2.,9.,1.,5.,
-		3.,1.,1.,7.,1.,
-		2.,1.,5.,1.,8. };
+	vector<PositType> Uposit = {   // define the upper triangular matrix
+		1.0, 2.0, 3.0, 4.0, 5.0,
+		0.0, 1.0, 2.0, 3.0, 4.0,
+		0.0, 0.0, 1.0, 2.0, 3.0,
+		0.0, 0.0, 0.0, 1.0, 2.0,
+		0.0, 0.0, 0.0, 0.0, 1.0,
+	};
+	vector<PositType> Lposit = {   // define the lower triangular matrix
+		1.0, 0.0, 0.0, 0.0, 0.0,
+		2.0, 1.0, 0.0, 0.0, 0.0,
+		3.0, 2.0, 1.0, 0.0, 0.0,
+		4.0, 3.0, 2.0, 1.0, 0.0,
+		5.0, 4.0, 3.0, 2.0, 1.0,
+	};
+	vector<PositType> Aposit(d*d);
+	matmul(Lposit, Uposit, Aposit);   // construct the A matrix to solve
+	printMatrix(cout, "A", Aposit);
 	// define a difficult solution
 	vector<PositType> xposit = {
-		epsminus,
 		epsplus,
-		epsminus,
 		epsplus,
-		epsminus };
+		epsplus,
+		epsplus,
+		epsplus
+	};
 	vector<PositType> bposit(d);
-	matvec<nbits, es>(Aposit, xposit, bposit);
+	matvec<nbits, es>(Aposit, xposit, bposit);   // construct the right hand side
 
+
+
+#if 0
 	cout << "posit<25,1>\n";
 	cout << "1.0 - FLT_EPSILON = " << setprecision(17) << epsminus << " converts to " << posit<25, 1>(epsminus) << endl;
 	cout << "1.0 + FLT_EPSILON = " << setprecision(17) << epsplus  << " converts to " << posit<25, 1>(epsplus) << endl;
@@ -599,18 +515,12 @@ try {
 	cout << "posit<27,1>\n";
 	cout << "1.0 - FLT_EPSILON = " << setprecision(17) << epsminus << " converts to " << posit<27, 1>(epsminus) << endl;
 	cout << "1.0 + FLT_EPSILON = " << setprecision(17) << epsplus  << " converts to " << posit<27, 1>(epsplus) << endl;
+#endif
 
-	// generate an interesting test A and x with 0.5 ULP round-off errors in each product
-	// that the fused-dot product will be able to resolve
-	vector<IEEEType> yieee   = { 0.5e-3f, 0.5e-3f, 1.0e-3f, 2.0e-3f, 2.0e-3f };
-	vector<PositType> yposit = { 0.5e-3, 0.5e-3, 1.0e-3, 2.0e-3, 2.0e-3 };
-	cout << "dot(x,y)      : " << dot(xieee, yieee) << endl;
-	cout << "fused_dot(x,y): " << fused_dot(xposit, yposit) << endl;
-
-	cout << "LinearSolve WITHOUT fused-dot product" << endl;
+	cout << "LinearSolve regular dot product" << endl;
 	CompareIEEEDecompositions(Aieee, xieee, bieee); 
 	cout << endl << ">>>>>>>>>>>>>>>>" << endl;
-	cout << "LinearSolve WITH fused-dot product" << endl;
+	cout << "LinearSolve fused-dot product" << endl;
 	ComparePositDecompositions(Aposit, xposit, bposit);
 
 	return EXIT_SUCCESS;
