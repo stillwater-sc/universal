@@ -1,7 +1,7 @@
 #pragma once
 // posit.hpp: definition of arbitrary posit number configurations
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -115,6 +115,8 @@ class posit {
 	}
     
 public:
+	static constexpr size_t nbits = nbits;
+	static constexpr size_t es = es;
 	static constexpr size_t sbits   = 1;                          // number of sign bits:     specified
 	static constexpr size_t rbits   = nbits - sbits;              // maximum number of regime bits:   derived
 	static constexpr size_t ebits   = es;                         // maximum number of exponent bits: specified

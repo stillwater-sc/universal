@@ -8,8 +8,10 @@
 #include "common.hpp"
 
 #include <vector>
+#define POSIT_VERBOSE_OUTPUT
+#define QUIRE_TRACE_ADD
 #include <posit>
-//#include "math_functions.hpp"
+#include "blas.hpp"
 
 // can the ratio a/b be represented exactly
 bool isRepresentable(int a, int b) {
@@ -19,98 +21,6 @@ bool isRepresentable(int a, int b) {
 	return a % b == 0;
 }
 
-template<typename Ty>
-Ty dot(const std::vector<Ty>& x, const std::vector<Ty>& y) {
-	// preconditions
-	size_t d = x.size();
-	assert(x.size() == d);
-	assert(y.size() == d);
-	Ty sum = 0;
-	for (size_t i = 0; i < d; ++i) {
-		sum += x[i] * y[i];
-	}
-	return sum;
-}
-
-template<size_t nbits, size_t es, size_t capacity = 10>
-sw::unum::posit<nbits, es> fused_dot(const std::vector< sw::unum::posit<nbits, es> >& x, const std::vector< sw::unum::posit<nbits, es> >& y) {
-	// preconditions
-	size_t d = x.size();
-	assert(x.size() == d);
-	assert(y.size() == d);
-	sw::unum::quire<nbits, es, capacity> q = 0;
-	for (size_t i = 0; i < d; ++i) {
-		q += quire_mul(x[i], y[i]);
-	}
-	sw::unum::posit<nbits, es> sum;
-	sum.convert(q.to_value());     // one and only rounding step of the fused-dot product
-	return sum;
-}
-
-template<typename Ty>
-void matvec(const std::vector<Ty>& A, const std::vector<Ty>& x, std::vector<Ty>& b) {
-	// preconditions
-	size_t d = x.size();
-	assert(A.size() == d*d);
-	assert(b.size() == d);
-	for (size_t i = 0; i < d; ++i) {
-		b[i] = 0;
-		for (size_t j = 0; j < d; ++j) {
-			//std::cout << "b[" << i << "] = " << b[i] << std::endl;
-			//std::cout << "A[" << i << "][" << j << "] = " << A[i*d + j] << std::endl;
-			//std::cout << "x[" << j << "] = " << x[j] << std::endl;
-			b[i] = b[i] + A[i*d + j] * x[j];
-		}
-		//std::cout << "b[" << i << "] = " << b[i] << std::endl;
-	}
-}
-
-template<size_t nbits, size_t es>
-void matvec(const std::vector< sw::unum::posit<nbits, es> >& A, const std::vector< sw::unum::posit<nbits, es> >& x, std::vector< sw::unum::posit<nbits, es> >& b) {
-	// preconditions
-	size_t d = x.size();
-	assert(A.size() == d*d);
-	assert(b.size() == d);
-	for (size_t i = 0; i < d; ++i) {
-		b[i] = 0;
-		for (size_t j = 0; j < d; ++j) {
-			//std::cout << "b[" << i << "] = " << b[i] << std::endl;
-			//std::cout << "A[" << i << "][" << j << "] = " << A[i*d + j] << std::endl;
-			//std::cout << "x[" << j << "] = " << x[j] << std::endl;
-			b[i] = b[i] + A[i*d + j] * x[j];
-		}
-		//std::cout << "b[" << i << "] = " << b[i] << std::endl;
-	}
-}
-
-template<typename Ty>
-void matmul(const std::vector<Ty>& A, const std::vector<Ty>& B, std::vector<Ty>& C) {
-	// preconditions
-	int d = int(std::sqrt(A.size()));
-	assert(A.size() == d*d);
-	assert(B.size() == d*d);
-	assert(C.size() == d*d);
-	for (int i = 0; i < d; ++i) {
-		for (int j = 0; j < d; ++j) {
-			C[i*d + j] = Ty(0);
-			for (int k = 0; k < d; ++k) {
-				C[i*d + j] = C[i*d + j] + A[i*d + k] * B[k*d + j];
-			}
-		}
-	}
-}
-
-template<typename Ty>
-void eye(std::vector<Ty>& I) {
-	// preconditions
-	int d = int(std::sqrt(I.size()));
-	assert(I.size() == d*d);
-	for (int i = 0; i < d; ++i) {
-		for (int j = 0; j < d; ++j) {
-			I[i*d + j] = (i == j ? Ty(1) : Ty(0));
-		}
-	}
-}
 
 // These functions print matrices and vectors in a nice format
 template<typename Ty>
@@ -544,10 +454,12 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
+	using namespace sw::blas;
 
 	// a 32-bit float and a <27,1> posit have the same number of significand bits around 1.0
-	const size_t nbits = 27;
-	const size_t es = 1;
+	constexpr size_t nbits    = 27;
+	constexpr size_t es       =  1;
+	constexpr size_t capacity = 10;
 
 	typedef float            IEEEType;
 	typedef posit<nbits, es> PositType;
@@ -566,11 +478,12 @@ try {
 		2.,1.,5.,1.,8. };
 	// define a difficult solution
 	vector<IEEEType> xieee = {
-		epsminus,
 		epsplus,
-		epsminus,
 		epsplus,
-		epsminus  };
+		epsplus,
+		epsplus,
+		epsplus
+	};
 	vector<IEEEType> bieee(d);
 	matvec(Aieee, xieee, bieee);
 
@@ -582,14 +495,21 @@ try {
 		2.,1.,5.,1.,8. };
 	// define a difficult solution
 	vector<PositType> xposit = {
-		epsminus,
 		epsplus,
-		epsminus,
 		epsplus,
-		epsminus };
+		epsplus,
+		epsplus,
+		epsplus
+	};
 	vector<PositType> bposit(d);
+
+	cout << epsplus << " " << 1.5f*epsplus << endl;
+
 	matvec<nbits, es>(Aposit, xposit, bposit);
 
+
+
+#if 0
 	cout << "posit<25,1>\n";
 	cout << "1.0 - FLT_EPSILON = " << setprecision(17) << epsminus << " converts to " << posit<25, 1>(epsminus) << endl;
 	cout << "1.0 + FLT_EPSILON = " << setprecision(17) << epsplus  << " converts to " << posit<25, 1>(epsplus) << endl;
@@ -599,18 +519,19 @@ try {
 	cout << "posit<27,1>\n";
 	cout << "1.0 - FLT_EPSILON = " << setprecision(17) << epsminus << " converts to " << posit<27, 1>(epsminus) << endl;
 	cout << "1.0 + FLT_EPSILON = " << setprecision(17) << epsplus  << " converts to " << posit<27, 1>(epsplus) << endl;
+#endif
 
-	// generate an interesting test A and x with 0.5 ULP round-off errors in each product
-	// that the fused-dot product will be able to resolve
-	vector<IEEEType> yieee   = { 0.5e-3f, 0.5e-3f, 1.0e-3f, 2.0e-3f, 2.0e-3f };
-	vector<PositType> yposit = { 0.5e-3, 0.5e-3, 1.0e-3, 2.0e-3, 2.0e-3 };
-	cout << "dot(x,y)      : " << dot(xieee, yieee) << endl;
-	cout << "fused_dot(x,y): " << fused_dot(xposit, yposit) << endl;
+	sw::unum::quire<nbits, es, capacity> q = epsplus;
+	cout << q << endl;
 
-	cout << "LinearSolve WITHOUT fused-dot product" << endl;
+
+
+	return 0;
+
+	cout << "LinearSolve regular dot product" << endl;
 	CompareIEEEDecompositions(Aieee, xieee, bieee); 
 	cout << endl << ">>>>>>>>>>>>>>>>" << endl;
-	cout << "LinearSolve WITH fused-dot product" << endl;
+	cout << "LinearSolve fused-dot product" << endl;
 	ComparePositDecompositions(Aposit, xposit, bposit);
 
 	return EXIT_SUCCESS;
