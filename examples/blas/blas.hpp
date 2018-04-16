@@ -5,9 +5,11 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <vector>
+#include "blas_utils.hpp"
 
 namespace sw {
 	namespace blas {
+
 		// LEVEL 1 BLAS operators
 
 		// sum of magnitudes of the vector elements
