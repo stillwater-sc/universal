@@ -22,28 +22,6 @@ bool isRepresentable(int a, int b) {
 }
 
 
-// These functions print matrices and vectors in a nice format
-template<typename Ty>
-void coutMatrix(const std::string& name, const std::vector<Ty>& m) {
-	size_t d = size_t(std::sqrt(m.size()));
-	std::cout << "Matrix: " << name << " is " << d << "x" << d << std::endl;
-	std::cout << std::setprecision(17);
-	for (size_t i = 0; i<d; ++i) {
-		for (size_t j = 0; j<d; ++j) std::cout << std::setw(20) << m[i*d + j];
-		std::cout << std::endl;
-	}
-	std::cout << std::setprecision(5);
-}
-
-template<typename Ty>
-void coutVector(const std::string& name, const std::vector<Ty>& v) {
-	size_t d = v.size();
-	std::cout << "Vector: " << name << " is of size " << d << " elements" << std::endl;
-	std::cout << std::setprecision(17);
-	for (size_t j = 0; j<d; ++j) std::cout << std::setw(20) << v[j];
-	std::cout << std::setprecision(5) << std::endl;
-}
-
 // The following compact LU factorization schemes are described
 // in Dahlquist, Bjorck, Anderson 1974 "Numerical Methods".
 //
@@ -259,7 +237,7 @@ template<size_t nbits, size_t es, size_t capacity = 10>
 void ComparePositDecompositions(std::vector< sw::unum::posit<nbits, es> >& A, std::vector< sw::unum::posit<nbits, es> >& x, std::vector< sw::unum::posit<nbits, es> >& b) {
 	size_t d = b.size();
 	assert(A.size() == d*d);
-
+	using namespace sw::blas;
 	std::vector< sw::unum::posit<nbits, es> > LU(d*d);
 
 	{
@@ -273,8 +251,8 @@ void ComparePositDecompositions(std::vector< sw::unum::posit<nbits, es> >& A, st
 		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
 
 		SolveCrout(LU, b, x);
-		coutMatrix("Crout LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Crout LU", LU);
+		printVector(std::cout, "Solution", x);
 	}
 
 	std::cout << std::endl;
@@ -289,12 +267,12 @@ void ComparePositDecompositions(std::vector< sw::unum::posit<nbits, es> >& A, st
 		std::cout << "Doolittle took " << elapsed << " seconds." << std::endl;
 		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
 		SolveCrout(LU, b, x);
-		coutMatrix("Doolittle LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Doolittle LU", LU);
+		printVector(std::cout, "Solution", x);
 
 		SolveDoolittle(LU, b, x);
-		coutMatrix("Doolittle LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Doolittle LU", LU);
+		printVector(std::cout, "Solution", x);
 	}
 
 
@@ -310,12 +288,12 @@ void ComparePositDecompositions(std::vector< sw::unum::posit<nbits, es> >& A, st
 		std::cout << "Cholesky took " << elapsed << " seconds." << std::endl;
 		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
 		SolveCrout(LU, b, x);
-		coutMatrix("Cholesky LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Cholesky LU", LU);
+		printVector(std::cout, "Solution", x);
 
 		SolveCholesky(LU, b, x);
-		coutMatrix("Cholesky LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Cholesky LU", LU);
+		printVector(std::cout, "Solution", x);
 	}
 #endif
 }
@@ -325,7 +303,7 @@ template<typename Ty>
 void CompareIEEEDecompositions(std::vector<Ty>& A, std::vector<Ty>& x, std::vector<Ty>& b) {
 	size_t d = b.size();
 	assert(A.size() == d*d);
-
+	using namespace sw::blas;
 	std::vector<Ty> LU(d*d);
 
 	{
@@ -339,8 +317,8 @@ void CompareIEEEDecompositions(std::vector<Ty>& A, std::vector<Ty>& x, std::vect
 		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
 
 		SolveCrout(LU, b, x);
-		coutMatrix("Crout LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Crout LU", LU);
+		printVector(std::cout, "Solution", x);
 	}
 
 
@@ -356,12 +334,12 @@ void CompareIEEEDecompositions(std::vector<Ty>& A, std::vector<Ty>& x, std::vect
 		std::cout << "Doolittle took " << elapsed << " seconds." << std::endl;
 		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
 		SolveCrout(LU, b, x);
-		coutMatrix("Doolittle LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Doolittle LU", LU);
+		printVector(std::cout, "Solution", x);
 
 		SolveDoolittle(LU, b, x);
-		coutMatrix("Doolittle LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Doolittle LU", LU);
+		printVector(std::cout, "Solution", x);
 	}
 
 
@@ -377,12 +355,12 @@ void CompareIEEEDecompositions(std::vector<Ty>& A, std::vector<Ty>& x, std::vect
 		std::cout << "Cholesky took " << elapsed << " seconds." << std::endl;
 		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
 		SolveCrout(LU, b, x);
-		coutMatrix("Cholesky LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Cholesky LU", LU);
+		printVector(std::cout, "Solution", x);
 
 		SolveCholesky(LU, b, x);
-		coutMatrix("Cholesky LU", LU);
-		coutVector("Solution", x);
+		printMatrix(std::cout, "Cholesky LU", LU);
+		printVector(std::cout, "Solution", x);
 	}
 }
 
@@ -470,12 +448,22 @@ try {
 	float epsplus = 1.0f + eps;
 	// We want to solve the system Ax=b
 	int d = 5;
-	vector<IEEEType> Aieee = { 
-		2.,1.,1.,3.,2.,
-		1.,2.,2.,1.,1.,
-		1.,2.,9.,1.,5.,
-		3.,1.,1.,7.,1.,
-		2.,1.,5.,1.,8. };
+	vector<IEEEType> Uieee = {     // define the upper triangular matrix
+		1.0, 2.0, 3.0, 4.0, 5.0,
+		0.0, 1.0, 2.0, 3.0, 4.0,
+		0.0, 0.0, 1.0, 2.0, 3.0,
+		0.0, 0.0, 0.0, 1.0, 2.0,
+		0.0, 0.0, 0.0, 0.0, 1.0,
+	};
+	vector<IEEEType> Lieee = {     // define the lower triangular matrix
+		1.0, 0.0, 0.0, 0.0, 0.0,
+		2.0, 1.0, 0.0, 0.0, 0.0,
+		3.0, 2.0, 1.0, 0.0, 0.0,
+		4.0, 3.0, 2.0, 1.0, 0.0,
+		5.0, 4.0, 3.0, 2.0, 1.0,
+	};
+	vector<IEEEType> Aieee(d*d);
+	matmul(Lieee, Uieee, Aieee);   // construct the A matrix to solve
 	// define a difficult solution
 	vector<IEEEType> xieee = {
 		epsplus,
@@ -485,14 +473,25 @@ try {
 		epsplus
 	};
 	vector<IEEEType> bieee(d);
-	matvec(Aieee, xieee, bieee);
+	matvec(Aieee, xieee, bieee);   // construct the right hand side
 
-	vector<PositType> Aposit = {
-		2.,1.,1.,3.,2.,
-		1.,2.,2.,1.,1.,
-		1.,2.,9.,1.,5.,
-		3.,1.,1.,7.,1.,
-		2.,1.,5.,1.,8. };
+	vector<PositType> Uposit = {   // define the upper triangular matrix
+		1.0, 2.0, 3.0, 4.0, 5.0,
+		0.0, 1.0, 2.0, 3.0, 4.0,
+		0.0, 0.0, 1.0, 2.0, 3.0,
+		0.0, 0.0, 0.0, 1.0, 2.0,
+		0.0, 0.0, 0.0, 0.0, 1.0,
+	};
+	vector<PositType> Lposit = {   // define the lower triangular matrix
+		1.0, 0.0, 0.0, 0.0, 0.0,
+		2.0, 1.0, 0.0, 0.0, 0.0,
+		3.0, 2.0, 1.0, 0.0, 0.0,
+		4.0, 3.0, 2.0, 1.0, 0.0,
+		5.0, 4.0, 3.0, 2.0, 1.0,
+	};
+	vector<PositType> Aposit(d*d);
+	matmul(Lposit, Uposit, Aposit);   // construct the A matrix to solve
+	printMatrix(cout, "A", Aposit);
 	// define a difficult solution
 	vector<PositType> xposit = {
 		epsplus,
@@ -502,10 +501,7 @@ try {
 		epsplus
 	};
 	vector<PositType> bposit(d);
-
-	cout << epsplus << " " << 1.5f*epsplus << endl;
-
-	matvec<nbits, es>(Aposit, xposit, bposit);
+	matvec<nbits, es>(Aposit, xposit, bposit);   // construct the right hand side
 
 
 
@@ -520,13 +516,6 @@ try {
 	cout << "1.0 - FLT_EPSILON = " << setprecision(17) << epsminus << " converts to " << posit<27, 1>(epsminus) << endl;
 	cout << "1.0 + FLT_EPSILON = " << setprecision(17) << epsplus  << " converts to " << posit<27, 1>(epsplus) << endl;
 #endif
-
-	sw::unum::quire<nbits, es, capacity> q = epsplus;
-	cout << q << endl;
-
-
-
-	return 0;
 
 	cout << "LinearSolve regular dot product" << endl;
 	CompareIEEEDecompositions(Aieee, xieee, bieee); 
