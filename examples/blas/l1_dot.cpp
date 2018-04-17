@@ -10,7 +10,6 @@
 #include <posit>
 
 #include "blas.hpp"
-#include "blas_utils.hpp"
 
 using namespace std;
 using namespace sw::blas;

@@ -1,3 +1,4 @@
+#pragma once
 // blas_utils.hpp :  include file containing templated utilities to work with vectors and matrices
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
