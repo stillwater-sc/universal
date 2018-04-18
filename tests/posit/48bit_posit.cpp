@@ -21,7 +21,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 100; // 150000;
+	const size_t RND_TEST_CASES = 0; // 150000;
 
 	const size_t nbits = 48;
 	const size_t es = 2;
