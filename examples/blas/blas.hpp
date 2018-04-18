@@ -105,9 +105,9 @@ namespace sw {
 		void swap(size_t n, vector_T& x, size_t incx, vector_T& y, size_t incy) {
 			size_t cnt, ix, iy;
 			for (cnt = 0, ix = 0, iy = 0; cnt < n && ix < x.size() && iy < y.size(); ++cnt, ix += incx, iy += incy) {
-				x.typename tmp = x[ix];
-				x[ix] = y[iy];
-				y[iy] = tmp;
+				//x.typename tmp = x[ix];
+				//x[ix] = y[iy];
+				//y[iy] = tmp;
 			}
 		}
 
