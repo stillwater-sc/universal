@@ -193,11 +193,4 @@ Generate Posit Lookup table for a POSIT<5,2>
   31:            11111           10001      -3      -1     -12               0001               --               ~               -0.000244140625
 ```
 
-The unum format is a public domain specification, and there are a collection of web resources that
-manage information and discussions around the use of unums.
-
-[Posit Hub](https://posithub.org)
-
-[Unum-computing Google Group](https://groups.google.com/forum/#!forum/unum-computing)
-
 

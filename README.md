@@ -172,7 +172,11 @@ A posit offers more accuracy and a larger dynamic range than floats with the sam
 In _valid_ mode, a unum represents a range of real numbers and can be used to rigorously bound answers 
 much like interval arithmetic does.
 
-Posit configurations have a very specific relationship to one another. When expanding a posit, the new value falls 'between' the old values of the smaller posit. The new value is the arithmetic mean of the two numbers if the expanding bit is a fraction bit, and it is the geometric mean of the two numbers if the expanding bit is a regime or exponent bit. This [page](PositRefinementViz.md) shows a visualization of the expansion of _posit<2,0>_ to _posit<7,1>_:
+Posit configurations have a very specific relationship to one another. When expanding a posit, 
+the new value falls 'between' the old values of the smaller posit. The new value is the arithmetic mean 
+of the two numbers if the expanding bit is a fraction bit, and it is the geometric mean of the two numbers 
+if the expanding bit is a regime or exponent bit. 
+This [page](PositRefinementViz.md) shows a visualization of the expansion of _posit<2,0>_ to _posit<7,1>_:
 
 # Public Domain and community resources
 
