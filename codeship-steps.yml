@@ -1,0 +1,6 @@
+- name: log_env
+  service: universal_test_suite
+  command: printenv
+- name: test_runner
+  service: universal_test_suite
+  command: make test

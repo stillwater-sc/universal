@@ -238,10 +238,10 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << '\n';
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	std::cerr << "Caught unknown exception" << '\n';
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

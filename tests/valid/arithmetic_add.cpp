@@ -14,20 +14,18 @@
 #include "../tests/test_helpers.hpp"
 #include "../tests/valid_test_helpers.hpp"
 
-using namespace std;
-using namespace sw::unum;
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty reference;
-	valid<nbits, es> pa, pb, psum;
+	sw::unum::valid<nbits, es> pa, pb, psum;
 	pa = a;
 	pb = b;
 	reference = a + b;
 	//psum = pa + pb;
-	cout << "reference " << reference << " result " << psum << endl << endl;
+	std::cout << "reference " << reference << " result " << psum << '\n' << std::endl;
 }
 
 #define MANUAL_TESTING 1
@@ -35,6 +33,9 @@ void GenerateTestCase(Ty a, Ty b) {
 
 int main(int argc, char** argv)
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 	std::string tag = "Addition failed: ";
@@ -98,10 +99,10 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
