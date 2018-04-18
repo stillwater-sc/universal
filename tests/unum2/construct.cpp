@@ -6,20 +6,20 @@
 
 #include <iostream>
 
-using namespace std;
-
 int main(int argc, char* argv[]) 
 try {
+	using namespace std;
+
 	int nrOfFailedTestCases = 0;
 
 	cerr << "TBD" << endl;
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

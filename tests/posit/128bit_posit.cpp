@@ -17,7 +17,6 @@ Standard posits with nbits = 128 have 4 exponent bits.
 */
 
 int main(int argc, char** argv)
-#if 0                                                       // Deal with this later
 try {
 	using namespace std;
 	using namespace sw::unum;
@@ -46,15 +45,10 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << '\n';
-	return EXIT_FAILURE;
+	std::cerr << msg << std::endl;
+	return EXIT_SUCCESS; //as we manually throwing the not supported yet it should not fall through the cracks     EXIT_FAILURE;
 }
 catch (...) {
-	std::cerr << "Caught unknown exception" << '\n';
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
-#else
-{
-    return 0;
-}
-#endif
