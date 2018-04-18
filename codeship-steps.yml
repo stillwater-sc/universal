@@ -3,4 +3,4 @@
   command: printenv
 - name: test_runner
   service: universal_test_suite
-  command: cd build && ctest -j 4
+  command: make test

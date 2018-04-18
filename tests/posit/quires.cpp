@@ -12,13 +12,9 @@
 // test support functions
 #include "../tests/quire_test_helpers.hpp"
 
-using namespace std;
-using namespace sw::unum;
-
-
 
 template<size_t nbits, size_t es, size_t capacity>
-void GenerateTestCase(int input, const quire<nbits, es, capacity>& reference, const quire<nbits, es, capacity>& qresult) {
+void GenerateTestCase(int input, const sw::unum::quire<nbits, es, capacity>& reference, const sw::unum::quire<nbits, es, capacity>& qresult) {
 
 	std::cout << std::endl;
 }
@@ -29,6 +25,9 @@ void GenerateTestCase(int input, const quire<nbits, es, capacity>& reference, co
 
 int main()
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -140,10 +139,10 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
