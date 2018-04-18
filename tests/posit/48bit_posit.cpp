@@ -21,7 +21,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 150000;
+	const size_t RND_TEST_CASES = 100; // 150000;
 
 	const size_t nbits = 48;
 	const size_t es = 2;
@@ -44,11 +44,11 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << '\n';
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	std::cerr << "Caught unknown exception" << '\n';
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
 
