@@ -64,13 +64,13 @@ namespace sw {
 				for (uint32_t i = start; i < vec.size(); i += incr) {
 					if (printed < nrSamples) {
 						printed++;
-						cout << vec_name << "[" << setw(3) << i << "] = " << setprecision(15) << vec[i] << '\n';
+						std::cout << vec_name << "[" << std::setw(3) << i << "] = " << std::setprecision(15) << vec[i] << '\n';
 					}
 				}
 			}
 			else {
 				for (uint32_t i = start; i < vec.size(); i += incr) {
-					cout << vec_name << "[" << setw(3) << i << "] = " << setprecision(15) << vec[i] << '\n';
+					std::cout << vec_name << "[" << std::setw(3) << i << "] = " << std::setprecision(15) << vec[i] << '\n';
 				}
 			}
 			std::cout << std::endl;
