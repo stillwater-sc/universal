@@ -17,7 +17,10 @@ and try
 or
 > docker run --rm stillwater/universal tools/cmd/cmd_pc 1.2345678901234567890123
 or run a test suite
-> docker run --rm stillwater/universal tests/posit/posit_8bit_posit 
+> docker run --rm stillwater/universal tests/posit/posit_8bit_posit
+These two educational examples are pretty informative as well
+> docker run --rm stillwater/universal education/posit/edu_scales
+> docker run --rm stillwater/universal education/posit/edu_tables
 ```
 
 If you do want to work with the code, the universal numbers software library is built using cmake. 
