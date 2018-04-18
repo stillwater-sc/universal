@@ -5,6 +5,7 @@ Universal Numbers, or unums, are a collection of number systems to replace float
 # How to build
 
 [ ![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master)](https://app.codeship.com/projects/286490)
+[![Coverage Status](https://coveralls.io/repos/github/stillwater-sc/universal/badge.svg?branch=master)](https://coveralls.io/github/stillwater-sc/universal?branch=master)
 
 The universal numbers software library is built with cmake. 
 Install the latest cmake [cmake](https://cmake.org/download).
