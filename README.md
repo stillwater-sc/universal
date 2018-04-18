@@ -7,12 +7,25 @@ Universal Numbers, or unums, are a collection of number systems to replace float
 [ ![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master)](https://app.codeship.com/projects/286490)
 [![Coverage Status](https://coveralls.io/repos/github/stillwater-sc/universal/badge.svg?branch=master)](https://coveralls.io/github/stillwater-sc/universal?branch=master)
 
-The universal numbers software library is built with cmake. 
+If just want to experiment with the number system tools and test suites, and don't want to bother cloning and building the source code, there is a Docker container at your service:
+
+```
+> docker pull stillwater/universal
+> docker run --rm stillwater/universal ls tools/cmd
+and try
+> docker run --rm stillwater/universal tools/cmd/cmd_ieee_fp 1.2345678901234567890123
+or
+> docker run --rm stillwater/universal tools/cmd/cmd_pc 1.2345678901234567890123
+or run a test suite
+> docker run --rm stillwater/universal tests/posit/posit_8bit_posit 
+```
+
+If you do want to work with the code, the universal numbers software library is built using cmake. 
 Install the latest cmake [cmake](https://cmake.org/download).
 
 The library is a pure template library without any further dependencies.
 
-Simply clone the github repo, and you are ready to build the universal library. What you are building are tools to work with floats and posits, educational programs that highlight the use of the posit library, and the posit verification suite. Make test (or better yet ctest -j 16 (or how many cores you have)) will run the posit verification suite and can be used as a regression capability. This will take several minutes but will touch all the corners of the posit functionality.
+Simply clone the github repo, and you are ready to build the universal library. What you are building are tools to work with floats and posits, educational programs that highlight the use of the posit library, and the posit verification suite. Issue the command _make test_ (or better yet _ctest -j 16_ (or how many cores you have)) to run the complete posit verification suite, which can be used as a regression capability when you are modifying the source code. This will take several minutes but will touch all the corners of the posit functionality.
 
 ```
 > git clone https://github.com/stillwater-sc/universal
@@ -20,8 +33,8 @@ Simply clone the github repo, and you are ready to build the universal library. 
 > cmake ..
 > make
 > make test
-
 ```
+
 The library builds a set of useful command utilities, which can be found in the directory ".../build/tools/cmd".
 
 ```
