@@ -5,6 +5,9 @@ build
 .idea
 cmake-build-debug
 
+# coverall.io token
+.coveralls.yml
+
 # VS IDE config caches
 .vs
 
