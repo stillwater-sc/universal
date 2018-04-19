@@ -1,4 +1,4 @@
-# remove build directory
+# don't copy to local build directory
 /build
 # remove the background directory
 /background
