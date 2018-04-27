@@ -1,6 +1,6 @@
 #pragma once
 
-//  posit_test_helpers.cpp : functions to aid in testing and test reporting on posit types.
+//  posit_test_helpers.hpp : functions to aid in testing and test reporting on posit types.
 // Needs to be included after posit type is declared.
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
