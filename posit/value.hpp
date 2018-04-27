@@ -1,5 +1,5 @@
 #pragma once
-// value.hpp: definition of a (sign, scale, fraction) representation of an approximation to a real value
+// value.hpp: definition of a (sign, scale, significant) representation of an approximation to a real value
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
