@@ -171,7 +171,7 @@ namespace sw {
 			positives = 0; negatives = 0;
 			for (int i = 0; i < NR_TEST_CASES; i++) {
 				pa = pa.reciprocate();
-				preciprocal > 0 ? positives++ : negatives++;
+				pa >= 0 ? positives++ : negatives++;
 			}
 			return positives + negatives;
 		}
@@ -185,7 +185,7 @@ namespace sw {
 			for (int i = 0; i < NR_TEST_CASES; i++) {
 				pb.set_raw_bits(i);
 				pdiv = pa / pb;
-				pdiv > 0 ? positives++ : negatives++;
+				pdiv >= 0 ? positives++ : negatives++;
 			}
 			return positives + negatives;
 		}
