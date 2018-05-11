@@ -49,10 +49,10 @@ std::string range_to_string(std::string tag) {
 	std::stringstream ss;
 	ss << setw(13) << tag;
 	ss << "                       ";
-	ss << "minpos scale " << std::setw(10) << std::numeric_limits<Ty>::min_exponent << "     ";
-	ss << "maxpos scale " << std::setw(10) << std::numeric_limits<Ty>::max_exponent << "     ";
-	ss << "minimum " << std::setw(10) << std::numeric_limits<Ty>::min() << "     ";
-	ss << "maximum " << std::setw(10) << std::numeric_limits<Ty>::max() << "     ";
+	ss << "minexp scale " << std::setw(10) << std::numeric_limits<Ty>::min_exponent << "     ";
+	ss << "maxexp scale " << std::setw(10) << std::numeric_limits<Ty>::max_exponent << "     ";
+	ss << "minimum " << std::setw(12) << std::numeric_limits<Ty>::min() << "     ";
+	ss << "maximum " << std::setw(12) << std::numeric_limits<Ty>::max() << "     ";
 	return ss.str();
 }
 
@@ -248,7 +248,7 @@ void ReportPositScales() {
 	std::cout << spec_to_string(p128_4) << std::endl;
 	std::cout << std::endl;
 
-	std::cout << "IEEE float configurations" << std::endl;
+	std::cout << "IEEE float configurations from numeric_limits<Ty>" << std::endl;
 	std::cout << range_to_string<float>("float") << std::endl;
 	std::cout << range_to_string<double>("double") << std::endl;
 	std::cout << range_to_string<long double>("long double") << std::endl;
