@@ -31,7 +31,7 @@ CMD ["echo", "Universal Numbers Library Version 1.0.0"]
 FROM alpine:latest as release
 MAINTAINER Theodore Omtzigt
 
-RUN apk add --no-cache libc6-compat libstdc++ make cmake
+RUN apk add --no-cache libc6-compat libstdc++ make cmake bash gawk sed grep bc coreutils
 
 # after building, the test executables are organized in the build directory under root
 # ctest gets its configuration for CTestTestfile.cmake files. There is one at the root of the build tree
