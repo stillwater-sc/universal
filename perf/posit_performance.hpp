@@ -1,5 +1,4 @@
 #pragma once
-
 //  posit_performance.hpp : functions to aid in measuring arithmetic performance of posit types.
 // Needs to be included after posit type is declared.
 //
@@ -12,7 +11,6 @@
 #include <random>
 #include <limits>
 #include <chrono>
-#include "math_functions.hpp"
 
 namespace sw {
 	namespace unum {
