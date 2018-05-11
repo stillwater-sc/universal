@@ -13,7 +13,7 @@
 // minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
-#include "../../posit/math_functions.hpp"
+#include "../../math/sqrt.hpp"
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
 
@@ -125,7 +125,7 @@ try {
 
 #else
 
-	cout << "Posit addition validation" << endl;
+	cout << "Posit sqrt validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "sqrt");
 

@@ -1,5 +1,5 @@
 #pragma once
-// math_functions.hpp: simple math functions for posits
+// sqrt.hpp: sqrt functions for posits
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //

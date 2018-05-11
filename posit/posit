@@ -14,5 +14,8 @@
 #include "posit_functions.hpp"
 #include "quire.hpp"
 
+// math functions
+#include "../math/sqrt.hpp"
+
 
 #endif
