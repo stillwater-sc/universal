@@ -17,6 +17,7 @@
 #include "../math/logarithm.hpp"
 #include "../math/exponent.hpp"
 #include "../math/trigonometric.hpp"
+#include "../math/hyperbolic.hpp"
 
 namespace sw {
 	namespace unum {
@@ -907,6 +908,156 @@ namespace sw {
 				}
 				else {
 					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "acos", pa, pref, pacos);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// enumerate all hyperbolic sine cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateSinh(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, psinh, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				psinh = sw::unum::sinh(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::sinh(da);
+				if (psinh != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "sinh", pa, pref, psinh);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "sinh", pa, pref, psinh);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// enumerate all hyperbolic cosine cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateCosh(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, pcosh, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				pcosh = sw::unum::cosh(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::cosh(da);
+				if (pcosh != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "cosh", pa, pref, pcosh);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "cosh", pa, pref, pcosh);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// enumerate all hyperbolic tangent cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateTanh(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, ptanh, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				ptanh = sw::unum::tanh(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::tanh(da);
+				if (ptanh != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "tanh", pa, pref, ptanh);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "tanh", pa, pref, ptanh);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// enumerate all hyperbolic cotangent cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateAtanh(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, patanh, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				patanh = sw::unum::atanh(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::atanh(da);
+				if (patanh != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "atanh", pa, pref, patanh);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "atanh", pa, pref, patanh);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// enumerate all hyperbolic sec cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateAsinh(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, pasinh, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				pasinh = sw::unum::asinh(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::asinh(da);
+				if (pasinh != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "asinh", pa, pref, pasinh);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "asinh", pa, pref, pasinh);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// enumerate all hyperbolic cosec cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateAcosh(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, pacosh, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				pacosh = sw::unum::acosh(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::acosh(da);
+				if (pacosh != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "acosh", pa, pref, pacosh);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "acosh", pa, pref, pacosh);
 				}
 			}
 			return nrOfFailedTests;

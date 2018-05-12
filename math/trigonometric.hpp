@@ -35,16 +35,16 @@ namespace sw {
 			return posit<nbits,es>(std::atan(double(x)));
 		}
 
-		// secant of an angle of x radians
-		template<size_t nbits, size_t es>
-		posit<nbits,es> asin(posit<nbits,es> x) {
-			return posit<nbits,es>(std::asin(double(x)));
-		}
-
 		// cosecant of an angle of x radians
 		template<size_t nbits, size_t es>
 		posit<nbits,es> acos(posit<nbits,es> x) {
 			return posit<nbits,es>(std::acos(double(x)));
+		}
+
+		// secant of an angle of x radians
+		template<size_t nbits, size_t es>
+		posit<nbits,es> asin(posit<nbits,es> x) {
+			return posit<nbits,es>(std::asin(double(x)));
 		}
 
 
