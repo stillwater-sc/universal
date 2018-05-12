@@ -11,16 +11,30 @@ If just want to experiment with the number system tools and test suites, and don
 
 ```
 > docker pull stillwater/universal
-> docker run --rm stillwater/universal ls tools/cmd
-and try
-> docker run --rm stillwater/universal tools/cmd/cmd_ieee_fp 1.2345678901234567890123
-or
-> docker run --rm stillwater/universal tools/cmd/cmd_pc 1.2345678901234567890123
+> docker run -it --rm stillwater/universal /bin/bash
+bash-4.3# ls tools/cmd
+CTestTestfile.cmake  cmake_install.cmake  cmd_dc  cmd_fc  cmd_ieee_fp  cmd_ldc  cmd_numeric_limits  cmd_pc
+bash-4.3# tools/cmd/cmd_ieee_fp 1.2345678901234567890123
+input value:  1.2345678901234567890123
+      float:                1.23456788 (+,0,00111100000011001010010)
+     double:        1.2345678901234567 (+,0,0011110000001100101001000010100011000101100111111011)
+long double:    1.23456789012345669043 (+,0,001111000000110010100100001010001100010110011111101100000000000)
+
 or run a test suite
-> docker run --rm stillwater/universal tests/posit/posit_8bit_posit
-These two educational examples are pretty informative as well
-> docker run --rm stillwater/universal education/posit/edu_scales
-> docker run --rm stillwater/universal education/posit/edu_tables
+
+bash-4.3# tests/posit/posit_8bit_posit
+Standard posit<8,0> configuration tests
+ posit<  8,0> useed scale     1     minpos scale         -6     maxpos scale          6
+ posit<8,0> add         PASS
+ posit<8,0> subtract    PASS
+ posit<8,0> multiply    PASS
+ posit<8,0> divide      PASS
+ posit<8,0> negate      PASS
+ posit<8,0> reciprocate PASS
+
+These two educational examples are pretty informative when you are just starting out learning about posits:
+bash-4.3# education/posit/edu_scales
+bash-4.3# education/posit/edu_tables
 ```
 
 If you do want to work with the code, the universal numbers software library is built using cmake. 
