@@ -600,6 +600,133 @@ namespace sw {
 
 		////////////////////////////////////  MATHEMATICAL FUNCTIONS  //////////////////////////////////////////
 
+		// enumerate all NATURAL LOGARITHM cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateLog(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, plog, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				plog = sw::unum::log(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::log(da);
+				if (plog != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "log", pa, pref, plog);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "log", pa, pref, plog);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// enumerate all BINARY LOGARITHM cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateLog2(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, plog2, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				plog2 = sw::unum::log2(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::log2(da);
+				if (plog2 != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "log2", pa, pref, plog2);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "log2", pa, pref, plog2);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+
+		// enumerate all DECIMAL LOGARITHM cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateLog10(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, plog10, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				plog10 = sw::unum::log10(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::log10(da);
+				if (plog10 != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "log10", pa, pref, plog10);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "log10", pa, pref, plog10);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+
+		// enumerate all base-e exponent cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateExp(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, pexp, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				pexp = sw::unum::exp(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::exp(da);
+				if (pexp != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "exp", pa, pref, pexp);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "exp", pa, pref, pexp);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// enumerate all base-2 exponent cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateExp2(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, pexp2, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				pexp2 = sw::unum::exp2(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::exp2(da);
+				if (pexp2 != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "exp2", pa, pref, pexp2);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "exp2", pa, pref, pexp2);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
 		// enumerate all power method cases for a posit configuration
 		template<size_t nbits, size_t es>
 		int ValidatePowerFunction(std::string tag, bool bReportIndividualTestCases) {
@@ -628,6 +755,157 @@ namespace sw {
 
 			return nrOfFailedTests;
 		}
+
+		// enumerate all trigonometric sine cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateSine(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, psin, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				psin = sw::unum::sin(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::sin(da);
+				if (psin != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "sin", pa, pref, psin);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "sin", pa, pref, psin);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// enumerate all trigonometric cosine cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateCosine(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, pcos, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				pcos = sw::unum::cos(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::cos(da);
+				if (pcos != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "cos", pa, pref, pcos);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "cos", pa, pref, pcos);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// enumerate all trigonometric tangent cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateTangent(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, ptan, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				ptan = sw::unum::tan(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::tan(da);
+				if (ptan != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "tan", pa, pref, ptan);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "tan", pa, pref, ptan);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// enumerate all trigonometric cotangent cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateAtan(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, patan, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				patan = sw::unum::atan(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::atan(da);
+				if (patan != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "atan", pa, pref, patan);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "atan", pa, pref, patan);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// enumerate all trigonometric sec cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateAsin(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, pasin, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				pasin = sw::unum::asin(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::asin(da);
+				if (pasin != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "asin", pa, pref, pasin);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "asin", pa, pref, pasin);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// enumerate all trigonometric cosec cases for a posit configuration
+		template<size_t nbits, size_t es>
+		int ValidateAcos(std::string tag, bool bReportIndividualTestCases) {
+			const int NR_TEST_CASES = (1 << nbits);
+			int nrOfFailedTests = 0;
+			posit<nbits, es> pa, pacos, pref;
+
+			double da;
+			for (int i = 1; i < NR_TEST_CASES; i++) {
+				pa.set_raw_bits(i);
+				pacos = sw::unum::acos(pa);
+				// generate reference
+				da = double(pa);
+				pref = std::acos(da);
+				if (pacos != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "acos", pa, pref, pacos);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "acos", pa, pref, pacos);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
 		//////////////////////////////////// RANDOMIZED TEST SUITE FOR BINARY OPERATORS ////////////////////////
 
 		// for testing posit configs that are > 14-15, we need a more efficient approach.
