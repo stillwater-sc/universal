@@ -21,12 +21,6 @@ namespace sw {
 			return posit<nbits,es>(std::exp2(double(x)));
 		}
 
-		// Base-10 exponential function
-		template<size_t nbits, size_t es>
-		posit<nbits,es> exp10(posit<nbits,es> x) {
-			return posit<nbits,es>(std::exp10(double(x)));
-		}
-
 	}  // namespace unum
 
 }  // namespace sw

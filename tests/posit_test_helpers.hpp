@@ -12,6 +12,12 @@
 #include <random>
 #include <limits>
 
+#include "../math/sqrt.hpp"
+#include "../math/pow.hpp"
+#include "../math/logarithm.hpp"
+#include "../math/exponent.hpp"
+#include "../math/trigonometric.hpp"
+
 namespace sw {
 	namespace unum {
 

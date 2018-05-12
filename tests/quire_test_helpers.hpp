@@ -113,7 +113,7 @@ namespace sw {
 
 			// cover the scales with one order outside of the dynamic range of the quire configuration (minpos^2 and maxpos^2)
 			for (int scale = max_scale + 1; scale >= min_scale - 1; scale--) {  // extend by 1 max and min scale to test edge of the quire
-				value<fbits> v = pow(2.0, scale);
+				value<fbits> v = std::pow(2.0, scale);
 				try {
 					q = v;
 					std::cout << std::setw(10) << v << q << std::endl;
