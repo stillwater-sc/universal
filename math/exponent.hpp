@@ -9,6 +9,9 @@
 namespace sw {
 	namespace unum {
 
+		// the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
+		// correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
+
 		// Base-e exponential function
 		template<size_t nbits, size_t es>
 		posit<nbits,es> exp(posit<nbits,es> x) {
