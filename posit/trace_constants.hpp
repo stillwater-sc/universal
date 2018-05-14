@@ -24,6 +24,9 @@ constexpr bool _trace_div         = false;
 constexpr bool _trace_reciprocate = false;
 constexpr bool _trace_sqrt        = false;
 
+// quire update tracing
+constexpr bool _trace_quire_add   = false;
+
 # else // !POSIT_VERBOSE_OUTPUT
 
 #ifdef POSIT_TRACE_ALL
@@ -36,6 +39,10 @@ constexpr bool _trace_sqrt        = false;
 #define POSIT_TRACE_DIV
 #define POSIT_TRACE_RECIPROCATE
 #define POSIT_TRACE_SQRT
+#endif
+
+#ifdef QUIRE_TRACE_ALL
+#define QUIRE_TRACE_ADD
 #endif
 
 // posit decode and conversion
@@ -95,6 +102,12 @@ constexpr bool _trace_sqrt = false;
 constexpr bool _trace_sqrt = true;
 #endif
 
+// QUIRE tracing
+#ifndef QUIRE_TRACE_ADD
+constexpr bool _trace_quire_add = false;
+#else
+constexpr bool _trace_quire_add = true;
+#endif
 
 # endif
 

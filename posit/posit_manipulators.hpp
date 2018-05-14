@@ -36,7 +36,7 @@ namespace sw {
 				<< " Regime : " << std::setw(3) << p.regime_k()
 				<< " Exponent : " << std::setw(5) << p.get_exponent().value()
 				<< " Fraction : " << std::setw(8) << std::setprecision(21) << 1.0 + p.fraction_value()
-				<< " Value : " << std::setw(16) << double(p)
+				<< " Value : " << std::setw(16) << p
 				<< std::setprecision(0);
 			return ss.str();
 		}

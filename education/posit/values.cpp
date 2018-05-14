@@ -4,13 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
-
-#include "../../posit/exceptions.hpp"
-#include "../../bitblock/bitblock.hpp"
-#include "../../posit/trace_constants.hpp"
-#include "../../posit/bit_functions.hpp"
-#include "../../posit/value.hpp"
+#include "common.hpp"
+#include <posit>
 
 using namespace std;
 using namespace sw::unum;
@@ -18,10 +13,10 @@ using namespace sw::unum;
 void TestConversionResult(bool bValid, string descriptor)
 {
 	if (!bValid) {
-		cout << descriptor << " conversions FAIL" << endl;
+		std::cout << descriptor << " conversions FAIL" << std::endl;
 	}
 	else {
-		cout << descriptor << " conversions PASS" << endl;
+		std::cout << descriptor << " conversions PASS" << std::endl;
 	}
 }
 

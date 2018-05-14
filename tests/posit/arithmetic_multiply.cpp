@@ -1,10 +1,10 @@
 // arithmetic_multiply.cpp: functional tests for multiplication
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 // when you define POSIT_VERBOSE_OUTPUT executing an MUL the code will print intermediate results
 //#define POSIT_VERBOSE_OUTPUT
@@ -16,15 +16,12 @@
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
 
-using namespace std;
-using namespace sw::unum;
-
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_mul
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
-	posit<nbits, es> pa, pb, pref, pmul;
+	sw::unum::posit<nbits, es> pa, pb, pref, pmul;
 	pa = a;
 	pb = b;
 	ref = a * b;
@@ -38,12 +35,12 @@ void GenerateTestCase(Ty a, Ty b) {
 }
 
 template<size_t nbits, size_t es>
-void GenerateTestCase( posit<nbits,es> pa, posit<nbits,es> pb, posit<nbits, es> pref) {
+void GenerateTestCase( sw::unum::posit<nbits,es> pa, sw::unum::posit<nbits,es> pb, sw::unum::posit<nbits, es> pref) {
 	double a = double(pa);
 	double b = double(pb);
 	double ref = a * b;
-	//posit<nbits, es> pref = ref;
-	posit<nbits, es> pmul = pa * pb;
+	//sw::unum::posit<nbits, es> pref = ref;
+	sw::unum::posit<nbits, es> pmul = pa * pb;
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " * " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
 	std::cout << pa.get() << " * " << pb.get() << " = " << pmul.get() << " (reference: " << pref.get() << ")   ";
@@ -70,7 +67,7 @@ b61e2f1f fffffffe 00000002 00000003
 fffffffe b61e2f1f 00000002 00000003
 */
 void DifficultRoundingCases() {
-	posit<32, 2> a, b, bad, pref;
+	sw::unum::posit<32, 2> a, b, bad, pref;
 	std::vector<uint32_t> cases = {
 		0x00000002, 0x93ff6977, 0xfffffffa, 0xfffffff9,
 		0x00000002, 0xb61e2f1f, 0xfffffffe, 0xfffffffd,
@@ -87,9 +84,9 @@ void DifficultRoundingCases() {
 		0xb61e2f1f, 0xfffffffe, 0x00000002, 0x00000003,
 		0xfffffffe, 0xb61e2f1f, 0x00000002, 0x00000003,
 	};
-	unsigned nrOfTests = cases.size() / 4;
+	size_t nrOfTests = cases.size() >> 2;  // divide by 4
 	
-	for (unsigned i = 0; i < cases.size(); i+= 4) {
+	for (size_t i = 0; i < cases.size(); i+= 4) {
 		a.set_raw_bits(cases[i]);
 		b.set_raw_bits(cases[i + 1]);
 		pref.set_raw_bits(cases[i + 3]);
@@ -102,7 +99,10 @@ void DifficultRoundingCases() {
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
-try {	
+try {
+	using namespace std;
+	using namespace sw::unum;
+
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
@@ -194,11 +194,11 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
 

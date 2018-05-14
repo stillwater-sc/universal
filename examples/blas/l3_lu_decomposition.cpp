@@ -5,14 +5,13 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // enable the mathematical constants in cmath: old-style preprocessor magic which isn't best practice anymore
-#include "stdafx.h"
+#include "common.hpp"
 
 #include <vector>
+#define POSIT_VERBOSE_OUTPUT
+#define QUIRE_TRACE_ADD
 #include <posit>
-#include "math_functions.hpp"
-
-using namespace std;
-using namespace sw::unum;
+#include "blas.hpp"
 
 // can the ratio a/b be represented exactly
 bool isRepresentable(int a, int b) {
@@ -22,24 +21,6 @@ bool isRepresentable(int a, int b) {
 	return a % b == 0;
 }
 
-// These functions print matrices and vectors in a nice format
-template<typename Ty>
-void coutMatrix(const std::string& name, const std::vector<Ty>& m) {
-	int d = (int)std::sqrt(m.size());
-	cout << "Matrix: " << name << " is " << d << "x" << d << endl;
-	for (int i = 0; i<d; ++i) {
-		for (int j = 0; j<d; ++j) cout << setw(14) << m[i*d + j];
-		cout << endl;
-	}
-}
-
-template<typename Ty>
-void coutVector(const std::string& name, const std::vector<Ty>& v) {
-	int d = (int)v.size();
-	cout << "Vector: " << name << " is of size " << d << " elements" << endl;
-	for (int j = 0; j<d; ++j)cout << setw(14) << v[j];
-	cout << endl;
-}
 
 // The following compact LU factorization schemes are described
 // in Dahlquist, Bjorck, Anderson 1974 "Numerical Methods".
@@ -58,14 +39,17 @@ void coutVector(const std::string& name, const std::vector<Ty>& v) {
 // Crout implements an in-place LU decomposition, that is, S and D can be the same
 // Crout uses unit diagonals for the upper triangle
 template<typename Ty>
-void Crout(int d, std::vector<Ty>& S, std::vector<Ty>& D) {
-	for (int k = 0; k < d; ++k) {
-		for (int i = k; i<d; ++i) {
+void Crout(std::vector<Ty>& S, std::vector<Ty>& D) {
+	size_t d = size_t(std::sqrt(S.size()));
+	assert(S.size() == d*d);
+	assert(D.size() == d*d);
+	for (size_t k = 0; k < d; ++k) {
+		for (size_t i = k; i<d; ++i) {
 			Ty sum = 0.;
-			for (int p = 0; p<k; ++p) sum += D[i*d + p] * D[p*d + k];
+			for (size_t p = 0; p<k; ++p) sum += D[i*d + p] * D[p*d + k];
 			D[i*d + k] = S[i*d + k] - sum; // not dividing by diagonals
 		}
-		for (int j = k + 1; j < d; ++j) {
+		for (size_t j = k + 1; j < d; ++j) {
 			Ty sum = 0.;
 			for (int p = 0; p<k; ++p) sum += D[k*d + p] * D[p*d + j];
 			D[k*d + j] = (S[k*d + j] - sum) / D[k*d + k];
@@ -96,14 +80,18 @@ void SolveCrout(const std::vector<Ty>& LU, const std::vector<Ty>& b, std::vector
 }
 
 template<size_t nbits, size_t es, size_t capacity = 10>
-void CroutFDP(int d, std::vector< posit<nbits, es> >& S, std::vector< posit<nbits, es> >& D) {
+void CroutFDP(std::vector< sw::unum::posit<nbits, es> >& S, std::vector< sw::unum::posit<nbits, es> >& D) {
+	size_t d = size_t(std::sqrt(S.size()));
+	assert(S.size() == d*d);
+	assert(D.size() == d*d);
+	using namespace sw::unum;
 	for (int k = 0; k < d; ++k) {
 		for (int i = k; i < d; ++i) {
 			quire<nbits, es, capacity> q = 0.0;
 			//for (int p = 0; p < k; ++p) q += D[i*d + p] * D[p*d + k];   if we had expression templates for the quire
 			for (int p = 0; p < k; ++p) q += quire_mul(D[i*d + p], D[p*d + k]);
 			posit<nbits, es> sum;
-			sum.convert(q.to_value());   // one and only rounding step of the fused-dot product
+			sum.convert(q.to_value());     // one and only rounding step of the fused-dot product
 			D[i*d + k] = S[i*d + k] - sum; // not dividing by diagonals
 		}
 		for (int j = k + 1; j < d; ++j) {
@@ -119,8 +107,9 @@ void CroutFDP(int d, std::vector< posit<nbits, es> >& S, std::vector< posit<nbit
 
 // SolveCrout takes an LU decomposition, LU, and a right hand side vector, b, and produces a result, x.
 template<size_t nbits, size_t es, size_t capacity = 10>
-void SolveCroutFDP(const std::vector< posit<nbits, es> >& LU, const std::vector< posit<nbits, es> >& b, std::vector< posit<nbits, es> >& x) {
-	int d = (int)b.size();
+void SolveCroutFDP(const std::vector< sw::unum::posit<nbits, es> >& LU, const std::vector< sw::unum::posit<nbits, es> >& b, std::vector< sw::unum::posit<nbits, es> >& x) {
+	using namespace sw::unum;
+	int d = int(b.size());
 	std::vector< posit<nbits, es> > y(d);
 	for (int i = 0; i < d; ++i) {
 		quire<nbits, es, capacity> q = 0.0;
@@ -146,16 +135,19 @@ void SolveCroutFDP(const std::vector< posit<nbits, es> >& LU, const std::vector<
 
 // Doolittle uses unit diagonals for the lower triangle
 template<typename Ty>
-void Doolittle(int d, std::vector<Ty>& S, std::vector<Ty>& D) {
-	for (int k = 0; k < d; ++k) {
-		for (int j = k; j < d; ++j) {
+void Doolittle(std::vector<Ty>& S, std::vector<Ty>& D) {
+	size_t d = size_t(std::sqrt(S.size()));
+	assert(S.size() == d*d);
+	assert(D.size() == d*d);
+	for (size_t k = 0; k < d; ++k) {
+		for (size_t j = k; j < d; ++j) {
 			Ty sum = 0.;
-			for (int p = 0; p < k; ++p) sum += D[k*d + p] * D[p*d + j];
+			for (size_t p = 0; p < k; ++p) sum += D[k*d + p] * D[p*d + j];
 			D[k*d + j] = (S[k*d + j] - sum); // not dividing by diagonals
 		}
-		for (int i = k + 1; i < d; ++i) {
+		for (size_t i = k + 1; i < d; ++i) {
 			Ty sum = 0.;
-			for (int p = 0; p < k; ++p) sum += D[i*d + p] * D[p*d + k];
+			for (size_t p = 0; p < k; ++p) sum += D[i*d + p] * D[p*d + k];
 			D[i*d + k] = (S[i*d + k] - sum) / D[k*d + k];
 		}
 	}
@@ -179,14 +171,17 @@ void SolveDoolittle(const std::vector<Ty>& LU, const std::vector<Ty>& b, std::ve
 
 // Cholesky requires the matrix to be symmetric positive-definite
 template<typename Ty>
-void Cholesky(int d, std::vector<Ty>& S, std::vector<Ty>& D) {
-	for (int k = 0; k<d; ++k) {
+void Cholesky(std::vector<Ty>& S, std::vector<Ty>& D) {
+	size_t d = size_t(std::sqrt(S.size()));
+	assert(S.size() == d*d);
+	assert(D.size() == d*d);
+	for (size_t k = 0; k<d; ++k) {
 		Ty sum = 0.;
-		for (int p = 0; p<k; ++p)sum += D[k*d + p] * D[k*d + p];
+		for (size_t p = 0; p<k; ++p)sum += D[k*d + p] * D[k*d + p];
 		D[k*d + k] = sqrt(S[k*d + k] - sum);
-		for (int i = k + 1; i<d; ++i) {
+		for (size_t i = k + 1; i<d; ++i) {
 			Ty sum = 0.;
-			for (int p = 0; p<k; ++p)sum += D[i*d + p] * D[k*d + p];
+			for (size_t p = 0; p<k; ++p)sum += D[i*d + p] * D[k*d + p];
 			D[i*d + k] = (S[i*d + k] - sum) / D[k*d + k];
 		}
 	}
@@ -194,15 +189,18 @@ void Cholesky(int d, std::vector<Ty>& S, std::vector<Ty>& D) {
 // This version could be more efficient on some architectures
 // Use solveCholesky for both Cholesky decompositions
 template<typename Ty>
-void CholeskyRow(int d, std::vector<Ty>& S, std::vector<Ty>& D) {
-	for (int k = 0; k<d; ++k) {
-		for (int j = 0; j<d; ++j) {
+void CholeskyRow(std::vector<Ty>& S, std::vector<Ty>& D) {
+	size_t d = size_t(std::sqrt(S.size()));
+	assert(S.size() == d*d);
+	assert(D.size() == d*d);
+	for (size_t k = 0; k<d; ++k) {
+		for (size_t j = 0; j<d; ++j) {
 			Ty sum = 0.;
-			for (int p = 0; p<j; ++p) sum += D[k*d + p] * D[j*d + p];
+			for (size_t p = 0; p<j; ++p) sum += D[k*d + p] * D[j*d + p];
 			D[k*d + j] = (S[k*d + j] - sum) / D[j*d + j];
 		}
 		Ty sum = 0.;
-		for (int p = 0; p<k; ++p) sum += D[k*d + p] * D[k*d + p];
+		for (size_t p = 0; p<k; ++p) sum += D[k*d + p] * D[k*d + p];
 		D[k*d + k] = sqrt(S[k*d + k] - sum);
 	}
 }
@@ -235,91 +233,303 @@ void EnumerateTestCases() {
 	}
 }
 
+template<size_t nbits, size_t es, size_t capacity = 10>
+void ComparePositDecompositions(std::vector< sw::unum::posit<nbits, es> >& A, std::vector< sw::unum::posit<nbits, es> >& x, std::vector< sw::unum::posit<nbits, es> >& b) {
+	size_t d = b.size();
+	assert(A.size() == d*d);
+	using namespace sw::blas;
+	std::vector< sw::unum::posit<nbits, es> > LU(d*d);
+
+	{
+		using namespace std::chrono;
+		steady_clock::time_point t1 = steady_clock::now();
+		Crout(A, LU);
+		steady_clock::time_point t2 = steady_clock::now();
+		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+		double elapsed = time_span.count();
+		std::cout << "Crout took " << elapsed << " seconds." << std::endl;
+		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
+
+		SolveCrout(LU, b, x);
+		printMatrix(std::cout, "Crout LU", LU);
+		printVector(std::cout, "Solution", x);
+	}
+
+	std::cout << std::endl;
+#if 0
+	{
+		using namespace std::chrono;
+		steady_clock::time_point t1 = steady_clock::now();
+		DoolittleFDP(A, LU);
+		steady_clock::time_point t2 = steady_clock::now();
+		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+		double elapsed = time_span.count();
+		std::cout << "Doolittle took " << elapsed << " seconds." << std::endl;
+		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
+		SolveCrout(LU, b, x);
+		printMatrix(std::cout, "Doolittle LU", LU);
+		printVector(std::cout, "Solution", x);
+
+		SolveDoolittle(LU, b, x);
+		printMatrix(std::cout, "Doolittle LU", LU);
+		printVector(std::cout, "Solution", x);
+	}
+
+
+	std::cout << std::endl;
+
+	{
+		using namespace std::chrono;
+		steady_clock::time_point t1 = steady_clock::now();
+		CholeskyFDP(A, LU);
+		steady_clock::time_point t2 = steady_clock::now();
+		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+		double elapsed = time_span.count();
+		std::cout << "Cholesky took " << elapsed << " seconds." << std::endl;
+		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
+		SolveCrout(LU, b, x);
+		printMatrix(std::cout, "Cholesky LU", LU);
+		printVector(std::cout, "Solution", x);
+
+		SolveCholesky(LU, b, x);
+		printMatrix(std::cout, "Cholesky LU", LU);
+		printVector(std::cout, "Solution", x);
+	}
+#endif
+}
+
+
 template<typename Ty>
-void CompareDecompositions(bool useQuire, int d, std::vector<Ty>& A, std::vector<Ty>& b) {
-	std::vector<Ty> x(d);
+void CompareIEEEDecompositions(std::vector<Ty>& A, std::vector<Ty>& x, std::vector<Ty>& b) {
+	size_t d = b.size();
+	assert(A.size() == d*d);
+	using namespace sw::blas;
 	std::vector<Ty> LU(d*d);
 
-	if (useQuire) {
-		CroutFDP(d, A, LU);
-		SolveCroutFDP(LU, b, x);
-		coutMatrix("CroutFDP LU", LU);
-		coutVector("Solution", x);
+	{
+		using namespace std::chrono;
+		steady_clock::time_point t1 = steady_clock::now();
+		Crout(A, LU);
+		steady_clock::time_point t2 = steady_clock::now();
+		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+		double elapsed = time_span.count();
+		std::cout << "Crout took " << elapsed << " seconds." << std::endl;
+		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
 
-		cout << endl;
-#if 0
-		DoolittleFDP(d, A, LU);
-		SolveDoolittleFDP(LU, b, x);
-		coutMatrix("DoolittleFDP LU", LU);
-		coutVector("Solution", x);
-
-		cout << endl;
-
-		CholeskyFDP(d, A, LU);
-		SolveCholeskyFDP(LU, b, x);
-		coutMatrix("CholeskyFDP Decomposition", LU);
-		coutVector("Solution", x);
-#endif
-
-	}
-	else {
-		Crout(d, A, LU);
 		SolveCrout(LU, b, x);
-		coutMatrix("Crout LU", LU);
-		coutVector("Solution", x);
-
-		cout << endl;
-#if 0
-		Doolittle(d, A, LU);
-		SolveDoolittle(LU, b, x);
-		coutMatrix("Doolittle LU", LU);
-		coutVector("Solution", x);
-
-		cout << endl;
-
-		Cholesky(d, A, LU);
-		SolveCholesky(LU, b, x);
-		coutMatrix("Cholesky Decomposition", LU);
-		coutVector("Solution", x);
-#endif
+		printMatrix(std::cout, "Crout LU", LU);
+		printVector(std::cout, "Solution", x);
 	}
 
+
+	std::cout << std::endl;
+
+	{
+		using namespace std::chrono;
+		steady_clock::time_point t1 = steady_clock::now();
+		Doolittle(A, LU);
+		steady_clock::time_point t2 = steady_clock::now();
+		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+		double elapsed = time_span.count();
+		std::cout << "Doolittle took " << elapsed << " seconds." << std::endl;
+		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
+		SolveCrout(LU, b, x);
+		printMatrix(std::cout, "Doolittle LU", LU);
+		printVector(std::cout, "Solution", x);
+
+		SolveDoolittle(LU, b, x);
+		printMatrix(std::cout, "Doolittle LU", LU);
+		printVector(std::cout, "Solution", x);
+	}
+
+
+	std::cout << std::endl;
+
+	{
+		using namespace std::chrono;
+		steady_clock::time_point t1 = steady_clock::now();
+		Cholesky(A, LU);
+		steady_clock::time_point t2 = steady_clock::now();
+		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+		double elapsed = time_span.count();
+		std::cout << "Cholesky took " << elapsed << " seconds." << std::endl;
+		std::cout << "Performance " << (uint32_t)(d*d*d / (1000 * elapsed)) << " KOPS/s" << std::endl;
+		SolveCrout(LU, b, x);
+		printMatrix(std::cout, "Cholesky LU", LU);
+		printVector(std::cout, "Solution", x);
+
+		SolveCholesky(LU, b, x);
+		printMatrix(std::cout, "Cholesky LU", LU);
+		printVector(std::cout, "Solution", x);
+	}
 }
+
+/* TBD
+template<> class std::numeric_limits< sw::unum::posit<28, 1> >
+	: public _Num_float_base
+{	// limits for type posit<28, 1>
+public:
+	typedef sw::unum::posit<28,1> _Ty;
+
+	static constexpr _Ty(min)() _THROW0()
+	{	// return minimum value
+		return (sw::unum::minpos<28,1>());
+	}
+
+	static constexpr _Ty(max)() _THROW0()
+	{	// return maximum value
+		return (_DBL_MAX);
+	}
+
+	static constexpr _Ty lowest() _THROW0()
+	{	// return most negative value
+		return (-(max)());
+	}
+
+	static constexpr _Ty epsilon() _THROW0()
+	{	// return smallest effective increment from 1.0
+		return (_DBL_EPSILON);
+	}
+
+	static constexpr _Ty round_error() _THROW0()
+	{	// return largest rounding error
+		return (0.5);
+	}
+
+	static constexpr _Ty denorm_min() _THROW0()
+	{	// return minimum denormalized value
+		return (_DBL_TRUE_MIN);
+	}
+
+	static constexpr _Ty infinity() _THROW0()
+	{	// return positive infinity
+		return (__builtin_huge_val());
+	}
+
+	static constexpr _Ty quiet_NaN() _THROW0()
+	{	// return non-signaling NaN
+		return (__builtin_nan("0"));
+	}
+
+	static constexpr _Ty signaling_NaN() _THROW0()
+	{	// return signaling NaN
+		return (__builtin_nans("1"));
+	}
+
+	_STCONS(int, digits, DBL_MANT_DIG);
+	_STCONS(int, digits10, DBL_DIG);
+
+	_STCONS(int, max_digits10, 2 + DBL_MANT_DIG * 301L / 1000);
+
+	_STCONS(int, max_exponent, (int)DBL_MAX_EXP);
+	_STCONS(int, max_exponent10, (int)DBL_MAX_10_EXP);
+	_STCONS(int, min_exponent, (int)DBL_MIN_EXP);
+	_STCONS(int, min_exponent10, (int)DBL_MIN_10_EXP);
+};
+*/
 
 int main(int argc, char** argv)
 try {
-	const size_t nbits = 28;
-	const size_t es = 1;
+	using namespace std;
+	using namespace sw::unum;
+	using namespace sw::blas;
 
-	//typedef float MyType;
-	typedef posit<nbits, es> MyType;
-	MyType p;
-	cout << "Using " << spec_to_string(p) << endl;
+	// a 32-bit float and a <27,1> posit have the same number of significand bits around 1.0
+	constexpr size_t nbits    = 27;
+	constexpr size_t es       =  1;
+	constexpr size_t capacity = 10;
 
+	typedef float            IEEEType;
+	typedef posit<nbits, es> PositType;
+	cout << "Using " << spec_to_string(posit<nbits, es>()) << endl;
+
+	float eps = std::numeric_limits<float>::epsilon();
+	float epsminus= 1.0f - eps;
+	float epsplus = 1.0f + eps;
 	// We want to solve the system Ax=b
 	int d = 5;
-	std::vector<MyType> A = { 
-		2.,1.,1.,3.,2.,
-		1.,2.,2.,1.,1.,
-		1.,2.,9.,1.,5.,
-		3.,1.,1.,7.,1.,
-		2.,1.,5.,1.,8. };
+	vector<IEEEType> Uieee = {     // define the upper triangular matrix
+		1.0, 2.0, 3.0, 4.0, 5.0,
+		0.0, 1.0, 2.0, 3.0, 4.0,
+		0.0, 0.0, 1.0, 2.0, 3.0,
+		0.0, 0.0, 0.0, 1.0, 2.0,
+		0.0, 0.0, 0.0, 0.0, 1.0,
+	};
+	vector<IEEEType> Lieee = {     // define the lower triangular matrix
+		1.0, 0.0, 0.0, 0.0, 0.0,
+		2.0, 1.0, 0.0, 0.0, 0.0,
+		3.0, 2.0, 1.0, 0.0, 0.0,
+		4.0, 3.0, 2.0, 1.0, 0.0,
+		5.0, 4.0, 3.0, 2.0, 1.0,
+	};
+	vector<IEEEType> Aieee(d*d);
+	matmul(Lieee, Uieee, Aieee);   // construct the A matrix to solve
+	// define a difficult solution
+	vector<IEEEType> xieee = {
+		epsplus,
+		epsplus,
+		epsplus,
+		epsplus,
+		epsplus
+	};
+	vector<IEEEType> bieee(d);
+	matvec(Aieee, xieee, bieee);   // construct the right hand side
 
-	std::vector<MyType> b = { 9, 7, 18, 13, 17 }; //  { -2.0, 4.0, 3.0, -5.0, 1.0 };
-	cout << "LinearSolve WITHOUT fused-dot product" << endl;
-	CompareDecompositions(false, d, A, b); 
+	vector<PositType> Uposit = {   // define the upper triangular matrix
+		1.0, 2.0, 3.0, 4.0, 5.0,
+		0.0, 1.0, 2.0, 3.0, 4.0,
+		0.0, 0.0, 1.0, 2.0, 3.0,
+		0.0, 0.0, 0.0, 1.0, 2.0,
+		0.0, 0.0, 0.0, 0.0, 1.0,
+	};
+	vector<PositType> Lposit = {   // define the lower triangular matrix
+		1.0, 0.0, 0.0, 0.0, 0.0,
+		2.0, 1.0, 0.0, 0.0, 0.0,
+		3.0, 2.0, 1.0, 0.0, 0.0,
+		4.0, 3.0, 2.0, 1.0, 0.0,
+		5.0, 4.0, 3.0, 2.0, 1.0,
+	};
+	vector<PositType> Aposit(d*d);
+	matmul(Lposit, Uposit, Aposit);   // construct the A matrix to solve
+	printMatrix(cout, "A", Aposit);
+	// define a difficult solution
+	vector<PositType> xposit = {
+		epsplus,
+		epsplus,
+		epsplus,
+		epsplus,
+		epsplus
+	};
+	vector<PositType> bposit(d);
+	matvec<nbits, es>(Aposit, xposit, bposit);   // construct the right hand side
+
+
+
+#if 0
+	cout << "posit<25,1>\n";
+	cout << "1.0 - FLT_EPSILON = " << setprecision(17) << epsminus << " converts to " << posit<25, 1>(epsminus) << endl;
+	cout << "1.0 + FLT_EPSILON = " << setprecision(17) << epsplus  << " converts to " << posit<25, 1>(epsplus) << endl;
+	cout << "posit<26,1>\n";
+	cout << "1.0 - FLT_EPSILON = " << setprecision(17) << epsminus << " converts to " << posit<26, 1>(epsminus) << endl;
+	cout << "1.0 + FLT_EPSILON = " << setprecision(17) << epsplus  << " converts to " << posit<26, 1>(epsplus) << endl;
+	cout << "posit<27,1>\n";
+	cout << "1.0 - FLT_EPSILON = " << setprecision(17) << epsminus << " converts to " << posit<27, 1>(epsminus) << endl;
+	cout << "1.0 + FLT_EPSILON = " << setprecision(17) << epsplus  << " converts to " << posit<27, 1>(epsplus) << endl;
+#endif
+
+	cout << "LinearSolve regular dot product" << endl;
+	CompareIEEEDecompositions(Aieee, xieee, bieee); 
 	cout << endl << ">>>>>>>>>>>>>>>>" << endl;
-	cout << "LinearSolve WITH fused-dot product" << endl;
-	CompareDecompositions(true, d, A, b);
+	cout << "LinearSolve fused-dot product" << endl;
+	ComparePositDecompositions(Aposit, xposit, bposit);
 
-	int nrOfFailedTestCases = 0;
-	return nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS;
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

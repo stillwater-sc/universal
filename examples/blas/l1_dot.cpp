@@ -1,20 +1,15 @@
 // l1_dot.cpp: example program contrasting a BLAS L1 ?dot routine between FLOAT and POSIT
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
-#include <ratio>
-#include <chrono>
-#include <iostream>
-#include <ctime>
+#include "common.hpp"
 
 #include <vector>
 #include <posit>
 
 #include "blas.hpp"
-#include "blas_utils.hpp"
 
 using namespace std;
 using namespace sw::blas;

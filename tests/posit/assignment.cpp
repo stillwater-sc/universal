@@ -4,19 +4,16 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
 
-using namespace std;
-using namespace sw::unum;
-
 #define FLOAT_TABLE_WIDTH 20
 
 template<size_t nbits, size_t es, typename Ty>
-void ReportAssignmentError(std::string test_case, std::string op, const posit<nbits, es>& pref, const posit<nbits, es>& presult, const Ty& value) {
+void ReportAssignmentError(std::string test_case, std::string op, const sw::unum::posit<nbits, es>& pref, const sw::unum::posit<nbits, es>& presult, const Ty& value) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FLOAT_TABLE_WIDTH) << value
@@ -27,18 +24,18 @@ void ReportAssignmentError(std::string test_case, std::string op, const posit<nb
 }
 
 template<size_t nbits, size_t es, typename Ty>
-void ReportAssignmentSuccess(std::string test_case, std::string op, const posit<nbits, es>& pref, const posit<nbits, es>& presult, const Ty& value) {
+void ReportAssignmentSuccess(std::string test_case, std::string op, const sw::unum::posit<nbits, es>& pref, const sw::unum::posit<nbits, es>& presult, const Ty& value) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FLOAT_TABLE_WIDTH) << value
 		<< " == "
 		<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
 		<< std::setw(FLOAT_TABLE_WIDTH) << pref
-		<< "               posit fields " << pretty_print(presult) << std::endl;
+		<< "               posit fields " << sw::unum::pretty_print(presult) << std::endl;
 }
 
 template<size_t nbits, size_t es, typename Ty>
-Ty GenerateValue(const posit<nbits,es>& p) {
+Ty GenerateValue(const sw::unum::posit<nbits,es>& p) {
 	Ty value = 0;
 	if (std::numeric_limits<Ty>::is_exact) {
 		if (std::numeric_limits<Ty>::is_signed) {
@@ -61,7 +58,7 @@ int ValidateAssignment(bool bReportIndividualTestCases) {
 
 	// use only valid posit values
 	// posit_raw -> to value in Ty -> assign to posit -> compare posits
-	posit<nbits, es> p, assigned;
+	sw::unum::posit<nbits, es> p, assigned;
 	for (size_t i = 0; i < NR_POSITS; i++) {
 		p.set_raw_bits(i); // std::cout << p.get() << endl;
 		if (p.isNaR() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
@@ -80,6 +77,9 @@ int ValidateAssignment(bool bReportIndividualTestCases) {
 
 int main()
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	const size_t nbits = 8;
 	const size_t es = 2;
 
@@ -95,11 +95,11 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
 
