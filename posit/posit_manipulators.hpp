@@ -117,6 +117,97 @@ namespace sw {
 			return ss.str();
 		}
 
+		enum ColorCode {
+			FG_DEFAULT = 39,
+			FG_BLACK = 30,
+			FG_RED = 31,
+			FG_GREEN = 32,
+			FG_YELLOW = 33,
+			FG_BLUE = 34,
+			FG_MAGENTA = 35,
+			FG_CYAN = 36,
+			FG_LIGHT_GRAY = 37,
+			FG_DARK_GRAY = 90,
+			FG_LIGHT_RED = 91,
+			FG_LIGHT_GREEN = 92,
+			FG_LIGHT_YELLOW = 93,
+			FG_LIGHT_BLUE = 94,
+			FG_LIGHT_MAGENTA = 95,
+			FG_LIGHT_CYAN = 96,
+			FG_WHITE = 97,
+
+			BG_DEFAULT = 49,
+			BG_BLACK = 40,
+			BG_RED = 41,
+			BG_GREEN = 42,
+			BG_YELLOW = 43,
+			BG_BLUE = 44,
+			BG_MAGENTA = 45,
+			BG_CYAN = 46,
+			BG_LIGHT_GRAY = 47,
+			BG_DARK_GRAY = 100,
+			BG_LIGHT_RED = 101,
+			BG_LIGHT_GREEN = 102,
+			BG_LIGHT_YELLOW = 103,
+			BG_LIGHT_BLUE = 104,
+			BG_LIGHT_MAGENTA = 105,
+			BG_LIGHT_CYAN = 106,
+			BG_WHITE = 107
+
+		};
+		class Color {
+			ColorCode code;
+		public:
+			Color(ColorCode pCode) : code(pCode) {}
+			friend std::ostream&
+				operator<<(std::ostream& os, const Color& mod) {
+				return os << "\033[" << mod.code << "m";
+			}
+		};
+
+		template<size_t nbits, size_t es>
+		std::string color_print(const posit<nbits, es>& p) {
+			std::stringstream ss;
+			Color red(ColorCode::FG_RED);
+			Color yellow(ColorCode::FG_YELLOW);
+			Color blue(ColorCode::FG_BLUE);
+			Color magenta(ColorCode::FG_MAGENTA);
+			Color cyan(ColorCode::FG_CYAN);
+			Color white(ColorCode::FG_WHITE);
+			Color def(ColorCode::FG_DEFAULT);
+			ss << red << (p.isNegative() ? "1" : "0");
+
+			std::bitset<nbits - 1> r = p.get_regime().get();
+			int regimeBits = (int)p.get_regime().nrBits();
+			int nrOfRegimeBitsProcessed = 0;
+			for (int i = nbits - 2; i >= 0; --i) {
+				if (regimeBits > nrOfRegimeBitsProcessed++) {
+					ss << yellow << (r[i] ? "1" : "0");
+				}
+			}
+
+			std::bitset<es> e = p.get_exponent().get();
+			int exponentBits = (int)p.get_exponent().nrBits();
+			int nrOfExponentBitsProcessed = 0;
+			for (int i = int(es) - 1; i >= 0; --i) {
+				if (exponentBits > nrOfExponentBitsProcessed++) {
+					ss << cyan << (e[i] ? "1" : "0");
+				}
+			}
+
+			bitblock<posit<nbits, es>::fbits> f = p.get_fraction().get();
+			int fractionBits = (int)p.get_fraction().nrBits();
+			int nrOfFractionBitsProcessed = 0;
+			for (int i = int(p.fbits) - 1; i >= 0; --i) {
+				if (fractionBits > nrOfFractionBitsProcessed++) {
+					ss << magenta << (f[i] ? "1" : "0");
+				}
+			}
+
+			ss << def;
+			return ss.str();
+		}
+		
 		// generate a full binary representation table for a given posit configuration
 		template<size_t nbits, size_t es>
 		void GeneratePositTable(std::ostream& ostr) 
@@ -167,8 +258,6 @@ namespace sw {
 					<< std::endl;
 			}
 		}
-
-
 
 	}  // namespace unum
 
