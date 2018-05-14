@@ -1,0 +1,17 @@
+# don't copy to local build directory
+/build
+# remove the background directory
+/background
+# remove bin directory
+/bin
+# remove Win32 directory
+/Win32
+# remove x64 directory
+/x64
+
+# remove IntelliJ IDEA configuration
+/.idea
+/cmake-build-debug
+# remove Visual Studio configuration
+/.vs
+

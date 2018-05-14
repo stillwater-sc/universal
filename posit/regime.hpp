@@ -44,7 +44,7 @@ public:
 		double scale;
 		int e2 = (1 << es) * _k;
 		if (e2 < -63 || e2 > 63) {
-			scale = pow(2.0, e2);
+			scale = std::pow(2.0, e2);  // TODO: needs a native posit implementation
 		}
 		else {
 			if (e2 >= 0) {

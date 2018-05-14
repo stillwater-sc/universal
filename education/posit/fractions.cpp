@@ -1,20 +1,26 @@
-﻿//  fractions.cpp : tests on posit fractions
+﻿//  fractions.cpp : examples of working with posit fractions
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
+#include <posit>
 
-#include "../../posit/posit.hpp"
-#include "../../posit/posit_manipulators.hpp"
-#include "../tests/test_helpers.hpp"
-
-using namespace std;
-using namespace sw::unum;
+// test reporting helper
+int ReportTestResult(int nrOfFailedTests, std::string description, std::string test_operation)
+{
+	if (nrOfFailedTests > 0) {
+		std::cout << description << " " << test_operation << " FAIL " << nrOfFailedTests << " failed test cases" << std::endl;
+	}
+	else {
+		std::cout << description << " " << test_operation << " PASS" << std::endl;
+	}
+	return nrOfFailedTests;
+}
 
 template<size_t fbits>
-void ReportError(std::string test_case, std::string op, double input, double reference, const fraction<fbits>& _fraction) {
+void ReportError(std::string test_case, std::string op, double input, double reference, const sw::unum::fraction<fbits>& _fraction) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(10) << input
@@ -30,10 +36,10 @@ int ValidateFractionValue(std::string tag, bool bReportIndividualTestCases)
 	const uint64_t NR_OF_FRACTIONS = (uint64_t(1) << fbits);
 	int nrOfFailedTests = 0;
 
-	fraction<fbits> _fraction;
+	sw::unum::fraction<fbits> _fraction;
 	double divisor = uint64_t(1) << fbits;
 	for (uint64_t i = 0; i < NR_OF_FRACTIONS; i++) {
-		bitblock<fbits> bits = convert_to_bitblock<fbits, uint64_t>(i);
+		sw::unum::bitblock<fbits> bits = sw::unum::convert_to_bitblock<fbits, uint64_t>(i);
 		_fraction.set(bits);  // use default nr of fraction bits to be full size
 		// fraction value is the 'fraction' of the operand: (fraction to ull)/2^fbits
 		double v = _fraction.value();
@@ -54,10 +60,10 @@ int ValidateFixedPointNumber(std::string tag, bool bReportIndividualTestCases)
 	int nrOfFailedTests = 0;
 
 	double divisor = uint64_t(1) << fbits;
-	fraction<fbits> _fraction;
-	bitblock<fbits + 1> _fixed_point;
+	sw::unum::fraction<fbits> _fraction;
+	sw::unum::bitblock<fbits + 1> _fixed_point;
 	for (uint64_t i = 0; i < NR_OF_FRACTIONS; i++) {
-		bitblock<fbits> bits = convert_to_bitblock<fbits, uint64_t>(i);
+		sw::unum::bitblock<fbits> bits = sw::unum::convert_to_bitblock<fbits, uint64_t>(i);
 		_fraction.set(bits);  // use default nr of fraction bits to be full size
 							  // fraction value is the 'fraction' of the operand: (fraction to ull)/2^fbits
 		double v = 1.0 + _fraction.value();
@@ -76,33 +82,29 @@ template<size_t fbits>
 int ValidateRoundingAssessment(std::string tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 
-	fraction<fbits> _fraction;
-	bitblock<fbits> bits = convert_to_bitblock<fbits, uint32_t>(0x50);
+	sw::unum::fraction<fbits> _fraction;
+	sw::unum::bitblock<fbits> bits = sw::unum::convert_to_bitblock<fbits, uint32_t>(0x50);
 	for (unsigned i = 0; i < fbits; i++) {
 		bool rb = _fraction.assign2(i, bits);
-		cout << "nf = " << i << " " << bits << " fraction " << _fraction << " " << (rb ? "up" : "dn") << endl;
+		std::cout << "#fbits = " << i << " " << bits << " fraction " << _fraction << " " << (rb ? "up" : "dn") << '\n';
 	}
+	std::cout << std::endl;
 
 	return nrOfFailedTests;
 }
 
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
 int main(int argc, char** argv)
 try {
-	bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
+	using namespace std;
+	using namespace sw::unum;
 
-
-#if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 	ValidateFixedPointNumber<4>("Hello", true);
 	ValidateRoundingAssessment<8>("", true);
 
-#else
-
 	cout << "Fraction tests" << endl;
+	int nrOfFailedTestCases = 0;
+	bool bReportIndividualTestCases = false;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateFixedPointNumber<3>("Fixed point conversion failed: ", bReportIndividualTestCases), "fraction<3>", "get_fixed_point()");
 	nrOfFailedTestCases += ReportTestResult(ValidateFixedPointNumber<4>("Fixed point conversion failed: ", bReportIndividualTestCases), "fraction<4>", "get_fixed_point()");
@@ -124,23 +126,21 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateFractionValue<16>("Value conversion failed: ", bReportIndividualTestCases), "fraction<16>", "value()");
 	nrOfFailedTestCases += ReportTestResult(ValidateFractionValue<18>("Value conversion failed: ", bReportIndividualTestCases), "fraction<18>", "value()");
 
-#endif
 
 #if STRESS_TESTING
 	nrOfFailedTestCases += ReportTestResult(ValidateFractionValue<24>("Value conversion failed: ", bReportIndividualTestCases), "fraction<24>", "value()");
 	nrOfFailedTestCases += ReportTestResult(ValidateFractionValue<28>("Value conversion failed: ", bReportIndividualTestCases), "fraction<28>", "value()");
 	//nrOfFailedTestCases += ReportTestResult(ValidateFractionValue<32>("Value conversion failed: ", bReportIndividualTestCases), "fraction<32>", "value()");
-
 #endif
 
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

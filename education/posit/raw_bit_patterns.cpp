@@ -4,22 +4,17 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
-#include <sstream>
-
-#include "../../posit/posit.hpp"
-
-using namespace std;
-using namespace sw::unum;
+#include "common.hpp"
+#include <posit>
 
 template<size_t nbits, size_t es>
 void EnumerateRegimePatterns() {
-	posit<nbits, es> p;
-	bitblock<nbits> raw;
+	sw::unum::posit<nbits, es> p;
+	sw::unum::bitblock<nbits> raw;
 
 	std::cout << "posit<" << nbits << ", " << es << ">" << std::endl;
 
-	std::cout << setprecision(34);
+	std::cout << std::setprecision(34);
 	// start with NaR
 	raw.reset();
 	raw[nbits - 1] = true;
@@ -46,8 +41,7 @@ void EnumerateRegimePatterns() {
 
 int main() 
 try {
-	// generate regime pattern tables
-
+	// generate regime patterns
 	EnumerateRegimePatterns<4, 0>();
 	EnumerateRegimePatterns<8, 0>();
 	EnumerateRegimePatterns<16, 1>();
@@ -57,11 +51,11 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
 
@@ -102,86 +96,87 @@ catch (...) {
 void ManualPatternSet() {
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 2;
-	posit<nbits, es> p;
-	bitblock<nbits> raw;
+	sw::unum::posit<nbits, es> p;
+	sw::unum::bitblock<nbits> raw;
 
 	// 1152921504606846976
 	raw.reset();
 	// positive regime infinity - 1
+	using namespace std;
 	cout << setprecision(34);
 	raw[15] = 1;							// NaR (Not a Real)
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw.flip();								// 72057594037927936			
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[0] = false;							// 4503599627370496			
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[1] = false;							// 281474976710656			
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[2] = false;							// 17592186044416			
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[3] = false;							// 1099511627776			
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[4] = false;							// 68719476736			
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[5] = false;							// 4294967296			
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[6] = false;							// 268435456			
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[7] = false;							// 16777216			
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[8] = false;							// 1048576			
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[9] = false;							// 65536			
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[10] = false;						// 4096			
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[11] = false;						// 256
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[12] = false;						// 16
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[13] = false;						// 1
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 
 	raw.reset();
 	// positive fractional regime 1 - 0
 	raw[13] = true;			// 1
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[12] = true;			// 1/16
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[11] = true;			// 1/256
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[10] = true;			// 1/4096
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[9] = true;			// 1/65536
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[8] = true;			// 1/1048576
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[7] = true;			// 1/16777216
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[6] = true;			// 1/268435456
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[5] = true;			// 1/4294967296
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[4] = true;			// 1/68719476736
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[3] = true;			// 1/1099511627776
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[2] = true;			// 1/17592186044416
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw.reset();
 	raw[1] = true;			// 1/281474976710656
-	p.set(raw); 	cout << raw << "      " << p << endl;
+	p.set(raw); 	cout << raw << "      " << p << '\n';
 	raw[1] = false;			// 0
 	p.set(raw); 	cout << raw << "      " << p << " 0" << endl;
 }

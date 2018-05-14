@@ -1,10 +1,10 @@
 // 128bit_posit.cpp: Functionality tests for standard 128-bit posits
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 #include <vector>
 #include <posit>
@@ -12,15 +12,15 @@
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
 
-using namespace std;
-
 /*
 Standard posits with nbits = 128 have 4 exponent bits.
 */
 
 int main(int argc, char** argv)
-#if 0                                                       // Deal with this later
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	const size_t RND_TEST_CASES = 10000;
 
 	const size_t nbits = 128;
@@ -45,15 +45,10 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
-	return EXIT_FAILURE;
+	std::cerr << msg << std::endl;
+	return EXIT_SUCCESS; //as we manually throwing the not supported yet it should not fall through the cracks     EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
-#else
-{
-    return 0;
-}
-#endif

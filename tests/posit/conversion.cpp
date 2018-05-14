@@ -1,10 +1,10 @@
 // conversion.cpp : functional tests for conversion operators to posit numbers
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 // if you want to trace the posit intermediate results
 // #define POSIT_VERBOSE_OUTPUT
@@ -16,22 +16,19 @@
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
 
-using namespace std;
-using namespace sw::unum;
-
 template<size_t nbits, size_t es>
-void GenerateLogicPattern(double input, const posit<nbits, es>& presult, const posit<nbits+1, es>& pnext) {
+void GenerateLogicPattern(double input, const sw::unum::posit<nbits, es>& presult, const sw::unum::posit<nbits+1, es>& pnext) {
 	const int VALUE_WIDTH = 15;
 	bool fail = presult != pnext;
-	value<52> v(input);
-	std::cout << setw(VALUE_WIDTH) << input << " "
-		<< " result " << setw(VALUE_WIDTH) << presult 
+	sw::unum::value<52> v(input);
+	std::cout << std::setw(VALUE_WIDTH) << input << " "
+		<< " result " << std::setw(VALUE_WIDTH) << presult 
 		<< "  scale= " << std::setw(3) << presult.scale() 
-		<< "  k= " << std::setw(3) << calculate_k<nbits, es>(v.scale())
+		<< "  k= " << std::setw(3) << sw::unum::calculate_k<nbits, es>(v.scale())
 		<< "  exp= " << std::setw(3) << presult.get_exponent() << "  "
 		<< presult.get() << " " 
 		<< pnext.get() << " "
-		<< setw(VALUE_WIDTH) << pnext << " "
+		<< std::setw(VALUE_WIDTH) << pnext << " "
 		<< (fail ? "FAIL" : "    PASS")
 		<< std::endl;
 }
@@ -42,14 +39,14 @@ void GenerateLogicPatternsForDebug() {
 	// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 	const int NR_TEST_CASES = (1 << (nbits + 1));
 	const int HALF = (1 << nbits);
-	posit<nbits + 1, es> pref, pprev, pnext;
+	sw::unum::posit<nbits + 1, es> pref, pprev, pnext;
 
 	// execute the test
 	int nrOfFailedTests = 0;
-	double minpos = minpos_value<nbits+1, es>();
+	double minpos = sw::unum::minpos_value<nbits+1, es>();
 	double eps = 1.0e-10;
 	double da, input;
-	posit<nbits, es> pa;
+	sw::unum::posit<nbits, es> pa;
 	std::cout << spec_to_string(pa) << std::endl;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
 		pref.set_raw_bits(i);
@@ -155,21 +152,21 @@ void GenerateLogicPatternsForDebug() {
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es>
-void GenerateTestCase(float input, float reference, const posit<nbits, es>& presult) {
+void GenerateTestCase(float input, float reference, const sw::unum::posit<nbits, es>& presult) {
 	if (fabs(double(presult) - reference) > 0.000000001) 
 		ReportConversionError("test_case", "=", input, reference, presult);
 	else
 		ReportConversionSuccess("test_case", "=", input, reference, presult);
-	cout << endl;
+	std::cout << std::endl;
 }
 
 template<size_t nbits, size_t es>
-void GenerateTestCase(double input, double reference, const posit<nbits, es>& presult) {
+void GenerateTestCase(double input, double reference, const sw::unum::posit<nbits, es>& presult) {
 	if (fabs(double(presult) - reference) > 0.000000001)
 		ReportConversionError("test_case", "=", input, reference, presult);
 	else
 		ReportConversionSuccess("test_case", "=", input, reference, presult);
-	cout << endl;
+	std::cout << std::endl;
 }
 
 #define MANUAL_TESTING 0
@@ -177,6 +174,9 @@ void GenerateTestCase(double input, double reference, const posit<nbits, es>& pr
 
 int main(int argc, char** argv)
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -272,11 +272,11 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
 

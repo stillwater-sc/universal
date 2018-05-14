@@ -1,18 +1,23 @@
-﻿//  regimes.cpp : tests on posit regimes
+﻿//  regimes.cpp : examples of working with posit regimes
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
+#include <posit>
 
-#include "../../posit/posit.hpp"
-#include "../../posit/posit_manipulators.hpp"
-#include "../tests/test_helpers.hpp"
-
-using namespace std;
-using namespace sw::unum;
-
+// test reporting helper
+int ReportTestResult(int nrOfFailedTests, std::string description, std::string test_operation)
+{
+	if (nrOfFailedTests > 0) {
+		std::cout << description << " " << test_operation << " FAIL " << nrOfFailedTests << " failed test cases" << std::endl;
+	}
+	else {
+		std::cout << description << " " << test_operation << " PASS" << std::endl;
+	}
+	return nrOfFailedTests;
+}
 
 /*
 Regime range example for a posit<6,es>
@@ -33,16 +38,16 @@ int ValidateRegimeOperations(std::string tag, bool bReportIndividualTestCases) {
 	const int NR_TEST_CASES = nbits;
 	int nrOfFailedTestCases = 0;
 
-	regime<nbits, es> r;
+	sw::unum::regime<nbits, es> r;
 	for (int k = -NR_TEST_CASES; k < NR_TEST_CASES + 1; k++) {
 		int reference = r.regime_size(k);
 		size_t nrRegimeBits = r.assign_regime_pattern(k);
 		if (nrRegimeBits != reference) {
 			nrOfFailedTestCases++;
-			if (bReportIndividualTestCases) cout << "FAIL: k = " << setw(3) << k << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << endl;
+			if (bReportIndividualTestCases) std::cout << "FAIL: k = " << std::setw(3) << k << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << std::endl;
 		}
 		else {
-			//if (bReportIndividualTestCases) cout << "PASS: k = " << setw(3) << k << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << endl;
+			//if (bReportIndividualTestCases) std::cout << "PASS: k = " << std::setw(3) << k << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << std::endl;
 		}
 	}
 
@@ -55,7 +60,7 @@ int ValidateInwardProjection(std::string tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	unsigned useed_scale = unsigned(1) << es;
 
-	posit<nbits, es> p;
+	sw::unum::posit<nbits, es> p;
 	// k represents the regime encoding 
 	int size = int(nbits);
 	for (int k = -size + 1; k <= size - 1; k++) {
@@ -64,9 +69,9 @@ int ValidateInwardProjection(std::string tag, bool bReportIndividualTestCases) {
 		bool reference = k < 0 ? k == -size + 1 : k == size - 1;
 		if (inward != reference) {
 			nrOfFailedTests++;
-			cout << "FAIL : k = " << setw(3) << k << " scale = " << setw(3) << scale << " inward projection range " << inward << " reference " << reference << endl;
+			std::cout << "FAIL : k = " << std::setw(3) << k << " scale = " << std::setw(3) << scale << " inward projection range " << inward << " reference " << reference << std::endl;
 		}
-		cout << "k = " << setw(3) << k << " scale = " << setw(3) << scale << " inward projection range " << inward << endl;
+		std::cout << "k = " << std::setw(3) << k << " scale = " << std::setw(3) << scale << " inward projection range " << inward << std::endl;
 
 	}
 	return nrOfFailedTests;
@@ -77,8 +82,8 @@ int ValidateRegimeScales(std::string tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	int useed_scale = int(1) << es;  // int because we are doing int math with it
 
-	regime<nbits, es> r1;
-	posit<nbits, es> p; // for check_inward_projection_range
+	sw::unum::regime<nbits, es> r1;
+	sw::unum::posit<nbits, es> p; // for check_inward_projection_range
 	// scale represents the binary scale of a value to test
 	int size = int(nbits);
 	for (int k = (-size + 1); k <= (size - 1); k++) {
@@ -91,9 +96,9 @@ int ValidateRegimeScales(std::string tag, bool bReportIndividualTestCases) {
 				}
 			}	
 			nrOfFailedTests++;
-			std::cout << "k = " << setw(3) << k
-				<< " scale = " << setw(3) << scale
-				<< " calc k " << setw(3) << r1.regime_k()
+			std::cout << "k = " << std::setw(3) << k
+				<< " scale = " << std::setw(3) << scale
+				<< " calc k " << std::setw(3) << r1.regime_k()
 				<< " bits " << r1 << ":scale=" << r1.scale()
 				<< " clamp " << p.check_inward_projection_range(scale) << std::endl;
 		}
@@ -107,6 +112,8 @@ int ValidateRegimeScales(std::string tag, bool bReportIndividualTestCases) {
 
 int main(int argc, char** argv)
 try {
+	using namespace std;
+
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -204,10 +211,10 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

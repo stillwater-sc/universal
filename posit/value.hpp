@@ -1,5 +1,5 @@
 #pragma once
-// value.hpp: definition of a (sign, scale, fraction) representation of an approximation to a real value
+// value.hpp: definition of a (sign, scale, significant) representation of an approximation to a real value
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
@@ -367,6 +367,20 @@ namespace sw {
 			explicit operator double() const { return to_double(); }
 			explicit operator float() const { return to_float(); }
 
+			template<size_t srcbits, size_t tgtbits>
+			void right_extend(const value<srcbits>& src) {
+				_sign = src.sign();
+				_scale = src.scale();
+				_nrOfBits = tgtbits;
+				_inf = src.isInfinite();
+				_zero = src.isZero();
+				_nan = src.isNaN();
+				bitblock<srcbits> src_fraction = src.fraction();
+				if (!_inf && !_zero && !_nan) {
+					for (int s = srcbits - 1, t = tgtbits - 1; s >= 0 && t >= 0; --s, --t)
+						_fraction[t] = src_fraction[s];
+				}
+			}
 			template<size_t tgt_size>
 			value<tgt_size> round_to() {
 				bitblock<tgt_size> rounded_fraction;

@@ -1,10 +1,10 @@
 // arithmetic_negate.cpp: functional tests for arithmetic negation
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_CONVERSION
@@ -15,18 +15,15 @@
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
 
-using namespace std;
-using namespace sw::unum;
-
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty fa) {
-	posit<nbits, es> pa, pref, pneg;
+	sw::unum::posit<nbits, es> pa, pref, pneg;
 	pa = fa;
 	pref = -fa;
 	pneg = -pa;
-	cout << "reference " << pref << " result " << pneg << endl << endl;
+	std::cout << "reference " << pref << " result " << pneg << std::endl << std::endl;
 }
 
 #define MANUAL_TESTING 0
@@ -34,6 +31,9 @@ void GenerateTestCase(Ty fa) {
 
 int main(int argc, char** argv)
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -96,11 +96,11 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
 

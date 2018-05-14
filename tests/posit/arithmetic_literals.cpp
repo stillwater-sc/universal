@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 // when you define POSIT_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define POSIT_VERBOSE_OUTPUT
@@ -19,15 +19,12 @@
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
 
-using namespace std;
-using namespace sw::unum;
-
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
 template<size_t nbits, size_t es>
 int ValidateAdditionWithLiteral(std::string tag, bool bReportIndividualTestCases) {
 	const int NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pb, psum1, psum2, pref;
+	sw::unum::posit<nbits, es> pa, pb, psum1, psum2, pref;
 
 	double da, db;
 	for (int i = 0; i < NR_POSITS; i++) {
@@ -57,7 +54,7 @@ template<size_t nbits, size_t es>
 int ValidateSubtractionWithLiteral(std::string tag, bool bReportIndividualTestCases) {
 	const int NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pb, pdiff1, pdiff2, pref;
+	sw::unum::posit<nbits, es> pa, pb, pdiff1, pdiff2, pref;
 
 	double da, db;
 	for (int i = 0; i < NR_POSITS; i++) {
@@ -87,7 +84,7 @@ template<size_t nbits, size_t es>
 int ValidateMultiplicationWithLiteral(std::string tag, bool bReportIndividualTestCases) {
 	const int NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pb, pmul1, pmul2, pref;
+	sw::unum::posit<nbits, es> pa, pb, pmul1, pmul2, pref;
 
 	double da, db;
 	for (int i = 0; i < NR_POSITS; i++) {
@@ -117,7 +114,7 @@ template<size_t nbits, size_t es>
 int ValidateDivisionWithLiteral(std::string tag, bool bReportIndividualTestCases) {
 	const int NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> pa, pb, pdiv1, pdiv2, pref;
+	sw::unum::posit<nbits, es> pa, pb, pdiv1, pdiv2, pref;
 
 	double da, db;
 	for (int i = 0; i < NR_POSITS; i++) {
@@ -147,7 +144,7 @@ int ValidateDivisionWithLiteral(std::string tag, bool bReportIndividualTestCases
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
-	posit<nbits, es> pa, pb, pref, psum;
+	sw::unum::posit<nbits, es> pa, pb, pref, psum;
 	pa = a;
 	pb = b;
 	ref = a + b;
@@ -165,6 +162,9 @@ void GenerateTestCase(Ty a, Ty b) {
 
 int main(int argc, char** argv)
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -231,10 +231,10 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

@@ -1,25 +1,24 @@
 ﻿//  quire_accumulations.cpp : computational path experiments with quires
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 #include "../../posit/exceptions.hpp"
 #include "../../bitblock/bitblock.hpp"
 #include "../../posit/value.hpp"
 #include "../../float/quire.hpp"
 
-using namespace std;
-using namespace sw::ieee;
-
-
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main()
 try {
+	using namespace std;
+	using namespace sw::ieee;
+
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -44,10 +43,10 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << '\n';
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << '\n';
 	return EXIT_FAILURE;
 }
