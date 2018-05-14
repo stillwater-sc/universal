@@ -40,38 +40,40 @@ try {
 	d = conj(c); std::cout << "conj(" << c << ") = " << d << '\n';
 	
 	// sqrt and inverse sqrt
-	p =  sqrt(x); std::cout << " sqrt(" << x << ") = " << p << '\n';
-	p = rsqrt(x); std::cout << "rsqrt(" << x << ") = " << p << '\n';
+	x = m_pi_4;
+	p =  sqrt(x); std::cout << " sqrt(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = rsqrt(x); std::cout << "rsqrt(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
 
 	// trigonometric functions
-	x = m_pi_4;
-	p =  sin(x); std::cout << "  sin(" << x << ") = " << p << '\n';
-	p = asin(x); std::cout << " asin(" << x << ") = " << p << '\n';
-	p =  cos(x); std::cout << "  cos(" << x << ") = " << p << '\n';
-	p = acos(x); std::cout << " acos(" << x << ") = " << p << '\n';
-	p =  tan(x); std::cout << "  tan(" << x << ") = " << p << '\n';
-	p = atan(x); std::cout << " atan(" << x << ") = " << p << '\n';
+	p =  sin(x); std::cout << "  sin(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = asin(x); std::cout << " asin(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =  cos(x); std::cout << "  cos(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = acos(x); std::cout << " acos(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =  tan(x); std::cout << "  tan(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = atan(x); std::cout << " atan(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
 
 	// hyperbolic functions
-	p =  sinh(x); std::cout << " sinh(" << x << ") = " << p << '\n';
-	p = asinh(x); std::cout << "asinh(" << x << ") = " << p << '\n';
-	p =  cosh(x); std::cout << " cosh(" << x << ") = " << p << '\n';
-	p = acosh(x); std::cout << "acosh(" << x << ") = " << p << '\n';
-	p =  tanh(x); std::cout << " tanh(" << x << ") = " << p << '\n';
-	p = atanh(x); std::cout << "atanh(" << x << ") = " << p << '\n';
+	p =  sinh(x); std::cout << " sinh(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = asinh(x); std::cout << "asinh(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =  cosh(x); std::cout << " cosh(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = acosh(x); std::cout << "acosh(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =  tanh(x); std::cout << " tanh(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = atanh(x); std::cout << "atanh(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
 
 	// error and gamma functions
-	p =  erf(x); std::cout << "  erf(" << x << ") = " << p << '\n';
-	p = erfc(x); std::cout << " erfc(" << x << ") = " << p << '\n';
+	p =  erf(x); std::cout << "  erf(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = erfc(x); std::cout << " erfc(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
 
 	// exponential and logarithmic functions
-	p = pow(x, y);
-	p =   exp(x); std::cout << "  exp(" << x << ") = " << p << '\n';
-	p =  exp2(x); std::cout << " exp2(" << x << ") = " << p << '\n';
-	p = exp10(x); std::cout << "exp10(" << x << ") = " << p << '\n';
-	p =   log(x); std::cout << "  log(" << x << ") = " << p << '\n';
-	p =  log2(x); std::cout << " log2(" << x << ") = " << p << '\n';
-	p = log10(x); std::cout << "log10(" << x << ") = " << p << '\n';
+
+	p =   exp(x); std::cout << "  exp(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =  exp2(x); std::cout << " exp2(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = exp10(x); std::cout << "exp10(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =   log(x); std::cout << "  log(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =  log2(x); std::cout << " log2(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = log10(x); std::cout << "log10(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+
+	p = pow(x, y); std::cout << "  pow(" << x << "," << y << ") = " << std::setw(10) << p << " " << color_print(p) << '\n';
 
 	return (bSuccess ? EXIT_SUCCESS : EXIT_FAILURE);
 }
