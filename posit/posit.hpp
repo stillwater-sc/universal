@@ -1251,11 +1251,21 @@ inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, double rhs) {
 
 #endif // POSIT_ENABLE_LITERALS
 
+// Sign of a posit
+template<size_t nbits, size_t es>
+bool sign(const posit<nbits,es>& p) {
+	return p.get_sign();
+}
+
 // Magnitude of a posit (equivalent to turning the sign bit off).
 template<size_t nbits, size_t es> 
 posit<nbits, es> abs(const posit<nbits, es>& p) {
     return posit<nbits, es>(false, p.get_regime(), p.get_exponent(), p.get_fraction());
 }
+		template<size_t nbits, size_t es>
+		posit<nbits, es> fabs(const posit<nbits, es>& p) {
+			return posit<nbits, es>(false, p.get_regime(), p.get_exponent(), p.get_fraction());
+		}
 
 // generate a posit representing minpos
 template<size_t nbits, size_t es>
