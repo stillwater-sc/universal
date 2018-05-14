@@ -61,7 +61,7 @@ namespace sw {
 		/*
 		- Consider the function argument, x, in floating-point form, with a base
 		(or radix) B, exponent e, and a fraction, f , such that 1/B ? f < 1.
-		Then we have x = ±f × Be. The number of bits in the exponent and
+		Then we have x = ï¿½f ï¿½ Be. The number of bits in the exponent and
 		fraction, and the value of the base, depends on the particular floating 
 		point arithmetic system chosen.
 		
@@ -198,7 +198,13 @@ namespace sw {
 			return p;
 		}
 
+		// reciprocal sqrt
+		template<size_t nbits, size_t es>
+		posit<nbits, es> rsqrt(const posit<nbits,es>& a) {
+			posit<nbits,es> v = sqrt(a);
+			return v.reciprocate();
+		}
 
-	};  // namespace unum
+	}  // namespace unum
 
-};  // namespace sw
+}  // namespace sw

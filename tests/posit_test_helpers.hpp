@@ -168,7 +168,7 @@ namespace sw {
 		int Compare(double input, const posit<nbits, es>& presult, double reference, bool bReportIndividualTestCases) {
 			int fail = 0;
 			double result = double(presult);
-			if (fabs(result - reference) > 0.000000001) {
+			if (std::fabs(result - reference) > 0.000000001) {
 				fail++;
 				if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, presult);
 			}

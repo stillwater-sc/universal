@@ -1,5 +1,5 @@
 #pragma once
-// exponent.hpp: exponent functions for posits
+// error_gamma.hpp: error and gamma functions for posits
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
@@ -12,22 +12,16 @@ namespace sw {
 		// the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 		// correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
 
-		// Base-e exponential function
+		// Compute the error function erf(x) = 2 over sqrt(PI) times Integral from 0 to x of e ^ (-t)^2 dt
 		template<size_t nbits, size_t es>
-		posit<nbits,es> exp(posit<nbits,es> x) {
-			return posit<nbits,es>(std::exp(double(x)));
+		posit<nbits,es> erf(posit<nbits,es> x) {
+			return posit<nbits,es>(std::erf(double(x)));
 		}
 
-		// Base-2 exponential function
+		// Compute the complementary error function: 1 - erf(x)
 		template<size_t nbits, size_t es>
-		posit<nbits,es> exp2(posit<nbits,es> x) {
-			return posit<nbits,es>(std::exp2(double(x)));
-		}
-
-		// Base-10 exponential function
-		template<size_t nbits, size_t es>
-		posit<nbits, es> exp10(posit<nbits, es> x) {
-			return posit<nbits, es>(std::pow(10.0, double(x)));
+		posit<nbits,es> erfc(posit<nbits,es> x) {
+			return posit<nbits,es>(std::erfc(double(x)));
 		}
 
 	}  // namespace unum

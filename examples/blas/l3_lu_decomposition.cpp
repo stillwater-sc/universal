@@ -51,7 +51,7 @@ void Crout(std::vector<Ty>& S, std::vector<Ty>& D) {
 		}
 		for (size_t j = k + 1; j < d; ++j) {
 			Ty sum = 0.;
-			for (int p = 0; p<k; ++p) sum += D[k*d + p] * D[p*d + j];
+			for (size_t p = 0; p<k; ++p) sum += D[k*d + p] * D[p*d + j];
 			D[k*d + j] = (S[k*d + j] - sum) / D[k*d + k];
 		}
 	}
