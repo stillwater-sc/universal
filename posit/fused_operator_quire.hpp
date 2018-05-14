@@ -27,11 +27,11 @@ public:
 	template<size_t nnbits>
 	friend bool operator!=(const quire<nnbits>& lhs, const quire<nnbits>& rhs);
 	template<size_t nnbitss>
-	friend bool operator< (const quire<nnbits>>& lhs, const quire<nnbits>& rhs);
+	friend bool operator< (const quire<nnbits>& lhs, const quire<nnbits>& rhs);
 	template<size_t nnbits>
-	friend bool operator> (const quire<nnbits>>& lhs, const quire<nnbits>& rhs);
+	friend bool operator> (const quire<nnbits>& lhs, const quire<nnbits>& rhs);
 	template<size_t nnbits>
-	friend bool operator<=(const quire<nnbits>>& lhs, const quire<nnbits>& rhs);
+	friend bool operator<=(const quire<nnbits>& lhs, const quire<nnbits>& rhs);
 	template<size_t nnbits>
-	friend bool operator>=(const quire<nnbits>& lhs, const quire<nnbits>>& rhs);
+	friend bool operator>=(const quire<nnbits>& lhs, const quire<nnbits>& rhs);
 };
