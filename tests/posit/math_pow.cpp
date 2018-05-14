@@ -13,9 +13,9 @@
 // minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
-#include "../../math/pow.hpp"
+#include "../../posit/math_pow.hpp"
 #include "../tests/test_helpers.hpp"
-#include "../tests/posit_test_helpers.hpp"
+#include "../tests/posit_math_helpers.hpp"
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
