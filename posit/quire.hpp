@@ -385,7 +385,7 @@ private:
 				bool _a = _lower[i];
 				bool _b = fraction[f];
 				_lower[i] = _a ^ _b ^ carry;
-				carry = (_a & _b) | carry & (_a ^ _b);
+				carry = (_a & _b) | (carry & (_a ^ _b));
 			}
 			// propagate any carries to the end of the lower accumulator
 			while (carry && i < half_range) {
@@ -420,7 +420,7 @@ private:
 				bool _a = _upper[i];
 				bool _b = fraction[f];
 				_upper[i] = _a ^ _b ^ carry;
-				carry = (_a & _b) | carry & (_a ^ _b);
+				carry = (_a & _b) | (carry & (_a ^ _b));
 			}
 			while (carry && i < int(upper_range)) {
 				bool _a = _upper[i];
@@ -449,14 +449,14 @@ private:
 				bool _a = _lower[i];
 				bool _b = fraction[f];
 				_lower[i] = _a ^ _b ^ carry;
-				carry = (_a & _b) | carry & (_a ^ _b);
+				carry = (_a & _b) | (carry & (_a ^ _b));
 			}
 			// next add the bits in the upper accumulator
 			for (i = 0; i <= v.scale() && f <= int(fbits); i++, f++) {
 				bool _a = _upper[i];
 				bool _b = fraction[f];
 				_upper[i] = _a ^ _b ^ carry;
-				carry = (_a & _b) | carry & (_a ^ _b);
+				carry = (_a & _b) | (carry & (_a ^ _b));
 			}
 			// propagate any carries to the end of the upper accumulator
 			while (carry && i < int(upper_range)) {

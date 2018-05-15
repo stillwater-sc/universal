@@ -739,7 +739,7 @@ public:
 		bitblock<tgt_fbits> _fr;
 		bitblock<fbits> _src = _fraction.get();
 		int tgt, src;
-		for (tgt = int(tgt_fbits) - 1, src = int(fbits) - 1; tgt >= 0, src >= 0; tgt--, src--) _fr[tgt] = _src[src];
+		for (tgt = int(tgt_fbits) - 1, src = int(fbits) - 1; tgt >= 0 && src >= 0; tgt--, src--) _fr[tgt] = _src[src];
 		v.set(_sign, get_scale(), _fr, isZero(), isNaR());
 	}
 	// collect the posit components into a bitset
