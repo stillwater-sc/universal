@@ -140,7 +140,7 @@ namespace sw {
 			for (int i = lsb; i < nbits; i++) {
 				bool _a = number[i];
 				number[i] = _a ^ carry;
-				carry = (_a & false) | carry & (_a ^ false);
+				carry = (_a & false) | (carry & (_a ^ false));
 			}
 			return carry;
 		}
@@ -168,7 +168,7 @@ namespace sw {
 				bool _a = a[i];
 				bool _b = b[i];
 				sum[i] = _a ^ _b ^ carry;
-				carry = (_a & _b) | carry & (_a ^ _b);
+				carry = (_a & _b) | (carry & (_a ^ _b));
 			}
 			sum.set(nbits, carry);
 			return carry;
@@ -206,7 +206,7 @@ namespace sw {
 				bool _a = a[i];
 				bool _b = b[i];
 				sum[i] = _a ^ _b ^ carry;
-				carry = (_a & _b) | carry & (_a ^ _b);
+				carry = (_a & _b) | (carry & (_a ^ _b));
 			}
 
 			return carry;
@@ -345,7 +345,7 @@ namespace sw {
 				bool _a = addend[i];
 				bool _b = accumulator[i];
 				accumulator[i] = _a ^ _b ^ carry;
-				carry = (_a & _b) | carry & (_a ^ _b);
+				carry = (_a & _b) | (carry & (_a ^ _b));
 			}
 			return carry;
 		}
