@@ -60,7 +60,7 @@ namespace sw {
 		// cotangent an angle of x radians
 		template<size_t nbits, size_t es>
 		posit<nbits,es> cot(posit<nbits,es> x) {
-			return posit<nbits,es>(std::tan(m_pi_2-double(x)));
+			return posit<nbits,es>(std::tan(sw::unum::m_pi_2-double(x)));
 		}
 
 		// secant of an angle of x radians
