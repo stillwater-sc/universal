@@ -38,6 +38,12 @@ namespace sw {
 		posit<nbits,es> atan(posit<nbits,es> x) {
 			return posit<nbits,es>(std::atan(double(x)));
 		}
+		
+		// Arc tangent with two parameters
+		template<size_t nbits, size_t es>
+		posit<nbits,es> atan2(posit<nbits,es> y, posit<nbits,es> x) {
+			return posit<nbits,es>(std::atan2(double(y),double(x)));
+		}
 
 		// cosecant of an angle of x radians
 		template<size_t nbits, size_t es>
@@ -51,6 +57,23 @@ namespace sw {
 			return posit<nbits,es>(std::asin(double(x)));
 		}
 
+		// cotangent an angle of x radians
+		template<size_t nbits, size_t es>
+		posit<nbits,es> cot(posit<nbits,es> x) {
+			return posit<nbits,es>(std::tan(m_pi_2-double(x)));
+		}
+
+		// secant of an angle of x radians
+		template<size_t nbits, size_t es>
+		posit<nbits,es> sec(posit<nbits,es> x) {
+			return posit<nbits,es>(1.0/std::cos(double(x)));
+		}
+
+		// cosecant of an angle of x radians
+		template<size_t nbits, size_t es>
+		posit<nbits,es> csc(posit<nbits,es> x) {
+			return posit<nbits,es>(1.0/std::sin(double(x)));
+		}
 
 	}  // namespace unum
 

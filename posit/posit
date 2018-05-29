@@ -6,24 +6,6 @@
 #ifndef _POSIT_
 #define _POSIT_
 
-// enable/disable the ability to use literals in binary logic and arithmetic operators
-#define POSIT_ENABLE_LITERALS 1
-#include "posit.hpp"
-#include "posit_manipulators.hpp"
-#include "posit_functions.hpp"
-#include "quire.hpp"
-
-// math functions
-#include "math_truncate.hpp"
-#include "math_complex.hpp"
-#include "math_sqrt.hpp"
-#include "math_pow.hpp"
-#include "math_logarithm.hpp"
-#include "math_exponents.hpp"
-#include "math_trigonometric.hpp"
-#include "math_hyperbolic.hpp"
-#include "math_error_gamma.hpp"
-
 // best practice for C++11
 // mathematical constants in our namespace
 namespace sw {
@@ -43,5 +25,26 @@ namespace sw {
 	constexpr double m_ln10     = 2.30258509299404568402;
   } // namespace unum
 } // namespace sw
+
+// enable/disable the ability to use literals in binary logic and arithmetic operators
+#define POSIT_ENABLE_LITERALS 1
+#include "posit.hpp"
+#include "posit_manipulators.hpp"
+#include "posit_functions.hpp"
+#include "quire.hpp"
+
+// math functions
+#include "math_truncate.hpp"
+#include "math_complex.hpp"
+#include "math_sqrt.hpp"
+#include "math_pow.hpp"
+#include "math_logarithm.hpp"
+#include "math_exponents.hpp"
+#include "math_trigonometric.hpp"
+#include "math_hyperbolic.hpp"
+#include "math_error_gamma.hpp"
+#include "math_minmax.hpp"
+#include "math_hypot.hpp"
+#include "math_frac.hpp"
 
 #endif
