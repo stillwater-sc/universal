@@ -12,6 +12,8 @@
 #include <limits>
 
 // mathematical function definitions and implementations
+#include "../posit/math_truncate.hpp"
+#include "../posit/math_complex.hpp"
 #include "../posit/math_sqrt.hpp"
 #include "../posit/math_pow.hpp"
 #include "../posit/math_logarithm.hpp"
@@ -19,7 +21,9 @@
 #include "../posit/math_trigonometric.hpp"
 #include "../posit/math_hyperbolic.hpp"
 #include "../posit/math_error_gamma.hpp"
-#include "../posit/math_complex.hpp"
+#include "../posit/math_minmax.hpp"
+#include "../posit/math_hypot.hpp"
+#include "../posit/math_frac.hpp"
 
 namespace sw {
 	namespace unum {
