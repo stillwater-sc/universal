@@ -16,6 +16,12 @@ namespace sw {
 		posit<nbits,es> pow(posit<nbits,es> x, posit<nbits, es> y) {
 			return posit<nbits,es>(std::pow(double(x), double(y)));
 		}
+		
+		template<size_t nbits, size_t es>
+		posit<nbits,es> pow(posit<nbits,es> x, int y) {
+			return posit<nbits,es>(std::pow(double(x), double(y)));
+		}
+
 
 	}  // namespace unum
 
