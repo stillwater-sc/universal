@@ -724,6 +724,9 @@ public:
 	explicit operator long long() const { return to_long_long(); }
 	explicit operator long() const { return to_long(); }
 	explicit operator int() const { return to_int(); }
+	explicit operator unsigned long long() const { return to_long_long(); }
+	explicit operator unsigned long() const { return to_long(); }
+	explicit operator unsigned int() const { return to_int(); }
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	value<fbits> convert_to_scientific_notation() const {
