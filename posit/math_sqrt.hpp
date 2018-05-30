@@ -32,7 +32,7 @@ namespace sw {
 	namespace unum {
 
 		// straight Babylonian
-		double babylonian(double v) {
+		inline double babylonian(double v) {
 			double x_n = 0.5 * v; // initial guess
 			const double eps = 1.0e-7;   // 
 			do {
@@ -43,7 +43,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		posit<nbits, es> BabylonianMethod(const posit<nbits, es>& v) {
+		inline posit<nbits, es> BabylonianMethod(const posit<nbits, es>& v) {
 			const double eps = 1.0e-5;
 			posit<nbits, es> half(0.5);
 			posit<nbits, es> x_next;
@@ -90,7 +90,7 @@ namespace sw {
 		*/
 
 		// reference for fast direct sqrt method
-		float my_test_sqrt(float a) {
+		inline float my_test_sqrt(float a) {
 			if (_trace_sqrt) std::cout << "----------------------- TEST SQRT -----------------------" << std::endl;
 
 			bool s;
@@ -142,7 +142,7 @@ namespace sw {
 
 		// fast sqrt at a given posit configuration.
 		template<size_t nbits, size_t es, size_t fbits> 
-		value<fbits> fast_sqrt(value<fbits>& v) {
+		inline value<fbits> fast_sqrt(value<fbits>& v) {
 			if (_trace_sqrt) std::cout << "---------------------------  SQRT -----------------------" << std::endl;
 //			static_assert(nbits >= 16, "fast_sqrt requires posit configurations nbits >= 16");
 			posit<nbits, es> fr = v.fraction_value()*0.5;
@@ -180,7 +180,7 @@ namespace sw {
 
 		// sqrt for arbitrary posit
 		template<size_t nbits, size_t es>
-		posit<nbits, es> sqrt(const posit<nbits, es>& a) {
+		inline posit<nbits, es> sqrt(const posit<nbits, es>& a) {
 			posit<nbits, es> p;
 			if (a.isNegative() || a.isNaR()) {
 				p.setToNaR();
@@ -200,7 +200,7 @@ namespace sw {
 
 		// reciprocal sqrt
 		template<size_t nbits, size_t es>
-		posit<nbits, es> rsqrt(const posit<nbits,es>& a) {
+		inline posit<nbits, es> rsqrt(const posit<nbits,es>& a) {
 			posit<nbits,es> v = sqrt(a);
 			return v.reciprocate();
 		}

@@ -33,7 +33,7 @@ namespace sw {
 		//  001 001      0.5 0.5   ref : 0.70710678118654757274
 		//	010 010      1   1     ref : 1
 		//	011 010      2   1     ref : 1.4142135623730951455
-		posit<3, 0> sqrt(const posit<3, 0>& a) {
+		inline posit<3, 0> sqrt(const posit<3, 0>& a) {
 			posit<3, 0> p;
 			if (a.isNegative() || a.isNaR()) {
 				p.setToNaR();
@@ -51,7 +51,7 @@ namespace sw {
 		//  001 001      0.25 0.5   ref : 0.5
 		//	010 010      1   1      ref : 1
 		//	011 010      4   1      ref : 1
-		posit<3, 1> sqrt(const posit<3, 1>& a) {
+		inline posit<3, 1> sqrt(const posit<3, 1>& a) {
 			posit<3, 1> p;
 			if (a.isNegative() || a.isNaR()) {
 				p.setToNaR();
@@ -73,7 +73,7 @@ namespace sw {
 		//	0101 0100      1.5  1        ref : 1.2247448713915889407
 		//	0110 0101      2    1.5      ref : 1.4142135623730951455
 		//	0111 0110      4    2        ref : 2
-		posit<4, 0> sqrt(const posit<4, 0>& a) {
+		inline posit<4, 0> sqrt(const posit<4, 0>& a) {
 			posit<4, 0> p;
 			if (a.isNegative() || a.isNaR()) {
 				p.setToNaR();
@@ -103,7 +103,7 @@ namespace sw {
 		//	01101 01011      3     1.75    ref : 1.7320508075688771932
 		//	01110 01100      4     2       ref : 2
 		//	01111 01101      8     3       ref : 2.8284271247461902909
-		posit<5, 0> sqrt(const posit<5, 0>& a) {
+		inline posit<5, 0> sqrt(const posit<5, 0>& a) {
 			posit<5, 0> p;
 			if (a.isNegative() || a.isNaR()) {
 				p.setToNaR();
