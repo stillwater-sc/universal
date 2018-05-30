@@ -1095,6 +1095,23 @@ private:
 
 };
 
+////////////////// convenience/shim functions
+
+template<size_t nbits, size_t es>
+inline bool isnan(const posit<nbits, es>& p) {
+	return p.isNaR();
+}
+
+template<size_t nbits, size_t es>
+inline bool isfinite(const posit<nbits, es>& p) {
+	return !p.isNaR();
+}
+
+template<size_t nbits, size_t es>
+inline bool isinf(const posit<nbits, es>& p) {
+	return p.isNaR();
+}
+
 ////////////////// POSIT operators
 
 // stream operators
