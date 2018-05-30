@@ -26,5 +26,6 @@
 #include "math_minmax.hpp"
 #include "math_hypot.hpp"
 #include "math_frac.hpp"
+#include "math_next.hpp"
 
 #endif
