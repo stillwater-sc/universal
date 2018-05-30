@@ -37,7 +37,7 @@ catch (...) {
 	return EXIT_FAILURE;
 }
 
-
+#ifdef TEACHING_MOMENT
 // just because you can, doesn't mean you should
 void DoNotDoStuffLikeThis() {
 	using namespace std;
@@ -95,3 +95,4 @@ void DoNotDoStuffLikeThis() {
 		cout << "FAIL 5 " << p << endl; nrOfFailedTestCases++;
 	}
 }
+#endif

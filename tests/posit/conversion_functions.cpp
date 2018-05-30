@@ -186,7 +186,7 @@ bool increment_unsigned(std::bitset<nbits>& number, int nrBits = nbits - 1) {
 	for (int i = lsb; i < nbits; i++) {
 		bool _a = number[i];
 		number[i] = _a ^ carry;
-		carry = (_a & false) | carry & (_a ^ false);
+		carry = (_a & false) | (carry & (_a ^ false));
 	}
 	return carry;
 }
