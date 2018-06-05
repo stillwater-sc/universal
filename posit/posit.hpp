@@ -130,6 +130,7 @@ public:
 		*this = set(raw_bits);
 	}
 	// initializers for native types
+	posit(const size_t initial_value)             { *this = initial_value; }
 	posit(const signed char initial_value)        { *this = initial_value; }
 	posit(const short initial_value)              { *this = initial_value; }
 	posit(const int initial_value)                { *this = initial_value; }
@@ -139,6 +140,18 @@ public:
 	posit(const double initial_value)             { *this = initial_value; }
 	posit(const long double initial_value)        { *this = initial_value; }
 	// assignment operators for native types
+	posit& operator=(const size_t rhs) {
+		value<64> v(rhs);
+		if (v.isZero()) {
+			setToZero();
+			return *this;
+		}
+		else {
+			convert(v);
+		}
+		convert(v);
+		return *this;
+	}
 	posit& operator=(const signed char rhs) {
 		value<8> v(rhs);
 		if (v.isZero()) {
