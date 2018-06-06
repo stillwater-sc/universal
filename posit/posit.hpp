@@ -133,10 +133,12 @@ public:
 	posit(const signed char initial_value)        { *this = initial_value; }
 	posit(const short initial_value)              { *this = initial_value; }
 	posit(const int initial_value)                { *this = initial_value; }
+	posit(const long initial_value)               { *this = initial_value; }
 	posit(const long long initial_value)          { *this = initial_value; }
 	posit(const char initial_value)               { *this = initial_value; }
-	//posit(const unsigned short initial_value)     { *this = initial_value; }
+	posit(const unsigned short initial_value)     { *this = initial_value; }
 	posit(const unsigned int initial_value)       { *this = initial_value; }
+	posit(const unsigned long initial_value)      { *this = initial_value; }
 	posit(const unsigned long long initial_value) { *this = initial_value; }
 	posit(const float initial_value)              { *this = initial_value; }
 	posit(const double initial_value)             { *this = initial_value; }
@@ -175,6 +177,21 @@ public:
 		return *this;
 	}
 	posit& operator=(const int rhs) {
+		value<31> v(rhs);
+		if (v.isZero()) {
+			setToZero();
+			return *this;
+		}
+		else if (v.isNegative()) {
+			convert(v);
+			take_2s_complement();
+		}
+		else {
+			convert(v);
+		}
+		return *this;
+	}
+	posit& operator=(const long rhs) {
 		value<31> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -249,6 +266,21 @@ public:
 		}
 		return *this;
 	}
+	posit& operator=(const unsigned long rhs) {
+		value<32> v(rhs);
+		if (v.isZero()) {
+			setToZero();
+			return *this;
+		}
+		else if (v.isNegative()) {
+			convert(v);
+			take_2s_complement();
+		}
+		else {
+			convert(v);
+		}
+		return *this;
+	}
 	posit& operator=(const unsigned long long rhs) {
 		value<64> v(rhs);
 		if (v.isZero()) {
@@ -270,6 +302,47 @@ public:
 	posit& operator=(long double rhs) {
        		return float_assign(rhs);
 	}
+	
+	// compiler environment idiosynchracies regarding type aliasing
+#if defined(__clang__)
+	/* Clang/LLVM. ---------------------------------------------- */
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+	/* Intel ICC/ICPC. ------------------------------------------ */
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+	/* GNU GCC/G++. --------------------------------------------- */
+	posit(const size_t initial_value) { *this = initial_value; }
+	posit& operator=(const size_t rhs) {
+		value<64> v(rhs);
+		if (v.isZero()) {
+			setToZero();
+			return *this;
+		}
+		else {
+			convert(v);
+		}
+		convert(v);
+		return *this;
+	}
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+	/* Hewlett-Packard C/aC++. ---------------------------------- */
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+	/* IBM XL C/C++. -------------------------------------------- */
+
+#elif defined(_MSC_VER)
+	/* Microsoft Visual Studio. --------------------------------- */
+
+#elif defined(__PGI)
+	/* Portland Group PGCC/PGCPP. ------------------------------- */
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+	/* Oracle Solaris Studio. ----------------------------------- */
+
+#endif
+	
 	// assignment for value type
 	template<size_t vbits>
 	posit& operator=(const value<vbits>& rhs) {
@@ -1368,6 +1441,60 @@ private:
 	template<size_t nnbits, size_t ees>
 	friend bool operator>=(long double lhs, const posit<nnbits, ees>& rhs);
 
+	// compiler environment idiosynchracies regarding type aliasing
+#if defined(__clang__)
+	/* Clang/LLVM. ---------------------------------------------- */
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+	/* Intel ICC/ICPC. ------------------------------------------ */
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+	/* GNU GCC/G++. --------------------------------------------- */
+	// posit - size_t
+	template<size_t nnbits, size_t ees>
+	friend bool operator==(const posit<nnbits, ees>& lhs, size_t rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator!=(const posit<nnbits, ees>& lhs, size_t rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator< (const posit<nnbits, ees>& lhs, size_t rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator> (const posit<nnbits, ees>& lhs, size_t rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator<=(const posit<nnbits, ees>& lhs, size_t rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator>=(const posit<nnbits, ees>& lhs, size_t rhs);
+
+	// size_t - posit
+	template<size_t nnbits, size_t ees>
+	friend bool operator==(size_t lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator!=(size_t lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator< (size_t lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator> (size_t lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator<=(size_t lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator>=(size_t lhs, const posit<nnbits, ees>& rhs);
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+	/* Hewlett-Packard C/aC++. ---------------------------------- */
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+	/* IBM XL C/C++. -------------------------------------------- */
+
+#elif defined(_MSC_VER)
+	/* Microsoft Visual Studio. --------------------------------- */
+
+#elif defined(__PGI)
+	/* Portland Group PGCC/PGCPP. ------------------------------- */
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+	/* Oracle Solaris Studio. ----------------------------------- */
+
+#endif
+
 #endif // POSIT_ENABLE_LITERALS
 
 };
@@ -1681,6 +1808,84 @@ template<size_t nbits, size_t es>
 inline bool operator>=(long double lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
+
+// compiler environment idiosynchracies regarding type aliasing
+#if defined(__clang__)
+/* Clang/LLVM. ---------------------------------------------- */
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+/* Intel ICC/ICPC. ------------------------------------------ */
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+/* GNU GCC/G++. --------------------------------------------- */
+// posit - size_t
+template<size_t nbits, size_t es>
+inline bool operator==(const posit<nbits, es>& lhs, size_t rhs) {
+	return lhs == posit<nbits, es>(rhs);
+}
+template<size_t nbits, size_t es>
+inline bool operator!=(const posit<nbits, es>& lhs, size_t rhs) {
+	return !operator==(lhs, posit<nbits, es>(rhs));
+}
+template<size_t nbits, size_t es>
+inline bool operator< (const posit<nbits, es>& lhs, size_t rhs) {
+	return lessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+}
+template<size_t nbits, size_t es>
+inline bool operator> (const posit<nbits, es>& lhs, size_t rhs) {
+	return operator< (posit<nbits, es>(rhs), lhs);
+}
+template<size_t nbits, size_t es>
+inline bool operator<=(const posit<nbits, es>& lhs, size_t rhs) {
+	return operator< (lhs, posit<nbits, es>(rhs)) || operator==(lhs, posit<nbits, es>(rhs));
+}
+template<size_t nbits, size_t es>
+inline bool operator>=(const posit<nbits, es>& lhs, size_t rhs) {
+	return !operator<(lhs, posit<nbits, es>(rhs));
+}
+
+// size_t - posit
+template<size_t nbits, size_t es>
+inline bool operator==(size_t lhs, const posit<nbits, es>& rhs) {
+	return posit<nbits, es>(lhs) == rhs;
+}
+template<size_t nbits, size_t es>
+inline bool operator!=(size_t lhs, const posit<nbits, es>& rhs) {
+	return !operator==(posit<nbits, es>(lhs), rhs);
+}
+template<size_t nbits, size_t es>
+inline bool operator< (size_t lhs, const posit<nbits, es>& rhs) {
+	return lessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+}
+template<size_t nbits, size_t es>
+inline bool operator> (size_t lhs, const posit<nbits, es>& rhs) {
+	return operator< (posit<nbits, es>(lhs), rhs);
+}
+template<size_t nbits, size_t es>
+inline bool operator<=(size_t lhs, const posit<nbits, es>& rhs) {
+	return operator< (posit<nbits, es>(lhs)), rhs || operator==(posit<nbits, es>(lhs), rhs);
+}
+template<size_t nbits, size_t es>
+inline bool operator>=(size_t lhs, const posit<nbits, es>& rhs) {
+	return !operator<(posit<nbits, es>(lhs), rhs);
+}
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+/* Hewlett-Packard C/aC++. ---------------------------------- */
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+/* IBM XL C/C++. -------------------------------------------- */
+
+#elif defined(_MSC_VER)
+/* Microsoft Visual Studio. --------------------------------- */
+
+#elif defined(__PGI)
+/* Portland Group PGCC/PGCPP. ------------------------------- */
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+/* Oracle Solaris Studio. ----------------------------------- */
+
+#endif
 
 // BINARY ADDITION
 template<size_t nbits, size_t es>
