@@ -288,7 +288,21 @@ public:
 	// compiler environment idiosynchracies regarding type aliasing
 #if defined(__clang__)
 	/* Clang/LLVM. ---------------------------------------------- */
+	posit(const size_t initial_value) { *this = initial_value; }
+	posit& operator=(const size_t rhs) {
+		value<64> v(rhs);
+		if (v.isZero()) {
+			setToZero();
+			return *this;
+		}
+		else {
+			convert(v);
+		}
+		convert(v);
+		return *this;
+	}
 
+#elif defined(__HP_cc) || defined(__HP_aCC)
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
 	/* Intel ICC/ICPC. ------------------------------------------ */
 
@@ -1426,6 +1440,33 @@ private:
 	// compiler environment idiosynchracies regarding type aliasing
 #if defined(__clang__)
 	/* Clang/LLVM. ---------------------------------------------- */
+	// posit - size_t
+	template<size_t nnbits, size_t ees>
+	friend bool operator==(const posit<nnbits, ees>& lhs, size_t rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator!=(const posit<nnbits, ees>& lhs, size_t rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator< (const posit<nnbits, ees>& lhs, size_t rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator> (const posit<nnbits, ees>& lhs, size_t rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator<=(const posit<nnbits, ees>& lhs, size_t rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator>=(const posit<nnbits, ees>& lhs, size_t rhs);
+
+	// size_t - posit
+	template<size_t nnbits, size_t ees>
+	friend bool operator==(size_t lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator!=(size_t lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator< (size_t lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator> (size_t lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator<=(size_t lhs, const posit<nnbits, ees>& rhs);
+	template<size_t nnbits, size_t ees>
+	friend bool operator>=(size_t lhs, const posit<nnbits, ees>& rhs);
 
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
 	/* Intel ICC/ICPC. ------------------------------------------ */
@@ -1794,6 +1835,58 @@ inline bool operator>=(long double lhs, const posit<nbits, es>& rhs) {
 // compiler environment idiosynchracies regarding type aliasing
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
+
+// posit - size_t
+template<size_t nbits, size_t es>
+inline bool operator==(const posit<nbits, es>& lhs, size_t rhs) {
+	return lhs == posit<nbits, es>(rhs);
+}
+template<size_t nbits, size_t es>
+inline bool operator!=(const posit<nbits, es>& lhs, size_t rhs) {
+	return !operator==(lhs, posit<nbits, es>(rhs));
+}
+template<size_t nbits, size_t es>
+inline bool operator< (const posit<nbits, es>& lhs, size_t rhs) {
+	return lessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
+}
+template<size_t nbits, size_t es>
+inline bool operator> (const posit<nbits, es>& lhs, size_t rhs) {
+	return operator< (posit<nbits, es>(rhs), lhs);
+}
+template<size_t nbits, size_t es>
+inline bool operator<=(const posit<nbits, es>& lhs, size_t rhs) {
+	return operator< (lhs, posit<nbits, es>(rhs)) || operator==(lhs, posit<nbits, es>(rhs));
+}
+template<size_t nbits, size_t es>
+inline bool operator>=(const posit<nbits, es>& lhs, size_t rhs) {
+	return !operator<(lhs, posit<nbits, es>(rhs));
+}
+
+// size_t - posit
+template<size_t nbits, size_t es>
+inline bool operator==(size_t lhs, const posit<nbits, es>& rhs) {
+	return posit<nbits, es>(lhs) == rhs;
+}
+template<size_t nbits, size_t es>
+inline bool operator!=(size_t lhs, const posit<nbits, es>& rhs) {
+	return !operator==(posit<nbits, es>(lhs), rhs);
+}
+template<size_t nbits, size_t es>
+inline bool operator< (size_t lhs, const posit<nbits, es>& rhs) {
+	return lessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+}
+template<size_t nbits, size_t es>
+inline bool operator> (size_t lhs, const posit<nbits, es>& rhs) {
+	return operator< (posit<nbits, es>(lhs), rhs);
+}
+template<size_t nbits, size_t es>
+inline bool operator<=(size_t lhs, const posit<nbits, es>& rhs) {
+	return operator< (posit<nbits, es>(lhs)), rhs || operator==(posit<nbits, es>(lhs), rhs);
+}
+template<size_t nbits, size_t es>
+inline bool operator>=(size_t lhs, const posit<nbits, es>& rhs) {
+	return !operator<(posit<nbits, es>(lhs), rhs);
+}
 
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
 /* Intel ICC/ICPC. ------------------------------------------ */
