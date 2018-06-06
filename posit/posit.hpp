@@ -1423,8 +1423,10 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 
 // TODO: this needs an implementation
 template<size_t nbits, size_t es>
-inline std::istream& operator>> (std::istream& istr, const posit<nbits, es>& p) {
-	istr >> p._Bits;
+inline std::istream& operator>> (std::istream& istr, posit<nbits, es>& p) {
+	double tmp;
+	istr >> tmp;
+	p = tmp;
 	return istr;
 }
 
