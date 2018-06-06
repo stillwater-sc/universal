@@ -130,18 +130,18 @@ public:
 		*this = set(raw_bits);
 	}
 	// initializers for native types
-	//posit(const size_t initial_value)             { *this = initial_value; }
 	posit(const signed char initial_value)        { *this = initial_value; }
 	posit(const short initial_value)              { *this = initial_value; }
 	posit(const int initial_value)                { *this = initial_value; }
 	posit(const long long initial_value)          { *this = initial_value; }
 	posit(const char initial_value)               { *this = initial_value; }
-	posit(const unsigned short initial_value)     { *this = initial_value; }
+	//posit(const unsigned short initial_value)     { *this = initial_value; }
 	posit(const unsigned int initial_value)       { *this = initial_value; }
 	posit(const unsigned long long initial_value) { *this = initial_value; }
 	posit(const float initial_value)              { *this = initial_value; }
 	posit(const double initial_value)             { *this = initial_value; }
 	posit(const long double initial_value)        { *this = initial_value; }
+
 	// assignment operators for native types
 	//posit& operator=(const size_t rhs) {
 	posit& operator=(const signed char rhs) {
