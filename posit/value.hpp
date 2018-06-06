@@ -25,7 +25,6 @@ namespace sw {
 			value() : _sign(false), _scale(0), _nrOfBits(fbits), _zero(true), _inf(false), _nan(false) {}
 			value(bool sign, int scale, const bitblock<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
 
-			// value(const size_t initial_value)            { *this = initial_value; }
 			value(const signed char initial_value)        { *this = initial_value; }
 			value(const short initial_value)              { *this = initial_value; }
 			value(const int initial_value)                { *this = initial_value; }
@@ -227,6 +226,40 @@ namespace sw {
 				}
 				return *this;
 			}
+
+        // compiler environment idiosynchracies regarding type aliasing
+#if defined(__clang__)
+        /* Clang/LLVM. ---------------------------------------------- */
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+        /* Intel ICC/ICPC. ------------------------------------------ */
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+        /* GNU GCC/G++. --------------------------------------------- */
+	value(const size_t initial_value)                { *this = initial_value; }
+	value<fbits>& operator=(const size_t rhs) {
+		*this = (unsigned long long)(rhs);
+		return *this;
+	}
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+        /* Hewlett-Packard C/aC++. ---------------------------------- */
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+        /* IBM XL C/C++. -------------------------------------------- */
+
+#elif defined(_MSC_VER)
+        /* Microsoft Visual Studio. --------------------------------- */
+
+#elif defined(__PGI)
+        /* Portland Group PGCC/PGCPP. ------------------------------- */
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+        /* Oracle Solaris Studio. ----------------------------------- */
+
+#endif
+
+
 
 			// operators
 			value<fbits> operator-() const {				

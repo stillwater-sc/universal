@@ -133,19 +133,16 @@ public:
 	posit(const signed char initial_value)        { *this = initial_value; }
 	posit(const short initial_value)              { *this = initial_value; }
 	posit(const int initial_value)                { *this = initial_value; }
-	posit(const long initial_value)               { *this = initial_value; }
 	posit(const long long initial_value)          { *this = initial_value; }
 	posit(const char initial_value)               { *this = initial_value; }
 	posit(const unsigned short initial_value)     { *this = initial_value; }
 	posit(const unsigned int initial_value)       { *this = initial_value; }
-	posit(const unsigned long initial_value)      { *this = initial_value; }
 	posit(const unsigned long long initial_value) { *this = initial_value; }
 	posit(const float initial_value)              { *this = initial_value; }
 	posit(const double initial_value)             { *this = initial_value; }
 	posit(const long double initial_value)        { *this = initial_value; }
 
 	// assignment operators for native types
-	//posit& operator=(const size_t rhs) {
 	posit& operator=(const signed char rhs) {
 		value<7> v(rhs);
 		if (v.isZero()) {
@@ -252,21 +249,6 @@ public:
 		return *this;
 	}
 	posit& operator=(const unsigned int rhs) {
-		value<32> v(rhs);
-		if (v.isZero()) {
-			setToZero();
-			return *this;
-		}
-		else if (v.isNegative()) {
-			convert(v);
-			take_2s_complement();
-		}
-		else {
-			convert(v);
-		}
-		return *this;
-	}
-	posit& operator=(const unsigned long rhs) {
 		value<32> v(rhs);
 		if (v.isZero()) {
 			setToZero();
