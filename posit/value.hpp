@@ -28,6 +28,7 @@ namespace sw {
 			value(const signed char initial_value)        { *this = initial_value; }
 			value(const short initial_value)              { *this = initial_value; }
 			value(const int initial_value)                { *this = initial_value; }
+			value(const long initial_value)               { *this = initial_value; }
 			value(const long long initial_value)          { *this = initial_value; }
 			value(const char initial_value)               { *this = initial_value; }
 			value(const unsigned short initial_value)     { *this = initial_value; }
