@@ -130,30 +130,22 @@ public:
 		*this = set(raw_bits);
 	}
 	// initializers for native types
-	posit(const size_t initial_value)             { *this = initial_value; }
+	//posit(const size_t initial_value)             { *this = initial_value; }
 	posit(const signed char initial_value)        { *this = initial_value; }
 	posit(const short initial_value)              { *this = initial_value; }
 	posit(const int initial_value)                { *this = initial_value; }
 	posit(const long long initial_value)          { *this = initial_value; }
+	posit(const char initial_value)               { *this = initial_value; }
+	posit(const unsigned short initial_value)     { *this = initial_value; }
+	posit(const unsigned int initial_value)       { *this = initial_value; }
 	posit(const unsigned long long initial_value) { *this = initial_value; }
 	posit(const float initial_value)              { *this = initial_value; }
 	posit(const double initial_value)             { *this = initial_value; }
 	posit(const long double initial_value)        { *this = initial_value; }
 	// assignment operators for native types
-	posit& operator=(const size_t rhs) {
-		value<64> v(rhs);
-		if (v.isZero()) {
-			setToZero();
-			return *this;
-		}
-		else {
-			convert(v);
-		}
-		convert(v);
-		return *this;
-	}
+	//posit& operator=(const size_t rhs) {
 	posit& operator=(const signed char rhs) {
-		value<8> v(rhs);
+		value<7> v(rhs);
 		if (v.isZero()) {
 			setToZero();
 			return *this;
@@ -168,7 +160,7 @@ public:
 		return *this;
 	}
 	posit& operator=(const short rhs) {
-		value<16> v(rhs);
+		value<15> v(rhs);
 		if (v.isZero()) {
 			setToZero();
 			return *this;
@@ -183,7 +175,7 @@ public:
 		return *this;
 	}
 	posit& operator=(const int rhs) {
-		value<32> v(rhs);
+		value<31> v(rhs);
 		if (v.isZero()) {
 			setToZero();
 			return *this;
@@ -198,7 +190,52 @@ public:
 		return *this;
 	}
 	posit& operator=(const long long rhs) {
-		value<64> v(rhs);
+		value<63> v(rhs);
+		if (v.isZero()) {
+			setToZero();
+			return *this;
+		}
+		else if (v.isNegative()) {
+			convert(v);
+			take_2s_complement();
+		}
+		else {
+			convert(v);
+		}
+		return *this;
+	}
+	posit& operator=(const char rhs) {
+		value<8> v(rhs);
+		if (v.isZero()) {
+			setToZero();
+			return *this;
+		}
+		else if (v.isNegative()) {
+			convert(v);
+			take_2s_complement();
+		}
+		else {
+			convert(v);
+		}
+		return *this;
+	}
+	posit& operator=(const unsigned short rhs) {
+		value<16> v(rhs);
+		if (v.isZero()) {
+			setToZero();
+			return *this;
+		}
+		else if (v.isNegative()) {
+			convert(v);
+			take_2s_complement();
+		}
+		else {
+			convert(v);
+		}
+		return *this;
+	}
+	posit& operator=(const unsigned int rhs) {
+		value<32> v(rhs);
 		if (v.isZero()) {
 			setToZero();
 			return *this;

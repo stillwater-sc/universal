@@ -24,36 +24,19 @@ namespace sw {
 			static constexpr size_t fhbits = fbits + 1;    // number of fraction bits including the hidden bit
 			value() : _sign(false), _scale(0), _nrOfBits(fbits), _zero(true), _inf(false), _nan(false) {}
 			value(bool sign, int scale, const bitblock<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
-			value(const size_t initial_value) {
-				*this = initial_value;
-			}
-			value(const signed char initial_value) {
-				*this = initial_value;
-			}
-			value(const short initial_value) {
-				*this = initial_value;
-			}
-			value(const int initial_value) {
-				*this = initial_value;
-			}
-			value(const long long initial_value) {
-				*this = initial_value;
-			}
-			value(const unsigned long long initial_value) {
-				*this = initial_value;
-			}
-			value(const float initial_value) {
-				*this = initial_value;
-			}
-			value(const double initial_value) {
-				*this = initial_value;
-			}
-			value(const long double initial_value) {
-				*this = initial_value;
-			}
-			value(const value& rhs) {
-				*this = rhs;
-			}
+			// value(const size_t initial_value)            { *this = initial_value; }
+			value(const signed char initial_value)        { *this = initial_value; }
+			value(const short initial_value)              { *this = initial_value; }
+			value(const int initial_value)                { *this = initial_value; }
+			value(const long long initial_value)          { *this = initial_value; }
+			value(const char initial_value)               { *this = initial_value; }
+			value(const unsigned short initial_value)     { *this = initial_value; }
+			value(const unsigned int initial_value)       { *this = initial_value; }
+			value(const unsigned long long initial_value) { *this = initial_value; }
+			value(const float initial_value)              { *this = initial_value; }
+			value(const double initial_value)             { *this = initial_value; }
+			value(const long double initial_value)        { *this = initial_value; }
+			value(const value& rhs) { *this = rhs; }
 			value& operator=(const value& rhs) {
 				_sign	  = rhs._sign;
 				_scale	  = rhs._scale;
@@ -62,10 +45,6 @@ namespace sw {
 				_inf      = rhs._inf;
 				_zero     = rhs._zero;
 				_nan      = rhs._nan;
-				return *this;
-			}
-			value<fbits>& operator=(const size_t rhs) {
-				*this = (long long)(rhs);
 				return *this;
 			}
 			value<fbits>& operator=(const signed char rhs) {
@@ -107,6 +86,18 @@ namespace sw {
 						if (_trace_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 					}
 				}
+				return *this;
+			}
+			value<fbits>& operator=(const char rhs) {
+				*this = (unsigned long long)(rhs);
+				return *this;
+			}
+			value<fbits>& operator=(const unsigned short rhs) {
+				*this = (unsigned long long)(rhs);
+				return *this;
+			}
+			value<fbits>& operator=(const unsigned int rhs) {
+				*this = (unsigned long long)(rhs);
 				return *this;
 			}
 			value<fbits>& operator=(const unsigned long long rhs) {
