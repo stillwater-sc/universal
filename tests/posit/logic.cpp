@@ -282,11 +282,23 @@ try {
 	else {
 		ReportTestResult(0, "posit<16,1> == 0", "== int literal");
 	}
+	if (!(p == 0.0f)) {
+		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> == 0.0", "== float literal");
+	}
+	else {
+		ReportTestResult(0, "posit<16,1> == 0.0", "== float literal");
+	}
 	if (!(p == 0.0)) { 
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> == 0.0", "== double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> == 0.0", "== double literal");
+	}
+	if (!(p == 0.0l)) {
+		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> == 0.0", "== long double literal");
+	}
+	else {
+		ReportTestResult(0, "posit<16,1> == 0.0", "== long double literal");
 	}
 	
 	cout << "Logic: operator!=()" << endl;
@@ -315,10 +327,22 @@ try {
 		ReportTestResult(0, "posit<16,1> != 0", "!= int literal");
 	}
 	if (p != 0.0f) {
+		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> != 0.0", "!= float literal");
+	}
+	else {
+		ReportTestResult(0, "posit<16,1> != 0.0", "!= float literal");
+	}
+	if (p != 0.0) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> != 0.0", "!= double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> != 0.0", "!= double literal");
+	}
+	if (p != 0.0l) {
+		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> != 0.0", "!= long double literal");
+	}
+	else {
+		ReportTestResult(0, "posit<16,1> != 0.0", "!= long double literal");
 	}
 
 	std::cout << "Logic: operator<()" << endl;
@@ -346,11 +370,23 @@ try {
 	else {
 		ReportTestResult(0, "posit<16,1> < 0", "< int literal");
 	}
+	if (p < 0.0f) {
+		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> < 0.0", "< float literal");
+	}
+	else {
+		ReportTestResult(0, "posit<16,1> < 0.0", "< float literal");
+	}
 	if (p < 0.0) { 
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> < 0.0", "< double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> < 0.0", "< double literal");
+	}
+	if (p < 0.0l) {
+		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> < 0.0", "< long double literal");
+	}
+	else {
+		ReportTestResult(0, "posit<16,1> < 0.0", "< long double literal");
 	}
 
 	std::cout << "Logic: operator<=()" << endl;
@@ -379,10 +415,22 @@ try {
 		ReportTestResult(0, "posit<16,1> <= 0", "<= int literal");
 	}
 	if (!(p <= 0.0f)) {
+		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> <= 0.0", "<= float literal");
+	}
+	else {
+		ReportTestResult(0, "posit<16,1> <= 0.0", "<= float literal");
+	}
+	if (!(p <= 0.0)) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> <= 0.0", "<= double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> <= 0.0", "<= double literal");
+	}
+	if (!(p <= 0.0l)) {
+		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> <= 0.0", "<= long double literal");
+	}
+	else {
+		ReportTestResult(0, "posit<16,1> <= 0.0", "<= long double literal");
 	}
 
 	std::cout << "Logic: operator>()" << endl;
@@ -411,10 +459,22 @@ try {
 		ReportTestResult(0, "posit<16,1> > 0", "> int literal");
 	}
 	if (p > 0.0f) {
+		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> > 0.0", "> float literal");
+	}
+	else {
+		ReportTestResult(0, "posit<16,1> > 0.0", "> float literal");
+	}
+	if (p > 0.0) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> > 0.0", "> double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> > 0.0", "> double literal");
+	}
+	if (p > 0.0l) {
+		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> > 0.0", "> long double literal");
+	}
+	else {
+		ReportTestResult(0, "posit<16,1> > 0.0", "> long double literal");
 	}
 
 	std::cout << "Logic: operator>=()" << endl;
@@ -442,11 +502,23 @@ try {
 	else {
 		ReportTestResult(0, "posit<16,1> >= 0", ">= int literal");
 	}
+	if (!(p >= 0.0f)) {
+		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> >= 0.0", ">= float literal");
+	}
+	else {
+		ReportTestResult(0, "posit<16,1> >= 0.0", ">= float literal");
+	}
 	if (!(p >= 0.0)) { 
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> >= 0.0", ">= double literal");
 	}
 	else {
 		ReportTestResult(0, "posit<16,1> >= 0.0", ">= double literal");
+	}
+	if (!(p >= 0.0l)) {
+		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> >= 0.0", ">= long double literal");
+	}
+	else {
+		ReportTestResult(0, "posit<16,1> >= 0.0", ">= long double literal");
 	}
 
 #if STRESS_TESTING
