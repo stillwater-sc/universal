@@ -235,10 +235,11 @@ namespace sw {
         // compiler environment idiosynchracies regarding type aliasing
 #if defined(__clang__)
         /* Clang/LLVM. ---------------------------------------------- */
-			value<fbits>& operator=(const unsigned long rhs) {
-				*this = (unsigned long long)(rhs);
-				return *this;
-			}
+	value(const size_t initial_value)                { *this = initial_value; }
+	value<fbits>& operator=(const size_t rhs) {
+		*this = (unsigned long long)(rhs);
+		return *this;
+	}
 
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
         /* Intel ICC/ICPC. ------------------------------------------ */
