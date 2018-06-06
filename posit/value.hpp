@@ -266,7 +266,11 @@ namespace sw {
 
 #elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
         /* Oracle Solaris Studio. ----------------------------------- */
-
+	value(const size_t initial_value)                { *this = initial_value; }
+	value<fbits>& operator=(const size_t rhs) {
+		*this = (unsigned long long)(rhs);
+		return *this;
+	}
 #endif
 
 
