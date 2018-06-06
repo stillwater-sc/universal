@@ -279,10 +279,10 @@ public:
 	posit& operator=(const float rhs) {
 		return float_assign(rhs);
 	}
-	posit& operator=(double rhs) {
+	posit& operator=(const double rhs) {
 		return float_assign(rhs);
 	}
-	posit& operator=(long double rhs) {
+	posit& operator=(const long double rhs) {
        		return float_assign(rhs);
 	}
 	
