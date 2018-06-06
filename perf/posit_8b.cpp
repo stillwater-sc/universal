@@ -25,7 +25,6 @@ try {
 	GeneratePerformanceReport<nbits, es>(perfReport);
 	ReportPerformance<nbits, es>(cout, "posit<8,0>", perfReport);
 
-	std::pow(1.0, 1.0);
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
