@@ -24,28 +24,31 @@ namespace sw {
 			static constexpr size_t fhbits = fbits + 1;    // number of fraction bits including the hidden bit
 			value() : _sign(false), _scale(0), _nrOfBits(fbits), _zero(true), _inf(false), _nan(false) {}
 			value(bool sign, int scale, const bitblock<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
-			value(signed char initial_value) {
+			value(const size_t initial_value) {
 				*this = initial_value;
 			}
-			value(short initial_value) {
+			value(const signed char initial_value) {
 				*this = initial_value;
 			}
-			value(int initial_value) {
+			value(const short initial_value) {
 				*this = initial_value;
 			}
-			value(long long initial_value) {
+			value(const int initial_value) {
 				*this = initial_value;
 			}
-			value(unsigned long long initial_value) {
+			value(const long long initial_value) {
 				*this = initial_value;
 			}
-			value(float initial_value) {
+			value(const unsigned long long initial_value) {
 				*this = initial_value;
 			}
-			value(double initial_value) {
+			value(const float initial_value) {
 				*this = initial_value;
 			}
-			value(long double initial_value) {
+			value(const double initial_value) {
+				*this = initial_value;
+			}
+			value(const long double initial_value) {
 				*this = initial_value;
 			}
 			value(const value& rhs) {
@@ -61,19 +64,23 @@ namespace sw {
 				_nan      = rhs._nan;
 				return *this;
 			}
-			value<fbits>& operator=(signed char rhs) {
+			value<fbits>& operator=(const size_t rhs) {
 				*this = (long long)(rhs);
 				return *this;
 			}
-			value<fbits>& operator=(short rhs) {
+			value<fbits>& operator=(const signed char rhs) {
 				*this = (long long)(rhs);
 				return *this;
 			}
-			value<fbits>& operator=(int rhs) {
+			value<fbits>& operator=(const short rhs) {
 				*this = (long long)(rhs);
 				return *this;
 			}
-			value<fbits>& operator=(long long rhs) {
+			value<fbits>& operator=(const int rhs) {
+				*this = (long long)(rhs);
+				return *this;
+			}
+			value<fbits>& operator=(const long long rhs) {
 				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 				if (rhs == 0) {
 					setToZero();
@@ -102,7 +109,7 @@ namespace sw {
 				}
 				return *this;
 			}
-			value<fbits>& operator=(unsigned long long rhs) {
+			value<fbits>& operator=(const unsigned long long rhs) {
 				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 				if (rhs == 0) {
 					setToZero();
@@ -117,7 +124,7 @@ namespace sw {
 				if (_trace_conversion) std::cout << "uint64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 				return *this;
 			}
-			value<fbits>& operator=(float rhs) {
+			value<fbits>& operator=(const float rhs) {
 				reset();
 				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
@@ -150,7 +157,7 @@ namespace sw {
 				}
 				return *this;
 			}
-			value<fbits>& operator=(double rhs) {
+			value<fbits>& operator=(const double rhs) {
 				reset();
 				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
@@ -183,7 +190,7 @@ namespace sw {
 				}
 				return *this;
 			}
-			value<fbits>& operator=(long double rhs) {
+			value<fbits>& operator=(const long double rhs) {
 				reset();
 				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
