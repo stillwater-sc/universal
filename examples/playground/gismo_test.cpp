@@ -36,7 +36,11 @@ int main(int argc, char** argv)
             posit_32_2 p;
             lnstream >> std::ws >> p;
         }
-        
+
+	{ // Test conversion from long to posit
+
+	    posit_32_2 p = 1/posit_32_2(10000000000);
+	}        
         return 0;
     }
     catch (char const* msg) {
