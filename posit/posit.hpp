@@ -130,16 +130,29 @@ public:
 		*this = set(raw_bits);
 	}
 	// initializers for native types
-	posit(signed char initial_value)        { *this = initial_value; }
-	posit(short initial_value)              { *this = initial_value; }
-	posit(int initial_value)                { *this = initial_value; }
-	posit(long long initial_value)          { *this = initial_value; }
-	posit(unsigned long long initial_value) { *this = initial_value; }
-	posit(float initial_value)              { *this = initial_value; }
-	posit(double initial_value)             { *this = initial_value; }
-	posit(long double initial_value)        { *this = initial_value; }
+	posit(const size_t initial_value)             { *this = initial_value; }
+	posit(const signed char initial_value)        { *this = initial_value; }
+	posit(const short initial_value)              { *this = initial_value; }
+	posit(const int initial_value)                { *this = initial_value; }
+	posit(const long long initial_value)          { *this = initial_value; }
+	posit(const unsigned long long initial_value) { *this = initial_value; }
+	posit(const float initial_value)              { *this = initial_value; }
+	posit(const double initial_value)             { *this = initial_value; }
+	posit(const long double initial_value)        { *this = initial_value; }
 	// assignment operators for native types
-	posit& operator=(signed char rhs) {
+	posit& operator=(const size_t rhs) {
+		value<64> v(rhs);
+		if (v.isZero()) {
+			setToZero();
+			return *this;
+		}
+		else {
+			convert(v);
+		}
+		convert(v);
+		return *this;
+	}
+	posit& operator=(const signed char rhs) {
 		value<8> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -154,7 +167,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(short rhs) {
+	posit& operator=(const short rhs) {
 		value<16> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -169,7 +182,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(int rhs) {
+	posit& operator=(const int rhs) {
 		value<32> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -184,7 +197,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(long long rhs) {
+	posit& operator=(const long long rhs) {
 		value<64> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -199,7 +212,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(unsigned long long rhs) {
+	posit& operator=(const unsigned long long rhs) {
 		value<64> v(rhs);
 		if (v.isZero()) {
 			setToZero();
@@ -211,7 +224,7 @@ public:
 		convert(v);
 		return *this;
 	}
-	posit& operator=(float rhs) {
+	posit& operator=(const float rhs) {
 		return float_assign(rhs);
 	}
 	posit& operator=(double rhs) {
