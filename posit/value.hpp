@@ -72,6 +72,14 @@ namespace sw {
 				*this = (long long)(rhs);
 				return *this;
 			}
+			value<fbits>& operator=(const long rhs) {
+				*this = (long long)(rhs);
+				return *this;
+			}
+			value<fbits>& operator=(const unsigned long rhs) {
+				*this = (unsigned long long)(rhs);
+				return *this;
+			}
 			value<fbits>& operator=(const long long rhs) {
 				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 				if (rhs == 0) {
