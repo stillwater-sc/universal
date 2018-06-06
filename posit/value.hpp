@@ -53,15 +53,7 @@ namespace sw {
 				*this = (long long)(rhs);
 				return *this;
 			}
-			value<fbits>& operator=(const char rhs) {
-				*this = (unsigned long long)(rhs);
-				return *this;
-			}
 			value<fbits>& operator=(const short rhs) {
-				*this = (long long)(rhs);
-				return *this;
-			}
-			value<fbits>& operator=(const unsigned short rhs) {
 				*this = (long long)(rhs);
 				return *this;
 			}
@@ -69,16 +61,8 @@ namespace sw {
 				*this = (long long)(rhs);
 				return *this;
 			}
-			value<fbits>& operator=(const unsigned int rhs) {
-				*this = (long long)(rhs);
-				return *this;
-			}
 			value<fbits>& operator=(const long rhs) {
 				*this = (long long)(rhs);
-				return *this;
-			}
-			value<fbits>& operator=(const unsigned long rhs) {
-				*this = (unsigned long long)(rhs);
 				return *this;
 			}
 			value<fbits>& operator=(const long long rhs) {
@@ -108,6 +92,18 @@ namespace sw {
 						if (_trace_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 					}
 				}
+				return *this;
+			}
+			value<fbits>& operator=(const char rhs) {
+				*this = (unsigned long long)(rhs);
+				return *this;
+			}
+			value<fbits>& operator=(const unsigned short rhs) {
+				*this = (long long)(rhs);
+				return *this;
+			}
+			value<fbits>& operator=(const unsigned int rhs) {
+				*this = (long long)(rhs);
 				return *this;
 			}
 			value<fbits>& operator=(const unsigned long long rhs) {
@@ -239,6 +235,10 @@ namespace sw {
         // compiler environment idiosynchracies regarding type aliasing
 #if defined(__clang__)
         /* Clang/LLVM. ---------------------------------------------- */
+			value<fbits>& operator=(const unsigned long rhs) {
+				*this = (unsigned long long)(rhs);
+				return *this;
+			}
 
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
         /* Intel ICC/ICPC. ------------------------------------------ */
