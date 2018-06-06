@@ -24,6 +24,7 @@ namespace sw {
 			static constexpr size_t fhbits = fbits + 1;    // number of fraction bits including the hidden bit
 			value() : _sign(false), _scale(0), _nrOfBits(fbits), _zero(true), _inf(false), _nan(false) {}
 			value(bool sign, int scale, const bitblock<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
+
 			// value(const size_t initial_value)            { *this = initial_value; }
 			value(const signed char initial_value)        { *this = initial_value; }
 			value(const short initial_value)              { *this = initial_value; }
@@ -36,7 +37,8 @@ namespace sw {
 			value(const float initial_value)              { *this = initial_value; }
 			value(const double initial_value)             { *this = initial_value; }
 			value(const long double initial_value)        { *this = initial_value; }
-			value(const value& rhs) { *this = rhs; }
+			value(const value& rhs)                       { *this = rhs; }
+
 			value& operator=(const value& rhs) {
 				_sign	  = rhs._sign;
 				_scale	  = rhs._scale;
@@ -51,11 +53,23 @@ namespace sw {
 				*this = (long long)(rhs);
 				return *this;
 			}
+			value<fbits>& operator=(const char rhs) {
+				*this = (unsigned long long)(rhs);
+				return *this;
+			}
 			value<fbits>& operator=(const short rhs) {
 				*this = (long long)(rhs);
 				return *this;
 			}
+			value<fbits>& operator=(const unsigned short rhs) {
+				*this = (long long)(rhs);
+				return *this;
+			}
 			value<fbits>& operator=(const int rhs) {
+				*this = (long long)(rhs);
+				return *this;
+			}
+			value<fbits>& operator=(const unsigned int rhs) {
 				*this = (long long)(rhs);
 				return *this;
 			}
@@ -86,18 +100,6 @@ namespace sw {
 						if (_trace_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 					}
 				}
-				return *this;
-			}
-			value<fbits>& operator=(const char rhs) {
-				*this = (unsigned long long)(rhs);
-				return *this;
-			}
-			value<fbits>& operator=(const unsigned short rhs) {
-				*this = (unsigned long long)(rhs);
-				return *this;
-			}
-			value<fbits>& operator=(const unsigned int rhs) {
-				*this = (unsigned long long)(rhs);
 				return *this;
 			}
 			value<fbits>& operator=(const unsigned long long rhs) {
