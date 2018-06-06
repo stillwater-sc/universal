@@ -33,7 +33,13 @@ namespace sw {
 			value(const short initial_value) {
 				*this = initial_value;
 			}
+			value(const unsigned short initial_value) {
+				*this = initial_value;
+			}
 			value(const int initial_value) {
+				*this = initial_value;
+			}
+			value(const unsigned int initial_value) {
 				*this = initial_value;
 			}
 			value(const long long initial_value) {
@@ -76,7 +82,15 @@ namespace sw {
 				*this = (long long)(rhs);
 				return *this;
 			}
+			value<fbits>& operator=(const unsigned short rhs) {
+				*this = (long long)(rhs);
+				return *this;
+			}
 			value<fbits>& operator=(const int rhs) {
+				*this = (long long)(rhs);
+				return *this;
+			}
+			value<fbits>& operator=(const unsigned int rhs) {
 				*this = (long long)(rhs);
 				return *this;
 			}
