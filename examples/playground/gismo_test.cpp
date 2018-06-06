@@ -21,7 +21,7 @@ int main(int argc, char** argv)
         typedef posit<32,2> posit_32_2;
 
         { // Test conversion from std::size_t to posits
-            std::size_t size = 32;
+            size_t size = 32;
             posit_32_2 p (size);
         }
 
