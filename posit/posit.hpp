@@ -133,6 +133,7 @@ public:
 	posit(const signed char initial_value)        { *this = initial_value; }
 	posit(const short initial_value)              { *this = initial_value; }
 	posit(const int initial_value)                { *this = initial_value; }
+	posit(const long initial_value)               { *this = initial_value; }
 	posit(const long long initial_value)          { *this = initial_value; }
 	posit(const char initial_value)               { *this = initial_value; }
 	posit(const unsigned short initial_value)     { *this = initial_value; }
