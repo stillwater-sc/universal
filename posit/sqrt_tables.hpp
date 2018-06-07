@@ -115,6 +115,6 @@ namespace sw {
 			return p;
 		}
 
-	};  // namespace unum
+	}  // namespace unum
 
-};  // namespace sw
+}  // namespace sw

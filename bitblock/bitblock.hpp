@@ -513,7 +513,7 @@ namespace sw {
 		bitblock<tgt_size> round(const bitblock<src_size>& src, size_t n)
 		{
 			return round_t<tgt_size, src_size>::eval(src, n);
-		};
+		}
 
 
 		////////////////////////////// HELPER functions
