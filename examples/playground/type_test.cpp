@@ -20,10 +20,11 @@ template<typename T>
 void test(const std::string& message)
 {
     std::cout << message << std::endl;
-
+#ifdef NOW
     // Constructor and assignment
     T v = 8;
     posit_32_2 p(v);
+
     p = v;
 
     // Baisc operators
@@ -42,6 +43,7 @@ void test(const std::string& message)
 
     // pretty print
     std::cout << color_print(p) << std::endl;
+#endif
 }
 
 int main(int argc, char** argv)
