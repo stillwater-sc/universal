@@ -20,7 +20,7 @@ template<typename T>
 void test(const std::string& message)
 {
     std::cout << message << std::endl;
-#ifdef NOW
+
     // Constructor and assignment
     T v = 8;
     posit_32_2 p(v);
@@ -43,7 +43,6 @@ void test(const std::string& message)
 
     // pretty print
     std::cout << color_print(p) << std::endl;
-#endif
 }
 
 int main(int argc, char** argv)
@@ -53,13 +52,13 @@ int main(int argc, char** argv)
 
         test<size_t>("size_t");
 
-        test<char>("char");
+        test<signed char>("signed char");
         test<short>("short");
         test<int>("int");
         test<long>("long");
         test<long long>("long long");
 
-        test<unsigned char>("unsigned char");
+        test<char>("char");
         test<unsigned short>("unsigned short");
         test<unsigned int>("unsigned int");
         test<unsigned long>("unsigned long");
