@@ -196,3 +196,4 @@ inline bool operator>=(const regime<nbits, es>& lhs, const regime<nbits, es>& rh
 }  // namespace unum
 
 }  // namespace sw
+

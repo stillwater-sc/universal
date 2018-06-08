@@ -115,3 +115,4 @@ constexpr bool _trace_quire_add = true;
 }  // namespace unum
 
 }  // namespace sw
+

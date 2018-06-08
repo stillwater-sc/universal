@@ -16,3 +16,4 @@ int ReportTestResult(int nrOfFailedTests, std::string description, std::string t
 	}
 	return nrOfFailedTests;
 }
+
