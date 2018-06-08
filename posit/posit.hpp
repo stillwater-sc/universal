@@ -867,7 +867,7 @@ break;
 				if (*it == 'p') break;
 				bitStr.append(1, *it);
 			}
-			long long raw;
+			unsigned long long raw;
 			std::istringstream ss(bitStr);
 			ss >> std::hex >> raw;
 			//std::cout << "[" << nbitsStr << "] [" << esStr << "] [" << bitStr << "] = " << raw << std::endl;
