@@ -17,11 +17,11 @@ int main(int argc, char** argv)
 		// Test reading posit from std::istringstream
         posit<32,2> p;
 
-        std::string string = "3.1415926535897932384626433832795028841971693993751058209749445923078164062";
+        std::string str = "3.1415926535897932384626433832795028841971693993751058209749445923078164062";
         std::istringstream lnstream;
         lnstream.unsetf(std::ios_base::skipws);
         lnstream.clear();
-        lnstream.str(string);
+        lnstream.str(str);
                         
         lnstream >> std::ws >> p;
 		cout << p << endl;
