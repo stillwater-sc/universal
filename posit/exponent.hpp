@@ -182,3 +182,4 @@ inline bool operator>=(const exponent<nbits, es>& lhs, const exponent<nbits, es>
 }  // namespace unum
 
 }  // namespace sw
+

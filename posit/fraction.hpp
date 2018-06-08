@@ -279,3 +279,4 @@ inline bool operator>=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs)
 }  // namespace unum
 
 }  // namespace sw
+
