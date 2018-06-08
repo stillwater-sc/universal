@@ -293,7 +293,11 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	if (bPrintIntermediateSteps) cout << "y        = " << y << endl;
 	bool r = (y >= 1.0f);
 	if (bPrintIntermediateSteps) cout << "r        = " << (r ? "1" : "0") << endl;
+#if (defined(__SUNPRO_C) || defined(__SUNPRO_CC)) && ((__SUNPRO_C < 0x5150) || (__SUNPRO_CC < 0x5150))
+	float e = std::floor(log2f(y));
+#else
 	float e = std::floor(std::log2(y));
+#endif
 	if (bPrintIntermediateSteps) cout << "e        = " << e << endl;
 	float f = y / float(pow(2.0, scale)) - 1.0f;
 	if (bPrintIntermediateSteps) cout << "f        = " << f << endl;
