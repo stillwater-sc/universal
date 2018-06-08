@@ -9,6 +9,7 @@
 #include <cassert>
 #include <iostream>
 #include <limits>
+#include <regex>
 
 // to yield a fast regression environment for productive development
 // we want to leverage the IEEE floating point hardware available on x86 and ARM.
@@ -757,7 +758,7 @@ public:
 					m++;
 				}
 				else {
-					break;
+break;
 				}
 			}
 			k = m - 1;
@@ -819,13 +820,13 @@ public:
 	void decode(const bitblock<nbits>& raw_bits) {
 		_raw_bits = raw_bits;	// store the raw bits for reference
 		// check special cases
-		_sign     = raw_bits.test(nbits - 1);
+		_sign = raw_bits.test(nbits - 1);
 		// check for special cases
 		bool special = false;
 		if (_sign) {
 			std::bitset<nbits> tmp(raw_bits);
 			tmp.reset(nbits - 1);
-			if (tmp.none()) {			
+			if (tmp.none()) {
 				setToNaR();  // special case = NaR (Not a Real)
 			}
 			else {
@@ -845,8 +846,44 @@ public:
 		// we are storing both the raw bit representation and the decoded form
 		// so no need to transform back via 2's complement of regime/exponent/fraction
 	}
-	
 
+	bool parse(std::string& txt) {
+		bool bSuccess = false;
+		// check if the txt is of the native posit form: nbits.esXhexvalue
+		std::regex posit_regex("[\\d]+\\.[012345][xX][\\w]+[p]*");
+		if (std::regex_match(txt, posit_regex)) {
+			// found a posit representation
+			std::string nbitsStr, esStr, bitStr;
+			auto it = txt.begin();
+			for (; it != txt.end(); it++) {
+				if (*it == '.') break;
+				nbitsStr.append(1, *it);
+			}
+			for (it++; it != txt.end(); it++) {
+				if (*it == 'x' || *it == 'X') break;
+				esStr.append(1, *it);
+			}
+			for (it++; it != txt.end(); it++) {
+				if (*it == 'p') break;
+				bitStr.append(1, *it);
+			}
+			long long raw;
+			std::istringstream ss(bitStr);
+			ss >> std::hex >> raw;
+			//std::cout << "[" << nbitsStr << "] [" << esStr << "] [" << bitStr << "] = " << raw << std::endl;
+			set_raw_bits(raw);
+			bSuccess = true;
+		}
+		else {
+			// assume it is a float/double/long double representation
+			std::istringstream ss(txt);
+			double d;
+			ss >> d;
+			*this = d;
+			bSuccess = true;
+		}
+		return bSuccess;
+	}
 	
 	// Maybe remove explicit, MTL compiles, but we have lots of double computation then
 	explicit operator long double() const { return to_long_double(); }
@@ -1598,9 +1635,11 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 // TODO: this needs an implementation
 template<size_t nbits, size_t es>
 inline std::istream& operator>> (std::istream& istr, posit<nbits, es>& p) {
-	double tmp;
-	istr >> tmp;
-	p = tmp;
+	std::string txt;
+	istr >> txt;
+	if (!p.parse(txt)) {
+		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+	}
 	return istr;
 }
 
