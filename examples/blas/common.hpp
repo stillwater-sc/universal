@@ -8,6 +8,11 @@
 #include <iostream>
 #include <iomanip>
 
+#if __GNUC__ < 5
+#define hexfloat     scientific
+#define defaultfloat scientific
+#endif
+
 #include <chrono>
 
 #include <vector>
