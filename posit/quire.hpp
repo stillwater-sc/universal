@@ -8,6 +8,10 @@
 namespace sw {
 	namespace unum {
 
+// Forward definitions
+template<size_t nbits, size_t es, size_t capacity> class quire;
+template<size_t nbits, size_t es, size_t capacity> quire<nbits, es, capacity> abs(const quire<nbits, es, capacity>& v);
+
 /* 
  quire: template class representing a quire associated with a posit configuration
  nbits and es are the same as the posit configuration, 
