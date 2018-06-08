@@ -1,7 +1,7 @@
 #
 # multi-stage build
 # docker build --target builder -t stillwater/universal:builder will just build a builder container
-# docker build --target release -t stillwater/universal:release will just build a builder container
+# docker build --target release -t stillwater/universal:release will just build a release container
 
 # BUILDER stage
 FROM gcc:7 as builder
@@ -23,7 +23,7 @@ RUN cmake .. && make
 
 # actual command 'make test' is run as part of the test pipeline
 
-# add a command that when you run the container without a command that it produces something meaningful
+# add a command that when you run the container without a command, it produces something meaningful
 CMD ["echo", "Universal Numbers Library Version 1.0.0"]
 
 
