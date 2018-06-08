@@ -1,4 +1,4 @@
-﻿//  quires.cpp : test suite for quires
+//  quires.cpp : test suite for quires
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //

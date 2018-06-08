@@ -1,4 +1,4 @@
-﻿//  quire_accumulations.cpp : computational path experiments with quires
+//  quire_accumulations.cpp : computational path experiments with quires
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //

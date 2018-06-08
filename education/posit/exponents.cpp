@@ -1,4 +1,4 @@
-﻿//  exponents.cpp : examples of working with posit exponents
+//  exponents.cpp : examples of working with posit exponents
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //

@@ -1,4 +1,4 @@
-﻿// conversion_functions.cpp : api experiments for conversion algorithms
+// conversion_functions.cpp : api experiments for conversion algorithms
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //

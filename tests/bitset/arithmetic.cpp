@@ -1,4 +1,4 @@
-﻿//  arithmetic.cpp : test suite for bitset-based arithmetic operators
+//  arithmetic.cpp : test suite for bitset-based arithmetic operators
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //

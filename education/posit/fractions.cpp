@@ -1,4 +1,4 @@
-﻿//  fractions.cpp : examples of working with posit fractions
+//  fractions.cpp : examples of working with posit fractions
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //

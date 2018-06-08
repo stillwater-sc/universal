@@ -1,4 +1,4 @@
-﻿//  regimes.cpp : examples of working with posit regimes
+//  regimes.cpp : examples of working with posit regimes
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
