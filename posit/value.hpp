@@ -33,6 +33,7 @@ namespace sw {
 			value(const char initial_value)               { *this = initial_value; }
 			value(const unsigned short initial_value)     { *this = initial_value; }
 			value(const unsigned int initial_value)       { *this = initial_value; }
+			value(const unsigned long initial_value)      { *this = initial_value; }
 			value(const unsigned long long initial_value) { *this = initial_value; }
 			value(const float initial_value)              { *this = initial_value; }
 			value(const double initial_value)             { *this = initial_value; }
@@ -103,6 +104,10 @@ namespace sw {
 				return *this;
 			}
 			value<fbits>& operator=(const unsigned int rhs) {
+				*this = (long long)(rhs);
+				return *this;
+			}
+			value<fbits>& operator=(const unsigned long rhs) {
 				*this = (long long)(rhs);
 				return *this;
 			}
@@ -231,49 +236,6 @@ namespace sw {
 				}
 				return *this;
 			}
-
-        // compiler environment idiosynchracies regarding type aliasing
-#if defined(__clang__)
-        /* Clang/LLVM. ---------------------------------------------- */
-	value(const size_t initial_value)                { *this = initial_value; }
-	value<fbits>& operator=(const size_t rhs) {
-		*this = (unsigned long long)(rhs);
-		return *this;
-	}
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-        /* Intel ICC/ICPC. ------------------------------------------ */
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-        /* GNU GCC/G++. --------------------------------------------- */
-	value(const size_t initial_value)                { *this = initial_value; }
-	value<fbits>& operator=(const size_t rhs) {
-		*this = (unsigned long long)(rhs);
-		return *this;
-	}
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-        /* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-        /* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-        /* Microsoft Visual Studio. --------------------------------- */
-
-#elif defined(__PGI)
-        /* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-        /* Oracle Solaris Studio. ----------------------------------- */
-	value(const size_t initial_value)                { *this = initial_value; }
-	value<fbits>& operator=(const size_t rhs) {
-		*this = (unsigned long long)(rhs);
-		return *this;
-	}
-#endif
-
-
 
 			// operators
 			value<fbits> operator-() const {				
