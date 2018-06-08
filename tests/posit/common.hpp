@@ -25,3 +25,9 @@
 #include <iostream>
 #include <iomanip>
 #include <sstream>
+
+#if __GNUC__ < 5
+#define hexfloat     scientific
+#define defaultfloat scientific
+#endif
+

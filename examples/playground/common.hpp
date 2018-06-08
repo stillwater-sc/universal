@@ -21,6 +21,11 @@
 #include <sstream>
 #include <iomanip>
 
+#if __GNUC__ < 5
+#define hexfloat     scientific
+#define defaultfloat scientific
+#endif
+
 // enable the mathematical constants in cmath
 #define _USE_MATH_DEFINES
 #include <cmath>        // for frexp/frexpf
