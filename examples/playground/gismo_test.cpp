@@ -27,14 +27,15 @@ int main(int argc, char** argv)
 
         { // Test reading posit from std::istringstream
 
-            std::string string = "3.141";
+            std::string str = "3.141";
             std::istringstream lnstream;
             lnstream.unsetf(std::ios_base::skipws);
             lnstream.clear();
-            lnstream.str(string);
+            lnstream.str(str);
                         
             posit_32_2 p;
             lnstream >> std::ws >> p;
+			cout << pretty_print(p) << endl;
         }
 
 	{ // Test conversion from long to posit
