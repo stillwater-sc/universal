@@ -1,4 +1,4 @@
-﻿//  values.cpp : tests on values in scientific notation (sign, scale, fraction)
+//  values.cpp : tests on values in scientific notation (sign, scale, fraction)
 //
 // Copyright (C) 2017 Stillwater Supercomputing, Inc.
 //

@@ -1,4 +1,4 @@
-﻿// extract.cpp : extracting IEEE floating point components and relate them to posit components
+// extract.cpp : extracting IEEE floating point components and relate them to posit components
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //

@@ -1,4 +1,4 @@
-﻿//  quires.cpp : test suite for IEEE float quires
+//  quires.cpp : test suite for IEEE float quires
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
