@@ -60,6 +60,7 @@ add_subdirectory("tests/valid")
 
 add_subdirectory("perf")
 add_subdirectory("tools/cmd")
+add_subdirectory("tools/utils")
 add_subdirectory("education/posit")
 add_subdirectory("examples/blas")
 add_subdirectory("examples/dsp")

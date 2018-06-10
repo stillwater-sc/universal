@@ -4,12 +4,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 #include <posit>
-
-using namespace std;
-using namespace sw::unum;
 
 typedef std::numeric_limits< double > dbl;
 const char* msg = "posit< 8, 0> = s1 r1111111 e f qNW v-64\n\
@@ -33,6 +30,9 @@ posit<64, 4> = s1 r11110 e1000 f100011110010000111001100101110101110001001110101
 // receive a float and print its components
 int main(int argc, char** argv)
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	if (argc != 2) {
 		cerr << "Show the sign/scale/regime/exponent/fraction components of a posit." << endl;
 	    cerr << "Usage: pc float_value" << endl;
@@ -80,11 +80,11 @@ try {
 
 	return EXIT_SUCCESS;
 }
-catch (char const* msg) {
-	cerr << msg << endl;
+catch (const char* const msg) {
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
