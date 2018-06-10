@@ -4,16 +4,17 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 #include <value>
 
-using namespace std;
-using namespace sw::unum;
 
 // receive a float and print the components of a IEEE float representations
 int main(int argc, char** argv)
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	// long double attributes
 	constexpr int f_prec = std::numeric_limits<float>::max_digits10;
 	constexpr int d_prec = std::numeric_limits<double>::max_digits10;
@@ -49,11 +50,11 @@ try {
 	cout << "long double: " << setprecision(q_prec) << setw(width) << q << " " << components(vq) << endl;
 	return EXIT_SUCCESS;
 }
-catch (char const* msg) {
-	cerr << msg << endl;
+catch (const char* const msg) {
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

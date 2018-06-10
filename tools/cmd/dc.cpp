@@ -4,16 +4,16 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 #include <value>
-
-using namespace std;
-using namespace sw::unum;
 
 // receive a float and print the components of a double representation
 int main(int argc, char** argv)
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	// double attributes
 	constexpr int max_digits10 = std::numeric_limits<double>::max_digits10;
 	constexpr int fbits = std::numeric_limits<double>::digits - 1;
@@ -31,11 +31,11 @@ try {
 	cout << "double: " << setprecision(max_digits10) << d << " " << components(v) << endl;
 	return EXIT_SUCCESS;
 }
-catch (char const* msg) {
-	cerr << msg << endl;
+catch (const char* const msg) {
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
