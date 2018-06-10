@@ -4,16 +4,17 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include "common.hpp"
 
 #include <value>
 
-using namespace std;
-using namespace sw::unum;
 
 // receive a float and print its components
 int main(int argc, char** argv)
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	// float attributes
 	constexpr int max_digits10 = std::numeric_limits<double>::max_digits10;
 	constexpr int fbits = std::numeric_limits<float>::digits - 1;
@@ -31,11 +32,11 @@ try {
 	cout << "float: " << setprecision(max_digits10) << f << " " << components(v) << endl;
 	return EXIT_SUCCESS;
 }
-catch (char const* msg) {
-	cerr << msg << endl;
+catch (const char* const msg) {
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
