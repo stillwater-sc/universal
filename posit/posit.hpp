@@ -706,7 +706,7 @@ public:
 					m++;
 				}
 				else {
-break;
+					break;
 				}
 			}
 			k = m - 1;
