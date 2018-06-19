@@ -8,6 +8,7 @@
 
 // type definitions for the important types, posit<> and quire<>
 #include "../../posit/posit.hpp"
+#include "../../posit/posit_manipulators.hpp"    // pretty_print
 #include "../../posit/quire.hpp"
 // test support functions
 #include "../tests/quire_test_helpers.hpp"
@@ -34,6 +35,28 @@ try {
 	std::string tag = "Quire Accumulation failed";
 
 #if MANUAL_TESTING
+	{
+		float v = 2.6226e-05f;
+		sw::unum::quire<16, 1, 2> q(v);
+		sw::unum::posit<16, 1> p1, p2, argA, argB;
+
+		p1 = v;
+		p2.convert(q.to_value());
+		argA = -0.016571;
+		argB = 0.000999451;
+		float diff = v - float(p1);
+		std::cout << "diff       = " << setprecision(17) << diff << std::endl;
+
+		std::cout << "quire      = " << q << std::endl;
+		std::cout << "v as posit = " << pretty_print(p1) << std::endl;
+		std::cout << "q as posit = " << p2 << std::endl;
+		q += quire_mul(argA, argB);
+		std::cout << "quire      = " << q << std::endl;
+		p2.convert(q.to_value());
+		std::cout << "q as posit = " << p2 << std::endl;
+	}
+	return EXIT_SUCCESS;
+
 	const size_t nbits = 4;
 	const size_t es = 1;
 	const size_t capacity = 2; // for testing the accumulation capacity of the quire can be small
@@ -122,6 +145,9 @@ try {
 	q += -v;	std::cout << q << std::endl;
 	q += -v;	std::cout << q << std::endl;
 	q += -v;	std::cout << q << " <- should be zero" << std::endl;
+
+
+	std::cout << std::endl;
 
 
 #else
