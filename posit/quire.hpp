@@ -28,6 +28,7 @@ public:
 	static constexpr size_t range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
 	static constexpr size_t half_range = range >> 1;          // position of the fixed point
 	static constexpr size_t radix_point = half_range;
+	// the upper is 1 bit bigger than the lower because maxpos^2 has that scale
 	static constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
 	static constexpr size_t qbits = range + capacity;     // size of the quire minus the sign bit: we are managing the sign explicitly
 	

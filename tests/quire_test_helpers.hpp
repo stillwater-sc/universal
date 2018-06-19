@@ -118,7 +118,7 @@ namespace sw {
 					q = v;
 					std::cout << std::setw(10) << v << q << std::endl;
 					value<q.qbits> r = q.to_value();
-					double in = (double)v;
+					double in  = double(v);
 					double out = (double)r;
 					if (std::abs(in - out) > 0.0000001) {
 						std::cerr << "quire value conversion failed: " << components(v) << " != " << components(r) << std::endl;
