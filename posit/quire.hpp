@@ -34,6 +34,8 @@ public:
 	
 	// Constructors
 	quire() : _sign(false) { _capacity.reset(); _upper.reset(); _lower.reset(); }
+
+#if IMPLICIT_CONVERSION
 	quire(int8_t initial_value) {
 		*this = initial_value;
 	}
@@ -59,6 +61,7 @@ public:
 	quire(const value<fbits>& rhs) {
 		*this = rhs;
 	}
+#endif
 
 	// Assignment operators: the class only supports native type values
 	// assigning a posit requires the convertion to a normalized value, i.e. q = posit<nbits,es>().to_value()
@@ -107,6 +110,7 @@ public:
 		}
 		return *this;
 	}
+#if IMPLICIT_CONVERSION
 	quire& operator=(int8_t rhs) {
 		*this = int64_t(rhs);
 		return *this;
@@ -184,6 +188,7 @@ public:
 		*this = value<bits>(rhs);
 		return *this;
 	}
+#endif
 
 	// Add a normalized value to the quire value. 
 	// All values in (and out) of the quire are normalized (sign, scale, fraction) triplets.
