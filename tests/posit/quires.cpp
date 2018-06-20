@@ -37,10 +37,11 @@ try {
 #if MANUAL_TESTING
 	{
 		float v = 2.6226e-05f;
-		sw::unum::quire<16, 1, 2> q(v);
+		sw::unum::quire<16, 1, 2> q;
 		sw::unum::posit<16, 1> p1, p2, argA, argB;
 
 		p1 = v;
+		q += p1.to_value();
 		p2.convert(q.to_value());
 		argA = -0.016571;
 		argB = 0.000999451;
@@ -71,11 +72,15 @@ try {
 	std::cout << endl;
 	std::cout << "Nothing prohibiting us from creating quires for float and double arithmetic" << std::endl;
 	float f = 1.555555555555e-10f;
-	quire<10, 2, 2> fquire(f);
+	value<23> vf(f);
+	quire<10, 2, 2> fquire;
+	fquire += vf;
 	std::cout << "float:  " << setw(15) << f << " " << fquire << std::endl;
 
 	double d = 1.555555555555e16;
-	quire<10, 2, 2> dquire(d);
+	value<52> vd(d);
+	quire<10, 2, 2> dquire;
+	dquire += vd;
 	std::cout << "double: " << setw(15) << d << " " << dquire << std::endl;
 
 	/* pattern to use posits with a quire
@@ -125,7 +130,7 @@ try {
 	q += -v;	std::cout << q << " <- should be zero" << std::endl;
 
 	std::cout << "Add/Subtract propagating carry/borrows across lower/upper accumulators" << std::endl;
-	q = 0;
+	q.clear();
 	v = 0.5;
 	q += v;		std::cout << q << std::endl;
 	q += v;		std::cout << q << std::endl;

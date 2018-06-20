@@ -38,8 +38,10 @@ int ValidateQuireMagnitudeComparison() {
 	using namespace std;
 	using namespace sw::unum;
 
-	quire<16, 1, 2> q = 0xAAAA;
+	quire<16, 1, 2> q;
 	value<20> v;
+	v = 0xAAAA;
+	q += v;
 	v = 0xAAAB;
 	cout << "quire: " << q << endl;
 	cout << "value: " << v.get_fixed_point() << " " << components(v) << endl;

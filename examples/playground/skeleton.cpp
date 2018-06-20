@@ -40,6 +40,20 @@ try {
 	bool bSuccess = true;
 
 	{
+		posit<5, 1> a, b, sum;
+		a = 0;
+		b.set_raw_bits(1);
+		sum = a + b;
+		cout << "  rounded sum: " << pretty_print(sum) << endl;
+		cout << "unrounded sum: " << components(sw::unum::quire_add(a, b)) << " " << sw::unum::quire_add(a, b) << endl;
+		posit<5, 1> rnd;
+		rnd.convert(sw::unum::quire_add(a, b));
+		cout << "  rounded sum: " << pretty_print(rnd) << endl;
+	}
+
+	return EXIT_SUCCESS;
+
+	{
 		double d = (double)0.79432823472428150206586100479;
 		posit<32, 2> E_pos(d);
 		cout << setprecision(30) << fixed << d << setprecision(6) << endl;
