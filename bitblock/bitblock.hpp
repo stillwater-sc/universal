@@ -37,10 +37,10 @@ namespace sw {
 				int msb = nbits - 1;
 				for (std::string::const_iterator it = string_of_bits.begin(); it != string_of_bits.end(); ++it) {
 					if (*it == '0') {
-						reset(msb--);
+						this->reset(msb--);
 					}
 					else if (*it == '1') {
-						set(msb--);
+						this->set(msb--);
 					}
 					else {
 						return false;
