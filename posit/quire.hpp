@@ -10,7 +10,8 @@ namespace sw {
 
 // Forward definitions
 template<size_t nbits, size_t es, size_t capacity> class quire;
-template<size_t nbits, size_t es, size_t capacity> quire<nbits, es, capacity> abs(const quire<nbits, es, capacity>& v);
+template<size_t nbits, size_t es, size_t capacity> quire<nbits, es, capacity> abs(const quire<nbits, es, capacity>& q);
+//template<size_t nbits, size_t es, size_t capacity> value<(size_t(1) << es)*(4*nbits-8)+capacity> abs(const quire<nbits, es, capacity>& q);
 
 /* 
  quire: template class representing a quire associated with a posit configuration
@@ -190,153 +191,154 @@ quire& operator=(long double rhs) {
 }
 #endif
 
-// Add a normalized value to the quire value. 
-// All values in (and out) of the quire are normalized (sign, scale, fraction) triplets.
-template<size_t fbits>
-quire& operator+=(const value<fbits>& rhs) {
-	if (rhs.isZero()) return *this;
+	// Add a normalized value to the quire value. 
+	// All values in (and out) of the quire are normalized (sign, scale, fraction) triplets.
+	template<size_t fbits>
+	quire& operator+=(const value<fbits>& rhs) {
+		if (rhs.isZero()) return *this;
 
-	if (rhs.scale() > int(half_range)) {
-		throw "RHS value too large for quire";
-	}
-	if (rhs.scale() < -int(half_range)) {
-		throw "RHS value too small for quire";
-	}
-	// sign/magnitude classification
-	// operation      add magnitudes           subtract magnitudes
-	//                                     a < b       a = b      a > b
-	// (+a) + (+b)      +(a + b)
-	// (+a) + (-b)                       -(b - a)    +(a - b)   +(a - b)
-	// (-a) + (+b)                       +(b - a)    +(a - b)   -(a - b)
-	// (-a) + (-b)      -(a + b)
-	if (_sign == rhs.sign()) {
-		add_value(rhs);
-		// _sign stays the same, so nothing new to assign
-	}
-	else {
-		// subtract magnitudes
-		int cmp = CompareMagnitude(rhs);
-		if (cmp < 0) {
-			// TODO: is there a way to NOT have to swap the whole quire?
-			value<qbits> subtractend = this->to_value();
-			*this = rhs;
-			subtract_value(subtractend);
-			_sign = rhs.sign();
+		if (rhs.scale() > int(half_range)) {
+			throw "RHS value too large for quire";
 		}
-		else if (cmp > 0) {
-			subtract_value(rhs);
-			// _sign stays the same
+		if (rhs.scale() < -int(half_range)) {
+			throw "RHS value too small for quire";
+		}
+		// sign/magnitude classification
+		// operation      add magnitudes           subtract magnitudes
+		//                                     a < b       a = b      a > b
+		// (+a) + (+b)      +(a + b)
+		// (+a) + (-b)                       -(b - a)    +(a - b)   +(a - b)
+		// (-a) + (+b)                       +(b - a)    +(a - b)   -(a - b)
+		// (-a) + (-b)      -(a + b)
+		if (_sign == rhs.sign()) {
+			add_value(rhs);
+			// _sign stays the same, so nothing new to assign
 		}
 		else {
-			subtract_value(rhs);
-			_sign = false;
+			// subtract magnitudes
+			int cmp = CompareMagnitude(rhs);
+			if (cmp < 0) {
+				// TODO: is there a way to NOT have to swap the whole quire?
+				value<qbits> subtractend = this->to_value();
+				*this = rhs;
+				subtract_value(subtractend);
+				_sign = rhs.sign();
+			}
+			else if (cmp > 0) {
+				subtract_value(rhs);
+				// _sign stays the same
+			}
+			else {
+				subtract_value(rhs);
+				_sign = false;
+			}
 		}
+		return *this;
 	}
-	return *this;
-}
 
-// Subtract a normalized value from the quire value
-template<size_t fbits>
-quire& operator-=(const value<fbits>& rhs) {
-	return *this += -rhs;
-}
-// bit addressing operator
-bool operator[](int index) const {
-	if (index < int(radix_point)) return _lower[index];
-	if (index < int(radix_point) + int(upper_range)) return _upper[index - int(radix_point)];
-	if (index < int(radix_point) + int(upper_range) + int(capacity)) return _capacity[index - int(radix_point) - int(upper_range)];
-	throw "index out of range";
-}
+	// Subtract a normalized value from the quire value
+	template<size_t fbits>
+	quire& operator-=(const value<fbits>& rhs) {
+		return *this += -rhs;
+	}
+	// bit addressing operator
+	bool operator[](int index) const {
+		if (index < int(radix_point)) return _lower[index];
+		if (index < int(radix_point) + int(upper_range)) return _upper[index - int(radix_point)];
+		if (index < int(radix_point) + int(upper_range) + int(capacity)) return _capacity[index - int(radix_point) - int(upper_range)];
+		throw "index out of range";
+	}
 
 // Modifiers
 
-// state management operators
-// reset the state of a quire to zero
-void reset() {
-	_sign = false;
-	_lower.reset();
-	_upper.reset();
-	_capacity.reset();
-}
-// semantic sugar: clear the state of a quire to zero
-void clear() { reset(); }
-void set_sign(bool v) { _sign = v; }
-bool load_bits(const std::string& string_of_bits) {
-	reset();
-	// format is "+:0000_000000000.000000000"
-	std::string::const_iterator it = string_of_bits.begin();
-	if (*it == '-') {
-		_sign = true;
-	}
-	else if (string_of_bits[0] == '+') {
+	// state management operators
+	// reset the state of a quire to zero
+	void reset() {
 		_sign = false;
+		_lower.reset();
+		_upper.reset();
+		_capacity.reset();
 	}
-	else {
-		return false; // fail
-	}
-	++it;
-	if (*it == ':') {
-		++it;
-	}
-	else {
-		return false; // fail, wrong format
-	}
-	int segment = 0; // capacity segment = 0, upper segment = 1, lower segment = 2
-	int msb_c = capacity - 1;
-	int msb_u = upper_range - 1;
-	int msb_l = half_range - 1;
-	for (; it != string_of_bits.end(); ++it) {
-		if (*it == '_') {
-			if (msb_c != -1) return false; // fail: incorrect format
-			segment = 1;
+	// semantic sugar: clear the state of a quire to zero
+	void clear() { reset(); }
+	void set_sign(bool v) { _sign = v; }
+	bool load_bits(const std::string& string_of_bits) {
+		reset();
+		// format is "+:0000_000000000.000000000"
+		std::string::const_iterator it = string_of_bits.begin();
+		if (*it == '-') {
+			_sign = true;
 		}
-		else if (*it == '.') {
-			if (msb_u != -1) return false; // fail, incorrect format
-			segment = 2;
-		}
-		else if (*it == '1') {
-			switch (segment) {
-			case 0:
-				_capacity.set(msb_c--);
-				break;
-			case 1:
-				_upper.set(msb_u--);
-				break;
-			case 2:
-				if (msb_l < 0) return false; // fail, incorrect format
-				_lower.set(msb_l--);
-				break;
-			default:
-				return false; // fail, incorrect state
-			}
+		else if (string_of_bits[0] == '+') {
+			_sign = false;
 		}
 		else {
-			switch (segment) {
-			case 0:
-				_capacity.reset(msb_c--);
-				break;
-			case 1:
-				_upper.reset(msb_u--);
-				break;
-			case 2:
-				if (msb_l < 0) return false; // fail, incorrect format
-				_lower.reset(msb_l--);
-				break;
-			default:
-				return false; // fail, incorrect state
+			return false; // fail
+		}
+		++it;
+		if (*it == ':') {
+			++it;
+		}
+		else {
+			return false; // fail, wrong format
+		}
+		int segment = 0; // capacity segment = 0, upper segment = 1, lower segment = 2
+		int msb_c = capacity - 1;
+		int msb_u = upper_range - 1;
+		int msb_l = half_range - 1;
+		for (; it != string_of_bits.end(); ++it) {
+			if (*it == '_') {
+				if (msb_c != -1) return false; // fail: incorrect format
+				segment = 1;
+			}
+			else if (*it == '.') {
+				if (msb_u != -1) return false; // fail, incorrect format
+				segment = 2;
+			}
+			else if (*it == '1') {
+				switch (segment) {
+				case 0:
+					_capacity.set(msb_c--);
+					break;
+				case 1:
+					_upper.set(msb_u--);
+					break;
+				case 2:
+					if (msb_l < 0) return false; // fail, incorrect format
+					_lower.set(msb_l--);
+					break;
+				default:
+					return false; // fail, incorrect state
+				}
+			}
+			else {
+				switch (segment) {
+				case 0:
+					_capacity.reset(msb_c--);
+					break;
+				case 1:
+					_upper.reset(msb_u--);
+					break;
+				case 2:
+					if (msb_l < 0) return false; // fail, incorrect format
+					_lower.reset(msb_l--);
+					break;
+				default:
+					return false; // fail, incorrect state
+				}
 			}
 		}
+		return true;
 	}
-	return true;
-}
 
-	// Selectors
+// Selectors
 	
 	// Compare magnitudes between quire and value: returns -1 if q < v, 0 if q == v, and 1 if q > v
 	template<size_t fbits>
 	int CompareMagnitude(const value<fbits>& v) {
 		// inefficient as we are copying a whole quire just to reset the sign bit, but we are leveraging the comparison logic
 		quire<nbits, es, capacity> absq = abs(*this);
+		//value<qbits> absq = abs(*this);
 		value<fbits> absv = abs(v);
 		if (absq < absv) {
 			return -1;
@@ -697,12 +699,21 @@ private:
 };
 
 // Magnitude of a quire
+#if 1
 template<size_t nbits, size_t es, size_t capacity>
 quire<nbits, es, capacity> abs(const quire<nbits, es, capacity>& q) {
 	quire<nbits, es, capacity> magnitude(q);
 	magnitude.set_sign(false);
 	return magnitude;
 }
+#else
+template<size_t nbits, size_t es, size_t capacity>
+value<(size_t(1) << es)*(4 * nbits - 8) + capacity> abs(const quire<nbits, es, capacity>& q) {
+	quire<nbits, es, capacity> magnitude(q);
+	magnitude.set_sign(false);
+	return magnitude;
+}
+#endif
 
 // QUIRE BINARY ARITHMETIC OPERATORS
 template<size_t nbits, size_t es, size_t capacity>
@@ -785,6 +796,11 @@ inline bool operator< (const quire<nbits, es, capacity>& q, const value<fbits>& 
 			for (i = quire<nbits, es, capacity>::radix_point + qscale, f = int(fbits); i >= 0 && f >= 0; --i, --f) {
 				if (!q[i] && fixed[f]) {
 					bSmaller = true;
+					undecided = false;
+					break;
+				}
+				else if (q[i] && !fixed[f]) {
+					bSmaller = false;
 					undecided = false;
 					break;
 				}

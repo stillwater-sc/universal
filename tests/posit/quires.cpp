@@ -95,10 +95,15 @@ taking -2.68435e+08 += quire_mul(-0.00828552, 0.000999451) (which equals -8.2809
 (-,-17,00010101110111010000000000)
 -1: 111111111111111111111111111111_111111111111111111111111111111111111111111111111111111111.11111111111111111110101010111000100000000000000000000000
 */
+template<size_t nbits, size_t es, size_t capacity = 30>
 void Issue45_2() {
-	sw::unum::quire<16, 1, 30> q, q_base;
-	sw::unum::value<2 * (16 - 2 - 1)> unrounded;
-	sw::unum::bitblock<26> fraction;
+	using namespace std;
+	using namespace sw::unum;
+
+	constexpr size_t mbits = 2 * (nbits - 2 - es);
+	sw::unum::quire<nbits, es, capacity> q, q_base;
+	sw::unum::value<mbits> unrounded, q_value;
+	sw::unum::bitblock<mbits> fraction;
 
 	//  quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000100100000100000001100000000000000000000000";
 	//	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000011011011000010011000000000000000000000000";
@@ -124,12 +129,13 @@ void Issue45_2() {
 	q_base.clear();
 	fraction.load_bits("00010101110111010000000000");
 	unrounded.set(true, -16, fraction, false, false, false);  // (-,-16,00010101110111010000000000)
+
 	q += unrounded; q_base += unrounded;
 	std::cout << q_base << " <--- q_base" << std::endl;
 	std::cout << q << std::endl;
 	quire_bits = "-:111111111111111111111111111111_111111111111111111111111111111111111111111111111111111111.11111111111111110101111111001010000000000000000000000000";
 	std::cout << quire_bits << " <--- debug reference" << std::endl;
-	
+
 	q_base.clear();
 	fraction.load_bits("00010101110111010000000000");
 	unrounded.set(true, -17, fraction, false, false, false);  // (-,-17,00010101110111010000000000)
@@ -142,7 +148,6 @@ void Issue45_2() {
 
 	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000011011011000010011000000000000000000000000";
 	quire_bits = "-:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000010001010111011101000000000000000000000000";
-
 
 	std::cout << std::endl << std::endl;
 	q_base.clear();
@@ -243,6 +248,25 @@ void Issue45_2() {
 	std::cout << q_base << " <--- q_base" << std::endl;
 	std::cout << q << std::endl;
 
+	{
+		// inefficient as we are copying a whole quire just to reset the sign bit, but we are leveraging the comparison logic
+		//quire<nbits, es, capacity> absq = abs(*this);
+		constexpr size_t qbits = (size_t(1) << es) * (4 * nbits - 8) + capacity;
+		constexpr size_t fbits = nbits - 3 - es;
+		//value<qbits> absq = abs(q);
+		quire <nbits, es, capacity> absq = abs(q);
+		value<mbits> absv = abs(unrounded);
+		if (absq < absv) {
+			cout << "q < v" << endl;
+		}
+		else if (absq > absv) {
+			cout << "q > v" << endl;
+		}
+		else {
+			cout << "q == v" << endl;
+		}
+	}
+
 }
 
 #define MANUAL_TESTING 1
@@ -260,10 +284,6 @@ try {
 
 #if MANUAL_TESTING
 
-	{
-		Issue45_2();
-	}
-	return EXIT_SUCCESS;
 
 	{
 		float v = 2.6226e-05f;
@@ -384,6 +404,11 @@ try {
 
 	std::cout << std::endl;
 
+#if 0
+	{
+		Issue45_2<16, 1, 30>();
+	}
+#endif
 
 #else
 
