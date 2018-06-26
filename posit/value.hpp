@@ -376,6 +376,7 @@ namespace sw {
 			explicit operator double() const { return to_double(); }
 			explicit operator float() const { return to_float(); }
 
+			// TODO: this does not implement a 'real' right extend. tgtbits need to be shorter than fbits
 			template<size_t srcbits, size_t tgtbits>
 			void right_extend(const value<srcbits>& src) {
 				_sign = src.sign();

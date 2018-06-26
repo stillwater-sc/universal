@@ -60,7 +60,7 @@ namespace sw {
 		// Standalone fused dot product
 		template<size_t nbits, size_t es, size_t capacity = 10>
 		sw::unum::posit<nbits, es> fused_dot(size_t n, const std::vector< sw::unum::posit<nbits, es> >& x, size_t incx, const std::vector< sw::unum::posit<nbits, es> >& y, size_t incy) {
-			sw::unum::quire<nbits, es, capacity> q = 0;
+			sw::unum::quire<nbits, es, capacity> q;   // initialized to 0 by constructor
 			size_t ix, iy;
 			for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
 				q += sw::unum::quire_mul(x[ix], y[iy]);
