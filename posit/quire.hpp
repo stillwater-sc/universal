@@ -10,7 +10,8 @@ namespace sw {
 
 // Forward definitions
 template<size_t nbits, size_t es, size_t capacity> class quire;
-template<size_t nbits, size_t es, size_t capacity> quire<nbits, es, capacity> abs(const quire<nbits, es, capacity>& v);
+template<size_t nbits, size_t es, size_t capacity> quire<nbits, es, capacity> abs(const quire<nbits, es, capacity>& q);
+//template<size_t nbits, size_t es, size_t capacity> value<(size_t(1) << es)*(4*nbits-8)+capacity> abs(const quire<nbits, es, capacity>& q);
 
 /* 
  quire: template class representing a quire associated with a posit configuration
@@ -28,11 +29,14 @@ public:
 	static constexpr size_t range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
 	static constexpr size_t half_range = range >> 1;          // position of the fixed point
 	static constexpr size_t radix_point = half_range;
+	// the upper is 1 bit bigger than the lower because maxpos^2 has that scale
 	static constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
 	static constexpr size_t qbits = range + capacity;     // size of the quire minus the sign bit: we are managing the sign explicitly
 	
 	// Constructors
 	quire() : _sign(false) { _capacity.reset(); _upper.reset(); _lower.reset(); }
+
+#if IMPLICIT_CONVERSION
 	quire(int8_t initial_value) {
 		*this = initial_value;
 	}
@@ -58,6 +62,7 @@ public:
 	quire(const value<fbits>& rhs) {
 		*this = rhs;
 	}
+#endif
 
 	// Assignment operators: the class only supports native type values
 	// assigning a posit requires the convertion to a normalized value, i.e. q = posit<nbits,es>().to_value()
@@ -106,6 +111,7 @@ public:
 		}
 		return *this;
 	}
+#if IMPLICIT_CONVERSION
 	quire& operator=(int8_t rhs) {
 		*this = int64_t(rhs);
 		return *this;
@@ -168,21 +174,22 @@ public:
 		}
 		return *this;
 	}
-	quire& operator=(float rhs) {
-		constexpr int bits = std::numeric_limits<float>::digits - 1;
-		*this = value<bits>(rhs);
-		return *this;
-	}
-	quire& operator=(double rhs) {
-		constexpr int bits = std::numeric_limits<double>::digits - 1;
-		*this = value<bits>(rhs);
-		return *this;
-	}
-	quire& operator=(long double rhs) {
-		constexpr int bits = std::numeric_limits<long double>::digits - 1;	
-		*this = value<bits>(rhs);
-		return *this;
-	}
+quire& operator=(float rhs) {
+	constexpr int bits = std::numeric_limits<float>::digits - 1;
+	*this = value<bits>(rhs);
+	return *this;
+}
+quire& operator=(double rhs) {
+	constexpr int bits = std::numeric_limits<double>::digits - 1;
+	*this = value<bits>(rhs);
+	return *this;
+}
+quire& operator=(long double rhs) {
+	constexpr int bits = std::numeric_limits<long double>::digits - 1;
+	*this = value<bits>(rhs);
+	return *this;
+}
+#endif
 
 	// Add a normalized value to the quire value. 
 	// All values in (and out) of the quire are normalized (sign, scale, fraction) triplets.
@@ -190,7 +197,7 @@ public:
 	quire& operator+=(const value<fbits>& rhs) {
 		if (rhs.isZero()) return *this;
 
-		if (rhs.scale() >  int(half_range)) {
+		if (rhs.scale() > int(half_range)) {
 			throw "RHS value too large for quire";
 		}
 		if (rhs.scale() < -int(half_range)) {
@@ -228,7 +235,7 @@ public:
 		}
 		return *this;
 	}
-	
+
 	// Subtract a normalized value from the quire value
 	template<size_t fbits>
 	quire& operator-=(const value<fbits>& rhs) {
@@ -242,12 +249,12 @@ public:
 		throw "index out of range";
 	}
 
-	// Modifiers
+// Modifiers
 
 	// state management operators
 	// reset the state of a quire to zero
 	void reset() {
-		_sign  = false;
+		_sign = false;
 		_lower.reset();
 		_upper.reset();
 		_capacity.reset();
@@ -255,14 +262,83 @@ public:
 	// semantic sugar: clear the state of a quire to zero
 	void clear() { reset(); }
 	void set_sign(bool v) { _sign = v; }
+	bool load_bits(const std::string& string_of_bits) {
+		reset();
+		// format is "+:0000_000000000.000000000"
+		std::string::const_iterator it = string_of_bits.begin();
+		if (*it == '-') {
+			_sign = true;
+		}
+		else if (string_of_bits[0] == '+') {
+			_sign = false;
+		}
+		else {
+			return false; // fail
+		}
+		++it;
+		if (*it == ':') {
+			++it;
+		}
+		else {
+			return false; // fail, wrong format
+		}
+		int segment = 0; // capacity segment = 0, upper segment = 1, lower segment = 2
+		int msb_c = capacity - 1;
+		int msb_u = upper_range - 1;
+		int msb_l = half_range - 1;
+		for (; it != string_of_bits.end(); ++it) {
+			if (*it == '_') {
+				if (msb_c != -1) return false; // fail: incorrect format
+				segment = 1;
+			}
+			else if (*it == '.') {
+				if (msb_u != -1) return false; // fail, incorrect format
+				segment = 2;
+			}
+			else if (*it == '1') {
+				switch (segment) {
+				case 0:
+					_capacity.set(msb_c--);
+					break;
+				case 1:
+					_upper.set(msb_u--);
+					break;
+				case 2:
+					if (msb_l < 0) return false; // fail, incorrect format
+					_lower.set(msb_l--);
+					break;
+				default:
+					return false; // fail, incorrect state
+				}
+			}
+			else {
+				switch (segment) {
+				case 0:
+					_capacity.reset(msb_c--);
+					break;
+				case 1:
+					_upper.reset(msb_u--);
+					break;
+				case 2:
+					if (msb_l < 0) return false; // fail, incorrect format
+					_lower.reset(msb_l--);
+					break;
+				default:
+					return false; // fail, incorrect state
+				}
+			}
+		}
+		return true;
+	}
 
-	// Selectors
+// Selectors
 	
 	// Compare magnitudes between quire and value: returns -1 if q < v, 0 if q == v, and 1 if q > v
 	template<size_t fbits>
 	int CompareMagnitude(const value<fbits>& v) {
 		// inefficient as we are copying a whole quire just to reset the sign bit, but we are leveraging the comparison logic
 		quire<nbits, es, capacity> absq = abs(*this);
+		//value<qbits> absq = abs(*this);
 		value<fbits> absv = abs(v);
 		if (absq < absv) {
 			return -1;
@@ -623,12 +699,21 @@ private:
 };
 
 // Magnitude of a quire
+#if 1
 template<size_t nbits, size_t es, size_t capacity>
 quire<nbits, es, capacity> abs(const quire<nbits, es, capacity>& q) {
 	quire<nbits, es, capacity> magnitude(q);
 	magnitude.set_sign(false);
 	return magnitude;
 }
+#else
+template<size_t nbits, size_t es, size_t capacity>
+value<(size_t(1) << es)*(4 * nbits - 8) + capacity> abs(const quire<nbits, es, capacity>& q) {
+	quire<nbits, es, capacity> magnitude(q);
+	magnitude.set_sign(false);
+	return magnitude;
+}
+#endif
 
 // QUIRE BINARY ARITHMETIC OPERATORS
 template<size_t nbits, size_t es, size_t capacity>
@@ -639,10 +724,10 @@ inline quire<nbits, es, capacity> operator+(const quire<nbits, es, capacity>& lh
 }
 
 
-////////////////// QUIRE operators
+////////////////// QUIRE stream operators
 template<size_t nbits, size_t es, size_t capacity>
 inline std::ostream& operator<<(std::ostream& ostr, const quire<nbits, es, capacity>& q) {
-	ostr << (q._sign ? "-1" : " 1") << ": " << q._capacity << "_" << q._upper << "." << q._lower;
+	ostr << (q._sign ? "-:" : "+:") << q._capacity << "_" << q._upper << "." << q._lower;
 	return ostr;
 }
 
@@ -711,6 +796,11 @@ inline bool operator< (const quire<nbits, es, capacity>& q, const value<fbits>& 
 			for (i = quire<nbits, es, capacity>::radix_point + qscale, f = int(fbits); i >= 0 && f >= 0; --i, --f) {
 				if (!q[i] && fixed[f]) {
 					bSmaller = true;
+					undecided = false;
+					break;
+				}
+				else if (q[i] && !fixed[f]) {
+					bSmaller = false;
 					undecided = false;
 					break;
 				}
