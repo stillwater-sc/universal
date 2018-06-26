@@ -27,10 +27,27 @@ namespace sw {
 			bitblock& operator=(bitblock&&) = default;
 
 			bitblock& operator=(int rhs) {
-				return (bitblock&) std::bitset<nbits>::operator=(rhs);
+				return (bitblock&)std::bitset<nbits>::operator=(rhs);
 			}
 
 			void setToZero() { std::bitset<nbits>::reset(); }
+			bool load_bits(const std::string& string_of_bits) {
+				if (string_of_bits.length() != nbits) return false;
+				setToZero();
+				int msb = nbits - 1;
+				for (std::string::const_iterator it = string_of_bits.begin(); it != string_of_bits.end(); ++it) {
+					if (*it == '0') {
+						reset(msb--);
+					}
+					else if (*it == '1') {
+						set(msb--);
+					}
+					else {
+						return false;
+					}
+				}
+				return true;
+			}
 		};
 
 		// logic operators
