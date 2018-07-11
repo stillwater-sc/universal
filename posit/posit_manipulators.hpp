@@ -70,7 +70,7 @@ namespace sw {
 			static constexpr size_t fbits = nbits - 3 - es;  // TODO: is there a better solution to gain access to the posit's fbits value?
 			std::stringstream ss;
 			ss << ( p.get_sign() ? "s1 r" : "s0 r" );
-			std::bitset<nbits-1> r = p.get_regime().get();
+			bitblock<nbits-1> r = p.get_regime().get();
 			int regimeBits = (int)p.get_regime().nrBits();
 			int nrOfRegimeBitsProcessed = 0;
 			for (int i = nbits - 2; i >= 0; --i) {
@@ -79,7 +79,7 @@ namespace sw {
 				}
 			}
 			ss << " e";
-			std::bitset<es> e = p.get_exponent().get();
+			bitblock<es> e = p.get_exponent().get();
 			int exponentBits = (int)p.get_exponent().nrBits();
 			int nrOfExponentBitsProcessed = 0;
 			for (int i = int(es) - 1; i >= 0; --i) {
@@ -88,7 +88,7 @@ namespace sw {
 				}
 			}
 			ss << " f";
-			std::bitset<fbits> f = p.get_fraction().get();
+			bitblock<fbits> f = p.get_fraction().get();
 			int fractionBits = (int)p.get_fraction().nrBits();
 			int nrOfFractionBitsProcessed = 0;
 			for (int i = int(p.fbits) - 1; i >= 0; --i) {
@@ -177,7 +177,7 @@ namespace sw {
 			Color def(ColorCode::FG_DEFAULT);
 			ss << red << (p.isNegative() ? "1" : "0");
 
-			std::bitset<nbits - 1> r = p.get_regime().get();
+			bitblock<nbits - 1> r = p.get_regime().get();
 			int regimeBits = (int)p.get_regime().nrBits();
 			int nrOfRegimeBitsProcessed = 0;
 			for (int i = nbits - 2; i >= 0; --i) {
@@ -186,7 +186,7 @@ namespace sw {
 				}
 			}
 
-			std::bitset<es> e = p.get_exponent().get();
+			bitblock<es> e = p.get_exponent().get();
 			int exponentBits = (int)p.get_exponent().nrBits();
 			int nrOfExponentBitsProcessed = 0;
 			for (int i = int(es) - 1; i >= 0; --i) {
