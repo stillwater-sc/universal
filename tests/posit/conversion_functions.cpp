@@ -138,7 +138,7 @@ void GenerateLogicPatternsForDebug() {
 }
 
 template<size_t nbits>
-std::string LowerSegment(std::bitset<nbits>& bits, unsigned msb) {
+std::string LowerSegment(sw::unum::bitblock<nbits>& bits, unsigned msb) {
 	std::stringstream ss;
 	for (int i = msb; i >= 0; i--) {
 		if (bits.test(i)) {
@@ -151,14 +151,14 @@ std::string LowerSegment(std::bitset<nbits>& bits, unsigned msb) {
 	return ss.str();
 }
 template<size_t src_size, size_t nbits>
-void CopyLowerSegment(std::bitset<src_size>& src, std::bitset<nbits>& tgt, unsigned msb = nbits-1) {
+void CopyLowerSegment(sw::unum::bitblock<src_size>& src, sw::unum::bitblock<nbits>& tgt, unsigned msb = nbits-1) {
 	for (int i = msb; i >= 0; i--) {
 		tgt[i] = src[i];
 	}
 }
 template<size_t nbits, size_t src_size>
-std::bitset<nbits> CopyInto(std::bitset<src_size>& src) {
-	std::bitset<nbits> tgt;
+sw::unum::bitblock<nbits> CopyInto(sw::unum::bitblock<src_size>& src) {
+	sw::unum::bitblock<nbits> tgt;
 	for (int i = nbits - 1; i >= 0; i--) {
 		tgt.set(i, src[i]);
 	}
@@ -167,8 +167,8 @@ std::bitset<nbits> CopyInto(std::bitset<src_size>& src) {
 
 // calculate the 2's complement of a 2's complement encoded number
 template<size_t nbits>
-std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
-	std::bitset<nbits> complement;
+sw::unum::bitblock<nbits> _twos_complement(sw::unum::bitblock<nbits> number) {
+	sw::unum::bitblock<nbits> complement;
 	uint8_t _slice = 0;
 	uint8_t carry = 1;
 	for (size_t i = 0; i < nbits; i++) {
@@ -180,7 +180,7 @@ std::bitset<nbits> twos_complement(std::bitset<nbits> number) {
 }
 
 template<size_t nbits>
-bool increment_unsigned(std::bitset<nbits>& number, int nrBits = nbits - 1) {
+bool increment_unsigned(sw::unum::bitblock<nbits>& number, int nrBits = nbits - 1) {
 	bool carry = 1;  // ripple carry
 	int lsb = nbits - nrBits;
 	for (int i = lsb; i < nbits; i++) {
@@ -191,9 +191,9 @@ bool increment_unsigned(std::bitset<nbits>& number, int nrBits = nbits - 1) {
 	return carry;
 }
 
-// increment the input bitset in place, and return true if there is a carry generated.
+// increment the input bitblock in place, and return true if there is a carry generated.
 template<size_t nbits>
-bool increment_bitset(std::bitset<nbits>& number) {
+bool increment_bitblock(sw::unum::bitblock<nbits>& number) {
 	bool carry = true;  // ripple carry
 	for (int i = 0; i < nbits; i++) {
 		bool _a = number[i];
@@ -203,9 +203,9 @@ bool increment_bitset(std::bitset<nbits>& number) {
 	return carry;
 }
 
-// decrement the input bitset in place, and return true if there is a borrow generated.
+// decrement the input bitblock in place, and return true if there is a borrow generated.
 template<size_t nbits>
-bool decrement_bitset(std::bitset<nbits>& number) {
+bool decrement_bitblock(sw::unum::bitblock<nbits>& number) {
 	bool borrow = true;
 	for (int i = 0; i < nbits; i++) {
 		bool _a = number[i];
@@ -218,8 +218,8 @@ bool decrement_bitset(std::bitset<nbits>& number) {
 // DANGER: this depends on the implicit type conversion of number to a uint64_t to sign extent a 2's complement number system
 // if nbits > 64 then this code breaks.
 template<size_t nbits, class Type>
-std::bitset<nbits> convert_to_bitset(Type number) {
-	std::bitset<nbits> _Bits;
+sw::unum::bitblock<nbits> _convert_to_bitblock(Type number) {
+	sw::unum::bitblock<nbits> _Bits;
 	uint64_t mask = uint64_t(1);
 	for (std::size_t i = 0; i < nbits; i++) {
 		_Bits[i] = mask & number;
@@ -230,7 +230,7 @@ std::bitset<nbits> convert_to_bitset(Type number) {
 
 // sticky bit representation of all the bits from [msb, lsb], that is, msb is included
 template<size_t nbits>
-bool anyAfter(const std::bitset<nbits>& bits, unsigned msb) {
+bool _anyAfter(const sw::unum::bitblock<nbits>& bits, unsigned msb) {
 	bool running = false;
 	for (int i = msb; i >= 0; i--) {
 		running |= bits.test(i);
@@ -272,18 +272,18 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	// ignore for the sake of clarity the special cases 0 and NaR (Not a Real)
 	bool sign = v.sign();
 	int scale = v.scale();
-	std::bitset<nrfbits> bits = v.fraction();
+	bitblock<nrfbits> bits = v.fraction();
 	cout << v << " = " << components(v) << endl;
 
 	float minpos = (float)minpos_value<nbits, es>();
 	float maxpos = (float)maxpos_value<nbits, es>();
 
 	const size_t pt_len = nbits + 3 + es;
-	std::bitset<pt_len> pt_bits;
-	std::bitset<pt_len> regime;
-	std::bitset<pt_len> exponent;
-	std::bitset<pt_len> fraction;
-	std::bitset<pt_len> sticky_bit;
+	bitblock<pt_len> pt_bits;
+	bitblock<pt_len> regime;
+	bitblock<pt_len> exponent;
+	bitblock<pt_len> fraction;
+	bitblock<pt_len> sticky_bit;
 
 	bool s = (x < 0);
 	if (bPrintIntermediateSteps) cout << "s        = " << (s ? "negative" : "positive") << endl;
@@ -314,7 +314,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	if (bPrintIntermediateSteps) cout << "_reg     = " << _reg << endl;
 	unsigned esval = scale % (uint32_t(1) << es);
 	if (bPrintIntermediateSteps) cout << "esval    = " << esval << endl;
-	exponent = convert_to_bitset<pt_len>(esval);
+	exponent = _convert_to_bitblock<pt_len>(esval);
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 	if (bPrintIntermediateSteps) cout << "nf       = " << nf << endl;
 	// copy the most significant nf fraction bits into fraction
@@ -351,21 +351,21 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	if (bPrintIntermediateSteps) cout << "blast at = " << len - nbits << endl;
 	bool blast = pt_bits.test(len - nbits);
 	bool bafter = pt_bits.test(len - nbits - 1);
-	bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
+	bool bsticky = _anyAfter(pt_bits, len - nbits - 1 - 1);
 	if (bPrintIntermediateSteps) cout << "blast    = " << blast << endl;
 	if (bPrintIntermediateSteps) cout << "bafter   = " << bafter << endl;
 	if (bPrintIntermediateSteps) cout << "bsticky  = " << bsticky << endl;
 
 	bool rb = (blast & bafter) | (bafter & bsticky);
 	cout << "rb       = " << rb << endl;
-	std::bitset<pt_len> ptt = pt_bits;
+	bitblock<pt_len> ptt = pt_bits;
 	ptt >>= (len - nbits);
 	if (bPrintIntermediateSteps) cout << "ptt      = " << ptt << endl;
-	if (rb) increment_bitset(ptt);
-	if (s) ptt = twos_complement(ptt);
+	if (rb) increment_bitblock(ptt);
+	if (s) ptt = _twos_complement(ptt);
 	cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits-1) << endl;
 
-	std::bitset<nbits> ptt_t;
+	bitblock<nbits> ptt_t;
 	CopyLowerSegment(ptt, ptt_t);
 	posit<nbits, es> p;
 	p.set_raw_bits(ptt_t.to_ullong());
@@ -375,20 +375,21 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 template<size_t nbits, size_t es, size_t nrfbits>
 sw::unum::posit<nbits, es> convert_to_posit(sw::unum::value<nrfbits> v, bool bPrintIntermediateSteps = false) {
 	using namespace std;
+	using namespace sw::unum;
 
 	cout << "convert to posit<" << nbits << "," << es << ">" << endl;
 	// ignore for the sake of clarity the special cases 0 and NaR (Not a Real)
-	std::bitset<nrfbits> bits = v.fraction();
+	bitblock<nrfbits> bits = v.fraction();
 
 	float minpos = (float)sw::unum::minpos_value<nbits, es>();
 	float maxpos = (float)sw::unum::maxpos_value<nbits, es>();
 
 	const size_t pt_len = nbits + 3 + es;
-	std::bitset<pt_len> pt_bits;
-	std::bitset<pt_len> regime;
-	std::bitset<pt_len> exponent;
-	std::bitset<pt_len> fraction;
-	std::bitset<pt_len> sticky_bit;
+	bitblock<pt_len> pt_bits;
+	bitblock<pt_len> regime;
+	bitblock<pt_len> exponent;
+	bitblock<pt_len> fraction;
+	bitblock<pt_len> sticky_bit;
 
 	bool s = v.sign();
 	int e = v.scale();
@@ -399,7 +400,7 @@ sw::unum::posit<nbits, es> convert_to_posit(sw::unum::value<nrfbits> v, bool bPr
 	for (unsigned i = 1; i <= run; i++) regime.set(i, r);
 
 	unsigned esval = e % (uint32_t(1) << es);
-	exponent = convert_to_bitset<pt_len>(esval);
+	exponent = _convert_to_bitblock<pt_len>(esval);
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 	// copy the most significant nf fraction bits into fraction
 	for (int i = 0; i < (int)nf; i++) fraction[i] = bits[nrfbits - nf + i];
@@ -430,11 +431,11 @@ sw::unum::posit<nbits, es> convert_to_posit(sw::unum::value<nrfbits> v, bool bPr
 	bool rb = (blast & bafter) | (bafter & bsticky);
 
 	pt_bits <<= pt_len - len;
-	std::bitset<nbits> ptt;
+	bitblock<nbits> ptt;
 	truncate(pt_bits, ptt);
 	cout << "ptt      = " << ptt << endl;
 	//ptt >>= (len - nbits);
-	if (rb) increment_bitset(ptt);
+	if (rb) increment_bitblock(ptt);
 	if (s) ptt = twos_complement(ptt);
 	if (bPrintIntermediateSteps) {
 		cout << "s        = " << (s ? "1" : "0") << endl;
@@ -489,9 +490,9 @@ void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
 	if (bPrintIntermediateSteps) std::cout << "exponent = " << _exponent << std::endl;
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 	if (bPrintIntermediateSteps) std::cout << "nf       = " << nf << std::endl;
-	sw::unum::bitblock<23> fraction_bitset = v.fraction();
+	sw::unum::bitblock<23> fraction_bitblock = v.fraction();
 	sw::unum::fraction<23> _fraction;
-	bool sb = _fraction.assign<23>(nf, fraction_bitset, nf+1);  // assign and create sticky bit
+	bool sb = _fraction.assign<23>(nf, fraction_bitblock, nf+1);  // assign and create sticky bit
 	if (bPrintIntermediateSteps) std::cout << "sb       = " << sb << std::endl;
 	// 	assess if we need to round up the truncated posit
 /*
@@ -506,7 +507,7 @@ void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
 		if (bPrintIntermediateSteps) std::cout << "bsticky  = " << bsticky << std::endl;
 		bool rb = (blast & bafter) | (bafter & bsticky);
 		if (bPrintIntermediateSteps) std::cout << "rb       = " << rb << std::endl;
-		std::bitset<pt_len> ptt = pt_bits;
+		bitblock<pt_len> ptt = pt_bits;
 		ptt >>= (len - nbits);
 
 	if (roundUp) {

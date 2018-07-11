@@ -68,7 +68,7 @@ try {
 	posit<48, 2> pb(b);
 	posit<48, 2> pdiff = pa - pb;
 	cout << pdiff.get() << endl;
-	std::bitset<48> ba = pa.get();
+	bitblock<48> ba = pa.get();
 	cout << a << endl;
 	cout << ba << endl;
 	//nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<48, 2>(tag, true, OPCODE_SUB, 1000), "posit<48,2>", "subtraction");

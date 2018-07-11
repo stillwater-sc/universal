@@ -84,7 +84,7 @@ public:
 		if (scale < -int(half_range)) 	throw "RHS value too small for quire";
 
 		int i, f; // running bit pointers, i for the quire, f for the incoming fraction
-		std::bitset<fbits+1> fraction = rhs.get_fixed_point();
+		sw::unum::bitblock<fbits+1> fraction = rhs.get_fixed_point();
 		// divide bits between upper and lower accumulator
 		if (scale - int(fbits) >= 0) {
 			// all upper accumulator
@@ -454,7 +454,7 @@ private:
 		// we manage scale >= 0 in the _upper accumulator, and scale < 0 in the _lower accumulator
 		int lsb = v.scale() - int(fbits);
 		bool carry = false;
-		std::bitset<fbits + 1> fraction = v.get_fixed_point();
+		bitblock<fbits + 1> fraction = v.get_fixed_point();
 		int i, f;  // bit pointers, i pointing to the quire bits, f pointing to the fraction bits of rhs
 		// divide bits between upper and lower accumulator
 		if (v.scale() < 0) {		// all lower accumulator
@@ -564,7 +564,7 @@ private:
 		// lsb in the quire of the lowest bit of the explicit fixed point value including the hidden bit of the fraction
 		int lsb = v.scale() - int(fbits);
 		bool borrow = false;
-		std::bitset<fbits + 1> fraction = v.get_fixed_point();
+		bitblock<fbits + 1> fraction = v.get_fixed_point();
 		int i, f;  // bit pointers, i pointing to the quire bits, f pointing to the fraction bits of rhs
 		// divide bits between upper and lower accumulator
 		if (v.scale() < 0) {		// all lower accumulator
@@ -790,7 +790,7 @@ inline bool operator< (const quire<nbits, es, capacity>& q, const value<fbits>& 
 		}
 		else if (qscale == vscale) {
 			// got to compare the fraction bits
-			std::bitset<fbits + 1> fixed = v.get_fixed_point();
+			bitblock<fbits + 1> fixed = v.get_fixed_point();
 			int i, f;  // bit pointers, i for the quire, f for the fraction in v
 			bool undecided = true;
 			for (i = quire<nbits, es, capacity>::radix_point + qscale, f = int(fbits); i >= 0 && f >= 0; --i, --f) {
@@ -830,7 +830,7 @@ inline bool operator> (const quire<nbits, es, capacity>& q, const value<fbits>& 
 		}
 		else if (qscale == vscale) {
 			// got to compare the fraction bits
-			std::bitset<fbits + 1> fixed_point = v.get_fixed_point();
+			bitblock<fbits + 1> fixed_point = v.get_fixed_point();
 			int i, f;  // bit pointers, i for the quire, f for the fraction in v
 			bool undecided = true;
 			for (i = quire<nbits, es, capacity>::radix_point + qscale, f = int(fbits); i >= 0 && f >= 0; --i, --f) {
