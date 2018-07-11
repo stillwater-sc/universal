@@ -422,7 +422,7 @@ public:
 	float sign_value() const {	return (_sign ? -1.0 : 1.0); }
 	sw::unum::value<qbits> to_value() const {
 		// find the MSB and build the fraction
-		bitblock<qbits> fraction;
+		sw::unum::bitblock<qbits> fraction;
 		bool isZero = false;
 		bool isNaR = false;   // TODO
 		int i;
