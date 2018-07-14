@@ -91,7 +91,7 @@ message(STATUS "C++14 support has been enabled by default")
 
 # Compiler specific environments
 if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	include(CheckCXXComilerFlag)
+	include(CheckCXXCompilerFlag)
 	check_cxx_compiler_flag("-msse3" COMPILER_HAS_SSE_FLAG)
 	check_cxx_compiler_flag("-mavx"  COMPILER_HAS_AVX_FLAG)
 	check_cxx_compiler_flag("-mavx2" COMPILER_HAS_AVX2_FLAG)
