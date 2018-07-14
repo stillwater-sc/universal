@@ -3,7 +3,7 @@
 # project command, we need at least 3.0. To honor the amazing work that
 # the folks at KitWare have done for the open source community, we are
 # going to specify a recent version.
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.7)
 
 ####
 # Set project variables
