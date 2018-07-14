@@ -147,7 +147,7 @@ elseif(MSVC)
 	add_definitions(-D _CRT_SECURE_NO_WARNINGS)
 	add_definitions(-D _SCL_SECURE_NO_WARNINGS)
 	# specific flags for debug and release builds
-	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Ox /Oi /Ot /Oy /OGL /fp:fast /GS-")
+	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Ox /Oi /Ot /Oy /fp:fast /GS-")
 	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
 	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /W4 /bigobj")
 endif()
