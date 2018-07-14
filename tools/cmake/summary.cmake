@@ -78,7 +78,7 @@ function(universal_print_configuration_summary)
     universal_merge_flag_lists(__flags_deb CMAKE_CXX_FLAGS_DEBUG CMAKE_CXX_FLAGS)
 
     universal_status("")
-    universal_status("******************* tiny-dnn Configuration Summary *******************")
+    universal_status("******************* Universal Arithmetic Library Configuration Summary *******************")
     universal_status("General:")
     universal_status("  Version                      :   ${PROJECT_VERSION}")
     universal_status("  System                       :   ${CMAKE_SYSTEM_NAME}")

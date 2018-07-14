@@ -1,67 +1,65 @@
-# FindTinyDNN
+# FindUNUM
 # -----------
 #
-# Find TinyDNN include dirs and libraries
+# Find UNUM include dirs and libraries
 #
 # Use this module by invoking find_package with the form:
 #
-#   find_package(TinyDNN
+#   find_package(UNUM
 #     [version] [EXACT]      # Minimum or EXACT version e.g. 0.1.0
-#     [REQUIRED]             # Fail with error if TinyDNN is not found
+#     [REQUIRED]             # Fail with error if UNUM is not found
 #     ) 
 #
 # This module finds headers and requested component libraries OR a CMake
-# package configuration file provided by a "TinyDNN CMake" build. For the
-# latter case skip to the "TinyDNN CMake" section below. For the former
+# package configuration file provided by a "UNUM CMake" build. For the
+# latter case skip to the "UNUM CMake" section below. For the former
 # case results are reported in variables::
 #
-#   TinyDNN_FOUND            - True if headers and requested libraries were found
-#   TinyDNN_INCLUDE_DIRS     - TinyDNN include directories
-#   TinyDNN_LIBRARY_DIRS     - Link directories for TinyDNN libraries
-#   TinyDNN_LIBRARIES        - TinyDNN third-party libraries to be linked
-#   TinyDNN_VERSION          - Version string appended to library filenames
-#   TinyDNN_MAJOR_VERSION    - TinyDNN major version number (X in X.y.z)
-#   TinyDNN_MINOR_VERSION    - TinyDNN minor version number (Y in x.Y.z)
-#   TinyDNN_SUBMINOR_VERSION - TinyDNN subminor version number (Z in x.y.Z)
+#   UNUM_FOUND            - True if headers and requested libraries were found
+#   UNUM_INCLUDE_DIRS     - UNUM include directories
+#   UNUM_LIBRARY_DIRS     - Link directories for UNUM libraries
+#   UNUM_LIBRARIES        - UNUM third-party libraries to be linked
+#   UNUM_VERSION          - Version string appended to library filenames
+#   UNUM_MAJOR_VERSION    - UNUM major version number (X in X.y.z)
+#   UNUM_MINOR_VERSION    - UNUM minor version number (Y in x.Y.z)
+#   UNUM_SUBMINOR_VERSION - UNUM subminor version number (Z in x.y.Z)
 #
 # The following :prop_tgt:`IMPORTED` targets are also defined::
 #
-#   TinyDNN::tiny_cnn        - Target for header-only dependencies
-#                              (TinyDNN include directory)
+#   UNUM::universal       - Target for header-only dependencies
+#                              (UNUM include directory)
 #
-# TinyDNN comes in many variants encoded in their file name.
+# UNUM comes in many variants encoded in their file name.
 # Users or projects may tell this module which variant to find by
 # setting variables::
 #
-#   TinyDNN_USE_TBB    - Set to ON to use the Intel Threading Building 
+#   UNUM_USE_TBB    - Set to ON to use the Intel Threading Building 
 #                        Blocks (TBB) libraries. Default is OFF.
-#   TinyDNN_USE_OMP    - Set to ON to use of the Open Multi-Processing
+#   UNUM_USE_OMP    - Set to ON to use of the Open Multi-Processing
 #                        (OpenMP) libraries. Default is OFF.
-#   TinyDNN_USE_SSE    - Set to OFF to use the Streaming SIMD Extension
+#   UNUM_USE_SSE    - Set to OFF to use the Streaming SIMD Extension
 #                        (SSE) instructions libraries. Default is ON.
-#   TinyDNN_USE_AVX    - Set to OFF to use the Advanced Vector Extensions
+#   UNUM_USE_AVX    - Set to OFF to use the Advanced Vector Extensions
 #                        (AVX) libraries). Default is ON.
-#   TinyDNN_USE_AVX2   - Set to ON to use the Advanced Vector Extensions 2
+#   UNUM_USE_AVX2   - Set to ON to use the Advanced Vector Extensions 2
 #                        (AVX2) libraries). Default is OFF.
-#   TinyDNN_USE_NNPACK - Set to ON to use the Acceleration package
-#                        for neural networks on multi-core CPUs.
-#   TinyDNN_USE_SERIALIZER - Set to ON to build with serialization support.
+#   UNUM_USE_SERIALIZER - Set to ON to build with serialization support.
 #
-# Example to find TinyDNN headers only::
+# Example to find UNUM headers only::
 #
-#   find_package(TinyDNN 0.1.0)
-#   if(TinyDNN_FOUND)
+#   find_package(UNUM 0.1.0)
+#   if(UNUM_FOUND)
 #     add_executable(foo foo.cc)
 #   endif()
 #
-# Example to find TinyDNN headers and some *static* libraries::
+# Example to find UNUM headers and some *static* libraries::
 #
-#   set(TinyDNN_USE_TBB              ON) # only find static libs
-#   set(TInyCNN_USE_AVX2             ON)
-#   find_package(TinyDNN 0.1.0)
-#   if(TinyDNN_FOUND)
+#   set(UNUM_USE_TBB              ON) # only find static libs
+#   set(UNUM_USE_AVX2             ON)
+#   find_package(UNUM 0.1.0)
+#   if(UNUM_FOUND)
 #     add_executable(foo foo.cc)
-#     target_link_libraries(foo ${TinyDNN_LIBRARIES})
+#     target_link_libraries(foo ${UNUM_LIBRARIES})
 #   endif()
 #
 ##################################################################
@@ -100,7 +98,7 @@ find_package(TBB QUIET)
 if(@PACKAGE_NAME@_USE_TBB AND TBB_FOUND)
     message(STATUS "Found Intel TBB: ${TBB_INCLUDE_DIR}")
     # In case that TBB is found we force to disable OpenMP since
-    # tiny-dnn does not support mutiple multithreading backends.
+    # universal does not support mutiple multithreading backends.
     set(@PACKAGE_NAME@_USE_OMP OFF)
     #TODO: add definitions in configure
     add_definitions(-DCNN_USE_TBB)
@@ -120,7 +118,7 @@ find_package(OpenMP QUIET)
 if(@PACKAGE_NAME@_USE_OMP AND OPENMP_FOUND)
     message(STATUS "Found OpenMP")
     # In case that OMP is found we force to disable Intel TBB since
-    # tiny-dnn does not support mutiple multithreading backends.
+    # universal does not support mutiple multithreading backends.
     set(@PACKAGE_NAME@_USE_TBB OFF)
     add_definitions(-DCNN_USE_OMP)
     set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -132,21 +130,6 @@ elseif(@PACKAGE_NAME@_USE_OMP AND NOT OPENMP_FOUND)
     # set the CMAKE_C_FLAGS and CMAKE_CXX_FLAGS by hand.
     message(FATAL_ERROR "Can't find OpenMP. Please set OpenMP_C_FLAGS & "
             "OpenMP_CXX_FLAGS")
-endif()
-
-# Find NNPACK: Acceleration package for neural networks on multi-core CPUs
-find_package(NNPACK QUIET)
-if(@PACKAGE_NAME@_USE_NNPACK AND NNPACK_FOUND)
-    add_definitions(-DCNN_USE_NNPACK)
-    include_directories(SYSTEM ${NNPACK_INCLUDE_DIR})
-    include_directories(SYSTEM ${NNPACK_INCLUDE_DIR}/../third-party/pthreadpool/include)
-    list(APPEND @PACKAGE_NAME@_LIBRARIES ${NNPACK_LIB})
-elseif(@PACKAGE_NAME@_USE_NNPACK AND NOT NNPACK_FOUND)
-    # In case the user sets the flag USE_NNPACK to ON, the CMake build-tree
-    # will require to find NNPACK in your system. Otherwise, the user can
-    # set the paths to headers and libs by hand.
-    message(FATAL_ERROR "Can't find NNPACK. Please set NNPACK_INCLUDE_DIR "
-            " & NNPACK_LIB")
 endif()
 
 if(NOT @PACKAGE_NAME@_USE_SERIALIZER)

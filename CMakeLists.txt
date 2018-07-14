@@ -3,7 +3,10 @@
 # project command, we need at least 3.0. To honor the amazing work that
 # the folks at KitWare have done for the open source community, we are
 # going to specify a recent version.
-cmake_minimum_required(VERSION 3.7)
+# Ubuntu 16.04 LTS runs cmake 3.5.1
+# Ubuntu 18.04 LTS runs cmake 3.10.2
+# container runs cmake 3.7.1
+cmake_minimum_required(VERSION 3.5)
 
 ####
 # Set project variables
@@ -36,13 +39,14 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 ####
 # Set build options
-option(USE_SSE                           "Build code with SSE ISA support"                  ON)
-option(USE_AVX                           "Build code with AVX ISA support"                  ON)
-option(USE_AVX2                          "Build code with AVX2 ISA support"                 ON)
+option(USE_SSE                           "Build code with SSE ISA support"                  OFF)
+option(USE_AVX                           "Build code with AVX ISA support"                  OFF)
+option(USE_AVX2                          "Build code with AVX2 ISA support"                 OFF)
 # control which projects get enabled
+option(BUILD_CI_CHECK                    "Set to ON to build all components"                OFF)
 option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 arithmetic"        OFF)
 option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 arithmetic"        OFF)
-option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3(posit) arithmetic" ON)
+option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3(posit) arithmetic" OFF)
 option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3(valid) arithmetic" OFF)
 option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"          ON)
 option(BUILD_APPLICATION_EXAMPLES        "Set to ON to build epplication examples"          ON)
@@ -51,6 +55,7 @@ option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"    
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"    ON)
 option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"      OFF)
 option(BUILD_PERFORMANCE_BENCHMARKS      "Set to ON to build performance benchmarking"      OFF)
+option(BUILD_DOCS                        "Set to ON to build documentation"                 OFF)
 
 ####
 # Create the library target
@@ -117,7 +122,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	# specific flags for debug and release builds
 	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3")
 	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
-elsif(MSVC)
+elseif(MSVC)
 	# Streaming SIMD Extension (SSE) ISA
 	if (USE_SSE)
 		add_definitions(-DUNUM_USE_SSE)
@@ -176,7 +181,7 @@ macro (compile_all testing prefix)
         get_filename_component (test ${source} NAME_WE)
         string(REPLACE " " ";" new_source ${source})
         set(test_name ${prefix}_${test})
-        # message(STATUS "Add test ${test_name} from source ${new_source}.")
+        message(STATUS "Add test ${test_name} from source ${new_source}.")
         add_executable (${test_name} ${new_source})
         if (${testing} STREQUAL "true")
             if (UNIVERSAL_CMAKE_TRACE)
@@ -241,7 +246,6 @@ write_basic_package_version_file(
     VERSION ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion)
 
-set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} ${EXTRA_C_FLAGS}")
 # Create *-targets.cmake file for build directory
 #install(TARGETS ${project_library_target_name}
 #        EXPORT  ${targets_export_name}
@@ -265,36 +269,45 @@ install(FILES
 install(DIRECTORY   ${PROJECT_SOURCE_DIR}/${project_library_target_name}
         DESTINATION ${include_install_dir})
 
-if(BUILD_VERIFICATION_SUITE)
+if(BUILD_CI_CHECK OR BUILD_VERIFICATION_SUITE)
 add_subdirectory("tests/bitblock")
-add_subdirectory("tests/float")
-add_subdirectory("tests/unum")
-add_subdirectory("tests/unum2")
 add_subdirectory("tests/posit")
 add_subdirectory("tests/valid")
-endif(BUILD_VERIFICATION_SUITE)
+endif(BUILD_CI_CHECK OR BUILD_VERIFICATION_SUITE)
 
-if(BUILD_CMD_LINE_TOOLS)
+if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_1)
+add_subdirectory("tests/unum")
+endif()
+
+if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_2)
+add_subdirectory("tests/unum2")
+endif()
+
+if(BUILD_CI_CHECK OR BUILD_IEEE_FLOAT_QUIRES)
+add_subdirectory("tests/float")
+endif()
+
+if(BUILD_CI_CHECK OR BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
 add_subdirectory("tools/utils")
-endif(BUILD_CMD_LINE_TOOLS)
+endif()
 
-if(BUILD_EDUCATION_EXAMPLES)
+if(BUILD_CI_CHECK OR BUILD_EDUCATION_EXAMPLES)
 add_subdirectory("education/posit")
-endif(BUILD_EDUCATION_EXAMPLES)
+endif()
 
-if(BUILD_APPLICATION_EXAMPLES)
+if(BUILD_CI_CHECK OR BUILD_APPLICATION_EXAMPLES)
 add_subdirectory("examples/blas")
 add_subdirectory("examples/dsp")
-endif(BUILD_APPLICATION_EXAMPLES)
+endif()
 
-if(BUILD_PLAYGROUND)
+if(BUILD_CI_CHECK OR BUILD_PLAYGROUND)
 add_subdirectory("examples/playground")
-endif(BUILD_PLAYGROUND)
+endif()
 
-if(BUILD_PERFORMANCE_BENCHMARKS)
+if(BUILD_CI_CHECK OR BUILD_PERFORMANCE_BENCHMARKS)
 add_subdirectory("perf")
-endif(BUILD_PERFORMANCE_BENCHMARKS)
+endif()
 
 ####
 # Configuration summary
