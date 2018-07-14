@@ -2432,7 +2432,7 @@ value<2 * (nbits - 2 - es)> fam(const posit<nbits, es>& a, const posit<nbits, es
 	constexpr size_t mbits = 2 * fhbits;      // size of the multiplier output
 
 	// first the add
-	value<abits> sum;
+	value<abits+1> sum;
 	value<fbits> va, vb, vc;
 
 	if (!a.isZero() || !b.isZero()) {
