@@ -19,7 +19,7 @@ RUN ls -la /usr/src/universal && cmake -version
 # set up the cmake/make environment to issue the build commands
 RUN mkdir build 
 WORKDIR /usr/src/universal/build
-RUN cmake .. && make
+RUN cmake -DBUILD_CI_CHECK=ON .. && make
 
 # actual command 'make test' is run as part of the test pipeline
 
