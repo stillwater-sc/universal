@@ -161,8 +161,8 @@ int Validate5_0_Lookup() {
 	constexpr size_t nr_of_posits = 32;
 	int nrOfFailures = 0;
 
-	sw::unum::posit<5, 0> pa, pb, psum;
-	sw::spec::posit<5, 0> sa, sb, ssum;
+	sw::unum::posit<nbits, es> pa, pb, psum;
+	sw::spec::posit<nbits, es> sa, sb, ssum;
 	for (size_t i = 0; i < nr_of_posits; i++) {
 		pa.set_raw_bits(i);
 		sa.set_raw_bits(i);

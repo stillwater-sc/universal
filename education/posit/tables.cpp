@@ -25,7 +25,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	int nrOfFailedTestCases = 0;
+	//int nrOfFailedTestCases = 0;
 
 	cout << "Generate posit configurations" << endl;
 

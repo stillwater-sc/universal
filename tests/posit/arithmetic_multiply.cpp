@@ -84,8 +84,7 @@ void DifficultRoundingCases() {
 		0xb61e2f1f, 0xfffffffe, 0x00000002, 0x00000003,
 		0xfffffffe, 0xb61e2f1f, 0x00000002, 0x00000003,
 	};
-	size_t nrOfTests = cases.size() >> 2;  // divide by 4
-	
+	// size_t nrOfTests = cases.size() >> 2;  // divide by 4
 	for (size_t i = 0; i < cases.size(); i+= 4) {
 		a.set_raw_bits(cases[i]);
 		b.set_raw_bits(cases[i + 1]);

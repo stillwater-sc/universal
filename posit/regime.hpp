@@ -79,7 +79,7 @@ public:
 	// return the size of a regime encoding for a particular k value
 	int regime_size(int k) const {
 		if (k < 0) k = -k - 1;
-		return (k < nbits - 2 ? k + 2 : nbits - 1);
+		return (k < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
 	}
 	size_t assign(int scale) {
 		bool r = scale > 0;
@@ -97,22 +97,22 @@ public:
 	// because useed = 2^es and thus a value of scale 'scale' will contain (scale >> es) number of useed factors
 	size_t assign_regime_pattern(int k) {
 		if (k < 0) { // south-east quadrant: patterns 00001---
-			_k = int8_t(-k < nbits - 2 ? k : -(static_cast<int>(nbits) - 2)); // constrain regime to minpos
+			_k = int8_t(-k < (static_cast<int>(nbits) - 2) ? k : -(static_cast<int>(nbits) - 2)); // constrain regime to minpos
 			k = -_k - 1;
 			_Bits.reset();
-			if (k < nbits - 2) {	// _RegimeBits = (k < nbits - 2 ? k + 2 : nbits - 1);
+			if (k < static_cast<int>(nbits) - 2) {	// _RegimeBits = (k < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
 				_RegimeBits = k + 2;
-				_Bits.set(nbits - 1 - _RegimeBits, true);   // set the run-length termination bit
+				_Bits.set(static_cast<int>(nbits) - 1 - _RegimeBits, true);   // set the run-length termination bit
 			}
 			else {
-				_RegimeBits = nbits - 1;
+				_RegimeBits = static_cast<int>(nbits) - 1;
 			}
 
 		}
 		else {       // north-east quadrant: patterns 11110---		
-			_k = int8_t(k < nbits - 2 ? k : nbits - 2); // constrain regime to maxpos
+			_k = int8_t(k < static_cast<int>(nbits) - 2 ? k : static_cast<int>(nbits) - 2); // constrain regime to maxpos
 			_Bits.set();
-			if (k < nbits - 2) {	// _RegimeBits = (std::size_t(k) < nbits - 2 ? k + 2 : nbits - 1);
+			if (k < static_cast<int>(nbits) - 2) {	// _RegimeBits = (std::size_t(k) < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
 				_RegimeBits = k + 2;   
 				_Bits.set(nbits - 1 - _RegimeBits, false);   // set the run-length termination bit
 			}

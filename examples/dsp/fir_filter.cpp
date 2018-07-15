@@ -46,7 +46,7 @@ try {
 	posit<nbits, es> p;
 	vector< posit<nbits, es> > sinusoid(vecSize), weights(vecSize);
 
-	for (int i = 0; i < vecSize; i++) {
+	for (size_t i = 0; i < vecSize; i++) {
 		sinusoid[i] = sin((float(i) / float(vecSize)) *2.0 * pi);
 
 		weights[i] = 0.5f;
@@ -55,7 +55,7 @@ try {
 	// dot product
 	posit<nbits, es> fir;
 	fir = 0.0f;
-	for (int i = 0; i < vecSize; i++) {
+	for (size_t i = 0; i < vecSize; i++) {
 		fir += sinusoid[i] * weights[i];
 	}
 	cout << "Value is " << fir << endl;

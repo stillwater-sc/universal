@@ -26,9 +26,11 @@ bool ValidateValue() {
 	float input[NR_TEST_CASES] = {
 		0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024
 	};
+#if 0
 	float golden_scales[NR_TEST_CASES] = {
 		0, 0, 1, 2, 3,  4,  5,  6,   7,   8,   9,   10
 	};
+#endif 
 	float golden_answer[NR_TEST_CASES] = {
 		0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024
 	};
