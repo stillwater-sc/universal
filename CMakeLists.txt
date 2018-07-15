@@ -123,10 +123,11 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3")
 	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
 elseif(MSVC)
+	include(CheckCXXCompilerFlag)
+	check_cxx_compiler_flag("/arch:SSE2" COMPILER_HAS_SSE_FLAG)
 	# Streaming SIMD Extension (SSE) ISA
 	if (USE_SSE)
 		add_definitions(-DUNUM_USE_SSE)
-		set(COMPILER_HAS_SSE_FLAG true)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:SSE2")
 	endif(USE_SSE)
 	# Advanced Vector Extensions (AVX) ISA
@@ -147,9 +148,37 @@ elseif(MSVC)
 	add_definitions(-D _CRT_SECURE_NO_WARNINGS)
 	add_definitions(-D _SCL_SECURE_NO_WARNINGS)
 	# specific flags for debug and release builds
-	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Ox /Oi /Ot /Oy /fp:fast /GS-")
-	set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
-	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /W4 /bigobj")
+	# Optimization
+	# Option	Purpose
+	# /O1		Creates small code.
+	# /O2		Creates fast code.
+	# /Ob		Controls inline expansion.
+	# /Od		Disables optimization.
+	# /Og		Deprecated. Uses global optimizations.
+	# /Oi		Generates intrinsic functions.
+	# /Os		Favors small code.
+	# /Ot		Favors fast code.
+	# /Ox		Uses maximum optimization (/Ob2gity /Gs).
+	# /Oy		Omits frame pointer. (x86 only)
+	# /favor	Produces code that is optimized for a specified architecture, or for a range of architectures.
+	# /fp:fast  Floating Point Model: options are fast, strict, precise
+	# /GS-      Disable Security Checks
+
+	# be forewarned that /fp:fast alters the float logic functions:
+	# \fp:fast  floating point model set to fast
+	# NaN ==  NaN: IEEE=true    Posit=true
+	# NaN == real: IEEE=true    Posit=false
+	# INF ==  INF: IEEE=true    Posit=true
+	# NaN !=  NaN: IEEE=false   Posit=false
+	# \fp:strict floating point model set to strict, \fp:precise yields the same results
+	# NaN ==  NaN: IEEE=false   Posit=true
+	# NaN == real: IEEE=false   Posit=false
+	# INF ==  INF: IEEE=true    Posit=true
+	# NaN !=  NaN: IEEE=true    Posit=false
+	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Oi /Ot /Ox /Oy /fp:fast /GS-")
+	# /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
+	# set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
+	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Wall /bigobj")
 endif()
 
 ####
