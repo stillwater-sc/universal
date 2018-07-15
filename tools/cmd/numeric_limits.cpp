@@ -16,7 +16,7 @@ try {
 
 	// long double attributes
 	constexpr int f_prec = std::numeric_limits<float>::max_digits10;
-	constexpr int d_prec = std::numeric_limits<double>::max_digits10;
+	//constexpr int d_prec = std::numeric_limits<double>::max_digits10;
 	constexpr int q_prec = std::numeric_limits<long double>::max_digits10;
 
 	constexpr int uint8_bits  = std::numeric_limits<unsigned char>::digits;

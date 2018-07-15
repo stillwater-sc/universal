@@ -179,6 +179,6 @@ inline std::istream& operator>> (std::istream& istr, const valid<nbits, es>& p) 
 	return istr;
 }
 
-	};  // namespace unum
+	}  // namespace unum
 
-}; // namespace sw
+} // namespace sw

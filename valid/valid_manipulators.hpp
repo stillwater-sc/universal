@@ -13,6 +13,6 @@ namespace sw {
 
 	namespace unum {
 
-	}; // namespace unum
+	} // namespace unum
 
-}; // namespace sw
+} // namespace sw

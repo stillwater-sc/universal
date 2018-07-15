@@ -183,7 +183,7 @@ template<size_t nbits>
 bool increment_unsigned(sw::unum::bitblock<nbits>& number, int nrBits = nbits - 1) {
 	bool carry = 1;  // ripple carry
 	int lsb = nbits - nrBits;
-	for (int i = lsb; i < nbits; i++) {
+	for (size_t i = lsb; i < nbits; i++) {
 		bool _a = number[i];
 		number[i] = _a ^ carry;
 		carry = (_a & false) | (carry & (_a ^ false));
@@ -195,7 +195,7 @@ bool increment_unsigned(sw::unum::bitblock<nbits>& number, int nrBits = nbits - 
 template<size_t nbits>
 bool increment_bitblock(sw::unum::bitblock<nbits>& number) {
 	bool carry = true;  // ripple carry
-	for (int i = 0; i < nbits; i++) {
+	for (size_t i = 0; i < nbits; i++) {
 		bool _a = number[i];
 		number[i] = _a ^ carry;
 		carry = carry & (_a ^ false);
@@ -207,7 +207,7 @@ bool increment_bitblock(sw::unum::bitblock<nbits>& number) {
 template<size_t nbits>
 bool decrement_bitblock(sw::unum::bitblock<nbits>& number) {
 	bool borrow = true;
-	for (int i = 0; i < nbits; i++) {
+	for (size_t i = 0; i < nbits; i++) {
 		bool _a = number[i];
 		number[i] = _a ^ borrow;
 		borrow = (!(!_a ^ true) & borrow);
@@ -221,7 +221,7 @@ template<size_t nbits, class Type>
 sw::unum::bitblock<nbits> _convert_to_bitblock(Type number) {
 	sw::unum::bitblock<nbits> _Bits;
 	uint64_t mask = uint64_t(1);
-	for (std::size_t i = 0; i < nbits; i++) {
+	for (size_t i = 0; i < nbits; i++) {
 		_Bits[i] = mask & number;
 		mask <<= 1;
 	}
@@ -270,7 +270,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	constexpr int nrfbits = std::numeric_limits<float>::digits - 1;
 	value<nrfbits> v(x);
 	// ignore for the sake of clarity the special cases 0 and NaR (Not a Real)
-	bool sign = v.sign();
+	//bool sign = v.sign();
 	int scale = v.scale();
 	bitblock<nrfbits> bits = v.fraction();
 	cout << v << " = " << components(v) << endl;
