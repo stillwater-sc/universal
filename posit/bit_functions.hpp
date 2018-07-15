@@ -158,6 +158,7 @@ namespace sw {
 			return ss.str();
 		}
 
+#ifdef ALIASING_ALLOWED
 		// full binary representation of a float number
 		inline std::string to_binary(float number) {
 			std::stringstream ss;
@@ -193,6 +194,7 @@ namespace sw {
 
 			return ss.str();
 		}
+#endif
 
 	}  // namespace unum
 

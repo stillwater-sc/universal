@@ -222,7 +222,7 @@ namespace sw {
 			const size_t k_column = 8;
 			const size_t sign_column = 8;
 			const size_t scale_column = 8;
-			const size_t regime_value_column = 30;
+		//	const size_t regime_value_column = 30;
 			const size_t regime_column = 16;
 			const size_t exponent_column = 16;
 			const size_t fraction_column = 16;
@@ -239,7 +239,7 @@ namespace sw {
 				<< std::setw(exponent_column) << " exponent"
 				<< std::setw(fraction_column) << " fraction"
 				<< std::setw(value_column) << " value" << std::endl;
-			for (int i = 0; i < size; i++) {
+			for (size_t i = 0; i < size; i++) {
 				myPosit.set_raw_bits(i);
 				regime<nbits,es>   r = myPosit.get_regime();
 				exponent<nbits,es> e = myPosit.get_exponent();

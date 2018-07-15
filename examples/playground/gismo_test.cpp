@@ -41,6 +41,7 @@ int main(int argc, char** argv)
 	{ // Test conversion from long to posit
 
 	    posit_32_2 p = 1/posit_32_2(10000000000);
+	    cout << pretty_print(p) << endl;
 	}        
         return 0;
     }

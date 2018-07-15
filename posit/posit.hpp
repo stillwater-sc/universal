@@ -681,12 +681,13 @@ public:
 		decode(raw_bits);
 		return *this;
 	}
-	// Set the raw bits of the posit given a binary pattern
+	// Set the raw bits of the posit given an unsigned value starting from the lsb
+	// handy for enumerating a posit state space
 	posit<nbits,es>& set_raw_bits(uint64_t value) {
 		clear();
 		bitblock<nbits> raw_bits;
 		uint64_t mask = 1;
-		for ( int i = 0; i < nbits; i++ ) {
+		for ( size_t i = 0; i < nbits; i++ ) {
 			raw_bits.set(i,(value & mask));
 			mask <<= 1;
 		}
@@ -736,12 +737,12 @@ public:
 
 		// get the exponent bits
 		// start of exponent is nbits - (sign_bit + regime_bits)
-		int msb = int(int(nbits) - 1 - (1 + nrRegimeBits));
+		int msb = int(static_cast<int>(nbits) - 1 - (1 + nrRegimeBits));
 		size_t nrExponentBits = 0;
 		if (es > 0) {
 			bitblock<es> _exp;
 			if (msb >= 0 && es > 0) {
-				nrExponentBits = (msb >= es - 1 ? es : msb + 1);
+				nrExponentBits = (msb >= static_cast<int>(es) - 1 ? es : msb + 1);
 				for (size_t i = 0; i < nrExponentBits; i++) {
 					_exp[es - 1 - i] = tmp[msb - i];
 				}
@@ -769,8 +770,6 @@ public:
 		_raw_bits = raw_bits;	// store the raw bits for reference
 		// check special cases
 		_sign = raw_bits.test(nbits - 1);
-		// check for special cases
-		bool special = false;
 		if (_sign) {
 			std::bitset<nbits> tmp(raw_bits);
 			tmp.reset(nbits - 1);

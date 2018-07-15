@@ -437,14 +437,14 @@ try {
 	// a 32-bit float and a <27,1> posit have the same number of significand bits around 1.0
 	constexpr size_t nbits    = 27;
 	constexpr size_t es       =  1;
-	constexpr size_t capacity = 10;
+	//constexpr size_t capacity = 10;
 
 	typedef float            IEEEType;
 	typedef posit<nbits, es> PositType;
 	cout << "Using " << spec_to_string(posit<nbits, es>()) << endl;
 
 	float eps = std::numeric_limits<float>::epsilon();
-	float epsminus= 1.0f - eps;
+	//float epsminus= 1.0f - eps;
 	float epsplus = 1.0f + eps;
 	// We want to solve the system Ax=b
 	int d = 5;

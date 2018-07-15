@@ -170,7 +170,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	cout << "Quire experiments" << endl;

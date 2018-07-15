@@ -14,8 +14,13 @@ namespace sw {
 
 		// sum of magnitudes of the vector elements
 		template<typename vector_T>
-		vector_T asum(size_t n, const vector_T& x, size_t incx) {
-
+		typename vector_T::value_type asum(size_t n, const vector_T& x, size_t incx) {
+			typename vector_T::value_type sum = 0;
+			size_t ix;
+			for (ix = 0; ix < n; ix += incx) {
+				sum += x[ix];
+			}
+			return sum;
 		}
 
 		// a time x plus y
@@ -114,13 +119,29 @@ namespace sw {
 		// find the index of the element with maximum absolute value
 		template<typename vector_T>
 		size_t amax(size_t n, const vector_T& x, size_t incx) {
-
+			typename vector_T::value_type running_max = -INFINITY;
+			size_t ix, index;
+			for (ix = 0; ix < x.size(); ix += incx) {
+				if (x[ix] > running_max) {
+					index = ix;
+					running_max = x[ix];
+				}
+			}
+			return index;
 		}
 
 		// find the index of the element with minimum absolute value
 		template<typename vector_T>
 		size_t amin(size_t n, const vector_T& x, size_t incx) {
-
+			typename vector_T::value_type running_min = INFINITY;
+			size_t ix, index;
+			for (ix = 0; ix < x.size(); ix += incx) {
+				if (x[ix] < running_min) {
+					index = ix;
+					running_min = x[ix];
+				}
+			}
+			return index;
 		}
 
 		// absolute value of a complex number

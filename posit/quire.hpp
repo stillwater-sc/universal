@@ -468,7 +468,7 @@ private:
 				carry = (_a & _b) | (carry & (_a ^ _b));
 			}
 			// propagate any carries to the end of the lower accumulator
-			while (carry && i < half_range) {
+			while (carry && i < int(half_range)) {
 				bool _a = _lower[i];
 				_lower[i] = _a ^ carry;
 				carry = carry & _a;
@@ -477,7 +477,7 @@ private:
 			if (carry) {  // carry propagate to the _upper accumulator
 						  // need to increment the _upper
 				i = 0;
-				while (carry && i < upper_range) {
+				while (carry && i < int(upper_range)) {
 					bool _a = _upper[i];
 					_upper[i] = _a ^ carry;
 					carry = carry & _a;
@@ -486,7 +486,7 @@ private:
 				if (carry) {
 					// next add the bits to the capacity segment
 					i = 0;
-					while (carry && i < capacity) {
+					while (carry && i < int(capacity)) {
 						bool _a = _capacity[i];
 						_capacity[i] = _a ^ carry;
 						carry = carry & _a;
@@ -511,7 +511,7 @@ private:
 			if (carry) {
 				// next add the bits to the capacity segment
 				i = 0;
-				while (carry && i < capacity) {
+				while (carry && i < int(capacity)) {
 					bool _a = _capacity[i];
 					_capacity[i] = _a ^ carry;
 					carry = carry & _a;
@@ -548,7 +548,7 @@ private:
 			// next add the bits to the capacity segment
 			if (carry) {
 				i = 0;
-				while (carry && i < capacity) {
+				while (carry && i < int(capacity)) {
 					bool _a = _capacity[i];
 					_capacity[i] = _a ^ carry;
 					carry = carry & _a;
@@ -578,7 +578,7 @@ private:
 				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
 			}
 			// propagate any borrows to the end of the lower accumulator
-			while (borrow && i < half_range) {
+			while (borrow && i < int(half_range)) {
 				bool _a = _lower[i];
 				_lower[i] = _a ^ borrow;
 				borrow = borrow & !_a;
@@ -587,7 +587,7 @@ private:
 			if (borrow) { // borrow propagate to the _upper accumulator
 						  // need to decrement the _upper
 				i = 0;
-				while (borrow && i < upper_range) {
+				while (borrow && i < int(upper_range)) {
 					bool _a = _upper[i];
 					_upper[i] = _a ^ borrow;
 					borrow = borrow & !_a;
@@ -596,7 +596,7 @@ private:
 				if (borrow) {
 					// propagate the borrow into the capacity segment
 					i = 0;
-					while (borrow && i < capacity) {
+					while (borrow && i < int(capacity)) {
 						bool _a = _capacity[i];
 						_capacity[i] = _a ^ borrow;
 						borrow = borrow & !_a;
@@ -613,7 +613,7 @@ private:
 				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
 			}
 			// propagate any borrows to the end of the upper accumulator
-			while (borrow && i < upper_range) {
+			while (borrow && i < int(upper_range)) {
 				bool _a = _upper[i];
 				_upper[i] = _a ^ borrow;
 				borrow = borrow & !_a;
@@ -622,7 +622,7 @@ private:
 			if (borrow) {
 				// propagate the borrow into the capacity segment
 				i = 0;
-				while (borrow && i < capacity) {
+				while (borrow && i < int(capacity)) {
 					bool _a = _capacity[i];
 					_capacity[i] = _a ^ borrow;
 					borrow = borrow & !_a;
@@ -650,7 +650,7 @@ private:
 				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
 			}
 			// propagate any borrows to the end of the upper accumulator
-			while (borrow && i < upper_range) {
+			while (borrow && i < int(upper_range)) {
 				bool _a = _upper[i];
 				_upper[i] = _a ^ borrow;
 				borrow = borrow & !_a;
@@ -659,7 +659,7 @@ private:
 			if (borrow) {
 				// propagate the borrow into the capacity segment
 				i = 0;
-				while (borrow && i < capacity) {
+				while (borrow && i < int(capacity)) {
 					bool _a = _capacity[i];
 					_capacity[i] = _a ^ borrow;
 					borrow = borrow & !_a;
@@ -771,8 +771,6 @@ inline bool operator>=(const quire<nbits, es, capacity>& lhs, const quire<nbits,
 template<size_t nbits, size_t es, size_t capacity, size_t fbits>
 inline bool operator== (const quire<nbits, es, capacity>& q, const value<fbits>& v) {
 	// not efficient, but leverages < and >
-	bool bSmaller = q < v;
-	bool bBigger = q > v;
 	return !(q < v) && !(q > v);
 }
 template<size_t nbits, size_t es, size_t capacity, size_t fbits>

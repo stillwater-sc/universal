@@ -634,7 +634,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Conversion failed: ";
@@ -642,8 +642,8 @@ try {
 #if MANUAL_TESTING
 	const size_t nbits = 5;
 	const size_t es = 0;
-	bool bPrintIntermediateResults = true;
 /*
+	bool bPrintIntermediateResults = true;
 	GenerateTestSample<nbits, es>(SE_QUANDRANT, bPrintIntermediateResults);
 	GenerateTestSample<nbits, es>(NE_QUANDRANT, bPrintIntermediateResults);
 	GenerateTestSample<nbits, es>(NW_QUANDRANT, bPrintIntermediateResults);

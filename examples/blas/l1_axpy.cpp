@@ -18,9 +18,9 @@ try {
 	using namespace sw::unum;
 	using namespace sw::blas;
 
-	const size_t nbits = 16;
-	const size_t es = 1;
-	const size_t vecSize = 32;
+	constexpr size_t nbits = 16;
+	constexpr size_t es = 1;
+	//constexpr size_t vecSize = 32;
 
 	int nrOfFailedTestCases = 0;
 

@@ -20,14 +20,14 @@ try {
 
 	cout << "Increment-based ascention from 0 to NaR and back to 0\n";
 	posit<nbits, es> p(0);
-	for (int i = 0; i <= uint32_t(1) << nbits; ++i) {
+	for (size_t i = 0; i <= (size_t(1) << nbits); ++i) {
 		cout << components_to_string(p++) << '\n';
 	}
 
 	// reverse enumeration from NaR to 0
 	cout << "Decrement-based descention from NaR to 0 and back to NaR\n";
 	p.setToNaR();
-	for (int i = uint32_t(1) << nbits; i >= 0; --i) {
+	for (long i = (size_t(1) << nbits); i >= 0; --i) {
 		cout << components_to_string(p--) << '\n';
 	}
 	cout << endl;

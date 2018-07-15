@@ -64,18 +64,18 @@ try {
 	using namespace sw::unum;
 	using namespace sw::blas;
 
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	constexpr size_t capacity = 6;   // 2^3 accumulations of maxpos^2
-	constexpr size_t vecSizePwr = 5;
-	constexpr size_t vecSize = (size_t(1) << vecSizePwr);
+	//constexpr size_t nbits = 16;
+	//constexpr size_t es = 1;
+	//constexpr size_t capacity = 6;   // 2^3 accumulations of maxpos^2
+	//constexpr size_t vecSizePwr = 5;
+	//constexpr size_t vecSize = (size_t(1) << vecSizePwr);
 
 	// generate an interesting vector x with 0.5 ULP round-off errors in each product
 	// that the fused-dot product will be able to resolve
 	// by progressively adding smaller values, a regular dot product loses these bits due to canceleation.
 	// but a fused dot product leveraging a quire will be able to resolve these.
 	float eps      = std::numeric_limits<float>::epsilon();
-	float epsminus = 1.0f - eps;
+	//float epsminus = 1.0f - eps;
 	float epsplus  = 1.0f + eps;
 
 	typedef float        IEEEType;

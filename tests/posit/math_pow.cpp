@@ -44,7 +44,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = true;
+	//bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Addition failed: ";
