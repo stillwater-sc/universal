@@ -39,9 +39,10 @@ endif(NOT CMAKE_BUILD_TYPE)
 
 ####
 # Set build options
-option(USE_SSE                           "Build code with SSE ISA support"                  OFF)
+# MSVC generates SSE/SSE2 code by default. No support for SSE3 as of 7/15/2018
+option(USE_SSE3                          "Build code with SSE3 ISA support"                 OFF)
 option(USE_AVX                           "Build code with AVX ISA support"                  OFF)
-option(USE_AVX2                          "Build code with AVX2 ISA support"                 OFF)
+option(USE_AVX2                          "Build code with AVX2 ISA support"                 ON)
 # control which projects get enabled
 option(BUILD_CI_CHECK                    "Set to ON to build all components"                OFF)
 option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 arithmetic"        OFF)
@@ -97,15 +98,15 @@ message(STATUS "C++14 support has been enabled by default")
 # Compiler specific environments
 if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	include(CheckCXXCompilerFlag)
-	check_cxx_compiler_flag("-msse3" COMPILER_HAS_SSE_FLAG)
+	check_cxx_compiler_flag("-msse3" COMPILER_HAS_SSE3_FLAG)
 	check_cxx_compiler_flag("-mavx"  COMPILER_HAS_AVX_FLAG)
 	check_cxx_compiler_flag("-mavx2" COMPILER_HAS_AVX2_FLAG)
 	
 	# Streaming SIMD Extension (SSE) ISA
-	if (USE_SSE AND COMPILER_HAS_SSE_FLAG)
+	if (USE_SSE3 AND COMPILER_HAS_SSE_FLAG)
 		add_definitions(-DUNUM_USE_SSE)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -msse3")
-	endif(USE_SSE AND COMPILER_HAS_SSE_FLAG)
+	endif(USE_SSE3 AND COMPILER_HAS_SSE_FLAG)
 	# Advanced Vector Extensions (AVX) ISA
 	if (USE_AVX AND COMPILER_HAS_AVX_FLAG)
 		add_definitions(-DUNUM_USE_AVX)
@@ -123,13 +124,12 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3")
 	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
 elseif(MSVC)
-	include(CheckCXXCompilerFlag)
-	check_cxx_compiler_flag("/arch:SSE2" COMPILER_HAS_SSE_FLAG)
 	# Streaming SIMD Extension (SSE) ISA
-	if (USE_SSE)
-		add_definitions(-DUNUM_USE_SSE)
-		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:SSE2")
-	endif(USE_SSE)
+	if (USE_SSE3)
+		add_definitions(-DUNUM_USE_SSE3)
+		set(COMPILER_HAS_SSE3_FLAG true)
+		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:SSE3")
+	endif(USE_SSE3)
 	# Advanced Vector Extensions (AVX) ISA
 	if (USE_AVX)
 		add_definitions(-DUNUM_USE_AVX)
