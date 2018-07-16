@@ -10,27 +10,7 @@
 namespace sw {
 	namespace blas {
 
-		// LEVEL 1 BLAS operators
 
-		// sum of magnitudes of the vector elements
-		template<typename vector_T>
-		typename vector_T::value_type asum(size_t n, const vector_T& x, size_t incx) {
-			typename vector_T::value_type sum = 0;
-			size_t ix;
-			for (ix = 0; ix < n; ix += incx) {
-				sum += x[ix];
-			}
-			return sum;
-		}
-
-		// a time x plus y
-		template<typename scale_T, typename vector_T>
-		void axpy(size_t n, scale_T a, const vector_T& x, size_t incx, vector_T& y, size_t incy) {
-			size_t cnt, ix, iy;
-			for (cnt = 0, ix = 0, iy = 0; cnt < n && ix < x.size() && iy < y.size(); ++cnt, ix += incx, iy += incy) {
-				y[iy] += a * x[ix];
-			}
-		}
 
 		// vector copy
 		template<typename vector_T>
@@ -116,48 +96,14 @@ namespace sw {
 			}
 		}
 
-		// find the index of the element with maximum absolute value
-		template<typename vector_T>
-		size_t amax(size_t n, const vector_T& x, size_t incx) {
-			typename vector_T::value_type running_max = -INFINITY;
-			size_t ix, index;
-			for (ix = 0; ix < x.size(); ix += incx) {
-				if (x[ix] > running_max) {
-					index = ix;
-					running_max = x[ix];
-				}
-			}
-			return index;
-		}
 
-		// find the index of the element with minimum absolute value
-		template<typename vector_T>
-		size_t amin(size_t n, const vector_T& x, size_t incx) {
-			typename vector_T::value_type running_min = INFINITY;
-			size_t ix, index;
-			for (ix = 0; ix < x.size(); ix += incx) {
-				if (x[ix] < running_min) {
-					index = ix;
-					running_min = x[ix];
-				}
-			}
-			return index;
-		}
 
 		// absolute value of a complex number
 		template<typename T>
 		T cabs(T z) {
 		}
 
-		// print a vector
-		template<typename vector_T>
-		void print(std::ostream& ostr, size_t n, vector_T& x, size_t incx = 1) {
-			size_t cnt, ix;
-			for (cnt = 0, ix = 0; cnt < n && ix < x.size(); ++cnt, ix += incx) {
-				cnt == 0 ? ostr << "[" << x[ix] : ostr << ", " << x[ix];
-			}
-			ostr << "]";
-		}
+
 
 
 		// LEVEL 2 BLAS operators
