@@ -1,7 +1,7 @@
 #pragma once
 // trace_constants.hpp: definition of constants that direct intermediate result reporting
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

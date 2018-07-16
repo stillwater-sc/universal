@@ -4,7 +4,7 @@
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <random>
 
 // These functions print matrices and vectors in a nice format
 template<typename Ty>
@@ -38,26 +38,50 @@ void print(std::ostream& ostr, size_t n, vector_T& x, size_t incx = 1) {
 	ostr << "]";
 }
 
-// generate random data vector
+// generate a vector of random permutations around 1.0
+// contraction is a right shift of the mantissa causing smaller fluctuations
 template<typename element_T>
-void randomVectorFill(size_t n, std::vector<element_T>& vec) {
-	for (size_t i = 0; i < n; i++) {
-		int rnd1 = rand();
-		int rnd2 = rand();
-		double rnd = rnd1 / (double)rnd2;
-		vec[i] = (element_T)rnd;
+void randomVectorFillAroundOneEPS(size_t n, std::vector<element_T>& vec, size_t contraction = 6) {
+	// Use random_device to generate a seed for Mersenne twister engine.
+	std::random_device rd{};
+	// Use Mersenne twister engine to generate pseudo-random numbers.
+	std::mt19937 engine{ rd() };
+	// "Filter" MT engine's output to generate pseudo-random double values,
+	// **uniformly distributed** on the closed interval [0, 1].
+	// (Note that the range is [inclusive, inclusive].)
+	std::uniform_real_distribution<double> dist{ 0.0, 1.0 };
+	// Pattern to generate pseudo-random number.
+	// double rnd_value = dist(engine);
+
+	double scale = std::pow(2, double(0.0-contraction));
+	for (size_t i = 0; i < n; ++i) {
+		// generate random value between [-0.5, 0.5], and contract
+		double eps = (dist(engine) - 0.5) * scale;
+		double v = 1.0 + eps;
+		vec[i] = (element_T)v;
 	}
 }
 
 // generate a vector of random permutations around 1.0
-// contraction is a right shift of the random variable causing smaller fluctuations
-// RAND_MAX is typically a 16bit number so can't contract more than 15 bits
+// contraction is a right shift of the mantissa causing smaller fluctuations
 template<typename element_T>
-void randomVectorFillAroundOneEPS(size_t n, std::vector<element_T>& vec, size_t contraction = 6) {
-	for (size_t i = 0; i < n; i++) {
-		int rnd1 = (rand() - (RAND_MAX >> 1)) >> contraction;
-		double eps = rnd1 / (double)RAND_MAX;
-		double v = 1.0 + eps;
+void randomVectorFillAroundZeroEPS(size_t n, std::vector<element_T>& vec, size_t contraction = 6) {
+	// Use random_device to generate a seed for Mersenne twister engine.
+	std::random_device rd{};
+	// Use Mersenne twister engine to generate pseudo-random numbers.
+	std::mt19937 engine{ rd() };
+	// "Filter" MT engine's output to generate pseudo-random double values,
+	// **uniformly distributed** on the closed interval [0, 1].
+	// (Note that the range is [inclusive, inclusive].)
+	std::uniform_real_distribution<double> dist{ 0.0, 1.0 };
+	// Pattern to generate pseudo-random number.
+	// double rnd_value = dist(engine);
+
+	double scale = std::pow(2, double(0.0 - contraction));
+	for (size_t i = 0; i < n; ++i) {
+		// generate random value between [-0.5, 0.5], and contract
+		double eps = (dist(engine) - 0.5) * scale;
+		double v = 0.0 + eps;
 		vec[i] = (element_T)v;
 	}
 }
