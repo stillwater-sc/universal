@@ -42,8 +42,8 @@ try {
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = calculate_k<nbits, es>(scale);
 		size_t nrOfRegimeBits = test_regime.assign_regime_pattern(k);
-		size_t nrOfExponentBits = test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
-		cout << "regime bits: " << nrOfRegimeBits << " exponent bits: " << nrOfExponentBits << '\n';
+		// assign_exponent() returns the rounding mode: not used anymore: TODO
+		test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
 		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime << " " << test_exponent << '\n';
 	}
 	cout << endl;
@@ -60,8 +60,7 @@ try {
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = calculate_k<nbits, es>(scale);;
 		size_t nrOfRegimeBits = test_regime.assign_regime_pattern(k);
-		size_t nrOfExponentBits = test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
-		cout << "regime bits: " << nrOfRegimeBits << " exponent bits: " << nrOfExponentBits << '\n';
+		test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
 		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime << " " << test_exponent << " " << test_fraction << '\n';
 	}
 	cout << endl;

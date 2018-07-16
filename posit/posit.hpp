@@ -315,7 +315,7 @@ public:
 		if (isNaR()) {
 			return *this;
 		}
-		posit<nbits, es> negated;
+		posit<nbits, es> negated(0);  // TODO: artificial initialization to pass -Wmaybe-uninitialized
 		negated.decode(twos_complement(_raw_bits));
 		return negated;
 	}
