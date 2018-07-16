@@ -1,17 +1,11 @@
-// lu_decomposition.cpp example program comparing float vs posit equation solver
+// l3_fused_lu.cpp example program comparing float vs posit LU Decomposition equation solver
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-// enable the mathematical constants in cmath: old-style preprocessor magic which isn't best practice anymore
 #include "common.hpp"
-
-#include <vector>
-#define POSIT_VERBOSE_OUTPUT
-#define QUIRE_TRACE_ADD
 #include <posit>
-#include "blas.hpp"
+#include "blas_operators.hpp"
 
 // can the ratio a/b be represented exactly
 bool isRepresentable(int a, int b) {
@@ -237,7 +231,6 @@ template<size_t nbits, size_t es, size_t capacity = 10>
 void ComparePositDecompositions(std::vector< sw::unum::posit<nbits, es> >& A, std::vector< sw::unum::posit<nbits, es> >& x, std::vector< sw::unum::posit<nbits, es> >& b) {
 	size_t d = b.size();
 	assert(A.size() == d*d);
-	using namespace sw::blas;
 	std::vector< sw::unum::posit<nbits, es> > LU(d*d);
 
 	{
@@ -303,7 +296,6 @@ template<typename Ty>
 void CompareIEEEDecompositions(std::vector<Ty>& A, std::vector<Ty>& x, std::vector<Ty>& b) {
 	size_t d = b.size();
 	assert(A.size() == d*d);
-	using namespace sw::blas;
 	std::vector<Ty> LU(d*d);
 
 	{
@@ -432,7 +424,6 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
-	using namespace sw::blas;
 
 	// a 32-bit float and a <27,1> posit have the same number of significand bits around 1.0
 	constexpr size_t nbits    = 27;
@@ -527,6 +518,10 @@ try {
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (std::runtime_error& err) {
+	std::cerr << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
