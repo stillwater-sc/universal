@@ -1,4 +1,4 @@
-// l1_axpy.cpp: example program contrasting a BLAS L1 ?axpy routine between FLOAT and POSIT
+// l2_fused_mv.cpp example program to demonstrate BLAS L2 Reproducible Matrix-Vector product
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
@@ -7,31 +7,13 @@
 #include <posit>
 #include "blas_operators.hpp"
 
-
-
 int main(int argc, char** argv)
 try {
-	using namespace std;
-	using namespace sw::unum;
-
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	//constexpr size_t vecSize = 32;
+	const size_t nbits = 8;
+	const size_t es = 0;
+	const size_t vecSize = 32;
 
 	int nrOfFailedTestCases = 0;
-
-	constexpr int d = 5;
-	vector< posit<nbits, es> > v1 = { 1.0, 2.0, 3.0, 4.0, 5.0 };
-	vector< posit<nbits, es> > v2(d);
-	posit<nbits, es> alpha = minpos<nbits, es>();
-
-	cout << "AXPY is " << endl;
-	print(cout, d, v1, 1); cout << endl;
-	print(cout, d, v2, 1); cout << endl;
-
-	axpy(d, alpha, v1, 1, v2, 1);
-
-	print(cout, d, v2, 1); cout << endl;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

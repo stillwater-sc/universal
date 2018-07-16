@@ -1,18 +1,12 @@
 // fir_filter.cpp example program showing a FIR filter using error-free custom posit configurations
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-// enable the mathematical constants in cmath
-#define _USE_MATH_DEFINES
-#include "stdafx.h"
+#include "common.hpp"
 
 #include <vector>
 #include <posit>
-
-using namespace std;
-using namespace sw::unum;
 
 /*
 
@@ -34,10 +28,13 @@ log_e(10)		M_LN10		2.30258509299404568402
 
 */
 
-const double pi = 3.14159265358979323846;  // best practice for C++
+constexpr double pi = 3.14159265358979323846;  // best practice for C++
 
 int main(int argc, char** argv)
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	const size_t nbits = 16;
 	const size_t es = 1;
 	const size_t vecSize = 32;
@@ -63,10 +60,14 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (std::runtime_error& err) {
+	std::cerr << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
