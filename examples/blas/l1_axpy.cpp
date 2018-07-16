@@ -8,15 +8,23 @@
 
 #include <vector>
 #include <posit>
+#include "blas_utils.hpp"
 
-#include "blas.hpp"
+// LEVEL 1 BLAS operator
+// a time x plus y
+template<typename scale_T, typename vector_T>
+void axpy(size_t n, scale_T a, const vector_T& x, size_t incx, vector_T& y, size_t incy) {
+	size_t cnt, ix, iy;
+	for (cnt = 0, ix = 0, iy = 0; cnt < n && ix < x.size() && iy < y.size(); ++cnt, ix += incx, iy += incy) {
+		y[iy] += a * x[ix];
+	}
+}
 
 
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
-	using namespace sw::blas;
 
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
