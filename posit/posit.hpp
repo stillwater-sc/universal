@@ -818,7 +818,7 @@ public:
 			std::istringstream ss(bitStr);
 			ss >> std::hex >> raw;
 			//std::cout << "[" << nbitsStr << "] [" << esStr << "] [" << bitStr << "] = " << raw << std::endl;
-			set_raw_bits(raw);
+			set_raw_bits(raw);  // TODO: this takes the least significant bits, but we want to take the most significant bits
 			bSuccess = true;
 		}
 		else {
