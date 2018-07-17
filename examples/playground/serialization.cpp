@@ -21,24 +21,28 @@ int main(int argc, char** argv)
         std::istringstream lnstream;
         lnstream.unsetf(std::ios_base::skipws);
         lnstream.clear();
-        lnstream.str(str);
-                        
+        lnstream.str(str);                       
         lnstream >> std::ws >> p;
-		cout << p << endl;
+		cout << "IEEE float/double format, parsed into a posit<32,2>: " << p << endl;
 
 		lnstream.clear();
-		lnstream.str("32.2x40000000p");
+		str = "32.2x40000000p";
+		lnstream.str(str);
 		lnstream >> std::ws >> p;
-		cout << p << endl;
-		lnstream.clear();
-		lnstream.str("32.2x80000000p");
-		lnstream >> std::ws >> p;
-		cout << p << endl;
-		lnstream.clear();
-		lnstream.str("64.3x8000000000000000p");
-		lnstream >> std::ws >> p;
-		cout << pretty_print(p) << endl;
+		cout << "posit format: " << setw(25) << str << "- parsed into a posit<32,2>: " << p << endl;
 
+		lnstream.clear();
+		str = "32.2x80000000p";
+		lnstream.str(str);
+		lnstream >> std::ws >> p;
+		cout << "posit format: " << setw(25) << str << "- parsed into a posit<32,2>: " << p << endl;
+
+		lnstream.clear();
+		str = "64.3x8000000000000000p";
+		lnstream.str(str);
+		lnstream >> std::ws >> p;  // TODO: this is truncating the most significant bits, instead of the least significant bits
+		cout << "posit format: " << setw(25) << str << "- parsed into a posit<32,2>: " << p << " <---- TODO fix" << endl;
+		cout << "pretty posit: " << pretty_print(p) << endl;
 
         return EXIT_SUCCESS;
     }
