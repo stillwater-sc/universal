@@ -35,7 +35,7 @@ before_build:
     mkdir build
     cd build
     cmake --version
-    cmake -DBUILD_CI_CHECK .. -G %generator%
+    cmake -DBUILD_CI_CHECK=ON .. -G %generator%
 build:
   project: c:\projects\cmake-init\build\template.sln
   verbosity: minimal
