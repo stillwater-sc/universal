@@ -37,7 +37,7 @@ before_build:
     cmake --version
     cmake -DBUILD_CI_CHECK=ON .. -G %generator%
 build:
-  project: c:\projects\cmake-init\build\template.sln
+  project: c:\projects\cmake-init\build\universal.sln
   verbosity: minimal
   parallel: true
 only_commits:
