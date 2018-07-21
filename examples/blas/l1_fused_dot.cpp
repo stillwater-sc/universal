@@ -4,12 +4,12 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
-#define POSIT_TRACE_DEBUG
-//#define POSIT_TRACE_MUL
+// enable the following define to show the intermediate steps in the fused-dot product
+// #define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_MUL
+#define QUIRE_TRACE_ADD
 #include <posit>
 #include "blas_operators.hpp"
-
-constexpr double pi = 3.14159265358979323846;  // best practice for C++
 
 template<typename Ty>
 Ty minValue(const std::vector<Ty>& samples) {
@@ -41,16 +41,37 @@ try {
 	//float epsminus = 1.0f - eps;
 	float epsplus  = 1.0f + eps;
 
-	typedef float        IEEEType;
-	typedef posit<27, 1> PositType;
-	vector<IEEEType> xieee = { epsplus,	epsplus, epsplus, epsplus, epsplus };
-	vector<IEEEType> yieee = { 1.5f, 1.25f, 1.125f, 1.0625f, 1.03125f };
-	vector<PositType> xposit = { epsplus,	epsplus, epsplus, epsplus, epsplus };
-	vector<PositType> yposit = { 1.5f, 1.25f, 1.125f, 1.0625f, 1.03125f };
-	cout << setprecision(17);
-	cout << "dot(x,y)      : " << dot(xieee.size(), xieee, 1, yieee, 1) << endl;
-	cout << "fused_dot(x,y): " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << endl;
-	cout << setprecision(5);
+	using PositType = posit<32, 2>;
+
+	{
+		using IEEEType = float;
+		IEEEType a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
+		IEEEType b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
+		vector<IEEEType> xieee = { a1, a2, a3, a4 };
+		vector<IEEEType> yieee = { b1, b2, b3, b4 };
+
+		cout << setprecision(17);
+		cout << "dot(x,y) float  : " << dot(xieee.size(), xieee, 1, yieee, 1) << endl;	
+
+		vector<PositType> xposit = { a1, a2, a3, a4 };
+		vector<PositType> yposit = { b1, b2, b3, b4 };
+
+		cout << "fused_dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+		cout << setprecision(5);
+	}
+
+	{
+		using IEEEType = double;
+		IEEEType a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
+		IEEEType b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
+		vector<IEEEType> xieee = { a1, a2, a3, a4 };
+		vector<IEEEType> yieee = { b1, b2, b3, b4 };
+
+		cout << setprecision(17);
+		cout << "dot(x,y) double : " << dot(xieee.size(), xieee, 1, yieee, 1) << endl;
+		cout << setprecision(5);
+	}
+
 
 	return EXIT_SUCCESS;
 }

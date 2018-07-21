@@ -36,12 +36,13 @@ void axpy(size_t n, scale_T a, const vector_T& x, size_t incx, vector_T& y, size
 // TODO: investigate if the vector<> index is always a 32bit entity?
 template<typename Ty>
 Ty dot(size_t n, const std::vector<Ty>& x, size_t incx, const std::vector<Ty>& y, size_t incy) {
-	Ty product = 0;
+	Ty sum_of_products = 0;
 	size_t cnt, ix, iy;
 	for (cnt = 0, ix = 0, iy = 0; cnt < n && ix < x.size() && iy < y.size(); ++cnt, ix += incx, iy += incy) {
-		product += x[ix] * y[iy];
+		Ty product = x[ix] * y[iy];
+		sum_of_products += product;
 	}
-	return product;
+	return sum_of_products;
 }
 // fused dot product operators
 // Fused dot product with quire continuation
@@ -55,14 +56,15 @@ void fused_dot(Qy& sum_of_products, size_t n, const std::vector<Ty>& x, size_t i
 // Standalone fused dot product
 template<size_t nbits, size_t es, size_t capacity = 10>
 sw::unum::posit<nbits, es> fused_dot(size_t n, const std::vector< sw::unum::posit<nbits, es> >& x, size_t incx, const std::vector< sw::unum::posit<nbits, es> >& y, size_t incy) {
-	sw::unum::quire<nbits, es, capacity> q;   // initialized to 0 by constructor
+	sw::unum::quire<nbits, es, capacity> sum_of_products;   // initialized to 0 by constructor
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
-		q += sw::unum::quire_mul(x[ix], y[iy]);
-		if (sw::unum::_trace_quire_add) std::cout << q << '\n';
+		sw::unum::value<2*(nbits - 2 - es)> unrounded_product = sw::unum::quire_mul(x[ix], y[iy]);
+		sum_of_products += unrounded_product;
+		if (sw::unum::_trace_quire_add) std::cout << sum_of_products << '\n';
 	}
 	sw::unum::posit<nbits, es> sum;
-	sum.convert(q.to_value());     // one and only rounding step of the fused-dot product
+	sum.convert(sum_of_products.to_value());     // one and only rounding step of the fused-dot product
 	return sum;
 }
 
