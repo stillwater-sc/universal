@@ -210,52 +210,75 @@ namespace sw {
 		
 		// generate a full binary representation table for a given posit configuration
 		template<size_t nbits, size_t es>
-		void GeneratePositTable(std::ostream& ostr) 
+		void GeneratePositTable(std::ostream& ostr, bool csvFormat = false)
 		{
-			ostr << "Generate Posit Lookup table for a POSIT<" << nbits << "," << es << ">" << std::endl;
-
 			const size_t size = (1 << nbits);
 			posit<nbits, es>	myPosit;
+			if (csvFormat) {
+				ostr << "Generate Posit Lookup table for a POSIT<" << nbits << "," << es << "> in CSV format" << std::endl;
+				ostr << "#, Binary, Decoded, k, sign, scale, regime, exponent, fraction, value\n";
+				for (size_t i = 0; i < size; i++) {
+					myPosit.set_raw_bits(i);
+					regime<nbits, es>   r = myPosit.get_regime();
+					exponent<nbits, es> e = myPosit.get_exponent();
+					fraction<myPosit.fbits>    f = myPosit.get_fraction();
+					ostr << i << ","
+						<< myPosit.get() << ","
+						<< myPosit.get_decoded() << ","
+						<< myPosit.regime_k() << ","
+						<< myPosit.sign_value() << ","
+						<< myPosit.scale() << ","
+						<< std::right << r << ","
+						<< std::right << e << ","
+						<< std::right << f << ","
+						<< std::setprecision(22) << myPosit << std::setprecision(0)
+						<< '\n';
+				}
+				ostr << std::endl;
+			}
+			else {
+				ostr << "Generate Posit Lookup table for a POSIT<" << nbits << "," << es << "> in TXT format" << std::endl;
 
-			const size_t index_column = 5;
-			const size_t bin_column = 16;
-			const size_t k_column = 8;
-			const size_t sign_column = 8;
-			const size_t scale_column = 8;
-		//	const size_t regime_value_column = 30;
-			const size_t regime_column = 16;
-			const size_t exponent_column = 16;
-			const size_t fraction_column = 16;
-			const size_t value_column = 30;
+				const size_t index_column = 5;
+				const size_t bin_column = 16;
+				const size_t k_column = 8;
+				const size_t sign_column = 8;
+				const size_t scale_column = 8;
+				//	const size_t regime_value_column = 30;
+				const size_t regime_column = 16;
+				const size_t exponent_column = 16;
+				const size_t fraction_column = 16;
+				const size_t value_column = 30;
 
-			ostr << std::setw(index_column) << " # "
-				<< std::setw(bin_column) << " Binary"
-				<< std::setw(bin_column) << " Decoded"
-				<< std::setw(k_column) << " k"
-				<< std::setw(sign_column) << "sign"
-				<< std::setw(scale_column) << "scale"
-		//		<< std::setw(regime_value_column) << " regime"
-				<< std::setw(regime_column) << " regime"
-				<< std::setw(exponent_column) << " exponent"
-				<< std::setw(fraction_column) << " fraction"
-				<< std::setw(value_column) << " value" << std::endl;
-			for (size_t i = 0; i < size; i++) {
-				myPosit.set_raw_bits(i);
-				regime<nbits,es>   r = myPosit.get_regime();
-				exponent<nbits,es> e = myPosit.get_exponent();
-				fraction<myPosit.fbits>    f = myPosit.get_fraction();
-				ostr << std::setw(4) << i << ": "
-					<< std::setw(bin_column) << myPosit.get()
-					<< std::setw(bin_column) << myPosit.get_decoded()
-					<< std::setw(k_column) << myPosit.regime_k()
-					<< std::setw(sign_column) << myPosit.sign_value()
-					<< std::setw(scale_column) << myPosit.scale()
-		//			<< std::setw(regime_value_column) << std::setprecision(22) << r.value() << std::setprecision(0)
-					<< std::setw(regime_column) << std::right << r
-					<< std::setw(exponent_column) << std::right << e 
-					<< std::setw(fraction_column) << std::right << f
-					<< std::setw(value_column) << std::setprecision(22) << myPosit << std::setprecision(0)
-					<< std::endl;
+				ostr << std::setw(index_column) << " # "
+					<< std::setw(bin_column) << " Binary"
+					<< std::setw(bin_column) << " Decoded"
+					<< std::setw(k_column) << " k"
+					<< std::setw(sign_column) << "sign"
+					<< std::setw(scale_column) << "scale"
+					//		<< std::setw(regime_value_column) << " regime"
+					<< std::setw(regime_column) << " regime"
+					<< std::setw(exponent_column) << " exponent"
+					<< std::setw(fraction_column) << " fraction"
+					<< std::setw(value_column) << " value" << std::endl;
+				for (size_t i = 0; i < size; i++) {
+					myPosit.set_raw_bits(i);
+					regime<nbits, es>   r = myPosit.get_regime();
+					exponent<nbits, es> e = myPosit.get_exponent();
+					fraction<myPosit.fbits>    f = myPosit.get_fraction();
+					ostr << std::setw(4) << i << ": "
+						<< std::setw(bin_column) << myPosit.get()
+						<< std::setw(bin_column) << myPosit.get_decoded()
+						<< std::setw(k_column) << myPosit.regime_k()
+						<< std::setw(sign_column) << myPosit.sign_value()
+						<< std::setw(scale_column) << myPosit.scale()
+						//			<< std::setw(regime_value_column) << std::setprecision(22) << r.value() << std::setprecision(0)
+						<< std::setw(regime_column) << std::right << r
+						<< std::setw(exponent_column) << std::right << e
+						<< std::setw(fraction_column) << std::right << f
+						<< std::setw(value_column) << std::setprecision(22) << myPosit << std::setprecision(0)
+						<< std::endl;
+				}
 			}
 		}
 
