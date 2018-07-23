@@ -41,7 +41,6 @@ try {
 	//float epsminus = 1.0f - eps;
 	float epsplus  = 1.0f + eps;
 
-	using PositType = posit<32, 2>;
 
 	{
 		using IEEEType = float;
@@ -50,13 +49,13 @@ try {
 		vector<IEEEType> xieee = { a1, a2, a3, a4 };
 		vector<IEEEType> yieee = { b1, b2, b3, b4 };
 
+		printVector(cout, "a: ", xieee);
+		printVector(cout, "b: ", yieee);
+
+		cout << endl << endl;
+
 		cout << setprecision(17);
-		cout << "dot(x,y) float  : " << dot(xieee.size(), xieee, 1, yieee, 1) << endl;	
-
-		vector<PositType> xposit = { a1, a2, a3, a4 };
-		vector<PositType> yposit = { b1, b2, b3, b4 };
-
-		cout << "fused_dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+		cout << "IEEE float   BLAS dot(x,y)  : " << dot(xieee.size(), xieee, 1, yieee, 1) << endl;
 		cout << setprecision(5);
 	}
 
@@ -68,10 +67,28 @@ try {
 		vector<IEEEType> yieee = { b1, b2, b3, b4 };
 
 		cout << setprecision(17);
-		cout << "dot(x,y) double : " << dot(xieee.size(), xieee, 1, yieee, 1) << endl;
+		cout << "IEEE double  BLAS dot(x,y)  : " << dot(xieee.size(), xieee, 1, yieee, 1) << endl;
 		cout << setprecision(5);
 	}
 
+	{
+		// a little verbose but enabling different precisions to be injected
+		// float, double, long double
+		// so that you can convince yourself that this is a property of posits and quires
+		// and not some input precision shenanigans. The magic is all in the quire
+		// accumulating UNROUNDED multiplies: that gives you in affect double the 
+		// fraction bits.
+		using IEEEType = float;
+		IEEEType a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
+		IEEEType b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
+
+		using PositType = posit<32, 2>;
+		vector<PositType> xposit = { a1, a2, a3, a4 };
+		vector<PositType> yposit = { b1, b2, b3, b4 };
+
+		cout << "posit<32,2> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+		cout << setprecision(5);
+	}
 
 	return EXIT_SUCCESS;
 }
