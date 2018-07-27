@@ -9,6 +9,7 @@
 #include "../../posit/exceptions.hpp"
 #include "../../bitblock/bitblock.hpp"
 #include "../../posit/value.hpp"
+#include "../../posit/posit.hpp"
 #include "../../valid/valid.hpp"
 #include "../../valid/valid_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
@@ -44,6 +45,23 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
+	constexpr size_t nbits = 16;
+	constexpr size_t es = 1;
+	valid<nbits, es> v1, v2;
+
+	v1.clear();
+	cout << v1 << endl;
+
+	v2.setToInclusive();
+	cout << v2 << endl;
+
+	v1 = 1;
+	cout << v1 << endl;
+
+	posit<nbits, es> lb(1.25f), ub(1.375f);
+	v2.setLowerBound(lb, false);
+	v2.setUpperBound(ub, true);
+	cout << v2 << endl;
 
 
 #else
