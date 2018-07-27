@@ -22,24 +22,13 @@ class valid {
 		constexpr int fbits = std::numeric_limits<T>::digits - 1;
 		value<fbits> v((T)rhs);
 
-		// special case processing
-		if (v.isZero()) {
-			setToZero();
-			return *this;
-		}
-		if (v.isInfinite() || v.isNaN()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
-			setToNaR();
-			return *this;
-		}
-
-		convert(v);
 		return *this;
 	}
 
 public:
 	static constexpr size_t somebits = 10;
 
-	valid<nbits, es>() { setToZero(); }
+	valid<nbits, es>() { clear(); }
 
 	valid(const valid&) = default;
 	valid(valid&&) = default;
@@ -47,7 +36,7 @@ public:
 	valid& operator=(const valid&) = default;
 	valid& operator=(valid&&) = default;
 
-	valid(int initial_value)                { *this = initial_value; }
+	valid(long initial_value)               { *this = initial_value; }
 	valid(unsigned long long initial_value) { *this = initial_value; }
 	valid(double initial_value)             { *this = initial_value; }
 	valid(long double initial_value)        { *this = initial_value; }
@@ -81,31 +70,50 @@ public:
 	explicit operator int() const { return to_int(); }
 
 	// selectors
-	bool isNaR() const {
-		return false;
+	inline bool isOpen() const {
+		return !isClosed();
 	}
-	bool isZero() const {
-		return false;
+	inline bool isClosed() const {
+		return lubit && uubit;
+	}
+	inline bool isOpenLower() const {
+		return lubit;
+	}
+	inline bool isOpenUpper() const {
+		return uubit;
 	}
 
 	// modifiers
+
+	// TODO: do we clear to exact 0, or [-inf, inf]?
 	inline void clear() {
-
+		lb.clear();
+		ub.clear();
+		lubit = true;
+		uubit = true;
 	}
-	inline void setToZero() {
-
+	inline void setToInclusive() {
+		lb.setToNaR();
+		ub.setToNaR();
+		lubit = true;
+		uubit = true;
 	}
-	inline void setToNaR() {
-
+	inline void setLowerBound(sw::unum::posit<nbits, es>& _lb, bool ubit) {
+		lb = _lb;
+		lubit = ubit;
+	}
+	inline void setUpperBound(sw::unum::posit<nbits, es>& _ub, bool ubit) {
+		ub = _ub;
+		uubit = ubit;
 	}
 
 private:
 	// member variables
+	sw::unum::posit<nbits, es> lb, ub;  // lower_bound and upper_bound of the tile
+	bool lubit, uubit; // lower ubit, upper ubit
 
 
-
-	// helper methods
-	
+	// helper methods	
 	int         to_int() const {
 		if (isZero()) return 0;
 		if (isNaR()) throw "NaR (Not a Real)";
@@ -160,21 +168,25 @@ private:
 
 // VALID operators
 template<size_t nbits, size_t es>
-inline std::ostream& operator<<(std::ostream& ostr, const valid<nbits, es>& p) {
-	if (p.isZero()) {
-		ostr << double(0.0);
-		return ostr;
+inline std::ostream& operator<<(std::ostream& ostr, const valid<nbits, es>& v) {
+	// determine lower bound
+	if (v.lubit == true) {  // exact lower bound
+		ostr << '[' << v.lb << ", ";
 	}
-	else if (p.isNaR()) {
-		ostr << "NaR";
-		return ostr;
+	else {					// inexact lower bound
+		ostr << '(' << v.lb << ", ";
 	}
-	ostr << p.to_double();
+	if (v.uubit == true) { // exact upper bound
+		ostr << v.ub << ']';
+	}
+	else {					// inexact upper bound
+		ostr << v.ub << ')';
+	}
 	return ostr;
 }
 
 template<size_t nbits, size_t es>
-inline std::istream& operator>> (std::istream& istr, const valid<nbits, es>& p) {
+inline std::istream& operator>> (std::istream& istr, const valid<nbits, es>& v) {
 	istr >> p._Bits;
 	return istr;
 }
