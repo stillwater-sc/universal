@@ -37,9 +37,9 @@ try {
 	// that the fused-dot product will be able to resolve
 	// by progressively adding smaller values, a regular dot product loses these bits due to canceleation.
 	// but a fused dot product leveraging a quire will be able to resolve these.
-	float eps      = std::numeric_limits<float>::epsilon();
+	//float eps      = std::numeric_limits<float>::epsilon();
 	//float epsminus = 1.0f - eps;
-	float epsplus  = 1.0f + eps;
+	//float epsplus  = 1.0f + eps;
 
 
 	{
