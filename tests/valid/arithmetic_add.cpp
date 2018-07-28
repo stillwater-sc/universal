@@ -63,6 +63,8 @@ try {
 	v2.setub(ub, true);
 	cout << v2 << endl;
 
+	int order = v2.relative_order(value<10>(0));
+	cout << order << endl;
 
 #else
 
