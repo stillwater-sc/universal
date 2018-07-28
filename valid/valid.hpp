@@ -159,7 +159,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const valid<nbits, es>& v) {
 
 template<size_t nbits, size_t es>
 inline std::istream& operator>> (std::istream& istr, const valid<nbits, es>& v) {
-	istr >> p._Bits;
+	istr >> v._Bits;
 	return istr;
 }
 
