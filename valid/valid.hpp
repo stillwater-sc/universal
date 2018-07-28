@@ -115,6 +115,95 @@ private:
 
 	// helper methods	
 
+	// special case check for projecting values between (0, minpos] to minpos and [maxpos, inf) to maxpos
+	// Returns true if the scale is too small or too large for this posit config
+	bool check_inward_projection_range(int scale) {
+		// calculate the max k factor for this posit config
+		int posit_size = nbits;
+		int k = scale < 0 ? -(posit_size - 2) : (posit_size - 2);
+		return scale < 0 ? scale < k*(1 << es) : scale > k*(1 << es);
+	}
+
+	// relative_order returns -1 if v was rounded up, 0 if it was exact, and 1 if v was rounded down
+	template <size_t FBits>
+	inline int relative_order(const value<FBits>& v) {
+		if (v.isZero()) {
+			return 0;
+		}
+		if (v.isNaN() || v.isInfinite()) {
+			return 0;
+		}
+		convert(v.sign(), v.scale(), v.fraction());
+	}
+	// convert assumes that ZERO and NaR cases are handled. Only non-zero and non-NaR values are allowed.
+	template<size_t input_fbits>
+	bool convert(bool sign, int scale, bitblock<input_fbits> input_fraction) {
+		clear();
+		if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+		if (_trace_conversion) std::cout << "sign " << (sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << scale << " fraction " << input_fraction << std::endl;
+
+		// construct the posit
+		_sign = sign;
+		int k = calculate_unconstrained_k<nbits, es>(scale);
+		// interpolation rule checks
+		if (check_inward_projection_range(scale)) {    // regime dominated
+			return 1; // rounded down
+		}
+		else {
+			const size_t pt_len = nbits + 3 + es;
+			bitblock<pt_len> pt_bits;
+			bitblock<pt_len> regime;
+			bitblock<pt_len> exponent;
+			bitblock<pt_len> fraction;
+			bitblock<pt_len> sticky_bit;
+
+			bool s = sign;
+			int e = scale;
+			bool r = (e >= 0);
+
+			unsigned run = (r ? 1 + (e >> es) : -(e >> es));
+			regime.set(0, 1 ^ r);
+			for (unsigned i = 1; i <= run; i++) regime.set(i, r);
+
+			unsigned esval = e % (uint32_t(1) << es);
+			exponent = convert_to_bitblock<pt_len>(esval);
+			unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
+			// TODO: what needs to be done if nf > fbits?
+			//assert(nf <= input_fbits);
+			// copy the most significant nf fraction bits into fraction
+			unsigned lsb = nf <= input_fbits ? 0 : nf - input_fbits;
+			for (unsigned i = lsb; i < nf; i++) fraction[i] = input_fraction[input_fbits - nf + i];
+
+			bool sb = anyAfter(input_fraction, input_fbits - 1 - nf);
+
+			// construct the untruncated posit
+			// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
+			regime <<= es + nf + 1;
+			exponent <<= nf + 1;
+			fraction <<= 1;
+			sticky_bit.set(0, sb);
+
+			pt_bits |= regime;
+			pt_bits |= exponent;
+			pt_bits |= fraction;
+			pt_bits |= sticky_bit;
+
+			unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
+			bool blast = pt_bits.test(len - nbits);
+			bool bafter = pt_bits.test(len - nbits - 1);
+			bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
+
+			bool rb = (blast & bafter) | (bafter & bsticky);
+
+			pt_bits <<= pt_len - len;
+			bitblock<nbits> ptt;
+			truncate(pt_bits, ptt);
+
+			if (rb) increment_bitset(ptt);
+			if (s) ptt = twos_complement(ptt);
+
+		}
+	}
 
 	// friends
 	// template parameters need names different from class template parameters (for gcc and clang)
