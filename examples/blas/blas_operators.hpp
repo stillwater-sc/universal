@@ -119,10 +119,10 @@ void matvec(const std::vector< sw::unum::posit<nbits, es> >& A, const std::vecto
 template<typename Ty>
 void eye(std::vector<Ty>& I) {
 	// preconditions
-	int d = int(std::sqrt(I.size()));
+	size_t d = size_t(std::sqrt(I.size()));
 	assert(I.size() == d*d);
-	for (int i = 0; i < d; ++i) {
-		for (int j = 0; j < d; ++j) {
+	for (size_t i = 0; i < d; ++i) {
+		for (size_t j = 0; j < d; ++j) {
 			I[i*d + j] = (i == j ? Ty(1) : Ty(0));
 		}
 	}
@@ -133,14 +133,14 @@ void eye(std::vector<Ty>& I) {
 template<typename Ty>
 void matmul(const std::vector<Ty>& A, const std::vector<Ty>& B, std::vector<Ty>& C) {
 	// preconditions
-	int d = int(std::sqrt(A.size()));
+	size_t d = size_t(std::sqrt(A.size()));
 	assert(A.size() == d*d);
 	assert(B.size() == d*d);
 	assert(C.size() == d*d);
-	for (int i = 0; i < d; ++i) {
-		for (int j = 0; j < d; ++j) {
+	for (size_t i = 0; i < d; ++i) {
+		for (size_t j = 0; j < d; ++j) {
 			C[i*d + j] = Ty(0);
-			for (int k = 0; k < d; ++k) {
+			for (size_t k = 0; k < d; ++k) {
 				C[i*d + j] = C[i*d + j] + A[i*d + k] * B[k*d + j];
 			}
 		}
@@ -151,15 +151,15 @@ void matmul(const std::vector<Ty>& A, const std::vector<Ty>& B, std::vector<Ty>&
 template<size_t nbits, size_t es, size_t capacity = 10>
 void matmul(const std::vector<sw::unum::posit<nbits,es> >& A, const std::vector<sw::unum::posit<nbits, es> >& B, std::vector<sw::unum::posit<nbits, es> >& C) {
 	// preconditions
-	int d = int(std::sqrt(A.size()));
+	size_t d = size_t(std::sqrt(A.size()));
 	assert(A.size() == d*d);
 	assert(B.size() == d*d);
 	assert(C.size() == d*d);
-	for (int i = 0; i < d; ++i) {
-		for (int j = 0; j < d; ++j) {
+	for (size_t i = 0; i < d; ++i) {
+		for (size_t j = 0; j < d; ++j) {
 			C[i*d + j] = 0;
 			sw::unum::quire<nbits, es, capacity> q;   // initialized to 0 by constructor
-			for (int k = 0; k < d; ++k) {
+			for (size_t k = 0; k < d; ++k) {
 				// C[i*d + j] = C[i*d + j] + A[i*d + k] * B[k*d + j];
 				q += sw::unum::quire_mul(A[i*d + k], B[k*d + j]);
 				if (sw::unum::_trace_quire_add) std::cout << q << '\n';

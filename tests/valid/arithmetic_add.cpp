@@ -59,8 +59,8 @@ try {
 	cout << v1 << endl;
 
 	posit<nbits, es> lb(1.25f), ub(1.375f);
-	v2.setLowerBound(lb, false);
-	v2.setUpperBound(ub, true);
+	v2.setlb(lb, false);
+	v2.setub(ub, true);
 	cout << v2 << endl;
 
 
