@@ -107,6 +107,18 @@ namespace sw {
 		uubit = ubit;
 	}
 
+	// relative_order returns -1 if v was rounded up, 0 if it was exact, and 1 if v was rounded down
+	template <size_t FBits>
+	inline int relative_order(const value<FBits>& v) {
+		if (v.isZero()) {
+			return 0;
+		}
+		if (v.isNaN() || v.isInfinite()) {
+			return 0;
+		}
+		return convert(v.sign(), v.scale(), v.fraction());
+	}
+
 private:
 	// member variables
 	sw::unum::posit<nbits, es> lb, ub;  // lower_bound and upper_bound of the tile
@@ -124,26 +136,11 @@ private:
 		return scale < 0 ? scale < k*(1 << es) : scale > k*(1 << es);
 	}
 
-	// relative_order returns -1 if v was rounded up, 0 if it was exact, and 1 if v was rounded down
-	template <size_t FBits>
-	inline int relative_order(const value<FBits>& v) {
-		if (v.isZero()) {
-			return 0;
-		}
-		if (v.isNaN() || v.isInfinite()) {
-			return 0;
-		}
-		convert(v.sign(), v.scale(), v.fraction());
-	}
+
 	// convert assumes that ZERO and NaR cases are handled. Only non-zero and non-NaR values are allowed.
 	template<size_t input_fbits>
-	bool convert(bool sign, int scale, bitblock<input_fbits> input_fraction) {
-		clear();
-		if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-		if (_trace_conversion) std::cout << "sign " << (sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << scale << " fraction " << input_fraction << std::endl;
-
+	int convert(bool sign, int scale, bitblock<input_fbits> input_fraction) {
 		// construct the posit
-		_sign = sign;
 		int k = calculate_unconstrained_k<nbits, es>(scale);
 		// interpolation rule checks
 		if (check_inward_projection_range(scale)) {    // regime dominated
@@ -202,6 +199,7 @@ private:
 			if (rb) increment_bitset(ptt);
 			if (s) ptt = twos_complement(ptt);
 
+			return -1; // TODO
 		}
 	}
 
