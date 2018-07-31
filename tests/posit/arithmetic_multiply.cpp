@@ -113,12 +113,29 @@ try {
 	// generate individual testcases to hand trace/debug
 
 	/*
+	Suppose posits x and y are
+
+	x = 0x3BCB2F0D representing the value 0.7371054179966449737548828125
+	y = 0x3ADA6F8A representing the value 0.678329028189182281494140625
+
+	If you use IEEE float you get exactly 1/2, which is incorrect. 
+	The correct answer is
+	z = 0x38000001 representing the value 0.5000000037252902984619140625
+	*/
+
+	posit<32, 2> x, y, z;
+	x.set_raw_bits(0x3BCB2F0D);
+	y.set_raw_bits(0x3ADA6F8A);
+	z = x * y;
+	bitblock<32> raw = z.get();
+	cout << components_to_string(z) << "\n0x" << hex << raw.to_ulong() <<  endl;
+
+
 	float fa, fb;
 	fa = 0.0f; fb = INFINITY;
 	std::cout << fa << " " << fb << std::endl;
 	GenerateTestCase<4,0, float>(fa, fb);
 	GenerateTestCase<16, 1, float>(float(minpos_value<16, 1>()), float(maxpos_value<16, 1>()));
-	*/
 
 	DifficultRoundingCases();
 	
