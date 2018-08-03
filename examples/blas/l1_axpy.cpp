@@ -1,26 +1,22 @@
 // l1_axpy.cpp: example program contrasting a BLAS L1 ?axpy routine between FLOAT and POSIT
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 #include "common.hpp"
-
-#include <vector>
 #include <posit>
+#include "blas_operators.hpp"
 
-#include "blas.hpp"
 
 
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
-	using namespace sw::blas;
 
-	const size_t nbits = 16;
-	const size_t es = 1;
-	const size_t vecSize = 32;
+	constexpr size_t nbits = 16;
+	constexpr size_t es = 1;
+	//constexpr size_t vecSize = 32;
 
 	int nrOfFailedTestCases = 0;
 
@@ -41,6 +37,10 @@ try {
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (std::runtime_error& err) {
+	std::cerr << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

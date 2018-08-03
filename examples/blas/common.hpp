@@ -3,6 +3,7 @@
 
 #include <cstdint>	 // uint8_t, etc.
 #include <cmath>     // for frexp/frexpf
+#include <cfloat>	 // for DBL_EPSILON, etc.
 #include <string>
 #include <sstream>
 #include <iostream>
@@ -14,7 +15,6 @@
 #endif
 
 #include <chrono>
-
 #include <vector>
 
 

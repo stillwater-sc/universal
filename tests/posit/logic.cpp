@@ -30,8 +30,19 @@ int ValidatePositLogicEqual() {
 				ref = true;
 			}
 			else {
-				// same behavior as IEEE floats
-				ref = double(a) == double(b);
+				// initially, we thought this would be the same behavior as IEEE floats
+				// ref = double(a) == double(b);
+				// but we have found that some compilers (MSVC) take liberty with NaN
+				// \fp:fast		floating point model set to fast
+				//	NaN == NaN  : IEEE = true    Posit = true
+				//	NaN == real : IEEE = true    Posit = false
+				// \fp:strict	floating point model set to strict
+				//	NaN == NaN  : IEEE = false    Posit = true
+				//	NaN == real : IEEE = false    Posit = false
+				// and thus we can't relay on IEEE float as reference
+
+				// instead, use the bit pattern as reference
+				ref = (i == j ? true : false);
 			}
 
 			presult = a == b;
@@ -64,8 +75,19 @@ int ValidatePositLogicNotEqual() {
 				ref = false;
 			}
 			else {
-				// same behavior as IEEE floats
-				ref = double(a) != double(b);
+				// initially, we thought this would be the same behavior as IEEE floats
+				// ref = double(a) == double(b);
+				// but we have found that some compilers (MSVC) take liberty with NaN
+				// \fp:fast		floating point model set to fast
+				//	NaN == NaN  : IEEE = true    Posit = true
+				//	NaN == real : IEEE = true    Posit = false
+				// \fp:strict	floating point model set to strict
+				//	NaN == NaN  : IEEE = false    Posit = true
+				//	NaN == real : IEEE = false    Posit = false
+				// and thus we can't relay on IEEE float as reference
+
+				// instead, use the bit pattern as reference
+				ref = (i != j ? true : false);
 			}
 
 			presult = a != b;
@@ -228,21 +250,25 @@ try {
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
-	double nan = NAN;
-	double inf = INFINITY;
+	constexpr size_t nbits = 8;
+	constexpr size_t es    = 0;
+
+	double nan    = NAN;
+	double inf    = INFINITY;
 	double normal = 0;
 	posit<nbits, es> pa(nan), pb(inf), pc(normal);
 	std::cout << pa << " " << pb << " " << pc << std::endl;
 	
 	// showcasing the differences between posit and IEEE float
-	std::cout << (nan == nan) << " " << (pa == pa) << std::endl;
-	std::cout << (inf == inf) << " " << (pb == pb) << std::endl;
-	std::cout << (nan != nan) << " " << (pa != pb) << std::endl;
-	std::cout << (inf != inf) << " " << (pb != pb) << std::endl;
-	std::cout << (nan <= normal) << " " << (pa <= pc) << std::endl;
-	std::cout << (nan >= normal) << " " << (pa >= pc) << std::endl;
-	std::cout << (inf <  normal) << " " << (pa <  pc) << std::endl;
-	std::cout << (inf  > normal) << " " << (pa  > pc) << std::endl;
+	std::cout << "NaN ==  NaN: IEEE=" << (nan == nan ? "true" : "false")    << "    Posit=" << (pa == pa ? "true" : "false") << std::endl;
+	std::cout << "NaN == real: IEEE=" << (nan == normal ? "true" : "false") << "    Posit=" << (pa == pc ? "true" : "false") << std::endl;
+	std::cout << "INF ==  INF: IEEE=" << (inf == inf ? "true" : "false")    << "    Posit=" << (pb == pb ? "true" : "false") << std::endl;
+	std::cout << "NaN !=  NaN: IEEE=" << (nan != nan ? "true" : "false")    << "   Posit=" << (pa != pb ? "true" : "false") << std::endl;
+	std::cout << "INF !=  INF: IEEE=" << (inf != inf ? "true" : "false")    << "   Posit=" << (pb != pb ? "true" : "false") << std::endl;
+	std::cout << "NaN <= real: IEEE=" << (nan <= normal ? "true" : "false") << "    Posit=" << (pa <= pc ? "true" : "false") << std::endl;
+	std::cout << "NaN >= real: IEEE=" << (nan >= normal ? "true" : "false") << "    Posit=" << (pa >= pc ? "true" : "false") << std::endl;
+	std::cout << "INF <  real: IEEE=" << (inf <  normal ? "true" : "false") << "   Posit=" << (pa <  pc ? "true" : "false") << std::endl;
+	std::cout << "INF >  real: IEEE=" << (inf  > normal ? "true" : "false") << "    Posit=" << (pa  > pc ? "true" : "false") << std::endl;
 
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<3, 0>(), "posit<3,0>", "==");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<3, 0>(), "posit<3,0>", "!=");

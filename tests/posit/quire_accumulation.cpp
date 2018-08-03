@@ -38,8 +38,10 @@ int ValidateQuireMagnitudeComparison() {
 	using namespace std;
 	using namespace sw::unum;
 
-	quire<16, 1, 2> q = 0xAAAA;
+	quire<16, 1, 2> q;
 	value<20> v;
+	v = 0xAAAA;
+	q += v;
 	v = 0xAAAB;
 	cout << "quire: " << q << endl;
 	cout << "value: " << v.get_fixed_point() << " " << components(v) << endl;
@@ -88,71 +90,79 @@ int ValidateSignMagnitudeTransitions() {
 	cout << "Quire experiments: sign/magnitude transitions at the range extremes" << endl;
 
 	quire<nbits, es, capacity> q;
+	value<2 * (nbits - 2 - es)> addend;
+	// TODO: how would you print a header to make it easier to interpret the bit positions
 	cout << q << "                                               <-- start at zero" << endl;
 	// start in the positive, SE quadrant with minpos^2
-	q += quire_mul(minpos, minpos);
-	cout << q << " q += minpos^2  minpos = " << minpos.get() << " " << components(minpos.to_value()) << endl;
+	q += addend = quire_mul(minpos, minpos);
+	cout << q << " q += minpos^2  addend = " << components(addend) << endl;
 	// move to the negative SW quadrant by adding negative value that is bigger
-	q += quire_mul(min2, -min2);
-	cout << q << " q += min2^2    min2   = " << min2.get() << " " << components(min2.to_value()) << endl;
+	q += addend = quire_mul(min2, -min2);
+	cout << q << " q += min2^2    addend = " << components(addend) << endl;
 	// remove minpos^2 from the quire by subtracting it
-	q -= quire_mul(minpos, minpos);
-	cout << q << " q -= minpos^2  minpos = " << minpos.get() << " " << components(minpos.to_value()) << endl;
+	q -= addend = quire_mul(minpos, minpos);
+	cout << q << " q -= minpos^2  addend = " << components(addend) << endl;
 	// move back into posit, SE quadrant by adding the next bigger product
-	q += quire_mul(min3, min3);
-	cout << q << " q += min3^2    min3   = " << min3.get() << " " << components(min3.to_value()) << endl;
+	q += addend = quire_mul(min3, min3);
+	cout << q << " q += min3^2    addend = " << components(addend) << endl;
 	// remove the min2^2 from the quire by subtracting it
-	q -= quire_mul(min2, min2);
-	cout << q << " q -= min2^2    min2   = " << min2.get() << " " << components(min2.to_value()) << endl;
+	q -= addend = quire_mul(min2, min2);
+	cout << q << " q -= min2^2    addend = " << components(addend) << endl;
 	// add a -maxpos^2, to flip it again
-	q += quire_mul(maxpos, -maxpos);
-	cout << q << " q += -maxpos^2 maxpos = " << maxpos.get() << " " << components(maxpos.to_value()) << endl;
+	q += addend = quire_mul(maxpos, -maxpos);
+	cout << q << " q += -maxpos^2 addend = " << components(addend) << endl;
 	// subtract min3^2 to propagate the carry
-	q -= quire_mul(min3, min3);
-	cout << q << " q -= min3^2    min3   = " << min3.get() << " " << components(min3.to_value()) << endl;
+	q -= addend = quire_mul(min3, min3);
+	cout << q << " q -= min3^2    addend = " << components(addend) << endl;
 	// remove min2^2 remenants
-	q += quire_mul(min2, min2);
-	cout << q << " q += min2^2    min2   = " << min2.get() << " " << components(min2.to_value()) << endl;
-	q += quire_mul(min2, min2);
-	cout << q << " q += min2^2    min2   = " << min2.get() << " " << components(min2.to_value()) << endl;
+	q += addend = quire_mul(min2, min2);
+	cout << q << " q += min2^2    addend = " << components(addend) << endl;
+	q += addend = quire_mul(min2, min2);
+	cout << q << " q += min2^2    addend = " << components(addend) << endl;
 	// borrow propagate
-	q += quire_mul(minpos, minpos);
-	cout << q << " q += minpos^2  minpos = " << minpos.get() << " " << components(minpos.to_value()) << endl;
+	q += addend = quire_mul(minpos, minpos);
+	cout << q << " q += minpos^2  addend = " << components(addend) << endl;
 	// flip the max3 bit
-	q += quire_mul(max3, max3);
-	cout << q << " q += max3^2    max3   = " << max3.get() << " " << components(max3.to_value()) << endl;
+	q += addend = quire_mul(max3, max3);
+	cout << q << " q += max3^2    addend = " << components(addend) << endl;
 	// add maxpos^2 to be left with max3^2
-	q += quire_mul(maxpos, maxpos);
-	cout << q << " q += maxpos^2  maxpos = " << maxpos.get() << " " << components(maxpos.to_value()) << endl;
+	q += addend = quire_mul(maxpos, maxpos);
+	cout << q << " q += maxpos^2  addend = " << components(addend) << endl;;
 	// subtract max2^2 to flip the sign again
-	q -= quire_mul(max2, max2);
-	cout << q << " q -= max2^2    max2   = " << max2.get() << " " << components(max2.to_value()) << endl;
+	q -= addend = quire_mul(max2, max2);
+	cout << q << " q -= max2^2    addend = " << components(addend) << endl;
 	// remove the max3^2 remenants
-	q -= quire_mul(max3, max3);
-	cout << q << " q -= max3^2    max3   = " << max3.get() << " " << components(max3.to_value()) << endl;
+	q -= addend = quire_mul(max3, max3);
+	cout << q << " q -= max3^2    addend = " << components(addend) << endl;
 	// remove the minpos^2 bits
-	q -= quire_mul(minpos, minpos);
-	cout << q << " q -= minpos^2  minpos = " << minpos.get() << " " << components(minpos.to_value()) << endl;
+	q -= addend = quire_mul(minpos, minpos);
+	cout << q << " q -= minpos^2  addend = " << components(addend) << endl;
 	// add maxpos^2 to be left with max2^2 and flipped back to positive quadrant
-	q += quire_mul(maxpos, maxpos);
-	cout << q << " q += maxpos^2  maxpos = " << maxpos.get() << " " << components(maxpos.to_value()) << endl;
+	q += addend = quire_mul(maxpos, maxpos);
+	cout << q << " q += maxpos^2  addend = " << components(addend) << endl;
 	// add max2^2 to remove its remenants
-	q += quire_mul(max2, max2);
-	cout << q << " q += max2^2    max2   = " << max2.get() << " " << components(max2.to_value()) << endl;
+	q += addend = quire_mul(max2, max2);
+	cout << q << " q += max2^2    addend = " << components(addend) << endl;
 	// subtract minpos^2 to propagate the borrow across the quire
-	q -= quire_mul(minpos, minpos);
-	cout << q << " q -= minpos^2  minpos = " << minpos.get() << " " << components(minpos.to_value()) << endl;
+	q -= addend = quire_mul(minpos, minpos);
+	cout << q << " q -= minpos^2  addend = " << components(addend) << endl;
 	// subtract maxpos^2 to flip the sign and be left with minpos^2
-	q -= quire_mul(maxpos, maxpos);
-	cout << q << " q -= maxpos^2  maxpos = " << maxpos.get() << " " << components(maxpos.to_value()) << endl;
+	q -= addend = quire_mul(maxpos, maxpos);
+	cout << q << " q -= maxpos^2  addend = " << components(addend) << endl;
 	// add minpos^2 to get to zero
-	q += quire_mul(minpos, minpos);
-	cout << q << " q += minpos^2  minpos = " << minpos.get() << " " << components(minpos.to_value()) << " <-- back to zero" << endl;
+	q += addend = quire_mul(minpos, minpos);
+	cout << q << " q += minpos^2  addend = " << components(addend) << endl;
+	// subtract minpos^2 to go negative
+	q += addend = -quire_mul(minpos, minpos);
+	cout << q << " q += -minpos^2 addend = " << components(addend) << endl;
+	// add minpos^2 to get to zero
+	q += addend = quire_mul(minpos, minpos);
+	cout << q << " q += minpos^2  addend = " << components(addend) << " <-- back to zero" << endl;
 
 	return nrOfFailedTestCases;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main()
@@ -160,7 +170,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	cout << "Quire experiments" << endl;
@@ -170,8 +180,8 @@ try {
 #if MANUAL_TESTING
 	std::vector< posit<16, 1> > t;
 
-//	t = GenerateVectorForZeroValueFDP(16, maxpos<16,1>());
-//	PrintTestVector(cout, t);
+	t = GenerateVectorForZeroValueFDP(16, maxpos<16,1>());
+	PrintTestVector(cout, t);
 
 #if 0
 	quire<8, 1, 2> q;
@@ -198,6 +208,8 @@ try {
 #endif
 
 	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<8, 1>();
+
+	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<16, 1>();
 	
 	//nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
 

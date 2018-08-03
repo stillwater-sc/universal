@@ -27,10 +27,27 @@ namespace sw {
 			bitblock& operator=(bitblock&&) = default;
 
 			bitblock& operator=(int rhs) {
-				return (bitblock&) std::bitset<nbits>::operator=(rhs);
+				return (bitblock&)std::bitset<nbits>::operator=(rhs);
 			}
 
 			void setToZero() { std::bitset<nbits>::reset(); }
+			bool load_bits(const std::string& string_of_bits) {
+				if (string_of_bits.length() != nbits) return false;
+				setToZero();
+				int msb = nbits - 1;
+				for (std::string::const_iterator it = string_of_bits.begin(); it != string_of_bits.end(); ++it) {
+					if (*it == '0') {
+						this->reset(msb--);
+					}
+					else if (*it == '1') {
+						this->set(msb--);
+					}
+					else {
+						return false;
+					}
+				}
+				return true;
+			}
 		};
 
 		// logic operators
@@ -42,9 +59,11 @@ namespace sw {
 			if (lhs[nbits - 1] == 0 && rhs[nbits - 1] == 1)	return false;
 			if (lhs[nbits - 1] == 1 && rhs[nbits - 1] == 0) return true;
 			// sign is equal, compare the remaining bits
-			for (int i = nbits - 2; i >= 0; --i) {
-				if (lhs[i] == 0 && rhs[i] == 1)	return true;
-				if (lhs[i] == 1 && rhs[i] == 0) return false;
+			if (nbits > 1) {
+				for (int i = static_cast<int>(nbits) - 2; i >= 0; --i) {
+					if (lhs[i] == 0 && rhs[i] == 1)	return true;
+					if (lhs[i] == 1 && rhs[i] == 0) return false;
+				}
 			}
 			// numbers are equal
 			return false;
@@ -54,7 +73,7 @@ namespace sw {
 		template<size_t nbits>
 		bool operator==(const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 			// compare remaining bits
-			for (int i = nbits - 1; i >= 0; --i) {
+			for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
 				if (lhs[i] != rhs[i]) return false;
 			}
 			// numbers are equal
@@ -65,7 +84,7 @@ namespace sw {
 		template<size_t nbits>
 		bool operator< (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 			// compare remaining bits
-			for (int i = nbits - 1; i >= 0; --i) {
+			for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
 				if (lhs[i] == 0 && rhs[i] == 1)	return true;
 				if (lhs[i] == 1 && rhs[i] == 0) return false;
 			}
@@ -77,7 +96,7 @@ namespace sw {
 		template<size_t nbits>
 		bool operator<= (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 			// compare remaining bits
-			for (int i = nbits - 1; i >= 0; --i) {
+			for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
 				if (lhs[i] == 0 && rhs[i] == 1)	return true;
 				if (lhs[i] == 1 && rhs[i] == 0) return false;
 			}
@@ -89,7 +108,7 @@ namespace sw {
 		template<size_t nbits>
 		bool operator> (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 			// compare remaining bits
-			for (int i = nbits - 1; i >= 0; --i) {
+			for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
 				if (lhs[i] == 0 && rhs[i] == 1)	return false;
 				if (lhs[i] == 1 && rhs[i] == 0) return true;
 			}
@@ -101,7 +120,7 @@ namespace sw {
 		template<size_t nbits>
 		bool operator>= (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 			// compare remaining bits
-			for (int i = nbits - 1; i >= 0; --i) {
+			for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
 				if (lhs[i] == 0 && rhs[i] == 1)	return false;
 				if (lhs[i] == 1 && rhs[i] == 0) return true;
 			}
@@ -119,7 +138,7 @@ namespace sw {
 		template<size_t nbits>
 		bool increment_bitset(bitblock<nbits>& number) {
 			bool carry = true;  // ripple carry
-			for (int i = 0; i < nbits; i++) {
+			for (size_t i = 0; i < nbits; i++) {
 				bool _a = number[i];
 				number[i] = _a ^ carry;
 				carry = carry & (_a ^ false);
@@ -134,10 +153,11 @@ namespace sw {
 		// [1 0 0 0] nrBits = 2 is the word [1 0]
 		// [1 1 0 0] nrBits = 3 is the word [1 1 0], etc.
 		template<size_t nbits>
-		bool increment_unsigned(bitblock<nbits>& number, int nrBits = nbits - 1) {
+		bool increment_unsigned(bitblock<nbits>& number, size_t nrBits = nbits - 1) {
+			if (nrBits > nbits-1) nrBits = nbits-1;  // check/fix argument
 			bool carry = 1;  // ripple carry
-			int lsb = nbits - nrBits;
-			for (int i = lsb; i < nbits; i++) {
+			size_t lsb = nbits - nrBits;
+			for (size_t i = lsb; i < nbits; i++) {
 				bool _a = number[i];
 				number[i] = _a ^ carry;
 				carry = (_a & false) | (carry & (_a ^ false));
@@ -149,7 +169,7 @@ namespace sw {
 		template<size_t nbits>
 		bool decrement_bitset(bitblock<nbits>& number) {
 			bool borrow = true;
-			for (int i = 0; i < nbits; i++) {
+			for (size_t i = 0; i < nbits; i++) {
 				bool _a = number[i];
 				number[i] = _a ^ borrow;
 				borrow = (!(!_a ^ true) & borrow);
@@ -164,7 +184,7 @@ namespace sw {
 		template<size_t nbits>
 		bool add_unsigned(bitblock<nbits> a, bitblock<nbits> b, bitblock<nbits + 1>& sum) {
 			bool carry = false;  // ripple carry
-			for (int i = 0; i < nbits; i++) {
+			for (size_t i = 0; i < nbits; i++) {
 				bool _a = a[i];
 				bool _b = b[i];
 				sum[i] = _a ^ _b ^ carry;
@@ -178,7 +198,7 @@ namespace sw {
 		template<size_t nbits>
 		bool subtract_unsigned(bitblock<nbits> a, bitblock<nbits> b, bitblock<nbits + 1>& dif) {
 			bool borrow = false;  // ripple borrow
-			for (int i = 0; i < nbits; i++) {
+			for (size_t i = 0; i < nbits; i++) {
 				bool _a = a[i];
 				bool _b = b[i];
 				dif[i] = _a ^ _b ^ borrow;
@@ -191,24 +211,25 @@ namespace sw {
 		template<size_t nbits>
 		bool add_signed_magnitude(bitblock<nbits> a, bitblock<nbits> b, bitblock<nbits>& sum) {
 			uint8_t carry = 0;
-			bool sign_a = a.test(nbits - 1);
-			if (sign_a) {
-				a = a.flip();
-				carry += 1;
-			}
-			bool sign_b = b.test(nbits - 1);
-			if (sign_b) {
-				b = b.flip();
-				carry += 1;
-			}
+			if (nbits > 1) {  // need at least 1 bit of magnitude to add
+				bool sign_a = a.test(nbits - 1);
+				if (sign_a) {
+					a = a.flip();
+					carry += 1;
+				}
+				bool sign_b = b.test(nbits - 1);
+				if (sign_b) {
+					b = b.flip();
+					carry += 1;
+				}
 
-			for (int i = 0; i < nbits - 2; i++) {
-				bool _a = a[i];
-				bool _b = b[i];
-				sum[i] = _a ^ _b ^ carry;
-				carry = (_a & _b) | (carry & (_a ^ _b));
+				for (size_t i = 0; i < nbits - 2; i++) {
+					bool _a = a[i];
+					bool _b = b[i];
+					sum[i] = _a ^ _b ^ carry;
+					carry = (_a & _b) | (carry & (_a ^ _b));
+				}
 			}
-
 			return carry;
 		}
 
@@ -341,7 +362,7 @@ namespace sw {
 		template<size_t src_size, size_t tgt_size>
 		bool accumulate(const bitblock<src_size>& addend, bitblock<tgt_size>& accumulator) {
 			bool carry = 0;  // ripple carry
-			for (int i = 0; i < src_size; i++) {
+			for (size_t i = 0; i < src_size; i++) {
 				bool _a = addend[i];
 				bool _b = accumulator[i];
 				accumulator[i] = _a ^ _b ^ carry;
@@ -359,11 +380,15 @@ namespace sw {
 			if (a.test(0)) {
 				copy_into<operand_size, result_size>(b, 0, result);
 			}
-			for (int i = 1; i < operand_size; i++) {
+			for (size_t i = 1; i < operand_size; i++) {
 				if (a.test(i)) {
 					copy_into<operand_size, result_size>(b, i, addend);
+#ifdef DEBUG
 					bool carry = accumulate(addend, result);   // we should never have a carry
 					assert(carry == false);
+#else
+					accumulate(addend, result);   // we should never have a carry
+#endif
 				}
 			}
 		}
@@ -373,7 +398,7 @@ namespace sw {
 		template<size_t src_size, size_t tgt_size>
 		bool subtract(bitblock<tgt_size>& accumulator, const bitblock<src_size>& subtractand) {
 			bool borrow = 0;  // ripple carry
-			for (int i = 0; i < src_size; i++) {
+			for (size_t i = 0; i < src_size; i++) {
 				bool _a = accumulator[i];
 				bool _b = subtractand[i];
 				accumulator[i] = _a ^ _b ^ borrow;
@@ -399,7 +424,12 @@ namespace sw {
 				subtractand <<= shift;
 				for (int i = operand_size - msb - 1; i >= 0; --i) {
 					if (subtractand <= accumulator) {
+#ifdef DEBUG
 						bool borrow = subtract(accumulator, subtractand);
+						assert(borrow == true);
+#else
+						subtract(accumulator, subtractand);
+#endif
 						result.set(i);
 					}
 					else {
@@ -431,8 +461,12 @@ namespace sw {
 					//std::cout << "accumulator " << accumulator << std::endl;
 					//std::cout << "subtractand " << subtractand << std::endl;
 					if (subtractand <= accumulator) {
+#ifdef DEBUG
 						bool borrow = subtract(accumulator, subtractand);
-						//assert(borrow == false);
+						assert(borrow == false);
+#else
+						subtract(accumulator, subtractand);
+#endif
 						result.set(i);
 					}
 					else {

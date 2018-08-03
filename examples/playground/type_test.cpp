@@ -34,12 +34,14 @@ void test(const std::string& message)
     p /= v;
 
     // Logical operators
-    bool b = (p == v);
+    bool b(false);
+    b = (p == v); 
     b = (p != v);
     b = (p <  v);
     b = (p >  v);
     b = (p <= v);
     b = (p >= v);
+    std::cout << "(p >= v) : " << (b ? "true" : "false") << std::endl;
 
     // pretty print
     std::cout << color_print(p) << std::endl;

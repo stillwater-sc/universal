@@ -35,7 +35,6 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		void ReportPerformance(std::ostream& ostr, std::string header, OperatorPerformance &perf) {
-			unsigned width = 15;
 			ostr << "Performance Report: " << header << '\n'
 				<< "Conversion      : " << perf.convert << " POPS\n"
 				<< "Prefix          : " << perf.prefix << " POPS\n"
@@ -378,7 +377,7 @@ namespace sw {
 			elapsed = time_span.count();
 			report.div = float((positives + negatives) / elapsed);
 		}
-	}; // namespace unum
+	} // namespace unum
 
-}; // namespace sw
+} // namespace sw
 

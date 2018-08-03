@@ -7,13 +7,13 @@
 #include "common.hpp"
 #include <posit>
 
-using namespace std;
-using namespace sw::unum;
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_sub
 template<size_t nbits, size_t es>
-void GenerateTestCase(const posit<nbits,es>& pa, const posit<nbits,es>& pb, const posit<nbits, es>& psecondary) {
+void GenerateTestCase(const sw::unum::posit<nbits,es>& pa, const sw::unum::posit<nbits,es>& pb, const sw::unum::posit<nbits, es>& psecondary) {
+	using namespace std;
+	using namespace sw::unum;
 	double da, db, dref;
 	posit<nbits, es> pref, pdif;
 	da = (double)pa;
@@ -42,9 +42,9 @@ oparand a     op	    operand b	Theo's code	John's Mathematica code
 0x18f27112	 minus (-)	0x4f5ccac7	b0b6fefd	0x4f70948b
 */
 void RunHardwareValidationFailures() {
-	const size_t nbits = 32;
-	const size_t es = 2;
-	posit<nbits, es> pa, pb, pmathematica;
+	constexpr size_t nbits = 32;
+	constexpr size_t es = 2;
+	sw::unum::posit<nbits, es> pa, pb, pmathematica;
 	pa.set_raw_bits(0x9368de2d);	pb.set_raw_bits(0x75bd5593);	pmathematica.set_raw_bits(0x7573e376);	GenerateTestCase<nbits, es>(-pa, pb, pmathematica);
 	pa.set_raw_bits(0xaddfa756);	pb.set_raw_bits(0x51215708);	pmathematica.set_raw_bits(0xc80fe5e0);	GenerateTestCase<nbits, es>(-pa, pb, pmathematica);
 	pa.set_raw_bits(0xe556134f);	pb.set_raw_bits(0x42ff7483);	pmathematica.set_raw_bits(0x42ca251d);	GenerateTestCase<nbits, es>(-pa, pb, pmathematica);
@@ -56,21 +56,23 @@ void RunHardwareValidationFailures() {
 
 int main(int argc, char** argv)
 try {
-	const size_t nbits = 32;
-	const size_t es = 2;
+	using namespace std;
+	using namespace sw::unum;
+	constexpr size_t nbits = 32;
+	constexpr size_t es = 2;
 
 	int nrOfFailedTestCases = 0;
 
 	long double ld = 1.234567890123456789;
-	posit<64, 2> p(ld);
+	posit<nbits, es> p(ld);
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

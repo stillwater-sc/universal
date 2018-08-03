@@ -49,7 +49,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Fused Multiply-Accumulate failed: ";
@@ -125,10 +125,10 @@ void ReportSizeof()
 	cout << "sizeof(value<32>)      = " << sizeof(value<32>) << " bytes" << endl;
 	cout << "sizeof(value<64>)      = " << sizeof(value<64>) << " bytes" << endl;
 
-	cout << "sizeof(bitset<8 >)     = " << sizeof(std::bitset<8>) << " bytes" << endl;
-	cout << "sizeof(bitset<16>)     = " << sizeof(std::bitset<16>) << " bytes" << endl;
-	cout << "sizeof(bitset<32>)     = " << sizeof(std::bitset<32>) << " bytes" << endl;
-	cout << "sizeof(bitset<64>)     = " << sizeof(std::bitset<64>) << " bytes" << endl;
+//	cout << "sizeof(bitset<8 >)     = " << sizeof(std::bitset<8>) << " bytes" << endl;
+//	cout << "sizeof(bitset<16>)     = " << sizeof(std::bitset<16>) << " bytes" << endl;
+//	cout << "sizeof(bitset<32>)     = " << sizeof(std::bitset<32>) << " bytes" << endl;
+//	cout << "sizeof(bitset<64>)     = " << sizeof(std::bitset<64>) << " bytes" << endl;
 
 	cout << "sizeof(bitblock<8 >)   = " << sizeof(bitblock<8>) << " bytes" << endl;
 	cout << "sizeof(bitblock<16>)   = " << sizeof(bitblock<16>) << " bytes" << endl;

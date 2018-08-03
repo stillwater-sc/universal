@@ -19,14 +19,12 @@ try {
 	using namespace std;
 	using namespace sw::ieee;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Quire Accumulation failed";
 
 #if MANUAL_TESTING
-	const size_t capacity = 2; // for testing the accumulation capacity of the quire can be small
-	const size_t fbits = 5;
 
 #else
 

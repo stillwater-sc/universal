@@ -1,4 +1,17 @@
+// common.hpp : include file for standard system include files,
 #pragma once
+
+#include <cstdint>	 // uint8_t, etc.
+#include <cmath>     // for frexp/frexpf
+#include <string>
+#include <sstream>
+#include <iostream>
+#include <iomanip>
+
+#include <chrono>
+
+#include <vector>
+
 
 #ifdef WINDOWS
 // Including SDKDDKVer.h defines the highest available Windows platform.

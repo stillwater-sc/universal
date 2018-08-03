@@ -22,7 +22,7 @@ namespace sw {
 		class value {
 		public:
 			static constexpr size_t fhbits = fbits + 1;    // number of fraction bits including the hidden bit
-			value() : _sign(false), _scale(0), _nrOfBits(fbits), _zero(true), _inf(false), _nan(false) {}
+			value() : _sign(false), _scale(0), _nrOfBits(fbits), _fraction(), _inf(false), _zero(true), _nan(false) {}
 			value(bool sign, int scale, const bitblock<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
 
 			value(const signed char initial_value)        { *this = initial_value; }
@@ -376,6 +376,7 @@ namespace sw {
 			explicit operator double() const { return to_double(); }
 			explicit operator float() const { return to_float(); }
 
+			// TODO: this does not implement a 'real' right extend. tgtbits need to be shorter than fbits
 			template<size_t srcbits, size_t tgtbits>
 			void right_extend(const value<srcbits>& src) {
 				_sign = src.sign();
@@ -429,10 +430,10 @@ namespace sw {
 				return value<tgt_size>(_sign, _scale, rounded_fraction, _zero, _inf);
 			}
 		private:
-			bool				_sign;
-			int					_scale;
+			bool                _sign;
+			int                 _scale;
+			int                 _nrOfBits;  // in case the fraction is smaller than the full fbits
 			bitblock<fbits>	    _fraction;
-			int					_nrOfBits;  // in case the fraction is smaller than the full fbits
 			bool                _inf;
 			bool                _zero;
 			bool                _nan;

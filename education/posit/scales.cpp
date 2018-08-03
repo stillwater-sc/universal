@@ -11,17 +11,17 @@ using namespace std;
 using namespace sw::unum;
 
 
-constexpr unsigned int MAX_ES = 5;
-constexpr unsigned int MAX_K = 10;
+constexpr size_t MAX_ES = 5;
+constexpr size_t MAX_K = 10;
 uint64_t GENERATED_SCALE_FACTORS[MAX_ES][MAX_K];
 
 void generateScaleFactorLookupTable() {
 	uint64_t useed, useed_power_k;
-	for (int es = 0; es < MAX_ES; es++) {
+	for (size_t es = 0; es < MAX_ES; es++) {
 		useed = two_to_the_power(two_to_the_power(es));
 		useed_power_k = useed; 
 		GENERATED_SCALE_FACTORS[es][0] = 1; // for k = 0
-		for (int k = 1; k < MAX_K; k++) {
+		for (size_t k = 1; k < MAX_K; k++) {
 			useed_power_k *= useed;
 			GENERATED_SCALE_FACTORS[es][k] = useed_power_k;
 		}
@@ -30,13 +30,13 @@ void generateScaleFactorLookupTable() {
 
 void printScaleFactors(uint64_t scale_factors[MAX_ES][MAX_K]) {
 	cout << "      ";
-	for (int k = 0; k < MAX_K; k++) {
+	for (size_t k = 0; k < MAX_K; k++) {
 		cout << "     k = " << k << "   ";
 	}
 	cout << endl;
-	for (int es = 0; es < MAX_ES; es++) {
+	for (size_t es = 0; es < MAX_ES; es++) {
 		cout << "es = " << es << " ";
-		for (int k = 0; k < MAX_K; k++) {
+		for (size_t k = 0; k < MAX_K; k++) {
 			cout << setw(12) << scale_factors[es][k] << " ";
 		}
 		cout << endl;
@@ -260,7 +260,6 @@ void ReportPositScales() {
 
 int main(int argc, char** argv)
 try {
-	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << "Experiments with the scale of numbers" << std::endl;
@@ -275,6 +274,7 @@ try {
 
 #ifdef STRESS_TEST
 
+	bool bReportIndividualTestCases = false;
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "conversion");
 
 

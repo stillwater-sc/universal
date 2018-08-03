@@ -27,7 +27,7 @@ public:
 	static constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
 	static constexpr size_t qbits = range + capacity;         // size of the quire minus the sign bit: we are managing the sign explicitly
 	
-	quire() : _sign(false), _capacity(0), _upper(0), _lower(0) {}
+	quire() : _sign(false) { _capacity.reset(); _upper.reset(); _lower.reset(); }
 	quire(int8_t initial_value) {
 		*this = initial_value;
 	}
@@ -67,7 +67,7 @@ public:
 		if (scale < -int(half_range)) {
 			throw "RHS value too small for quire";
 		}
-		std::bitset<fbits+1> fraction = rhs.get_fixed_point();
+		sw::unum::bitblock<fbits+1> fraction = rhs.get_fixed_point();
 		// divide bits between upper and lower accumulator
 		if (scale - int(fbits) >= 0) {
 			// all upper accumulator
@@ -186,7 +186,7 @@ public:
 			// lsb in the quire of the lowest bit of the explicit fixed point value including the hidden bit of the fraction
 			int lsb = scale - int(fbits);  
 			bool borrow = false;
-			std::bitset<fbits + 1> fraction = rhs.get_fixed_point();
+			sw::unum::bitblock<fbits + 1> fraction = rhs.get_fixed_point();
 			// divide bits between upper and lower accumulator
 			if (scale < 0) {		// all lower accumulator
 				int lsb = int(half_range) + scale - int(fbits);
@@ -199,7 +199,7 @@ public:
 					borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
 				}
 				// propagate any borrows to the end of the lower accumulator
-				while (borrow && i < half_range) {
+				while (borrow && i < int(half_range)) {
 					bool _a = _lower[i];
 					_lower[i] = _a ^ borrow;
 					borrow = borrow & !_a;
@@ -208,7 +208,7 @@ public:
 				if (borrow) { // borrow propagate to the _upper accumulator
 							  // need to decrement the _upper
 					i = 0;
-					while (borrow && i < upper_range) {
+					while (borrow && i < int(upper_range)) {
 						bool _a = _upper[i];
 						_upper[i] = _a ^ borrow;
 						borrow = borrow & !_a;
@@ -217,7 +217,7 @@ public:
 					if (borrow) {
 						// propagate the borrow into the capacity segment
 						i = 0;
-						while (borrow && i < capacity) {
+						while (borrow && i < int(capacity)) {
 							bool _a = _capacity[i];
 							_capacity[i] = _a ^ borrow;
 							borrow = borrow & !_a;
@@ -234,7 +234,7 @@ public:
 					borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
 				}
 				// propagate any borrows to the end of the upper accumulator
-				while (borrow && i < upper_range) {
+				while (borrow && i < int(upper_range)) {
 					bool _a = _upper[i];
 					_upper[i] = _a ^ borrow;
 					borrow = borrow & !_a;
@@ -243,7 +243,7 @@ public:
 				if (borrow) {
 					// propagate the borrow into the capacity segment
 					i = 0;
-					while (borrow && i < capacity) {
+					while (borrow && i < int(capacity)) {
 						bool _a = _capacity[i];
 						_capacity[i] = _a ^ borrow;
 						borrow = borrow & !_a;
@@ -271,7 +271,7 @@ public:
 					borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
 				}
 				// propagate any borrows to the end of the upper accumulator
-				while (borrow && i < upper_range) {
+				while (borrow && i < int(upper_range)) {
 					bool _a = _upper[i];
 					_upper[i] = _a ^ borrow;
 					borrow = borrow & !_a;
@@ -280,7 +280,7 @@ public:
 				if (borrow) {
 					// propagate the borrow into the capacity segment
 					i = 0;
-					while (borrow && i < capacity) {
+					while (borrow && i < int(capacity)) {
 						bool _a = _capacity[i];
 						_capacity[i] = _a ^ borrow;
 						borrow = borrow & !_a;
@@ -296,7 +296,7 @@ public:
 			// we manage scale >= 0 in the _upper accumulator, and scale < 0 in the _lower accumulator
 			int lsb = scale - int(fbits);
 			bool carry = false;
-			std::bitset<fbits + 1> fraction = rhs.get_fixed_point();
+			sw::unum::bitblock<fbits + 1> fraction = rhs.get_fixed_point();
 			// divide bits between upper and lower accumulator
 			if (scale < 0) {		// all lower accumulator
 				int lsb = int(half_range) + scale - int(fbits);
@@ -309,7 +309,7 @@ public:
 					carry = (_a & _b) | (carry & (_a ^ _b));
 				}
 				// propagate any carries to the end of the lower accumulator
-				while (carry && i < half_range) {
+				while (carry && i < int(half_range)) {
 					bool _a = _lower[i];
 					_lower[i] = _a ^ carry;
 					carry = carry & _a;
@@ -318,7 +318,7 @@ public:
 				if (carry) {  // carry propagate to the _upper accumulator
 							  // need to increment the _upper
 					i = 0;
-					while (carry && i < upper_range) {
+					while (carry && i < int(upper_range)) {
 						bool _a = _upper[i];
 						_upper[i] = _a ^ carry;
 						carry = carry & _a;
@@ -327,7 +327,7 @@ public:
 					if (carry) {
 						// next add the bits to the capacity segment
 						i = 0;
-						while (carry && i < capacity) {
+						while (carry && i < int(capacity)) {
 							bool _a = _capacity[i];
 							_capacity[i] = _a ^ carry;
 							carry = carry & _a;
@@ -352,7 +352,7 @@ public:
 				if (carry) {
 					// next add the bits to the capacity segment
 					i = 0;
-					while (carry && i < capacity) {
+					while (carry && i < int(capacity)) {
 						bool _a = _capacity[i];
 						_capacity[i] = _a ^ carry;
 						carry = carry & _a;
@@ -389,7 +389,7 @@ public:
 				// next add the bits to the capacity segment
 				if (carry) {
 					i = 0;
-					while (carry && i < capacity) {
+					while (carry && i < int(capacity)) {
 						bool _a = _capacity[i];
 						_capacity[i] = _a ^ carry;
 						carry = carry & _a;
@@ -422,7 +422,7 @@ public:
 	float sign_value() const {	return (_sign ? -1.0 : 1.0); }
 	sw::unum::value<qbits> to_value() const {
 		// find the MSB and build the fraction
-		std::bitset<qbits> fraction;
+		sw::unum::bitblock<qbits> fraction;
 		bool isZero = false;
 		bool isNaR = false;   // TODO
 		int i;
@@ -461,11 +461,12 @@ public:
 	}
 
 private:
-	bool				      _sign;
+	bool				   _sign;
 	// segmented accumulator to demonstrate potential hw concurrency for high performance quires
-	std::bitset<half_range>   _lower;
-	std::bitset<upper_range>  _upper;  
-	std::bitset<capacity>     _capacity;
+	// TODO: don't pull a type from sw::unum
+	sw::unum::bitblock<half_range>   _lower;
+	sw::unum::bitblock<upper_range>  _upper;
+	sw::unum::bitblock<capacity>     _capacity;
 
 #if TEMPLATIZED_TYPE
 	//  when we figure out how to templatize the extraction of exponent bits from type
