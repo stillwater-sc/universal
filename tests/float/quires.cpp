@@ -78,17 +78,17 @@ try {
 	using namespace std;
 	using namespace sw::ieee;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Quire Accumulation failed";
 
 #if MANUAL_TESTING
 	// float
-	const size_t nbits = 32;
-	const size_t es = 8;
-	const size_t capacity = 2; // for testing the accumulation capacity of the quire can be small
-	const size_t fbits = 5;
+	constexpr size_t nbits = 32;
+	constexpr size_t es = 8;
+	constexpr size_t capacity = 2; // for testing the accumulation capacity of the quire can be small
+	//constexpr size_t fbits = 5;
 
 	//GenerateUnsignedIntAssignments<nbits, es, capacity>();
 	//GenerateSignedIntAssignments<nbits, es, capacity>();
@@ -96,7 +96,7 @@ try {
 
 	//GenerateValueAssignments<nbits, es, capacity, fbits>();
 
-	typedef sw::ieee::quire<32, 8, 2> QuireFloat;
+	typedef sw::ieee::quire<nbits, es, 2> QuireFloat;
 	typedef sw::ieee::quire<64, 11, 2> QuireDouble;
 
 	std::cout << endl;

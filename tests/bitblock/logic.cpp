@@ -151,7 +151,7 @@ int ValidateBitsetLogicGreaterOrEqualThan() {
 
 int main()
 try {
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Bitblock logic operation failed";
