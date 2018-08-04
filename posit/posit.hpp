@@ -63,11 +63,11 @@ typedef __128bitdd double_double;
 #include "../bitblock/bitblock.hpp"
 #include "bit_functions.hpp"
 #include "trace_constants.hpp"
-#include "posit_functions.hpp"
 #include "value.hpp"
 #include "fraction.hpp"
 #include "exponent.hpp"
 #include "regime.hpp"
+#include "posit_functions.hpp"
 #include "math_constants.hpp"
 
 namespace sw {
@@ -327,7 +327,14 @@ namespace sw {
 					return *this;
 				}
 				posit<nbits, es> negated(0);  // TODO: artificial initialization to pass -Wmaybe-uninitialized
-				negated.decode(twos_complement(_raw_bits));
+				bitblock<nbits> raw_bits = twos_complement(_raw_bits);
+				negated.set(raw_bits);
+				bool local_sign;
+				regime<nbits, es> local_regime;
+				exponent<nbits, es> local_exponent;
+				fraction<fbits> local_fraction;
+				decode(raw_bits, local_sign, local_regime, local_exponent, local_fraction);
+				// TODO: how to get rid of this decode step?
 				return negated;
 			}
 
@@ -689,7 +696,9 @@ namespace sw {
 				_raw_bits.set(nbits - 1, true);
 			}
 			posit<nbits, es>& set(const bitblock<nbits>& raw_bits) {
-				decode(raw_bits);
+				_raw_bits = raw_bits;
+				// decode to cache the posit number interpretation
+				decode(raw_bits, _sign, _regime, _exponent, _fraction);
 				return *this;
 			}
 			// Set the raw bits of the posit given an unsigned value starting from the lsb
@@ -702,107 +711,10 @@ namespace sw {
 					raw_bits.set(i,(value & mask));
 					mask <<= 1;
 				}
+				_raw_bits = raw_bits;
 				// decode to cache the posit number interpretation
-				decode(raw_bits);
+				decode(raw_bits, _sign, _regime, _exponent, _fraction);
 				return *this;
-			}
-			int decode_regime(bitblock<nbits>& raw_bits) {
-				// let m be the number of identical bits in the regime
-				int m = 0;   // regime runlength counter
-				int k = 0;   // converted regime scale
-				if (raw_bits[nbits - 2] == 1) {   // run length of 1's
-					m = 1;   // if a run of 1's k = m - 1
-					int start = (nbits == 2 ? nbits - 2 : nbits - 3);
-					for (int i = start; i >= 0; --i) {
-						if (raw_bits[i] == 1) {
-							m++;
-						}
-						else {
-							break;
-						}
-					}
-					k = m - 1;
-				}
-				else {
-					m = 1;  // if a run of 0's k = -m
-					int start = (nbits == 2 ? nbits - 2 : nbits - 3);
-					for (int i = start; i >= 0; --i) {
-						if (raw_bits[i] == 0) {
-							m++;
-						}
-						else {
-							break;
-						}
-					}
-					k = -m;
-				}
-				return k;
-			}
-			// decode takes the raw bits representing a posit coming from memory
-			// and decodes the regime, the exponent, and the fraction.
-			// This function has the functionality of the posit register-file load.
-			void extract_fields(const bitblock<nbits>& raw_bits) {
-				bitblock<nbits> tmp(raw_bits);
-				if (_sign) tmp = twos_complement(tmp);
-				size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
-
-				// get the exponent bits
-				// start of exponent is nbits - (sign_bit + regime_bits)
-				int msb = int(static_cast<int>(nbits) - 1 - (1 + nrRegimeBits));
-				size_t nrExponentBits = 0;
-				if (es > 0) {
-					bitblock<es> _exp;
-					if (msb >= 0 && es > 0) {
-						nrExponentBits = (msb >= static_cast<int>(es) - 1 ? es : msb + 1);
-						for (size_t i = 0; i < nrExponentBits; i++) {
-							_exp[es - 1 - i] = tmp[msb - i];
-						}
-					}
-					_exponent.set(_exp, nrExponentBits);
-				}
-
-				// finally, set the fraction bits
-				// we do this so that the fraction is right extended with 0;
-				// The max fraction is <nbits - 3 - es>, but we are setting it to <nbits - 3> and right-extent
-				// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
-				// If the fraction is empty, we have a fraction of nbits-3 0 bits
-				// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
-				bitblock<fbits> _frac;
-				msb = msb - int(nrExponentBits);
-				size_t nrFractionBits = (msb < 0 ? 0 : msb + 1);
-				if (msb >= 0) {
-					for (int i = msb; i >= 0; --i) {
-						_frac[fbits - 1 - (msb - i)] = tmp[i];
-					}
-				}
-				_fraction.set(_frac, nrFractionBits);
-			}
-			void decode(const bitblock<nbits>& raw_bits) {
-				_raw_bits = raw_bits;	// store the raw bits for reference
-				// check special cases
-				_sign = raw_bits.test(nbits - 1);
-				if (_sign) {
-					std::bitset<nbits> tmp(raw_bits);
-					tmp.reset(nbits - 1);
-					if (tmp.none()) {
-						setToNaR();  // special case = NaR (Not a Real)
-					}
-					else {
-						extract_fields(raw_bits);
-					}
-				}
-				else {
-					if (raw_bits.none()) {  // special case = 0
-						setToZero();
-					}
-					else {
-						extract_fields(raw_bits);
-					}
-				}
-				if (_trace_decode) std::cout << "raw bits: " << _raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
-
-				// we are storing both the raw bit representation and the decoded form
-				// so no need to transform back via 2's complement of regime/exponent/fraction
 			}
 
 			bool parse(std::string& txt) {
@@ -951,7 +863,6 @@ namespace sw {
 			}
 			// scale returns the shifts to normalize the number =  regime + exponent shifts
 			int scale() const {
-
 				return _regime.scale() + _exponent.scale();
 			}
 			unsigned int exp() const {
@@ -979,13 +890,15 @@ namespace sw {
 			void increment_posit() {
 				bitblock<nbits> raw(_raw_bits);
 				increment_bitset(raw);
-				decode(raw);
+				_raw_bits = raw;
+				decode(raw, _sign, _regime, _exponent, _fraction);
 			}
 			// step down to the previous posit in a lexicographical order
 			void decrement_posit() {
 				bitblock<nbits> raw(_raw_bits);
 				decrement_bitset(raw);
-				decode(raw);
+				_raw_bits = raw;
+				decode(raw, _sign, _regime, _exponent, _fraction);
 			}
 	
 			// Generalized version
@@ -1074,7 +987,8 @@ namespace sw {
 
 					if (rb) increment_bitset(ptt);
 					if (s) ptt = twos_complement(ptt);
-					decode(ptt);
+					_raw_bits = ptt;
+					decode(ptt, _sign, _regime, _exponent, _fraction);
 				}
 			}
 

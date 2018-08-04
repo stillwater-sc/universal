@@ -113,8 +113,12 @@ namespace sw {
 			}
 			posit& set(sw::unum::bitblock<NBITS_IS_4>& raw) {
 				_bits = uint8_t(raw.to_ulong());
+				return *this;
 			}
-			posit& set_raw_bits(uint64_t value) { _bits = uint8_t(value & 0x0f); return *this; }
+			posit& set_raw_bits(uint64_t value) { 
+				_bits = uint8_t(value & 0x0f); 
+				return *this; 
+			}
 			posit operator-() const {
 				if (isZero()) {
 					return *this;
@@ -163,6 +167,7 @@ namespace sw {
 				operator--();
 				return tmp;
 			}
+			
 			// SELECTORS
 			inline bool isNaR() const {
 				return (_bits & 0x8);
