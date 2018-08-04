@@ -92,7 +92,7 @@ namespace sw {
 
 		// this comparison is for a two's complement number only, for example, the raw bits of a posit
 		template<size_t nbits>
-		bool lessThan(const std::bitset<nbits>& lhs, const std::bitset<nbits>& rhs) {
+		bool lessThan(const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 			// comparison of the sign bit
 			if (lhs[nbits - 1] == 0 && rhs[nbits - 1] == 1)	return false;
 			if (lhs[nbits - 1] == 1 && rhs[nbits - 1] == 0) return true;
@@ -105,5 +105,118 @@ namespace sw {
 			return false;
 		}
 
+		// decode_regime measures the run-length of the regime and returns the k value associated with that run-length
+		template<size_t nbits>
+		int decode_regime(bitblock<nbits>& raw_bits) {
+			// let m be the number of identical bits in the regime
+			int m = 0;   // regime runlength counter
+			int k = 0;   // converted regime scale
+			if (raw_bits[nbits - 2] == 1) {   // run length of 1's
+				m = 1;   // if a run of 1's k = m - 1
+				int start = (nbits == 2 ? nbits - 2 : nbits - 3);
+				for (int i = start; i >= 0; --i) {
+					if (raw_bits[i] == 1) {
+						m++;
+					}
+					else {
+						break;
+					}
+				}
+				k = m - 1;
+			}
+			else {
+				m = 1;  // if a run of 0's k = -m
+				int start = (nbits == 2 ? nbits - 2 : nbits - 3);
+				for (int i = start; i >= 0; --i) {
+					if (raw_bits[i] == 0) {
+						m++;
+					}
+					else {
+						break;
+					}
+				}
+				k = -m;
+			}
+			return k;
+		}
+	
+		// extract_fields takes a raw posit encoding and extracts the sign, regime, exponent, and fraction components
+		template<size_t nbits, size_t es, size_t fbits>
+		void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits,es>& _regime, exponent<nbits,es>& _exponent, fraction<fbits>& _fraction) {
+			bitblock<nbits> tmp(raw_bits);
+			if (_sign) tmp = twos_complement(tmp);
+			size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
+
+			// get the exponent bits
+			// start of exponent is nbits - (sign_bit + regime_bits)
+			int msb = int(static_cast<int>(nbits) - 1 - (1 + nrRegimeBits));
+			size_t nrExponentBits = 0;
+			if (es > 0) {
+				bitblock<es> _exp;
+				if (msb >= 0 && es > 0) {
+					nrExponentBits = (msb >= static_cast<int>(es) - 1 ? es : msb + 1);
+					for (size_t i = 0; i < nrExponentBits; i++) {
+						_exp[es - 1 - i] = tmp[msb - i];
+					}
+				}
+				_exponent.set(_exp, nrExponentBits);
+			}
+
+			// finally, set the fraction bits
+			// we do this so that the fraction is right extended with 0;
+			// The max fraction is <nbits - 3 - es>, but we are setting it to <nbits - 3> and right-extent
+			// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
+			// If the fraction is empty, we have a fraction of nbits-3 0 bits
+			// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
+			bitblock<fbits> _frac;
+			msb = msb - int(nrExponentBits);
+			size_t nrFractionBits = (msb < 0 ? 0 : msb + 1);
+			if (msb >= 0) {
+				for (int i = msb; i >= 0; --i) {
+					_frac[fbits - 1 - (msb - i)] = tmp[i];
+				}
+			}
+			_fraction.set(_frac, nrFractionBits);
+		}
+
+		// decode takes the raw bits representing a posit coming from memory
+		// and decodes the sign, regime, the exponent, and the fraction.
+		// This function has the functionality of the posit register-file load.
+		template<size_t nbits, size_t es, size_t fbits>
+		void decode(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _regime, exponent<nbits, es>& _exponent, fraction<fbits>& _fraction) {
+			//_raw_bits = raw_bits;	// store the raw bits for reference
+			// check special cases
+			_sign = raw_bits.test(nbits - 1);
+			if (_sign) {
+				std::bitset<nbits> tmp(raw_bits);
+				tmp.reset(nbits - 1);
+				if (tmp.none()) {
+					// setToNaR();   special case = NaR (Not a Real)
+					_sign = true;
+					_regime.setToInfinite();
+					_exponent.reset();
+				}
+				else {
+					extract_fields(raw_bits, _sign, _regime, _exponent, _fraction);
+				}
+			}
+			else {
+				if (raw_bits.none()) {  
+					// setToZero();  special case = 0
+					_sign = false;
+					_regime.setToZero();
+					_exponent.reset();
+					_fraction.reset();
+				}
+				else {
+					extract_fields(raw_bits, _sign, _regime, _exponent, _fraction);
+				}
+			}
+			//if (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
+			if (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << std::endl;
+
+			// we are storing both the raw bit representation and the decoded form
+			// so no need to transform back via 2's complement of regime/exponent/fraction
+		}
 	}
 }
