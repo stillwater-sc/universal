@@ -313,7 +313,7 @@ namespace sw {
 			}
 
 			// we model a hw pipeline with register assignments, functional block, and conversion
-			posit_decoded<nbits, es>& operator+=(const posit& rhs) {
+			posit_decoded<nbits, es>& operator+=(const posit_decoded& rhs) {
 				if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 				// special case handling of the inputs
 				if (isNaR() || rhs.isNaR()) {
@@ -349,7 +349,7 @@ namespace sw {
 			posit_decoded<nbits, es>& operator+=(double rhs) {
 				return *this += posit<nbits, es>(rhs);
 			}
-			posit_decoded<nbits, es>& operator-=(const posit& rhs) {
+			posit_decoded<nbits, es>& operator-=(const posit_decoded& rhs) {
 				if (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
 				// special case handling of the inputs
 				if (isNaR() || rhs.isNaR()) {
@@ -385,7 +385,7 @@ namespace sw {
 			posit_decoded<nbits, es>& operator-=(double rhs) {
 				return *this -= posit<nbits, es>(rhs);
 			}
-			posit_decoded<nbits, es>& operator*=(const posit& rhs) {
+			posit_decoded<nbits, es>& operator*=(const posit_decoded& rhs) {
 				static_assert(fhbits > 0, "posit configuration does not support multiplication");
 				if (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
 				// special case handling of the inputs
@@ -422,7 +422,7 @@ namespace sw {
 			posit_decoded<nbits, es>& operator*=(double rhs) {
 				return *this *= posit<nbits, es>(rhs);
 			}
-			posit_decoded<nbits, es>& operator/=(const posit& rhs) {
+			posit_decoded<nbits, es>& operator/=(const posit_decoded& rhs) {
 				if (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 				// since we are encoding error conditions as NaR (Not a Real), we need to process that condition first
 				if (rhs.isZero()) {
