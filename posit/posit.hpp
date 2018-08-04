@@ -1449,7 +1449,7 @@ namespace sw {
 		////////////////// convenience/shim functions
 
 		template<size_t nbits, size_t es>
-		inline bool isnan(const posit<nbits, es>& p) {
+		inline bool isnar(const posit<nbits, es>& p) {
 			return p.isNaR();
 		}
 
@@ -1459,7 +1459,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		inline bool isinf(const posit<nbits, es>& p) {
+		inline bool isinfinite(const posit<nbits, es>& p) {
 			return p.isNaR();
 		}
 
