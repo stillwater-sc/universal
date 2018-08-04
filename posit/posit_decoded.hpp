@@ -469,7 +469,7 @@ namespace sw {
 				return *this;
 			}
 			posit_decoded<nbits, es> operator++(int) {
-				posit tmp(*this);
+				posit_decoded tmp(*this);
 				operator++();
 				return tmp;
 			}
@@ -478,7 +478,7 @@ namespace sw {
 				return *this;
 			}
 			posit_decoded<nbits, es> operator--(int) {
-				posit tmp(*this);
+				posit_decoded tmp(*this);
 				operator--();
 				return tmp;
 			}
