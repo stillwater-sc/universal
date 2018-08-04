@@ -1468,19 +1468,21 @@ namespace sw {
 		// stream operators
 		template<size_t nbits, size_t es>
 		inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
+			/*
 			if (p.isZero()) {
-				ostr << double(0.0);
+				ostr << nbits << '.' << es << "x0p";
 				return ostr;
 			}
 			else if (p.isNaR()) {
-				ostr << "NaR";
+				ostr << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
 				return ostr;
 			}
-			ostr << p.to_double();
+			*/
+			ostr << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
 			return ostr;
 		}
 
-		// TODO: this needs an implementation
+		// read an ASCII float or posit format: nbits.esxNN...NNp, for example: 32.2x80000000p
 		template<size_t nbits, size_t es>
 		inline std::istream& operator>> (std::istream& istr, posit<nbits, es>& p) {
 			std::string txt;

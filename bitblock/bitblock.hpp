@@ -614,15 +614,30 @@ namespace sw {
 
 		template<size_t nbits>
 		std::string to_hex(bitblock<nbits> bits) {
-			char str[nbits];   // plenty of room
+			char str[(nbits >> 2) + 2];   // plenty of room
+			for (size_t i = 0; i < (nbits >> 2) + 2; ++i) str[i] = 0;
 			const char* hexits = "0123456789ABCDEF";
-			unsigned int max = (nbits >> 2) + (nbits % 4 ? 2 : 1);
-			for (unsigned int i = 0; i < max; i++) {
-				unsigned int hexit = (bits[3] << 3) + (bits[2] << 2) + (bits[1] << 1) + bits[0];
-				str[max - 1 - i] = hexits[hexit];
+			unsigned int maxHexDigits = (nbits >> 2) + (nbits % 4 ? 1 : 0);
+			for (unsigned int i = 0; i < maxHexDigits; i++) {
+				unsigned int hexit;
+				switch (nbits) {
+				case 1:
+					hexit = bits[0];
+					break;
+				case 2:
+					hexit = (bits[1] << 1) + bits[0];
+					break;
+				case 3:
+					hexit = (bits[2] << 2) + (bits[1] << 1) + bits[0];
+					break;
+				default:
+					hexit = (bits[3] << 3) + (bits[2] << 2) + (bits[1] << 1) + bits[0];
+					break;
+				}				
+				str[maxHexDigits - 1 - i] = hexits[hexit];
 				bits >>= 4;
 			}
-			str[max] = 0;
+			str[maxHexDigits] = 0;  // null terminated string
 			return std::string(str);
 		}
 
