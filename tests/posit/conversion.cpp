@@ -12,6 +12,7 @@
 
 // minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
+#include "../../posit/posit_functions.hpp"
 #include "../../posit/posit_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
