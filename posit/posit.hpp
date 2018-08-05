@@ -95,6 +95,135 @@ namespace sw {
 		// The symbol NAR can be used to initialize a posit, i.e., posit<nbits,es>(NAR), or posit<nbits,es> p = NAR
 		#define NAR INFINITY
 
+		// posit algorithms
+
+		// special case check for projecting values between (0, minpos] to minpos and [maxpos, inf) to maxpos
+		// Returns true if the scale is too small or too large for this posit config
+		// DO NOT USE the k value for this, as the k value encodes the useed regions
+		// and thus is too coarse to make this decision.
+		// Using the scale directly is the simplest expression of the inward projection test.
+		template<size_t nbits, size_t es>
+		bool check_inward_projection_range(int scale) {
+			// calculate the min/max k factor for this posit config
+			int posit_size = nbits;
+			int k = scale < 0 ? -(posit_size - 2) : (posit_size - 2);
+			return scale < 0 ? scale < k*(1 << es) : scale > k*(1 << es);
+		}
+
+		// decode_regime measures the run-length of the regime and returns the k value associated with that run-length
+		template<size_t nbits>
+		int decode_regime(bitblock<nbits>& raw_bits) {
+			// let m be the number of identical bits in the regime
+			int m = 0;   // regime runlength counter
+			int k = 0;   // converted regime scale
+			if (raw_bits[nbits - 2] == 1) {   // run length of 1's
+				m = 1;   // if a run of 1's k = m - 1
+				int start = (nbits == 2 ? nbits - 2 : nbits - 3);
+				for (int i = start; i >= 0; --i) {
+					if (raw_bits[i] == 1) {
+						m++;
+					}
+					else {
+						break;
+					}
+				}
+				k = m - 1;
+			}
+			else {
+				m = 1;  // if a run of 0's k = -m
+				int start = (nbits == 2 ? nbits - 2 : nbits - 3);
+				for (int i = start; i >= 0; --i) {
+					if (raw_bits[i] == 0) {
+						m++;
+					}
+					else {
+						break;
+					}
+				}
+				k = -m;
+			}
+			return k;
+		}
+
+		// extract_fields takes a raw posit encoding and extracts the sign, regime, exponent, and fraction components
+		template<size_t nbits, size_t es, size_t fbits>
+		void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _regime, exponent<nbits, es>& _exponent, fraction<fbits>& _fraction) {
+			bitblock<nbits> tmp(raw_bits);
+			if (_sign) tmp = twos_complement(tmp);
+			size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
+
+			// get the exponent bits
+			// start of exponent is nbits - (sign_bit + regime_bits)
+			int msb = int(static_cast<int>(nbits) - 1 - (1 + nrRegimeBits));
+			size_t nrExponentBits = 0;
+			if (es > 0) {
+				bitblock<es> _exp;
+				if (msb >= 0 && es > 0) {
+					nrExponentBits = (msb >= static_cast<int>(es) - 1 ? es : msb + 1);
+					for (size_t i = 0; i < nrExponentBits; i++) {
+						_exp[es - 1 - i] = tmp[msb - i];
+					}
+				}
+				_exponent.set(_exp, nrExponentBits);
+			}
+
+			// finally, set the fraction bits
+			// we do this so that the fraction is right extended with 0;
+			// The max fraction is <nbits - 3 - es>, but we are setting it to <nbits - 3> and right-extent
+			// The msb bit of the fraction represents 2^-1, the next 2^-2, etc.
+			// If the fraction is empty, we have a fraction of nbits-3 0 bits
+			// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
+			bitblock<fbits> _frac;
+			msb = msb - int(nrExponentBits);
+			size_t nrFractionBits = (msb < 0 ? 0 : msb + 1);
+			if (msb >= 0) {
+				for (int i = msb; i >= 0; --i) {
+					_frac[fbits - 1 - (msb - i)] = tmp[i];
+				}
+			}
+			_fraction.set(_frac, nrFractionBits);
+		}
+
+		// decode takes the raw bits representing a posit coming from memory
+		// and decodes the sign, regime, the exponent, and the fraction.
+		// This function has the functionality of the posit register-file load.
+		template<size_t nbits, size_t es, size_t fbits>
+		void decode(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _regime, exponent<nbits, es>& _exponent, fraction<fbits>& _fraction) {
+			//_raw_bits = raw_bits;	// store the raw bits for reference
+			// check special cases
+			_sign = raw_bits.test(nbits - 1);
+			if (_sign) {
+				std::bitset<nbits> tmp(raw_bits);
+				tmp.reset(nbits - 1);
+				if (tmp.none()) {
+					// setToNaR();   special case = NaR (Not a Real)
+					_sign = true;
+					_regime.setToInfinite();
+					_exponent.reset();
+				}
+				else {
+					extract_fields(raw_bits, _sign, _regime, _exponent, _fraction);
+				}
+			}
+			else {
+				if (raw_bits.none()) {
+					// setToZero();  special case = 0
+					_sign = false;
+					_regime.setToZero();
+					_exponent.reset();
+					_fraction.reset();
+				}
+				else {
+					extract_fields(raw_bits, _sign, _regime, _exponent, _fraction);
+				}
+			}
+			//if (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << " posit value: " << *this << std::endl;
+			if (_trace_decode) std::cout << "raw bits: " << raw_bits << " posit bits: " << (_sign ? "1|" : "0|") << _regime << "|" << _exponent << "|" << _fraction << std::endl;
+
+			// we are storing both the raw bit representation and the decoded form
+			// so no need to transform back via 2's complement of regime/exponent/fraction
+		}
+
 		// define to non-zero if you want to enable arithmetic and logic literals
 		// POSIT_ENABLE_LITERALS
 
@@ -317,7 +446,7 @@ namespace sw {
 				return *this;
 			}
 			// prefix operator
-			posit<nbits, es> operator-() const {
+			posit operator-() const {
 				if (isZero()) {
 					return *this;
 				}
@@ -337,7 +466,7 @@ namespace sw {
 			}
 
 			// we model a hw pipeline with register assignments, functional block, and conversion
-			posit<nbits, es>& operator+=(const posit& rhs) {
+			posit& operator+=(const posit& rhs) {
 				if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 				// special case handling of the inputs
 				if (isNaR() || rhs.isNaR()) {
@@ -370,10 +499,10 @@ namespace sw {
 				}
 				return *this;                
 			}
-			posit<nbits, es>& operator+=(double rhs) {
+			posit& operator+=(double rhs) {
 				return *this += posit<nbits, es>(rhs);
 			}
-			posit<nbits, es>& operator-=(const posit& rhs) {
+			posit& operator-=(const posit& rhs) {
 				if (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
 				// special case handling of the inputs
 				if (isNaR() || rhs.isNaR()) {
@@ -406,10 +535,10 @@ namespace sw {
 				}
 				return *this;
 			}
-			posit<nbits, es>& operator-=(double rhs) {
+			posit& operator-=(double rhs) {
 				return *this -= posit<nbits, es>(rhs);
 			}
-			posit<nbits, es>& operator*=(const posit& rhs) {
+			posit& operator*=(const posit& rhs) {
 				static_assert(fhbits > 0, "posit configuration does not support multiplication");
 				if (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
 				// special case handling of the inputs
@@ -443,10 +572,10 @@ namespace sw {
 				}
 				return *this;
 			}
-			posit<nbits, es>& operator*=(double rhs) {
+			posit& operator*=(double rhs) {
 				return *this *= posit<nbits, es>(rhs);
 			}
-			posit<nbits, es>& operator/=(const posit& rhs) {
+			posit& operator/=(const posit& rhs) {
 				if (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 				// since we are encoding error conditions as NaR (Not a Real), we need to process that condition first
 				if (rhs.isZero()) {
@@ -485,29 +614,29 @@ namespace sw {
 
 				return *this;
 			}
-			posit<nbits, es>& operator/=(double rhs) {
+			posit& operator/=(double rhs) {
 				return *this /= posit<nbits, es>(rhs);
 			}
-			posit<nbits, es>& operator++() {
+			posit& operator++() {
 				increment_posit();
 				return *this;
 			}
-			posit<nbits, es> operator++(int) {
+			posit operator++(int) {
 				posit tmp(*this);
 				operator++();
 				return tmp;
 			}
-			posit<nbits, es>& operator--() {
+			posit& operator--() {
 				decrement_posit();
 				return *this;
 			}
-			posit<nbits, es> operator--(int) {
+			posit operator--(int) {
 				posit tmp(*this);
 				operator--();
 				return tmp;
 			}
 
-			posit<nbits, es> reciprocate() const {
+			posit reciprocate() const {
 				if (_trace_reciprocate) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
 				posit<nbits, es> p;
 				// special case of NaR (Not a Real)
@@ -561,6 +690,11 @@ namespace sw {
 				}
 				return p;
 			}
+			posit abs() const {
+				posit p(*this);
+				p._raw_bits.set(nbits- 1, false);
+				return p;
+			}
 			// SELECTORS
 			bool isNaR() const {
 				if (_raw_bits[nbits - 1] == false) return false;
@@ -596,12 +730,12 @@ namespace sw {
 			// how many shifts represent the regime?
 			// regime = useed ^ k = 2 ^ (k*(2 ^ e))
 			// scale = useed ^ k * 2^e 
-			int                get_scale() const { return _regime.scale() + _exponent.scale(); }
-			bool               get_sign() const { return _sign;  }
-			regime<nbits, es>  get_regime() const {	return _regime;	}
+			//int                get_scale() const { return _regime.scale() + _exponent.scale(); }
+			//bool               get_sign() const { return _sign;  }
+			//regime<nbits, es>  get_regime() const {	return _regime;	}
 			int				   regime_k() const { return _regime.regime_k(); }
-			exponent<nbits,es> get_exponent() const { return _exponent;	}
-			fraction<fbits>    get_fraction() const { return _fraction;	}
+			//exponent<nbits,es> get_exponent() const { return _exponent;	}
+			//fraction<fbits>    get_fraction() const { return _fraction;	}
 			bitblock<nbits>    get() const { return _raw_bits; }
 			bitblock<nbits>    get_decoded() const {
 				bitblock<rbits> r = _regime.get();
@@ -763,18 +897,28 @@ namespace sw {
 				exponent<nbits, es>  _exponent;
 				fraction<fbits>      _fraction;
 				decode(_raw_bits, _sign, _regime, _exponent, _fraction);
-				return value<fbits>(_sign, _regime.scale() * _exponent.scale(), _fraction.get(), isZero(), isNaR());
+				return value<fbits>(_sign, _regime.scale() + _exponent.scale(), _fraction.get(), isZero(), isNaR());
 			}
 			void normalize(value<fbits>& v) const {
-				v.set(_sign, get_scale(), _fraction.get(), isZero(), isNaR());
+				bool		     	 _sign;
+				regime<nbits, es>    _regime;
+				exponent<nbits, es>  _exponent;
+				fraction<fbits>      _fraction;
+				decode(_raw_bits, _sign, _regime, _exponent, _fraction);
+				v.set(_sign, _regime.scale() + _exponent.scale(), _fraction.get(), isZero(), isNaR());
 			}
 			template<size_t tgt_fbits>
 			void normalize_to(value<tgt_fbits>& v) const {
+				bool		     	 _sign;
+				regime<nbits, es>    _regime;
+				exponent<nbits, es>  _exponent;
+				fraction<fbits>      _fraction;
+				decode(_raw_bits, _sign, _regime, _exponent, _fraction);
 				bitblock<tgt_fbits> _fr;
 				bitblock<fbits> _src = _fraction.get();
 				int tgt, src;
 				for (tgt = int(tgt_fbits) - 1, src = int(fbits) - 1; tgt >= 0 && src >= 0; tgt--, src--) _fr[tgt] = _src[src];
-				v.set(_sign, get_scale(), _fr, isZero(), isNaR());
+				v.set(_sign, _regime.scale() + _exponent.scale(), _fr, isZero(), isNaR());
 			}
 			// collect the posit components into a bitset
 			bitblock<nbits> collect() {
@@ -2253,12 +2397,12 @@ namespace sw {
 		// Magnitude of a posit (equivalent to turning the sign bit off).
 		template<size_t nbits, size_t es> 
 		posit<nbits, es> abs(const posit<nbits, es>& p) {
-			return posit<nbits, es>(false, p.get_regime(), p.get_exponent(), p.get_fraction());
+			return p.abs();
 		}
-				template<size_t nbits, size_t es>
-				posit<nbits, es> fabs(const posit<nbits, es>& p) {
-					return posit<nbits, es>(false, p.get_regime(), p.get_exponent(), p.get_fraction());
-				}
+		template<size_t nbits, size_t es>
+		posit<nbits, es> fabs(const posit<nbits, es>& p) {
+			return p.abs();
+		}
 
 		// generate a posit representing minpos
 		template<size_t nbits, size_t es>
