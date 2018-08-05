@@ -563,8 +563,8 @@ namespace sw {
 			}
 			// SELECTORS
 			bool isNaR() const {
-				bitblock<nbits> tmp(_raw_bits);
-				if (tmp[nbits - 1] == false) return false;
+				if (_raw_bits[nbits - 1] == false) return false;
+				bitblock<nbits> tmp(_raw_bits);			
 				tmp.reset(nbits - 1);
 				return tmp.none() ? true : false;
 			}

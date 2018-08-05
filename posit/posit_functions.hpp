@@ -308,7 +308,7 @@ namespace sw {
 			exponent<nbits, es>  _exponent;
 			fraction<fbits>      _fraction;
 			decode(p.get(), _sign, _regime, _exponent, _fraction);
-			return _regime.scale() * _exponent.scale();
+			return _regime.scale() + _exponent.scale();
 		}
 
 		// get the fraction bits of a posit
