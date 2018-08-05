@@ -30,10 +30,11 @@ try {
 
 	cout << "Generate posit configurations" << endl;
 
-	GeneratePositTable<2, 0>(cout, csv);
+	// TODO: need to re-enable nbits = 2
+	//GeneratePositTable<2, 0>(cout, csv);
 
 	GeneratePositTable<3, 0>(cout, csv);
-	GeneratePositTable<3, 1>(cout, csv);
+	//GeneratePositTable<3, 1>(cout, csv);
 
 	GeneratePositTable<4, 0>(cout, csv);
 	GeneratePositTable<4, 1>(cout, csv);
@@ -64,6 +65,10 @@ try {
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (std::runtime_error& e) {
+	std::cerr << e.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

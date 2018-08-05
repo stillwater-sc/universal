@@ -20,6 +20,16 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		void ReportConversionError(std::string test_case, std::string op, double input, double reference, const posit<nbits, es>& presult) {
+			static_assert(nbits > 2, "component_to_string requires nbits > 2");
+			constexpr size_t fbits = nbits - 3 - es;
+
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(presult.get(), _sign, _regime, _exponent, _fraction);
+			int                  _scale = _regime.scale() + _exponent.scale();
+
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << input
@@ -27,12 +37,22 @@ namespace sw {
 				<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
 				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
 				<< "  raw " << std::setw(nbits) << presult.get()
-				<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << presult.regime_k() << "   exp= " << std::setw(3) << presult.exp()
+				<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
 				<< std::endl;
 		}
 
 		template<size_t nbits, size_t es>
 		void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const posit<nbits, es>& presult) {
+			static_assert(nbits > 2, "component_to_string requires nbits > 2");
+			constexpr size_t fbits = nbits - 3 - es;
+
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(presult.get(), _sign, _regime, _exponent, _fraction);
+			int                  _scale = _regime.scale() + _exponent.scale();
+
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << input
@@ -40,7 +60,7 @@ namespace sw {
 				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult) << " reference value is "
 				<< std::setw(FLOAT_TABLE_WIDTH) << reference
 				<< "  raw " << std::setw(nbits) << presult.get()
-				<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << presult.regime_k() << "   exp= " << std::setw(3) << presult.exp()
+				<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
 				<< std::endl;
 		}
 
@@ -145,6 +165,9 @@ namespace sw {
 		int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
 			// we are going to generate a test set that consists of all posit configs and their midpoints
 			// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
+			// These larger posits will be at the mid-point between the smaller posit sample values
+			// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
+			// to test the rounding logic of the conversion.
 			const int NR_TEST_CASES = (1 << (nbits + 1));
 			const int HALF = (1 << nbits);
 			posit<nbits + 1, es> pref, pprev, pnext;
@@ -219,6 +242,10 @@ namespace sw {
 				else {
 					// for the even values, we generate the round-to-actual cases
 					if (i == 0) {
+						// special case of assigning to 0
+						input = 0.0;
+						pa = input;
+						nrOfFailedTests += Compare(input, pa, da, bReportIndividualTestCases);
 						// special case of projecting to +minpos
 						input = da + eps;
 						pa = input;

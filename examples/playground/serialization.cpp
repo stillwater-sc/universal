@@ -44,6 +44,16 @@ int main(int argc, char** argv)
 		cout << "posit format: " << setw(25) << str << "- parsed into a posit<32,2>: " << p << " <---- TODO fix" << endl;
 		cout << "pretty posit: " << pretty_print(p) << endl;
 
+		bitblock<1> one; one.set(0, true); str = to_hex(one); cout << "one  : " << str << endl;
+		bitblock<2> two; two.set(1, true); str = to_hex(two); cout << "two  : " << str << endl;
+		bitblock<3> three; three.set(2, true); str = to_hex(three); cout << "three: " << str << endl;
+		bitblock<4> four; four.set(3, true); str = to_hex(four); cout << "four : " << str << endl;
+
+		p.setToZero();
+		cout << "posit value     0: " << p << endl;
+		p.setToNaR();
+		cout << "posit value   NaR: " << p << endl;
+
         return EXIT_SUCCESS;
     }
     catch (char const* msg) {

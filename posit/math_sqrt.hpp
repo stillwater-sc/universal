@@ -172,7 +172,7 @@ namespace sw {
 			}
 			if (_trace_sqrt) std::cout << "y adjusted " << y << std::endl;
 
-			value<fbits> vsqrt = y.convert_to_scientific_notation();
+			value<fbits> vsqrt = y.to_value();
 			vsqrt.setExponent((e >> 1) - 1);
 			if (_trace_sqrt) std::cout << "vsqrt      " << vsqrt << std::endl;
 			return vsqrt;
