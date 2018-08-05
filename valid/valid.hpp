@@ -141,7 +141,7 @@ private:
 	template<size_t input_fbits>
 	int convert(bool sign, int scale, bitblock<input_fbits> input_fraction) {
 		// construct the posit
-		int k = calculate_unconstrained_k<nbits, es>(scale);
+		//int k = calculate_unconstrained_k<nbits, es>(scale);
 		// interpolation rule checks
 		if (check_inward_projection_range(scale)) {    // regime dominated
 			return 1; // rounded down

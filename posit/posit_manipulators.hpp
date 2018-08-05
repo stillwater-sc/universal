@@ -29,13 +29,21 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		std::string components_to_string(const posit<nbits, es>& p) {
+			static_assert(nbits > 2, "component_to_string requires nbits > 2");
+			constexpr size_t fbits = nbits - 3 - es;
 			std::stringstream ss;
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+
 			// TODO: hardcoded field width is governed by pretty printing posit tables, which by construction will always be small posits
-			ss << std::setw(14) << p.get() << " " << std::setw(14) << p.get_decoded()
-				<< " Sign : " << std::setw(2) << p.sign_value()
-				<< " Regime : " << std::setw(3) << p.regime_k()
-				<< " Exponent : " << std::setw(5) << p.get_exponent().value()
-				<< " Fraction : " << std::setw(8) << std::setprecision(21) << 1.0 + p.fraction_value()
+			ss << std::setw(14) << p.get() << " " << std::setw(14) << decoded(p)
+				<< " Sign : " << std::setw(2) << _sign
+				<< " Regime : " << std::setw(3) << _regime.regime_k()
+				<< " Exponent : " << std::setw(5) << exponent_value(p)
+				<< " Fraction : " << std::setw(8) << std::setprecision(21) << _fraction.value()
 				<< " Value : " << std::setw(16) << p
 				<< std::setprecision(0);
 			return ss.str();
@@ -69,9 +77,14 @@ namespace sw {
 		std::string pretty_print(const posit<nbits, es>& p, int printPrecision = std::numeric_limits<double>::max_digits10) {
 			static constexpr size_t fbits = nbits - 3 - es;  // TODO: is there a better solution to gain access to the posit's fbits value?
 			std::stringstream ss;
-			ss << ( p.get_sign() ? "s1 r" : "s0 r" );
-			bitblock<nbits-1> r = p.get_regime().get();
-			int regimeBits = (int)p.get_regime().nrBits();
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			ss << ( _sign ? "s1 r" : "s0 r" );
+			bitblock<nbits-1> r = _regime.get();
+			int regimeBits = (int)_regime.nrBits();
 			int nrOfRegimeBitsProcessed = 0;
 			for (int i = nbits - 2; i >= 0; --i) {
 				if (regimeBits > nrOfRegimeBitsProcessed++) {
@@ -79,8 +92,8 @@ namespace sw {
 				}
 			}
 			ss << " e";
-			bitblock<es> e = p.get_exponent().get();
-			int exponentBits = (int)p.get_exponent().nrBits();
+			bitblock<es> e = _exponent.get();
+			int exponentBits = (int)_exponent.nrBits();
 			int nrOfExponentBitsProcessed = 0;
 			for (int i = int(es) - 1; i >= 0; --i) {
 				if (exponentBits > nrOfExponentBitsProcessed++) {
@@ -88,8 +101,8 @@ namespace sw {
 				}
 			}
 			ss << " f";
-			bitblock<fbits> f = p.get_fraction().get();
-			int fractionBits = (int)p.get_fraction().nrBits();
+			bitblock<fbits> f = _fraction.get();
+			int fractionBits = (int)_fraction.nrBits();
 			int nrOfFractionBitsProcessed = 0;
 			for (int i = int(p.fbits) - 1; i >= 0; --i) {
 				if (fractionBits > nrOfFractionBitsProcessed++) {
@@ -97,7 +110,7 @@ namespace sw {
 				}
 			}
 			ss << " q";
-			ss << p.get_quadrant() << " v"
+			ss << quadrant(p) << " v"
 				<< std::setprecision(printPrecision) << p
 				<< std::setprecision(0);
 			return ss.str();
@@ -167,7 +180,15 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		std::string color_print(const posit<nbits, es>& p) {
+			static_assert(nbits > 2, "GeneratePositTable not valid for nbits < 3");
+			constexpr size_t fbits = nbits - 3 - es;
 			std::stringstream ss;
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+
 			Color red(ColorCode::FG_RED);
 			Color yellow(ColorCode::FG_YELLOW);
 			Color blue(ColorCode::FG_BLUE);
@@ -177,8 +198,8 @@ namespace sw {
 			Color def(ColorCode::FG_DEFAULT);
 			ss << red << (p.isNegative() ? "1" : "0");
 
-			bitblock<nbits - 1> r = p.get_regime().get();
-			int regimeBits = (int)p.get_regime().nrBits();
+			bitblock<nbits - 1> r = _regime.get();
+			int regimeBits = (int)_regime.nrBits();
 			int nrOfRegimeBitsProcessed = 0;
 			for (int i = nbits - 2; i >= 0; --i) {
 				if (regimeBits > nrOfRegimeBitsProcessed++) {
@@ -186,8 +207,8 @@ namespace sw {
 				}
 			}
 
-			bitblock<es> e = p.get_exponent().get();
-			int exponentBits = (int)p.get_exponent().nrBits();
+			bitblock<es> e = _exponent.get();
+			int exponentBits = (int)_exponent.nrBits();
 			int nrOfExponentBitsProcessed = 0;
 			for (int i = int(es) - 1; i >= 0; --i) {
 				if (exponentBits > nrOfExponentBitsProcessed++) {
@@ -195,8 +216,8 @@ namespace sw {
 				}
 			}
 
-			bitblock<posit<nbits, es>::fbits> f = p.get_fraction().get();
-			int fractionBits = (int)p.get_fraction().nrBits();
+			bitblock<posit<nbits, es>::fbits> f = _fraction.get();
+			int fractionBits = (int)_fraction.nrBits();
 			int nrOfFractionBitsProcessed = 0;
 			for (int i = int(p.fbits) - 1; i >= 0; --i) {
 				if (fractionBits > nrOfFractionBitsProcessed++) {
@@ -212,26 +233,31 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		void GeneratePositTable(std::ostream& ostr, bool csvFormat = false)
 		{
+			static_assert(nbits > 2, "GeneratePositTable not valid for nbits < 3");
+			constexpr size_t fbits = nbits - 3 - es;
 			const size_t size = (1 << nbits);
-			posit<nbits, es>	myPosit;
+			posit<nbits, es>	p;
 			if (csvFormat) {
 				ostr << "Generate Posit Lookup table for a POSIT<" << nbits << "," << es << "> in CSV format" << std::endl;
-				ostr << "#, Binary, Decoded, k, sign, scale, regime, exponent, fraction, value\n";
+				ostr << "#, Binary, Decoded, k, sign, scale, regime, exponent, fraction, value, posit\n";
 				for (size_t i = 0; i < size; i++) {
-					myPosit.set_raw_bits(i);
-					regime<nbits, es>   r = myPosit.get_regime();
-					exponent<nbits, es> e = myPosit.get_exponent();
-					fraction<myPosit.fbits>    f = myPosit.get_fraction();
+					p.set_raw_bits(i);
+					bool		     	 s;
+					regime<nbits, es>    r;
+					exponent<nbits, es>  e;
+					fraction<fbits>      f;
+					decode(p.get(), s, r, e, f);
 					ostr << i << ","
-						<< myPosit.get() << ","
-						<< myPosit.get_decoded() << ","
-						<< myPosit.regime_k() << ","
-						<< myPosit.sign_value() << ","
-						<< myPosit.scale() << ","
+						<< p.get() << ","
+						<< decoded(p) << ","
+						<< r.regime_k() << ","
+						<< s << ","
+						<< scale(p) << ","
 						<< std::right << r << ","
 						<< std::right << e << ","
 						<< std::right << f << ","
-						<< std::setprecision(22) << myPosit << std::setprecision(0)
+						<< to_string(p, 22) << ","
+						<< p
 						<< '\n';
 				}
 				ostr << std::endl;
@@ -244,39 +270,42 @@ namespace sw {
 				const size_t k_column = 8;
 				const size_t sign_column = 8;
 				const size_t scale_column = 8;
-				//	const size_t regime_value_column = 30;
 				const size_t regime_column = 16;
 				const size_t exponent_column = 16;
 				const size_t fraction_column = 16;
 				const size_t value_column = 30;
+				const size_t posit_format_column = 16;
 
 				ostr << std::setw(index_column) << " # "
-					<< std::setw(bin_column) << " Binary"
-					<< std::setw(bin_column) << " Decoded"
-					<< std::setw(k_column) << " k"
+					<< std::setw(bin_column) << "Binary"
+					<< std::setw(bin_column) << "Decoded"
+					<< std::setw(k_column) << "k"
 					<< std::setw(sign_column) << "sign"
 					<< std::setw(scale_column) << "scale"
-					//		<< std::setw(regime_value_column) << " regime"
-					<< std::setw(regime_column) << " regime"
-					<< std::setw(exponent_column) << " exponent"
-					<< std::setw(fraction_column) << " fraction"
-					<< std::setw(value_column) << " value" << std::endl;
+					<< std::setw(regime_column) << "regime"
+					<< std::setw(exponent_column) << "exponent"
+					<< std::setw(fraction_column) << "fraction"
+					<< std::setw(value_column) << "value"
+					<< std::setw(posit_format_column) << "posit_format"
+					<< std::endl;
 				for (size_t i = 0; i < size; i++) {
-					myPosit.set_raw_bits(i);
-					regime<nbits, es>   r = myPosit.get_regime();
-					exponent<nbits, es> e = myPosit.get_exponent();
-					fraction<myPosit.fbits>    f = myPosit.get_fraction();
+					p.set_raw_bits(i);
+					bool		     	 s;
+					regime<nbits, es>    r;
+					exponent<nbits, es>  e;
+					fraction<fbits>      f;
+					decode(p.get(), s, r, e, f);
 					ostr << std::setw(4) << i << ": "
-						<< std::setw(bin_column) << myPosit.get()
-						<< std::setw(bin_column) << myPosit.get_decoded()
-						<< std::setw(k_column) << myPosit.regime_k()
-						<< std::setw(sign_column) << myPosit.sign_value()
-						<< std::setw(scale_column) << myPosit.scale()
-						//			<< std::setw(regime_value_column) << std::setprecision(22) << r.value() << std::setprecision(0)
-						<< std::setw(regime_column) << std::right << r
-						<< std::setw(exponent_column) << std::right << e
-						<< std::setw(fraction_column) << std::right << f
-						<< std::setw(value_column) << std::setprecision(22) << myPosit << std::setprecision(0)
+						<< std::setw(bin_column) << p.get()
+						<< std::setw(bin_column) << decoded(p)
+						<< std::setw(k_column) << r.regime_k()
+						<< std::setw(sign_column) << s
+						<< std::setw(scale_column) << scale(p)
+						<< std::setw(regime_column) << std::right << to_string(r)
+						<< std::setw(exponent_column) << std::right << to_string(e)
+						<< std::setw(fraction_column) << std::right << to_string(f)
+						<< std::setw(value_column) << to_string(p, 22) << " "
+						<< std::setw(posit_format_column) << std::right << to_string(p)
 						<< std::endl;
 				}
 			}

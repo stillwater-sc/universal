@@ -17,8 +17,8 @@
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
 
-// generate specific test case that you can trace with the trace conditions in posit.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
+// generate specific test case that you can trace with the trace conditions in posit.hpp
+// Most bugs are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a) {
 	Ty reference;
@@ -27,11 +27,11 @@ void GenerateTestCase(Ty a) {
 	reference = (Ty)1.0 / a;
 	pref = reference;
 	preciprocal = pa.reciprocate();
-	std::cout << "input " << a << " reference 1/fa " << reference << " pref " << pref << " result " << preciprocal << std::endl << std::endl;
+	std::cout << "input " << a << " reference 1/fa " << reference << " pref " << double(pref) << '(' << pref << ") result " << double(preciprocal) << '(' << preciprocal << ')' << std::endl;
 }
 
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+#define STRESS_TESTING 1
 
 int main(int argc, char** argv)
 try {
@@ -98,10 +98,12 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "reciprocation");
 	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "reciprocation");
 	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "reciprocation");
 
 #if STRESS_TESTING
 
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<18, 1>(tag, bReportIndividualTestCases), "posit<18,1>", "reciprocation");
 	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<20, 1>(tag, bReportIndividualTestCases), "posit<20,1>", "reciprocation");
 
 #endif // STRESS_TESTING
