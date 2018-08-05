@@ -205,6 +205,7 @@ namespace sw {
 			inline int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
 
 			bitblock<NBITS_IS_4> get() const { bitblock<NBITS_IS_4> bb; bb = int(_bits); return bb; }
+			unsigned long long encoding() const { return unsigned long long(_bits); }
 			bitblock<NBITS_IS_4> get_decoded() const {
 				bitblock<NBITS_IS_4> _Bits;
 				uint8_t mask = 1;

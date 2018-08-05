@@ -41,7 +41,7 @@ namespace sw {
 				return p;
 			}
 			unsigned roots[4] = { 0, 1, 2, 2 };
-			unsigned root = roots[a.get_encoding_as_integer()];
+			unsigned root = roots[a.encoding()];
 			p.set_raw_bits(root);
 			return p;
 		}
@@ -60,7 +60,7 @@ namespace sw {
 				return p;
 			}
 			unsigned roots[4] = { 0, 1, 2, 2 };
-			unsigned root = roots[a.get_encoding_as_integer()];
+			unsigned root = roots[a.encoding()];
 			p.set_raw_bits(root);
 			return p;
 		}
@@ -83,7 +83,7 @@ namespace sw {
 				return p;
 			}
 			unsigned roots[8] = { 0, 2, 3, 3, 4, 4, 5, 6 };
-			unsigned root = roots[a.get_encoding_as_integer()];
+			unsigned root = roots[a.encoding()];
 			p.set_raw_bits(root);
 			return p;
 		}
@@ -114,7 +114,7 @@ namespace sw {
 				return p;
 			}
 			unsigned roots[16] = { 0, 3, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 11, 12, 13 };
-			unsigned root = roots[a.get_encoding_as_integer()];
+			unsigned root = roots[a.encoding()];
 			p.set_raw_bits(root);
 			return p;
 		}
