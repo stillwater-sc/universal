@@ -12,6 +12,7 @@
 
 // minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
+#include "../../posit/posit_decoded.hpp"
 #include "../../posit/posit_functions.hpp"
 #include "../../posit/posit_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
@@ -20,11 +21,20 @@
 template<size_t nbits, size_t es>
 void GenerateLogicPattern(double input, const sw::unum::posit<nbits, es>& presult, const sw::unum::posit<nbits+1, es>& pnext) {
 	const int VALUE_WIDTH = 15;
-	bool fail = presult != pnext;
+	// conceptually: 	bool fail = presult != pnext;
+	sw::unum::bitblock<nbits> bbresult = presult.get();
+	sw::unum::bitblock<nbits + 1> bbnext = pnext.get();
+	bool fail = bbnext[0] == true; // if the last bit of bbnext is set, we fail
+	for (size_t i = 0; i < nbits; ++i) {
+		if (bbresult[i] != bbnext[i + 1]) {
+			fail = true;
+			break;
+		}
+	}
 	sw::unum::value<52> v(input);
 	std::cout << std::setw(VALUE_WIDTH) << input << " "
 		<< " result " << std::setw(VALUE_WIDTH) << presult 
-		<< "  scale= " << std::setw(3) << presult.scale() 
+		<< "  scale= " << std::setw(3) << sw::unum::scale(presult) 
 		<< "  k= " << std::setw(3) << sw::unum::calculate_k<nbits, es>(v.scale())
 		<< "  exp= " << std::setw(3) << presult.get_exponent() << "  "
 		<< presult.get() << " " 
@@ -171,7 +181,7 @@ void GenerateTestCase(double input, double reference, const sw::unum::posit<nbit
 }
 
 #define MANUAL_TESTING 0
-#define STRESS_TESTING 0
+#define STRESS_TESTING 1
 
 int main(int argc, char** argv)
 try {
@@ -185,30 +195,23 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	double input, reference;
-	double ONEMEG = 1024.0 * 1024.0;
-	double FOURMEG = 4.0 * ONEMEG;
-	double SIXTEENMEG = 16.0 * ONEMEG;
-	input = FOURMEG + 1.0;
-	posit<8, 2> p(input);
-	reference = SIXTEENMEG;
-	GenerateTestCase(input, reference, p);
-	
 
 	// manual exhaustive testing
 	tag = "Manual Testing";
 
-	//GenerateLogicPatternsForDebug<3, 0>();
-	//GenerateLogicPatternsForDebug<4, 0>();	
-	//GenerateLogicPatternsForDebug<4, 1>();
-	//GenerateLogicPatternsForDebug<5, 1>();
-	//GenerateLogicPatternsForDebug<5, 2>();
-	//GenerateLogicPatternsForDebug<6, 2>();
-	//GenerateLogicPatternsForDebug<7, 3>();
-	//GenerateLogicPatternsForDebug<8, 0>();
-	//GenerateLogicPatternsForDebug<8, 1>();
-	//GenerateLogicPatternsForDebug<8, 2>();
-	//return 0;
+#ifdef VERBOSE_ENUMERATION_TESTING
+	GenerateLogicPatternsForDebug<3, 0>();
+	GenerateLogicPatternsForDebug<4, 0>();	
+	GenerateLogicPatternsForDebug<4, 1>();
+	GenerateLogicPatternsForDebug<5, 1>();
+	GenerateLogicPatternsForDebug<5, 2>();
+	GenerateLogicPatternsForDebug<6, 2>();
+	GenerateLogicPatternsForDebug<7, 3>();
+	GenerateLogicPatternsForDebug<8, 0>();
+	GenerateLogicPatternsForDebug<8, 1>();
+	GenerateLogicPatternsForDebug<8, 2>();
+	cout << "----------------\n";
+#endif
 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<3, 0>(tag, true), "posit<3,0>", "conversion");
 	return 0;
@@ -240,25 +243,42 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "conversion");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "conversion");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "conversion");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion< 9, 3>(tag, bReportIndividualTestCases), "posit<9,3>", "conversion");
 
 
-#ifdef STRESS_TESTING
+#if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<10, 3>(tag, bReportIndividualTestCases), "posit<10,3>", "conversion");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<12, 3>(tag, bReportIndividualTestCases), "posit<12,3>", "conversion");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<14, 0>(tag, bReportIndividualTestCases), "posit<14,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<14, 2>(tag, bReportIndividualTestCases), "posit<14,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(ValidateConversion<14, 3>(tag, bReportIndividualTestCases), "posit<14,3>", "conversion");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "conversion");
 	nrOfFailedTestCases += ReportTestResult(ValidateConversion<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "conversion");

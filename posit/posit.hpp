@@ -546,7 +546,7 @@ namespace sw {
 					// radix point falls at operand size == reciprocal_size - operand_size - 1
 					reciprocal <<= operand_size - 1;
 					if (_trace_reciprocate) std::cout << "frac   " << reciprocal << std::endl;
-					int new_scale = -scale();
+					int new_scale = -scale(*this);
 					int msb = findMostSignificantBit(reciprocal);
 					if (msb > 0) {
 						int shift = reciprocal_size - msb;
@@ -563,45 +563,34 @@ namespace sw {
 			}
 			// SELECTORS
 			bool isNaR() const {
-				return (_sign & _regime.isZero());
+				bitblock<nbits> tmp(_raw_bits);
+				if (tmp[nbits - 1] == false) return false;
+				tmp.reset(nbits - 1);
+				return tmp.none() ? true : false;
 			}
 			bool isZero() const {
-				return (!_sign & _regime.isZero());
+				return _raw_bits.none() ? true : false;
 			}
 			bool isOne() const { // pattern 010000....
 				bitblock<nbits> tmp(_raw_bits);
 				tmp.set(nbits - 2, false);
-				bool oneBitSet = tmp.none();
-				return !_sign & oneBitSet;
+				return _raw_bits[nbits - 2] & tmp.none();
 			}
 			bool isMinusOne() const { // pattern 110000...
 				bitblock<nbits> tmp(_raw_bits);
 				tmp.set(nbits - 1, false);
 				tmp.set(nbits - 2, false);
 				bool oneBitSet = tmp.none();
-				return _sign & oneBitSet;
+				return _raw_bits[nbits - 1] & _raw_bits[nbits - 2] & tmp.none();
 			}
 			bool isNegative() const {
-				return _sign;
+				return _raw_bits[nbits - 1];;
 			}
 			bool isPositive() const {
-				return !_sign;
+				return !_raw_bits[nbits - 1];
 			}
 			bool isPowerOf2() const {
 				return _fraction.none();
-			}
-
-			inline int	      sign_value() const {
-				return (_sign ? -1 : 1);
-			}
-			inline double   regime_value() const {
-				return _regime.value();
-			}
-			inline double exponent_value() const {
-				return _exponent.value();
-			}
-			inline double fraction_value() const {
-				return _fraction.value();
 			}
 
 			// how many shifts represent the regime?
@@ -766,10 +755,15 @@ namespace sw {
 
 			// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 			value<fbits> convert_to_scientific_notation() const {
-				return value<fbits>(_sign, scale(), get_fraction().get(), isZero(), isNaR());
+				return to_value();
 			}
 			value<fbits> to_value() const {
-				return value<fbits>(_sign, scale(), get_fraction().get(), isZero(), isNaR());
+				bool		     	 _sign;
+				regime<nbits, es>    _regime;
+				exponent<nbits, es>  _exponent;
+				fraction<fbits>      _fraction;
+				decode(_raw_bits, _sign, _regime, _exponent, _fraction);
+				return value<fbits>(_sign, _regime.scale() * _exponent.scale(), _fraction.get(), isZero(), isNaR());
 			}
 			void normalize(value<fbits>& v) const {
 				v.set(_sign, get_scale(), _fraction.get(), isZero(), isNaR());
@@ -859,44 +853,14 @@ namespace sw {
 					_fraction.set(fraction_bits, nrFractionBits);
 				}
 			}
-			// scale returns the shifts to normalize the number =  regime + exponent shifts
-			int scale() const {
-				return _regime.scale() + _exponent.scale();
-			}
-			unsigned int exp() const {
-				return _exponent.scale();
-			}
-			// special case check for projecting values between (0, minpos] to minpos and [maxpos, inf) to maxpos
-			// Returns true if the scale is too small or too large for this posit config
-			// DO NOT USE the k value for this, as the k value encodes the useed regions and thus is too coarse to make this decision
-			// Using the scale directly is the simplest expression of the inward projection test.
-			bool check_inward_projection_range(int scale) {
-				// calculate the max k factor for this posit config
-				int posit_size = nbits;
-				int k = scale < 0 ?	-(posit_size - 2) : (posit_size - 2);
-				return scale < 0 ? scale < k*(1<<es) : scale > k*(1<<es);
-			}
-			// project to the next 'larger' posit: this is 'pushing away' from zero, projecting to the next bigger scale
-			void project_up_and_up() {
-				bool carry = _fraction.increment();
-				if (carry && es > 0)
-					carry = _exponent.increment();
-				if (carry) 
-							_regime.increment();
-			}
+
 			// step up to the next posit in a lexicographical order
 			void increment_posit() {
-				bitblock<nbits> raw(_raw_bits);
-				increment_bitset(raw);
-				_raw_bits = raw;
-				decode(raw, _sign, _regime, _exponent, _fraction);
+				increment_bitset(_raw_bits);
 			}
 			// step down to the previous posit in a lexicographical order
 			void decrement_posit() {
-				bitblock<nbits> raw(_raw_bits);
-				decrement_bitset(raw);
-				_raw_bits = raw;
-				decode(raw, _sign, _regime, _exponent, _fraction);
+				decrement_bitset(_raw_bits);
 			}
 	
 			// Generalized version
@@ -923,13 +887,10 @@ namespace sw {
 				_sign = sign;
 				int k = calculate_unconstrained_k<nbits, es>(scale);
 				// interpolation rule checks
-				if (check_inward_projection_range(scale)) {    // regime dominated
+				if (check_inward_projection_range<nbits, es>(scale)) {    // regime dominated
 					if (_trace_conversion) std::cout << "inward projection" << std::endl;
 					// we are projecting to minpos/maxpos
-					_regime.assign_regime_pattern(k);
-					// store raw bit representation
-					_raw_bits = _sign ? twos_complement(collect()) : collect();
-					_raw_bits.set(nbits - 1, _sign);
+					_raw_bits = k < 0 ? minpos_pattern<nbits, es>(sign) : maxpos_pattern<nbits, es>(sign);
 					// we are done
 					if (_trace_rounding) std::cout << "projection  rounding ";
 				}
@@ -992,12 +953,14 @@ namespace sw {
 
 		private:
 			bitblock<nbits>      _raw_bits;	// raw bit representation
+			int					 _scale;
 			bool		     	 _sign;     // decoded posit representation
 			regime<nbits, es>    _regime;	// decoded posit representation
 			exponent<nbits, es>  _exponent;	// decoded posit representation
 			fraction<fbits>      _fraction;	// decoded posit representation
 
 			// HELPER methods
+
 			// Conversion functions
 			int         to_int() const {
 				if (isZero()) return 0;
@@ -1020,15 +983,29 @@ namespace sw {
 			double      to_double() const {
 				if (isZero())	return 0.0;
 				if (isNaR())	return NAN;
-				return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
+				bool		     	 _sign;
+				regime<nbits, es>    _regime;
+				exponent<nbits, es>  _exponent;
+				fraction<fbits>      _fraction;
+				decode(_raw_bits, _sign, _regime, _exponent, _fraction);
+				double s = (_sign ? -1.0 : 1.0);
+				double r = _regime.value();
+				double e = _exponent.value();
+				double f = (1.0 + _fraction.value());
+				return s * r * e * f;
 			}
 			long double to_long_double() const {
 				if (isZero())  return 0.0;
 				if (isNaR())   return NAN;
-				int s = sign_value();
-				double r = regime_value(); // regime value itself will fit in a double
-				double e = exponent_value(); // same with exponent
-				long double f = (long double)(1.0) + _fraction.value();
+				bool		     	 _sign;
+				regime<nbits, es>    _regime;
+				exponent<nbits, es>  _exponent;
+				fraction<fbits>      _fraction;
+				decode(_raw_bits, _sign, _regime, _exponent, _fraction);
+				long double s = (_sign ? -1.0 : 1.0);
+				long double r = _regime.value();
+				long double e = _exponent.value();
+				long double f = (1.0 + _fraction.value());
 				return s * r * e * f;
 			}
 			template <typename T>
@@ -2273,12 +2250,6 @@ namespace sw {
 
 		#endif // POSIT_ENABLE_LITERALS
 
-		// Sign of a posit
-		template<size_t nbits, size_t es>
-		bool sign(const posit<nbits,es>& p) {
-			return p.get_sign();
-		}
-
 		// Magnitude of a posit (equivalent to turning the sign bit off).
 		template<size_t nbits, size_t es> 
 		posit<nbits, es> abs(const posit<nbits, es>& p) {
@@ -2323,14 +2294,14 @@ namespace sw {
 
 			if (!a.isZero() && !b.isZero()) {
 				// transform the inputs into (sign,scale,fraction) triples
-				va.set(a.get_sign(), a.scale(), a.get_fraction().get(), a.isZero(), a.isNaR());;
-				vb.set(b.get_sign(), b.scale(), b.get_fraction().get(), b.isZero(), b.isNaR());;
+				va.set(sign(a), scale(a), extract_fraction<nbits, es, fbits>(a), a.isZero(), a.isNaR());;
+				vb.set(sign(b), scale(b), extract_fraction<nbits, es, fbits>(b), b.isZero(), b.isNaR());;
 
 				module_multiply(va, vb, product);    // multiply the two inputs
 			}
 		//	if (c.isZero()) return product;	// product isn't the right size
 			// second, the add
-			ctmp.set(c.get_sign(), c.scale(), c.get_fraction().get(), c.isZero(), c.isNaR());
+			ctmp.set(sign(c), scale(c), extract_fraction<nbits,es,fbits>(c), c.isZero(), c.isNaR());
 			value<mbits> vc;
 			vc.template right_extend<fbits,mbits>(ctmp);
 			value<abits+1> sum;
@@ -2353,15 +2324,15 @@ namespace sw {
 
 			if (!a.isZero() || !b.isZero()) {
 				// transform the inputs into (sign,scale,fraction) triples
-				va.set(a.get_sign(), a.scale(), a.get_fraction().get(), a.isZero(), a.isNaR());;
-				vb.set(b.get_sign(), b.scale(), b.get_fraction().get(), b.isZero(), b.isNaR());;
+				va.set(sign(a), scale(a), extract_fraction<nbits, es, fbits>(a), a.isZero(), a.isNaR());;
+				vb.set(sign(b), scale(b), extract_fraction<nbits, es, fbits>(b), b.isZero(), b.isNaR());;
 
 				module_add(va, vb, sum);    // multiply the two inputs
 			}
 			// second the multiply
 			value<mbits> product;
 			if (c.isZero()) return product;
-			vc.set(c.get_size(), c.scale(), c.get_fraction().get(), c.isZero(), c.isNaR());
+			vc.set(c.get_size(), scale(c), extract_fraction<nbits, es, fbits>(c), c.isZero(), c.isNaR());
 			module_multiply(sum, c, product);
 			return product;
 		}
@@ -2388,8 +2359,8 @@ namespace sw {
 			if (lhs.isZero() && rhs.isZero()) return sum;
 
 			// transform the inputs into (sign,scale,fraction) triples
-			a.set(lhs.get_sign(), lhs.scale(), lhs.get_fraction().get(), lhs.isZero(), lhs.isNaR());;
-			b.set(rhs.get_sign(), rhs.scale(), rhs.get_fraction().get(), rhs.isZero(), rhs.isNaR());;
+			a.set(sign(lhs), scale(lhs), extract_fraction<nbits, es, fbits>(lhs), lhs.isZero(), lhs.isNaR());
+			b.set(sign(rhs), scale(rhs), extract_fraction<nbits, es, fbits>(rhs), rhs.isZero(), rhs.isNaR());
 
 			module_add<fbits, abits>(a, b, sum);		// add the two inputs
 
@@ -2408,8 +2379,8 @@ namespace sw {
 			if (lhs.isZero() || rhs.isZero()) return product;
 
 			// transform the inputs into (sign,scale,fraction) triples
-			a.set(lhs.get_sign(), lhs.scale(), lhs.get_fraction().get(), lhs.isZero(), lhs.isNaR());;
-			b.set(rhs.get_sign(), rhs.scale(), rhs.get_fraction().get(), rhs.isZero(), rhs.isNaR());;
+			a.set(sign(lhs), scale(lhs), extract_fraction<nbits,es,fbits>(lhs), lhs.isZero(), lhs.isNaR());
+			b.set(sign(rhs), scale(rhs), extract_fraction<nbits, es, fbits>(rhs), rhs.isZero(), rhs.isNaR());
 
 			module_multiply(a, b, product);    // multiply the two inputs
 
