@@ -167,6 +167,23 @@ inline std::istream& operator>> (std::istream& istr, const exponent<nbits, es>& 
 }
 
 template<size_t nbits, size_t es>
+inline std::string to_string(const exponent<nbits, es>& e) {
+	std::stringstream ss;
+	bitblock<es> bb = e.get();
+	unsigned int nrOfExponentBitsProcessed = 0;
+	for (int i = int(es) - 1; i >= 0; --i) {
+		if (e.nrBits() > nrOfExponentBitsProcessed++) {
+			ss << (bb[i] ? "1" : "0");
+		}
+		else {
+			ss << "-";
+		}
+	}
+	if (nrOfExponentBitsProcessed == 0) ss << "~"; // for proper alignment in tables
+	return ss.str();
+}
+
+template<size_t nbits, size_t es>
 inline bool operator==(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return lhs._Bits == rhs._Bits && lhs._NrOfBits == rhs._NrOfBits; }
 template<size_t nbits, size_t es>
 inline bool operator!=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator==(lhs, rhs); }

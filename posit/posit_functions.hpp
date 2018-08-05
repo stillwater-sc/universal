@@ -220,5 +220,40 @@ namespace sw {
 			return _exponent.scale();
 		}
 
+		// obtain the decoded posit bits
+		template<size_t nbits, size_t es>
+		inline bitblock<nbits> decoded(const posit<nbits, es>& p) {
+			constexpr size_t rbits = nbits - 1;
+			constexpr size_t fbits = nbits - 3 - es;
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+
+			bitblock<rbits> r				= _regime.get();
+			size_t			nrRegimeBits	= _regime.nrBits();
+			bitblock<es>	e				= _exponent.get();
+			size_t			nrExponentBits	= _exponent.nrBits();
+			bitblock<fbits> f				= _fraction.get();
+			size_t			nrFractionBits	= _fraction.nrBits();
+
+			bitblock<nbits> _Bits;
+			_Bits.set(nbits - 1, _sign);
+			int msb = nbits - 2;
+			for (size_t i = 0; i < nrRegimeBits; i++) {
+				_Bits.set(std::size_t(msb--), r[nbits - 2 - i]);
+			}
+			if (msb < 0) 
+						return _Bits;
+			for (size_t i = 0; i < nrExponentBits && msb >= 0; i++) {
+				_Bits.set(std::size_t(msb--), e[es - 1 - i]);
+			}
+			if (msb < 0) return _Bits;
+			for (size_t i = 0; i < nrFractionBits && msb >= 0; i++) {
+				_Bits.set(std::size_t(msb--), f[fbits - 1 - i]);
+			}
+			return _Bits;
+		}
 	}
 }

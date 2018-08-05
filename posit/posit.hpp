@@ -111,6 +111,9 @@ namespace sw {
 		}
 
 		// decode_regime measures the run-length of the regime and returns the k value associated with that run-length
+		// how many shifts represent the regime?
+		// regime = useed ^ k = (2 ^ (2 ^ es)) ^ k = 2 ^ (k*(2 ^ es))
+		// scale  = useed ^ k * 2^e = k*(2 ^ es) + e 
 		template<size_t nbits>
 		int decode_regime(bitblock<nbits>& raw_bits) {
 			// let m be the number of identical bits in the regime
@@ -720,6 +723,7 @@ namespace sw {
 				p._raw_bits.set(nbits- 1, false);
 				return p;
 			}
+			
 			// SELECTORS
 			bool isNaR() const {
 				if (_raw_bits[nbits - 1] == false) return false;
@@ -752,42 +756,8 @@ namespace sw {
 				return _fraction.none();
 			}
 
-			// how many shifts represent the regime?
-			// regime = useed ^ k = 2 ^ (k*(2 ^ e))
-			// scale = useed ^ k * 2^e 
-			//int                get_scale() const { return _regime.scale() + _exponent.scale(); }
-			//bool               get_sign() const { return _sign;  }
-			//regime<nbits, es>  get_regime() const {	return _regime;	}
-			//int				 regime_k() const { return _regime.regime_k(); }
-			//exponent<nbits,es> get_exponent() const { return _exponent;	}
-			//fraction<fbits>    get_fraction() const { return _fraction;	}
 			bitblock<nbits>    get() const { return _raw_bits; }
 			unsigned long long encoding() const { return _raw_bits.to_ullong(); }
-			bitblock<nbits>    get_decoded() const {
-				bitblock<rbits> r = _regime.get();
-				size_t nrRegimeBits = _regime.nrBits();
-				bitblock<es> e = _exponent.get();
-				size_t nrExponentBits = _exponent.nrBits();
-				bitblock<fbits> f = _fraction.get();
-				size_t nrFractionBits = _fraction.nrBits();
-
-				bitblock<nbits> _Bits;
-				_Bits.set(nbits - 1, _sign);
-				int msb = nbits - 2;
-				for (size_t i = 0; i < nrRegimeBits; i++) {
-					_Bits.set(std::size_t(msb--), r[nbits - 2 - i]);
-				}
-				if (msb < 0) 
-							return _Bits;
-				for (size_t i = 0; i < nrExponentBits && msb >= 0; i++) {
-					_Bits.set(std::size_t(msb--), e[es - 1 - i]);
-				}
-				if (msb < 0) return _Bits;
-				for (size_t i = 0; i < nrFractionBits && msb >= 0; i++) {
-					_Bits.set(std::size_t(msb--), f[fbits - 1 - i]);
-				}
-				return _Bits;
-			}
 
 			// MODIFIERS
 			inline void clear() {
@@ -812,14 +782,15 @@ namespace sw {
 				_raw_bits.reset();
 				_raw_bits.set(nbits - 1, true);
 			}
+			
+			// set the posit bits explicitely
 			posit<nbits, es>& set(const bitblock<nbits>& raw_bits) {
 				_raw_bits = raw_bits;
 				// decode to cache the posit number interpretation
 				decode(raw_bits, _sign, _regime, _exponent, _fraction);
 				return *this;
 			}
-			// Set the raw bits of the posit given an unsigned value starting from the lsb
-			// handy for enumerating a posit state space
+			// Set the raw bits of the posit given an unsigned value starting from the lsb. Handy for enumerating a posit state space
 			posit<nbits,es>& set_raw_bits(uint64_t value) {
 				clear();
 				bitblock<nbits> raw_bits;
@@ -834,6 +805,7 @@ namespace sw {
 				return *this;
 			}
 
+			// read a posit ASCII format and make a memory posit out of it
 			bool parse(std::string& txt) {
 				bool bSuccess = false;
 				// check if the txt is of the native posit form: nbits.esXhexvalue
@@ -884,9 +856,6 @@ namespace sw {
 			explicit operator unsigned int() const { return to_int(); }
 
 			// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
-			value<fbits> convert_to_scientific_notation() const {
-				return to_value();
-			}
 			value<fbits> to_value() const {
 				bool		     	 _sign;
 				regime<nbits, es>    _regime;
@@ -1598,6 +1567,17 @@ namespace sw {
 				std::cerr << "unable to parse -" << txt << "- into a posit value\n";
 			}
 			return istr;
+		}
+
+		// convert a posit value to a string using "nar" as designation of NaR
+		template<size_t nbits, size_t es>
+		std::string to_string(const posit<nbits, es>& p, std::streamsize precision = 17) {
+			if (p.isNaR()) {
+				return std::string("nar");
+			}
+			std::stringstream ss;
+			ss << std::setprecision(precision) << (long double)p;
+			return ss.str();
 		}
 
 		// posit - posit binary logic operators
