@@ -90,6 +90,25 @@ namespace sw {
 			return std::pow((long double)(useed_value<nbits, es>()), (long double)(static_cast<int>(2 - int(nbits))));
 		}
 
+		// generate the minpos bit pattern for the sign requested (true is negative half, false is positive half)
+		template<size_t nbits, size_t es>
+		bitblock<nbits> minpos_pattern(bool sign = false) {
+			bitblock<nbits> _bits;
+			_bits.reset();
+			_bits.set(0, true);
+			return (sign ? twos_complement(_bits) : _bits);
+		}
+
+		// generate the maxpos bit pattern for the sign requested (true is negative half, false is positive half)
+		template<size_t nbits, size_t es>
+		bitblock<nbits> maxpos_pattern(bool sign = false) {
+			bitblock<nbits> _bits;
+			_bits.reset();
+			_bits.flip();
+			_bits.set(nbits - 1, false);
+			return (sign ? twos_complement(_bits) : _bits);
+		}
+
 		// this comparison is for a two's complement number only, for example, the raw bits of a posit
 		template<size_t nbits>
 		bool lessThan(const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
@@ -103,6 +122,19 @@ namespace sw {
 			}
 			// numbers are equal
 			return false;
+		}
+
+		// special case check for projecting values between (0, minpos] to minpos and [maxpos, inf) to maxpos
+		// Returns true if the scale is too small or too large for this posit config
+		// DO NOT USE the k value for this, as the k value encodes the useed regions
+		// and thus is too coarse to make this decision.
+		// Using the scale directly is the simplest expression of the inward projection test.
+		template<size_t nbits, size_t es>
+		bool check_inward_projection_range(int scale) {
+			// calculate the min/max k factor for this posit config
+			int posit_size = nbits;
+			int k = scale < 0 ? -(posit_size - 2) : (posit_size - 2);
+			return scale < 0 ? scale < k*(1 << es) : scale > k*(1 << es);
 		}
 
 		// decode_regime measures the run-length of the regime and returns the k value associated with that run-length
@@ -218,5 +250,102 @@ namespace sw {
 			// we are storing both the raw bit representation and the decoded form
 			// so no need to transform back via 2's complement of regime/exponent/fraction
 		}
+
+		// forward reference
+		template<size_t nbits, size_t es> class posit;
+
+		template<size_t nbits, size_t es>
+		inline int sign_value(const posit<nbits, es>& p) {
+			bitblock<nbits> _bits = p.get();
+			return (_bits[nbits - 1] ? -1 : 1);
+		}
+
+		template<size_t nbits, size_t es>
+		inline double regime_value(const posit<nbits, es>& p) {
+			constexpr size_t fbits = nbits - 3 - es;
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			return _regime.value();
+		}
+
+		template<size_t nbits, size_t es>
+		inline double exponent_value(const posit<nbits, es>& p) {
+			constexpr size_t fbits = nbits - 3 - es;
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			return _exponent.value();
+		}
+
+		template<size_t nbits, size_t es>
+		inline double fraction_value(const posit<nbits, es>& p) {
+			constexpr size_t fbits = nbits - 3 - es;
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			return _fraction.value();
+		}
+
+		// get the sign of the posit
+		template<size_t nbits, size_t es>
+		inline bool sign(const posit<nbits, es>& p) {
+			return p.isNegative();
+		}
+
+		// calculate the scale of a posit
+		template<size_t nbits, size_t es>
+		inline int scale(const posit<nbits, es>& p) {
+			constexpr size_t fbits = nbits - 3 - es;
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			return _regime.scale() * _exponent.scale();
+		}
+
+		// get the fraction bits of a posit
+		template<size_t nbits, size_t es, size_t fbits>
+		inline bitblock<fbits> extract_fraction(const posit<nbits, es>& p) {
+			constexpr size_t fbits = nbits - 3 - es;
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			return _fraction.get();
+		}
+
+		// calculate the scale of the regime component of the posit
+		template<size_t nbits, size_t es>
+		inline int regime_scale(const posit<nbits, es>& p) {
+			constexpr size_t fbits = nbits - 3 - es;
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			return _regime.scale();
+		}
+
+		// calculate the scale of the exponent component of the posit
+		template<size_t nbits, size_t es>
+		inline int exponent_scale(const posit<nbits, es>& p) {
+			constexpr size_t fbits = nbits - 3 - es;
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			return _exponent.scale();
+		}
+
 	}
 }

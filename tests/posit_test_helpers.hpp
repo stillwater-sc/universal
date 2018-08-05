@@ -27,7 +27,7 @@ namespace sw {
 				<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
 				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
 				<< "  raw " << std::setw(nbits) << presult.get()
-				<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << presult.regime_k() << "   exp= " << std::setw(3) << presult.exp()
+				<< "   scale= " << std::setw(3) << scale(presult) << "   k= " << std::setw(3) << presult.regime_k() << "   exp= " << std::setw(3) << exponent_scale(presult)
 				<< std::endl;
 		}
 
@@ -40,7 +40,7 @@ namespace sw {
 				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult) << " reference value is "
 				<< std::setw(FLOAT_TABLE_WIDTH) << reference
 				<< "  raw " << std::setw(nbits) << presult.get()
-				<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << presult.regime_k() << "   exp= " << std::setw(3) << presult.exp()
+				<< "   scale= " << std::setw(3) << scale(presult) << "   k= " << std::setw(3) << presult.regime_k() << "   exp= " << std::setw(3) << exponent_scale(presult)
 				<< std::endl;
 		}
 
@@ -145,6 +145,9 @@ namespace sw {
 		int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
 			// we are going to generate a test set that consists of all posit configs and their midpoints
 			// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
+			// These larger posits will be at the mid-point between the smaller posit sample values
+			// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
+			// to test the rounding logic of the conversion.
 			const int NR_TEST_CASES = (1 << (nbits + 1));
 			const int HALF = (1 << nbits);
 			posit<nbits + 1, es> pref, pprev, pnext;
@@ -219,6 +222,10 @@ namespace sw {
 				else {
 					// for the even values, we generate the round-to-actual cases
 					if (i == 0) {
+						// special case of assigning to 0
+						input = 0.0;
+						pa = input;
+						nrOfFailedTests += Compare(input, pa, da, bReportIndividualTestCases);
 						// special case of projecting to +minpos
 						input = da + eps;
 						pa = input;

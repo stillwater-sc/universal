@@ -27,7 +27,8 @@ void test(const std::string& message)
 
     p = v;
 
-    // Baisc operators
+#pragma warning (disable : 4244)
+    // Basis operators
     p += v;
     p -+ v;
     p *= v;

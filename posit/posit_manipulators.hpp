@@ -32,10 +32,10 @@ namespace sw {
 			std::stringstream ss;
 			// TODO: hardcoded field width is governed by pretty printing posit tables, which by construction will always be small posits
 			ss << std::setw(14) << p.get() << " " << std::setw(14) << p.get_decoded()
-				<< " Sign : " << std::setw(2) << p.sign_value()
+				<< " Sign : " << std::setw(2) << sign_value(p)
 				<< " Regime : " << std::setw(3) << p.regime_k()
-				<< " Exponent : " << std::setw(5) << p.get_exponent().value()
-				<< " Fraction : " << std::setw(8) << std::setprecision(21) << 1.0 + p.fraction_value()
+				<< " Exponent : " << std::setw(5) << exponent_value(p)
+				<< " Fraction : " << std::setw(8) << std::setprecision(21) << 1.0 + fraction_value(p)
 				<< " Value : " << std::setw(16) << p
 				<< std::setprecision(0);
 			return ss.str();
@@ -226,8 +226,8 @@ namespace sw {
 						<< myPosit.get() << ","
 						<< myPosit.get_decoded() << ","
 						<< myPosit.regime_k() << ","
-						<< myPosit.sign_value() << ","
-						<< myPosit.scale() << ","
+						<< sign_value(myPosit) << ","
+						<< scale(myPosit) << ","
 						<< std::right << r << ","
 						<< std::right << e << ","
 						<< std::right << f << ","
@@ -270,8 +270,8 @@ namespace sw {
 						<< std::setw(bin_column) << myPosit.get()
 						<< std::setw(bin_column) << myPosit.get_decoded()
 						<< std::setw(k_column) << myPosit.regime_k()
-						<< std::setw(sign_column) << myPosit.sign_value()
-						<< std::setw(scale_column) << myPosit.scale()
+						<< std::setw(sign_column) << sign_value(myPosit)
+						<< std::setw(scale_column) << scale(myPosit)
 						//			<< std::setw(regime_value_column) << std::setprecision(22) << r.value() << std::setprecision(0)
 						<< std::setw(regime_column) << std::right << r
 						<< std::setw(exponent_column) << std::right << e
