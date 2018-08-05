@@ -224,8 +224,33 @@ namespace sw {
 			// so no need to transform back via 2's complement of regime/exponent/fraction
 		}
 
+		// quadrant returns a two character string indicating the quadrant of the projective reals the posit resides: from 0, SE, NE, NaR, NW, SW
+		template<size_t nbits, size_t es>
+		std::string quadrant(const posit<nbits,es>& p) {
+			posit<nbits, es> pOne(1), pMinusOne(-1);
+			if (sign(p)) {
+				// west
+				if (p > pMinusOne) {
+					return "SW";
+				}
+				else {
+					return "NW";
+				}
+			}
+			else {
+				// east
+				if (p < pOne) {
+					return "SE";
+				}
+				else {
+					return "NE";
+				}
+			}
+		}
+		
 		// define to non-zero if you want to enable arithmetic and logic literals
-		// POSIT_ENABLE_LITERALS
+		// this is set in the library aggregation include file <posit>
+		// #define POSIT_ENABLE_LITERALS 1
 
 		// class posit represents posit numbers of arbitrary configuration and their basic arithmetic operations (add/sub, mul/div)
 		template<size_t _nbits, size_t _es>
@@ -737,6 +762,7 @@ namespace sw {
 			//exponent<nbits,es> get_exponent() const { return _exponent;	}
 			//fraction<fbits>    get_fraction() const { return _fraction;	}
 			bitblock<nbits>    get() const { return _raw_bits; }
+			unsigned long long encoding() const { return _raw_bits.to_ullong(); }
 			bitblock<nbits>    get_decoded() const {
 				bitblock<rbits> r = _regime.get();
 				size_t nrRegimeBits = _regime.nrBits();
@@ -762,37 +788,7 @@ namespace sw {
 				}
 				return _Bits;
 			}
-			std::string        get_quadrant() const {
-				posit<nbits, es> pOne(1), pMinusOne(-1);
-				if (_sign) {
-					// west
-					if (*this > pMinusOne) {
-						return "SW";
-					}
-					else {
-						return "NW";
-					}
-				}
-				else {
-					// east
-					if (*this < pOne) {
-						return "SE";
-					}
-					else {
-						return "NE";
-					}
-				}
-			}
-			long long          get_encoding_as_integer() const {
-				if (nbits > 64) throw "encoding cannot be represented by a 64bit integer";
-				long long as_integer = 0;
-				unsigned long long mask = 1;
-				for (unsigned i = 0; i < nbits; i++) {
-					if (_raw_bits[i]) as_integer |= mask;
-					mask <<= 1;
-				}
-				return as_integer;
-			}
+
 			// MODIFIERS
 			inline void clear() {
 				_sign = false;

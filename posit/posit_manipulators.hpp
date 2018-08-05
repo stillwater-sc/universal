@@ -110,7 +110,7 @@ namespace sw {
 				}
 			}
 			ss << " q";
-			ss << p.get_quadrant() << " v"
+			ss << quadrant(p) << " v"
 				<< std::setprecision(printPrecision) << p
 				<< std::setprecision(0);
 			return ss.str();
