@@ -264,6 +264,27 @@ inline std::istream& operator>> (std::istream& istr, const fraction<nfbits>& f) 
 }
 
 template<size_t nfbits>
+inline std::string to_string(const fraction<nfbits>& f) {
+	unsigned int nrOfFractionBitsProcessed = 0;
+	std::stringstream ss;
+	if (nfbits > 0) {
+		bitblock<nfbits> bb = f.get();
+		int upperbound = nfbits;
+		upperbound--;
+		for (int i = upperbound; i >= 0; --i) {
+			if (f.nrBits() > nrOfFractionBitsProcessed++) {
+				ss << (bb[i] ? "1" : "0");
+			}
+			else {
+				ss << "-";
+			}
+		}
+	}
+	if (nrOfFractionBitsProcessed == 0) ss << "~"; // for proper alignment in tables
+	return ss.str();
+}
+
+template<size_t nfbits>
 inline bool operator==(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return lhs._NrOfBits == rhs._NrOfBits && lhs._Bits == rhs._Bits; }
 template<size_t nfbits>
 inline bool operator!=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return !operator==(lhs, rhs); }

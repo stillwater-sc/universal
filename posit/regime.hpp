@@ -184,6 +184,22 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
+		inline std::string to_string(const regime<nbits, es>& r) {
+			std::stringstream ss;
+			bitblock<nbits - 1> bb = r.get();
+			unsigned int nrOfRegimeBitsProcessed = 0;
+			for (int i = nbits - 2; i >= 0; --i) {
+				if (r.nrBits() > nrOfRegimeBitsProcessed++) {
+					ss << (bb[i] ? "1" : "0");
+				}
+				else {
+					ss << "-";
+				}
+			}
+			return ss.str();
+		}
+
+		template<size_t nbits, size_t es>
 		inline bool operator==(const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return lhs._Bits == rhs._Bits && lhs._RegimeBits == rhs._RegimeBits; }
 		template<size_t nbits, size_t es>
 		inline bool operator!=(const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return !operator==(lhs, rhs); }
