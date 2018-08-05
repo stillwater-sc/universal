@@ -84,7 +84,7 @@ namespace sw {
 		};
 
 		template<>
-		class posit<NBITS_IS_4, 0> {
+		class posit<NBITS_IS_4, ES_IS_0> {
 		public:
 			static constexpr size_t nbits	= NBITS_IS_4;
 			static constexpr size_t es		= ES_IS_0;
@@ -111,6 +111,17 @@ namespace sw {
 			posit& operator=(const long double rhs) {
 				return float_assign(rhs);
 			}
+
+			explicit operator long double() const { return to_long_double(); }
+			explicit operator double() const { return to_double(); }
+			explicit operator float() const { return to_float(); }
+			explicit operator long long() const { return to_long_long(); }
+			explicit operator long() const { return to_long(); }
+			explicit operator int() const { return to_int(); }
+			explicit operator unsigned long long() const { return to_long_long(); }
+			explicit operator unsigned long() const { return to_long(); }
+			explicit operator unsigned int() const { return to_int(); }
+
 			posit& set(sw::unum::bitblock<NBITS_IS_4>& raw) {
 				_bits = uint8_t(raw.to_ulong());
 				return *this;
@@ -215,6 +226,68 @@ namespace sw {
 			inline void setToNaR() { _bits = 0x8; }
 		private:
 			uint8_t _bits;
+
+			// Conversion functions
+			int         to_int() const {
+				if (isZero()) return 0;
+				if (isNaR()) throw "NaR (Not a Real)";
+				return int(to_float());
+			}
+			long        to_long() const {
+				if (isZero()) return 0;
+				if (isNaR()) throw "NaR (Not a Real)";
+				return long(to_double());
+			}
+			long long   to_long_long() const {
+				if (isZero()) return 0;
+				if (isNaR()) throw "NaR (Not a Real)";
+				return long(to_long_double());
+			}
+			float       to_float() const {
+				return (float)to_double();
+			}
+			double      to_double() const {
+				if (isZero())	return 0.0;
+				if (isNaR())	return NAN;
+				bool		     	 _sign;
+				regime<nbits, es>    _regime;
+				exponent<nbits, es>  _exponent;
+				fraction<fbits>      _fraction;
+				bitblock<nbits>		 _raw_bits;
+				_raw_bits.reset();
+				uint64_t mask = 1;
+				for (size_t i = 0; i < nbits; i++) {
+					_raw_bits.set(i, (_bits & mask));
+					mask <<= 1;
+				}
+				decode(_raw_bits, _sign, _regime, _exponent, _fraction);
+				double s = (_sign ? -1.0 : 1.0);
+				double r = _regime.value();
+				double e = _exponent.value();
+				double f = (1.0 + _fraction.value());
+				return s * r * e * f;
+			}
+			long double to_long_double() const {
+				if (isZero())  return 0.0;
+				if (isNaR())   return NAN;
+				bool		     	 _sign;
+				regime<nbits, es>    _regime;
+				exponent<nbits, es>  _exponent;
+				fraction<fbits>      _fraction;
+				bitblock<nbits>		 _raw_bits;
+				_raw_bits.reset();
+				uint64_t mask = 1;
+				for (size_t i = 0; i < nbits; i++) {
+					_raw_bits.set(i, (_bits & mask));
+					mask <<= 1;
+				}
+				decode(_raw_bits, _sign, _regime, _exponent, _fraction);
+				long double s = (_sign ? -1.0 : 1.0);
+				long double r = _regime.value();
+				long double e = _exponent.value();
+				long double f = (1.0 + _fraction.value());
+				return s * r * e * f;
+			}
 
 			template <typename T>
 			posit& float_assign(const T& rhs) {
