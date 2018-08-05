@@ -314,7 +314,7 @@ namespace sw {
 		// get the fraction bits of a posit
 		template<size_t nbits, size_t es, size_t fbits>
 		inline bitblock<fbits> extract_fraction(const posit<nbits, es>& p) {
-			constexpr size_t fbits = nbits - 3 - es;
+			//constexpr size_t fbits = nbits - 3 - es;
 			bool		     	 _sign;
 			regime<nbits, es>    _regime;
 			exponent<nbits, es>  _exponent;

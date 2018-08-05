@@ -27,7 +27,10 @@ void test(const std::string& message)
 
     p = v;
 
+#if defined(_MSC_VER)
 #pragma warning (disable : 4244)
+#endif
+
     // Basis operators
     p += v;
     p -+ v;
