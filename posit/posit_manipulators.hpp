@@ -29,13 +29,21 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		std::string components_to_string(const posit<nbits, es>& p) {
+			static_assert(nbits > 2, "component_to_string requires nbits > 2");
+			constexpr size_t fbits = nbits - 3 - es;
 			std::stringstream ss;
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+
 			// TODO: hardcoded field width is governed by pretty printing posit tables, which by construction will always be small posits
 			ss << std::setw(14) << p.get() << " " << std::setw(14) << p.get_decoded()
-				<< " Sign : " << std::setw(2) << sign_value(p)
-				<< " Regime : " << std::setw(3) << p.regime_k()
+				<< " Sign : " << std::setw(2) << _sign
+				<< " Regime : " << std::setw(3) << _regime.regime_k()
 				<< " Exponent : " << std::setw(5) << exponent_value(p)
-				<< " Fraction : " << std::setw(8) << std::setprecision(21) << 1.0 + fraction_value(p)
+				<< " Fraction : " << std::setw(8) << std::setprecision(21) << _fraction.value()
 				<< " Value : " << std::setw(16) << p
 				<< std::setprecision(0);
 			return ss.str();

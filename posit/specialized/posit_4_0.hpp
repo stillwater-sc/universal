@@ -203,8 +203,6 @@ namespace sw {
 			}
 
 			inline int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
-			inline int scale() const { return 0; } // TODO
-			inline int regime_k() const { return 0; } // TODO
 
 			bitblock<NBITS_IS_4> get() const { bitblock<NBITS_IS_4> bb; bb = int(_bits); return bb; }
 			bitblock<NBITS_IS_4> get_decoded() const {

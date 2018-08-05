@@ -733,7 +733,7 @@ namespace sw {
 			//int                get_scale() const { return _regime.scale() + _exponent.scale(); }
 			//bool               get_sign() const { return _sign;  }
 			//regime<nbits, es>  get_regime() const {	return _regime;	}
-			int				   regime_k() const { return _regime.regime_k(); }
+			//int				 regime_k() const { return _regime.regime_k(); }
 			//exponent<nbits,es> get_exponent() const { return _exponent;	}
 			//fraction<fbits>    get_fraction() const { return _fraction;	}
 			bitblock<nbits>    get() const { return _raw_bits; }
