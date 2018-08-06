@@ -64,7 +64,7 @@ sw::unum::posit<nbits, es> fused_dot(size_t n, const std::vector< sw::unum::posi
 		if (sw::unum::_trace_quire_add) std::cout << sum_of_products << '\n';
 	}
 	sw::unum::posit<nbits, es> sum;
-	sum.convert(sum_of_products.to_value());     // one and only rounding step of the fused-dot product
+	convert(sum_of_products.to_value(), sum);     // one and only rounding step of the fused-dot product
 	return sum;
 }
 
@@ -111,7 +111,7 @@ void matvec(const std::vector< sw::unum::posit<nbits, es> >& A, const std::vecto
 			q += sw::unum::quire_mul(A[i*d + j], x[j]);
 			if (sw::unum::_trace_quire_add) std::cout << q << '\n';
 		}  
-		b[i].convert(q.to_value());  // one and only rounding step of the fused-dot product
+		convert(q.to_value(), b[i]);  // one and only rounding step of the fused-dot product
 		//std::cout << "b[" << i << "] = " << b[i] << std::endl;
 	}
 }
@@ -164,7 +164,7 @@ void matmul(const std::vector<sw::unum::posit<nbits,es> >& A, const std::vector<
 				q += sw::unum::quire_mul(A[i*d + k], B[k*d + j]);
 				if (sw::unum::_trace_quire_add) std::cout << q << '\n';
 			}
-			C[i*d + j].convert(q.to_value());  // one and only rounding step of the fused-dot product
+			convert(q.to_value(), C[i*d + j]);  // one and only rounding step of the fused-dot product
 		}
 	}
 }

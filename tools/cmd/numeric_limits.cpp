@@ -5,8 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-
-#include <value>
+#include <posit>
 
 // receive a float and print the components of a IEEE float representations
 int main(int argc, char** argv)
@@ -62,11 +61,36 @@ try {
 	for (int i = 15; i >= 0; i--) {
 		cout << setw(2) << (int)(uint8_t)ld.bytes[i] << " ";
 	}
-	cout << dec << endl;
+	cout << dec << setfill(' ') << endl;
 	cout << "sign     " << (sign ? "-" : "+") << endl;
 	cout << "scale    " << scale << endl;
 	cout << "fraction " << fraction << endl;
 
+	cout << endl;
+	// report on the size of different posit components and implementations
+	posit<4, 0> p4_0;
+	posit<8, 0> p8_0;
+	posit_decoded<8, 0> pd8_0;
+	posit<16, 1> p16_1;
+	posit_decoded<16, 1> pd16_1;
+	posit<32, 2> p32_2;
+	posit_decoded<32, 2> pd32_2;
+	posit<64, 3> p64_3;
+	posit_decoded<64, 3> pd64_3;
+	posit<128, 4> p128_4;
+	posit_decoded<128, 4> pd128_4;
+	cout << setw(20) << "configuration" << setw(10) << "bytes" << endl;
+	cout << setw(20) << "posit<4,0>" << setw(10) << sizeof(p4_0) << endl;
+	cout << setw(20) << "posit<8,0>" << setw(10) << sizeof(p8_0) << endl;
+	cout << setw(20) << "decoded<8,0>" << setw(10) << sizeof(pd8_0) << endl;
+	cout << setw(20) << "posit<16,1>" << setw(10) << sizeof(p16_1) << endl;
+	cout << setw(20) << "decoded<16,1>" << setw(10) << sizeof(pd16_1) << endl;
+	cout << setw(20) << "posit<32,2>" << setw(10) << sizeof(p32_2) << endl;
+	cout << setw(20) << "decoded<32,2>" << setw(10) << sizeof(pd32_2) << endl;
+	cout << setw(20) << "posit<64,3>" << setw(10) << sizeof(p64_3) << endl;
+	cout << setw(20) << "decoded<64,3>" << setw(10) << sizeof(pd64_3) << endl;
+	cout << setw(20) << "posit<128,4>" << setw(10) << sizeof(p128_4) << endl;
+	cout << setw(20) << "decoded<128,4>" << setw(10) << sizeof(pd128_4) << endl;
 
 	return EXIT_SUCCESS;
 }

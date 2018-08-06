@@ -485,7 +485,7 @@ namespace sw {
 
 			posit_decoded<nbits, es> reciprocate() const {
 				if (_trace_reciprocate) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
-				posit<nbits, es> p;
+				posit_decoded<nbits, es> p;
 				// special case of NaR (Not a Real)
 				if (isNaR()) {
 					p.setToNaR();

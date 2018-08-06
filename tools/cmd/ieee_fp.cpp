@@ -87,7 +87,7 @@ try {
 
 	int width = q_prec + 4;
 
-	int old_precision = cout.precision();
+	std::streamsize old_precision = cout.precision();
 
 	cout << report_compiler_version() << endl;
 	cout << "float precision       : " << f_fbits << " bits\n";
