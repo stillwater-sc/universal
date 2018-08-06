@@ -9,10 +9,11 @@
 // when you define POSIT_VERBOSE_OUTPUT executing an reciprocate the code will print intermediate results
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_RECIPROCATE
-#define POSIT_TRACE_CONVERT
+#define POSIT_TRACE_CONVERSION
 
 // minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
+#include "../../posit/posit_decoded.hpp"		// old reference design for validation/debug
 #include "../../posit/posit_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
@@ -22,7 +23,7 @@
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a) {
 	Ty reference;
-	sw::unum::posit<nbits, es> pa, pref, preciprocal;
+	sw::unum::posit_decoded<nbits, es> pa, pref, preciprocal;
 	pa = a;
 	reference = (Ty)1.0 / a;
 	pref = reference;
@@ -46,8 +47,16 @@ try {
 	std::string tag = "Reciprocation failed: ";
 
 #if MANUAL_TESTING
-
 	// generate individual testcases to hand trace/debug
+	posit<5, 0> p1(0.75);
+	posit<5, 0> p1_reciprocal;
+	posit_decoded<5, 0> p2(0.75), p2_reciprocal;
+
+	p2_reciprocal = p2.reciprocate();
+	p1_reciprocal = p1.reciprocate();
+
+	cout << "posit    : " << to_string(p1_reciprocal) << endl;
+	cout << "reference: " << double(p2_reciprocal) << endl;
 
 	GenerateTestCase<4, 0, double>(0.75);
 	GenerateTestCase<5, 0, double>(0.75);
@@ -56,19 +65,20 @@ try {
 	posit<16, 0> p(1 / 0.75);
 	cout << p.get() << " " << pretty_print(p, 17) << endl;
 
-	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<3, 0>("Manual testing", true), "posit<3,0>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<4, 0>("Manual testing", true), "posit<4,0>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 0>("Manual testing", true), "posit<5,0>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<6, 0>("Manual testing", true), "posit<6,0>", "reciprocation");
+	tag = "Manual Testing: ";
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<3, 0>(tag, true), "posit<3,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<4, 0>(tag, true), "posit<4,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 0>(tag, true), "posit<5,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<6, 0>(tag, true), "posit<6,0>", "reciprocation");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 1>("Manual testing", true), "posit<5,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<6, 1>("Manual testing", true), "posit<6,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<7, 1>("Manual testing", true), "posit<7,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<5, 1>(tag, true), "posit<5,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<6, 1>(tag, true), "posit<6,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<7, 1>(tag, true), "posit<7,1>", "reciprocation");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<8, 2>(tag, true), "posit<8,2>", "reciprocation");
 
 #else
-
+	tag = "Reciprocation failed: ";
 	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "reciprocation");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "reciprocation");
@@ -120,4 +130,3 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
-
