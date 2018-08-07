@@ -8,6 +8,10 @@
 
 // enable/disable the ability to use literals in binary logic and arithmetic operators
 #define POSIT_ENABLE_LITERALS 1
+// enable throwing specific exceptions for posit arithmetic errors
+// left to application to enable/disable
+//#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+
 #include "posit.hpp"
 #include "posit_decoded.hpp"
 #include "specialized/posit_4_0.hpp"
