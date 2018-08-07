@@ -69,6 +69,7 @@ try {
 	cout << endl;
 	// report on the size of different posit components and implementations
 	posit<4, 0> p4_0;
+	posit_decoded<4, 0> pd4_0;
 	posit<8, 0> p8_0;
 	posit_decoded<8, 0> pd8_0;
 	posit<16, 1> p16_1;
@@ -79,18 +80,19 @@ try {
 	posit_decoded<64, 3> pd64_3;
 	posit<128, 4> p128_4;
 	posit_decoded<128, 4> pd128_4;
-	cout << setw(20) << "configuration" << setw(10) << "bytes" << endl;
-	cout << setw(20) << "posit<4,0>" << setw(10) << sizeof(p4_0) << endl;
-	cout << setw(20) << "posit<8,0>" << setw(10) << sizeof(p8_0) << endl;
-	cout << setw(20) << "decoded<8,0>" << setw(10) << sizeof(pd8_0) << endl;
-	cout << setw(20) << "posit<16,1>" << setw(10) << sizeof(p16_1) << endl;
-	cout << setw(20) << "decoded<16,1>" << setw(10) << sizeof(pd16_1) << endl;
-	cout << setw(20) << "posit<32,2>" << setw(10) << sizeof(p32_2) << endl;
-	cout << setw(20) << "decoded<32,2>" << setw(10) << sizeof(pd32_2) << endl;
-	cout << setw(20) << "posit<64,3>" << setw(10) << sizeof(p64_3) << endl;
-	cout << setw(20) << "decoded<64,3>" << setw(10) << sizeof(pd64_3) << endl;
-	cout << setw(20) << "posit<128,4>" << setw(10) << sizeof(p128_4) << endl;
-	cout << setw(20) << "decoded<128,4>" << setw(10) << sizeof(pd128_4) << endl;
+	cout << left << setw(20) << "configuration" << setw(10) << "bytes" << endl;
+	cout << left << setw(20) << "posit<4,0>" << setw(10) << sizeof(p4_0) << endl;
+	cout << left << setw(20) << "decoded<4,0>" << setw(10) << sizeof(pd4_0) << endl;
+	cout << left << setw(20) << "posit<8,0>" << setw(10) << sizeof(p8_0) << endl;
+	cout << left << setw(20) << "decoded<8,0>" << setw(10) << sizeof(pd8_0) << endl;
+	cout << left << setw(20) << "posit<16,1>" << setw(10) << sizeof(p16_1) << endl;
+	cout << left << setw(20) << "decoded<16,1>" << setw(10) << sizeof(pd16_1) << endl;
+	cout << left << setw(20) << "posit<32,2>" << setw(10) << sizeof(p32_2) << endl;
+	cout << left << setw(20) << "decoded<32,2>" << setw(10) << sizeof(pd32_2) << endl;
+	cout << left << setw(20) << "posit<64,3>" << setw(10) << sizeof(p64_3) << endl;
+	cout << left << setw(20) << "decoded<64,3>" << setw(10) << sizeof(pd64_3) << endl;
+	cout << left << setw(20) << "posit<128,4>" << setw(10) << sizeof(p128_4) << endl;
+	cout << left << setw(20) << "decoded<128,4>" << setw(10) << sizeof(pd128_4) << endl;
 
 	return EXIT_SUCCESS;
 }
