@@ -75,8 +75,8 @@ namespace sw {
 			try {
 				q = i;
 			}
-			catch (char const* msg) {
-				std::cerr << "Caught the exception: " << msg << ". Value was " << i << std::endl;
+			catch (const std::runtime_error& err) {
+				std::cerr << "Caught the exception: " << err.what() << ". Value was " << i << std::endl;
 			}
 		}
 
@@ -96,8 +96,8 @@ namespace sw {
 			try {
 				q = i;
 			}
-			catch (char const* msg) {
-				std::cerr << "Caught the exception: " << msg << ". RHS was " << i << std::endl;
+			catch (const std::runtime_error& err) {
+				std::cerr << "Caught the exception: " << err.what() << ". RHS was " << i << std::endl;
 			}
 		}
 
@@ -124,8 +124,8 @@ namespace sw {
 						std::cerr << "quire value conversion failed: " << components(v) << " != " << components(r) << std::endl;
 					}
 				}
-				catch (char const* msg) {
-					std::cerr << "Caught the exception: " << msg << ". RHS was " << v << " " << components(v) << std::endl;
+				catch (const std::runtime_error& err) {
+					std::cerr << "Caught the exception: " << err.what() << ". RHS was " << v << " " << components(v) << std::endl;
 				}
 			}
 		}
@@ -260,7 +260,7 @@ namespace sw {
 
 			// convert quire to posit
 			posit<nbits, es> presult;
-			presult.convert(q.to_value());
+			convert(q.to_value(), presult);
 
 			if (!presult.isZero()) {
 				nrOfFailedTests++;

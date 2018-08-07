@@ -8,7 +8,8 @@
 // when you define POSIT_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_CONVERSION
-
+// enable posit arithmetic exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
 
 /*
@@ -87,6 +88,10 @@ try {
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

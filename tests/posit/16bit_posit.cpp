@@ -47,6 +47,10 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
+catch (const std::runtime_error& err) {
+	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
 catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;

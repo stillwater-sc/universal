@@ -11,11 +11,19 @@
 
 // type definitions for the important types, posit<> and quire<>
 #include "../../posit/posit.hpp"
+#define QUIRE_IMPLICIT_CONVERSION 1
 #include "../../posit/quire.hpp"
 // test support functions
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
 #include "../tests/quire_test_helpers.hpp"
+
+// if you want to enable ISSUE_45
+//#define ISSUE_45_DEBUG
+#ifdef ISSUE_45_DEBUG
+// forward reference
+template<size_t nbits, size_t es, size_t capacity> void Issue45_2();
+#endif
 
 template<size_t nbits, size_t es>
 void PrintTestVector(std::ostream& ostr, const std::vector< sw::unum::posit<nbits,es> >& pv) {
@@ -162,6 +170,81 @@ int ValidateSignMagnitudeTransitions() {
 	return nrOfFailedTestCases;
 }
 
+template<size_t nbits, size_t es, size_t capacity = 2>
+int ValidateCarryPropagation(bool bReportIndividualTestCases) {
+	using namespace sw::unum;
+	int nrOfFailedTests = 0;
+
+	constexpr size_t mbits = 2 * (nbits - 2 - es);
+	quire<nbits, es, capacity> q;
+	posit<nbits, es> minpos = sw::unum::minpos<nbits, es>();
+	value<mbits> minpos_square = quire_mul(minpos, minpos);
+	constexpr size_t NR_INCREMENTS_TO_OVERFLOW = (size_t(1) << (q.qbits+1));
+	for (size_t i = 0; i < NR_INCREMENTS_TO_OVERFLOW; ++i) {
+		q += minpos_square;
+	}
+	std::cout << q << std::endl;
+	nrOfFailedTests = q.isZero() ? 0 : 1;
+
+	return nrOfFailedTests;
+}
+
+template<size_t nbits, size_t es, size_t capacity = 2>
+int ValidateBorrowPropagation(bool bReportIndividualTestCases) {
+	using namespace sw::unum;
+	int nrOfFailedTests = 0;
+
+	constexpr size_t mbits = 2 * (nbits - 2 - es);
+	quire<nbits, es, capacity> q;
+	posit<nbits, es> minpos = sw::unum::minpos<nbits, es>();
+	value<mbits> minpos_square = quire_mul(minpos, minpos);
+	q -= minpos_square;
+	std::cout << q << std::endl;
+	constexpr size_t NR_DECREMENTS_TO_OVERFLOW = (size_t(1) << (q.qbits + 1));
+	for (size_t i = 0; i < NR_DECREMENTS_TO_OVERFLOW-1; ++i) {
+		q -= minpos_square;
+	}
+	std::cout << q << std::endl;
+	nrOfFailedTests = q.isZero() ? 0 : 1;
+
+	return nrOfFailedTests;
+}
+
+template<size_t nbits, size_t es, size_t capacity = 2>
+int ValidateQuireAccumulation(bool bReportIndividualTestCases) {
+	int nrOfFailedTests = 0;
+
+	return nrOfFailedTests;
+}
+
+// one of test to check that the quire can deal with 0
+void TestCaseForProperZeroHandling() {
+	using namespace std;
+	using namespace sw::unum;
+
+	quire<8, 1, 2> q;
+	posit<8, 1> minpos = minpos_value<8, 1>();
+	q += quire_mul(minpos, minpos);
+	value<3> v3 = q.to_value().round_to<3>();
+	value<5> v5 = q.to_value().round_to<5>();
+	value<7> v7 = q.to_value().round_to<7>();
+	cout << components(v3) << endl;
+	cout << components(v5) << endl;
+	cout << components(v7) << endl;
+
+	// test correct handling of 0
+	q = 1;
+	cout << q << endl;
+	posit<8, 1> one = 1;
+	posit<8, 1> aThird = 0.3333333333333333333333333333333333333333333;
+	value< posit<8, 1>::mbits > mul = quire_mul(aThird, -one);
+	cout << components(mul) << endl;
+	q += quire_mul(aThird, -one);
+	cout << q << endl;
+	value<8> result = q.to_value().round_to<8>();
+	cout << result << " " << components(result) << endl;
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -170,7 +253,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	//bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	cout << "Quire experiments" << endl;
@@ -183,35 +266,22 @@ try {
 	t = GenerateVectorForZeroValueFDP(16, maxpos<16,1>());
 	PrintTestVector(cout, t);
 
-#if 0
-	quire<8, 1, 2> q;
-	posit<8, 1> minpos = minpos_value<8, 1>();
-	q += quire_mul(minpos, minpos);
-	value<3> v3 = q.to_value().round_to<3>();
-	value<5> v5 = q.to_value().round_to<5>();
-	value<7> v7 = q.to_value().round_to<7>();
-	cout << components(v3) << endl;
-	cout << components(v5) << endl;
-	cout << components(v7) << endl;
-
-	// test correct handling of 0
-	quire<8, 1, 2> q = 1;
-	cout << q << endl;
-	posit<8, 1> one = 1;
-	posit<8, 1> aThird = 0.3333333333333333333333333333333333333333333;
-	value< posit<8, 1>::mbits > mul = quire_mul(aThird, -one);
-	cout << components(mul) << endl;
-	q += quire_mul(aThird, -one);
-	cout << q << endl;
-	value<8> result = q.to_value().round_to<8>();
-	cout << result << " " << components(result) << endl;
-#endif
-
 	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<8, 1>();
 
 	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<16, 1>();
 	
-	//nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
+	
+	cout << "Carry Propagation\n";
+	nrOfFailedTestCases += ReportTestResult(ValidateCarryPropagation<4, 1>(bReportIndividualTestCases), "carry propagation", "increment");
+	cout << "Borrow Propagation\n";
+	nrOfFailedTestCases += ReportTestResult(ValidateBorrowPropagation<4, 1>(bReportIndividualTestCases), "borrow propagation", "increment");
+
+#ifdef ISSUE_45_DEBUG
+	{	
+		Issue45_2<16, 1, 30>();
+	}
+#endif
 
 #else
 
@@ -256,4 +326,267 @@ catch (char const* msg) {
 catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
+}
+
+
+////////////////////////////////////////////////////////////////////////
+// specific debug scenarios of note
+//
+// use forward reference to bring them up to the main body
+// template<size_t nbits, size_t es, size_t capacity> void Issue45();
+// template<size_t nbits, size_t es, size_t capacity> void Issue45_2();
+
+// test case for github issue #45
+template<size_t nbits, size_t es>
+void Issue45() {
+	using ScalarType = sw::unum::posit<nbits, es>;
+	using magnitude = sw::unum::posit<nbits, es>;
+	using positX = sw::unum::posit<nbits, es>;
+	using quireX = sw::unum::quire<nbits, es, 10>;
+	using valueX = sw::unum::value<2 * (nbits - 2 - es)>;
+
+	constexpr int n = 64;
+	std::vector<positX> Acoefficients(n);
+	for (int i = 0; i < n; ++i) {
+		Acoefficients[i] = sw::unum::minpos<nbits, es>();
+	}
+	std::vector<positX> xcoefficients(n);
+	for (int i = 0; i < n; ++i) {
+		xcoefficients[i] = 1.0f;
+	}
+	std::vector<positX> ycoefficients(n);
+	//const LocalOrdinalType* Arowoffsets = &A.row_offsets[0];
+	const ScalarType* Acoefs = &Acoefficients[0];
+	const ScalarType* xcoefs = &xcoefficients[0];
+	ScalarType* ycoefs = &ycoefficients[0];
+	ScalarType beta = 0;
+
+	magnitude result;
+	quireX resultAsQuire;
+	valueX resultValueX(0.0f);
+	resultAsQuire = resultValueX;
+
+	for (int row = 0; row < 1; ++row) {
+		quireX sum;
+		valueX sumVal(0.0f);
+		sum = sumVal;
+
+		for (int i = 0; i < n; ++i) {
+			valueX addend = sw::unum::quire_mul(Acoefficients[i], xcoefficients[i]);
+			sum += addend;
+			std::cout << components(addend) << "\n" << sum << std::endl;
+		}
+		positX tempSum;
+		tempSum.convert(sum.to_value());
+		ycoefs[row] = tempSum;
+		valueX resultValueX = sw::unum::quire_mul(xcoefs[row], tempSum);
+		resultAsQuire += resultValueX;
+
+	}
+	result.convert(resultAsQuire.to_value());
+	std::cout << "result: " << result << std::endl;
+}
+
+/*
+taking 5.05447e-05 += quire_mul(-0.0165405, 0.000999451) (which equals -1.65314e-05)
+(-,-16,00010101010110100000000000)
+1: 000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000100100000100000001100000000000000000000000
+Row = 266, i = 5338, tempValue after += 3.43323e-05
+
+taking 3.43323e-05 += quire_mul(-0.00828552, 0.000999451) (which equals -8.28097e-06)
+(-,-17,00010101110111010000000000)
+1: 000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000011011011000010011000000000000000000000000
+Row = 266, i = 5339, tempValue after += 2.6226e-05
+
+----------------------------------------------------------------------------------------------------------------------
+
+taking 2.6226e-05 += quire_mul(-0.016571, 0.000999451) (which equals -1.65619e-05)
+(-,-16,00010101110111010000000000)
+-1: 111111111111111111111111111111_111111111111111111111111111111111111111111111111111111111.11111111111111110101111111001010000000000000000000000000
+Row = 266, i = 5340, tempValue after += -2.68435e+08
+----------------------------------------------------------------------------------------------------------------------
+
+Row = 266, i = 5341, tempValue = -2.68435e+08
+taking -2.68435e+08 += quire_mul(-0.00828552, 0.000999451) (which equals -8.28097e-06)
+(-,-17,00010101110111010000000000)
+-1: 111111111111111111111111111111_111111111111111111111111111111111111111111111111111111111.11111111111111111110101010111000100000000000000000000000
+*/
+
+// step by step testing to find where the failure occurred
+template<size_t nbits, size_t es, size_t capacity = 30>
+void Issue45_2() {
+	using namespace std;
+	using namespace sw::unum;
+
+	cout << "Debug of issue #45\n";
+
+	constexpr size_t mbits = 2 * (nbits - 2 - es);
+	sw::unum::quire<nbits, es, capacity> q, q_base;
+	sw::unum::value<mbits> unrounded, q_value;
+	sw::unum::bitblock<mbits> fraction;
+
+	//  quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000100100000100000001100000000000000000000000";
+	//	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000011011011000010011000000000000000000000000";
+	//	quire_bits = "-:111111111111111111111111111111_111111111111111111111111111111111111111111111111111111111.11111111111111110101111111001010000000000000000000000000";
+	//	quire_bits = "-:111111111111111111111111111111_111111111111111111111111111111111111111111111111111111111.11111111111111111110101010111000100000000000000000000000";
+
+	fraction.load_bits("00010101010110100000000000");
+	//unrounded.set(true, -16, fraction, false, false, false);  // (-,-16,00010101010110100000000000)
+
+	std::string quire_bits;
+	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000100100000100000001100000000000000000000000";
+	q.load_bits(quire_bits);
+	//std::cout << quire_bits << std::endl;
+	//std::cout << q << std::endl;
+	fraction.load_bits("00010101110111010000000000");
+	unrounded.set(true, -17, fraction, false, false, false);  // (-, -17, 00010101110111010000000000)
+	q += unrounded; q_base += unrounded;
+	std::cout << q_base << " <--- q_base" << std::endl;
+	std::cout << q << std::endl;
+	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000011011011000010011000000000000000000000000";
+	std::cout << quire_bits << " <--- debug reference" << std::endl;
+
+	q_base.clear();
+	fraction.load_bits("00010101110111010000000000");
+	unrounded.set(true, -16, fraction, false, false, false);  // (-,-16,00010101110111010000000000)
+
+	q += unrounded; q_base += unrounded;
+	std::cout << q_base << " <--- q_base" << std::endl;
+	std::cout << q << std::endl;
+	quire_bits = "-:111111111111111111111111111111_111111111111111111111111111111111111111111111111111111111.11111111111111110101111111001010000000000000000000000000";
+	std::cout << quire_bits << " <--- debug reference" << std::endl;
+
+	q_base.clear();
+	fraction.load_bits("00010101110111010000000000");
+	unrounded.set(true, -17, fraction, false, false, false);  // (-,-17,00010101110111010000000000)
+	q += unrounded; q_base += unrounded;
+	std::cout << q_base << " <--- q_base" << std::endl;
+	std::cout << q << std::endl;
+	quire_bits = "-:111111111111111111111111111111_111111111111111111111111111111111111111111111111111111111.11111111111111111110101010111000100000000000000000000000";
+	std::cout << quire_bits << " <--- debug reference" << std::endl;
+
+
+	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000011011011000010011000000000000000000000000";
+	quire_bits = "-:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000010001010111011101000000000000000000000000";
+
+	std::cout << std::endl << std::endl;
+	q_base.clear();
+	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000001000000000010000000000000000000000000000";
+	q.load_bits(quire_bits);
+	std::cout << q << " <---- starting value" << std::endl;
+	fraction.load_bits("00000000000111000000000000");
+	unrounded.set(true, -17, fraction, false, false, false);  // (-, -17, 00000000000111000000000000)
+	q += unrounded; q_base += unrounded;
+	std::cout << q_base << " <--- q_base" << std::endl;
+	std::cout << q << std::endl;
+
+	std::cout << std::endl << std::endl;
+	q_base.clear();
+	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.01000000000000000000000000000000000000000000000000000000";
+	q.load_bits(quire_bits);
+	std::cout << q << " <---- starting value" << std::endl;
+	fraction.load_bits("11000000000000000000000000");
+	unrounded.set(true, -3, fraction, false, false, false);
+	q += unrounded; q_base += unrounded;
+	std::cout << q_base << " <--- q_base" << std::endl;
+	std::cout << q << std::endl;
+
+	std::cout << std::endl << std::endl;
+	q_base.clear();
+	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000010000000000000000000000000000000000000000000000000";
+	q.load_bits(quire_bits);
+	std::cout << q << " <---- starting value" << std::endl;
+	fraction.load_bits("11000000000000000000000000");
+	unrounded.set(true, -8, fraction, false, false, false);
+	q += unrounded; q_base += unrounded;
+	std::cout << q_base << " <--- q_base" << std::endl;
+	std::cout << q << std::endl;
+
+	std::cout << std::endl << std::endl;
+	q_base.clear();
+	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000100000000000000000000000000000000000000000000";
+	q.load_bits(quire_bits);
+	std::cout << q << " <---- starting value" << std::endl;
+	fraction.load_bits("11000000000000000000000000");
+	unrounded.set(true, -13, fraction, false, false, false);
+	q += unrounded; q_base += unrounded;
+	std::cout << q_base << " <--- q_base" << std::endl;
+	std::cout << q << std::endl;
+
+	std::cout << std::endl << std::endl;
+	q_base.clear();
+	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000001000000000000000000000000000000000000000";
+	q.load_bits(quire_bits);
+	std::cout << q << " <---- starting value" << std::endl;
+	fraction.load_bits("11000000000000000000000000");
+	unrounded.set(true, -18, fraction, false, false, false);
+	q += unrounded; q_base += unrounded;
+	std::cout << q_base << " <--- q_base" << std::endl;
+	std::cout << q << std::endl;
+
+	std::cout << std::endl << std::endl;
+	q_base.clear();
+	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000000000010000000000000000000000000000000000";
+	q.load_bits(quire_bits);
+	std::cout << q << " <---- starting value" << std::endl;
+	fraction.load_bits("11000000000000000000000000");
+	unrounded.set(true, -23, fraction, false, false, false);
+	q += unrounded; q_base += unrounded;
+	std::cout << q_base << " <--- q_base" << std::endl;
+	std::cout << q << std::endl;
+
+	std::cout << std::endl << std::endl;
+	q_base.clear();
+	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000000000000000100000000000000000000000000000";
+	q.load_bits(quire_bits);
+	std::cout << q << " <---- starting value" << std::endl;
+	fraction.load_bits("11000000000000000000000000");
+	unrounded.set(true, -28, fraction, false, false, false);
+	q += unrounded; q_base += unrounded;
+	std::cout << q_base << " <--- q_base" << std::endl;
+	std::cout << q << std::endl;
+
+	std::cout << std::endl << std::endl;
+	q_base.clear();
+	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000000000000000010000000000000000000000000000";
+	q.load_bits(quire_bits);
+	std::cout << q << " <---- starting value" << std::endl;
+	fraction.load_bits("11000000000000000000000000");
+	unrounded.set(true, -29, fraction, false, false, false);
+	q += unrounded; q_base += unrounded;
+	std::cout << q_base << " <--- q_base" << std::endl;
+	std::cout << q << std::endl;
+
+	std::cout << std::endl << std::endl;
+	q_base.clear();
+	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000000000000000001000000000000000000000000000";
+	q.load_bits(quire_bits);
+	std::cout << q << " <---- starting value" << std::endl;
+	fraction.load_bits("11000000000000000000000000");
+	unrounded.set(true, -30, fraction, false, false, false);
+	q += unrounded; q_base += unrounded;
+	std::cout << q_base << " <--- q_base" << std::endl;
+	std::cout << q << std::endl;
+
+	{
+		constexpr size_t mbits = 2 * (nbits - 2 - es);
+		sw::unum::quire<nbits, es, capacity> q, q_base;
+
+		// inefficient as we are copying a whole quire just to reset the sign bit, but we are leveraging the comparison logic
+		//quire<nbits, es, capacity> absq = abs(*this);
+		constexpr size_t qbits = (size_t(1) << es) * (4 * nbits - 8) + capacity;
+		constexpr size_t fbits = nbits - 3 - es;
+		//value<qbits> absq = abs(q);
+		quire <nbits, es, capacity> absq = abs(q);
+		value<mbits> absv = abs(unrounded);
+		if (absq < absv) {
+			cout << "q < v" << endl;
+		}
+		else if (absq > absv) {
+			cout << "q > v" << endl;
+		}
+		else {
+			cout << "q == v" << endl;
+		}
+	}
 }

@@ -450,8 +450,23 @@ namespace sw {
 				for (size_t j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
 					db = double(pb);
-					psum = pa + pb;
 					pref = da + db;
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+					try {
+						psum = pa + pb;
+					}
+					catch (const operand_is_nar& err) {
+						if (pa.isNaR() || pb.isNaR()) {
+							// correctly caught the exception
+							psum.setToNaR();
+						}
+						else {
+							throw err;
+						}
+					}
+#else
+					psum = pa + pb;
+#endif
 					if (psum != pref) {
 						nrOfFailedTests++;
 						if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", pa, pb, pref, psum);
@@ -479,8 +494,23 @@ namespace sw {
 				for (size_t j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
 					db = double(pb);
-					pdif = pa - pb;
 					pref = da - db;
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+					try {
+						pdif = pa - pb;
+					}
+					catch (const operand_is_nar& err) {
+						if (pa.isNaR() || pb.isNaR()) {
+							// correctly caught the exception
+							pdif.setToNaR();
+						}
+						else {
+							throw err;
+						}
+					}
+#else
+					pdif = pa - pb;
+#endif
 					if (pdif != pref) {
 						nrOfFailedTests++;
 						if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", pa, pb, pref, pdif);
@@ -508,8 +538,23 @@ namespace sw {
 				for (size_t j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
 					db = double(pb);
-					pmul = pa * pb;
 					pref = da * db;
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+					try {
+						pmul = pa * pb;
+					}
+					catch (const operand_is_nar& err) {
+						if (pa.isNaR() || pb.isNaR()) {
+							// correctly caught the exception
+							pmul.setToNaR();
+						}
+						else {
+							throw err;
+						}
+					}
+#else
+					pmul = pa * pb;
+#endif
 					if (pmul != pref) {
 						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "*", pa, pb, pref, pmul);
 						nrOfFailedTests++;
@@ -566,15 +611,54 @@ namespace sw {
 				da = double(pa);
 				for (size_t j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
+					db = double(pb);
 					if (pb.isNaR()) {
 						pref.setToNaR();
 					}
 					else {
-						db = double(pb);
 						pref = da / db;
 					}
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+					try {
+						pdiv = pa / pb;
+					}
+					catch (const divide_by_zero& err) {
+						if (pb.isZero()) {
+							// correctly caught the divide by zero condition
+							continue;
+							//pdiv.setToNaR();
+						}
+						else {
+							if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+							throw err; // rethrow
+						}
+					}
+					catch (const divide_by_nar& err) {
+						if (pb.isNaR()) {
+							// correctly caught the divide by nar condition
+							continue;
+							//pdiv = 0.0f;
+						}
+						else {
+							if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+							throw err; // rethrow
+						}
+					}
+					catch (const numerator_is_nar& err) {
+						if (pa.isNaR()) {
+							// correctly caught the numerator is nar condition
+							continue;
+							//pdiv.setToNaR();
+						}
+						else {
+							if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+							throw err; // rethrow
+						}
+					}
+#else
 					pdiv = pa / pb;
-
+#endif
+					// check against the IEEE reference
 					if (pdiv != pref) {
 						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
 						nrOfFailedTests++;
@@ -582,6 +666,7 @@ namespace sw {
 					else {
 						//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", pa, pb, pref, pdiv);
 					}
+
 				}
 			}
 			return nrOfFailedTests;
@@ -604,7 +689,7 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		void execute(int opcode, double da, double db, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& preference, posit<nbits, es>& presult) {
-			double reference;
+			double reference = 0.0;
 			switch (opcode) {
 			default:
 			case OPCODE_NOP:
@@ -624,8 +709,24 @@ namespace sw {
 				reference = da * db;
 				break;
 			case OPCODE_DIV:
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+				try {
+					presult = pa / pb;
+					reference = da / db;
+				}
+				catch (const std::runtime_error& err) {
+					if (pb.isZero()) {
+						// correctly caught the divide by zero
+						presult = da / db;
+					}
+					else {
+						throw err;
+					}
+				}
+#else
 				presult = pa / pb;
 				reference = da / db;
+#endif
 				break;
 			}
 			preference = reference;
