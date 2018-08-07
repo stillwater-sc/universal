@@ -5,7 +5,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-
+// enable posit arithmetic exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+//#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_DEBUG
 #define POSIT_TRACE_MUL
 #include <posit>
@@ -28,6 +30,10 @@ try {
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

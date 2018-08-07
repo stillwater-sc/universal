@@ -5,8 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-
-#include <vector>
+// enable posit arithmetic exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
 
 #include "../tests/test_helpers.hpp"
@@ -47,6 +47,10 @@ try {
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_SUCCESS; //as we manually throwing the not supported yet it should not fall through the cracks     EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
 }
 catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
