@@ -193,7 +193,7 @@ namespace sw {
 			value<fbits> v;
 			a.normalize_to(v);
 			value<fbits> vsqrt = fast_sqrt<anbits, es, fbits>(v);
-			p.convert(vsqrt);
+			convert(vsqrt, p);
 
 			return p;
 		}
