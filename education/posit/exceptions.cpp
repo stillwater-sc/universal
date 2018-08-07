@@ -101,7 +101,7 @@ try {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
 	}
 
-	value<pa.mbits> unrounded = sw::unum::quire_mul(minpos<nbits, es>(), minpos<nbits, es>());
+	//value<pa.mbits> unrounded = sw::unum::quire_mul(minpos<nbits, es>(), minpos<nbits, es>());
 
 	return EXIT_SUCCESS;
 }

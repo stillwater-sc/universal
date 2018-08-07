@@ -99,7 +99,6 @@ try {
 		const size_t nbits = 4;
 		const size_t es = 1;
 		const size_t capacity = 2; // for testing the accumulation capacity of the quire can be small
-		const size_t fbits = 5;
 		// nbits = 4, es = 1, capacity = 2
 		//  17 16   15 14 13 12 11 10  9  8    7  6  5  4  3  2  1  0
 		// [ 0  0    0  0  0  0  0  0  0  0    0  0  0  0  0  0  0  0 ]
