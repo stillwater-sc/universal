@@ -260,7 +260,7 @@ namespace sw {
 
 			// convert quire to posit
 			posit<nbits, es> presult;
-			presult.convert(q.to_value());
+			convert(q.to_value(), presult);
 
 			if (!presult.isZero()) {
 				nrOfFailedTests++;

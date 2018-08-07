@@ -36,7 +36,7 @@ public:
 	// Constructors
 	quire() : _sign(false) { _capacity.reset(); _upper.reset(); _lower.reset(); }
 
-#if IMPLICIT_CONVERSION
+#if QUIRE_IMPLICIT_CONVERSION
 	quire(int8_t initial_value) {
 		*this = initial_value;
 	}
@@ -111,7 +111,7 @@ public:
 		}
 		return *this;
 	}
-#if IMPLICIT_CONVERSION
+#if QUIRE_IMPLICIT_CONVERSION
 	quire& operator=(int8_t rhs) {
 		*this = int64_t(rhs);
 		return *this;
