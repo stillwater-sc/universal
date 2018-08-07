@@ -323,6 +323,7 @@ endif()
 
 if(BUILD_CI_CHECK OR BUILD_EDUCATION_EXAMPLES)
 add_subdirectory("education/posit")
+add_subdirectory("education/quire")
 endif()
 
 if(BUILD_CI_CHECK OR BUILD_APPLICATION_EXAMPLES)
