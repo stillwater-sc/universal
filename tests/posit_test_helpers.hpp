@@ -689,7 +689,7 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		void execute(int opcode, double da, double db, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& preference, posit<nbits, es>& presult) {
-			double reference;
+			double reference = 0.0;
 			switch (opcode) {
 			default:
 			case OPCODE_NOP:
