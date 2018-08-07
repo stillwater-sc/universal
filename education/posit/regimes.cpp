@@ -35,13 +35,13 @@ Regime range example for a posit<6,es>
 */
 template<size_t nbits, size_t es>
 int ValidateRegimeOperations(std::string tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = nbits;
+	constexpr int NR_TEST_CASES = int(nbits);
 	int nrOfFailedTestCases = 0;
 
 	sw::unum::regime<nbits, es> r;
 	for (int k = -NR_TEST_CASES; k < NR_TEST_CASES + 1; k++) {
-		int reference = r.regime_size(k);
-		size_t nrRegimeBits = r.assign_regime_pattern(k);
+		int reference    = r.regime_size(k);
+		int nrRegimeBits = int(r.assign_regime_pattern(k));
 		if (nrRegimeBits != reference) {
 			nrOfFailedTestCases++;
 			if (bReportIndividualTestCases) std::cout << "FAIL: k = " << std::setw(3) << k << " regime is " << r << " bits " << nrRegimeBits << " reference " << reference << std::endl;
@@ -90,7 +90,7 @@ int ValidateRegimeScales(std::string tag, bool bReportIndividualTestCases) {
 		int scale = k*useed_scale;
 		r1.assign_regime_pattern(k);
 		if (r1.scale() != scale) {
-			if (p.check_inward_projection_range(scale)) {
+			if (sw::unum::check_inward_projection_range<nbits, es>(scale)) {
 				if (r1.scale() == (k - 1)*useed_scale || r1.scale() == (k + 1)*useed_scale) {
 					continue;
 				}
@@ -100,7 +100,7 @@ int ValidateRegimeScales(std::string tag, bool bReportIndividualTestCases) {
 				<< " scale = " << std::setw(3) << scale
 				<< " calc k " << std::setw(3) << r1.regime_k()
 				<< " bits " << r1 << ":scale=" << r1.scale()
-				<< " clamp " << p.check_inward_projection_range(scale) << std::endl;
+				<< " clamp " << sw::unum::check_inward_projection_range<nbits,es>(scale) << std::endl;
 		}
 
 	}

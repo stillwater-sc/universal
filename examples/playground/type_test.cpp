@@ -27,19 +27,25 @@ void test(const std::string& message)
 
     p = v;
 
-    // Baisc operators
+#if defined(_MSC_VER)
+#pragma warning (disable : 4244)
+#endif
+
+    // Basis operators
     p += v;
     p -+ v;
     p *= v;
     p /= v;
 
     // Logical operators
-    bool b = (p == v);
+    bool b(false);
+    b = (p == v); 
     b = (p != v);
     b = (p <  v);
     b = (p >  v);
     b = (p <= v);
     b = (p >= v);
+    std::cout << "(p >= v) : " << (b ? "true" : "false") << std::endl;
 
     // pretty print
     std::cout << color_print(p) << std::endl;

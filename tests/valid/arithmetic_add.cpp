@@ -9,6 +9,7 @@
 #include "../../posit/exceptions.hpp"
 #include "../../bitblock/bitblock.hpp"
 #include "../../posit/value.hpp"
+#include "../../posit/posit.hpp"
 #include "../../valid/valid.hpp"
 #include "../../valid/valid_manipulators.hpp"
 #include "../tests/test_helpers.hpp"
@@ -36,7 +37,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 	std::string tag = "Addition failed: ";
 
@@ -44,7 +45,26 @@ try {
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
+	constexpr size_t nbits = 16;
+	constexpr size_t es = 1;
+	valid<nbits, es> v1, v2;
 
+	v1.clear();
+	cout << v1 << endl;
+
+	v2.setToInclusive();
+	cout << v2 << endl;
+
+	v1 = 1;
+	cout << v1 << endl;
+
+	posit<nbits, es> lb(1.25f), ub(1.375f);
+	v2.setlb(lb, false);
+	v2.setub(ub, true);
+	cout << v2 << endl;
+
+	int order = v2.relative_order(value<10>(0));
+	cout << order << endl;
 
 #else
 

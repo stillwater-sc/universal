@@ -20,7 +20,16 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		void ReportConversionError(std::string test_case, std::string op, double input, double reference, const posit<nbits, es>& presult) {
-			unsigned width = 15;
+			static_assert(nbits > 2, "component_to_string requires nbits > 2");
+			constexpr size_t fbits = nbits - 3 - es;
+
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(presult.get(), _sign, _regime, _exponent, _fraction);
+			int                  _scale = _regime.scale() + _exponent.scale();
+
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << input
@@ -28,12 +37,22 @@ namespace sw {
 				<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
 				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
 				<< "  raw " << std::setw(nbits) << presult.get()
-				<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << presult.regime_k() << "   exp= " << std::setw(3) << presult.exp()
+				<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
 				<< std::endl;
 		}
 
 		template<size_t nbits, size_t es>
 		void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const posit<nbits, es>& presult) {
+			static_assert(nbits > 2, "component_to_string requires nbits > 2");
+			constexpr size_t fbits = nbits - 3 - es;
+
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(presult.get(), _sign, _regime, _exponent, _fraction);
+			int                  _scale = _regime.scale() + _exponent.scale();
+
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << input
@@ -41,7 +60,7 @@ namespace sw {
 				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult) << " reference value is "
 				<< std::setw(FLOAT_TABLE_WIDTH) << reference
 				<< "  raw " << std::setw(nbits) << presult.get()
-				<< "   scale= " << std::setw(3) << presult.scale() << "   k= " << std::setw(3) << presult.regime_k() << "   exp= " << std::setw(3) << presult.exp()
+				<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
 				<< std::endl;
 		}
 
@@ -146,6 +165,9 @@ namespace sw {
 		int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
 			// we are going to generate a test set that consists of all posit configs and their midpoints
 			// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
+			// These larger posits will be at the mid-point between the smaller posit sample values
+			// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
+			// to test the rounding logic of the conversion.
 			const int NR_TEST_CASES = (1 << (nbits + 1));
 			const int HALF = (1 << nbits);
 			posit<nbits + 1, es> pref, pprev, pnext;
@@ -220,6 +242,10 @@ namespace sw {
 				else {
 					// for the even values, we generate the round-to-actual cases
 					if (i == 0) {
+						// special case of assigning to 0
+						input = 0.0;
+						pa = input;
+						nrOfFailedTests += Compare(input, pa, da, bReportIndividualTestCases);
 						// special case of projecting to +minpos
 						input = da + eps;
 						pa = input;
@@ -255,7 +281,7 @@ namespace sw {
 			std::vector< posit<nbits, es> > s(NR_OF_REALS);
 			posit<nbits, es> p;
 			// generate raw set, which will sort later
-			for (int i = 0; i < NR_OF_REALS; i++) {
+			for (size_t i = 0; i < NR_OF_REALS; i++) {
 				p.set_raw_bits(i);
 				s[i] = p;
 			}
@@ -268,7 +294,6 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int ValidateIncrement(std::string tag, bool bReportIndividualTestCases)
 		{
-			const size_t NrOfReals = (unsigned(1) << nbits);
 			std::vector< posit<nbits, es> > set;
 			GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
@@ -293,7 +318,6 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int ValidateDecrement(std::string tag, bool bReportIndividualTestCases)
 		{
-			const size_t NrOfReals = (unsigned(1) << nbits);
 			std::vector< posit<nbits, es> > set;
 			GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
@@ -318,7 +342,6 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int ValidatePostfix(std::string tag, bool bReportIndividualTestCases)
 		{
-			const size_t NrOfReals = (unsigned(1) << nbits);
 			std::vector< posit<nbits, es> > set;
 			GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
@@ -343,7 +366,6 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int ValidatePrefix(std::string tag, bool bReportIndividualTestCases)
 		{
-			const size_t NrOfReals = (unsigned(1) << nbits);
 			std::vector< posit<nbits, es> > set;
 			GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
@@ -367,12 +389,12 @@ namespace sw {
 		// enumerate all negation cases for a posit configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateNegation(std::string tag, bool bReportIndividualTestCases) {
-			const int NR_TEST_CASES = (1 << nbits);
+			constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
-			posit<nbits, es> pa, pneg, pref;
+			posit<nbits, es> pa(0), pneg(0), pref(0);
 
 			double da;
-			for (int i = 1; i < NR_TEST_CASES; i++) {
+			for (size_t i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				pneg = -pa;
 				// generate reference
@@ -392,12 +414,12 @@ namespace sw {
 		// enumerate all SQRT cases for a posit configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateSqrt(std::string tag, bool bReportIndividualTestCases) {
-			const int NR_TEST_CASES = (1 << nbits);
+			constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, psqrt, pref;
 
 			double da;
-			for (int i = 1; i < NR_TEST_CASES; i++) {
+			for (size_t i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				psqrt = sw::unum::sqrt(pa);
 				// generate reference
@@ -417,15 +439,15 @@ namespace sw {
 		// enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateAddition(std::string tag, bool bReportIndividualTestCases) {
-			const int NR_POSITS = (unsigned(1) << nbits);
+			const size_t NR_POSITS = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pb, psum, pref;
 
 			double da, db;
-			for (int i = 0; i < NR_POSITS; i++) {
+			for (size_t i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
 				da = double(pa);
-				for (int j = 0; j < NR_POSITS; j++) {
+				for (size_t j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
 					db = double(pb);
 					psum = pa + pb;
@@ -446,15 +468,15 @@ namespace sw {
 		// enumerate all subtraction cases for a posit configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateSubtraction(std::string tag, bool bReportIndividualTestCases) {
-			const int NR_POSITS = (1 << nbits);
+			const size_t NR_POSITS = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pb, pref, pdif;
 
 			double da, db;
-			for (int i = 0; i < NR_POSITS; i++) {
+			for (size_t i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
 				da = double(pa);
-				for (int j = 0; j < NR_POSITS; j++) {
+				for (size_t j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
 					db = double(pb);
 					pdif = pa - pb;
@@ -476,14 +498,14 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int ValidateMultiplication(std::string tag, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
-			const size_t NR_POSITS = (unsigned(1) << nbits);
+			const size_t NR_POSITS = (size_t(1) << nbits);
 
 			posit<nbits, es> pa, pb, pmul, pref;
 			double da, db;
-			for (int i = 0; i < NR_POSITS; i++) {
+			for (size_t i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
 				da = double(pa);
-				for (int j = 0; j < NR_POSITS; j++) {
+				for (size_t j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
 					db = double(pb);
 					pmul = pa * pb;
@@ -503,12 +525,12 @@ namespace sw {
 		// enerate all reciprocation cases for a posit configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateReciprocation(std::string tag, bool bReportIndividualTestCases) {
-			const int NR_TEST_CASES = (1 << nbits);
+			const size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, preciprocal, preference;
 
 			double da;
-			for (int i = 0; i < NR_TEST_CASES; i++) {
+			for (size_t i = 0; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				// generate reference
 				if (pa.isNaR()) {
@@ -535,14 +557,14 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int ValidateDivision(std::string tag, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
-			const size_t NR_POSITS = (unsigned(1) << nbits);
+			const size_t NR_POSITS = (size_t(1) << nbits);
 
 			posit<nbits, es> pa, pb, pdiv, pref;
 			double da, db;
-			for (int i = 0; i < NR_POSITS; i++) {
+			for (size_t i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
 				da = double(pa);
-				for (int j = 0; j < NR_POSITS; j++) {
+				for (size_t j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
 					if (pb.isNaR()) {
 						pref.setToNaR();

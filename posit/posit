@@ -9,6 +9,8 @@
 // enable/disable the ability to use literals in binary logic and arithmetic operators
 #define POSIT_ENABLE_LITERALS 1
 #include "posit.hpp"
+#include "posit_decoded.hpp"
+#include "specialized/posit_4_0.hpp"
 #include "posit_manipulators.hpp"
 #include "posit_functions.hpp"
 #include "quire.hpp"

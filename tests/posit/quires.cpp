@@ -277,7 +277,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Quire Accumulation failed";
@@ -292,7 +292,7 @@ try {
 
 		p1 = v;
 		q = p1.to_value();
-		p2.convert(q.to_value());
+		convert(q.to_value(), p2);
 		argA = -0.016571;
 		argB = 0.000999451;
 		float diff = v - float(p1);
@@ -303,7 +303,7 @@ try {
 		std::cout << "q as posit = " << p2 << std::endl;
 		q += quire_mul(argA, argB);
 		std::cout << "quire      = " << q << std::endl;
-		p2.convert(q.to_value());
+		convert(q.to_value(), p2);
 		std::cout << "q as posit = " << p2 << std::endl;
 	}
 

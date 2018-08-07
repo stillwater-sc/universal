@@ -5,9 +5,52 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-
+#include "posit.hpp"
 #include <value>
 
+std::string version_string(int a, int b, int c) {
+	std::ostringstream ss;
+	ss << a << '.' << b << '.' << c;
+	return ss.str();
+}
+
+std::string report_compiler_version() {
+#if defined(__clang__)
+	/* Clang/LLVM. ---------------------------------------------- */
+	return version_string(__clang_major__, __clang_minor__, __clang_patchlevel__);
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+	/* Intel ICC/ICPC. ------------------------------------------ */
+	return std::string("Intel Compiler");
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+	/* GNU GCC/G++. --------------------------------------------- */
+	return version_string(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+	/* Hewlett-Packard C/C++. ---------------------------------- */
+	return std::string("Hewlett-Packard C/C++ compiler");
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+	/* IBM XL C/C++. -------------------------------------------- */
+	return std::string("IBM XL C/C++");
+
+#elif defined(_MSC_VER)
+	/* Microsoft Visual Studio. --------------------------------- */
+	// Visual C++ compiler is 15.00.20706.01, the _MSC_FULL_VER will be 15002070601
+	char version[16];
+	sprintf(version, "%d", _MSC_FULL_VER);
+	return std::string("Microsoft Visual Studio C++ compiler version ") + std::string(version);
+
+#elif defined(__PGI)
+	/* Portland Group PGCC/PGCPP. ------------------------------- */
+	return std::string("Portland Group PGCC/PGCPP");
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+	/* Oracle Solaris Studio. ----------------------------------- */
+	return std::string("Oracle Solaris Studio");
+#endif
+}
 
 // receive a float and print the components of a IEEE float representations
 int main(int argc, char** argv)
@@ -42,12 +85,24 @@ try {
 	value<d_fbits> vd(d);
 	value<q_fbits> vq(q);
 
-        int width = q_prec + 4;
+	int width = q_prec + 4;
+
+	std::streamsize old_precision = cout.precision();
+
+	cout << report_compiler_version() << endl;
+	cout << "float precision       : " << f_fbits << " bits\n";
+	cout << "double precision      : " << d_fbits << " bits\n";
+	cout << "long double precision : " << q_fbits << " bits\n";
+
+	cout << endl;
 
 	cout << "input value: " << setprecision(f_prec) << setw(width) << argv[1] << endl;
 	cout << "      float: " << setprecision(f_prec) << setw(width) << f << " " << components(vf) << endl;
 	cout << "     double: " << setprecision(d_prec) << setw(width) << d << " " << components(vd) << endl;
 	cout << "long double: " << setprecision(q_prec) << setw(width) << q << " " << components(vq) << endl;
+
+	cout << setprecision(old_precision);
+
 	return EXIT_SUCCESS;
 }
 catch (const char* const msg) {
