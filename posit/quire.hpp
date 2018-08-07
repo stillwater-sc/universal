@@ -72,7 +72,7 @@ public:
 	quire& operator=(const value<fbits>& rhs) {
 		reset();
 		if (rhs.isZero()) return *this;
-		if (rhs.isInfinite() || rhs.isNaN())           throw "NaR not implemented";
+		if (rhs.isInfinite() || rhs.isNaN()) throw operand_is_nar{};
 		_sign = rhs.sign();
 
 		int scale = rhs.scale();
@@ -80,8 +80,8 @@ public:
 		// TODO: however, on the upper side we also have the capacity bits, which gives us the opportunity 
 		// TODO: to accept larger scale values than the dynamic range of the posit.
 		// TODO: When you are assigning the sum of quires you could hit this condition.
-		if (scale >  int(half_range)) 	throw "RHS value too large for quire";
-		if (scale < -int(half_range)) 	throw "RHS value too small for quire";
+		if (scale >  int(half_range)) 	throw operand_too_large_for_quire{};
+		if (scale < -int(half_range)) 	throw operand_too_small_for_quire{};
 
 		int i, f; // running bit pointers, i for the quire, f for the incoming fraction
 		sw::unum::bitblock<fbits+1> fraction = rhs.get_fixed_point();
@@ -111,6 +111,7 @@ public:
 		}
 		return *this;
 	}
+
 #if QUIRE_IMPLICIT_CONVERSION
 	quire& operator=(int8_t rhs) {
 		*this = int64_t(rhs);
@@ -132,7 +133,7 @@ public:
 		magnitude = _sign ? -rhs : rhs;
 		unsigned msb = findMostSignificantBit(magnitude);
 		if (msb > half_range + capacity) {
-			throw "RHS value too large for quire";
+			throw operand_too_large_for_quire{};
 		}
 		else {
 			// copy the value into the quire
@@ -155,7 +156,7 @@ public:
 		reset();
 		unsigned msb = findMostSignificantBit(rhs);
 		if (msb > half_range + capacity) {
-			throw "Assigned value too large for quire";
+			throw operand_too_large_for_quire{};
 		}
 		else {
 			// copy the value into the quire
@@ -198,10 +199,10 @@ quire& operator=(long double rhs) {
 		if (rhs.isZero()) return *this;
 
 		if (rhs.scale() > int(half_range)) {
-			throw "RHS value too large for quire";
+			throw operand_too_large_for_quire{};
 		}
 		if (rhs.scale() < -int(half_range)) {
-			throw "RHS value too small for quire";
+			throw operand_too_small_for_quire{};
 		}
 		// sign/magnitude classification
 		// operation      add magnitudes           subtract magnitudes

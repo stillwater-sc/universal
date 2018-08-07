@@ -11,6 +11,8 @@
 
 #include <string>
 #include <iostream>
+// enable posit arithmetic exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
 
 int main(int argc, char** argv)
@@ -49,6 +51,10 @@ int main(int argc, char** argv)
         std::cerr << msg << std::endl;
         return EXIT_FAILURE;
     }
+	catch (const std::runtime_error& err) {
+		std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
+		return EXIT_FAILURE;
+	}
     catch (...) {
         std::cerr << "Caught unknown exception" << std::endl;
         return EXIT_FAILURE;

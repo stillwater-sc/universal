@@ -171,6 +171,46 @@ int ValidateSignMagnitudeTransitions() {
 }
 
 template<size_t nbits, size_t es, size_t capacity = 2>
+int ValidateCarryPropagation(bool bReportIndividualTestCases) {
+	using namespace sw::unum;
+	int nrOfFailedTests = 0;
+
+	constexpr size_t mbits = 2 * (nbits - 2 - es);
+	quire<nbits, es, capacity> q;
+	posit<nbits, es> minpos = sw::unum::minpos<nbits, es>();
+	value<mbits> minpos_square = quire_mul(minpos, minpos);
+	constexpr size_t NR_INCREMENTS_TO_OVERFLOW = (size_t(1) << (q.qbits+1));
+	for (size_t i = 0; i < NR_INCREMENTS_TO_OVERFLOW; ++i) {
+		q += minpos_square;
+	}
+	std::cout << q << std::endl;
+	nrOfFailedTests = q.isZero() ? 0 : 1;
+
+	return nrOfFailedTests;
+}
+
+template<size_t nbits, size_t es, size_t capacity = 2>
+int ValidateBorrowPropagation(bool bReportIndividualTestCases) {
+	using namespace sw::unum;
+	int nrOfFailedTests = 0;
+
+	constexpr size_t mbits = 2 * (nbits - 2 - es);
+	quire<nbits, es, capacity> q;
+	posit<nbits, es> minpos = sw::unum::minpos<nbits, es>();
+	value<mbits> minpos_square = quire_mul(minpos, minpos);
+	q -= minpos_square;
+	std::cout << q << std::endl;
+	constexpr size_t NR_DECREMENTS_TO_OVERFLOW = (size_t(1) << (q.qbits + 1));
+	for (size_t i = 0; i < NR_DECREMENTS_TO_OVERFLOW-1; ++i) {
+		q -= minpos_square;
+	}
+	std::cout << q << std::endl;
+	nrOfFailedTests = q.isZero() ? 0 : 1;
+
+	return nrOfFailedTests;
+}
+
+template<size_t nbits, size_t es, size_t capacity = 2>
 int ValidateQuireAccumulation(bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 
@@ -205,7 +245,7 @@ void TestCaseForProperZeroHandling() {
 	cout << result << " " << components(result) << endl;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main()
@@ -230,8 +270,12 @@ try {
 
 	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<16, 1>();
 	
-	//nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
-
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
+	
+	cout << "Carry Propagation\n";
+	nrOfFailedTestCases += ReportTestResult(ValidateCarryPropagation<4, 1>(bReportIndividualTestCases), "carry propagation", "increment");
+	cout << "Borrow Propagation\n";
+	nrOfFailedTestCases += ReportTestResult(ValidateBorrowPropagation<4, 1>(bReportIndividualTestCases), "borrow propagation", "increment");
 
 #ifdef ISSUE_45_DEBUG
 	{	

@@ -98,7 +98,22 @@ namespace sw {
 
 			positives = 0; negatives = 0;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+				try {
+					pa = -pa;
+				}
+				catch (const operand_is_nar& err) {
+					if (pa.isNaR()) {
+						// correctly caught the operand is nar condition
+						pa.setToNaR();
+					}
+					else {
+						throw err;
+					}
+				}
+#else
 				pa = -pa;
+#endif
 				pa >= 0 ? positives++ : negatives++;
 			}
 			return positives + negatives;
@@ -112,7 +127,23 @@ namespace sw {
 			positives = 0; negatives = 0;
 			for (int i = 0; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+				try {
+					psqrt = sw::unum::sqrt(pa);
+				}
+				catch (const operand_is_nar& err) {
+					if (pa.isNaR()) {
+						// correctly caught the operand is nar condition
+						psqrt.setToNaR();
+				}
+				else {
+						throw err;
+					}
+				}
+#else
 				psqrt = sw::unum::sqrt(pa);
+#endif
+
 				psqrt >= 0 ? positives++ : negatives++;
 			}
 			return positives + negatives;
@@ -121,12 +152,27 @@ namespace sw {
 		// measure performance of arithmetic addition
 		template<size_t nbits, size_t es>
 		int MeasureAdditionPerformance(int &positives, int &negatives) {
-			posit<nbits, es> pa(1.0), pb, psum;
+			posit<nbits, es> pa(1), pb, psum;
 
 			positives = 0; negatives = 0;
 			for (int i = 0; i < NR_TEST_CASES; i++) {
 				pb.set_raw_bits(i);
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+				try {
+					psum = pa + pb;
+				}
+				catch (const operand_is_nar& err) {
+					if (pa.isNaR() || pb.isNaR()) {
+						// correctly caught the operand is nar condition
+						psum.setToNaR();
+					}
+					else {
+						throw err;
+					}
+				}
+#else
 				psum = pa + pb;
+#endif
 				psum >= 0 ? positives++ : negatives++;
 			}
 			return positives + negatives;
@@ -135,12 +181,27 @@ namespace sw {
 		// measure performance of arithmetic subtraction
 		template<size_t nbits, size_t es>
 		int MeasureSubtractionPerformance(int &positives, int &negatives) {
-			posit<nbits, es> pa(1.0), pb, pdif;
+			posit<nbits, es> pa(1), pb, pdif;
 
 			positives = 0; negatives = 0;
 			for (int i = 0; i < NR_TEST_CASES; i++) {
 				pb.set_raw_bits(i);
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+				try {
+					pdif = pa - pb;
+				}
+				catch (const operand_is_nar& err) {
+					if (pa.isNaR() || pb.isNaR()) {
+						// correctly caught the operand is nar condition
+						pdif.setToNaR();
+					}
+					else {
+						throw err;
+					}
+				}
+#else
 				pdif = pa - pb;
+#endif
 				pdif >= 0 ? positives++ : negatives++;
 			}
 			return positives + negatives;
@@ -149,12 +210,28 @@ namespace sw {
 		// measure performance of arithmetic multiplication
 		template<size_t nbits, size_t es>
 		int MeasureMultiplicationPerformance(int &positives, int &negatives) {
-			posit<nbits, es> pa(1.0), pb, pmul;
+			posit<nbits, es> pa(1), pb, pmul;
 
 			positives = 0; negatives = 0;
 			for (int i = 0; i < NR_TEST_CASES; i++) {
 				pb.set_raw_bits(i);
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+				try {
+					pmul = pa * pb;
+				}
+				catch (const operand_is_nar& err) {
+					if (pa.isNaR() || pb.isNaR()) {
+						// correctly caught the operand is nar condition
+						pmul.setToNaR();
+					}
+					else {
+						throw err;
+					}
+				}
+#else
 				pmul = pa * pb;
+#endif
+
 				pmul >= 0 ? positives++ : negatives++;
 			}
 			return positives + negatives;
@@ -176,12 +253,45 @@ namespace sw {
 		// measure performance of arithmetic division
 		template<size_t nbits, size_t es>
 		int MeasureDivisionPerformance(int &positives, int &negatives) {
-			posit<nbits, es> pa(1.0), pb, pdiv;
+			posit<nbits, es> pa(1), pb, pdiv;
 
 			positives = 0; negatives = 0;
 			for (int i = 0; i < NR_TEST_CASES; i++) {
 				pb.set_raw_bits(i);
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+				try {
+					pdiv = pa / pb;
+				}
+				catch (const divide_by_zero& err) {
+					if (pb.isZero()) {
+						// correctly caught the divide by zero condition
+						pdiv.setToNaR();
+					}
+					else {
+						throw err;
+					}
+				}
+				catch (const divide_by_nar& err) {
+					if (pb.isNaR()) {
+						// correctly caught the divide by nar condition
+						pdiv = 0.0f;
+					}
+					else {
+						throw err;
+					}
+				}
+				catch (const operand_is_nar& err) {
+					if (pa.isNaR()) {
+						// correctly caught the operand is nar condition
+						pdiv.setToNaR();
+					}
+					else {
+						throw err;
+					}
+				}
+#else
 				pdiv = pa / pb;
+#endif
 				pdiv >= 0 ? positives++ : negatives++;
 			}
 			return positives + negatives;
