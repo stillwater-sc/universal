@@ -1,4 +1,4 @@
-// scales.cpp : report dynamic range of posit configurations
+// scales.cpp : report dynamic range of posit configurations and posit numbers
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
@@ -6,22 +6,21 @@
 
 #include "common.hpp"
 #include <posit>
+#include "../tests/test_helpers.hpp"
 
-using namespace std;
-using namespace sw::unum;
-
-
-constexpr unsigned int MAX_ES = 5;
-constexpr unsigned int MAX_K = 10;
+#ifdef UNIVERSAL_MPRF_ENABLED
+// TODO: this needs to be done with MPRF as these scale factors grow very large
+constexpr size_t MAX_ES = 5;
+constexpr size_t MAX_K = 10;
 uint64_t GENERATED_SCALE_FACTORS[MAX_ES][MAX_K];
 
 void generateScaleFactorLookupTable() {
 	uint64_t useed, useed_power_k;
-	for (int es = 0; es < MAX_ES; es++) {
+	for (size_t es = 0; es < MAX_ES; es++) {
 		useed = two_to_the_power(two_to_the_power(es));
 		useed_power_k = useed; 
 		GENERATED_SCALE_FACTORS[es][0] = 1; // for k = 0
-		for (int k = 1; k < MAX_K; k++) {
+		for (size_t k = 1; k < MAX_K; k++) {
 			useed_power_k *= useed;
 			GENERATED_SCALE_FACTORS[es][k] = useed_power_k;
 		}
@@ -30,24 +29,25 @@ void generateScaleFactorLookupTable() {
 
 void printScaleFactors(uint64_t scale_factors[MAX_ES][MAX_K]) {
 	cout << "      ";
-	for (int k = 0; k < MAX_K; k++) {
+	for (size_t k = 0; k < MAX_K; k++) {
 		cout << "     k = " << k << "   ";
 	}
 	cout << endl;
-	for (int es = 0; es < MAX_ES; es++) {
+	for (size_t es = 0; es < MAX_ES; es++) {
 		cout << "es = " << es << " ";
-		for (int k = 0; k < MAX_K; k++) {
+		for (size_t k = 0; k < MAX_K; k++) {
 			cout << setw(12) << scale_factors[es][k] << " ";
 		}
 		cout << endl;
 	}
 	cout << endl;
 }
+#endif
 
 template<typename Ty>
 std::string range_to_string(std::string tag) {
 	std::stringstream ss;
-	ss << setw(13) << tag;
+	ss << std::setw(13) << tag;
 	ss << "                       ";
 	ss << "minexp scale " << std::setw(10) << std::numeric_limits<Ty>::min_exponent << "     ";
 	ss << "maxexp scale " << std::setw(10) << std::numeric_limits<Ty>::max_exponent << "     ";
@@ -61,6 +61,7 @@ std::string range_to_string(std::string tag) {
 // maxpos = useed^(nbits-2)
 // minpos = useed^(2-nbits)
 void ReportPositScales() {
+	using namespace sw::unum;
 	posit<3, 0> p3_0;
 	posit<4, 0> p4_0;
 	posit<4, 1> p4_1;
@@ -254,46 +255,70 @@ void ReportPositScales() {
 	std::cout << range_to_string<long double>("long double") << std::endl;
 }
 
+// enumerate and validate scales
+template<size_t nbits, size_t es>
+int ValidateScales(std::string& str, bool bReportIndividualTestCases) {
+	using namespace sw::unum;
+	int nrOfTestFailures = 0;
+	constexpr size_t NR_OF_TESTCASES = (size_t(1) << nbits);
 
-#define MANUAL_TESTING 1
+	sw::unum::posit<nbits, es> p;
+	for (size_t i = 0; i < NR_OF_TESTCASES; ++i) {
+		p.set_raw_bits(i);
+		int _scale = scale(p);
+		constexpr size_t fbits = nbits - 3 - es;
+		bool		     	 _sign;
+		regime<nbits, es>    _regime;
+		exponent<nbits, es>  _exponent;
+		fraction<fbits>      _fraction;
+		decode(p.get(), _sign, _regime, _exponent, _fraction);
+		std::cout << _regime << " " << _exponent << " " << _fraction << " regime scale: " << std::setw(3) << _regime.scale() << " exponent scale: " << std::setw(3) << _exponent.scale() << " posit scale: " << std::setw(3) << scale(p) << std::endl;
+	}
+	return nrOfTestFailures;
+}
+
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
-	bool bReportIndividualTestCases = false;
+	using namespace std;
+	using namespace sw::unum;
+
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "Experiments with the scale of numbers" << std::endl;
+	std::cout << "Experiments with the scale of posit numbers" << std::endl;
 
 	std::string tag = "Posit Scales failed";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
-	ReportPositScales();
+
+	bool bReportIndividualTestCases = false;
+	nrOfFailedTestCases += ReportTestResult(ValidateScales<4, 1>(tag, bReportIndividualTestCases), "posit<4,0>", "scales");
 
 #else
+	ReportPositScales();
 
 #ifdef STRESS_TEST
-
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "conversion");
-
 
 #endif // STRESS_TESTING
 
 
 #endif // MANUAL_TESTING
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
-
-    
+ 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (std::runtime_error& e) {
+	std::cerr << e.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
 

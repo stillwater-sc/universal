@@ -8,25 +8,52 @@
 #include <chrono>
 #include <posit>
 
+enum BINARY_ARITHMETIC_OPERATOR {
+	ADD = 0,
+	SUB = 1,
+	MUL = 2,
+	DIV = 3
+};
+
+enum UNARY_ARITHMETIC_OPERATOR {
+	RECIPROCAL	= 4,
+	SQRT		= 5
+};
+
 // generate a look-up table for addition
 template<size_t nbits, size_t es>
-void GenerateAddLookupTable() {
+void GenerateLookupTable(BINARY_ARITHMETIC_OPERATOR op) {
 	constexpr size_t nr_of_posits = (1 << nbits);
-	sw::unum::posit<nbits, es> pa, pb, psum;
+	sw::unum::posit<nbits, es> pa, pb, presult;
 	unsigned long long mask = nr_of_posits - 1;
 	unsigned long long base;
 	for (size_t i = 0; i < nr_of_posits; i++) {
 		pa.set_raw_bits(i);
 		for (size_t j = 0; j < nr_of_posits; j++) {
 			pb.set_raw_bits(j);
-			psum = pa + pb;
+			switch (op) {
+			case ADD:
+				presult = pa + pb;
+				break;
+			case SUB:
+				presult = pa - pb;
+				break;
+			case MUL:
+				presult = pa * pb;
+				break;
+			case DIV:
+				presult = pa / pb;
+				break;
+			}
+
 			base = pa.get().to_ullong() << nbits | pb.get().to_ullong();
-			//std::cout << std::hex << base << " " << psum.get() << std::endl;
-			std::cout << psum.get().to_ulong() << ",";
+			//std::cout << std::hex << base << " " << presult.get() << std::endl;
+			std::cout << presult.get().to_ulong() << ",";
 		}
 		std::cout << std::endl;
 	}
 }
+
 
 namespace sw {
 	namespace spec {
@@ -161,8 +188,8 @@ int Validate5_0_Lookup() {
 	constexpr size_t nr_of_posits = 32;
 	int nrOfFailures = 0;
 
-	sw::unum::posit<5, 0> pa, pb, psum;
-	sw::spec::posit<5, 0> sa, sb, ssum;
+	sw::unum::posit<nbits, es> pa, pb, psum;
+	sw::spec::posit<nbits, es> sa, sb, ssum;
 	for (size_t i = 0; i < nr_of_posits; i++) {
 		pa.set_raw_bits(i);
 		sa.set_raw_bits(i);
@@ -211,7 +238,10 @@ try {
 	double elapsed;
 
 	//Validate5_0_Lookup();
-	//GenerateAddLookupTable<5, 0>();
+	//GenerateLookupTable<4, 0>(ADD);
+	//GenerateLookupTable<4, 0>(SUB);
+	//GenerateLookupTable<4, 0>(MUL);
+	//GenerateLookupTable<4, 0>(DIV);
 
 	begin = steady_clock::now();
 	MeasureAdditionPerformance<5, 0>(positives, negatives);

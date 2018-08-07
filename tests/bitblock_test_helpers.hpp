@@ -53,12 +53,16 @@ int ValidateBitsetAddition(bool bReportIndividualTestCases = false) {
 			ref = i + j;
 			bref = convert_to_bitblock<nbits + 1, unsigned>(ref);
 			carry = add_unsigned(a, b, bsum);
+			if (carry) {
+				int maxNr = (int(1) << (nbits-1));
+				if (ref < maxNr) ReportBinaryArithmeticError("FAIL", "+", a, b, bref, bsum);
+			}
 			if (bref != bsum) {
 				nrOfFailedTestCases++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, bref, bsum);
+				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, bref, bsum);
 			}
 			else {
-				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-", a, b, bref, bsum);
+				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, bref, bsum);
 			}
 		}
 	}
@@ -81,6 +85,9 @@ int ValidateBitsetSubtraction(bool bReportIndividualTestCases = false) {
 			ref = i - j;
 			bref = convert_to_bitblock<nbits + 1, unsigned>(ref);
 			borrow = subtract_unsigned(a, b, bsub);
+			if (borrow) {
+				if (a >= b) ReportBinaryArithmeticError("FAIL", "-", a, b, bref, bsub);
+			}
 			if (bref != bsub) {
 				nrOfFailedTestCases++;
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, bref, bsub);

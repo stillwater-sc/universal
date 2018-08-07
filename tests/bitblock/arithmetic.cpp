@@ -20,7 +20,6 @@ int Conversions() {
 	const size_t nbits = 33;
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b, ref, sum;
-	bool carry = 0;
 
 	cout << "Binary conversions" << endl;
 
@@ -65,7 +64,6 @@ int Conversions() {
 int IncrementRightAdjustedBitset()
 {
 	const size_t nbits = 5;
-	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 
 	bitblock<nbits> r1, ref;
@@ -94,12 +92,12 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 	
 	// use a programmatic pattern of alternating bits
 	// so it is easy to spot any differences
-	for (int i = 0; i < src_size; i = i + 2) {
+	for (size_t i = 0; i < src_size; i = i + 2) {
 		reference.set(i, true);
 		operand.set(i, true);
 	}
 
-	for (int i = 0; i < tgt_size - src_size; i++) {
+	for (size_t i = 0; i < tgt_size - src_size; i++) {
 		copy_into<src_size, tgt_size>(operand, i, addend);
 
 		if (reference != addend) {
@@ -113,13 +111,6 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 
 		reference <<= 1; // each time around the loop, shift left by 1	
 	}
-
-	return nrOfFailedTestCases;
-}
-
-template<size_t src_size, size_t tgt_size>
-int VerifyAccumulation() {
-	int nrOfFailedTestCases = 0;
 
 	return nrOfFailedTestCases;
 }

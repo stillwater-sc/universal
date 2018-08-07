@@ -15,12 +15,9 @@
 namespace sw {
 	namespace unum {
 
-
 		static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 
-
-
-	}; // namespace unum
-}; // namespace sw
+	} // namespace unum
+} // namespace sw
 

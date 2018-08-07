@@ -19,7 +19,7 @@ try {
 
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 0;
-	constexpr size_t capacity = 6;   // 2^3 accumulations of maxpos^2
+	//constexpr size_t capacity = 6;   // 2^3 accumulations of maxpos^2
 
 	OperatorPerformance perfReport;
 	GeneratePerformanceReport<nbits, es>(perfReport);
