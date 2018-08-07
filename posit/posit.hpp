@@ -227,23 +227,6 @@ namespace sw {
 			// so no need to transform back via 2's complement of regime/exponent/fraction
 		}
 
-		// convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
-		template<size_t nbits, size_t es, size_t fbits>
-		inline posit<nbits, es>& convert(const value<fbits>& v, posit<nbits, es>& p) {
-			if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-			if (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " fraction " << v.fraction() << std::endl;
-
-			if (v.isZero()) {
-				p.setToZero();
-				return p;
-			}
-			if (v.isNaN() || v.isInfinite()) {
-				p.setToNaR();
-				return p;
-			}
-			return convert_<nbits, es, fbits>(v.sign(), v.scale(), v.fraction(), p);
-		}
-
 		// needed to avoid double rounding situations: TODO: does that mean the condensed version above should be removed?
 		template<size_t nbits, size_t es, size_t fbits>
 		inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>& fraction_in, posit<nbits, es>& p) {
@@ -316,6 +299,24 @@ namespace sw {
 			}
 			return p;
 		}
+
+		// convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
+		template<size_t nbits, size_t es, size_t fbits>
+		inline posit<nbits, es>& convert(const value<fbits>& v, posit<nbits, es>& p) {
+			if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+			if (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " fraction " << v.fraction() << std::endl;
+
+			if (v.isZero()) {
+				p.setToZero();
+				return p;
+			}
+			if (v.isNaN() || v.isInfinite()) {
+				p.setToNaR();
+				return p;
+			}
+			return convert_<nbits, es, fbits>(v.sign(), v.scale(), v.fraction(), p);
+		}
+
 		
 		// quadrant returns a two character string indicating the quadrant of the projective reals the posit resides: from 0, SE, NE, NaR, NW, SW
 		template<size_t nbits, size_t es>
@@ -344,7 +345,7 @@ namespace sw {
 		// collect the posit components into a bitset: TODO: do we enforce fbits to be the same size as the posit::fbits?
 		template<size_t nbits, size_t es, size_t fbits>
 		bitblock<nbits> collect(bool _sign, const regime<nbits, es>& _regime, const exponent<nbits, es>& _exponent, const fraction<fbits>& _fraction) {
-			bitblock<rbits> r = _regime.get();
+			bitblock<nbits-1> r = _regime.get();
 			size_t nrRegimeBits = _regime.nrBits();
 			bitblock<es> e = _exponent.get();
 			size_t nrExponentBits = _exponent.nrBits();
