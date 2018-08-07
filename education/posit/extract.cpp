@@ -67,9 +67,8 @@ posit<nbits, es> extract(float f) {
 
 	extract_fp_components(f, _sign, _scale, _fr, _23b_fraction_without_hidden_bit);
 	bitblock<fbits> _fraction = extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
-
-	p.convert(_sign, _scale, _fraction);
-	return p;
+	value<fbits> v(_sign, _scale, _fraction);
+	return convert(v, p);
 }
 
 template<size_t nbits, size_t es>
@@ -83,9 +82,8 @@ posit<nbits, es> extract(double d) {
 
 	extract_fp_components(d, _sign, _scale, _fr, _52b_fraction_without_hidden_bit);
 	bitblock<fbits> _fraction = extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
-
-	p.convert(_sign, _scale, _fraction);
-	return p;
+	value<fbits> v(_sign, _scale, _fraction);
+	return convert(v, p);
 }
 
 int main()
