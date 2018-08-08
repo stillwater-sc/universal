@@ -11,7 +11,6 @@
 #define POSIT_TRACE_DEBUG
 #define POSIT_TRACE_MUL
 #include <posit>
-
 #include "posit_performance.hpp"
 
 int main(int argc, char** argv)
@@ -22,9 +21,6 @@ try {
 	constexpr size_t nbits = 4;
 	constexpr size_t es = 0;
 	//constexpr size_t capacity = 6;   // 2^3 accumulations of maxpos^2
-
-	posit<nbits, es> p;
-	p.set_raw_bits(0x8);
 
 	OperatorPerformance perfReport;
 	GeneratePerformanceReport<nbits, es>(perfReport);
