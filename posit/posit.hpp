@@ -126,7 +126,7 @@ namespace sw {
 		// regime = useed ^ k = (2 ^ (2 ^ es)) ^ k = 2 ^ (k*(2 ^ es))
 		// scale  = useed ^ k * 2^e = k*(2 ^ es) + e 
 		template<size_t nbits>
-		int decode_regime(bitblock<nbits>& raw_bits) {
+		int decode_regime(const bitblock<nbits>& raw_bits) {
 			// let m be the number of identical bits in the regime
 			int m = 0;   // regime runlength counter
 			int k = 0;   // converted regime scale
