@@ -15,13 +15,13 @@ try {
 
 	// generate individual testcases to hand trace/debug
 	cout << "Manual Exponent tests" << endl;
-	constexpr size_t nbits = 8;
+	constexpr size_t nbits = 6;
 	constexpr size_t es = 2;
 	posit<nbits, es> p; // for calculate_k method
 	regime<nbits, es> r;
 	exponent<nbits, es> e;
-	constexpr size_t NR_OF_POSITS = (size_t(1) << nbits);
 
+	// create a two column table of regime and exponent bits
 	cout << "regime  exponent\n";
 	for (int scale = minpos_scale<nbits,es>()-1; scale < maxpos_scale<nbits,es>()+1; ++scale) {
 		p = std::pow(2.0, scale);
