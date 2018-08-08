@@ -32,12 +32,12 @@ namespace sw {
 
 		template<typename Ty>
 		std::string to_scientific(Ty value) {
-			char* scales[] = { "", "K", "M", "G", "T" };
+			const char* scales[] = { "", "K", "M", "G", "T" };
 			Ty lower_bound = Ty(1);
 			Ty scale_factor = 1.0;
-			int integer_value;
-			int scale;
-			for (int i = 0; i < sizeof(scales); ++i) {
+			int integer_value = 0;
+			int scale = 0;
+			for (unsigned i = 0; i < sizeof(scales); ++i) {
 				if (value > lower_bound && value < 1000 * lower_bound) {
 					integer_value = int(value / scale_factor);
 					scale = i;
