@@ -135,23 +135,21 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		inline double regime_value(const posit<nbits, es>& p) {
-			constexpr size_t fbits = nbits - 3 - es;
-			bool		     	 _sign;
 			regime<nbits, es>    _regime;
-			exponent<nbits, es>  _exponent;
-			fraction<fbits>      _fraction;
-			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			bitblock<nbits> tmp(p.get());
+			tmp = sign(p) ? twos_complement(tmp) : tmp;
+			size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 			return _regime.value();
 		}
 
 		template<size_t nbits, size_t es>
 		inline double exponent_value(const posit<nbits, es>& p) {
-			constexpr size_t fbits = nbits - 3 - es;
-			bool		     	 _sign;
 			regime<nbits, es>    _regime;
 			exponent<nbits, es>  _exponent;
-			fraction<fbits>      _fraction;
-			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			bitblock<nbits> tmp(p.get());
+			tmp = sign(p) ? twos_complement(tmp) : tmp;
+			size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));	// get the regime bits
+			_exponent.extract_exponent_bits(tmp, nrRegimeBits);							// get the exponent bits
 			return _exponent.value();
 		}
 
@@ -175,12 +173,13 @@ namespace sw {
 		// calculate the scale of a posit
 		template<size_t nbits, size_t es>
 		inline int scale(const posit<nbits, es>& p) {
-			constexpr size_t fbits = nbits - 3 - es;
-			bool		     	 _sign;
 			regime<nbits, es>    _regime;
 			exponent<nbits, es>  _exponent;
-			fraction<fbits>      _fraction;
-			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			bitblock<nbits> tmp(p.get());
+			tmp = sign(p) ? twos_complement(tmp) : tmp;
+			size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));	// get the regime bits
+			_exponent.extract_exponent_bits(tmp, nrRegimeBits);							// get the exponent bits
+			// return the scale
 			return _regime.scale() + _exponent.scale();
 		}
 
@@ -199,24 +198,22 @@ namespace sw {
 		// calculate the scale of the regime component of the posit
 		template<size_t nbits, size_t es>
 		inline int regime_scale(const posit<nbits, es>& p) {
-			constexpr size_t fbits = nbits - 3 - es;
-			bool		     	 _sign;
 			regime<nbits, es>    _regime;
-			exponent<nbits, es>  _exponent;
-			fraction<fbits>      _fraction;
-			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			bitblock<nbits> tmp(p.get());
+			tmp = sign(p) ? twos_complement(tmp) : tmp;
+			size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 			return _regime.scale();
 		}
 
 		// calculate the scale of the exponent component of the posit
 		template<size_t nbits, size_t es>
 		inline int exponent_scale(const posit<nbits, es>& p) {
-			constexpr size_t fbits = nbits - 3 - es;
-			bool		     	 _sign;
 			regime<nbits, es>    _regime;
 			exponent<nbits, es>  _exponent;
-			fraction<fbits>      _fraction;
-			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			bitblock<nbits> tmp(p.get());
+			tmp = sign(p) ? twos_complement(tmp) : tmp;
+			size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
+			_exponent.extract_exponent_bits(tmp, nrRegimeBits);
 			return _exponent.scale();
 		}
 
