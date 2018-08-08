@@ -47,12 +47,32 @@ public:
 	bitblock<es> get() const {
 		return _Bits;
 	}
-	void set(const bitblock<es>& raw, size_t nrOfExponentBits) {
+	void set(const bitblock<es>& raw, size_t nrExponentBits) {
 		_Bits = raw;
-		_NrOfBits = nrOfExponentBits;
+		_NrOfBits = nrExponentBits;
 	}
+	
+	// extract the exponent bits given a pattern and the location of the starting point
+	void extract_exponent_bits(const bitblock<nbits>& _raw_bits, size_t nrRegimeBits) {
+		_Bits.reset();
+		// start of exponent is nbits - (sign_bit + regime_bits)
+		int msb = int(static_cast<int>(nbits) - 1 - (1 + nrRegimeBits));
+		size_t nrExponentBits = 0;
+		if (es > 0) {
+			bitblock<es> _exp;
+			if (msb >= 0 && es > 0) {
+				nrExponentBits = (msb >= static_cast<int>(es) - 1 ? es : msb + 1);
+				for (size_t i = 0; i < nrExponentBits; i++) {
+					_exp[es - 1 - i] = _raw_bits[msb - i];
+				}
+			}
+			set(_exp, nrExponentBits);
+		}
+	}
+
 	// calculate the exponent given a number's scale: esval = Mod[scale, 2^es];
-	void assign(int scale) {
+	// DEPRECATED
+	void _assign(int scale) {
 		_Bits.reset();
 		unsigned int my_exponent = scale < 0 ? -scale >> es : scale >> es;
 		// convert value into bitset
@@ -64,7 +84,8 @@ public:
 	}
 	// calculate the exponent given a number's scale and the number of regime bits, 
 	// returning an indicator which type of rounding is required to complete the posit
-	int assign_exponent_bits(int scale, int k, size_t nr_of_regime_bits) {
+	// DEPRECATED
+	int assign_exponent_bits(int scale, int k, size_t nrRegimeBits) {
 		int rounding_mode = NO_ADDITIONAL_ROUNDING;
 		_Bits.reset();
 		// we need to get to an adjusted scale that encodes regime and exponent
@@ -78,14 +99,14 @@ public:
 			_Bits[i] = my_exponent & mask;
 			mask <<= 1;
 		}
-		_NrOfBits = (nbits - 1 - nr_of_regime_bits > es ? es : nbits - 1 - nr_of_regime_bits);
+		_NrOfBits = (nbits - 1 - nrRegimeBits > es ? es : nbits - 1 - nrRegimeBits);
 		if (_NrOfBits > 0) {
 			if (_NrOfBits < es) {
 				rounding_mode = _Bits[es - 1 - _NrOfBits] ? GEOMETRIC_ROUND_UP : GEOMETRIC_ROUND_DOWN; // check the next bit to see if we need to geometric round
 				if (_trace_rounding) std::cout << "truncated exp" << (rounding_mode == GEOMETRIC_ROUND_UP ? " geo-up " : " geo-dw ");
 			}
 			else {
-				if (nbits - 1 - nr_of_regime_bits - es > 0) {
+				if (nbits - 1 - nrRegimeBits - es > 0) {
 					// use the fraction to determine rounding as this posit has fraction bits
 					rounding_mode = ARITHMETIC_ROUNDING;
 					if (_trace_rounding) std::cout << "arithmetic  rounding ";
@@ -113,6 +134,7 @@ public:
 		}
 		return rounding_mode;
 	}
+
 	bool increment() {
 		bool carry = false;
 		if (es > 0) {
