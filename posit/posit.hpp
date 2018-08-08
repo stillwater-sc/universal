@@ -391,6 +391,47 @@ namespace sw {
 			return p;
 		}
 
+
+		// read a posit ASCII format and make a memory posit out of it
+		template<size_t nbits, size_t es>
+		bool parse(std::string& txt, posit<nbits, es>& p) {
+			bool bSuccess = false;
+			// check if the txt is of the native posit form: nbits.esXhexvalue
+			std::regex posit_regex("[\\d]+\\.[012345][xX][\\w]+[p]*");
+			if (std::regex_match(txt, posit_regex)) {
+				// found a posit representation
+				std::string nbitsStr, esStr, bitStr;
+				auto it = txt.begin();
+				for (; it != txt.end(); it++) {
+					if (*it == '.') break;
+					nbitsStr.append(1, *it);
+				}
+				for (it++; it != txt.end(); it++) {
+					if (*it == 'x' || *it == 'X') break;
+					esStr.append(1, *it);
+				}
+				for (it++; it != txt.end(); it++) {
+					if (*it == 'p') break;
+					bitStr.append(1, *it);
+				}
+				unsigned long long raw;
+				std::istringstream ss(bitStr);
+				ss >> std::hex >> raw;
+				//std::cout << "[" << nbitsStr << "] [" << esStr << "] [" << bitStr << "] = " << raw << std::endl;
+				p.set_raw_bits(raw);  // TODO: if not aligned, this takes the least significant bits, but we want to take the most significant bits
+				bSuccess = true;
+			}
+			else {
+				// assume it is a float/double/long double representation
+				std::istringstream ss(txt);
+				double d;
+				ss >> d;
+				p = d;
+				bSuccess = true;
+			}
+			return bSuccess;
+		}
+
 		////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		// class posit represents posit numbers of arbitrary configuration and their basic arithmetic operations (add/sub, mul/div)
 		template<size_t _nbits, size_t _es>
@@ -972,45 +1013,6 @@ namespace sw {
 				_raw_bits = raw_bits;
 				return *this;
 			}
-
-			// read a posit ASCII format and make a memory posit out of it
-			bool parse(std::string& txt) {
-				bool bSuccess = false;
-				// check if the txt is of the native posit form: nbits.esXhexvalue
-				std::regex posit_regex("[\\d]+\\.[012345][xX][\\w]+[p]*");
-				if (std::regex_match(txt, posit_regex)) {
-					// found a posit representation
-					std::string nbitsStr, esStr, bitStr;
-					auto it = txt.begin();
-					for (; it != txt.end(); it++) {
-						if (*it == '.') break;
-						nbitsStr.append(1, *it);
-					}
-					for (it++; it != txt.end(); it++) {
-						if (*it == 'x' || *it == 'X') break;
-						esStr.append(1, *it);
-					}
-					for (it++; it != txt.end(); it++) {
-						if (*it == 'p') break;
-						bitStr.append(1, *it);
-					}
-					unsigned long long raw;
-					std::istringstream ss(bitStr);
-					ss >> std::hex >> raw;
-					//std::cout << "[" << nbitsStr << "] [" << esStr << "] [" << bitStr << "] = " << raw << std::endl;
-					set_raw_bits(raw);  // TODO: this takes the least significant bits, but we want to take the most significant bits
-					bSuccess = true;
-				}
-				else {
-					// assume it is a float/double/long double representation
-					std::istringstream ss(txt);
-					double d;
-					ss >> d;
-					*this = d;
-					bSuccess = true;
-				}
-				return bSuccess;
-			}
 	
 			// Maybe remove explicit, MTL compiles, but we have lots of double computation then
 			explicit operator long double() const { return to_long_double(); }
@@ -1096,12 +1098,12 @@ namespace sw {
 			}
 			long        to_long() const {
 				if (isZero()) return 0;
-				if (isNaR()) return int(INFINITY);
+				if (isNaR()) return long(INFINITY);
 				return long(to_double());
 			}
 			long long   to_long_long() const {
 				if (isZero()) return 0;
-				if (isNaR()) return int(INFINITY);
+				if (isNaR()) return (long long)(INFINITY);
 				return long(to_long_double());
 			}
 #endif
@@ -1573,8 +1575,7 @@ namespace sw {
 		// generate a posit format ASCII format nbits.esxNN...NNp
 		template<size_t nbits, size_t es>
 		inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
-			ostr << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
-			return ostr;
+			return ostr << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
 		}
 
 		// read an ASCII float or posit format: nbits.esxNN...NNp, for example: 32.2x80000000p
@@ -1582,7 +1583,7 @@ namespace sw {
 		inline std::istream& operator>> (std::istream& istr, posit<nbits, es>& p) {
 			std::string txt;
 			istr >> txt;
-			if (!p.parse(txt)) {
+			if (!parse(txt, p)) {
 				std::cerr << "unable to parse -" << txt << "- into a posit value\n";
 			}
 			return istr;
