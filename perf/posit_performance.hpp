@@ -30,21 +30,41 @@ namespace sw {
 			float sqrt;
 		};
 
+		template<typename Ty>
+		std::string to_scientific(Ty value) {
+			char* scales[] = { "", "K", "M", "G", "T" };
+			Ty lower_bound = Ty(1);
+			Ty scale_factor = 1.0;
+			int integer_value;
+			int scale;
+			for (int i = 0; i < sizeof(scales); ++i) {
+				if (value > lower_bound && value < 1000 * lower_bound) {
+					integer_value = int(value / scale_factor);
+					scale = i;
+					break;
+				}
+				lower_bound *= 1000;
+				scale_factor *= 1000.0;
+			}
+			std::stringstream ss;
+			ss << std::setw(3) << std::right << integer_value << ' ' << scales[scale];
+			return ss.str();
+		}
 		static constexpr int NR_TEST_CASES = 100000;
 		static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 		template<size_t nbits, size_t es>
 		void ReportPerformance(std::ostream& ostr, std::string header, OperatorPerformance &perf) {
 			ostr << "Performance Report: " << header << '\n'
-				<< "Conversion      : " << perf.convert << " POPS\n"
-				<< "Prefix          : " << perf.prefix << " POPS\n"
-				<< "Postfix         : " << perf.postfix << " POPS\n"
-				<< "Negation        : " << perf.neg << " POPS\n"
-				<< "Addition        : " << perf.add << " POPS\n"
-				<< "Subtraction     : " << perf.sub << " POPS\n"
-				<< "Multiplication  : " << perf.mul << " POPS\n"
-				<< "Division        : " << perf.div << " POPS\n"
-				<< "Square Root     : " << perf.sqrt << " POPS\n"
+				<< "Conversion      : " << to_scientific(perf.convert) << "POPS\n"
+				<< "Prefix          : " << to_scientific(perf.prefix) << "POPS\n"
+				<< "Postfix         : " << to_scientific(perf.postfix) << "POPS\n"
+				<< "Negation        : " << to_scientific(perf.neg) << "POPS\n"
+				<< "Addition        : " << to_scientific(perf.add) << "POPS\n"
+				<< "Subtraction     : " << to_scientific(perf.sub) << "POPS\n"
+				<< "Multiplication  : " << to_scientific(perf.mul) << "POPS\n"
+				<< "Division        : " << to_scientific(perf.div) << "POPS\n"
+				<< "Square Root     : " << to_scientific(perf.sqrt) << "POPS\n"
 				<< std::endl;
 		}
 
