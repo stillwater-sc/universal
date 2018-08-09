@@ -12,7 +12,13 @@ cp run_perf_report.sh Mmm_DD_YYYY
 cd Mmm_DD_YYYY
 
 # generate the report
-./run_perf_report.sh > report.log
+./run_perf_report.sh > performance_report
+
+# record the system and processor details
+# i.e.
+# Processor: Intel Core i7-7500 CPU @ 2.70GHz, 2 cores, 4 threads, 15W mobile processor
+# Memory   : 16GB
+# System   : 64-bit Windows 10 Pro, Version 1803, x64-based processor, OS build 17134.165
 
 # check in the results
 git commit -a -m "Adding performance report for date Mmm-DD-YYYY"
