@@ -1,0 +1,17 @@
+# create a performance report result directory with the date in the name
+# for example, Aug_8_2018
+mkdir Mmm_DD_YYYY
+
+# copy the performance tests from build/perf to bin/performance
+cp ../../build/perf/*.exe Mmm_DD_YYYY
+
+# copy the report generator to the result directory
+cp run_perf_report.sh Mmm_DD_YYYY
+
+# cd into the directory
+cd Mmm_DD_YYYY
+
+# generate the report
+./run_perf_report.sh > result.log
+
+# check in the results
