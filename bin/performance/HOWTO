@@ -12,6 +12,8 @@ cp run_perf_report.sh Mmm_DD_YYYY
 cd Mmm_DD_YYYY
 
 # generate the report
-./run_perf_report.sh > result.log
+./run_perf_report.sh > report.log
 
 # check in the results
+git commit -a -m "Adding performance report for date Mmm-DD-YYYY"
+git push
