@@ -124,8 +124,11 @@ namespace sw {
 						std::cerr << "quire value conversion failed: " << components(v) << " != " << components(r) << std::endl;
 					}
 				}
-				catch (const std::runtime_error& err) {
+				catch (const quire_exception& err) {
 					std::cerr << "Caught the exception: " << err.what() << ". RHS was " << v << " " << components(v) << std::endl;
+				}
+				catch (...) {
+					std::cerr << "Why can't I catch quire_exception type?\n";
 				}
 			}
 		}

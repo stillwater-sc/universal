@@ -464,6 +464,7 @@ namespace sw {
 							throw err;
 						}
 					}
+
 #else
 					psum = pa + pb;
 #endif

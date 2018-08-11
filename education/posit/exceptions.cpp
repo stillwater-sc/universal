@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-// enable posit arithmetic exceptions
+// enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
 
@@ -73,11 +73,17 @@ try {
 	try {
 		pa.setToNaR();
 		pb = 1.0f;
-		pc = pa * pb;
+		pc = pa * pb;	// TODO: operator *= throws the same exception, but for some reason we can't catch it here
 		cout << "Incorrect: operand is nar exception didn't fire" << endl;
 	}
 	catch (const operand_is_nar& err) {
 		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
+	}
+	catch (const posit_arithmetic_exception& err) {
+		std::cerr << "Correctly caught exception: " << err.what() << std::endl;
+	}
+	catch (...) {
+		std::cerr << "Why can't I catch operand_is_nar exception for multiply?\n";
 	}
 
 	quire<nbits, es, capacity> q1, q2, q3;
@@ -109,8 +115,20 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
+catch (const sw::unum::posit_arithmetic_exception& err) {
+	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::unum::quire_exception& err) {
+	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::unum::posit_internal_exception& err) {
+	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
 catch (const std::runtime_error& err) {
-	std::cerr << err.what() << std::endl;
+	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

@@ -6,9 +6,8 @@
 
 #include "common.hpp"
 // enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <posit>
-
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
 
@@ -48,8 +47,20 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_SUCCESS; //as we manually throwing the not supported yet it should not fall through the cracks     EXIT_FAILURE;
 }
+catch (const sw::unum::posit_arithmetic_exception& err) {
+	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::unum::quire_exception& err) {
+	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::unum::posit_internal_exception& err) {
+	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
+	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
