@@ -62,10 +62,10 @@ public:
 		_sign = rhs.sign();
 		int i,f, scale = rhs.scale();
 		if (scale > int(half_range)) {
-			throw operand_too_large_for_quire{};
+			throw sw::unum::operand_too_large_for_quire{};   // TODO: namespace polution
 		}
 		if (scale < -int(half_range)) {
-			throw operand_too_small_for_quire{};
+			throw sw::unum::operand_too_small_for_quire{};	// TODO: namespace polution
 		}
 		sw::unum::bitblock<fbits+1> fraction = rhs.get_fixed_point();
 		// divide bits between upper and lower accumulator
@@ -114,7 +114,7 @@ public:
 		magnitude = _sign ? -rhs : rhs;
 		unsigned msb = sw::unum::findMostSignificantBit(magnitude);
 		if (msb > half_range + capacity) {
-			throw operand_too_large_for_quire{};
+			throw sw::unum::operand_too_large_for_quire{};   // TODO: namespace polution
 		}
 		else {
 			// copy the value into the quire
@@ -137,7 +137,7 @@ public:
 		reset();
 		unsigned msb = sw::unum::findMostSignificantBit(rhs);
 		if (msb > half_range + capacity) {
-			throw operand_too_large_for_quire{};
+			throw sw::unum::operand_too_large_for_quire{};   // TODO: namespace polution
 		}
 		else {
 			// copy the value into the quire
@@ -177,10 +177,10 @@ public:
 		if (rhs.isZero()) return *this;
 		int i, f, scale = rhs.scale();
 		if (scale >  int(half_range)) {
-			throw operand_too_large_for_quire{};
+			throw sw::unum::operand_too_large_for_quire{};   // TODO: namespace polution
 		}
 		if (scale < -int(half_range)) {
-			throw operand_too_small_for_quire{};
+			throw sw::unum::operand_too_small_for_quire{};	// TODO: namespace polution
 		}
 		if (rhs.sign()) {			// subtract
 			// lsb in the quire of the lowest bit of the explicit fixed point value including the hidden bit of the fraction

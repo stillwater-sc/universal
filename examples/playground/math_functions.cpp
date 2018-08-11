@@ -82,8 +82,20 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
+catch (const sw::unum::posit_arithmetic_exception& err) {
+	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::unum::quire_exception& err) {
+	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::unum::posit_internal_exception& err) {
+	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
+	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

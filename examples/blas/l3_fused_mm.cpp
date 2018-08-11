@@ -5,8 +5,11 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-#define POSIT_VERBOSE_OUTPUT
+// enable the following define to show the intermediate steps in the fused-dot product
+// #define POSIT_VERBOSE_OUTPUT
 #define QUIRE_TRACE_ADD
+// enable posit arithmetic exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
 #include "blas_operators.hpp"
 

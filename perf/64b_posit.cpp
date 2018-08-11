@@ -5,13 +5,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-// enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-//#define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_DEBUG
-#define POSIT_TRACE_MUL
+// enable/disable posit arithmetic exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <posit>
-
 #include "posit_performance.hpp"
 
 int main(int argc, char** argv)
@@ -32,8 +28,20 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
+catch (const sw::unum::posit_arithmetic_exception& err) {
+	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::unum::quire_exception& err) {
+	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const sw::unum::posit_internal_exception& err) {
+	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
+	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
