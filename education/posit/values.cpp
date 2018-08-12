@@ -5,7 +5,56 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
+//#define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_CONVERSION
 #include <posit>
+
+/*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+//
+// Constants
+#define DBL_DECIMAL_DIG  17                      // # of decimal digits of rounding precision
+#define DBL_DIG          15                      // # of decimal digits of precision
+#define DBL_EPSILON      2.2204460492503131e-016 // smallest such that 1.0+DBL_EPSILON != 1.0
+#define DBL_HAS_SUBNORM  1                       // type does support subnormal numbers
+#define DBL_MANT_DIG     53                      // # of bits in mantissa
+#define DBL_MAX          1.7976931348623158e+308 // max value
+#define DBL_MAX_10_EXP   308                     // max decimal exponent
+#define DBL_MAX_EXP      1024                    // max binary exponent
+#define DBL_MIN          2.2250738585072014e-308 // min positive value
+#define DBL_MIN_10_EXP   (-307)                  // min decimal exponent
+#define DBL_MIN_EXP      (-1021)                 // min binary exponent
+#define _DBL_RADIX       2                       // exponent radix
+#define DBL_TRUE_MIN     4.9406564584124654e-324 // min positive value
+
+#define FLT_DECIMAL_DIG  9                       // # of decimal digits of rounding precision
+#define FLT_DIG          6                       // # of decimal digits of precision
+#define FLT_EPSILON      1.192092896e-07F        // smallest such that 1.0+FLT_EPSILON != 1.0
+#define FLT_HAS_SUBNORM  1                       // type does support subnormal numbers
+#define FLT_GUARD        0
+#define FLT_MANT_DIG     24                      // # of bits in mantissa
+#define FLT_MAX          3.402823466e+38F        // max value
+#define FLT_MAX_10_EXP   38                      // max decimal exponent
+#define FLT_MAX_EXP      128                     // max binary exponent
+#define FLT_MIN          1.175494351e-38F        // min normalized positive value
+#define FLT_MIN_10_EXP   (-37)                   // min decimal exponent
+#define FLT_MIN_EXP      (-125)                  // min binary exponent
+#define FLT_NORMALIZE    0
+#define FLT_RADIX        2                       // exponent radix
+#define FLT_TRUE_MIN     1.401298464e-45F        // min positive value
+
+#define LDBL_DIG         DBL_DIG                 // # of decimal digits of precision
+#define LDBL_EPSILON     DBL_EPSILON             // smallest such that 1.0+LDBL_EPSILON != 1.0
+#define LDBL_HAS_SUBNORM DBL_HAS_SUBNORM         // type does support subnormal numbers
+#define LDBL_MANT_DIG    DBL_MANT_DIG            // # of bits in mantissa
+#define LDBL_MAX         DBL_MAX                 // max value
+#define LDBL_MAX_10_EXP  DBL_MAX_10_EXP          // max decimal exponent
+#define LDBL_MAX_EXP     DBL_MAX_EXP             // max binary exponent
+#define LDBL_MIN         DBL_MIN                 // min normalized positive value
+#define LDBL_MIN_10_EXP  DBL_MIN_10_EXP          // min decimal exponent
+#define LDBL_MIN_EXP     DBL_MIN_EXP             // min binary exponent
+#define _LDBL_RADIX      _DBL_RADIX              // exponent radix
+#define LDBL_TRUE_MIN    DBL_TRUE_MIN            // min positive value
+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
 
 using namespace std;
 using namespace sw::unum;
@@ -55,6 +104,46 @@ bool ValidateValue() {
 	return bValid;
 }
 
+/*
+minimum normalized positive value of float, double and long double respectively
+FLT_MIN
+DBL_MIN
+LDBL_MIN
+
+minimum positive value of float, double and long double respectively
+(macro constant)
+FLT_TRUE_MIN
+DBL_TRUE_MIN    (C++17)
+LDBL_TRUE_MIN
+ */
+template<size_t fbits>
+bool ValidateSubnormalFloats() {
+	constexpr float flt_min = std::numeric_limits<float>::min();
+	constexpr float flt_max = std::numeric_limits<float>::max();
+	constexpr float flt_true_min = 1.401298464e-45F;
+
+	bool bSuccess = false;
+
+	std::cout << flt_min << " " << flt_max << std::endl;
+	std::cout << flt_true_min << std::endl;
+	std::cout << hexfloat << flt_min << defaultfloat << std::endl;
+
+	value<23> v;
+	float flt = flt_min;
+	std::cout << components(v) << std::endl;
+	for (size_t i = 0; i < 24; ++i) {
+		flt /= 2.0;
+		v = flt;
+		std::cout << hexfloat << flt << defaultfloat << " " << flt << " " << components(v) << " " << v << std::endl;
+	}
+
+	flt = flt_min + 3*flt_true_min;
+	v = flt;
+	std::cout << hexfloat << flt << defaultfloat << " " << flt << " " << components(v) << " " << v << std::endl;
+
+	return bSuccess;
+}
+
 template<size_t fbits>
 void PrintValue(float f, const value<fbits>& v) {
 	cout << "float: " << setw(fbits) << f << components(v) << endl;
@@ -62,23 +151,10 @@ void PrintValue(float f, const value<fbits>& v) {
 
 int main()
 try {
-	const size_t nbits = 32;
 	int nrOfFailedTestCases = 0;
 
-	value<nbits> v1(-0.125f), v2(1.5f);
-	cout << v1 << endl;
-	cout << v2 << endl;
-
-	long long n1, n2;
-	n1 =  1234567890123456;
-	n2 = -123456789012345;
-	v1 = n1;
-	v2 = n2;
-	cout << setprecision(10) << v1 << endl;
-	cout << v2 << endl;
-
-	value<nbits> v3(n1), v4(n2);
-	cout << v3 << endl << v4 << endl;
+	cout << "Validate subnormal floats" << endl;
+	ValidateSubnormalFloats<std::numeric_limits<float>::digits>();
 
 	cout << "Value configuration validation" << endl;
 	TestConversionResult(ValidateValue<8>(), "value<8>");
