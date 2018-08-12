@@ -5,6 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
+#define POSIT_VERBOSE_OUTPUT
+#define POSIT_TRACE_CONVERSION
 #include <posit>
 
 using namespace std;
@@ -56,6 +58,28 @@ bool ValidateValue() {
 }
 
 template<size_t fbits>
+bool ValidateSubnormalFloats() {
+	constexpr float flt_min = std::numeric_limits<float>::min();
+	constexpr float flt_max = std::numeric_limits<float>::max();
+	std::cout << flt_min << " " << flt_max << std::endl;
+	std::cout << FLT_TRUE_MIN << std::endl;
+	std::cout << hexfloat << flt_min << defaultfloat << std::endl;
+
+	value<23> v;
+	float flt = flt_min;
+	std::cout << components(v) << std::endl;
+	for (size_t i = 0; i < 24; ++i) {
+		flt /= 2.0;
+		v = flt;
+		std::cout << hexfloat << flt << defaultfloat << " " << flt << " " << components(v) << " " << v << std::endl;
+	}
+
+	flt = FLT_TRUE_MIN + flt_min;
+	v = flt;
+	std::cout << hexfloat << flt << defaultfloat << " " << flt << " " << components(v) << " " << v << std::endl;
+}
+
+template<size_t fbits>
 void PrintValue(float f, const value<fbits>& v) {
 	cout << "float: " << setw(fbits) << f << components(v) << endl;
 }
@@ -65,20 +89,10 @@ try {
 	const size_t nbits = 32;
 	int nrOfFailedTestCases = 0;
 
-	value<nbits> v1(-0.125f), v2(1.5f);
-	cout << v1 << endl;
-	cout << v2 << endl;
 
-	long long n1, n2;
-	n1 =  1234567890123456;
-	n2 = -123456789012345;
-	v1 = n1;
-	v2 = n2;
-	cout << setprecision(10) << v1 << endl;
-	cout << v2 << endl;
 
-	value<nbits> v3(n1), v4(n2);
-	cout << v3 << endl << v4 << endl;
+
+	return 0;
 
 	cout << "Value configuration validation" << endl;
 	TestConversionResult(ValidateValue<8>(), "value<8>");
