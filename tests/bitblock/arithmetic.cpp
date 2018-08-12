@@ -207,12 +207,6 @@ try {
 	catch (const integer_divide_by_zero& e) {
 		cout << "Properly caught exception: " << e.what() << endl;
 	}
-	catch (const sw::unum::bitblock_arithmetic_exception& e) {
-		cout << "Properly caught exception: " << e.what() << endl;
-	}
-	catch (const std::runtime_error& e) {
-		cout << "Properly caught exception: " << e.what() << endl;
-	}
 	catch (...) {
 		cout << "Why can't I catch this specific exception type?" << endl;
 	}

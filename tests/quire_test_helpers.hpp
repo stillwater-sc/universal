@@ -15,7 +15,6 @@
 namespace sw {
 	namespace unum {
 
-
 		int TestQuireAccumulationResult(int nrOfFailedTests, std::string descriptor)
 		{
 			if (nrOfFailedTests > 0) {
