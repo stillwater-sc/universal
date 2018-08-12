@@ -142,20 +142,18 @@ namespace sw {
 					_nan = true;
 					break;
 				case FP_SUBNORMAL:
-					std::cerr << "TODO: subnormal number: returning 0" << std::endl;
-					break;
 				case FP_NORMAL:
-				{
-					float _fr;
-					unsigned int _23b_fraction_without_hidden_bit;
-					int _exponent;
-					extract_fp_components(rhs, _sign, _exponent, _fr, _23b_fraction_without_hidden_bit);
-					_scale = _exponent - 1;
-					_fraction = extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
-					_nrOfBits = fbits;
-					if (_trace_conversion) std::cout << "float " << rhs << " sign " << _sign << " scale " << _scale << " 23b fraction 0x" << std::hex << _23b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
-				}
-				break;
+					{
+						float _fr;
+						unsigned int _23b_fraction_without_hidden_bit;
+						int _exponent;
+						extract_fp_components(rhs, _sign, _exponent, _fr, _23b_fraction_without_hidden_bit);
+						_scale = _exponent - 1;
+						_fraction = extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
+						_nrOfBits = fbits;
+						if (_trace_conversion) std::cout << "float " << rhs << " sign " << _sign << " scale " << _scale << " 23b fraction 0x" << std::hex << _23b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
+					}
+					break;
 				}
 				return *this;
 			}
@@ -175,20 +173,18 @@ namespace sw {
 					_nan = true;
 					break;
 				case FP_SUBNORMAL:
-					std::cerr << "TODO: subnormal number: returning 0" << std::endl;
-					break;
 				case FP_NORMAL:
-				{
-					double _fr;
-					unsigned long long _52b_fraction_without_hidden_bit;
-					int _exponent;
-					extract_fp_components(rhs, _sign, _exponent, _fr, _52b_fraction_without_hidden_bit);
-					_scale = _exponent - 1;
-					_fraction = extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
-					_nrOfBits = fbits;
-					if (_trace_conversion) std::cout << "double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _52b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
-				}
-				break;
+					{
+						double _fr;
+						unsigned long long _52b_fraction_without_hidden_bit;
+						int _exponent;
+						extract_fp_components(rhs, _sign, _exponent, _fr, _52b_fraction_without_hidden_bit);
+						_scale = _exponent - 1;
+						_fraction = extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
+						_nrOfBits = fbits;
+						if (_trace_conversion) std::cout << "double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _52b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
+					}
+					break;
 				}
 				return *this;
 			}
@@ -208,31 +204,29 @@ namespace sw {
 					_nan = true;
 					break;
 				case FP_SUBNORMAL:
-					std::cerr << "TODO: subnormal number: returning 0" << std::endl;
-					break;
 				case FP_NORMAL:
-				{
-					long double _fr;
-					unsigned long long _63b_fraction_without_hidden_bit;
-					int _exponent;
-					extract_fp_components(rhs, _sign, _exponent, _fr, _63b_fraction_without_hidden_bit);
-					_scale = _exponent - 1;
-					// how to interpret the fraction bits: TODO: this should be a static compile-time code block
-					if (sizeof(long double) == 8) {
-						// we are just a double and thus only have 52bits of fraction
-						_fraction = extract_52b_fraction<fbits>(_63b_fraction_without_hidden_bit);
-						if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
+					{
+						long double _fr;
+						unsigned long long _63b_fraction_without_hidden_bit;
+						int _exponent;
+						extract_fp_components(rhs, _sign, _exponent, _fr, _63b_fraction_without_hidden_bit);
+						_scale = _exponent - 1;
+						// how to interpret the fraction bits: TODO: this should be a static compile-time code block
+						if (sizeof(long double) == 8) {
+							// we are just a double and thus only have 52bits of fraction
+							_fraction = extract_52b_fraction<fbits>(_63b_fraction_without_hidden_bit);
+							if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 
-					}
-					else if (sizeof(long double) == 16) {
-						// how to differentiate between 80bit and 128bit formats?
-						_fraction = extract_63b_fraction<fbits>(_63b_fraction_without_hidden_bit);
-						if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 63b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
+						}
+						else if (sizeof(long double) == 16) {
+							// how to differentiate between 80bit and 128bit formats?
+							_fraction = extract_63b_fraction<fbits>(_63b_fraction_without_hidden_bit);
+							if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 63b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 
+						}
+						_nrOfBits = fbits;
 					}
-					_nrOfBits = fbits;
-				}
-				break;
+					break;
 				}
 				return *this;
 			}
