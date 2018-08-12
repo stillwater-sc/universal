@@ -14,8 +14,12 @@
 #include <SDKDDKVer.h>
 #endif // WINDOWS
 
-#include <stdio.h>
 #include <cstdint>	// uint8_t, etc.
+#include <cfloat>   // for FLT_MIN, etc. constants
+// enable the mathematical constants in cmath
+#define _USE_MATH_DEFINES
+#include <cmath>        // for frexp/frexpf
+
 #include <string>
 #include <iostream>
 #include <sstream>
@@ -26,6 +30,3 @@
 #define defaultfloat scientific
 #endif
 
-// enable the mathematical constants in cmath
-#define _USE_MATH_DEFINES
-#include <cmath>        // for frexp/frexpf
