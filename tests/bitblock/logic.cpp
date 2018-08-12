@@ -4,27 +4,22 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
-
+#include "common.hpp"
 #include "../tests/test_helpers.hpp"
 #include "../../posit/exceptions.hpp"
 #include "../../bitblock/bitblock.hpp"
-
-
-using namespace std;
-using namespace sw::unum;
 
 template<size_t nbits>
 int ValidateBitsetLogicLessThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	bitblock<nbits> a, b;
+	sw::unum::bitblock<nbits> a, b;
 	bool ref, bref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitblock<nbits, unsigned>(i);
+		a = sw::unum::convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitblock<nbits, unsigned>(j);
+			b = sw::unum::convert_to_bitblock<nbits, unsigned>(j);
 			ref = i < j;
 			bref = a < b;
 			if (ref != bref) {
@@ -40,13 +35,13 @@ template<size_t nbits>
 int ValidateBitsetLogicGreaterThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	bitblock<nbits> a, b;
+	sw::unum::bitblock<nbits> a, b;
 	bool ref, bref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitblock<nbits, unsigned>(i);
+		a = sw::unum::convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitblock<nbits, unsigned>(j);
+			b = sw::unum::convert_to_bitblock<nbits, unsigned>(j);
 			ref = i > j;
 			bref = a > b;
 			if (ref != bref) {
@@ -62,13 +57,13 @@ template<size_t nbits>
 int ValidateBitsetLogicEqual() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	bitblock<nbits> a, b;
+	sw::unum::bitblock<nbits> a, b;
 	bool ref, bref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitblock<nbits, unsigned>(i);
+		a = sw::unum::convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitblock<nbits, unsigned>(j);
+			b = sw::unum::convert_to_bitblock<nbits, unsigned>(j);
 			ref = i == j;
 			bref = a == b;
 			if (ref != bref) {
@@ -84,13 +79,13 @@ template<size_t nbits>
 int ValidateBitsetLogicNotEqual() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	bitblock<nbits> a, b;
+	sw::unum::bitblock<nbits> a, b;
 	bool ref, bref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitblock<nbits, unsigned>(i);
+		a = sw::unum::convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitblock<nbits, unsigned>(j);
+			b = sw::unum::convert_to_bitblock<nbits, unsigned>(j);
 			ref = i != j;
 			bref = a != b;
 			if (ref != bref) {
@@ -106,13 +101,13 @@ template<size_t nbits>
 int ValidateBitsetLogicLessOrEqualThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	bitblock<nbits> a, b;
+	sw::unum::bitblock<nbits> a, b;
 	bool ref, bref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitblock<nbits, unsigned>(i);
+		a = sw::unum::convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitblock<nbits, unsigned>(j);
+			b = sw::unum::convert_to_bitblock<nbits, unsigned>(j);
 			ref = i <= j;
 			bref = a <= b;
 			if (ref != bref) {
@@ -128,13 +123,13 @@ template<size_t nbits>
 int ValidateBitsetLogicGreaterOrEqualThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	bitblock<nbits> a, b;
+	sw::unum::bitblock<nbits> a, b;
 	bool ref, bref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = convert_to_bitblock<nbits, unsigned>(i);
+		a = sw::unum::convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = convert_to_bitblock<nbits, unsigned>(j);
+			b = sw::unum::convert_to_bitblock<nbits, unsigned>(j);
 			ref = i >= j;
 			bref = a >= b;
 			if (ref != bref) {
@@ -151,6 +146,9 @@ int ValidateBitsetLogicGreaterOrEqualThan() {
 
 int main()
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -230,11 +228,11 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
 

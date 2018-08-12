@@ -54,39 +54,51 @@ void test(const std::string& message)
 }
 
 int main(int argc, char** argv)
-    try {
-        using namespace std;
-        using namespace sw::unum;
+try {
+    using namespace std;
+    using namespace sw::unum;
 
-        test<size_t>("size_t");
+    test<size_t>("size_t");
 
-        test<signed char>("signed char");
-        test<short>("short");
-        test<int>("int");
-        test<long>("long");
-        test<long long>("long long");
+    test<signed char>("signed char");
+    test<short>("short");
+    test<int>("int");
+    test<long>("long");
+    test<long long>("long long");
 
-        test<char>("char");
-        test<unsigned short>("unsigned short");
-        test<unsigned int>("unsigned int");
-        test<unsigned long>("unsigned long");
-        test<unsigned long long>("unsigned long long");
+    test<char>("char");
+    test<unsigned short>("unsigned short");
+    test<unsigned int>("unsigned int");
+    test<unsigned long>("unsigned long");
+    test<unsigned long long>("unsigned long long");
         
-        test<float>("float");
-        test<double>("double");
-        test<long double>("long double");
+    test<float>("float");
+    test<double>("double");
+    test<long double>("long double");
 
-        return 0;
-    }
-    catch (char const* msg) {
-        std::cerr << msg << std::endl;
-        return EXIT_FAILURE;
-    }
-	catch (const std::runtime_error& err) {
-		std::cerr << "Uncaught arithmetic exception: " << err.what() << std::endl;
-		return EXIT_FAILURE;
-	}
-    catch (...) {
-        std::cerr << "Caught unknown exception" << std::endl;
-        return EXIT_FAILURE;
-    }
+    return 0;
+}
+catch (char const* msg) {
+    std::cerr << msg << std::endl;
+    return EXIT_FAILURE;
+}
+catch (const posit_arithmetic_exception& err) {
+	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const quire_exception& err) {
+	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const posit_internal_exception& err) {
+	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (...) {
+    std::cerr << "Caught unknown exception" << std::endl;
+    return EXIT_FAILURE;
+}

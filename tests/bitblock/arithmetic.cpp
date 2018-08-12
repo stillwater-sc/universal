@@ -3,25 +3,19 @@
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "stdafx.h"
-#include <sstream>
-
-#include "../../posit/exceptions.hpp"
+#include "common.hpp"
+#include "../../posit/exceptions.hpp"	// TODO: remove namespace polution
 #include "../../bitblock/bitblock.hpp"
 #include "../tests/test_helpers.hpp"
 #include "../bitblock_test_helpers.hpp"
 
-using namespace std;
-using namespace sw::unum;
-
-
 int Conversions() {
+	using namespace sw::unum;
 	const size_t nbits = 33;
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b, ref, sum;
 
-	cout << "Binary conversions" << endl;
+	std::cout << "Binary conversions" << std::endl;
 
 	ref = convert_to_bitblock<nbits, uint64_t>(uint64_t(0x155555555));
 	a = flip_sign_bit(convert_to_bitblock<nbits,uint64_t>(uint64_t(0x55555555)));
@@ -29,31 +23,31 @@ int Conversions() {
 
 	b = convert_to_bitblock<nbits,uint64_t>(uint64_t(0x5));
 
-	cout << "1's complement of a = " << to_binary(ones_complement(a)) << endl;
+	std::cout << "1's complement of a = " << to_binary(ones_complement(a)) << std::endl;
 	ref = convert_to_bitblock<nbits, uint64_t>(uint64_t(0xAAAAAAAA));
 	nrOfFailedTestCases += (ones_complement(a) != ref ? 1 : 0);
-	cout << "1's complement of b = " << to_binary(ones_complement(b)) << endl;
+	std::cout << "1's complement of b = " << to_binary(ones_complement(b)) << std::endl;
 	ref = convert_to_bitblock<nbits, uint64_t>(uint64_t(0x1FFFFFFFA));
 	nrOfFailedTestCases += (ones_complement(b) != ref ? 1 : 0);
 
 	const size_t nnbits = 9;
 	bitblock<nnbits> c, ref2;
 	c = convert_to_bitblock<9,int8_t>(int8_t(-128));  // this looks like -1 for a 9bit posit
-	cout << "c                   = " << to_binary(c) << endl;
+	std::cout << "c                   = " << to_binary(c) << std::endl;
 	ref2 = convert_to_bitblock<nnbits, uint64_t>(uint64_t(0x180));
 	nrOfFailedTestCases += (c != ref2 ? 1 : 0);
 
 	c = twos_complement(c);							// this looks like  1 for a 9bit posit
-	cout << "2's Complement      = " << to_binary(c) << endl;
+	std::cout << "2's Complement      = " << to_binary(c) << std::endl;
 	ref2 = convert_to_bitblock<nnbits, uint64_t>(uint64_t(0x080));
 	nrOfFailedTestCases += (c != ref2 ? 1 : 0);
 
 	bitblock<9> d;
 	d = convert_to_bitblock<9,int64_t>(int64_t(int8_t(-128)));
-	cout << "d                   = " << to_binary(d) << endl;
+	std::cout << "d                   = " << to_binary(d) << std::endl;
 	d = twos_complement(d);
-	cout << "2's complement      = " << to_binary(d) << endl;
-	cout << endl;
+	std::cout << "2's complement      = " << to_binary(d) << std::endl;
+	std::cout << std::endl;
 	nrOfFailedTestCases += (c != d ? 1 : 0);
 
 	return nrOfFailedTestCases;
@@ -66,17 +60,17 @@ int IncrementRightAdjustedBitset()
 	const size_t nbits = 5;
 	int nrOfFailedTestCases = 0;
 
-	bitblock<nbits> r1, ref;
+	sw::unum::bitblock<nbits> r1, ref;
 	bool carry;
 
-	cout << "Increments" << endl;
+	std::cout << "Increments" << std::endl;
 	for (std::size_t i = 0; i < nbits; i++) {
 		r1.reset();
 		r1.set(nbits - 1 - i, true);
 		carry = false;
-		cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- input" << endl;
-		carry = increment_unsigned(r1, int(i));
-		cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- result" << endl;
+		std::cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- input" << std::endl;
+		carry = sw::unum::increment_unsigned(r1, int(i));
+		std::cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- result" << std::endl;
 	}
 
 	return nrOfFailedTestCases;
@@ -86,9 +80,9 @@ template<size_t src_size, size_t tgt_size>
 int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 	int nrOfFailedTestCases = 0;
 
-	bitblock<src_size> operand;
-	bitblock<tgt_size> addend;
-	bitblock<tgt_size> reference;
+	sw::unum::bitblock<src_size> operand;
+	sw::unum::bitblock<tgt_size> addend;
+	sw::unum::bitblock<tgt_size> reference;
 	
 	// use a programmatic pattern of alternating bits
 	// so it is easy to spot any differences
@@ -98,14 +92,14 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 	}
 
 	for (size_t i = 0; i < tgt_size - src_size; i++) {
-		copy_into<src_size, tgt_size>(operand, i, addend);
+		sw::unum::copy_into<src_size, tgt_size>(operand, i, addend);
 
 		if (reference != addend) {
 			nrOfFailedTestCases++;
-			if (bReportIndividualTestCases) cout << "FAIL operand : " << operand << " at i=" << i << " result   : " << addend << " reference: " << reference << endl;
+			if (bReportIndividualTestCases) std::cout << "FAIL operand : " << operand << " at i=" << i << " result   : " << addend << " reference: " << reference << std::endl;
 		}
 		else {
-			if (bReportIndividualTestCases) cout << "PASS operand : " << operand << " at i=" << i << " result   : " << addend << " reference: " << reference << endl;
+			if (bReportIndividualTestCases) std::cout << "PASS operand : " << operand << " at i=" << i << " result   : " << addend << " reference: " << reference << std::endl;
 		}
 
 
@@ -120,6 +114,9 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 
 int main(int argc, char** argv)
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -207,8 +204,11 @@ try {
 	try {
 		integer_divide_unsigned(a, b, c); // divide by zero
 	}
-	catch (runtime_error& e) {
+	catch (const integer_divide_by_zero& e) {
 		cout << "Properly caught exception: " << e.what() << endl;
+	}
+	catch (...) {
+		cout << "Why can't I catch this specific exception type?" << endl;
 	}
 
 	nrOfFailedTestCases += ReportTestResult(ValidateBitsetDivision<3>(bReportIndividualTestCases), "bitblock<3>", "/");
@@ -232,10 +232,14 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

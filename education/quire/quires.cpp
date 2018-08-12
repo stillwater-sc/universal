@@ -5,7 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-
+// enable/disable posit arithmetic exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // type definitions for the important types, posit<> and quire<>
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"    // pretty_print
