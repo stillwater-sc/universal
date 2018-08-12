@@ -191,7 +191,7 @@ catch (char const* msg) {
 	std::cerr << msg << '\n';
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::quire_exception& err) {
+catch (const quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

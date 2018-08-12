@@ -15,7 +15,6 @@
 namespace sw {
 	namespace unum {
 
-
 		static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 		template<size_t nbits, size_t es>
@@ -710,24 +709,8 @@ namespace sw {
 				reference = da * db;
 				break;
 			case OPCODE_DIV:
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
-				try {
-					presult = pa / pb;
-					reference = da / db;
-				}
-				catch (const std::runtime_error& err) {
-					if (pb.isZero()) {
-						// correctly caught the divide by zero
-						presult = da / db;
-					}
-					else {
-						throw err;
-					}
-				}
-#else
 				presult = pa / pb;
 				reference = da / db;
-#endif
 				break;
 			}
 			preference = reference;
@@ -792,7 +775,21 @@ namespace sw {
 				// in case you have numeric_limits<long double>::digits trouble... this will show that
 				//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " pa " << pa << std::endl;
 				//std::cout << "sizeof db: " << sizeof(db) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value db " << db << " at index " << ia << " pa " << pb << std::endl;
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+				try {
+					execute(opcode, da, db, pa, pb, preference, presult);
+				}
+				catch (const posit_arithmetic_exception& err) {
+					if (pa.isNaR() || pb.isNaR() || (opcode == OPCODE_DIV && pb.isZero())) {
+						std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+					}
+					else {
+						throw err;
+					}
+				}
+#else
 				execute(opcode, da, db, pa, pb, preference, presult);
+#endif
 				if (presult != preference) {
 					nrOfFailedTests++;
 					if (bReportIndividualTestCases) ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, preference, presult);
