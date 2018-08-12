@@ -5,15 +5,13 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-#define POSIT_VERBOSE_OUTPUT
+//#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_CONVERSION
 #include <posit>
 
-//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+/*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //
 // Constants
-//
-//-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 #define DBL_DECIMAL_DIG  17                      // # of decimal digits of rounding precision
 #define DBL_DIG          15                      // # of decimal digits of precision
 #define DBL_EPSILON      2.2204460492503131e-016 // smallest such that 1.0+DBL_EPSILON != 1.0
@@ -56,6 +54,7 @@
 #define LDBL_MIN_EXP     DBL_MIN_EXP             // min binary exponent
 #define _LDBL_RADIX      _DBL_RADIX              // exponent radix
 #define LDBL_TRUE_MIN    DBL_TRUE_MIN            // min positive value
+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
 
 using namespace std;
 using namespace sw::unum;
@@ -121,11 +120,12 @@ template<size_t fbits>
 bool ValidateSubnormalFloats() {
 	constexpr float flt_min = std::numeric_limits<float>::min();
 	constexpr float flt_max = std::numeric_limits<float>::max();
+	constexpr float flt_true_min = 1.401298464e-45F;
 
 	bool bSuccess = false;
 
 	std::cout << flt_min << " " << flt_max << std::endl;
-	std::cout << FLT_TRUE_MIN << std::endl;
+	std::cout << flt_true_min << std::endl;
 	std::cout << hexfloat << flt_min << defaultfloat << std::endl;
 
 	value<23> v;
@@ -137,7 +137,7 @@ bool ValidateSubnormalFloats() {
 		std::cout << hexfloat << flt << defaultfloat << " " << flt << " " << components(v) << " " << v << std::endl;
 	}
 
-	flt = FLT_TRUE_MIN + flt_min;
+	flt = flt_min + 3*flt_true_min;
 	v = flt;
 	std::cout << hexfloat << flt << defaultfloat << " " << flt << " " << components(v) << " " << v << std::endl;
 
@@ -152,6 +152,9 @@ void PrintValue(float f, const value<fbits>& v) {
 int main()
 try {
 	int nrOfFailedTestCases = 0;
+
+	cout << "Validate subnormal floats" << endl;
+	ValidateSubnormalFloats<std::numeric_limits<float>::digits>();
 
 	cout << "Value configuration validation" << endl;
 	TestConversionResult(ValidateValue<8>(), "value<8>");
