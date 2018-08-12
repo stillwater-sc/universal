@@ -8,7 +8,8 @@
 
 // till we figure out how to derive sizes from types
 #define TEMPLATIZED_TYPE 0
-
+// enable/disable quire exceptions
+#define QUIRE_THROW_EXCEPTION 0
 #include "../../posit/exceptions.hpp"
 #include "../../bitblock/bitblock.hpp"
 #include "../../posit/bit_functions.hpp"
@@ -188,6 +189,14 @@ try {
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';
+	return EXIT_FAILURE;
+}
+catch (const quire_exception& err) {
+	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
+	return EXIT_FAILURE;
+}
+catch (const std::runtime_error& err) {
+	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
