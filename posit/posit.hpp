@@ -1575,7 +1575,11 @@ namespace sw {
 		// generate a posit format ASCII format nbits.esxNN...NNp
 		template<size_t nbits, size_t es>
 		inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
-			return ostr << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
+			// to make certain that setw and left/right operators work properly
+			// we need to transform the posit into a string
+			std::stringstream ss;
+			ss << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
+			return ostr << ss.str();
 		}
 
 		// read an ASCII float or posit format: nbits.esxNN...NNp, for example: 32.2x80000000p
@@ -2432,7 +2436,7 @@ namespace sw {
 			value<mbits> product;
 			value<fbits> va, vb, ctmp;
 
-			if (!a.isZero() && !b.isZero()) {
+			if (!a.isZero() && !b.isZero()) {  // product will only become non-zero if neither a and b are zero
 				// transform the inputs into (sign,scale,fraction) triples
 				va.set(sign(a), scale(a), extract_fraction<nbits, es, fbits>(a), a.isZero(), a.isNaR());;
 				vb.set(sign(b), scale(b), extract_fraction<nbits, es, fbits>(b), b.isZero(), b.isNaR());;
@@ -2445,8 +2449,12 @@ namespace sw {
 			value<mbits> vc;
 			vc.template right_extend<fbits,mbits>(ctmp);
 			value<abits+1> sum;
-			module_add<mbits,abits>(product, vc, sum);
-
+			if (product.isZero() && c.isZero()) {
+				sum.setToZero();
+			}
+			else {
+				module_add<mbits,abits>(product, vc, sum);
+			}
 			return sum;
 		}
 
@@ -2458,22 +2466,25 @@ namespace sw {
 			constexpr size_t fhbits = fbits + 1;      // size of fraction + hidden bit
 			constexpr size_t mbits = 2 * fhbits;      // size of the multiplier output
 
-			// first the add
-			value<abits+1> sum;
-			value<fbits> va, vb, vc;
+			value<fbits> va, vb;
+			value<abits+1> sum, vc;
+			value<mbits> product;
 
+			// special case
+			if (c.isZero()) return product;
+
+			// first the add
 			if (!a.isZero() || !b.isZero()) {
 				// transform the inputs into (sign,scale,fraction) triples
 				va.set(sign(a), scale(a), extract_fraction<nbits, es, fbits>(a), a.isZero(), a.isNaR());;
 				vb.set(sign(b), scale(b), extract_fraction<nbits, es, fbits>(b), b.isZero(), b.isNaR());;
 
 				module_add(va, vb, sum);    // multiply the two inputs
+				if (sum.isZero()) return product;  // product is still zero
 			}
-			// second the multiply
-			value<mbits> product;
-			if (c.isZero()) return product;
+			// second, the multiply		
 			vc.set(c.get_size(), scale(c), extract_fraction<nbits, es, fbits>(c), c.isZero(), c.isNaR());
-			module_multiply(sum, c, product);
+			module_multiply(sum, vc, product);
 			return product;
 		}
 
