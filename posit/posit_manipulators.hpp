@@ -119,12 +119,19 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		std::string info_print(const posit<nbits, es>& p, int printPrecision) {
 			std::stringstream ss;
-			ss << "raw: " << p.get() << " decoded: " << p.get_decoded() << " "
-				<< p.get_quadrant() << " "
-				<< (p.get_sign() ? "negative r" : "positive r")
-				<< p.get_regime() << " e"
-				<< p.get_exponent() << " f"
-				<< p.get_fraction() << " : value "
+			constexpr size_t fbits = p.fbits;
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+
+			ss << "raw: " << p.get() << " decoded: " << decoded(p) << " "
+				<< quadrant(p) << " "
+				<< (_sign ? "negative r" : "positive r")
+				<< _regime << " e"
+				<< _exponent << " f"
+				<< _fraction << " : value "
 				<< std::setprecision(printPrecision) << p
 				<< std::setprecision(0);
 			return ss.str();
