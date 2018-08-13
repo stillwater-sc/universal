@@ -1,8 +1,4 @@
-// stdafx.h : include file for standard system include files,
-// or project specific include files that are used frequently, but
-// are changed infrequently
-//
-
+// common.hpp : include file for standard system include files
 #pragma once
 
 #ifdef WINDOWS
@@ -14,16 +10,18 @@
 #include <SDKDDKVer.h>
 #endif // WINDOWS
 
-#include <cstdint>	// uint8_t, etc.
-#include <cfloat>   // for FLT_MIN, etc. constants
 // enable the mathematical constants in cmath
 #define _USE_MATH_DEFINES
-#include <cmath>        // for frexp/frexpf
 
+#include <cstdint>	 // uint8_t, etc.
+#include <cmath>     // for frexp/frexpf
+#include <cfloat>	 // for DBL_EPSILON, etc.
 #include <string>
-#include <iostream>
 #include <sstream>
+#include <iostream>
 #include <iomanip>
+#include <chrono>
+#include <vector>
 
 #if defined(__GNUC__)
 #if __GNUC__ < 5
