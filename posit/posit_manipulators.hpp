@@ -28,7 +28,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		std::string components_to_string(const posit<nbits, es>& p) {
+		std::string components(const posit<nbits, es>& p) {
 			static_assert(nbits > 2, "component_to_string requires nbits > 2");
 			constexpr size_t fbits = nbits - 3 - es;
 			std::stringstream ss;

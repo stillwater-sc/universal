@@ -369,7 +369,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	CopyLowerSegment(ptt, ptt_t);
 	posit<nbits, es> p;
 	p.set_raw_bits(ptt_t.to_ullong());
-	cout << "p = " << components_to_string(p) << endl;
+	cout << "p = " << components(p) << endl;
 }
 
 template<size_t nbits, size_t es, size_t nrfbits>
