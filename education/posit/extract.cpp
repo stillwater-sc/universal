@@ -116,7 +116,7 @@ try {
 
 	p = extract<nbits, es>(uf.f);
 	cout << "posit<" << nbits << "," << es << "> = " << p << endl;
-	cout << "posit<" << nbits << "," << es << "> = " << components_to_string(p) << endl;
+	cout << "posit<" << nbits << "," << es << "> = " << components(p) << endl;
 
 
 	uf.i = FLOAT_ALTERNATING_BITS_SIGNIFICANT_5 | FLOAT_SIGN_MASK;
@@ -127,7 +127,7 @@ try {
 
 	p = extract<nbits, es>(uf.f);
 	cout << "posit<" << nbits << "," << es << "> = " << p << endl;
-	cout << "posit<" << nbits << "," << es << "> = " << components_to_string(p) << endl;
+	cout << "posit<" << nbits << "," << es << "> = " << components(p) << endl;
 
 	union {
 		double d;
@@ -143,7 +143,7 @@ try {
 
 	p = extract<nbits, es>(ud.d);
 	cout << "posit<" << nbits << "," << es << "> = " << p << endl;
-	cout << "posit<" << nbits << "," << es << "> = " << components_to_string(p) << endl;
+	cout << "posit<" << nbits << "," << es << "> = " << components(p) << endl;
 
 
 	ud.i = DOUBLE_ALTERNATING_BITS_SIGNIFICANT_5 | DOUBLE_SIGN_MASK;
@@ -154,7 +154,7 @@ try {
 
 	p = extract<nbits, es>(uf.f);
 	cout << "posit<" << nbits << "," << es << "> = " << p << endl;
-	cout << "posit<" << nbits << "," << es << "> = " << components_to_string(p) << endl;
+	cout << "posit<" << nbits << "," << es << "> = " << components(p) << endl;
 
 	return EXIT_SUCCESS;
 }
