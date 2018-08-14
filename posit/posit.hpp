@@ -489,10 +489,6 @@ namespace sw {
 					setToZero();
 					return *this;
 				}
-				else if (v.isNegative()) {
-					convert(v, *this);
-					_raw_bits = twos_complement(_raw_bits);
-				}
 				else {
 					convert(v, *this);
 				}
@@ -503,10 +499,6 @@ namespace sw {
 				if (v.isZero()) {
 					setToZero();
 					return *this;
-				}
-				else if (v.isNegative()) {
-					convert(v, *this);
-					_raw_bits = twos_complement(_raw_bits);
 				}
 				else {
 					convert(v, *this);
@@ -519,10 +511,6 @@ namespace sw {
 					setToZero();
 					return *this;
 				}
-				else if (v.isNegative()) {
-					convert(v, *this);
-					_raw_bits = twos_complement(_raw_bits);
-				}
 				else {
 					convert(v, *this);
 				}
@@ -533,10 +521,6 @@ namespace sw {
 				if (v.isZero()) {
 					setToZero();
 					return *this;
-				}
-				else if (v.isNegative()) {
-					convert(v, *this);
-					_raw_bits = twos_complement(_raw_bits);
 				}
 				else {
 					convert(v, *this);
@@ -549,10 +533,6 @@ namespace sw {
 					setToZero();
 					return *this;
 				}
-				else if (v.isNegative()) {
-					convert(v, *this);
-					_raw_bits = twos_complement(_raw_bits);
-				}
 				else {
 					convert(v, *this);
 				}
@@ -563,10 +543,6 @@ namespace sw {
 				if (v.isZero()) {
 					setToZero();
 					return *this;
-				}
-				else if (v.isNegative()) {
-					convert(v, *this);
-					_raw_bits = twos_complement(_raw_bits);
 				}
 				else {
 					convert(v, *this);
@@ -579,10 +555,6 @@ namespace sw {
 					setToZero();
 					return *this;
 				}
-				// else if (v.isNegative()) {
-				// 	convert(v);
-				// 	take_2s_complement();
-				// }
 				else {
 					convert(v, *this);
 				}
@@ -594,10 +566,6 @@ namespace sw {
 					setToZero();
 					return *this;
 				}
-				// else if (v.isNegative()) {
-				// 	convert(v);
-				// 	take_2s_complement();
-				// }
 				else {
 					convert(v, *this);
 				}
@@ -612,7 +580,6 @@ namespace sw {
 				else {
 					convert(v, *this);
 				}
-				// convert(v);
 				return *this;
 			}
 			posit& operator=(const unsigned long long rhs) {
@@ -624,7 +591,6 @@ namespace sw {
 				else {
 					convert(v, *this);
 				}
-				// convert(v);
 				return *this;
 			}
 			posit& operator=(const float rhs) {
@@ -1065,7 +1031,6 @@ namespace sw {
 				decrement_bitset(_raw_bits);
 			}
 	
-
 
 		private:
 			bitblock<nbits>      _raw_bits;	// raw bit representation
