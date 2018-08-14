@@ -117,7 +117,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		std::string info_print(const posit<nbits, es>& p, int printPrecision) {
+		std::string info_print(const posit<nbits, es>& p, int printPrecision = 17) {
 			std::stringstream ss;
 			constexpr size_t fbits = p.fbits;
 			bool		     	 _sign;
