@@ -3,13 +3,12 @@
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 #include "common.hpp"
-
 // minimum set of include files to reflect source code dependencies
 #define POSIT_ENABLE_LITERALS 1
 #include "../../posit/posit.hpp"
 #include "../tests/test_helpers.hpp"
+#include "../../posit/posit_manipulators.hpp"
 
 // Posit equal diverges from IEEE float in dealing with INFINITY/NAN
 // Posit NaR can be checked for equality/inequality
@@ -239,7 +238,7 @@ int ValidatePositLogicGreaterOrEqualThan() {
 	return nrOfFailedTestCases;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main()
@@ -250,32 +249,52 @@ try {
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
-	constexpr size_t nbits = 8;
-	constexpr size_t es    = 0;
 
-	double nan    = NAN;
-	double inf    = INFINITY;
-	double normal = 0;
-	posit<nbits, es> pa(nan), pb(inf), pc(normal);
-	std::cout << pa << " " << pb << " " << pc << std::endl;
+	posit<4, 0> pa(1.5), pb(-4);
+
+	pb = -4;
 	
-	// showcasing the differences between posit and IEEE float
-	std::cout << "NaN ==  NaN: IEEE=" << (nan == nan ? "true" : "false")    << "    Posit=" << (pa == pa ? "true" : "false") << std::endl;
-	std::cout << "NaN == real: IEEE=" << (nan == normal ? "true" : "false") << "    Posit=" << (pa == pc ? "true" : "false") << std::endl;
-	std::cout << "INF ==  INF: IEEE=" << (inf == inf ? "true" : "false")    << "    Posit=" << (pb == pb ? "true" : "false") << std::endl;
-	std::cout << "NaN !=  NaN: IEEE=" << (nan != nan ? "true" : "false")    << "   Posit=" << (pa != pb ? "true" : "false") << std::endl;
-	std::cout << "INF !=  INF: IEEE=" << (inf != inf ? "true" : "false")    << "   Posit=" << (pb != pb ? "true" : "false") << std::endl;
-	std::cout << "NaN <= real: IEEE=" << (nan <= normal ? "true" : "false") << "    Posit=" << (pa <= pc ? "true" : "false") << std::endl;
-	std::cout << "NaN >= real: IEEE=" << (nan >= normal ? "true" : "false") << "    Posit=" << (pa >= pc ? "true" : "false") << std::endl;
-	std::cout << "INF <  real: IEEE=" << (inf <  normal ? "true" : "false") << "   Posit=" << (pa <  pc ? "true" : "false") << std::endl;
-	std::cout << "INF >  real: IEEE=" << (inf  > normal ? "true" : "false") << "    Posit=" << (pa  > pc ? "true" : "false") << std::endl;
+	if (pa < pb) {
+		cout << "incorrect: " << endl;
+		cout << "pa = " << info_print(pa) << " " << float(pa) << endl;
+		cout << "pb = " << info_print(pb) << " " << float(pb) << endl;
+	}
 
+	GeneratePositTable<4, 0>(cout);
+	ReportTestResult(ValidatePositLogicLessThan<4, 0>(), "posit<4,0>", "<");
+
+	return 0;
+
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t es = 0;
+		double nan    = NAN;
+		double inf    = INFINITY;
+		double normal = 0;
+		posit<nbits, es> pa(nan), pb(inf), pc(normal);
+		std::cout << pa << " " << pb << " " << pc << std::endl;
+	
+		// showcasing the differences between posit and IEEE float
+		std::cout << "NaN ==  NaN: IEEE=" << (nan == nan ? "true" : "false")    << "    Posit=" << (pa == pa ? "true" : "false") << std::endl;
+		std::cout << "NaN == real: IEEE=" << (nan == normal ? "true" : "false") << "    Posit=" << (pa == pc ? "true" : "false") << std::endl;
+		std::cout << "INF ==  INF: IEEE=" << (inf == inf ? "true" : "false")    << "    Posit=" << (pb == pb ? "true" : "false") << std::endl;
+		std::cout << "NaN !=  NaN: IEEE=" << (nan != nan ? "true" : "false")    << "   Posit=" << (pa != pb ? "true" : "false") << std::endl;
+		std::cout << "INF !=  INF: IEEE=" << (inf != inf ? "true" : "false")    << "   Posit=" << (pb != pb ? "true" : "false") << std::endl;
+		std::cout << "NaN <= real: IEEE=" << (nan <= normal ? "true" : "false") << "    Posit=" << (pa <= pc ? "true" : "false") << std::endl;
+		std::cout << "NaN >= real: IEEE=" << (nan >= normal ? "true" : "false") << "    Posit=" << (pa >= pc ? "true" : "false") << std::endl;
+		std::cout << "INF <  real: IEEE=" << (inf <  normal ? "true" : "false") << "   Posit=" << (pa <  pc ? "true" : "false") << std::endl;
+		std::cout << "INF >  real: IEEE=" << (inf  > normal ? "true" : "false") << "    Posit=" << (pa  > pc ? "true" : "false") << std::endl;
+	}
+
+	{
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<3, 0>(), "posit<3,0>", "==");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<3, 0>(), "posit<3,0>", "!=");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<3, 0>(), "posit<3,0>", "<");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<3, 0>(), "posit<3,0>", ">");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<3, 0>(), "posit<3,0>", "<=");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<3, 0>(), "posit<3,0>", ">=");
+	}
+
 
 #else
 	posit<16, 1> p;

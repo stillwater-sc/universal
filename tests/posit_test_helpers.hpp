@@ -1,6 +1,5 @@
 #pragma once
-
-//  posit_test_helpers.hpp : functions to aid in testing and test reporting on posit types.
+//  posit_test_helpers.hpp : posit verification functions
 // Needs to be included after posit type is declared.
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
@@ -11,6 +10,7 @@
 #include <typeinfo>
 #include <random>
 #include <limits>
+
 
 namespace sw {
 	namespace unum {
@@ -138,12 +138,13 @@ namespace sw {
 				<< std::setw(nbits) << pref.get()
 				<< " " << pretty_print(presult,20) << std::endl;
 		}
+		
 		template<size_t nbits, size_t es>
 		void ReportDecodeError(std::string test_case, const posit<nbits, es>& actual, double golden_value) {
 			std::cerr << test_case << " actual " << actual << " required " << golden_value << std::endl;
 		}
 
-		/////////////////////////////// VALIDATION TEST SUITES ////////////////////////////////
+		/////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
 		template<size_t nbits, size_t es>
 		int Compare(double input, const posit<nbits, es>& presult, double reference, bool bReportIndividualTestCases) {
@@ -271,6 +272,36 @@ namespace sw {
 				}
 			}
 			return nrOfFailedTests;
+		}
+
+		// enumerate all conversion cases for integers
+		template<size_t nbits, size_t es>
+		int ValidateIntegerConversion(std::string& tag, bool bReportIndividualTestCases) {
+			// we generate numbers from 1 to NaR to -1 and the special case of 0
+			constexpr size_t NR_OF_TESTS = (size_t(1) << (nbits - 1)) + 1;
+			int nrOfFailedTestCases = 0;
+
+			posit<nbits, es> p(0);
+			if (!p.isZero()) nrOfFailedTestCases++;
+			p.setToNaR();  p = 0;
+			if (!p.isZero()) nrOfFailedTestCases++;
+
+			p = 1;
+			if (!p.isOne()) nrOfFailedTestCases++;
+			for (size_t i = 0; i < NR_OF_TESTS; ++i) {
+				if (!p.isNaR()) {
+					long long ref = (long long)p;
+					posit<nbits,es> presult = ref;
+					if (presult != ref) {
+						if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
+					}
+					else {
+						if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << ref << std::endl;
+					}
+				}
+				++p;
+			}
+			return nrOfFailedTestCases;
 		}
 
 		// Generate ordered set in ascending order from [-NaR, -maxpos, ..., +maxpos] for a particular posit config <nbits, es>
