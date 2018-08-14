@@ -7,6 +7,11 @@
 namespace sw {
 	namespace unum {
 
+		// set the fast specialization variable to indicate that we are running a special template specialization
+#ifdef POSIT_FAST_SPECIALIZATION
+#define POSIT_FAST_POSIT_4_0
+#endif
+
 			constexpr uint8_t posit_4_0_addition_lookup[256] = {
 				0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
 				1,2,3,4,4,6,6,7,8,9,10,12,13,14,15,0,
@@ -83,6 +88,10 @@ namespace sw {
 				8,12,14,15,15,15,15,15,8,1,1,1,1,1,2,4,
 			};
 
+			constexpr uint8_t posit_4_0_reciprocal_lookup[16] = {
+				8,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,
+			};
+
 			template<>
 			class posit<NBITS_IS_4, ES_IS_0> {
 			public:
@@ -102,6 +111,34 @@ namespace sw {
 
 				posit(int initial_value) { _bits = uint8_t(initial_value & 0x0f); }
 				// assignment operators for native types
+				posit& operator=(int rhs) {
+					return operator=((long long)(rhs));
+				}
+				posit& operator=(long long rhs) {
+					// only valid integers are -4, -2, -1, 0, 1, 2, 4
+					if (rhs <= -4) {
+						_bits = 0x9;   // value is -4, or -maxpos
+					}
+					else if (-4 > rhs && rhs <= -2) {
+						_bits = 0xA;   // value is -2
+					}
+					else if (-2 > rhs && rhs <= -1) {
+						_bits = 0xC;   // value is -1
+					}
+					else if (-1 > rhs && rhs < 1) {
+						_bits = 0x0;   // value is 0
+					}
+					else if (1 <= rhs && rhs < 2) {
+						_bits = 0x4;   // value is 1
+					}
+					else if (2 <= rhs && rhs < 4) {
+						_bits = 0x6;   // value is 2
+					}
+					else if (4 <= rhs) {
+						_bits = 0x7;   // value is 4, or maxpos
+					}
+					return *this;
+				}
 				posit& operator=(const float rhs) {
 					return float_assign(rhs);
 				}
@@ -178,7 +215,11 @@ namespace sw {
 					operator--();
 					return tmp;
 				}
-
+				posit reciprocate() const {
+					posit p;
+					p.set_raw_bits(posit_4_0_reciprocal_lookup[_bits]);
+					return p;
+				}
 				// SELECTORS
 				inline bool isNaR() const {
 					return (_bits == 0x8);
