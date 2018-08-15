@@ -59,7 +59,7 @@ namespace sw {
 				}
 				return scale;
 			}
-			bool isZero() const {
+			bool iszero() const {
 				return _Bits.none();
 			}
 			bitblock<nbits - 1> get() const {
@@ -69,12 +69,12 @@ namespace sw {
 				_Bits = raw;
 				_RegimeBits = nrOfRegimeBits;
 			}
-			void setToZero() {
+			void setzero() {
 				_Bits.reset();
 				_RegimeBits = nbits - 1;
 				_k = 1 - static_cast<int>(nbits);   // by design: this simplifies increment/decrement
 			}
-			void setToInfinite() {
+			void setinf() {
 				_Bits.reset();
 				_RegimeBits = nbits - 1;
 				_k = static_cast<int>(nbits) - 1;   // by design: this simplifies increment/decrement

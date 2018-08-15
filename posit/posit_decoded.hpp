@@ -96,7 +96,7 @@ namespace sw {
 			static constexpr size_t mbits   = 2 * fhbits;                 // size of the multiplier output
 			static constexpr size_t divbits = 3 * fhbits + 4;             // size of the divider output
 
-			posit_decoded() { setToZero();  }
+			posit_decoded() { setzero();  }
 	
 			posit_decoded(const posit_decoded&) = default;
 			posit_decoded(posit_decoded&&) = default;
@@ -133,11 +133,11 @@ namespace sw {
 			// assignment operators for native types
 			posit_decoded& operator=(const signed char rhs) {
 				value<8*sizeof(signed char)-1> v(rhs);
-				if (v.isZero()) {
-					setToZero();
+				if (v.iszero()) {
+					setzero();
 					return *this;
 				}
-				else if (v.isNegative()) {
+				else if (v.isneg()) {
 					convert(v);
 					take_2s_complement();
 				}
@@ -148,11 +148,11 @@ namespace sw {
 			}
 			posit_decoded& operator=(const short rhs) {
 				value<8*sizeof(short)-1> v(rhs);
-				if (v.isZero()) {
-					setToZero();
+				if (v.iszero()) {
+					setzero();
 					return *this;
 				}
-				else if (v.isNegative()) {
+				else if (v.isneg()) {
 					convert(v);
 					take_2s_complement();
 				}
@@ -163,11 +163,11 @@ namespace sw {
 			}
 			posit_decoded& operator=(const int rhs) {
 				value<8*sizeof(int)-1> v(rhs);
-				if (v.isZero()) {
-					setToZero();
+				if (v.iszero()) {
+					setzero();
 					return *this;
 				}
-				else if (v.isNegative()) {
+				else if (v.isneg()) {
 					convert(v);
 					take_2s_complement();
 				}
@@ -178,11 +178,11 @@ namespace sw {
 			}
 			posit_decoded& operator=(const long rhs) {
 				value<8*sizeof(long)> v(rhs);
-				if (v.isZero()) {
-					setToZero();
+				if (v.iszero()) {
+					setzero();
 					return *this;
 				}
-				else if (v.isNegative()) {
+				else if (v.isneg()) {
 					convert(v);
 					take_2s_complement();
 				}
@@ -193,11 +193,11 @@ namespace sw {
 			}
 			posit_decoded& operator=(const long long rhs) {
 				value<8*sizeof(long long)-1> v(rhs);
-				if (v.isZero()) {
-					setToZero();
+				if (v.iszero()) {
+					setzero();
 					return *this;
 				}
-				else if (v.isNegative()) {
+				else if (v.isneg()) {
 					convert(v);
 					take_2s_complement();
 				}
@@ -208,11 +208,11 @@ namespace sw {
 			}
 			posit_decoded& operator=(const char rhs) {
 				value<8*sizeof(char)> v(rhs);
-				if (v.isZero()) {
-					setToZero();
+				if (v.iszero()) {
+					setzero();
 					return *this;
 				}
-				else if (v.isNegative()) {
+				else if (v.isneg()) {
 					convert(v);
 					take_2s_complement();
 				}
@@ -223,11 +223,11 @@ namespace sw {
 			}
 			posit_decoded& operator=(const unsigned short rhs) {
 				value<8*sizeof(unsigned short)> v(rhs);
-				if (v.isZero()) {
-					setToZero();
+				if (v.iszero()) {
+					setzero();
 					return *this;
 				}
-				// else if (v.isNegative()) {
+				// else if (v.isneg()) {
 				// 	convert(v);
 				// 	take_2s_complement();
 				// }
@@ -238,11 +238,11 @@ namespace sw {
 			}
 			posit_decoded& operator=(const unsigned int rhs) {
 				value<8*sizeof(unsigned int)> v(rhs);
-				if (v.isZero()) {
-					setToZero();
+				if (v.iszero()) {
+					setzero();
 					return *this;
 				}
-				// else if (v.isNegative()) {
+				// else if (v.isneg()) {
 				// 	convert(v);
 				// 	take_2s_complement();
 				// }
@@ -253,8 +253,8 @@ namespace sw {
 			}
 			posit_decoded& operator=(const unsigned long rhs) {
 				value<8*sizeof(unsigned long)> v(rhs);
-				if (v.isZero()) {
-					setToZero();
+				if (v.iszero()) {
+					setzero();
 					return *this;
 				}
 				else {
@@ -265,8 +265,8 @@ namespace sw {
 			}
 			posit_decoded& operator=(const unsigned long long rhs) {
 				value<8*sizeof(unsigned long long)> v(rhs);
-				if (v.isZero()) {
-					setToZero();
+				if (v.iszero()) {
+					setzero();
 					return *this;
 				}
 				else {
@@ -294,10 +294,10 @@ namespace sw {
 			}
 			// prefix operator
 			posit_decoded<nbits, es> operator-() const {
-				if (isZero()) {
+				if (iszero()) {
 					return *this;
 				}
-				if (isNaR()) {
+				if (isnar()) {
 					return *this;
 				}
 				posit<nbits, es> negated(0);  // TODO: artificial initialization to pass -Wmaybe-uninitialized
@@ -316,15 +316,15 @@ namespace sw {
 			posit_decoded<nbits, es>& operator+=(const posit_decoded& rhs) {
 				if (_trace_add) std::cout << "---------------------- ADD -------------------" << std::endl;
 				// special case handling of the inputs
-				if (isNaR() || rhs.isNaR()) {
-					setToNaR();
+				if (isnar() || rhs.isnar()) {
+					setnar();
 					return *this;
 				}
-				if (isZero()) {
+				if (iszero()) {
 					*this = rhs;
 					return *this;
 				}
-				if (rhs.isZero()) return *this;
+				if (rhs.iszero()) return *this;
 
 				// arithmetic operation
 				value<abits + 1> sum;
@@ -335,11 +335,11 @@ namespace sw {
 				module_add<fbits,abits>(a, b, sum);		// add the two inputs
 
 				// special case handling of the result
-				if (sum.isZero()) {
-					setToZero();
+				if (sum.iszero()) {
+					setzero();
 				}
-				else if (sum.isInfinite()) {
-					setToNaR();
+				else if (sum.isinf()) {
+					setnar();
 				}
 				else {
 					convert(sum);
@@ -352,15 +352,15 @@ namespace sw {
 			posit_decoded<nbits, es>& operator-=(const posit_decoded& rhs) {
 				if (_trace_sub) std::cout << "---------------------- SUB -------------------" << std::endl;
 				// special case handling of the inputs
-				if (isNaR() || rhs.isNaR()) {
-					setToNaR();
+				if (isnar() || rhs.isnar()) {
+					setnar();
 					return *this;
 				}
-				if (isZero()) {
+				if (iszero()) {
 					*this = -rhs;
 					return *this;
 				}
-				if (rhs.isZero()) return *this;
+				if (rhs.iszero()) return *this;
 
 				// arithmetic operation
 				value<abits + 1> difference;
@@ -371,11 +371,11 @@ namespace sw {
 				module_subtract<fbits, abits>(a, b, difference);	// add the two inputs
 
 				// special case handling of the result
-				if (difference.isZero()) {
-					setToZero();
+				if (difference.iszero()) {
+					setzero();
 				}
-				else if (difference.isInfinite()) {
-					setToNaR();
+				else if (difference.isinf()) {
+					setnar();
 				}
 				else {
 					convert(difference);
@@ -389,12 +389,12 @@ namespace sw {
 				static_assert(fhbits > 0, "posit configuration does not support multiplication");
 				if (_trace_mul) std::cout << "---------------------- MUL -------------------" << std::endl;
 				// special case handling of the inputs
-				if (isNaR() || rhs.isNaR()) {
-					setToNaR();
+				if (isnar() || rhs.isnar()) {
+					setnar();
 					return *this;
 				}
-				if (isZero() || rhs.isZero()) {
-					setToZero();
+				if (iszero() || rhs.iszero()) {
+					setzero();
 					return *this;
 				}
 
@@ -408,11 +408,11 @@ namespace sw {
 				module_multiply(a, b, product);    // multiply the two inputs
 
 				// special case handling on the output
-				if (product.isZero()) {
-					setToZero();
+				if (product.iszero()) {
+					setzero();
 				}
-				else if (product.isInfinite()) {
-					setToNaR();
+				else if (product.isinf()) {
+					setnar();
 				}
 				else {
 					convert(product);
@@ -425,16 +425,16 @@ namespace sw {
 			posit_decoded<nbits, es>& operator/=(const posit_decoded& rhs) {
 				if (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
 				// since we are encoding error conditions as NaR (Not a Real), we need to process that condition first
-				if (rhs.isZero()) {
-					setToNaR();
+				if (rhs.iszero()) {
+					setnar();
 					return *this;
 					//throw divide_by_zero{};    not throwing is a quiet signalling NaR
 				}
-				if (rhs.isNaR()) {
-					setToNaR();
+				if (rhs.isnar()) {
+					setnar();
 					return *this;
 				}		
-				if (isZero() || isNaR()) {
+				if (iszero() || isnar()) {
 					return *this;
 				}
 
@@ -447,13 +447,13 @@ namespace sw {
 				module_divide(a, b, ratio);
 
 				// special case handling on the output
-				if (ratio.isZero()) {
+				if (ratio.iszero()) {
 					throw "result can't be zero";
-					setToZero();  // this can't happen as we would project back onto minpos
+					setzero();  // this can't happen as we would project back onto minpos
 				}
-				else if (ratio.isInfinite()) {
+				else if (ratio.isinf()) {
 					throw "result can't be NaR";
-					setToNaR();  // this can't happen as we would project back onto maxpos
+					setnar();  // this can't happen as we would project back onto maxpos
 				}
 				else {
 					convert<divbits>(ratio);
@@ -487,12 +487,12 @@ namespace sw {
 				if (_trace_reciprocate) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
 				posit_decoded<nbits, es> p;
 				// special case of NaR (Not a Real)
-				if (isNaR()) {
-					p.setToNaR();
+				if (isnar()) {
+					p.setnar();
 					return p;
 				}
-				if (isZero()) {
-					p.setToNaR();
+				if (iszero()) {
+					p.setnar();
 					return p;
 				}
 				// compute the reciprocal
@@ -538,29 +538,29 @@ namespace sw {
 				return p;
 			}
 			// SELECTORS
-			bool isNaR() const {
-				return (_sign & _regime.isZero());
+			bool isnar() const {
+				return (_sign & _regime.iszero());
 			}
-			bool isZero() const {
-				return (!_sign & _regime.isZero());
+			bool iszero() const {
+				return (!_sign & _regime.iszero());
 			}
-			bool isOne() const { // pattern 010000....
+			bool isone() const { // pattern 010000....
 				bitblock<nbits> tmp(_raw_bits);
 				tmp.set(nbits - 2, false);
 				bool oneBitSet = tmp.none();
 				return !_sign & oneBitSet;
 			}
-			bool isMinusOne() const { // pattern 110000...
+			bool isminusone() const { // pattern 110000...
 				bitblock<nbits> tmp(_raw_bits);
 				tmp.set(nbits - 1, false);
 				tmp.set(nbits - 2, false);
 				bool oneBitSet = tmp.none();
 				return _sign & oneBitSet;
 			}
-			bool isNegative() const {
+			bool isneg() const {
 				return _sign;
 			}
-			bool isPositive() const {
+			bool ispos() const {
 				return !_sign;
 			}
 			bool isPowerOf2() const {
@@ -654,14 +654,14 @@ namespace sw {
 				_fraction.reset();
 				_raw_bits.reset();
 			}
-			inline void setToZero() {
+			inline void setzero() {
 				_sign = false;
-				_regime.setToZero();
+				_regime.setzero();
 				_exponent.reset();
 				_fraction.reset();
 				_raw_bits.reset();
 			}
-			inline void setToNaR() {
+			inline void setnar() {
 				_sign = true;
 				_regime.setToInfinite();
 				_exponent.reset();
@@ -742,13 +742,13 @@ namespace sw {
 
 			// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 			value<fbits> convert_to_scientific_notation() const {
-				return value<fbits>(_sign, scale(), get_fraction().get(), isZero(), isNaR());
+				return value<fbits>(_sign, scale(), get_fraction().get(), iszero(), isnar());
 			}
 			value<fbits> to_value() const {
-				return value<fbits>(_sign, scale(), get_fraction().get(), isZero(), isNaR());
+				return value<fbits>(_sign, scale(), get_fraction().get(), iszero(), isnar());
 			}
 			void normalize(value<fbits>& v) const {
-				v.set(_sign, get_scale(), _fraction.get(), isZero(), isNaR());
+				v.set(_sign, get_scale(), _fraction.get(), iszero(), isnar());
 			}
 			template<size_t tgt_fbits>
 			void normalize_to(value<tgt_fbits>& v) const {
@@ -756,7 +756,7 @@ namespace sw {
 				bitblock<fbits> _src = _fraction.get();
 				int tgt, src;
 				for (tgt = int(tgt_fbits) - 1, src = int(fbits) - 1; tgt >= 0 && src >= 0; tgt--, src--) _fr[tgt] = _src[src];
-				v.set(_sign, get_scale(), _fr, isZero(), isNaR());
+				v.set(_sign, get_scale(), _fr, iszero(), isnar());
 			}
 			// collect the posit components into a bitset
 			bitblock<nbits> collect() {
@@ -878,12 +878,12 @@ namespace sw {
 			// Generalized version
 			template <size_t FBits>
 			inline void convert(const value<FBits>& v) {
-				if (v.isZero()) {
-					setToZero();
+				if (v.iszero()) {
+					setzero();
 					return;
 				}
-				if (v.isNaN() || v.isInfinite()) {
-					setToNaR();
+				if (v.isNaN() || v.isinf()) {
+					setnar();
 					return;
 				}
 				convert(v.sign(), v.scale(), v.fraction());
@@ -976,31 +976,31 @@ namespace sw {
 			// HELPER methods
 			// Conversion functions
 			int         to_int() const {
-				if (isZero()) return 0;
-				if (isNaR()) throw "NaR (Not a Real)";
+				if (iszero()) return 0;
+				if (isnar()) throw "NaR (Not a Real)";
 				return int(to_float());
 			}
 			long        to_long() const {
-				if (isZero()) return 0;
-				if (isNaR()) throw "NaR (Not a Real)";
+				if (iszero()) return 0;
+				if (isnar()) throw "NaR (Not a Real)";
 				return long(to_double());
 			}
 			long long   to_long_long() const {
-				if (isZero()) return 0;
-				if (isNaR()) throw "NaR (Not a Real)";
+				if (iszero()) return 0;
+				if (isnar()) throw "NaR (Not a Real)";
 				return long(to_long_double());
 			}
 			float       to_float() const {
 				return (float)to_double();
 			}
 			double      to_double() const {
-				if (isZero())	return 0.0;
-				if (isNaR())	return NAN;
+				if (iszero())	return 0.0;
+				if (isnar())	return NAN;
 				return sign_value() * regime_value() * exponent_value() * (1.0 + fraction_value());
 			}
 			long double to_long_double() const {
-				if (isZero())  return 0.0;
-				if (isNaR())   return NAN;
+				if (iszero())  return 0.0;
+				if (isnar())   return NAN;
 				int s = sign_value();
 				double r = regime_value(); // regime value itself will fit in a double
 				double e = exponent_value(); // same with exponent
@@ -1013,12 +1013,12 @@ namespace sw {
 				value<dfbits> v((T)rhs);
 
 				// special case processing
-				if (v.isZero()) {
-					setToZero();
+				if (v.iszero()) {
+					setzero();
 					return *this;
 				}
-				if (v.isInfinite() || v.isNaN()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
-					setToNaR();
+				if (v.isinf() || v.isNaN()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
+					setnar();
 					return *this;
 				}
 
@@ -1424,17 +1424,17 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		inline bool isnar(const posit_decoded<nbits, es>& p) {
-			return p.isNaR();
+			return p.isnar();
 		}
 
 		template<size_t nbits, size_t es>
 		inline bool isfinite(const posit_decoded<nbits, es>& p) {
-			return !p.isNaR();
+			return !p.isnar();
 		}
 
 		template<size_t nbits, size_t es>
 		inline bool isinfinite(const posit_decoded<nbits, es>& p) {
-			return p.isNaR();
+			return p.isnar();
 		}
 
 		////////////////// POSIT operators
@@ -2280,16 +2280,16 @@ namespace sw {
 			value<mbits> product;
 			value<fbits> va, vb, ctmp;
 
-			if (!a.isZero() && !b.isZero()) {
+			if (!a.iszero() && !b.iszero()) {
 				// transform the inputs into (sign,scale,fraction) triples
-				va.set(a.get_sign(), a.scale(), a.get_fraction().get(), a.isZero(), a.isNaR());;
-				vb.set(b.get_sign(), b.scale(), b.get_fraction().get(), b.isZero(), b.isNaR());;
+				va.set(a.get_sign(), a.scale(), a.get_fraction().get(), a.iszero(), a.isnar());;
+				vb.set(b.get_sign(), b.scale(), b.get_fraction().get(), b.iszero(), b.isnar());;
 
 				module_multiply(va, vb, product);    // multiply the two inputs
 			}
-		//	if (c.isZero()) return product;	// product isn't the right size
+		//	if (c.iszero()) return product;	// product isn't the right size
 			// second, the add
-			ctmp.set(c.get_sign(), c.scale(), c.get_fraction().get(), c.isZero(), c.isNaR());
+			ctmp.set(c.get_sign(), c.scale(), c.get_fraction().get(), c.iszero(), c.isnar());
 			value<mbits> vc;
 			vc.template right_extend<fbits,mbits>(ctmp);
 			value<abits+1> sum;
@@ -2310,17 +2310,17 @@ namespace sw {
 			value<abits+1> sum;
 			value<fbits> va, vb, vc;
 
-			if (!a.isZero() || !b.isZero()) {
+			if (!a.iszero() || !b.iszero()) {
 				// transform the inputs into (sign,scale,fraction) triples
-				va.set(a.get_sign(), a.scale(), a.get_fraction().get(), a.isZero(), a.isNaR());;
-				vb.set(b.get_sign(), b.scale(), b.get_fraction().get(), b.isZero(), b.isNaR());;
+				va.set(a.get_sign(), a.scale(), a.get_fraction().get(), a.iszero(), a.isnar());;
+				vb.set(b.get_sign(), b.scale(), b.get_fraction().get(), b.iszero(), b.isnar());;
 
 				module_add(va, vb, sum);    // multiply the two inputs
 			}
 			// second the multiply
 			value<mbits> product;
-			if (c.isZero()) return product;
-			vc.set(c.get_size(), c.scale(), c.get_fraction().get(), c.isZero(), c.isNaR());
+			if (c.iszero()) return product;
+			vc.set(c.get_size(), c.scale(), c.get_fraction().get(), c.iszero(), c.isnar());
 			module_multiply(sum, c, product);
 			return product;
 		}
@@ -2344,11 +2344,11 @@ namespace sw {
 			value<abits + 1> sum;
 			value<fbits> a, b;
 
-			if (lhs.isZero() && rhs.isZero()) return sum;
+			if (lhs.iszero() && rhs.iszero()) return sum;
 
 			// transform the inputs into (sign,scale,fraction) triples
-			a.set(lhs.get_sign(), lhs.scale(), lhs.get_fraction().get(), lhs.isZero(), lhs.isNaR());;
-			b.set(rhs.get_sign(), rhs.scale(), rhs.get_fraction().get(), rhs.isZero(), rhs.isNaR());;
+			a.set(lhs.get_sign(), lhs.scale(), lhs.get_fraction().get(), lhs.iszero(), lhs.isnar());;
+			b.set(rhs.get_sign(), rhs.scale(), rhs.get_fraction().get(), rhs.iszero(), rhs.isnar());;
 
 			module_add<fbits, abits>(a, b, sum);		// add the two inputs
 
@@ -2364,11 +2364,11 @@ namespace sw {
 			value<mbits> product;
 			value<fbits> a, b;	
 	
-			if (lhs.isZero() || rhs.isZero()) return product;
+			if (lhs.iszero() || rhs.iszero()) return product;
 
 			// transform the inputs into (sign,scale,fraction) triples
-			a.set(lhs.get_sign(), lhs.scale(), lhs.get_fraction().get(), lhs.isZero(), lhs.isNaR());;
-			b.set(rhs.get_sign(), rhs.scale(), rhs.get_fraction().get(), rhs.isZero(), rhs.isNaR());;
+			a.set(lhs.get_sign(), lhs.scale(), lhs.get_fraction().get(), lhs.iszero(), lhs.isnar());;
+			b.set(rhs.get_sign(), rhs.scale(), rhs.get_fraction().get(), rhs.iszero(), rhs.isnar());;
 
 			module_multiply(a, b, product);    // multiply the two inputs
 

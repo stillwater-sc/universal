@@ -212,7 +212,7 @@ namespace sw {
 				if (tmp.none()) {
 					// setnar();   special case = NaR (Not a Real)
 					_sign = true;
-					_regime.setToInfinite();
+					_regime.setinf();
 					_exponent.reset();
 				}
 				else {
