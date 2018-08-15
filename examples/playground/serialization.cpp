@@ -48,9 +48,9 @@ try {
 	bitblock<3> three; three.set(2, true); str = to_hex(three); cout << "three: " << str << endl;
 	bitblock<4> four; four.set(3, true); str = to_hex(four); cout << "four : " << str << endl;
 
-	p.setToZero();
+	p.setzero();
 	cout << "posit value     0: " << p << endl;
-	p.setToNaR();
+	p.setnar();
 	cout << "posit value   NaR: " << p << endl;
 
     return EXIT_SUCCESS;

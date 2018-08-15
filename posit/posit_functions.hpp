@@ -167,7 +167,7 @@ namespace sw {
 		// get the sign of the posit
 		template<size_t nbits, size_t es>
 		inline bool sign(const posit<nbits, es>& p) {
-			return p.isNegative();
+			return p.isneg();
 		}
 
 		// calculate the scale of a posit

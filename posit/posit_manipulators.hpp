@@ -53,11 +53,11 @@ namespace sw {
 		std::string component_values_to_string(posit<nbits, es> p) {
 			std::stringstream ss;
 			// TODO: hardcoded field sizes
-			if (p.isZero()) {
+			if (p.iszero()) {
 				ss << " zero    " << std::setw(103) << "b" << p.get();
 				return ss.str();
 			}
-			else if (p.isInfinite()) {
+			else if (p.isinf()) {
 				ss << " infinite" << std::setw(103) << "b" << p.get();
 				return ss.str();
 			}
@@ -203,7 +203,7 @@ namespace sw {
 			Color cyan(ColorCode::FG_CYAN);
 			Color white(ColorCode::FG_WHITE);
 			Color def(ColorCode::FG_DEFAULT);
-			ss << red << (p.isNegative() ? "1" : "0");
+			ss << red << (p.isneg() ? "1" : "0");
 
 			bitblock<nbits - 1> r = _regime.get();
 			int regimeBits = (int)_regime.nrBits();

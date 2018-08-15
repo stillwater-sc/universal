@@ -32,7 +32,7 @@ try {
 
 	try {
 		pa = 1.0f;
-		pb.setToNaR();
+		pb.setnar();
 		pc = pa / pb;
 		cout << "Correct: division by nar exception didn't fire as it is not enabled" << endl;
 	}
@@ -41,7 +41,7 @@ try {
 	}
 
 	try {
-		pa.setToNaR();
+		pa.setnar();
 		pb = 1.0f;
 		pc = pa / pb;
 		cout << "Correct: numerator is nar exception didn't fire as it is not enabled" << endl;
@@ -51,7 +51,7 @@ try {
 	}
 
 	try {
-		pa.setToNaR();
+		pa.setnar();
 		pb = 1.0f;
 		pc = pa + pb;
 		cout << "Correct: operand is nar exception didn't fire as it is not enabled" << endl;
@@ -61,7 +61,7 @@ try {
 	}
 
 	try {
-		pa.setToNaR();
+		pa.setnar();
 		pb = 1.0f;
 		pc = pa - pb;
 		cout << "Correct: operand is nar exception didn't fire as it is not enabled" << endl;
@@ -71,7 +71,7 @@ try {
 	}
 
 	try {
-		pa.setToNaR();
+		pa.setnar();
 		pb = 1.0f;
 		pc = pa * pb;
 		cout << "Correct: operand is nar exception didn't fire as it is not enabled" << endl;

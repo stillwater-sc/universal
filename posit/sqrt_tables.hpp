@@ -36,8 +36,8 @@ namespace sw {
 		template<>
 		inline posit<3, 0> sqrt(const posit<3, 0>& a) {
 			posit<3, 0> p;
-			if (a.isNegative() || a.isNaR()) {
-				p.setToNaR();
+			if (a.isneg() || a.isnar()) {
+				p.setnar();
 				return p;
 			}
 			unsigned roots[4] = { 0, 1, 2, 2 };
@@ -55,8 +55,8 @@ namespace sw {
 		template<>
 		inline posit<3, 1> sqrt(const posit<3, 1>& a) {
 			posit<3, 1> p;
-			if (a.isNegative() || a.isNaR()) {
-				p.setToNaR();
+			if (a.isneg() || a.isnar()) {
+				p.setnar();
 				return p;
 			}
 			unsigned roots[4] = { 0, 1, 2, 2 };
@@ -78,8 +78,8 @@ namespace sw {
 		template<>
 		inline posit<4, 0> sqrt(const posit<4, 0>& a) {
 			posit<4, 0> p;
-			if (a.isNegative() || a.isNaR()) {
-				p.setToNaR();
+			if (a.isneg() || a.isnar()) {
+				p.setnar();
 				return p;
 			}
 			unsigned roots[8] = { 0, 2, 3, 3, 4, 4, 5, 6 };
@@ -109,8 +109,8 @@ namespace sw {
 		template<>
 		inline posit<5, 0> sqrt(const posit<5, 0>& a) {
 			posit<5, 0> p;
-			if (a.isNegative() || a.isNaR()) {
-				p.setToNaR();
+			if (a.isneg() || a.isnar()) {
+				p.setnar();
 				return p;
 			}
 			unsigned roots[16] = { 0, 3, 4, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 11, 12, 13 };

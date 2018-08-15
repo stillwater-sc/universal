@@ -52,7 +52,7 @@ try {
 	v1.clear();
 	cout << v1 << endl;
 
-	v2.setToInclusive();
+	v2.setinclusive();
 	cout << v2 << endl;
 
 	v1 = 1;

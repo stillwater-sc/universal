@@ -184,7 +184,7 @@ int ValidateCarryPropagation(bool bReportIndividualTestCases) {
 		q += minpos_square;
 	}
 	std::cout << q << std::endl;
-	nrOfFailedTests = q.isZero() ? 0 : 1;
+	nrOfFailedTests = q.iszero() ? 0 : 1;
 
 	return nrOfFailedTests;
 }
@@ -205,7 +205,7 @@ int ValidateBorrowPropagation(bool bReportIndividualTestCases) {
 		q -= minpos_square;
 	}
 	std::cout << q << std::endl;
-	nrOfFailedTests = q.isZero() ? 0 : 1;
+	nrOfFailedTests = q.iszero() ? 0 : 1;
 
 	return nrOfFailedTests;
 }

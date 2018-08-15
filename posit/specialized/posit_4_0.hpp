@@ -168,10 +168,10 @@ namespace sw {
 					return *this;
 				}
 				posit operator-() const {
-					if (isZero()) {
+					if (iszero()) {
 						return *this;
 					}
-					if (isNaR()) {
+					if (isnar()) {
 						return *this;
 					}
 					posit p;
@@ -221,25 +221,25 @@ namespace sw {
 					return p;
 				}
 				// SELECTORS
-				inline bool isNaR() const {
+				inline bool isnar() const {
 					return (_bits == 0x8);
 				}
-				inline bool isZero() const {
+				inline bool iszero() const {
 					return (_bits == 0);
 				}
-				inline bool isOne() const { // pattern 010000....
+				inline bool isone() const { // pattern 010000....
 					return (_bits == 0x4);
 				}
-				inline bool isMinusOne() const { // pattern 110000...
+				inline bool isminusone() const { // pattern 110000...
 					return (_bits == 0xC);
 				}
-				inline bool isNegative() const {
+				inline bool isneg() const {
 					return (_bits & 0x8) & (_bits != 0x8);
 				}
-				inline bool isPositive() const {
-					return !isNegative();
+				inline bool ispos() const {
+					return !isneg();
 				}
-				inline bool isPowerOf2() const {
+				inline bool ispowerof2() const {
 					return !(_bits & 0x1);
 				}
 
@@ -249,8 +249,8 @@ namespace sw {
 				unsigned long long encoding() const { return (unsigned long long)(_bits); }
 
 				inline void clear() { _bits = 0; }
-				inline void setToZero() { clear(); }
-				inline void setToNaR() { _bits = 0x8; }
+				inline void setzero() { clear(); }
+				inline void setnar() { _bits = 0x8; }
 
 			private:
 				uint8_t _bits;
@@ -258,34 +258,34 @@ namespace sw {
 				// Conversion functions
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 				int         to_int() const {
-					if (isZero()) return 0;
-					if (isNaR()) throw not_a_real{};
+					if (iszero()) return 0;
+					if (isnar()) throw not_a_real{};
 					return int(to_float());
 				}
 				long        to_long() const {
-					if (isZero()) return 0;
-					if (isNaR()) throw not_a_real{};
+					if (iszero()) return 0;
+					if (isnar()) throw not_a_real{};
 					return long(to_double());
 				}
 				long long   to_long_long() const {
-					if (isZero()) return 0;
-					if (isNaR()) throw not_a_real{};
+					if (iszero()) return 0;
+					if (isnar()) throw not_a_real{};
 					return long(to_long_double());
 				}
 #else
 				int         to_int() const {
-					if (isZero()) return 0;
-					if (isNaR())  return int(INFINITY);
+					if (iszero()) return 0;
+					if (isnar())  return int(INFINITY);
 					return int(to_float());
 				}
 				long        to_long() const {
-					if (isZero()) return 0;
-					if (isNaR())  return long(INFINITY);
+					if (iszero()) return 0;
+					if (isnar())  return long(INFINITY);
 					return long(to_double());
 				}
 				long long   to_long_long() const {
-					if (isZero()) return 0;
-					if (isNaR())  return (long long)(INFINITY);
+					if (iszero()) return 0;
+					if (isnar())  return (long long)(INFINITY);
 					return long(to_long_double());
 				}
 #endif
@@ -293,8 +293,8 @@ namespace sw {
 					return (float)to_double();
 				}
 				double      to_double() const {
-					if (isZero())	return 0.0;
-					if (isNaR())	return NAN;
+					if (iszero())	return 0.0;
+					if (isnar())	return NAN;
 					bool		     	 _sign;
 					regime<nbits, es>    _regime;
 					exponent<nbits, es>  _exponent;
@@ -314,8 +314,8 @@ namespace sw {
 					return s * r * e * f;
 				}
 				long double to_long_double() const {
-					if (isZero())  return 0.0;
-					if (isNaR())   return NAN;
+					if (iszero())  return 0.0;
+					if (isnar())   return NAN;
 					bool		     	 _sign;
 					regime<nbits, es>    _regime;
 					exponent<nbits, es>  _exponent;
@@ -341,12 +341,12 @@ namespace sw {
 					value<dfbits> v((T)rhs);
 
 					// special case processing
-					if (v.isZero()) {
-						setToZero();
+					if (v.iszero()) {
+						setzero();
 						return *this;
 					}
-					if (v.isInfinite() || v.isNaN()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
-						setToNaR();
+					if (v.isinf() || v.isnan()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
+						setnar();
 						return *this;
 					}
 
@@ -376,7 +376,7 @@ namespace sw {
 
 			// convert a posit value to a string using "nar" as designation of NaR
 			std::string to_string(const posit<NBITS_IS_4, ES_IS_0>& p, std::streamsize precision) {
-				if (p.isNaR()) {
+				if (p.isnar()) {
 					return std::string("nar");
 				}
 				std::stringstream ss;

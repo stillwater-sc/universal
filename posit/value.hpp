@@ -69,7 +69,7 @@ namespace sw {
 			value<fbits>& operator=(const long long rhs) {
 				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 				if (rhs == 0) {
-					setToZero();
+					setzero();
 					return *this;
 				}
 				reset();
@@ -114,7 +114,7 @@ namespace sw {
 			value<fbits>& operator=(const unsigned long long rhs) {
 				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 				if (rhs == 0) {
-					setToZero();
+					setzero();
 				}
 				else {
 					reset();
@@ -254,7 +254,7 @@ namespace sw {
 				_inf      = inf;
 				_nan      = nan;
 			}
-			void setToZero() {
+			void setzero() {
 				_zero     = true;
 				_sign     = false;
 				_inf      = false;
@@ -263,7 +263,7 @@ namespace sw {
 				_nrOfBits = fbits;
 				_fraction.reset();
 			}
-			void setToInfinite() {
+			void setinf() {
 				_inf      = true;
 				_sign     = false;
 				_zero     = false;
@@ -272,7 +272,7 @@ namespace sw {
 				_nrOfBits = fbits;
 				_fraction.reset();
 			}
-			void setToNan() {
+			void setnan() {
 				_nan      = true;
 				_sign     = false;
 				_zero     = false;
@@ -282,10 +282,11 @@ namespace sw {
 				_fraction.reset();
 			}
 			inline void setExponent(int e) { _scale = e; }
-			inline bool isNegative() const { return _sign; }
-			inline bool isZero() const { return _zero; }
-			inline bool isInfinite() const { return _inf; }
-			inline bool isNaN() const { return _nan; }
+			inline bool isneg() const { return _sign; }
+			inline bool ispos() const { return !_sign; }
+			inline bool iszero() const { return _zero; }
+			inline bool isinf() const { return _inf; }
+			inline bool isnan() const { return _nan; }
 			inline bool sign() const { return _sign; }
 			inline int scale() const { return _scale; }
 			bitblock<fbits> fraction() const { return _fraction; }
@@ -376,9 +377,9 @@ namespace sw {
 				_sign = src.sign();
 				_scale = src.scale();
 				_nrOfBits = tgtbits;
-				_inf = src.isInfinite();
-				_zero = src.isZero();
-				_nan = src.isNaN();
+				_inf = src.isinf();
+				_zero = src.iszero();
+				_nan = src.isnan();
 				bitblock<srcbits> src_fraction = src.fraction();
 				if (!_inf && !_zero && !_nan) {
 					for (int s = srcbits - 1, t = tgtbits - 1; s >= 0 && t >= 0; --s, --t)
@@ -486,11 +487,11 @@ namespace sw {
 		template<size_t fbits>
 		inline std::string components(const value<fbits>& v) {
 			std::stringstream s;
-			if (v.isZero()) {
+			if (v.iszero()) {
 				s << " zero b" << std::setw(fbits) << v.fraction();
 				return s.str();
 			}
-			else if (v.isInfinite()) {
+			else if (v.isinf()) {
 				s << " infinite b" << std::setw(fbits) << v.fraction();
 				return s.str();
 			}
@@ -501,7 +502,7 @@ namespace sw {
 		/// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
 		template<size_t nfbits>
 		value<nfbits> abs(const value<nfbits>& v) {
-			return value<nfbits>(false, v.scale(), v.fraction(), v.isZero());
+			return value<nfbits>(false, v.scale(), v.fraction(), v.iszero());
 		}
 
 		// add module
@@ -516,8 +517,8 @@ namespace sw {
 			// to simplify the result processing assign the biggest 
 			// absolute value to R1, then the sign of the result will be sign of the value in R1.
 
-			if (lhs.isInfinite() || rhs.isInfinite()) {
-				result.setToInfinite();
+			if (lhs.isinf() || rhs.isinf()) {
+				result.setinf();
 				return;
 			}
 			int lhs_scale = lhs.scale(), rhs_scale = rhs.scale(), scale_of_result = std::max(lhs_scale, rhs_scale);
@@ -575,8 +576,8 @@ namespace sw {
 		// subtract module: use ADDER
 		template<size_t fbits, size_t abits>
 		void module_subtract(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 1>& result) {
-			if (lhs.isInfinite() || rhs.isInfinite()) {
-				result.setToInfinite();
+			if (lhs.isinf() || rhs.isinf()) {
+				result.setinf();
 				return;
 			}
 			int lhs_scale = lhs.scale(), rhs_scale = rhs.scale(), scale_of_result = std::max(lhs_scale, rhs_scale);
@@ -635,8 +636,8 @@ namespace sw {
 		template<size_t fbits, size_t abits>
 		void module_subtract_BROKEN(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 1>& result) {
 
-			if (lhs.isInfinite() || rhs.isInfinite()) {
-				result.setToInfinite();
+			if (lhs.isinf() || rhs.isinf()) {
+				result.setinf();
 				return;
 			}
 			int lhs_scale = lhs.scale(), rhs_scale = rhs.scale(), scale_of_result = std::max(lhs_scale, rhs_scale);
@@ -689,12 +690,12 @@ namespace sw {
 			static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
 			if (_trace_mul) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
 
-			if (lhs.isInfinite() || rhs.isInfinite()) {
-				result.setToInfinite();
+			if (lhs.isinf() || rhs.isinf()) {
+				result.setinf();
 				return;
 			}
-			if (lhs.isZero() || rhs.isZero()) {
-				result.setToZero();
+			if (lhs.iszero() || rhs.iszero()) {
+				result.setzero();
 				return;
 			}
 
@@ -732,12 +733,12 @@ namespace sw {
 			static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
 			if (_trace_div) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
 
-			if (lhs.isInfinite() || rhs.isInfinite()) {
-				result.setToInfinite();
+			if (lhs.isinf() || rhs.isinf()) {
+				result.setinf();
 				return;
 			}
-			if (lhs.isZero() || rhs.isInfinite()) {
-				result.setToZero();
+			if (lhs.iszero() || rhs.iszero()) {
+				result.setzero();
 				return;
 			}
 

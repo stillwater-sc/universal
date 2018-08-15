@@ -61,7 +61,7 @@ int ValidateAssignment(bool bReportIndividualTestCases) {
 	sw::unum::posit<nbits, es> p, assigned;
 	for (size_t i = 0; i < NR_POSITS; i++) {
 		p.set_raw_bits(i); // std::cout << p.get() << endl;
-		if (p.isNaR() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
+		if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
 		Ty value = (Ty)(p);
 		assigned = value;
 		if (p != assigned) {

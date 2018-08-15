@@ -10,7 +10,7 @@
 // quick helper to report on a posit's specialness
 template<size_t nbits, size_t es>
 void checkSpecialCases(sw::unum::posit<nbits, es> p) {
-	std::cout << "posit is " << (p.isZero() ? "zero " : "non-zero ") << (p.isPositive() ? "positive " : "negative ") << (p.isNaR() ? "Not a Real" : "Its a Real") << std::endl;
+	std::cout << "posit is " << (p.iszero() ? "zero " : "non-zero ") << (p.ispos() ? "positive " : "negative ") << (p.isnar() ? "Not a Real" : "Its a Real") << std::endl;
 }
 
 // Demonstrate basic arithmetic with posit numbers

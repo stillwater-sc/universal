@@ -71,8 +71,8 @@ public:
 	template<size_t fbits>
 	quire& operator=(const value<fbits>& rhs) {
 		reset();
-		if (rhs.isZero()) return *this;
-		if (rhs.isInfinite() || rhs.isNaN()) throw operand_is_nar{};
+		if (rhs.iszero()) return *this;
+		if (rhs.isinf() || rhs.isnan()) throw operand_is_nar{};
 		_sign = rhs.sign();
 
 		int scale = rhs.scale();
@@ -196,7 +196,7 @@ quire& operator=(long double rhs) {
 	// All values in (and out) of the quire are normalized (sign, scale, fraction) triplets.
 	template<size_t fbits>
 	quire& operator+=(const value<fbits>& rhs) {
-		if (rhs.isZero()) return *this;
+		if (rhs.iszero()) return *this;
 
 		if (rhs.scale() > int(half_range)) {
 			throw operand_too_large_for_quire{};
@@ -355,7 +355,7 @@ quire& operator=(long double rhs) {
 	int min_scale() const { return -int(half_range); }
 	int capacity_range() const { return capacity; }
 	bool isNegative() const { return _sign; }
-	bool isZero() const { return _capacity.none() && _upper.none() && _lower.none(); }
+	bool iszero() const { return _capacity.none() && _upper.none() && _lower.none(); }
 	int scale() const {
 		int msb = int(capacity)-1; // indicative of no bits set
 		for (; msb >= 0; msb--) {
@@ -448,7 +448,7 @@ private:
 	// add a value to the quire
 	template<size_t fbits>
 	void add_value(const value<fbits>& v) {
-		if (v.isZero()) return;
+		if (v.iszero()) return;
 		// scale is the location of the msb in the fixed point representation
 		// so scale  =  0 is the hidden bit at location 0, scale 1 = bit 1, etc.
 		// and scale = -1 is the first bit of the fraction
@@ -561,7 +561,7 @@ private:
 	// subtract a value from the quire
 	template<size_t fbits>
 	void subtract_value(const value<fbits>& v) {
-		if (v.isZero()) return;
+		if (v.iszero()) return;
 		// lsb in the quire of the lowest bit of the explicit fixed point value including the hidden bit of the fraction
 		int lsb = v.scale() - int(fbits);
 		bool borrow = false;
