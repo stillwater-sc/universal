@@ -25,7 +25,7 @@ try {
 	}
 	// reverse enumeration from NaR to 0
 	cout << "Decrement-based descention from NaR to 0 and back to NaR\n";
-	p.setToNaR();
+	p.setnar();
 	for (long i = (size_t(1) << nbits); i >= 0; --i) {
 		cout << components(p--) << '\n';
 	}
@@ -40,7 +40,7 @@ try {
 	}
 	// reverse enumeration from NaR to 0
 	cout << "Decrement-based descention from NaR to 0 and back to NaR\n";
-	p.setToNaR();
+	p.setnar();
 	for (long i = (size_t(1) << nbits); i >= 0; --i) {
 		cout << pretty_print(p--) << '\n';
 	}
@@ -55,7 +55,7 @@ try {
 	}
 	// reverse enumeration from NaR to 0
 	cout << "Decrement-based descention from NaR to 0 and back to NaR\n";
-	p.setToNaR();
+	p.setnar();
 	for (long i = (size_t(1) << nbits); i >= 0; --i) {
 		cout << info_print(p--, nbits) << '\n';
 	}

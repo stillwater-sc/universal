@@ -32,7 +32,7 @@ try {
 
 	try {
 		pa = 1.0f;
-		pb.setToNaR();
+		pb.setnar();
 		pc = pa / pb;
 		cout << "Incorrect: division by nar exception didn't fire" << endl;
 	}
@@ -41,7 +41,7 @@ try {
 	}
 
 	try {
-		pa.setToNaR();
+		pa.setnar();
 		pb = 1.0f;
 		pc = pa / pb;
 		cout << "Incorrect: numerator is nar exception didn't fire" << endl;
@@ -51,7 +51,7 @@ try {
 	}
 
 	try {
-		pa.setToNaR();
+		pa.setnar();
 		pb = 1.0f;
 		pc = pa + pb;
 		cout << "Incorrect: operand is nar exception didn't fire" << endl;
@@ -61,7 +61,7 @@ try {
 	}
 
 	try {
-		pa.setToNaR();
+		pa.setnar();
 		pb = 1.0f;
 		pc = pa - pb;
 		cout << "Incorrect: operand is nar exception didn't fire" << endl;
@@ -71,7 +71,7 @@ try {
 	}
 
 	try {
-		pa.setToNaR();
+		pa.setnar();
 		pb = 1.0f;
 		pc = pa * pb;	// TODO: operator *= throws the same exception, but for some reason we can't catch it here
 		cout << "Incorrect: operand is nar exception didn't fire" << endl;

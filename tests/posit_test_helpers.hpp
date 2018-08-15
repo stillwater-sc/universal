@@ -282,14 +282,14 @@ namespace sw {
 			int nrOfFailedTestCases = 0;
 
 			posit<nbits, es> p(0);
-			if (!p.isZero()) nrOfFailedTestCases++;
-			p.setToNaR();  p = 0;
-			if (!p.isZero()) nrOfFailedTestCases++;
+			if (!p.iszero()) nrOfFailedTestCases++;
+			p.setnar();  p = 0;
+			if (!p.iszero()) nrOfFailedTestCases++;
 
 			p = 1;
-			if (!p.isOne()) nrOfFailedTestCases++;
+			if (!p.isone()) nrOfFailedTestCases++;
 			for (size_t i = 0; i < NR_OF_TESTS; ++i) {
-				if (!p.isNaR()) {
+				if (!p.isnar()) {
 					long long ref = (long long)p;
 					posit<nbits,es> presult = ref;
 					if (presult != ref) {
@@ -486,9 +486,9 @@ namespace sw {
 						psum = pa + pb;
 					}
 					catch (const operand_is_nar& err) {
-						if (pa.isNaR() || pb.isNaR()) {
+						if (pa.isnar() || pb.isnar()) {
 							// correctly caught the exception
-							psum.setToNaR();
+							psum.setnar();
 						}
 						else {
 							throw err;
@@ -531,9 +531,9 @@ namespace sw {
 						pdif = pa - pb;
 					}
 					catch (const operand_is_nar& err) {
-						if (pa.isNaR() || pb.isNaR()) {
+						if (pa.isnar() || pb.isnar()) {
 							// correctly caught the exception
-							pdif.setToNaR();
+							pdif.setnar();
 						}
 						else {
 							throw err;
@@ -575,9 +575,9 @@ namespace sw {
 						pmul = pa * pb;
 					}
 					catch (const operand_is_nar& err) {
-						if (pa.isNaR() || pb.isNaR()) {
+						if (pa.isnar() || pb.isnar()) {
 							// correctly caught the exception
-							pmul.setToNaR();
+							pmul.setnar();
 						}
 						else {
 							throw err;
@@ -609,8 +609,8 @@ namespace sw {
 			for (size_t i = 0; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				// generate reference
-				if (pa.isNaR()) {
-					preference.setToNaR();
+				if (pa.isnar()) {
+					preference.setnar();
 				}
 				else {
 					da = double(pa);
@@ -643,8 +643,8 @@ namespace sw {
 				for (size_t j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
 					db = double(pb);
-					if (pb.isNaR()) {
-						pref.setToNaR();
+					if (pb.isnar()) {
+						pref.setnar();
 					}
 					else {
 						pref = da / db;
@@ -654,10 +654,10 @@ namespace sw {
 						pdiv = pa / pb;
 					}
 					catch (const divide_by_zero& err) {
-						if (pb.isZero()) {
+						if (pb.iszero()) {
 							// correctly caught the divide by zero condition
 							continue;
-							//pdiv.setToNaR();
+							//pdiv.setnar();
 						}
 						else {
 							if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
@@ -665,7 +665,7 @@ namespace sw {
 						}
 					}
 					catch (const divide_by_nar& err) {
-						if (pb.isNaR()) {
+						if (pb.isnar()) {
 							// correctly caught the divide by nar condition
 							continue;
 							//pdiv = 0.0f;
@@ -676,10 +676,10 @@ namespace sw {
 						}
 					}
 					catch (const numerator_is_nar& err) {
-						if (pa.isNaR()) {
+						if (pa.isnar()) {
 							// correctly caught the numerator is nar condition
 							continue;
-							//pdiv.setToNaR();
+							//pdiv.setnar();
 						}
 						else {
 							if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
@@ -717,7 +717,7 @@ namespace sw {
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				b.set_raw_bits(j);
 				// set the golden reference
-				if (a.isNaR() && b.isNaR()) {
+				if (a.isnar() && b.isnar()) {
 					// special case of posit equality
 					ref = true;
 				}
@@ -762,7 +762,7 @@ namespace sw {
 				b.set_raw_bits(j);
 
 				// set the golden reference
-				if (a.isNaR() && b.isNaR()) {
+				if (a.isnar() && b.isnar()) {
 					// special case of posit equality
 					ref = false;
 				}
@@ -808,7 +808,7 @@ namespace sw {
 				b.set_raw_bits(j);
 
 				// generate the golden reference
-				if (a.isNaR() && !b.isNaR()) {
+				if (a.isnar() && !b.isnar()) {
 					// special case of posit NaR
 					ref = true;
 				}
@@ -842,7 +842,7 @@ namespace sw {
 				b.set_raw_bits(j);
 
 				// generate the golden reference
-				if (!a.isNaR() && b.isNaR()) {
+				if (!a.isnar() && b.isnar()) {
 					// special case of posit NaR
 					ref = true;
 				}
@@ -876,7 +876,7 @@ namespace sw {
 				b.set_raw_bits(j);
 
 				// set the golden reference
-				if (a.isNaR()) {
+				if (a.isnar()) {
 					// special case of posit <= for NaR
 					ref = true;
 				}
@@ -911,7 +911,7 @@ namespace sw {
 				b.set_raw_bits(j);
 
 				// set the golden reference
-				if (b.isNaR()) {
+				if (b.isnar()) {
 					// special case of posit >= for NaR
 					ref = true;
 				}
@@ -952,8 +952,8 @@ namespace sw {
 			switch (opcode) {
 			default:
 			case OPCODE_NOP:
-				preference.setToZero();
-				presult.setToZero();
+				preference.setzero();
+				presult.setzero();
 				return;
 			case OPCODE_ADD:
 				presult = pa + pb;
@@ -1039,7 +1039,7 @@ namespace sw {
 					execute(opcode, da, db, pa, pb, preference, presult);
 				}
 				catch (const posit_arithmetic_exception& err) {
-					if (pa.isNaR() || pb.isNaR() || (opcode == OPCODE_DIV && pb.isZero())) {
+					if (pa.isnar() || pb.isnar() || (opcode == OPCODE_DIV && pb.iszero())) {
 						std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 					}
 					else {

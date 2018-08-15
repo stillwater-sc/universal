@@ -91,19 +91,19 @@ void DoNotDoStuffLikeThis() {
 
 	int nrOfFailedTestCases = 0;
 	p = 0.0f;
-	if (!p.isZero()) {
+	if (!p.iszero()) {
 		cout << "FAIL 1 " << p << endl; nrOfFailedTestCases++;
 	}
 	p = 0.0f; --(--(--(p++)++)++);
-	if (!p.isZero()) {
+	if (!p.iszero()) {
 		cout << "FAIL 2 " << p << endl; nrOfFailedTestCases++;
 	}
 	p = 0.0f; ++(++(++(p--)--)--);
-	if (!p.isZero()) {
+	if (!p.iszero()) {
 		cout << "FAIL 3 " << p << endl; nrOfFailedTestCases++;
 	}
 	p = 0.0f; ----------p++++++++++;
-	if (!p.isZero()) {
+	if (!p.iszero()) {
 		cout << "FAIL 4 " << p << endl; nrOfFailedTestCases++;
 	}
 	p = 0.0f; p++++++++++;

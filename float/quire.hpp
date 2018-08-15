@@ -174,7 +174,7 @@ public:
 	
 	template<size_t fbits>
 	quire& operator+=(const sw::unum::value<fbits>& rhs) {
-		if (rhs.isZero()) return *this;
+		if (rhs.iszero()) return *this;
 		int i, f, scale = rhs.scale();
 		if (scale >  int(half_range)) {
 			throw operand_too_large_for_quire{};
@@ -414,8 +414,9 @@ public:
 	int max_scale() const { return half_range; }
 	int min_scale() const { return -int(half_range); }
 	int capacity_range() const { return capacity; }
-	bool isNegative() const { return _sign; }
-	bool isZero() const { return _capacity.none() && _upper.none() && _lower.none(); }
+	bool isneg() const { return _sign; }
+	bool ispos() const { return !_sign; }
+	bool iszero() const { return _capacity.none() && _upper.none() && _lower.none(); }
 
 	// Return value of the sign bit: true indicates a negative number, false a positive number or zero
 	bool get_sign() const { return _sign; }

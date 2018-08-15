@@ -62,16 +62,16 @@ namespace sw {
 			// conversion operators
 
 			// selectors
-			inline bool isOpen() const {
-				return !isClosed();
+			inline bool isopen() const {
+				return !isclosed();
 			}
-			inline bool isClosed() const {
+			inline bool isclosed() const {
 				return lubit && uubit;
 			}
-			inline bool isOpenLower() const {
+			inline bool isopenlower() const {
 				return lubit;
 			}
-			inline bool isOpenUpper() const {
+			inline bool isopenupper() const {
 				return uubit;
 			}
 			inline bool getlb(sw::unum::posit<nbits, es>& _lb) const {
@@ -92,9 +92,9 @@ namespace sw {
 		lubit = true;
 		uubit = true;
 	}
-	inline void setToInclusive() {
-		lb.setToNaR();
-		ub.setToNaR();
+	inline void setinclusive() {
+		lb.setnar();
+		ub.setnar();
 		lubit = true;
 		uubit = true;
 	}
@@ -110,10 +110,10 @@ namespace sw {
 	// relative_order returns -1 if v was rounded up, 0 if it was exact, and 1 if v was rounded down
 	template <size_t FBits>
 	inline int relative_order(const value<FBits>& v) {
-		if (v.isZero()) {
+		if (v.iszero()) {
 			return 0;
 		}
-		if (v.isNaN() || v.isInfinite()) {
+		if (v.isnan() || v.isinf()) {
 			return 0;
 		}
 		return convert(v.sign(), v.scale(), v.fraction());

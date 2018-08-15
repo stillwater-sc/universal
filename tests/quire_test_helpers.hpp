@@ -264,7 +264,7 @@ namespace sw {
 			posit<nbits, es> presult;
 			convert(q.to_value(), presult);
 
-			if (!presult.isZero()) {
+			if (!presult.iszero()) {
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases)	ReportQuireNonZeroError("FAIL", "fdp", t.size(), t[0], presult);
 			}

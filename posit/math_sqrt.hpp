@@ -182,8 +182,8 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		inline posit<nbits, es> sqrt(const posit<nbits, es>& a) {
 			posit<nbits, es> p;
-			if (a.isNegative() || a.isNaR()) {
-				p.setToNaR();
+			if (a.isneg() || a.isnar()) {
+				p.setnar();
 				return p;
 			}
 

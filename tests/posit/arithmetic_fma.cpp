@@ -4,10 +4,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
-
-// when you define POSIT_VERBOSE_OUTPUT executing an SUB the code will print intermediate results
-//#define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_SUB
 // minimum set of include files to reflect source code dependencies
 // enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
@@ -61,13 +57,28 @@ try {
 	//ReportErrors():
 
 	{
+		double da(0.25), db(0.0), dc(0.0);
 		posit<64, 3> pa, pb, pc, pfma;
-		pa = 0.25;
-		pb = pc = 0.0;
+		pa = da;
+		pb = db;
+		pc = dc;
 		pfma = sw::unum::fma(pa, pb, pc);
+		if (da*db + dc != 0.0)  cout << "Incorrect:  ";
 		cout << pfma << " : " << (long double)(pfma) << endl;
 	}
 
+	{
+		double da(0.25), db(0.0), dc(1.0);
+		posit<64, 3> pa, pb, pc, pfma;
+		pa = da;
+		pb = db;
+		pc = dc;
+		pfma = sw::unum::fma(pa, pb, pc);
+		if (da*db + dc != 1.0)  cout << "Incorrect:  ";
+		cout << pfma << " : " << (long double)(pfma) << endl;
+	}
+
+	return 0;
 	{
 		// this is not a good test case, because 0.1 is not representable in binary so you get round-off in the conversion
 		GenerateTestCase<16, 1, double>(0.1, 10, -1);
