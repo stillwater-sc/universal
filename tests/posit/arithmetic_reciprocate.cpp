@@ -16,8 +16,8 @@
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_decoded.hpp"		// old reference design for validation/debug
 #include "../../posit/posit_manipulators.hpp"
-#include "../tests/test_helpers.hpp"
-#include "../tests/posit_test_helpers.hpp"
+#include "../test_helpers.hpp"
+#include "../posit_test_helpers.hpp"
 
 // generate specific test case that you can trace with the trace conditions in posit.hpp
 // Most bugs are traceable with _trace_conversion and _trace_add

@@ -5,13 +5,13 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-
+// minimum set of include files
 #include "../../posit/exceptions.hpp"
 #include "../../bitblock/bitblock.hpp"
 #include "../../posit/value.hpp"
 #include "../../float/quire.hpp"
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main()
@@ -22,14 +22,15 @@ try {
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Quire Accumulation failed";
+	std::string tag = "Quire Accumulation";
 
 #if MANUAL_TESTING
 
 #else
 
-	cout << "Quire experiments" << endl;
+	cout << "IEEE Floating Point Quire experiments" << endl;
 	
+	cout << "\nTBD\n";
 
 #ifdef STRESS_TESTING
 

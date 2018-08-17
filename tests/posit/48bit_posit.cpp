@@ -8,8 +8,8 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
-#include "../tests/test_helpers.hpp"
-#include "../tests/posit_test_helpers.hpp"
+#include "../test_helpers.hpp"
+#include "../posit_test_helpers.hpp"
 
 /*
 Extended Standard posit with nbits = 48 have es = 2 exponent bits.
