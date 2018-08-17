@@ -6,7 +6,6 @@
 
 #include "common.hpp"
 #include <posit>
-#include "../tests/test_helpers.hpp"
 
 #ifdef UNIVERSAL_MPRF_ENABLED
 // TODO: this needs to be done with MPRF as these scale factors grow very large

@@ -9,8 +9,8 @@
 #define POSIT_ENABLE_LITERALS 1
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
-#include "../tests/test_helpers.hpp"
-#include "../tests/posit_test_helpers.hpp"
+#include "../test_helpers.hpp"
+#include "../posit_test_helpers.hpp"
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0

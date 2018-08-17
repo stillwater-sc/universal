@@ -16,8 +16,8 @@
 #include "../../posit/posit_decoded.hpp"
 #include "../../posit/posit_functions.hpp"
 #include "../../posit/posit_manipulators.hpp"
-#include "../tests/test_helpers.hpp"
-#include "../tests/posit_test_helpers.hpp"
+#include "../test_helpers.hpp"
+#include "../posit_test_helpers.hpp"
 
 template<size_t nbits, size_t es>
 void GenerateLogicPattern(double input, const sw::unum::posit<nbits, es>& presult, const sw::unum::posit<nbits+1, es>& pnext) {

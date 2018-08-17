@@ -14,8 +14,8 @@
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
 #include "../../posit/math_pow.hpp"
-#include "../tests/test_helpers.hpp"
-#include "../tests/posit_math_helpers.hpp"
+#include "../test_helpers.hpp"
+#include "../posit_math_helpers.hpp"
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add

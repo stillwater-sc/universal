@@ -397,12 +397,12 @@ namespace sw {
 		// subtract a subtractand from a running accumulator
 		template<size_t src_size, size_t tgt_size>
 		bool subtract(bitblock<tgt_size>& accumulator, const bitblock<src_size>& subtractand) {
-			bool borrow = 0;  // ripple carry
+			bool borrow = 0;  // ripple borrow
 			for (size_t i = 0; i < src_size; i++) {
 				bool _a = accumulator[i];
 				bool _b = subtractand[i];
 				accumulator[i] = _a ^ _b ^ borrow;
-				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+				borrow = ((!_a) & _b) | (!((!_a) ^ (!_b)) & borrow);
 			}
 			return borrow;
 		}

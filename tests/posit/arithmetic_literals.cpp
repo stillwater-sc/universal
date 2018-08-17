@@ -17,8 +17,8 @@
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
 // generic and posit test helper functions
-#include "../tests/test_helpers.hpp"
-#include "../tests/posit_test_helpers.hpp"
+#include "../test_helpers.hpp"
+#include "../posit_test_helpers.hpp"
 
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
 template<size_t nbits, size_t es>

@@ -7,7 +7,6 @@
 #include "common.hpp"
 #include <posit>
 
-
 /*
   Posit values are a combination of 
   - a scaling factor: useed, 

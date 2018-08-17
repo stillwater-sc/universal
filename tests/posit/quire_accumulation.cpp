@@ -14,9 +14,9 @@
 #define QUIRE_IMPLICIT_CONVERSION 1
 #include "../../posit/quire.hpp"
 // test support functions
-#include "../tests/test_helpers.hpp"
-#include "../tests/posit_test_helpers.hpp"
-#include "../tests/quire_test_helpers.hpp"
+#include "../test_helpers.hpp"
+#include "../posit_test_helpers.hpp"
+#include "../quire_test_helpers.hpp"
 
 // if you want to enable ISSUE_45
 //#define ISSUE_45_DEBUG

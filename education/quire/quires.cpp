@@ -8,12 +8,9 @@
 // enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // type definitions for the important types, posit<> and quire<>
-#include "../../posit/posit.hpp"
-#include "../../posit/posit_manipulators.hpp"    // pretty_print
-#include "../../posit/quire.hpp"
+#include <posit>
 // test support functions
 #include "../tests/quire_test_helpers.hpp"
-
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0

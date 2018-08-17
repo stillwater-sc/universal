@@ -8,7 +8,7 @@
 
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
-#include "../tests/test_helpers.hpp"
+#include "../test_helpers.hpp"
 
 #define FLOAT_TABLE_WIDTH 20
 
@@ -64,6 +64,7 @@ int ValidateAssignment(bool bReportIndividualTestCases) {
 		if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
 		Ty value = (Ty)(p);
 		assigned = value;
+		// TODO: how to make this work for integers: std::cout << p << " " << value << " " << assigned << std::endl;
 		if (p != assigned) {
 			nrOfFailedTestCases++;
 			if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", p, assigned, value);
@@ -85,12 +86,44 @@ try {
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
-	std::string tag = "Assignment operator";
+	std::string tag = "Assignment";
 
 	posit<nbits, es> p;
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<3, 0, int>(bReportIndividualTestCases), tag, "assignment");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<3, 0, float>(bReportIndividualTestCases), tag, "assignment");
+	// 
+	// TODO: How to make this work for integers
+	// nrOfFailedTestCases = ReportTestResult(ValidateAssignment<3, 0, int>(bReportIndividualTestCases), tag, "posit<3,0> int");
+
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<3, 0, float>(bReportIndividualTestCases), tag, "posit<3,0>");
+
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 0, float>(bReportIndividualTestCases), tag, "posit<4,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 1, float>(bReportIndividualTestCases), tag, "posit<4,1>");
+
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<5, 0, float>(bReportIndividualTestCases), tag, "posit<5,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<5, 1, float>(bReportIndividualTestCases), tag, "posit<5,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<5, 2, float>(bReportIndividualTestCases), tag, "posit<5,2>");
+
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 0, float>(bReportIndividualTestCases), tag, "posit<6,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 1, float>(bReportIndividualTestCases), tag, "posit<6,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 2, float>(bReportIndividualTestCases), tag, "posit<6,2>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 3, float>(bReportIndividualTestCases), tag, "posit<6,3>");
+
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 0, float>(bReportIndividualTestCases), tag, "posit<7,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 1, float>(bReportIndividualTestCases), tag, "posit<7,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 2, float>(bReportIndividualTestCases), tag, "posit<7,2>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<7, 3, float>(bReportIndividualTestCases), tag, "posit<7,3>");
+
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 0, float>(bReportIndividualTestCases), tag, "posit<8,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 1, float>(bReportIndividualTestCases), tag, "posit<8,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 2, float>(bReportIndividualTestCases), tag, "posit<8,2>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 3, float>(bReportIndividualTestCases), tag, "posit<8,3>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 4, float>(bReportIndividualTestCases), tag, "posit<8,4>");
+
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 0, float>(bReportIndividualTestCases), tag, "posit<9,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 1, float>(bReportIndividualTestCases), tag, "posit<9,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 2, float>(bReportIndividualTestCases), tag, "posit<9,2>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 3, float>(bReportIndividualTestCases), tag, "posit<9,3>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<9, 4, float>(bReportIndividualTestCases), tag, "posit<9,4>");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
