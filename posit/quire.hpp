@@ -36,7 +36,6 @@ public:
 	// Constructors
 	quire() : _sign(false) { _capacity.reset(); _upper.reset(); _lower.reset(); }
 
-#if QUIRE_IMPLICIT_CONVERSION
 	quire(int8_t initial_value) {
 		*this = initial_value;
 	}
@@ -62,7 +61,9 @@ public:
 	quire(const value<fbits>& rhs) {
 		*this = rhs;
 	}
-#endif
+	quire(const posit<nbits, es>& rhs) {
+		*this = rhs;
+	}
 
 	// Assignment operators: the class only supports native type values
 	// assigning a posit requires the convertion to a normalized value, i.e. q = posit<nbits,es>().to_value()
@@ -111,8 +112,10 @@ public:
 		}
 		return *this;
 	}
-
-#if QUIRE_IMPLICIT_CONVERSION
+	quire& operator=(const posit<nbits, es>& rhs) {
+		*this = rhs.to_value();
+		return *this;
+	}
 	quire& operator=(int8_t rhs) {
 		*this = int64_t(rhs);
 		return *this;
@@ -175,25 +178,25 @@ public:
 		}
 		return *this;
 	}
-quire& operator=(float rhs) {
-	constexpr int bits = std::numeric_limits<float>::digits - 1;
-	*this = value<bits>(rhs);
-	return *this;
-}
-quire& operator=(double rhs) {
-	constexpr int bits = std::numeric_limits<double>::digits - 1;
-	*this = value<bits>(rhs);
-	return *this;
-}
-quire& operator=(long double rhs) {
-	constexpr int bits = std::numeric_limits<long double>::digits - 1;
-	*this = value<bits>(rhs);
-	return *this;
-}
-#endif
+	quire& operator=(float rhs) {
+		constexpr int bits = std::numeric_limits<float>::digits - 1;
+		*this = value<bits>(rhs);
+		return *this;
+	}
+	quire& operator=(double rhs) {
+		constexpr int bits = std::numeric_limits<double>::digits - 1;
+		*this = value<bits>(rhs);
+		return *this;
+	}
+	quire& operator=(long double rhs) {
+		constexpr int bits = std::numeric_limits<long double>::digits - 1;
+		*this = value<bits>(rhs);
+		return *this;
+	}
+
+	// All values in (and out) of the quire are normalized (sign, scale, fraction) triplets.
 
 	// Add a normalized value to the quire value. 
-	// All values in (and out) of the quire are normalized (sign, scale, fraction) triplets.
 	template<size_t fbits>
 	quire& operator+=(const value<fbits>& rhs) {
 		if (rhs.iszero()) return *this;
@@ -236,12 +239,30 @@ quire& operator=(long double rhs) {
 		}
 		return *this;
 	}
-
 	// Subtract a normalized value from the quire value
 	template<size_t fbits>
 	quire& operator-=(const value<fbits>& rhs) {
 		return *this += -rhs;
 	}
+	
+	// add a posit directly (syntactic sugar)
+	quire& operator+=(const posit<nbits, es>& rhs) {
+		return operator+=(rhs.to_value());
+	}
+	// subtract a posit directly (syntactic sugar)
+	quire& operator-=(const posit<nbits, es>& rhs) {
+		return operator-=(rhs.to_value());
+	}
+
+	// add two quires
+	quire& operator+=(const quire& q) {
+		return operator+=(q.to_value());
+	}
+	// subtract two quires
+	quire& operator-=(const quire& q) {
+		return operator-=(q.to_value());
+	}
+	
 	// bit addressing operator
 	bool operator[](int index) const {
 		if (index < int(radix_point)) return _lower[index];

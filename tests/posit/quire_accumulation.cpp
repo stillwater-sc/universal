@@ -11,7 +11,6 @@
 
 // type definitions for the important types, posit<> and quire<>
 #include "../../posit/posit.hpp"
-#define QUIRE_IMPLICIT_CONVERSION 1
 #include "../../posit/quire.hpp"
 // test support functions
 #include "../test_helpers.hpp"
@@ -261,8 +260,23 @@ try {
 	std::string tag = "Quire Accumulation failed";
 
 #if MANUAL_TESTING
-	std::vector< posit<16, 1> > t;
+	cout << "Quire load/store and add/subtract" << endl;
+	posit<16, 1> p(1);
+	quire<16, 1> q1 = p;
+	quire<16, 1> q2 = q1;
+	cout << q2 << endl;
+	q2 += p;
+	cout << q2 << endl;
+	q2 -= q1;
+	cout << q2 << endl;
+	q2 -= p;
+	cout << q2 << endl;
+	q2 -= p;
+	cout << q2 << endl;
 
+	cout << endl;
+
+	std::vector< posit<16, 1> > t;
 	t = GenerateVectorForZeroValueFDP(16, maxpos<16,1>());
 	PrintTestVector(cout, t);
 
