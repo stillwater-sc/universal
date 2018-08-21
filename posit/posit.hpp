@@ -2306,12 +2306,12 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, double rhs) {
 			posit<nbits, es> sum = lhs;
-			sum += rhs;
+			sum += posit<nbits, es>(rhs);
 			return sum;
 		}
 		template<size_t nbits, size_t es>
 		inline posit<nbits, es> operator+(double lhs, const posit<nbits, es>& rhs) {
-			posit<nbits, es> sum = lhs;
+			posit<nbits, es> sum(lhs);
 			sum += rhs;
 			return sum;
 		}
@@ -2319,40 +2319,40 @@ namespace sw {
 		// BINARY SUBTRACTION
 		template<size_t nbits, size_t es>
 		inline posit<nbits, es> operator-(double lhs, const posit<nbits, es>& rhs) {
-			posit<nbits, es> sum = lhs;
-			sum -= rhs;
-			return sum;
+			posit<nbits, es> diff(lhs);
+			diff -= rhs;
+			return diff;
 		}
 		template<size_t nbits, size_t es>
 		inline posit<nbits, es> operator-(const posit<nbits, es>& lhs, double rhs) {
-			posit<nbits, es> diff = lhs;
-			diff -= rhs;
+			posit<nbits, es> diff(lhs);
+			diff -= posit<nbits, es>(rhs);
 			return diff;
 		}
 		// BINARY MULTIPLICATION
 		template<size_t nbits, size_t es>
 		inline posit<nbits, es> operator*(double lhs, const posit<nbits, es>& rhs) {
-			posit<nbits, es> sum = lhs;
-			sum *= rhs;
-			return sum;
+			posit<nbits, es> mul(lhs);
+			mul *= rhs;
+			return mul;
 		}
 		template<size_t nbits, size_t es>
 		inline posit<nbits, es> operator*(const posit<nbits, es>& lhs, double rhs) {
-			posit<nbits, es> mul = lhs;
-			mul *= rhs;
+			posit<nbits, es> mul(lhs);
+			mul *= posit<nbits, es>(rhs);
 			return mul;
 		}
 		// BINARY DIVISION
 		template<size_t nbits, size_t es>
 		inline posit<nbits, es> operator/(double lhs, const posit<nbits, es>& rhs) {
-			posit<nbits, es> sum = lhs;
-			sum /= rhs;
-			return sum;
+			posit<nbits, es> ratio(lhs);
+			ratio /= rhs;
+			return ratio;
 		}
 		template<size_t nbits, size_t es>
 		inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, double rhs) {
-			posit<nbits, es> ratio = lhs;
-			ratio /= rhs;
+			posit<nbits, es> ratio(lhs);
+			ratio /= posit<nbits, es>(rhs);
 			return ratio;
 		}
 
