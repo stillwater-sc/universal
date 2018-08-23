@@ -6,6 +6,8 @@
 
 #include "common.hpp"
 // minimum set of include files to reflect source code dependencies
+#include "../../posit/exceptions.hpp"
+#include "../../posit/trace_constants.hpp"
 #include "../../bitblock/bitblock.hpp"
 #include "../../posit/bit_functions.hpp"
 #include "../../areal/areal.hpp"
@@ -21,13 +23,12 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 500000;
+	//const size_t RND_TEST_CASES = 500000;
 
 	const size_t nbits = 16;
 	const size_t es = 5;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = false;
 	std::string tag = " areal<16,5>";
 
 	cout << "Standard areal<16,5> configuration tests" << endl;
@@ -36,6 +37,8 @@ try {
 
 #if 0
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
+	bool bReportIndividualTestCases = false;
+
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");

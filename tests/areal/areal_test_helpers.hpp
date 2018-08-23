@@ -33,7 +33,7 @@ namespace sw {
 				<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
 				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
 				<< "  raw " << std::setw(nbits) << presult.get()
-				<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
+				<< "   scale= " << std::setw(3) << _scale << "   k= " << "   exp= " << std::setw(3) << _exponent.scale()
 				<< std::endl;
 		}
 
@@ -43,11 +43,10 @@ namespace sw {
 			constexpr size_t fbits = nbits - 3 - es;
 
 			bool		     	 _sign;
-			regime<nbits, es>    _regime;
 			exponent<nbits, es>  _exponent;
 			fraction<fbits>      _fraction;
-			decode(presult.get(), _sign, _regime, _exponent, _fraction);
-			int                  _scale = _regime.scale() + _exponent.scale();
+			decode(presult.get(), _sign, _exponent, _fraction);
+			int                  _scale = _exponent.scale();
 
 			std::cerr << test_case
 				<< " " << op << " "
@@ -56,7 +55,7 @@ namespace sw {
 				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult) << " reference value is "
 				<< std::setw(FLOAT_TABLE_WIDTH) << reference
 				<< "  raw " << std::setw(nbits) << presult.get()
-				<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
+				<< "   scale= " << std::setw(3) << _scale << "   k= " << "   exp= " << std::setw(3) << _exponent.scale()
 				<< std::endl;
 		}
 
@@ -171,7 +170,9 @@ namespace sw {
 
 			// execute the test
 			int nrOfFailedTests = 0;
-			double minpos = minpos_value<nbits+1, es>();
+			areal<nbits+1, es> areal_minpos(0);
+			areal_minpos++;
+			double minpos = double(areal_minpos);
 			double eps;
 			double da, input;
 			areal<nbits, es> pa;
@@ -438,6 +439,7 @@ namespace sw {
 			return nrOfFailedTests;
 		}
 
+#if SQRT_IMPLEMENTED
 		// enumerate all SQRT cases for a areal configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateSqrt(std::string tag, bool bReportIndividualTestCases) {
@@ -462,6 +464,7 @@ namespace sw {
 			}
 			return nrOfFailedTests;
 		}
+#endif
 
 		// enumerate all addition cases for a areal configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>

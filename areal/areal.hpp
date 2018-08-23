@@ -43,7 +43,7 @@ namespace sw {
 				std::bitset<nbits> tmp(raw_bits);
 				tmp.reset(nbits - 1);
 				if (tmp.none()) {
-					// setnar();   special case = NaR (Not a Real)
+					// setnan();   special case = NaR (Not a Real)
 					_sign = true;
 					_exponent.reset();
 				}
@@ -107,7 +107,7 @@ namespace sw {
 			static constexpr size_t mbits = 2 * fhbits;         // size of the multiplier output
 			static constexpr size_t divbits = 3 * fhbits + 4;   // size of the divider output
 
-			areal() : _sign(false), _scale(0), _nrOfBits(fbits), _zero(true), _inf(false), _nan(false) {}
+			areal() : _sign(false), _scale(0), _nrOfBits(fbits), _inf(false), _zero(true), _nan(false) {}
 			areal(bool sign, int scale, const bitblock<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
 			areal(signed char initial_value) {
 				*this = initial_value;
@@ -140,6 +140,7 @@ namespace sw {
 				_sign	  = rhs._sign;
 				_scale	  = rhs._scale;
 				_fraction = rhs._fraction;
+				_raw_bits = rhs._raw_bits ;
 				_nrOfBits = rhs._nrOfBits;
 				_inf      = rhs._inf;
 				_zero     = rhs._zero;
@@ -161,7 +162,7 @@ namespace sw {
 			areal& operator=(long long rhs) {
 				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 				if (rhs == 0) {
-					setToZero();
+					setzero();
 					return *this;
 				}
 				reset();
@@ -190,7 +191,7 @@ namespace sw {
 			areal& operator=(unsigned long long rhs) {
 				if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 				if (rhs == 0) {
-					setToZero();
+					setzero();
 				}
 				else {
 					reset();
@@ -438,7 +439,7 @@ namespace sw {
 					return *this;
 				}
 				if (rhs.isnan()) {
-					setnar();
+					setnan();
 					return *this;
 				}
 				if (iszero() || isnan()) {
@@ -693,10 +694,10 @@ namespace sw {
 			}
 		private:
 			bitblock<nbits> _raw_bits;
-			bool			_sign;
-			int				_scale;
+			bool            _sign;
+			int             _scale;
 			bitblock<fbits>	_fraction;
-			int				_nrOfBits;  // in case the fraction is smaller than the full fbits
+			int             _nrOfBits;  // in case the fraction is smaller than the full fbits
 			bool            _inf;
 			bool            _zero;
 			bool            _nan;
