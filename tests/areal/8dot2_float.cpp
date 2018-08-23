@@ -6,6 +6,8 @@
 
 #include "common.hpp"
 // minimum set of include files to reflect source code dependencies
+#include "../../posit/exceptions.hpp"
+#include "../../posit/trace_constants.hpp"
 #include "../../bitblock/bitblock.hpp"
 #include "../../posit/bit_functions.hpp"
 #include "../../areal/areal.hpp"
@@ -23,7 +25,6 @@ try {
 	const size_t es = 2;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = false;
 	std::string tag = " areal<8,2>";
 
 	cout << "Standard areal<8,2> configuration tests" << endl;
@@ -31,6 +32,8 @@ try {
 	areal<nbits, es> r;
 
 #if 0
+	bool bReportIndividualTestCases = false;
+
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
@@ -56,23 +59,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
-	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const posit_internal_exception& err) {
-	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	std::cerr << "Caught unknown exception" << std::endl;
+	std::cerr << "caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

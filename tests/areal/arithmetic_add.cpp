@@ -6,6 +6,8 @@
 
 #include "common.hpp"
 // minimum set of include files to reflect source code dependencies
+#include "../../posit/exceptions.hpp"
+#include "../../posit/trace_constants.hpp"
 #include "../../bitblock/bitblock.hpp"
 #include "../../posit/bit_functions.hpp"
 #include "../../areal/areal.hpp"
@@ -38,12 +40,13 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Addition failed: ";
 
 #if MANUAL_TESTING
+//	bool bReportIndividualTestCases = false;
+
 	// generate individual testcases to hand trace/debug
 	//GenerateTestCase<16, 5, double>(INFINITY, INFINITY);
 	//GenerateTestCase<8, 2, float>(0.5f, -0.5f);
