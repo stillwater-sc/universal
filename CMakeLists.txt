@@ -300,6 +300,7 @@ install(DIRECTORY   ${PROJECT_SOURCE_DIR}/${project_library_target_name}
 
 if(BUILD_CI_CHECK OR BUILD_VERIFICATION_SUITE)
 add_subdirectory("tests/bitblock")
+add_subdirectory("tests/areal")
 add_subdirectory("tests/posit")
 add_subdirectory("tests/valid")
 endif(BUILD_CI_CHECK OR BUILD_VERIFICATION_SUITE)
