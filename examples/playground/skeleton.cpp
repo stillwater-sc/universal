@@ -39,6 +39,13 @@ try {
 
 	bool bSuccess = true;
 
+
+	cout << hexfloat;
+	cout << 0.12345678;
+	cout << defaultfloat;
+	cout << 0.12345678 << endl;
+	return 0;
+
 	{
 		double d = (double)0.79432823472428150206586100479;
 		posit<32, 2> E_pos(d);

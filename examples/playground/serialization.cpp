@@ -6,6 +6,8 @@
 #include "common.hpp"
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+// enable special posit format emission
+#define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 1
 #include <posit>
 
 int main(int argc, char** argv)
@@ -39,14 +41,15 @@ try {
 	lnstream.clear();
 	str = "64.3x8000000000000000p";
 	lnstream.str(str);
-	lnstream >> std::ws >> p;  // TODO: this is truncating the most significant bits, instead of the least significant bits
-	cout << "posit format: " << setw(25) << str << "- parsed into a posit<32,2>: " << p << " <---- TODO fix" << endl;
+	lnstream >> std::ws >> p;  // testing that we are NOT truncating the most significant bits
+	cout << "posit format: " << setw(25) << str << "- parsed into a posit<32,2>: " << p << " <---- should have the most significant 32bits of the 64.3 posit" << endl;
 	cout << "pretty posit: " << pretty_print(p) << endl;
 
-	bitblock<1> one; one.set(0, true); str = to_hex(one); cout << "one  : " << str << endl;
-	bitblock<2> two; two.set(1, true); str = to_hex(two); cout << "two  : " << str << endl;
-	bitblock<3> three; three.set(2, true); str = to_hex(three); cout << "three: " << str << endl;
-	bitblock<4> four; four.set(3, true); str = to_hex(four); cout << "four : " << str << endl;
+	cout << "Bitblock patterns" << endl;
+	bitblock<1> one; one.set(0, true); str = to_hex(one); cout << "one  : \"" << one << "\"    value : " << str << endl;
+	bitblock<2> two; two.set(1, true); str = to_hex(two); cout << "two  : \"" << two << "\"   value : " << str << endl;
+	bitblock<3> three; three.set(2, true); str = to_hex(three); cout << "three: \"" << three << "\"  value : " << str << endl;
+	bitblock<4> four; four.set(3, true); str = to_hex(four); cout << "four : \"" << four << "\" value : " << str << endl;
 
 	p.setzero();
 	cout << "posit value     0: " << p << endl;

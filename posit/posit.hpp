@@ -414,11 +414,20 @@ namespace sw {
 					if (*it == 'p') break;
 					bitStr.append(1, *it);
 				}
+				size_t nbits_in = nbits;
+				{
+					std::istringstream ss(nbitsStr);
+					ss >> nbits_in;
+				}
 				unsigned long long raw;
 				std::istringstream ss(bitStr);
 				ss >> std::hex >> raw;
 				//std::cout << "[" << nbitsStr << "] [" << esStr << "] [" << bitStr << "] = " << raw << std::endl;
-				p.set_raw_bits(raw);  // TODO: if not aligned, this takes the least significant bits, but we want to take the most significant bits
+				// if not aligned, set_raw_bits takes the least significant nbits, so we need to shift to pick up the most significant nbits
+				if (nbits < nbits_in) {
+					raw >>= (nbits_in - nbits);
+				}
+				p.set_raw_bits(raw);  
 				bSuccess = true;
 			}
 			else {
@@ -1532,7 +1541,13 @@ namespace sw {
 			// to make certain that setw and left/right operators work properly
 			// we need to transform the posit into a string
 			std::stringstream ss;
+#if POSIT_ROUNDING_ERROR_FREE_IO_FORMAT
 			ss << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
+#else
+			std::streamsize prec = ostr.precision();
+			std::streamsize width = ostr.width();
+			ss << std::showpos << std::fixed << std::setw(width) << std::setprecision(prec) << (long double)p;
+#endif
 			return ostr << ss.str();
 		}
 

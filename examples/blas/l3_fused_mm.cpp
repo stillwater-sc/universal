@@ -31,7 +31,9 @@ try {
 		printMatrix(cout, "A matrix", A);
 		printMatrix(cout, "B matrix", B);
 		printMatrix(cout, "C matrix", C);
-		cout << setprecision(5) << endl;
+		cout << endl;
+		posit<32, 2> p = minpos<32, 2>();
+		cout << p << endl;
 	}
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
