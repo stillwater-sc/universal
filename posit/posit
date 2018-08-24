@@ -27,6 +27,7 @@
 
 // math functions
 #include "math_truncate.hpp"
+#include "math_classify.hpp"
 #include "math_complex.hpp"
 #include "math_sqrt.hpp"
 #include "math_pow.hpp"
