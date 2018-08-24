@@ -1522,16 +1522,6 @@ namespace sw {
 			return p.isnar();
 		}
 
-		template<size_t nbits, size_t es>
-		inline bool isfinite(const posit<nbits, es>& p) {
-			return !p.isnar();
-		}
-
-		template<size_t nbits, size_t es>
-		inline bool isinfinite(const posit<nbits, es>& p) {
-			return p.isnar();
-		}
-
 		////////////////// POSIT operators
 
 		// stream operators
