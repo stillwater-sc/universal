@@ -11,21 +11,23 @@ template<typename Ty>
 void printMatrix(std::ostream& ostr, const std::string& name, const std::vector<Ty>& m) {
 	size_t d = size_t(std::sqrt(m.size()));
 	ostr << "Matrix: " << name << " is " << d << "x" << d << std::endl;
+	std::streamsize prec = ostr.precision();
 	ostr << std::setprecision(17);
 	for (size_t i = 0; i<d; ++i) {
 		for (size_t j = 0; j<d; ++j) std::cout << std::setw(20) << m[i*d + j] << " ";
 		ostr << std::endl;
 	}
-	ostr << std::setprecision(5);
+	ostr << std::setprecision(prec);
 }
 
 template<typename Ty>
 void printVector(std::ostream& ostr, const std::string& name, const std::vector<Ty>& v) {
 	size_t d = v.size();
 	ostr << "Vector: " << name << " is of size " << d << " elements" << std::endl;
+	std::streamsize prec = ostr.precision();
 	ostr << std::setprecision(17);
 	for (size_t j = 0; j<d; ++j) std::cout << std::setw(20) << v[j] << " ";
-	ostr << std::setprecision(5) << std::endl;
+	ostr << std::setprecision(prec) << std::endl;
 }
 
 // print a vector
@@ -91,6 +93,7 @@ void randomVectorFillAroundZeroEPS(size_t n, std::vector<element_T>& vec, size_t
 template<typename element_T>
 void sampleVector(std::string vec_name, std::vector<element_T>& vec, uint32_t start = 0, uint32_t incr = 1, uint32_t nrSamples = 0) {
 	std::cout << "Vector sample is: " << '\n';
+	std::streamsize prec = ostr.precision();
 	if (nrSamples) {
 		uint32_t printed = 0;
 		for (uint32_t i = start; i < vec.size(); i += incr) {
@@ -105,5 +108,5 @@ void sampleVector(std::string vec_name, std::vector<element_T>& vec, uint32_t st
 			std::cout << vec_name << "[" << std::setw(3) << i << "] = " << std::setprecision(15) << vec[i] << '\n';
 		}
 	}
-	std::cout << std::endl;
+	std::cout << std::setprecision(prec) << std::endl;
 }

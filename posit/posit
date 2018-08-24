@@ -3,19 +3,36 @@
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _POSIT_
-#define _POSIT_
+#ifndef _POSIT_STANDARD_HEADER_
+#define _POSIT_STANDARD_HEADER_
 
+////////////////////////////////////////////////////////////////////////////////////////
+///  BEHAVIORAL COMPILATION SWITCHES
+
+////////////////////////////////////////////////////////////////////////////////////////
+// enable/disable special posit format I/O
+#if !defined(POSIT_ROUNDING_ERROR_FREE_IO_FORMAT)
+// default is to print (long double) values
+#define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 0
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////
 // enable/disable the ability to use literals in binary logic and arithmetic operators
+#if !defined(POSIT_ENABLE_LITERALS)
+// default is to enable them
 #define POSIT_ENABLE_LITERALS 1
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////
 // enable throwing specific exceptions for posit arithmetic errors
 // left to application to enable
 #if !defined(POSIT_THROW_ARITHMETIC_EXCEPTION)
 // default is to use NaR as a signalling error
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-//#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #endif
 
+////////////////////////////////////////////////////////////////////////////////////////
+/// INCLUDE FILES that make up the library
 #include "posit.hpp"
 #include "posit_decoded.hpp"
 #ifdef POSIT_FAST_SPECIALIZATION
