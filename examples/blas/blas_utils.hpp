@@ -93,7 +93,7 @@ void randomVectorFillAroundZeroEPS(size_t n, std::vector<element_T>& vec, size_t
 template<typename element_T>
 void sampleVector(std::string vec_name, std::vector<element_T>& vec, uint32_t start = 0, uint32_t incr = 1, uint32_t nrSamples = 0) {
 	std::cout << "Vector sample is: " << '\n';
-	std::streamsize prec = ostr.precision();
+	std::streamsize prec = std::cout.precision();
 	if (nrSamples) {
 		uint32_t printed = 0;
 		for (uint32_t i = start; i < vec.size(); i += incr) {
