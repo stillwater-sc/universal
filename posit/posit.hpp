@@ -1546,7 +1546,10 @@ namespace sw {
 #else
 			std::streamsize prec = ostr.precision();
 			std::streamsize width = ostr.width();
-			ss << std::showpos << std::fixed << std::setw(width) << std::setprecision(prec) << (long double)p;
+			std::ios_base::fmtflags ff;
+			ff = ostr.flags();
+			ss.flags(ff);
+			ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
 #endif
 			return ostr << ss.str();
 		}

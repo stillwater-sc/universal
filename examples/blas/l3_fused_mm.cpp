@@ -33,7 +33,7 @@ try {
 		printMatrix(cout, "C matrix", C);
 		cout << endl;
 		posit<32, 2> p = minpos<32, 2>();
-		cout << p << endl;
+		cout << p << " vs " << std::fixed << p << endl;
 	}
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
