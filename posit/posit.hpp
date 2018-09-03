@@ -223,7 +223,7 @@ namespace sw {
 				if (raw_bits.none()) {
 					// setzero();  special case = 0
 					_sign = false;
-					_regime.reset();
+					_regime.setzero();  // <-- all the 0's end up in the regime
 					_exponent.reset();
 					_fraction.reset();
 				}
@@ -1529,6 +1529,30 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		inline bool isnar(const posit<nbits, es>& p) {
 			return p.isnar();
+		}
+		template<size_t nbits, size_t es>
+		inline bool iszero(const posit<nbits, es>& p) {
+			return p.iszero();
+		}
+		template<size_t nbits, size_t es>
+		inline bool ispos(const posit<nbits, es>& p) {
+			return p.ispos();
+		}
+		template<size_t nbits, size_t es>
+		inline bool isneg(const posit<nbits, es>& p) {
+			return p.isneg();
+		}
+		template<size_t nbits, size_t es>
+		inline bool isone(const posit<nbits, es>& p) {
+			return p.isone();
+		}		
+		template<size_t nbits, size_t es>
+		inline bool isminusone(const posit<nbits, es>& p) {
+			return p.isminusone();
+		}
+		template<size_t nbits, size_t es>
+		inline bool ispowerof2(const posit<nbits, es>& p) {
+			return p.ispowerof2();
 		}
 
 		////////////////// POSIT operators
