@@ -23,14 +23,12 @@ namespace sw {
 			regime& operator=(const regime& r) = default;
 			regime& operator=(regime&& r) = default;
 	
-			void reset() {
+			inline void reset() {
 				_k = 0;
 				_RegimeBits = 0;
 				_Bits.reset();
 			}
-			size_t nrBits() const {
-				return _RegimeBits;
-			}
+			inline size_t nrBits() const { return _RegimeBits;	}
 			int scale() const {
 				return _k > 0 ? int(_k) * (1 << es) : -(int(-_k) * (1 << es));
 			}
@@ -59,12 +57,8 @@ namespace sw {
 				}
 				return scale;
 			}
-			bool iszero() const {
-				return _Bits.none();
-			}
-			bitblock<nbits - 1> get() const {
-				return _Bits;
-			}
+			inline bool iszero() const { return _Bits.none(); }
+			inline bitblock<nbits - 1> get() const { return _Bits;	}
 			void set(const bitblock<nbits - 1>& raw, size_t nrOfRegimeBits) {
 				_Bits = raw;
 				_RegimeBits = nrOfRegimeBits;
