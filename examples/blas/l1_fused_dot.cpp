@@ -43,6 +43,8 @@ try {
 	//float epsminus = 1.0f - eps;
 	//float epsplus  = 1.0f + eps;
 
+	std::streamsize prec = cout.precision();
+	cout << setprecision(17);
 
 	{
 		using IEEEType = float;
@@ -55,10 +57,7 @@ try {
 		printVector(cout, "b: ", yieee);
 
 		cout << endl << endl;
-
-		cout << setprecision(17);
-		cout << "IEEE float   BLAS dot(x,y)  : " << dot(xieee.size(), xieee, 1, yieee, 1) << endl;
-		cout << setprecision(5);
+		cout << "IEEE float   BLAS dot(x,y)  : " << dot(xieee.size(), xieee, 1, yieee, 1) << "           <----- correct answer is 2" << endl;
 	}
 
 	{
@@ -68,9 +67,7 @@ try {
 		vector<IEEEType> xieee = { a1, a2, a3, a4 };
 		vector<IEEEType> yieee = { b1, b2, b3, b4 };
 
-		cout << setprecision(17);
-		cout << "IEEE double  BLAS dot(x,y)  : " << dot(xieee.size(), xieee, 1, yieee, 1) << endl;
-		cout << setprecision(5);
+		cout << "IEEE double  BLAS dot(x,y)  : " << dot(xieee.size(), xieee, 1, yieee, 1) << "           <----- correct answer is 2" << endl;
 	}
 
 	{
@@ -84,12 +81,58 @@ try {
 		IEEEType a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
 		IEEEType b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
 
-		using PositType = posit<32, 2>;
-		vector<PositType> xposit = { a1, a2, a3, a4 };
-		vector<PositType> yposit = { b1, b2, b3, b4 };
+		{
+			using PositType = posit<8, 3>;
+			vector<PositType> xposit = { a1, a2, a3, a4 };
+			vector<PositType> yposit = { b1, b2, b3, b4 };
 
-		cout << "posit<32,2> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
-		cout << setprecision(5);
+			cout << "posit< 8,3> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+		}
+		{
+			using PositType = posit<16, 2>;
+			vector<PositType> xposit = { a1, a2, a3, a4 };
+			vector<PositType> yposit = { b1, b2, b3, b4 };
+
+			cout << "posit<16,2> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+		}
+		{
+			using PositType = posit<32, 2>;
+			vector<PositType> xposit = { a1, a2, a3, a4 };
+			vector<PositType> yposit = { b1, b2, b3, b4 };
+
+			cout << "posit<32,2> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+		}
+		{
+			using PositType = posit<64, 1>;
+			vector<PositType> xposit = { a1, a2, a3, a4 };
+			vector<PositType> yposit = { b1, b2, b3, b4 };
+
+			cout << "posit<64,1> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+		}
+		{
+			using PositType = posit<64, 0>;
+			vector<PositType> xposit = { a1, a2, a3, a4 };
+			vector<PositType> yposit = { b1, b2, b3, b4 };
+
+			cout << "posit<64,0> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+		}
+
+		{
+			using PositType = posit<16, 1>;
+			vector<PositType> xposit = { a1, a2, a3, a4 };
+			vector<PositType> yposit = { b1, b2, b3, b4 };
+
+			cout << "posit<16,1> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+		}
+		{
+			using PositType = posit<32, 1>;
+			vector<PositType> xposit = { a1, a2, a3, a4 };
+			vector<PositType> yposit = { b1, b2, b3, b4 };
+
+			cout << "posit<32,1> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+		}
+
+		cout << setprecision(prec);
 	}
 
 	return EXIT_SUCCESS;
