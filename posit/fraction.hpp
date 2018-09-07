@@ -155,33 +155,31 @@ public:
 	{
 		bitblock<Size> number;
             
-            // Check range
-            if (long(fbits) + shift >= long(Size))
-                throw shift_too_large{};
+        // Check range
+        if (long(fbits) + shift >= long(Size))
+            throw shift_too_large{};
                 
-            const long hpos = fbits + shift;              // position of hidden bit
+        const long hpos = fbits + shift;              // position of hidden bit
             
-            // If hidden bit is LSB or beyond just set uncertainty bit and call it a day
-            if (hpos <= 0) {
-                number[0] = true;
-                return number;
-            }
-                
-            number[hpos] = true;                   // hidden bit now safely set
-            
-            // Copy fraction bits into certain part
-            for (long npos = hpos - 1, fpos = long(fbits) - 1; npos > 0 && fpos >= 0; --npos, --fpos)
-                number[npos] = _Bits[fpos];
-                
-            // Set uncertainty bit
-            bool uncertainty = false;
-            for (long fpos = std::min(long(fbits)-1, -shift); fpos >= 0 && !uncertainty; --fpos)
-                uncertainty |= _Bits[fpos];
-            number[0] = uncertainty;
+        // If hidden bit is LSB or beyond just set uncertainty bit and call it a day
+        if (hpos <= 0) {
+            number[0] = true;
             return number;
         }
-	
-	
+                
+        number[hpos] = true;                   // hidden bit now safely set
+            
+        // Copy fraction bits into certain part
+        for (long npos = hpos - 1, fpos = long(fbits) - 1; npos > 0 && fpos >= 0; --npos, --fpos)
+            number[npos] = _Bits[fpos];
+                
+        // Set uncertainty bit
+        bool uncertainty = false;
+        for (long fpos = std::min(long(fbits)-1, -shift); fpos >= 0 && !uncertainty; --fpos)
+            uncertainty |= _Bits[fpos];
+        number[0] = uncertainty;
+        return number;
+    }
 	
 	
 	// normalize the fraction and return its fraction in the argument: add a sticky bit and two guard bits to the result

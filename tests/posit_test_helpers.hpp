@@ -18,7 +18,6 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		void ReportConversionError(std::string test_case, std::string op, double input, double reference, const posit<nbits, es>& presult) {
-			static_assert(nbits > 2, "component_to_string requires nbits > 2");
 			constexpr size_t fbits = nbits - 3 - es;
 
 			bool		     	 _sign;
@@ -39,27 +38,73 @@ namespace sw {
 				<< std::endl;
 		}
 
-		template<size_t nbits, size_t es>
-		void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const posit<nbits, es>& presult) {
-			static_assert(nbits > 2, "component_to_string requires nbits > 2");
-			constexpr size_t fbits = nbits - 3 - es;
-
-			bool		     	 _sign;
-			regime<nbits, es>    _regime;
-			exponent<nbits, es>  _exponent;
-			fraction<fbits>      _fraction;
-			decode(presult.get(), _sign, _regime, _exponent, _fraction);
-			int                  _scale = _regime.scale() + _exponent.scale();
-
+		template<>
+		void ReportConversionError<2,0>(std::string test_case, std::string op, double input, double reference, const posit<2, 0>& presult) {
+			constexpr size_t nbits = 2;
+			constexpr size_t es = 0;
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << input
-				<< " did     convert to "
-				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult) << " reference value is "
-				<< std::setw(FLOAT_TABLE_WIDTH) << reference
+				<< " did not convert to "
+				<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
+				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
 				<< "  raw " << std::setw(nbits) << presult.get()
-				<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
+//						<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
 				<< std::endl;
+
+		}
+		template<>
+		void ReportConversionError<3, 1>(std::string test_case, std::string op, double input, double reference, const posit<3, 1>& presult) {
+			constexpr size_t nbits = 3;
+			constexpr size_t es = 1; 
+			std::cerr << test_case
+				<< " " << op << " "
+				<< std::setw(FLOAT_TABLE_WIDTH) << input
+				<< " did not convert to "
+				<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
+				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
+				<< "  raw " << std::setw(nbits) << presult.get()
+				//						<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
+				<< std::endl;
+
+		}
+
+		template<size_t nbits, size_t es>
+		void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const posit<nbits, es>& presult) {
+			static_assert(nbits > 1, "component_to_string requires nbits >= 2");
+			if (nbits > 2) {
+				constexpr size_t fbits = nbits - 3 - es;
+
+				bool		     	 _sign;
+				regime<nbits, es>    _regime;
+				exponent<nbits, es>  _exponent;
+				fraction<fbits>      _fraction;
+				decode(presult.get(), _sign, _regime, _exponent, _fraction);
+				int                  _scale = _regime.scale() + _exponent.scale();
+
+				std::cerr << test_case
+					<< " " << op << " "
+					<< std::setw(FLOAT_TABLE_WIDTH) << input
+					<< " did     convert to "
+					<< std::setw(FLOAT_TABLE_WIDTH) << double(presult) << " reference value is "
+					<< std::setw(FLOAT_TABLE_WIDTH) << reference
+					<< "  raw " << std::setw(nbits) << presult.get()
+					<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
+					<< std::endl;
+			}
+			else {
+				if (nbits == 2) {
+					std::cerr << test_case
+						<< " " << op << " "
+						<< std::setw(FLOAT_TABLE_WIDTH) << input
+						<< " did     convert to "
+						<< std::setw(FLOAT_TABLE_WIDTH) << double(presult) << " reference value is "
+						<< std::setw(FLOAT_TABLE_WIDTH) << reference
+						<< "  raw " << std::setw(nbits) << presult.get()
+//						<< "   scale= " << std::setw(3) << _scale << "   k= " << std::setw(3) << _regime.regime_k() << "   exp= " << std::setw(3) << _exponent.scale()
+						<< std::endl;
+				}
+			}
 		}
 
 		template<size_t nbits, size_t es>
@@ -711,39 +756,39 @@ namespace sw {
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
 
-			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-				a.set_raw_bits(i);
-				for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-					b.set_raw_bits(j);
-					// set the golden reference
-					if (a.isnar() && b.isnar()) {
-						// special case of posit equality
-						ref = true;
-					}
-					else {
-						// initially, we thought this would be the same behavior as IEEE floats
-						// ref = double(a) == double(b);
-						// but we have found that some compilers (MSVC) take liberty with NaN
-						// \fp:fast		floating point model set to fast
-						//	NaN == NaN  : IEEE = true    Posit = true
-						//	NaN == real : IEEE = true    Posit = false
-						// \fp:strict	floating point model set to strict
-						//	NaN == NaN  : IEEE = false    Posit = true
-						//	NaN == real : IEEE = false    Posit = false
-						// and thus we can't relay on IEEE float as reference
+for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+	a.set_raw_bits(i);
+	for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+		b.set_raw_bits(j);
+		// set the golden reference
+		if (a.isnar() && b.isnar()) {
+			// special case of posit equality
+			ref = true;
+		}
+		else {
+			// initially, we thought this would be the same behavior as IEEE floats
+			// ref = double(a) == double(b);
+			// but we have found that some compilers (MSVC) take liberty with NaN
+			// \fp:fast		floating point model set to fast
+			//	NaN == NaN  : IEEE = true    Posit = true
+			//	NaN == real : IEEE = true    Posit = false
+			// \fp:strict	floating point model set to strict
+			//	NaN == NaN  : IEEE = false    Posit = true
+			//	NaN == real : IEEE = false    Posit = false
+			// and thus we can't relay on IEEE float as reference
 
-						// instead, use the bit pattern as reference
-						ref = (i == j ? true : false);
-					}
+			// instead, use the bit pattern as reference
+			ref = (i == j ? true : false);
+		}
 
-					presult = a == b;
-					if (ref != presult) {
-						nrOfFailedTestCases++;
-						std::cout << a << " == " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
-					}
-				}
-			}
-			return nrOfFailedTestCases;
+		presult = a == b;
+		if (ref != presult) {
+			nrOfFailedTestCases++;
+			std::cout << a << " == " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
+		}
+	}
+}
+return nrOfFailedTestCases;
 		}
 
 		// Posit not-equal diverges from IEEE float in dealing with INFINITY/NAN
@@ -810,6 +855,9 @@ namespace sw {
 					if (a.isnar() && !b.isnar()) {
 						// special case of posit NaR
 						ref = true;
+					}
+					else if (b.isnar()) {
+						ref = false;  // everything is less than NaR
 					}
 					else {
 						// same behavior as IEEE floats
