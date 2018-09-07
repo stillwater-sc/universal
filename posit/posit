@@ -36,6 +36,9 @@
 #include "posit.hpp"
 #include "posit_decoded.hpp"
 #ifdef POSIT_FAST_SPECIALIZATION
+#include "specialized/posit_2_0.hpp"
+#include "specialized/posit_3_0.hpp"
+//#include "specialized/posit_3_1.hpp"
 #include "specialized/posit_4_0.hpp"
 #endif
 #include "posit_manipulators.hpp"

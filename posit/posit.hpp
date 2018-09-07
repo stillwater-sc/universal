@@ -84,6 +84,8 @@ namespace sw {
 		// #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 
 		// specialized configuration constants
+		constexpr size_t NBITS_IS_2 = 2;
+		constexpr size_t NBITS_IS_3 = 3;
 		constexpr size_t NBITS_IS_4 = 4;
 		constexpr size_t NBITS_IS_5 = 5;
 		constexpr size_t NBITS_IS_6 = 6;

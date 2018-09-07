@@ -1,4 +1,4 @@
-// posit_4_0.cpp: specialized 4-bit posit using lookup table arithmetic
+// posit_3_0.cpp: specialized 3-bit posit using lookup table arithmetic
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
@@ -9,100 +9,52 @@ namespace sw {
 
 		// set the fast specialization variable to indicate that we are running a special template specialization
 #ifdef POSIT_FAST_SPECIALIZATION
-#define POSIT_FAST_POSIT_4_0
+#define POSIT_FAST_POSIT_3_0
 #endif
 
-			constexpr uint8_t posit_4_0_addition_lookup[256] = {
-				0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
-				1,2,3,4,4,6,6,7,8,9,10,12,13,14,15,0,
-				2,3,4,4,5,6,6,7,8,9,11,12,14,15,0,1,
-				3,4,4,5,6,6,6,7,8,9,12,13,15,0,1,2,
-				4,4,5,6,6,6,6,7,8,10,12,14,0,1,2,3,
-				5,6,6,6,6,6,7,7,8,10,14,0,2,3,4,4,
-				6,6,6,6,6,7,7,7,8,10,0,2,4,4,5,6,
-				7,7,7,7,7,7,7,7,8,0,6,6,6,7,7,7,
-				8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
-				9,9,9,9,10,10,10,0,8,9,9,9,9,9,9,9,
-				10,10,11,12,12,14,0,6,8,9,9,9,10,10,10,10,
-				11,12,12,13,14,0,2,6,8,9,9,10,10,10,10,10,
-				12,13,14,15,0,2,4,6,8,9,10,10,10,10,11,12,
-				13,14,15,0,1,3,4,7,8,9,10,10,10,11,12,12,
-				14,15,0,1,2,4,5,7,8,9,10,10,11,12,12,13,
-				15,0,1,2,3,4,6,7,8,9,10,10,12,12,13,14,
+			constexpr uint8_t posit_3_0_addition_lookup[64] = {
+				0,1,0,3,1,1,0,3,2,0,2,3,3,3,3,3,
+				0,1,0,3,1,1,0,3,2,0,2,3,3,3,3,3,
+				0,1,0,3,1,1,0,3,2,0,2,3,3,3,3,3,
+				0,1,0,3,1,1,0,3,2,0,2,3,3,3,3,3,
 			};
 
-			constexpr uint8_t posit_4_0_subtraction_lookup[256] = {
-				0,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,
-				1,0,15,14,13,12,10,9,8,7,6,6,4,4,3,2,
-				2,1,0,15,14,12,11,9,8,7,6,6,5,4,4,3,
-				3,2,1,0,15,13,12,9,8,7,6,6,6,5,4,4,
-				4,3,2,1,0,14,12,10,8,7,6,6,6,6,5,4,
-				5,4,4,3,2,0,14,10,8,7,7,6,6,6,6,6,
-				6,6,5,4,4,2,0,10,8,7,7,7,6,6,6,6,
-				7,7,7,7,6,6,6,0,8,7,7,7,7,7,7,7,
-				8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
-				9,9,9,9,9,9,9,9,8,0,10,10,10,9,9,9,
-				10,10,10,10,10,9,9,9,8,6,0,14,12,12,11,10,
-				11,10,10,10,10,10,9,9,8,6,2,0,14,13,12,12,
-				12,12,11,10,10,10,10,9,8,6,4,2,0,15,14,13,
-				13,12,12,11,10,10,10,9,8,7,4,3,1,0,15,14,
-				14,13,12,12,11,10,10,9,8,7,5,4,2,1,0,15,
-				15,14,13,12,12,10,10,9,8,7,6,4,3,2,1,0,
+			constexpr uint8_t posit_3_0_subtraction_lookup[64] = {
+				0,2,1,3,1,0,1,3,2,2,0,3,3,3,3,3,
+				0,2,1,3,1,0,1,3,2,2,0,3,3,3,3,3,
+				0,2,1,3,1,0,1,3,2,2,0,3,3,3,3,3,
+				0,2,1,3,1,0,1,3,2,2,0,3,3,3,3,3,
 			};
 
-			constexpr uint8_t posit_4_0_multiplication_lookup[256] = {
-				0,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,
-				0,1,1,1,1,2,2,4,8,12,14,14,15,15,15,15,
-				0,1,1,2,2,3,4,6,8,10,12,13,14,14,15,15,
-				0,1,2,2,3,4,5,6,8,10,11,12,13,14,14,15,
-				0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
-				0,2,3,4,5,6,6,7,8,9,10,10,11,12,13,14,
-				0,2,4,5,6,6,7,7,8,9,9,10,10,11,12,14,
-				0,4,6,6,7,7,7,7,8,9,9,9,9,10,10,12,
-				8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
-				0,12,10,10,9,9,9,9,8,7,7,7,7,6,6,4,
-				0,14,12,11,10,10,9,9,8,7,7,6,6,5,4,2,
-				0,14,13,12,11,10,10,9,8,7,6,6,5,4,3,2,
-				0,15,14,13,12,11,10,9,8,7,6,5,4,3,2,1,
-				0,15,14,14,13,12,11,10,8,6,5,4,3,2,2,1,
-				0,15,15,14,14,13,12,10,8,6,4,3,2,2,1,1,
-				0,15,15,15,15,14,14,12,8,4,2,2,1,1,1,1,
+			constexpr uint8_t posit_3_0_multiplication_lookup[64] = {
+				0,0,0,3,1,1,2,3,0,2,1,3,3,3,3,3,
+				0,0,0,3,1,1,2,3,0,2,1,3,3,3,3,3,
+				0,0,0,3,1,1,2,3,0,2,1,3,3,3,3,3,
+				0,0,0,3,1,1,2,3,0,2,1,3,3,3,3,3,
 			};
 
-			constexpr uint8_t posit_4_0_division_lookup[256] = {
-				8,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,
-				8,4,2,1,1,1,1,1,8,15,15,15,15,15,14,12,
-				8,6,4,3,2,1,1,1,8,15,15,15,14,13,12,10,
-				8,6,5,4,3,2,2,1,8,15,14,14,13,12,11,10,
-				8,7,6,5,4,3,2,1,8,15,14,13,12,11,10,9,
-				8,7,6,6,5,4,3,2,8,14,13,12,11,10,10,9,
-				8,7,7,6,6,5,4,2,8,14,12,11,10,10,9,9,
-				8,7,7,7,7,6,6,4,8,12,10,10,9,9,9,9,
-				8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,8,
-				8,9,9,9,9,10,10,12,8,4,6,6,7,7,7,7,
-				8,9,9,10,10,11,12,14,8,2,4,5,6,6,7,7,
-				8,9,10,10,11,12,13,14,8,2,3,4,5,6,6,7,
-				8,9,10,11,12,13,14,15,8,1,2,3,4,5,6,7,
-				8,10,11,12,13,14,14,15,8,1,2,2,3,4,5,6,
-				8,10,12,13,14,15,15,15,8,1,1,1,2,3,4,6,
-				8,12,14,15,15,15,15,15,8,1,1,1,1,1,2,4,
+			constexpr uint8_t posit_3_0_division_lookup[64] = {
+				3,0,0,3,3,1,2,3,3,2,1,3,3,3,3,3,
+				3,0,0,3,3,1,2,3,3,2,1,3,3,3,3,3,
+				3,0,0,3,3,1,2,3,3,2,1,3,3,3,3,3,
+				3,0,0,3,3,1,2,3,3,2,1,3,3,3,3,3,
 			};
 
-			constexpr uint8_t posit_4_0_reciprocal_lookup[16] = {
-				8,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,
+			constexpr uint8_t posit_3_0_reciprocal_lookup[8] = {
+				3,1,2,3,3,1,2,3,
 			};
 
 			template<>
-			class posit<NBITS_IS_4, ES_IS_0> {
+			class posit<NBITS_IS_3, ES_IS_0> {
 			public:
-				static constexpr size_t nbits = NBITS_IS_4;
+				static constexpr size_t nbits = NBITS_IS_3;
 				static constexpr size_t es = ES_IS_0;
 				static constexpr size_t sbits = 1;
 				static constexpr size_t rbits = nbits - sbits;
 				static constexpr size_t ebits = es;
 				static constexpr size_t fbits = nbits - 3;
 				static constexpr size_t fhbits = fbits + 1;
-				static constexpr uint8_t index_shift = 4;
+				static constexpr uint8_t index_shift = 3;
 
 				posit() { _bits = 0; }
 				posit(const posit&) = default;
@@ -116,27 +68,15 @@ namespace sw {
 					return operator=((long long)(rhs));
 				}
 				posit& operator=(long long rhs) {
-					// only valid integers are -4, -2, -1, 0, 1, 2, 4
-					if (rhs <= -4) {
-						_bits = 0x9;   // value is -4, or -maxpos
+					// only valid integers are -1, 0, 1
+					if (rhs <= -1) {
+						_bits = 0x2;   // value is -1, or -maxpos
 					}
-					else if (-4 > rhs && rhs <= -2) {
-						_bits = 0xA;   // value is -2
-					}
-					else if (-2 > rhs && rhs <= -1) {
-						_bits = 0xC;   // value is -1
-					}
-					else if (-1 > rhs && rhs < 1) {
+					else if (rhs == 0) {
 						_bits = 0x0;   // value is 0
 					}
-					else if (1 <= rhs && rhs < 2) {
-						_bits = 0x4;   // value is 1
-					}
-					else if (2 <= rhs && rhs < 4) {
-						_bits = 0x6;   // value is 2
-					}
-					else if (4 <= rhs) {
-						_bits = 0x7;   // value is 4, or maxpos
+					else if (1 <= rhs) {
+						_bits = 0x1;   // value is 1, or maxpos
 					}
 					return *this;
 				}
@@ -160,7 +100,7 @@ namespace sw {
 				explicit operator unsigned long() const { return to_long(); }
 				explicit operator unsigned int() const { return to_int(); }
 
-				posit& set(sw::unum::bitblock<NBITS_IS_4>& raw) {
+				posit& set(sw::unum::bitblock<NBITS_IS_3>& raw) {
 					_bits = uint8_t(raw.to_ulong());
 					return *this;
 				}
@@ -180,22 +120,22 @@ namespace sw {
 				}
 				posit& operator+=(const posit& b) {
 					uint16_t index = (_bits << index_shift) | b._bits;
-					_bits = posit_4_0_addition_lookup[index];
+					_bits = posit_3_0_addition_lookup[index];
 					return *this;
 				}
 				posit& operator-=(const posit& b) {
 					uint16_t index = (_bits << index_shift) | b._bits;
-					_bits = posit_4_0_subtraction_lookup[index];
+					_bits = posit_3_0_subtraction_lookup[index];
 					return *this;
 				}
 				posit& operator*=(const posit& b) {
 					uint16_t index = (_bits << index_shift) | b._bits;
-					_bits = posit_4_0_multiplication_lookup[index];
+					_bits = posit_3_0_multiplication_lookup[index];
 					return *this;
 				}
 				posit& operator/=(const posit& b) {
 					uint16_t index = (_bits << index_shift) | b._bits;
-					_bits = posit_4_0_division_lookup[index];
+					_bits = posit_3_0_division_lookup[index];
 					return *this;
 				}
 				posit& operator++() {
@@ -218,7 +158,7 @@ namespace sw {
 				}
 				posit reciprocate() const {
 					posit p;
-					p.set_raw_bits(posit_4_0_reciprocal_lookup[_bits]);
+					p.set_raw_bits(posit_3_0_reciprocal_lookup[_bits]);
 					return p;
 				}
 				// SELECTORS
@@ -246,7 +186,7 @@ namespace sw {
 
 				inline int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
 
-				bitblock<NBITS_IS_4> get() const { bitblock<NBITS_IS_4> bb; bb = int(_bits); return bb; }
+				bitblock<NBITS_IS_3> get() const { bitblock<NBITS_IS_3> bb; bb = int(_bits); return bb; }
 				unsigned long long encoding() const { return (unsigned long long)(_bits); }
 
 				inline void clear() { _bits = 0; }
@@ -351,32 +291,39 @@ namespace sw {
 						return *this;
 					}
 
-					//convert(v);
-					_bits = uint8_t(rhs); // TODO: not correct
+					if (rhs <= -0.5) {
+						_bits = 0x2;   // value is -1, or -maxpos
+					}
+					else if (-0.5 < rhs && rhs < 0.5) {
+						_bits = 0x0;   // value is 0
+					}
+					else if (rhs >= 0.5) {
+						_bits = 0x1;   // value is 1, or maxpos
+					}
 					return *this;
 				}
 
 				// I/O operators
-				friend std::ostream& operator<< (std::ostream& ostr, const posit<NBITS_IS_4, 0>& p);
-				friend std::istream& operator>> (std::istream& istr, posit<NBITS_IS_4, 0>& p);
+				friend std::ostream& operator<< (std::ostream& ostr, const posit<NBITS_IS_3, ES_IS_0>& p);
+				friend std::istream& operator>> (std::istream& istr, posit<NBITS_IS_3, ES_IS_0>& p);
 
 				// posit - posit logic functions
-				friend bool operator==(const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator!=(const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator< (const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator> (const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator<=(const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator>=(const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
+				friend bool operator==(const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs);
+				friend bool operator!=(const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs);
+				friend bool operator< (const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs);
+				friend bool operator> (const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs);
+				friend bool operator<=(const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs);
+				friend bool operator>=(const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs);
 
 			};
 
 			// posit I/O operators
-			inline std::ostream& operator<<(std::ostream& ostr, const posit<NBITS_IS_4, ES_IS_0>& p) {
-				return ostr << NBITS_IS_4 << '.' << ES_IS_0 << 'x' << to_hex(p.get()) << 'p';
+			inline std::ostream& operator<<(std::ostream& ostr, const posit<NBITS_IS_3, ES_IS_0>& p) {
+				return ostr << NBITS_IS_3 << '.' << ES_IS_0 << 'x' << to_hex(p.get()) << 'p';
 			}
 
 			// convert a posit value to a string using "nar" as designation of NaR
-			std::string to_string(const posit<NBITS_IS_4, ES_IS_0>& p, std::streamsize precision) {
+			std::string to_string(const posit<NBITS_IS_3, ES_IS_0>& p, std::streamsize precision) {
 				if (p.isnar()) {
 					return std::string("nar");
 				}
@@ -386,27 +333,27 @@ namespace sw {
 			}
 
 			// posit - posit binary logic operators
-			inline bool operator==(const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs) {
+			inline bool operator==(const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs) {
 				return lhs._bits == rhs._bits;
 			}
-			inline bool operator!=(const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs) {
+			inline bool operator!=(const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs) {
 				return !operator==(lhs, rhs);
 			}
-			inline bool operator< (const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs) {
+			inline bool operator< (const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs) {
 				return lhs._bits < rhs._bits;
 			}
-			inline bool operator> (const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs) {
+			inline bool operator> (const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs) {
 				return operator< (rhs, lhs);
 			}
-			inline bool operator<=(const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs) {
+			inline bool operator<=(const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs) {
 				return operator< (lhs, rhs) || operator==(lhs, rhs);
 			}
-			inline bool operator>=(const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs) {
+			inline bool operator>=(const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs) {
 				return !operator< (lhs, rhs);
 			}
 
-			inline posit<NBITS_IS_4, ES_IS_0> operator+(const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs) {
-				posit<NBITS_IS_4, ES_IS_0> sum = lhs;
+			inline posit<NBITS_IS_3, ES_IS_0> operator+(const posit<NBITS_IS_3, ES_IS_0>& lhs, const posit<NBITS_IS_3, ES_IS_0>& rhs) {
+				posit<NBITS_IS_3, ES_IS_0> sum = lhs;
 				sum += rhs;
 				return sum;
 			}
