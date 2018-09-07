@@ -11,26 +11,37 @@ namespace sw {
 #ifdef POSIT_FAST_SPECIALIZATION
 #define POSIT_FAST_POSIT_2_0
 #endif
+		constexpr uint8_t posit_2_0_addition_lookup[16] = {
+			0,1,2,3,  // 0   + {0,1,NaR,-1}
+			1,1,2,0,  // 1   + {0,1,NaR,-1}
+			2,2,2,2,  // NaR + {0,1,NaR,-1}
+			3,0,2,3,  // -1  + {0,1,NaR,-1}
+		};
 
-			constexpr uint8_t posit_2_0_addition_lookup[16] = {
-				0,1,0,3,1,1,0,3,2,0,2,3,3,3,3,3,
-			};
+		constexpr uint8_t posit_2_0_subtraction_lookup[16] = {
+			0,3,2,1,  // 0   - {0,1,NaR,-1}
+			1,0,2,1,  // 1   - {0,1,NaR,-1}
+			2,2,2,2,  // NaR - {0,1,NaR,-1}
+			3,3,2,0,  // -1  - {0,1,NaR,-1}
+		};
 
-			constexpr uint8_t posit_2_0_subtraction_lookup[16] = {
-				0,2,1,3,1,0,1,3,2,2,0,3,3,3,3,3,
-			};
+		constexpr uint8_t posit_2_0_multiplication_lookup[16] = {
+			0,0,2,0,  // 0   * {0,1,NaR,-1}
+			0,1,2,3,  // 1   * {0,1,NaR,-1}
+			2,2,2,2,  // NaR * {0,1,NaR,-1}
+			0,3,2,1,  // -1  * {0,1,NaR,-1}
+		};
 
-			constexpr uint8_t posit_2_0_multiplication_lookup[16] = {
-				0,0,0,3,1,1,2,3,0,2,1,3,3,3,3,3,
-			};
+		constexpr uint8_t posit_2_0_division_lookup[16] = {
+			2,0,2,0,  // 0   / {0,1,NaR,-1}
+			2,1,2,3,  // 1   / {0,1,NaR,-1}
+			2,2,2,2,  // NaR / {0,1,NaR,-1}
+			2,3,2,1,  // -1  / {0,1,NaR,-1}
+		};
 
-			constexpr uint8_t posit_2_0_division_lookup[16] = {
-				3,0,0,3,3,1,2,3,3,2,1,3,3,3,3,3,
-			};
-
-			constexpr uint8_t posit_2_0_reciprocal_lookup[4] = {
-				3,1,2,3,
-			};
+		constexpr uint8_t posit_2_0_reciprocal_lookup[4] = {
+			2,1,2,3,
+		};
 
 			template<>
 			class posit<NBITS_IS_2, ES_IS_0> {
@@ -43,6 +54,7 @@ namespace sw {
 				static constexpr size_t fbits = 0;
 				static constexpr size_t fhbits = fbits + 1;
 				static constexpr uint8_t index_shift = 2;
+				static constexpr uint8_t bit_mask = 0x3;  // last two bits
 
 				posit() { _bits = 0; }
 				posit(const posit&) = default;
@@ -68,7 +80,7 @@ namespace sw {
 				posit& operator=(long long rhs) {
 					// only valid integers are -1, 0, 1
 					if (rhs <= -1) {
-						_bits = 0x2;   // value is -1, or -maxpos
+						_bits = 0x3;   // value is -1, or -maxpos
 					}
 					else if (rhs == 0) {
 						_bits = 0x0;   // value is 0
@@ -99,7 +111,7 @@ namespace sw {
 				explicit operator unsigned int() const { return to_int(); }
 
 				posit& set(sw::unum::bitblock<NBITS_IS_2>& raw) {
-					_bits = uint8_t(raw.to_ulong());
+					_bits = uint8_t(raw.to_ulong() & bit_mask);
 					return *this;
 				}
 				posit& set_raw_bits(uint64_t value) {
@@ -107,14 +119,24 @@ namespace sw {
 					return *this;
 				}
 				posit operator-() const {
-					if (iszero()) {
-						return *this;
-					}
-					if (isnar()) {
-						return *this;
-					}
 					posit p;
-					return p.set_raw_bits((~_bits) + 1);
+					switch (_bits) {
+					case 0x00:
+						p.set_raw_bits(0x00);
+						break;
+					case 0x01:
+						p.set_raw_bits(0x03);
+						break;
+					case 0x02:
+						p.set_raw_bits(0x02);
+						break;
+					case 0x03:
+						p.set_raw_bits(0x01);
+						break;
+					default:
+						p.set_raw_bits(0x02);
+					}
+					return p;
 				}
 				posit& operator+=(const posit& b) {
 					uint16_t index = (_bits << index_shift) | b._bits;
@@ -185,11 +207,11 @@ namespace sw {
 				inline int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
 
 				bitblock<NBITS_IS_2> get() const { bitblock<NBITS_IS_2> bb; bb = int(_bits); return bb; }
-				unsigned long long encoding() const { return (unsigned long long)(_bits & 0x03); }
+				unsigned long long encoding() const { return (unsigned long long)(_bits & bit_mask); }
 
-				inline void clear() { _bits = 0; }
-				inline void setzero() { clear(); }
-				inline void setnar() { _bits = 0x8; }
+				inline void clear()   { _bits = 0x00; }
+				inline void setzero() { _bits = 0x00; }
+				inline void setnar()  { _bits = 0x02; }
 
 			private:
 				uint8_t _bits;
@@ -232,46 +254,44 @@ namespace sw {
 					return (float)to_double();
 				}
 				double      to_double() const {
-					if (iszero())	return 0.0;
-					if (isnar())	return -INFINITY;
-					bool		     	 _sign;
-					regime<nbits, es>    _regime;
-					exponent<nbits, es>  _exponent;
-					fraction<fbits>      _fraction;
-					bitblock<nbits>		 _raw_bits;
-					_raw_bits.reset();
-					uint64_t mask = 1;
-					for (size_t i = 0; i < nbits; i++) {
-						_raw_bits.set(i, (_bits & mask));
-						mask <<= 1;
+					double value;
+					switch (_bits & bit_mask) {
+					case 0x00:
+						value = 0.0;
+						break;
+					case 0x01:
+						value = 1.0;
+						break;
+					case 0x02:
+						value = -INFINITY;
+						break;
+					case 0x03:
+						value = -1.0;
+						break;
+					default:
+						value = -INFINITY;
 					}
-					decode(_raw_bits, _sign, _regime, _exponent, _fraction);
-					double s = (_sign ? -1.0 : 1.0);
-					double r = _regime.value();
-					double e = _exponent.value();
-					double f = (1.0 + _fraction.value());
-					return s * r * e * f;
+					return value;
 				}
 				long double to_long_double() const {
-					if (iszero())  return 0.0;
-					if (isnar())   return NAN;
-					bool		     	 _sign;
-					regime<nbits, es>    _regime;
-					exponent<nbits, es>  _exponent;
-					fraction<fbits>      _fraction;
-					bitblock<nbits>		 _raw_bits;
-					_raw_bits.reset();
-					uint64_t mask = 1;
-					for (size_t i = 0; i < nbits; i++) {
-						_raw_bits.set(i, (_bits & mask));
-						mask <<= 1;
+					long double value;
+					switch (_bits & bit_mask) {
+					case 0x00:
+						value = 0.0;
+						break;
+					case 0x01:
+						value = 1.0;
+						break;
+					case 0x02:
+						value = -INFINITY;
+						break;
+					case 0x03:
+						value = -1.0;
+						break;
+					default:
+						value = -INFINITY;
 					}
-					decode(_raw_bits, _sign, _regime, _exponent, _fraction);
-					long double s = (_sign ? -1.0 : 1.0);
-					long double r = _regime.value();
-					long double e = _exponent.value();
-					long double f = (1.0 + _fraction.value());
-					return s * r * e * f;
+					return value;
 				}
 
 				template <typename T>
@@ -280,23 +300,19 @@ namespace sw {
 					value<dfbits> v((T)rhs);
 
 					// special case processing
-					if (v.iszero()) {
-						setzero();
-						return *this;
-					}
 					if (v.isinf() || v.isnan()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
 						setnar();
 						return *this;
 					}
 
-					if (rhs <= -0.5) {
-						_bits = 0x2;   // value is -1, or -maxpos
+					if (rhs <= -0.25) {
+						_bits = 0x03;   // value is -1, or -maxpos
 					}
-					else if (-0.5 < rhs && rhs < 0.5) {
-						_bits = 0x0;   // value is 0
+					else if (-0.25 < rhs && rhs < 0.25) {
+						_bits = 0x00;   // value is 0
 					}
-					else if (rhs >= 0.5) {
-						_bits = 0x1;   // value is 1, or maxpos
+					else if (rhs >= 0.25) {
+						_bits = 0x01;   // value is 1, or maxpos
 					}
 					return *this;
 				}
@@ -317,7 +333,20 @@ namespace sw {
 
 			// posit I/O operators
 			inline std::ostream& operator<<(std::ostream& ostr, const posit<NBITS_IS_2, ES_IS_0>& p) {
-				return ostr << NBITS_IS_2 << '.' << ES_IS_0 << 'x' << to_hex(p.get()) << 'p';
+				// to make certain that setw and left/right operators work properly
+				// we need to transform the posit into a string
+				std::stringstream ss;
+#if POSIT_ROUNDING_ERROR_FREE_IO_FORMAT
+				ss << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
+#else
+				std::streamsize prec = ostr.precision();
+				std::streamsize width = ostr.width();
+				std::ios_base::fmtflags ff;
+				ff = ostr.flags();
+				ss.flags(ff);
+				ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
+#endif
+				return ostr << ss.str();
 			}
 
 			// convert a posit value to a string using "nar" as designation of NaR
@@ -345,31 +374,24 @@ namespace sw {
 					true, true, false, false,
 				};
 				uint16_t index = (uint16_t(lhs.encoding()) << NBITS_IS_2) | uint16_t(rhs.encoding());
-//				std::cout << "Index is " << index << " " << lhs.encoding() << " " << rhs.encoding() << std::endl;
 				return posit_2_0_less_than_lookup[index];
 			}
-			template<>
-			inline bool operator< <NBITS_IS_2, ES_IS_0> (int lhs, const posit<NBITS_IS_2, ES_IS_0>& rhs) {
+			inline bool operator< (int lhs, const posit<NBITS_IS_2, ES_IS_0>& rhs) {
 				return posit<NBITS_IS_2, ES_IS_0>(lhs) < rhs;
 			}
-			template<>
-			inline bool operator< <NBITS_IS_2, ES_IS_0> (const posit<NBITS_IS_2, ES_IS_0>& lhs, int rhs) {
+			inline bool operator< (const posit<NBITS_IS_2, ES_IS_0>& lhs, int rhs) {
 				return lhs < posit<NBITS_IS_2, ES_IS_0>(rhs);
 			}
-			template<>
-			inline bool operator< <NBITS_IS_2, ES_IS_0> (float lhs, const posit<NBITS_IS_2, ES_IS_0>& rhs) {
+			inline bool operator< (float lhs, const posit<NBITS_IS_2, ES_IS_0>& rhs) {
 				return posit<NBITS_IS_2, ES_IS_0>(lhs) < rhs;
 			}
-			template<>
-			inline bool operator< <NBITS_IS_2, ES_IS_0> (const posit<NBITS_IS_2, ES_IS_0>& lhs, float rhs) {
+			inline bool operator< (const posit<NBITS_IS_2, ES_IS_0>& lhs, float rhs) {
 				return lhs < posit<NBITS_IS_2, ES_IS_0>(rhs);
 			}
-			template<>
-			inline bool operator< <NBITS_IS_2, ES_IS_0> (double lhs, const posit<NBITS_IS_2, ES_IS_0>& rhs) {
+			inline bool operator< (double lhs, const posit<NBITS_IS_2, ES_IS_0>& rhs) {
 				return posit<NBITS_IS_2, ES_IS_0>(lhs) < rhs;
 			}
-			template<>
-			inline bool operator< <NBITS_IS_2, ES_IS_0> (const posit<NBITS_IS_2, ES_IS_0>& lhs, double rhs) {
+			inline bool operator< (const posit<NBITS_IS_2, ES_IS_0>& lhs, double rhs) {
 				return lhs < posit<NBITS_IS_2, ES_IS_0>(rhs);
 			}
 			inline bool operator> (const posit<NBITS_IS_2, ES_IS_0>& lhs, const posit<NBITS_IS_2, ES_IS_0>& rhs) {

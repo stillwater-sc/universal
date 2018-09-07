@@ -28,7 +28,7 @@ try {
 	const size_t es = 0;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	std::string tag = " posit<2,0>";
 
 #if defined(POSIT_FAST_POSIT_2_0)
