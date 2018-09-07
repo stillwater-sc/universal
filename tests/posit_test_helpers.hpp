@@ -206,7 +206,7 @@ namespace sw {
 
 		// enumerate all conversion cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) {
 			// we are going to generate a test set that consists of all posit configs and their midpoints
 			// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 			// These larger posits will be at the mid-point between the smaller posit sample values
@@ -317,6 +317,31 @@ namespace sw {
 			}
 			return nrOfFailedTests;
 		}
+		template<>
+		int ValidateConversion<NBITS_IS_2, ES_IS_0>(const std::string& tag, bool bReportIndividualTestCases) {
+			int nrOfFailedTestCases = 0;
+			posit<NBITS_IS_2, ES_IS_0> p;
+			// special case
+			p = -INFINITY;
+			if (!isnar(p)) nrOfFailedTestCases++;
+			// test vector
+			std::vector<double> in  = { -4.0, -2.0, -1.0, -0.5, -0.25, 0.0, 0.25, 0.5, 1.0, 2.0, 4.0 };
+			std::vector<double> ref = { -1.0, -1.0, -1.0, -1.0, -1.00, 0.0, 1.00, 1.0, 1.0, 1.0, 1.0 };
+			size_t ref_index = 0;
+			for (auto v : in) {
+
+				p = v;
+				double refv = ref[ref_index++];
+				if (double(p) != refv) {
+					if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << refv << std::endl;
+					nrOfFailedTestCases++;
+				}
+				else {
+					//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << refv << std::endl;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
 
 		// enumerate all conversion cases for integers
 		template<size_t nbits, size_t es>
@@ -344,6 +369,46 @@ namespace sw {
 					}
 				}
 				++p;
+			}
+			return nrOfFailedTestCases;
+		}
+		template<>
+		int ValidateIntegerConversion<NBITS_IS_2, ES_IS_0>(std::string& tag, bool bReportIndividualTestCases) {
+			std::vector<int> in = { -4, -3, -2, -1, 0, 1, 2, 3, 4 };
+			std::vector<int> ref = { -1, -1, -1, -1, 0, 1, 1, 1, 1 };
+			int nrOfFailedTestCases = 0;
+			size_t ref_index = 0;
+			for (auto v : in) {
+				posit<NBITS_IS_2, ES_IS_0> p;
+				p = v;
+				int refv = ref[ref_index++];
+				if (int(p) != refv) {
+					if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << refv << std::endl;
+					nrOfFailedTestCases++;
+				}
+				else {
+					//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << refv << std::endl;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
+		template<>
+		int ValidateIntegerConversion<NBITS_IS_3, ES_IS_0>(std::string& tag, bool bReportIndividualTestCases) {
+			std::vector<int> in = { -4, -3, -2, -1, 0, 1, 2, 3, 4 };
+			std::vector<int> ref = { -2, -2, -2, -1, 0, 1, 2, 2, 2 };
+			int nrOfFailedTestCases = 0;
+			size_t ref_index = 0;
+			for (auto v : in) {
+				posit<NBITS_IS_3, ES_IS_0> p;
+				p = v;
+				int refv = ref[ref_index++];
+				if (int(p) != refv) {
+					if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << refv << std::endl;
+					nrOfFailedTestCases++;
+				}
+				else {
+					//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << refv << std::endl;
+				}
 			}
 			return nrOfFailedTestCases;
 		}
