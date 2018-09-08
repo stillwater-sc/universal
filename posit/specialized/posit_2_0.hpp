@@ -11,6 +11,17 @@ namespace sw {
 #ifdef POSIT_FAST_SPECIALIZATION
 #define POSIT_FAST_POSIT_2_0
 #endif
+
+		/*  values of a posit<2,0>
+		00 +0
+		01 +1
+		10 nar
+		11 -1
+		*/
+		constexpr float posit_2_0_values_lookup[8] = {
+			0.0f, 1.0f, -INFINITY, -1.0f,
+		};
+
 		constexpr uint8_t posit_2_0_addition_lookup[16] = {
 			0,1,2,3,  // 0   + {0,1,NaR,-1}
 			1,1,2,0,  // 1   + {0,1,NaR,-1}
@@ -53,8 +64,11 @@ namespace sw {
 				static constexpr size_t ebits = es;
 				static constexpr size_t fbits = 0;
 				static constexpr size_t fhbits = fbits + 1;
-				static constexpr uint8_t index_shift = 2;
+				static constexpr uint8_t index_shift = NBITS_IS_2;
 				static constexpr uint8_t bit_mask = 0x3;  // last two bits
+				static constexpr uint8_t nar_encoding = 0x02;
+				static constexpr uint8_t one_encoding = 0x01;
+				static constexpr uint8_t minus_one_encoding = 0x03;
 
 				posit() { _bits = 0; }
 				posit(const posit&) = default;
@@ -62,8 +76,8 @@ namespace sw {
 				posit& operator=(const posit&) = default;
 				posit& operator=(posit&&) = default;
 
-				posit(int initial_value) { _bits = uint8_t(initial_value & 0x03); }
-				posit(long long initial_value) { _bits = uint8_t(initial_value & 0x03); }
+				posit(int initial_value) { _bits = uint8_t(initial_value & bit_mask); }
+				posit(long long initial_value) { _bits = uint8_t(initial_value & bit_mask); }
 				posit(float initial_value) {
 					*this = float_assign(initial_value);
 				}
@@ -115,7 +129,7 @@ namespace sw {
 					return *this;
 				}
 				posit& set_raw_bits(uint64_t value) {
-					_bits = uint8_t(value & 0x0f);
+					_bits = uint8_t(value & bit_mask);
 					return *this;
 				}
 				posit operator-() const {
@@ -183,16 +197,16 @@ namespace sw {
 				}
 				// SELECTORS
 				inline bool isnar() const {
-					return (_bits == 0x2);
+					return (_bits == nar_encoding);
 				}
 				inline bool iszero() const {
 					return (_bits == 0);
 				}
 				inline bool isone() const { // pattern 010000....
-					return (_bits == 0x1);
+					return (_bits == one_encoding);
 				}
 				inline bool isminusone() const { // pattern 110000...
-					return (_bits == 0x3);
+					return (_bits == minus_one_encoding);
 				}
 				inline bool isneg() const {
 					return (_bits & 0x2);
@@ -211,7 +225,7 @@ namespace sw {
 
 				inline void clear()   { _bits = 0x00; }
 				inline void setzero() { _bits = 0x00; }
-				inline void setnar()  { _bits = 0x02; }
+				inline void setnar()  { _bits = nar_encoding; }
 
 			private:
 				uint8_t _bits;

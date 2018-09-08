@@ -611,7 +611,7 @@ namespace sw {
 				return float_assign(rhs);
 			}
 			posit& operator=(const long double rhs) {
-       				return float_assign(rhs);
+       			return float_assign(rhs);
 			}
 	
 			// assignment for value type
