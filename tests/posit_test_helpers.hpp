@@ -41,7 +41,7 @@ namespace sw {
 		template<>
 		void ReportConversionError<2,0>(std::string test_case, std::string op, double input, double reference, const posit<2, 0>& presult) {
 			constexpr size_t nbits = 2;
-			constexpr size_t es = 0;
+			//constexpr size_t es = 0;
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << input
@@ -56,7 +56,7 @@ namespace sw {
 		template<>
 		void ReportConversionError<3, 1>(std::string test_case, std::string op, double input, double reference, const posit<3, 1>& presult) {
 			constexpr size_t nbits = 3;
-			constexpr size_t es = 1; 
+			//constexpr size_t es = 1; 
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << input
