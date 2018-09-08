@@ -1,4 +1,4 @@
-// 8bit_posit.cpp: Functionality tests for standard 8-bit posits
+// 3bit_posit.cpp: Functionality tests for standard 8-bit posits
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
@@ -8,13 +8,13 @@
 // enable fast specialized posit<3,0>
 #define POSIT_FAST_SPECIALIZATION
 // enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <posit>
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
 
 /*
- posits with nbits = 3 have no exponent bits, i.e. es = 0.
+ posit of size nbits = 3 without exponent bits, i.e. es = 0.
 */
 
 int main(int argc, char** argv)

@@ -1,4 +1,4 @@
-// 8bit_posit.cpp: Functionality tests for standard 8-bit posits
+// 2bit_posit.cpp: Functionality tests for standard 8-bit posits
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
@@ -14,7 +14,7 @@
 #include "../posit_test_helpers.hpp"
 
 /*
- posits with nbits = 2 have no exponent bits, i.e. es = 0.
+ posit of size nbits = 2 without exponent bits, i.e. es = 0.
 */
 
 int main(int argc, char** argv)
