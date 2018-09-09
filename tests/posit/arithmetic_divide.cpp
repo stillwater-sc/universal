@@ -206,18 +206,23 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 2>(tag, bReportIndividualTestCases), "posit<3,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<3, 3>(tag, bReportIndividualTestCases), "posit<3,3>", "division");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<4, 2>(tag, bReportIndividualTestCases), "posit<4,2>", "division");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<5, 3>(tag, bReportIndividualTestCases), "posit<5,3>", "division");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(ValidateDivision<6, 4>(tag, bReportIndividualTestCases), "posit<6,4>", "division");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "division");

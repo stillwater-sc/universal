@@ -58,10 +58,11 @@ try {
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 0>("Manual Testing", true), "posit<3,0>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 1>("Manual Testing", true), "posit<3,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 0>("Manual Testing", true), "posit<5,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>("Manual Testing", true), "posit<8,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 2>("Manual Testing", true), "posit<3,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<3, 3>("Manual Testing", true), "posit<3,3>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, true, OPCODE_ADD, 1000), "posit<16,1>", "addition");
+
+//	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, true, OPCODE_ADD, 1000), "posit<16,1>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(tag, true, OPCODE_ADD, 1000), "posit<64,2>", "addition");
 
 #else
@@ -75,21 +76,25 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<4, 2>(tag, bReportIndividualTestCases), "posit<4,2>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<5, 3>(tag, bReportIndividualTestCases), "posit<5,3>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<6, 4>(tag, bReportIndividualTestCases), "posit<6,4>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<7, 5>(tag, bReportIndividualTestCases), "posit<7,5>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "addition");
@@ -97,6 +102,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 6>(tag, bReportIndividualTestCases), "posit<8,6>", "addition");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<16,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<24, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<24,1>", "addition");
