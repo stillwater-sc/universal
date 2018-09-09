@@ -5,6 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
+// enable/disable special posit format I/O
+#define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 1
 #include <posit>
 
 /*
@@ -24,7 +26,6 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	//int nrOfFailedTestCases = 0;
 	bool csv = false;
 
 	cout << "Generate posit configurations" << endl;
@@ -36,12 +37,16 @@ try {
 	GeneratePositTable<3, 1>(cout, csv);
 	GeneratePositTable<3, 2>(cout, csv);
 	GeneratePositTable<3, 3>(cout, csv);
+	GeneratePositTable<3, 4>(cout, csv);
+	GeneratePositTable<3, 5>(cout, csv);
 
 	GeneratePositTable<4, 0>(cout, csv);
 	GeneratePositTable<4, 1>(cout, csv);
 	GeneratePositTable<4, 2>(cout, csv);
-
-	return 0;
+	GeneratePositTable<4, 3>(cout, csv);
+	GeneratePositTable<4, 4>(cout, csv);
+	GeneratePositTable<4, 5>(cout, csv);
+	GeneratePositTable<4, 6>(cout, csv);
 
 	GeneratePositTable<5, 0>(cout, csv);
 	GeneratePositTable<5, 1>(cout, csv);
