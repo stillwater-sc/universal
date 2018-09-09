@@ -245,7 +245,7 @@ namespace sw {
 			const size_t size = (1 << nbits);
 			posit<nbits, es>	p;
 			if (csvFormat) {
-				ostr << "Generate Posit Lookup table for a POSIT<" << nbits << "," << es << "> in CSV format" << std::endl;
+				ostr << "\"Generate Posit Lookup table for a POSIT<" << nbits << "," << es << "> in CSV format\"" << std::endl;
 				ostr << "#, Binary, Decoded, k, sign, scale, regime, exponent, fraction, value, posit\n";
 				for (size_t i = 0; i < size; i++) {
 					p.set_raw_bits(i);
@@ -312,7 +312,7 @@ namespace sw {
 						<< std::setw(exponent_column) << std::right << to_string(e)
 						<< std::setw(fraction_column) << std::right << to_string(f)
 						<< std::setw(value_column) << to_string(p, 22) << " "
-						<< std::setw(posit_format_column) << std::right << to_string(p)
+						<< std::setw(posit_format_column) << std::right << p
 						<< std::endl;
 				}
 			}
