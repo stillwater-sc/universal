@@ -30,17 +30,23 @@ try {
 	cout << "Generate posit configurations" << endl;
 
 	// TODO: need to re-enable nbits = 2
-	//GeneratePositTable<2, 0>(cout, csv);
+	GeneratePositTable<2, 0>(cout, csv);
 
 	GeneratePositTable<3, 0>(cout, csv);
-	//GeneratePositTable<3, 1>(cout, csv);
+	GeneratePositTable<3, 1>(cout, csv);
+	GeneratePositTable<3, 2>(cout, csv);
+	GeneratePositTable<3, 3>(cout, csv);
 
 	GeneratePositTable<4, 0>(cout, csv);
 	GeneratePositTable<4, 1>(cout, csv);
+	GeneratePositTable<4, 2>(cout, csv);
+
+	return 0;
 
 	GeneratePositTable<5, 0>(cout, csv);
 	GeneratePositTable<5, 1>(cout, csv);
 	GeneratePositTable<5, 2>(cout, csv);
+	GeneratePositTable<5, 3>(cout, csv);
 
 	GeneratePositTable<6, 0>(cout, csv);
 	GeneratePositTable<6, 1>(cout, csv);

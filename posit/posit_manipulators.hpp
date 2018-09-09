@@ -240,8 +240,8 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		void GeneratePositTable(std::ostream& ostr, bool csvFormat = false)
 		{
-			static_assert(nbits > 2, "GeneratePositTable not valid for nbits < 3");
-			constexpr size_t fbits = nbits - 3 - es;
+			//static_assert(nbits > 2, "GeneratePositTable not valid for nbits < 3");
+			static constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
 			const size_t size = (1 << nbits);
 			posit<nbits, es>	p;
 			if (csvFormat) {

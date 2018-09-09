@@ -152,18 +152,23 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 2>(tag, bReportIndividualTestCases), "posit<3,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<3, 3>(tag, bReportIndividualTestCases), "posit<3,3>", "multiplication");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<4, 2>(tag, bReportIndividualTestCases), "posit<4,2>", "multiplication");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<5, 3>(tag, bReportIndividualTestCases), "posit<5,3>", "multiplication");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<6, 4>(tag, bReportIndividualTestCases), "posit<6,4>", "multiplication");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "multiplication");

@@ -221,7 +221,7 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		inline bitblock<nbits> decoded(const posit<nbits, es>& p) {
 			constexpr size_t rbits = nbits - 1;
-			constexpr size_t fbits = nbits - 3 - es;
+			constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 			bool		     	 _sign;
 			regime<nbits, es>    _regime;
 			exponent<nbits, es>  _exponent;

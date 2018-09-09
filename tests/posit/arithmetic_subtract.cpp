@@ -81,18 +81,23 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<3, 2>(tag, bReportIndividualTestCases), "posit<3,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<3, 3>(tag, bReportIndividualTestCases), "posit<3,3>", "subtraction");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<4, 2>(tag, bReportIndividualTestCases), "posit<4,2>", "subtraction");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<5, 3>(tag, bReportIndividualTestCases), "posit<5,3>", "subtraction");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<6, 4>(tag, bReportIndividualTestCases), "posit<6,4>", "subtraction");
 
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "subtraction");
