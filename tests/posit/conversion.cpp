@@ -59,7 +59,7 @@ void GenerateLogicPatternsForDebug() {
 	double eps = 1.0e-10;
 	double da, input;
 	sw::unum::posit<nbits, es> pa;
-	std::cout << spec_to_string(pa) << std::endl;
+	std::cout << sw::unum::dynamic_range(pa) << std::endl;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
 		pref.set_raw_bits(i);
 		da = double(pref);
