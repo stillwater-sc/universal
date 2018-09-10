@@ -17,15 +17,12 @@ void EnumeratePositComponentsAcrossTheirScale() {
 	using namespace std;
 	using namespace sw::unum;
 
-	static_assert(nbits > es + 2, "posit configuration must adhere to nbits > es + 2");
-	if (nbits < es + 3) return;
-
-	cout << "Enumerating the posit components across the dynamic range of the posit configuration\n";
+	cout << "Enumerating the posit components across the dynamic range of the posit<" << nbits << "," << es << ">\n";
 
 	posit<nbits, es> p;
 
 	// calculate the dynamic range of this posit configuration
-	int k_max = nbits - 1;
+	int k_max = nbits - 2;
 	int bound = (k_max << es);
 
 	// regime component of the posit
@@ -34,7 +31,7 @@ void EnumeratePositComponentsAcrossTheirScale() {
 	for (int scale = -bound; scale < bound; scale++) {
 		int k = scale >> es;
 		test_regime.assign_regime_pattern(k);
-		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime.get() << " scale " << test_regime.scale() << '\n';
+		cout << "scale of input number: " << setw(4) << scale << " regime attributes: k " << setw(2) << k << " " << test_regime.get() << " scale " << test_regime.scale() << '\n';
 	}
 	cout << endl;
 
@@ -45,13 +42,13 @@ void EnumeratePositComponentsAcrossTheirScale() {
 		int k = calculate_k<nbits, es>(scale);
 		size_t nrOfRegimeBits = test_regime.assign_regime_pattern(k);
 		test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
-		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime << " " << test_exponent << '\n';
+		cout << "scale of input number: " << setw(4) << scale << " exponent bits: " << test_exponent << '\n';
 	}
 	cout << endl;
 
 	// fraction component of the posit
 	cout << "FRACTION\n";
-	constexpr size_t fbits = nbits - 3 - es;
+	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 	bitblock<fbits> _fraction;
 	fraction<fbits> test_fraction;
 	test_fraction.set(_fraction, fbits);
@@ -59,7 +56,7 @@ void EnumeratePositComponentsAcrossTheirScale() {
 		int k = calculate_k<nbits, es>(scale);;
 		size_t nrOfRegimeBits = test_regime.assign_regime_pattern(k);
 		test_exponent.assign_exponent_bits(scale, k, nrOfRegimeBits);
-		cout << "scale " << setw(4) << scale << " k " << setw(2) << k << " " << test_regime << " " << test_exponent << " " << test_fraction << '\n';
+		cout << "scale of input number: " << setw(4) << scale << " fraction bits: " << test_fraction << '\n';
 	}
 	cout << endl;
 }
@@ -69,9 +66,15 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
+	EnumeratePositComponentsAcrossTheirScale<4, 5>();
+	return 0;
+
 	EnumeratePositComponentsAcrossTheirScale<4, 0>();
 	EnumeratePositComponentsAcrossTheirScale<4, 1>();
-	//EnumeratePositComponentsAcrossTheirScale<4, 2>();  TODO: to have an independent es, we need a different fraction size calculation
+	EnumeratePositComponentsAcrossTheirScale<4, 2>();
+	EnumeratePositComponentsAcrossTheirScale<4, 3>();
+	EnumeratePositComponentsAcrossTheirScale<4, 4>();
+	EnumeratePositComponentsAcrossTheirScale<4, 5>();
 
 	return EXIT_SUCCESS;
 }
