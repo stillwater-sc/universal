@@ -31,7 +31,7 @@ try {
 
 	cout << "Standard posit<128,4> configuration tests" << endl;
 	posit<nbits, es> p;
-	cout << spec_to_string(p) << endl << endl;
+	cout << dynamic_range(p) << endl << endl;
 
 	throw("128bit posits are not yet supported");
 

@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>  // for frexp/frexpf
+#include <typeinfo>  // for typeid()
 
 // This file contains functions that use the posit type.
 // If you have helper functions that the posit type could use, but does not depend on 
@@ -18,9 +19,21 @@ namespace sw {
 
 		// DEBUG/REPORTING HELPERS
 
+		template<typename Ty>
+		std::string dynamic_range(Ty v) {
+			std::stringstream ss;
+			ss << std::setw(13) << typeid(v).name();
+			ss << "                       ";
+			ss << "minexp scale " << std::setw(10) << std::numeric_limits<Ty>::min_exponent << "     ";
+			ss << "maxexp scale " << std::setw(10) << std::numeric_limits<Ty>::max_exponent << "     ";
+			ss << "minimum " << std::setw(12) << std::numeric_limits<Ty>::min() << "     ";
+			ss << "maximum " << std::setw(12) << std::numeric_limits<Ty>::max() << "     ";
+			return ss.str();
+		}
+
 		// Report the posit minpos/maxpos scales
 		template<size_t nbits, size_t es>
-		std::string spec_to_string(const posit<nbits, es>& p) {
+		std::string dynamic_range(const posit<nbits, es>& p) {
 			std::stringstream ss;
 			ss << " posit<" << std::setw(3) << nbits << "," << es << "> ";
 			ss << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
