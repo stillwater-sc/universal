@@ -39,7 +39,7 @@ void GenerateLogicPatternsForDebug() {
 	const double eps = 1.0e-10;  // TODO for big posits, eps is important to resolve differences
 	double da, input;
 	sw::unum::posit<nbits, es> pa;
-	std::cout << sw::unum::spec_to_string(pa) << std::endl;
+	std::cout << sw::unum::dynamic_range(pa) << std::endl;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
 		pref.set_raw_bits(i);
 		da = double(pref);
@@ -568,7 +568,7 @@ void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
 
 	posit<nbits, es> p;
 	cout << endl << endl << "-------------------------------------------" << endl;
-	cout << spec_to_string(p) << endl;
+	cout << dynamic_range(p) << endl;
 	cout << components_to_string(p) << endl;
 
 	int index;

@@ -42,8 +42,6 @@ try {
 	posit<nbits, es> pdblmin(MY_DBL_MIN);
 	posit<nbits, es> pone(1);
 
-	posit<nbits, es> p = pdblmin / posit<nbits,es>(2.0);
-
 	std::cout << std::boolalpha
 		<< "isnormal(NaN) = " << std::isnormal(NAN) << '\n'
 		<< "isnormal(Inf) = " << std::isnormal(INFINITY) << '\n'

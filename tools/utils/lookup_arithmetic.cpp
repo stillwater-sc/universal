@@ -32,8 +32,6 @@ template<size_t nbits, size_t es>
 void GenerateLookupTable(BINARY_ARITHMETIC_OPERATOR op) {
 	constexpr size_t nr_of_posits = (1 << nbits);
 	sw::unum::posit<nbits, es> pa, pb, presult;
-	unsigned long long mask = nr_of_posits - 1;
-	unsigned long long base;
 	for (size_t i = 0; i < nr_of_posits; i++) {
 		pa.set_raw_bits(i);
 		for (size_t j = 0; j < nr_of_posits; j++) {
@@ -53,7 +51,7 @@ void GenerateLookupTable(BINARY_ARITHMETIC_OPERATOR op) {
 				break;
 			}
 
-			base = pa.get().to_ullong() << nbits | pb.get().to_ullong();
+			//unsigned long long base = pa.get().to_ullong() << nbits | pb.get().to_ullong();
 			//std::cout << std::hex << base << " " << presult.get() << std::endl;
 			std::cout << presult.get().to_ulong() << ",";
 		}
@@ -67,8 +65,6 @@ void GenerateLookupTable(BINARY_LOGIC_OPERATOR op) {
 	constexpr size_t nr_of_posits = (1 << nbits);
 	sw::unum::posit<nbits, es> pa, pb;
 	bool result;
-	unsigned long long mask = nr_of_posits - 1;
-	unsigned long long base;
 	for (size_t i = 0; i < nr_of_posits; i++) {
 		pa.set_raw_bits(i);
 		for (size_t j = 0; j < nr_of_posits; j++) {
@@ -88,7 +84,7 @@ void GenerateLookupTable(BINARY_LOGIC_OPERATOR op) {
 				break;
 			}
 
-			base = pa.get().to_ullong() << nbits | pb.get().to_ullong();
+			//unsigned long long base = pa.get().to_ullong() << nbits | pb.get().to_ullong();
 			//std::cout << std::hex << base << " " << presult.get() << std::endl;
 			std::cout << result << ",";
 		}
