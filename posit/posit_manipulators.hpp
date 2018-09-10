@@ -17,8 +17,10 @@ namespace sw {
 	namespace unum {
 
 		// DEBUG/REPORTING HELPERS
+
+		// Report the posit minpos/maxpos scales
 		template<size_t nbits, size_t es>
-		std::string spec_to_string(posit<nbits, es> p) {
+		std::string spec_to_string(const posit<nbits, es>& p) {
 			std::stringstream ss;
 			ss << " posit<" << std::setw(3) << nbits << "," << es << "> ";
 			ss << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
@@ -27,6 +29,15 @@ namespace sw {
 			return ss.str();
 		}
 
+		// Generate a type tag for this posit, for example, posit<8,1>
+		template<size_t nbits, size_t es>
+		std::string type_tag(const posit<nbits, es>& p) {
+			std::stringstream ss;
+			ss << "posit<" << nbits << "," << es << ">";
+			return ss.str();
+		}
+
+		// Generate a string representing the posit components: sign, regime, exponent, faction, and value
 		template<size_t nbits, size_t es>
 		std::string components(const posit<nbits, es>& p) {
 			constexpr size_t fbits = p.fbits;
@@ -43,13 +54,13 @@ namespace sw {
 				<< " Regime : " << std::setw(3) << _regime.regime_k()
 				<< " Exponent : " << std::setw(5) << exponent_value(p)
 				<< " Fraction : " << std::setw(8) << std::setprecision(21) << _fraction.value()
-				<< " Value : " << std::setw(16) << p
-				<< std::setprecision(0);
+				<< " Value : " << std::setw(16) << p;
+
 			return ss.str();
 		}
 
 		template<size_t nbits, size_t es>
-		std::string component_values_to_string(posit<nbits, es> p) {
+		std::string component_values_to_string(const posit<nbits, es>& p) {
 			std::stringstream ss;
 			// TODO: hardcoded field sizes
 			if (p.iszero()) {

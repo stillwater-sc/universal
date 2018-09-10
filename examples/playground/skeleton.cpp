@@ -39,12 +39,10 @@ try {
 
 	bool bSuccess = true;
 
-
 	cout << hexfloat;
-	cout << 0.12345678;
+	cout << "hexfloat: " << 0.12345678 << endl;
 	cout << defaultfloat;
-	cout << 0.12345678 << endl;
-	return 0;
+	cout << "default : " << 0.12345678 << endl;
 
 	{
 		double d = (double)0.79432823472428150206586100479;
@@ -90,6 +88,84 @@ try {
 		cout << "posit<8,1> value of PI/2  = " << p << " " << color_print(p) << " " << pretty_print(p) << endl;
 	}
 
+	cout << endl;
+
+	{
+		constexpr size_t nbits = 8;
+		{
+			posit<nbits, 0> p(1.0); --p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		{
+			posit<nbits, 1> p(1.0); --p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		{
+			posit<nbits, 2> p(1.0); --p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		{
+			posit<nbits, 3> p(1.0); --p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		{
+			posit<nbits, 4> p(1.0); --p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		{
+			posit<nbits, 5> p(1.0); --p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		{
+			posit<nbits, 6> p(1.0); --p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		cout << endl;
+	}
+
+	{
+		constexpr size_t nbits = 8;
+		{
+			posit<nbits, 0> p(1.0); ++p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		{
+			posit<nbits, 1> p(1.0); ++p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		{
+			posit<nbits, 2> p(1.0); ++p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		{
+			posit<nbits, 3> p(1.0); ++p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		{
+			posit<nbits, 4> p(1.0); ++p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		{
+			posit<nbits, 5> p(1.0); ++p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		{
+			posit<nbits, 6> p(1.0); ++p;
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+		cout << endl;
+	}
+
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t es = 3;
+		constexpr size_t NR_POSITS = (size_t(1) << nbits);
+		posit<nbits, es> p;
+		for (size_t i = 0; i < NR_POSITS; ++i) {
+			p.set_raw_bits(i);
+			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+		}
+	}
 	return (bSuccess ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 catch (char const* msg) {
