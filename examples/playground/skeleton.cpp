@@ -31,6 +31,185 @@ log_e(10)		M_LN10		2.30258509299404568402
 
 */
 
+template<size_t nbits, size_t es>
+void ColorPrintTable()
+{
+	constexpr size_t NR_POSITS = (size_t(1) << nbits);
+	sw::unum::posit<nbits, es> p;
+	for (size_t i = 0; i < NR_POSITS; ++i) {
+		p.set_raw_bits(i);
+		std::cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << std::endl;
+	}
+}
+
+void HexVsDefaultFloatPrinting()
+{
+	using namespace std;
+
+	cout << hexfloat;
+	cout << "hexfloat: " << 0.12345678 << endl;
+	cout << defaultfloat;
+	cout << "default : " << 0.12345678 << endl;
+}
+void LongDoubleExample()
+{
+	using namespace std;
+	using namespace sw::unum;
+
+	double d = (double)0.79432823472428150206586100479;
+	posit<32, 2> E_pos(d);
+	cout << setprecision(30) << fixed << d << setprecision(6) << endl;
+	cout << pretty_print(E_pos) << endl;
+
+	long double ld = (long double)0.79432823472428150206586100479;
+	E_pos = ld;
+	cout << setprecision(30) << fixed << ld << setprecision(6) << endl;
+	cout << pretty_print(E_pos) << endl;
+
+
+	int _exp;
+	union {
+		long double fr;
+		unsigned char bytes[16];
+	} u;
+	u.fr = frexpl(ld, &_exp);
+	cout << "bytes of fraction: " << hex;
+	for (int i = 15; i >= 0; i--) {
+		cout << setw(2) << unsigned(u.bytes[i]) << " ";
+	}
+	cout << dec << endl;
+}
+
+template<size_t nbits, size_t es>
+void PiExamples()
+{
+	using namespace std;
+	using namespace sw::unum;
+
+	posit<nbits, es> p;
+
+	p = m_pi;
+	cout << type_tag(p) << " value of PI    = " << p << " " << color_print(p) << " " << pretty_print(p) << endl;
+
+	// convert posit back to float
+	float f = float(p);
+	cout << "float value               = " << f << endl;
+
+	// calculate PI/2
+	p = p / 2.0;  // implicit conversions of literals
+	cout << type_tag(p) << " value of PI/2  = " << p << " " << color_print(p) << " " << pretty_print(p) << endl;
+}
+
+void DynamicRangeTable()
+{
+	using namespace std;
+	using namespace sw::unum;
+
+	constexpr size_t nbits = 8;
+	{
+		posit<nbits, 0> p(1.0); --p;
+		cout << dynamic_range(p) << endl;
+	}
+	{
+		posit<nbits, 1> p(1.0); --p;
+		cout << dynamic_range(p) << endl;
+	}
+	{
+		posit<nbits, 2> p(1.0); --p;
+		cout << dynamic_range(p) << endl;
+	}
+	{
+		posit<nbits, 3> p(1.0); --p;
+		cout << dynamic_range(p) << endl;
+	}
+	{
+		posit<nbits, 4> p(1.0); --p;
+		cout << dynamic_range(p) << endl;
+	}
+	{
+		posit<nbits, 5> p(1.0); --p;
+		cout << dynamic_range(p) << endl;
+	}
+	{
+		posit<nbits, 6> p(1.0); --p;
+		cout << dynamic_range(p) << endl;
+	}
+	cout << endl;
+}
+
+void OnePlusEps()
+{
+	using namespace std;
+	using namespace sw::unum;
+
+	constexpr size_t nbits = 8;
+	{
+		posit<nbits, 0> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 1> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 2> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 3> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 4> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 5> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 6> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	cout << endl;
+}
+
+void OneMinusEps()
+{
+	using namespace std;
+	using namespace sw::unum;
+
+	constexpr size_t nbits = 8;
+	{
+		posit<nbits, 0> p(1.0); ++p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 1> p(1.0); ++p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 2> p(1.0); ++p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 3> p(1.0); ++p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 4> p(1.0); ++p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 5> p(1.0); ++p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 6> p(1.0); ++p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	cout << endl;
+}
 
 int main(int argc, char** argv)
 try {
@@ -39,133 +218,17 @@ try {
 
 	bool bSuccess = true;
 
-	cout << hexfloat;
-	cout << "hexfloat: " << 0.12345678 << endl;
-	cout << defaultfloat;
-	cout << "default : " << 0.12345678 << endl;
+	HexVsDefaultFloatPrinting(); cout << endl;
+	LongDoubleExample(); cout << endl;
+	PiExamples<8,1>();	cout << endl;
 
-	{
-		double d = (double)0.79432823472428150206586100479;
-		posit<32, 2> E_pos(d);
-		cout << setprecision(30) << fixed << d << setprecision(6) << endl;
-		cout << pretty_print(E_pos) << endl;
+	DynamicRangeTable();
 
-		long double ld = (long double)0.79432823472428150206586100479;
-		E_pos = ld;
-		cout << setprecision(30) << fixed << ld << setprecision(6) << endl;
-		cout << pretty_print(E_pos) << endl;
+	OnePlusEps();
+	OneMinusEps();
 
+	ColorPrintTable<8, 3>();
 
-		int _exp;
-		union {
-		    long double fr;
-		    unsigned char bytes[16];
-		} u;
-		u.fr = frexpl(ld, &_exp);
-		cout << "bytes of fraction: " << hex;
-		for (int i = 15; i >= 0; i--) {
-			cout << setw(2) << unsigned(u.bytes[i]) << " ";
-		}
-		cout << dec << endl;
-	}
-
-	{
-		constexpr size_t nbits = 8;
-		constexpr size_t es = 1;
-
-		posit<nbits, es> p;
-
-		// assign PI to posit<8,1>
-		p = m_pi;
-		cout << "posit<8,1> value of PI    = " << p << " " << color_print(p) << " " << pretty_print(p) << endl;
-
-		// convert posit back to float
-		float f = float(p);
-		cout << "float value               = " << f << endl;
-
-		// calculate PI/2
-		p = p / posit<nbits, es>(2.0);  // explicit conversions of literals
-		cout << "posit<8,1> value of PI/2  = " << p << " " << color_print(p) << " " << pretty_print(p) << endl;
-	}
-
-	cout << endl;
-
-	{
-		constexpr size_t nbits = 8;
-		{
-			posit<nbits, 0> p(1.0); --p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		{
-			posit<nbits, 1> p(1.0); --p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		{
-			posit<nbits, 2> p(1.0); --p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		{
-			posit<nbits, 3> p(1.0); --p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		{
-			posit<nbits, 4> p(1.0); --p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		{
-			posit<nbits, 5> p(1.0); --p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		{
-			posit<nbits, 6> p(1.0); --p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		cout << endl;
-	}
-
-	{
-		constexpr size_t nbits = 8;
-		{
-			posit<nbits, 0> p(1.0); ++p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		{
-			posit<nbits, 1> p(1.0); ++p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		{
-			posit<nbits, 2> p(1.0); ++p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		{
-			posit<nbits, 3> p(1.0); ++p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		{
-			posit<nbits, 4> p(1.0); ++p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		{
-			posit<nbits, 5> p(1.0); ++p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		{
-			posit<nbits, 6> p(1.0); ++p;
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-		cout << endl;
-	}
-
-	{
-		constexpr size_t nbits = 8;
-		constexpr size_t es = 3;
-		constexpr size_t NR_POSITS = (size_t(1) << nbits);
-		posit<nbits, es> p;
-		for (size_t i = 0; i < NR_POSITS; ++i) {
-			p.set_raw_bits(i);
-			cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-		}
-	}
 	return (bSuccess ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 catch (char const* msg) {

@@ -32,7 +32,7 @@ try {
 	cout << "Extended Standard posit<48,2> configuration tests" << endl;
 
 	posit<nbits, es> p;
-	cout << spec_to_string(p) << endl << endl;
+	cout << dynamic_range(p) << endl << endl;
 
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");

@@ -38,7 +38,7 @@ try {
 #endif
 
 	posit<nbits,es> p;
-	cout << spec_to_string(p) << endl;
+	cout << dynamic_range(p) << endl;
 
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
