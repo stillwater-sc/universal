@@ -52,11 +52,16 @@ try {
 	GeneratePositTable<5, 1>(cout, csv);
 	GeneratePositTable<5, 2>(cout, csv);
 	GeneratePositTable<5, 3>(cout, csv);
+	GeneratePositTable<5, 4>(cout, csv);
+	GeneratePositTable<5, 5>(cout, csv);
 
 	GeneratePositTable<6, 0>(cout, csv);
 	GeneratePositTable<6, 1>(cout, csv);
 	GeneratePositTable<6, 2>(cout, csv);
 	GeneratePositTable<6, 3>(cout, csv);
+	GeneratePositTable<6, 4>(cout, csv);
+	GeneratePositTable<6, 5>(cout, csv);
+	GeneratePositTable<6, 6>(cout, csv);
 
 	GeneratePositTable<7, 0>(cout, csv);
 	GeneratePositTable<7, 1>(cout, csv);
