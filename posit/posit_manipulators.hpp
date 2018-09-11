@@ -53,7 +53,7 @@ namespace sw {
 		// Generate a string representing the posit components: sign, regime, exponent, faction, and value
 		template<size_t nbits, size_t es>
 		std::string components(const posit<nbits, es>& p) {
-			constexpr size_t fbits = p.fbits;
+			constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 			std::stringstream ss;
 			bool		     	 _sign;
 			regime<nbits, es>    _regime;
@@ -98,7 +98,7 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		std::string pretty_print(const posit<nbits, es>& p, int printPrecision = std::numeric_limits<double>::max_digits10) {
-			static constexpr size_t fbits = p.fbits;
+			constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 			std::stringstream ss;
 			bool		     	 _sign;
 			regime<nbits, es>    _regime;
@@ -141,8 +141,8 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		std::string info_print(const posit<nbits, es>& p, int printPrecision = 17) {
+			constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 			std::stringstream ss;
-			constexpr size_t fbits = p.fbits;
 			bool		     	 _sign;
 			regime<nbits, es>    _regime;
 			exponent<nbits, es>  _exponent;
@@ -210,7 +210,7 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		std::string color_print(const posit<nbits, es>& p) {
-			constexpr size_t fbits = p.fbits;
+			constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 			std::stringstream ss;
 			bool		     	 _sign;
 			regime<nbits, es>    _regime;
@@ -261,7 +261,7 @@ namespace sw {
 		// generate a full binary representation table for a given posit configuration
 		template<size_t nbits, size_t es>
 		void GeneratePositTable(std::ostream& ostr, bool csvFormat = false)	{
-			static constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
+			static constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
 			const size_t size = (1 << nbits);
 			posit<nbits, es>	p;
 			if (csvFormat) {
