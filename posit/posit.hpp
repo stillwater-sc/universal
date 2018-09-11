@@ -448,11 +448,9 @@ namespace sw {
 		template<size_t _nbits, size_t _es>
 		class posit {
 
-		//	static_assert(_es + 2 <= _nbits, "Value for 'es' is too large for this 'nbits' value");
 		//	static_assert(sizeof(long double) == 16, "Posit library requires compiler support for 128 bit long double.");
 		//	static_assert((sizeof(long double) == 16) && (std::numeric_limits<long double>::digits < 113), "C++ math library for long double does not support 128-bit quad precision floats.");
-
-    
+  
 		public:
 			static constexpr size_t nbits   = _nbits;
 			static constexpr size_t es      = _es;
