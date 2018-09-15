@@ -1,0 +1,114 @@
+Experiments with the scale of posit numbers
+Posit specificiation examples and their ranges:
+Scales are represented as the binary scale of the number: i.e. 2^scale
+
+Small, specialized posit configurations
+nbits = 3
+ posit<  3,0> useed scale     1     minpos scale         -1     maxpos scale          1
+nbits = 4
+ posit<  4,0> useed scale     1     minpos scale         -2     maxpos scale          2
+ posit<  4,1> useed scale     2     minpos scale         -4     maxpos scale          4
+nbits = 5
+ posit<  5,0> useed scale     1     minpos scale         -3     maxpos scale          3
+ posit<  5,1> useed scale     2     minpos scale         -6     maxpos scale          6
+ posit<  5,2> useed scale     4     minpos scale        -12     maxpos scale         12
+nbits = 6
+ posit<  6,0> useed scale     1     minpos scale         -4     maxpos scale          4
+ posit<  6,1> useed scale     2     minpos scale         -8     maxpos scale          8
+ posit<  6,2> useed scale     4     minpos scale        -16     maxpos scale         16
+ posit<  6,3> useed scale     8     minpos scale        -32     maxpos scale         32
+nbits = 7
+ posit<  7,0> useed scale     1     minpos scale         -5     maxpos scale          5
+ posit<  7,1> useed scale     2     minpos scale        -10     maxpos scale         10
+ posit<  7,2> useed scale     4     minpos scale        -20     maxpos scale         20
+ posit<  7,3> useed scale     8     minpos scale        -40     maxpos scale         40
+ posit<  7,4> useed scale    16     minpos scale        -80     maxpos scale         80
+nbits = 8
+ posit<  8,0> useed scale     1     minpos scale         -6     maxpos scale          6
+ posit<  8,1> useed scale     2     minpos scale        -12     maxpos scale         12
+ posit<  8,2> useed scale     4     minpos scale        -24     maxpos scale         24
+ posit<  8,3> useed scale     8     minpos scale        -48     maxpos scale         48
+ posit<  8,4> useed scale    16     minpos scale        -96     maxpos scale         96
+nbits = 9
+ posit<  9,0> useed scale     1     minpos scale         -7     maxpos scale          7
+ posit<  9,1> useed scale     2     minpos scale        -14     maxpos scale         14
+ posit<  9,2> useed scale     4     minpos scale        -28     maxpos scale         28
+ posit<  9,3> useed scale     8     minpos scale        -56     maxpos scale         56
+ posit<  9,4> useed scale    16     minpos scale       -112     maxpos scale        112
+nbits = 10
+ posit< 10,0> useed scale     1     minpos scale         -8     maxpos scale          8
+ posit< 10,1> useed scale     2     minpos scale        -16     maxpos scale         16
+ posit< 10,2> useed scale     4     minpos scale        -32     maxpos scale         32
+ posit< 10,3> useed scale     8     minpos scale        -64     maxpos scale         64
+ posit< 10,4> useed scale    16     minpos scale       -128     maxpos scale        128
+nbits = 11
+ posit< 11,0> useed scale     1     minpos scale         -9     maxpos scale          9
+ posit< 11,1> useed scale     2     minpos scale        -18     maxpos scale         18
+ posit< 11,2> useed scale     4     minpos scale        -36     maxpos scale         36
+ posit< 11,3> useed scale     8     minpos scale        -72     maxpos scale         72
+ posit< 11,4> useed scale    16     minpos scale       -144     maxpos scale        144
+nbits = 12
+ posit< 12,0> useed scale     1     minpos scale        -10     maxpos scale         10
+ posit< 12,1> useed scale     2     minpos scale        -20     maxpos scale         20
+ posit< 12,2> useed scale     4     minpos scale        -40     maxpos scale         40
+ posit< 12,3> useed scale     8     minpos scale        -80     maxpos scale         80
+ posit< 12,4> useed scale    16     minpos scale       -160     maxpos scale        160
+Standard posit configurations
+ posit<  8,0> useed scale     1     minpos scale         -6     maxpos scale          6
+ posit< 16,1> useed scale     2     minpos scale        -28     maxpos scale         28
+ posit< 32,2> useed scale     4     minpos scale       -120     maxpos scale        120
+ posit< 64,3> useed scale     8     minpos scale       -496     maxpos scale        496
+Extended Standard posit configurations
+ posit<  4,0> useed scale     1     minpos scale         -2     maxpos scale          2
+ posit<  8,0> useed scale     1     minpos scale         -6     maxpos scale          6
+ posit< 12,0> useed scale     1     minpos scale        -10     maxpos scale         10
+ posit< 16,1> useed scale     2     minpos scale        -28     maxpos scale         28
+ posit< 20,1> useed scale     2     minpos scale        -36     maxpos scale         36
+ posit< 24,1> useed scale     2     minpos scale        -44     maxpos scale         44
+ posit< 28,1> useed scale     2     minpos scale        -52     maxpos scale         52
+ posit< 32,2> useed scale     4     minpos scale       -120     maxpos scale        120
+ posit< 40,2> useed scale     4     minpos scale       -152     maxpos scale        152
+ posit< 48,2> useed scale     4     minpos scale       -184     maxpos scale        184
+ posit< 56,2> useed scale     4     minpos scale       -216     maxpos scale        216
+ posit< 64,3> useed scale     8     minpos scale       -496     maxpos scale        496
+Extended Modified Standard posit configurations
+ posit<  4,0> useed scale     1     minpos scale         -2     maxpos scale          2
+ posit<  4,1> useed scale     2     minpos scale         -4     maxpos scale          4
+ posit<  8,0> useed scale     1     minpos scale         -6     maxpos scale          6
+ posit<  8,1> useed scale     2     minpos scale        -12     maxpos scale         12
+ posit<  8,2> useed scale     4     minpos scale        -24     maxpos scale         24
+ posit<  8,3> useed scale     8     minpos scale        -48     maxpos scale         48
+ posit<  8,4> useed scale    16     minpos scale        -96     maxpos scale         96
+ posit< 16,0> useed scale     1     minpos scale        -14     maxpos scale         14
+ posit< 16,1> useed scale     2     minpos scale        -28     maxpos scale         28
+ posit< 16,2> useed scale     4     minpos scale        -56     maxpos scale         56
+ posit< 16,3> useed scale     8     minpos scale       -112     maxpos scale        112
+ posit< 16,4> useed scale    16     minpos scale       -224     maxpos scale        224
+ posit< 32,0> useed scale     1     minpos scale        -30     maxpos scale         30
+ posit< 32,1> useed scale     2     minpos scale        -60     maxpos scale         60
+ posit< 32,2> useed scale     4     minpos scale       -120     maxpos scale        120
+ posit< 32,3> useed scale     8     minpos scale       -240     maxpos scale        240
+ posit< 32,4> useed scale    16     minpos scale       -480     maxpos scale        480
+ posit< 64,0> useed scale     1     minpos scale        -62     maxpos scale         62
+ posit< 64,1> useed scale     2     minpos scale       -124     maxpos scale        124
+ posit< 64,2> useed scale     4     minpos scale       -248     maxpos scale        248
+ posit< 64,3> useed scale     8     minpos scale       -496     maxpos scale        496
+ posit< 64,4> useed scale    16     minpos scale       -992     maxpos scale        992
+Ginormous posit configurations
+ posit< 80,2> useed scale     4     minpos scale       -312     maxpos scale        312
+ posit< 80,3> useed scale     8     minpos scale       -624     maxpos scale        624
+ posit< 80,4> useed scale    16     minpos scale      -1248     maxpos scale       1248
+ posit< 96,2> useed scale     4     minpos scale       -376     maxpos scale        376
+ posit< 96,3> useed scale     8     minpos scale       -752     maxpos scale        752
+ posit< 96,4> useed scale    16     minpos scale      -1504     maxpos scale       1504
+ posit<112,2> useed scale     4     minpos scale       -440     maxpos scale        440
+ posit<112,3> useed scale     8     minpos scale       -880     maxpos scale        880
+ posit<112,4> useed scale    16     minpos scale      -1760     maxpos scale       1760
+ posit<128,2> useed scale     4     minpos scale       -504     maxpos scale        504
+ posit<128,3> useed scale     8     minpos scale      -1008     maxpos scale       1008
+ posit<128,4> useed scale    16     minpos scale      -2016     maxpos scale       2016
+
+IEEE float configurations from numeric_limits<Ty>
+        float                       minexp scale       -125     maxexp scale        128     minimum  1.17549e-38     maximum  3.40282e+38
+       double                       minexp scale      -1021     maxexp scale       1024     minimum 2.22507e-308     maximum 1.79769e+308
+  long double                       minexp scale      -1021     maxexp scale       1024     minimum 2.22507e-308     maximum 1.79769e+308
