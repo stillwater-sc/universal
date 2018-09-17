@@ -89,12 +89,12 @@ sw::unum::posit<nbits, es> convert_to_posit(Ty rhs) {
 		cout << sb_mask << "  mask of remainder bits\n";
 
 		// construct the untruncated posit
-		cout << pt_bits << "  unconstrained posit starting bits.   length = " << pt_len << "\n";
+		cout << pt_bits << "  unconstrained posit: length = nbits(" << nbits << ") + es(" << es << ") + 3 guard bits: " << pt_len << "\n";
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
 		regime <<= es + nf + 1;
 		cout << regime << "  runlength = " << run << endl;
 		exponent <<= nf + 1;
-		cout << exponent << "  es value = " << esval << endl;
+		cout << exponent << "  exponent value = " << hex << esval << dec << endl;
 		fraction <<= 1;
 		cout << fraction << "  most significant " << nf << " fraction bits\n";
 		sticky_bit.set(0, sb);
@@ -149,10 +149,46 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	float f = 0.3;
+	float samples[20];
+	
+	posit<nbits, es> p_one_minus_eps, p_one, p_one_plus_eps;
+	p_one = 1.0;
+	p_one_minus_eps = 1.0; --p_one_minus_eps;
+	p_one_plus_eps = 1.0; ++p_one_plus_eps;
+
+	posit<nbits, es> p_minpos, p_maxpos(NAR);
+	++p_minpos;
+	--p_maxpos;
+
+	samples[0] = 0.0f;
+	samples[1] = float(p_minpos) / 2.0f;
+	samples[2] = float(p_minpos);
+	samples[3] = float(++p_minpos);
+	samples[4] = float(p_one_minus_eps);
+	samples[5] = float(p_one);
+	samples[6] = float(p_one_plus_eps);
+	samples[7] = float(--p_maxpos);
+	samples[8] = float(p_maxpos);
+	samples[9] = float(p_maxpos) * 2.0f;
+	samples[10] = INFINITY;
+	samples[11] = -samples[9];
+	samples[12] = -samples[8];
+	samples[13] = -samples[7];
+	samples[14] = -samples[6];
+	samples[15] = -1.0f;
+	samples[16] = -samples[4];
+	samples[17] = -samples[3];
+	samples[18] = -samples[2];
+	samples[19] = -samples[1];
+
 	posit<nbits, es> p;
 
-	p = convert_to_posit<nbits,es,float>(f);
+	int i = 0;
+	for (auto sample : samples) {
+		cout << "Sample[" << i++ << "] = " << sample << endl;
+		p = convert_to_posit<nbits,es,float>(sample);
+		cout << "********************************************************************\n";
+	}
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
