@@ -240,7 +240,7 @@ namespace sw {
 			// so no need to transform back via 2's complement of regime/exponent/fraction
 		}
 
-		// needed to avoid double rounding situations: TODO: does that mean the condensed version above should be removed?
+		// needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 		template<size_t nbits, size_t es, size_t fbits>
 		inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>& fraction_in, posit<nbits, es>& p) {
 			if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
