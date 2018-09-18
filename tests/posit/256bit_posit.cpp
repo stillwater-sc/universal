@@ -1,4 +1,4 @@
-// 128bit_posit.cpp: Functionality tests for standard 128-bit posits
+// 256bit_posit.cpp: Functionality tests for standard 256-bit posits
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
@@ -24,14 +24,14 @@ try {
 
 	const size_t RND_TEST_CASES = 10000;
 
-	const size_t nbits = 128;
-	const size_t es = 4;
+	const size_t nbits = 256;
+	const size_t es = 5;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<128,4>";
+	std::string tag = " posit<256,5>";
 
-	cout << "Standard posit<128,4> configuration tests" << endl;
+	cout << "Standard posit<256,5> configuration tests" << endl;
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
 
