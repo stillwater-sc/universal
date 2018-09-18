@@ -20,7 +20,6 @@ sw::unum::posit<nbits, es> convert_to_posit(Ty rhs) {
 	value<fbits> v((Ty)rhs);
 	posit<nbits, es> p;
 
-	streamsize prec = cout.precision();
 	cout << setprecision(numeric_limits<Ty>::digits10) << v << "   input value\n";
 	cout << "Test for ZERO\n";
 	cout << components(v);
