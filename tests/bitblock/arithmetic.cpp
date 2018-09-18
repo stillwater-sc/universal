@@ -23,30 +23,30 @@ int Conversions() {
 
 	b = convert_to_bitblock<nbits,uint64_t>(uint64_t(0x5));
 
-	std::cout << "1's complement of a = " << to_binary(ones_complement(a)) << std::endl;
+	std::cout << "1's complement of a = " << to_bit_string(ones_complement(a)) << std::endl;
 	ref = convert_to_bitblock<nbits, uint64_t>(uint64_t(0xAAAAAAAA));
 	nrOfFailedTestCases += (ones_complement(a) != ref ? 1 : 0);
-	std::cout << "1's complement of b = " << to_binary(ones_complement(b)) << std::endl;
+	std::cout << "1's complement of b = " << to_bit_string(ones_complement(b)) << std::endl;
 	ref = convert_to_bitblock<nbits, uint64_t>(uint64_t(0x1FFFFFFFA));
 	nrOfFailedTestCases += (ones_complement(b) != ref ? 1 : 0);
 
 	const size_t nnbits = 9;
 	bitblock<nnbits> c, ref2;
 	c = convert_to_bitblock<9,int8_t>(int8_t(-128));  // this looks like -1 for a 9bit posit
-	std::cout << "c                   = " << to_binary(c) << std::endl;
+	std::cout << "c                   = " << to_bit_string(c) << std::endl;
 	ref2 = convert_to_bitblock<nnbits, uint64_t>(uint64_t(0x180));
 	nrOfFailedTestCases += (c != ref2 ? 1 : 0);
 
 	c = twos_complement(c);							// this looks like  1 for a 9bit posit
-	std::cout << "2's Complement      = " << to_binary(c) << std::endl;
+	std::cout << "2's Complement      = " << to_bit_string(c) << std::endl;
 	ref2 = convert_to_bitblock<nnbits, uint64_t>(uint64_t(0x080));
 	nrOfFailedTestCases += (c != ref2 ? 1 : 0);
 
 	bitblock<9> d;
 	d = convert_to_bitblock<9,int64_t>(int64_t(int8_t(-128)));
-	std::cout << "d                   = " << to_binary(d) << std::endl;
+	std::cout << "d                   = " << to_bit_string(d) << std::endl;
 	d = twos_complement(d);
-	std::cout << "2's complement      = " << to_binary(d) << std::endl;
+	std::cout << "2's complement      = " << to_bit_string(d) << std::endl;
 	std::cout << std::endl;
 	nrOfFailedTestCases += (c != d ? 1 : 0);
 
