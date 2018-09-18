@@ -603,12 +603,12 @@ namespace sw {
 		}
 
 		template<size_t nbits>
-		std::string to_bit_string(bitblock<nbits> bits) {
+		std::string to_bit_string(bitblock<nbits> bits, bool separator = true) {
 			std::stringstream ss;
 			int msb = nbits; // compilation warning work-around for nbits = 0
 			for (int i = msb - 1; i >= 0; --i) {
 				ss << (bits[std::size_t(i)] ? "1" : "0");
-				if (i % 4 == 0 && i != 0) ss << "'";
+				if (separator && i % 4 == 0 && i != 0) ss << "'";
 			}
 			return ss.str();
 		}
