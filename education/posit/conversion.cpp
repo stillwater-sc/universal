@@ -21,6 +21,7 @@ sw::unum::posit<nbits, es> convert_to_posit(Ty rhs) {
 
 	streamsize prec = cout.precision();
 	cout << setprecision(numeric_limits<Ty>::digits10) << v << "   input value\n";
+	cout << "Test for ZERO\n";
 	cout << components(v);
 	if (v.iszero()) {
 		p.setzero();
@@ -31,6 +32,7 @@ sw::unum::posit<nbits, es> convert_to_posit(Ty rhs) {
 	else {
 		cout << " input value is NOT zero\n";
 	}
+	cout << "Test for NaR\n";
 	cout << components(v);
 	if (v.isnan() || v.isinf()) {
 		p.setnar();
@@ -76,64 +78,71 @@ sw::unum::posit<nbits, es> convert_to_posit(Ty rhs) {
 		unsigned esval = e % (uint32_t(1) << es);
 		exponent = convert_to_bitblock<pt_len>(esval);
 		unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
-		// TODO: what needs to be done if nf > fbits?
-		//assert(nf <= input_fbits);
+
 		// copy the most significant nf fraction bits into fraction
 		unsigned lsb = nf <= fbits ? 0 : nf - fbits;
 		for (unsigned i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
-		cout << fraction_in << "  full fraction bits\n";
+		cout << to_bit_string(fraction_in) << "  full fraction bits\n";
 
-		bool sb = anyAfter(fraction_in, fbits - 1 - nf);
-		bitblock<fbits> sb_mask;
-		for (int i = 0; i < fbits - 1 - nf; i++) sb_mask.set(i);
-		cout << sb_mask << "  mask of remainder bits\n";
+		int remaining_bits = fbits - 1 - nf;
+		bool sb = false;
+		if (remaining_bits > 0) {
+			sb = anyAfter(fraction_in, fbits - 1 - nf);
+			bitblock<fbits> sb_mask;
+			for (int i = 0; i < fbits - 1 - nf; i++) sb_mask.set(i);
+			cout << to_bit_string(sb_mask) << "  mask of remainder bits\n";
+		}
 
 		// construct the untruncated posit
-		cout << pt_bits << "  unconstrained posit: length = nbits(" << nbits << ") + es(" << es << ") + 3 guard bits: " << pt_len << "\n";
+		cout << to_bit_string(pt_bits) << "  unconstrained posit: length = nbits(" << nbits << ") + es(" << es << ") + 3 guard bits: " << pt_len << "\n";
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
 		regime <<= es + nf + 1;
-		cout << regime << "  runlength = " << run << endl;
+		cout << to_bit_string(regime) << "  runlength = " << run << endl;
 		exponent <<= nf + 1;
-		cout << exponent << "  exponent value = " << hex << esval << dec << endl;
+		cout << to_bit_string(exponent) << "  exponent value = " << hex << esval << dec << endl;
 		fraction <<= 1;
-		cout << fraction << "  most significant " << nf << " fraction bits\n";
+		cout << to_bit_string(fraction) << "  most significant " << nf << " fraction bits (nbits-1-run-es)\n";
 		sticky_bit.set(0, sb);
-		cout << sticky_bit << "  sticky bit representing the truncated fraction bits\n";
+		if (remaining_bits > 0) {
+			cout << to_bit_string(sticky_bit) << "  sticky bit representing the truncated fraction bits\n";
+		}
+		else {
+			cout << to_bit_string(sticky_bit) << "  sticky bit representing the fraction bits which are not truncated\n";
+		}
 
 		pt_bits |= regime;
 		pt_bits |= exponent;
 		pt_bits |= fraction;
 		pt_bits |= sticky_bit;
-		cout << pt_bits << "  unconstrained posit bits ";
-
+		cout << to_bit_string(pt_bits) << "  unconstrained posit bits ";
 
 		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
 		cout << " length = " << len << endl;
 		bool blast = pt_bits.test(len - nbits);
 		bitblock<pt_len> blast_bb;
 		blast_bb.set(len - nbits);
-		cout << blast_bb << "  last bit mask\n";
+		cout << to_bit_string(blast_bb) << "  last bit mask\n";
 		bool bafter = pt_bits.test(len - nbits - 1);
 		bitblock<pt_len> bafter_bb;
 		bafter_bb.set(len - nbits - 1);
-		cout << bafter_bb << "  bit after last bit mask\n";
+		cout << to_bit_string(bafter_bb) << "  bit after last bit mask\n";
 		bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
 		bitblock<pt_len> bsticky_bb;
 		for (int i = len - nbits - 2; i >= 0; --i) bsticky_bb.set(i);
-		cout << bsticky_bb << "  sticky bit mask\n";
+		cout << to_bit_string(bsticky_bb) << "  sticky bit mask\n";
 
 		bool rb = (blast & bafter) | (bafter & bsticky);
-		cout << "rounding decision: " << (rb ? "up" : "down") << endl;
+		cout << "rounding decision (blast & bafter) | (bafter & bsticky): " << (rb ? "round up" : "round down") << endl;
 
 		bitblock<nbits> ptt;
 		pt_bits <<= pt_len - len;
-		cout << pt_bits << "  shifted posit\n";
+		cout << to_bit_string(pt_bits) << "  shifted posit\n";
 		truncate(pt_bits, ptt);
-		cout << ptt << "  truncated posit\n";
+		cout << to_bit_string(ptt) << "  truncated posit\n";
 		if (rb) increment_bitset(ptt);
-		cout << ptt << "  rounded posit\n";
+		cout << to_bit_string(ptt) << "  rounded posit\n";
 		if (s) ptt = twos_complement(ptt);
-		cout << ptt << "  final posit\n";
+		cout << to_bit_string(ptt) << "  final posit\n";
 		p.set(ptt);
 	}
 	return p;
@@ -147,8 +156,15 @@ try {
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
 
-	int nrOfFailedTestCases = 0;
+#define ONE_SAMPLE 1
+#if ONE_SAMPLE
+	posit<nbits, es> p(-1.0);
+	--p;
+	float sample = float(p);
+	p = convert_to_posit<nbits, es, float>(sample);
+	cout << color_print(p) << endl;
 
+#else
 	float samples[20];
 	
 	posit<nbits, es> p_one_minus_eps, p_one, p_one_plus_eps;
@@ -189,8 +205,9 @@ try {
 		p = convert_to_posit<nbits,es,float>(sample);
 		cout << "********************************************************************\n";
 	}
+#endif
 
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
