@@ -132,8 +132,8 @@ namespace sw {
 			}
 		private:
 			bitblock<nbits - 1>  	_Bits;
-			signed char				_k;
-			unsigned char			_run;
+			int						_k;
+			unsigned				_run;
 			size_t					_RegimeBits;
 
 			// template parameters need names different from class template parameters (for gcc and clang)

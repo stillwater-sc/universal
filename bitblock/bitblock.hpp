@@ -603,11 +603,12 @@ namespace sw {
 		}
 
 		template<size_t nbits>
-		std::string to_binary(bitblock<nbits> bits) {
+		std::string to_bit_string(bitblock<nbits> bits) {
 			std::stringstream ss;
 			int msb = nbits; // compilation warning work-around for nbits = 0
 			for (int i = msb - 1; i >= 0; --i) {
 				ss << (bits[std::size_t(i)] ? "1" : "0");
+				if (i % 4 == 0 && i != 0) ss << "'";
 			}
 			return ss.str();
 		}
@@ -662,7 +663,8 @@ namespace sw {
 
 		// sticky bit representation of all the bits from [msb, lsb], that is, msb is included
 		template<size_t nbits>
-		bool anyAfter(const bitblock<nbits>& bits, unsigned msb) {
+		bool anyAfter(const bitblock<nbits>& bits, int msb) {
+			if (msb < 0) return false;	// bad input
 			bool running = false;
 			for (int i = msb; i >= 0; i--) {
 				running |= bits.test(i);
