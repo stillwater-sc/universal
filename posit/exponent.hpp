@@ -166,6 +166,9 @@ private:
 	friend bool operator>=(const exponent<nnbits, ees>& lhs, const exponent<nnbits, ees>& rhs);
 };
 
+template<size_t nbits, size_t es>
+inline int scale(const exponent<nbits, es>& e) { return e.scale(); }
+
 /////////////////// EXPONENT operators
 template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e) {
