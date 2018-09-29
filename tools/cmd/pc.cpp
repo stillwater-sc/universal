@@ -34,6 +34,7 @@ try {
 	using namespace sw::unum;
 
 	if (argc != 2) {
+		cerr << "pc : posit components" << endl;
 		cerr << "Show the sign/scale/regime/exponent/fraction components of a posit." << endl;
 	    cerr << "Usage: pc float_value" << endl;
 		cerr << "Example: pc -1.123456789e17" << endl;
