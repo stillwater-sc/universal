@@ -6,10 +6,8 @@
 
 #include "common.hpp"
 // minimum set of include files to reflect source code dependencies
-#include "../../posit/exceptions.hpp"
-#include "../../posit/trace_constants.hpp"
+//#include "../../posit/exceptions.hpp"
 #include "../../bitblock/bitblock.hpp"
-#include "../../posit/bit_functions.hpp"
 #include "../../areal/areal.hpp"
 #include "../test_helpers.hpp"
 #include "areal_test_helpers.hpp"
@@ -30,17 +28,19 @@ try {
 	cout << "Standard areal<8,2> configuration tests" << endl;
 
 	areal<nbits, es> r;
+	r = 0.0;
+	cout << r << endl;
 
 #if 0
 	bool bReportIndividualTestCases = false;
 
 	// logic tests
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan          <nbits, es>(), tag, "    <          ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
+	nrOfFailedTestCases += ReportTestResult(ValidateArealLogicEqual             <nbits, es>(), tag, "    ==         ");
+	nrOfFailedTestCases += ReportTestResult(ValidateArealLogicNotEqual          <nbits, es>(), tag, "    !=         ");
+	nrOfFailedTestCases += ReportTestResult(ValidateArealLogicLessThan          <nbits, es>(), tag, "    <          ");
+	nrOfFailedTestCases += ReportTestResult(ValidateArealLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         ");
+	nrOfFailedTestCases += ReportTestResult(ValidateArealLogicGreaterThan       <nbits, es>(), tag, "    >          ");
+	nrOfFailedTestCases += ReportTestResult(ValidateArealLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
 	// conversion tests
 	nrOfFailedTestCases += ReportTestResult( ValidateIntegerConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "integer assign ");
 	nrOfFailedTestCases += ReportTestResult( ValidateConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");

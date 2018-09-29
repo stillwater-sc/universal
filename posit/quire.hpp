@@ -13,6 +13,79 @@ template<size_t nbits, size_t es, size_t capacity> class quire;
 template<size_t nbits, size_t es, size_t capacity> quire<nbits, es, capacity> abs(const quire<nbits, es, capacity>& q);
 //template<size_t nbits, size_t es, size_t capacity> value<(size_t(1) << es)*(4*nbits-8)+capacity> abs(const quire<nbits, es, capacity>& q);
 
+template<size_t nbits, size_t es, size_t capacity> 
+std::string quire_properties() {
+	constexpr size_t escale = size_t(1) << es;         // 2^es
+	constexpr size_t range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
+	constexpr size_t half_range = range >> 1;          // position of the fixed point
+	constexpr size_t radix_point = half_range;
+	// the upper is 1 bit bigger than the lower because maxpos^2 has that scale
+	constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
+	constexpr size_t qbits = range + capacity;     // size of the quire minus the sign bit: we are managing the sign explicitly
+
+	std::stringstream ss;
+	ss << "Properties of a quire<" << nbits << ", " << es << ", " << capacity << ">\n";
+	ss << "dynamic range of product   : " << range << std::endl;
+	ss << "radix point of accumulator : " << radix_point << std::endl;
+	ss << "full  quire size in bits   : " << qbits << std::endl;
+	ss << "lower quire size in bits   : " << half_range << std::endl;
+	ss << "upper quire size in bits   : " << upper_range << std::endl;
+	ss << "capacity bits              : " << capacity << std::endl;
+	return ss.str();
+}
+
+template<size_t nbits, size_t es, size_t capacity>
+inline int quire_size() {
+	constexpr size_t escale = size_t(1) << es;         // 2^es
+	constexpr size_t range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
+	constexpr size_t half_range = range >> 1;          // position of the fixed point
+	constexpr size_t radix_point = half_range;
+	// the upper is 1 bit bigger than the lower because maxpos^2 has that scale
+	constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
+	constexpr size_t qbits = range + capacity;     // size of the quire minus the sign bit: we are managing the sign explicitly
+
+	return int(qbits);  // why int? so that we can do arithmetic on it 
+}
+
+
+// return the dynamic range of a posit product
+template<size_t nbits, size_t es, size_t capacity>
+inline int dynamic_range_product() {
+	constexpr size_t escale = size_t(1) << es;         // 2^es
+	constexpr size_t range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
+	return range;
+}
+
+// return the dynamic range of the full quire
+template<size_t nbits, size_t es, size_t capacity>
+inline int dynamic_range() { 
+	constexpr size_t escale = size_t(1) << es;         // 2^es
+	constexpr size_t range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
+	constexpr size_t qbits = range + capacity;     // size of the quire minus the sign bit: we are managing the sign explicitly
+	return qbits;
+}
+
+// Return the dynamic range of the upper quire
+template<size_t nbits, size_t es, size_t capacity>
+inline int max_scale() {
+	constexpr size_t escale = size_t(1) << es;         // 2^es
+	constexpr size_t range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
+	constexpr size_t half_range = range >> 1;          // position of the fixed point
+	constexpr size_t radix_point = half_range;
+	// the upper is 1 bit bigger than the lower because maxpos^2 has that scale
+	constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
+	return int(upper_range); 
+}
+
+// Return the dynamic range of the lower quire
+template<size_t nbits, size_t es, size_t capacity>
+inline int min_scale() {
+	constexpr size_t escale = size_t(1) << es;         // 2^es
+	constexpr size_t range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
+	constexpr size_t half_range = range >> 1; 
+	return -int(half_range); 
+}
+
 /* 
  quire: template class representing a quire associated with a posit configuration
  nbits and es are the same as the posit configuration, 
@@ -371,12 +444,13 @@ public:
 		return 0;
 	}
 	// query functions for quire attributes
-	int dynamic_range() const { return range; }
-	int max_scale() const { return upper_range; }
-	int min_scale() const { return -int(half_range); }
-	int capacity_range() const { return capacity; }
-	bool isNegative() const { return _sign; }
-	bool iszero() const { return _capacity.none() && _upper.none() && _lower.none(); }
+	inline int dynamic_range() const { return range; }
+	inline int max_scale() const { return upper_range; }
+	inline int min_scale() const { return -int(half_range); }
+	inline int capacity_range() const { return capacity; }
+	inline bool isneg() const { return _sign; }
+	inline bool ispos() const { return _sign; }
+	inline bool iszero() const { return _capacity.none() && _upper.none() && _lower.none(); }
 	int scale() const {
 		int msb = int(capacity)-1; // indicative of no bits set
 		for (; msb >= 0; msb--) {
@@ -394,8 +468,8 @@ public:
 	}
 
 	// Return value of the sign bit: true indicates a negative number, false a positive number or zero
-	bool sign() const { return _sign; }
-	float sign_value() const {	return (_sign ? -1.0 : 1.0); }
+	inline bool sign() const { return _sign; }
+	inline float sign_value() const {	return (_sign ? -1.0 : 1.0); }
 	bitblock<qbits+1> get() const {
 		bitblock<qbits+1> q;
 		int msb = 0;

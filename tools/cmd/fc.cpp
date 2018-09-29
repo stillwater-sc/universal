@@ -20,6 +20,7 @@ try {
 	constexpr int fbits = std::numeric_limits<float>::digits - 1;
 
 	if (argc != 2) {
+		cerr << "fc : IEEE float components" << endl;
 		cerr << "Show the sign/scale/fraction components of a float." << endl;
 	    cerr << "Usage: fc float_value" << endl;
 		cerr << "Example: fc 0.03124999" << endl;

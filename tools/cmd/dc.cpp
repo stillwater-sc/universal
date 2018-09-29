@@ -19,6 +19,7 @@ try {
 	constexpr int fbits = std::numeric_limits<double>::digits - 1;
 
 	if (argc != 2) {
+		cerr << "dc : IEEE double components" << endl;
 		cerr << "Show the sign/scale/fraction components of a double." << endl;
 		cerr << "Usage: dc double_value" << endl;
 		cerr << "Example: dc 0.03124999" << endl;

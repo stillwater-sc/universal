@@ -6,10 +6,7 @@
 
 #include "common.hpp"
 // minimum set of include files to reflect source code dependencies
-#include "../../posit/exceptions.hpp"
-#include "../../posit/trace_constants.hpp"
 #include "../../bitblock/bitblock.hpp"
-#include "../../posit/bit_functions.hpp"
 #include "../../areal/areal.hpp"
 #include "../test_helpers.hpp"
 #include "areal_test_helpers.hpp"
@@ -34,6 +31,8 @@ try {
 	cout << "Standard areal<16,5> configuration tests" << endl;
 
 	areal<nbits, es> r;
+	r = 1.2345;
+	cout << r << endl;
 
 #if 0
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
