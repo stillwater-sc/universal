@@ -945,6 +945,54 @@ inline bool operator> (const quire<nbits, es, capacity>& q, const value<fbits>& 
 	return bBigger;
 }
 
+
+
+// QUIRE OPERATORS
+
+// unrounded posit addition to be added to the quire
+template<size_t nbits, size_t es>
+value<nbits - es + 2> quire_add(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+	static constexpr size_t fbits     = nbits - 3 - es;
+	static constexpr size_t fhbits    = fbits + 1;            // size of fraction + hidden bit
+	static constexpr size_t guardbits = 3;
+	static constexpr size_t abits     = fhbits + guardbits;   // size of the addend
+	value<abits + 1> sum;
+	value<fbits> a, b;
+
+	// special case handling
+	if (lhs.iszero()) { rhs.normalize_to<abits+1>(sum); return sum; }
+	if (rhs.iszero()) { lhs.normalize_to<abits+1>(sum); return sum; }
+
+	// transform the inputs into (sign,scale,fraction) triples
+	a.set(sign(lhs), scale(lhs), extract_fraction<nbits, es, fbits>(lhs), lhs.iszero(), lhs.isnar());
+	b.set(sign(rhs), scale(rhs), extract_fraction<nbits, es, fbits>(rhs), rhs.iszero(), rhs.isnar());
+
+	module_add<fbits, abits>(a, b, sum);		// add the two inputs
+
+	return sum;
+}
+
+// unrounded posit multiplication to be added to the quire
+template<size_t nbits, size_t es>
+value<2 * (nbits - 2 - es)> quire_mul(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
+	static constexpr size_t fbits = nbits - 3 - es;
+	static constexpr size_t fhbits = fbits + 1;      // size of fraction + hidden bit
+	static constexpr size_t mbits = 2 * fhbits;      // size of the multiplier output
+
+	value<mbits> product;  // constructs to zero value
+	value<fbits> a, b;
+
+	if (lhs.iszero() || rhs.iszero()) return product;
+
+	// transform the inputs into (sign,scale,fraction) triples
+	a.set(sign(lhs), scale(lhs), extract_fraction<nbits, es, fbits>(lhs), lhs.iszero(), lhs.isnar());
+	b.set(sign(rhs), scale(rhs), extract_fraction<nbits, es, fbits>(rhs), rhs.iszero(), rhs.isnar());
+
+	module_multiply(a, b, product);    // multiply the two inputs
+
+	return product;
+}
+
 }  // namespace unum
 
 }  // namespace sw

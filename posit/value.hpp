@@ -505,7 +505,7 @@ namespace sw {
 			return value<nfbits>(false, v.scale(), v.fraction(), v.iszero());
 		}
 
-		// add module
+		// add two values with fbits fraction bits, round them to abits, and return the abits+1 result value
 		template<size_t fbits, size_t abits>
 		void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 1>& result) {
 			// with sign/magnitude adders it is customary to organize the computation 
