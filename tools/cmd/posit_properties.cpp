@@ -36,6 +36,7 @@ void ReportArithmeticProperties(size_t nbits, size_t es, size_t capacity) {
 
 	cout << "arithmetic properties of a posit<" << nbits << ", " << es << "> environment" << endl;
 
+/*
 	constexpr size_t es_0 = 0;
 	constexpr size_t es_1 = 1;
 	constexpr size_t es_2 = 2;
@@ -46,6 +47,7 @@ void ReportArithmeticProperties(size_t nbits, size_t es, size_t capacity) {
 	constexpr size_t es_7 = 7;
 	constexpr size_t es_8 = 8;
 	constexpr size_t es_9 = 9;
+*/
 
 	switch (nbits) {
 	case 1:

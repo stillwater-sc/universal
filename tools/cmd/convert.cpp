@@ -89,7 +89,8 @@ sw::unum::posit<nbits, es> convert_to_posit(Ty rhs) {
 		if (remaining_bits > 0) {
 			sb = anyAfter(fraction_in, fbits - 1 - nf);
 			bitblock<fbits> sb_mask;
-			for (int i = 0; i < fbits - 1 - nf; i++) sb_mask.set(i);
+			//for (int i = 0; i < int(fbits) - 1 - nf; i++) sb_mask.set(i);
+			for (int i = 0; i < remaining_bits; i++) sb_mask.set(i);
 			cout << to_bit_string(sb_mask) << "  mask of remainder bits\n";
 		}
 
@@ -199,7 +200,7 @@ try {
 	posit<128, 4> p128_4;
 	posit<256, 5> p256_5;
 
-	int precision = dbl::max_digits10;
+	//int precision = dbl::max_digits10;
 	switch (size) {
 	case 8:
 		p8_0 = convert_to_posit<8, 0, double>(d);
