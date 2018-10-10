@@ -38,10 +38,10 @@ template<size_t nbits, size_t es, size_t capacity>
 inline int quire_size() {
 	constexpr size_t escale = size_t(1) << es;         // 2^es
 	constexpr size_t range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
-	constexpr size_t half_range = range >> 1;          // position of the fixed point
-	constexpr size_t radix_point = half_range;
+	//constexpr size_t half_range = range >> 1;          // position of the fixed point
+	//constexpr size_t radix_point = half_range;
 	// the upper is 1 bit bigger than the lower because maxpos^2 has that scale
-	constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
+	//constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
 	constexpr size_t qbits = range + capacity;     // size of the quire minus the sign bit: we are managing the sign explicitly
 
 	return int(qbits);  // why int? so that we can do arithmetic on it 
@@ -71,7 +71,7 @@ inline int max_scale() {
 	constexpr size_t escale = size_t(1) << es;         // 2^es
 	constexpr size_t range = escale * (4 * nbits - 8); // dynamic range of the posit configuration
 	constexpr size_t half_range = range >> 1;          // position of the fixed point
-	constexpr size_t radix_point = half_range;
+	//constexpr size_t radix_point = half_range;
 	// the upper is 1 bit bigger than the lower because maxpos^2 has that scale
 	constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
 	return int(upper_range); 
@@ -592,7 +592,8 @@ private:
 			}
 		}
 		else if (lsb >= 0) {	// all upper accumulator
-			for (i = lsb, f = 0; i <= v.scale() && f <= int(fbits); i++, f++) {
+			int upper_bound = v.scale();
+			for (i = lsb, f = 0; i <= upper_bound && f <= int(fbits); i++, f++) {
 				bool _a = _upper[i];
 				bool _b = fraction[f];
 				_upper[i] = _a ^ _b ^ carry;
@@ -702,7 +703,8 @@ private:
 			}
 		}
 		else if (lsb >= 0) {	// all upper accumulator
-			for (i = lsb, f = 0; i <= v.scale() && f <= int(fbits); i++, f++) {
+			int upper_bound = v.scale();
+			for (i = lsb, f = 0; i <= upper_bound && f <= int(fbits); i++, f++) {
 				bool _a = _upper[i];
 				bool _b = fraction[f];
 				_upper[i] = _a ^ _b ^ borrow;

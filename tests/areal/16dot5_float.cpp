@@ -6,6 +6,9 @@
 
 #include "common.hpp"
 // minimum set of include files to reflect source code dependencies
+// TODO: the dependencies on posit exceptions and trace_constants needs to be removed
+#include "../../posit/exceptions.hpp"
+#include "../../posit/trace_constants.hpp"
 #include "../../bitblock/bitblock.hpp"
 #include "../../areal/areal.hpp"
 #include "../test_helpers.hpp"

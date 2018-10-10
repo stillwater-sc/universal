@@ -88,7 +88,7 @@ sw::unum::posit<nbits, es> convert_to_posit(Ty rhs) {
 		if (remaining_bits > 0) {
 			sb = anyAfter(fraction_in, fbits - 1 - nf);
 			bitblock<fbits> sb_mask;
-			for (int i = 0; i < fbits - 1 - nf; i++) sb_mask.set(i);
+			for (int i = 0; i < remaining_bits; i++) sb_mask.set(i);
 			cout << to_bit_string(sb_mask) << "  mask of remainder bits\n";
 		}
 
