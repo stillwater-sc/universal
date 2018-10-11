@@ -12,8 +12,8 @@
 // turn on tracing: kinda misleading that these flags carry the POSIT prefix
 #define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_ADD
-#include "../../bitblock/bitblock.hpp"
 #include "../../posit/exceptions.hpp"
+#include "../../bitblock/bitblock.hpp"
 #include "../../posit/value.hpp"
 #include "../test_helpers.hpp"
 
@@ -65,6 +65,10 @@ try {
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
+	// Arithmetic tests for value class
+	cout << endl << "value addition arithmetic tests" << endl;
+	cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases" << endl;
+
 #if MANUAL_TESTING
 
 	// a posit<8,0> has 5 sbits, and 5 fbits. it needs 5 sbits to capture products
@@ -82,8 +86,6 @@ try {
 	// This implies that this functionality is independent of the <nbits,es> configuration of the posit.
 	// Otherwise stated, an enumeration of tests for different posit configurations is a bit superfluous.
 
-	// DECREMENT tests
-	cout << endl << "DECREMENT tests" << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidateValueAdd<3,5>("FAIL", bReportIndividualTestCases), "value<3,5>", "addition");
 
 

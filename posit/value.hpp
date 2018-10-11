@@ -484,7 +484,7 @@ namespace sw {
 		template<size_t nfbits>
 		inline bool operator< (const value<nfbits>& lhs, const value<nfbits>& rhs) {
 			if (lhs._inf) {
-				if (rhs._inf) return false; else true; // everything is less than -infinity
+				if (rhs._inf) return false; else return true; // everything is less than -infinity
 			}
 			else {
 				if (rhs._inf) return false;
