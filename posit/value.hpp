@@ -137,9 +137,11 @@ namespace sw {
 					break;
 				case FP_INFINITE:
 					_inf  = true;
+					_sign = true;
 					break;
 				case FP_NAN:
 					_nan = true;
+					_sign = true;
 					break;
 				case FP_SUBNORMAL:
 				case FP_NORMAL:
@@ -168,9 +170,11 @@ namespace sw {
 					break;
 				case FP_INFINITE:
 					_inf = true;
+					_sign = true;
 					break;
 				case FP_NAN:
 					_nan = true;
+					_sign = true;
 					break;
 				case FP_SUBNORMAL:
 				case FP_NORMAL:
@@ -199,9 +203,11 @@ namespace sw {
 					break;
 				case FP_INFINITE:
 					_inf = true;
+					_sign = true;
 					break;
 				case FP_NAN:
 					_nan = true;
+					_sign = true;
 					break;
 				case FP_SUBNORMAL:
 				case FP_NORMAL:
@@ -263,18 +269,18 @@ namespace sw {
 				_nrOfBits = fbits;
 				_fraction.reset();
 			}
-			void setinf() {
+			void setinf() {      // this maps to NaR on the posit side, and that has a sign = 1
 				_inf      = true;
-				_sign     = false;
+				_sign     = true;
 				_zero     = false;
 				_nan      = false;
 				_scale    = 0;
 				_nrOfBits = fbits;
 				_fraction.reset();
 			}
-			void setnan() {
+			void setnan() {		// this will also map to NaR
 				_nan      = true;
-				_sign     = false;
+				_sign     = true;
 				_zero     = false;
 				_inf      = false;
 				_scale    = 0;
@@ -476,7 +482,73 @@ namespace sw {
 		template<size_t nfbits>
 		inline bool operator!=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator==(lhs, rhs); }
 		template<size_t nfbits>
-		inline bool operator< (const value<nfbits>& lhs, const value<nfbits>& rhs) { return lhs.to_long_double() < rhs.to_long_double(); }
+		inline bool operator< (const value<nfbits>& lhs, const value<nfbits>& rhs) {
+			if (lhs._inf) {
+				if (rhs._inf) return false; else true; // everything is less than -infinity
+			}
+			else {
+				if (rhs._inf) return false;
+			}
+
+			if (lhs._zero) {
+				if (rhs._zero) return false; // they are both 0
+				if (rhs._sign) return false; else return true;
+			}
+			if (rhs._zero) {
+				if (lhs._sign) return true; else return false;
+			}
+			if (lhs._sign) {
+				if (rhs._sign) {	// both operands are negative
+					if (lhs._scale > rhs._scale) {
+						return true;	// lhs is more negative
+					}
+					else {
+						if (lhs._scale == rhs._scale) {
+							// compare the fraction, which is an unsigned value
+							if (lhs._fraction == rhs._fraction) return false; // they are the same value
+							if (lhs._fraction > rhs._fraction) {
+								return true; // lhs is more negative
+							}
+							else {
+								return false; // lhs is less negative
+							}
+						}
+						else {
+							return false; // lhs is less negative
+						}
+					}
+				}
+				else {
+					return true; // lhs is negative, rhs is positive
+				}
+			}
+			else {
+				if (rhs._sign) {	
+					return false; // lhs is positive, rhs is negative
+				}
+				else {
+					if (lhs._scale > rhs._scale) {
+						return false; // lhs is more positive
+					}
+					else {
+						if (lhs._scale == rhs._scale) {
+							// compare the fractions
+							if (lhs._fraction == rhs._fraction) return false; // they are the same value
+							if (lhs._fraction > rhs._fraction) {
+								return false; // lhs is more positive than rhs
+							}
+							else {
+								return true; // lhs is less positive than rhs
+							}
+						}
+						else {
+							return true; // lhs is less positive
+						}
+					}
+				}
+			}
+			return false;
+		}
 		template<size_t nfbits>
 		inline bool operator> (const value<nfbits>& lhs, const value<nfbits>& rhs) { return  operator< (rhs, lhs); }
 		template<size_t nfbits>

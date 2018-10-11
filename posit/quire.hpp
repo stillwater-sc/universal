@@ -962,6 +962,8 @@ value<nbits - es + 2> quire_add(const posit<nbits, es>& lhs, const posit<nbits, 
 	value<fbits> a, b;
 
 	// special case handling
+	if (lhs.isnar() || rhs.isnar()) { sum.setinf(); return sum; }
+	if (lhs.iszero() && rhs.iszero()) return sum;
 	if (lhs.iszero()) { rhs.normalize_to<abits+1>(sum); return sum; }
 	if (rhs.iszero()) { lhs.normalize_to<abits+1>(sum); return sum; }
 
