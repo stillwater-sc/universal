@@ -52,6 +52,16 @@ Simply clone the github repo, and you are ready to build the universal library. 
 > make test
 ```
 
+The default build configuration will build the educational examples and utilities. If you want to build the full regression suite, use the following cmake command:
+```
+cmake -DBUILD_CI_CHECK=ON ..
+```
+
+For performance, the default build configuration compiles with AVX2. If your particular CPU doesn't support AVX2, you will need to build with that flag turned off:
+```
+cmake -DBUILD_CI_CHECK=on -DUSE_AVX2=OFF ..
+```
+
 The library builds a set of useful command utilities, which can be found in the directory ".../build/tools/cmd".
 
 ```
