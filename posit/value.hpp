@@ -610,6 +610,9 @@ namespace sw {
 
 			if (_trace_add) {
 				std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1       " << r1 << std::endl;
+				if (signs_are_different) {
+					std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2 orig  " << twos_complement(r2) << std::endl;
+				}
 				std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
 			}
 
@@ -624,7 +627,7 @@ namespace sw {
 					shift = -1;
 				} 
 				else {
-					// the carry && signs!= implies r2 is complement, result < r1, must find hidden bit (in the complement)
+					// the carry && signs!= implies ||result|| < ||r1||, must find MSB (in the complement)
 					for (int i = abits - 1; i >= 0 && !sum[i]; i--) {
 						shift++;
 					}
