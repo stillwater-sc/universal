@@ -73,11 +73,13 @@ try {
 
 	// a posit<8,0> has 5 sbits, and 5 fbits. it needs 5 sbits to capture products
 	// nrOfFailedTestCases += ReportTestResult(ValidateValueAdd<3, 5>("FAIL", bReportIndividualTestCases), "value<5,5>", "addition");
-	value<5> a = 1;
-	value<5> b = -3;
+	value<5> a = 8;
+	value<5> b = -64;
+	value<5> c = -56;
 	value<10> sum;
 	cout << components(a) << endl;
 	cout << components(b) << endl;
+	cout << components(c) << endl;
 	module_add<5,9>(a, b, sum);
 	cout << components(sum) << endl;
 
