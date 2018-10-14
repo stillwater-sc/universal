@@ -986,6 +986,8 @@ value<2 * (nbits - 2 - es)> quire_mul(const posit<nbits, es>& lhs, const posit<n
 	value<mbits> product;  // constructs to zero value
 	value<fbits> a, b;
 
+	// special case handling
+	if (lhs.isnar() || rhs.isnar()) { product.setinf(); return product; }
 	if (lhs.iszero() || rhs.iszero()) return product;
 
 	// transform the inputs into (sign,scale,fraction) triples
