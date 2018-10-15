@@ -162,9 +162,9 @@ namespace std {
 		static constexpr bool is_exact = false;
 		static constexpr int radix = 2;
 
-		static constexpr int min_exponent = sw::unum::minpos_scale<nbits,es>();
+		static constexpr int min_exponent = static_cast<int>(2 - int(nbits)) * (1 << es);
 		static constexpr int min_exponent10 = int((min_exponent) / 3.3);
-		static constexpr int max_exponent = sw::unum::maxpos_scale<nbits,es>() * 2^es;
+		static constexpr int max_exponent = (nbits - 2) * (1 << es);
 		static constexpr int max_exponent10 = int((max_exponent) / 3.3);
 		static constexpr bool has_infinity = true;
 		static constexpr bool has_quiet_NaN = true;

@@ -7,6 +7,46 @@
 #include "common.hpp"
 #include <posit>
 
+template<size_t nbits, size_t es>
+void ReportNumericLimitsOfPosit() {
+	using namespace std;
+	using namespace sw::unum;
+
+	stringstream ss;
+	ss << "numeric_limits< sw::unum::posit<" << nbits << ", " << es << "> >::";
+	string posit_tag = ss.str();
+
+	cout << "Numeric limits for posit< " << nbits << ", " << es << ">\n";
+	cout << posit_tag << "min()             : " << numeric_limits< posit<nbits, es> >::min() << '\n';
+	cout << posit_tag << "max()             : " << numeric_limits< posit<nbits, es> >::max() << '\n';
+	cout << posit_tag << "lowest()          : " << numeric_limits< posit<nbits, es> >::lowest() << '\n';
+	cout << posit_tag << "epsilon()         : " << numeric_limits< posit<nbits, es> >::epsilon() << '\n';
+
+	cout << posit_tag << "digits            : " << numeric_limits< posit<nbits, es> >::digits << '\n';
+	cout << posit_tag << "digits10          : " << numeric_limits< posit<nbits, es> >::digits10 << '\n';
+	cout << posit_tag << "max_digits10      : " << numeric_limits< posit<nbits, es> >::max_digits10 << '\n';
+	cout << posit_tag << "is_signed         : " << numeric_limits< posit<nbits, es> >::is_signed << '\n';
+	cout << posit_tag << "is_integer        : " << numeric_limits< posit<nbits, es> >::is_integer << '\n';
+	cout << posit_tag << "is_exact          : " << numeric_limits< posit<nbits, es> >::is_exact << '\n';
+
+	cout << posit_tag << "min_exponent      : " << numeric_limits< posit<nbits, es> >::min_exponent << '\n';
+	cout << posit_tag << "min_exponent10    : " << numeric_limits< posit<nbits, es> >::min_exponent10 << '\n';
+	cout << posit_tag << "max_exponent      : " << numeric_limits< posit<nbits, es> >::max_exponent << '\n';
+	cout << posit_tag << "max_exponent10    : " << numeric_limits< posit<nbits, es> >::max_exponent10 << '\n';
+	cout << posit_tag << "has_infinity      : " << numeric_limits< posit<nbits, es> >::has_infinity << '\n';
+	cout << posit_tag << "has_quiet_NaN     : " << numeric_limits< posit<nbits, es> >::has_quiet_NaN << '\n';
+	cout << posit_tag << "has_signaling_NaN : " << numeric_limits< posit<nbits, es> >::has_signaling_NaN << '\n';
+	cout << posit_tag << "has_denorm        : " << numeric_limits< posit<nbits, es> >::has_denorm << '\n';
+	cout << posit_tag << "has_denorm_loss   : " << numeric_limits< posit<nbits, es> >::has_denorm_loss << '\n';
+
+	cout << posit_tag << "is_iec559         : " << numeric_limits< posit<nbits, es> >::is_iec559 << '\n';
+	cout << posit_tag << "is_bounded        : " << numeric_limits< posit<nbits, es> >::is_bounded << '\n';
+	cout << posit_tag << "is_modulo         : " << numeric_limits< posit<nbits, es> >::is_modulo << '\n';
+	cout << posit_tag << "traps             : " << numeric_limits< posit<nbits, es> >::traps << '\n';
+	cout << posit_tag << "tinyness_before   : " << numeric_limits< posit<nbits, es> >::tinyness_before << '\n';
+	cout << posit_tag << "round_style       : " << numeric_limits< posit<nbits, es> >::round_style << '\n';
+
+}
 // receive a float and print the components of a IEEE float representations
 int main(int argc, char** argv)
 try {
@@ -42,6 +82,14 @@ try {
 	cout << "         float       " << setw(4) << f_fbits     << " bits" << endl;
 	cout << "         double      " << setw(4) << d_fbits     << " bits" << endl;
 	cout << "         long double " << setw(4) << q_fbits     << " bits" << endl;
+
+	// numeric_limits of standard posits
+	ReportNumericLimitsOfPosit<8, 0>();
+	ReportNumericLimitsOfPosit<16, 1>();
+	ReportNumericLimitsOfPosit<32, 2>();
+	ReportNumericLimitsOfPosit<64, 3>();
+	ReportNumericLimitsOfPosit<128, 4>();
+//	ReportNumericLimitsOfPosit<256, 5>();
 
 	union {
 		long double da;
