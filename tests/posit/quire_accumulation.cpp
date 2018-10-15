@@ -604,8 +604,8 @@ void Issue45_2() {
 
 		// inefficient as we are copying a whole quire just to reset the sign bit, but we are leveraging the comparison logic
 		//quire<nbits, es, capacity> absq = abs(*this);
-		constexpr size_t qbits = (size_t(1) << es) * (4 * nbits - 8) + capacity;
-		constexpr size_t fbits = nbits - 3 - es;
+		//constexpr size_t qbits = (size_t(1) << es) * (4 * nbits - 8) + capacity;
+		//constexpr size_t fbits = nbits - 3 - es;
 		//value<qbits> absq = abs(q);
 		quire <nbits, es, capacity> absq = abs(q);
 		value<mbits> absv = abs(unrounded);

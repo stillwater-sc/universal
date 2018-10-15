@@ -942,7 +942,6 @@ public:
 		bitblock<nbits> tmp(_raw_bits);
 		tmp.set(nbits - 1, false);
 		tmp.set(nbits - 2, false);
-		bool oneBitSet = tmp.none();
 		return _raw_bits[nbits - 1] & _raw_bits[nbits - 2] & tmp.none();
 	}
 	bool isneg() const {

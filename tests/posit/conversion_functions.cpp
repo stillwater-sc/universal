@@ -35,7 +35,6 @@ void GenerateLogicPatternsForDebug() {
 	sw::unum::posit<nbits + 1, es> pref, pprev, pnext;
 
 	// execute the test
-	int nrOfFailedTests = 0;
 	const double eps = 1.0e-10;  // TODO for big posits, eps is important to resolve differences
 	double da, input;
 	sw::unum::posit<nbits, es> pa;
@@ -381,8 +380,8 @@ sw::unum::posit<nbits, es> convert_to_posit(sw::unum::value<nrfbits> v, bool bPr
 	// ignore for the sake of clarity the special cases 0 and NaR (Not a Real)
 	bitblock<nrfbits> bits = v.fraction();
 
-	float minpos = (float)sw::unum::minpos_value<nbits, es>();
-	float maxpos = (float)sw::unum::maxpos_value<nbits, es>();
+	//float minpos = (float)sw::unum::minpos_value<nbits, es>();
+	//float maxpos = (float)sw::unum::maxpos_value<nbits, es>();
 
 	const size_t pt_len = nbits + 3 + es;
 	bitblock<pt_len> pt_bits;
@@ -476,7 +475,6 @@ sw::unum::posit<nbits, es> convert_to_posit(sw::unum::value<nrfbits> v, bool bPr
 template<size_t nbits, size_t es>
 void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
 	sw::unum::value<23> v(x);
-	bool sign = v.sign();
 	int scale = v.scale();
 	
 	unsigned run = (scale >= 0 ? 1 + (scale >> es) : -scale >> es);

@@ -256,7 +256,6 @@ int ValidateScales(std::string& str, bool bReportIndividualTestCases) {
 	sw::unum::posit<nbits, es> p;
 	for (size_t i = 0; i < NR_OF_TESTCASES; ++i) {
 		p.set_raw_bits(i);
-		int _scale = scale(p);
 		constexpr size_t fbits = nbits - 3 - es;
 		bool		     	 _sign;
 		regime<nbits, es>    _regime;

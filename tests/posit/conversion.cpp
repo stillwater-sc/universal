@@ -54,7 +54,6 @@ void GenerateLogicPatternsForDebug() {
 	sw::unum::posit<nbits + 1, es> pref, pprev, pnext;
 
 	// execute the test
-	int nrOfFailedTests = 0;
 	double minpos = sw::unum::minpos_value<nbits+1, es>();
 	double eps = 1.0e-10;
 	double da, input;

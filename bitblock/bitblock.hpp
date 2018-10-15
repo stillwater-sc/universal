@@ -235,8 +235,8 @@ namespace sw {
 
 		template<size_t nbits>
 		bool subtract_signed_magnitude(bitblock<nbits> a, bitblock<nbits> b, bitblock<nbits>& diff) {
-			bool sign_a = a.test(nbits - 1);
-			bool sign_b = b.test(nbits - 1);
+			//bool sign_a = a.test(nbits - 1);
+			//bool sign_b = b.test(nbits - 1);
 			std::cerr << "subtract_signed_magnitude not implemented yet" << std::endl;
 			return false;
 		}

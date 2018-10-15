@@ -136,7 +136,7 @@ namespace std {
 		static constexpr sw::unum::posit<nbits, es> lowest() { return -(max)(); } // return most negative value
 		static constexpr sw::unum::posit<nbits, es> epsilon() { // return smallest effective increment from 1.0
 			sw::unum::posit<nbits, es> p_one(1), p_one_plus_eps(1);
-			return ++p_one_plus_eps() - p_one;
+			return ++p_one_plus_eps - p_one;
 		}
 		static constexpr sw::unum::posit<nbits, es> round_error() { // return largest rounding error
 			return sw::unum::posit<nbits, es>(0.5);

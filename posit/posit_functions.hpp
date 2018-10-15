@@ -138,7 +138,7 @@ namespace sw {
 			regime<nbits, es>    _regime;
 			bitblock<nbits> tmp(p.get());
 			tmp = sign(p) ? twos_complement(tmp) : tmp;
-			size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
+			_regime.assign_regime_pattern(decode_regime(tmp));
 			return _regime.value();
 		}
 
@@ -201,7 +201,7 @@ namespace sw {
 			regime<nbits, es>    _regime;
 			bitblock<nbits> tmp(p.get());
 			tmp = sign(p) ? twos_complement(tmp) : tmp;
-			size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
+			_regime.assign_regime_pattern(decode_regime(tmp));
 			return _regime.scale();
 		}
 

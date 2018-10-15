@@ -36,7 +36,6 @@ namespace sw {
 		// This function has the functionality of the real(float) register-file load.
 		template<size_t nbits, size_t es>
 		void decode(const bitblock<nbits>& raw_bits, bool& _sign, exponent<nbits, es>& _exponent, fraction<nbits - es - 1>& _fraction) {
-			constexpr size_t fbits = nbits - es - 1;
 			// check special cases
 			_sign = raw_bits.test(nbits - 1);
 			if (_sign) {
