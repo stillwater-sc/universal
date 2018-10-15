@@ -721,7 +721,7 @@ namespace sw {
 			bitblock<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
 			bitblock<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
 			bool r1_sign = lhs.sign(), r2_sign = rhs.sign();
-			bool signs_are_equal = r1_sign == r2_sign;
+			//bool signs_are_equal = r1_sign == r2_sign;
 
 			if (r1_sign) r1 = twos_complement(r1);
 			if (r1_sign) r2 = twos_complement(r2);

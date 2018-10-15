@@ -65,7 +65,6 @@ namespace sw {
 			std::cout << "Upper range = " << upper_range << std::endl;
 			uint64_t i;
 			q = 0; std::cout << q << std::endl;
-			unsigned v = 1;
 			for (i = 1; i < uint64_t(1) << (upper_range + capacity); i <<= 1) {
 				q = i;
 				std::cout << q << std::endl;
@@ -86,7 +85,6 @@ namespace sw {
 			std::cout << "Upper range = " << upper_range << std::endl;
 			int64_t i, upper_limit = -(int64_t(1) << (upper_range + capacity));
 			q = 0; std::cout << q << std::endl;
-			unsigned v = 1;
 			for (i = -1; i > upper_limit; i *= 2) {
 				q = i;
 				std::cout << q << std::endl;
