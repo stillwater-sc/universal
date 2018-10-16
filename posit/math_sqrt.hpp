@@ -178,6 +178,7 @@ namespace sw {
 			return vsqrt;
 		}
 
+#if POSIT_NATIVE_SQRT
 		// sqrt for arbitrary posit
 		template<size_t nbits, size_t es>
 		inline posit<nbits, es> sqrt(const posit<nbits, es>& a) {
@@ -197,6 +198,12 @@ namespace sw {
 
 			return p;
 		}
+#else
+		template<size_t nbits, size_t es>
+		inline posit<nbits, es> sqrt(const posit<nbits, es>& a) {
+			return posit<nbits, es>(std::sqrtl((long double)a));
+		}
+#endif
 
 		// reciprocal sqrt
 		template<size_t nbits, size_t es>
