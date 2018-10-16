@@ -917,9 +917,15 @@ public:
 		}
 		return p;
 	}
+	// absolute value is 2's complement when negative
 	posit abs() const {
-		posit p(*this);
-		p._raw_bits.set(nbits- 1, false);
+		posit p;
+		if (isneg()) {
+			p.set(twos_complement(_raw_bits));
+		}
+		else {
+			p.set(_raw_bits);
+		}
 		return p;
 	}
 			
