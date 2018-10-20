@@ -305,6 +305,7 @@ try {
 
 	if (argc == 1) {
 		// print a standard quire size table
+		QuireSizeTable<4>(cout); cout << endl;
 		QuireSizeTable<8>(cout); cout << endl;
 		QuireSizeTable<16>(cout); cout << endl;
 		QuireSizeTable<24>(cout); cout << endl;
