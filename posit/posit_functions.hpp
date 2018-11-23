@@ -109,21 +109,6 @@ namespace sw {
 			return (sign ? twos_complement(_bits) : _bits);
 		}
 
-		// this comparison is for a two's complement number only, for example, the raw bits of a posit
-		template<size_t nbits>
-		bool lessThan(const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
-			// comparison of the sign bit
-			if (lhs[nbits - 1] == 0 && rhs[nbits - 1] == 1)	return false;
-			if (lhs[nbits - 1] == 1 && rhs[nbits - 1] == 0) return true;
-			// sign is equal, compare the remaining bits
-			for (int i = nbits - 2; i >= 0; --i) {
-				if (lhs[i] == 0 && rhs[i] == 1)	return true;
-				if (lhs[i] == 1 && rhs[i] == 0) return false;
-			}
-			// numbers are equal
-			return false;
-		}
-
 		// forward reference
 		template<size_t nbits, size_t es> class posit;
 
