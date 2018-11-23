@@ -82,7 +82,7 @@ sw::unum::posit<nbits, es> convert_to_posit(Ty rhs) {
 		// copy the most significant nf fraction bits into fraction
 		unsigned lsb = nf <= fbits ? 0 : nf - fbits;
 		for (unsigned i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
-		cout << to_bit_string(fraction_in) << "  full fraction bits\n";
+		cout << to_binary(fraction_in) << "  full fraction bits\n";
 
 		int remaining_bits = fbits - 1 - nf;
 		bool sb = false;
@@ -91,59 +91,59 @@ sw::unum::posit<nbits, es> convert_to_posit(Ty rhs) {
 			bitblock<fbits> sb_mask;
 			//for (int i = 0; i < int(fbits) - 1 - nf; i++) sb_mask.set(i);
 			for (int i = 0; i < remaining_bits; i++) sb_mask.set(i);
-			cout << to_bit_string(sb_mask) << "  mask of remainder bits\n";
+			cout << to_binary(sb_mask) << "  mask of remainder bits\n";
 		}
 
 		// construct the untruncated posit
-		cout << to_bit_string(pt_bits) << "  unconstrained posit: length = nbits(" << nbits << ") + es(" << es << ") + 3 guard bits: " << pt_len << "\n";
+		cout << to_binary(pt_bits) << "  unconstrained posit: length = nbits(" << nbits << ") + es(" << es << ") + 3 guard bits: " << pt_len << "\n";
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
 		regime <<= es + nf + 1;
-		cout << to_bit_string(regime) << "  runlength = " << run << endl;
+		cout << to_binary(regime) << "  runlength = " << run << endl;
 		exponent <<= nf + 1;
-		cout << to_bit_string(exponent) << "  exponent value = " << hex << esval << dec << endl;
+		cout << to_binary(exponent) << "  exponent value = " << hex << esval << dec << endl;
 		fraction <<= 1;
-		cout << to_bit_string(fraction) << "  most significant " << nf << " fraction bits (nbits-1-run-es)\n";
+		cout << to_binary(fraction) << "  most significant " << nf << " fraction bits (nbits-1-run-es)\n";
 		sticky_bit.set(0, sb);
 		if (remaining_bits > 0) {
-			cout << to_bit_string(sticky_bit) << "  sticky bit representing the truncated fraction bits\n";
+			cout << to_binary(sticky_bit) << "  sticky bit representing the truncated fraction bits\n";
 		}
 		else {
-			cout << to_bit_string(sticky_bit) << "  sticky bit representing the fraction bits which are not truncated\n";
+			cout << to_binary(sticky_bit) << "  sticky bit representing the fraction bits which are not truncated\n";
 		}
 		
 		pt_bits |= regime;
 		pt_bits |= exponent;
 		pt_bits |= fraction;
 		pt_bits |= sticky_bit;
-		cout << to_bit_string(pt_bits) << "  unconstrained posit bits ";
+		cout << to_binary(pt_bits) << "  unconstrained posit bits ";
 
 		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
 		cout << " length = " << len << endl;
 		bool blast = pt_bits.test(len - nbits);
 		bitblock<pt_len> blast_bb;
 		blast_bb.set(len - nbits);
-		cout << to_bit_string(blast_bb) << "  last bit mask\n";
+		cout << to_binary(blast_bb) << "  last bit mask\n";
 		bool bafter = pt_bits.test(len - nbits - 1);
 		bitblock<pt_len> bafter_bb;
 		bafter_bb.set(len - nbits - 1);
-		cout << to_bit_string(bafter_bb) << "  bit after last bit mask\n";
+		cout << to_binary(bafter_bb) << "  bit after last bit mask\n";
 		bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
 		bitblock<pt_len> bsticky_bb;
 		for (int i = len - nbits - 2; i >= 0; --i) bsticky_bb.set(i);
-		cout << to_bit_string(bsticky_bb) << "  sticky bit mask\n";
+		cout << to_binary(bsticky_bb) << "  sticky bit mask\n";
 
 		bool rb = (blast & bafter) | (bafter & bsticky);
 		cout << "rounding decision (blast & bafter) | (bafter & bsticky): " << (rb ? "round up" : "round down") << endl;
 
 		bitblock<nbits> ptt;
 		pt_bits <<= pt_len - len;
-		cout << to_bit_string(pt_bits) << "  shifted posit\n";
+		cout << to_binary(pt_bits) << "  shifted posit\n";
 		truncate(pt_bits, ptt);
-		cout << to_bit_string(ptt) << "  truncated posit\n";
+		cout << to_binary(ptt) << "  truncated posit\n";
 		if (rb) increment_bitset(ptt);
-		cout << to_bit_string(ptt) << "  rounded posit\n";
+		cout << to_binary(ptt) << "  rounded posit\n";
 		if (s) ptt = twos_complement(ptt);
-		cout << to_bit_string(ptt) << "  final posit\n";
+		cout << to_binary(ptt) << "  final posit\n";
 		p.set(ptt);
 	}
 	return p;
