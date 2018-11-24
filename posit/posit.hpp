@@ -209,7 +209,7 @@ void decode(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _re
 	// check special cases
 	_sign = raw_bits.test(nbits - 1);
 	if (_sign) {
-		std::bitset<nbits> tmp(raw_bits);
+		bitblock<nbits> tmp(raw_bits);
 		tmp.reset(nbits - 1);
 		if (tmp.none()) {
 			// setnar();   special case = NaR (Not a Real)
