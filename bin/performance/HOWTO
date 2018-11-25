@@ -3,7 +3,7 @@
 mkdir Mmm_DD_YYYY
 
 # copy the performance tests from build/perf to bin/performance
-cp ../../build/perf/*.exe Mmm_DD_YYYY
+cp ../../build/perf/Release/*.exe Mmm_DD_YYYY
 
 # copy the report generator to the result directory
 cp run_perf_report.sh Mmm_DD_YYYY
