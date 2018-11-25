@@ -73,6 +73,7 @@ typedef __128bitdd double_double;
 #define ctzl(x) __builtin_ctzl(x)
 #define popcnt(x) __builtin_popcount(x)
 #define popcntl(x) __builtin_popcountl(x)
+#define clearmemory(dst,val,size) __builtin_memset(dst,val,size)
 
 #elif defined(__HP_cc) || defined(__HP_aCC)
  /* Hewlett-Packard C/aC++. ---------------------------------- */
@@ -83,10 +84,10 @@ typedef __128bitdd double_double;
 #elif defined(_MSC_VER)
  /* Microsoft Visual Studio. --------------------------------- */
 
-
 #include <intrin.h>
 #pragma intrinsic(_BitScanForward)
 #pragma intrinsic(_BitScanForward64)
+#define clearmemory(dst,val,size) memset(dst,val,size)
 
  // 32bit unsigned versions
 static inline uint32_t popcnt(uint32_t v) {
@@ -372,7 +373,8 @@ static inline uint32_t ctzl(uint64_t x) {
 
       void
       M_do_reset() noexcept
-      { __builtin_memset(M_w, 0, Nw * sizeof(WordT)); }
+      { clearmemory(M_w, 0, Nw * sizeof(WordT)); }
+	  //{ __builtin_memset(M_w, 0, Nw * sizeof(WordT)); }
 
       bool
       M_is_equal(const BaseBitset<Nw>& x) const noexcept
@@ -487,7 +489,7 @@ static inline uint32_t ctzl(uint64_t x) {
       noexcept {
         bool carry = false;
         for (size_t i = 0; i < UBB_WORDS(Nb); i++) {
-          carry = BaseBitset::S_add(M_w[i], a.M_w[i], b.M_w[i],carry);
+          carry = BaseBitset::S_add(M_w[i], a.M_w[i], b.M_w[i], carry);
         }
         return this->M_testBit(Nb);
       }
@@ -604,7 +606,8 @@ static inline uint32_t ctzl(uint64_t x) {
     void
     BaseBitset<Nw>::M_do_left_shift(size_t shift) noexcept
     {
-      if (__builtin_expect(shift != 0, 1))
+//      if (__builtin_expect(shift != 0, 1))
+	  if (shift != 0)
 	{
 	  const size_t wshift = shift / UBB_BITS_PER_WORD;
 	  const size_t offset = shift % UBB_BITS_PER_WORD;
@@ -630,7 +633,8 @@ static inline uint32_t ctzl(uint64_t x) {
     void
     BaseBitset<Nw>::M_do_right_shift(size_t shift) noexcept
     {
-      if (__builtin_expect(shift != 0, 1))
+      //if (__builtin_expect(shift != 0, 1))
+	  if (shift != 0)
 	{
 	  const size_t wshift = shift / UBB_BITS_PER_WORD;
 	  const size_t offset = shift % UBB_BITS_PER_WORD;
@@ -744,12 +748,12 @@ static inline uint32_t ctzl(uint64_t x) {
       : M_w(0)
       { }
 
-#if __cplusplus >= 201103L
+//#if __cplusplus >= 201103L
       constexpr BaseBitset(unsigned long long val) noexcept
-#else
-      BaseBitset(unsigned long val)
-#endif
-      : M_w(val)
+//#else
+//      BaseBitset(unsigned long val)
+//#endif
+      : M_w(WordT(val))
       { }
 
       static constexpr size_t
@@ -781,11 +785,11 @@ static inline uint32_t ctzl(uint64_t x) {
       M_getword(size_t) const noexcept
       { return M_w; }
 
-#if __cplusplus >= 201103L
+//#if __cplusplus >= 201103L
       const WordT*
       M_getdata() const noexcept
       { return &M_w; }
-#endif
+//#endif
 
       WordT&
       M_hiword() noexcept
@@ -966,11 +970,11 @@ static inline uint32_t ctzl(uint64_t x) {
       M_do_to_ulong() const noexcept
       { return M_w; }
 
-#if __cplusplus >= 201103L
+//#if __cplusplus >= 201103L
       unsigned long long
       M_do_to_ullong() const noexcept
       { return M_w; }
-#endif
+//#endif
 
       size_t
       M_do_find_first(size_t not_found) const noexcept
@@ -1011,11 +1015,11 @@ static inline uint32_t ctzl(uint64_t x) {
       constexpr BaseBitset() noexcept
       { }
 
-#if __cplusplus >= 201103L
+//#if __cplusplus >= 201103L
       constexpr BaseBitset(unsigned long long) noexcept
-#else
-      BaseBitset(unsigned long)
-#endif
+//#else
+//     BaseBitset(unsigned long)
+//#endif
       { }
 
       static constexpr size_t
@@ -1144,11 +1148,11 @@ static inline uint32_t ctzl(uint64_t x) {
       M_do_to_ulong() const noexcept
       { return 0; }
 
-#if __cplusplus >= 201103L
+//#if __cplusplus >= 201103L
       unsigned long long
       M_do_to_ullong() const noexcept
       { return 0; }
-#endif
+//#endif
 
       // Normally "not found" is the size, but that could also be
       // misinterpreted as an index in this corner case.  Oh well.
@@ -1178,7 +1182,7 @@ static inline uint32_t ctzl(uint64_t x) {
       S_do_sanitize(WordT) noexcept { }
     };
 
-#if __cplusplus >= 201103L
+//#if __cplusplus >= 201103L
   template<size_t Nb, bool = (Nb < UBB_BITS_PER_ULL)>
     struct Sanitize_val
     {
@@ -1194,7 +1198,7 @@ static inline uint32_t ctzl(uint64_t x) {
       S_do_sanitize_val(unsigned long long val)
       { return val & ~((~static_cast<unsigned long long>(0)) << Nb); }
     };
-#endif
+//#endif
 
   /**
    *  @brief The %bitset class represents a @e fixed-size sequence of bits.
@@ -1307,9 +1311,9 @@ static inline uint32_t ctzl(uint64_t x) {
 		sanitize_type::S_do_sanitize(this->M_hiword());
       }
 
-#if __cplusplus >= 201103L
+//#if __cplusplus >= 201103L
       friend struct std::hash<bitset>;
-#endif
+//#endif
 
     public:
       /**
@@ -1391,14 +1395,14 @@ static inline uint32_t ctzl(uint64_t x) {
       { }
 
       /// Initial bits bitwise-copied from a single word (others set to zero).
-#if __cplusplus >= 201103L
+//#if __cplusplus >= 201103L
       constexpr bitset(unsigned long long val) noexcept
       : Base(Sanitize_val<Nb>::S_do_sanitize_val(val)) { }
-#else
-      bitset(unsigned long val)
-      : Base(val)
-      { M_do_sanitize(); }
-#endif
+//#else
+//      bitset(unsigned long val)
+//      : Base(val)
+//      { M_do_sanitize(); }
+//#endif
 
       /**
        *  Use a subset of a string.
@@ -1452,7 +1456,7 @@ static inline uint32_t ctzl(uint64_t x) {
 	  M_copy_from_string(s, position, n, zero, one);
 	}
 
-#if __cplusplus >= 201103L
+//#if __cplusplus >= 201103L
       /**
        *  Construct from a character %array.
        *  @param  str  An %array of characters @a zero and @a one.
@@ -1479,7 +1483,7 @@ static inline uint32_t ctzl(uint64_t x) {
 							     n, zero,
 							     one);
 	}
-#endif
+//#endif
 
       // 23.3.5.2 bitset operations:
       //@{
@@ -1705,11 +1709,11 @@ static inline uint32_t ctzl(uint64_t x) {
       to_ulong() const
       { return this->M_do_to_ulong(); }
 
-#if __cplusplus >= 201103L
+//#if __cplusplus >= 201103L
       unsigned long long
       to_ullong() const
       { return this->M_do_to_ullong(); }
-#endif
+//#endif
 
       /**
        *  @brief Returns a character interpretation of the %bitset.
@@ -2170,7 +2174,7 @@ static inline uint32_t ctzl(uint64_t x) {
 
 } // namespace bitset
 
-#if __cplusplus >= 201103L
+//#if __cplusplus >= 201103L
 
 #ifdef VERSION_SPECIALIZATION
   //  _GLIBCXX_BEGIN_NAMESPACE_VERSION
@@ -2200,6 +2204,6 @@ namespace bitset2 {
 }
 #endif // VERSION_SPECIALIZATION
 
-#endif // C++11
+//#endif // C++11
 
 #endif /* UBB_H */

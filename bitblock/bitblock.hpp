@@ -36,7 +36,7 @@ namespace sw {
       }
 
 	  unsigned long long to_ullong() const {
-		  return this->M_do_to_ullong();
+		  return M_do_to_ullong();
 	  }
       void setToZero() {
         universal_bitset::bitset<nbits>::reset();
@@ -293,8 +293,8 @@ namespace sw {
       return _fraction;
     }
 
-                template<size_t nbits>
-                bitblock<nbits> copy_integer_fraction(unsigned long long _fraction_without_hidden_bit) {
+    template<size_t nbits>
+    bitblock<nbits> copy_integer_fraction(unsigned long long _fraction_without_hidden_bit) {
                         bitblock<nbits> _fraction;
                         uint64_t mask = uint64_t(0x8000000000000000ull);
                         unsigned int ub = (nbits < 64 ? nbits : 64);
@@ -478,31 +478,30 @@ namespace sw {
                                 }
                                 return result;
                         }
-                };
+    };
 
-                template<size_t src_size>
-                struct round_t<0, src_size>
-                {
-                        static bitblock<0> eval(const bitblock<src_size>&, size_t)
-                        {
-                                return {};
-                        }
-                };
-
-
-
-                /** Round off \p n last bits of bitset \p src. Round to nearest resulting in potentially smaller bitset.
-                *  Doesn't return carry bit in case of overflow while rounding up! TODO: Check whether we need carry or we require an extra bit for this case.
-                */
-                template<size_t tgt_size, size_t src_size>
-                bitblock<tgt_size> round(const bitblock<src_size>& src, size_t n)
-                {
-                        return round_t<tgt_size, src_size>::eval(src, n);
-                }
+    template<size_t src_size>
+    struct round_t<0, src_size>
+    {
+            static bitblock<0> eval(const bitblock<src_size>&, size_t)
+            {
+                    return {};
+            }
+    };
 
 
-                ////////////////////////////// HELPER functions
 
+    /** Round off \p n last bits of bitset \p src. Round to nearest resulting in potentially smaller bitset.
+     *  Doesn't return carry bit in case of overflow while rounding up! TODO: Check whether we need carry or we require an extra bit for this case.
+     */
+    template<size_t tgt_size, size_t src_size>
+    bitblock<tgt_size> round(const bitblock<src_size>& src, size_t n)
+    {
+            return round_t<tgt_size, src_size>::eval(src, n);
+    }
+
+
+    ////////////////////////////// HELPER functions
 
     // Attention!
     // Achtung!
@@ -540,49 +539,46 @@ namespace sw {
       return std::string(str);
     }
 
-                template<size_t nbits>
-                std::string to_hex(bitblock<nbits> bits) {
-                        char str[(nbits >> 2) + 2];   // plenty of room
-                        for (size_t i = 0; i < (nbits >> 2) + 2; ++i) str[i] = 0;
-                        const char* hexits = "0123456789ABCDEF";
-                        unsigned int maxHexDigits = (nbits >> 2) + (nbits % 4 ? 1 : 0);
-                        for (unsigned int i = 0; i < maxHexDigits; i++) {
-                                unsigned int hexit;
-                                switch (nbits) {
-                                case 1:
-                                        hexit = bits[0];
-                                        break;
-                                case 2:
-                                        hexit = (bits[1] << 1) + bits[0];
-                                        break;
-                                case 3:
-                                        hexit = (bits[2] << 2) + (bits[1] << 1) + bits[0];
-                                        break;
-                                default:
-                                        hexit = (bits[3] << 3) + (bits[2] << 2) + (bits[1] << 1) + bits[0];
-                                        break;
-                                }                               
-                                str[maxHexDigits - 1 - i] = hexits[hexit];
-                                bits >>= 4;
-                        }
-                        str[maxHexDigits] = 0;  // null terminated string
-                        return std::string(str);
-                }
+    template<size_t nbits>
+    std::string to_hex(bitblock<nbits> bits) {
+            char str[(nbits >> 2) + 2];   // plenty of room
+            for (size_t i = 0; i < (nbits >> 2) + 2; ++i) str[i] = 0;
+            const char* hexits = "0123456789ABCDEF";
+            unsigned int maxHexDigits = (nbits >> 2) + (nbits % 4 ? 1 : 0);
+            for (unsigned int i = 0; i < maxHexDigits; i++) {
+                    unsigned int hexit;
+                    switch (nbits) {
+                    case 1:
+                            hexit = bits[0];
+                            break;
+                    case 2:
+                            hexit = (bits[1] << 1) + bits[0];
+                            break;
+                    case 3:
+                            hexit = (bits[2] << 2) + (bits[1] << 1) + bits[0];
+                            break;
+                    default:
+                            hexit = (bits[3] << 3) + (bits[2] << 2) + (bits[1] << 1) + bits[0];
+                            break;
+                    }                               
+                    str[maxHexDigits - 1 - i] = hexits[hexit];
+                    bits >>= 4;
+            }
+            str[maxHexDigits] = 0;  // null terminated string
+            return std::string(str);
+    }
 
-                // convert a sign/magnitude number to a string
-                template<size_t nbits>
-                std::string sign_magnitude_to_string(bitblock<nbits> bits) {
-                        std::stringstream ss;
-                        ss << (bits[nbits - 1] ? "n-" : "p-");
-                        if (nbits < 2) return ss.str();
-                        for (int i = nbits - 2; i >= 0; --i) {
-                                ss << (bits[i] ? "1" : "0");
-                        }
-                        return ss.str();
-                }
-
-
-
+    // convert a sign/magnitude number to a string
+    template<size_t nbits>
+    std::string sign_magnitude_to_string(bitblock<nbits> bits) {
+            std::stringstream ss;
+            ss << (bits[nbits - 1] ? "n-" : "p-");
+            if (nbits < 2) return ss.str();
+            for (int i = nbits - 2; i >= 0; --i) {
+                    ss << (bits[i] ? "1" : "0");
+            }
+            return ss.str();
+    }
 
 
     // find the MSB, return position if found, return -1 if no bits are set
