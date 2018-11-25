@@ -35,9 +35,10 @@ namespace sw {
         return (bitblock&) universal_bitset::bitset<nbits>::operator=(rhs);
       }
 
-	  unsigned long long to_ullong() const {
-		  return M_do_to_ullong();
-	  }
+      unsigned long long to_ullong() const {
+        return this->M_do_to_ullong();
+      }
+
       void setToZero() {
         universal_bitset::bitset<nbits>::reset();
       }
