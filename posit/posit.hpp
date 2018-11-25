@@ -473,9 +473,8 @@ public:
 	posit& operator=(posit&&) = default;
 
 	/// Construct posit from raw bits
-	posit(const std::bitset<nbits>& raw_bits) {
-		*this = set(raw_bits);
-	}
+	//posit(const std::bitset<nbits>& raw_bits)   { *this = set(raw_bits); }
+
 	// initializers for native types
 	posit(const signed char initial_value)        { *this = initial_value; }
 	posit(const short initial_value)              { *this = initial_value; }

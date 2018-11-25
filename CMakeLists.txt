@@ -147,7 +147,30 @@ elseif(MSVC)
 	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /MP")
 	add_definitions(-D _CRT_SECURE_NO_WARNINGS)
 	add_definitions(-D _SCL_SECURE_NO_WARNINGS)
+
 	# specific flags for debug and release builds
+
+	# correct __cplusplus variable setting
+    # /Zc:__cplusplus
+    # You need to compile with the /Zc:__cplusplus switch to see the updated value of the __cplusplus macro. 
+	# Microsoft tried updating the macro by default and discovered that a lot of code doesn’t compile correctly 
+	# when they changed the value of __cplusplus. 
+	# They’ll continue to require use of the /Zc:__cplusplus switch for all minor versions of MSVC in the 19.xx family.
+	# 
+	# The version reported by the __cplusplus macro also depends upon the standard version switch used. 
+	# If you’re compiling in C++14 mode the macro will be set to “201402L”. If you compile in C++17 mode the macro will be set to “201703L”. And the /std:c++latest switch, used to enable features from the Standard currently in development, sets a value that is more than the current Standard. This chart shows the values of the __cplusplus macro with different switch combinations:
+	#
+	# /Zc:__cplusplus switch		/std:c++ switch					__cplusplus value
+	# Zc:__cplusplus				Currently defaults to C++14		201402L
+	# Zc:__cplusplus				/std:c++14						201402L
+	# Zc:__cplusplus				/std:c++17						201703L
+	# Zc:__cplusplus				/std:c++latest					201704L
+	# Zc:__cplusplus- (disabled)	Any value						199711L
+	# Zc:__cplusplus not specified	Any value						199711L
+	# Note that the MSVC compiler does not, and never will, support a C++11, C++03, or C++98 standards version switch. 
+	# Also, the value of the __cplusplus macro is not affected by the /permissive- switch.
+	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
+
 	# Optimization
 	# Option	Purpose
 	# /O1		Creates small code.

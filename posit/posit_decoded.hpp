@@ -112,9 +112,8 @@ namespace sw {
 				_raw_bits.set(nbits - 1, _sign);
 			}
 			/// Construct posit from raw bits
-			posit_decoded(const std::bitset<nbits>& raw_bits) {
-				*this = set(raw_bits);
-			}
+			//posit_decoded(const std::bitset<nbits>& raw_bits)     { *this = set(raw_bits); }
+
 			// initializers for native types
 			posit_decoded(const signed char initial_value)        { *this = initial_value; }
 			posit_decoded(const short initial_value)              { *this = initial_value; }
