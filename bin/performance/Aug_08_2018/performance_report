@@ -3,7 +3,6 @@ Processor: Intel Core i7-7500 CPU @ 2.70GHz, 2 cores, 4 threads, 15W mobile proc
 Memory   : 16GB
 System   : 64-bit Windows 10 Pro, Version 1803, x64-based processor, OS build 17134.165
 
-$ sh run_perf_report.sh
 Performance Report: posit<4,0>
 Conversion      :   5 MPOPS
 Prefix          :  10 GPOPS

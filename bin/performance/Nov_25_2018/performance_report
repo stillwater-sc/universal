@@ -1,0 +1,60 @@
+Date run : 8/8/2018
+Processor: Intel Core i7-7500 CPU @ 2.70GHz, 2 cores, 4 threads, 15W mobile processor
+Memory   : 16GB
+System   : 64-bit Windows 10 Pro, Version 1803, x64-based processor, OS build 17134.407
+
+Performance Report: posit<4,0>
+Conversion      :   2 MPOPS
+Prefix          : 154 MPOPS
+Postfix         : 151 MPOPS
+Negation        :  63 MPOPS
+Addition        :   2 MPOPS
+Subtraction     :   3 MPOPS
+Multiplication  :   4 MPOPS
+Division        :   4 MPOPS
+Square Root     :  65 MPOPS
+
+Performance Report: posit<8,0>
+Conversion      :   2 MPOPS
+Prefix          : 195 MPOPS
+Postfix         : 212 MPOPS
+Negation        : 122 MPOPS
+Addition        :   1 MPOPS
+Subtraction     :   2 MPOPS
+Multiplication  :   2 MPOPS
+Division        :   2 MPOPS
+Square Root     :   2 MPOPS
+
+Performance Report: posit<16,1>
+Conversion      :   2 MPOPS
+Prefix          : 160 MPOPS
+Postfix         : 173 MPOPS
+Negation        : 257 MPOPS
+Addition        :   1 MPOPS
+Subtraction     :   1 MPOPS
+Multiplication  :   1 MPOPS
+Division        :   1 MPOPS
+Square Root     :   1 MPOPS
+
+Performance Report: posit<32,2>
+Conversion      :   1 MPOPS
+Prefix          : 254 MPOPS
+Postfix         : 265 MPOPS
+Negation        : 268 MPOPS
+Addition        :   1 MPOPS
+Subtraction     :   1 MPOPS
+Multiplication  :   1 MPOPS
+Division        : 482 KPOPS
+Square Root     :   1 MPOPS
+
+Performance Report: posit<64,3>
+Conversion      :   1 MPOPS
+Prefix          : 146 MPOPS
+Postfix         : 155 MPOPS
+Negation        : 118 MPOPS
+Addition        : 778 KPOPS
+Subtraction     : 702 KPOPS
+Multiplication  : 589 KPOPS
+Division        : 307 KPOPS
+Square Root     : 645 KPOPS
+

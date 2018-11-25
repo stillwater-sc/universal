@@ -338,8 +338,8 @@ namespace sw {
 			switch (opcode) {
 			default:
 			case OPCODE_NOP:
-				preference.setToZero();
-				presult.setToZero();
+				preference.setzero();
+				presult.setzero();
 				return;
 			case OPCODE_ADD:
 				presult = pa + pb;
