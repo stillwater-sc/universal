@@ -19,6 +19,11 @@
 // warning C4146 : unary minus operator applied to unsigned type, result still unsigned
 #pragma warning( disable : 4146)
 
+template<size_t bits_in_value, size_t bytes_in_word>
+size_t NrWords() {
+	return ((bits_in_value + (8 * bytes_in_word) - 1) / (8 * bytes_in_word));
+}
+
 void CheckUnsignedNegationBehavior() {
 	unsigned long x = 0x7fffffff;
 	cout << hex;
@@ -29,7 +34,8 @@ void CheckUnsignedNegationBehavior() {
 }
 
 void CheckMultiWordBehavior() {
-
+	using namespace std;
+	using namespace sw::unum;
 	using WordT = unsigned char;
 
 	// checking UBB_WORDS
@@ -163,10 +169,6 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 	return nrOfFailedTestCases;
 }
 
-template<size_t bits_in_value, size_t bytes_in_word>
-size_t NrWords() {
-	return ((bits_in_value + (8 * bytes_in_word) - 1) / (8 * bytes_in_word));
-}
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
