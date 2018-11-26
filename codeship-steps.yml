@@ -1,6 +1,6 @@
 - name: log_env
-  service: universal_test_suite
+  service: universal-test-suite
   command: printenv
 - name: test_runner
-  service: universal_test_suite
+  service: universal-test-suite
   command: make test
