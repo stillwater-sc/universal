@@ -12,7 +12,7 @@ Universal Number Library Contributors
   * Posit Rounding algorithm
   * Build automation
 
-* **[Mark Seligman](https://github.com/caolan)**
+* **[Mark Seligman](https://github.com/suiji)**
 
   * Fast and optimal bitblock implementation
   * Compiler intrinsics and performance
