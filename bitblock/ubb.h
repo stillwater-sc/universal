@@ -72,7 +72,6 @@ namespace universal_bitset {
 #elif defined(__GNUC__) || defined(__GNUG__)
  /* GNU GCC/G++. --------------------------------------------- */
 
-#define clz(x) __builtin_clz(x)
 #define ctz(x) __builtin_ctz(x)
 #define ctzl(x) __builtin_ctzl(x)
 #define popcnt(x) __builtin_popcount(x)
@@ -98,14 +97,12 @@ namespace universal_bitset {
 // disable this warning: as the logic is correct
 // warning C4146 : unary minus operator applied to unsigned type, result still unsigned
 
- // 32bit unsigned versions
-	static inline uint32_t popcnt(uint32_t v) {
-		uint32_t c;
-		v = v - ((v >> 1) & 0x55555555);                    // reuse input as temporary
-		v = (v & 0x33333333) + ((v >> 2) & 0x33333333);     // temp
-		c = ((v + (v >> 4) & 0xF0F0F0F) * 0x1010101) >> 24; // count
-		return c;
-	}
+#define ctz(x)  __lzcnt(x)
+#define ctzl(x) __lzcnt64(x)
+#define popcnt(x)  __popcnt(x)
+#define popcntl(x) __popcnt64(x)
+
+  /* Exit?
 	static inline uint32_t clz(uint32_t x) {
 		x |= (x >> 1);
 		x |= (x >> 2);
@@ -113,19 +110,6 @@ namespace universal_bitset {
 		x |= (x >> 8);
 		x |= (x >> 16);
 		return 32 - popcnt(x);
-	}
-	static inline uint32_t ctz(uint32_t x) {
-		return popcnt((x & -x) - 1);
-	}
-
-	// 64bit unsigned versions
-	static inline uint32_t popcntl(uint64_t x) {
-		x -= ((x >> 1) & 0x5555555555555555);
-		x = (((x >> 2) & 0x3333333333333333) + (x & 0x3333333333333333));
-		x = (((x >> 4) + x) & 0x0f0f0f0f0f0f0f0f);
-		x += (x >> 8);
-		x += (x >> 16);
-		return x & 0x0000003f;
 	}
 	static inline uint32_t clzl(uint64_t x) {
 		x |= (x >> 1);
@@ -136,9 +120,16 @@ namespace universal_bitset {
 		x |= (x >> 32);
 		return 64 - popcntl(x);
 	}
-	static inline uint32_t ctzl(uint64_t x) {
-		return popcntl((x & -x) - 1);
-	}
+
+
+  static inline uint32_t ctz(uint32_t x) {
+    return popcnt((x & -x) - 1);
+  }
+
+  static inline uint32_t ctzl(uint64_t x) {
+    return popcntl((x & -x) - 1);
+  }
+  */
 
 #pragma warning( pop ) 
 
@@ -150,6 +141,7 @@ namespace universal_bitset {
 
 #endif
 
+#define leadzeroes(x) (sizeof(WordT) > 4 ? ctzl(x) : ctz(x))
 #define popcount(x) (sizeof(WordT) > 4 ? popcntl(x) : popcnt(x)) 
 
 
@@ -732,7 +724,7 @@ namespace universal_bitset {
 			WordT thisword = M_w[i];
 			if (thisword != static_cast<WordT>(0))
 				return (i * UBB_BITS_PER_WORD
-					+ ctzl(thisword));//__builtin_ctzl(thisword));
+					+ leadzeroes(thisword));//__builtin_ctzl(thisword));
 		}
 		// not found, so return an indication of failure.
 		return not_found;
@@ -758,7 +750,7 @@ namespace universal_bitset {
 		thisword &= (~static_cast<WordT>(0)) << S_whichbit(prev);
 
 		if (thisword != static_cast<WordT>(0))
-			return (i * UBB_BITS_PER_WORD + ctzl(thisword));//__builtin_ctzl(thisword));
+			return (i * UBB_BITS_PER_WORD + leadzeroes(thisword));//__builtin_ctzl(thisword));
 
 			  // check subsequent words
 		i++;
@@ -766,7 +758,7 @@ namespace universal_bitset {
 		{
 			thisword = M_w[i];
 			if (thisword != static_cast<WordT>(0))
-				return (i * UBB_BITS_PER_WORD + ctzl(thisword));//__builtin_ctzl(thisword));
+				return (i * UBB_BITS_PER_WORD + leadzeroes(thisword));//__builtin_ctzl(thisword));
 		}
 		// not found, so return an indication of failure.
 		return not_found;
@@ -1063,7 +1055,7 @@ namespace universal_bitset {
 		{
 			if (M_w != 0)
 				//return __builtin_ctzl(M_w);
-				return ctzl(M_w);
+				return leadzeroes(M_w);
 			else
 				return not_found;
 		}
@@ -1080,7 +1072,7 @@ namespace universal_bitset {
 			WordT x = M_w >> prev;
 			if (x != 0)
 				// return __builtin_ctzl(x) + prev;
-				return ctzl(x) + prev;
+				return leadzeroes(x) + prev;
 			else
 				return not_found;
 		}
