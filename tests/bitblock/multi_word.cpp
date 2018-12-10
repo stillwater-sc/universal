@@ -24,13 +24,16 @@ size_t NrWords() {
 	return ((bits_in_value + (8 * bytes_in_word) - 1) / (8 * bytes_in_word));
 }
 
+#include <intrin.h>
 void CheckUnsignedNegationBehavior() {
+	using namespace std;
+
 	unsigned long x = 0x7fffffff;
 	cout << hex;
 	cout << " +x = " << x << endl;
 	cout << " -x = " << -x << endl;
 	cout << dec;
-	cout << " #1 = " << universal_bitset::popcnt(x) << endl;
+//	cout << " #1 = " << popcnt(x) << endl;
 }
 
 void CheckMultiWordBehavior() {
