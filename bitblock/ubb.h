@@ -169,8 +169,10 @@ namespace universal_bitset {
 		constexpr BaseBitset() noexcept
 			: M_w() { }
 
-
-		constexpr BaseBitset(unsigned long long val) noexcept
+#if __cplusplus >= 201402L
+    constexpr
+#endif
+		BaseBitset(unsigned long long val) noexcept
 		{
 			for (size_t i = 0; i < Nw; ++i) {
 				M_w[i] = WordT(val);
