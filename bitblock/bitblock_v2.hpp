@@ -9,33 +9,56 @@
 
 // this should be removed when we have made the transition away from std::bitset to sw::unum::bitblock
 #include <cassert>
-#include <bitset>
+#include "ubb.h"
+
 
 namespace sw {
 	namespace unum {
 
-		// bitblock is a template class implementing efficient multi-precision binary arithmetic and logic
+		/**
+		 @brief templated class implementing efficient multi-precision binary arithmetic and logic
+		 */
 		template<size_t nbits>
-		class bitblock : public std::bitset<nbits> {
+		class bitblock : public universal_bitset::bitset<nbits> {
 		public:
-			bitblock() { setToZero(); }
+			bitblock() {
+				setzero();
+			}
 
 			bitblock(const bitblock&) = default;
 			bitblock(bitblock&&) = default;
-
 			bitblock& operator=(const bitblock&) = default;
 			bitblock& operator=(bitblock&&) = default;
 
-			bitblock& operator=(int rhs) {
-				return (bitblock&)std::bitset<nbits>::operator=(rhs);
+			// assignment operators for native types
+			bitblock& operator=(const signed char rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
+			bitblock& operator=(const short rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
+			bitblock& operator=(const int rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
+			bitblock& operator=(const long rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
+			bitblock& operator=(const long long rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
+			bitblock& operator=(const char rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
+			bitblock& operator=(const unsigned short rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
+			bitblock& operator=(const unsigned int rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
+			bitblock& operator=(const unsigned long rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
+			bitblock& operator=(const unsigned long long rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
+
+			unsigned long long to_ullong() const {
+				return this->M_do_to_ullong();
 			}
 
-			void setToZero() { std::bitset<nbits>::reset(); }
+			void setzero() {
+				universal_bitset::bitset<nbits>::reset();
+			}
+
 			bool load_bits(const std::string& string_of_bits) {
-				if (string_of_bits.length() != nbits) return false;
-				setToZero();
+				if (string_of_bits.length() != nbits)
+					return false;
+
+				setzero();
 				int msb = nbits - 1;
+
 				for (std::string::const_iterator it = string_of_bits.begin(); it != string_of_bits.end(); ++it) {
+
 					if (*it == '0') {
 						this->reset(msb--);
 					}
@@ -50,100 +73,60 @@ namespace sw {
 			}
 		};
 
-		// logic operators
+		/**
+		   @param val is a bitblock value.
+
+		   @return value of sign bit.
+		 */
+		template<size_t nbits>
+		unsigned int getSignBit(const bitblock<nbits>& val) {
+			return val[nbits - 1];
+		}
+
+		// logic operators:  unsigned (in)equality inherited.
 
 		// this comparison is for a two's complement number only
 		template<size_t nbits>
-		bool twosComplementLessThan(const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
-			// comparison of the sign bit
-			if (lhs[nbits - 1] == 0 && rhs[nbits - 1] == 1)	return false;
-			if (lhs[nbits - 1] == 1 && rhs[nbits - 1] == 0) return true;
-			// sign is equal, compare the remaining bits
-			if (nbits > 1) {
-				for (int i = static_cast<int>(nbits) - 2; i >= 0; --i) {
-					if (lhs[i] == 0 && rhs[i] == 1)	return true;
-					if (lhs[i] == 1 && rhs[i] == 0) return false;
-				}
+		bool lessThan(const bitblock<nbits>& lhs,
+			const bitblock<nbits>& rhs) {
+			// Short-circuits on disparate signs:
+			if (getSignBit(lhs) == 0 && getSignBit(rhs) == 1) {
+				return false;
 			}
-			// numbers are equal
-			return false;
+			if (getSignBit(lhs) == 1 && getSignBit(rhs) == 0) {
+				return true;
+			}
+
+			// Sign bits agree, can compare bit patterns directly:
+			return lhs < rhs;
 		}
 
-		// this comparison works for any number
+		/**
+		  @brief Vestigial alias for '<' operator:  unsigned.
+		*/
 		template<size_t nbits>
-		bool operator==(const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
-			// compare remaining bits
-			for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-				if (lhs[i] != rhs[i]) return false;
-			}
-			// numbers are equal
-			return true;
-		}
-
-		// this comparison is for unsigned numbers only
-		template<size_t nbits>
-		bool operator< (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
-			// compare remaining bits
-			for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-				if (lhs[i] == 0 && rhs[i] == 1)	return true;
-				if (lhs[i] == 1 && rhs[i] == 0) return false;
-			}
-			// numbers are equal
-			return false;
-		}
-
-		// this comparison is for unsigned numbers only
-		template<size_t nbits>
-		bool operator<= (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
-			// compare remaining bits
-			for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-				if (lhs[i] == 0 && rhs[i] == 1)	return true;
-				if (lhs[i] == 1 && rhs[i] == 0) return false;
-			}
-			// numbers are equal
-			return true;
-		}
-
-		// this comparison is for unsigned numbers only
-		template<size_t nbits>
-		bool operator> (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
-			// compare remaining bits
-			for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-				if (lhs[i] == 0 && rhs[i] == 1)	return false;
-				if (lhs[i] == 1 && rhs[i] == 0) return true;
-			}
-			// numbers are equal
-			return false;
-		}
-
-		// this comparison is for unsigned numbers only
-		template<size_t nbits>
-		bool operator>= (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
-			// compare remaining bits
-			for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-				if (lhs[i] == 0 && rhs[i] == 1)	return false;
-				if (lhs[i] == 1 && rhs[i] == 0) return true;
-			}
-			// numbers are equal
-			return true;
+		bool lessThan_unsigned(const bitblock<nbits> &lhs,
+			const bitblock<nbits> &rhs) {
+			return lhs < rhs;
 		}
 
 		////////////////////////////// ARITHMETIC functions
-
-
 		//////////////////////////////////////////////////////////////////////////////////////
 		// increment and decrement
 
-		// increment the input bitset in place, and return true if there is a carry generated.
+		/**
+		   @brief Increments value in place.
+
+		   @param[in, out] number is the value to decrement.
+
+		   @return true iff the sign has changed from nonnegative to negative.
+		 */
 		template<size_t nbits>
 		bool increment_bitset(bitblock<nbits>& number) {
-			bool carry = true;  // ripple carry
-			for (size_t i = 0; i < nbits; i++) {
-				bool _a = number[i];
-				number[i] = _a ^ carry;
-				carry = carry & (_a ^ false);
-			}
-			return carry;
+			unsigned int signPre = getSignBit(number);
+			number.increment();
+			unsigned int signPost = getSignBit(number);
+			return signPost > signPre;
 		}
 
 		// increment the input bitset in place, and return true if there is a carry generated.
@@ -152,11 +135,11 @@ namespace sw {
 		// [1 0 0 0] nrBits = 1 is the word [1]
 		// [1 0 0 0] nrBits = 2 is the word [1 0]
 		// [1 1 0 0] nrBits = 3 is the word [1 1 0], etc.
+
 		template<size_t nbits>
-		bool increment_unsigned(bitblock<nbits>& number, size_t nrBits = nbits - 1) {
-			if (nrBits > nbits - 1) nrBits = nbits - 1;  // check/fix argument
+		bool increment_unsigned(bitblock<nbits>& number, int nrBits = nbits - 1) {
 			bool carry = 1;  // ripple carry
-			size_t lsb = nbits - nrBits;
+			int lsb = nbits - nrBits;
 			for (size_t i = lsb; i < nbits; i++) {
 				bool _a = number[i];
 				number[i] = _a ^ carry;
@@ -165,84 +148,89 @@ namespace sw {
 			return carry;
 		}
 
-		// decrement the input bitset in place, and return true if there is a borrow generated.
+
+		/**
+		   @brief Decrements value in place.
+
+		   @param[in, out] number is the value to decrement.
+
+		   @return true iff the sign has changed from negative to nonnegative.
+		 */
 		template<size_t nbits>
 		bool decrement_bitset(bitblock<nbits>& number) {
-			bool borrow = true;
-			for (size_t i = 0; i < nbits; i++) {
-				bool _a = number[i];
-				number[i] = _a ^ borrow;
-				borrow = (!(!_a ^ true) & borrow);
-			}
-			return borrow;
+			unsigned int signPre = getSignBit(number);
+			(void)number.decrement();
+			unsigned int signPost = getSignBit(number);
+			return signPost < signPre;
 		}
 
-		//////////////////////////////////////////////////////////////////////////////////////
-		// add and subtract
 
-		// add bitsets a and b and return result in bitset sum. Return true if there is a carry generated.
+		//////////////////////////////////////////////////////////////////////////////////////
+
+		/**
+		   @brief Adds two nbit summands into nbit+1 result.
+
+		   @param a is an addend.
+
+		   @param b is an addend.
+
+		   @param[out] sum contains the sum, with carry bit set.
+
+		   @return true iff carry precipitated.
+		*/
 		template<size_t nbits>
-		bool add_unsigned(bitblock<nbits> a, bitblock<nbits> b, bitblock<nbits + 1>& sum) {
-			bool carry = false;  // ripple carry
-			for (size_t i = 0; i < nbits; i++) {
+		bool add_unsigned(const bitblock<nbits> &a,
+			const bitblock<nbits> &b,
+			bitblock<nbits + 1>& sum) {
+			return sum.add(a, b);
+		}
+
+		// subtract bitsets a and b and return result in bitset dif. Return true if there is a borrow generated.
+		template<size_t nbits>
+		bool subtract_unsigned(bitblock<nbits> a,
+			bitblock<nbits> b,
+			bitblock<nbits + 1>& dif) {
+			return dif.sub(a, b);
+		}
+
+		template<size_t nbits>
+		bool add_signed_magnitude(bitblock<nbits> a,
+			bitblock<nbits> b,
+			bitblock<nbits>& sum) {
+			uint8_t carry = 0;
+			bool sign_a = a.test(nbits - 1);
+			if (sign_a) {
+				a = a.flip();
+				carry += 1;
+			}
+			bool sign_b = b.test(nbits - 1);
+			if (sign_b) {
+				b = b.flip();
+				carry += 1;
+			}
+			for (int i = 0; i < nbits - 2; i++) {
 				bool _a = a[i];
 				bool _b = b[i];
 				sum[i] = _a ^ _b ^ carry;
 				carry = (_a & _b) | (carry & (_a ^ _b));
 			}
-			sum.set(nbits, carry);
+
 			return carry;
 		}
 
-		// subtract bitsets a and b and return result in bitset dif. Return true if there is a borrow generated.
-		template<size_t nbits>
-		bool subtract_unsigned(bitblock<nbits> a, bitblock<nbits> b, bitblock<nbits + 1>& dif) {
-			bool borrow = false;  // ripple borrow
-			for (size_t i = 0; i < nbits; i++) {
-				bool _a = a[i];
-				bool _b = b[i];
-				dif[i] = _a ^ _b ^ borrow;
-				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
-			}
-			dif.set(nbits, borrow);
-			return borrow;
-		}
 
 		template<size_t nbits>
-		bool add_signed_magnitude(bitblock<nbits> a, bitblock<nbits> b, bitblock<nbits>& sum) {
-			uint8_t carry = 0;
-			if (nbits > 1) {  // need at least 1 bit of magnitude to add
-				bool sign_a = a.test(nbits - 1);
-				if (sign_a) {
-					a = a.flip();
-					carry += 1;
-				}
-				bool sign_b = b.test(nbits - 1);
-				if (sign_b) {
-					b = b.flip();
-					carry += 1;
-				}
-
-				for (size_t i = 0; i < nbits - 2; i++) {
-					bool _a = a[i];
-					bool _b = b[i];
-					sum[i] = _a ^ _b ^ carry;
-					carry = (_a & _b) | (carry & (_a ^ _b));
-				}
-			}
-			return carry;
-		}
-
-		template<size_t nbits>
-		bool subtract_signed_magnitude(bitblock<nbits> a, bitblock<nbits> b, bitblock<nbits>& diff) {
-			//bool sign_a = a.test(nbits - 1);
-			//bool sign_b = b.test(nbits - 1);
+		bool subtract_signed_magnitude(bitblock<nbits> a,
+			bitblock<nbits> b,
+			bitblock<nbits>& diff) {
+			bool sign_a = a.test(nbits - 1);
+			bool sign_b = b.test(nbits - 1);
 			std::cerr << "subtract_signed_magnitude not implemented yet" << std::endl;
 			return false;
 		}
 
-		// integral type to bitblock transformations
 
+		// integral type to bitblock transformations
 		// we are using a full nbits sized bitset even though nbits-3 is the maximum fraction
 		// a posit would contain. However, we need an extra bit after the cut-off to make the
 		// round up/down decision. The <nbits-something> size created a lot of sw complexity
@@ -273,6 +261,7 @@ namespace sw {
 			return _fraction;
 		}
 
+
 		template<size_t nbits>
 		bitblock<nbits> extract_63b_fraction(uint64_t _63b_fraction_without_hidden_bit) {
 			bitblock<nbits> _fraction;
@@ -290,6 +279,7 @@ namespace sw {
 			uint64_t lower;
 			uint64_t upper;
 		} uint128;
+
 
 		// take in a long double mapped to two uint64_t elements
 		template<size_t nbits>
@@ -323,6 +313,7 @@ namespace sw {
 			return _fraction;
 		}
 
+
 		////////////////////////////////////////////////////////////////////////////////////////
 		// bitset copy and slice operators
 
@@ -333,6 +324,7 @@ namespace sw {
 			for (size_t i = 0; i < src_size; i++)
 				tgt.set(i + shift, src[i]);
 		}
+
 
 		// copy a slice of a bitset into a bigger bitset starting at position indicated by the shift value
 		template<size_t src_size, size_t tgt_size>
@@ -352,24 +344,13 @@ namespace sw {
 			bitblock<to - from> result;
 			for (size_t i = 0, end = to - from; i < end; ++i)
 				result[i] = src[i + from];
+
 			return result;
 		}
 
 		//////////////////////////////////////////////////////////////////////////////////////
 		// multiply and divide
 
-		// accumulate the addend to a running accumulator
-		template<size_t src_size, size_t tgt_size>
-		bool accumulate(const bitblock<src_size>& addend, bitblock<tgt_size>& accumulator) {
-			bool carry = 0;  // ripple carry
-			for (size_t i = 0; i < src_size; i++) {
-				bool _a = addend[i];
-				bool _b = accumulator[i];
-				accumulator[i] = _a ^ _b ^ carry;
-				carry = (_a & _b) | (carry & (_a ^ _b));
-			}
-			return carry;
-		}
 
 		// multiply bitsets a and b and return result in bitset result.
 		template<size_t operand_size>
@@ -383,33 +364,18 @@ namespace sw {
 			for (size_t i = 1; i < operand_size; i++) {
 				if (a.test(i)) {
 					copy_into<operand_size, result_size>(b, i, addend);
-#ifdef DEBUG
-					bool carry = accumulate(addend, result);   // we should never have a carry
-					assert(carry == false);
-#else
-					accumulate(addend, result);   // we should never have a carry
-#endif
+					(void)result.add(addend);
+					// we should never have a carry:  assert(carry == false);
 				}
 			}
 		}
 
 
-		// subtract a subtractand from a running accumulator
-		template<size_t src_size, size_t tgt_size>
-		bool subtract(bitblock<tgt_size>& accumulator, const bitblock<src_size>& subtractand) {
-			bool borrow = 0;  // ripple borrow
-			for (size_t i = 0; i < src_size; i++) {
-				bool _a = accumulator[i];
-				bool _b = subtractand[i];
-				accumulator[i] = _a ^ _b ^ borrow;
-				borrow = ((!_a) & _b) | (!((!_a) ^ (!_b)) & borrow);
-			}
-			return borrow;
-		}
-
 		// divide bitsets a and b and return result in bitset result.
 		template<size_t operand_size>
-		void integer_divide_unsigned(const bitblock<operand_size>& a, const bitblock<operand_size>& b, bitblock<2 * operand_size>& result) {
+		void integer_divide_unsigned(const bitblock<operand_size>& a,
+			const bitblock<operand_size>& b,
+			bitblock<2 * operand_size>& result) {
 			bitblock<operand_size> subtractand, accumulator;
 			result.reset();
 			accumulator = a;
@@ -417,34 +383,31 @@ namespace sw {
 			if (msb < 0) {
 				throw integer_divide_by_zero{};
 			}
-			else {
-				int shift = operand_size - msb - 1;
-				// prepare the subtractand
-				subtractand = b;
-				subtractand <<= shift;
-				for (int i = operand_size - msb - 1; i >= 0; --i) {
-					if (subtractand <= accumulator) {
-#ifdef DEBUG
-						bool borrow = subtract(accumulator, subtractand);
-						assert(borrow == true);
-#else
-						subtract(accumulator, subtractand);
-#endif
-						result.set(i);
-					}
-					else {
-						result.reset(i);
-					}
-					subtractand >>= 1;
+
+			const unsigned int shift = operand_size - msb - 1;
+			// prepare the subtractand
+			subtractand = b;
+			subtractand <<= shift;
+			for (int i = shift; i >= 0; --i) {
+				if (subtractand <= accumulator) {
+					(void)accumulator.sub(subtractand);
+					result.set(i);
 				}
+				else {
+					result.reset(i);
+				}
+				subtractand >>= 1;
 			}
 		}
+
 
 		// divide bitsets a and b and return result in bitset result. 
 		// By providing more bits in the result, the algorithm will fill these with fraction bits if available.
 		// Radix point must be maintained by calling function.
 		template<size_t operand_size, size_t result_size>
-		void divide_with_fraction(const bitblock<operand_size>& a, const bitblock<operand_size>& b, bitblock<result_size>& result) {
+		void divide_with_fraction(const bitblock<operand_size>& a,
+			const bitblock<operand_size>& b,
+			bitblock<result_size>& result) {
 			bitblock<result_size> subtractand, accumulator;
 			result.reset();
 			copy_into<operand_size, result_size>(a, result_size - operand_size, accumulator);
@@ -452,29 +415,24 @@ namespace sw {
 			if (msb < 0) {
 				throw integer_divide_by_zero{};
 			}
-			else {
-				int shift = operand_size - msb - 1;
-				// prepare the subtractand
-				copy_into<operand_size, result_size>(b, result_size - operand_size, subtractand);
-				subtractand <<= shift;
-				for (int i = result_size - msb - 1; i >= 0; --i) {
-					//std::cout << "accumulator " << accumulator << std::endl;
-					//std::cout << "subtractand " << subtractand << std::endl;
-					if (subtractand <= accumulator) {
-#ifdef DEBUG
-						bool borrow = subtract(accumulator, subtractand);
-						assert(borrow == false);
-#else
-						subtract(accumulator, subtractand);
-#endif
-						result.set(i);
-					}
-					else {
-						result.reset(i);
-					}
-					//std::cout << "result      " << result << std::endl;
-					subtractand >>= 1;
+
+			int shift = operand_size - msb - 1;
+			// prepare the subtractand
+			copy_into<operand_size, result_size>(b, result_size - operand_size, subtractand);
+			subtractand <<= shift;
+			for (int i = result_size - msb - 1; i >= 0; --i) {
+				//std::cout << "accumulator " << accumulator << std::endl;
+				//std::cout << "subtractand " << subtractand << std::endl;
+				if (subtractand <= accumulator) {
+					(void)accumulator.sub(subtractand);
+					//assert(borrow == false);
+					result.set(i);
 				}
+				else {
+					result.reset(i);
+				}
+				//std::cout << "result      " << result << std::endl;
+				subtractand >>= 1;
 			}
 		}
 
@@ -488,6 +446,7 @@ namespace sw {
 			for (size_t i = 0; i < tgt_size; i++)
 				tgt.set(tgt_size - 1 - i, src[src_size - 1 - i]);
 		}
+
 
 		// round
 		template<size_t tgt_size, size_t src_size>
@@ -505,7 +464,6 @@ namespace sw {
 						throw cut_off_leading_bit{};
 
 				bitblock<tgt_size> result((src >> n).to_ullong()); // convert to size_t to deal with different sizes
-
 				if (n > 0 && src[n - 1]) {                                // round up potentially if first cut-off bit is true
 #         ifdef POSIT_ROUND_TIES_AWAY_FROM_ZERO             // TODO: Evil hack to be consistent with assign_fraction, for testing only
 					result = result.to_ullong() + 1;
@@ -524,6 +482,7 @@ namespace sw {
 #             endif
 					}
 #         endif
+
 				}
 				return result;
 			}
@@ -541,8 +500,8 @@ namespace sw {
 
 
 		/** Round off \p n last bits of bitset \p src. Round to nearest resulting in potentially smaller bitset.
-		*  Doesn't return carry bit in case of overflow while rounding up! TODO: Check whether we need carry or we require an extra bit for this case.
-		*/
+		 *  Doesn't return carry bit in case of overflow while rounding up! TODO: Check whether we need carry or we require an extra bit for this case.
+		 */
 		template<size_t tgt_size, size_t src_size>
 		bitblock<tgt_size> round(const bitblock<src_size>& src, size_t n)
 		{
@@ -552,65 +511,40 @@ namespace sw {
 
 		////////////////////////////// HELPER functions
 
-		// find the MSB, return position if found, return -1 if no bits are set
-		template<size_t nbits>
-		int findMostSignificantBit(const bitblock<nbits>& bits) {
-			int msb = -1; // indicative of no bits set
-			for (int i = nbits - 1; i >= 0; i--) {
-				if (bits.test(i)) {
-					msb = i;
-					break;
-				}
-			}
-			return msb;
-		}
-
-		// calculate the 1's complement of a sign-magnitude encoded number
-		template<size_t nbits>
-		bitblock<nbits> ones_complement(bitblock<nbits> number) {
-			bitblock<nbits> complement;
-			for (size_t i = 0; i < nbits; i++) {
-				complement.set(i, !number[i]);
-			}
-			return complement;
-		}
-
-		// calculate the 2's complement of a 2's complement encoded number
-		template<size_t nbits>
-		bitblock<nbits> twos_complement(bitblock<nbits> number) {
-			bitblock<nbits> complement;
-			uint8_t _slice = 0;
-			uint8_t carry = 1;
-			for (size_t i = 0; i < nbits; i++) {
-				_slice = uint8_t(!number[i]) + carry;
-				carry = _slice >> 1;
-				complement[i] = (0x1 & _slice);
-			}
-			return complement;
-		}
-
-		// DANGER: this depends on the implicit type conversion of number to a uint64_t to sign extent a 2's complement number system
-		// if nbits > 64 then this code breaks.
+		// Attention!
+		// Achtung!
+		// Regardez!
+		// Waarschuwing!
+		// DANGER: this depends on the implicit type conversion of number
+		// to a uint64_t for sign-extending a 2's complement number system.
+		// If nbits > 64 then this code breaks.
 		template<size_t nbits, class Type>
 		bitblock<nbits> convert_to_bitblock(Type number) {
-			bitblock<nbits> _Bits;
-			uint64_t mask = uint64_t(1);
+			bitblock<nbits> bBits;
+			const uint64_t one = uint64_t(1);
 			for (std::size_t i = 0; i < nbits; i++) {
-				_Bits[i] = mask & number;
-				mask <<= 1;
+				bBits[i] = (one << i) & number;
 			}
-			return _Bits;
+
+			return bBits;
 		}
 
+		/**
+		   @brief Constructs a string of 1's and 0's representing the
+		   value passed.
+
+		   @param bit contains the value to display.
+
+		   @return string representing the value.
+		 */
 		template<size_t nbits>
-		std::string to_bit_string(bitblock<nbits> bits, bool separator = true) {
-			std::stringstream ss;
-			int msb = nbits; // compilation warning work-around for nbits = 0
-			for (int i = msb - 1; i >= 0; --i) {
-				ss << (bits[std::size_t(i)] ? "1" : "0");
-				if (separator && i % 4 == 0 && i != 0) ss << "'";
+		std::string to_binary(bitblock<nbits> const &bits) {
+			char str[nbits + 1];
+			str[nbits] = 0;
+			for (size_t i = 0; i < nbits; i++) {
+				str[nbits - 1 - i] = bits[i] ? '1' : '0';
 			}
-			return ss.str();
+			return std::string(str);
 		}
 
 		template<size_t nbits>
@@ -654,24 +588,62 @@ namespace sw {
 			return ss.str();
 		}
 
-		// return a new bitset with the sign flipped as compared to the input bitset
+
+		// find the MSB, return position if found, return -1 if no bits are set
 		template<size_t nbits>
-		bitblock<nbits> flip_sign_bit(bitblock<nbits> number) {
-			number.flip(nbits - 1);
-			return number;
+		int findMostSignificantBit(const bitblock<nbits>& bits) {
+			return bits.getMSB();
 		}
 
-		// sticky bit representation of all the bits from [msb, lsb], that is, msb is included
+		// calculate the 1's complement of a sign-magnitude encoded number
+
 		template<size_t nbits>
-		bool anyAfter(const bitblock<nbits>& bits, int msb) {
-			if (msb < 0) return false;	// bad input
-			bool running = false;
-			for (int i = msb; i >= 0; i--) {
-				running |= bits.test(i);
+		bitblock<nbits> ones_complement(const bitblock<nbits> &number) {
+			bitblock<nbits> complement = number;
+			complement.flip();
+			return complement;
+		}
+
+
+		// calculate the 2's complement of a 2's complement encoded number
+		template<size_t nbits>
+		bitblock<nbits> twos_complement(const bitblock<nbits> &number) {
+			bitblock<nbits> complement;
+			uint8_t slice = 0;
+			uint8_t carry = 1;
+			for (size_t i = 0; i < nbits; i++) {
+				slice = uint8_t(!number[i]) + carry;
+				carry = slice >> 1;
+				complement[i] = (0x1 & slice);
 			}
-			return running;
+
+			return complement;
 		}
 
-	} // namespace unum
 
-} // namespace sw
+		/**
+		   @brief Flips the sign bit of value passed.
+
+		   @param number is a value for which the sign is to be flipped.
+
+		   @return new bitset with the sign flipped as compared to number
+		*/
+		template<size_t nbits>
+		bitblock<nbits> flip_sign_bit(const bitblock<nbits> &number) {
+			bitblock<nbits> negate = number;
+			negate.flip(nbits - 1);
+			return negate;
+		}
+
+		/**
+		   @return true iff any bit at or right of msb is set.
+		 */
+		template<size_t nbits>
+		bool anyAfter(const bitblock<nbits>& bits, unsigned msb) {
+			bitblock<nbits> shBits = bits;
+			shBits <<= (nbits - 1 - msb);
+			return shBits.count() > 0;
+		}
+	} // namespace sw
+
+} // namespace unum
