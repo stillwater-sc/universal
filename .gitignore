@@ -1,5 +1,6 @@
 # Build directory
 build
+build_clang
 
 # CLion IDE config caches
 .idea
