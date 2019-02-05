@@ -161,7 +161,6 @@ namespace universal_bitset {
                 constexpr BaseBitset() noexcept
                         : M_w() { }
 
-
                 constexpr BaseBitset(unsigned long long val) noexcept
                 {
                         for (size_t i = 0; i < Nw; ++i) {
@@ -169,6 +168,7 @@ namespace universal_bitset {
                                 val >>= 8 * sizeof(WordT);
                         }
                 }
+
 
                 /**
                    @brief Finds leading bit of value passed.
