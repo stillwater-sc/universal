@@ -114,7 +114,7 @@ try {
 
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_SUB, 1000), "posit<16,1>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<24, 1>(tag, bReportIndividualTestCases, OPCODE_SUB, 1000), "posit<24,1>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 1>(tag, bReportIndividualTestCases, OPCODE_SUB, 1000), "posit<32,1>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 1>(tag, bReportIndividualTestCases, OPCODE_SUB, 1000), "posit<32,1>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 2>(tag, bReportIndividualTestCases, OPCODE_SUB, 1000), "posit<32,2>", "subtraction");
 
 #if STRESS_TESTING

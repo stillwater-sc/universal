@@ -14,7 +14,7 @@
 #include "../test_helpers.hpp"
 #include "areal_test_helpers.hpp"
 
-// generate specific test case that you can trace with the trace conditions in posit.h
+// generate specific test case that you can trace with the trace conditions in areal.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
@@ -56,7 +56,7 @@ try {
 
 #else
 
-	cout << "Posit addition validation" << endl;
+	cout << "Arbitrary Real addition validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "addition");
 
