@@ -54,7 +54,7 @@ namespace sw {
 
 		// this comparison is for a two's complement number only
 		template<size_t nbits>
-		bool lessThan_twoscomplement(const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
+		bool twosComplementLessThan(const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 			// comparison of the sign bit
 			if (lhs[nbits - 1] == 0 && rhs[nbits - 1] == 1)	return false;
 			if (lhs[nbits - 1] == 1 && rhs[nbits - 1] == 0) return true;
