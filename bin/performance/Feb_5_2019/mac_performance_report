@@ -1,0 +1,60 @@
+Date run : 2/5/2019
+Processor: Intel Core i7 2.2GHz, 6 cores, L2 cache per core 256KB, L3 cache 9 MB
+Memory   : 16GB 2400 MHz DDR4
+System   : 64-bit macOS High Sierra, Version 10.13.6, MacBook Pro
+
+Performance Report: posit<4,0>
+Conversion      :  11 MPOPS
+Prefix          : 118 MPOPS
+Postfix         : 118 MPOPS
+Negation        : 109 MPOPS
+Addition        :   8 MPOPS
+Subtraction     :   8 MPOPS
+Multiplication  :   9 MPOPS
+Division        :   3 MPOPS
+Square Root     : 162 MPOPS
+
+Performance Report: posit<8,0>
+Conversion      :   6 MPOPS
+Prefix          :  86 MPOPS
+Postfix         :  86 MPOPS
+Negation        : 123 MPOPS
+Addition        :   5 MPOPS
+Subtraction     :   5 MPOPS
+Multiplication  :   6 MPOPS
+Division        :   1 MPOPS
+Square Root     :   5 MPOPS
+
+Performance Report: posit<16,1>
+Conversion      :   6 MPOPS
+Prefix          :  42 MPOPS
+Postfix         :  42 MPOPS
+Negation        : 113 MPOPS
+Addition        :   4 MPOPS
+Subtraction     :   4 MPOPS
+Multiplication  :   4 MPOPS
+Division        : 349 KPOPS
+Square Root     :   4 MPOPS
+
+Performance Report: posit<32,2>
+Conversion      :   4 MPOPS
+Prefix          :  20 MPOPS
+Postfix         :  20 MPOPS
+Negation        :  59 MPOPS
+Addition        :   2 MPOPS
+Subtraction     :   2 MPOPS
+Multiplication  :   2 MPOPS
+Division        :  85 KPOPS
+Square Root     :   2 MPOPS
+
+Performance Report: posit<64,3>
+Conversion      :   2 MPOPS
+Prefix          :  11 MPOPS
+Postfix         :  11 MPOPS
+Negation        : 520 MPOPS
+Addition        :   1 MPOPS
+Subtraction     :   1 MPOPS
+Multiplication  : 804 KPOPS
+Division        :  25 KPOPS
+Square Root     :   1 MPOPS
+
