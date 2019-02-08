@@ -26,7 +26,7 @@ namespace sw {
 			bitblock& operator=(const bitblock&) = default;
 			bitblock& operator=(bitblock&&) = default;
 
-			bitblock& operator=(int rhs) {
+			bitblock& operator=(unsigned long long rhs) {
 				return (bitblock&)std::bitset<nbits>::operator=(rhs);
 			}
 

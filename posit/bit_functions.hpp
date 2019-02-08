@@ -124,6 +124,28 @@ namespace sw {
 			return ss.str();
 		}
 
+		// full binary representation of a posit
+		template<typename Posit>
+		inline std::string to_binary(const Posit& number) {
+			constexpr size_t nbits = number.nbits;
+			constexpr size_t es = number.es;
+			constexpr size_t fbits = number.fbits;
+			bool s;
+			regime<nbits, es> r;
+			exponent<nbits, es> e;
+			fraction<fbits> f;
+			bitblock<nbits> raw = number.get();
+			std::stringstream ss;
+			extract_fields(raw, s, r, e, f);
+
+			ss << (s ? "1|" : "0|");
+			ss << to_string(r, false) << "|"
+				<< to_string(e, false) << "|"
+				<< to_string(f, false);
+
+			return ss.str();
+		}
+
 		// full binary representation of a signed 64-bit number
 		inline std::string to_binary(long long int number) {
 			std::stringstream ss;
@@ -195,7 +217,63 @@ namespace sw {
 			return ss.str();
 		}
 #endif
+		// binary exponent representation
+		template<typename Posit>
+		inline std::string to_base2_scientific(const Posit& number) {
+			std::stringstream ss;
+			constexpr size_t fbits = number.fbits;
+			value<fbits> v = number.to_value();
+			bool s = v.sign();
+			int base2Exp = v.scale();
+			bitblock<fbits> mantissa = v.fraction();
+			ss << (s ? "-" : "+") << "1." << mantissa << "e2^" << std::showpos << base2Exp;
+			return ss.str();
+		}
 
+		// specialization for IEEE single precision floats
+		template<>
+		inline std::string to_base2_scientific(const float& number) {
+			std::stringstream ss;
+			bool s;
+			int base2Exp;
+			float _fr;
+			unsigned int mantissa;
+			extract_fp_components(number, s, base2Exp, _fr, mantissa);
+			ss << (s ? "-" : "+") << "1." << std::bitset<23>(mantissa) << "e2^" << std::showpos << base2Exp-1;
+			return ss.str();
+		}
+
+
+		// specialization for IEEE double precision floats
+		template<>
+		inline std::string to_base2_scientific(const double& number) {
+			std::stringstream ss;
+			bool s;
+			int base2Exp;
+			double _fr;
+			unsigned long long mantissa;
+			extract_fp_components(number, s, base2Exp, _fr, mantissa);
+			ss << (s ? "-" : "+") << "1." << std::bitset<52>(mantissa) << "e2^" << std::showpos << base2Exp - 1;
+			return ss.str();
+		}
+
+		// numerical helpers
+
+		template<typename Scalar>
+		Scalar ulp(const Scalar& a) {
+			Scalar b(a);
+			return ++b - a;
+		}
+
+		template<>
+		float ulp(const float& a) {
+			return std::nextafter(a, a + 1.0f) - a;
+		}
+		template<>
+		double ulp(const double& a) {
+			return std::nextafter(a, a + 1.0f) - a;
+		}
+		
 	}  // namespace unum
 
 }  // namespace sw

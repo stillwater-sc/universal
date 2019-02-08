@@ -165,6 +165,7 @@ int decode_regime(const bitblock<nbits>& raw_bits) {
 template<size_t nbits, size_t es, size_t fbits>
 void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _regime, exponent<nbits, es>& _exponent, fraction<fbits>& _fraction) {
 	bitblock<nbits> tmp(raw_bits);
+	_sign = raw_bits[nbits - 1];
 	if (_sign) tmp = twos_complement(tmp);
 	size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 
