@@ -125,26 +125,9 @@ namespace sw {
 		}
 
 		// full binary representation of a posit
-		template<typename Posit>
-		inline std::string to_binary(const Posit& number) {
-			constexpr size_t nbits = number.nbits;
-			constexpr size_t es = number.es;
-			constexpr size_t fbits = number.fbits;
-			bool s;
-			regime<nbits, es> r;
-			exponent<nbits, es> e;
-			fraction<fbits> f;
-			bitblock<nbits> raw = number.get();
-			std::stringstream ss;
-			extract_fields(raw, s, r, e, f);
-
-			ss << (s ? "1|" : "0|");
-			ss << to_string(r, false) << "|"
-				<< to_string(e, false) << "|"
-				<< to_string(f, false);
-
-			return ss.str();
-		}
+		//template<typename Posit>
+		//inline std::string to_binary(const Posit& number) {...}
+		// implementation is found in posit.hpp : don't want to pollute this collection of native type helpers with posit types
 
 		// full binary representation of a signed 64-bit number
 		inline std::string to_binary(long long int number) {
@@ -217,6 +200,8 @@ namespace sw {
 			return ss.str();
 		}
 #endif
+
+/*
 		// binary exponent representation
 		template<typename Posit>
 		inline std::string to_base2_scientific(const Posit& number) {
@@ -229,9 +214,9 @@ namespace sw {
 			ss << (s ? "-" : "+") << "1." << mantissa << "e2^" << std::showpos << base2Exp;
 			return ss.str();
 		}
+*/
 
 		// specialization for IEEE single precision floats
-		template<>
 		inline std::string to_base2_scientific(const float& number) {
 			std::stringstream ss;
 			bool s;
@@ -245,7 +230,6 @@ namespace sw {
 
 
 		// specialization for IEEE double precision floats
-		template<>
 		inline std::string to_base2_scientific(const double& number) {
 			std::stringstream ss;
 			bool s;

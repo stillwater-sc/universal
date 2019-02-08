@@ -1605,7 +1605,45 @@ std::string to_string(const posit<nbits, es>& p, std::streamsize precision = 17)
 	return ss.str();
 }
 
+
+// binary representation of a posit with delimiters: i.e. 0|10|00|000000 => s|r|e|f
+template<typename Posit>
+inline std::string to_binary(const Posit& number) {
+	constexpr size_t nbits = number.nbits;
+	constexpr size_t es = number.es;
+	constexpr size_t fbits = number.fbits;
+	bool s;
+	regime<nbits, es> r;
+	exponent<nbits, es> e;
+	fraction<fbits> f;
+	bitblock<nbits> raw = number.get();
+	std::stringstream ss;
+	extract_fields(raw, s, r, e, f);
+
+	ss << (s ? "1|" : "0|");
+	ss << to_string(r, false) << "|"
+		<< to_string(e, false) << "|"
+		<< to_string(f, false);
+
+	return ss.str();
+}
+
+// binary exponent representation: i.e. 1.0101010e2^-37
+template<typename Posit>
+inline std::string to_base2_scientific(const Posit& number) {
+	std::stringstream ss;
+	constexpr size_t fbits = number.fbits;
+	value<fbits> v = number.to_value();
+	bool s = v.sign();
+	int base2Exp = v.scale();
+	bitblock<fbits> mantissa = v.fraction();
+	ss << (s ? "-" : "+") << "1." << mantissa << "e2^" << std::showpos << base2Exp;
+	return ss.str();
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
 // posit - posit binary logic operators
+
 template<size_t nbits, size_t es>
 inline bool operator==(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	return lhs._raw_bits == rhs._raw_bits;
