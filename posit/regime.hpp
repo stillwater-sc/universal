@@ -181,7 +181,7 @@ inline std::istream& operator>> (std::istream& istr, const regime<nbits, es>& r)
 }
 
 template<size_t nbits, size_t es>
-inline std::string to_string(const regime<nbits, es>& r) {
+inline std::string to_string(const regime<nbits, es>& r, bool dashExtent = true) {
 	std::stringstream ss;
 	bitblock<nbits - 1> bb = r.get();
 	unsigned int nrOfRegimeBitsProcessed = 0;
@@ -190,7 +190,7 @@ inline std::string to_string(const regime<nbits, es>& r) {
 			ss << (bb[i] ? "1" : "0");
 		}
 		else {
-			ss << "-";
+			ss << (dashExtent ? "-" : "");
 		}
 	}
 	return ss.str();

@@ -351,6 +351,7 @@ namespace sw {
 				}
 				else {
 					//convert(sum, *this);
+					convert_<nbits, es, abits+1>(sum.sign(), sum.scale(), sum.fraction(), *this);
 				}
 				return *this;
 			}
