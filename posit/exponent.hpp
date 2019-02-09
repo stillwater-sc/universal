@@ -192,7 +192,7 @@ inline std::istream& operator>> (std::istream& istr, const exponent<nbits, es>& 
 }
 
 template<size_t nbits, size_t es>
-inline std::string to_string(const exponent<nbits, es>& e) {
+inline std::string to_string(const exponent<nbits, es>& e, bool dashExtent = true) {
 	std::stringstream ss;
 	bitblock<es> bb = e.get();
 	unsigned int nrOfExponentBitsProcessed = 0;
@@ -201,7 +201,7 @@ inline std::string to_string(const exponent<nbits, es>& e) {
 			ss << (bb[i] ? "1" : "0");
 		}
 		else {
-			ss << "-";
+			ss << (dashExtent ? "-" : "");
 		}
 	}
 	if (nrOfExponentBitsProcessed == 0) ss << "~"; // for proper alignment in tables
