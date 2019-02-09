@@ -1045,6 +1045,13 @@ public:
 		decrement_bitset(_raw_bits);
 	}
 	
+	// return human readable type configuration for this posit
+	inline std::string cfg() {
+		std::stringstream ss;
+		ss << "posit<" << nbits << ", " << es << ">";
+		return ss.str();
+	}
+
 private:
 	bitblock<nbits>      _raw_bits;	// raw bit representation
 //			int					 _scale;
@@ -1631,13 +1638,18 @@ inline std::string to_binary(const Posit& number) {
 // binary exponent representation: i.e. 1.0101010e2^-37
 template<typename Posit>
 inline std::string to_base2_scientific(const Posit& number) {
-	std::stringstream ss;
+	constexpr size_t nbits = number.nbits;
+	constexpr size_t es    = number.es;
 	constexpr size_t fbits = number.fbits;
-	value<fbits> v = number.to_value();
-	bool s = v.sign();
-	int base2Exp = v.scale();
-	bitblock<fbits> mantissa = v.fraction();
-	ss << (s ? "-" : "+") << "1." << mantissa << "e2^" << std::showpos << base2Exp;
+	bool s;
+	scale(number);
+	regime<nbits, es> r;
+	exponent<nbits, es> e;
+	fraction<fbits> f;
+	bitblock<nbits> raw = number.get();
+	std::stringstream ss;
+	extract_fields(raw, s, r, e, f);
+	ss << (s ? "-" : "+") << "1." << to_string(f, true) << "e2^" << std::showpos << r.scale() + e.scale();
 	return ss.str();
 }
 
