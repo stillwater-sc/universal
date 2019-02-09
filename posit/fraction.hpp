@@ -262,7 +262,7 @@ inline std::istream& operator>> (std::istream& istr, const fraction<nfbits>& f) 
 }
 
 template<size_t nfbits>
-inline std::string to_string(const fraction<nfbits>& f) {
+inline std::string to_string(const fraction<nfbits>& f, bool dashExtent = true) {
 	unsigned int nrOfFractionBitsProcessed = 0;
 	std::stringstream ss;
 	if (nfbits > 0) {
@@ -274,7 +274,7 @@ inline std::string to_string(const fraction<nfbits>& f) {
 				ss << (bb[i] ? "1" : "0");
 			}
 			else {
-				ss << "-";
+				ss << (dashExtent ? "-" : "");
 			}
 		}
 	}
