@@ -2562,6 +2562,18 @@ value<nbits> fmma(const posit<nbits, es>& a, const posit<nbits, es>& b, const po
 	return result;
 }
 
+// Numerical property functions
+template<typename Scalar>
+std::pair<Scalar, Scalar> twoSum(const Scalar& a, const Scalar& b) {
+	Scalar s = a + b;
+	Scalar aApproximate = s - b;
+	Scalar bApproximate = s - aApproximate;
+	Scalar aDiff = a - aApproximate;
+	Scalar bDiff = b - bApproximate;
+	Scalar r = aDiff + bDiff;
+	return std::make_pair(s, r);
+}
+
 }  // namespace unum
 
 }  // namespace sw
