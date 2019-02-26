@@ -372,7 +372,7 @@ namespace sw {
 			}
 			return nrOfFailedTestCases;
 		}
-
+/*
 		// specialized template for fast posit<2,0>
 		template<>
 		int ValidateIntegerConversion<NBITS_IS_2, ES_IS_0>(std::string& tag, bool bReportIndividualTestCases) {
@@ -415,35 +415,7 @@ namespace sw {
 			}
 			return nrOfFailedTestCases;
 		}
-		// specialized template for fast posit<8,0>
-		template<>
-		int ValidateIntegerConversion<NBITS_IS_8, ES_IS_0>(std::string& tag, bool bReportIndividualTestCases) {
-			// we generate numbers from 1 to NaR to -1 and the special case of 0
-			constexpr size_t NR_OF_TESTS = (size_t(1) << (NBITS_IS_8 - 1)) + 1;
-			int nrOfFailedTestCases = 0;
-
-			posit<NBITS_IS_8, ES_IS_0> p(0);
-			if (!p.iszero()) nrOfFailedTestCases++;
-			p.setnar();  p = 0;
-			if (!p.iszero()) nrOfFailedTestCases++;
-
-			p = 1;
-			if (!p.isone()) nrOfFailedTestCases++;
-			for (size_t i = 0; i < NR_OF_TESTS; ++i) {
-				if (!p.isnar()) {
-					int ref = (int)p;
-					posit<NBITS_IS_8, ES_IS_0> presult = ref;
-					if (presult != ref) {
-						if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
-					}
-					else {
-						//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << ref << std::endl;
-					}
-				}
-				++p;
-			}
-			return nrOfFailedTestCases;
-		}
+*/
 
 		// Generate ordered set in ascending order from [-NaR, -maxpos, ..., +maxpos] for a particular posit config <nbits, es>
 		template<size_t nbits, size_t es>

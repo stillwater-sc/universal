@@ -264,45 +264,6 @@ namespace sw {
 				friend bool operator<=(const posit<NBITS_IS_8, 0>& lhs, const posit<NBITS_IS_8, 0>& rhs);
 				friend bool operator>=(const posit<NBITS_IS_8, 0>& lhs, const posit<NBITS_IS_8, 0>& rhs);
 
-#if POSIT_ENABLE_LITERALS
-				// posit - literal logic functions
-/*
-				// posit - int
-				template<size_t nnbits, size_t ees>
-				friend bool operator==(const posit<nnbits, ees>& lhs, int rhs);
-				template<size_t nnbits, size_t ees>
-				friend bool operator!=(const posit<NBITS_IS_0, ES_IS_0>& lhs, int rhs);
-				template<size_t nnbits, size_t ees>
-				friend bool operator< (const posit<nnbits, ees>& lhs, int rhs);
-				template<size_t nnbits, size_t ees>
-				friend bool operator> (const posit<nnbits, ees>& lhs, int rhs);
-				template<size_t nnbits, size_t ees>
-				friend bool operator<=(const posit<nnbits, ees>& lhs, int rhs);
-				template<size_t nnbits, size_t ees>
-				friend bool operator>=(const posit<nnbits, ees>& lhs, int rhs);
-
-				// int - posit
-				template<size_t nnbits, size_t ees>
-				friend bool operator==(int lhs, const posit<nnbits, ees>& rhs);
-				template<size_t nnbits, size_t ees>
-				friend bool operator!=(int lhs, const posit<nnbits, ees>& rhs);
-				template<size_t nnbits, size_t ees>
-				friend bool operator< (int lhs, const posit<nnbits, ees>& rhs);
-				template<size_t nnbits, size_t ees>
-				friend bool operator> (int lhs, const posit<nnbits, ees>& rhs);
-				template<size_t nnbits, size_t ees>
-				friend bool operator<=(int lhs, const posit<nnbits, ees>& rhs);
-				template<size_t nnbits, size_t ees>
-				friend bool operator>=(int lhs, const posit<nnbits, ees>& rhs);
-			*/
-				friend bool operator==(const posit<NBITS_IS_8, ES_IS_0>& lhs, int rhs);
-				friend bool operator!=(const posit<NBITS_IS_8, ES_IS_0>& lhs, int rhs);
-				friend bool operator< (const posit<NBITS_IS_8, ES_IS_0>& lhs, int rhs);
-				friend bool operator> (const posit<NBITS_IS_8, ES_IS_0>& lhs, int rhs);
-				friend bool operator<=(const posit<NBITS_IS_8, ES_IS_0>& lhs, int rhs);
-				friend bool operator>=(const posit<NBITS_IS_8, ES_IS_0>& lhs, int rhs);
-#endif
-
 			};
 
 			// posit I/O operators
@@ -347,78 +308,48 @@ namespace sw {
 			}
 
 #if POSIT_ENABLE_LITERALS
+			// posit - literal logic functions
+
 			// posit - int logic operators
-			inline bool operator==(const posit<8, 0>& lhs, int rhs) {
-				return lhs == posit<8, 0>(rhs);
+			inline bool operator==(const posit<NBITS_IS_8, ES_IS_0>& lhs, int rhs) {
+				return operator==(lhs, posit<NBITS_IS_8, ES_IS_0>(rhs));
 			}
-			inline bool operator!=(const posit<8, 0>& lhs, int rhs) {
-				return !operator==(lhs, posit<8, 0>(rhs));
+			inline bool operator!=(const posit<NBITS_IS_8, ES_IS_0>& lhs, int rhs) {
+				return !operator==(lhs, posit<NBITS_IS_8, ES_IS_0>(rhs));
 			}
-			inline bool operator< (const posit<8, 0>& lhs, int rhs) {
-				return lhs._bits < (uint8_t)rhs;
+			inline bool operator< (const posit<NBITS_IS_8, ES_IS_0>& lhs, int rhs) {
+				return operator<(lhs, posit<NBITS_IS_8, ES_IS_0>(rhs));
 			}
-			inline bool operator> (const posit<8, 0>& lhs, int rhs) {
-				return operator< (posit<8, 0>(rhs), lhs);
+			inline bool operator> (const posit<NBITS_IS_8, ES_IS_0>& lhs, int rhs) {
+				return operator< (posit<NBITS_IS_8, ES_IS_0>(rhs), lhs);
 			}
-			inline bool operator<=(const posit<8, 0>& lhs, int rhs) {
-				return operator< (lhs, posit<8, 0>(rhs)) || operator==(lhs, posit<8, 0>(rhs));
+			inline bool operator<=(const posit<NBITS_IS_8, ES_IS_0>& lhs, int rhs) {
+				return operator< (lhs, posit<NBITS_IS_8, ES_IS_0>(rhs)) || operator==(lhs, posit<NBITS_IS_8, ES_IS_0>(rhs));
 			}
-			inline bool operator>=(const posit<8, 0>& lhs, int rhs) {
-				return !operator<(lhs, posit<8, 0>(rhs));
-			}
-			/*
-			// posit - int logic operators
-			template<size_t nbits, size_t es>
-			inline bool operator==(const posit<nbits, es>& lhs, int rhs) {
-			return lhs == posit<nbits, es>(rhs);
-			}
-			template<size_t nbits, size_t es>
-			inline bool operator!=(const posit<NBITS_IS_0, ES_IS_0>& lhs, int rhs) {
-			return !operator==(lhs, posit<nbits, es>(rhs));
-			}
-			template<size_t nbits, size_t es>
-			inline bool operator< (const posit<nbits, es>& lhs, int rhs) {
-			return twosComplementLessThan(lhs._raw_bits, posit<nbits, es>(rhs)._raw_bits);
-			}
-			template<size_t nbits, size_t es>
-			inline bool operator> (const posit<nbits, es>& lhs, int rhs) {
-			return operator< (posit<nbits, es>(rhs), lhs);
-			}
-			template<size_t nbits, size_t es>
-			inline bool operator<=(const posit<nbits, es>& lhs, int rhs) {
-			return operator< (lhs, posit<nbits, es>(rhs)) || operator==(lhs, posit<nbits, es>(rhs));
-			}
-			template<size_t nbits, size_t es>
-			inline bool operator>=(const posit<nbits, es>& lhs, int rhs) {
-			return !operator<(lhs, posit<nbits, es>(rhs));
+			inline bool operator>=(const posit<NBITS_IS_8, ES_IS_0>& lhs, int rhs) {
+				return !operator<(lhs, posit<NBITS_IS_8, ES_IS_0>(rhs));
 			}
 
 			// int - posit logic operators
-			template<size_t nbits, size_t es>
-			inline bool operator==(int lhs, const posit<nbits, es>& rhs) {
-			return posit<nbits, es>(lhs) == rhs;
+			inline bool operator==(int lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
+				return posit<NBITS_IS_8, ES_IS_0>(lhs) == rhs;
 			}
-			template<size_t nbits, size_t es>
-			inline bool operator!=(int lhs, const posit<nbits, es>& rhs) {
-			return !operator==(posit<nbits, es>(lhs), rhs);
+			inline bool operator!=(int lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
+				return !operator==(posit<NBITS_IS_8, ES_IS_0>(lhs), rhs);
 			}
-			template<size_t nbits, size_t es>
-			inline bool operator< (int lhs, const posit<nbits, es>& rhs) {
-			return twosComplementLessThan(posit<nbits, es>(lhs)._raw_bits, rhs._raw_bits);
+			inline bool operator< (int lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
+				return operator<(posit<NBITS_IS_8, ES_IS_0>(lhs), rhs);
 			}
-			template<size_t nbits, size_t es>
-			inline bool operator> (int lhs, const posit<nbits, es>& rhs) {
-			return operator< (posit<nbits, es>(lhs), rhs);
+			inline bool operator> (int lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
+				return operator< (posit<NBITS_IS_8, ES_IS_0>(rhs), lhs);
 			}
-			template<size_t nbits, size_t es>
-			inline bool operator<=(int lhs, const posit<nbits, es>& rhs) {
-			return operator< (posit<nbits, es>(lhs), rhs) || operator==(posit<nbits, es>(lhs), rhs);
+			inline bool operator<=(int lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
+				return operator< (posit<NBITS_IS_8, ES_IS_0>(lhs), rhs) || operator==(posit<NBITS_IS_8, ES_IS_0>(lhs), rhs);
 			}
-			template<size_t nbits, size_t es>
-			inline bool operator>=(int lhs, const posit<nbits, es>& rhs) {
-			return !operator<(posit<nbits, es>(lhs), rhs);
+			inline bool operator>=(int lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
+				return !operator<(posit<NBITS_IS_8, ES_IS_0>(lhs), rhs);
 			}
-			*/
+
 #endif
 	}
 

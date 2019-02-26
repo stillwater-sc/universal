@@ -1,6 +1,6 @@
 // posit_4_0.cpp: specialized 4-bit posit using lookup table arithmetic
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,8 +9,7 @@ namespace sw {
 
 		// set the fast specialization variable to indicate that we are running a special template specialization
 #ifdef POSIT_FAST_SPECIALIZATION
-#define POSIT_FAST_POSIT_4_0
-#endif
+#define POSIT_FAST_POSIT_4_0 1
 
 			constexpr uint8_t posit_4_0_addition_lookup[256] = {
 				0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
@@ -410,6 +409,9 @@ namespace sw {
 				sum += rhs;
 				return sum;
 			}
+#else
+#define POSIT_FAST_POSIT_4_0 0
+#endif
 
 	}
 }
