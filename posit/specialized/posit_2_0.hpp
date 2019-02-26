@@ -76,8 +76,8 @@ namespace sw {
 				posit& operator=(const posit&) = default;
 				posit& operator=(posit&&) = default;
 
-				posit(int initial_value) { *this = initial_value; }
-				posit(long int initial_value) { *this = initial_value; }
+				posit(int initial_value) { *this = (long long)initial_value; }
+				posit(long int initial_value) { *this = (long long)initial_value; }
 				posit(long long initial_value) { *this = initial_value; }
 				posit(float initial_value) {
 					*this = float_assign(initial_value);
