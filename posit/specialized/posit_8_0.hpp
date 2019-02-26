@@ -33,6 +33,7 @@ namespace sw {
 				posit(char initial_value) { *this = (long long)initial_value; }
 				posit(short initial_value) { *this = (long long)initial_value; }
 				posit(int initial_value) { *this = (long long)initial_value; }
+				posit(long int initial_value) { *this = (long long)initial_value; }
 				posit(long long initial_value) { *this = (long long)initial_value; }
 				// assignment operators for native types
 				posit& operator=(int rhs) {
