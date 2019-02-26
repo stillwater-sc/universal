@@ -30,7 +30,10 @@ namespace sw {
 				posit& operator=(const posit&) = default;
 				posit& operator=(posit&&) = default;
 
-				posit(int initial_value) { _bits = uint8_t(initial_value & 0x0f); }
+				posit(char initial_value) { *this = (long long)initial_value; }
+				posit(short initial_value) { *this = (long long)initial_value; }
+				posit(int initial_value) { *this = (long long)initial_value; }
+				posit(long long initial_value) { *this = (long long)initial_value; }
 				// assignment operators for native types
 				posit& operator=(int rhs) {
 					return operator=((long long)(rhs));
@@ -265,8 +268,32 @@ namespace sw {
 			};
 
 			// posit I/O operators
+			// generate a posit format ASCII format nbits.esxNN...NNp
 			inline std::ostream& operator<<(std::ostream& ostr, const posit<NBITS_IS_8, ES_IS_0>& p) {
-				return ostr << NBITS_IS_8 << '.' << ES_IS_0 << 'x' << to_hex(p.get()) << 'p';
+				// to make certain that setw and left/right operators work properly
+				// we need to transform the posit into a string
+				std::stringstream ss;
+#if POSIT_ROUNDING_ERROR_FREE_IO_FORMAT
+				ss << NBITS_IS_8 << '.' << ES_IS_0 << 'x' << to_hex(p.get()) << 'p';
+#else
+				std::streamsize prec = ostr.precision();
+				std::streamsize width = ostr.width();
+				std::ios_base::fmtflags ff;
+				ff = ostr.flags();
+				ss.flags(ff);
+				ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
+#endif
+				return ostr << ss.str();
+			}
+
+			// read an ASCII float or posit format: nbits.esxNN...NNp, for example: 32.2x80000000p
+			inline std::istream& operator>> (std::istream& istr, posit<NBITS_IS_8, ES_IS_0>& p) {
+				std::string txt;
+				istr >> txt;
+				if (!parse(txt, p)) {
+					std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+				}
+				return istr;
 			}
 
 			// convert a posit value to a string using "nar" as designation of NaR
