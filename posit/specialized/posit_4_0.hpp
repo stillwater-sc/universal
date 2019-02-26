@@ -109,9 +109,15 @@ namespace sw {
 				posit& operator=(const posit&) = default;
 				posit& operator=(posit&&) = default;
 
-				posit(int initial_value) { _bits = uint8_t(initial_value & 0x0f); }
+				posit(char initial_value) { *this = (long long)initial_value; }
+				posit(short initial_value) { *this = (long long)initial_value; }
+				posit(int initial_value) { *this = (long long)initial_value; }
+				posit(long long initial_value) { *this = (long long)initial_value; }
 				// assignment operators for native types
 				posit& operator=(int rhs) {
+					return operator=((long long)(rhs));
+				}
+				posit& operator=(long int rhs) {
 					return operator=((long long)(rhs));
 				}
 				posit& operator=(long long rhs) {
@@ -234,7 +240,7 @@ namespace sw {
 					return (_bits == 0xC);
 				}
 				inline bool isneg() const {
-					return (_bits & 0x8) & (_bits != 0x8);
+					return (_bits & 0x08) == (0x08);
 				}
 				inline bool ispos() const {
 					return !isneg();
@@ -316,23 +322,23 @@ namespace sw {
 				long double to_long_double() const {
 					if (iszero())  return 0.0;
 					if (isnar())   return NAN;
-					bool		     	 _sign;
-					regime<nbits, es>    _regime;
-					exponent<nbits, es>  _exponent;
-					fraction<fbits>      _fraction;
-					bitblock<nbits>		 _raw_bits;
-					_raw_bits.reset();
-					uint64_t mask = 1;
-					for (size_t i = 0; i < nbits; i++) {
-						_raw_bits.set(i, (_bits & mask));
-						mask <<= 1;
-					}
-					decode(_raw_bits, _sign, _regime, _exponent, _fraction);
-					long double s = (_sign ? -1.0 : 1.0);
-					long double r = _regime.value();
-					long double e = _exponent.value();
-					long double f = (1.0 + _fraction.value());
-					return s * r * e * f;
+bool		     	 _sign;
+regime<nbits, es>    _regime;
+exponent<nbits, es>  _exponent;
+fraction<fbits>      _fraction;
+bitblock<nbits>		 _raw_bits;
+_raw_bits.reset();
+uint64_t mask = 1;
+for (size_t i = 0; i < nbits; i++) {
+	_raw_bits.set(i, (_bits & mask));
+	mask <<= 1;
+}
+decode(_raw_bits, _sign, _regime, _exponent, _fraction);
+long double s = (_sign ? -1.0 : 1.0);
+long double r = _regime.value();
+long double e = _exponent.value();
+long double f = (1.0 + _fraction.value());
+return s * r * e * f;
 				}
 
 				template <typename T>
@@ -356,22 +362,46 @@ namespace sw {
 				}
 
 				// I/O operators
-				friend std::ostream& operator<< (std::ostream& ostr, const posit<NBITS_IS_4, 0>& p);
-				friend std::istream& operator>> (std::istream& istr, posit<NBITS_IS_4, 0>& p);
+				friend std::ostream& operator<< (std::ostream& ostr, const posit<NBITS_IS_4, ES_IS_0>& p);
+				friend std::istream& operator>> (std::istream& istr, posit<NBITS_IS_4, ES_IS_0>& p);
 
 				// posit - posit logic functions
-				friend bool operator==(const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator!=(const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator< (const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator> (const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator<=(const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator>=(const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
+				friend bool operator==(const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs);
+				friend bool operator!=(const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs);
+				friend bool operator< (const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs);
+				friend bool operator> (const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs);
+				friend bool operator<=(const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs);
+				friend bool operator>=(const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs);
 
 			};
 
 			// posit I/O operators
+			// generate a posit format ASCII format nbits.esxNN...NNp
 			inline std::ostream& operator<<(std::ostream& ostr, const posit<NBITS_IS_4, ES_IS_0>& p) {
-				return ostr << NBITS_IS_4 << '.' << ES_IS_0 << 'x' << to_hex(p.get()) << 'p';
+				// to make certain that setw and left/right operators work properly
+				// we need to transform the posit into a string
+				std::stringstream ss;
+#if POSIT_ROUNDING_ERROR_FREE_IO_FORMAT
+				ss << NBITS_IS_4 << '.' << ES_IS_0 << 'x' << to_hex(p.get()) << 'p';
+#else
+				std::streamsize prec = ostr.precision();
+				std::streamsize width = ostr.width();
+				std::ios_base::fmtflags ff;
+				ff = ostr.flags();
+				ss.flags(ff);
+				ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
+#endif
+				return ostr << ss.str();
+			}
+
+			// read an ASCII float or posit format: nbits.esxNN...NNp, for example: 32.2x80000000p
+			inline std::istream& operator>> (std::istream& istr, posit<NBITS_IS_4, ES_IS_0>& p) {
+				std::string txt;
+				istr >> txt;
+				if (!parse(txt, p)) {
+					std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+				}
+				return istr;
 			}
 
 			// convert a posit value to a string using "nar" as designation of NaR
@@ -392,7 +422,11 @@ namespace sw {
 				return !operator==(lhs, rhs);
 			}
 			inline bool operator< (const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs) {
-				return lhs._bits < rhs._bits;
+				if (rhs.isnar()) {
+					return false;
+				}
+				posit<NBITS_IS_4, ES_IS_0> r = lhs - rhs;  // else calculate the difference and check if negative
+				return r.isneg();
 			}
 			inline bool operator> (const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs) {
 				return operator< (rhs, lhs);
