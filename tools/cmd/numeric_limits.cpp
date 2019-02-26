@@ -1,11 +1,48 @@
 // numeric_limits.cpp: show the numeric limits of the compiler environment
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
 #include <posit>
+
+//#define POSIT_DECODED_CLASS
+#ifdef POSIT_DECODED_CLASS
+#include "posit_decoded.hpp"
+
+void WhyWeRemovedDecodedPosits() {
+	using namespace std;
+	using namespace sw::unum;
+
+	// report on the size of different posit components and implementations
+	posit<4, 0> p4_0;
+	posit_decoded<4, 0> pd4_0;
+	posit<8, 0> p8_0;
+	posit_decoded<8, 0> pd8_0;
+	posit<16, 1> p16_1;
+	posit_decoded<16, 1> pd16_1;
+	posit<32, 2> p32_2;
+	posit_decoded<32, 2> pd32_2;
+	posit<64, 3> p64_3;
+	posit_decoded<64, 3> pd64_3;
+	posit<128, 4> p128_4;
+	posit_decoded<128, 4> pd128_4;
+	cout << left << setw(20) << "configuration" << setw(10) << "bytes" << endl;
+	cout << left << setw(20) << "posit<4,0>" << setw(10) << sizeof(p4_0) << endl;
+	cout << left << setw(20) << "decoded<4,0>" << setw(10) << sizeof(pd4_0) << endl;
+	cout << left << setw(20) << "posit<8,0>" << setw(10) << sizeof(p8_0) << endl;
+	cout << left << setw(20) << "decoded<8,0>" << setw(10) << sizeof(pd8_0) << endl;
+	cout << left << setw(20) << "posit<16,1>" << setw(10) << sizeof(p16_1) << endl;
+	cout << left << setw(20) << "decoded<16,1>" << setw(10) << sizeof(pd16_1) << endl;
+	cout << left << setw(20) << "posit<32,2>" << setw(10) << sizeof(p32_2) << endl;
+	cout << left << setw(20) << "decoded<32,2>" << setw(10) << sizeof(pd32_2) << endl;
+	cout << left << setw(20) << "posit<64,3>" << setw(10) << sizeof(p64_3) << endl;
+	cout << left << setw(20) << "decoded<64,3>" << setw(10) << sizeof(pd64_3) << endl;
+	cout << left << setw(20) << "posit<128,4>" << setw(10) << sizeof(p128_4) << endl;
+	cout << left << setw(20) << "decoded<128,4>" << setw(10) << sizeof(pd128_4) << endl;
+}
+#endif
 
 template<size_t nbits, size_t es>
 void ReportNumericLimitsOfPosit() {
@@ -47,7 +84,9 @@ void ReportNumericLimitsOfPosit() {
 	cout << posit_tag << "round_style       : " << numeric_limits< posit<nbits, es> >::round_style << '\n';
 
 }
-// receive a float and print the components of a IEEE float representations
+
+
+// Report on size and numeric limits details of different data types
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -70,7 +109,7 @@ try {
 	constexpr int d_fbits     = std::numeric_limits<double>::digits;
 	constexpr int q_fbits     = std::numeric_limits<long double>::digits;
 
-	cout << "Number of bits in native types" << endl;
+	cout << "Bit sizes for native types" << endl;
 	cout << "unsigned char        " << setw(4) << uint8_bits  << " bits" << endl;
 	cout << "unsigned short       " << setw(4) << uint16_bits << " bits" << endl;
 	cout << "unsigned int         " << setw(4) << uint32_bits << " bits" << endl;
@@ -82,6 +121,22 @@ try {
 	cout << "         float       " << setw(4) << f_fbits     << " bits" << endl;
 	cout << "         double      " << setw(4) << d_fbits     << " bits" << endl;
 	cout << "         long double " << setw(4) << q_fbits     << " bits" << endl;
+
+	// report on the size of different posit components and implementations
+	posit<4, 0> p4_0;
+	posit<8, 0> p8_0;
+	posit<16, 1> p16_1;
+	posit<32, 2> p32_2;
+	posit<64, 3> p64_3;
+	posit<128, 4> p128_4;
+	constexpr int columnWidth = 21;
+	cout << "Bit sizes for standard posit configurations\n";
+	cout << left << setw(columnWidth) << "posit<4,0>" << setw(4) << right << sizeof(p4_0) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<8,0>" << setw(4) << right << sizeof(p8_0) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<16,1>" << setw(4) << right << sizeof(p16_1) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<32,2>" << setw(4) << right << sizeof(p32_2) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<64,3>" << setw(4) << right << sizeof(p64_3) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<128,4>" << setw(4) << right << sizeof(p128_4) * 8 << " bits" << endl;
 
 	// numeric_limits of standard posits
 	ReportNumericLimitsOfPosit<8, 0>();
@@ -115,32 +170,8 @@ try {
 	cout << "fraction " << fraction << endl;
 
 	cout << endl;
-	// report on the size of different posit components and implementations
-	posit<4, 0> p4_0;
-	posit_decoded<4, 0> pd4_0;
-	posit<8, 0> p8_0;
-	posit_decoded<8, 0> pd8_0;
-	posit<16, 1> p16_1;
-	posit_decoded<16, 1> pd16_1;
-	posit<32, 2> p32_2;
-	posit_decoded<32, 2> pd32_2;
-	posit<64, 3> p64_3;
-	posit_decoded<64, 3> pd64_3;
-	posit<128, 4> p128_4;
-	posit_decoded<128, 4> pd128_4;
-	cout << left << setw(20) << "configuration" << setw(10) << "bytes" << endl;
-	cout << left << setw(20) << "posit<4,0>" << setw(10) << sizeof(p4_0) << endl;
-	cout << left << setw(20) << "decoded<4,0>" << setw(10) << sizeof(pd4_0) << endl;
-	cout << left << setw(20) << "posit<8,0>" << setw(10) << sizeof(p8_0) << endl;
-	cout << left << setw(20) << "decoded<8,0>" << setw(10) << sizeof(pd8_0) << endl;
-	cout << left << setw(20) << "posit<16,1>" << setw(10) << sizeof(p16_1) << endl;
-	cout << left << setw(20) << "decoded<16,1>" << setw(10) << sizeof(pd16_1) << endl;
-	cout << left << setw(20) << "posit<32,2>" << setw(10) << sizeof(p32_2) << endl;
-	cout << left << setw(20) << "decoded<32,2>" << setw(10) << sizeof(pd32_2) << endl;
-	cout << left << setw(20) << "posit<64,3>" << setw(10) << sizeof(p64_3) << endl;
-	cout << left << setw(20) << "decoded<64,3>" << setw(10) << sizeof(pd64_3) << endl;
-	cout << left << setw(20) << "posit<128,4>" << setw(10) << sizeof(p128_4) << endl;
-	cout << left << setw(20) << "decoded<128,4>" << setw(10) << sizeof(pd128_4) << endl;
+
+	// WhyWeRemovedDecodedPosits();
 
 	return EXIT_SUCCESS;
 }

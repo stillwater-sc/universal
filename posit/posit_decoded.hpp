@@ -662,7 +662,7 @@ namespace sw {
 			}
 			inline void setnar() {
 				_sign = true;
-				_regime.setToInfinite();
+				_regime.setinf();
 				_exponent.reset();
 				_fraction.reset();
 				_raw_bits.reset();
@@ -881,7 +881,7 @@ namespace sw {
 					setzero();
 					return;
 				}
-				if (v.isNaN() || v.isinf()) {
+				if (v.isnan() || v.isinf()) {
 					setnar();
 					return;
 				}
@@ -1016,7 +1016,7 @@ namespace sw {
 					setzero();
 					return *this;
 				}
-				if (v.isinf() || v.isNaN()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
+				if (v.isinf() || v.isnan()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
 					setnar();
 					return *this;
 				}

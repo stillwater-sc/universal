@@ -35,7 +35,7 @@
 /// INCLUDE FILES that make up the library
 #include "posit.hpp"
 #include "numeric_limits.hpp"
-#include "posit_decoded.hpp"
+//#include "posit_decoded.hpp"
 
 #ifdef POSIT_FAST_SPECIALIZATION
 #include "specialized/posit_2_0.hpp"
