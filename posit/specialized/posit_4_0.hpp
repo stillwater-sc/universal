@@ -322,23 +322,23 @@ namespace sw {
 				long double to_long_double() const {
 					if (iszero())  return 0.0;
 					if (isnar())   return NAN;
-bool		     	 _sign;
-regime<nbits, es>    _regime;
-exponent<nbits, es>  _exponent;
-fraction<fbits>      _fraction;
-bitblock<nbits>		 _raw_bits;
-_raw_bits.reset();
-uint64_t mask = 1;
-for (size_t i = 0; i < nbits; i++) {
-	_raw_bits.set(i, (_bits & mask));
-	mask <<= 1;
-}
-decode(_raw_bits, _sign, _regime, _exponent, _fraction);
-long double s = (_sign ? -1.0 : 1.0);
-long double r = _regime.value();
-long double e = _exponent.value();
-long double f = (1.0 + _fraction.value());
-return s * r * e * f;
+					bool		     	 _sign;
+					regime<nbits, es>    _regime;
+					exponent<nbits, es>  _exponent;
+					fraction<fbits>      _fraction;
+					bitblock<nbits>		 _raw_bits;
+					_raw_bits.reset();
+					uint64_t mask = 1;
+					for (size_t i = 0; i < nbits; i++) {
+						_raw_bits.set(i, (_bits & mask));
+						mask <<= 1;
+					}
+					decode(_raw_bits, _sign, _regime, _exponent, _fraction);
+					long double s = (_sign ? -1.0 : 1.0);
+					long double r = _regime.value();
+					long double e = _exponent.value();
+					long double f = (1.0 + _fraction.value());
+					return s * r * e * f;
 				}
 
 				template <typename T>
@@ -355,9 +355,9 @@ return s * r * e * f;
 						setnar();
 						return *this;
 					}
-
-					//convert(v);
-					_bits = uint8_t(rhs); // TODO: not correct
+					bitblock<NBITS_IS_4> ptt;
+					convert_to_bb<NBITS_IS_4, ES_IS_0, dfbits>(v.sign(), v.scale(), v.fraction(), ptt); // TODO: needs to be faster
+					_bits = uint8_t(ptt.to_ulong());
 					return *this;
 				}
 

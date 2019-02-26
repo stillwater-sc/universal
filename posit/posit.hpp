@@ -243,6 +243,78 @@ void decode(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, es>& _re
 
 // needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
 template<size_t nbits, size_t es, size_t fbits>
+inline bitblock<nbits>& convert_to_bb(bool _sign, int _scale, const bitblock<fbits>& fraction_in, bitblock<nbits>& ptt) {
+	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
+	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
+
+	ptt.reset(); // ptt will yield the final bits of the posit
+	// construct the posit
+	// interpolation rule checks
+	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
+		if (_trace_conversion) std::cout << "inward projection" << std::endl;
+		// we are projecting to minpos/maxpos
+		int k = calculate_unconstrained_k<nbits, es>(_scale);
+		ptt = k < 0 ? minpos_pattern<nbits, es>(_sign) : maxpos_pattern<nbits, es>(_sign);
+		// we are done
+		if (_trace_rounding) std::cout << "projection  rounding ";
+	}
+	else {
+		const size_t pt_len = nbits + 3 + es;
+		bitblock<pt_len> pt_bits;
+		bitblock<pt_len> regime;
+		bitblock<pt_len> exponent;
+		bitblock<pt_len> fraction;
+		bitblock<pt_len> sticky_bit;
+
+		bool s = _sign;
+		int e = _scale;
+		bool r = (e >= 0);
+
+		unsigned run = (r ? 1 + (e >> es) : -(e >> es));
+		regime.set(0, 1 ^ r);
+		for (unsigned i = 1; i <= run; i++) regime.set(i, r);
+
+		unsigned esval = e % (uint32_t(1) << es);
+		exponent = convert_to_bitblock<pt_len>(esval);
+		unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
+		// TODO: what needs to be done if nf > fbits?
+		//assert(nf <= input_fbits);
+		// copy the most significant nf fraction bits into fraction
+		unsigned lsb = nf <= fbits ? 0 : nf - fbits;
+		for (unsigned i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
+
+		bool sb = anyAfter(fraction_in, fbits - 1 - nf);
+
+		// construct the untruncated posit
+		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
+		regime <<= es + nf + 1;
+		exponent <<= nf + 1;
+		fraction <<= 1;
+		sticky_bit.set(0, sb);
+
+		pt_bits |= regime;
+		pt_bits |= exponent;
+		pt_bits |= fraction;
+		pt_bits |= sticky_bit;
+
+		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
+		bool blast = pt_bits.test(len - nbits);
+		bool bafter = pt_bits.test(len - nbits - 1);
+		bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
+
+		bool rb = (blast & bafter) | (bafter & bsticky);
+
+
+		pt_bits <<= pt_len - len;
+		truncate(pt_bits, ptt);
+		if (rb) increment_bitset(ptt);
+		if (s) ptt = twos_complement(ptt);
+	}
+	return ptt;
+}
+
+// needed to avoid double rounding situations during arithmetic: TODO: does that mean the condensed version below should be removed?
+template<size_t nbits, size_t es, size_t fbits>
 inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>& fraction_in, posit<nbits, es>& p) {
 	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
 	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
