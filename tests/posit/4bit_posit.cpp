@@ -1,4 +1,4 @@
-// 8bit_posit.cpp: Functionality tests for standard 8-bit posits
+// 4bit_posit.cpp: Functionality tests for specialized 4-bit posits based on look-up tables
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
