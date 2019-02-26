@@ -37,7 +37,7 @@
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a) {
 	Ty reference;
-	sw::unum::posit_decoded<nbits, es> pa, pref, preciprocal;
+	sw::unum::posit<nbits, es> pa, pref, preciprocal;
 	pa = a;
 	reference = (Ty)1.0 / a;
 	pref = reference;
@@ -45,7 +45,7 @@ void GenerateTestCase(Ty a) {
 	std::cout << "input " << a << " reference 1/fa " << reference << " pref " << double(pref) << '(' << pref << ") result " << double(preciprocal) << '(' << preciprocal << ')' << std::endl;
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 1
 
 int main(int argc, char** argv)
@@ -64,7 +64,7 @@ try {
 	// generate individual testcases to hand trace/debug
 	posit<5, 0> p1(0.75);
 	posit<5, 0> p1_reciprocal;
-	posit_decoded<5, 0> p2(0.75), p2_reciprocal;
+	posit<5, 0> p2(0.75), p2_reciprocal;
 
 	p2_reciprocal = p2.reciprocate();
 	p1_reciprocal = p1.reciprocate();
