@@ -45,7 +45,7 @@ void GenerateTestCase(Ty a) {
 	std::cout << "input " << a << " reference 1/fa " << reference << " pref " << double(pref) << '(' << pref << ") result " << double(preciprocal) << '(' << preciprocal << ')' << std::endl;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 1
 
 int main(int argc, char** argv)
