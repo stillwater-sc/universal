@@ -105,8 +105,8 @@ namespace sw {
 			posit& operator=(const posit&) = default;
 			posit& operator=(posit&&) = default;
 
-			posit(int initial_value) { _bits = uint8_t(initial_value & bit_mask); }
-			posit(long long initial_value) { _bits = uint8_t(initial_value & bit_mask); }
+			posit(int initial_value) { *this = initial_value; }
+			posit(long long initial_value) { *this = initial_value; }
 			posit(float initial_value) {
 				*this = float_assign(initial_value);
 			}

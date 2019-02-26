@@ -22,7 +22,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	// const size_t RND_TEST_CASES = 0;  // no randoms, 4-bit posits can be done exhaustively
+	// const size_t RND_TEST_CASES = 0;  // no randoms, 3-bit posits can be done exhaustively
 
 	const size_t nbits = 3;
 	const size_t es = 0;

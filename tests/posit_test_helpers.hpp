@@ -384,7 +384,7 @@ namespace sw {
 				posit<NBITS_IS_2, ES_IS_0> p;
 				p = v;
 				int refv = ref[ref_index++];
-				if (int(p) != refv) {
+				if (p != refv) {
 					if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << refv << std::endl;
 					nrOfFailedTestCases++;
 				}
@@ -405,7 +405,7 @@ namespace sw {
 				posit<NBITS_IS_3, ES_IS_0> p;
 				p = v;
 				int refv = ref[ref_index++];
-				if (int(p) != refv) {
+				if (p != refv) {
 					if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << refv << std::endl;
 					nrOfFailedTestCases++;
 				}
