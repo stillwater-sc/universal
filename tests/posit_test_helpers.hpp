@@ -350,22 +350,23 @@ namespace sw {
 			constexpr size_t NR_OF_TESTS = (size_t(1) << (nbits - 1)) + 1;
 			int nrOfFailedTestCases = 0;
 
-			posit<nbits, es> p(0);
-			if (!p.iszero()) nrOfFailedTestCases++;
-			p.setnar();  p = 0;
-			if (!p.iszero()) nrOfFailedTestCases++;
+			posit<nbits, es> p;
 
 			p = 1;
-			if (!p.isone()) nrOfFailedTestCases++;
+			if (!p.isone()) {
+				if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << 1 << std::endl;
+				nrOfFailedTestCases++;
+			}
 			for (size_t i = 0; i < NR_OF_TESTS; ++i) {
 				if (!p.isnar()) {
-					long long ref = (long long)p;
+					long ref = (long)p;
 					posit<nbits,es> presult = ref;
 					if (presult != ref) {
 						if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
+						nrOfFailedTestCases++;
 					}
 					else {
-						if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << ref << std::endl;
+						//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << ref << std::endl;
 					}
 				}
 				++p;

@@ -36,9 +36,7 @@ namespace sw {
 					return operator=((long long)(rhs));
 				}
 				posit& operator=(long long rhs) {
-					// only valid integers are -4, -2, -1, 0, 1, 2, 4
-
-					return *this;
+					return float_assign((double)rhs);
 				}
 				posit& operator=(const float rhs) {
 					return float_assign(rhs);
@@ -289,7 +287,7 @@ namespace sw {
 				return !operator==(lhs, rhs);
 			}
 			inline bool operator< (const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
-				return lhs._bits < rhs._bits;
+				return *(signed char*)(&lhs._bits) < *(signed char*)(&rhs._bits);
 			}
 			inline bool operator> (const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
 				return operator< (rhs, lhs);
