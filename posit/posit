@@ -1,6 +1,6 @@
 // posit standard header
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _POSIT_STANDARD_HEADER_
@@ -42,6 +42,7 @@
 #include "specialized/posit_3_0.hpp"
 #include "specialized/posit_3_1.hpp"
 #include "specialized/posit_4_0.hpp"
+#include "specialized/posit_8_0.hpp"
 #endif
 
 #include "posit_manipulators.hpp"
