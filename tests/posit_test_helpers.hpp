@@ -359,16 +359,14 @@ namespace sw {
 			}
 			for (size_t i = 0; i < NR_OF_TESTS; ++i) {
 				if (!p.isnar()) {
-					long ref = (long)p;
-					presult = ref;
-std::cout << "p = " << sw::unum::posit_format(p) << " ref = " << sw::unum::posit_format(presult) << std::endl;
-
-					if (presult != p) {
-						if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << presult << " : reference = " << ref << std::endl;
+					long ref = (long)p;   // obtain the integer cast of this posit
+					presult = ref;		  // assign this integer to a reference posit
+					if (presult != ref) { // compare the integer cast to the reference posit
+						if (bReportIndividualTestCases) std::cout << tag << " FAIL long(" << p << ") != long(" << presult << ") : reference = " << ref << std::endl;
 						nrOfFailedTestCases++;
 					}
 					else {
-						if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << presult << " : reference = " << ref << std::endl;
+						//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << presult << " : reference = " << ref << std::endl;
 					}
 				}
 				++p;
