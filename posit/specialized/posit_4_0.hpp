@@ -123,6 +123,7 @@ namespace sw {
 				}
 				posit& operator=(long long rhs) {
 					// only valid integers are -4, -2, -1, 0, 1, 2, 4
+					_bits = uint8_t(0);
 					if (rhs <= -4) {
 						_bits = 0x9;   // value is -4, or -maxpos
 					}
