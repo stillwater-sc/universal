@@ -56,7 +56,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication   <nbits, es>(tag, bReportIndividualTestCases), tag, "multiply       ");
 	nrOfFailedTestCases += ReportTestResult(ValidateDivision         <nbits, es>(tag, bReportIndividualTestCases), tag, "divide         ");
 	nrOfFailedTestCases += ReportTestResult(ValidateNegation         <nbits, es>(tag, bReportIndividualTestCases), tag, "negate         ");
-//	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation    <nbits, es>(tag, bReportIndividualTestCases), tag, "reciprocate    ");
+	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation    <nbits, es>(tag, bReportIndividualTestCases), tag, "reciprocate    ");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

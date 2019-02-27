@@ -88,7 +88,7 @@ namespace sw {
 			};
 
 			constexpr uint8_t posit_4_0_reciprocal_lookup[16] = {
-				8,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,
+				8,7,6,5,4,3,2,1,8,15,14,13,12,11,10,9,
 			};
 
 			template<>
