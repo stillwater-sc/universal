@@ -252,22 +252,23 @@ namespace sw {
 						return *this;
 					}
 
-					//convert(v);
-					_bits = uint8_t(rhs); // TODO: not correct
+					bitblock<NBITS_IS_8> ptt;
+					convert_to_bb<NBITS_IS_8, ES_IS_0, dfbits>(v.sign(), v.scale(), v.fraction(), ptt); // TODO: needs to be faster
+					_bits = uint8_t(ptt.to_ulong());
 					return *this;
 				}
 
 				// I/O operators
-				friend std::ostream& operator<< (std::ostream& ostr, const posit<NBITS_IS_8, 0>& p);
-				friend std::istream& operator>> (std::istream& istr, posit<NBITS_IS_8, 0>& p);
+				friend std::ostream& operator<< (std::ostream& ostr, const posit<NBITS_IS_8, ES_IS_0>& p);
+				friend std::istream& operator>> (std::istream& istr, posit<NBITS_IS_8, ES_IS_0>& p);
 
 				// posit - posit logic functions
-				friend bool operator==(const posit<NBITS_IS_8, 0>& lhs, const posit<NBITS_IS_8, 0>& rhs);
-				friend bool operator!=(const posit<NBITS_IS_8, 0>& lhs, const posit<NBITS_IS_8, 0>& rhs);
-				friend bool operator< (const posit<NBITS_IS_8, 0>& lhs, const posit<NBITS_IS_8, 0>& rhs);
-				friend bool operator> (const posit<NBITS_IS_8, 0>& lhs, const posit<NBITS_IS_8, 0>& rhs);
-				friend bool operator<=(const posit<NBITS_IS_8, 0>& lhs, const posit<NBITS_IS_8, 0>& rhs);
-				friend bool operator>=(const posit<NBITS_IS_8, 0>& lhs, const posit<NBITS_IS_8, 0>& rhs);
+				friend bool operator==(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs);
+				friend bool operator!=(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs);
+				friend bool operator< (const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs);
+				friend bool operator> (const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs);
+				friend bool operator<=(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs);
+				friend bool operator>=(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs);
 
 			};
 
