@@ -37,9 +37,7 @@ try {
 	cout << "Reference posit<4,0> configuration tests" << endl;
 #endif
 
-	nrOfFailedTestCases += ReportTestResult(ValidateIntegerConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "integer assign ");
 
-return 0;
 	posit<nbits,es> p;
 	cout << dynamic_range(p) << endl;
 
