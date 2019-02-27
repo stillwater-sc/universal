@@ -1673,9 +1673,18 @@ inline std::istream& operator>> (std::istream& istr, posit<nbits, es>& p) {
 	return istr;
 }
 
+// generate a posit format ASCII format nbits.esxNN...NNp
+template<size_t nbits, size_t es>
+inline std::string posit_format(const posit<nbits, es>& p) {
+	// we need to transform the posit into a string
+	std::stringstream ss;
+	ss << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
+	return ss.str();
+}
+
 // convert a posit value to a string using "nar" as designation of NaR
 template<size_t nbits, size_t es>
-std::string to_string(const posit<nbits, es>& p, std::streamsize precision = 17) {
+inline std::string to_string(const posit<nbits, es>& p, std::streamsize precision = 17) {
 	if (p.isnar()) {
 		return std::string("nar");
 	}
