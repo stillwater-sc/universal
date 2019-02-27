@@ -346,11 +346,11 @@ namespace sw {
 		// enumerate all conversion cases for integers
 		template<size_t nbits, size_t es>
 		int ValidateIntegerConversion(std::string& tag, bool bReportIndividualTestCases) {
-			// we generate numbers from 1 to NaR to -1 and the special case of 0
+			// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
 			constexpr size_t NR_OF_TESTS = (size_t(1) << (nbits - 1)) + 1;
 			int nrOfFailedTestCases = 0;
 
-			posit<nbits, es> p;
+			posit<nbits, es> p, presult;
 
 			p = 1;
 			if (!p.isone()) {
@@ -360,13 +360,15 @@ namespace sw {
 			for (size_t i = 0; i < NR_OF_TESTS; ++i) {
 				if (!p.isnar()) {
 					long ref = (long)p;
-					posit<nbits,es> presult = ref;
-					if (presult != ref) {
-						if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
+					presult = ref;
+std::cout << "p = " << sw::unum::posit_format(p) << " ref = " << sw::unum::posit_format(presult) << std::endl;
+
+					if (presult != p) {
+						if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << presult << " : reference = " << ref << std::endl;
 						nrOfFailedTestCases++;
 					}
 					else {
-						//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << ref << std::endl;
+						if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << presult << " : reference = " << ref << std::endl;
 					}
 				}
 				++p;
