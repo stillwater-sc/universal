@@ -126,6 +126,7 @@ namespace sw {
 			}
 			posit& operator=(long long rhs) {
 				// only valid integers are -2, -1, 0, 1, 2
+				_bits = 0x00;
 				if (rhs <= -2) {
 					_bits = 0x05;   // value is -2, or -maxpos
 				}
