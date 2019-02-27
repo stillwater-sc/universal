@@ -92,6 +92,9 @@ namespace sw {
 				posit& operator=(int rhs) {
 					return operator=((long long)(rhs));
 				}
+				posit& operator=(long int rhs) {
+					return operator=((long long)(rhs));
+				}
 				posit& operator=(long long rhs) {
 					// only valid integers are -1, 0, 1
 					if (rhs <= -1) {

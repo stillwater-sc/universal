@@ -39,6 +39,9 @@ namespace sw {
 				posit& operator=(int rhs) {
 					return operator=((long long)(rhs));
 				}
+				posit& operator=(long int rhs) {
+					return operator=((long long)(rhs));
+				}
 				posit& operator=(long long rhs) {
 					return float_assign((double)rhs);
 				}
