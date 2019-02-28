@@ -37,7 +37,10 @@ try {
 #else
 	cout << "Standard posit<8,0> configuration tests" << endl;
 #endif
-	
+
+//	ValidateAddition<nbits, es>(tag, true);
+//	return 1;
+
 	posit<nbits,es> p;
 	cout << dynamic_range(p) << endl;
 
