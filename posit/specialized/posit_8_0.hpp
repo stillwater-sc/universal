@@ -84,11 +84,244 @@ namespace sw {
 					return p.set_raw_bits((~_bits) + 1);
 				}
 				posit& operator+=(const posit& b) {
+					uint8_t regA;
+					uint16_t frac16A, frac16B;
+					uint8_t fracA = 0, regime, tmp;
+					bool sign, regSA, regSB, rcarry = 0, bitNPlusOne = 0, bitsMore = 0;
+					uint8_t kA = 0;
+					uint16_t shiftRight;
+					union ui8_p8 {
+						uint8_t ui;
+					} uZ;
 
+					uint8_t lhs = _bits;
+					uint8_t rhs = b._bits;
+					// process special cases
+					if (lhs == 0x80 || rhs == 0x80) {  // infinity
+						_bits = 0x80;
+						return *this;
+					}
+					if (lhs == 0x0 || rhs == 0x0) { // zero
+						_bits = lhs | rhs;
+						return *this;
+					}
+					sign = (bool)(_bits & 0x80);
+					if (sign) {
+						lhs = -lhs & 0xFF;
+						rhs = -rhs & 0xFF;
+					}
+
+					if ((int8_t)lhs < (int8_t)rhs) {
+						lhs ^= rhs;
+						rhs ^= lhs;
+						lhs ^= rhs;
+					}
+					regSA = ((bool)(((uint8_t)(lhs) >> 6) & 0x1));
+					regSB = ((bool)(((uint8_t)(rhs) >> 6) & 0x1));
+
+					tmp = (lhs << 2) & 0xFF;
+					if (regSA) {
+						while (tmp >> 7) {
+							kA++;
+							tmp = (tmp << 1) & 0xFF;
+						}
+					}
+					else {
+						kA = -1;
+						while (!(tmp >> 7)) {
+							kA--;
+							tmp = (tmp << 1) & 0xFF;
+						}
+						tmp &= 0x7F;
+					}
+					frac16A = (0x80 | tmp) << 7;
+					shiftRight = kA;
+
+					tmp = (rhs << 2) & 0xFF;
+					if (regSB) {
+						while (tmp >> 7) {
+							shiftRight--;
+							tmp = (tmp << 1) & 0xFF;
+						}
+					}
+					else {
+						shiftRight++;
+						while (!(tmp >> 7)) {
+							shiftRight++;
+							tmp = (tmp << 1) & 0xFF;
+						}
+						tmp &= 0x7F;
+					}
+					frac16B = (0x80 | tmp) << 7;
+
+					//Manage CLANG (LLVM) compiler when shifting right more than number of bits
+					(shiftRight>7) ? (frac16B = 0) : (frac16B >>= shiftRight); //frac32B >>= shiftRight
+
+					frac16A += frac16B;
+
+					rcarry = 0x8000 & frac16A; //first left bit
+					if (rcarry) {
+						kA++;
+						frac16A >>= 1;
+					}
+
+					if (kA<0) {
+						regA = (-kA & 0xFF);
+						regSA = 0;
+						regime = 0x40 >> regA;
+					}
+					else {
+						regA = kA + 1;
+						regSA = 1;
+						regime = 0x7F - (0x7F >> regA);
+					}
+
+					if (regA>6) {
+						//max or min pos. exp and frac does not matter.
+						(regSA) ? (uZ.ui = 0x7F) : (uZ.ui = 0x1);
+					}
+					else {
+						frac16A = (frac16A & 0x3FFF) >> regA;
+						fracA = (uint8_t)(frac16A >> 8);
+						bitNPlusOne = (0x80 & frac16A);
+						uZ.ui = ((uint8_t)regime + ((uint8_t)(fracA)));
+
+						//n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+						if (bitNPlusOne) {
+							(0x7F & frac16A) ? (bitsMore = 1) : (bitsMore = 0);
+							uZ.ui += (uZ.ui & 1) | bitsMore;
+						}
+					}
+					if (sign) uZ.ui = -uZ.ui & 0xFF;
+					_bits = uZ.ui;
 					return *this;
 				}
 				posit& operator-=(const posit& b) {
+					uint8_t regA;
+					uint16_t frac16A, frac16B;
+					uint8_t fracA = 0, regime, tmp;
+					bool sign = 0, regSA, regSB, ecarry = 0, bitNPlusOne = 0, bitsMore = 0;
+					int16_t shiftRight;
+					int8_t kA = 0;
+					union ui8_p8 {
+						uint8_t ui;
+					} uZ;
 
+					uint8_t lhs = _bits;
+					uint8_t rhs = b._bits;
+					// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
+					sign = (bool)(lhs & 0x80);
+					(sign) ? (lhs = (-lhs & 0xFF)) : (rhs = (-rhs & 0xFF));
+					// process special cases
+					if (lhs == 0x80 || rhs == 0x80) {  // infinity
+						_bits = 0x80;
+						return *this;
+					}
+					if (lhs == 0x0 || rhs == 0x0) { // zero
+						_bits = lhs | uint8_t(-*(int8_t*)&rhs);
+						return *this;
+					}
+
+
+					if (lhs == rhs) { //essential, if not need special handling
+						_bits = 0x0;
+						return *this;
+					}
+					if (lhs < rhs) {  // swap lhs and rhs
+						lhs ^= rhs;
+						rhs ^= lhs;
+						lhs ^= rhs;
+						sign = !sign;
+					}
+
+					regSA = ((bool)(((uint8_t)(lhs) >> 6) & 0x1));
+					regSB = ((bool)(((uint8_t)(rhs) >> 6) & 0x1));
+
+					tmp = (lhs << 2) & 0xFF;
+					if (regSA) {
+						while (tmp >> 7) {
+							kA++;
+							tmp = (tmp << 1) & 0xFF;
+						}
+					}
+					else {
+						kA = -1;
+						while (!(tmp >> 7)) {
+							kA--;
+							tmp = (tmp << 1) & 0xFF;
+						}
+						tmp &= 0x7F;
+					}
+					frac16A = (0x80 | tmp) << 7;
+					shiftRight = kA;
+
+					tmp = (rhs << 2) & 0xFF;
+					if (regSB) {
+						while (tmp >> 7) {
+							shiftRight--;
+							tmp = (tmp << 1) & 0xFF;
+						}
+					}
+					else {
+						shiftRight++;
+						while (!(tmp >> 7)) {
+							shiftRight++;
+							tmp = (tmp << 1) & 0xFF;
+						}
+						tmp &= 0x7F;
+					}
+					frac16B = (0x80 | tmp) << 7;
+
+
+					if (shiftRight >= 14) {
+						uZ.ui = lhs;
+						if (sign) uZ.ui = -uZ.ui & 0xFFFF;
+						_bits = uZ.ui;
+						return *this;
+					}
+					else
+						frac16B >>= shiftRight;
+
+					frac16A -= frac16B;
+
+					while ((frac16A >> 14) == 0) {
+						kA--;
+						frac16A <<= 1;
+					}
+					ecarry = (0x4000 & frac16A) >> 14;
+					if (!ecarry) {
+						kA--;
+						frac16A <<= 1;
+					}
+
+					if (kA<0) {
+						regA = (-kA & 0xFF);
+						regSA = 0;
+						regime = 0x40 >> regA;
+					}
+					else {
+						regA = kA + 1;
+						regSA = 1;
+						regime = 0x7F - (0x7F >> regA);
+					}
+
+					if (regA>6) {
+						//max or min pos. exp and frac does not matter.
+						(regSA) ? (uZ.ui = 0x7F) : (uZ.ui = 0x1);
+					}
+					else {
+						frac16A = (frac16A & 0x3FFF) >> regA;
+						fracA = (uint8_t)(frac16A >> 8);
+						bitNPlusOne = (0x80 & frac16A);
+						uZ.ui = ((uint8_t)regime + ((uint8_t)(fracA)));
+
+						if (bitNPlusOne) {
+							(0x7F & frac16A) ? (bitsMore = 1) : (bitsMore = 0);
+							uZ.ui += (uZ.ui & 1) | bitsMore;
+						}
+					}
+					if (sign) uZ.ui = -uZ.ui & 0xFF;
+					_bits = uZ.ui;
 					return *this;
 				}
 				posit& operator*=(const posit& b) {
@@ -153,7 +386,12 @@ namespace sw {
 				inline void clear() { _bits = 0; }
 				inline void setzero() { clear(); }
 				inline void setnar() { _bits = 0x80; }
-
+				inline posit twosComplement() const {
+					posit<NBITS_IS_8, ES_IS_0> p;
+					int8_t v = -*(int8_t*)&_bits;
+					p.set_raw_bits(v);
+					return p;
+				}
 			private:
 				uint8_t _bits;
 
@@ -332,9 +570,25 @@ namespace sw {
 			}
 
 			inline posit<NBITS_IS_8, ES_IS_0> operator+(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
-				posit<NBITS_IS_8, ES_IS_0> sum = lhs;
-				sum += rhs;
-				return sum;
+				posit<NBITS_IS_8, ES_IS_0> result = lhs;
+				if (lhs.isneg() == rhs.isneg()) {  // are the posits the same sign?
+					result += rhs;
+				} 
+				else {
+					result -= rhs;
+				}
+				return result;
+			}
+			inline posit<NBITS_IS_8, ES_IS_0> operator-(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
+				posit<NBITS_IS_8, ES_IS_0> result = lhs;
+				if (lhs.isneg() == rhs.isneg()) {  // are the posits the same sign?
+					result -= rhs.twosComplement();
+				}
+				else {
+					result += rhs.twosComplement();
+				}
+				return result;
+
 			}
 
 #if POSIT_ENABLE_LITERALS
