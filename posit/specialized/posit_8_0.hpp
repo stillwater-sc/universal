@@ -128,31 +128,7 @@ namespace sw {
 						frac16A >>= 1;
 					}
 
-					uint8_t scale, regime;
-					if (m < 0) {
-						scale = (-m & 0xFF);
-						regime = 0x40 >> scale;
-					}
-					else {
-						scale = m + 1;
-						regime = 0x7F - (0x7F >> scale);
-					}
-
-					if (scale > 6) {
-						_bits = m<0 ? 0x1 : 0x7F;  // minpos and maxpos
-					}
-					else {
-						frac16A = (frac16A & 0x3FFF) >> scale;
-						uint8_t fracA = (uint8_t)(frac16A >> 8);
-						bool bitNPlusOne = bool(0x80 & frac16A);
-						_bits = uint8_t(regime) + (uint8_t(fracA));
-
-						// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-						if (bitNPlusOne) {
-							uint8_t moreBits = (0x7F & frac16A) ? 0x01 : 0x00;
-							_bits += (_bits & 0x01) | moreBits;
-						}
-					}
+					_bits = round(m, frac16A);
 					if (sign) _bits = -_bits & 0xFF;
 					return *this;
 				}
@@ -191,6 +167,7 @@ namespace sw {
 					adjust(rhs, shiftRight, remaining);
 					uint16_t frac16B = (0x80 | remaining) << 7;
 
+					// do the subtraction of the fractions
 					if (shiftRight >= 14) {
 						_bits = lhs;
 						if (sign) _bits = -_bits & 0xFFFF;
@@ -211,30 +188,7 @@ namespace sw {
 						frac16A <<= 1;
 					}
 
-					uint8_t scale, regime;
-					if (m < 0) {
-						scale = (-m & 0xFF);
-						regime = 0x40 >> scale;
-					}
-					else {
-						scale = m + 1;
-						regime = 0x7F - (0x7F >> scale);
-					}
-
-					if (scale > 6) {
-						_bits = m<0 ? 0x1 : 0x7F;  // minpos and maxpos
-					}
-					else {
-						frac16A = (frac16A & 0x3FFF) >> scale;
-						uint8_t fracA = (uint8_t)(frac16A >> 8);
-						bool bitNPlusOne = bool (0x80 & frac16A);
-						_bits = uint8_t(regime) + (uint8_t(fracA));
-						// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-						if (bitNPlusOne) {
-							uint8_t moreBits = (0x7F & frac16A) ? 0x01 : 0x00;
-							_bits += (_bits & 0x01) | moreBits;
-						}
-					}
+					_bits = round(m, frac16A);
 					if (sign) _bits = -_bits & 0xFF;
 					return *this;
 				}
@@ -289,7 +243,7 @@ namespace sw {
 				inline bool ispos() const      { return !isneg(); }
 				inline bool ispowerof2() const { return !(_bits & 0x1); }
 
-				inline int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
+				inline int sign_value() const  { return (_bits & 0x8 ? -1 : 1); }
 
 				bitblock<NBITS_IS_8> get() const { bitblock<NBITS_IS_8> bb; bb = int(_bits); return bb; }
 				unsigned long long encoding() const { return (unsigned long long)(_bits); }
@@ -409,7 +363,7 @@ namespace sw {
 
 				// helper method
 				// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder
-				inline void decode_regime(const uint8_t bits, int8_t& m, uint8_t& remaining) {
+				inline void decode_regime(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
 					remaining = (bits << 2) & 0xFF;
 					if (bits & 0x40) {  // positive regimes
 						while (remaining >> 7) {
@@ -426,7 +380,7 @@ namespace sw {
 						remaining &= 0x7F;
 					}
 				}
-				inline void adjust(const uint8_t bits, int8_t& shiftRight, uint8_t& remaining) {
+				inline void adjust(const uint8_t bits, int8_t& shiftRight, uint8_t& remaining) const {
 					remaining = (bits << 2) & 0xFF;
 					if (bits & 0x40) {  // positive regimes
 						while (remaining >> 7) {
@@ -442,6 +396,33 @@ namespace sw {
 						}
 						remaining &= 0x7F;
 					}
+				}
+				inline uint8_t round(const int8_t m, uint16_t fraction) const {
+					uint8_t scale, regime, bits;
+					if (m < 0) {
+						scale = (-m & 0xFF);
+						regime = 0x40 >> scale;
+					}
+					else {
+						scale = m + 1;
+						regime = 0x7F - (0x7F >> scale);
+					}
+
+					if (scale > 6) {
+						bits = m<0 ? 0x1 : 0x7F;  // minpos and maxpos
+					}
+					else {
+						fraction = (fraction & 0x3FFF) >> scale;
+						uint8_t final_fbits = uint8_t(fraction >> 8);
+						bool bitNPlusOne = bool(0x80 & fraction);
+						bits = uint8_t(regime) + uint8_t(final_fbits);
+						// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+						if (bitNPlusOne) {
+							uint8_t moreBits = (0x7F & fraction) ? 0x01 : 0x00;
+							bits += (bits & 0x01) | moreBits;
+						}
+					}
+					return bits;
 				}
 				// I/O operators
 				friend std::ostream& operator<< (std::ostream& ostr, const posit<NBITS_IS_8, ES_IS_0>& p);
