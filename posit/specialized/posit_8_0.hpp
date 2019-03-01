@@ -30,30 +30,35 @@ namespace sw {
 				posit& operator=(const posit&) = default;
 				posit& operator=(posit&&) = default;
 
-				posit(char initial_value) { *this = (long long)initial_value; }
-				posit(short initial_value) { *this = (long long)initial_value; }
-				posit(int initial_value) { *this = (long long)initial_value; }
-				posit(long int initial_value) { *this = (long long)initial_value; }
-				posit(long long initial_value) { *this = (long long)initial_value; }
+				// initializers for native types
+				posit(const signed char initial_value)        { *this = initial_value; }
+				posit(const short initial_value)              { *this = initial_value; }
+				posit(const int initial_value)                { *this = initial_value; }
+				posit(const long initial_value)               { *this = initial_value; }
+				posit(const long long initial_value)          { *this = initial_value; }
+				posit(const char initial_value)               { *this = initial_value; }
+				posit(const unsigned short initial_value)     { *this = initial_value; }
+				posit(const unsigned int initial_value)       { *this = initial_value; }
+				posit(const unsigned long initial_value)      { *this = initial_value; }
+				posit(const unsigned long long initial_value) { *this = initial_value; }
+				posit(const float initial_value)              { *this = initial_value; }
+				posit(const double initial_value)             { *this = initial_value; }
+				posit(const long double initial_value)        { *this = initial_value; }
+
 				// assignment operators for native types
-				posit& operator=(int rhs) {
-					return operator=((long long)(rhs));
-				}
-				posit& operator=(long int rhs) {
-					return operator=((long long)(rhs));
-				}
-				posit& operator=(long long rhs) {
-					return float_assign((double)rhs);
-				}
-				posit& operator=(const float rhs) {
-					return float_assign(rhs);
-				}
-				posit& operator=(const double rhs) {
-					return float_assign(rhs);
-				}
-				posit& operator=(const long double rhs) {
-					return float_assign(rhs);
-				}
+				posit& operator=(const signed char rhs)       { return operator=((long long)(rhs)); }
+				posit& operator=(const short rhs)             { return operator=((long long)(rhs)); }
+				posit& operator=(const int rhs)               { return operator=((long long)(rhs)); }
+				posit& operator=(const long rhs)              { return operator=((long long)(rhs)); }
+				posit& operator=(const long long rhs)         { return float_assign((long double)rhs); }
+				posit& operator=(const char rhs)              { return operator=((long long)(rhs)); }
+				posit& operator=(const unsigned short rhs)    { return operator=((long long)(rhs)); }
+				posit& operator=(const unsigned int rhs)      { return operator=((long long)(rhs)); }
+				posit& operator=(const unsigned long rhs)     { return operator=((long long)(rhs)); }
+				posit& operator=(const unsigned long long rhs){ return float_assign((long double)rhs); }
+				posit& operator=(const float rhs)             { return float_assign(rhs); }
+				posit& operator=(const double rhs)            { return float_assign(rhs); }
+				posit& operator=(const long double rhs)       { return float_assign(rhs); }
 
 				explicit operator long double() const { return to_long_double(); }
 				explicit operator double() const { return to_double(); }
@@ -84,64 +89,53 @@ namespace sw {
 					return p.set_raw_bits((~_bits) + 1);
 				}
 				posit& operator+=(const posit& b) {
-					uint8_t regA;
-					uint16_t frac16A, frac16B;
-					uint8_t fracA = 0, regime, tmp;
-					bool sign, regSA, regSB, rcarry = 0, bitNPlusOne = 0, bitsMore = 0;
-					int8_t kA = 0;
-					int16_t shiftRight;
-
 					uint8_t lhs = _bits;
 					uint8_t rhs = b._bits;
 					// process special cases
-					if (lhs == 0x80 || rhs == 0x80) {  // infinity
+					if (isnar() || b.isnar()) {  // infinity
 						_bits = 0x80;
 						return *this;
 					}
-					if (lhs == 0x0 || rhs == 0x0) { // zero
+					if (iszero() || b.iszero()) { // zero
 						_bits = lhs | rhs;
 						return *this;
 					}
-					sign = (bool)(_bits & 0x80);
+					bool sign = (bool)(_bits & 0x80);
 					if (sign) {
 						lhs = -lhs & 0xFF;
 						rhs = -rhs & 0xFF;
 					}
-
-					if ((int8_t)lhs < (int8_t)rhs) {
-						lhs ^= rhs;
-						rhs ^= lhs;
-						lhs ^= rhs;
-					}
-					regSA = ((bool)(((uint8_t)(lhs) >> 6) & 0x1));
-					regSB = ((bool)(((uint8_t)(rhs) >> 6) & 0x1));
-
-					tmp = (lhs << 2) & 0xFF;
-					if (regSA) {
+					if (lhs < rhs) std::swap(lhs, rhs);
+					
+					// decode the regime of lhs
+					int8_t m = 0; // pattern length
+					uint8_t tmp = (lhs << 2) & 0xFF;
+					if (lhs & 0x40) {  // positive regimes
 						while (tmp >> 7) {
-							kA++;
+							m++;
 							tmp = (tmp << 1) & 0xFF;
 						}
 					}
-					else {
-						kA = -1;
+					else {             // negative regimes
+						m = -1;
 						while (!(tmp >> 7)) {
-							kA--;
+							m--;
 							tmp = (tmp << 1) & 0xFF;
 						}
 						tmp &= 0x7F;
 					}
-					frac16A = (0x80 | tmp) << 7;
-					shiftRight = kA;
+					uint16_t frac16A = (0x80 | tmp) << 7;
+					int8_t shiftRight = m;
 
+					// decode regime of the rhs
 					tmp = (rhs << 2) & 0xFF;
-					if (regSB) {
+					if (rhs & 0x40) {  // positive regimes
 						while (tmp >> 7) {
 							shiftRight--;
 							tmp = (tmp << 1) & 0xFF;
 						}
 					}
-					else {
+					else {             // negative regimes
 						shiftRight++;
 						while (!(tmp >> 7)) {
 							shiftRight++;
@@ -149,44 +143,43 @@ namespace sw {
 						}
 						tmp &= 0x7F;
 					}
-					frac16B = (0x80 | tmp) << 7;
+					uint16_t frac16B = (0x80 | tmp) << 7;
 
-					//Manage CLANG (LLVM) compiler when shifting right more than number of bits
+					// Work-around CLANG (LLVM) compiler when shifting right more than number of bits
 					(shiftRight>7) ? (frac16B = 0) : (frac16B >>= shiftRight); //frac32B >>= shiftRight
 
 					frac16A += frac16B;
 
-					rcarry = 0x8000 & frac16A; //first left bit
+					bool rcarry = 0x8000 & frac16A; // leading one
 					if (rcarry) {
-						kA++;
+						m++;
 						frac16A >>= 1;
 					}
 
-					if (kA<0) {
-						regA = (-kA & 0xFF);
-						regSA = 0;
-						regime = 0x40 >> regA;
+					uint8_t regime = 0;
+					uint8_t scale = 0;
+					if (m < 0) {
+						scale = (-m & 0xFF);
+						regime = 0x40 >> scale;
 					}
 					else {
-						regA = kA + 1;
-						regSA = 1;
-						regime = 0x7F - (0x7F >> regA);
+						scale = m + 1;
+						regime = 0x7F - (0x7F >> scale);
 					}
 
-					if (regA>6) {
-						//max or min pos. exp and frac does not matter.
-						_bits = regSA ? 0x7F : 0x1;
+					if (scale > 6) {
+						_bits = m<0 ? 0x1 : 0x7F;  // minpos and maxpos
 					}
 					else {
-						frac16A = (frac16A & 0x3FFF) >> regA;
-						fracA = (uint8_t)(frac16A >> 8);
-						bitNPlusOne = (0x80 & frac16A);
-						_bits = ((uint8_t)regime + ((uint8_t)(fracA)));
+						frac16A = (frac16A & 0x3FFF) >> scale;
+						uint8_t fracA = (uint8_t)(frac16A >> 8);
+						bool bitNPlusOne = (0x80 & frac16A);
+						_bits = (uint8_t(regime) + (uint8_t(fracA)));
 
 						//n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 						if (bitNPlusOne) {
-							(0x7F & frac16A) ? (bitsMore = 1) : (bitsMore = 0);
-							_bits += (_bits & 0x01) | bitsMore;
+							uint8_t moreBits = (0x7F & frac16A) ? 0x01 : 0x00;
+							_bits += (_bits & 0x01) | moreBits;
 						}
 					}
 					if (sign) _bits = -_bits & 0xFF;
@@ -203,11 +196,11 @@ namespace sw {
 					uint8_t lhs = _bits;
 					uint8_t rhs = b._bits;
 					// process special cases
-					if (lhs == 0x80 || rhs == 0x80) {  // infinity
+					if (isnar() || b.isnar()) {
 						_bits = 0x80;
 						return *this;
 					}
-					if (lhs == 0x0 || rhs == 0x0) { // zero
+					if (iszero() || b.iszero()) {
 						_bits = lhs | rhs;
 						return *this;
 					}
@@ -215,14 +208,12 @@ namespace sw {
 					sign = (bool)(lhs & 0x80);
 					(sign) ? (lhs = (-lhs & 0xFF)) : (rhs = (-rhs & 0xFF));
 
-					if (lhs == rhs) { //essential, if not need special handling
+					if (lhs == rhs) {
 						_bits = 0x0;
 						return *this;
 					}
-					if (lhs < rhs) {  // swap lhs and rhs
-						lhs ^= rhs;
-						rhs ^= lhs;
-						lhs ^= rhs;
+					if (lhs < rhs) {
+						std::swap(lhs, rhs);
 						sign = !sign;
 					}
 
