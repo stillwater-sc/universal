@@ -88,7 +88,7 @@ namespace sw {
 					posit p;
 					return p.set_raw_bits((~_bits) + 1);
 				}
-				posit& operator+=(const posit& b) {
+				posit& operator+=(const posit& b) { // derived from SoftPosit
 					uint8_t lhs = _bits;
 					uint8_t rhs = b._bits;
 					// process special cases
@@ -100,7 +100,7 @@ namespace sw {
 						_bits = lhs | rhs;
 						return *this;
 					}
-					bool sign = (bool)(_bits & 0x80);
+					bool sign = bool(_bits & 0x80);
 					if (sign) {
 						lhs = -lhs & 0xFF;
 						rhs = -rhs & 0xFF;
@@ -150,14 +150,13 @@ namespace sw {
 
 					frac16A += frac16B;
 
-					bool rcarry = 0x8000 & frac16A; // leading one
+					bool rcarry = bool(0x8000 & frac16A); // is MSB set
 					if (rcarry) {
 						m++;
 						frac16A >>= 1;
 					}
 
-					uint8_t regime = 0;
-					uint8_t scale = 0;
+					uint8_t scale, regime;
 					if (m < 0) {
 						scale = (-m & 0xFF);
 						regime = 0x40 >> scale;
@@ -173,10 +172,10 @@ namespace sw {
 					else {
 						frac16A = (frac16A & 0x3FFF) >> scale;
 						uint8_t fracA = (uint8_t)(frac16A >> 8);
-						bool bitNPlusOne = (0x80 & frac16A);
-						_bits = (uint8_t(regime) + (uint8_t(fracA)));
+						bool bitNPlusOne = bool(0x80 & frac16A);
+						_bits = uint8_t(regime) + (uint8_t(fracA));
 
-						//n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+						// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 						if (bitNPlusOne) {
 							uint8_t moreBits = (0x7F & frac16A) ? 0x01 : 0x00;
 							_bits += (_bits & 0x01) | moreBits;
@@ -185,14 +184,7 @@ namespace sw {
 					if (sign) _bits = -_bits & 0xFF;
 					return *this;
 				}
-				posit& operator-=(const posit& b) {
-					uint8_t regA;
-					uint16_t frac16A, frac16B;
-					uint8_t fracA = 0, regime, tmp;
-					bool sign = 0, regSA, regSB, ecarry = 0, bitNPlusOne = 0, bitsMore = 0;
-					int8_t kA = 0;
-					int16_t shiftRight;
-
+				posit& operator-=(const posit& b) {  // derived from SoftPosit
 					uint8_t lhs = _bits;
 					uint8_t rhs = b._bits;
 					// process special cases
@@ -205,11 +197,11 @@ namespace sw {
 						return *this;
 					}
 					// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
-					sign = (bool)(lhs & 0x80);
+					bool sign = bool(lhs & 0x80);
 					(sign) ? (lhs = (-lhs & 0xFF)) : (rhs = (-rhs & 0xFF));
 
 					if (lhs == rhs) {
-						_bits = 0x0;
+						_bits = 0x00;
 						return *this;
 					}
 					if (lhs < rhs) {
@@ -217,29 +209,29 @@ namespace sw {
 						sign = !sign;
 					}
 
-					regSA = ((bool)(((uint8_t)(lhs) >> 6) & 0x1));
-					regSB = ((bool)(((uint8_t)(rhs) >> 6) & 0x1));
-
-					tmp = (lhs << 2) & 0xFF;
-					if (regSA) {
+					// decode the regime of lhs
+					int8_t m = 0; // pattern length
+					uint8_t tmp = (lhs << 2) & 0xFF;
+					if (lhs & 0x40) {  // positive regimes
 						while (tmp >> 7) {
-							kA++;
+							m++;
 							tmp = (tmp << 1) & 0xFF;
 						}
 					}
 					else {
-						kA = -1;
+						m = -1;
 						while (!(tmp >> 7)) {
-							kA--;
+							m--;
 							tmp = (tmp << 1) & 0xFF;
 						}
 						tmp &= 0x7F;
 					}
-					frac16A = (0x80 | tmp) << 7;
-					shiftRight = kA;
+					uint16_t frac16A = (0x80 | tmp) << 7;
+					int8_t shiftRight = m;
 
+					// decode the regime of rhs
 					tmp = (rhs << 2) & 0xFF;
-					if (regSB) {
+					if (rhs & 0x40) {
 						while (tmp >> 7) {
 							shiftRight--;
 							tmp = (tmp << 1) & 0xFF;
@@ -253,53 +245,50 @@ namespace sw {
 						}
 						tmp &= 0x7F;
 					}
-					frac16B = (0x80 | tmp) << 7;
-
+					uint16_t frac16B = (0x80 | tmp) << 7;
 
 					if (shiftRight >= 14) {
 						_bits = lhs;
 						if (sign) _bits = -_bits & 0xFFFF;
 						return *this;
 					}
-					else
+					else {
 						frac16B >>= shiftRight;
-
+					}
 					frac16A -= frac16B;
 
 					while ((frac16A >> 14) == 0) {
-						kA--;
+						m--;
 						frac16A <<= 1;
 					}
-					ecarry = (0x4000 & frac16A) >> 14;
+					bool ecarry = bool (0x4000 & frac16A);
 					if (!ecarry) {
-						kA--;
+						m--;
 						frac16A <<= 1;
 					}
 
-					if (kA<0) {
-						regA = (-kA & 0xFF);
-						regSA = 0;
-						regime = 0x40 >> regA;
+					uint8_t scale, regime;
+					if (m < 0) {
+						scale = (-m & 0xFF);
+						regime = 0x40 >> scale;
 					}
 					else {
-						regA = kA + 1;
-						regSA = 1;
-						regime = 0x7F - (0x7F >> regA);
+						scale = m + 1;
+						regime = 0x7F - (0x7F >> scale);
 					}
 
-					if (regA>6) {
-						//max or min pos. exp and frac does not matter.
-						_bits = regSA ? 0x7F : 0x1;
+					if (scale > 6) {
+						_bits = m<0 ? 0x1 : 0x7F;  // minpos and maxpos
 					}
 					else {
-						frac16A = (frac16A & 0x3FFF) >> regA;
-						fracA = (uint8_t)(frac16A >> 8);
-						bitNPlusOne = (0x80 & frac16A);
-						_bits = ((uint8_t)regime + ((uint8_t)(fracA)));
-
+						frac16A = (frac16A & 0x3FFF) >> scale;
+						uint8_t fracA = (uint8_t)(frac16A >> 8);
+						bool bitNPlusOne = bool (0x80 & frac16A);
+						_bits = uint8_t(regime) + (uint8_t(fracA));
+						// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 						if (bitNPlusOne) {
-							(0x7F & frac16A) ? (bitsMore = 1) : (bitsMore = 0);
-							_bits += (_bits & 0x01) | bitsMore;
+							uint8_t moreBits = (0x7F & frac16A) ? 0x01 : 0x00;
+							_bits += (_bits & 0x01) | moreBits;
 						}
 					}
 					if (sign) _bits = -_bits & 0xFF;
