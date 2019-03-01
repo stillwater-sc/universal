@@ -88,11 +88,8 @@ namespace sw {
 					uint16_t frac16A, frac16B;
 					uint8_t fracA = 0, regime, tmp;
 					bool sign, regSA, regSB, rcarry = 0, bitNPlusOne = 0, bitsMore = 0;
-					uint8_t kA = 0;
-					uint16_t shiftRight;
-					union ui8_p8 {
-						uint8_t ui;
-					} uZ;
+					int8_t kA = 0;
+					int16_t shiftRight;
 
 					uint8_t lhs = _bits;
 					uint8_t rhs = b._bits;
@@ -178,22 +175,21 @@ namespace sw {
 
 					if (regA>6) {
 						//max or min pos. exp and frac does not matter.
-						(regSA) ? (uZ.ui = 0x7F) : (uZ.ui = 0x1);
+						_bits = regSA ? 0x7F : 0x1;
 					}
 					else {
 						frac16A = (frac16A & 0x3FFF) >> regA;
 						fracA = (uint8_t)(frac16A >> 8);
 						bitNPlusOne = (0x80 & frac16A);
-						uZ.ui = ((uint8_t)regime + ((uint8_t)(fracA)));
+						_bits = ((uint8_t)regime + ((uint8_t)(fracA)));
 
 						//n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 						if (bitNPlusOne) {
 							(0x7F & frac16A) ? (bitsMore = 1) : (bitsMore = 0);
-							uZ.ui += (uZ.ui & 1) | bitsMore;
+							_bits += (_bits & 0x01) | bitsMore;
 						}
 					}
-					if (sign) uZ.ui = -uZ.ui & 0xFF;
-					_bits = uZ.ui;
+					if (sign) _bits = -_bits & 0xFF;
 					return *this;
 				}
 				posit& operator-=(const posit& b) {
@@ -201,27 +197,23 @@ namespace sw {
 					uint16_t frac16A, frac16B;
 					uint8_t fracA = 0, regime, tmp;
 					bool sign = 0, regSA, regSB, ecarry = 0, bitNPlusOne = 0, bitsMore = 0;
-					int16_t shiftRight;
 					int8_t kA = 0;
-					union ui8_p8 {
-						uint8_t ui;
-					} uZ;
+					int16_t shiftRight;
 
 					uint8_t lhs = _bits;
 					uint8_t rhs = b._bits;
-					// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
-					sign = (bool)(lhs & 0x80);
-					(sign) ? (lhs = (-lhs & 0xFF)) : (rhs = (-rhs & 0xFF));
 					// process special cases
 					if (lhs == 0x80 || rhs == 0x80) {  // infinity
 						_bits = 0x80;
 						return *this;
 					}
 					if (lhs == 0x0 || rhs == 0x0) { // zero
-						_bits = lhs | uint8_t(-*(int8_t*)&rhs);
+						_bits = lhs | rhs;
 						return *this;
 					}
-
+					// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
+					sign = (bool)(lhs & 0x80);
+					(sign) ? (lhs = (-lhs & 0xFF)) : (rhs = (-rhs & 0xFF));
 
 					if (lhs == rhs) { //essential, if not need special handling
 						_bits = 0x0;
@@ -274,9 +266,8 @@ namespace sw {
 
 
 					if (shiftRight >= 14) {
-						uZ.ui = lhs;
-						if (sign) uZ.ui = -uZ.ui & 0xFFFF;
-						_bits = uZ.ui;
+						_bits = lhs;
+						if (sign) _bits = -_bits & 0xFFFF;
 						return *this;
 					}
 					else
@@ -307,21 +298,20 @@ namespace sw {
 
 					if (regA>6) {
 						//max or min pos. exp and frac does not matter.
-						(regSA) ? (uZ.ui = 0x7F) : (uZ.ui = 0x1);
+						_bits = regSA ? 0x7F : 0x1;
 					}
 					else {
 						frac16A = (frac16A & 0x3FFF) >> regA;
 						fracA = (uint8_t)(frac16A >> 8);
 						bitNPlusOne = (0x80 & frac16A);
-						uZ.ui = ((uint8_t)regime + ((uint8_t)(fracA)));
+						_bits = ((uint8_t)regime + ((uint8_t)(fracA)));
 
 						if (bitNPlusOne) {
 							(0x7F & frac16A) ? (bitsMore = 1) : (bitsMore = 0);
-							uZ.ui += (uZ.ui & 1) | bitsMore;
+							_bits += (_bits & 0x01) | bitsMore;
 						}
 					}
-					if (sign) uZ.ui = -uZ.ui & 0xFF;
-					_bits = uZ.ui;
+					if (sign) _bits = -_bits & 0xFF;
 					return *this;
 				}
 				posit& operator*=(const posit& b) {
