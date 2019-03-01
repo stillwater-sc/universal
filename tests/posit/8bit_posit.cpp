@@ -38,8 +38,19 @@ try {
 	cout << "Standard posit<8,0> configuration tests" << endl;
 #endif
 
-//	ValidateAddition<nbits, es>(tag, true);
-//	return 1;
+	/*
+	uint8_t bb = 0xc0;
+	uint8_t bbb = -bb;
+	cout << "b = " << hex << int(bb) << " -b = " << int(bbb) << endl;
+
+	posit<8, 0> a, b, c;
+	a = 0;
+	b = -0.5;
+	c = a + b;
+	cout << a.get() << " + " << b.get() << " = " << c.get() << "(" << c << ") reference: " << -0.5 << endl;
+	ValidateAddition<nbits, es>(tag, true);
+	return 1;
+	*/
 
 	posit<nbits,es> p;
 	cout << dynamic_range(p) << endl;
@@ -55,8 +66,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult( ValidateIntegerConversion<nbits, es>(tag, true), tag, "integer assign ");
 	nrOfFailedTestCases += ReportTestResult( ValidateConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");
 	// arithmetic tests
-//	nrOfFailedTestCases += ReportTestResult( ValidateAddition         <nbits, es>(tag, bReportIndividualTestCases), tag, "add            ");
-//	nrOfFailedTestCases += ReportTestResult( ValidateSubtraction      <nbits, es>(tag, bReportIndividualTestCases), tag, "subtract       ");
+	nrOfFailedTestCases += ReportTestResult( ValidateAddition         <nbits, es>(tag, bReportIndividualTestCases), tag, "add            ");
+	nrOfFailedTestCases += ReportTestResult( ValidateSubtraction      <nbits, es>(tag, bReportIndividualTestCases), tag, "subtract       ");
 //	nrOfFailedTestCases += ReportTestResult( ValidateMultiplication   <nbits, es>(tag, bReportIndividualTestCases), tag, "multiply       ");
 //	nrOfFailedTestCases += ReportTestResult( ValidateDivision         <nbits, es>(tag, bReportIndividualTestCases), tag, "divide         ");
 	nrOfFailedTestCases += ReportTestResult( ValidateNegation         <nbits, es>(tag, bReportIndividualTestCases), tag, "negate         ");
