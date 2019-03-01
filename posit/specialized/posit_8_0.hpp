@@ -109,41 +109,13 @@ namespace sw {
 					
 					// decode the regime of lhs
 					int8_t m = 0; // pattern length
-					uint8_t tmp = (lhs << 2) & 0xFF;
-					if (lhs & 0x40) {  // positive regimes
-						while (tmp >> 7) {
-							m++;
-							tmp = (tmp << 1) & 0xFF;
-						}
-					}
-					else {             // negative regimes
-						m = -1;
-						while (!(tmp >> 7)) {
-							m--;
-							tmp = (tmp << 1) & 0xFF;
-						}
-						tmp &= 0x7F;
-					}
-					uint16_t frac16A = (0x80 | tmp) << 7;
+					uint8_t remaining = 0;
+					decode_regime(lhs, m, remaining);
+					uint16_t frac16A = (0x80 | remaining) << 7;
 					int8_t shiftRight = m;
-
-					// decode regime of the rhs
-					tmp = (rhs << 2) & 0xFF;
-					if (rhs & 0x40) {  // positive regimes
-						while (tmp >> 7) {
-							shiftRight--;
-							tmp = (tmp << 1) & 0xFF;
-						}
-					}
-					else {             // negative regimes
-						shiftRight++;
-						while (!(tmp >> 7)) {
-							shiftRight++;
-							tmp = (tmp << 1) & 0xFF;
-						}
-						tmp &= 0x7F;
-					}
-					uint16_t frac16B = (0x80 | tmp) << 7;
+					// adjust shift and extract fraction bits of rhs
+					adjust(rhs, shiftRight, remaining);
+					uint16_t frac16B = (0x80 | remaining) << 7;
 
 					// Work-around CLANG (LLVM) compiler when shifting right more than number of bits
 					(shiftRight>7) ? (frac16B = 0) : (frac16B >>= shiftRight); //frac32B >>= shiftRight
@@ -211,41 +183,13 @@ namespace sw {
 
 					// decode the regime of lhs
 					int8_t m = 0; // pattern length
-					uint8_t tmp = (lhs << 2) & 0xFF;
-					if (lhs & 0x40) {  // positive regimes
-						while (tmp >> 7) {
-							m++;
-							tmp = (tmp << 1) & 0xFF;
-						}
-					}
-					else {
-						m = -1;
-						while (!(tmp >> 7)) {
-							m--;
-							tmp = (tmp << 1) & 0xFF;
-						}
-						tmp &= 0x7F;
-					}
-					uint16_t frac16A = (0x80 | tmp) << 7;
+					uint8_t remaining = 0;
+					decode_regime(lhs, m, remaining);
+					uint16_t frac16A = (0x80 | remaining) << 7;
 					int8_t shiftRight = m;
-
-					// decode the regime of rhs
-					tmp = (rhs << 2) & 0xFF;
-					if (rhs & 0x40) {
-						while (tmp >> 7) {
-							shiftRight--;
-							tmp = (tmp << 1) & 0xFF;
-						}
-					}
-					else {
-						shiftRight++;
-						while (!(tmp >> 7)) {
-							shiftRight++;
-							tmp = (tmp << 1) & 0xFF;
-						}
-						tmp &= 0x7F;
-					}
-					uint16_t frac16B = (0x80 | tmp) << 7;
+					// adjust shift and extract fraction bits of rhs
+					adjust(rhs, shiftRight, remaining);
+					uint16_t frac16B = (0x80 | remaining) << 7;
 
 					if (shiftRight >= 14) {
 						_bits = lhs;
@@ -295,6 +239,17 @@ namespace sw {
 					return *this;
 				}
 				posit& operator*=(const posit& b) {
+					uint8_t lhs = _bits;
+					uint8_t rhs = b._bits;
+					// process special cases
+					if (isnar() || b.isnar()) {
+						_bits = 0x80;
+						return *this;
+					}
+					if (iszero() || b.iszero()) {
+						_bits = 0x00;
+						return *this;
+					}
 
 					return *this;
 				}
@@ -326,27 +281,13 @@ namespace sw {
 					return p;
 				}
 				// SELECTORS
-				inline bool isnar() const {
-					return (_bits == 0x80);
-				}
-				inline bool iszero() const {
-					return (_bits == 0x00);
-				}
-				inline bool isone() const { // pattern 010000....
-					return (_bits == 0x40);
-				}
-				inline bool isminusone() const { // pattern 110000...
-					return (_bits == 0xC0);
-				}
-				inline bool isneg() const {
-					return (_bits & 0x80);
-				}
-				inline bool ispos() const {
-					return !isneg();
-				}
-				inline bool ispowerof2() const {
-					return !(_bits & 0x1);
-				}
+				inline bool isnar() const      { return (_bits == 0x80); }
+				inline bool iszero() const     { return (_bits == 0x00); }
+				inline bool isone() const      { return (_bits == 0x40); } // pattern 010000...
+				inline bool isminusone() const { return (_bits == 0xC0); } // pattern 110000...
+				inline bool isneg() const      { return (_bits & 0x80); }
+				inline bool ispos() const      { return !isneg(); }
+				inline bool ispowerof2() const { return !(_bits & 0x1); }
 
 				inline int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
 
@@ -466,6 +407,42 @@ namespace sw {
 					return *this;
 				}
 
+				// helper method
+				// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder
+				inline void decode_regime(const uint8_t bits, int8_t& m, uint8_t& remaining) {
+					remaining = (bits << 2) & 0xFF;
+					if (bits & 0x40) {  // positive regimes
+						while (remaining >> 7) {
+							m++;
+							remaining = (remaining << 1) & 0xFF;
+						}
+					}
+					else {              // negative regimes
+						m = -1;
+						while (!(remaining >> 7)) {
+							m--;
+							remaining = (remaining << 1) & 0xFF;
+						}
+						remaining &= 0x7F;
+					}
+				}
+				inline void adjust(const uint8_t bits, int8_t& shiftRight, uint8_t& remaining) {
+					remaining = (bits << 2) & 0xFF;
+					if (bits & 0x40) {  // positive regimes
+						while (remaining >> 7) {
+							shiftRight--;
+							remaining = (remaining << 1) & 0xFF;
+						}
+					}
+					else {              // negative regimes
+						shiftRight++;
+						while (!(remaining >> 7)) {
+							shiftRight++;
+							remaining = (remaining << 1) & 0xFF;
+						}
+						remaining &= 0x7F;
+					}
+				}
 				// I/O operators
 				friend std::ostream& operator<< (std::ostream& ostr, const posit<NBITS_IS_8, ES_IS_0>& p);
 				friend std::istream& operator>> (std::istream& istr, posit<NBITS_IS_8, ES_IS_0>& p);
@@ -560,6 +537,7 @@ namespace sw {
 				return result;
 
 			}
+			// binary operator*() is provided by generic class
 
 #if POSIT_ENABLE_LITERALS
 			// posit - literal logic functions
