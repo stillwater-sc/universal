@@ -47,7 +47,36 @@ namespace sw {
 
 				// assignment operators for native types
 				posit& operator=(const signed char rhs)       { 
-					return float_assign(rhs);
+					// special case for speed as this is a common initialization
+					if (rhs == 0) {
+						_bits = 0x00;
+						return *this;
+					}
+
+					bool sign = bool(rhs & 0x80);
+					int8_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
+					uint8_t raw;
+					if (v > 48 || v == -128) { // +-maxpos, 0x80 is special in int8 arithmetic as it is its own negation
+						raw = 0x7F;
+					}
+					else {
+						uint8_t mask = 0x40;
+						int8_t k = 6;
+						uint8_t fraction_bits = v;
+						while (!(fraction_bits & mask)) {
+							k--;
+							fraction_bits <<= 1;
+						}
+						fraction_bits = (fraction_bits ^ mask);
+						raw = (0x7F ^ (0x3F >> k)) | (fraction_bits >> (k + 1));
+
+						mask = 0x1 << k; //bitNPlusOne
+						if (mask & fraction_bits) {
+							if (((mask - 1) & fraction_bits) | ((mask << 1) & fraction_bits)) raw++;
+						}
+					}
+					_bits = sign ? -raw : raw;
+					return *this;
 				}
 				posit& operator=(const short rhs)             { return operator=((signed char)(rhs)); }
 				posit& operator=(const int rhs)               { return operator=((signed char)(rhs)); }
