@@ -18,8 +18,9 @@ namespace sw {
 		// standardized structure to hold performance measurement results
 		// 
 		struct OperatorPerformance {
-			OperatorPerformance() : convert(0), prefix(0), postfix(0), neg(0), add(0), sub(0), mul(0), div(0), sqrt(0) {}
-			float convert;
+			OperatorPerformance() : intconvert(0), ieeeconvert(0), prefix(0), postfix(0), neg(0), add(0), sub(0), mul(0), div(0), sqrt(0) {}
+			float intconvert;
+			float ieeeconvert;
 			float prefix;
 			float postfix;
 			float neg;
@@ -56,7 +57,8 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		void ReportPerformance(std::ostream& ostr, std::string header, OperatorPerformance &perf) {
 			ostr << "Performance Report: " << header << '\n'
-				<< "Conversion      : " << to_scientific(perf.convert) << "POPS\n"
+				<< "Conversion int  : " << to_scientific(perf.intconvert) << "POPS\n"
+				<< "Conversion ieee : " << to_scientific(perf.ieeeconvert) << "POPS\n"
 				<< "Prefix          : " << to_scientific(perf.prefix) << "POPS\n"
 				<< "Postfix         : " << to_scientific(perf.postfix) << "POPS\n"
 				<< "Negation        : " << to_scientific(perf.neg) << "POPS\n"
@@ -68,15 +70,28 @@ namespace sw {
 				<< std::endl;
 		}
 
-
-		// enumerate all conversion cases for a posit configuration
+		// Integer conversion case for a posit configuration
 		template<size_t nbits, size_t es>
-		int MeasureConversionPerformance(int &positives, int &negatives) {
+		int MeasureIntegerConversionPerformance(int &positives, int &negatives) {
+			posit<nbits, es> p(0);
+
+			positives = 0, negatives = 0;
+			for (int i = -(NR_TEST_CASES >> 1); i < (NR_TEST_CASES >> 1); ++i) {
+				p = i;
+				p >= 0 ? positives++ : negatives++;
+			}
+			return positives + negatives;
+		}
+
+
+		// IEEE conversion case for a posit configuration
+		template<size_t nbits, size_t es>
+		int MeasureIeeeConversionPerformance(int &positives, int &negatives) {
 			posit<nbits, es> p(0);
 
 			positives = 0, negatives = 0;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
-				p = 0.031625;
+				p = 1.0;
 				p >= 0 ? positives++ : negatives++;
 			}
 			return positives + negatives;
@@ -445,11 +460,18 @@ namespace sw {
 			double elapsed;
 
 			begin = steady_clock::now();
-			    MeasureConversionPerformance<nbits, es>(positives, negatives);
+			    MeasureIntegerConversionPerformance<nbits, es>(positives, negatives);
 			end = steady_clock::now();
 			time_span = duration_cast<duration<double>>(end - begin);
 			elapsed = time_span.count();
-			report.convert = float((positives + negatives) / elapsed);
+			report.intconvert = float((positives + negatives) / elapsed);
+
+			begin = steady_clock::now();
+				MeasureIeeeConversionPerformance<nbits, es>(positives, negatives);
+			end = steady_clock::now();
+			time_span = duration_cast<duration<double>>(end - begin);
+			elapsed = time_span.count();
+			report.ieeeconvert = float((positives + negatives) / elapsed);
 
 			begin = steady_clock::now();
 			    MeasurePrefixPerformance<nbits, es>(positives, negatives);
