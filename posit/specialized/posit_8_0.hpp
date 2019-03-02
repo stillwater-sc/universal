@@ -238,6 +238,8 @@ namespace sw {
 
 					// calculate the sign of the result
 					bool sign = bool(lhs & 0x80) ^ bool(rhs & 0x80);
+					lhs = lhs & 0x80 ? -lhs : lhs;
+					rhs = rhs & 0x80 ? -rhs : rhs;
 
 					// decode the regime of lhs
 					int8_t m = 0; // pattern length
@@ -245,7 +247,7 @@ namespace sw {
 					decode_regime(lhs, m, remaining);
 					uint8_t lhs_fraction = (0x80 | remaining);
 					// adjust shift and extract fraction bits of rhs
-					adjust(rhs, m, remaining);
+					extract(rhs, m, remaining);
 					uint8_t rhs_fraction = (0x80 | remaining);
 					uint16_t result_fraction = uint16_t(lhs_fraction) * uint16_t(rhs_fraction);
 
@@ -444,6 +446,23 @@ namespace sw {
 						shiftRight++;
 						while (!(remaining >> 7)) {
 							shiftRight++;
+							remaining = (remaining << 1) & 0xFF;
+						}
+						remaining &= 0x7F;
+					}
+				}
+				inline void extract(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
+					remaining = (bits << 2) & 0xFF;
+					if (bits & 0x40) {  // positive regimes
+						while (remaining >> 7) {
+							m++;
+							remaining = (remaining << 1) & 0xFF;
+						}
+					}
+					else {              // negative regimes
+						m--;
+						while (!(remaining >> 7)) {
+							m--;
 							remaining = (remaining << 1) & 0xFF;
 						}
 						remaining &= 0x7F;
