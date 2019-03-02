@@ -821,7 +821,8 @@ namespace sw {
 		// Posit NaR can be checked for equality/inequality
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicEqual() {
-			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+			const unsigned max = nbits > 10 ? 10 : nbits;
+			size_t NR_TEST_CASES = (unsigned(1) << max);
 			int nrOfFailedTestCases = 0;
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
@@ -865,7 +866,8 @@ return nrOfFailedTestCases;
 		// Posit NaR can be checked for equality/inequality
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicNotEqual() {
-			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+			const unsigned max = nbits > 10 ? 10 : nbits;
+			size_t NR_TEST_CASES = (unsigned(1) << max);
 			int nrOfFailedTestCases = 0;
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
@@ -911,7 +913,8 @@ return nrOfFailedTestCases;
 		// Posit NaR is smaller than any other value
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicLessThan() {
-			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+			const unsigned max = nbits > 10 ? 10 : nbits;
+			size_t NR_TEST_CASES = (unsigned(1) << max);
 			int nrOfFailedTestCases = 0;
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
@@ -948,7 +951,8 @@ return nrOfFailedTestCases;
 		// Any number is greater-than posit NaR
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicGreaterThan() {
-			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+			const unsigned max = nbits > 10 ? 10 : nbits;
+			size_t NR_TEST_CASES = (unsigned(1) << max);
 			int nrOfFailedTestCases = 0;
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
@@ -982,7 +986,8 @@ return nrOfFailedTestCases;
 		// Posit NaR is smaller or equal than any other value
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicLessOrEqualThan() {
-			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+			const unsigned max = nbits > 10 ? 10 : nbits;
+			size_t NR_TEST_CASES = (unsigned(1) << max);
 			int nrOfFailedTestCases = 0;
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
@@ -1017,7 +1022,8 @@ return nrOfFailedTestCases;
 		// Any number is greater-or-equal-than posit NaR
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicGreaterOrEqualThan() {
-			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+			const unsigned max = nbits > 10 ? 10 : nbits;
+			size_t NR_TEST_CASES = (unsigned(1) << max);
 			int nrOfFailedTestCases = 0;
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
@@ -1056,12 +1062,13 @@ return nrOfFailedTestCases;
 		// where something special happens in the posit arithmetic, such as rounding.
 
 		// operation opcodes
-		const int OPCODE_NOP = 0;
-		const int OPCODE_ADD = 1;
-		const int OPCODE_SUB = 2;
-		const int OPCODE_MUL = 3;
-		const int OPCODE_DIV = 4;
-		const int OPCODE_RAN = 5;
+		const int OPCODE_NOP  = 0;
+		const int OPCODE_ADD  = 1;
+		const int OPCODE_SUB  = 2;
+		const int OPCODE_MUL  = 3;
+		const int OPCODE_DIV  = 4;
+		const int OPCODE_SQRT = 5;
+		const int OPCODE_RAN  = 6;
 
 		template<size_t nbits, size_t es>
 		void execute(int opcode, double da, double db, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& preference, posit<nbits, es>& presult) {
@@ -1087,6 +1094,10 @@ return nrOfFailedTestCases;
 			case OPCODE_DIV:
 				presult = pa / pb;
 				reference = da / db;
+				break;
+			case OPCODE_SQRT:
+				presult = sw::unum::sqrt(pa);
+				reference = std::sqrt(da);
 				break;
 			}
 			preference = reference;
@@ -1118,6 +1129,9 @@ return nrOfFailedTestCases;
 				break;
 			case OPCODE_DIV:
 				operation_string = "/";
+				break;
+			case OPCODE_SQRT:
+				operation_string = "sqrt";
 				break;
 			}
 			// generate the full state space set of valid posit values
