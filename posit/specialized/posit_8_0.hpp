@@ -46,16 +46,18 @@ namespace sw {
 				posit(const long double initial_value)        { *this = initial_value; }
 
 				// assignment operators for native types
-				posit& operator=(const signed char rhs)       { return operator=((long long)(rhs)); }
-				posit& operator=(const short rhs)             { return operator=((long long)(rhs)); }
-				posit& operator=(const int rhs)               { return operator=((long long)(rhs)); }
-				posit& operator=(const long rhs)              { return operator=((long long)(rhs)); }
-				posit& operator=(const long long rhs)         { return float_assign((long double)rhs); }
-				posit& operator=(const char rhs)              { return operator=((long long)(rhs)); }
-				posit& operator=(const unsigned short rhs)    { return operator=((long long)(rhs)); }
-				posit& operator=(const unsigned int rhs)      { return operator=((long long)(rhs)); }
-				posit& operator=(const unsigned long rhs)     { return operator=((long long)(rhs)); }
-				posit& operator=(const unsigned long long rhs){ return float_assign((long double)rhs); }
+				posit& operator=(const signed char rhs)       { 
+					return float_assign(rhs);
+				}
+				posit& operator=(const short rhs)             { return operator=((signed char)(rhs)); }
+				posit& operator=(const int rhs)               { return operator=((signed char)(rhs)); }
+				posit& operator=(const long rhs)              { return operator=((signed char)(rhs)); }
+				posit& operator=(const long long rhs)         { return operator=((signed char)(rhs)); }
+				posit& operator=(const char rhs)              { return operator=((signed char)(rhs)); }
+				posit& operator=(const unsigned short rhs)    { return operator=((signed char)(rhs)); }
+				posit& operator=(const unsigned int rhs)      { return operator=((signed char)(rhs)); }
+				posit& operator=(const unsigned long rhs)     { return operator=((signed char)(rhs)); }
+				posit& operator=(const unsigned long long rhs){ return operator=((signed char)(rhs)); }
 				posit& operator=(const float rhs)             { return float_assign(rhs); }
 				posit& operator=(const double rhs)            { return float_assign(rhs); }
 				posit& operator=(const long double rhs)       { return float_assign(rhs); }
@@ -118,7 +120,7 @@ namespace sw {
 					uint16_t frac16B = (0x80 | remaining) << 7;
 
 					// Work-around CLANG (LLVM) compiler when shifting right more than number of bits
-					(shiftRight>7) ? (frac16B = 0) : (frac16B >>= shiftRight); //frac32B >>= shiftRight
+					(shiftRight>7) ? (frac16B = 0) : (frac16B >>= shiftRight); 
 
 					frac16A += frac16B;
 
