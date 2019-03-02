@@ -236,6 +236,27 @@ namespace sw {
 						return *this;
 					}
 
+					// calculate the sign of the result
+					bool sign = bool(lhs & 0x80) ^ bool(rhs & 0x80);
+
+					// decode the regime of lhs
+					int8_t m = 0; // pattern length
+					uint8_t remaining = 0;
+					decode_regime(lhs, m, remaining);
+					uint8_t lhs_fraction = (0x80 | remaining);
+					// adjust shift and extract fraction bits of rhs
+					adjust(rhs, m, remaining);
+					uint8_t rhs_fraction = (0x80 | remaining);
+					uint16_t result_fraction = uint16_t(lhs_fraction) * uint16_t(rhs_fraction);
+
+					bool rcarry = bool(result_fraction & 0x8000);
+					if (rcarry) {
+						m++;
+						result_fraction >>= 1;
+					}
+
+					_bits = round(m, result_fraction);
+					if (sign) _bits = -_bits & 0xFF;
 					return *this;
 				}
 				posit& operator/=(const posit& b) {
