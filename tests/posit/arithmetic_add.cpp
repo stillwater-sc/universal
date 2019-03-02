@@ -27,6 +27,7 @@
 #endif
 // posit type manipulators such as pretty printers
 #include "../../posit/posit_manipulators.hpp"
+#include "../../posit/math_sqrt.hpp"   // due to ValidateThroughRandoms support for sqrt randoms
 // test helpers
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
