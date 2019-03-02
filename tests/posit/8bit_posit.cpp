@@ -158,21 +158,6 @@ try {
 	cout << "Standard posit<8,0> configuration tests" << endl;
 #endif
 
-	// FAIL       +0.015625 *       +0.015625 !=       +0.015625 instead it yielded              +1 00000001 vs 01000000
-	// FAIL       +0.015625 *             -64 !=              -1 instead it yielded       -0.015625 11000000 vs 11111111
-	posit8_t a, b, c;
-	a = 0x01;
-	b = 0x81;
-	c = p8_mul(a, b);
-	cout << "c = 0x" << hex << int(c) << dec << endl;
-
-	posit<nbits, es> x, y, z;
-	x = 0.015625f;
-	y = -64.0f;
-	z = x * y;
-	cout << "x = " << x << " y = " << y << " " << posit_format(y) << endl;
-	cout << "z = " << z << endl;
-
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl;
 
@@ -193,6 +178,7 @@ try {
 //	nrOfFailedTestCases += ReportTestResult( ValidateDivision         <nbits, es>(tag, bReportIndividualTestCases), tag, "divide         ");
 	nrOfFailedTestCases += ReportTestResult( ValidateNegation         <nbits, es>(tag, bReportIndividualTestCases), tag, "negate         ");
 //	nrOfFailedTestCases += ReportTestResult( ValidateReciprocation    <nbits, es>(tag, bReportIndividualTestCases), tag, "reciprocate    ");
+	nrOfFailedTestCases += ReportTestResult(ValidateSqrt              <nbits, es>(tag, bReportIndividualTestCases), tag, "sqrt           ");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
