@@ -325,8 +325,7 @@ namespace sw {
 					return tmp;
 				}
 				posit reciprocate() const {
-					posit p;
-
+					posit p = 1.0 / *this;
 					return p;
 				}
 				// SELECTORS
