@@ -145,7 +145,7 @@ namespace sw {
 					uint16_t frac16A = (0x80 | remaining) << 7;
 					int8_t shiftRight = m;
 					// adjust shift and extract fraction bits of rhs
-					adjust(rhs, shiftRight, remaining);
+					extractAddand(rhs, shiftRight, remaining);
 					uint16_t frac16B = (0x80 | remaining) << 7;
 
 					// Work-around CLANG (LLVM) compiler when shifting right more than number of bits
@@ -195,7 +195,7 @@ namespace sw {
 					uint16_t frac16A = (0x80 | remaining) << 7;
 					int8_t shiftRight = m;
 					// adjust shift and extract fraction bits of rhs
-					adjust(rhs, shiftRight, remaining);
+					extractAddand(rhs, shiftRight, remaining);
 					uint16_t frac16B = (0x80 | remaining) << 7;
 
 					// do the subtraction of the fractions
@@ -247,7 +247,7 @@ namespace sw {
 					decode_regime(lhs, m, remaining);
 					uint8_t lhs_fraction = (0x80 | remaining);
 					// adjust shift and extract fraction bits of rhs
-					extract(rhs, m, remaining);
+					extractMultiplicand(rhs, m, remaining);
 					uint8_t rhs_fraction = (0x80 | remaining);
 					uint16_t result_fraction = uint16_t(lhs_fraction) * uint16_t(rhs_fraction);
 
@@ -257,11 +257,52 @@ namespace sw {
 						result_fraction >>= 1;
 					}
 
+					// round
 					_bits = round(m, result_fraction);
 					if (sign) _bits = -_bits & 0xFF;
 					return *this;
 				}
 				posit& operator/=(const posit& b) {
+					uint8_t lhs = _bits;
+					uint8_t rhs = b._bits;
+					// process special cases
+					if (isnar() || b.isnar() || b.iszero()) {
+						_bits = 0x80;
+						return *this;
+					}
+					if (iszero()) {
+						_bits = 0x00;
+						return *this;
+					}
+
+					// calculate the sign of the result
+					bool sign = bool(lhs & 0x80) ^ bool(rhs & 0x80);
+					lhs = lhs & 0x80 ? -lhs : lhs;
+					rhs = rhs & 0x80 ? -rhs : rhs;
+
+					// decode the regime of lhs
+					int8_t m = 0; // pattern length
+					uint8_t remaining = 0;
+					decode_regime(lhs, m, remaining);
+					uint16_t lhs_fraction = (0x80 | remaining) << 7;
+					// adjust shift and extract fraction bits of rhs
+					extractDividand(rhs, m, remaining);
+					uint8_t rhs_fraction = (0x80 | remaining);
+					div_t result = div(lhs_fraction, uint16_t(rhs_fraction));
+					uint16_t result_fraction = result.quot;
+					uint16_t remainder = result.rem;
+
+					if (result_fraction != 0) {
+						bool rcarry = result_fraction >> 7; // this is the hidden bit (7th bit) , extreme right bit is bit 0
+						if (!rcarry) {
+							--m;
+							result_fraction <<= 1;
+						}
+					}
+
+					// round
+					_bits = adjustAndRound(m, result_fraction, remainder != 0);
+					if (sign) _bits = -_bits & 0xFF;
 
 					return *this;
 				}
@@ -421,48 +462,65 @@ namespace sw {
 					remaining = (bits << 2) & 0xFF;
 					if (bits & 0x40) {  // positive regimes
 						while (remaining >> 7) {
-							m++;
+							++m;
 							remaining = (remaining << 1) & 0xFF;
 						}
 					}
 					else {              // negative regimes
 						m = -1;
 						while (!(remaining >> 7)) {
-							m--;
+							--m;
 							remaining = (remaining << 1) & 0xFF;
 						}
 						remaining &= 0x7F;
 					}
 				}
-				inline void adjust(const uint8_t bits, int8_t& shiftRight, uint8_t& remaining) const {
+				inline void extractAddand(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
 					remaining = (bits << 2) & 0xFF;
 					if (bits & 0x40) {  // positive regimes
 						while (remaining >> 7) {
-							shiftRight--;
+							--m;
 							remaining = (remaining << 1) & 0xFF;
 						}
 					}
 					else {              // negative regimes
-						shiftRight++;
+						++m;
 						while (!(remaining >> 7)) {
-							shiftRight++;
+							++m;
 							remaining = (remaining << 1) & 0xFF;
 						}
 						remaining &= 0x7F;
 					}
 				}
-				inline void extract(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
+				inline void extractMultiplicand(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
 					remaining = (bits << 2) & 0xFF;
 					if (bits & 0x40) {  // positive regimes
 						while (remaining >> 7) {
-							m++;
+							++m;
 							remaining = (remaining << 1) & 0xFF;
 						}
 					}
 					else {              // negative regimes
-						m--;
+						--m;
 						while (!(remaining >> 7)) {
-							m--;
+							--m;
+							remaining = (remaining << 1) & 0xFF;
+						}
+						remaining &= 0x7F;
+					}
+				}
+				inline void extractDividand(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
+					remaining = (bits << 2) & 0xFF;
+					if (bits & 0x40) {  // positive regimes
+						while (remaining >> 7) {
+							--m;
+							remaining = (remaining << 1) & 0xFF;
+						}
+					}
+					else {              // negative regimes
+						++m;
+						while (!(remaining >> 7)) {
+							++m;
 							remaining = (remaining << 1) & 0xFF;
 						}
 						remaining &= 0x7F;
@@ -490,6 +548,43 @@ namespace sw {
 						// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 						if (bitNPlusOne) {
 							uint8_t moreBits = (0x7F & fraction) ? 0x01 : 0x00;
+							bits += (bits & 0x01) | moreBits;
+						}
+					}
+					return bits;
+				}
+				inline uint8_t adjustAndRound(const int8_t k, uint16_t fraction, bool nonZeroRemainder) const {
+					uint8_t scale, regime, bits;
+					if (k < 0) {
+						scale = (-k & 0xFF);
+						regime = 0x40 >> scale;
+					}
+					else {
+						scale = k + 1;
+						regime = 0x7F - (0x7F >> scale);
+					}
+
+					if (scale > 6) {
+						bits = k<0 ? 0x1 : 0x7F;  // minpos and maxpos
+					}
+					else {
+						//remove carry and rcarry bits and shift to correct position
+						fraction &= 0x7F;
+						uint8_t final_fbits = (uint_fast16_t)fraction >> (scale + 1);
+						bool bitNPlusOne = (0x1 & (fraction >> scale));
+						bits = uint8_t(regime) + uint8_t(final_fbits);
+#ifdef NOW
+						std::cout << std::hex;
+						std::cout << "fraction raw   = " << int(fraction) << std::endl;
+						std::cout << "fraction final = " << int(final_fbits) << std::endl;
+						std::cout << "posit bits     = " << int(bits) << std::endl;
+						std::cout << std::dec;
+#endif
+						if (bitNPlusOne) {
+							uint8_t moreBits = (((1 << scale) - 1) & fraction) ? 0x01 : 0x00;
+							if (nonZeroRemainder) moreBits = 0x01;
+							//std::cout << "bitsMore = " << (moreBits ? "true" : "false") << std::endl;
+							// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 							bits += (bits & 0x01) | moreBits;
 						}
 					}
