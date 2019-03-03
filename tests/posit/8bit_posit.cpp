@@ -1,13 +1,14 @@
 // 8bit_posit.cpp: Functionality tests for standard 8-bit posits
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
 // Configure the posit template environment
 // first: enable fast specialized posit<8,0>
-#define POSIT_FAST_SPECIALIZATION
+// #define POSIT_FAST_SPECIALIZATION
+#define POSIT_FAST_POSIT_8_0 1
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
@@ -32,7 +33,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	std::string tag = " posit<8,0>";
 
-#if defined(POSIT_FAST_POSIT_8_0)
+#if POSIT_FAST_POSIT_8_0
 	cout << "Fast specialization posit<8,0> configuration tests" << endl;
 #else
 	cout << "Standard posit<8,0> configuration tests" << endl;
