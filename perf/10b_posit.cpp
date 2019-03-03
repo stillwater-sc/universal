@@ -1,4 +1,4 @@
-// 32b_posit.cpp: performance characterization of standard posit<32,2> configuration
+// 10b_posit.cpp: performance characterization of standard posit<10,1> configuration
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
@@ -15,12 +15,12 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
+	constexpr size_t nbits = 10;
+	constexpr size_t es = 1;
 
 	OperatorPerformance perfReport;
 	GeneratePerformanceReport<nbits, es>(perfReport);
-	ReportPerformance<nbits, es>(cout, "posit<32,2>", perfReport);
+	ReportPerformance<nbits, es>(cout, "posit<10,1>", perfReport);
 
 	return EXIT_SUCCESS;
 }

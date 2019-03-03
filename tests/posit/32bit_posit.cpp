@@ -1,10 +1,14 @@
 // 32bit_posit.cpp: Functionality tests for standard 32-bit posits
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
-// enable/disable posit arithmetic exceptions
+// Configure the posit template environment
+// first: enable fast specialized posit<32,2>
+// #define POSIT_FAST_SPECIALIZATION
+#define POSIT_FAST_POSIT_32_2 0
+// second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
 #include "../test_helpers.hpp"
@@ -28,7 +32,11 @@ try {
 	bool bReportIndividualTestCases = false;
 	std::string tag = " posit<32,2>";
 
+#if POSIT_FAST_POSIT_32_2
+	cout << "Fast specialization posit<32,2> configuration tests" << endl;
+#else
 	cout << "Standard posit<32,2> configuration tests" << endl;
+#endif
 
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
@@ -41,6 +49,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
 	// conversion tests
+	// disabled until we can constrain the state space 2^33 is too big
 //	nrOfFailedTestCases += ReportTestResult( ValidateIntegerConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "integer assign ");
 //	nrOfFailedTestCases += ReportTestResult( ValidateConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");
 

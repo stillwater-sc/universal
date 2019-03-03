@@ -101,7 +101,7 @@ void GenerateLookupTable(UNARY_ARITHMETIC_OPERATOR op) {
 	std::cout << std::hex;
 	for (size_t i = 0; i < nr_of_posits; i += 8) {
 		for (int j = 0; j < 8; ++j) {
-			unsigned index = i + j;
+			size_t index = i + j;
 			//std::cout << "index[" << index << "]";
 			pa.set_raw_bits(index);
 			switch (op) {
