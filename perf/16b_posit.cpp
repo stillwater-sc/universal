@@ -1,6 +1,6 @@
-// posit_8b.cpp: performance characterization of standard posit<8,0> configuration
+// 16b_posit.cpp: performance characterization of standard posit<16,1> configuration
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

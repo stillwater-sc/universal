@@ -1,6 +1,6 @@
-// 32b_posit.cpp: performance characterization of standard posit<32,2> configuration
+// 48b_posit.cpp: performance characterization of standard posit<48,3> configuration
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -15,12 +15,12 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
+	constexpr size_t nbits = 48;
+	constexpr size_t es = 3;
 
 	OperatorPerformance perfReport;
 	GeneratePerformanceReport<nbits, es>(perfReport);
-	ReportPerformance<nbits, es>(cout, "posit<32,2>", perfReport);
+	ReportPerformance<nbits, es>(cout, "posit<48,3>", perfReport);
 
 	return EXIT_SUCCESS;
 }
