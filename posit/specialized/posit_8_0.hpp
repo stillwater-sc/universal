@@ -650,7 +650,7 @@ namespace sw {
 				return !operator==(lhs, rhs);
 			}
 			inline bool operator< (const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
-				return *(signed char*)(&lhs._bits) < *(signed char*)(&rhs._bits);
+				return (signed char)(lhs._bits) < (signed char)(rhs._bits);
 			}
 			inline bool operator> (const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
 				return operator< (rhs, lhs);
