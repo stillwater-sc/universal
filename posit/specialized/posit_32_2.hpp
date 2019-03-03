@@ -65,7 +65,7 @@ namespace sw {
 			}
 			constexpr uint32_t sign_mask = 0x8000'0000;
 			bool sign = bool(rhs & sign_mask);
-			int32_t v = sign ? -rhs : rhs; // project to positive side of the projective reals
+			uint32_t v = sign ? -rhs : rhs; // project to positive side of the projective reals
 			uint32_t raw;
 			if (v == sign_mask) { // +-maxpos, 0x8000'0000 is special in int32 arithmetic as it is its own negation
 				raw = sign_mask;
