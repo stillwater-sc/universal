@@ -10,7 +10,7 @@ namespace sw {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #ifndef POSIT_FAST_POSIT_32_2
-  #ifdef POSIT_FAST_SPECIALIZATION
+  #if defined(POSIT_FAST_SPECIALIZATION)
     #define POSIT_FAST_POSIT_32_2 1
   #else
     #define POSIT_FAST_POSIT_32_2 0
@@ -18,6 +18,7 @@ namespace sw {
 #endif
 
 #if POSIT_FAST_POSIT_32_2
+
 	// fast specialized posit<32,2>
 	template<>
 	class posit<NBITS_IS_32, ES_IS_2> {
@@ -53,47 +54,89 @@ namespace sw {
 		posit(const long double initial_value)        { *this = initial_value; }
 
 		// assignment operators for native types
-		posit& operator=(const signed char rhs)       { 
+		posit& operator=(const signed char rhs)       { return operator=((long)(rhs)); }
+		posit& operator=(const short rhs)             { return operator=((long)(rhs)); }
+		posit& operator=(const int rhs)               { return operator=((long)(rhs)); }
+		posit& operator=(const long rhs) {
 			// special case for speed as this is a common initialization
 			if (rhs == 0) {
-				_bits = 0x00;
+				_bits = 0x0;
 				return *this;
 			}
-
-			bool sign = bool(rhs & 0x80);
-			int8_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
-			uint8_t raw;
-			if (v > 48 || v == -128) { // +-maxpos, 0x80 is special in int8 arithmetic as it is its own negation
-				raw = 0x7F;
+			constexpr uint32_t sign_mask = 0x8000'0000;
+			bool sign = bool(rhs & sign_mask);
+			int32_t v = sign ? -rhs : rhs; // project to positive side of the projective reals
+			uint32_t raw;
+			if (v == sign_mask) { // +-maxpos, 0x8000'0000 is special in int32 arithmetic as it is its own negation
+				raw = sign_mask;
 			}
-			else {
-				uint8_t mask = 0x40;
-				int8_t k = 6;
-				uint8_t fraction_bits = v;
-				while (!(fraction_bits & mask)) {
-					k--;
+			else if (v > 0xFFFFFBFF) { // 4294966271
+				raw = 0x7FC0'0000;     // 4294967296
+			}
+			else if (v < 0x2) {        // 0 and 1
+				raw = (v << 30);
+			}
+			else {				
+				int8_t m = 31;
+				uint32_t fraction_bits = v;
+				while (!(fraction_bits & sign_mask)) {
+					--m;
 					fraction_bits <<= 1;
 				}
-				fraction_bits = (fraction_bits ^ mask);
-				raw = (0x7F ^ (0x3F >> k)) | (fraction_bits >> (k + 1));
+				int8_t k = (m >> 2);
+				uint32_t exponent_bits = (m & 0x3) << (27 - k);
+				fraction_bits = (fraction_bits ^ sign_mask);
+				raw = (0x7FFF'FFFF ^ (0x3FFF'FFFF >> k)) | exponent_bits | (fraction_bits >> (k + 4));
 
-				mask = 0x1 << k; //bitNPlusOne
-				if (mask & fraction_bits) {
-					if (((mask - 1) & fraction_bits) | ((mask << 1) & fraction_bits)) raw++;
+				uint32_t fraction_bit_mask = 0x8 << k; //bitNPlusOne
+				if (fraction_bit_mask & fraction_bits) {
+					if (((fraction_bit_mask - 1) & fraction_bits) | ((fraction_bit_mask << 1) & fraction_bits)) raw++;
 				}
 			}
-			_bits = sign ? -raw : raw;
+			_bits = sign ? uint32_t(-long(raw)) : raw;
 			return *this;
 		}
-		posit& operator=(const short rhs)             { return operator=((signed char)(rhs)); }
-		posit& operator=(const int rhs)               { return operator=((signed char)(rhs)); }
-		posit& operator=(const long rhs)              { return operator=((signed char)(rhs)); }
-		posit& operator=(const long long rhs)         { return operator=((signed char)(rhs)); }
-		posit& operator=(const char rhs)              { return operator=((signed char)(rhs)); }
-		posit& operator=(const unsigned short rhs)    { return operator=((signed char)(rhs)); }
-		posit& operator=(const unsigned int rhs)      { return operator=((signed char)(rhs)); }
-		posit& operator=(const unsigned long rhs)     { return operator=((signed char)(rhs)); }
-		posit& operator=(const unsigned long long rhs){ return operator=((signed char)(rhs)); }
+		posit& operator=(const long long rhs)         { return operator=((long)(rhs)); }
+		posit& operator=(const char rhs)              { return operator=((unsigned long)(rhs)); }
+		posit& operator=(const unsigned short rhs)    { return operator=((unsigned long)(rhs)); }
+		posit& operator=(const unsigned int rhs)      { return operator=((unsigned long)(rhs)); }
+		posit& operator=(const unsigned long rhs) {
+			// special case for speed as this is a common initialization
+			if (rhs == 0) {
+				_bits = 0x0;
+				return *this;
+			}
+			constexpr uint32_t sign_mask = 0x8000'0000;
+			bool sign = bool(rhs & sign_mask);
+			uint32_t v = rhs; // always positive
+			uint32_t raw;
+			if (v > 0xFFFFFBFF) { // 4294966271
+				raw = 0x7FC0'0000;// 4294967296
+			}
+			else if (v < 0x2) {        // 0 and 1
+				raw = (v << 30);
+			}
+			else {
+				int8_t m = 31;
+				uint32_t fraction_bits = v;
+				while (!(fraction_bits & sign_mask)) {
+					--m;
+					fraction_bits <<= 1;
+				}
+				int8_t k = (m >> 2);
+				uint32_t exponent_bits = (m & 0x3) << (27 - k);
+				fraction_bits = (fraction_bits ^ sign_mask);
+				raw = (0x7FFF'FFFF ^ (0x3FFF'FFFF >> k)) | exponent_bits | (fraction_bits >> (k + 4));
+
+				uint32_t fraction_bit_mask = 0x8 << k; //bitNPlusOne
+				if (fraction_bit_mask & fraction_bits) {
+					if (((fraction_bit_mask - 1) & fraction_bits) | ((fraction_bit_mask << 1) & fraction_bits)) raw++;
+				}
+			}
+			_bits = raw;
+			return *this;
+		}
+		posit& operator=(const unsigned long long rhs){ return operator=((unsigned long)(rhs)); }
 		posit& operator=(const float rhs)             { return float_assign(rhs); }
 		posit& operator=(const double rhs)            { return float_assign(rhs); }
 		posit& operator=(const long double rhs)       { return float_assign(rhs); }
@@ -113,7 +156,7 @@ namespace sw {
 			return *this;
 		}
 		posit& set_raw_bits(uint64_t value) {
-			_bits = uint8_t(value & 0xff);
+			_bits = uint32_t(value & 0xFFFF'FFFF);
 			return *this;
 		}
 		posit operator-() const {
@@ -336,22 +379,22 @@ namespace sw {
 			return p;
 		}
 		// SELECTORS
-		inline bool isnar() const      { return (_bits == 0x80); }
-		inline bool iszero() const     { return (_bits == 0x00); }
-		inline bool isone() const      { return (_bits == 0x40); } // pattern 010000...
-		inline bool isminusone() const { return (_bits == 0xC0); } // pattern 110000...
-		inline bool isneg() const      { return (_bits & 0x80); }
+		inline bool isnar() const      { return (_bits == 0x8000'0000); }
+		inline bool iszero() const     { return (_bits == 0x0); }
+		inline bool isone() const      { return (_bits == 0x4000'0000); } // pattern 010000...
+		inline bool isminusone() const { return (_bits == 0xC000'0000); } // pattern 110000...
+		inline bool isneg() const      { return (_bits & 0x8000'0000); }
 		inline bool ispos() const      { return !isneg(); }
 		inline bool ispowerof2() const { return !(_bits & 0x1); }
 
 		inline int sign_value() const  { return (_bits & 0x8 ? -1 : 1); }
 
-		bitblock<NBITS_IS_32> get() const { bitblock<NBITS_IS_32> bb; bb = int(_bits); return bb; }
+		bitblock<NBITS_IS_32> get() const { bitblock<NBITS_IS_32> bb; bb = long(_bits); return bb; }
 		unsigned long long encoding() const { return (unsigned long long)(_bits); }
 
-		inline void clear() { _bits = 0; }
+		inline void clear() { _bits = 0x0; }
 		inline void setzero() { clear(); }
-		inline void setnar() { _bits = 0x80; }
+		inline void setnar() { _bits = 0x8000'0000; }
 		inline posit twosComplement() const {
 			posit<NBITS_IS_32, ES_IS_2> p;
 			int8_t v = -*(int8_t*)&_bits;
@@ -359,7 +402,7 @@ namespace sw {
 			return p;
 		}
 	private:
-		uint8_t _bits;
+		uint32_t _bits;
 
 		// Conversion functions
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -657,7 +700,7 @@ namespace sw {
 		return !operator==(lhs, rhs);
 	}
 	inline bool operator< (const posit<NBITS_IS_32, ES_IS_2>& lhs, const posit<NBITS_IS_32, ES_IS_2>& rhs) {
-		return *(signed char*)(&lhs._bits) < *(signed char*)(&rhs._bits);
+		return *(long*)(&lhs._bits) < *(long*)(&rhs._bits);
 	}
 	inline bool operator> (const posit<NBITS_IS_32, ES_IS_2>& lhs, const posit<NBITS_IS_32, ES_IS_2>& rhs) {
 		return operator< (rhs, lhs);
@@ -691,6 +734,7 @@ namespace sw {
 
 	}
 	// binary operator*() is provided by generic class
+	// binary operator/() is provided by generic class
 
 #if POSIT_ENABLE_LITERALS
 	// posit - literal logic functions
