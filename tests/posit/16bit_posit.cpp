@@ -1,11 +1,15 @@
 // 16bit_posit.cpp: Functionality tests for standard 16-bit posits
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-// enable posit arithmetic exceptions
+// Configure the posit template environment
+// first: enable fast specialized posit<16,1>
+// #define POSIT_FAST_SPECIALIZATION
+#define POSIT_FAST_POSIT_16_1 0
+// second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
 #include "../test_helpers.hpp"
@@ -29,7 +33,12 @@ try {
 	bool bReportIndividualTestCases = false;
 	std::string tag = " posit<16,1>";
 
+#if POSIT_FAST_POSIT_16_1
+	cout << "Fast specialization posit<16,1> configuration tests" << endl;
+#else
 	cout << "Standard posit<16,1> configuration tests" << endl;
+#endif
+	
 
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
