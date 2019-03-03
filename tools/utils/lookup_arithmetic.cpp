@@ -92,6 +92,36 @@ void GenerateLookupTable(BINARY_LOGIC_OPERATOR op) {
 	}
 }
 
+// generate a look-up table for uniary operators
+template<size_t nbits, size_t es>
+void GenerateLookupTable(UNARY_ARITHMETIC_OPERATOR op) {
+	constexpr size_t nr_of_posits = (1 << nbits);
+	sw::unum::posit<nbits, es> pa, pb, presult;
+
+	std::cout << std::hex;
+	for (size_t i = 0; i < nr_of_posits; i += 8) {
+		for (int j = 0; j < 8; ++j) {
+			unsigned index = i + j;
+			//std::cout << "index[" << index << "]";
+			pa.set_raw_bits(index);
+			switch (op) {
+			case RECIPROCAL:
+				presult = 1.0 / pa;
+				std::cout << "0x" << std::hex << presult.get().to_ulong() << ",";
+				break;
+			case SQRT:
+				if (pa.ispos() || pa.iszero()) {
+					presult = sw::unum::sqrt(pa);
+					std::cout << "0x" << std::hex << presult.get().to_ulong() << ",";
+				}
+				break;
+			}
+
+			//std::cout << std::hex << base << " " << presult.get() << std::endl;
+		}
+		std::cout << std::dec << std::endl;
+	}
+}
 
 namespace sw {
 	namespace spec {
@@ -274,12 +304,7 @@ try {
 	duration<double> time_span;
 	double elapsed;
 
-	for (int i = 0; i < 8; ++i) {
-		posit<3, 0> p3_0;
-		p3_0.set_raw_bits(i);
-		cout << p3_0.get() << " " << p3_0 << endl;
-	}
-
+#ifdef NOW
 	//Validate5_0_Lookup();
 	cout << "constexpr uint8_t posit_3_0_addition_lookup[64] = {\n";
 	GenerateLookupTable<3, 0>(ADD);
@@ -309,6 +334,7 @@ try {
 	cout << "constexpr uint8_t posit_4_0_division_lookup[256] = {\n";
 	GenerateLookupTable<4, 0>(DIV);
 	cout << "};\n";
+#endif
 
 	begin = steady_clock::now();
 	MeasureAdditionPerformance<5, 0>(positives, negatives);
@@ -319,6 +345,8 @@ try {
 	cout << "Performance = " << pops << "POPS" << std::endl;
 	cout << elapsed << endl;
 	cout << positives << " " << negatives << endl;
+
+	GenerateLookupTable<8, 1>(SQRT);
 
 	return EXIT_SUCCESS;
 }
