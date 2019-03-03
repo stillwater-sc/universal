@@ -1,4 +1,4 @@
-// 8bit_posit.cpp: Functionality tests for standard 8-bit posits
+// 4bit_posit.cpp: Functionality tests for specialized 4-bit posits based on look-up tables
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
@@ -6,7 +6,7 @@
 
 #include "common.hpp"
 // enable fast specialized posit<4,0>
-// #define POSIT_FAST_SPECIALIZATION
+#define POSIT_FAST_SPECIALIZATION
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
@@ -36,6 +36,7 @@ try {
 #else
 	cout << "Reference posit<4,0> configuration tests" << endl;
 #endif
+
 
 	posit<nbits,es> p;
 	cout << dynamic_range(p) << endl;

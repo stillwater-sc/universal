@@ -1,6 +1,6 @@
 // posit_4_0.cpp: specialized 4-bit posit using lookup table arithmetic
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,8 +9,7 @@ namespace sw {
 
 		// set the fast specialization variable to indicate that we are running a special template specialization
 #ifdef POSIT_FAST_SPECIALIZATION
-#define POSIT_FAST_POSIT_4_0
-#endif
+#define POSIT_FAST_POSIT_4_0 1
 
 			constexpr uint8_t posit_4_0_addition_lookup[256] = {
 				0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
@@ -89,7 +88,7 @@ namespace sw {
 			};
 
 			constexpr uint8_t posit_4_0_reciprocal_lookup[16] = {
-				8,0,0,0,0,0,0,0,8,0,0,0,0,0,0,0,
+				8,7,6,5,4,3,2,1,8,15,14,13,12,11,10,9,
 			};
 
 			template<>
@@ -110,13 +109,21 @@ namespace sw {
 				posit& operator=(const posit&) = default;
 				posit& operator=(posit&&) = default;
 
-				posit(int initial_value) { _bits = uint8_t(initial_value & 0x0f); }
+				posit(char initial_value) { *this = (long long)initial_value; }
+				posit(short initial_value) { *this = (long long)initial_value; }
+				posit(int initial_value) { *this = (long long)initial_value; }
+				posit(long int initial_value) { *this = (long long)initial_value; }
+				posit(long long initial_value) { *this = (long long)initial_value; }
 				// assignment operators for native types
 				posit& operator=(int rhs) {
 					return operator=((long long)(rhs));
 				}
+				posit& operator=(long int rhs) {
+					return operator=((long long)(rhs));
+				}
 				posit& operator=(long long rhs) {
 					// only valid integers are -4, -2, -1, 0, 1, 2, 4
+					_bits = uint8_t(0);
 					if (rhs <= -4) {
 						_bits = 0x9;   // value is -4, or -maxpos
 					}
@@ -235,7 +242,7 @@ namespace sw {
 					return (_bits == 0xC);
 				}
 				inline bool isneg() const {
-					return (_bits & 0x8) & (_bits != 0x8);
+					return (_bits & 0x08) == (0x08);
 				}
 				inline bool ispos() const {
 					return !isneg();
@@ -350,29 +357,53 @@ namespace sw {
 						setnar();
 						return *this;
 					}
-
-					//convert(v);
-					_bits = uint8_t(rhs); // TODO: not correct
+					bitblock<NBITS_IS_4> ptt;
+					convert_to_bb<NBITS_IS_4, ES_IS_0, dfbits>(v.sign(), v.scale(), v.fraction(), ptt); // TODO: needs to be faster
+					_bits = uint8_t(ptt.to_ulong());
 					return *this;
 				}
 
 				// I/O operators
-				friend std::ostream& operator<< (std::ostream& ostr, const posit<NBITS_IS_4, 0>& p);
-				friend std::istream& operator>> (std::istream& istr, posit<NBITS_IS_4, 0>& p);
+				friend std::ostream& operator<< (std::ostream& ostr, const posit<NBITS_IS_4, ES_IS_0>& p);
+				friend std::istream& operator>> (std::istream& istr, posit<NBITS_IS_4, ES_IS_0>& p);
 
 				// posit - posit logic functions
-				friend bool operator==(const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator!=(const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator< (const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator> (const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator<=(const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
-				friend bool operator>=(const posit<NBITS_IS_4, 0>& lhs, const posit<NBITS_IS_4, 0>& rhs);
+				friend bool operator==(const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs);
+				friend bool operator!=(const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs);
+				friend bool operator< (const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs);
+				friend bool operator> (const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs);
+				friend bool operator<=(const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs);
+				friend bool operator>=(const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs);
 
 			};
 
 			// posit I/O operators
+			// generate a posit format ASCII format nbits.esxNN...NNp
 			inline std::ostream& operator<<(std::ostream& ostr, const posit<NBITS_IS_4, ES_IS_0>& p) {
-				return ostr << NBITS_IS_4 << '.' << ES_IS_0 << 'x' << to_hex(p.get()) << 'p';
+				// to make certain that setw and left/right operators work properly
+				// we need to transform the posit into a string
+				std::stringstream ss;
+#if POSIT_ROUNDING_ERROR_FREE_IO_FORMAT
+				ss << NBITS_IS_4 << '.' << ES_IS_0 << 'x' << to_hex(p.get()) << 'p';
+#else
+				std::streamsize prec = ostr.precision();
+				std::streamsize width = ostr.width();
+				std::ios_base::fmtflags ff;
+				ff = ostr.flags();
+				ss.flags(ff);
+				ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
+#endif
+				return ostr << ss.str();
+			}
+
+			// read an ASCII float or posit format: nbits.esxNN...NNp, for example: 32.2x80000000p
+			inline std::istream& operator>> (std::istream& istr, posit<NBITS_IS_4, ES_IS_0>& p) {
+				std::string txt;
+				istr >> txt;
+				if (!parse(txt, p)) {
+					std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+				}
+				return istr;
 			}
 
 			// convert a posit value to a string using "nar" as designation of NaR
@@ -393,7 +424,11 @@ namespace sw {
 				return !operator==(lhs, rhs);
 			}
 			inline bool operator< (const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs) {
-				return lhs._bits < rhs._bits;
+				if (rhs.isnar()) {
+					return false;
+				}
+				posit<NBITS_IS_4, ES_IS_0> r = lhs - rhs;  // else calculate the difference and check if negative
+				return r.isneg();
 			}
 			inline bool operator> (const posit<NBITS_IS_4, ES_IS_0>& lhs, const posit<NBITS_IS_4, ES_IS_0>& rhs) {
 				return operator< (rhs, lhs);
@@ -410,6 +445,9 @@ namespace sw {
 				sum += rhs;
 				return sum;
 			}
+#else
+#define POSIT_FAST_POSIT_4_0 0
+#endif
 
 	}
 }
