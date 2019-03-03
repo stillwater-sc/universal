@@ -30,6 +30,7 @@ namespace sw {
 		static constexpr size_t fbits = nbits - 3;
 		static constexpr size_t fhbits = fbits + 1;
 		static constexpr uint8_t index_shift = 4;
+		static constexpr uint16_t SIGN_MASK = 0x8000;
 
 		posit() { _bits = 0; }
 		posit(const posit&) = default;
@@ -53,29 +54,30 @@ namespace sw {
 		posit(const long double initial_value)        { *this = initial_value; }
 
 		// assignment operators for native types
-		posit& operator=(const signed char rhs)       { 
+		posit& operator=(const signed char rhs)       { return operator=((signed short)(rhs)); }
+		posit& operator=(const short rhs) {
 			// special case for speed as this is a common initialization
 			if (rhs == 0) {
-				_bits = 0x00;
+				_bits = 0x0;
 				return *this;
 			}
 
-			bool sign = bool(rhs & 0x80);
-			int8_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
-			uint8_t raw;
-			if (v > 48 || v == -128) { // +-maxpos, 0x80 is special in int8 arithmetic as it is its own negation
+			bool sign = bool(rhs & SIGN_MASK);
+			uint16_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
+			uint16_t raw;
+			if (v > 48 || v == SIGN_MASK) { // +-maxpos, 0x8000 is special in int16 arithmetic as it is its own negation
 				raw = 0x7F;
 			}
 			else {
-				uint8_t mask = 0x40;
+				uint16_t mask = 0x4000;
 				int8_t k = 6;
-				uint8_t fraction_bits = v;
+				uint16_t fraction_bits = v;
 				while (!(fraction_bits & mask)) {
 					k--;
 					fraction_bits <<= 1;
 				}
 				fraction_bits = (fraction_bits ^ mask);
-				raw = (0x7F ^ (0x3F >> k)) | (fraction_bits >> (k + 1));
+				raw = (0x7FFF ^ (0x3FFF >> k)) | (fraction_bits >> (k + 1));
 
 				mask = 0x1 << k; //bitNPlusOne
 				if (mask & fraction_bits) {
@@ -85,15 +87,45 @@ namespace sw {
 			_bits = sign ? -raw : raw;
 			return *this;
 		}
-		posit& operator=(const short rhs)             { return operator=((signed char)(rhs)); }
-		posit& operator=(const int rhs)               { return operator=((signed char)(rhs)); }
-		posit& operator=(const long rhs)              { return operator=((signed char)(rhs)); }
-		posit& operator=(const long long rhs)         { return operator=((signed char)(rhs)); }
-		posit& operator=(const char rhs)              { return operator=((signed char)(rhs)); }
-		posit& operator=(const unsigned short rhs)    { return operator=((signed char)(rhs)); }
-		posit& operator=(const unsigned int rhs)      { return operator=((signed char)(rhs)); }
-		posit& operator=(const unsigned long rhs)     { return operator=((signed char)(rhs)); }
-		posit& operator=(const unsigned long long rhs){ return operator=((signed char)(rhs)); }
+		posit& operator=(const int rhs)               { return operator=((signed short)(rhs)); }
+		posit& operator=(const long rhs)              { return operator=((signed short)(rhs)); }
+		posit& operator=(const long long rhs)         { return operator=((signed short)(rhs)); }
+		posit& operator=(const char rhs)              { return operator=((unsigned short)(rhs)); }
+		posit& operator=(const unsigned short rhs)    { 
+			// special case for speed as this is a common initialization
+			if (rhs == 0) {
+				_bits = 0x0;
+				return *this;
+			}
+
+			bool sign = bool(rhs & SIGN_MASK);
+			uint16_t v = rhs; // already at the positve side of the projective reals
+			uint16_t raw;
+			if (v > 48 || v == SIGN_MASK) { // +-maxpos, 0x8000 is special in int16 arithmetic as it is its own negation
+				raw = 0x7F;
+			}
+			else {
+				uint16_t mask = 0x4000;
+				int8_t k = 6;
+				uint16_t fraction_bits = v;
+				while (!(fraction_bits & mask)) {
+					k--;
+					fraction_bits <<= 1;
+				}
+				fraction_bits = (fraction_bits ^ mask);
+				raw = (0x7FFF ^ (0x3FFF >> k)) | (fraction_bits >> (k + 1));
+
+				mask = 0x1 << k; //bitNPlusOne
+				if (mask & fraction_bits) {
+					if (((mask - 1) & fraction_bits) | ((mask << 1) & fraction_bits)) raw++;
+				}
+			}
+			_bits = raw;
+			return *this;
+		}
+		posit& operator=(const unsigned int rhs)      { return operator=((unsigned short)(rhs)); }
+		posit& operator=(const unsigned long rhs)     { return operator=((unsigned short)(rhs)); }
+		posit& operator=(const unsigned long long rhs){ return operator=((unsigned short)(rhs)); }
 		posit& operator=(const float rhs)             { return float_assign(rhs); }
 		posit& operator=(const double rhs)            { return float_assign(rhs); }
 		posit& operator=(const long double rhs)       { return float_assign(rhs); }
@@ -109,11 +141,11 @@ namespace sw {
 		explicit operator unsigned int() const { return to_int(); }
 
 		posit& set(sw::unum::bitblock<NBITS_IS_16>& raw) {
-			_bits = uint8_t(raw.to_ulong());
+			_bits = uint16_t(raw.to_ulong());
 			return *this;
 		}
 		posit& set_raw_bits(uint64_t value) {
-			_bits = uint8_t(value & 0xff);
+			_bits = uint16_t(value & 0xffff);
 			return *this;
 		}
 		posit operator-() const {
@@ -127,8 +159,8 @@ namespace sw {
 			return p.set_raw_bits((~_bits) + 1);
 		}
 		posit& operator+=(const posit& b) { // derived from SoftPosit
-			uint8_t lhs = _bits;
-			uint8_t rhs = b._bits;
+			uint16_t lhs = _bits;
+			uint16_t rhs = b._bits;
 			// process special cases
 			if (isnar() || b.isnar()) {  // infinity
 				_bits = 0x80;
@@ -336,11 +368,11 @@ namespace sw {
 			return p;
 		}
 		// SELECTORS
-		inline bool isnar() const      { return (_bits == 0x80); }
-		inline bool iszero() const     { return (_bits == 0x00); }
-		inline bool isone() const      { return (_bits == 0x40); } // pattern 010000...
-		inline bool isminusone() const { return (_bits == 0xC0); } // pattern 110000...
-		inline bool isneg() const      { return (_bits & 0x80); }
+		inline bool isnar() const      { return (_bits == SIGN_MASK); }
+		inline bool iszero() const     { return (_bits == 0x0); }
+		inline bool isone() const      { return (_bits == 0x4000); } // pattern 010000...
+		inline bool isminusone() const { return (_bits == 0xC000); } // pattern 110000...
+		inline bool isneg() const      { return (_bits & SIGN_MASK); }
 		inline bool ispos() const      { return !isneg(); }
 		inline bool ispowerof2() const { return !(_bits & 0x1); }
 
@@ -351,15 +383,15 @@ namespace sw {
 
 		inline void clear() { _bits = 0; }
 		inline void setzero() { clear(); }
-		inline void setnar() { _bits = 0x80; }
+		inline void setnar() { _bits = SIGN_MASK; }
 		inline posit twosComplement() const {
 			posit<NBITS_IS_16, ES_IS_1> p;
-			int8_t v = -*(int8_t*)&_bits;
+			int16_t v = -*(int16_t*)&_bits;
 			p.set_raw_bits(v);
 			return p;
 		}
 	private:
-		uint8_t _bits;
+		uint16_t _bits;
 
 		// Conversion functions
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -657,7 +689,7 @@ namespace sw {
 		return !operator==(lhs, rhs);
 	}
 	inline bool operator< (const posit<NBITS_IS_16, ES_IS_1>& lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs) {
-		return *(signed char*)(&lhs._bits) < *(signed char*)(&rhs._bits);
+		return (signed short)(lhs._bits) < (signed short)(rhs._bits);
 	}
 	inline bool operator> (const posit<NBITS_IS_16, ES_IS_1>& lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs) {
 		return operator< (rhs, lhs);
