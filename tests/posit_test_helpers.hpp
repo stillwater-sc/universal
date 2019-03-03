@@ -346,32 +346,35 @@ namespace sw {
 		// enumerate all conversion cases for integers
 		template<size_t nbits, size_t es>
 		int ValidateIntegerConversion(std::string& tag, bool bReportIndividualTestCases) {
-			// we generate numbers from 1 to NaR to -1 and the special case of 0
+			// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
 			constexpr size_t NR_OF_TESTS = (size_t(1) << (nbits - 1)) + 1;
 			int nrOfFailedTestCases = 0;
 
-			posit<nbits, es> p(0);
-			if (!p.iszero()) nrOfFailedTestCases++;
-			p.setnar();  p = 0;
-			if (!p.iszero()) nrOfFailedTestCases++;
+			posit<nbits, es> p, presult;
 
 			p = 1;
-			if (!p.isone()) nrOfFailedTestCases++;
+			if (!p.isone()) {
+				if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << 1 << std::endl;
+				nrOfFailedTestCases++;
+			}
 			for (size_t i = 0; i < NR_OF_TESTS; ++i) {
 				if (!p.isnar()) {
-					long long ref = (long long)p;
-					posit<nbits,es> presult = ref;
-					if (presult != ref) {
-						if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
+					long ref = (long)p;   // obtain the integer cast of this posit
+					presult = ref;		  // assign this integer to a reference posit
+					if (presult != ref) { // compare the integer cast to the reference posit
+						if (bReportIndividualTestCases) std::cout << tag << " FAIL long(" << p << ") != long(" << presult << ") : reference = " << ref << std::endl;
+						nrOfFailedTestCases++;
 					}
 					else {
-						if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << ref << std::endl;
+						//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << presult << " : reference = " << ref << std::endl;
 					}
 				}
 				++p;
 			}
 			return nrOfFailedTestCases;
 		}
+/*
+		// specialized template for fast posit<2,0>
 		template<>
 		int ValidateIntegerConversion<NBITS_IS_2, ES_IS_0>(std::string& tag, bool bReportIndividualTestCases) {
 			std::vector<int> in = { -4, -3, -2, -1, 0, 1, 2, 3, 4 };
@@ -382,7 +385,7 @@ namespace sw {
 				posit<NBITS_IS_2, ES_IS_0> p;
 				p = v;
 				int refv = ref[ref_index++];
-				if (int(p) != refv) {
+				if (p != refv) {
 					if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << refv << std::endl;
 					nrOfFailedTestCases++;
 				}
@@ -392,6 +395,7 @@ namespace sw {
 			}
 			return nrOfFailedTestCases;
 		}
+		// specialized template for fast posit<3,0>
 		template<>
 		int ValidateIntegerConversion<NBITS_IS_3, ES_IS_0>(std::string& tag, bool bReportIndividualTestCases) {
 			std::vector<int> in = { -4, -3, -2, -1, 0, 1, 2, 3, 4 };
@@ -402,7 +406,7 @@ namespace sw {
 				posit<NBITS_IS_3, ES_IS_0> p;
 				p = v;
 				int refv = ref[ref_index++];
-				if (int(p) != refv) {
+				if (p != refv) {
 					if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << refv << std::endl;
 					nrOfFailedTestCases++;
 				}
@@ -412,6 +416,7 @@ namespace sw {
 			}
 			return nrOfFailedTestCases;
 		}
+*/
 
 		// Generate ordered set in ascending order from [-NaR, -maxpos, ..., +maxpos] for a particular posit config <nbits, es>
 		template<size_t nbits, size_t es>
@@ -816,7 +821,8 @@ namespace sw {
 		// Posit NaR can be checked for equality/inequality
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicEqual() {
-			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+			const unsigned max = nbits > 10 ? 10 : nbits;
+			size_t NR_TEST_CASES = (unsigned(1) << max);
 			int nrOfFailedTestCases = 0;
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
@@ -860,7 +866,8 @@ return nrOfFailedTestCases;
 		// Posit NaR can be checked for equality/inequality
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicNotEqual() {
-			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+			const unsigned max = nbits > 10 ? 10 : nbits;
+			size_t NR_TEST_CASES = (unsigned(1) << max);
 			int nrOfFailedTestCases = 0;
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
@@ -906,7 +913,8 @@ return nrOfFailedTestCases;
 		// Posit NaR is smaller than any other value
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicLessThan() {
-			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+			const unsigned max = nbits > 10 ? 10 : nbits;
+			size_t NR_TEST_CASES = (unsigned(1) << max);
 			int nrOfFailedTestCases = 0;
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
@@ -943,7 +951,8 @@ return nrOfFailedTestCases;
 		// Any number is greater-than posit NaR
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicGreaterThan() {
-			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+			const unsigned max = nbits > 10 ? 10 : nbits;
+			size_t NR_TEST_CASES = (unsigned(1) << max);
 			int nrOfFailedTestCases = 0;
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
@@ -977,7 +986,8 @@ return nrOfFailedTestCases;
 		// Posit NaR is smaller or equal than any other value
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicLessOrEqualThan() {
-			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+			const unsigned max = nbits > 10 ? 10 : nbits;
+			size_t NR_TEST_CASES = (unsigned(1) << max);
 			int nrOfFailedTestCases = 0;
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
@@ -1012,7 +1022,8 @@ return nrOfFailedTestCases;
 		// Any number is greater-or-equal-than posit NaR
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicGreaterOrEqualThan() {
-			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
+			const unsigned max = nbits > 10 ? 10 : nbits;
+			size_t NR_TEST_CASES = (unsigned(1) << max);
 			int nrOfFailedTestCases = 0;
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
@@ -1051,12 +1062,13 @@ return nrOfFailedTestCases;
 		// where something special happens in the posit arithmetic, such as rounding.
 
 		// operation opcodes
-		const int OPCODE_NOP = 0;
-		const int OPCODE_ADD = 1;
-		const int OPCODE_SUB = 2;
-		const int OPCODE_MUL = 3;
-		const int OPCODE_DIV = 4;
-		const int OPCODE_RAN = 5;
+		const int OPCODE_NOP  = 0;
+		const int OPCODE_ADD  = 1;
+		const int OPCODE_SUB  = 2;
+		const int OPCODE_MUL  = 3;
+		const int OPCODE_DIV  = 4;
+		const int OPCODE_SQRT = 5;
+		const int OPCODE_RAN  = 6;
 
 		template<size_t nbits, size_t es>
 		void execute(int opcode, double da, double db, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& preference, posit<nbits, es>& presult) {
@@ -1082,6 +1094,10 @@ return nrOfFailedTestCases;
 			case OPCODE_DIV:
 				presult = pa / pb;
 				reference = da / db;
+				break;
+			case OPCODE_SQRT:
+				presult = sw::unum::sqrt(pa);
+				reference = std::sqrt(da);
 				break;
 			}
 			preference = reference;
@@ -1113,6 +1129,9 @@ return nrOfFailedTestCases;
 				break;
 			case OPCODE_DIV:
 				operation_string = "/";
+				break;
+			case OPCODE_SQRT:
+				operation_string = "sqrt";
 				break;
 			}
 			// generate the full state space set of valid posit values

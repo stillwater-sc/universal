@@ -5,6 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
+// enable fast specialized posit<4,0>
+#define POSIT_FAST_SPECIALIZATION
 // enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <posit>
@@ -18,6 +20,12 @@ try {
 	constexpr size_t nbits = 4;
 	constexpr size_t es = 0;
 	//constexpr size_t capacity = 6;   // 2^3 accumulations of maxpos^2
+
+#if defined(POSIT_FAST_POSIT_4_0)
+	cout << "Fast specialization posit<4,0> configuration performance tests" << endl;
+#else
+	cout << "Reference posit<4,0> configuration performance tests" << endl;
+#endif
 
 	OperatorPerformance perfReport;
 	GeneratePerformanceReport<nbits, es>(perfReport);

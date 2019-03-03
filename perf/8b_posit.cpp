@@ -5,7 +5,10 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-// enable/disable posit arithmetic exceptions
+// Configure the posit template environment
+// first: enable fast specialized posit<8,0>
+#define POSIT_FAST_SPECIALIZATION
+// second: disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <posit>
 #include "posit_performance.hpp"

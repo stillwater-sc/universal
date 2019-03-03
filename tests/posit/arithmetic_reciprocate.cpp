@@ -6,16 +6,29 @@
 
 #include "common.hpp"
 
+// Configure the posit template environment
+// first: enable fast specialized posit configurations
+//#define POSIT_FAST_SPECIALIZATION
+// second: enable/disable posit arithmetic exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
+// third: enable tracing 
 // when you define POSIT_VERBOSE_OUTPUT executing an reciprocate the code will print intermediate results
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_RECIPROCATE
 #define POSIT_TRACE_CONVERSION
 // minimum set of include files to reflect source code dependencies
-// enable/disable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include "../../posit/posit.hpp"
-#include "../../posit/posit_decoded.hpp"		// old reference design for validation/debug
+#include "../../posit/numeric_limits.hpp"
+#ifdef POSIT_FAST_SPECIALIZATION
+#include "../../posit/specialized/posit_2_0.hpp"
+#include "../../posit/specialized/posit_3_0.hpp"
+#include "../../posit/specialized/posit_3_1.hpp"
+#include "../../posit/specialized/posit_4_0.hpp"
+#include "../../posit/specialized/posit_8_0.hpp"
+#endif
+// posit type manipulators such as pretty printers
 #include "../../posit/posit_manipulators.hpp"
+// test helpers
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
 
@@ -24,7 +37,7 @@
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a) {
 	Ty reference;
-	sw::unum::posit_decoded<nbits, es> pa, pref, preciprocal;
+	sw::unum::posit<nbits, es> pa, pref, preciprocal;
 	pa = a;
 	reference = (Ty)1.0 / a;
 	pref = reference;
@@ -51,7 +64,7 @@ try {
 	// generate individual testcases to hand trace/debug
 	posit<5, 0> p1(0.75);
 	posit<5, 0> p1_reciprocal;
-	posit_decoded<5, 0> p2(0.75), p2_reciprocal;
+	posit<5, 0> p2(0.75), p2_reciprocal;
 
 	p2_reciprocal = p2.reciprocate();
 	p1_reciprocal = p1.reciprocate();

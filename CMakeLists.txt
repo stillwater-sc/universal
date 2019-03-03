@@ -44,18 +44,18 @@ option(USE_SSE3                          "Build code with SSE3 ISA support"     
 option(USE_AVX                           "Build code with AVX ISA support"                  OFF)
 option(USE_AVX2                          "Build code with AVX2 ISA support"                 ON)
 # control which projects get enabled
-option(BUILD_CI_CHECK                    "Set to ON to build all components"                OFF)
 option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 arithmetic"        OFF)
 option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 arithmetic"        OFF)
-option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3(posit) arithmetic" OFF)
-option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3(valid) arithmetic" OFF)
+option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3(posit) arithmetic" ON)
+option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3(valid) arithmetic" ON)
 option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"          ON)
 option(BUILD_APPLICATION_EXAMPLES        "Set to ON to build epplication examples"          ON)
-option(BUILD_VERIFICATION_SUITE          "Set to ON to build verification tests"            OFF)
-option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                OFF)
+option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                ON)
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"    ON)
 option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"      OFF)
 option(BUILD_PERFORMANCE_BENCHMARKS      "Set to ON to build performance benchmarking"      OFF)
+option(BUILD_VERIFICATION_SUITE          "Set to ON to build verification tests"            OFF)
+option(BUILD_CI_CHECK                    "Set to ON to build all components"                OFF)
 option(BUILD_DOCS                        "Set to ON to build documentation"                 OFF)
 
 ####

@@ -105,8 +105,9 @@ namespace sw {
 			posit& operator=(const posit&) = default;
 			posit& operator=(posit&&) = default;
 
-			posit(int initial_value) { _bits = uint8_t(initial_value & bit_mask); }
-			posit(long long initial_value) { _bits = uint8_t(initial_value & bit_mask); }
+			posit(int initial_value) { *this = (long long)initial_value; }
+			posit(long int initial_value) { *this = (long long)initial_value; }
+			posit(long long initial_value) { *this = initial_value; }
 			posit(float initial_value) {
 				*this = float_assign(initial_value);
 			}
@@ -120,8 +121,12 @@ namespace sw {
 			posit& operator=(int rhs) {
 				return operator=((long long)(rhs));
 			}
+			posit& operator=(long int rhs) {
+				return operator=((long long)(rhs));
+			}
 			posit& operator=(long long rhs) {
 				// only valid integers are -2, -1, 0, 1, 2
+				_bits = 0x00;
 				if (rhs <= -2) {
 					_bits = 0x05;   // value is -2, or -maxpos
 				}

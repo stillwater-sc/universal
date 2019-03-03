@@ -6,19 +6,33 @@
 
 #include "common.hpp"
 
+// Configure the posit template environment
+// first: enable fast specialized posit configurations
+//#define POSIT_FAST_SPECIALIZATION
+// second: enable/disable posit arithmetic exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
+// third: enable tracing 
 // when you define POSIT_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_ADD
-// minimum set of include files to reflect source code dependencies
-// enable/disable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-// enable/disable the ability to use literals in binary logic and arithmetic operators
+// forth: enable/disable the ability to use literals in binary logic and arithmetic operators
 #define POSIT_ENABLE_LITERALS 1
+// minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
+#include "../../posit/numeric_limits.hpp"
+#ifdef POSIT_FAST_SPECIALIZATION
+#include "../../posit/specialized/posit_2_0.hpp"
+#include "../../posit/specialized/posit_3_0.hpp"
+#include "../../posit/specialized/posit_3_1.hpp"
+#include "../../posit/specialized/posit_4_0.hpp"
+#include "../../posit/specialized/posit_8_0.hpp"
+#endif
+// posit type manipulators such as pretty printers
 #include "../../posit/posit_manipulators.hpp"
-// generic and posit test helper functions
+// test helpers
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
+
 
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
 template<size_t nbits, size_t es>
