@@ -347,7 +347,8 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int ValidateIntegerConversion(std::string& tag, bool bReportIndividualTestCases) {
 			// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
-			constexpr size_t NR_OF_TESTS = (size_t(1) << (nbits - 1)) + 1;
+			const unsigned max = nbits > 20 ? 20 : nbits;
+			size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;
 			int nrOfFailedTestCases = 0;
 
 			posit<nbits, es> p, presult;
@@ -357,7 +358,7 @@ namespace sw {
 				if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << 1 << std::endl;
 				nrOfFailedTestCases++;
 			}
-			for (size_t i = 0; i < NR_OF_TESTS; ++i) {
+			for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 				if (!p.isnar()) {
 					long ref = (long)p;   // obtain the integer cast of this posit
 					presult = ref;		  // assign this integer to a reference posit
@@ -436,8 +437,7 @@ namespace sw {
 
 		// validate the increment operator++
 		template<size_t nbits, size_t es>
-		int ValidateIncrement(std::string tag, bool bReportIndividualTestCases)
-		{
+		int ValidateIncrement(std::string tag, bool bReportIndividualTestCases)	{
 			std::vector< posit<nbits, es> > set;
 			GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
@@ -827,39 +827,39 @@ namespace sw {
 			sw::unum::posit<nbits, es> a, b;
 			bool ref, presult;
 
-for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-	a.set_raw_bits(i);
-	for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-		b.set_raw_bits(j);
-		// set the golden reference
-		if (a.isnar() && b.isnar()) {
-			// special case of posit equality
-			ref = true;
-		}
-		else {
-			// initially, we thought this would be the same behavior as IEEE floats
-			// ref = double(a) == double(b);
-			// but we have found that some compilers (MSVC) take liberty with NaN
-			// \fp:fast		floating point model set to fast
-			//	NaN == NaN  : IEEE = true    Posit = true
-			//	NaN == real : IEEE = true    Posit = false
-			// \fp:strict	floating point model set to strict
-			//	NaN == NaN  : IEEE = false    Posit = true
-			//	NaN == real : IEEE = false    Posit = false
-			// and thus we can't relay on IEEE float as reference
+			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+				a.set_raw_bits(i);
+				for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+					b.set_raw_bits(j);
+					// set the golden reference
+					if (a.isnar() && b.isnar()) {
+						// special case of posit equality
+						ref = true;
+					}
+					else {
+						// initially, we thought this would be the same behavior as IEEE floats
+						// ref = double(a) == double(b);
+						// but we have found that some compilers (MSVC) take liberty with NaN
+						// \fp:fast		floating point model set to fast
+						//	NaN == NaN  : IEEE = true    Posit = true
+						//	NaN == real : IEEE = true    Posit = false
+						// \fp:strict	floating point model set to strict
+						//	NaN == NaN  : IEEE = false    Posit = true
+						//	NaN == real : IEEE = false    Posit = false
+						// and thus we can't relay on IEEE float as reference
 
-			// instead, use the bit pattern as reference
-			ref = (i == j ? true : false);
-		}
+						// instead, use the bit pattern as reference
+						ref = (i == j ? true : false);
+					}
 
-		presult = a == b;
-		if (ref != presult) {
-			nrOfFailedTestCases++;
-			std::cout << a << " == " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
-		}
-	}
-}
-return nrOfFailedTestCases;
+					presult = a == b;
+					if (ref != presult) {
+						nrOfFailedTestCases++;
+						std::cout << a << " == " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
+					}
+				}
+			}
+			return nrOfFailedTestCases;
 		}
 
 		// Posit not-equal diverges from IEEE float in dealing with INFINITY/NAN
