@@ -347,7 +347,7 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int ValidateIntegerConversion(std::string& tag, bool bReportIndividualTestCases) {
 			// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
-			const unsigned max = nbits > 20 ? 20 : nbits;
+			const unsigned max = nbits > 24 ? 24 : nbits;
 			size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;
 			int nrOfFailedTestCases = 0;
 
@@ -418,6 +418,57 @@ namespace sw {
 			return nrOfFailedTestCases;
 		}
 */
+
+// enumerate all conversion cases for integers
+		template<size_t nbits, size_t es>
+		int ValidateUintConversion(std::string& tag, bool bReportIndividualTestCases) {
+			// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
+			const unsigned max = nbits > 24 ? 24 : nbits;
+			size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;
+			int nrOfFailedTestCases = 0;
+
+			posit<nbits, es> p, presult;
+
+			if (nbits > 24) {
+				// cycle from largest value down to 0 via positive regime
+				constexpr unsigned long upper_bound = 0xFFFF'FFFF;
+				p = upper_bound;
+				for (unsigned long i = upper_bound; i > upper_bound - unsigned long(NR_TEST_CASES); --i) {
+					unsigned long ref = (unsigned long)p;   // obtain the integer cast of this posit
+					presult = ref;		  // assign this integer to a reference posit
+					if (presult != ref) { // compare the integer cast to the reference posit
+						if (bReportIndividualTestCases) std::cout << tag << " FAIL uint32(" << p << ") != uint32(" << presult << ") : reference = " << ref << std::endl;
+						nrOfFailedTestCases++;
+					}
+					else {
+						//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << presult << " : reference = " << ref << std::endl;
+					}
+					--p;
+				}
+			}
+			else {
+				p = 1;
+				if (!p.isone()) {
+					if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << 1 << std::endl;
+					nrOfFailedTestCases++;
+				}
+				for (size_t i = 0; i < NR_TEST_CASES; ++i) {
+					if (!p.isnar()) {
+						unsigned long ref = (unsigned long)p;   // obtain the integer cast of this posit
+						presult = ref;		  // assign this integer to a reference posit
+						if (presult != ref) { // compare the integer cast to the reference posit
+							if (bReportIndividualTestCases) std::cout << tag << " FAIL uint32(" << p << ") != uint32(" << presult << ") : reference = " << ref << std::endl;
+							nrOfFailedTestCases++;
+						}
+						else {
+							//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << presult << " : reference = " << ref << std::endl;
+						}
+					}
+					++p;
+				}
+			}
+			return nrOfFailedTestCases;
+		}
 
 		// Generate ordered set in ascending order from [-NaR, -maxpos, ..., +maxpos] for a particular posit config <nbits, es>
 		template<size_t nbits, size_t es>
@@ -1191,6 +1242,108 @@ namespace sw {
 
 			return nrOfFailedTests;
 		}
+
+		template<size_t nbits, size_t es>
+		int Compare(long double input, const posit<nbits, es>& presult, const posit<nbits, es>& ptarget, const posit<nbits+1,es>& pref, bool bReportIndividualTestCases) {
+			int fail = 0;
+			if (presult != ptarget) {
+				fail++;
+				if (bReportIndividualTestCases) {
+					ReportConversionError("FAIL", "=", input, long double(ptarget), presult);
+					std::cout << "reference   : " << pref.get() << std::endl;
+					std::cout << "target bits : " << ptarget.get() << std::endl;
+					std::cout << "actual bits : " << presult.get() << std::endl;
+				}
+			}
+			else {
+				// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
+			}
+			return fail;
+		}
+
+
+		// generate a random set of conversion cases
+		template<size_t nbits, size_t es>
+		int ValidateConversionThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, uint32_t nrOfRandoms) {
+			// we are going to generate a test set that consists of all posit configs and their midpoints
+			// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
+			// These larger posits will be at the mid-point between the smaller posit sample values
+			// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
+			// to test the rounding logic of the conversion.
+			posit<nbits + 1, es> pref, pprev, pnext;
+
+			// setup the random number generator
+			std::random_device rd;     //Get a random seed from the OS entropy device, or whatever
+			std::mt19937_64 eng(rd()); //Use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
+									   //Define the distribution, by default it goes from 0 to MAX(unsigned long long)
+			std::uniform_int_distribution<unsigned long long> distr;
+
+			// execute the test
+			int nrOfFailedTests = 0;
+			long double minpos = minpos_value<nbits + 1, es>();
+			long double da, input;
+			posit<nbits, es> presult, ptarget;
+			for (uint32_t i = 0; i < nrOfRandoms; ++i) {
+				// generate random value
+				unsigned long long value = distr(eng);
+				pref.set_raw_bits(value);   // assign to a posit<nbits+1,es> to generate the reference we know how to perturb
+				da = long double(pref);
+
+				//std::cout << std::hex << "0x" << value << std::endl;
+				//std::cout << std::dec << da << std::endl;
+/*
+				long double eps;
+				if (value == 0) {
+					eps = minpos / 2.0;
+				}
+				else {
+					eps = da > 0 ? da * 1.0e-6 : da * -1.0e-6;
+				}
+				*/
+
+				pprev = pnext = pref;
+				--pprev;
+				++pnext;
+				bitblock<nbits> raw_target;
+				if (value % 2) {
+					// for odd values, we are between posit values, so we create the round-up and round-down cases
+
+					// round-down case
+					input = long double(pprev);
+					presult = input;
+					truncate(pprev.get(), raw_target);
+					ptarget.set(raw_target);
+					nrOfFailedTests += Compare(input, presult, ptarget, pref, bReportIndividualTestCases);
+					// round-up
+					input = long double(pnext);
+					presult = input;
+					truncate(pnext.get(), raw_target);
+					ptarget.set(raw_target);
+					nrOfFailedTests += Compare(input, presult, ptarget, pref, bReportIndividualTestCases);
+				}
+				else {
+					// for even values, we are on a posit value, so we create the round-up and round-down cases
+					// by perturbing negative for rounding up, and perturbing positive for rounding down
+					// The problem you will run into for large posits is that you need 128-bit floats to be
+					// able to make the perturbation small enough not to end up on a completely different posit.
+
+					// round-up
+					input = long double(pprev);
+					presult = input;
+					truncate(pprev.get(), raw_target);
+					ptarget.set(raw_target);
+					nrOfFailedTests += Compare(input, presult, ptarget, pref, bReportIndividualTestCases);
+					// round-down
+					input = long double(pnext);
+					presult = input;
+					truncate(pnext.get(), raw_target);
+					ptarget.set(raw_target);
+					//nrOfFailedTests += Compare(input, presult, ptarget, pref, bReportIndividualTestCases);
+				}
+			}
+			return nrOfFailedTests;
+		}
+
 
 
 	} // namespace unum
