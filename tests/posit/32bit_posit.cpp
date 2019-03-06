@@ -6,7 +6,7 @@
 #include "common.hpp"
 // Configure the posit template environment
 // first: enable fast specialized posit<32,2>
-//#define POSIT_FAST_SPECIALIZATION   // would turn all the fast specializations on
+#define POSIT_FAST_SPECIALIZATION   // would turn all the fast specializations on
 //#define POSIT_FAST_POSIT_32_2 1
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
@@ -42,17 +42,18 @@ try {
 	cout << dynamic_range(p) << endl << endl;
 
 	// logic tests
-//	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
-//	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
-//	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicLessThan          <nbits, es>(), tag, "    <          ");
-//	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         ");
-//	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
-//	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
+	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
+	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
+	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicLessThan          <nbits, es>(), tag, "    <          ");
+	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         ");
+	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
+	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
 	// conversion tests
 	// disabled until we can constrain the state space 2^33 is too big
-//	nrOfFailedTestCases += ReportTestResult( ValidateIntegerConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "sint32 assign  ");
-//	nrOfFailedTestCases += ReportTestResult( ValidateUintConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "uint32 assign  ");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversionThroughRandoms <nbits, es>(tag, true, 100), tag, "float assign   ");
+	nrOfFailedTestCases += ReportTestResult( ValidateIntegerConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "sint32 assign  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateUintConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "uint32 assign  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateConversion <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");
+//	nrOfFailedTestCases += ReportTestResult( ValidateConversionThroughRandoms <nbits, es>(tag, true, 100), tag, "float assign   ");
 
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
 //	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES),  tag, "addition       ");
