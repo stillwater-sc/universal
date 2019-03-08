@@ -13,7 +13,7 @@
 #include <posit>
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
-
+#include "softposit32_ref.hpp"
 /*
 Standard posit with nbits = 32 have es = 2 exponent bits.
 */
@@ -23,7 +23,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 200000;
+	const size_t RND_TEST_CASES = 10; // 200000;
 
 	const size_t nbits = 32;
 	const size_t es = 2;
@@ -38,9 +38,20 @@ try {
 	cout << "Standard posit<32,2> configuration tests" << endl;
 #endif
 
+	posit32_t a, b, c;
+	a = 0x4000'0000;
+	b = 0xC000'0000;
+	c = p32_add(a, b);
+	cout << hex;
+	cout << "a = 0x" << a << endl;
+	cout << "b = 0x" << b << endl;
+	cout << "c = 0x" << c << endl;
+	cout << dec;
+
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
 
+#ifdef later
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
@@ -54,9 +65,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult( ValidateUintConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "uint32 assign  ");
 	nrOfFailedTestCases += ReportTestResult( ValidateConversion <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");
 //	nrOfFailedTestCases += ReportTestResult( ValidateConversionThroughRandoms <nbits, es>(tag, true, 100), tag, "float assign   ");
-
+#endif
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
-//	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES),  tag, "addition       ");
+	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES),  tag, "addition       ");
 //	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES),  tag, "subtraction    ");
 //	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES),  tag, "multiplication ");
 //	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES),  tag, "division       ");

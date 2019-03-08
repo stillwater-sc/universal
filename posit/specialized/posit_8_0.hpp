@@ -22,7 +22,7 @@ namespace sw {
 				static constexpr size_t ebits = es;
 				static constexpr size_t fbits = nbits - 3;
 				static constexpr size_t fhbits = fbits + 1;
-				static constexpr uint8_t index_shift = 4;
+				static constexpr uint8_t sign_mask = 0x80;
 
 				posit() { _bits = 0; }
 				posit(const posit&) = default;
@@ -53,7 +53,7 @@ namespace sw {
 						return *this;
 					}
 
-					bool sign = bool(rhs & 0x80);
+					bool sign = bool(rhs & sign_mask);
 					int8_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
 					uint8_t raw;
 					if (v > 48 || v == -128) { // +-maxpos, 0x80 is special in int8 arithmetic as it is its own negation
@@ -131,7 +131,7 @@ namespace sw {
 						_bits = lhs | rhs;
 						return *this;
 					}
-					bool sign = bool(_bits & 0x80);
+					bool sign = bool(_bits & sign_mask);
 					if (sign) {
 						lhs = -lhs & 0xFF;
 						rhs = -rhs & 0xFF;
@@ -176,7 +176,7 @@ namespace sw {
 						return *this;
 					}
 					// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
-					bool sign = bool(lhs & 0x80);
+					bool sign = bool(lhs & sign_mask);
 					(sign) ? (lhs = (-lhs & 0xFF)) : (rhs = (-rhs & 0xFF));
 
 					if (lhs == rhs) {
