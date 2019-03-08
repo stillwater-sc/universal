@@ -63,6 +63,7 @@ namespace sw {
 				_bits = 0x0;
 				return *this;
 			}
+
 			bool sign = bool(rhs & sign_mask);
 			uint32_t v = sign ? -rhs : rhs; // project to positive side of the projective reals
 			uint32_t raw;
@@ -105,6 +106,7 @@ namespace sw {
 				_bits = 0x0;
 				return *this;
 			}
+
 			uint32_t v = rhs; // always positive
 			uint32_t raw;
 			if (v > 0xFFFFFBFF) { // 4294966271
@@ -242,6 +244,7 @@ namespace sw {
 				std::swap(lhs, rhs);
 				sign = !sign;
 			}
+
 #ifdef later
 			// decode the regime of lhs
 			int8_t m = 0; // pattern length
@@ -292,6 +295,7 @@ namespace sw {
 				_bits = 0x00;
 				return *this;
 			}
+
 #ifdef later
 			// calculate the sign of the result
 			bool sign = bool(lhs & 0x80) ^ bool(rhs & 0x80);
@@ -303,6 +307,7 @@ namespace sw {
 			uint32_t remaining = 0;
 			decode_regime(lhs, m, remaining);
 			uint32_t lhs_fraction = (0x8000'0000 | remaining);
+
 			// adjust shift and extract fraction bits of rhs
 			extractMultiplicand(rhs, m, remaining);
 			uint8_t rhs_fraction = (0x80 | remaining);
@@ -341,6 +346,7 @@ namespace sw {
 			// decode the regime of lhs
 			int8_t m = 0; // pattern length
 			uint32_t remaining = 0;
+
 			decode_regime(lhs, m, remaining);
 			uint16_t lhs_fraction = (0x80 | remaining) << 7;
 			// adjust shift and extract fraction bits of rhs
@@ -583,6 +589,7 @@ namespace sw {
 				remaining &= 0x7F;
 			}
 		}
+
 		inline uint8_t round(const int8_t m, uint8_t exp, uint64_t fraction) const {
 			uint8_t scale, regime, bits;
 			if (m < 0) {
