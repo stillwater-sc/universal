@@ -24,6 +24,8 @@
 #include "../../posit/specialized/posit_3_1.hpp"
 #include "../../posit/specialized/posit_4_0.hpp"
 #include "../../posit/specialized/posit_8_0.hpp"
+#include "../../posit/specialized/posit_16_1.hpp"
+#include "../../posit/specialized/posit_32_2.hpp"
 #endif
 // posit type manipulators such as pretty printers
 #include "../../posit/posit_manipulators.hpp"

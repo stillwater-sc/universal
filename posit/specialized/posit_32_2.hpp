@@ -591,7 +591,7 @@ namespace sw {
 		}
 
 		inline uint8_t round(const int8_t m, uint8_t exp, uint64_t fraction) const {
-			uint8_t scale, regime, bits;
+			uint32_t scale, regime, bits;
 			if (m < 0) {
 				scale = -m;
 				regime = 0x4000'0000 >> scale;
@@ -615,24 +615,24 @@ namespace sw {
 				else {
 					uint8_t moreBits = 0x0;
 					if (scale == 30) {
-						bitNPlusOne = exp & 0x2;
+						bitNPlusOne = bool(exp & 0x2);
 						moreBits = exp & 0x1;
 						exp = 0;
 					}
 					else if (scale == 29) {
-						bitNPlusOne = exp & 0x1;
+						bitNPlusOne = bool(exp & 0x1);
 						exp >>= 1;
 					}
 					if (final_fbits > 0) {
 						final_fbits = 0x0;
-						moreBits = 1;
+						moreBits = 0x01;
 					}
-					bits = uint32_t(regime) + uint32_t(exp) + uint32_t(final_fbits);
-					// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-					if (bitNPlusOne) {
-						uint8_t moreBits = (0x7FFF'FFFF & fraction) ? 0x01 : 0x00;
-						bits += (bits & 0x000'0001) | moreBits;
-					}
+				}
+				bits = uint32_t(regime) + uint32_t(exp) + uint32_t(final_fbits);
+				// n+1 frac bit is 1. Need to check if another bit is 1 too, if not round to even
+				if (bitNPlusOne) {
+					uint32_t moreBits = (0x7FFF'FFFF & fraction) ? 0x1 : 0x0;
+					bits += (bits & 0x000'0001) | moreBits;
 				}
 			}
 			return bits;
