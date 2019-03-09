@@ -13,7 +13,8 @@
 #include <posit>
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
-#include "softposit32_ref.hpp"
+//#include "softposit32_ref.hpp"
+
 /*
 Standard posit with nbits = 32 have es = 2 exponent bits.
 */
@@ -23,7 +24,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 10; // 200000;
+	const size_t RND_TEST_CASES = 2000000;
 
 	const size_t nbits = 32;
 	const size_t es = 2;
@@ -38,20 +39,10 @@ try {
 	cout << "Standard posit<32,2> configuration tests" << endl;
 #endif
 
-	posit32_t a, b, c;
-	a = 0x4000'0000;
-	b = 0xC000'0000;
-	c = p32_add(a, b);
-	cout << hex;
-	cout << "a = 0x" << a << endl;
-	cout << "b = 0x" << b << endl;
-	cout << "c = 0x" << c << endl;
-	cout << dec;
-
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
-
-#ifdef later
+#define now
+#ifdef now
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
