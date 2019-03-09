@@ -437,7 +437,7 @@ namespace sw {
 				// cycle from largest value down to 0 via positive regime
 				constexpr unsigned long upper_bound = 0xFFFF'FFFF;
 				p = upper_bound;
-				for (unsigned long i = upper_bound; i > upper_bound - unsigned long(NR_TEST_CASES); --i) {
+				for (unsigned long i = upper_bound; i > upper_bound - (unsigned long)(NR_TEST_CASES); --i) {
 					unsigned long ref = (unsigned long)p;   // obtain the integer cast of this posit
 					presult = ref;		  // assign this integer to a reference posit
 					if (presult != ref) { // compare the integer cast to the reference posit
@@ -1253,7 +1253,7 @@ namespace sw {
 			if (presult != ptarget) {
 				fail++;
 				if (bReportIndividualTestCases) {
-					ReportConversionError("FAIL", "=", input, long double(ptarget), presult);
+					ReportConversionError("FAIL", "=", input, (long double)(ptarget), presult);
 					std::cout << "reference   : " << pref.get() << std::endl;
 					std::cout << "target bits : " << ptarget.get() << std::endl;
 					std::cout << "actual bits : " << presult.get() << std::endl;
@@ -1291,7 +1291,7 @@ namespace sw {
 				// generate random value
 				unsigned long long value = distr(eng);
 				pref.set_raw_bits(value);   // assign to a posit<nbits+1,es> to generate the reference we know how to perturb
-				da = long double(pref);
+				da = (long double)(pref);
 
 				//std::cout << std::hex << "0x" << value << std::endl;
 				//std::cout << std::dec << da << std::endl;
@@ -1313,13 +1313,13 @@ namespace sw {
 					// for odd values, we are between posit values, so we create the round-up and round-down cases
 
 					// round-down case
-					input = long double(pprev);
+					input = (long double)(pprev);
 					presult = input;
 					truncate(pprev.get(), raw_target);
 					ptarget.set(raw_target);
 					nrOfFailedTests += Compare(input, presult, ptarget, pref, bReportIndividualTestCases);
 					// round-up
-					input = long double(pnext);
+					input = (long double)(pnext);
 					presult = input;
 					truncate(pnext.get(), raw_target);
 					ptarget.set(raw_target);
@@ -1332,21 +1332,19 @@ namespace sw {
 					// able to make the perturbation small enough not to end up on a completely different posit.
 
 					// round-up
-					input = long double(pprev);
+					input = (long double)(pprev);
 					presult = input;
-					ptarget = long double(pref);
+					ptarget = (long double)(pref);
 					//nrOfFailedTests += Compare(input, presult, ptarget, pref, bReportIndividualTestCases);
 					// round-down
-					input = long double(pnext);
+					input = (long double)(pnext);
 					presult = input;
-					ptarget = long double(pref);
+					ptarget = (long double)(pref);
 					nrOfFailedTests += Compare(input, presult, ptarget, pref, bReportIndividualTestCases);
 				}
 			}
 			return nrOfFailedTests;
 		}
-
-
 
 	} // namespace unum
 
