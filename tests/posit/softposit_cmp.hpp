@@ -10,7 +10,10 @@ const uint_fast16_t softposit_approxRecipSqrt1[16] = {
 	0x5cc7, 0x8335, 0x52a6, 0x74e2, 0x4a3e, 0x68fe, 0x432b, 0x5efd
 };
 
-// incomplete dispatch for posit based FMA
+// incomplete dispatch for posit based FMA, default is opcode 0 mulAdd 
+//softposit_mulAdd_subC => (uiA*uiB)-uiC
+//softposit_mulAdd_subProd => uiC - (uiA*uiB)
+//Default is always op==0 (uiA*uiB)+uiC
 enum {
 	softposit_mulAdd_subC = 1,
 	softposit_mulAdd_subProd = 2

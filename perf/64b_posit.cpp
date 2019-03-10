@@ -5,7 +5,10 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-// enable/disable posit arithmetic exceptions
+// Configure the posit template environment
+// first: enable fast specialized posit<64,3>
+#define POSIT_FAST_POSIT_64_3 0
+// second: disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <posit>
 #include "posit_performance.hpp"
@@ -17,6 +20,7 @@ try {
 
 	constexpr size_t nbits = 64;
 	constexpr size_t es = 3;
+	//constexpr size_t capacity = 6;   // 2^6 accumulations of maxpos^2
 
 	OperatorPerformance perfReport;
 	GeneratePerformanceReport<nbits, es>(perfReport);
