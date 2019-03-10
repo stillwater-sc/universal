@@ -484,11 +484,11 @@ posit32_t p32_mul(posit32_t pA, posit32_t pB) {
 	}
 	else {
 		//remove carry and rcarry bits and shift to correct position (2 bits exp, so + 1 than 16 bits)
-		std::cout << "sf1 = " << std::hex << frac64Z << std::endl;
-		frac64Z = (frac64Z & 0xFFFFFFFFFFFFFFF) >> regA;
-		std::cout << "sf2 = " << std::hex << frac64Z << std::endl;
+		//std::cout << "fracin = " << std::hex << frac64Z << std::endl;
+		frac64Z = (frac64Z & 0xFFF'FFFF'FFFF'FFFF) >> regA;
+		//std::cout << "fracsh = " << std::hex << frac64Z << std::dec << std::endl;
+
 		fracA = (uint_fast32_t)(frac64Z >> 32);
-		std::cout << "sff = " << fracA << std::dec << std::endl;
 
 		if (regA <= 28) {
 			bitNPlusOne |= (0x80000000 & frac64Z);
@@ -510,9 +510,16 @@ posit32_t p32_mul(posit32_t pA, posit32_t pB) {
 			}
 
 		}
-		//sign is always zero
+		//std::cout << "scale  = " << regA << std::endl;
+		//std::cout << "frac64 = " << std::hex << frac64Z << std::dec << std::endl;
+		//std::cout << std::hex;
+		//std::cout << "regime = " << regime << std::endl;
+		//std::cout << "expone = " << expA << std::endl;
+		//std::cout << "fracti = " << fracA << std::endl;
+		//std::cout << std::dec;
+		// sign is always zero
 		uZ = packToP32UI(regime, expA, fracA);
-		//n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+		// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 		if (bitNPlusOne) {
 			(0x7FFFFFFF & frac64Z) ? (bitsMore = 1) : (bitsMore = 0);
 			uZ += (uZ & 1) | bitsMore;
