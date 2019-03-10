@@ -194,39 +194,39 @@ namespace sw {
 			if (lhs < rhs) std::swap(lhs, rhs);
 			
 			// decode the regime of lhs
-			int8_t m = 0; // pattern length
+			int32_t m = 0; // pattern length
 			uint32_t remaining = 0;
 			decode_regime(lhs, m, remaining);
 
 			// extract the exponent
-			int8_t lhs_exp = remaining >> 29;
+			uint32_t exp = remaining >> 29;
 
 			// extract the remaining fraction
 			uint64_t frac64A = ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
-			int8_t shiftRight = m;
+			int32_t shiftRight = m;
 
 			// adjust shift and extract fraction bits of rhs
 			extractAddand(rhs, shiftRight, remaining);
 			uint64_t frac64B = ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
 			// This is 4kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
-			shiftRight = (shiftRight << 2) + lhs_exp - (remaining >> 29);
+			shiftRight = (shiftRight << 2) + exp - (remaining >> 29);
 
 			// Work-around CLANG (LLVM) compiler when shifting right more than number of bits
-			frac64B = (shiftRight>63) ? 0 : (frac64B >> shiftRight); 
+			frac64B = (shiftRight > 63) ? 0 : (frac64B >> shiftRight); 
 
-			frac64A += frac64B;
+			frac64A += frac64B; // add the now aligned fractions
 
 			bool rcarry = bool(0x8000'0000'0000'0000 & frac64A); // is MSB set
 			if (rcarry) {
-				++lhs_exp;
-				if (lhs_exp > 3) {
+				++exp;
+				if (exp > 3) {
 					++m;
-					lhs_exp &= 0x3;
+					exp &= 0x3;
 				}
 				frac64A >>= 1;
 			}
 
-			_bits = round(m, lhs_exp, frac64A);
+			_bits = round(m, exp, frac64A);
 			if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 			return *this;
 		}
@@ -265,23 +265,23 @@ namespace sw {
 			}
 
 			// decode the regime of lhs
-			int8_t m = 0; // pattern length
+			int32_t m = 0; // pattern length
 			uint32_t remaining = 0;
 			decode_regime(lhs, m, remaining);
 
 			// extract the exponent
-			int8_t lhs_exp = remaining >> 29;
+			uint32_t exp = remaining >> 29;
 
 			// extract the remaining fraction
 			uint64_t frac64A = ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
-			int8_t shiftRight = m;
+			int32_t shiftRight = m;
 
 			// adjust shift and extract fraction bits of rhs
 			extractAddand(rhs, shiftRight, remaining);
 			uint64_t frac64B = ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
 
 			// This is 4kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
-			shiftRight = (shiftRight << 2) + lhs_exp - (remaining >> 29);
+			shiftRight = (shiftRight << 2) + exp - (remaining >> 29);
 			if (shiftRight > 63) {  // catastrophic cancellation case
 				_bits = lhs;
 				if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
@@ -290,7 +290,7 @@ namespace sw {
 			else {
 				frac64B >>= shiftRight;  // adjust the rhs fraction
 			}
-			frac64A -= frac64B;			// subtract the fractions
+			frac64A -= frac64B;			// subtract the aligned fractions
 
 			// adjust the results
 			while ((frac64A >> 59) == 0) {
@@ -299,18 +299,18 @@ namespace sw {
 			}
 			bool ecarry = bool (0x4000'0000'0000'0000 & frac64A);
 			while (!ecarry) {
-				if (lhs_exp == 0) {
+				if (exp == 0) {
 					--m;
-					lhs_exp = 0x3;
+					exp = 0x3;
 				}
 				else {
-					--m;
+					exp--;
 				}
 				frac64A <<= 1;
 				ecarry = bool(0x4000'0000'0000'0000 & frac64A);
 			}
 
-			_bits = round(m, lhs, frac64A);
+			_bits = round(m, exp, frac64A);
 			if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 			return *this;
 		}
@@ -342,12 +342,12 @@ namespace sw {
 			rhs = rhs & sign_mask ? -int32_t(rhs) : rhs;
 
 			// decode the regime of lhs
-			int8_t m = 0; // pattern length
+			int32_t m = 0;
 			uint32_t remaining = 0;
 			decode_regime(lhs, m, remaining);
 			uint32_t lhs_fraction = (0x8000'0000 | remaining);
 
-			int8_t lhs_exp = 0;
+			uint32_t exp = 0;
 
 			// adjust shift and extract fraction bits of rhs
 			extractMultiplicand(rhs, m, remaining);
@@ -361,7 +361,7 @@ namespace sw {
 			}
 
 			// round
-			_bits = round(m, lhs_exp, result_fraction);
+			_bits = round(m, exp, result_fraction);
 			if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 			return *this;
 		}
@@ -399,14 +399,13 @@ namespace sw {
 			rhs = rhs & sign_mask ? -int32_t(rhs) : rhs;
 
 			// decode the regime of lhs
-			int8_t m = 0; // pattern length
+			int32_t m = 0; // pattern length
 			uint32_t remaining = 0;
-
 			decode_regime(lhs, m, remaining);
 			uint16_t lhs_fraction = (0x80 | remaining) << 7;
 			// adjust shift and extract fraction bits of rhs
 			extractDividand(rhs, m, remaining);
-			uint8_t rhs_fraction = (0x80 | remaining);
+			uint32_t rhs_fraction = (0x80 | remaining);
 			div_t result = div(lhs_fraction, uint16_t(rhs_fraction));
 			uint16_t result_fraction = result.quot;
 			uint16_t remainder = result.rem;
@@ -470,7 +469,7 @@ namespace sw {
 		inline void setnar() { _bits = 0x8000'0000; }
 		inline posit twosComplement() const {
 			posit<NBITS_IS_32, ES_IS_2> p;
-			int8_t v = -*(int8_t*)&_bits;
+			int32_t v = -(int32_t)_bits;
 			p.set_raw_bits(v);
 			return p;
 		}
@@ -574,13 +573,13 @@ namespace sw {
 
 			bitblock<NBITS_IS_32> ptt;
 			convert_to_bb<NBITS_IS_32, ES_IS_2, dfbits>(v.sign(), v.scale(), v.fraction(), ptt); // TODO: needs to be faster
-			_bits = uint8_t(ptt.to_ulong());
+			_bits = uint32_t(ptt.to_ulong());
 			return *this;
 		}
 
 		// helper method
 		// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder
-		inline void decode_regime(const uint8_t bits, int8_t& m, uint32_t& remaining) const {
+		inline void decode_regime(const uint32_t bits, int32_t& m, uint32_t& remaining) const {
 			remaining = (bits << 2) & 0xFFFF'FFFF;
 			if (bits & 0x4000'0000) {  // positive regimes
 				while (remaining >> 31) {
@@ -597,7 +596,7 @@ namespace sw {
 				remaining &= 0x7FFF'FFFF;
 			}
 		}
-		inline void extractAddand(const uint8_t bits, int8_t& m, uint32_t& remaining) const {
+		inline void extractAddand(const uint32_t bits, int32_t& m, uint32_t& remaining) const {
 			remaining = (bits << 2) & 0xFFFF'FFFF;
 			if (bits & 0x4000'0000) {  // positive regimes
 				while (remaining >> 31) {
@@ -614,7 +613,7 @@ namespace sw {
 				remaining &= 0x7FFF'FFFF;
 			}
 		}
-		inline void extractMultiplicand(const uint8_t bits, int8_t& m, uint32_t& remaining) const {
+		inline void extractMultiplicand(const uint32_t bits, int32_t& m, uint32_t& remaining) const {
 			remaining = (bits << 2) & 0xFFFF'FFFF;
 			if (bits & 0x4000'0000) {  // positive regimes
 				while (remaining >> 31) {
@@ -631,7 +630,7 @@ namespace sw {
 				remaining &= 0x7FFF'FFFF;
 			}
 		}
-		inline void extractDividand(const uint8_t bits, int8_t& m, uint32_t& remaining) const {
+		inline void extractDividand(const uint32_t bits, int32_t& m, uint32_t& remaining) const {
 			remaining = (bits << 2) & 0xFFFF'FFFF;
 			if (bits & 0x4000'0000) {  // positive regimes
 				while (remaining >> 31) {
@@ -649,7 +648,7 @@ namespace sw {
 			}
 		}
 
-		inline uint8_t round(const int8_t m, uint8_t exp, uint64_t fraction) const {
+		inline uint32_t round(const int8_t m, uint32_t exp, uint64_t fraction) const {
 			uint32_t scale, regime, bits;
 			if (m < 0) {
 				scale = -m;
@@ -672,7 +671,7 @@ namespace sw {
 					exp <<= (28 - scale);
 				}
 				else {
-					uint8_t moreBits = 0x0;
+					uint8_t moreBits = 0;
 					if (scale == 30) {
 						bitNPlusOne = bool(exp & 0x2);
 						moreBits = exp & 0x1;
