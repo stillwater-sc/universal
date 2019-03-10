@@ -24,7 +24,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 10; // 2000000;
+	const size_t RND_TEST_CASES = 2000000;
 
 	const size_t nbits = 32;
 	const size_t es = 2;
@@ -39,10 +39,11 @@ try {
 	cout << "Standard posit<32,2> configuration tests" << endl;
 #endif
 
-	//FAIL 00000000000000000000000010110010 - 00000000000000000000000011010011 != 00000000000000000000000010100001 instead it yielded 11111111111111111111111110000110 s1 r0000000000000000000000001 e11 f1010 qSW v - 1.6408306828597045553e-28
-	//FAIL 00000000000000000000000001001100 - 00000000000000000000000001000100 != 00000000000000000000000011001110 instead it yielded 00000000000000000000000010000000 s0 r000000000000000000000001 e00 f00000 qSE v + 2.0194839173657902219e-28
-	//FAIL 00000000000000000000000001001110 - 00000000000000000000000001001100 != 00000000000000000000000001101010 instead it yielded 00000000000000000000000010100100 s0 r000000000000000000000001 e01 f00100 qSE v + 4.5438388140730279992e-28
-
+#ifdef later
+	//FAIL 00000000000000000000000011100101 + 00000000000000000000000000011110 != 00000000000000000000000000010001 instead it yielded 00000000000000000000000011100101 s0 r000000000000000000000001 e11 f00101 qSE v + 1.8680226235633559552e-27
+	//FAIL 00000000000000000000000000000001 + 00000000000000000000000000001101 != 00000000000000000000000001111101 instead it yielded 00000000000000000000000000001101 s0 r0000000000000000000000000001 e10 f1 qSE v + 1.8488927466117464189e-32
+	//FAIL 00000000000000000000000010001010 + 00000000000000000000000000000001 != 00000000000000000000000011110110 instead it yielded 00000000000000000000000010001010 s0 r000000000000000000000001 e00 f01010 qSE v + 2.6505726415425996662e-28
+		F
 	posit32_t a, b, c;
 	a = 0x0000'00B2;
 	b = 0x0000'00D3;
@@ -60,19 +61,13 @@ try {
 	cout << "x = " << posit_format(x) << endl;
 	cout << "y = " << posit_format(y) << endl;
 	cout << "z = " << posit_format(z) << endl;
-/*
-a = 32.2xb2
-b = 32.2xd3
-c = 32.2xffffff4c
-x = 32.2x000000B2p
-y = 32.2x000000D3p
-z = 32.2xFFFFFF86p
-*/
+
 	return 1;
+#endif
 
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
-#define now_
+#define now
 #ifdef now
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
@@ -89,7 +84,7 @@ z = 32.2xFFFFFF86p
 //	nrOfFailedTestCases += ReportTestResult( ValidateConversionThroughRandoms <nbits, es>(tag, true, 100), tag, "float assign   ");
 #endif
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
-//	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, true, OPCODE_ADD, RND_TEST_CASES),  tag, "addition       ");
+	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, true, OPCODE_ADD, RND_TEST_CASES),  tag, "addition       ");
 	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, true, OPCODE_SUB, RND_TEST_CASES),  tag, "subtraction    ");
 //	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES),  tag, "multiplication ");
 //	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES),  tag, "division       ");

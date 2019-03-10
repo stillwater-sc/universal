@@ -509,7 +509,7 @@ namespace sw {
 
 			bitblock<NBITS_IS_16> ptt;
 			convert_to_bb<NBITS_IS_16, ES_IS_1, dfbits>(v.sign(), v.scale(), v.fraction(), ptt); // TODO: needs to be faster
-			_bits = uint8_t(ptt.to_ulong());
+			_bits = uint16_t(ptt.to_ulong());
 			return *this;
 		}
 
