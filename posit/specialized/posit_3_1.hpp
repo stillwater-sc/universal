@@ -8,9 +8,8 @@ namespace sw {
 	namespace unum {
 
 		// set the fast specialization variable to indicate that we are running a special template specialization
-#ifdef POSIT_FAST_SPECIALIZATION
-#define POSIT_FAST_POSIT_3_1
-#endif
+#if POSIT_FAST_POSIT_3_1
+#pragma message("Fast specialization of posit<3,1>")
 
 			constexpr uint8_t posit_3_1_addition_lookup[64] = {
 				0,1,0,3,1,1,0,3,2,0,2,3,3,3,3,3,
@@ -361,6 +360,9 @@ namespace sw {
 				sum += rhs;
 				return sum;
 			}
-
+#else  // POSIT_FAST_POSIT_3_1
+#pragma message("Standard posit<3,1>")
+#	define POSIT_FAST_POSIT_3_1 0
+#endif // POSIT_FAST_POSIT_3_1
 	}
 }
