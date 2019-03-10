@@ -9,15 +9,9 @@ namespace sw {
   namespace unum {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
-#ifndef POSIT_FAST_POSIT_16_1
-  #ifdef POSIT_FAST_SPECIALIZATION
-    #define POSIT_FAST_POSIT_16_1 1
-  #else 
-    #define POSIT_FAST_POSIT_16_1 0
-  #endif
-#endif
-
 #if POSIT_FAST_POSIT_16_1
+#pragma message("Fast specialization of posit<16,1>")
+
 	// fast specialized posit<16,1>
 	template<>
 	class posit<NBITS_IS_16, ES_IS_1> {
@@ -789,6 +783,9 @@ namespace sw {
 
 #endif // POSIT_ENABLE_LITERALS
 
+#else  // POSIT_FAST_POSIT_16_1
+#pragma message("Standard posit<16,1>")
+#	define POSIT_FAST_POSIT_16_1 0
 #endif // POSIT_FAST_POSIT_16_1
 
   }
