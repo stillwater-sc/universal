@@ -20,7 +20,7 @@ namespace sw {
 				static constexpr size_t sbits = 1;
 				static constexpr size_t rbits = nbits - sbits;
 				static constexpr size_t ebits = es;
-				static constexpr size_t fbits = nbits - 3;
+				static constexpr size_t fbits = nbits - 3 - es;
 				static constexpr size_t fhbits = fbits + 1;
 				static constexpr uint8_t sign_mask = 0x80;
 

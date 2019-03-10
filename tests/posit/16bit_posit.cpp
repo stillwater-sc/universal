@@ -14,7 +14,7 @@
 #include <posit>
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
-
+#include "softposit16_ref.hpp"
 /*
 Standard posit with nbits = 16 have es = 1 exponent bit.
 */

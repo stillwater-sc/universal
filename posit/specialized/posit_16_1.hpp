@@ -27,10 +27,9 @@ namespace sw {
 		static constexpr size_t sbits = 1;
 		static constexpr size_t rbits = nbits - sbits;
 		static constexpr size_t ebits = es;
-		static constexpr size_t fbits = nbits - 3;
+		static constexpr size_t fbits = nbits - 3 - es;
 		static constexpr size_t fhbits = fbits + 1;
-		static constexpr uint8_t index_shift = 4;
-		static constexpr uint16_t SIGN_MASK = 0x8000;
+		static constexpr uint16_t sign_mask = 0x8000u;
 
 		posit() { _bits = 0; }
 		posit(const posit&) = default;
@@ -54,78 +53,98 @@ namespace sw {
 		posit(const long double initial_value)        { *this = initial_value; }
 
 		// assignment operators for native types
-		posit& operator=(const signed char rhs)       { return operator=((signed short)(rhs)); }
-		posit& operator=(const short rhs) {
+		posit& operator=(const signed char rhs)       { return operator=((long)(rhs)); }
+		posit& operator=(const short rhs)             { return operator=((long)(rhs)); }
+		posit& operator=(const int rhs)               { return operator=((long)(rhs)); }
+		posit& operator=(const long rhs)              { 
 			// special case for speed as this is a common initialization
 			if (rhs == 0) {
 				_bits = 0x0;
 				return *this;
 			}
 
-			bool sign = bool(rhs & SIGN_MASK);
-			uint16_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
+			bool sign = (rhs < 0);
+			uint32_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
 			uint16_t raw;
-			if (v > 48 || v == SIGN_MASK) { // +-maxpos, 0x8000 is special in int16 arithmetic as it is its own negation
-				raw = 0x7F;
+			if (v == sign_mask) { // +-maxpos, 0x8000 is special in int16 arithmetic as it is its own negation
+				_bits = 0x8000;
+				return *this;
+			}
+			else if (v > 0x0800'0000) { // v > 134,217,728
+				_bits = 0x7FFFu;  // +-maxpos
+			}
+			else if (v > 0x02FF'FFFF) { // 50,331,647 < v < 134,217,728
+				_bits = 0x7FFEu;  // 0.5 of maxpos
+			}
+			else if (v < 2) {  // v == 0 or v == 1
+				_bits = (v << 14); // generates 0x0000 if v is 0, or 0x4000 if 1
 			}
 			else {
-				uint16_t mask = 0x4000;
-				int8_t k = 6;
+				uint32_t mask = 0x0200'0000;
+				int8_t scale = 25;
 				uint16_t fraction_bits = v;
 				while (!(fraction_bits & mask)) {
-					k--;
+					--scale;
 					fraction_bits <<= 1;
 				}
+				int8_t k = scale >> 1;
+				uint16_t exp = (scale & 0x01) << (12 - k); // extract exponent and shift to correct location
 				fraction_bits = (fraction_bits ^ mask);
-				raw = (0x7FFF ^ (0x3FFF >> k)) | (fraction_bits >> (k + 1));
+				raw = (0x7FFF ^ (0x3FFF >> k)) | exp |  (fraction_bits >> (k + 13));
 
-				mask = 0x1 << k; //bitNPlusOne
+				mask = 0x1000 << k; // bitNPlusOne
 				if (mask & fraction_bits) {
-					if (((mask - 1) & fraction_bits) | ((mask << 1) & fraction_bits)) raw++;
+					if (((mask - 1) & fraction_bits) | ((mask << 1) & fraction_bits)) raw++; // increment by 1
 				}
 			}
 			_bits = sign ? -raw : raw;
 			return *this;
 		}
-		posit& operator=(const int rhs)               { return operator=((signed short)(rhs)); }
-		posit& operator=(const long rhs)              { return operator=((signed short)(rhs)); }
-		posit& operator=(const long long rhs)         { return operator=((signed short)(rhs)); }
-		posit& operator=(const char rhs)              { return operator=((unsigned short)(rhs)); }
-		posit& operator=(const unsigned short rhs)    { 
+		posit& operator=(const long long rhs)         { return operator=((long)(rhs)); }
+		posit& operator=(const char rhs)              { return operator=((unsigned long)(rhs)); }
+		posit& operator=(const unsigned short rhs)    { return operator=((unsigned long)(rhs)); }
+		posit& operator=(const unsigned int rhs)      { return operator=((unsigned long)(rhs)); }
+		posit& operator=(const unsigned long rhs)     { 
 			// special case for speed as this is a common initialization
 			if (rhs == 0) {
 				_bits = 0x0;
 				return *this;
 			}
+			uint32_t v = rhs;
+			if (v == sign_mask) { // +-maxpos, 0x8000 is special in int16 arithmetic as it is its own negation
+				_bits = 0x8000;
+			}
+			else if (v > 0x0800'0000) { // v > 134,217,728
+				_bits = 0x7FFFu;  // +-maxpos
+			}
+			else if (v > 0x02FF'FFFF) { // 50,331,647 < v < 134,217,728
+				_bits = 0x7FFEu;  // 0.5 of maxpos
+			}
+			else if (v < 2) {  // v == 0 or v == 1
+				_bits = (v << 14); // generates 0x0000 if v is 0, or 0x4000 if 1
 
-			bool sign = bool(rhs & SIGN_MASK);
-			uint16_t v = rhs; // already at the positve side of the projective reals
-			uint16_t raw;
-			if (v > 48 || v == SIGN_MASK) { // +-maxpos, 0x8000 is special in int16 arithmetic as it is its own negation
-				raw = 0x7F;
 			}
 			else {
-				uint16_t mask = 0x4000;
-				int8_t k = 6;
+				uint32_t mask = 0x0200'0000;
+				int8_t scale = 25;
 				uint16_t fraction_bits = v;
 				while (!(fraction_bits & mask)) {
-					k--;
+					--scale;
 					fraction_bits <<= 1;
 				}
+				int8_t k = scale >> 1;
+				uint16_t exp = (scale & 0x01) << (12 - k); // extract exponent and shift to correct location
 				fraction_bits = (fraction_bits ^ mask);
-				raw = (0x7FFF ^ (0x3FFF >> k)) | (fraction_bits >> (k + 1));
+				_bits = (0x7FFF ^ (0x3FFF >> k)) | exp | (fraction_bits >> (k + 13));
 
-				mask = 0x1 << k; //bitNPlusOne
+				mask = 0x1000 << k; // bitNPlusOne
 				if (mask & fraction_bits) {
-					if (((mask - 1) & fraction_bits) | ((mask << 1) & fraction_bits)) raw++;
+					if (((mask - 1) & fraction_bits) | ((mask << 1) & fraction_bits)) _bits++; // increment by 1
 				}
 			}
-			_bits = raw;
 			return *this;
 		}
-		posit& operator=(const unsigned int rhs)      { return operator=((unsigned short)(rhs)); }
-		posit& operator=(const unsigned long rhs)     { return operator=((unsigned short)(rhs)); }
-		posit& operator=(const unsigned long long rhs){ return operator=((unsigned short)(rhs)); }
+		posit& operator=(const unsigned long long rhs){ return operator=((unsigned long)(rhs)); }
 		posit& operator=(const float rhs)             { return float_assign(rhs); }
 		posit& operator=(const double rhs)            { return float_assign(rhs); }
 		posit& operator=(const long double rhs)       { return float_assign(rhs); }
@@ -179,13 +198,13 @@ namespace sw {
 			
 			// decode the regime of lhs
 			int8_t m = 0; // pattern length
-			uint8_t remaining = 0;
+			uint16_t remaining = 0;
 			decode_regime(lhs, m, remaining);
-			uint16_t frac16A = (0x80 | remaining) << 7;
+			uint32_t frac16A = (0x80 | remaining) << 7;
 			int8_t shiftRight = m;
 			// adjust shift and extract fraction bits of rhs
 			extractAddand(rhs, shiftRight, remaining);
-			uint16_t frac16B = (0x80 | remaining) << 7;
+			uint32_t frac16B = (0x80 | remaining) << 7;
 
 			// Work-around CLANG (LLVM) compiler when shifting right more than number of bits
 			(shiftRight>7) ? (frac16B = 0) : (frac16B >>= shiftRight); 
@@ -203,8 +222,8 @@ namespace sw {
 			return *this;
 		}
 		posit& operator-=(const posit& b) {  // derived from SoftPosit
-			uint8_t lhs = _bits;
-			uint8_t rhs = b._bits;
+			uint16_t lhs = _bits;
+			uint16_t rhs = b._bits;
 			// process special cases
 			if (isnar() || b.isnar()) {
 				_bits = 0x80;
@@ -229,7 +248,7 @@ namespace sw {
 
 			// decode the regime of lhs
 			int8_t m = 0; // pattern length
-			uint8_t remaining = 0;
+			uint16_t remaining = 0;
 			decode_regime(lhs, m, remaining);
 			uint16_t frac16A = (0x80 | remaining) << 7;
 			int8_t shiftRight = m;
@@ -263,8 +282,8 @@ namespace sw {
 			return *this;
 		}
 		posit& operator*=(const posit& b) {
-			uint8_t lhs = _bits;
-			uint8_t rhs = b._bits;
+			uint16_t lhs = _bits;
+			uint16_t rhs = b._bits;
 			// process special cases
 			if (isnar() || b.isnar()) {
 				_bits = 0x80;
@@ -282,7 +301,7 @@ namespace sw {
 
 			// decode the regime of lhs
 			int8_t m = 0; // pattern length
-			uint8_t remaining = 0;
+			uint16_t remaining = 0;
 			decode_regime(lhs, m, remaining);
 			uint8_t lhs_fraction = (0x80 | remaining);
 			// adjust shift and extract fraction bits of rhs
@@ -302,8 +321,8 @@ namespace sw {
 			return *this;
 		}
 		posit& operator/=(const posit& b) {
-			uint8_t lhs = _bits;
-			uint8_t rhs = b._bits;
+			uint16_t lhs = _bits;
+			uint16_t rhs = b._bits;
 			// process special cases
 			if (isnar() || b.isnar() || b.iszero()) {
 				_bits = 0x80;
@@ -321,7 +340,7 @@ namespace sw {
 
 			// decode the regime of lhs
 			int8_t m = 0; // pattern length
-			uint8_t remaining = 0;
+			uint16_t remaining = 0;
 			decode_regime(lhs, m, remaining);
 			uint16_t lhs_fraction = (0x80 | remaining) << 7;
 			// adjust shift and extract fraction bits of rhs
@@ -368,11 +387,11 @@ namespace sw {
 			return p;
 		}
 		// SELECTORS
-		inline bool isnar() const      { return (_bits == SIGN_MASK); }
+		inline bool isnar() const      { return (_bits == sign_mask); }
 		inline bool iszero() const     { return (_bits == 0x0); }
 		inline bool isone() const      { return (_bits == 0x4000); } // pattern 010000...
 		inline bool isminusone() const { return (_bits == 0xC000); } // pattern 110000...
-		inline bool isneg() const      { return (_bits & SIGN_MASK); }
+		inline bool isneg() const      { return (_bits & sign_mask); }
 		inline bool ispos() const      { return !isneg(); }
 		inline bool ispowerof2() const { return !(_bits & 0x1); }
 
@@ -383,7 +402,7 @@ namespace sw {
 
 		inline void clear() { _bits = 0; }
 		inline void setzero() { clear(); }
-		inline void setnar() { _bits = SIGN_MASK; }
+		inline void setnar() { _bits = sign_mask; }
 		inline posit twosComplement() const {
 			posit<NBITS_IS_16, ES_IS_1> p;
 			int16_t v = -*(int16_t*)&_bits;
@@ -496,7 +515,7 @@ namespace sw {
 
 		// helper method
 		// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder
-		inline void decode_regime(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
+		inline void decode_regime(const uint16_t bits, int8_t& m, uint16_t& remaining) const {
 			remaining = (bits << 2) & 0xFF;
 			if (bits & 0x40) {  // positive regimes
 				while (remaining >> 7) {
@@ -513,7 +532,7 @@ namespace sw {
 				remaining &= 0x7F;
 			}
 		}
-		inline void extractAddand(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
+		inline void extractAddand(const uint16_t bits, int8_t& m, uint16_t& remaining) const {
 			remaining = (bits << 2) & 0xFF;
 			if (bits & 0x40) {  // positive regimes
 				while (remaining >> 7) {
@@ -530,7 +549,7 @@ namespace sw {
 				remaining &= 0x7F;
 			}
 		}
-		inline void extractMultiplicand(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
+		inline void extractMultiplicand(const uint16_t bits, int8_t& m, uint16_t& remaining) const {
 			remaining = (bits << 2) & 0xFF;
 			if (bits & 0x40) {  // positive regimes
 				while (remaining >> 7) {
@@ -547,7 +566,7 @@ namespace sw {
 				remaining &= 0x7F;
 			}
 		}
-		inline void extractDividand(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
+		inline void extractDividand(const uint16_t bits, int8_t& m, uint16_t& remaining) const {
 			remaining = (bits << 2) & 0xFF;
 			if (bits & 0x40) {  // positive regimes
 				while (remaining >> 7) {
