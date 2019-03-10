@@ -364,7 +364,7 @@ namespace sw {
 			}
 
 			// round
-			_bits = round(m, exp, result_fraction);
+			_bits = round_mul(m, exp, result_fraction);
 			if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 			return *this;
 		}
@@ -666,8 +666,6 @@ namespace sw {
 				bits = m<0 ? 0x1 : 0x7FFF'FFFF;  // minpos and maxpos
 			}
 			else {
-std::cout << "f1 = " << std::hex << ((fraction & 0x3FFF'FFFF'FFFF'FFFF) >> (scale + 2)) << std::endl;
-std::cout << "f2 = " << ((fraction & 0x3FFF'FFFF'FFFF'FFFF) >> scale) << std::dec << std::endl;
 				fraction = (fraction & 0x3FFF'FFFF'FFFF'FFFF) >> (scale + 2);
 				uint32_t final_fbits = uint32_t(fraction >> 32);
 				bool bitNPlusOne = false;
@@ -692,6 +690,66 @@ std::cout << "f2 = " << ((fraction & 0x3FFF'FFFF'FFFF'FFFF) >> scale) << std::de
 					}
 				}
 				bits = uint32_t(regime) + uint32_t(exp) + uint32_t(final_fbits);
+				// n+1 frac bit is 1. Need to check if another bit is 1 too, if not round to even
+				if (bitNPlusOne) {
+					uint32_t moreBits = (0x7FFF'FFFF & fraction) ? 0x1 : 0x0;
+					bits += (bits & 0x000'0001) | moreBits;
+				}
+			}
+			return bits;
+		}
+		inline uint32_t round_mul(const int8_t m, uint32_t exp, uint64_t fraction) const {
+			uint32_t scale, regime, bits;
+			if (m < 0) {
+				scale = -m;
+				regime = 0x4000'0000 >> scale;
+			}
+			else {
+				scale = m + 1;
+				regime = 0x7FFF'FFFF - (0x7FFF'FFFF >> scale);
+			}
+
+			if (scale > 30) {
+				bits = m<0 ? 0x1 : 0x7FFF'FFFF;  // minpos and maxpos
+			}
+			else {
+				//std::cout << "fracin = " << std::hex << fraction << std::dec << std::endl;
+				fraction = (fraction & 0x0FFF'FFFF'FFFF'FFFF) >> scale;
+				//std::cout << "fracsh = " << std::hex << fraction << std::dec << std::endl;
+
+				uint32_t final_fbits = uint32_t(fraction >> 32);
+				bool bitNPlusOne = false;
+				if (scale <= 28) {
+					bitNPlusOne = bool(0x0000'0000'8000'0000 & fraction);
+					exp <<= (28 - scale);
+				}
+				else {
+					uint8_t moreBits = 0;
+					if (scale == 30) {
+						bitNPlusOne = bool(exp & 0x2);
+						moreBits = exp & 0x1;
+						exp = 0;
+					}
+					else if (scale == 29) {
+						bitNPlusOne = bool(exp & 0x1);
+						exp >>= 1;
+					}
+					if (final_fbits > 0) {
+						final_fbits = 0;
+						moreBits = 0x01;
+					}
+				}
+				// sign is set by the calling environment as +/- behaves differently compared to */div
+				bits = uint32_t(regime) + uint32_t(exp) + uint32_t(final_fbits);
+
+				//std::cout << "scale  = " << scale << std::endl;
+				//std::cout << "frac64 = " << std::hex << fraction << std::dec << std::endl;
+				//std::cout << std::hex ;
+				//std::cout << "regime = " << regime << std::endl;
+				//std::cout << "expone = " << exp << std::endl;
+				//std::cout << "fracti = " << final_fbits << std::endl;
+				//std::cout << std::dec ;
+
 				// n+1 frac bit is 1. Need to check if another bit is 1 too, if not round to even
 				if (bitNPlusOne) {
 					uint32_t moreBits = (0x7FFF'FFFF & fraction) ? 0x1 : 0x0;

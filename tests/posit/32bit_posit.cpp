@@ -6,8 +6,8 @@
 #include "common.hpp"
 // Configure the posit template environment
 // first: enable fast specialized posit<32,2>
-#define POSIT_FAST_SPECIALIZATION   // turns on all fast specializations
-//#define POSIT_FAST_POSIT_32_2 1
+//#define POSIT_FAST_SPECIALIZATION   // turns on all fast specializations
+#define POSIT_FAST_POSIT_32_2 1
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
@@ -26,7 +26,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 10; // 2000000;
+	const size_t RND_TEST_CASES = 2000000;
 
 	const size_t nbits = 32;
 	const size_t es = 2;
@@ -41,37 +41,39 @@ try {
 	cout << "Standard posit<32,2> configuration tests" << endl;
 #endif
 
-	ValidateAgainstSoftPosit<32,2>("test", true, OPCODE_MUL, 10);
-	return 1;
-#ifdef later
-	//FAIL 00000000000000000000000011100101 + 00000000000000000000000000011110 != 00000000000000000000000000010001 instead it yielded 00000000000000000000000011100101 s0 r000000000000000000000001 e11 f00101 qSE v + 1.8680226235633559552e-27
-	//FAIL 00000000000000000000000000000001 + 00000000000000000000000000001101 != 00000000000000000000000001111101 instead it yielded 00000000000000000000000000001101 s0 r0000000000000000000000000001 e10 f1 qSE v + 1.8488927466117464189e-32
-	//FAIL 00000000000000000000000010001010 + 00000000000000000000000000000001 != 00000000000000000000000011110110 instead it yielded 00000000000000000000000010001010 s0 r000000000000000000000001 e00 f01010 qSE v + 2.6505726415425996662e-28
-		F
+	//ValidateAgainstSoftPosit<32,2>("test", true, OPCODE_MUL, 10);
+	//return 1;
+#define manual 0
+#if manual
+
+	// FAIL 10000110000110111111010000101111 * 10111101110000011010101011101011 != 01111010001101011110010100011110 instead it yielded 01111010010011010111100101001000 
+	// FAIL 10100100010110000000110110000101 * 10110000000100000001010001001000 != 01100101110011100001110111100001 instead it yielded 01100101011100111000011101111000
 	posit32_t a, b, c;
-	a = 0x0000'00B2;
-	b = 0x0000'00D3;
-	c = p32_sub(a, b);
+	a = 0b10000110000110111111010000101111;
+	b = 0b10111101110000011010101011101011;
+	c = p32_mul(a, b);
 	cout << hex;
 	cout << "a = 32.2x" << a << endl;
 	cout << "b = 32.2x" << b << endl;
 	cout << "c = 32.2x" << c << endl;
 	cout << dec;
 
-	posit<nbits, es> x, y, z;
-	x.set_raw_bits(0x00B2);
-	y.set_raw_bits(0x00D3);
-	z = x - y;
+	posit<nbits, es> x, y, z, r;
+	x.set_raw_bits(0b10000110000110111111010000101111);
+	y.set_raw_bits(0b10111101110000011010101011101011);
+	r.set_raw_bits(0b01111010001101011110010100011110);
+	z = x * y;
 	cout << "x = " << posit_format(x) << endl;
 	cout << "y = " << posit_format(y) << endl;
 	cout << "z = " << posit_format(z) << endl;
+	cout << "r = " << posit_format(r) << endl;
 
 	return 1;
 #endif
 
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
-#define now_
+#define now
 #ifdef now
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
@@ -88,9 +90,9 @@ try {
 //	nrOfFailedTestCases += ReportTestResult( ValidateConversionThroughRandoms <nbits, es>(tag, true, 100), tag, "float assign   ");
 #endif
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
-//	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES),  tag, "addition       ");
-//	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES),  tag, "subtraction    ");
-	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, true, OPCODE_MUL, RND_TEST_CASES),  tag, "multiplication ");
+	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES),  tag, "addition       ");
+	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES),  tag, "subtraction    ");
+	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES),  tag, "multiplication ");
 //	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES),  tag, "division       ");
 //	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SQRT, RND_TEST_CASES), tag, "sqrt           ");
 
