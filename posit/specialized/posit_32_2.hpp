@@ -338,18 +338,28 @@ namespace sw {
 			int32_t m = 0;
 			uint32_t remaining = 0;
 			decode_regime(lhs, m, remaining);
-			uint32_t lhs_fraction = (0x8000'0000 | remaining);
-
-			uint32_t exp = 0;
+			uint32_t exp = remaining >> 29;  // lhs exponent
+			uint32_t lhs_fraction = ((remaining << 1) | 0x40000000) & 0x7FFFFFFF;;
 
 			// adjust shift and extract fraction bits of rhs
 			extractMultiplicand(rhs, m, remaining);
-			uint8_t rhs_fraction = (0x80 | remaining);
-			uint16_t result_fraction = uint16_t(lhs_fraction) * uint16_t(rhs_fraction);
+			uint32_t rhs_fraction = (((remaining << 1) | 0x40000000) & 0x7FFFFFFF);
+			uint64_t result_fraction = uint64_t(lhs_fraction) * uint64_t(rhs_fraction);
+			exp += remaining >> 29;  // product exp is the sum of lhs exp and rhs exp
 
-			bool rcarry = bool(result_fraction & 0x8000);
+			// adjust exponent if it has overflown
+			if (exp > 3) {
+				++m;
+				exp &= 0x3;
+			}
+
+			bool rcarry = bool(result_fraction >> 61); // the 3rd bit of the 64-bit result fraction
 			if (rcarry) {
-				m++;
+				++exp;
+				if (exp > 3) { // adjust again if we have overflown
+					++m;
+					exp &= 0x3;
+				}
 				result_fraction >>= 1;
 			}
 
@@ -656,6 +666,8 @@ namespace sw {
 				bits = m<0 ? 0x1 : 0x7FFF'FFFF;  // minpos and maxpos
 			}
 			else {
+std::cout << "f1 = " << std::hex << ((fraction & 0x3FFF'FFFF'FFFF'FFFF) >> (scale + 2)) << std::endl;
+std::cout << "f2 = " << ((fraction & 0x3FFF'FFFF'FFFF'FFFF) >> scale) << std::dec << std::endl;
 				fraction = (fraction & 0x3FFF'FFFF'FFFF'FFFF) >> (scale + 2);
 				uint32_t final_fbits = uint32_t(fraction >> 32);
 				bool bitNPlusOne = false;
