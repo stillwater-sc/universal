@@ -28,9 +28,9 @@ namespace sw {
 		static constexpr size_t sbits = 1;
 		static constexpr size_t rbits = nbits - sbits;
 		static constexpr size_t ebits = es;
-		static constexpr size_t fbits = nbits - 3;
+		static constexpr size_t fbits = nbits - 3 - es;
 		static constexpr size_t fhbits = fbits + 1;
-		static constexpr uint32_t sign_mask = 0x8000'0000;
+		static constexpr uint32_t sign_mask = 0x8000'0000ul;
 
 		posit() { _bits = 0; }
 		posit(const posit&) = default;
@@ -169,13 +169,19 @@ namespace sw {
 			return p.set_raw_bits((~_bits) + 1);
 		}
 		posit& operator+=(const posit& b) { // derived from SoftPosit
-			uint32_t lhs = _bits;
-			uint32_t rhs = b._bits;
-			// process special cases
-			if (isnar() || b.isnar()) {  // infinity
-				_bits = 0x8000'0000;
+			// special case handling of the inputs
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+			if (isnar() || b.isnar()) {
+				throw operand_is_nar{};
+			}
+#else
+			if (isnar() || b.isnar()) {
+				setnar();
 				return *this;
 			}
+#endif
+			uint32_t lhs = _bits;
+			uint32_t rhs = b._bits;
 			if (iszero() || b.iszero()) { // zero
 				_bits = lhs | rhs;
 				return *this;
@@ -191,7 +197,11 @@ namespace sw {
 			int8_t m = 0; // pattern length
 			uint32_t remaining = 0;
 			decode_regime(lhs, m, remaining);
+
+			// extract the exponent
 			int8_t lhs_exp = remaining >> 29;
+
+			// extract the remaining fraction
 			uint64_t frac64A = ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
 			int8_t shiftRight = m;
 
@@ -220,24 +230,33 @@ namespace sw {
 			if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 			return *this;
 		}
+		posit& operator+=(double rhs) {
+			return *this += posit<nbits, es>(rhs);
+		}
 		posit& operator-=(const posit& b) {  // derived from SoftPosit
-			uint32_t lhs = _bits;
-			uint32_t rhs = b._bits;
-			// process special cases
+			// special case handling of the inputs
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
 			if (isnar() || b.isnar()) {
-				_bits = 0x80;
+				throw operand_is_nar{};
+			}
+#else
+			if (isnar() || b.isnar()) {
+				setnar();
 				return *this;
 			}
+#endif
+			uint32_t lhs = _bits;
+			uint32_t rhs = b._bits;
 			if (iszero() || b.iszero()) {
 				_bits = lhs | rhs;
 				return *this;
 			}
 			// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
-			bool sign = bool(lhs & 0x80);
+			bool sign = bool(lhs & sign_mask);
 			(sign) ? (lhs = (-int32_t(lhs) & 0xFFFF'FFFF)) : (rhs = (-int32_t(rhs) & 0xFFFF'FFFF));
 
 			if (lhs == rhs) {
-				_bits = 0x00;
+				_bits = 0;
 				return *this;
 			}
 			if (lhs < rhs) {
@@ -245,68 +264,90 @@ namespace sw {
 				sign = !sign;
 			}
 
-#ifdef later
 			// decode the regime of lhs
 			int8_t m = 0; // pattern length
 			uint32_t remaining = 0;
 			decode_regime(lhs, m, remaining);
-			uint16_t frac16A = (0x80 | remaining) << 7;
+
+			// extract the exponent
+			int8_t lhs_exp = remaining >> 29;
+
+			// extract the remaining fraction
+			uint64_t frac64A = ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
 			int8_t shiftRight = m;
+
 			// adjust shift and extract fraction bits of rhs
 			extractAddand(rhs, shiftRight, remaining);
-			uint16_t frac16B = (0x80 | remaining) << 7;
+			uint64_t frac64B = ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
 
-			// do the subtraction of the fractions
-			if (shiftRight >= 14) {
+			// This is 4kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
+			shiftRight = (shiftRight << 2) + lhs_exp - (remaining >> 29);
+			if (shiftRight > 63) {  // catastrophic cancellation case
 				_bits = lhs;
-				if (sign) _bits = -_bits & 0xFFFF;
+				if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 				return *this;
 			}
 			else {
-				frac16B >>= shiftRight;
+				frac64B >>= shiftRight;  // adjust the rhs fraction
 			}
-			frac16A -= frac16B;
+			frac64A -= frac64B;			// subtract the fractions
 
-			while ((frac16A >> 14) == 0) {
-				m--;
-				frac16A <<= 1;
+			// adjust the results
+			while ((frac64A >> 59) == 0) {
+				--m;
+				frac64A <<= 4;
 			}
-			bool ecarry = bool (0x4000 & frac16A);
-			if (!ecarry) {
-				m--;
-				frac16A <<= 1;
+			bool ecarry = bool (0x4000'0000'0000'0000 & frac64A);
+			while (!ecarry) {
+				if (lhs_exp == 0) {
+					--m;
+					lhs_exp = 0x3;
+				}
+				else {
+					--m;
+				}
+				frac64A <<= 1;
+				ecarry = bool(0x4000'0000'0000'0000 & frac64A);
 			}
 
 			_bits = round(m, lhs, frac64A);
-			if (sign) _bits = -_bits & 0xFFFF'FFFF;
-#endif
+			if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 			return *this;
 		}
+		posit& operator-=(double rhs) {
+			return *this -= posit<nbits, es>(rhs);
+		}
 		posit& operator*=(const posit& b) {
-
-			uint8_t lhs = _bits;
-			uint8_t rhs = b._bits;
-			// process special cases
+			// special case handling of the inputs
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
 			if (isnar() || b.isnar()) {
-				_bits = 0x80;
+				throw operand_is_nar{};
+			}
+#else
+			if (isnar() || b.isnar()) {
+				setnar();
 				return *this;
 			}
-			if (iszero() || b.iszero()) {
-				_bits = 0x00;
-				return *this;
-			}
+#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
-#ifdef later
+			if (iszero() || b.iszero()) {
+				_bits = 0;
+				return *this;
+			}
+			uint32_t lhs = _bits;
+			uint32_t rhs = b._bits;
 			// calculate the sign of the result
-			bool sign = bool(lhs & 0x80) ^ bool(rhs & 0x80);
-			lhs = lhs & 0x80 ? -lhs : lhs;
-			rhs = rhs & 0x80 ? -rhs : rhs;
+			bool sign = bool(lhs & sign_mask) ^ bool(rhs & sign_mask);
+			lhs = lhs & sign_mask ? -int32_t(lhs) : lhs;
+			rhs = rhs & sign_mask ? -int32_t(rhs) : rhs;
 
 			// decode the regime of lhs
 			int8_t m = 0; // pattern length
 			uint32_t remaining = 0;
 			decode_regime(lhs, m, remaining);
 			uint32_t lhs_fraction = (0x8000'0000 | remaining);
+
+			int8_t lhs_exp = 0;
 
 			// adjust shift and extract fraction bits of rhs
 			extractMultiplicand(rhs, m, remaining);
@@ -321,27 +362,41 @@ namespace sw {
 
 			// round
 			_bits = round(m, lhs_exp, result_fraction);
-			if (sign) _bits = -_bits & 0xFFFF'FFFF;
-#endif
+			if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
 			return *this;
 		}
+		posit& operator*=(double rhs) {
+			return *this *= posit<nbits, es>(rhs);
+		}
 		posit& operator/=(const posit& b) {
-			uint8_t lhs = _bits;
-			uint8_t rhs = b._bits;
-			// process special cases
+			// since we are encoding error conditions as NaR (Not a Real), we need to process that condition first
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+			if (b.iszero()) {
+				throw divide_by_zero{};    // not throwing is a quiet signalling NaR
+			}
+			if (b.isnar()) {
+				throw divide_by_nar{};
+			}
+			if (isnar()) {
+				throw numerator_is_nar{};
+			}
+#else
 			if (isnar() || b.isnar() || b.iszero()) {
-				_bits = 0x80;
+				setnar();
 				return *this;
 			}
+#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 			if (iszero()) {
-				_bits = 0x00;
+				setzero();
 				return *this;
 			}
 
+			uint32_t lhs = _bits;
+			uint32_t rhs = b._bits;
 			// calculate the sign of the result
-			bool sign = bool(lhs & 0x80) ^ bool(rhs & 0x80);
-			lhs = lhs & 0x80 ? -lhs : lhs;
-			rhs = rhs & 0x80 ? -rhs : rhs;
+			bool sign = bool(lhs & sign_mask) ^ bool(rhs & sign_mask);
+			lhs = lhs & sign_mask ? -int32_t(lhs) : lhs;
+			rhs = rhs & sign_mask ? -int32_t(rhs) : rhs;
 
 			// decode the regime of lhs
 			int8_t m = 0; // pattern length
@@ -370,6 +425,10 @@ namespace sw {
 
 			return *this;
 		}
+		posit& operator/=(double rhs) {
+			return *this /= posit<nbits, es>(rhs);
+		}
+
 		posit& operator++() {
 			++_bits;
 			return *this;
