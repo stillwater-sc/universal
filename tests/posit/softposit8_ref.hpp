@@ -42,6 +42,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define packToP8UI( regime, fracA) ((uint8_t) regime + ((uint8_t)(fracA)) )
 
 using posit8_t = uint8_t;
+
 // add magnitudes
 posit8_t softposit_addMagsP8(uint_fast8_t uiA, uint_fast8_t uiB) {
 	uint_fast8_t regA;
@@ -545,7 +546,7 @@ posit8_t p8_div(posit8_t pA, posit8_t pB) {
 }
 
 posit8_t p8_sqrt(posit8_t pA) {
-	union ui8_p8 uA;
+	posit8_t uA;
 	uint_fast8_t uiA;
 
 	static const uint8_t p8Sqrt[] =
@@ -557,24 +558,22 @@ posit8_t p8_sqrt(posit8_t pA) {
 		73, 74, 74, 74, 75, 75, 75, 76, 76, 77, 77, 77, 79, 80, 81, 83, 84,
 		85, 86, 87, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 100,
 		101, 102, 103, 105, 108, 110, 112, 114, 115, 120 };
-	uA.p = pA;
-	uiA = uA.ui;
+	uiA = pA;
 
 	if (uiA >= 0x80) {
-		uA.ui = 0x80;
-		return uA.p;
+		uA = 0x80;
+		return uA;
 	}
-	uA.ui = p8Sqrt[uiA];
+	uA = p8Sqrt[uiA];
 
-	return uA.p;
+	return uA;
 }
 
 //softposit_mulAdd_subC => (uiA*uiB)-uiC
 //softposit_mulAdd_subProd => uiC - (uiA*uiB)
 //Default is always op==0
 posit8_t softposit_mulAddP8(uint_fast8_t uiA, uint_fast8_t uiB, uint_fast8_t uiC, uint_fast8_t op) {
-
-	union ui8_p8 uZ;
+	posit8_t uZ;
 	uint_fast8_t regZ, fracA, fracZ, regime, tmp;
 	bool signA, signB, signC, signZ, regSA, regSB, regSC, regSZ, bitNPlusOne = 0, bitsMore = 0, rcarry;
 	int_fast8_t kA = 0, kC = 0, kZ = 0, shiftRight;
@@ -582,15 +581,15 @@ posit8_t softposit_mulAddP8(uint_fast8_t uiA, uint_fast8_t uiB, uint_fast8_t uiC
 
 	//NaR
 	if (uiA == 0x80 || uiB == 0x80 || uiC == 0x80) {
-		uZ.ui = 0x80;
-		return uZ.p;
+		uZ = 0x80;
+		return uZ;
 	}
 	else if (uiA == 0 || uiB == 0) {
 		if (op == softposit_mulAdd_subC)
-			uZ.ui = -uiC;
+			uZ = -uiC;
 		else
-			uZ.ui = uiC;
-		return uZ.p;
+			uZ = uiC;
+		return uZ;
 	}
 
 	signA = signP8UI(uiA);
@@ -698,8 +697,8 @@ posit8_t softposit_mulAddP8(uint_fast8_t uiA, uint_fast8_t uiB, uint_fast8_t uiC
 		}
 		else {
 			if (frac16C == frac16Z && signZ != signC) { //check if same number
-				uZ.ui = 0;
-				return uZ.p;
+				uZ = 0;
+				return uZ;
 			}
 			else {
 				if (signZ == signC)
@@ -751,7 +750,7 @@ posit8_t softposit_mulAddP8(uint_fast8_t uiA, uint_fast8_t uiB, uint_fast8_t uiC
 
 	if (regZ>6) {
 		//max or min pos. exp and frac does not matter.
-		(regSZ) ? (uZ.ui = 0x7F) : (uZ.ui = 0x1);
+		(regSZ) ? (uZ = 0x7F) : (uZ = 0x1);
 	}
 	else {
 		//remove hidden bits
@@ -760,27 +759,22 @@ posit8_t softposit_mulAddP8(uint_fast8_t uiA, uint_fast8_t uiB, uint_fast8_t uiC
 		fracZ = (frac16Z >> regZ) >> 8;
 
 		bitNPlusOne = ((frac16Z >> regZ) & 0x80);
-		uZ.ui = packToP8UI(regime, fracZ);
+		uZ = packToP8UI(regime, fracZ);
 
 		if (bitNPlusOne) {
 			if ((frac16Z << (9 - regZ)) & 0xFFFF) bitsMore = 1;
-			uZ.ui += (uZ.ui & 1) | bitsMore;
+			uZ += (uZ & 1) | bitsMore;
 		}
 	}
 
-	if (signZ) uZ.ui = -uZ.ui & 0xFF;
-	return uZ.p;
+	if (signZ) uZ = -uZ & 0xFF;
+	return uZ;
 
 }
 
 posit8_t p8_mulAdd(posit8_t a, posit8_t b, posit8_t c)
 {
-	union ui8_p8 uA;
-	uint_fast8_t uiA;
-	union ui8_p8 uB;
-	uint_fast8_t uiB;
-	union ui8_p8 uC;
-	uint_fast8_t uiC;
+	uint_fast8_t uiA, uiB, uiC;
 
 	uiA = a;
 	uiB = b;

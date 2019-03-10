@@ -48,15 +48,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using posit16_t = uint16_t;
 
-const uint_fast16_t softposit_approxRecipSqrt0[16] = {
-	0xb4c9, 0xffab, 0xaa7d, 0xf11c, 0xa1c5, 0xe4c7, 0x9a43, 0xda29,
-	0x93b5, 0xd0e5, 0x8ded, 0xc8b7, 0x88c6, 0xc16d, 0x8424, 0xbae1
-};
-const uint_fast16_t softposit_approxRecipSqrt1[16] = {
-	0xa5a5, 0xea42, 0x8c21, 0xc62d, 0x788f, 0xaa7f, 0x6928, 0x94b6,
-	0x5cc7, 0x8335, 0x52a6, 0x74e2, 0x4a3e, 0x68fe, 0x432b, 0x5efd
-};
-
 posit16_t softposit_addMagsP16(uint_fast16_t, uint_fast16_t);
 posit16_t softposit_subMagsP16(uint_fast16_t, uint_fast16_t);
 posit16_t softposit_mulAddP16(uint_fast16_t, uint_fast16_t, uint_fast16_t, uint_fast16_t);
@@ -744,10 +735,6 @@ posit16_t p16_sqrt(posit16_t pA) {
 
 }
 
-enum {
-	softposit_mulAdd_subC = 1,
-	softposit_mulAdd_subProd = 2
-};
 //softposit_mulAdd_subC => (uiA*uiB)-uiC
 //softposit_mulAdd_subProd => uiC - (uiA*uiB)
 //Default is always op==0
