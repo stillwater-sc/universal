@@ -402,29 +402,51 @@ namespace sw {
 			rhs = rhs & sign_mask ? -int32_t(rhs) : rhs;
 
 			// decode the regime of lhs
-			int32_t m = 0; // pattern length
+			int32_t m = 0;
 			uint32_t remaining = 0;
 			decode_regime(lhs, m, remaining);
-			uint16_t lhs_fraction = (0x80 | remaining) << 7;
+
+			// extract exponent
+			int32_t exp = remaining >> 29;
+
+			// extract the lhs fraction
+			uint32_t lhs_fraction = ((remaining << 1) | 0x4000'0000) & 0x7FFF'FFFF;
+			uint64_t lhs64 = uint64_t(lhs_fraction) << 30;
+
 			// adjust shift and extract fraction bits of rhs
 			extractDividand(rhs, m, remaining);
-			uint32_t rhs_fraction = (0x80 | remaining);
-			div_t result = div(lhs_fraction, uint16_t(rhs_fraction));
-			uint16_t result_fraction = result.quot;
-			uint16_t remainder = result.rem;
+			// calculate exponent, exp = lhs_exp - rhs_exp
+			exp -= remaining >> 29;
+			uint32_t rhs_fraction = ((remaining << 1) | 0x4000'0000) & 0x7FFF'FFFF;
+
+			// execute the integer division of fractions
+			lldiv_t result = lldiv(lhs64, uint64_t(rhs_fraction));
+			uint64_t result_fraction = result.quot;
+			uint64_t remainder = result.rem;
+
+			// adjust exponent if underflowed
+			if (exp < 0) {
+				exp += 4;
+				--m;
+			}
 
 			if (result_fraction != 0) {
-				bool rcarry = result_fraction >> 7; // this is the hidden bit (7th bit) , extreme right bit is bit 0
+				bool rcarry = result_fraction >> 30; // this is the hidden bit (31th bit), extreme right bit is bit 0
 				if (!rcarry) {
-					--m;
+					if (exp == 0) {
+						--m;
+						exp = 0x3;
+					}
+					else {
+						--exp;
+					}
 					result_fraction <<= 1;
 				}
 			}
 
 			// round
-			_bits = adjustAndRound(m, result_fraction, remainder != 0);
+			_bits = adjustAndRound(m, exp, result_fraction, remainder != 0);
 			if (sign) _bits = -int32_t(_bits) & 0xFFFF'FFFF;
-
 			return *this;
 		}
 		posit& operator/=(double rhs) {
@@ -643,11 +665,11 @@ namespace sw {
 			}
 			else {              // negative regimes
 				++m;
-				while (!(remaining >> 7)) {
+				while (!(remaining >> 31)) {
 					++m;
-					remaining = (remaining << 1) & 0xFF;
+					remaining = (remaining << 1) & 0xFFFF'FFFF;
 				}
-				remaining &= 0x7F;
+				remaining &= 0x7FFF'FFFF;
 			}
 		}
 
@@ -758,40 +780,62 @@ namespace sw {
 			}
 			return bits;
 		}
-		inline uint8_t adjustAndRound(const int8_t k, uint16_t fraction, bool nonZeroRemainder) const {
-			uint8_t scale, regime, bits;
+		inline uint32_t adjustAndRound(const int8_t k, uint32_t exp, uint64_t frac64, bool nonZeroRemainder) const {
+			uint32_t scale, regime, bits;
 			if (k < 0) {
-				scale = (-k & 0xFF);
-				regime = 0x40 >> scale;
+				scale = -k;
+				regime = 0x4000'0000 >> scale;
 			}
 			else {
 				scale = k + 1;
-				regime = 0x7F - (0x7F >> scale);
+				regime = 0x7FFF'FFFF - (0x7FFF'FFFF >> scale);
 			}
 
-			if (scale > 6) {
-				bits = k<0 ? 0x1 : 0x7F;  // minpos and maxpos
+			if (scale > 30) {
+				bits = k<0 ? 0x1 : 0x7FFF'FFFF;  // minpos and maxpos
 			}
 			else {
 				//remove carry and rcarry bits and shift to correct position
-				fraction &= 0x7F;
-				uint8_t final_fbits = (uint_fast16_t)fraction >> (scale + 1);
-				bool bitNPlusOne = (0x1 & (fraction >> scale));
-				bits = uint8_t(regime) + uint8_t(final_fbits);
-#ifdef NOW
+				frac64 &= 0x3FFF'FFFF;
+				uint32_t fraction = uint32_t(frac64) >> (scale + 2);
+
+				bool bitNPlusOne = false;
+				uint32_t moreBits = false;
+				if (scale <= 28) {
+					bitNPlusOne = bool (frac64 >> ((scale + 1)) & 0x1);
+					exp <<= (28 - scale);
+					if (bitNPlusOne) moreBits = (((1 << (scale + 1)) - 1) & frac64) ? 0x1 : 0x0;
+				}
+				else {
+					if (scale == 30) {
+						bitNPlusOne = bool(exp & 0x2);
+						moreBits = exp & 0x1;
+						exp = 0;
+					}
+					else if (scale == 29) {
+						bitNPlusOne = bool(exp & 0x1);
+						exp >>= 1;
+					}
+					if (frac64 > 0) {
+						fraction = 0;
+						moreBits = 0x1;
+					}
+				}
+				if (nonZeroRemainder) moreBits = 0x1;
+				bits = uint32_t(regime) + uint32_t(exp) + uint32_t(fraction);
+				if (bitNPlusOne) bits += (bits & 0x1) | moreBits;
+#define TRACE_DIV_
+#ifdef TRACE_DIV
+				std::cout << "universal\n";
+				std::cout << "scale          = " << scale << std::endl;
 				std::cout << std::hex;
-				std::cout << "fraction raw   = " << int(fraction) << std::endl;
-				std::cout << "fraction final = " << int(final_fbits) << std::endl;
-				std::cout << "posit bits     = " << int(bits) << std::endl;
+				std::cout << "regime         = " << regime << std::endl;
+				std::cout << "exponent       = " << exp << std::endl;
+				std::cout << "fraction raw   = " << frac64 << std::endl;
+				std::cout << "fraction final = " << fraction << std::endl;
+				std::cout << "posit bits     = " << bits << std::endl;
 				std::cout << std::dec;
 #endif
-				if (bitNPlusOne) {
-					uint8_t moreBits = (((1 << scale) - 1) & fraction) ? 0x01 : 0x00;
-					if (nonZeroRemainder) moreBits = 0x01;
-					//std::cout << "bitsMore = " << (moreBits ? "true" : "false") << std::endl;
-					// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-					bits += (bits & 0x01) | moreBits;
-				}
 			}
 			return bits;
 		}
