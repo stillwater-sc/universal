@@ -743,10 +743,8 @@ namespace sw {
 					exp <<= (28 - scale);
 				}
 				else {
-					uint8_t moreBits = 0;
 					if (scale == 30) {
 						bitNPlusOne = bool(exp & 0x2);
-						moreBits = exp & 0x1;
 						exp = 0;
 					}
 					else if (scale == 29) {
@@ -755,7 +753,6 @@ namespace sw {
 					}
 					if (final_fbits > 0) {
 						final_fbits = 0;
-						moreBits = 0x01;
 					}
 				}
 				// sign is set by the calling environment as +/- behaves differently compared to */div
