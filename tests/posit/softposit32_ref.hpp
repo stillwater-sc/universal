@@ -578,9 +578,9 @@ posit32_t p32_div(posit32_t pA, posit32_t pB) {
 	}
 	expA = tmp >> 29; //to get 2 bits
 	fracA = ((tmp << 1) | 0x40000000) & 0x7FFFFFFF;
-	frac64A = fracA << 30;
+	frac64A = uint64_t(fracA) << 30;
 
-	tmp = (uiB << 2) & 0xFFFFFFFF;
+	tmp = (uiB << 2) & 0xFFFF'FFFF;
 	if (regSB) {
 		while (tmp >> 31) {
 			kA--;
@@ -635,8 +635,7 @@ posit32_t p32_div(posit32_t pA, posit32_t pB) {
 	}
 	else {
 		//remove carry and rcarry bits and shift to correct position
-		frac64Z &= 0x3FFFFFFF;
-
+		frac64Z &= 0x3FFF'FFFF;
 		fracA = (uint_fast32_t)frac64Z >> (regA + 2);
 
 		if (regA <= 28) {
@@ -664,6 +663,18 @@ posit32_t p32_div(posit32_t pA, posit32_t pB) {
 
 		uZ = packToP32UI(regime, expA, fracA);
 		if (bitNPlusOne) uZ += (uZ & 1) | bitsMore;
+#define TRACE_DIV_
+#ifdef TRACE_DIV
+		std::cout << "softposit\n";
+		std::cout << "scale          = " << regA << std::endl;
+		std::cout << std::hex;
+		std::cout << "regime         = " << regime << std::endl;
+		std::cout << "exponent       = " << expA << std::endl;
+		std::cout << "fraction raw   = " << frac64Z << std::endl;
+		std::cout << "fraction final = " << fracA << std::endl;
+		std::cout << "posit bits     = " << uZ << std::endl;
+		std::cout << std::dec;
+#endif
 	}
 
 	if (signZ) uZ = -uZ & 0xFFFFFFFF;

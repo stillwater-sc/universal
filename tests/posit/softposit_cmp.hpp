@@ -22,6 +22,7 @@ enum {
 #include "softposit8_ref.hpp"
 #include "softposit16_ref.hpp"
 #include "softposit32_ref.hpp"
+#include "softposit64_ref.hpp"
 
 namespace sw {
 	namespace unum {
@@ -72,6 +73,7 @@ namespace sw {
 				return;
 			case OPCODE_ADD:
 				presult = p32_add(pa, pb);
+				std::cout << "softposit add\n";
 				reference = da + db;
 				break;
 			case OPCODE_SUB:

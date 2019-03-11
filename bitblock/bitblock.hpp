@@ -617,7 +617,8 @@ namespace sw {
 		std::string to_hex(bitblock<nbits> bits) {
 			char str[(nbits >> 2) + 2];   // plenty of room
 			for (size_t i = 0; i < (nbits >> 2) + 2; ++i) str[i] = 0;
-			const char* hexits = "0123456789ABCDEF";
+			//const char* hexits = "0123456789ABCDEF";
+			const char* hexits = "0123456789abcdef";
 			unsigned int maxHexDigits = (nbits >> 2) + (nbits % 4 ? 1 : 0);
 			for (unsigned int i = 0; i < maxHexDigits; i++) {
 				unsigned int hexit;
