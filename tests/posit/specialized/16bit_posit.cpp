@@ -12,8 +12,8 @@
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
-#include "../test_helpers.hpp"
-#include "../posit_test_helpers.hpp"
+#include "../../test_helpers.hpp"
+#include "../../posit_test_helpers.hpp"
 
 #include "softposit_cmp.hpp"
 /*
