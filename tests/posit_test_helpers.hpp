@@ -216,9 +216,11 @@ namespace sw {
 			const size_t HALF = (size_t(1) << nbits);
 			posit<nbits + 1, es> pref, pprev, pnext;
 
-			const unsigned max = nbits > 20 ? 20 : nbits;
+			const unsigned max = nbits > 22 ? 22 : nbits;
 			size_t max_tests = (size_t(1) << max) - 1;
-			//std::cout << "ValidateConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
+			if (max_tests < NR_TEST_CASES) {
+				std::cout << "ValidateConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
+			}
 
 			// execute the test
 			int nrOfFailedTests = 0;

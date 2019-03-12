@@ -72,24 +72,23 @@ namespace sw {
 				presult.setzero();
 				return;
 			case OPCODE_ADD:
-				presult = p32_add(pa, pb);
-				std::cout << "softposit add\n";
+				presult.set_raw_bits(p32_add(pa, pb));
 				reference = da + db;
 				break;
 			case OPCODE_SUB:
-				presult = p32_sub(pa, pb);
+				presult.set_raw_bits(p32_sub(pa, pb));
 				reference = da - db;
 				break;
 			case OPCODE_MUL:
-				presult = p32_mul(pa, pb);
+				presult.set_raw_bits(p32_mul(pa, pb));
 				reference = da * db;
 				break;
 			case OPCODE_DIV:
-				presult = p32_div(pa, pb);
+				presult.set_raw_bits(p32_div(pa, pb));
 				reference = da / db;
 				break;
 			case OPCODE_SQRT:
-				presult = p32_sqrt(pa);
+				presult.set_raw_bits(p32_sqrt(pa));
 				reference = std::sqrt(da);
 				break;
 			}
@@ -278,19 +277,16 @@ namespace sw {
 #else
 				execute(opcode, da, db, pa, pb, preference, presult);
 #endif
-
-				if (presult != preference) {
-					nrOfFailedTests++;
-					if (bReportIndividualTestCases) ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, preference, presult);
-				}
-				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccessInBinary("PASS", operation_string, pa, pb, preference, presult);
-				}
-
 				posit<nbits, es> psoftposit;
 				reference(opcode, da, db, pa, pb, preference, psoftposit);
-				std::cout << "softposit = " << posit_format(psoftposit) << std::endl;
-				std::cout << "universal = " << posit_format(presult) << std::endl;
+
+				if (presult != psoftposit) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases) ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, psoftposit, presult);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccessInBinary("PASS", operation_string, pa, pb, psoftposit, presult);
+				}
 			}
 
 			return nrOfFailedTests;
