@@ -1286,7 +1286,7 @@ namespace sw {
 
 			// execute the test
 			int nrOfFailedTests = 0;
-			long double minpos = minpos_value<nbits + 1, es>();
+			//long double minpos = minpos_value<nbits + 1, es>();
 			long double da, input;
 			posit<nbits, es> presult, ptarget;
 			for (uint32_t i = 0; i < nrOfRandoms; ++i) {
