@@ -7,10 +7,9 @@
 namespace sw {
 	namespace unum {
 
-		// set the fast specialization variable to indicate that we are running a special template specialization
-#ifdef POSIT_FAST_SPECIALIZATION
-#define POSIT_FAST_POSIT_3_0
-#endif
+// set the fast specialization variable to indicate that we are running a special template specialization
+#if POSIT_FAST_POSIT_3_0
+#pragma message("Fast specialization of posit<3,0>")
 
 		/*  values of a posit<3,0>
 		000 +0
@@ -509,5 +508,9 @@ namespace sw {
 			div /= rhs;
 			return div;
 		}
+#else  // POSIT_FAST_POSIT_3_0
+// too verbose #pragma message("Standard posit<3,0>")
+#	define POSIT_FAST_POSIT_3_0 0
+#endif // POSIT_FAST_POSIT_3_0
 	}
 }
