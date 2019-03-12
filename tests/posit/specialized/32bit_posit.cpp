@@ -18,6 +18,8 @@
 Standard posit with nbits = 32 have es = 2 exponent bits.
 */
 
+#define SOFTPOSIT_CMP_
+#ifdef SOFTPOSIT_CMP
 #include "./softposit_cmp.hpp"
 void GenerateP32Test(int opcode, uint32_t _a, uint32_t _b, uint32_t _c) {
 	using namespace std;
@@ -43,7 +45,6 @@ void GenerateP32Test(int opcode, uint32_t _a, uint32_t _b, uint32_t _c) {
 		c = p32_sqrt(a);
 		break;
 	}
-	c = p32_div(a, b);
 	cout << hex;
 	cout << "a = 32.2x" << a << "p" << endl;
 	cout << "b = 32.2x" << b << "p" << endl;
@@ -76,6 +77,7 @@ void GenerateP32Test(int opcode, uint32_t _a, uint32_t _b, uint32_t _c) {
 	cout << "z = " << posit_format(z) << endl;
 	cout << "r = " << posit_format(r) << endl;
 }
+#endif // SOFTPOSIT_CMP
 
 int main(int argc, char** argv)
 try {
@@ -97,8 +99,7 @@ try {
 	cout << "Standard posit<32,2> configuration tests" << endl;
 #endif
 
-#define MANUAL 0
-#if MANUAL
+#ifdef SOFTPOSIT_CMP
 	// FAIL 10011000011101110011010101010000 / 11111011010101010100001001101000 != 01111110010010000101000100110001
 	uint32_t a = 0b10011000011101110011010101010000;
 	uint32_t b = 0b11111011010101010100001001101000;
