@@ -11,14 +11,13 @@
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
-#include "../test_helpers.hpp"
-#include "../posit_test_helpers.hpp"
+#include "../../test_helpers.hpp"
+#include "../../posit_test_helpers.hpp"
 
 #include "./softposit_cmp.hpp"
 /*
 Standard posit with nbits = 32 have es = 2 exponent bits.
 */
-
 
 void GenerateDivTest(int opcode, uint32_t _a, uint32_t _b, uint32_t _c) {
 	using namespace std;

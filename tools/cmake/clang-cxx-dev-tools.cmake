@@ -2,10 +2,20 @@
 # Requires clang-format and clang-tidy
 
 file(GLOB_RECURSE ALL_CXX_SOURCE_FILES
+  ${CMAKE_SOURCE_DIR}/areal/*.hpp
   ${CMAKE_SOURCE_DIR}/posit/*.hpp
+  ${CMAKE_SOURCE_DIR}/valid/*.hpp  
   ${CMAKE_SOURCE_DIR}/bitblock/*.hpp
+  ${CMAKE_SOURCE_DIR}/perf/*.hpp
+  ${CMAKE_SOURCE_DIR}/perf/*.cpp   
   ${CMAKE_SOURCE_DIR}/tests/posit/*.hpp
   ${CMAKE_SOURCE_DIR}/tests/posit/*.cpp
+  ${CMAKE_SOURCE_DIR}/tests/posit/specialized/*.hpp
+  ${CMAKE_SOURCE_DIR}/tests/posit/specialized/*.cpp
+  ${CMAKE_SOURCE_DIR}/tools/cmd/*.hpp
+  ${CMAKE_SOURCE_DIR}/tools/cmd/*.cpp 
+  ${CMAKE_SOURCE_DIR}/tools/utils/*.hpp
+  ${CMAKE_SOURCE_DIR}/tools/utils/*.cpp     
   ${CMAKE_SOURCE_DIR}/education/posit/*.hpp
   ${CMAKE_SOURCE_DIR}/education/posit/*.cpp
   ${CMAKE_SOURCE_DIR}/examples/blas/*.hpp

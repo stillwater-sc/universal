@@ -1,18 +1,22 @@
-// 128bit_posit.cpp: Functionality tests for standard 128-bit posits
+// 256bit_posit.cpp: Functionality tests for standard 256-bit posits
 //
 // Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-// disable posit arithmetic exceptions
+// Configure the posit template environment
+// first: enable fast specialized posit<256,5>
+//#define POSIT_FAST_SPECIALIZATION   // turns on all fast specializations
+#define POSIT_FAST_POSIT_256_5 0
+// second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <posit>
-#include "../test_helpers.hpp"
-#include "../posit_test_helpers.hpp"
+#include "../../test_helpers.hpp"
+#include "../../posit_test_helpers.hpp"
 
 /*
-Standard posits with nbits = 128 have 4 exponent bits.
+Standard posits with nbits = 256 have 5 exponent bits.
 */
 
 #define STRESS_TESTING 1
@@ -24,14 +28,19 @@ try {
 
 	const size_t RND_TEST_CASES = 10000;
 
-	const size_t nbits = 128;
-	const size_t es = 4;
+	const size_t nbits = 256;
+	const size_t es = 5;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<128,4>";
+	std::string tag = " posit<256,5>";
 
-	cout << "Standard posit<128,4> configuration tests" << endl;
+#if POSIT_FAST_POSIT_256_5
+	cout << "Fast specialization posit<256,5> configuration tests" << endl;
+#else
+	cout << "Standard posit<256,5> configuration tests" << endl;
+#endif
+
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
 

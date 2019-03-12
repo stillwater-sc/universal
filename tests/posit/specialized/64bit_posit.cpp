@@ -12,8 +12,8 @@
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
-#include "../test_helpers.hpp"
-#include "../posit_test_helpers.hpp"
+#include "../../test_helpers.hpp"
+#include "../../posit_test_helpers.hpp"
 
 /*
 Standard posit with nbits = 64 have es = 3 exponent bits.
@@ -33,7 +33,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	std::string tag = " posit<64,3>";
 
-#if POSIT_FAST_POSIT_32_2
+#if POSIT_FAST_POSIT_64_3
 	cout << "Fast specialization posit<64,3> configuration tests" << endl;
 #else
 	cout << "Standard posit<64,3> configuration tests" << endl;
