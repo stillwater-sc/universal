@@ -127,7 +127,8 @@ namespace sw {
 			bitblock<fbits> f = _fraction.get();
 			int fractionBits = (int)_fraction.nrBits();
 			int nrOfFractionBitsProcessed = 0;
-			for (int i = int(p.fbits) - 1; i >= 0; --i) {
+			//for (int i = int(p.fbits) - 1; i >= 0; --i) {  // this does not look correct
+			for (int i = int(fbits) - 1; i >= 0; --i) {
 				if (fractionBits > nrOfFractionBitsProcessed++) {
 					ss << (f[i] ? "1" : "0");
 				}

@@ -8,9 +8,9 @@
 namespace sw {
 	namespace unum {
 
-		// set the fast specialization variable to indicate that we are running a special template specialization
-#ifdef POSIT_FAST_SPECIALIZATION
-#define POSIT_FAST_POSIT_8_0 1
+// set the fast specialization variable to indicate that we are running a special template specialization
+#if POSIT_FAST_POSIT_8_0
+#pragma message("Fast specialization of posit<8,0>")
 
 			template<>
 			class posit<NBITS_IS_8, ES_IS_0> {
@@ -20,9 +20,9 @@ namespace sw {
 				static constexpr size_t sbits = 1;
 				static constexpr size_t rbits = nbits - sbits;
 				static constexpr size_t ebits = es;
-				static constexpr size_t fbits = nbits - 3;
+				static constexpr size_t fbits = nbits - 3 - es;
 				static constexpr size_t fhbits = fbits + 1;
-				static constexpr uint8_t index_shift = 4;
+				static constexpr uint8_t sign_mask = 0x80;
 
 				posit() { _bits = 0; }
 				posit(const posit&) = default;
@@ -53,7 +53,7 @@ namespace sw {
 						return *this;
 					}
 
-					bool sign = bool(rhs & 0x80);
+					bool sign = bool(rhs & sign_mask);
 					int8_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
 					uint8_t raw;
 					if (v > 48 || v == -128) { // +-maxpos, 0x80 is special in int8 arithmetic as it is its own negation
@@ -131,7 +131,7 @@ namespace sw {
 						_bits = lhs | rhs;
 						return *this;
 					}
-					bool sign = bool(_bits & 0x80);
+					bool sign = bool(_bits & sign_mask);
 					if (sign) {
 						lhs = -lhs & 0xFF;
 						rhs = -rhs & 0xFF;
@@ -176,7 +176,7 @@ namespace sw {
 						return *this;
 					}
 					// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
-					bool sign = bool(lhs & 0x80);
+					bool sign = bool(lhs & sign_mask);
 					(sign) ? (lhs = (-lhs & 0xFF)) : (rhs = (-rhs & 0xFF));
 
 					if (lhs == rhs) {
@@ -650,7 +650,7 @@ namespace sw {
 				return !operator==(lhs, rhs);
 			}
 			inline bool operator< (const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
-				return *(signed char*)(&lhs._bits) < *(signed char*)(&rhs._bits);
+				return (signed char)(lhs._bits) < (signed char)(rhs._bits);
 			}
 			inline bool operator> (const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
 				return operator< (rhs, lhs);
@@ -728,11 +728,12 @@ namespace sw {
 				return !operator<(posit<NBITS_IS_8, ES_IS_0>(lhs), rhs);
 			}
 
-#endif
+#endif // POSIT_ENABLE_LITERALS
+
+#else  // POSIT_FAST_POSIT_8_0
+// too verbose #pragma message("Standard posit<8,0>")
+#	define POSIT_FAST_POSIT_8_0 0
+#endif // POSIT_FAST_POSIT_8_0
+
 	}
-
-#else 
-#define POSIT_FAST_POSIT_8_0 0
-#endif
-
 }

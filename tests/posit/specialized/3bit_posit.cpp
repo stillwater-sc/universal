@@ -6,12 +6,13 @@
 
 #include "common.hpp"
 // enable fast specialized posit<3,0>
-#define POSIT_FAST_SPECIALIZATION
+//#define POSIT_FAST_SPECIALIZATION
+#define POSIT_FAST_POSIT_3_0 1
 // enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
-#include "../test_helpers.hpp"
-#include "../posit_test_helpers.hpp"
+#include "../../test_helpers.hpp"
+#include "../../posit_test_helpers.hpp"
 
 /*
  posit of size nbits = 3 without exponent bits, i.e. es = 0.

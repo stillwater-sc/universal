@@ -5,11 +5,14 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
+// enable fast specialized posit<48,2>
+//#define POSIT_FAST_SPECIALIZATION
+#define POSIT_FAST_POSIT_48_2 1
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
-#include "../test_helpers.hpp"
-#include "../posit_test_helpers.hpp"
+#include "../../test_helpers.hpp"
+#include "../../posit_test_helpers.hpp"
 
 /*
 Extended Standard posit with nbits = 48 have es = 2 exponent bits.
@@ -29,7 +32,12 @@ try {
 	bool bReportIndividualTestCases = false;
 	std::string tag = " posit<48,2>";
 
+#if defined(POSIT_FAST_POSIT_48_2)
+	cout << "Fast specialization posit<48,2> configuration tests" << endl;
+#else
 	cout << "Extended Standard posit<48,2> configuration tests" << endl;
+#endif
+
 
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;

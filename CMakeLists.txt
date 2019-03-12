@@ -48,6 +48,7 @@ option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 arithme
 option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 arithmetic"        OFF)
 option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3(posit) arithmetic" ON)
 option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3(valid) arithmetic" ON)
+option(BUILD_FLOAT_ARBITRARY_PRECISION   "Set to ON to build arbitrary precision floats"    ON)
 option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"          ON)
 option(BUILD_APPLICATION_EXAMPLES        "Set to ON to build epplication examples"          ON)
 option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                ON)
@@ -321,14 +322,6 @@ install(FILES
 install(DIRECTORY   ${PROJECT_SOURCE_DIR}/${project_library_target_name}
         DESTINATION ${include_install_dir})
 
-if(BUILD_CI_CHECK OR BUILD_VERIFICATION_SUITE)
-add_subdirectory("tests/bitblock")
-add_subdirectory("tests/value")
-add_subdirectory("tests/areal")
-add_subdirectory("tests/posit")
-add_subdirectory("tests/valid")
-endif(BUILD_CI_CHECK OR BUILD_VERIFICATION_SUITE)
-
 if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_1)
 add_subdirectory("tests/unum")
 endif()
@@ -336,6 +329,24 @@ endif()
 if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_2)
 add_subdirectory("tests/unum2")
 endif()
+
+if(BUILD_CI_CHECK OR BUILD_VERIFICATION_SUITE)
+add_subdirectory("tests/bitblock")
+add_subdirectory("tests/value")
+endif(BUILD_CI_CHECK OR BUILD_VERIFICATION_SUITE)
+
+if(BUILD_CI_CHECK OR BUILD_FLOAT_ARBITRARY_PRECISION)
+add_subdirectory("tests/areal")
+endif(BUILD_CI_CHECK OR BUILD_FLOAT_ARBITRARY_PRECISION)
+
+if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_3_POSIT)
+add_subdirectory("tests/posit")
+add_subdirectory("tests/posit/specialized")
+endif(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_3_POSIT)
+
+if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_3_VALID)
+add_subdirectory("tests/valid")
+endif(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_3_VALID)
 
 if(BUILD_CI_CHECK OR BUILD_IEEE_FLOAT_QUIRES)
 add_subdirectory("tests/float")
