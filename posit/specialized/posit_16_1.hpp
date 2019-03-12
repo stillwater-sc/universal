@@ -784,7 +784,7 @@ namespace sw {
 #endif // POSIT_ENABLE_LITERALS
 
 #else  // POSIT_FAST_POSIT_16_1
-#pragma message("Standard posit<16,1>")
+// too verbose #pragma message("Standard posit<16,1>")
 #	define POSIT_FAST_POSIT_16_1 0
 #endif // POSIT_FAST_POSIT_16_1
 

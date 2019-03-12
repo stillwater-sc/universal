@@ -509,7 +509,7 @@ namespace sw {
 			return div;
 		}
 #else  // POSIT_FAST_POSIT_3_0
-#pragma message("Standard posit<3,0>")
+// too verbose #pragma message("Standard posit<3,0>")
 #	define POSIT_FAST_POSIT_3_0 0
 #endif // POSIT_FAST_POSIT_3_0
 	}

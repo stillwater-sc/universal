@@ -444,7 +444,7 @@ namespace sw {
 			}
 
 #else  // POSIT_FAST_POSIT_2_0
-#pragma message("Standard posit<2,0>")
+// too verbose #pragma message("Standard posit<2,0>")
 #	define POSIT_FAST_POSIT_2_0 0
 #endif // POSIT_FAST_POSIT_2_0
 	}

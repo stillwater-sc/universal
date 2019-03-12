@@ -361,7 +361,7 @@ namespace sw {
 				return sum;
 			}
 #else  // POSIT_FAST_POSIT_3_1
-#pragma message("Standard posit<3,1>")
+// too verbose #pragma message("Standard posit<3,1>")
 #	define POSIT_FAST_POSIT_3_1 0
 #endif // POSIT_FAST_POSIT_3_1
 	}

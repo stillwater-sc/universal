@@ -6,9 +6,10 @@
 
 #include "common.hpp"
 // enable fast specialized posit<4,0>
-#define POSIT_FAST_SPECIALIZATION
+//#define POSIT_FAST_SPECIALIZATION
+#define POSIT_FAST_POSIT_4_0 1
 // enable/disable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
 #include "posit_performance.hpp"
 
