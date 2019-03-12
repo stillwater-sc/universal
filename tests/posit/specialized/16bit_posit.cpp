@@ -8,17 +8,77 @@
 // Configure the posit template environment
 // first: enable fast specialized posit<16,1>
 //#define POSIT_FAST_SPECIALIZATION
-//#define POSIT_FAST_POSIT_16_1 0
+#define POSIT_FAST_POSIT_16_1 0
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
 #include "../../test_helpers.hpp"
 #include "../../posit_test_helpers.hpp"
 
-#include "softposit_cmp.hpp"
 /*
 Standard posit with nbits = 16 have es = 1 exponent bit.
 */
+
+#define SOFTPOSIT_CMP_
+#ifdef SOFTPOSIT_CMP
+#include "./softposit_cmp.hpp"
+void GenerateP16Test(int opcode, uint16_t _a, uint16_t _b, uint16_t _c) {
+	using namespace std;
+	using namespace sw::unum;
+
+	posit16_t a, b, c;
+	a = _a;
+	b = _b;
+	switch (opcode) {
+	case OPCODE_ADD:
+		c = p16_add(a, b);
+		break;
+	case OPCODE_SUB:
+		c = p16_sub(a, b);
+		break;
+	case OPCODE_MUL:
+		c = p16_mul(a, b);
+		break;
+	case OPCODE_DIV:
+		c = p16_div(a, b);
+		break;
+	case OPCODE_SQRT:
+		c = p16_sqrt(a);
+		break;
+	}
+	cout << hex;
+	cout << "a = 32.2x" << a << "p" << endl;
+	cout << "b = 32.2x" << b << "p" << endl;
+	cout << "c = 32.2x" << c << "p" << endl;
+	cout << dec;
+
+	posit<16, 1> x, y, z, r;
+	x.set_raw_bits(_a);
+	y.set_raw_bits(_b);
+	r.set_raw_bits(_c);
+	switch (opcode) {
+	case OPCODE_ADD:
+		z = x + y;
+		break;
+	case OPCODE_SUB:
+		z = a - b;
+		break;
+	case OPCODE_MUL:
+		z = x * y;
+		break;
+	case OPCODE_DIV:
+		z = x / y;
+		break;
+	case OPCODE_SQRT:
+		z = sw::unum::sqrt(x);
+		break;
+	}
+	cout << "x = " << posit_format(x) << endl;
+	cout << "y = " << posit_format(y) << endl;
+	cout << "z = " << posit_format(z) << endl;
+	cout << "r = " << posit_format(r) << endl;
+}
+#endif // SOFTPOSIT_CMP
 
 int main(int argc, char** argv)
 try {
@@ -39,34 +99,19 @@ try {
 #else
 	cout << "Standard posit<16,1> configuration tests" << endl;
 #endif
-#if later	
-	{
-		posit<nbits, es> p, mp;
-		mp.set_raw_bits(0x01);
-		cout << "posit         value          multiple of minpos\n";
-		for (int i = 0; i < 10; ++i) {
-			p.set_raw_bits(i);
-			cout << setw(10) << posit_format(p) << " = " << setw(10) << p << "   " << setw(5) << p / mp << endl;
-		}
-	}
 
-	posit16_t a, b, c;
-	a = 0x0000'009B;
-	b = 0x0000'0043;
-	c = p16_add(a, b);
-	cout << hex;
-	cout << "a = 32.2x" << a << endl;
-	cout << "b = 32.2x" << b << endl;
-	cout << "c = 32.2x" << c << endl;
-	cout << dec;
-
-	posit<nbits, es> x, y, z;
-	x.set_raw_bits(0x009B);
-	y.set_raw_bits(0x0043);
-	z = x + y;
-	cout << "x = " << posit_format(x) << endl;
-	cout << "y = " << posit_format(y) << endl;
-	cout << "z = " << posit_format(z) << endl;
+#ifdef SOFTPOSIT_CMP
+	// FAIL 10011000011101110011010101010000 / 11111011010101010100001001101000 != 01111110010010000101000100110001
+	uint16_t a = 0b10011000011101110011010101010000;
+	uint16_t b = 0b11111011010101010100001001101000;
+	uint16_t c = 0b01111110010010000101000100110001;
+	GenerateP16Test(OPCODE_DIV, a, b, c);
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_ADD, 10), tag, " add ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_SUB, 10), tag, " sub ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_MUL, 10), tag, " mul ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_DIV, 10), tag, " div ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_SQRT, 10), tag, " sqrt ");
+	return 1;
 #endif
 
 	posit<nbits, es> p;
