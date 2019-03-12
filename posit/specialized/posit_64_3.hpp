@@ -732,7 +732,7 @@ namespace sw {
 #endif // POSIT_ENABLE_LITERALS
 
 #else  // POSIT_FAST_POSIT_64_3
-#pragma message("Standard posit<64,3>")
+// too verbose #pragma message("Standard posit<64,3>")
 #	define POSIT_FAST_POSIT_64_3 0
 #endif // POSIT_FAST_POSIT_64_3
 

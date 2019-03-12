@@ -446,7 +446,7 @@ namespace sw {
 				return sum;
 			}
 #else  // POSIT_FAST_POSIT_4_0
-#pragma message("Standard posit<4,0>")
+// too verbose #pragma message("Standard posit<4,0>")
 #	define POSIT_FAST_POSIT_4_0 0
 #endif // POSIT_FAST_POSIT_4_0
 

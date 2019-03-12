@@ -138,9 +138,9 @@ namespace sw {
 					pa = -pa;
 				}
 				catch (const operand_is_nar& err) {
-					if (pa.isNaR()) {
+					if (pa.isnar()) {
 						// correctly caught the operand is nar condition
-						pa.setToNaR();
+						pa.setnar();
 					}
 					else {
 						throw err;
@@ -167,9 +167,9 @@ namespace sw {
 					psqrt = sw::unum::sqrt(pa);
 				}
 				catch (const operand_is_nar& err) {
-					if (pa.isNaR()) {
+					if (pa.isnar()) {
 						// correctly caught the operand is nar condition
-						psqrt.setToNaR();
+						psqrt.setnar();
 				}
 				else {
 						throw err;
@@ -197,9 +197,9 @@ namespace sw {
 					psum = pa + pb;
 				}
 				catch (const operand_is_nar& err) {
-					if (pa.isNaR() || pb.isNaR()) {
+					if (pa.isnar() || pb.isnar()) {
 						// correctly caught the operand is nar condition
-						psum.setToNaR();
+						psum.setnar();
 					}
 					else {
 						throw err;
@@ -226,9 +226,9 @@ namespace sw {
 					pdif = pa - pb;
 				}
 				catch (const operand_is_nar& err) {
-					if (pa.isNaR() || pb.isNaR()) {
+					if (pa.isnar() || pb.isnar()) {
 						// correctly caught the operand is nar condition
-						pdif.setToNaR();
+						pdif.setnar();
 					}
 					else {
 						throw err;
@@ -255,9 +255,9 @@ namespace sw {
 					pmul = pa * pb;
 				}
 				catch (const operand_is_nar& err) {
-					if (pa.isNaR() || pb.isNaR()) {
+					if (pa.isnar() || pb.isnar()) {
 						// correctly caught the operand is nar condition
-						pmul.setToNaR();
+						pmul.setnar();
 					}
 					else {
 						throw err;
@@ -298,16 +298,16 @@ namespace sw {
 					pdiv = pa / pb;
 				}
 				catch (const divide_by_zero& err) {
-					if (pb.isZero()) {
+					if (pb.iszero()) {
 						// correctly caught the divide by zero condition
-						pdiv.setToNaR();
+						pdiv.setnar();
 					}
 					else {
 						throw err;
 					}
 				}
 				catch (const divide_by_nar& err) {
-					if (pb.isNaR()) {
+					if (pb.isnar()) {
 						// correctly caught the divide by nar condition
 						pdiv = 0.0f;
 					}
@@ -316,9 +316,9 @@ namespace sw {
 					}
 				}
 				catch (const operand_is_nar& err) {
-					if (pa.isNaR()) {
+					if (pa.isnar()) {
 						// correctly caught the operand is nar condition
-						pdiv.setToNaR();
+						pdiv.setnar();
 					}
 					else {
 						throw err;
