@@ -14,12 +14,12 @@
 #include "../../test_helpers.hpp"
 #include "../../posit_test_helpers.hpp"
 
-#include "./softposit_cmp.hpp"
 /*
 Standard posit with nbits = 32 have es = 2 exponent bits.
 */
 
-void GenerateDivTest(int opcode, uint32_t _a, uint32_t _b, uint32_t _c) {
+#include "./softposit_cmp.hpp"
+void GenerateP32Test(int opcode, uint32_t _a, uint32_t _b, uint32_t _c) {
 	using namespace std;
 	using namespace sw::unum;
 
@@ -82,7 +82,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 2000000;
+	const size_t RND_TEST_CASES = 2*1000*1000;  // 2M
 
 	const size_t nbits = 32;
 	const size_t es = 2;
@@ -103,19 +103,18 @@ try {
 	uint32_t a = 0b10011000011101110011010101010000;
 	uint32_t b = 0b11111011010101010100001001101000;
 	uint32_t c = 0b01111110010010000101000100110001;
-	GenerateDivTest(OPCODE_DIV, a, b, c);
-	//ValidateAgainstSoftPosit<32,2>("test", true, OPCODE_ADD, 10);
-	//ValidateAgainstSoftPosit<32,2>("test", true, OPCODE_SUB, 10);
-	//ValidateAgainstSoftPosit<32,2>("test", true, OPCODE_MUL, 10);
-	//ValidateAgainstSoftPosit<32,2>("test", true, OPCODE_DIV, 10);
-	//ValidateAgainstSoftPosit<32,2>("test", true, OPCODE_SQRT, 10);
+	GenerateP32Test(OPCODE_DIV, a, b, c);
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_ADD, 10), tag, " add ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_SUB, 10), tag, " sub ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_MUL, 10), tag, " mul ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_DIV, 10), tag, " div ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_SQRT, 10), tag, " sqrt ");
 	return 1;
 #endif
 
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
-#define now
-#ifdef now
+
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
@@ -134,9 +133,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES),  tag, "addition       ");
 	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES),  tag, "subtraction    ");
 	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES),  tag, "multiplication ");
-#endif
-	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, true, OPCODE_DIV, RND_TEST_CASES),  tag, "division       ");
-//	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SQRT, RND_TEST_CASES), tag, "sqrt           ");
+	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES),  tag, "division       ");
+	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SQRT, RND_TEST_CASES), tag, "sqrt           ");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
