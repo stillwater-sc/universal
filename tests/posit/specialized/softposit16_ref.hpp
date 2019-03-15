@@ -56,7 +56,7 @@ posit16_t i32_to_p16(int32_t a) {
 	int_fast8_t k, log2 = 25;
 	posit16_t uZ;
 	uint_fast16_t uiA;
-	uint_fast32_t expA, mask = 0x02000000, fracA;
+	uint_fast32_t expA, mask = 0x0200'0000, fracA;
 	bool sign;
 
 	sign = a >> 31;
@@ -93,6 +93,212 @@ posit16_t i32_to_p16(int32_t a) {
 		}
 	}
 	(sign) ? (uZ = -uiA & 0xFFFF) : (uZ = uiA);
+	return uZ;
+}
+
+void checkExtraTwoBitsP16(double f16, double temp, bool * bitsNPlusOne, bool * bitsMore) {
+	temp /= 2;
+	if (temp <= f16) {
+		*bitsNPlusOne = 1;
+		f16 -= temp;
+	}
+	if (f16>0)
+		*bitsMore = 1;
+}
+
+uint_fast16_t convertFractionP16(double f16, uint_fast8_t fracLength, bool * bitsNPlusOne, bool * bitsMore) {
+
+	uint_fast16_t frac = 0;
+
+	if (f16 == 0) return 0;
+	else if (f16 == INFINITY) return 0x8000;
+
+	f16 -= 1; //remove hidden bit
+	if (fracLength == 0)
+		checkExtraTwoBitsP16(f16, 1.0, bitsNPlusOne, bitsMore);
+	else {
+		double temp = 1;
+		while (true) {
+			temp /= 2;
+			if (temp <= f16) {
+				f16 -= temp;
+				fracLength--;
+				frac = (frac << 1) + 1; //shift in one
+				if (f16 == 0) {
+					//put in the rest of the bits
+					frac <<= (uint_fast8_t)fracLength;
+					break;
+				}
+
+				if (fracLength == 0) {
+					checkExtraTwoBitsP16(f16, temp, bitsNPlusOne, bitsMore);
+
+					break;
+				}
+			}
+			else {
+				frac <<= 1; //shift in a zero
+				fracLength--;
+				if (fracLength == 0) {
+					checkExtraTwoBitsP16(f16, temp, bitsNPlusOne, bitsMore);
+					break;
+				}
+			}
+		}
+	}
+
+	return frac;
+}
+
+posit16_t convertFloatToP16(float a) {
+	return convertDoubleToP16((double)a);
+}
+
+posit16_t convertDoubleToP16(double f16) {
+	posit16_t uZ;
+	bool sign, regS;
+	uint_fast16_t reg, frac = 0;
+	int_fast8_t exp = 0;
+	bool bitNPlusOne = 0, bitsMore = 0;
+
+	(f16 >= 0) ? (sign = 0) : (sign = 1);
+
+	if (f16 == 0) {
+		uZ = 0;
+		return uZ;
+	}
+	else if (f16 == INFINITY || f16 == -INFINITY || f16 == NAN) {
+		uZ = 0x8000;
+		return uZ;
+	}
+	else if (f16 == 1) {
+		uZ = 16384;
+		return uZ;
+	}
+	else if (f16 == -1) {
+		uZ = 49152;
+		return uZ;
+	}
+	else if (f16 >= 268435456) {
+		//maxpos
+		uZ = 32767;
+		return uZ;
+	}
+	else if (f16 <= -268435456) {
+		// -maxpos
+		uZ = 32769;
+		return uZ;
+	}
+	else if (f16 <= 3.725290298461914e-9 && !sign) {
+		//minpos
+		uZ = 1;
+		return uZ;
+	}
+	else if (f16 >= -3.725290298461914e-9 && sign) {
+		//-minpos
+		uZ = 65535;
+		return uZ;
+	}
+	else if (f16>1 || f16<-1) {
+		if (sign) {
+			//Make negative numbers positive for easier computation
+			f16 = -f16;
+		}
+
+		regS = 1;
+		reg = 1; //because k = m-1; so need to add back 1
+				 // minpos
+		if (f16 <= 3.725290298461914e-9) {
+			uZ = 1;
+		}
+		else {
+			//regime
+			while (f16 >= 4) {
+				f16 *= 0.25;
+				reg++;
+			}
+			if (f16 >= 2) {
+				f16 *= 0.5;
+				exp++;
+			}
+
+			int fracLength = 13 - reg;
+
+			if (fracLength<0) {
+				//reg == 14, means rounding bits is exp and just the rest.
+				if (f16>1) 	bitsMore = 1;
+
+			}
+			else
+				frac = convertFractionP16(f16, fracLength, &bitNPlusOne, &bitsMore);
+
+
+			if (reg == 14 && frac>0) {
+				bitsMore = 1;
+				frac = 0;
+			}
+			if (reg>14)
+				(regS) ? (uZ = 32767) : (uZ = 0x1);
+			else {
+				uint_fast16_t regime = 1;
+				if (regS) regime = ((1 << reg) - 1) << 1;
+				uZ = ((uint16_t)(regime) << (14 - reg)) + ((uint16_t)(exp) << (13 - reg)) + ((uint16_t)(frac));
+				//n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+				if (reg == 14 && exp) bitNPlusOne = 1;
+				uZ += (bitNPlusOne & (uZ & 1)) | (bitNPlusOne & bitsMore);
+			}
+			if (sign) uZ = -uZ & 0xFFFF;
+		}
+	}
+	else if (f16 < 1 || f16 > -1) {
+
+		if (sign) {
+			//Make negative numbers positive for easier computation
+			f16 = -f16;
+		}
+		regS = 0;
+		reg = 0;
+
+		//regime
+		while (f16<1) {
+			f16 *= 4;
+			reg++;
+		}
+		if (f16 >= 2) {
+			f16 /= 2;
+			exp++;
+		}
+		if (reg == 14) {
+			bitNPlusOne = exp;
+			if (frac>1) bitsMore = 1;
+		}
+		else {
+			//only possible combination for reg=15 to reach here is 7FFF (maxpos) and FFFF (-minpos)
+			//but since it should be caught on top, so no need to handle
+			int_fast8_t fracLength = 13 - reg;
+			frac = convertFractionP16(f16, fracLength, &bitNPlusOne, &bitsMore);
+		}
+
+		if (reg == 14 && frac>0) {
+			bitsMore = 1;
+			frac = 0;
+		}
+		if (reg>14)
+			(regS) ? (uZ.ui = 32767) : (uZ.ui = 0x1);
+		else {
+			uint_fast16_t regime = 1;
+			if (regS) regime = ((1 << reg) - 1) << 1;
+			uZ = ((uint16_t)(regime) << (14 - reg)) + ((uint16_t)(exp) << (13 - reg)) + ((uint16_t)(frac));
+			//n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
+			if (reg == 14 && exp) bitNPlusOne = 1;
+			uZ += (bitNPlusOne & (uZ & 1)) | (bitNPlusOne & bitsMore);
+		}
+		if (sign) uZ = -uZ & 0xFFFF;
+	}
+	else {
+		//NaR - for NaN, INF and all other combinations
+		uZ = 0x8000;
+	}
 	return uZ;
 }
 
