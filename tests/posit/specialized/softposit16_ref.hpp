@@ -150,9 +150,6 @@ uint_fast16_t convertFractionP16(double f16, uint_fast8_t fracLength, bool * bit
 	return frac;
 }
 
-posit16_t convertFloatToP16(float a) {
-	return convertDoubleToP16((double)a);
-}
 
 posit16_t convertDoubleToP16(double f16) {
 	posit16_t uZ;
@@ -284,7 +281,7 @@ posit16_t convertDoubleToP16(double f16) {
 			frac = 0;
 		}
 		if (reg>14)
-			(regS) ? (uZ.ui = 32767) : (uZ.ui = 0x1);
+			(regS) ? (uZ = 32767) : (uZ = 0x1);
 		else {
 			uint_fast16_t regime = 1;
 			if (regS) regime = ((1 << reg) - 1) << 1;
@@ -300,6 +297,10 @@ posit16_t convertDoubleToP16(double f16) {
 		uZ = 0x8000;
 	}
 	return uZ;
+}
+
+posit16_t convertFloatToP16(float a) {
+	return convertDoubleToP16((double)a);
 }
 
 posit16_t softposit_addMagsP16(uint_fast16_t uiA, uint_fast16_t uiB) {
