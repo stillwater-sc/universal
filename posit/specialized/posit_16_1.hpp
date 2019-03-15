@@ -59,24 +59,24 @@ namespace sw {
 
 			bool sign = (rhs < 0);
 			uint32_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
-			uint16_t raw;
+			uint16_t raw = 0;
 			if (v == sign_mask) { // +-maxpos, 0x8000 is special in int16 arithmetic as it is its own negation
 				_bits = 0x8000;
 				return *this;
 			}
 			else if (v > 0x0800'0000) { // v > 134,217,728
-				_bits = 0x7FFFu;  // +-maxpos
+				raw = 0x7FFFu;  // +-maxpos
 			}
 			else if (v > 0x02FF'FFFF) { // 50,331,647 < v < 134,217,728
-				_bits = 0x7FFEu;  // 0.5 of maxpos
+				raw = 0x7FFEu;  // 0.5 of maxpos
 			}
 			else if (v < 2) {  // v == 0 or v == 1
-				_bits = (v << 14); // generates 0x0000 if v is 0, or 0x4000 if 1
+				raw = (v << 14); // generates 0x0000 if v is 0, or 0x4000 if 1
 			}
 			else {
 				uint32_t mask = 0x0200'0000;
 				int8_t scale = 25;
-				uint16_t fraction_bits = v;
+				uint32_t fraction_bits = v;
 				while (!(fraction_bits & mask)) {
 					--scale;
 					fraction_bits <<= 1;
@@ -107,21 +107,24 @@ namespace sw {
 			uint32_t v = rhs;
 			if (v == sign_mask) { // +-maxpos, 0x8000 is special in int16 arithmetic as it is its own negation
 				_bits = 0x8000;
+				return *this;
 			}
 			else if (v > 0x0800'0000) { // v > 134,217,728
 				_bits = 0x7FFFu;  // +-maxpos
+				return *this;
 			}
 			else if (v > 0x02FF'FFFF) { // 50,331,647 < v < 134,217,728
 				_bits = 0x7FFEu;  // 0.5 of maxpos
+				return *this;
 			}
 			else if (v < 2) {  // v == 0 or v == 1
 				_bits = (v << 14); // generates 0x0000 if v is 0, or 0x4000 if 1
-
+				return *this;
 			}
 			else {
 				uint32_t mask = 0x0200'0000;
 				int8_t scale = 25;
-				uint16_t fraction_bits = v;
+				uint32_t fraction_bits = v;
 				while (!(fraction_bits & mask)) {
 					--scale;
 					fraction_bits <<= 1;
