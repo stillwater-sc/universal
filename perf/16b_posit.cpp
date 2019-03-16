@@ -7,7 +7,7 @@
 #include "common.hpp"
 // Configure the posit template environment
 // first: enable fast specialized posit<16,1>
-#define POSIT_FAST_POSIT_16_1 0
+#define POSIT_FAST_POSIT_16_1 1
 // second: disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <posit>

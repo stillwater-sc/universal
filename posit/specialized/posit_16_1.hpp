@@ -178,7 +178,7 @@ namespace sw {
 			uint16_t lhs = _bits;
 			uint16_t rhs = b._bits;
 			// process special cases
-			if (isnar() || b.isnar()) {  // infinity
+			if (isnar() || b.isnar()) {  // NaR
 				_bits = 0x8000;
 				return *this;
 			}
@@ -211,9 +211,9 @@ namespace sw {
 
 			//This is 2kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
 			shiftRight = (shiftRight << 1) + exp - (remaining >> 14);
-			frac32A += frac32B;
 
 			if (shiftRight == 0) {
+				frac32A += frac32B;  // this will always product a carry
 				if (exp) ++m;
 				exp ^= 1;
 				frac32A >>= 1;
@@ -221,8 +221,9 @@ namespace sw {
 			else {
 				//Manage CLANG (LLVM) compiler when shifting right more than number of bits
 				(shiftRight>31) ? (frac32B = 0) : (frac32B >>= shiftRight); //frac32B >>= shiftRight
+				frac32A += frac32B;
 
-				bool rcarry = 0x8000'0000 & frac32A; //first left bit
+				bool rcarry = 0x8000'0000 & frac32A; // first left bit
 				if (rcarry) {
 					if (exp) ++m;
 					exp ^= 1;
@@ -656,7 +657,7 @@ namespace sw {
 			else {
 				fraction = (fraction & 0x3FFF'FFFF) >> (scale + 1);
 				uint16_t final_fbits = uint16_t(fraction >> 16);
-				bool bitNPlusOne = bool(0x80 & fraction);
+				bool bitNPlusOne = false;
 				if (scale != 14) {
 					bitNPlusOne = bool((fraction >> 15) & 0x1);
 				}
@@ -664,6 +665,7 @@ namespace sw {
 					final_fbits = 0;
 				}
 				if (scale == 14 && exp != 0) bitNPlusOne = true;
+				exp <<= (13 - scale);
 				bits = uint16_t(regime) + uint16_t(exp) + uint16_t(final_fbits);
 				// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 				if (bitNPlusOne) {
