@@ -89,6 +89,21 @@ void BulkCmpArithmeticOps(int nrOfRandoms = 10) {
 	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", bReportIndividualTestCases, OPCODE_SQRT, nrOfRandoms), tag, " sqrt ");
 }
 
+void DecodePosit(sw::unum::posit<16, 1> p) {
+	using namespace std;
+	using namespace sw::unum;
+	bool sign;
+	int8_t scale;
+	int16_t exp;
+	uint32_t fraction;
+	p.decode_posit(uint16_t(p.encoding()), sign, scale, exp, fraction);
+	cout << "raw      0b" << p.get() << dec << endl;
+	cout << "sign       " << (sign ? "-1" : "+1") << endl;
+	cout << "scale      " << int(scale) << endl;
+	cout << "exponent 0x" << hex << exp << dec << endl;
+	cout << "fraction 0x" << hex << fraction << dec << endl;
+}
+
 #endif // SOFTPOSIT_CMP
 
 int main(int argc, char** argv)
@@ -115,24 +130,16 @@ try {
 	cout << dynamic_range(p) << endl << endl;
 
 #ifdef SOFTPOSIT_CMP
-	// FAIL 0100000001101011 * 0110101000010001 != 0110101001010100 instead it yielded 0110101010010101 s0 r110 e1 f01010010101 qNE v+10.58203125
-	uint16_t a = 0b0100000001101011;
-	uint16_t b = 0b0110101000010001;
-	uint16_t c = 0b0110101001010100;
+	// FAIL 0000001001010100 / 0000000000000100 != 0111111110001010 instead it yielded 0111111110001011 s0 r111111110 e0 f01011 qNE v+22016
+	uint16_t a = 0b0000001001010100;
+	uint16_t b = 0b0000000000000100;
+	uint16_t c = 0b0111111110001010;
 
-	p.set_raw_bits(a);
-	bool sign;
-	int8_t scale;
-	int16_t exp;
-	uint32_t fraction;
-	p.decode_posit(a, sign, scale, exp, fraction);
-	cout << "raw      0b" << convert_to_bitblock<16, uint16_t>(a) << dec << endl;
-	cout << "sign       " << (sign ? "-1" : "+1") << endl;
-	cout << "scale      " << int(scale) << endl;
-	cout << "exponent 0x" << hex << exp << dec << endl;
-	cout << "fraction 0x" << hex << fraction << dec << endl;
-	GenerateP16Test(OPCODE_MUL, a, b, c);
+	GenerateP16Test(OPCODE_DIV, a, b, c);
 
+	p.set_raw_bits(a); DecodePosit(p);
+	p.set_raw_bits(b); DecodePosit(p);
+	p.set_raw_bits(c); DecodePosit(p);
 	return 1;
 #endif
 
@@ -144,14 +151,14 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
 	// conversion tests
-	nrOfFailedTestCases += ReportTestResult( ValidateIntegerConversion<nbits, es>(tag, true), tag, "integer assign ");
+	nrOfFailedTestCases += ReportTestResult( ValidateIntegerConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "integer assign ");
 	nrOfFailedTestCases += ReportTestResult( ValidateConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");
 
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
 //	ReportTestResult(ValidateAddition<nbits, es>("addition", false), tag, "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition       ");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction    ");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, true, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication ");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication ");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division       ");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SQRT, RND_TEST_CASES), tag, "sqrt           ");
 

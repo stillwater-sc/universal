@@ -39,7 +39,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 =============================================================================*/
 
 // example: #pragma warning( disable : 4507 34; once : 4385; error : 164 )
-#pragma warning( disable : 4146)
+#pragma warning( disable : 4146 )
 
 #define signP16UI( a ) ( (bool) ( ( uint16_t ) (a)>>15 ) )
 #define signregP16UI( a ) ( (bool) (((uint16_t) (a)>>14) & 0x1) )

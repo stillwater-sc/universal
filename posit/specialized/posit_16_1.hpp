@@ -382,17 +382,18 @@ namespace sw {
 			decode_regime(lhs, m, remaining);
 
 			// extract the exponent
-			uint16_t exp = remaining >> 14;
+			int32_t exp = remaining >> 14;
 
 			// extract the fraction
 			uint16_t lhs_fraction = (0x4000 | remaining);
+			uint32_t fraction = lhs_fraction << 14;
 
 			// adjust shift and extract fraction bits of rhs
 			extractDividand(rhs, m, remaining);
 			exp -= remaining >> 14;
 			uint16_t rhs_fraction = (0x4000 | remaining);
 
-			div_t result = div(lhs_fraction, rhs_fraction);
+			div_t result = div(fraction, rhs_fraction);
 			uint32_t result_fraction = result.quot;
 			uint32_t remainder = result.rem;
 
@@ -411,7 +412,7 @@ namespace sw {
 			}
 
 			// round
-			_bits = round(m, exp, result_fraction);
+			_bits = divRound(m, exp, result_fraction, remainder != 0);
 			if (sign) _bits = -_bits & 0xFFFF;
 
 			return *this;
@@ -688,6 +689,43 @@ namespace sw {
 				// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 				if (bitNPlusOne) {
 					uint16_t moreBits = (0x7FFF & fraction) ? 0x0001 : 0x0000;
+					bits += (bits & 0x0001) | moreBits;
+				}
+			}
+			return bits;
+		}
+		inline uint16_t divRound(const int8_t m, uint16_t exp, uint32_t fraction, bool nonZeroRemainder) const {
+			uint16_t scale, regime, bits;
+			if (m < 0) {
+				scale = (-m & 0xFFFF);
+				regime = 0x4000 >> scale;
+			}
+			else {
+				scale = m + 1;
+				regime = 0x7FFF - (0x7FFF >> scale);
+			}
+
+			if (scale > 14) {
+				bits = m<0 ? 0x0001 : 0x7FFF;  // minpos and maxpos
+			}
+			else {
+				fraction &= 0x3FFF; // remove both carry bits
+				uint16_t final_fbits = uint16_t(fraction >> (scale + 1));
+				bool bitNPlusOne = false;
+				if (scale != 14) {
+					bitNPlusOne = bool((fraction >> scale) & 0x1);
+				}
+				else if (final_fbits > 0) {
+					final_fbits = 0;
+				}
+				if (scale == 14 && exp != 0) bitNPlusOne = true;
+				exp <<= (13 - scale);
+				bits = uint16_t(regime) + uint16_t(exp) + uint16_t(final_fbits);
+				
+				if (bitNPlusOne) {
+					uint16_t moreBits = (fraction & ((1 << scale) -1)) ? 0x0001 : 0x0000;
+					if (nonZeroRemainder) moreBits = 0x0001;
+						// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 					bits += (bits & 0x0001) | moreBits;
 				}
 			}
