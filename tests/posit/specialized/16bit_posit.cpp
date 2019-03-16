@@ -8,7 +8,7 @@
 // Configure the posit template environment
 // first: enable fast specialized posit<16,1>
 //#define POSIT_FAST_SPECIALIZATION
-#define POSIT_FAST_POSIT_16_1 0
+#define POSIT_FAST_POSIT_16_1 1
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
@@ -47,9 +47,9 @@ void GenerateP16Test(int opcode, uint16_t _a, uint16_t _b, uint16_t _c) {
 		break;
 	}
 	cout << hex;
-	cout << "a = 32.2x" << a << "p" << endl;
-	cout << "b = 32.2x" << b << "p" << endl;
-	cout << "c = 32.2x" << c << "p" << endl;
+	cout << "a = 16.1x" << a << "p" << endl;
+	cout << "b = 16.1x" << b << "p" << endl;
+	cout << "c = 16.1x" << c << "p" << endl;
 	cout << dec;
 
 	posit<16, 1> x, y, z, r;
@@ -78,6 +78,32 @@ void GenerateP16Test(int opcode, uint16_t _a, uint16_t _b, uint16_t _c) {
 	cout << "z = " << posit_format(z) << endl;
 	cout << "r = " << posit_format(r) << endl;
 }
+
+template<size_t nbits, size_t es>
+void BulkCmpArithmeticOps(int nrOfRandoms = 10) {
+	bool bReportIndividualTestCases = true;
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", bReportIndividualTestCases, OPCODE_ADD, nrOfRandoms), tag, " add ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", bReportIndividualTestCases, OPCODE_SUB, nrOfRandoms), tag, " sub ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", bReportIndividualTestCases, OPCODE_MUL, nrOfRandoms), tag, " mul ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", bReportIndividualTestCases, OPCODE_DIV, nrOfRandoms), tag, " div ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", bReportIndividualTestCases, OPCODE_SQRT, nrOfRandoms), tag, " sqrt ");
+}
+
+void DecodePosit(sw::unum::posit<16, 1> p) {
+	using namespace std;
+	using namespace sw::unum;
+	bool sign;
+	int8_t scale;
+	int16_t exp;
+	uint32_t fraction;
+	p.decode_posit(uint16_t(p.encoding()), sign, scale, exp, fraction);
+	cout << "raw      0b" << p.get() << dec << endl;
+	cout << "sign       " << (sign ? "-1" : "+1") << endl;
+	cout << "scale      " << int(scale) << endl;
+	cout << "exponent 0x" << hex << exp << dec << endl;
+	cout << "fraction 0x" << hex << fraction << dec << endl;
+}
+
 #endif // SOFTPOSIT_CMP
 
 int main(int argc, char** argv)
@@ -100,22 +126,22 @@ try {
 	cout << "Standard posit<16,1> configuration tests" << endl;
 #endif
 
-#ifdef SOFTPOSIT_CMP
-	// FAIL 10011000011101110011010101010000 / 11111011010101010100001001101000 != 01111110010010000101000100110001
-	uint16_t a = 0b10011000011101110011010101010000;
-	uint16_t b = 0b11111011010101010100001001101000;
-	uint16_t c = 0b01111110010010000101000100110001;
-	GenerateP16Test(OPCODE_DIV, a, b, c);
-	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_ADD, 10), tag, " add ");
-	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_SUB, 10), tag, " sub ");
-	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_MUL, 10), tag, " mul ");
-	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_DIV, 10), tag, " div ");
-	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", true, OPCODE_SQRT, 10), tag, " sqrt ");
-	return 1;
-#endif
-
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
+
+#ifdef SOFTPOSIT_CMP
+	// FAIL 0000001001010100 / 0000000000000100 != 0111111110001010 instead it yielded 0111111110001011 s0 r111111110 e0 f01011 qNE v+22016
+	uint16_t a = 0b0000001001010100;
+	uint16_t b = 0b0000000000000100;
+	uint16_t c = 0b0111111110001010;
+
+	GenerateP16Test(OPCODE_DIV, a, b, c);
+
+	p.set_raw_bits(a); DecodePosit(p);
+	p.set_raw_bits(b); DecodePosit(p);
+	p.set_raw_bits(c); DecodePosit(p);
+	return 1;
+#endif
 
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
@@ -129,6 +155,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult( ValidateConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");
 
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
+//	ReportTestResult(ValidateAddition<nbits, es>("addition", false), tag, "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition       ");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction    ");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication ");
