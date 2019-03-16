@@ -697,7 +697,7 @@ posit16_t p16_mul(posit16_t pA, posit16_t pB) {
 	}
 	else {
 		//remove carry and rcarry bits and shift to correct position
-		frac32Z = (frac32Z & 0xFFFFFFF) >> (regA - 1);
+		frac32Z = (frac32Z & 0xFFF'FFFF) >> (regA - 1);
 		fracA = (uint_fast16_t)(frac32Z >> 16);
 
 		if (regA != 14) bitNPlusOne |= bool(0x8000 & frac32Z);

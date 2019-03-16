@@ -115,14 +115,10 @@ try {
 	cout << dynamic_range(p) << endl << endl;
 
 #ifdef SOFTPOSIT_CMP
-	// FAIL 0011111001100011 + 0000111101011111 != 0100000000011101 instead it yielded 0100110111110000 s0 r10 e0 f110111110000 qNE v+1.87109375
-	// FAIL 0110110111011110 + 0011111001100011 != 0110111011010001 instead it yielded 0111001101000100 s0 r1110 e0 f1101000100 qNE v + 29.0625
-	// FAIL 0010001100111100 + 0011111001100011 != 0100010000000000 instead it yielded 0100100011010000 s0 r10 e0 f100011010000 qNE v + 1.55078125
-	// FAIL 0110000000010100 + 0010001100111100 != 0110000010101110 instead it yielded 0110100011011001 s0 r110 e1 f00011011001 qNE v + 8.84765625
-
-	uint16_t a = 0b0011111001100011;
-	uint16_t b = 0b0000111101011111;
-	uint16_t c = 0b0100000000011101;
+	// FAIL 0100000001101011 * 0110101000010001 != 0110101001010100 instead it yielded 0110101010010101 s0 r110 e1 f01010010101 qNE v+10.58203125
+	uint16_t a = 0b0100000001101011;
+	uint16_t b = 0b0110101000010001;
+	uint16_t c = 0b0110101001010100;
 
 	p.set_raw_bits(a);
 	bool sign;
@@ -135,13 +131,13 @@ try {
 	cout << "scale      " << int(scale) << endl;
 	cout << "exponent 0x" << hex << exp << dec << endl;
 	cout << "fraction 0x" << hex << fraction << dec << endl;
-	GenerateP16Test(OPCODE_ADD, a, b, c);
+	GenerateP16Test(OPCODE_MUL, a, b, c);
 
 	return 1;
 #endif
 
 
-#define now_
+#define now
 #ifdef now
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
@@ -153,12 +149,13 @@ try {
 	// conversion tests
 	nrOfFailedTestCases += ReportTestResult( ValidateIntegerConversion<nbits, es>(tag, true), tag, "integer assign ");
 	nrOfFailedTestCases += ReportTestResult( ValidateConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");
-#endif
+
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
 //	ReportTestResult(ValidateAddition<nbits, es>("addition", false), tag, "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition       ");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction    ");
-//	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication ");
+	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, true, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication ");
+#endif
 //	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division       ");
 //	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SQRT, RND_TEST_CASES), tag, "sqrt           ");
 
