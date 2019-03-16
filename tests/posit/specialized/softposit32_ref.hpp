@@ -773,6 +773,6 @@ posit32_t p32_sqrt(posit32_t pA) {
 		if (((mask - 1) & fracZ) | ((mask << 1) & fracZ)) fracZ += (mask << 1);
 	}
 	// Assemble the result and return it.
-	uA = uiZ | (expZ << (27 - shift)) | (fracZ >> (5 + shift));
+	uA = uiZ | (expZ << (27 - shift)) | uint_fast32_t(fracZ >> (5 + shift));
 	return uA;
 }

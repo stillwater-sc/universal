@@ -354,26 +354,21 @@ namespace sw {
 		int ValidateIntegerConversion(std::string& tag, bool bReportIndividualTestCases) {
 			// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
 			const unsigned max = nbits > 22 ? 2 : nbits;
-			size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;
+			size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;  
 			int nrOfFailedTestCases = 0;
 
 			posit<nbits, es> p, presult;
-
 			p = 1;
-			if (!p.isone()) {
-				if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << 1 << std::endl;
-				nrOfFailedTestCases++;
-			}
 			for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 				if (!p.isnar()) {
-					long ref = (long)p;   // obtain the integer cast of this posit
-					presult = ref;		  // assign this integer to a reference posit
-					if (presult != ref) { // compare the integer cast to the reference posit
+					long ref = (long)p; // obtain the integer cast of this posit
+					presult = ref;		// assign this integer to a posit				
+					if (ref != presult) { // compare the integer cast to the reference posit
 						if (bReportIndividualTestCases) std::cout << tag << " FAIL long(" << p << ") != long(" << presult << ") : reference = " << ref << std::endl;
 						nrOfFailedTestCases++;
 					}
 					else {
-						//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " == " << presult << " : reference = " << ref << std::endl;
+						//if (bReportIndividualTestCases) std::cout << tag << " PASS " << p << " casts to " << presult << " : reference = " << ref << std::endl;
 					}
 				}
 				++p;
