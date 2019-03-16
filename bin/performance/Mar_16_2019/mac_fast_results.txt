@@ -1,0 +1,51 @@
+Fast specialization posit<4,0>
+Performance Report: posit<4,0>
+Conversion int  : 593 MPOPS
+Conversion ieee :   6 MPOPS
+Prefix          : 945 MPOPS
+Postfix         : 949 MPOPS
+Negation        :   1 TPOPS
+Addition        : 961 MPOPS
+Subtraction     : 950 MPOPS
+Multiplication  : 961 MPOPS
+Division        : 961 MPOPS
+Square Root     : 662 MPOPS
+
+Fast specialization posit<8,0>
+Performance Report: posit<8,0>
+Conversion int  : 387 MPOPS
+Conversion ieee :   6 MPOPS
+Prefix          :   3 GPOPS
+Postfix         :   5 GPOPS
+Negation        :   2 TPOPS
+Addition        : 108 MPOPS
+Subtraction     : 112 MPOPS
+Multiplication  : 132 MPOPS
+Division        :  58 MPOPS
+Square Root     :   1 GPOPS
+
+Fast specialization posit<16,1>
+Performance Report: posit<16,1>
+Conversion int  : 135 MPOPS
+Conversion ieee :   7 MPOPS
+Prefix          :   4 GPOPS
+Postfix         :   9 GPOPS
+Negation        :   2 TPOPS
+Addition        : 113 MPOPS
+Subtraction     : 111 MPOPS
+Multiplication  : 125 MPOPS
+Division        :  67 MPOPS
+Square Root     :   5 MPOPS
+
+Fast specialization posit<32,2>
+Performance Report: posit<32,2>
+Conversion int  : 174 MPOPS
+Conversion ieee :   6 MPOPS
+Prefix          :   2 TPOPS
+Postfix         :   2 TPOPS
+Negation        :   2 TPOPS
+Addition        :  99 MPOPS
+Subtraction     :  87 MPOPS
+Multiplication  : 102 MPOPS
+Division        :  40 MPOPS
+Square Root     :   3 MPOPS
