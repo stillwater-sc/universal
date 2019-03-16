@@ -363,18 +363,18 @@ namespace sw {
 			uint16_t rhs = b._bits;
 			// process special cases
 			if (isnar() || b.isnar() || b.iszero()) {
-				_bits = 0x80;
+				_bits = 0x8000;
 				return *this;
 			}
 			if (iszero()) {
-				_bits = 0x00;
+				_bits = 0x0000;
 				return *this;
 			}
 
 			// calculate the sign of the result
-			bool sign = bool(lhs & 0x80) ^ bool(rhs & 0x80);
-			lhs = lhs & 0x80 ? -lhs : lhs;
-			rhs = rhs & 0x80 ? -rhs : rhs;
+			bool sign = bool(lhs & sign_mask) ^ bool(rhs & sign_mask);
+			lhs = lhs & sign_mask ? -lhs : lhs;
+			rhs = rhs & sign_mask ? -rhs : rhs;
 
 			// decode the regime of lhs
 			int8_t m = 0; // pattern length
@@ -384,25 +384,35 @@ namespace sw {
 			// extract the exponent
 			uint16_t exp = remaining >> 14;
 
-			uint16_t lhs_fraction = (0x80 | remaining) << 7;
+			// extract the fraction
+			uint16_t lhs_fraction = (0x4000 | remaining);
+
 			// adjust shift and extract fraction bits of rhs
 			extractDividand(rhs, m, remaining);
-			uint8_t rhs_fraction = (0x80 | remaining);
-			div_t result = div(lhs_fraction, uint16_t(rhs_fraction));
-			uint16_t result_fraction = result.quot;
-			uint16_t remainder = result.rem;
+			exp -= remaining >> 14;
+			uint16_t rhs_fraction = (0x4000 | remaining);
 
+			div_t result = div(lhs_fraction, rhs_fraction);
+			uint32_t result_fraction = result.quot;
+			uint32_t remainder = result.rem;
+
+			// adjust the exponent if needed
+			if (exp < 0) {
+				exp = 0x01;
+				--m;
+			}
 			if (result_fraction != 0) {
-				bool rcarry = result_fraction >> 7; // this is the hidden bit (7th bit) , extreme right bit is bit 0
+				bool rcarry = result_fraction >> 14; // this is the hidden bit (14th bit), extreme right bit is bit 0
 				if (!rcarry) {
-					--m;
+					if (exp == 0) --m;
+					exp ^= 0x01;
 					result_fraction <<= 1;
 				}
 			}
 
 			// round
-			_bits = adjustAndRound(m, result_fraction, remainder != 0);
-			if (sign) _bits = -_bits & 0xFF;
+			_bits = round(m, exp, result_fraction);
+			if (sign) _bits = -_bits & 0xFFFF;
 
 			return *this;
 		}
@@ -632,7 +642,7 @@ namespace sw {
 			}
 		}
 		inline void extractDividand(const uint16_t bits, int8_t& m, uint16_t& remaining) const {
-			remaining = (bits << 2) & 0xFF;
+			remaining = (bits << 2) & 0xFFFF;
 			if (bits & 0x4000) {  // positive regimes
 				while (remaining >> 15) {
 					--m;
