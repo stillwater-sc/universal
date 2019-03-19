@@ -117,14 +117,17 @@ try {
 	cout << dynamic_range(p) << endl << endl;
 
 	// logic tests
+	cout << "Logic operator tests " << endl;
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicLessThan          <nbits, es>(), tag, "    <          ");
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         ");
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
 	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
+
 	// conversion tests
-	// disabled until we can constrain the state space 2^33 is too big
+	// internally this generators are clamped as the state space 2^33 is too big
+	cout << "Assignment/conversion tests " << endl;
 	nrOfFailedTestCases += ReportTestResult( ValidateIntegerConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "sint32 assign  ");
 	nrOfFailedTestCases += ReportTestResult( ValidateUintConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "uint32 assign  ");
 	nrOfFailedTestCases += ReportTestResult( ValidateConversion <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");
@@ -135,6 +138,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES),  tag, "subtraction    ");
 	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES),  tag, "multiplication ");
 	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES),  tag, "division       ");
+
+	// elementary function tests
+	cout << "Elementary function tests " << endl;
 	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SQRT, RND_TEST_CASES), tag, "sqrt           ");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
