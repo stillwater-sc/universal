@@ -111,7 +111,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 500000;
+	const size_t RND_TEST_CASES = 2*1024*1024;
 
 	const size_t nbits = 16;
 	const size_t es = 1;
@@ -130,37 +130,45 @@ try {
 	cout << dynamic_range(p) << endl << endl;
 
 #ifdef SOFTPOSIT_CMP
-	// FAIL 0000001001010100 / 0000000000000100 != 0111111110001010 instead it yielded 0111111110001011 s0 r111111110 e0 f01011 qNE v+22016
-	uint16_t a = 0b0000001001010100;
-	uint16_t b = 0b0000000000000100;
-	uint16_t c = 0b0111111110001010;
+	uint16_t a = 0b0100010110101101;
+	uint16_t b = 0b0000000000000000;
+	uint16_t c = 0b0100001010011111;
 
 	GenerateP16Test(OPCODE_DIV, a, b, c);
 
 	p.set_raw_bits(a); DecodePosit(p);
 	p.set_raw_bits(b); DecodePosit(p);
 	p.set_raw_bits(c); DecodePosit(p);
+
 	return 1;
 #endif
 
 	// logic tests
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan          <nbits, es>(), tag, "    <          ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
-	// conversion tests
-	nrOfFailedTestCases += ReportTestResult( ValidateIntegerConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "integer assign ");
-	nrOfFailedTestCases += ReportTestResult( ValidateConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");
+	cout << "Logic operator tests " << endl;
+	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
+	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
+	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicLessThan          <nbits, es>(), tag, "    <          ");
+	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         ");
+	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
+	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
 
+	// conversion tests
+	cout << "Assignment/conversion tests " << endl;
+	nrOfFailedTestCases += ReportTestResult( ValidateIntegerConversion           <nbits, es>(tag, bReportIndividualTestCases), tag, "integer assign ");
+	nrOfFailedTestCases += ReportTestResult( ValidateConversion                  <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");
+
+	// arithmetic tests
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
-//	ReportTestResult(ValidateAddition<nbits, es>("addition", false), tag, "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition       ");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction    ");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication ");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division       ");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SQRT, RND_TEST_CASES), tag, "sqrt           ");
+	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms              <nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition       ");
+	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms              <nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction    ");
+	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms              <nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication ");
+	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms              <nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division       ");
+
+	// elementary function tests
+	cout << "Elementary function tests " << endl;
+	nrOfFailedTestCases += ReportTestResult( ValidateSqrt                        <nbits, es>(tag, bReportIndividualTestCases), tag, "sqrt           ");
+
+	cout << flush;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
