@@ -354,22 +354,22 @@ namespace sw {
 			}
 			raw &= 0x3FFF;
 			uint16_t exp = 1 - (raw >> 13);
-			uint16_t fraction = (raw | 0x2000) >> 1;
+			uint16_t rhs_fraction = (raw | 0x2000) >> 1;
 
 			// Use table look-up of first four bits for piecewise linear approximation of 1/sqrt:
-			uint16_t index = ((fraction >> 8) & 0x000E) + exp;
+			uint16_t index = ((rhs_fraction >> 8) & 0x000E) + exp;
 
-			uint32_t r0 = approxRecipSqrt0[index] - ((uint32_t(approxRecipSqrt1[index])	* (fraction & 0x01FF)) >> 13);
+			uint32_t r0 = approxRecipSqrt0[index] - ((uint32_t(approxRecipSqrt1[index])	* (rhs_fraction & 0x01FF)) >> 13);
 			// Use Newton-Raphson refinement to get more accuracy for 1/sqrt:
 			uint32_t eSqrR0 = ((uint_fast32_t)r0 * r0) >> 1;
 
 			if (exp) eSqrR0 >>= 1;
-			uint16_t sigma0 = 0xFFFF ^ (0xFFFF & (((uint64_t)eSqrR0 * (uint64_t)fraction) >> 18));
+			uint16_t sigma0 = 0xFFFF ^ (0xFFFF & (((uint64_t)eSqrR0 * (uint64_t)rhs_fraction) >> 18));
 			uint32_t oneOverSqrt = (r0 << 2) + ((r0 * sigma0) >> 23);
 
 			// We need 17 bits of accuracy for posit16 square root approximation.
 			// Multiplying 16 bits and 18 bits needs 64-bit scratch before rounding.
-			uint16_t final_fraction = (uint16_t)(((uint64_t)fraction) * oneOverSqrt) >> 13;
+			uint32_t computing_fraction = (((uint64_t)rhs_fraction) * oneOverSqrt) >> 13;
 
 			// Figure out the regime and the resulting right shift of the fraction
 			uint16_t shift;
@@ -385,28 +385,28 @@ namespace sw {
 			if (scale & 1) raw |= (0x1000 >> shift);
 
 			// Right-shift fraction bits, accounting for 1 <= a < 2 versus 2 <= a < 4:
-			final_fraction = final_fraction >> (exp + shift);
+			computing_fraction = computing_fraction >> (exp + shift);
 
 			// Trick for eliminating off-by-one cases that only uses one multiply:
-			final_fraction++;
-			if (!(final_fraction & 0x0007)) {
-				uint32_t shiftedFraction = final_fraction >> 1;
+			computing_fraction++;
+			if (!(computing_fraction & 0x0007)) {
+				uint32_t shiftedFraction = computing_fraction >> 1;
 				uint32_t negRem = (shiftedFraction * shiftedFraction) & 0x0003'FFFF;
 				if (negRem & 0x0002'0000) {
-					final_fraction |= 1;
+					computing_fraction |= 1;
 				}
 				else {
-					if (negRem) --final_fraction;
+					if (negRem) --computing_fraction;
 				}
 			}
 			// Strip off the hidden bit and round-to-nearest using last 4 bits.
-			final_fraction -= (0x0001'0000 >> shift);
-			bool bitNPlusOne = bool((final_fraction >> 3) & 0x1);
+			computing_fraction -= (0x0001'0000 >> shift);
+			bool bitNPlusOne = bool((computing_fraction >> 3) & 0x1);
 			if (bitNPlusOne) {
-				if (((final_fraction >> 4) & 1) | (final_fraction & 7)) final_fraction += 0x0010;
+				if (((computing_fraction >> 4) & 1) | (computing_fraction & 7)) computing_fraction += 0x0010;
 			}
 			// Assemble the result and return it.
-			p.set_raw_bits(raw | (final_fraction >> 4));
+			p.set_raw_bits(raw | (computing_fraction >> 4));
 			return p;
 		}
 #endif

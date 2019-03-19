@@ -130,16 +130,16 @@ try {
 	cout << dynamic_range(p) << endl << endl;
 
 #ifdef SOFTPOSIT_CMP
-	// FAIL 0000001001010100 / 0000000000000100 != 0111111110001010 instead it yielded 0111111110001011 s0 r111111110 e0 f01011 qNE v+22016
-	uint16_t a = 0b0000001001010100;
-	uint16_t b = 0b0000000000000100;
-	uint16_t c = 0b0111111110001010;
+	uint16_t a = 0b0100010110101101;
+	uint16_t b = 0b0000000000000000;
+	uint16_t c = 0b0100001010011111;
 
 	GenerateP16Test(OPCODE_DIV, a, b, c);
 
 	p.set_raw_bits(a); DecodePosit(p);
 	p.set_raw_bits(b); DecodePosit(p);
 	p.set_raw_bits(c); DecodePosit(p);
+
 	return 1;
 #endif
 
