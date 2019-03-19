@@ -443,7 +443,7 @@ namespace sw {
 			// Use table look-up of first 4 bits for piecewise linear approx. of 1/sqrt:
 			uint32_t index = ((rhs_fraction >> 24) & 0x000E) + exp;
 			int32_t eps = ((rhs_fraction >> 9) & 0xFFFF);
-			uint32_t r0 = approxRecipSqrt0[index] - ((approxRecipSqrt1[index] * eps) >> 20);
+			uint32_t r0 = approxRecipSqrt0[index] - ((uint64_t(approxRecipSqrt1[index]) * eps) >> 20);
 
 			// Use Newton-Raphson refinement to get 33 bits of accuracy for 1/sqrt:
 			uint64_t eSqrR0 = (uint64_t)r0 * r0;
