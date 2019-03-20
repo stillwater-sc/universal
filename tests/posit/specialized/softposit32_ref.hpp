@@ -722,7 +722,7 @@ posit32_t p32_sqrt(posit32_t pA) {
 	shiftZ += (expA >> 1);
 	expA = (0x1 ^ (expA & 0x1));
 	uiA &= 0x0FFFFFFF;
-	fracA = (uiA | 0x10000000);
+	fracA = (uiA | 0x1000'0000);
 
 	// Use table look-up of first 4 bits for piecewise linear approx. of 1/sqrt:
 	index = ((fracA >> 24) & 0xE) + expA;

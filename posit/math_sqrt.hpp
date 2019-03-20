@@ -212,6 +212,289 @@ namespace sw {
 			return v.reciprocate();
 		}
 
+		///////////////////////////////////////////////////////////////////
+		// specialized sqrt configurations
+
+
+		// fast sqrt for posit<2,0>
+		template<>
+		inline posit<3, 0> sqrt(const posit<3, 0>& a) {
+			posit<3, 0> p;
+			if (a.isneg() || a.isnar()) {
+				p.setnar();
+				return p;
+			}
+			unsigned root = posit_3_0_roots[a.encoding()];
+			p.set_raw_bits(root);
+			return p;
+		}
+
+		// fast sqrt for posit<3,1>
+		template<>
+		inline posit<3, 1> sqrt(const posit<3, 1>& a) {
+			posit<3, 1> p;
+			if (a.isneg() || a.isnar()) {
+				p.setnar();
+				return p;
+			}
+			unsigned root = posit_3_1_roots[a.encoding()];
+			p.set_raw_bits(root);
+			return p;
+		}
+
+		// fast sqrt for posit<4,0>
+		template<>
+		inline posit<4, 0> sqrt(const posit<4, 0>& a) {
+			posit<4, 0> p;
+			if (a.isneg() || a.isnar()) {
+				p.setnar();
+				return p;
+			}
+
+			unsigned root = posit_4_0_roots[a.encoding()];
+			p.set_raw_bits(root);
+			return p;
+		}
+
+		// fast sqrt for posit<5,0>
+		template<>
+		inline posit<5, 0> sqrt(const posit<5, 0>& a) {
+			posit<5, 0> p;
+			if (a.isneg() || a.isnar()) {
+				p.setnar();
+				return p;
+			}
+			unsigned root = posit_5_0_roots[a.encoding()];
+			p.set_raw_bits(root);
+			return p;
+		}
+
+		// fast sqrt for posit<8,0>
+		template<>
+		inline posit<8, 0> sqrt(const posit<8, 0>& a) {
+			posit<8, 0> p;
+			if (a.isneg() || a.isnar()) {
+				p.setnar();
+				return p;
+			}
+			unsigned root = posit_8_0_roots[a.encoding()];
+			p.set_raw_bits(root);
+			return p;
+		}
+
+		// fast sqrt for posit<8,1>
+		template<>
+		inline posit<8, 1> sqrt(const posit<8, 1>& a) {
+			posit<8, 1> p;
+			if (a.isneg() || a.isnar()) {
+				p.setnar();
+				return p;
+			}
+			unsigned root = posit_8_1_roots[a.encoding()];
+			p.set_raw_bits(root);
+			return p;
+		}
+
+		// seed sqrt approximation
+		const uint16_t approxRecipSqrt0[16] = {
+			0xb4c9, 0xffab, 0xaa7d, 0xf11c, 0xa1c5, 0xe4c7, 0x9a43, 0xda29,
+			0x93b5, 0xd0e5, 0x8ded, 0xc8b7, 0x88c6, 0xc16d, 0x8424, 0xbae1
+		};
+		const uint16_t approxRecipSqrt1[16] = {
+			0xa5a5, 0xea42, 0x8c21, 0xc62d, 0x788f, 0xaa7f, 0x6928, 0x94b6,
+			0x5cc7, 0x8335, 0x52a6, 0x74e2, 0x4a3e, 0x68fe, 0x432b, 0x5efd
+		};
+
+#if POSIT_FAST_POSIT_16_1
+
+		// fast sqrt for posit<16,1>
+		template<>
+		inline posit<16, 1> sqrt(const posit<16, 1>& a) {
+			posit<16, 1> p;
+			if (a.isneg() || a.isnar()) {
+				p.setnar();
+				return p;
+			}
+			if (a.iszero()) {
+				p.setzero();
+				return p;
+			}
+
+			uint16_t raw = uint16_t(a.encoding());
+			int16_t scale;
+			// Compute the square root. Here, kZ is the net power-of-2 scaling of the result.
+			// Decode the regime and exponent bit; scale the input to be in the range 1 to 4:			
+			if (raw & 0x4000) {
+				scale = -1;
+				while (raw & 0x4000) {
+					++scale;
+					raw = (raw << 1) & 0xFFFF;
+				}
+			}
+			else {
+				scale = 0;
+				while (!(raw & 0x4000)) {
+					--scale;
+					raw = (raw << 1) & 0xFFFF;
+				}
+
+			}
+			raw &= 0x3FFF;
+			uint16_t exp = 1 - (raw >> 13);
+			uint16_t rhs_fraction = (raw | 0x2000) >> 1;
+
+			// Use table look-up of first four bits for piecewise linear approximation of 1/sqrt:
+			uint16_t index = ((rhs_fraction >> 8) & 0x000E) + exp;
+
+			uint32_t r0 = approxRecipSqrt0[index] - ((uint32_t(approxRecipSqrt1[index])	* (rhs_fraction & 0x01FF)) >> 13);
+			// Use Newton-Raphson refinement to get more accuracy for 1/sqrt:
+			uint32_t eSqrR0 = ((uint_fast32_t)r0 * r0) >> 1;
+
+			if (exp) eSqrR0 >>= 1;
+			uint16_t sigma0 = 0xFFFF ^ (0xFFFF & (((uint64_t)eSqrR0 * (uint64_t)rhs_fraction) >> 18));
+			uint32_t oneOverSqrt = (r0 << 2) + ((r0 * sigma0) >> 23);
+
+			// We need 17 bits of accuracy for posit16 square root approximation.
+			// Multiplying 16 bits and 18 bits needs 64-bit scratch before rounding.
+			uint32_t result_fraction = (((uint64_t)rhs_fraction) * oneOverSqrt) >> 13;
+
+			// Figure out the regime and the resulting right shift of the fraction
+			uint16_t shift;
+			if (scale < 0) {
+				shift = (-1 - scale) >> 1;
+				raw = 0x2000 >> shift;   // build up the raw bits of the result posit
+			}
+			else {
+				shift = scale >> 1;
+				raw = 0x7FFF - (0x7FFF >> (shift + 1));
+			}
+			// Set the exponent bit in the answer, if it is nonzero:
+			if (scale & 1) raw |= (0x1000 >> shift);
+
+			// Right-shift fraction bits, accounting for 1 <= a < 2 versus 2 <= a < 4:
+			result_fraction = result_fraction >> (exp + shift);
+
+			// Trick for eliminating off-by-one cases that only uses one multiply:
+			result_fraction++;
+			if (!(result_fraction & 0x0007)) {
+				uint32_t shiftedFraction = result_fraction >> 1;
+				uint32_t negRem = (shiftedFraction * shiftedFraction) & 0x0003'FFFF;
+				if (negRem & 0x0002'0000) {
+					result_fraction |= 1;
+				}
+				else {
+					if (negRem) --result_fraction;
+				}
+			}
+			// Strip off the hidden bit and round-to-nearest using last 4 bits.
+			result_fraction -= (0x0001'0000 >> shift);
+			bool bitNPlusOne = bool((result_fraction >> 3) & 0x1);
+			if (bitNPlusOne) {
+				if (((result_fraction >> 4) & 1) | (result_fraction & 7)) result_fraction += 0x0010;
+			}
+			// Assemble the result and return it.
+			p.set_raw_bits(raw | (result_fraction >> 4));
+			return p;
+		}
+#endif // POSIT_FAST_POSIT_16_1
+
+
+#if POSIT_FAST_POSIT_32_2
+
+		// fast sqrt for posit<16,1>
+		template<>
+		inline posit<32, 2> sqrt(const posit<32, 2>& a) {
+			posit<32, 2> p;
+			if (a.isneg() || a.isnar()) {
+				p.setnar();
+				return p;
+			}
+			if (a.iszero()) {
+				p.setzero();
+				return p;
+			}
+
+			uint32_t raw = uint32_t(a.encoding());
+			int32_t scale;
+			// Compute the square root; shiftZ is the power-of-2 scaling of the result.
+			// Decode regime and exponent; scale the input to be in the range 1 to 4:
+			if (raw & 0x4000'0000) {
+				scale = -2;
+				while (raw & 0x4000'0000) {
+					scale += 2;
+					raw = (raw << 1) & 0xFFFF'FFFF;
+				}
+			}
+			else {
+				scale = 0;
+				while (!(raw & 0x40000000)) {
+					scale -= 2;
+					raw = (raw << 1) & 0xFFFF'FFFF;
+				}
+			}
+
+			raw &= 0x3FFF'FFFF;
+			uint32_t exp = (raw >> 28);
+			scale += (exp >> 1);
+			exp = (0x1 ^ (exp & 0x1));
+			raw &= 0x0FFF'FFFF;
+			uint32_t rhs_fraction = (raw | 0x1000'0000);
+
+			// Use table look-up of first 4 bits for piecewise linear approx. of 1/sqrt:
+			uint32_t index = ((rhs_fraction >> 24) & 0x000E) + exp;
+			int32_t eps = ((rhs_fraction >> 9) & 0xFFFF);
+			uint32_t r0 = approxRecipSqrt0[index] - ((uint64_t(approxRecipSqrt1[index]) * eps) >> 20);
+
+			// Use Newton-Raphson refinement to get 33 bits of accuracy for 1/sqrt:
+			uint64_t eSqrR0 = (uint64_t)r0 * r0;
+			if (!exp) eSqrR0 <<= 1;
+			uint64_t sigma0 = 0xFFFF'FFFF & (0xFFFF'FFFF ^ ((eSqrR0 * (uint64_t)rhs_fraction) >> 20));
+			uint64_t recipSqrt = ((uint64_t)r0 << 20) + (((uint64_t)r0 * sigma0) >> 21);
+
+			uint64_t sqrSigma0 = ((sigma0 * sigma0) >> 35);
+			recipSqrt += (((recipSqrt + (recipSqrt >> 2) - ((uint64_t)r0 << 19)) * sqrSigma0) >> 46);
+
+
+			uint64_t result_fraction = (((uint64_t)rhs_fraction) * recipSqrt) >> 31;
+			if (exp) result_fraction = (result_fraction >> 1);
+
+			// Find the exponent of Z and encode the regime bits
+			uint32_t result_exp = scale & 0x3;
+			uint32_t shift;
+			if (scale < 0) {
+				shift = (-1 - scale) >> 2;
+				raw = 0x2000'0000 >> shift;     // build up the raw bits of the result posit
+			}
+			else {
+				shift = scale >> 2;
+				raw = 0x7FFF'FFFF - (0x3FFF'FFFF >> shift);
+			}
+
+			// Trick for eliminating off-by-one cases that only uses one multiply:
+			result_fraction++;
+			if (!(result_fraction & 0x000F)) {
+				uint64_t shiftedFraction = result_fraction >> 1;
+				uint64_t negRem = (shiftedFraction * shiftedFraction) & 0x1'FFFF'FFFF;
+				if (negRem & 0x1'0000'0000) {
+					result_fraction |= 1;
+				}
+				else {
+					if (negRem) --result_fraction;
+				}
+			}
+			// Strip off the hidden bit and round-to-nearest using last shift+5 bits.
+			result_fraction &= 0xFFFF'FFFF;
+			uint32_t mask = (1 << (4 + shift));
+			if (mask & result_fraction) {
+				if (((mask - 1) & result_fraction) | ((mask << 1) & result_fraction)) result_fraction += (mask << 1);
+			}
+			// Assemble the result and return it.
+			p.set_raw_bits(raw | (result_exp << (27 - shift)) | uint_fast32_t(result_fraction >> (5 + shift)));
+			return p;
+		}
+
+#endif // POSIT_FAST_POSIT_32_2
+
 	}  // namespace unum
 
 }  // namespace sw

@@ -1,0 +1,10 @@
+#
+./perf_4b_posit.exe
+./perf_8b_posit.exe
+./perf_10b_posit.exe
+./perf_12b_posit.exe
+./perf_14b_posit.exe
+./perf_16b_posit.exe
+./perf_32b_posit.exe
+./perf_48b_posit.exe
+./perf_64b_posit.exe

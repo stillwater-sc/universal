@@ -126,7 +126,7 @@ namespace sw {
 				<< " == "
 				<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
 				<< std::setw(FLOAT_TABLE_WIDTH) << pref
-				<< " " << components_to_string(presult) << std::endl;
+				<< " " << pretty_print(presult) << std::endl;
 		}
 
 		template<size_t nbits, size_t es>
@@ -1165,6 +1165,8 @@ namespace sw {
 			posit<nbits, es> pa, pb, presult, preference;
 
 			std::string operation_string;
+			bool binaryOperator = true; // most ops are binary operators +/- and */div
+			bool sqrtOperator = false;  // we need to filter negative values from the randoms
 			switch (opcode) {
 			default:
 			case OPCODE_NOP:
@@ -1184,6 +1186,8 @@ namespace sw {
 				break;
 			case OPCODE_SQRT:
 				operation_string = "sqrt";
+				binaryOperator = false;
+				sqrtOperator = true;
 				break;
 			}
 			// generate the full state space set of valid posit values
@@ -1202,6 +1206,9 @@ namespace sw {
 			std::vector<double> operand_values(SIZE_STATE_SPACE);
 			for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
 				presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as posit encoding
+				if (sqrtOperator && presult.isneg()) {
+					presult = -presult;
+				}
 				operand_values[i] = double(presult);
 			}
 			double da, db;
@@ -1234,10 +1241,27 @@ namespace sw {
 #endif
 				if (presult != preference) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases) ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, preference, presult);
+					if (bReportIndividualTestCases) {
+						if (binaryOperator) {
+							ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, preference, presult);
+						}
+						else {
+							std::cout << "FAIL " << posit_format(pa) << " ref " << posit_format(preference) << " result " << posit_format(presult) << std::endl;
+							ReportUnaryArithmeticError("FAIL", operation_string, pa, preference, presult);
+						}
+					}
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccessInBinary("PASS", operation_string, pa, pb, preference, presult);
+					/*
+					if (bReportIndividualTestCases) {
+						if (binaryOperator) {
+							ReportBinaryArithmeticSuccessInBinary("PASS", operation_string, pa, pb, preference, presult);
+						}
+						else {
+							ReportUnaryArithmeticSuccess("PASS", operation_string, pa, preference, presult);
+						}
+					}
+					*/
 				}
 			}
 
