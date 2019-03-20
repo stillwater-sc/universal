@@ -1,0 +1,113 @@
+Date run : 3/19/2019
+Processor: Intel Core i7 2.2GHz, 6 cores, L2 cache per core 256KB, L3 cache 9 MB
+Memory   : 16GB 2400 MHz DDR4
+System   : 64-bit macOS High Sierra, Version 10.13.6, MacBook Pro
+
+Performance Report: posit<4,0>
+Conversion int  : 627 MPOPS
+Conversion ieee :   7 MPOPS
+Prefix          :   1 GPOPS
+Postfix         :   1 GPOPS
+Negation        :   2 TPOPS
+Addition        :   1 GPOPS
+Subtraction     :   1 GPOPS
+Multiplication  :   1 GPOPS
+Division        :   1 GPOPS
+Square Root     : 729 MPOPS
+
+Performance Report: posit<8,0>
+Conversion int  : 423 MPOPS
+Conversion ieee :   7 MPOPS
+Prefix          :   3 GPOPS
+Postfix         :   5 GPOPS
+Negation        :   2 TPOPS
+Addition        : 108 MPOPS
+Subtraction     : 112 MPOPS
+Multiplication  : 132 MPOPS
+Division        :  60 MPOPS
+Square Root     :   1 GPOPS
+
+Performance Report: posit<10,0>
+Conversion int  :  33 MPOPS
+Conversion ieee :   7 MPOPS
+Prefix          :  68 MPOPS
+Postfix         :  72 MPOPS
+Negation        : 142 MPOPS
+Addition        :   6 MPOPS
+Subtraction     :   6 MPOPS
+Multiplication  :   6 MPOPS
+Division        : 742 KPOPS
+Square Root     :   6 MPOPS
+
+Performance Report: posit<12,0>
+Conversion int  :  36 MPOPS
+Conversion ieee :   6 MPOPS
+Prefix          :  49 MPOPS
+Postfix         :  55 MPOPS
+Negation        : 127 MPOPS
+Addition        :   5 MPOPS
+Subtraction     :   5 MPOPS
+Multiplication  :   5 MPOPS
+Division        : 522 KPOPS
+Square Root     :   6 MPOPS
+
+Performance Report: posit<14,0>
+Conversion int  :  25 MPOPS
+Conversion ieee :   8 MPOPS
+Prefix          :  45 MPOPS
+Postfix         :  46 MPOPS
+Negation        : 127 MPOPS
+Addition        :   5 MPOPS
+Subtraction     :   5 MPOPS
+Multiplication  :   4 MPOPS
+Division        : 399 KPOPS
+Square Root     :   5 MPOPS
+
+Performance Report: posit<16,1>
+Conversion int  : 136 MPOPS
+Conversion ieee :   7 MPOPS
+Prefix          :   4 GPOPS
+Postfix         :   9 GPOPS
+Negation        :   2 TPOPS
+Addition        : 113 MPOPS
+Subtraction     : 110 MPOPS
+Multiplication  : 116 MPOPS
+Division        :  62 MPOPS
+Square Root     : 129 MPOPS
+
+Performance Report: posit<32,2>
+Conversion int  : 199 MPOPS
+Conversion ieee :   6 MPOPS
+Prefix          :   2 TPOPS
+Postfix         :   2 TPOPS
+Negation        :   2 TPOPS
+Addition        :  79 MPOPS
+Subtraction     :  85 MPOPS
+Multiplication  : 105 MPOPS
+Division        :  39 MPOPS
+Square Root     :  49 MPOPS
+
+Performance Report: posit<48,3>
+Conversion int  :   4 MPOPS
+Conversion ieee :   4 MPOPS
+Prefix          :   8 MPOPS
+Postfix         :   9 MPOPS
+Negation        :  20 MPOPS
+Addition        :   2 MPOPS
+Subtraction     :   2 MPOPS
+Multiplication  :   1 MPOPS
+Division        :  45 KPOPS
+Square Root     :   2 MPOPS
+
+Performance Report: posit<64,3>
+Conversion int  :   3 MPOPS
+Conversion ieee :   3 MPOPS
+Prefix          :  12 MPOPS
+Postfix         :  11 MPOPS
+Negation        : 564 MPOPS
+Addition        :   1 MPOPS
+Subtraction     :   1 MPOPS
+Multiplication  :   1 MPOPS
+Division        :  25 KPOPS
+Square Root     :   1 MPOPS
+
