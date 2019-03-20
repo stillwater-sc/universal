@@ -1,0 +1,10 @@
+#
+./perf_4b_posit
+./perf_8b_posit
+./perf_10b_posit
+./perf_12b_posit
+./perf_14b_posit
+./perf_16b_posit
+./perf_32b_posit
+./perf_48b_posit
+./perf_64b_posit
