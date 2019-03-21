@@ -25,7 +25,7 @@ endif(POLICY CMP0048)
 # to pay attention to the value of these variables.
 if(NOT CMAKE_BUILD_TYPE)
 	message(STATUS "No default build type specified: setting CMAKE_BUILD_TYPE=Release")
-	set(CMAKE_BUILD_TYPE Release CACHE string
+	set(CMAKE_BUILD_TYPE Release CACHE STRING
 		"Choose the build type: options are: Debug Release RelWithDebInfo MinSizeRel"
 		FORCE)
 else(NOT CMAKE_BUILD_TYPE)
