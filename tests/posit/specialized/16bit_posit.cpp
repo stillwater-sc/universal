@@ -58,11 +58,12 @@ try {
 	nrOfFailedTestCases += ReportTestResult( ValidateConversion                  <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   (native)  ");
 
 	// arithmetic tests
+	// State space is too large for exhaustive testing, so we use randoms to try to catch any silly regressions
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
-	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms              <nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms              <nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction    (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms              <nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateThroughRandoms              <nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction    (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division       (native)  ");
 
 	// elementary function tests
 	cout << "Elementary function tests " << endl;
@@ -75,15 +76,15 @@ try {
 	nrOfFailedTestCases += ReportTestResult( ValidateSine                        <nbits, es>(tag, bReportIndividualTestCases), tag, "sin                      ");
 	nrOfFailedTestCases += ReportTestResult( ValidateCosine                      <nbits, es>(tag, bReportIndividualTestCases), tag, "cos                      ");
 	nrOfFailedTestCases += ReportTestResult( ValidateTangent                     <nbits, es>(tag, bReportIndividualTestCases), tag, "tan                      ");
-	nrOfFailedTestCases += ReportTestResult( ValidateAtan                        <nbits, es>(tag, bReportIndividualTestCases), tag, "atan                     ");
 	nrOfFailedTestCases += ReportTestResult( ValidateAsin                        <nbits, es>(tag, bReportIndividualTestCases), tag, "asin                     ");
 	nrOfFailedTestCases += ReportTestResult( ValidateAcos                        <nbits, es>(tag, bReportIndividualTestCases), tag, "acos                     ");
+	nrOfFailedTestCases += ReportTestResult( ValidateAtan                        <nbits, es>(tag, bReportIndividualTestCases), tag, "atan                     ");
 	nrOfFailedTestCases += ReportTestResult( ValidateSinh                        <nbits, es>(tag, bReportIndividualTestCases), tag, "sinh                     ");
 	nrOfFailedTestCases += ReportTestResult( ValidateCosh                        <nbits, es>(tag, bReportIndividualTestCases), tag, "cosh                     ");
 	nrOfFailedTestCases += ReportTestResult( ValidateTanh                        <nbits, es>(tag, bReportIndividualTestCases), tag, "tanh                     ");
-	nrOfFailedTestCases += ReportTestResult( ValidateAtanh                       <nbits, es>(tag, bReportIndividualTestCases), tag, "atanh                    ");
-	nrOfFailedTestCases += ReportTestResult( ValidateAcosh                       <nbits, es>(tag, bReportIndividualTestCases), tag, "acosh                    ");
 	nrOfFailedTestCases += ReportTestResult( ValidateAsinh                       <nbits, es>(tag, bReportIndividualTestCases), tag, "asinh                    ");
+	nrOfFailedTestCases += ReportTestResult( ValidateAcosh                       <nbits, es>(tag, bReportIndividualTestCases), tag, "acosh                    ");
+	nrOfFailedTestCases += ReportTestResult( ValidateAtanh                       <nbits, es>(tag, bReportIndividualTestCases), tag, "atanh                    ");
 
 	nrOfFailedTestCases += ReportTestResult( ValidatePowerFunction               <nbits, es>(tag, bReportIndividualTestCases), tag, "pow                      ");
 

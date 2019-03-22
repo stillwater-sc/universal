@@ -33,6 +33,7 @@
 // test helpers
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
+#include "../posit_math_helpers.hpp"
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -121,10 +122,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 6>(tag, bReportIndividualTestCases), "posit<8,6>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<16,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<24, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<24,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<32,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 2>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<32,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<16,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<24, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<24,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<32, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<32,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<32, 2>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<32,2>", "addition");
 
 #if STRESS_TESTING
 	// nbits=48 also shows failures
