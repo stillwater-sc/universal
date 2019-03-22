@@ -95,114 +95,6 @@ namespace sw {
 			preference = reference;
 		}
 
-		/*
-				template<size_t nbits, size_t es>
-		void reference(int opcode, double da, double db, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& preference, posit<nbits, es>& presult) {
-			double reference = 0.0;
-			switch (opcode) {
-			default:
-			case OPCODE_NOP:
-				preference.setzero();
-				presult.setzero();
-				return;
-			case OPCODE_ADD:
-				switch (nbits) {
-				case 8:
-					presult = p8_add(pa, pb);
-					break;
-				case 16:
-					presult = p16_add(pa, pb);
-					break;
-				case 32:
-					presult = p32_add(pa, pb);
-					break;
-				case 64:
-					//presult = p64_add(pa, pb);
-					break;
-				default:
-					break;
-				}
-				reference = da + db;
-				break;
-			case OPCODE_SUB:
-				switch (nbits) {
-				case 8:
-					presult = p8_sub(pa, pb);
-					break;
-				case 16:
-					presult = p16_sub(pa, pb);
-					break;
-				case 32:
-					presult = p32_sub(pa, pb);
-					break;
-				case 64:
-					//presult = p64_sub(pa, pb);
-					break;
-				default:
-					break;
-				}
-				reference = da - db;
-				break;
-			case OPCODE_MUL:
-				switch (nbits) {
-				case 8:
-					presult = p8_mul(pa, pb);
-					break;
-				case 16:
-					presult = p16_mul(pa, pb);
-					break;
-				case 32:
-					presult = p32_mul(pa, pb);
-					break;
-				case 64:
-					//presult = p64_mul(pa, pb);
-					break;
-				default:
-					break;
-				}
-				reference = da * db;
-				break;
-			case OPCODE_DIV:
-				switch (nbits) {
-				case 8:
-					presult = p8_div(pa, pb);
-					break;
-				case 16:
-					presult = p16_div(pa, pb);
-					break;
-				case 32:
-					presult = p32_div(pa, pb);
-					break;
-				case 64:
-					//presult = p64_div(pa, pb);
-					break;
-				default:
-					break;
-				}
-				reference = da / db;
-				break;
-			case OPCODE_SQRT:
-				switch (nbits) {
-				case 8:
-					break;
-				case 16:
-					presult = p16_sqrt(pa);
-					break;
-				case 32:
-					presult = p32_sqrt(pa);
-					break;
-				case 64:
-					//presult = p64_sqrt(pa);
-					break;
-				default:
-					break;
-				}
-				reference = std::sqrt(da);
-				break;
-			}
-			preference = reference;
-		}
-		*/
 		template<size_t nbits, size_t es>
 		int ValidateAgainstSoftPosit(std::string tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
 			const size_t SIZE_STATE_SPACE = nrOfRandoms;
@@ -292,5 +184,197 @@ namespace sw {
 			return nrOfFailedTests;
 		}
 
+		void GenerateP16Test(int opcode, uint16_t _a, uint16_t _b, uint16_t _c) {
+			using namespace std;
+			using namespace sw::unum;
+
+			posit16_t a, b, c;
+			a = _a;
+			b = _b;
+			switch (opcode) {
+			case OPCODE_ADD:
+				c = p16_add(a, b);
+				break;
+			case OPCODE_SUB:
+				c = p16_sub(a, b);
+				break;
+			case OPCODE_MUL:
+				c = p16_mul(a, b);
+				break;
+			case OPCODE_DIV:
+				c = p16_div(a, b);
+				break;
+			case OPCODE_SQRT:
+				c = p16_sqrt(a);
+				break;
+			}
+			cout << hex;
+			cout << "a = 16.1x" << a << "p" << endl;
+			cout << "b = 16.1x" << b << "p" << endl;
+			cout << "c = 16.1x" << c << "p" << endl;
+			cout << dec;
+
+			posit<16, 1> x, y, z, r;
+			x.set_raw_bits(_a);
+			y.set_raw_bits(_b);
+			r.set_raw_bits(_c);
+			switch (opcode) {
+			case OPCODE_ADD:
+				z = x + y;
+				break;
+			case OPCODE_SUB:
+				z = a - b;
+				break;
+			case OPCODE_MUL:
+				z = x * y;
+				break;
+			case OPCODE_DIV:
+				z = x / y;
+				break;
+			case OPCODE_SQRT:
+				z = sw::unum::sqrt(x);
+				break;
+			}
+			cout << "x = " << posit_format(x) << endl;
+			cout << "y = " << posit_format(y) << endl;
+			cout << "z = " << posit_format(z) << endl;
+			cout << "r = " << posit_format(r) << endl;
+		}
+
+		void GenerateP32Test(int opcode, uint32_t _a, uint32_t _b, uint32_t _c) {
+			using namespace std;
+			using namespace sw::unum;
+
+			posit32_t a, b, c;
+			a = _a;
+			b = _b;
+			switch (opcode) {
+			case OPCODE_ADD:
+				c = p32_add(a, b);
+				break;
+			case OPCODE_SUB:
+				c = p32_sub(a, b);
+				break;
+			case OPCODE_MUL:
+				c = p32_mul(a, b);
+				break;
+			case OPCODE_DIV:
+				c = p32_div(a, b);
+				break;
+			case OPCODE_SQRT:
+				c = p32_sqrt(a);
+				break;
+			}
+			cout << hex;
+			if (opcode == OPCODE_SQRT) {
+				cout << "a    = 32.2x" << a << "p" << endl;
+				cout << "sqrt = 32.2x" << c << "p" << endl;
+			}
+			else {
+				cout << "a = 32.2x" << a << "p" << endl;
+				cout << "b = 32.2x" << b << "p" << endl;
+				cout << "c = 32.2x" << c << "p" << endl;
+			}
+			cout << dec;
+
+			posit<32, 2> x, y, z, r;
+			x.set_raw_bits(_a);
+			y.set_raw_bits(_b);
+			r.set_raw_bits(_c);
+			switch (opcode) {
+			case OPCODE_ADD:
+				z = x + y;
+				break;
+			case OPCODE_SUB:
+				z = a - b;
+				break;
+			case OPCODE_MUL:
+				z = x * y;
+				break;
+			case OPCODE_DIV:
+				z = x / y;
+				break;
+			case OPCODE_SQRT:
+				z = sw::unum::sqrt(x);
+				break;
+			}
+			if (opcode == OPCODE_SQRT) {
+				cout << "x    = " << posit_format(x) << endl;
+				cout << "sqrt = " << posit_format(z) << endl;
+			}
+			else {
+				cout << "x = " << posit_format(x) << endl;
+				cout << "y = " << posit_format(y) << endl;
+				cout << "z = " << posit_format(z) << endl;
+				cout << "r = " << posit_format(r) << endl;
+			}
+		}
+
+		// general posit decode
+		inline void decode_posit(uint16_t bits, bool& sign, int8_t& scale, int16_t& exp, uint32_t& fraction) {
+			if (bits == 0x8000) {
+				sign = true;
+				scale = 28;
+				exp = 0;
+				fraction = 0;
+			}
+			else if (bits == 0) {
+				sign = false;
+				scale = 0;
+				exp = 0;
+				fraction = 0;
+			}
+			else {
+				sign = bool(bits & 0x8000);
+				uint16_t tmp = (bits << 2) & 0xFFFF;
+				if (bits & 0x4000) {  // positive regimes
+					scale = 0;
+					while (tmp >> 15) {
+						++scale;
+						tmp = (tmp << 1) & 0xFFFF;
+					}
+				}
+				else {              // negative regimes
+					scale = -1;
+					while (!(tmp >> 15)) {
+						--scale;
+						tmp = (tmp << 1) & 0xFFFF;
+					}
+					tmp &= 0x7FFF;
+				}
+				exp = tmp >> 14;  // extract the exponent
+				fraction = (0x0000'4000 | tmp) << 16;  // shift to prepare for arithmetic use
+			}
+		}
+
 	} // namespace unum
 } // namespace sw
+
+
+
+template<size_t nbits, size_t es>
+void BulkCmpArithmeticOps(int nrOfRandoms = 10) {
+	bool bReportIndividualTestCases = true;
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", bReportIndividualTestCases, OPCODE_ADD, nrOfRandoms), tag, " add ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", bReportIndividualTestCases, OPCODE_SUB, nrOfRandoms), tag, " sub ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", bReportIndividualTestCases, OPCODE_MUL, nrOfRandoms), tag, " mul ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", bReportIndividualTestCases, OPCODE_DIV, nrOfRandoms), tag, " div ");
+	ReportTestResult(ValidateAgainstSoftPosit<nbits, es>("test", bReportIndividualTestCases, OPCODE_SQRT, nrOfRandoms), tag, " sqrt ");
+}
+
+
+
+void DecodePosit(sw::unum::posit<16, 1> p) {
+	using namespace std;
+	using namespace sw::unum;
+	bool sign;
+	int8_t scale;
+	int16_t exp;
+	uint32_t fraction;
+	decode_posit(uint16_t(p.encoding()), sign, scale, exp, fraction);
+	cout << "raw      0b" << p.get() << dec << endl;
+	cout << "sign       " << (sign ? "-1" : "+1") << endl;
+	cout << "scale      " << int(scale) << endl;
+	cout << "exponent 0x" << hex << exp << dec << endl;
+	cout << "fraction 0x" << hex << fraction << dec << endl;
+}

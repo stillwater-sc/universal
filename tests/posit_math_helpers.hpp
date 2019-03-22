@@ -25,10 +25,12 @@
 #include "../posit/math_hypot.hpp"
 #include "../posit/math_frac.hpp"
 
+#include "posit_test_helpers.hpp"
+
 namespace sw {
 	namespace unum {
 
-		static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
+//		static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 		template<size_t nbits, size_t es>
 		void ReportTwoInputFunctionError(std::string test_case, std::string op, const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
@@ -215,11 +217,12 @@ namespace sw {
 
 		// enumerate all power method cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidatePowerFunction(std::string tag, bool bReportIndividualTestCases) {
+		int ValidatePowerFunction(std::string tag, bool bReportIndividualTestCases, unsigned int maxSamples = 10000) {
 			const int NR_POSITS = (unsigned(1) << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pb, ppow, pref;
 
+			uint32_t testNr = 0;
 			double da, db;
 			for (int i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
@@ -235,6 +238,11 @@ namespace sw {
 					}
 					else {
 						//if (bReportIndividualTestCases) ReportTwoInputFunctionSuccess("PASS", "pow", pa, pb, pref, ppow);
+					}
+					++testNr;
+					if (testNr > maxSamples) {
+						std::cerr << "ValidatePower has been truncated\n";
+						i = j = NR_POSITS;
 					}
 				}
 			}
