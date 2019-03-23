@@ -13,7 +13,7 @@
 // minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
-#include "../../posit/math_trigonometric.hpp"
+#include "../../posit/math/trigonometry.hpp"
 #include "../test_helpers.hpp"
 #include "../posit_math_helpers.hpp"
 

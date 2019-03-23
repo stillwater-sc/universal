@@ -62,7 +62,6 @@ typedef __128bitdd double_double;
 #include "exponent.hpp"
 #include "regime.hpp"
 #include "posit_functions.hpp"
-#include "math_constants.hpp"
 
 namespace sw {
 	namespace unum {
