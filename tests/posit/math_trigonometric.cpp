@@ -1,6 +1,6 @@
-// math_trigonometric.cpp: functional tests for trigonometric functions (sin/cos/tan/atan/acos/asin)
+// math_trigonometry.cpp: functional tests for trigonometric functions (sin/cos/tan/atan/acos/asin)
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -13,6 +13,7 @@
 // minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
+#include "../../posit/math/constants.hpp"   // for m_pi etc.
 #include "../../posit/math/trigonometry.hpp"
 #include "../test_helpers.hpp"
 #include "../posit_math_helpers.hpp"
