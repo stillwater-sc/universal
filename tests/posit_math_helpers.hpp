@@ -2,7 +2,7 @@
 //  posit_math_helpers.hpp : functions to aid in testing and test reporting of function evaluation on posit types.
 // Needs to be included after posit type is declared.
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -12,19 +12,9 @@
 #include <limits>
 
 // mathematical function definitions and implementations
-#include "../posit/math_truncate.hpp"
-#include "../posit/math_complex.hpp"
-#include "../posit/math_sqrt.hpp"
-#include "../posit/math_pow.hpp"
-#include "../posit/math_logarithm.hpp"
-#include "../posit/math_exponents.hpp"
-#include "../posit/math_trigonometric.hpp"
-#include "../posit/math_hyperbolic.hpp"
-#include "../posit/math_error_gamma.hpp"
-#include "../posit/math_minmax.hpp"
-#include "../posit/math_hypot.hpp"
-#include "../posit/math_frac.hpp"
+#include "../posit/math_functions.hpp"
 
+// include the base test helpers
 #include "posit_test_helpers.hpp"
 
 namespace sw {
