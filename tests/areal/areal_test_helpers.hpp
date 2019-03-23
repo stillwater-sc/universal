@@ -979,7 +979,7 @@ namespace sw {
 		// Basic design is that we generate nrOfRandom areal values and store them in an operand array.
 		// We will then execute the binary operator nrOfRandom combinations.
 		template<size_t nbits, size_t es>
-		int ValidateThroughRandoms(std::string tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
+		int ValidateBinaryOperatorThroughRandoms(std::string tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
 			const size_t SIZE_STATE_SPACE = nrOfRandoms;
 			int nrOfFailedTests = 0;
 			areal<nbits, es> pa, pb, presult, preference;

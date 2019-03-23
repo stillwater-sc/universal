@@ -94,7 +94,7 @@ public:
 	// because useed = 2^es and thus a value of scale 'scale' will contain (scale >> es) number of useed factors
 	size_t assign_regime_pattern(int k) {
 		if (k < 0) { // south-east quadrant: patterns 00001---
-			_k = int8_t(-k < (static_cast<int>(nbits) - 2) ? k : -(static_cast<int>(nbits) - 2)); // constrain regime to minpos
+			_k = int(-k < (static_cast<int>(nbits) - 2) ? k : -(static_cast<int>(nbits) - 2)); // constrain regime to minpos
 			k = -_k - 1;
 			_Bits.reset();
 			if (k < static_cast<int>(nbits) - 2) {	// _RegimeBits = (k < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
@@ -107,7 +107,7 @@ public:
 
 		}
 		else {       // north-east quadrant: patterns 11110---		
-			_k = int8_t(k < static_cast<int>(nbits) - 2 ? k : static_cast<int>(nbits) - 2); // constrain regime to maxpos
+			_k = int(k < static_cast<int>(nbits) - 2 ? k : static_cast<int>(nbits) - 2); // constrain regime to maxpos
 			_Bits.set();
 			if (k < static_cast<int>(nbits) - 2) {	// _RegimeBits = (std::size_t(k) < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
 				_RegimeBits = k + 2;   

@@ -1,13 +1,13 @@
-// arithmetic_literals.cpp: functional tests for addition
+// arithmetic_literals.cpp: functional tests for the use of literals in posit equations
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
 
 // Configure the posit template environment
-// first: enable fast specialized posit configurations
+// first: enable general or specialized specialized posit configurations
 //#define POSIT_FAST_SPECIALIZATION
 // second: enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
@@ -17,16 +17,11 @@
 #define POSIT_TRACE_ADD
 // forth: enable/disable the ability to use literals in binary logic and arithmetic operators
 #define POSIT_ENABLE_LITERALS 1
+
 // minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
 #include "../../posit/numeric_limits.hpp"
-#ifdef POSIT_FAST_SPECIALIZATION
-#include "../../posit/specialized/posit_2_0.hpp"
-#include "../../posit/specialized/posit_3_0.hpp"
-#include "../../posit/specialized/posit_3_1.hpp"
-#include "../../posit/specialized/posit_4_0.hpp"
-#include "../../posit/specialized/posit_8_0.hpp"
-#endif
+#include "../../posit/specializations.hpp"
 // posit type manipulators such as pretty printers
 #include "../../posit/posit_manipulators.hpp"
 // test helpers

@@ -68,7 +68,6 @@ typedef __128bitdd double_double;
 #include "exponent.hpp"
 #include "regime.hpp"
 #include "posit_functions.hpp"
-#include "math_constants.hpp"
 
 namespace sw {
 namespace unum {
@@ -84,21 +83,35 @@ namespace unum {
 // #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 
 // specialized configuration constants
-constexpr size_t NBITS_IS_2  = 2;
-constexpr size_t NBITS_IS_3  = 3;
-constexpr size_t NBITS_IS_4  = 4;
-constexpr size_t NBITS_IS_5  = 5;
-constexpr size_t NBITS_IS_6  = 6;
-constexpr size_t NBITS_IS_7  = 7;
-constexpr size_t NBITS_IS_8  = 8;
-constexpr size_t NBITS_IS_16 = 16;
-constexpr size_t NBITS_IS_32 = 32;
-constexpr size_t NBITS_IS_48 = 48;
-constexpr size_t NBITS_IS_64 = 64;
+constexpr size_t NBITS_IS_2   =   2;
+constexpr size_t NBITS_IS_3   =   3;
+constexpr size_t NBITS_IS_4   =   4;
+constexpr size_t NBITS_IS_5   =   5;
+constexpr size_t NBITS_IS_6   =   6;
+constexpr size_t NBITS_IS_7   =   7;
+constexpr size_t NBITS_IS_8   =   8;
+constexpr size_t NBITS_IS_10  =  10;
+constexpr size_t NBITS_IS_12  =  12;
+constexpr size_t NBITS_IS_14  =  14;
+constexpr size_t NBITS_IS_16  =  16;
+constexpr size_t NBITS_IS_20  =  20;
+constexpr size_t NBITS_IS_24  =  24;
+constexpr size_t NBITS_IS_28  =  28;
+constexpr size_t NBITS_IS_32  =  32;
+constexpr size_t NBITS_IS_40  =  40;
+constexpr size_t NBITS_IS_48  =  48;
+constexpr size_t NBITS_IS_56  =  56;
+constexpr size_t NBITS_IS_64  =  64;
+constexpr size_t NBITS_IS_80  =  80;
+constexpr size_t NBITS_IS_96  =  96;
+constexpr size_t NBITS_IS_128 = 128;
+constexpr size_t NBITS_IS_256 = 256;
 constexpr size_t ES_IS_0 = 0;
 constexpr size_t ES_IS_1 = 1;
 constexpr size_t ES_IS_2 = 2;
 constexpr size_t ES_IS_3 = 3;
+constexpr size_t ES_IS_4 = 4;
+constexpr size_t ES_IS_5 = 5;
 
 // Forward definitions
 template<size_t nbits, size_t es> class posit;

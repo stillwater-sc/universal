@@ -1,13 +1,13 @@
 // arithmetic_add.cpp: functional tests for addition
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
 
 // Configure the posit template environment
-// first: enable fast specialized posit configurations
+// first: enable general or specialized posit configurations
 //#define POSIT_FAST_SPECIALIZATION
 // second: enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
@@ -15,24 +15,18 @@
 // when you define POSIT_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_ADD
+
 // minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
 #include "../../posit/numeric_limits.hpp"
-#ifdef POSIT_FAST_SPECIALIZATION
-#include "../../posit/specialized/posit_2_0.hpp"
-#include "../../posit/specialized/posit_3_0.hpp"
-#include "../../posit/specialized/posit_3_1.hpp"
-#include "../../posit/specialized/posit_4_0.hpp"
-#include "../../posit/specialized/posit_8_0.hpp"
-#include "../../posit/specialized/posit_16_1.hpp"
-#include "../../posit/specialized/posit_32_2.hpp"
-#endif
+#include "../../posit/specializations.hpp"
 // posit type manipulators such as pretty printers
 #include "../../posit/posit_manipulators.hpp"
-#include "../../posit/math_sqrt.hpp"   // due to ValidateThroughRandoms support for sqrt randoms
+#include "../../posit/math_functions.hpp"
 // test helpers
 #include "../test_helpers.hpp"
-#include "../posit_test_helpers.hpp"
+#include "../posit_math_helpers.hpp"
+#include "../posit_test_randoms.hpp"
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -121,10 +115,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 6>(tag, bReportIndividualTestCases), "posit<8,6>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<16,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<24, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<24,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<32,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<32, 2>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<32,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<16,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<24, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<24,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<32, 1>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<32,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<32, 2>(tag, bReportIndividualTestCases, OPCODE_ADD, 1000), "posit<32,2>", "addition");
 
 #if STRESS_TESTING
 	// nbits=48 also shows failures

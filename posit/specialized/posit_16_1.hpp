@@ -462,27 +462,7 @@ namespace sw {
 			p.set_raw_bits(v);
 			return p;
 		}
-		// general posit decode
-		inline void decode_posit(uint16_t bits, bool& sign, int8_t& m, int16_t& exp, uint32_t& fraction) {
-			sign = bool(bits & sign_mask);
-			uint16_t tmp = (bits << 2) & 0xFFFF;
-			if (bits & 0x4000) {  // positive regimes
-				while (tmp >> 15) {
-					++m;
-					tmp = (tmp << 1) & 0xFFFF;
-				}
-			}
-			else {              // negative regimes
-				m = -1;
-				while (!(tmp >> 15)) {
-					--m;
-					tmp = (tmp << 1) & 0xFFFF;
-				}
-				tmp &= 0x7FFF;
-			}
-			exp = tmp >> 14;  // extract the exponent
-			fraction = (0x0000'4000 | tmp) << 16;  // shift to prepare for arithmetic use
-		}
+
 	private:
 		uint16_t _bits;
 
