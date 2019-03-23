@@ -13,8 +13,8 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
 #include "../../test_helpers.hpp"
-#include "../../posit_test_helpers.hpp"
 #include "../../posit_math_helpers.hpp"
+#include "../../posit_test_randoms.hpp"
 
 /*
 Standard posit with nbits = 16 have es = 1 exponent bit.
