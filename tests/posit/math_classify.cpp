@@ -10,7 +10,7 @@
 #define POSIT_ENABLE_LITERALS 1
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
-#include "../../posit/math_classify.hpp"
+#include "../../posit/math/classify.hpp"
 #include "../test_helpers.hpp"
 #include "../posit_math_helpers.hpp"
 

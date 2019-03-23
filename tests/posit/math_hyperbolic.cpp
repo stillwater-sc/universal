@@ -13,7 +13,7 @@
 // minimum set of include files to reflect source code dependencies
 #include "../../posit/posit.hpp"
 #include "../../posit/posit_manipulators.hpp"
-#include "../../posit/math_hyperbolic.hpp"
+#include "../../posit/math/hyperbolic.hpp"
 #include "../test_helpers.hpp"
 #include "../posit_math_helpers.hpp"
 
