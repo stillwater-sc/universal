@@ -47,6 +47,7 @@ option(USE_AVX2                          "Build code with AVX2 ISA support"     
 option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 arithmetic"        OFF)
 option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 arithmetic"        OFF)
 option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3(posit) arithmetic" ON)
+option(BUILD_C_API_LIB			 "Set to ON to build C API library"                 OFF)
 option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3(valid) arithmetic" ON)
 option(BUILD_FLOAT_ARBITRARY_PRECISION   "Set to ON to build arbitrary precision floats"    ON)
 option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"          ON)
@@ -154,20 +155,23 @@ elseif(MSVC)
 	# correct __cplusplus variable setting
     # /Zc:__cplusplus
     # You need to compile with the /Zc:__cplusplus switch to see the updated value of the __cplusplus macro. 
-	# Microsoft tried updating the macro by default and discovered that a lot of code doesn’t compile correctly 
+	# Microsoft tried updating the macro by default and discovered that a lot of code doesn't compile correctly 
 	# when they changed the value of __cplusplus. 
-	# They’ll continue to require use of the /Zc:__cplusplus switch for all minor versions of MSVC in the 19.xx family.
+	# They'll continue to require use of the /Zc:__cplusplus switch for all minor versions of MSVC in the 19.xx family.
 	# 
 	# The version reported by the __cplusplus macro also depends upon the standard version switch used. 
-	# If you’re compiling in C++14 mode the macro will be set to “201402L”. If you compile in C++17 mode the macro will be set to “201703L”. And the /std:c++latest switch, used to enable features from the Standard currently in development, sets a value that is more than the current Standard. This chart shows the values of the __cplusplus macro with different switch combinations:
+	# If you're compiling in C++14 mode the macro will be set to '201402L'. If you compile in C++17 mode 
+	# the macro will be set to '201703L'. And the /std:c++latest switch, used to enable features from the 
+	# Standard currently in development, sets a value that is more than the current Standard. 
+	# This chart shows the values of the __cplusplus macro with different switch combinations:
 	#
-	# /Zc:__cplusplus switch		/std:c++ switch					__cplusplus value
-	# Zc:__cplusplus				Currently defaults to C++14		201402L
-	# Zc:__cplusplus				/std:c++14						201402L
-	# Zc:__cplusplus				/std:c++17						201703L
-	# Zc:__cplusplus				/std:c++latest					201704L
-	# Zc:__cplusplus- (disabled)	Any value						199711L
-	# Zc:__cplusplus not specified	Any value						199711L
+	# /Zc:__cplusplus switch		/std:c++ switch				__cplusplus value
+	# Zc:__cplusplus			Currently defaults to C++14			201402L
+	# Zc:__cplusplus			/std:c++14					201402L
+	# Zc:__cplusplus			/std:c++17					201703L
+	# Zc:__cplusplus			/std:c++latest					201704L
+	# Zc:__cplusplus- (disabled)		Any value					199711L
+	# Zc:__cplusplus not specified		Any value					199711L
 	# Note that the MSVC compiler does not, and never will, support a C++11, C++03, or C++98 standards version switch. 
 	# Also, the value of the __cplusplus macro is not affected by the /permissive- switch.
 	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
@@ -221,7 +225,7 @@ endif()
 include_directories("./posit")
 
 # Possibly not under Windows
-add_compile_options ( -std=c++11 )
+add_compile_options ( -std=c++14 )
 
 ####
 # macro to read all cpp files in a directory 
@@ -322,58 +326,78 @@ install(FILES
 install(DIRECTORY   ${PROJECT_SOURCE_DIR}/${project_library_target_name}
         DESTINATION ${include_install_dir})
 
-if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_1)
+if(BUILD_CI_CHECK)
+	set(BUILD_UNUM_TYPE_1 ON)
+	set(BUILD_UNUM_TYPE_2 ON)
+	set(BUILD_VERIFICATION_SUITE ON)
+	set(BUILD_VERIFICATION_SUITE ON)
+	set(BUILD_FLOAT_ARBITRARY_PRECISION ON)
+	set(BUILD_UNUM_TYPE_3_POSIT ON)
+	set(BUILD_UNUM_TYPE_3_VALID ON)
+	set(BUILD_IEEE_FLOAT_QUIRES ON)
+	set(BUILD_CMD_LINE_TOOLS ON)
+	set(BUILD_EDUCATION_EXAMPLES ON)
+	set(BUILD_APPLICATION_EXAMPLES ON)
+	set(BUILD_PLAYGROUND ON)
+	set(BUILD_PERFORMANCE_BENCHMARKS ON)
+endif(BUILD_CI_CHECK)
+
+if(BUILD_UNUM_TYPE_1)
 add_subdirectory("tests/unum")
-endif()
+endif(BUILD_UNUM_TYPE_1)
 
-if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_2)
+if(BUILD_UNUM_TYPE_2)
 add_subdirectory("tests/unum2")
-endif()
+endif(BUILD_UNUM_TYPE_2)
 
-if(BUILD_CI_CHECK OR BUILD_VERIFICATION_SUITE)
+if(BUILD_VERIFICATION_SUITE)
 add_subdirectory("tests/bitblock")
 add_subdirectory("tests/value")
-endif(BUILD_CI_CHECK OR BUILD_VERIFICATION_SUITE)
+endif(BUILD_VERIFICATION_SUITE)
 
-if(BUILD_CI_CHECK OR BUILD_FLOAT_ARBITRARY_PRECISION)
+if(BUILD_FLOAT_ARBITRARY_PRECISION)
 add_subdirectory("tests/areal")
-endif(BUILD_CI_CHECK OR BUILD_FLOAT_ARBITRARY_PRECISION)
+endif(BUILD_FLOAT_ARBITRARY_PRECISION)
 
-if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_3_POSIT)
+if(BUILD_UNUM_TYPE_3_POSIT)
 add_subdirectory("tests/posit")
 add_subdirectory("tests/posit/specialized")
-endif(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_3_POSIT)
+endif(BUILD_UNUM_TYPE_3_POSIT)
 
-if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_3_VALID)
+if(BUILD_UNUM_TYPE_3_VALID)
 add_subdirectory("tests/valid")
-endif(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_3_VALID)
+endif(BUILD_UNUM_TYPE_3_VALID)
 
-if(BUILD_CI_CHECK OR BUILD_IEEE_FLOAT_QUIRES)
+if(BUILD_IEEE_FLOAT_QUIRES)
 add_subdirectory("tests/float")
-endif()
+endif(BUILD_IEEE_FLOAT_QUIRES)
 
-if(BUILD_CI_CHECK OR BUILD_CMD_LINE_TOOLS)
+if(BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
 add_subdirectory("tools/utils")
-endif()
+endif(BUILD_CMD_LINE_TOOLS)
 
-if(BUILD_CI_CHECK OR BUILD_EDUCATION_EXAMPLES)
+if(BUILD_EDUCATION_EXAMPLES)
 add_subdirectory("education/posit")
 add_subdirectory("education/quire")
-endif()
+endif(BUILD_EDUCATION_EXAMPLES)
 
-if(BUILD_CI_CHECK OR BUILD_APPLICATION_EXAMPLES)
+if(BUILD_APPLICATION_EXAMPLES)
 add_subdirectory("examples/blas")
 add_subdirectory("examples/dsp")
-endif()
+endif(BUILD_APPLICATION_EXAMPLES)
 
-if(BUILD_CI_CHECK OR BUILD_PLAYGROUND)
+if(BUILD_PLAYGROUND)
 add_subdirectory("examples/playground")
-endif()
+endif(BUILD_PLAYGROUND)
 
-if(BUILD_CI_CHECK OR BUILD_PERFORMANCE_BENCHMARKS)
+if(BUILD_PERFORMANCE_BENCHMARKS)
 add_subdirectory("perf")
-endif()
+endif(BUILD_PERFORMANCE_BENCHMARKS)
+
+if(BUILD_C_API_LIB)
+add_subdirectory("libs/posit")
+endif(BUILD_C_API_LIB)
 
 ####
 # Configuration summary
