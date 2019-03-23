@@ -12,7 +12,7 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
 #include "../../test_helpers.hpp"
-#include "../../posit_test_helpers.hpp"
+#include "../../posit_test_randoms.hpp"
 
 /*
 Standard posit with nbits = 32 have es = 2 exponent bits.

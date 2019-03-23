@@ -25,8 +25,8 @@
 #include "../../posit/math_functions.hpp"
 // test helpers
 #include "../test_helpers.hpp"
-#include "../posit_test_helpers.hpp"
 #include "../posit_math_helpers.hpp"
+#include "../posit_test_randoms.hpp"
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
