@@ -56,7 +56,7 @@ namespace sw {
 		
 		template<size_t nbits, size_t es>
 		posit<nbits,es> hypotl(posit<nbits,es> x, posit<nbits,es> y) {
-			return posit<nbits,es>(std::hypotl(long double(x),long double(y)));
+			return posit<nbits,es>(std::hypotl((long double)(x),(long double)(y)));
 		}
 		
 	}  // namespace unum
