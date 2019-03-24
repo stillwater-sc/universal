@@ -1,6 +1,10 @@
-// posit_api.cpp: implementation of the posit API for C programs
+// posit_c_api.cpp: implementation of the posit API for C programs
+//
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "posit_c_api.h"
+#include <posit_c_api.h>
 #define POSIT_FAST_POSIT_8_0  1
 #define POSIT_FAST_POSIT_16_1 1
 #define POSIT_FAST_POSIT_32_2 1
