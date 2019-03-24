@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
 	}
 
 	if (sizeof(long double) != 16) {
-		printf("Sizeof (long double) is %zu, which isn't sufficient to validate posit<64,3>\n", sizeof(long double));
+		printf("Sizeof (long double) is %zu, which isn't sufficiently precise to validate posit<64,3>\n", sizeof(long double));
 	}
 	// partial state space
 	fails = 0;
