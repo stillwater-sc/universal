@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.5)
 
 ####
 # Set project variables
-project (universal VERSION 1.0.0 LANGUAGES CXX)
+project (universal VERSION 1.0.0 LANGUAGES C CXX)
 
 ####
 ## Enable project() command to manage VERSION variables
@@ -396,7 +396,8 @@ add_subdirectory("perf")
 endif(BUILD_PERFORMANCE_BENCHMARKS)
 
 if(BUILD_C_API_LIB)
-add_subdirectory("libs/posit")
+add_subdirectory("c_api/posit")
+add_subdirectory("c_api/test/posit")
 endif(BUILD_C_API_LIB)
 
 ####

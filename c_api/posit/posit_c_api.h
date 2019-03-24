@@ -39,6 +39,31 @@ extern "C" {
 	//////////////////////////////////////////////////////////////////////
 	// C API function definitions
 
+	//////////////////////////////////////////////////////////////////////
+	// Important posit constants
+	static const posit8_t  NAR8  = 0x80;
+	static const posit16_t NAR16 = 0x8000;
+	static const posit32_t NAR32 = 0x8000'0000;
+	static const posit64_t NAR64 = 0x8000'0000'0000'0000;
+
+	// Raw bit assignments
+	posit8_t  posit_bit_assign8(unsigned char  a);
+	posit16_t posit_bit_assign16(unsigned short a);
+	posit32_t posit_bit_assign32(unsigned long a);
+	posit64_t posit_bit_assign64(unsigned long long a);
+
+	// Integer assignments
+	posit8_t  posit_integer_assign8(int  a);
+	posit16_t posit_integer_assign16(int a);
+	posit32_t posit_integer_assign32(long a);
+	posit64_t posit_integer_assign64(long long a);
+
+	// IEEE floating point assignments
+	posit8_t  posit_float_assign8(float  a);
+	posit16_t posit_float_assign16(float a);
+	posit32_t posit_float_assign32(double a);
+	posit64_t posit_float_assign64(long double a);
+
 	// Addition
 	posit8_t  posit_add8 (posit8_t  a, posit8_t  b);
 	posit16_t posit_add16(posit16_t a, posit16_t b);
