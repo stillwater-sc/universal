@@ -46,6 +46,24 @@ extern "C" {
 	static const posit32_t NAR32 = 0x8000'0000;
 	static const posit64_t NAR64 = 0x8000'0000'0000'0000;
 
+	///////////////////////////////////////////////////////////////
+/////////        output
+
+// report posit format for posit8_t. str must be at least 8 characters in size
+	void posit_format8(posit8_t a, char* str);
+	// report posit format for posit16_t. str must be at least 10 characters in size
+	void posit_format16(posit16_t a, char* str);
+	// report posit format for posit32_t. str must be at least 14 characters in size
+	void posit_format32(posit32_t a, char* str);
+	// report posit format for posit64_t. str must be at least 22 characters in size
+	void posit_format64(posit64_t a, char* str);
+
+	// casts to double
+	double posit_value8(posit8_t a);
+	double posit_value16(posit16_t a);
+	double posit_value32(posit32_t a);
+	double posit_value64(posit64_t a);
+
 	// Raw bit assignments
 	posit8_t  posit_bit_assign8(unsigned char  a);
 	posit16_t posit_bit_assign16(unsigned short a);
