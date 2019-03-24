@@ -47,7 +47,7 @@ option(USE_AVX2                          "Build code with AVX2 ISA support"     
 option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 arithmetic"        OFF)
 option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 arithmetic"        OFF)
 option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3(posit) arithmetic" ON)
-option(BUILD_C_API_LIB			 "Set to ON to build C API library"                 OFF)
+option(BUILD_C_API_LIB                   "Set to ON to build C API library"                 OFF)
 option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3(valid) arithmetic" ON)
 option(BUILD_FLOAT_ARBITRARY_PRECISION   "Set to ON to build arbitrary precision floats"    ON)
 option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"          ON)
