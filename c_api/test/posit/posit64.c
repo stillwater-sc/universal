@@ -1,8 +1,13 @@
+// posit64.c: example test of the posit API for C programs using 64-bit posits
+//
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <inttypes.h>
-#include "../c_api/posit/posit_c_api.h"
+#include <posit_c_api.h>
 
 int main(int argc, char* argv[]) 
 {
