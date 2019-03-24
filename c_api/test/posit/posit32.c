@@ -10,28 +10,28 @@ int main(int argc, char* argv[])
 	bool failures = false;
 
 	// special case values
-	pa = NAR16;
+	pa = NAR32;
 	pb = 0;
 	pc = posit_add32(pa, pb);
 	posit_format32(pc, str);
 	printf("posit value = %s\n", str);
 	printf("posit value = 32.2x%08xp\n", pc);
 
-	pa = NAR16;
+	pa = NAR32;
 	pb = 0;
 	pc = posit_sub32(pa, pb);
 	posit_format32(pc, str);
 	printf("posit value = %s\n", str);
 	printf("posit value = 32.2x%08xp\n", pc);
 
-	pa = NAR16;
+	pa = NAR32;
 	pb = 0;
 	pc = posit_mul32(pa, pb);
 	posit_format32(pc, str);
 	printf("posit value = %s\n", str);
 	printf("posit value = 32.2x%08xp\n", pc);
 
-	pa = NAR16;
+	pa = NAR32;
 	pb = 0;
 	pc = posit_div32(pa, pb);
 	posit_format32(pc, str);
@@ -51,12 +51,14 @@ int main(int argc, char* argv[])
 			db = posit_value32(pb);
 			dref = da + db;
 
-			posit32_t pref = posit_float_assign32((float)dref);
+			posit32_t pref = posit_float_assign32(dref);
 			if (pref != pc) {
 				printf("FAIL: 32.2x%08xp + 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
 				++fails;
+				break;
 			}
 		}
+		if (fails) break;
 	}
 	if (fails) {
 		printf("addition        FAIL\n");
@@ -79,7 +81,7 @@ int main(int argc, char* argv[])
 			db = posit_value32(pb);
 			dref = da - db;
 
-			posit32_t pref = posit_float_assign32((float)dref);
+			posit32_t pref = posit_float_assign32(dref);
 			if (pref != pc) {
 				printf("FAIL: 32.2x%08xp + 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
 				++fails;
@@ -107,7 +109,7 @@ int main(int argc, char* argv[])
 			db = posit_value32(pb);
 			dref = da * db;
 
-			posit32_t pref = posit_float_assign32((float)dref);
+			posit32_t pref = posit_float_assign32(dref);
 			if (pref != pc) {
 				printf("FAIL: 32.2x%08xp + 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
 				++fails;
@@ -135,7 +137,7 @@ int main(int argc, char* argv[])
 			db = posit_value32(pb);
 			dref = da / db;
 
-			posit32_t pref = posit_float_assign32((float)dref);
+			posit32_t pref = posit_float_assign32(dref);
 			if (pref != pc) {
 				printf("FAIL: 32.2x%08xp + 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
 				++fails;
