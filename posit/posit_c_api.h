@@ -43,8 +43,8 @@ extern "C" {
 	// Important posit constants
 	static const posit8_t  NAR8  = 0x80;
 	static const posit16_t NAR16 = 0x8000;
-	static const posit32_t NAR32 = 0x8000'0000;
-	static const posit64_t NAR64 = 0x8000'0000'0000'0000;
+	static const posit32_t NAR32 = 0x80000000;
+	static const posit64_t NAR64 = 0x8000000000000000;
 
 	///////////////////////////////////////////////////////////////
 /////////        output
