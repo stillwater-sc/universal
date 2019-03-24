@@ -12,7 +12,7 @@
 // test support functions
 #include "../tests/quire_test_helpers.hpp"
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main()
@@ -24,8 +24,24 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	cout << "Quire use cases" << endl;
-
 	std::string tag = "Quire Accumulation failed";
+
+	// generate table of quire sizes for standard posit configurations
+	quire<  8, 0, 7>   quire8  ; cout << "quire<  8,0,7>   " << quire8.total_bits() << " bits\n";
+	quire< 16, 1, 15>  quire16 ; cout << "quire< 16,1,15>  " << quire16.total_bits() << " bits\n";
+	quire< 32, 2, 31>  quire32 ; cout << "quire< 32,2,31>  " << quire32.total_bits() << " bits\n";
+	quire< 64, 3, 63>  quire64 ; cout << "quire< 64,3,63>  " << quire64.total_bits() << " bits\n";
+	quire<128, 4, 127> quire128; cout << "quire<128,4,127> " << quire128.total_bits() << " bits\n";
+	quire<256, 5, 7>   quire256; cout << "quire<256,5,7>   " << quire256.total_bits() << " bits\n";
+
+	/*
+		quire<  8, 0, 0>   25 bits
+		quire< 16, 1, 0>   113 bits
+		quire< 32, 2, 0>   481 bits
+		quire< 64, 3, 0>   1985 bits
+		quire<128, 4, 0>   8065 bits
+		quire<256, 5, 0>   32513 bits
+	*/
 
 #if MANUAL_TESTING
 
@@ -166,7 +182,8 @@ try {
 #else
 
 	std::cout << "Quire validation" << std::endl;
-	TestQuireAccumulationResult(ValidateQuireAccumulation<8,0,5>(), "quire<8,0,5>");
+	std::vector< posit<8, 0> > v;
+	TestQuireAccumulationResult(ValidateQuireAccumulation<8,0,5>(true, v), "quire<8,0,5>");
 
 #ifdef STRESS_TESTING
 
