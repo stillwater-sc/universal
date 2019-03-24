@@ -7,6 +7,117 @@
 #define POSIT_FAST_POSIT_64_3 0
 #include <posit>
 
+
+///////////////////////////////////////////////////////////////
+/////////        bit assignment
+
+posit8_t posit_bit_assign8(unsigned char a) {
+	using namespace sw::unum;
+	constexpr size_t nbits = 8;
+	constexpr size_t es = 0;
+	posit<nbits, es> pa;
+	pa.set_raw_bits(a);
+	return (posit8_t)pa.encoding();
+}
+
+posit16_t posit_bit_assign16(unsigned short a) {
+	using namespace sw::unum;
+	constexpr size_t nbits = 16;
+	constexpr size_t es = 1;
+	posit<nbits, es> pa;
+	pa.set_raw_bits(a);
+	return (posit16_t)pa.encoding();
+}
+
+posit32_t posit_bit_assign32(unsigned long a) {
+	using namespace sw::unum;
+	constexpr size_t nbits = 32;
+	constexpr size_t es = 2;
+	posit<nbits, es> pa;
+	pa.set_raw_bits(a);
+	return (posit32_t)pa.encoding();
+}
+
+posit64_t posit_bit_assign64(unsigned long long a) {
+	using namespace sw::unum;
+	constexpr size_t nbits = 64;
+	constexpr size_t es = 3;
+	posit<nbits, es> pa;
+	pa.set_raw_bits(a);
+	return (posit64_t)pa.encoding();
+}
+
+
+///////////////////////////////////////////////////////////////
+/////////        integer assignment
+
+posit8_t posit_bit_assign8(int a) {
+	using namespace sw::unum;
+	constexpr size_t nbits = 8;
+	constexpr size_t es = 0;
+	posit<nbits, es> pa(a);
+	return (posit8_t)pa.encoding();
+}
+
+posit16_t posit_bit_assign16(int a) {
+	using namespace sw::unum;
+	constexpr size_t nbits = 16;
+	constexpr size_t es = 1;
+	posit<nbits, es> pa(a);
+	return (posit16_t)pa.encoding();
+}
+
+posit32_t posit_bit_assign32(long a) {
+	using namespace sw::unum;
+	constexpr size_t nbits = 32;
+	constexpr size_t es = 2;
+	posit<nbits, es> pa(a);
+	return (posit32_t)pa.encoding();
+}
+
+posit64_t posit_bit_assign64(long long a) {
+	using namespace sw::unum;
+	constexpr size_t nbits = 64;
+	constexpr size_t es = 3;
+	posit<nbits, es> pa(a);
+	return (posit64_t)pa.encoding();
+}
+
+///////////////////////////////////////////////////////////////
+/////////        IEEE floating point assignment
+
+posit8_t posit_float_assign8(float a) {
+	using namespace sw::unum;
+	constexpr size_t nbits = 8;
+	constexpr size_t es = 0;
+	posit<nbits, es> pa(a);
+	return (posit8_t)pa.encoding();
+}
+
+posit16_t posit_float_assign16(float a) {
+	using namespace sw::unum;
+	constexpr size_t nbits = 16;
+	constexpr size_t es = 1;
+	posit<nbits, es> pa(a);
+	return (posit16_t)pa.encoding();
+}
+
+posit32_t posit_float_assign32(double a) {
+	using namespace sw::unum;
+	constexpr size_t nbits = 32;
+	constexpr size_t es = 2;
+	posit<nbits, es> pa(a);
+	return (posit32_t)pa.encoding();
+}
+
+posit64_t posit_float_assign64(long double a) {
+	using namespace sw::unum;
+	constexpr size_t nbits = 64;
+	constexpr size_t es = 3;
+	posit<nbits, es> pa(a);
+	return (posit64_t)pa.encoding();
+}
+
 ///////////////////////////////////////////////////////////////
 /////////        ADDITION
 
