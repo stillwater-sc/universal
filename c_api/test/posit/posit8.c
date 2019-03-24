@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
 
 			posit8_t pref = posit_float_assign8((float)dref);
 			if (pref != pc) {
-				printf("FAIL: 8.0x%02xp + 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
+				printf("FAIL: 8.0x%02xp - 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
 				++fails;
 			}
 		}
@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 
 			posit8_t pref = posit_float_assign8((float)dref);
 			if (pref != pc) {
-				printf("FAIL: 8.0x%02xp + 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
+				printf("FAIL: 8.0x%02xp * 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
 				++fails;
 			}
 		}
@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
 
 			posit8_t pref = posit_float_assign8((float)dref);
 			if (pref != pc) {
-				printf("FAIL: 8.0x%02xp + 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
+				printf("FAIL: 8.0x%02xp / 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
 				++fails;
 			}
 		}

@@ -83,7 +83,7 @@ int main(int argc, char* argv[])
 
 			posit32_t pref = posit_float_assign32(dref);
 			if (pref != pc) {
-				printf("FAIL: 32.2x%08xp + 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
+				printf("FAIL: 32.2x%08xp - 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
 				++fails;
 			}
 		}
@@ -111,7 +111,7 @@ int main(int argc, char* argv[])
 
 			posit32_t pref = posit_float_assign32(dref);
 			if (pref != pc) {
-				printf("FAIL: 32.2x%08xp + 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
+				printf("FAIL: 32.2x%08xp * 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
 				++fails;
 			}
 		}
@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
 
 			posit32_t pref = posit_float_assign32(dref);
 			if (pref != pc) {
-				printf("FAIL: 32.2x%08xp + 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
+				printf("FAIL: 32.2x%08xp / 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
 				++fails;
 			}
 		}
