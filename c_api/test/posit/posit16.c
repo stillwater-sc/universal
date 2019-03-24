@@ -15,28 +15,28 @@ int main(int argc, char* argv[])
 	pc = posit_add16(pa, pb);
 	posit_format16(pc, str);
 	printf("posit value = %s\n", str);
-	printf("posit value = 16.1x%02xp\n", pc);
+	printf("posit value = 16.1x%04xp\n", pc);
 
 	pa = NAR16;
 	pb = 0;
 	pc = posit_sub16(pa, pb);
 	posit_format16(pc, str);
 	printf("posit value = %s\n", str);
-	printf("posit value = 16.1x%02xp\n", pc);
+	printf("posit value = 16.1x%04xp\n", pc);
 
 	pa = NAR16;
 	pb = 0;
 	pc = posit_mul16(pa, pb);
 	posit_format16(pc, str);
 	printf("posit value = %s\n", str);
-	printf("posit value = 16.1x%02xp\n", pc);
+	printf("posit value = 16.1x%04xp\n", pc);
 
 	pa = NAR16;
 	pb = 0;
 	pc = posit_div16(pa, pb);
 	posit_format16(pc, str);
 	printf("posit value = %s\n", str);
-	printf("posit value = 16.1x%02xp\n", pc);
+	printf("posit value = 16.1x%04xp\n", pc);
 
 	// partial state space
 	int fails = 0;
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 
 			posit16_t pref = posit_float_assign16((float)dref);
 			if (pref != pc) {
-				printf("FAIL: 16.1x%02xp + 16.1x%02xp produced 16.1x%02xp instead of 16.1x%02xp\n", pa, pb, pc, pref);
+				printf("FAIL: 16.1x%04xp + 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n", pa, pb, pc, pref);
 				++fails;
 			}
 		}
@@ -81,7 +81,7 @@ int main(int argc, char* argv[])
 
 			posit16_t pref = posit_float_assign16((float)dref);
 			if (pref != pc) {
-				printf("FAIL: 16.1x%02xp + 16.1x%02xp produced 16.1x%02xp instead of 16.1x%02xp\n", pa, pb, pc, pref);
+				printf("FAIL: 16.1x%04xp + 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n", pa, pb, pc, pref);
 				++fails;
 			}
 		}
@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
 
 			posit16_t pref = posit_float_assign16((float)dref);
 			if (pref != pc) {
-				printf("FAIL: 16.1x%02xp + 16.1x%02xp produced 16.1x%02xp instead of 16.1x%02xp\n", pa, pb, pc, pref);
+				printf("FAIL: 16.1x%04xp + 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n", pa, pb, pc, pref);
 				++fails;
 			}
 		}
@@ -137,7 +137,7 @@ int main(int argc, char* argv[])
 
 			posit16_t pref = posit_float_assign16((float)dref);
 			if (pref != pc) {
-				printf("FAIL: 16.1x%02xp + 16.1x%02xp produced 16.1x%02xp instead of 16.1x%02xp\n", pa, pb, pc, pref);
+				printf("FAIL: 16.1x%04xp + 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n", pa, pb, pc, pref);
 				++fails;
 			}
 		}
