@@ -20,22 +20,22 @@ extern "C" {
 
 	///////////////////////////////////////////////////////////////////////
 	///   associated quire configurations
-	typedef unsigned long		quire8_t;
+	typedef unsigned long long	quire8_t;   // quire<8,0,39>
 	typedef struct quire16_t {
 		unsigned char x[16];
-	}							quire16_t;
+	}							quire16_t;	// quire<16,1,15>
 	typedef struct quire32_t {
 		unsigned char x[64];
-	}							quire32_t;
+	}							quire32_t;	// quire<32,2,31>
 	typedef struct quire64_t {
 		unsigned char x[256];
-	}							quire64_t;
+	}							quire64_t;	// quire<64,3,63>
 	typedef struct quire128_t {
 		unsigned char x[1024];
-	}							quire128_t;
+	}							quire128_t;	// quire<128,4,127>
 	typedef struct quire256_t {
-		unsigned char x[4065];
-	}							quire256_t;
+		unsigned char x[4096];
+	}							quire256_t; // quire<256,5,255>
 
 	/// quire<  8, 0, 7>      32 bits		<--- likely not enough capacity bits
 	///	quire< 16, 1, 15>    128 bits
@@ -156,7 +156,6 @@ extern "C" {
 	posit16_t posit_sqrt16(posit16_t a);
 	posit32_t posit_sqrt32(posit32_t a);
 	posit64_t posit_sqrt64(posit64_t a);
-
 
 #ifdef __cplusplus
 }
