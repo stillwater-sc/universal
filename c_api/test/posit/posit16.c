@@ -11,7 +11,7 @@
 int main(int argc, char* argv[]) 
 {
 	posit16_t pa, pb, pc;
-	char str[10];
+	char str[POSIT_FORMAT16_SIZE];
 	bool failures = false;
 
 	// special case values

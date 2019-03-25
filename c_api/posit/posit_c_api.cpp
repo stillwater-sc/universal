@@ -88,13 +88,13 @@ double posit_value32(posit32_t a) {
 	return (double)pa;
 }
 
-double posit_value64(posit64_t a) {
+long double posit_value64(posit64_t a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 64;
 	constexpr size_t es = 3;
 	posit<nbits, es> pa;
 	pa.set_raw_bits(a);
-	return (double)pa;
+	return (long double)pa;
 }
 
 ///////////////////////////////////////////////////////////////

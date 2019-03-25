@@ -98,64 +98,81 @@ extern "C" {
 	///////////////////////////////////////////////////////////////
 	/////////        output
 
-	/// report posit format for posit8_t. str must be at least 8 characters in size
+
+	/// report posit format for posit8_t. str must be at least 8 characters in size:    8.0x40p + /0 is 8 chars
+#define POSIT_FORMAT8_SIZE 8
 	void posit_format8(posit8_t a, char* str);
-	/// report posit format for posit16_t. str must be at least 10 characters in size
+	/// report posit format for posit16_t. str must be at least 11 characters in size:  16.1x4000p + /0 is 11 chars
+#define POSIT_FORMAT16_SIZE 11
 	void posit_format16(posit16_t a, char* str);
-	/// report posit format for posit32_t. str must be at least 14 characters in size
+	/// report posit format for posit32_t. str must be at least 15 characters in size:  32.2x40000000p + /0 is 15 chars
+#define POSIT_FORMAT32_SIZE 15
 	void posit_format32(posit32_t a, char* str);
-	/// report posit format for posit64_t. str must be at least 22 characters in size
+	/// report posit format for posit64_t. str must be at least 23 characters in size:  64.3x1234567812345678p + /0 is 23 chars
+#define POSIT_FORMAT64_SIZE 23
 	void posit_format64(posit64_t a, char* str);
+	/// report posit format for posit128_t. str must be at least 40 characters in size:  128.4x12345678123456781234567812345678p + /0 is 40 chars
+#define POSIT_FORMAT128_SIZE 40
+	void posit_format128(posit128_t a, char* str);
 
 	// casts to double
-	double posit_value8(posit8_t a);
-	double posit_value16(posit16_t a);
-	double posit_value32(posit32_t a);
-	double posit_value64(posit64_t a);
+	double      posit_value8(posit8_t a);
+	double      posit_value16(posit16_t a);
+	double      posit_value32(posit32_t a);
+	long double posit_value64(posit64_t a);
+	long double posit_value128(posit64_t a);
 
 	// Raw bit assignments
-	posit8_t  posit_bit_assign8(unsigned char  a);
-	posit16_t posit_bit_assign16(unsigned short a);
-	posit32_t posit_bit_assign32(unsigned long a);
-	posit64_t posit_bit_assign64(unsigned long long a);
+	posit8_t   posit_bit_assign8(unsigned char  a);
+	posit16_t  posit_bit_assign16(unsigned short a);
+	posit32_t  posit_bit_assign32(unsigned long a);
+	posit64_t  posit_bit_assign64(unsigned long long a);
+	posit128_t posit_bit_assign128(unsigned long long a);
 
 	// Integer assignments
-	posit8_t  posit_integer_assign8(int  a);
-	posit16_t posit_integer_assign16(int a);
-	posit32_t posit_integer_assign32(long a);
-	posit64_t posit_integer_assign64(long long a);
+	posit8_t   posit_integer_assign8(int  a);
+	posit16_t  posit_integer_assign16(int a);
+	posit32_t  posit_integer_assign32(long a);
+	posit64_t  posit_integer_assign64(long long a);
+	posit128_t posit_integer_assign128(long long a);
 
 	// IEEE floating point assignments
-	posit8_t  posit_float_assign8(float  a);
-	posit16_t posit_float_assign16(float a);
-	posit32_t posit_float_assign32(double a);
-	posit64_t posit_float_assign64(long double a);
+	posit8_t   posit_float_assign8(float  a);
+	posit16_t  posit_float_assign16(float a);
+	posit32_t  posit_float_assign32(double a);
+	posit64_t  posit_float_assign64(long double a);
+	posit128_t posit_float_assign128(long double a);
 
 	// Addition
-	posit8_t  posit_add8 (posit8_t  a, posit8_t  b);
-	posit16_t posit_add16(posit16_t a, posit16_t b);
-	posit32_t posit_add32(posit32_t a, posit32_t b);
-	posit64_t posit_add64(posit64_t a, posit64_t b);
+	posit8_t   posit_add8 (posit8_t  a, posit8_t  b);
+	posit16_t  posit_add16(posit16_t a, posit16_t b);
+	posit32_t  posit_add32(posit32_t a, posit32_t b);
+	posit64_t  posit_add64(posit64_t a, posit64_t b);
+	posit128_t posit_add128(posit128_t a, posit128_t b);
 	// Subtraction
-	posit8_t  posit_sub8(posit8_t  a, posit8_t  b);
-	posit16_t posit_sub16(posit16_t a, posit16_t b);
-	posit32_t posit_sub32(posit32_t a, posit32_t b);
-	posit64_t posit_sub64(posit64_t a, posit64_t b);
+	posit8_t   posit_sub8(posit8_t  a, posit8_t  b);
+	posit16_t  posit_sub16(posit16_t a, posit16_t b);
+	posit32_t  posit_sub32(posit32_t a, posit32_t b);
+	posit64_t  posit_sub64(posit64_t a, posit64_t b);
+	posit128_t posit_sub128(posit128_t a, posit128_t b);
 	// Multiplication
-	posit8_t  posit_mul8(posit8_t  a, posit8_t  b);
-	posit16_t posit_mul16(posit16_t a, posit16_t b);
-	posit32_t posit_mul32(posit32_t a, posit32_t b);
-	posit64_t posit_mul64(posit64_t a, posit64_t b);
+	posit8_t   posit_mul8(posit8_t  a, posit8_t  b);
+	posit16_t  posit_mul16(posit16_t a, posit16_t b);
+	posit32_t  posit_mul32(posit32_t a, posit32_t b);
+	posit64_t  posit_mul64(posit64_t a, posit64_t b);
+	posit128_t posit_mul128(posit128_t a, posit128_t b);
 	// Division
-	posit8_t  posit_div8(posit8_t  a, posit8_t  b);
-	posit16_t posit_div16(posit16_t a, posit16_t b);
-	posit32_t posit_div32(posit32_t a, posit32_t b);
-	posit64_t posit_div64(posit64_t a, posit64_t b);
+	posit8_t   posit_div8(posit8_t  a, posit8_t  b);
+	posit16_t  posit_div16(posit16_t a, posit16_t b);
+	posit32_t  posit_div32(posit32_t a, posit32_t b);
+	posit64_t  posit_div64(posit64_t a, posit64_t b);
+	posit128_t posit_div128(posit128_t a, posit128_t b);
 	// Square Root
-	posit8_t  posit_sqrt8(posit8_t  a);
-	posit16_t posit_sqrt16(posit16_t a);
-	posit32_t posit_sqrt32(posit32_t a);
-	posit64_t posit_sqrt64(posit64_t a);
+	posit8_t   posit_sqrt8(posit8_t  a);
+	posit16_t  posit_sqrt16(posit16_t a);
+	posit32_t  posit_sqrt32(posit32_t a);
+	posit64_t  posit_sqrt64(posit64_t a);
+	posit128_t posit_sqrt128(posit128_t a);
 
 #ifdef __cplusplus
 }

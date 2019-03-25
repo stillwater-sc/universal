@@ -12,7 +12,7 @@
 int main(int argc, char* argv[]) 
 {
 	posit64_t pa, pb, pc;
-	char str[14];
+	char str[POSIT_FORMAT64_SIZE];
 	bool failures = false;
 	bool bReportIndividualTestCases = false;
 
