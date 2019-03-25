@@ -94,6 +94,16 @@ extern "C" {
 	static const posit16_t NAR16 = 0x8000;
 	static const posit32_t NAR32 = 0x80000000;
 	static const posit64_t NAR64 = 0x8000000000000000;
+	static const posit128_t NAR128 = {   // we a storing this in little endian
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
+	};
+
+	static const posit8_t   ZERO8 = 0;
+	static const posit16_t  ZERO16 = 0;
+	static const posit32_t  ZERO32 = 0;
+	static const posit64_t  ZERO64 = 0;
+	static const posit128_t ZERO128 = { 0 };
 
 	///////////////////////////////////////////////////////////////
 	/////////        output
@@ -120,14 +130,14 @@ extern "C" {
 	double      posit_value16(posit16_t a);
 	double      posit_value32(posit32_t a);
 	long double posit_value64(posit64_t a);
-	long double posit_value128(posit64_t a);
+	long double posit_value128(posit128_t a);
 
 	// Raw bit assignments
 	posit8_t   posit_bit_assign8(unsigned char  a);
 	posit16_t  posit_bit_assign16(unsigned short a);
 	posit32_t  posit_bit_assign32(unsigned long a);
 	posit64_t  posit_bit_assign64(unsigned long long a);
-	posit128_t posit_bit_assign128(unsigned long long a);
+	posit128_t posit_bit_assign128(unsigned long long lower, unsigned long long upper);
 
 	// Integer assignments
 	posit8_t   posit_integer_assign8(int  a);
@@ -173,6 +183,9 @@ extern "C" {
 	posit32_t  posit_sqrt32(posit32_t a);
 	posit64_t  posit_sqrt64(posit64_t a);
 	posit128_t posit_sqrt128(posit128_t a);
+
+	// logic operators
+	bool       posit_cmp128(posit128_t a, posit128_t b);
 
 #ifdef __cplusplus
 }
