@@ -16,29 +16,29 @@ int main(int argc, char* argv[])
 
 	// special case values
 	pa = NAR32;
-	pb = 0;
-	pc = posit_add32(pa, pb);
+	pb = ZERO32;
+	pc = padd32(pa, pb);
 	posit_format32(pc, str);
 	printf("posit value = %s\n", str);
 	printf("posit value = 32.2x%08xp\n", pc);
 
 	pa = NAR32;
-	pb = 0;
-	pc = posit_sub32(pa, pb);
+	pb = ZERO32;
+	pc = psub32(pa, pb);
 	posit_format32(pc, str);
 	printf("posit value = %s\n", str);
 	printf("posit value = 32.2x%08xp\n", pc);
 
 	pa = NAR32;
-	pb = 0;
-	pc = posit_mul32(pa, pb);
+	pb = ZERO32;
+	pc = pmul32(pa, pb);
 	posit_format32(pc, str);
 	printf("posit value = %s\n", str);
 	printf("posit value = 32.2x%08xp\n", pc);
 
 	pa = NAR32;
-	pb = 0;
-	pc = posit_div32(pa, pb);
+	pb = ZERO32;
+	pc = pdiv32(pa, pb);
 	posit_format32(pc, str);
 	printf("posit value = %s\n", str);
 	printf("posit value = 32.2x%08xp\n", pc);
@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign32(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign32(b);
-			pc = posit_add32(pa, pb);
+			pc = padd32(pa, pb);
 
 			double da, db, dref;
 			da = posit_value32(pa);
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign32(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign32(b);
-			pc = posit_sub32(pa, pb);
+			pc = psub32(pa, pb);
 
 			double da, db, dref;
 			da = posit_value32(pa);
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign32(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign32(b);
-			pc = posit_mul32(pa, pb);
+			pc = pmul32(pa, pb);
 
 			double da, db, dref;
 			da = posit_value32(pa);
@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign32(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign32(b);
-			pc = posit_div32(pa, pb);
+			pc = pdiv32(pa, pb);
 
 			double da, db, dref;
 			da = posit_value32(pa);

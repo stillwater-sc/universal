@@ -18,26 +18,26 @@ int main(int argc, char* argv[])
 
 	// special case values
 	pa = NAR64;
-	pb = 0;
-	pc = posit_add64(pa, pb);
+	pb = ZERO64;
+	pc = padd64(pa, pb);
 	posit_format64(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR64;
-	pb = 0;
-	pc = posit_sub64(pa, pb);
+	pb = ZERO64;
+	pc = psub64(pa, pb);
 	posit_format64(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR64;
-	pb = 0;
-	pc = posit_mul64(pa, pb);
+	pb = ZERO64;
+	pc = pmul64(pa, pb);
 	posit_format64(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR64;
-	pb = 0;
-	pc = posit_div64(pa, pb);
+	pb = ZERO64;
+	pc = pdiv64(pa, pb);
 	posit_format64(pc, str);
 	printf("posit value = %s\n", str);
 
@@ -47,7 +47,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign64(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign64(b);
-			pc = posit_add64(pa, pb);
+			pc = padd64(pa, pb);
 
 			long double da, db, dref;
 			da = posit_value64(pa);
@@ -80,7 +80,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign64(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign64(b);
-			pc = posit_sub64(pa, pb);
+			pc = psub64(pa, pb);
 
 			long double da, db, dref;
 			da = posit_value64(pa);
@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign64(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign64(b);
-			pc = posit_mul64(pa, pb);
+			pc = pmul64(pa, pb);
 
 			long double da, db, dref;
 			da = posit_value64(pa);
@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign64(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign64(b);
-			pc = posit_div64(pa, pb);
+			pc = pdiv64(pa, pb);
 
 			long double da, db, dref;
 			da = posit_value64(pa);

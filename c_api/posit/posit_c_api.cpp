@@ -310,7 +310,7 @@ posit128_t posit_float_assign128(long double a) {
 /////////        ADDITION
 
 // posit<8,0> addition
-posit8_t posit_add8(posit8_t a, posit8_t b) {
+posit8_t padd8(posit8_t a, posit8_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 0;
@@ -322,7 +322,7 @@ posit8_t posit_add8(posit8_t a, posit8_t b) {
 }
 
 // posit<16,1> addition
-posit16_t posit_add16(posit16_t a, posit16_t b) {
+posit16_t padd16(posit16_t a, posit16_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
@@ -334,7 +334,7 @@ posit16_t posit_add16(posit16_t a, posit16_t b) {
 }
 
 // posit<32,2> addition
-posit32_t posit_add32(posit32_t a, posit32_t b) {
+posit32_t padd32(posit32_t a, posit32_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
@@ -346,7 +346,7 @@ posit32_t posit_add32(posit32_t a, posit32_t b) {
 }
 
 // posit<64,3> addition
-posit64_t posit_add64(posit64_t a, posit64_t b) {
+posit64_t padd64(posit64_t a, posit64_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 64;
 	constexpr size_t es = 3;
@@ -358,7 +358,7 @@ posit64_t posit_add64(posit64_t a, posit64_t b) {
 }
 
 // posit<128,4> addition
-posit128_t posit_add128(posit128_t a, posit128_t b) {
+posit128_t padd128(posit128_t a, posit128_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 128;
 	constexpr size_t es = 4;
@@ -380,7 +380,7 @@ posit128_t posit_add128(posit128_t a, posit128_t b) {
 /////////        SUBTRACTION
 
 // posit<8,0> subtraction
-posit8_t posit_sub8(posit8_t a, posit8_t b) {
+posit8_t psub8(posit8_t a, posit8_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 0;
@@ -392,7 +392,7 @@ posit8_t posit_sub8(posit8_t a, posit8_t b) {
 }
 
 // posit<16,1> subtraction
-posit16_t posit_sub16(posit16_t a, posit16_t b) {
+posit16_t psub16(posit16_t a, posit16_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
@@ -404,7 +404,7 @@ posit16_t posit_sub16(posit16_t a, posit16_t b) {
 }
 
 // posit<32,2> subtraction
-posit32_t posit_sub32(posit32_t a, posit32_t b) {
+posit32_t psub32(posit32_t a, posit32_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
@@ -416,7 +416,7 @@ posit32_t posit_sub32(posit32_t a, posit32_t b) {
 }
 
 // posit<64,3> subtraction
-posit64_t posit_sub64(posit64_t a, posit64_t b) {
+posit64_t psub64(posit64_t a, posit64_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 64;
 	constexpr size_t es = 3;
@@ -428,7 +428,7 @@ posit64_t posit_sub64(posit64_t a, posit64_t b) {
 }
 
 // posit<128,4> subtraction
-posit128_t posit_sub128(posit128_t a, posit128_t b) {
+posit128_t psub128(posit128_t a, posit128_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 128;
 	constexpr size_t es = 4;
@@ -450,7 +450,7 @@ posit128_t posit_sub128(posit128_t a, posit128_t b) {
 /////////        MULTIPLICATION
 
 // posit<8,0> multiplication
-posit8_t posit_mul8(posit8_t a, posit8_t b) {
+posit8_t pmul8(posit8_t a, posit8_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 0;
@@ -462,7 +462,7 @@ posit8_t posit_mul8(posit8_t a, posit8_t b) {
 }
 
 // posit<16,1> multiplication
-posit16_t posit_mul16(posit16_t a, posit16_t b) {
+posit16_t pmul16(posit16_t a, posit16_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
@@ -474,7 +474,7 @@ posit16_t posit_mul16(posit16_t a, posit16_t b) {
 }
 
 // posit<32,2> multiplication
-posit32_t posit_mul32(posit32_t a, posit32_t b) {
+posit32_t pmul32(posit32_t a, posit32_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
@@ -486,7 +486,7 @@ posit32_t posit_mul32(posit32_t a, posit32_t b) {
 }
 
 // posit<64,3> multiplication
-posit64_t posit_mul64(posit64_t a, posit64_t b) {
+posit64_t pmul64(posit64_t a, posit64_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 64;
 	constexpr size_t es = 3;
@@ -498,7 +498,7 @@ posit64_t posit_mul64(posit64_t a, posit64_t b) {
 }
 
 // posit<128,4> multiplication
-posit128_t posit_mul128(posit128_t a, posit128_t b) {
+posit128_t pmul128(posit128_t a, posit128_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 128;
 	constexpr size_t es = 4;
@@ -520,7 +520,7 @@ posit128_t posit_mul128(posit128_t a, posit128_t b) {
 /////////        DIVISION
 
 // posit<8,0> division
-posit8_t posit_div8(posit8_t a, posit8_t b) {
+posit8_t pdiv8(posit8_t a, posit8_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 0;
@@ -532,7 +532,7 @@ posit8_t posit_div8(posit8_t a, posit8_t b) {
 }
 
 // posit<16,1> division
-posit16_t posit_div16(posit16_t a, posit16_t b) {
+posit16_t pdiv16(posit16_t a, posit16_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
@@ -544,7 +544,7 @@ posit16_t posit_div16(posit16_t a, posit16_t b) {
 }
 
 // posit<32,2> division
-posit32_t posit_div32(posit32_t a, posit32_t b) {
+posit32_t pdiv32(posit32_t a, posit32_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
@@ -556,7 +556,7 @@ posit32_t posit_div32(posit32_t a, posit32_t b) {
 }
 
 // posit<64,3> division
-posit64_t posit_div64(posit64_t a, posit64_t b) {
+posit64_t pdiv64(posit64_t a, posit64_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 64;
 	constexpr size_t es = 3;
@@ -568,7 +568,7 @@ posit64_t posit_div64(posit64_t a, posit64_t b) {
 }
 
 // posit<128,4> division
-posit128_t posit_div128(posit128_t a, posit128_t b) {
+posit128_t pdiv128(posit128_t a, posit128_t b) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 128;
 	constexpr size_t es = 4;
@@ -590,7 +590,7 @@ posit128_t posit_div128(posit128_t a, posit128_t b) {
 /////////        SQUARE ROOT
 
 // posit<8,0> sqrt
-posit8_t posit_sqrt8(posit8_t a) {
+posit8_t psqrt8(posit8_t a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 0;
@@ -601,7 +601,7 @@ posit8_t posit_sqrt8(posit8_t a) {
 }
 
 // posit<16,1> sqrt
-posit16_t posit_add16(posit16_t a) {
+posit16_t psqrt16(posit16_t a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
@@ -612,7 +612,7 @@ posit16_t posit_add16(posit16_t a) {
 }
 
 // posit<32,2> sqrt
-posit32_t posit_add32(posit32_t a) {
+posit32_t psqrt32(posit32_t a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
@@ -623,7 +623,7 @@ posit32_t posit_add32(posit32_t a) {
 }
 
 // posit<64,3> sqrt
-posit64_t posit_sqrt64(posit64_t a) {
+posit64_t psqrt64(posit64_t a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 64;
 	constexpr size_t es = 4;

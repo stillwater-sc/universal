@@ -19,25 +19,25 @@ int main(int argc, char* argv[])
 	// special case values
 	pa = NAR128;
 	pb = ZERO128;
-	pc = posit_add128(pa, pb);
+	pc = padd128(pa, pb);
 	posit_format128(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR128;
 	pb = ZERO128;
-	pc = posit_sub128(pa, pb);
+	pc = psub128(pa, pb);
 	posit_format128(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR128;
 	pb = ZERO128;
-	pc = posit_mul128(pa, pb);
+	pc = pmul128(pa, pb);
 	posit_format128(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR128;
 	pb = ZERO128;
-	pc = posit_div128(pa, pb);
+	pc = pdiv128(pa, pb);
 	posit_format128(pc, str);
 	printf("posit value = %s\n", str);
 
@@ -50,7 +50,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign128(a, 0);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign128(b, 0);
-			pc = posit_add128(pa, pb);
+			pc = padd128(pa, pb);
 
 			long double da, db, dref;
 			da = posit_value128(pa);
@@ -88,7 +88,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign128(a, 0);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign128(b, 0);
-			pc = posit_sub128(pa, pb);
+			pc = psub128(pa, pb);
 
 			long double da, db, dref;
 			da = posit_value128(pa);
@@ -126,7 +126,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign128(a, 0);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign128(b, 0);
-			pc = posit_mul128(pa, pb);
+			pc = pmul128(pa, pb);
 
 			long double da, db, dref;
 			da = posit_value128(pa);
@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign128(a, 0);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign128(b, 0);
-			pc = posit_div128(pa, pb);
+			pc = pdiv128(pa, pb);
 
 			long double da, db, dref;
 			da = posit_value128(pa);

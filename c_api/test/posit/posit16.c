@@ -16,29 +16,29 @@ int main(int argc, char* argv[])
 
 	// special case values
 	pa = NAR16;
-	pb = 0;
-	pc = posit_add16(pa, pb);
+	pb = ZERO16;
+	pc = padd16(pa, pb);
 	posit_format16(pc, str);
 	printf("posit value = %s\n", str);
 	printf("posit value = 16.1x%04xp\n", pc);
 
 	pa = NAR16;
-	pb = 0;
-	pc = posit_sub16(pa, pb);
+	pb = ZERO16;
+	pc = psub16(pa, pb);
 	posit_format16(pc, str);
 	printf("posit value = %s\n", str);
 	printf("posit value = 16.1x%04xp\n", pc);
 
 	pa = NAR16;
-	pb = 0;
-	pc = posit_mul16(pa, pb);
+	pb = ZERO16;
+	pc = pmul16(pa, pb);
 	posit_format16(pc, str);
 	printf("posit value = %s\n", str);
 	printf("posit value = 16.1x%04xp\n", pc);
 
 	pa = NAR16;
-	pb = 0;
-	pc = posit_div16(pa, pb);
+	pb = ZERO16;
+	pc = pdiv16(pa, pb);
 	posit_format16(pc, str);
 	printf("posit value = %s\n", str);
 	printf("posit value = 16.1x%04xp\n", pc);
@@ -49,7 +49,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign16(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign16(b);
-			pc = posit_add16(pa, pb);
+			pc = padd16(pa, pb);
 
 			double da, db, dref;
 			da = posit_value16(pa);
@@ -77,7 +77,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign16(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign16(b);
-			pc = posit_sub16(pa, pb);
+			pc = psub16(pa, pb);
 
 			double da, db, dref;
 			da = posit_value16(pa);
@@ -105,7 +105,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign16(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign16(b);
-			pc = posit_mul16(pa, pb);
+			pc = pmul16(pa, pb);
 
 			double da, db, dref;
 			da = posit_value16(pa);
@@ -133,7 +133,7 @@ int main(int argc, char* argv[])
 		pa = posit_bit_assign16(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit_bit_assign16(b);
-			pc = posit_div16(pa, pb);
+			pc = pdiv16(pa, pb);
 
 			double da, db, dref;
 			da = posit_value16(pa);
