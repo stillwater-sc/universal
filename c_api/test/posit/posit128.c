@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
 			dref = da + db;
 
 			posit128_t pref = posit_float_assign128(dref);
-			if (posit_cmp128(pref, pc)) {
+			if (pequal128(pref, pc)) {
 				char sa[40], sb[40], sc[40], sref[40];
 				posit_format128(pa, sa);
 				posit_format128(pb, sb);
@@ -96,7 +96,7 @@ int main(int argc, char* argv[])
 			dref = da - db;
 
 			posit128_t pref = posit_float_assign128(dref);
-			if (posit_cmp128(pref, pc)) {
+			if (pequal128(pref, pc)) {
 				char sa[40], sb[40], sc[40], sref[40];
 				posit_format128(pa, sa);
 				posit_format128(pb, sb);
@@ -134,7 +134,7 @@ int main(int argc, char* argv[])
 			dref = da * db;
 
 			posit128_t pref = posit_float_assign128(dref);
-			if (posit_cmp128(pref, pc)) {
+			if (pequal128(pref, pc)) {
 				char sa[40], sb[40], sc[40], sref[40];
 				posit_format128(pa, sa);
 				posit_format128(pb, sb);
@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
 			dref = da / db;
 
 			posit128_t pref = posit_float_assign128(dref);
-			if (posit_cmp128(pref, pc)) {
+			if (pequal128(pref, pc)) {
 				char sa[40], sb[40], sc[40], sref[40];
 				posit_format128(pa, sa);
 				posit_format128(pb, sb);

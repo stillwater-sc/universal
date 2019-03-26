@@ -636,7 +636,22 @@ posit64_t posit_sqrt64(posit64_t a) {
 ///////////////////////////////////////////////////////////////
 /////////        logic operators
 
-bool posit_cmp128(posit128_t a, posit128_t b) {
+bool pequal8(posit8_t a, posit8_t b) {
+	return a == b;
+}
+
+bool pequal16(posit16_t a, posit16_t b) {
+	return a == b;
+}
+
+bool pequal32(posit32_t a, posit32_t b) {
+	return a == b;
+}
+bool pequal64(posit64_t a, posit64_t b) {
+	return a == b;
+}
+
+bool pequal128(posit128_t a, posit128_t b) {
 	bool bEqual = true;
 	for (int i = 0; i < 16; ++i) {
 		if (a.x[i] != b.x[i]) {
@@ -645,4 +660,27 @@ bool posit_cmp128(posit128_t a, posit128_t b) {
 		}
 	}
 	return bEqual;
+}
+
+int pcmp8(posit8_t a, posit8_t b) {
+	return a - b;
+}
+
+int pcmp16(posit16_t a, posit16_t b) {
+	return a - b;
+}
+
+int pcmp32(posit32_t a, posit32_t b) {
+	return a - b;
+}
+
+int pcmp64(posit64_t a, posit64_t b) {
+	return int(a - b);
+}
+
+// TODO
+int pcmp128(posit128_t a, posit128_t b) {
+	int cmp = 0;
+
+	return cmp;
 }
