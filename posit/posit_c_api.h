@@ -185,7 +185,16 @@ extern "C" {
 	posit128_t posit_sqrt128(posit128_t a);
 
 	// logic operators
-	bool       posit_cmp128(posit128_t a, posit128_t b);
+	bool       pequal8(posit8_t a, posit8_t b);
+	int        pcmp8(posit8_t a, posit8_t b);
+	bool       pequal16(posit16_t a, posit16_t b);
+	int        pcmp16(posit16_t a, posit16_t b);
+	bool       pequal32(posit32_t a, posit32_t b);
+	int        pcmp32(posit32_t a, posit32_t b);
+	bool       pequal64(posit64_t a, posit64_t b);
+	int        pcmp64(posit64_t a, posit64_t b);
+	bool       pequal128(posit128_t a, posit128_t b);
+	int        pcmp128(posit128_t a, posit128_t b);
 
 #ifdef __cplusplus
 }
