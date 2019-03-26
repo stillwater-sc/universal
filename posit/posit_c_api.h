@@ -111,18 +111,18 @@ extern "C" {
 
 	/// report posit format for posit8_t. str must be at least 8 characters in size:    8.0x40p + /0 is 8 chars
 #define POSIT_FORMAT8_SIZE 8
+#define POSIT_FORMAT16_SIZE 11
+#define POSIT_FORMAT32_SIZE 15
+#define POSIT_FORMAT64_SIZE 23
+#define POSIT_FORMAT128_SIZE 40
 	void posit_format8(posit8_t a, char* str);
 	/// report posit format for posit16_t. str must be at least 11 characters in size:  16.1x4000p + /0 is 11 chars
-#define POSIT_FORMAT16_SIZE 11
 	void posit_format16(posit16_t a, char* str);
 	/// report posit format for posit32_t. str must be at least 15 characters in size:  32.2x40000000p + /0 is 15 chars
-#define POSIT_FORMAT32_SIZE 15
 	void posit_format32(posit32_t a, char* str);
 	/// report posit format for posit64_t. str must be at least 23 characters in size:  64.3x1234567812345678p + /0 is 23 chars
-#define POSIT_FORMAT64_SIZE 23
 	void posit_format64(posit64_t a, char* str);
 	/// report posit format for posit128_t. str must be at least 40 characters in size:  128.4x12345678123456781234567812345678p + /0 is 40 chars
-#define POSIT_FORMAT128_SIZE 40
 	void posit_format128(posit128_t a, char* str);
 
 	// casts to double
@@ -154,46 +154,60 @@ extern "C" {
 	posit128_t posit_float_assign128(long double a);
 
 	// Addition
-	posit8_t   posit_add8 (posit8_t  a, posit8_t  b);
-	posit16_t  posit_add16(posit16_t a, posit16_t b);
-	posit32_t  posit_add32(posit32_t a, posit32_t b);
-	posit64_t  posit_add64(posit64_t a, posit64_t b);
-	posit128_t posit_add128(posit128_t a, posit128_t b);
+	posit8_t   padd8 (posit8_t  a, posit8_t  b);
+	posit16_t  padd16(posit16_t a, posit16_t b);
+	posit32_t  padd32(posit32_t a, posit32_t b);
+	posit64_t  padd64(posit64_t a, posit64_t b);
+	posit128_t padd128(posit128_t a, posit128_t b);
 	// Subtraction
-	posit8_t   posit_sub8(posit8_t  a, posit8_t  b);
-	posit16_t  posit_sub16(posit16_t a, posit16_t b);
-	posit32_t  posit_sub32(posit32_t a, posit32_t b);
-	posit64_t  posit_sub64(posit64_t a, posit64_t b);
-	posit128_t posit_sub128(posit128_t a, posit128_t b);
+	posit8_t   psub8(posit8_t  a, posit8_t  b);
+	posit16_t  psub16(posit16_t a, posit16_t b);
+	posit32_t  psub32(posit32_t a, posit32_t b);
+	posit64_t  psub64(posit64_t a, posit64_t b);
+	posit128_t psub128(posit128_t a, posit128_t b);
 	// Multiplication
-	posit8_t   posit_mul8(posit8_t  a, posit8_t  b);
-	posit16_t  posit_mul16(posit16_t a, posit16_t b);
-	posit32_t  posit_mul32(posit32_t a, posit32_t b);
-	posit64_t  posit_mul64(posit64_t a, posit64_t b);
-	posit128_t posit_mul128(posit128_t a, posit128_t b);
+	posit8_t   pmul8(posit8_t  a, posit8_t  b);
+	posit16_t  pmul16(posit16_t a, posit16_t b);
+	posit32_t  pmul32(posit32_t a, posit32_t b);
+	posit64_t  pmul64(posit64_t a, posit64_t b);
+	posit128_t pmul128(posit128_t a, posit128_t b);
 	// Division
-	posit8_t   posit_div8(posit8_t  a, posit8_t  b);
-	posit16_t  posit_div16(posit16_t a, posit16_t b);
-	posit32_t  posit_div32(posit32_t a, posit32_t b);
-	posit64_t  posit_div64(posit64_t a, posit64_t b);
-	posit128_t posit_div128(posit128_t a, posit128_t b);
+	posit8_t   pdiv8(posit8_t  a, posit8_t  b);
+	posit16_t  pdiv16(posit16_t a, posit16_t b);
+	posit32_t  pdiv32(posit32_t a, posit32_t b);
+	posit64_t  pdiv64(posit64_t a, posit64_t b);
+	posit128_t pdiv128(posit128_t a, posit128_t b);
 	// Square Root
-	posit8_t   posit_sqrt8(posit8_t  a);
-	posit16_t  posit_sqrt16(posit16_t a);
-	posit32_t  posit_sqrt32(posit32_t a);
-	posit64_t  posit_sqrt64(posit64_t a);
-	posit128_t posit_sqrt128(posit128_t a);
+	posit8_t   psqrt8(posit8_t  a);
+	posit16_t  psqrt16(posit16_t a);
+	posit32_t  psqrt32(posit32_t a);
+	posit64_t  psqrt64(posit64_t a);
+	posit128_t psqrt128(posit128_t a);
+	// Natural Logarithm 
+	posit8_t   plog8(posit8_t  a);
+	posit16_t  plog16(posit16_t a);
+	posit32_t  plog32(posit32_t a);
+	posit64_t  plog64(posit64_t a);
+	posit128_t plog128(posit128_t a);
+	// Exponent 
+	posit8_t   pexp8(posit8_t  a);
+	posit16_t  pexp16(posit16_t a);
+	posit32_t  pexp32(posit32_t a);
+	posit64_t  pexp64(posit64_t a);
+	posit128_t pexp128(posit128_t a);
 
 	// logic operators
+	// equal: true if a == b, false otherwise
 	bool       pequal8(posit8_t a, posit8_t b);
-	int        pcmp8(posit8_t a, posit8_t b);
 	bool       pequal16(posit16_t a, posit16_t b);
-	int        pcmp16(posit16_t a, posit16_t b);
 	bool       pequal32(posit32_t a, posit32_t b);
-	int        pcmp32(posit32_t a, posit32_t b);
 	bool       pequal64(posit64_t a, posit64_t b);
-	int        pcmp64(posit64_t a, posit64_t b);
 	bool       pequal128(posit128_t a, posit128_t b);
+	// compare: -1 if a < b, 0 if a == b, +1 if a > b
+	int        pcmp8(posit8_t a, posit8_t b);
+	int        pcmp16(posit16_t a, posit16_t b);
+	int        pcmp32(posit32_t a, posit32_t b);
+	int        pcmp64(posit64_t a, posit64_t b);
 	int        pcmp128(posit128_t a, posit128_t b);
 
 #ifdef __cplusplus
