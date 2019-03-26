@@ -54,7 +54,7 @@ extern "C" {
 	typedef unsigned char       posit5_t;   // posit<5,0>
 	typedef unsigned char       posit6_t;   // posit<6,0>
 	typedef unsigned char       posit7_t;   // posit<7,0>
-#endif DEEP_LEARNING
+#endif // DEEP_LEARNING
 
 #ifdef DSP_PIPELINES
 	//////////////////////////////////////////////////////////////////////
@@ -62,7 +62,7 @@ extern "C" {
 	typedef unsigned char       posit10_t;   // posit<10,0>
 	typedef unsigned char       posit12_t;   // posit<12,0>
 	typedef unsigned char       posit14_t;   // posit<14,0>
-#endif DSP_PIPELINES
+#endif // DSP_PIPELINES
 
 #ifdef EXTENDED_STANDARD
 	//////////////////////////////////////////////////////////////////////
@@ -83,7 +83,7 @@ extern "C" {
 	typedef unsigned char       posit80_t;  // posit<80,3>
 	typedef unsigned char       posit96_t;  // posit<96,3>
 	typedef unsigned char       posit112_t; // posit<112,3>
-#endif EXTENDED_STANDARD
+#endif // EXTENDED_STANDARD
 
 	//////////////////////////////////////////////////////////////////////
 	// C API function definitions
@@ -94,16 +94,16 @@ extern "C" {
 	static const posit16_t NAR16 = 0x8000;
 	static const posit32_t NAR32 = 0x80000000;
 	static const posit64_t NAR64 = 0x8000000000000000;
-	static const posit128_t NAR128 = {   // we a storing this in little endian
+	static const posit128_t NAR128 = {{   // we a storing this in little endian
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
-	};
+	}};
 
 	static const posit8_t   ZERO8 = 0;
 	static const posit16_t  ZERO16 = 0;
 	static const posit32_t  ZERO32 = 0;
 	static const posit64_t  ZERO64 = 0;
-	static const posit128_t ZERO128 = { 0 };
+	static const posit128_t ZERO128 = {{ 0 }};
 
 	///////////////////////////////////////////////////////////////
 	/////////        output
