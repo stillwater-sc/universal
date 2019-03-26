@@ -209,7 +209,8 @@ posit128_t posit_bit_assign128(unsigned long long lower, unsigned long long uppe
 	marshal128((posit128_t&)p128_mem, raw);
 	pa.set(raw);
 	posit128_t result;
-	unmarshal128(pa.get(), result);
+	bitblock<nbits> x = pa.get();
+	unmarshal128(x, result);
 	return result;
 }
 
@@ -254,7 +255,8 @@ posit128_t posit_integer_assign128(long long a) {
 	constexpr size_t es = 4;
 	posit<nbits, es> pa(a);
 	posit128_t result;
-	unmarshal128(pa.get(), result);
+	bitblock<nbits> x = pa.get();
+	unmarshal128(x, result);
 	return result;
 }
 
@@ -299,7 +301,8 @@ posit128_t posit_float_assign128(long double a) {
 	constexpr size_t es = 4;
 	posit<nbits, es> pa(a);
 	posit128_t result;
-	unmarshal128(pa.get(), result);
+	bitblock<nbits> x = pa.get();
+	unmarshal128(x, result);
 	return result;
 }
 
@@ -368,7 +371,8 @@ posit128_t posit_add128(posit128_t a, posit128_t b) {
 	presult = pa + pb;
 	// marshall it back to a posit128_t
 	posit128_t result;
-	unmarshal128(presult.get(), result);
+	bitblock<nbits> x = presult.get();
+	unmarshal128(x, result);
 	return result;
 }
 
@@ -437,7 +441,8 @@ posit128_t posit_sub128(posit128_t a, posit128_t b) {
 	presult = pa - pb;
 	// marshall it back to a posit128_t
 	posit128_t result;
-	unmarshal128(presult.get(), result);
+	bitblock<nbits> x = presult.get();
+	unmarshal128(x, result);
 	return result;
 }
 
@@ -506,7 +511,8 @@ posit128_t posit_mul128(posit128_t a, posit128_t b) {
 	presult = pa * pb;
 	// marshall it back to a posit128_t
 	posit128_t result;
-	unmarshal128(presult.get(), result);
+	bitblock<nbits> x = presult.get();
+	unmarshal128(x, result);
 	return result;
 }
 
@@ -575,7 +581,8 @@ posit128_t posit_div128(posit128_t a, posit128_t b) {
 	presult = pa / pb;
 	// marshall it back to a posit128_t
 	posit128_t result;
-	unmarshal128(presult.get(), result);
+	bitblock<nbits> x = presult.get();
+	unmarshal128(x, result);
 	return result;
 }
 
