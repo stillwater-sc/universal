@@ -1,5 +1,11 @@
 #pragma once
 // posit_api.h: generic C and C++ header defining the posit api
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <inttypes.h>
+
 #ifdef __cplusplus
 // export a C interface if used by C++ source code
 extern "C" {
@@ -109,49 +115,47 @@ extern "C" {
 	/////////        output
 
 
-	/// report posit format for posit8_t. str must be at least 8 characters in size:    8.0x40p + /0 is 8 chars
 #define POSIT_FORMAT8_SIZE 8
 #define POSIT_FORMAT16_SIZE 11
 #define POSIT_FORMAT32_SIZE 15
 #define POSIT_FORMAT64_SIZE 23
 #define POSIT_FORMAT128_SIZE 40
-	void posit_format8(posit8_t a, char* str);
+	/// report posit format for posit8_t. str must be at least 8 characters in size:    8.0x40p + /0 is 8 chars
+	void pformat8(posit8_t a, char* str);
 	/// report posit format for posit16_t. str must be at least 11 characters in size:  16.1x4000p + /0 is 11 chars
-	void posit_format16(posit16_t a, char* str);
+	void pformat16(posit16_t a, char* str);
 	/// report posit format for posit32_t. str must be at least 15 characters in size:  32.2x40000000p + /0 is 15 chars
-	void posit_format32(posit32_t a, char* str);
+	void pformat32(posit32_t a, char* str);
 	/// report posit format for posit64_t. str must be at least 23 characters in size:  64.3x1234567812345678p + /0 is 23 chars
-	void posit_format64(posit64_t a, char* str);
+	void pformat64(posit64_t a, char* str);
 	/// report posit format for posit128_t. str must be at least 40 characters in size:  128.4x12345678123456781234567812345678p + /0 is 40 chars
-	void posit_format128(posit128_t a, char* str);
+	void pformat128(posit128_t a, char* str);
 
 	// casts to double
-	double      posit_value8(posit8_t a);
-	double      posit_value16(posit16_t a);
-	double      posit_value32(posit32_t a);
-	long double posit_value64(posit64_t a);
-	long double posit_value128(posit128_t a);
+	double      pvalue8(posit8_t a);
+	double      pvalue16(posit16_t a);
+	double      pvalue32(posit32_t a);
+	long double pvalue64(posit64_t a);
+	long double pvalue128(posit128_t a);
 
 	// Raw bit assignments
-	posit8_t   posit_bit_assign8(unsigned char  a);
-	posit16_t  posit_bit_assign16(unsigned short a);
-	posit32_t  posit_bit_assign32(unsigned long a);
-	posit64_t  posit_bit_assign64(unsigned long long a);
-	posit128_t posit_bit_assign128(unsigned long long lower, unsigned long long upper);
+	// small posits don't need help as you can simply assign to them directly
+	// helper for the bigger posit to make it easier to create them
+	posit128_t passign128(unsigned long long lower, unsigned long long upper);
 
 	// Integer assignments
-	posit8_t   posit_integer_assign8(int  a);
-	posit16_t  posit_integer_assign16(int a);
-	posit32_t  posit_integer_assign32(long a);
-	posit64_t  posit_integer_assign64(long long a);
-	posit128_t posit_integer_assign128(long long a);
+	posit8_t   passign8i(int  a);
+	posit16_t  passign16i(int a);
+	posit32_t  passign32i(long a);
+	posit64_t  passign64i(long long a);
+	posit128_t passign128i(long long a);
 
 	// IEEE floating point assignments
-	posit8_t   posit_float_assign8(float  a);
-	posit16_t  posit_float_assign16(float a);
-	posit32_t  posit_float_assign32(double a);
-	posit64_t  posit_float_assign64(long double a);
-	posit128_t posit_float_assign128(long double a);
+	posit8_t   passign8f(float  a);
+	posit16_t  passign16f(float a);
+	posit32_t  passign32f(double a);
+	posit64_t  passign64f(long double a);
+	posit128_t passign128f(long double a);
 
 	// Addition
 	posit8_t   padd8 (posit8_t  a, posit8_t  b);

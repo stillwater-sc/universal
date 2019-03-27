@@ -3,10 +3,7 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <inttypes.h>
+
 #include <posit_c_api.h>
 
 int main(int argc, char* argv[]) 
@@ -20,25 +17,25 @@ int main(int argc, char* argv[])
 	pa = NAR128;
 	pb = ZERO128;
 	pc = padd128(pa, pb);
-	posit_format128(pc, str);
+	pformat128(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR128;
 	pb = ZERO128;
 	pc = psub128(pa, pb);
-	posit_format128(pc, str);
+	pformat128(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR128;
 	pb = ZERO128;
 	pc = pmul128(pa, pb);
-	posit_format128(pc, str);
+	pformat128(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR128;
 	pb = ZERO128;
 	pc = pdiv128(pa, pb);
-	posit_format128(pc, str);
+	pformat128(pc, str);
 	printf("posit value = %s\n", str);
 
 	if (sizeof(long double) != 16) {
@@ -47,23 +44,23 @@ int main(int argc, char* argv[])
 	// partial state space
 	int fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign128(a, 0);
+		pa = passign128(a, 0);
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign128(b, 0);
+			pb = passign128(b, 0);
 			pc = padd128(pa, pb);
 
 			long double da, db, dref;
-			da = posit_value128(pa);
-			db = posit_value128(pb);
+			da = pvalue128(pa);
+			db = pvalue128(pb);
 			dref = da + db;
 
-			posit128_t pref = posit_float_assign128(dref);
+			posit128_t pref = passign128f(dref);
 			if (pequal128(pref, pc)) {
 				char sa[40], sb[40], sc[40], sref[40];
-				posit_format128(pa, sa);
-				posit_format128(pb, sb);
-				posit_format128(pc, sc);
-				posit_format128(pref, sref);
+				pformat128(pa, sa);
+				pformat128(pb, sb);
+				pformat128(pc, sc);
+				pformat128(pref, sref);
 				if (bReportIndividualTestCases) printf("FAIL: %s + %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
@@ -85,23 +82,23 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign128(a, 0);
+		pa = passign128(a, 0);
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign128(b, 0);
+			pb = passign128(b, 0);
 			pc = psub128(pa, pb);
 
 			long double da, db, dref;
-			da = posit_value128(pa);
-			db = posit_value128(pb);
+			da = pvalue128(pa);
+			db = pvalue128(pb);
 			dref = da - db;
 
-			posit128_t pref = posit_float_assign128(dref);
+			posit128_t pref = passign128f(dref);
 			if (pequal128(pref, pc)) {
 				char sa[40], sb[40], sc[40], sref[40];
-				posit_format128(pa, sa);
-				posit_format128(pb, sb);
-				posit_format128(pc, sc);
-				posit_format128(pref, sref);
+				pformat128(pa, sa);
+				pformat128(pb, sb);
+				pformat128(pc, sc);
+				pformat128(pref, sref);
 				if (bReportIndividualTestCases) printf("FAIL: %s - %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
@@ -123,23 +120,23 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign128(a, 0);
+		pa = passign128(a, 0);
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign128(b, 0);
+			pb = passign128(b, 0);
 			pc = pmul128(pa, pb);
 
 			long double da, db, dref;
-			da = posit_value128(pa);
-			db = posit_value128(pb);
+			da = pvalue128(pa);
+			db = pvalue128(pb);
 			dref = da * db;
 
-			posit128_t pref = posit_float_assign128(dref);
+			posit128_t pref = passign128f(dref);
 			if (pequal128(pref, pc)) {
 				char sa[40], sb[40], sc[40], sref[40];
-				posit_format128(pa, sa);
-				posit_format128(pb, sb);
-				posit_format128(pc, sc);
-				posit_format128(pref, sref);
+				pformat128(pa, sa);
+				pformat128(pb, sb);
+				pformat128(pc, sc);
+				pformat128(pref, sref);
 				if (bReportIndividualTestCases) printf("FAIL: %s * %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
@@ -161,23 +158,23 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign128(a, 0);
+		pa = passign128(a, 0);
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign128(b, 0);
+			pb = passign128(b, 0);
 			pc = pdiv128(pa, pb);
 
 			long double da, db, dref;
-			da = posit_value128(pa);
-			db = posit_value128(pb);
+			da = pvalue128(pa);
+			db = pvalue128(pb);
 			dref = da / db;
 
-			posit128_t pref = posit_float_assign128(dref);
+			posit128_t pref = passign128f(dref);
 			if (pequal128(pref, pc)) {
 				char sa[40], sb[40], sc[40], sref[40];
-				posit_format128(pa, sa);
-				posit_format128(pb, sb);
-				posit_format128(pc, sc);
-				posit_format128(pref, sref);
+				pformat128(pa, sa);
+				pformat128(pb, sb);
+				pformat128(pc, sc);
+				pformat128(pref, sref);
 				if (bReportIndividualTestCases) printf("FAIL: %s / %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}

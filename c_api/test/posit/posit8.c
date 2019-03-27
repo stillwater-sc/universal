@@ -3,9 +3,7 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
+
 #include <posit_c_api.h>
 
 int main(int argc, char* argv[]) 
@@ -18,45 +16,41 @@ int main(int argc, char* argv[])
 	pa = NAR8;
 	pb = ZERO8;
 	pc = padd8(pa, pb);
-	posit_format8(pc, str);
+	pformat8(pc, str);
 	printf("posit value = %s\n", str);
-	printf("posit value = 8.0x%02xp\n", pc);
 
 	pa = NAR8;
 	pb = ZERO8;
 	pc = psub8(pa, pb);
-	posit_format8(pc, str);
+	pformat8(pc, str);
 	printf("posit value = %s\n", str);
-	printf("posit value = 8.0x%02xp\n", pc);
 
 	pa = NAR8;
 	pb = ZERO8;
 	pc = pmul8(pa, pb);
-	posit_format8(pc, str);
+	pformat8(pc, str);
 	printf("posit value = %s\n", str);
-	printf("posit value = 8.0x%02xp\n", pc);
 
 	pa = NAR8;
 	pb = ZERO8;
 	pc = pdiv8(pa, pb);
-	posit_format8(pc, str);
+	pformat8(pc, str);
 	printf("posit value = %s\n", str);
-	printf("posit value = 8.0x%02xp\n", pc);
 
 	// full state space
 	int fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign8(a);
+		pa = (posit8_t)a;
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign8(b);
+			pb = (posit8_t)b;
 			pc = padd8(pa, pb);
 
 			double da, db, dref;
-			da = posit_value8(pa);
-			db = posit_value8(pb);
+			da = pvalue8(pa);
+			db = pvalue8(pb);
 			dref = da + db;
 
-			posit8_t pref = posit_float_assign8((float)dref);
+			posit8_t pref = passign8f((float)dref);
 			if (pref != pc) {
 				printf("FAIL: 8.0x%02xp + 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
 				++fails;
@@ -74,17 +68,17 @@ int main(int argc, char* argv[])
 	// full state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign8(a);
+		pa = (posit8_t)a;
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign8(b);
+			pb = (posit8_t)b;
 			pc = psub8(pa, pb);
 
 			double da, db, dref;
-			da = posit_value8(pa);
-			db = posit_value8(pb);
+			da = pvalue8(pa);
+			db = pvalue8(pb);
 			dref = da - db;
 
-			posit8_t pref = posit_float_assign8((float)dref);
+			posit8_t pref = passign8f((float)dref);
 			if (pref != pc) {
 				printf("FAIL: 8.0x%02xp - 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
 				++fails;
@@ -102,17 +96,17 @@ int main(int argc, char* argv[])
 	// full state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign8(a);
+		pa = (posit8_t)a;
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign8(b);
+			pb = (posit8_t)b;
 			pc = pmul8(pa, pb);
 
 			double da, db, dref;
-			da = posit_value8(pa);
-			db = posit_value8(pb);
+			da = pvalue8(pa);
+			db = pvalue8(pb);
 			dref = da * db;
 
-			posit8_t pref = posit_float_assign8((float)dref);
+			posit8_t pref = passign8f((float)dref);
 			if (pref != pc) {
 				printf("FAIL: 8.0x%02xp * 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
 				++fails;
@@ -130,17 +124,17 @@ int main(int argc, char* argv[])
 	// full state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign8(a);
+		pa = (posit8_t)a;
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign8(b);
+			pb = (posit8_t)b;
 			pc = pdiv8(pa, pb);
 
 			double da, db, dref;
-			da = posit_value8(pa);
-			db = posit_value8(pb);
+			da = pvalue8(pa);
+			db = pvalue8(pb);
 			dref = da / db;
 
-			posit8_t pref = posit_float_assign8((float)dref);
+			posit8_t pref = passign8f((float)dref);
 			if (pref != pc) {
 				printf("FAIL: 8.0x%02xp / 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
 				++fails;

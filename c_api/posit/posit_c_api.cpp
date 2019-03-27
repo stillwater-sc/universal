@@ -49,7 +49,7 @@ void unmarshal128(sw::unum::bitblock<128>& raw, posit128_t& a) {
 /////////        output
 
 // report posit format for posit8_t. str must be at least 8 characters in size
-void posit_format8(posit8_t a, char* str) {
+void pformat8(posit8_t a, char* str) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 0;
@@ -60,7 +60,7 @@ void posit_format8(posit8_t a, char* str) {
 }
 
 // report posit format for posit16_t. str must be at least 10 characters in size
-void posit_format16(posit16_t a, char* str) {
+void pformat16(posit16_t a, char* str) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
@@ -71,7 +71,7 @@ void posit_format16(posit16_t a, char* str) {
 }
 
 // report posit format for posit32_t. str must be at least 14 characters in size
-void posit_format32(posit32_t a, char* str) {
+void pformat32(posit32_t a, char* str) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
@@ -82,7 +82,7 @@ void posit_format32(posit32_t a, char* str) {
 }
 
 // report posit format for posit64_t. str must be at least 22 characters in size
-void posit_format64(posit64_t a, char* str) {
+void pformat64(posit64_t a, char* str) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 64;
 	constexpr size_t es = 3;
@@ -93,7 +93,7 @@ void posit_format64(posit64_t a, char* str) {
 }
 
 // report posit format for posit128_t. str must be at least 40 characters in size
-void posit_format128(posit128_t a, char* str) {
+void pformat128(posit128_t a, char* str) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 128;
 	constexpr size_t es = 4;
@@ -108,7 +108,7 @@ void posit_format128(posit128_t a, char* str) {
 ///////////////////////////////////////////////////////////////
 /////////        casts to double
 
-double posit_value8(posit8_t a) {
+double pvalue8(posit8_t a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 0;
@@ -117,7 +117,7 @@ double posit_value8(posit8_t a) {
 	return (double)pa;
 }
 
-double posit_value16(posit16_t a) {
+double pvalue16(posit16_t a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
@@ -126,7 +126,7 @@ double posit_value16(posit16_t a) {
 	return (double)pa;
 }
 
-double posit_value32(posit32_t a) {
+double pvalue32(posit32_t a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
@@ -135,7 +135,7 @@ double posit_value32(posit32_t a) {
 	return (double)pa;
 }
 
-long double posit_value64(posit64_t a) {
+long double pvalue64(posit64_t a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 64;
 	constexpr size_t es = 3;
@@ -144,7 +144,7 @@ long double posit_value64(posit64_t a) {
 	return (long double)pa;
 }
 
-long double posit_value128(posit128_t a) {
+long double pvalue128(posit128_t a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 128;
 	constexpr size_t es = 4;
@@ -158,43 +158,8 @@ long double posit_value128(posit128_t a) {
 ///////////////////////////////////////////////////////////////
 /////////        bit assignment
 
-posit8_t posit_bit_assign8(unsigned char a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 8;
-	constexpr size_t es = 0;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	return (posit8_t)pa.encoding();
-}
-
-posit16_t posit_bit_assign16(unsigned short a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	return (posit16_t)pa.encoding();
-}
-
-posit32_t posit_bit_assign32(unsigned long a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	return (posit32_t)pa.encoding();
-}
-
-posit64_t posit_bit_assign64(unsigned long long a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 64;
-	constexpr size_t es = 3;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	return (posit64_t)pa.encoding();
-}
-
-posit128_t posit_bit_assign128(unsigned long long lower, unsigned long long upper = 0) {
+// helper to make it easier to create 128bit numbers
+posit128_t passign128(unsigned long long lower, unsigned long long upper = 0) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 128;
 	constexpr size_t es = 4;
@@ -217,7 +182,7 @@ posit128_t posit_bit_assign128(unsigned long long lower, unsigned long long uppe
 ///////////////////////////////////////////////////////////////
 /////////        integer assignment
 
-posit8_t posit_integer_assign8(int a) {
+posit8_t passign8i(int a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 0;
@@ -225,7 +190,7 @@ posit8_t posit_integer_assign8(int a) {
 	return (posit8_t)pa.encoding();
 }
 
-posit16_t posit_integer_assign16(int a) {
+posit16_t passign16i(int a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
@@ -233,7 +198,7 @@ posit16_t posit_integer_assign16(int a) {
 	return (posit16_t)pa.encoding();
 }
 
-posit32_t posit_integer_assign32(long a) {
+posit32_t passign32i(long a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
@@ -241,7 +206,7 @@ posit32_t posit_integer_assign32(long a) {
 	return (posit32_t)pa.encoding();
 }
 
-posit64_t posit_integer_assign64(long long a) {
+posit64_t passign64i(long long a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 64;
 	constexpr size_t es = 3;
@@ -249,7 +214,7 @@ posit64_t posit_integer_assign64(long long a) {
 	return (posit64_t)pa.encoding();
 }
 
-posit128_t posit_integer_assign128(long long a) {
+posit128_t passign128i(long long a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 128;
 	constexpr size_t es = 4;
@@ -263,7 +228,7 @@ posit128_t posit_integer_assign128(long long a) {
 ///////////////////////////////////////////////////////////////
 /////////        IEEE floating point assignment
 
-posit8_t posit_float_assign8(float a) {
+posit8_t passign8f(float a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 0;
@@ -271,7 +236,7 @@ posit8_t posit_float_assign8(float a) {
 	return (posit8_t)pa.encoding();
 }
 
-posit16_t posit_float_assign16(float a) {
+posit16_t passign16f(float a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
@@ -279,7 +244,7 @@ posit16_t posit_float_assign16(float a) {
 	return (posit16_t)pa.encoding();
 }
 
-posit32_t posit_float_assign32(double a) {
+posit32_t passign32f(double a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
@@ -287,7 +252,7 @@ posit32_t posit_float_assign32(double a) {
 	return (posit32_t)pa.encoding();
 }
 
-posit64_t posit_float_assign64(long double a) {
+posit64_t passign64f(long double a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 64;
 	constexpr size_t es = 3;
@@ -295,7 +260,7 @@ posit64_t posit_float_assign64(long double a) {
 	return (posit64_t)pa.encoding();
 }
 
-posit128_t posit_float_assign128(long double a) {
+posit128_t passign128f(long double a) {
 	using namespace sw::unum;
 	constexpr size_t nbits = 128;
 	constexpr size_t es = 4;
