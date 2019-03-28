@@ -171,8 +171,8 @@ int main(int argc, char* argv[])
 		}
 		else {
 			printf("division        FAIL\n");
+			failures = true;
 		}
-		failures = true;
 	}
 	else {
 		printf("division        PASS\n");
