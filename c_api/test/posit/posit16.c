@@ -15,26 +15,26 @@ int main(int argc, char* argv[])
 	// special case values
 	pa = NAR16;
 	pb = ZERO16;
-	pc = padd16(pa, pb);
-	pformat16(pc, str);
+	pc = posit_add16(pa, pb);
+	posit_format16(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR16;
 	pb = ZERO16;
-	pc = psub16(pa, pb);
-	pformat16(pc, str);
+	pc = posit_sub16(pa, pb);
+	posit_format16(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR16;
 	pb = ZERO16;
-	pc = pmul16(pa, pb);
-	pformat16(pc, str);
+	pc = posit_mul16(pa, pb);
+	posit_format16(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR16;
 	pb = ZERO16;
-	pc = pdiv16(pa, pb);
-	pformat16(pc, str);
+	pc = posit_div16(pa, pb);
+	posit_format16(pc, str);
 	printf("posit value = %s\n", str);
 
 	// partial state space
@@ -43,14 +43,14 @@ int main(int argc, char* argv[])
 		pa = (posit16_t)a;
 		for (int b = 0; b < 256; ++b) {
 			pb = (posit16_t)b;
-			pc = padd16(pa, pb);
+			pc = posit_add16(pa, pb);
 
 			double da, db, dref;
-			da = pvalue16(pa);
-			db = pvalue16(pb);
+			da = posit_value16(pa);
+			db = posit_value16(pb);
 			dref = da + db;
 
-			posit16_t pref = passign16f((float)dref);
+			posit16_t pref = posit_assign16f((float)dref);
 			if (pref != pc) {
 				printf("FAIL: 16.1x%04xp + 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n", pa, pb, pc, pref);
 				++fails;
@@ -71,14 +71,14 @@ int main(int argc, char* argv[])
 		pa = (posit16_t)a;
 		for (int b = 0; b < 256; ++b) {
 			pb = (posit16_t)b;
-			pc = psub16(pa, pb);
+			pc = posit_sub16(pa, pb);
 
 			double da, db, dref;
-			da = pvalue16(pa);
-			db = pvalue16(pb);
+			da = posit_value16(pa);
+			db = posit_value16(pb);
 			dref = da - db;
 
-			posit16_t pref = passign16f((float)dref);
+			posit16_t pref = posit_assign16f((float)dref);
 			if (pref != pc) {
 				printf("FAIL: 16.1x%04xp - 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n", pa, pb, pc, pref);
 				++fails;
@@ -99,14 +99,14 @@ int main(int argc, char* argv[])
 		pa = (posit16_t)a;
 		for (int b = 0; b < 256; ++b) {
 			pb = (posit16_t)b;
-			pc = pmul16(pa, pb);
+			pc = posit_mul16(pa, pb);
 
 			double da, db, dref;
-			da = pvalue16(pa);
-			db = pvalue16(pb);
+			da = posit_value16(pa);
+			db = posit_value16(pb);
 			dref = da * db;
 
-			posit16_t pref = passign16f((float)dref);
+			posit16_t pref = posit_assign16f((float)dref);
 			if (pref != pc) {
 				printf("FAIL: 16.1x%04xp * 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n", pa, pb, pc, pref);
 				++fails;
@@ -127,14 +127,14 @@ int main(int argc, char* argv[])
 		pa = (posit16_t)a;
 		for (int b = 0; b < 256; ++b) {
 			pb = (posit16_t)b;
-			pc = pdiv16(pa, pb);
+			pc = posit_div16(pa, pb);
 
 			double da, db, dref;
-			da = pvalue16(pa);
-			db = pvalue16(pb);
+			da = posit_value16(pa);
+			db = posit_value16(pb);
 			dref = da / db;
 
-			posit16_t pref = passign16f((float)dref);
+			posit16_t pref = posit_assign16f((float)dref);
 			if (pref != pc) {
 				printf("FAIL: 16.1x%04xp / 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n", pa, pb, pc, pref);
 				++fails;
