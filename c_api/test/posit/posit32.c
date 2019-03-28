@@ -15,26 +15,26 @@ int main(int argc, char* argv[])
 	// special case values
 	pa = NAR32;
 	pb = ZERO32;
-	pc = padd32(pa, pb);
-	pformat32(pc, str);
+	pc = posit_add32(pa, pb);
+	posit_format32(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR32;
 	pb = ZERO32;
-	pc = psub32(pa, pb);
-	pformat32(pc, str);
+	pc = posit_sub32(pa, pb);
+	posit_format32(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR32;
 	pb = ZERO32;
-	pc = pmul32(pa, pb);
-	pformat32(pc, str);
+	pc = posit_mul32(pa, pb);
+	posit_format32(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR32;
 	pb = ZERO32;
-	pc = pdiv32(pa, pb);
-	pformat32(pc, str);
+	pc = posit_div32(pa, pb);
+	posit_format32(pc, str);
 	printf("posit value = %s\n", str);
 
 	// partial state space
@@ -43,14 +43,14 @@ int main(int argc, char* argv[])
 		pa = (posit32_t)(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = (posit32_t)(b);
-			pc = padd32(pa, pb);
+			pc = posit_add32(pa, pb);
 
 			double da, db, dref;
-			da = pvalue32(pa);
-			db = pvalue32(pb);
+			da = posit_value32(pa);
+			db = posit_value32(pb);
 			dref = da + db;
 
-			posit32_t pref = passign32f(dref);
+			posit32_t pref = posit_assign32f(dref);
 			if (pref != pc) {
 				printf("FAIL: 32.2x%08xp + 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
 				++fails;
@@ -73,14 +73,14 @@ int main(int argc, char* argv[])
 		pa = (posit32_t)(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = (posit32_t)(b);
-			pc = psub32(pa, pb);
+			pc = posit_sub32(pa, pb);
 
 			double da, db, dref;
-			da = pvalue32(pa);
-			db = pvalue32(pb);
+			da = posit_value32(pa);
+			db = posit_value32(pb);
 			dref = da - db;
 
-			posit32_t pref = passign32f(dref);
+			posit32_t pref = posit_assign32f(dref);
 			if (pref != pc) {
 				printf("FAIL: 32.2x%08xp - 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
 				++fails;
@@ -101,14 +101,14 @@ int main(int argc, char* argv[])
 		pa = (posit32_t)(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = (posit32_t)(b);
-			pc = pmul32(pa, pb);
+			pc = posit_mul32(pa, pb);
 
 			double da, db, dref;
-			da = pvalue32(pa);
-			db = pvalue32(pb);
+			da = posit_value32(pa);
+			db = posit_value32(pb);
 			dref = da * db;
 
-			posit32_t pref = passign32f(dref);
+			posit32_t pref = posit_assign32f(dref);
 			if (pref != pc) {
 				printf("FAIL: 32.2x%08xp * 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
 				++fails;
@@ -129,14 +129,14 @@ int main(int argc, char* argv[])
 		pa = (posit32_t)(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = (posit32_t)(b);
-			pc = pdiv32(pa, pb);
+			pc = posit_div32(pa, pb);
 
 			double da, db, dref;
-			da = pvalue32(pa);
-			db = pvalue32(pb);
+			da = posit_value32(pa);
+			db = posit_value32(pb);
 			dref = da / db;
 
-			posit32_t pref = passign32f(dref);
+			posit32_t pref = posit_assign32f(dref);
 			if (pref != pc) {
 				printf("FAIL: 32.2x%08xp / 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
 				++fails;

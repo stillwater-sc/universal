@@ -15,26 +15,26 @@ int main(int argc, char* argv[])
 	// special case values
 	pa = NAR8;
 	pb = ZERO8;
-	pc = padd8(pa, pb);
-	pformat8(pc, str);
+	pc = posit_add8(pa, pb);
+	posit_format8(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR8;
 	pb = ZERO8;
-	pc = psub8(pa, pb);
-	pformat8(pc, str);
+	pc = posit_sub8(pa, pb);
+	posit_format8(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR8;
 	pb = ZERO8;
-	pc = pmul8(pa, pb);
-	pformat8(pc, str);
+	pc = posit_mul8(pa, pb);
+	posit_format8(pc, str);
 	printf("posit value = %s\n", str);
 
 	pa = NAR8;
 	pb = ZERO8;
-	pc = pdiv8(pa, pb);
-	pformat8(pc, str);
+	pc = posit_div8(pa, pb);
+	posit_format8(pc, str);
 	printf("posit value = %s\n", str);
 
 	// full state space
@@ -43,14 +43,14 @@ int main(int argc, char* argv[])
 		pa = (posit8_t)a;
 		for (int b = 0; b < 256; ++b) {
 			pb = (posit8_t)b;
-			pc = padd8(pa, pb);
+			pc = posit_add8(pa, pb);
 
 			double da, db, dref;
-			da = pvalue8(pa);
-			db = pvalue8(pb);
+			da = posit_value8(pa);
+			db = posit_value8(pb);
 			dref = da + db;
 
-			posit8_t pref = passign8f((float)dref);
+			posit8_t pref = posit_assign8f((float)dref);
 			if (pref != pc) {
 				printf("FAIL: 8.0x%02xp + 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
 				++fails;
@@ -71,14 +71,14 @@ int main(int argc, char* argv[])
 		pa = (posit8_t)a;
 		for (int b = 0; b < 256; ++b) {
 			pb = (posit8_t)b;
-			pc = psub8(pa, pb);
+			pc = posit_sub8(pa, pb);
 
 			double da, db, dref;
-			da = pvalue8(pa);
-			db = pvalue8(pb);
+			da = posit_value8(pa);
+			db = posit_value8(pb);
 			dref = da - db;
 
-			posit8_t pref = passign8f((float)dref);
+			posit8_t pref = posit_assign8f((float)dref);
 			if (pref != pc) {
 				printf("FAIL: 8.0x%02xp - 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
 				++fails;
@@ -99,14 +99,14 @@ int main(int argc, char* argv[])
 		pa = (posit8_t)a;
 		for (int b = 0; b < 256; ++b) {
 			pb = (posit8_t)b;
-			pc = pmul8(pa, pb);
+			pc = posit_mul8(pa, pb);
 
 			double da, db, dref;
-			da = pvalue8(pa);
-			db = pvalue8(pb);
+			da = posit_value8(pa);
+			db = posit_value8(pb);
 			dref = da * db;
 
-			posit8_t pref = passign8f((float)dref);
+			posit8_t pref = posit_assign8f((float)dref);
 			if (pref != pc) {
 				printf("FAIL: 8.0x%02xp * 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
 				++fails;
@@ -127,14 +127,14 @@ int main(int argc, char* argv[])
 		pa = (posit8_t)a;
 		for (int b = 0; b < 256; ++b) {
 			pb = (posit8_t)b;
-			pc = pdiv8(pa, pb);
+			pc = posit_div8(pa, pb);
 
 			double da, db, dref;
-			da = pvalue8(pa);
-			db = pvalue8(pb);
+			da = posit_value8(pa);
+			db = posit_value8(pb);
 			dref = da / db;
 
-			posit8_t pref = passign8f((float)dref);
+			posit8_t pref = posit_assign8f((float)dref);
 			if (pref != pc) {
 				printf("FAIL: 8.0x%02xp / 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
 				++fails;
