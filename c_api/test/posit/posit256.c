@@ -8,6 +8,7 @@
 
 int main(int argc, char* argv[]) 
 {
+	const int maxNr = 196;
 	posit256_t pa, pb, pc;
 	char str[POSIT_FORMAT256_SIZE];
 	bool failures = false;
@@ -43,9 +44,9 @@ int main(int argc, char* argv[])
 
 	// partial state space
 	int fails = 0;
-	for (int a = 0; a < 256; ++a) {
+	for (int a = 0; a < maxNr; ++a) {
 		pa = posit_assign256(a, 0, 0, 0);
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < maxNr; ++b) {
 			pb = posit_assign256(b, 0, 0, 0);
 			pc = posit_add256(pa, pb);
 
@@ -81,9 +82,9 @@ int main(int argc, char* argv[])
 
 	// partial state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {
+	for (int a = 0; a < maxNr; ++a) {
 		pa = posit_assign256(a, 0, 0, 0);
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < maxNr; ++b) {
 			pb = posit_assign256(b, 0, 0, 0);
 			pc = posit_sub256(pa, pb);
 
@@ -119,9 +120,9 @@ int main(int argc, char* argv[])
 
 	// partial state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {
+	for (int a = 0; a < maxNr; ++a) {
 		pa = posit_assign256(a, 0, 0, 0);
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < maxNr; ++b) {
 			pb = posit_assign256(b, 0, 0, 0);
 			pc = posit_mul256(pa, pb);
 
@@ -157,9 +158,9 @@ int main(int argc, char* argv[])
 
 	// partial state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {
+	for (int a = 0; a < maxNr; ++a) {
 		pa = posit_assign256(a, 0, 0, 0);
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < maxNr; ++b) {
 			pb = posit_assign256(b, 0, 0, 0);
 			pc = posit_div256(pa, pb);
 
