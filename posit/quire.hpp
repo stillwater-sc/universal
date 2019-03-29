@@ -444,10 +444,10 @@ public:
 		return 0;
 	}
 	// query functions for quire attributes
-	inline size_t dynamic_range() const { return range; }
-	inline size_t max_scale() const { return upper_range; }
-	inline size_t min_scale() const { return -int(half_range); }
-	inline size_t capacity_range() const { return capacity; }
+	inline int dynamic_range() const { return int(range); }
+	inline int max_scale() const { return int(upper_range); }
+	inline int min_scale() const { return -int(half_range); }
+	inline int capacity_range() const { return int(capacity); }
 	inline size_t total_bits() const { return qbits + 1; }
 	inline bool isneg() const { return _sign; }
 	inline bool ispos() const { return _sign; }
