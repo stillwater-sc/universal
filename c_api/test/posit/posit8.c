@@ -8,57 +8,58 @@
 #include <stdbool.h>
 #include <posit_c_api.h>
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
 	posit8_t pa, pb, pc;
-	char str[POSIT_FORMAT8_SIZE];
+	char str[posit16_str_SIZE];
 	bool failures = false;
 
 	// special case values
 	pa = NAR8;
-	pb = 0;
-	pc = posit_add8(pa, pb);
-	posit_format8(pc, str);
+	pb = ZERO8;
+	pc = posit_add(pa, pb);
+	posit_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 8.0x%02xp\n", pc);
+	printf("posit value = 8.0x%02xp\n", posit_bits(pc));
 
 	pa = NAR8;
-	pb = 0;
-	pc = posit_sub8(pa, pb);
-	posit_format8(pc, str);
+	pb = ZERO8;
+	pc = posit_sub(pa, pb);
+	posit_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 8.0x%02xp\n", pc);
+	printf("posit value = 8.0x%02xp\n", posit_bits(pc));
 
 	pa = NAR8;
-	pb = 0;
-	pc = posit_mul8(pa, pb);
-	posit_format8(pc, str);
+	pb = ZERO8;
+	pc = posit_mul(pa, pb);
+	posit_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 8.0x%02xp\n", pc);
+	printf("posit value = 8.0x%02xp\n", posit_bits(pc));
 
 	pa = NAR8;
-	pb = 0;
-	pc = posit_div8(pa, pb);
-	posit_format8(pc, str);
+	pb = ZERO8;
+	pc = posit_div(pa, pb);
+	posit_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 8.0x%02xp\n", pc);
+	printf("posit value = 8.0x%02xp\n", posit_bits(pc));
 
 	// full state space
 	int fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign8(a);
+		pa = posit8_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign8(b);
-			pc = posit_add8(pa, pb);
+			pb = posit8_reinterpret(b);
+			pc = posit_add(pa, pb);
 
 			double da, db, dref;
-			da = posit_value8(pa);
-			db = posit_value8(pb);
+			da = posit_tod(pa);
+			db = posit_tod(pb);
 			dref = da + db;
 
-			posit8_t pref = posit_float_assign8((float)dref);
-			if (pref != pc) {
-				printf("FAIL: 8.0x%02xp + 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
+			posit8_t pref = posit8((float)dref);
+			if (posit_cmp(pref, pc)) {
+				printf("FAIL: 8.0x%02xp + 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
+                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
 				++fails;
 			}
 		}
@@ -74,19 +75,20 @@ int main(int argc, char* argv[])
 	// full state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign8(a);
+		pa = posit8_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign8(b);
-			pc = posit_sub8(pa, pb);
+			pb = posit8_reinterpret(b);
+			pc = posit_sub(pa, pb);
 
 			double da, db, dref;
-			da = posit_value8(pa);
-			db = posit_value8(pb);
+			da = posit_tod(pa);
+			db = posit_tod(pb);
 			dref = da - db;
 
-			posit8_t pref = posit_float_assign8((float)dref);
-			if (pref != pc) {
-				printf("FAIL: 8.0x%02xp - 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
+			posit8_t pref = posit8((float)dref);
+			if (posit_cmp(pref, pc)) {
+				printf("FAIL: 8.0x%02xp - 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
+                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
 				++fails;
 			}
 		}
@@ -102,19 +104,20 @@ int main(int argc, char* argv[])
 	// full state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign8(a);
+		pa = posit8_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign8(b);
-			pc = posit_mul8(pa, pb);
+			pb = posit8_reinterpret(b);
+			pc = posit_mul(pa, pb);
 
 			double da, db, dref;
-			da = posit_value8(pa);
-			db = posit_value8(pb);
+			da = posit_tod(pa);
+			db = posit_tod(pb);
 			dref = da * db;
 
-			posit8_t pref = posit_float_assign8((float)dref);
-			if (pref != pc) {
-				printf("FAIL: 8.0x%02xp * 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
+			posit8_t pref = posit8((float)dref);
+			if (posit_cmp(pref, pc)) {
+				printf("FAIL: 8.0x%02xp * 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
+                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
 				++fails;
 			}
 		}
@@ -130,19 +133,20 @@ int main(int argc, char* argv[])
 	// full state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign8(a);
+		pa = posit8_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign8(b);
-			pc = posit_div8(pa, pb);
+			pb = posit8_reinterpret(b);
+			pc = posit_div(pa, pb);
 
 			double da, db, dref;
-			da = posit_value8(pa);
-			db = posit_value8(pb);
+			da = posit_tod(pa);
+			db = posit_tod(pb);
 			dref = da / db;
 
-			posit8_t pref = posit_float_assign8((float)dref);
-			if (pref != pc) {
-				printf("FAIL: 8.0x%02xp / 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n", pa, pb, pc, pref);
+			posit8_t pref = posit8((float)dref);
+			if (posit_cmp(pref, pc)) {
+				printf("FAIL: 8.0x%02xp / 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
+                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
 				++fails;
 			}
 		}

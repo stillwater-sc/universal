@@ -11,11 +11,8 @@
 #define POSIT_FAST_POSIT_64_3 0
 #include <posit>
 
-///////////////////////////////////////////////////////////////
-/// conversions
-
 // marshal128 takes a posit128_t and marshals it into a raw bitblock
-void marshal128(posit128_t a, sw::unum::bitblock<128>& raw) {
+static void marshal128(posit128_t a, sw::unum::bitblock<128>& raw) {
 	// 16 bytes
 	uint32_t bit_cntr = 0;
 	for (int c = 0; c < 16; ++c) {
@@ -29,7 +26,7 @@ void marshal128(posit128_t a, sw::unum::bitblock<128>& raw) {
 }
 
 // unmarshal128 takes a raw bitblock and unmarshals it into a posit128_t
-void unmarshal128(sw::unum::bitblock<128>& raw, posit128_t& a) {
+static void unmarshal128(sw::unum::bitblock<128>& raw, posit128_t& a) {
 	// 16 bytes
 	uint32_t bit_cntr = 0;
 	for (int c = 0; c < 16; ++c) {
@@ -45,604 +42,139 @@ void unmarshal128(sw::unum::bitblock<128>& raw, posit128_t& a) {
 	}
 }
 
-///////////////////////////////////////////////////////////////
-/////////        output
-
-// report posit format for posit8_t. str must be at least 8 characters in size
-void posit_format8(posit8_t a, char* str) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 8;
-	constexpr size_t es = 0;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	std::string s = posit_format(pa);
-	sprintf(str, "%s", s.c_str());
-}
-
-// report posit format for posit16_t. str must be at least 10 characters in size
-void posit_format16(posit16_t a, char* str) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	std::string s = posit_format(pa);
-	sprintf(str, "%s", s.c_str());
-}
-
-// report posit format for posit32_t. str must be at least 14 characters in size
-void posit_format32(posit32_t a, char* str) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	std::string s = posit_format(pa);
-	sprintf(str, "%s", s.c_str());
-}
-
-// report posit format for posit64_t. str must be at least 22 characters in size
-void posit_format64(posit64_t a, char* str) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 64;
-	constexpr size_t es = 3;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	std::string s = posit_format(pa);
-	sprintf(str, "%s", s.c_str());
-}
-
-// report posit format for posit128_t. str must be at least 40 characters in size
-void posit_format128(posit128_t a, char* str) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 128;
-	constexpr size_t es = 4;
-	posit<nbits, es> pa;
-	bitblock<nbits> raw;
-	marshal128(a, raw);
-	pa.set(raw);
-	std::string s = posit_format(pa);
-	sprintf(str, "%s", s.c_str());
-}
-
-///////////////////////////////////////////////////////////////
-/////////        casts to double
-
-double posit_value8(posit8_t a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 8;
-	constexpr size_t es = 0;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	return (double)pa;
-}
-
-double posit_value16(posit16_t a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	return (double)pa;
-}
-
-double posit_value32(posit32_t a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	return (double)pa;
-}
-
-long double posit_value64(posit64_t a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 64;
-	constexpr size_t es = 3;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	return (long double)pa;
-}
-
-long double posit_value128(posit128_t a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 128;
-	constexpr size_t es = 4;
-	posit<nbits, es> pa;
-	bitblock<nbits> raw;
-	marshal128(a, raw);
-	pa.set(raw);
-	return (long double)pa;
-}
-
-///////////////////////////////////////////////////////////////
-/////////        bit assignment
-
-posit8_t posit_bit_assign8(unsigned char a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 8;
-	constexpr size_t es = 0;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	return (posit8_t)pa.encoding();
-}
-
-posit16_t posit_bit_assign16(unsigned short a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	return (posit16_t)pa.encoding();
-}
-
-posit32_t posit_bit_assign32(unsigned long a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	return (posit32_t)pa.encoding();
-}
-
-posit64_t posit_bit_assign64(unsigned long long a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 64;
-	constexpr size_t es = 3;
-	posit<nbits, es> pa;
-	pa.set_raw_bits(a);
-	return (posit64_t)pa.encoding();
-}
-
-posit128_t posit_bit_assign128(unsigned long long lower, unsigned long long upper = 0) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 128;
-	constexpr size_t es = 4;
-	posit<nbits, es> pa;
-	struct {
-		unsigned long long lower;
-		unsigned long long upper;
-	} p128_mem;
-	p128_mem.upper = upper;
-	p128_mem.lower = lower;
-	bitblock<nbits> raw;
-	marshal128((posit128_t&)p128_mem, raw);
-	pa.set(raw);
-	posit128_t result;
-	bitblock<nbits> x = pa.get();
-	unmarshal128(x, result);
-	return result;
-}
-
-///////////////////////////////////////////////////////////////
-/////////        integer assignment
-
-posit8_t posit_integer_assign8(int a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 8;
-	constexpr size_t es = 0;
-	posit<nbits, es> pa(a);
-	return (posit8_t)pa.encoding();
-}
-
-posit16_t posit_integer_assign16(int a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	posit<nbits, es> pa(a);
-	return (posit16_t)pa.encoding();
-}
-
-posit32_t posit_integer_assign32(long a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	posit<nbits, es> pa(a);
-	return (posit32_t)pa.encoding();
-}
-
-posit64_t posit_integer_assign64(long long a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 64;
-	constexpr size_t es = 3;
-	posit<nbits, es> pa(a);
-	return (posit64_t)pa.encoding();
-}
-
-posit128_t posit_integer_assign128(long long a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 128;
-	constexpr size_t es = 4;
-	posit<nbits, es> pa(a);
-	posit128_t result;
-	bitblock<nbits> x = pa.get();
-	unmarshal128(x, result);
-	return result;
-}
-
-///////////////////////////////////////////////////////////////
-/////////        IEEE floating point assignment
-
-posit8_t posit_float_assign8(float a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 8;
-	constexpr size_t es = 0;
-	posit<nbits, es> pa(a);
-	return (posit8_t)pa.encoding();
-}
-
-posit16_t posit_float_assign16(float a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	posit<nbits, es> pa(a);
-	return (posit16_t)pa.encoding();
-}
-
-posit32_t posit_float_assign32(double a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	posit<nbits, es> pa(a);
-	return (posit32_t)pa.encoding();
-}
-
-posit64_t posit_float_assign64(long double a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 64;
-	constexpr size_t es = 3;
-	posit<nbits, es> pa(a);
-	return (posit64_t)pa.encoding();
-}
-
-posit128_t posit_float_assign128(long double a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 128;
-	constexpr size_t es = 4;
-	posit<nbits, es> pa(a);
-	posit128_t result;
-	bitblock<nbits> x = pa.get();
-	unmarshal128(x, result);
-	return result;
-}
-
-///////////////////////////////////////////////////////////////
-/////////        ADDITION
-
-// posit<8,0> addition
-posit8_t posit_add8(posit8_t a, posit8_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 8;
-	constexpr size_t es = 0;
-	posit<nbits,es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa + pb;
-	return (posit8_t)presult.encoding();
-}
-
-// posit<16,1> addition
-posit16_t posit_add16(posit16_t a, posit16_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa + pb;
-	return (posit16_t)presult.encoding();
-}
-
-// posit<32,2> addition
-posit32_t posit_add32(posit32_t a, posit32_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa + pb;
-	return (posit32_t)presult.encoding();
-}
-
-// posit<64,3> addition
-posit64_t posit_add64(posit64_t a, posit64_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 64;
-	constexpr size_t es = 3;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa + pb;
-	return (posit64_t)presult.encoding();
-}
-
-// posit<128,4> addition
-posit128_t posit_add128(posit128_t a, posit128_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 128;
-	constexpr size_t es = 4;
-	posit<nbits, es> pa, pb, presult;
-	bitblock<nbits> raw;
-	marshal128(a, raw);
-	pa.set(raw);
-	marshal128(b, raw);
-	pb.set(raw);
-	presult = pa + pb;
-	// marshall it back to a posit128_t
-	posit128_t result;
-	bitblock<nbits> x = presult.get();
-	unmarshal128(x, result);
-	return result;
-}
-
-///////////////////////////////////////////////////////////////
-/////////        SUBTRACTION
-
-// posit<8,0> subtraction
-posit8_t posit_sub8(posit8_t a, posit8_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 8;
-	constexpr size_t es = 0;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa - pb;
-	return (posit8_t)presult.encoding();
-}
-
-// posit<16,1> subtraction
-posit16_t posit_sub16(posit16_t a, posit16_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa - pb;
-	return (posit16_t)presult.encoding();
-}
-
-// posit<32,2> subtraction
-posit32_t posit_sub32(posit32_t a, posit32_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa - pb;
-	return (posit32_t)presult.encoding();
-}
-
-// posit<64,3> subtraction
-posit64_t posit_sub64(posit64_t a, posit64_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 64;
-	constexpr size_t es = 3;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa - pb;
-	return (posit64_t)presult.encoding();
-}
-
-// posit<128,4> subtraction
-posit128_t posit_sub128(posit128_t a, posit128_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 128;
-	constexpr size_t es = 4;
-	posit<nbits, es> pa, pb, presult;
-	bitblock<nbits> raw;
-	marshal128(a, raw);
-	pa.set(raw);
-	marshal128(b, raw);
-	pb.set(raw);
-	presult = pa - pb;
-	// marshall it back to a posit128_t
-	posit128_t result;
-	bitblock<nbits> x = presult.get();
-	unmarshal128(x, result);
-	return result;
-}
-
-///////////////////////////////////////////////////////////////
-/////////        MULTIPLICATION
-
-// posit<8,0> multiplication
-posit8_t posit_mul8(posit8_t a, posit8_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 8;
-	constexpr size_t es = 0;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa * pb;
-	return (posit8_t)presult.encoding();
-}
-
-// posit<16,1> multiplication
-posit16_t posit_mul16(posit16_t a, posit16_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa * pb;
-	return (posit16_t)presult.encoding();
-}
-
-// posit<32,2> multiplication
-posit32_t posit_mul32(posit32_t a, posit32_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa * pb;
-	return (posit32_t)presult.encoding();
-}
-
-// posit<64,3> multiplication
-posit64_t posit_mul64(posit64_t a, posit64_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 64;
-	constexpr size_t es = 3;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa * pb;
-	return (posit64_t)presult.encoding();
-}
-
-// posit<128,4> multiplication
-posit128_t posit_mul128(posit128_t a, posit128_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 128;
-	constexpr size_t es = 4;
-	posit<nbits, es> pa, pb, presult;
-	bitblock<nbits> raw;
-	marshal128(a, raw);
-	pa.set(raw);
-	marshal128(b, raw);
-	pb.set(raw);
-	presult = pa * pb;
-	// marshall it back to a posit128_t
-	posit128_t result;
-	bitblock<nbits> x = presult.get();
-	unmarshal128(x, result);
-	return result;
-}
-
-///////////////////////////////////////////////////////////////
-/////////        DIVISION
-
-// posit<8,0> division
-posit8_t posit_div8(posit8_t a, posit8_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 8;
-	constexpr size_t es = 0;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa / pb;
-	return (posit8_t)presult.encoding();
-}
-
-// posit<16,1> division
-posit16_t posit_div16(posit16_t a, posit16_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa / pb;
-	return (posit16_t)presult.encoding();
-}
-
-// posit<32,2> division
-posit32_t posit_div32(posit32_t a, posit32_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa / pb;
-	return (posit32_t)presult.encoding();
-}
-
-// posit<64,3> division
-posit64_t posit_div64(posit64_t a, posit64_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 64;
-	constexpr size_t es = 3;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	pb.set_raw_bits(b);
-	presult = pa / pb;
-	return (posit64_t)presult.encoding();
-}
-
-// posit<128,4> division
-posit128_t posit_div128(posit128_t a, posit128_t b) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 128;
-	constexpr size_t es = 4;
-	posit<nbits, es> pa, pb, presult;
-	bitblock<nbits> raw;
-	marshal128(a, raw);
-	pa.set(raw);
-	marshal128(b, raw);
-	pb.set(raw);
-	presult = pa / pb;
-	// marshall it back to a posit128_t
-	posit128_t result;
-	bitblock<nbits> x = presult.get();
-	unmarshal128(x, result);
-	return result;
-}
-
-///////////////////////////////////////////////////////////////
-/////////        SQUARE ROOT
-
-// posit<8,0> sqrt
-posit8_t posit_sqrt8(posit8_t a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 8;
-	constexpr size_t es = 0;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	presult = sqrt(pa);
-	return (posit8_t)presult.encoding();
-}
-
-// posit<16,1> sqrt
-posit16_t posit_add16(posit16_t a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	presult = sqrt(pa);
-	return (posit16_t)presult.encoding();
-}
-
-// posit<32,2> sqrt
-posit32_t posit_add32(posit32_t a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	posit<nbits, es> pa, pb, presult;
-	pa.set_raw_bits(a);
-	presult = sqrt(pa);
-	return (posit32_t)presult.encoding();
-}
-
-// posit<64,3> sqrt
-posit64_t posit_sqrt64(posit64_t a) {
-	using namespace sw::unum;
-	constexpr size_t nbits = 64;
-	constexpr size_t es = 4;
-	posit<nbits, es> pa, presult;
-	pa.set_raw_bits(a);
-	presult = sqrt(pa);
-	return (posit64_t)presult.encoding();
-}
-
-///////////////////////////////////////////////////////////////
-/////////        logic operators
-
-bool posit_cmp128(posit128_t a, posit128_t b) {
-	bool bEqual = true;
-	for (int i = 0; i < 16; ++i) {
-		if (a.x[i] != b.x[i]) {
-			bEqual = false;
-			break;
-		}
+template<size_t nbits, size_t es, class positN_t> class convert {
+	static sw::unum::posit<nbits, es> decode(positN_t bits);
+	static positN_t encode(sw::unum::posit<nbits, es> p);
+};
+template<size_t nbits, size_t es, class positN_t> class convert_small : convert<nbits,es,positN_t> {
+	public:
+	static sw::unum::posit<nbits, es> decode(positN_t bits) {
+		sw::unum::posit<nbits, es> pa;
+		pa.set_raw_bits((uint64_t) bits.v);
+		return pa;
 	}
-	return bEqual;
+	static positN_t encode(sw::unum::posit<nbits, es> p) {
+		return { p.encoding() };
+	}
+};
+template<size_t nbits, size_t es, class positN_t> class convert_big : convert<nbits,es,positN_t> {
+	public:
+	static sw::unum::posit<nbits, es> decode(positN_t bits) {
+		sw::unum::posit<nbits, es> pa;
+		sw::unum::bitblock<nbits> raw;
+		marshal128(bits, raw);
+		pa.set(raw);
+		return pa;
+	}
+	static positN_t encode(sw::unum::posit<nbits, es> p) {
+		posit128_t out;
+		sw::unum::bitblock<nbits> raw = p.get();
+		unmarshal128(raw, out);
+		return out;
+	}
+};
+
+template<size_t nbits, size_t es> class operation {
+	public:
+	static sw::unum::posit<nbits, es> op(
+		sw::unum::posit<nbits, es> a,
+		sw::unum::posit<nbits, es> b
+	);
+};
+#define OPERATION(name, impl) \
+	template<size_t nbits, size_t es> class name: operation<nbits,es> { \
+		public: static sw::unum::posit<nbits, es> \
+			op(sw::unum::posit<nbits, es> a, sw::unum::posit<nbits, es> b) impl \
+	}
+OPERATION(op_add, { return a + b; });
+OPERATION(op_sub, { return a - b; });
+OPERATION(op_mul, { return a * b; });
+OPERATION(op_div, { return a / b; });
+
+template<size_t _nbits, size_t _es, class positN_t, class convert> class capi {
+	public:
+	static constexpr size_t nbits = _nbits;
+	static constexpr size_t es = _es;
+	static constexpr positN_t positN = positN_t();
+	static constexpr convert conv = convert();
+
+	static void format(positN_t p, char* str) {
+		using namespace sw::unum;
+		posit<nbits, es> pa = convert::decode(p);
+		std::string s = posit_format(pa);
+		sprintf(str, "%s", s.c_str());
+	}
+
+	template<class out>
+	static out to(positN_t bits) {
+		using namespace sw::unum;
+		posit<nbits, es> pa = convert::decode(bits);
+		return static_cast<out>(pa);
+	}
+
+	template<class in>
+	static positN_t from(in a) {
+		using namespace sw::unum;
+		posit<nbits, es> pa(a);
+		return convert::encode(pa);
+	}
+
+	template<class operation>
+	static positN_t op(positN_t a, positN_t b) {
+		using namespace sw::unum;
+		posit<nbits, es> pa = convert::decode(a);
+		posit<nbits, es> pb = convert::decode(b);
+		posit<nbits, es> res = operation::op(pa, pb);
+		return convert::encode(res);
+	}
+
+	template<class ocapi>
+	static positN_t fromp(decltype(ocapi::positN) p) {
+		using namespace sw::unum;
+		posit<ocapi::nbits, ocapi::es> inp = decltype(ocapi::conv)::decode(p);
+		// TODO: There must be a better way to do this
+		double d = (double) inp;
+		posit<nbits, es> outp(d);
+		return convert::encode(outp);
+	}
+
+	static int cmp(positN_t a, positN_t b) {
+		using namespace sw::unum;
+		posit<nbits, es> pa = convert::decode(a);
+		posit<nbits, es> pb = convert::decode(b);
+		return (pa > pb) ? 1 : (pa < pb) ? -1 : 0;
+	}
+};
+
+typedef capi<8,0,posit8_t,convert_small<8,0,posit8_t>> capi8;
+typedef capi<16,1,posit16_t,convert_small<16,1,posit16_t>> capi16;
+typedef capi<32,2,posit32_t,convert_small<32,2,posit32_t>> capi32;
+typedef capi<64,3,posit64_t,convert_small<64,3,posit64_t>> capi64;
+typedef capi<128,4,posit128_t,convert_big<128,4,posit128_t>> capi128;
+
+// prevent any symbol mangling
+extern "C" {
+
+#define POSIT_IMPLS
+
+#define POSIT_NBITS 8
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
+
+#define POSIT_NBITS 16
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
+
+#define POSIT_NBITS 32
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
+
+#define POSIT_NBITS 64
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
+
+#define POSIT_NBITS 128
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
+
 }
