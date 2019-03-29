@@ -177,7 +177,7 @@ namespace sw {
 					return *this;
 				}
 				posit& operator++() {
-					++_bits;
+					_bits = (_bits + 1) & 0x03;
 					return *this;
 				}
 				posit operator++(int) {
@@ -186,7 +186,7 @@ namespace sw {
 					return tmp;
 				}
 				posit& operator--() {
-					--_bits;
+					_bits = (_bits - 1) & 0x03;
 					return *this;
 				}
 				posit operator--(int) {
@@ -222,10 +222,10 @@ namespace sw {
 					return !(_bits & 0x1);
 				}
 
-				inline int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
+				inline int sign_value() const { return (_bits & 0x2 ? -1 : 1); }
 
 				bitblock<NBITS_IS_2> get() const { bitblock<NBITS_IS_2> bb; bb = int(_bits); return bb; }
-				unsigned long long encoding() const { return (unsigned long long)(_bits & bit_mask); }
+				unsigned int encoding() const { return (unsigned int)(_bits & bit_mask); }
 
 				inline void clear()   { _bits = 0x00; }
 				inline void setzero() { _bits = 0x00; }

@@ -476,7 +476,7 @@ namespace sw {
 			begin = steady_clock::now();
 			    MeasurePrefixPerformance<nbits, es>(positives, negatives);
 			end = steady_clock::now();
-			 time_span = duration_cast<duration<double>>(end - begin);
+			time_span = duration_cast<duration<double>>(end - begin);
 			elapsed = time_span.count();
 			report.prefix = float((positives + negatives) / elapsed);
 
