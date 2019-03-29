@@ -1,4 +1,7 @@
 #pragma once
+
+#include <stdint.h>
+
 // posit_api.h: generic C and C++ header defining the posit api
 #ifdef __cplusplus
 // export a C interface if used by C++ source code
@@ -7,16 +10,18 @@ extern "C" {
 
 	//////////////////////////////////////////////////////////////////////
 	/// Standard posit configuration per the POSIT standard
-	typedef unsigned char       posit8_t;	// posit<8,0>
-	typedef unsigned short      posit16_t;	// posit<16,1>
-	typedef unsigned long       posit32_t;	// posit<32,2>
-	typedef unsigned long long  posit64_t;	// posit<64,3>
-	typedef struct posit128_t {
-		unsigned char x[16];
-	}							posit128_t;	// posit<128,4>
-	typedef struct posit256_t {
-		unsigned char x[32];
-	}							posit256_t;	// posit<256,5>
+	typedef struct posit8_s  { uint8_t v; }  	posit8_t;	// posit<8,0>
+	typedef struct posit16_s { uint16_t v; } 	posit16_t;	// posit<16,1>
+	typedef struct posit32_s { uint32_t v; } 	posit32_t;	// posit<32,2>
+	typedef struct posit64_s { uint64_t v; } 	posit64_t;	// posit<64,3>
+	typedef union posit128_u {
+		uint8_t x[16];
+		uint64_t longs[2];
+	} 											posit128_t; // posit<128,4>
+	typedef struct posit256_u {
+		uint8_t x[32];
+		uint64_t longs[4];
+	}											posit256_t;	// posit<256,5>
 
 	///////////////////////////////////////////////////////////////////////
 	///   associated quire configurations
@@ -90,102 +95,214 @@ extern "C" {
 
 	//////////////////////////////////////////////////////////////////////
 	// Important posit constants
-	static const posit8_t  NAR8  = 0x80;
-	static const posit16_t NAR16 = 0x8000;
-	static const posit32_t NAR32 = 0x80000000;
-	static const posit64_t NAR64 = 0x8000000000000000;
+	static const posit8_t  NAR8  = { 0x80 };
+	static const posit16_t NAR16 = { 0x8000 };
+	static const posit32_t NAR32 = { 0x80000000 };
+	static const posit64_t NAR64 = { 0x8000000000000000 };
 	static const posit128_t NAR128 = {{   // we a storing this in little endian
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
 	}};
 
-	static const posit8_t   ZERO8 = 0;
-	static const posit16_t  ZERO16 = 0;
-	static const posit32_t  ZERO32 = 0;
-	static const posit64_t  ZERO64 = 0;
+	static const posit8_t   ZERO8 = { 0 };
+	static const posit16_t  ZERO16 = { 0 };
+	static const posit32_t  ZERO32 = { 0 };
+	static const posit64_t  ZERO64 = { 0 };
 	static const posit128_t ZERO128 = {{ 0 }};
 
-	///////////////////////////////////////////////////////////////
-	/////////        output
 
-
+enum {
 	/// report posit format for posit8_t. str must be at least 8 characters in size:    8.0x40p + /0 is 8 chars
-#define POSIT_FORMAT8_SIZE 8
-	void posit_format8(posit8_t a, char* str);
+	posit8_str_SIZE = 8,
+	#define posit8_str_SIZE posit8_str_SIZE
+
 	/// report posit format for posit16_t. str must be at least 11 characters in size:  16.1x4000p + /0 is 11 chars
-#define POSIT_FORMAT16_SIZE 11
-	void posit_format16(posit16_t a, char* str);
+	posit16_str_SIZE = 11,
+	#define posit16_str_SIZE posit16_str_SIZE
+
 	/// report posit format for posit32_t. str must be at least 15 characters in size:  32.2x40000000p + /0 is 15 chars
-#define POSIT_FORMAT32_SIZE 15
-	void posit_format32(posit32_t a, char* str);
+	posit32_str_SIZE = 16,
+	#define posit32_str_SIZE posit32_str_SIZE
+
 	/// report posit format for posit64_t. str must be at least 23 characters in size:  64.3x1234567812345678p + /0 is 23 chars
-#define POSIT_FORMAT64_SIZE 23
-	void posit_format64(posit64_t a, char* str);
+	posit64_str_SIZE = 23,
+	#define posit64_str_SIZE posit64_str_SIZE
+
 	/// report posit format for posit128_t. str must be at least 40 characters in size:  128.4x12345678123456781234567812345678p + /0 is 40 chars
-#define POSIT_FORMAT128_SIZE 40
-	void posit_format128(posit128_t a, char* str);
+	posit128_str_SIZE = 40
+	#define posit128_str_SIZE posit128_str_SIZE
+};
 
-	// casts to double
-	double      posit_value8(posit8_t a);
-	double      posit_value16(posit16_t a);
-	double      posit_value32(posit32_t a);
-	long double posit_value64(posit64_t a);
-	long double posit_value128(posit128_t a);
+// reinterpret bits from an insigned integer type to a posit
+static inline posit8_t   posit8_reinterpret(uint8_t n) { posit8_t x = { n }; return x; }
+static inline posit16_t  posit16_reinterpret(uint16_t n) { posit16_t x = { n }; return x; }
+static inline posit32_t  posit32_reinterpret(uint32_t n) { posit32_t x = { n }; return x; }
+static inline posit64_t  posit64_reinterpret(uint64_t n) { posit64_t x = { n }; return x; }
+#ifdef __cplusplus
+static inline posit128_t posit128_reinterpret(uint64_t* n) {
+    posit128_t out;
+    out.longs[0] = n[0];
+    out.longs[1] = n[1];
+    return out;
+}
+static inline posit256_t posit256_reinterpret(uint64_t* n) {
+    posit256_t out;
+    out.longs[0] = n[0];
+    out.longs[1] = n[1];
+    out.longs[2] = n[2];
+    out.longs[3] = n[3];
+    return out;
+}
+#else
+// static array parameters are illegal in C++ but they provide valuable verification in C
+static inline posit128_t posit128_reinterpret(uint64_t n[static 2]) {
+    return (posit128_t){ .longs = { n[0], n[1] } };
+}
+static inline posit256_t posit256_reinterpret(uint64_t n[static 4]) {
+    return (posit256_t){ .longs = { n[0], n[1], n[2], n[3] } };
+}
+#endif
 
-	// Raw bit assignments
-	posit8_t   posit_bit_assign8(unsigned char  a);
-	posit16_t  posit_bit_assign16(unsigned short a);
-	posit32_t  posit_bit_assign32(unsigned long a);
-	posit64_t  posit_bit_assign64(unsigned long long a);
-	posit128_t posit_bit_assign128(unsigned long long lower, unsigned long long upper);
+// And reinterpret the bits from a posit to an unsigned integer type (where possible)
+static inline uint8_t   posit8_bits(posit8_t n) { return n.v; }
+static inline uint16_t  posit16_bits(posit16_t n) { return n.v; }
+static inline uint32_t  posit32_bits(posit32_t n) { return n.v; }
+static inline uint64_t  posit64_bits(posit64_t n) { return n.v; }
 
-	// Integer assignments
-	posit8_t   posit_integer_assign8(int  a);
-	posit16_t  posit_integer_assign16(int a);
-	posit32_t  posit_integer_assign32(long a);
-	posit64_t  posit_integer_assign64(long long a);
-	posit128_t posit_integer_assign128(long long a);
 
-	// IEEE floating point assignments
-	posit8_t   posit_float_assign8(float  a);
-	posit16_t  posit_float_assign16(float a);
-	posit32_t  posit_float_assign32(double a);
-	posit64_t  posit_float_assign64(long double a);
-	posit128_t posit_float_assign128(long double a);
+#define POSIT_NBITS 8
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
 
-	// Addition
-	posit8_t   posit_add8 (posit8_t  a, posit8_t  b);
-	posit16_t  posit_add16(posit16_t a, posit16_t b);
-	posit32_t  posit_add32(posit32_t a, posit32_t b);
-	posit64_t  posit_add64(posit64_t a, posit64_t b);
-	posit128_t posit_add128(posit128_t a, posit128_t b);
-	// Subtraction
-	posit8_t   posit_sub8(posit8_t  a, posit8_t  b);
-	posit16_t  posit_sub16(posit16_t a, posit16_t b);
-	posit32_t  posit_sub32(posit32_t a, posit32_t b);
-	posit64_t  posit_sub64(posit64_t a, posit64_t b);
-	posit128_t posit_sub128(posit128_t a, posit128_t b);
-	// Multiplication
-	posit8_t   posit_mul8(posit8_t  a, posit8_t  b);
-	posit16_t  posit_mul16(posit16_t a, posit16_t b);
-	posit32_t  posit_mul32(posit32_t a, posit32_t b);
-	posit64_t  posit_mul64(posit64_t a, posit64_t b);
-	posit128_t posit_mul128(posit128_t a, posit128_t b);
-	// Division
-	posit8_t   posit_div8(posit8_t  a, posit8_t  b);
-	posit16_t  posit_div16(posit16_t a, posit16_t b);
-	posit32_t  posit_div32(posit32_t a, posit32_t b);
-	posit64_t  posit_div64(posit64_t a, posit64_t b);
-	posit128_t posit_div128(posit128_t a, posit128_t b);
-	// Square Root
-	posit8_t   posit_sqrt8(posit8_t  a);
-	posit16_t  posit_sqrt16(posit16_t a);
-	posit32_t  posit_sqrt32(posit32_t a);
-	posit64_t  posit_sqrt64(posit64_t a);
-	posit128_t posit_sqrt128(posit128_t a);
+#define POSIT_NBITS 16
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
 
-	// logic operators
-	bool       posit_cmp128(posit128_t a, posit128_t b);
+#define POSIT_NBITS 32
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
+
+#define POSIT_NBITS 64
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
+
+#define POSIT_NBITS 128
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
+
+#if __STDC_VERSION__ >= 201112L && !defined(POSIT_NO_GENERICS)
+
+#define POSIT_FROM(nbits, x) (_Generic((x), \
+	long double: 		POSIT_GLUE4(posit,nbits,_from,ld), \
+	double: 			POSIT_GLUE4(posit,nbits,_from,d), \
+	float: 				POSIT_GLUE4(posit,nbits,_from,f), \
+	long long: 			POSIT_GLUE4(posit,nbits,_from,sll), \
+	long: 				POSIT_GLUE4(posit,nbits,_from,sl), \
+	int: 				POSIT_GLUE4(posit,nbits,_from,si), \
+	unsigned long long: POSIT_GLUE4(posit,nbits,_from,ull), \
+	unsigned long: 		POSIT_GLUE4(posit,nbits,_from,ul), \
+	unsigned int: 		POSIT_GLUE4(posit,nbits,_from,ui), \
+	posit8_t: 			POSIT_GLUE4(posit,nbits,_from,p8), \
+	posit16_t: 			POSIT_GLUE4(posit,nbits,_from,p16), \
+	posit32_t: 			POSIT_GLUE4(posit,nbits,_from,p32), \
+	posit64_t: 			POSIT_GLUE4(posit,nbits,_from,p64), \
+	posit128_t: 		POSIT_GLUE4(posit,nbits,_from,p128) \
+)(x))
+#define posit8(x)       POSIT_FROM(8, (x))
+#define posit16(x)      POSIT_FROM(16, (x))
+#define posit32(x)      POSIT_FROM(32, (x))
+#define posit64(x)      POSIT_FROM(64, (x))
+#define posit128(x)     POSIT_FROM(128, (x))
+
+#define POSIT_OP2(nbits, op, y) _Generic((y), \
+	long double: 		POSIT_GLUE5(posit,nbits,_,op,ld), \
+	double: 			POSIT_GLUE5(posit,nbits,_,op,d), \
+	float: 				POSIT_GLUE5(posit,nbits,_,op,f), \
+	long long: 			POSIT_GLUE5(posit,nbits,_,op,sll), \
+	long: 				POSIT_GLUE5(posit,nbits,_,op,sl), \
+	int: 				POSIT_GLUE5(posit,nbits,_,op,si), \
+	unsigned long long: POSIT_GLUE5(posit,nbits,_,op,ull), \
+	unsigned long: 		POSIT_GLUE5(posit,nbits,_,op,ul), \
+	unsigned int: 		POSIT_GLUE5(posit,nbits,_,op,ui), \
+	posit8_t: 			POSIT_GLUE5(posit,nbits,_,op,p8), \
+	posit16_t: 			POSIT_GLUE5(posit,nbits,_,op,p16), \
+	posit32_t: 			POSIT_GLUE5(posit,nbits,_,op,p32), \
+	posit64_t: 			POSIT_GLUE5(posit,nbits,_,op,p64), \
+	posit128_t: 		POSIT_GLUE5(posit,nbits,_,op,p128) \
+)
+#define POSIT_OP2X(nbits, op, x) _Generic((x), \
+	long double: 		POSIT_GLUE5(posit,nbits,_,ld,op), \
+	double: 			POSIT_GLUE5(posit,nbits,_,d,op), \
+	float: 				POSIT_GLUE5(posit,nbits,_,f,op), \
+	long long: 			POSIT_GLUE5(posit,nbits,_,op,sll), \
+	long: 				POSIT_GLUE5(posit,nbits,_,sl,op), \
+	int: 				POSIT_GLUE5(posit,nbits,_,si,op), \
+	unsigned long long: POSIT_GLUE5(posit,nbits,_,ull,op), \
+	unsigned long: 		POSIT_GLUE5(posit,nbits,_,ul,op), \
+	unsigned int: 		POSIT_GLUE5(posit,nbits,_,ui,op), \
+	posit8_t: 			POSIT_GLUE5(posit,nbits,_,p8,op), \
+	posit16_t: 			POSIT_GLUE5(posit,nbits,_,p16,op), \
+	posit32_t: 			POSIT_GLUE5(posit,nbits,_,p32,op), \
+	posit64_t: 			POSIT_GLUE5(posit,nbits,_,p64,op), \
+	posit128_t: 		POSIT_GLUE5(posit,nbits,_,p128,op) \
+)
+
+#define POSIT_GENERIC_OP(p,x,op) (_Generic((p), \
+	posit8_t:           POSIT_OP2(8, op, (x)), \
+	posit16_t:          POSIT_OP2(16, op, (x)), \
+	posit32_t:          POSIT_OP2(32, op, (x)), \
+	posit64_t:          POSIT_OP2(64, op, (x)), \
+	posit128_t:         POSIT_OP2(128, op, (x)), \
+	default: _Generic((x), \
+		posit8_t:       POSIT_OP2X(8, op, (p)), \
+		posit16_t:      POSIT_OP2X(16, op, (p)), \
+		posit32_t:      POSIT_OP2X(32, op, (p)), \
+		posit64_t:      POSIT_OP2X(64, op, (p)), \
+		posit128_t:     POSIT_OP2X(128, op, (p)) \
+	) \
+)((p),(x)))
+#define posit_add(p, x) POSIT_GENERIC_OP(p,x,add)
+#define posit_sub(p, x) POSIT_GENERIC_OP(p,x,sub)
+#define posit_mul(p, x) POSIT_GENERIC_OP(p,x,mul)
+#define posit_div(p, x) POSIT_GENERIC_OP(p,x,div)
+#define posit_cmp(p, x) POSIT_GENERIC_OP(p,x,cmp)
+
+#define POSIT_GENETIC1(p, op) _Generic((p), \
+	posit8_t: POSIT_GLUE(posit8_,op), \
+	posit16_t: POSIT_GLUE(posit16_,op), \
+	posit32_t: POSIT_GLUE(posit32_,op), \
+	posit64_t: POSIT_GLUE(posit64_,op), \
+	posit128_t: POSIT_GLUE(posit128_,op) \
+)
+#define posit_str(buf, p)   POSIT_GENETIC1(p, str)((buf), (p))
+#define posit_sqrt(p)       POSIT_GENETIC1(p, sqrt)(p)
+#define posit_told(p)       POSIT_GENETIC1(p, told)(p)
+#define posit_tod(p)        POSIT_GENETIC1(p, tod)(p)
+#define posit_tof(p)        POSIT_GENETIC1(p, tof)(p)
+#define posit_tosll(p)      POSIT_GENETIC1(p, tosll)(p)
+#define posit_tosl(p)       POSIT_GENETIC1(p, tosl)(p)
+#define posit_tosi(p)       POSIT_GENETIC1(p, tosi)(p)
+#define posit_toull(p)      POSIT_GENETIC1(p, toull)(p)
+#define posit_toul(p)       POSIT_GENETIC1(p, toul)(p)
+#define posit_toui(p)       POSIT_GENETIC1(p, toui)(p)
+
+#define posit_bits(p) (_Generic((p), \
+	posit8_t: posit8_bits, \
+	posit16_t: posit16_bits, \
+	posit32_t: posit32_bits, \
+	posit64_t: posit64_bits \
+)(p))
+
+// we need to leave these defined as we complete because otherwise
+// the generics macros will not work correctly.
+#define POSIT_GLUE3(a,b,c) POSIT_GLUE(POSIT_GLUE(a,b),c)
+#define POSIT_GLUE4(a,b,c,d) POSIT_GLUE(POSIT_GLUE(a,b),POSIT_GLUE(c,d))
+#define POSIT_GLUE5(a,b,c,d,e) POSIT_GLUE(POSIT_GLUE4(a,b,c,d),e)
+#define POSIT_GLUE(x,y) POSIT_GLUE_(x,y)
+#define POSIT_GLUE_(x,y) x ## y
+
+#endif // POSIT_NO_GENERICS
+
 
 #ifdef __cplusplus
 }

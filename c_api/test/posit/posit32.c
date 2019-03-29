@@ -8,57 +8,58 @@
 #include <stdbool.h>
 #include <posit_c_api.h>
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
 	posit32_t pa, pb, pc;
-	char str[POSIT_FORMAT32_SIZE];
+	char str[posit32_str_SIZE];
 	bool failures = false;
 
 	// special case values
 	pa = NAR32;
-	pb = 0;
-	pc = posit_add32(pa, pb);
-	posit_format32(pc, str);
+	pb = ZERO32;
+	pc = posit_add(pa, pb);
+	posit_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 32.2x%08xp\n", pc);
+	printf("posit value = 32.2x%08xp\n", posit_bits(pc));
 
 	pa = NAR32;
-	pb = 0;
-	pc = posit_sub32(pa, pb);
-	posit_format32(pc, str);
+	pb = ZERO32;
+	pc = posit_sub(pa, pb);
+	posit_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 32.2x%08xp\n", pc);
+	printf("posit value = 32.2x%08xp\n", posit_bits(pc));
 
 	pa = NAR32;
-	pb = 0;
-	pc = posit_mul32(pa, pb);
-	posit_format32(pc, str);
+	pb = ZERO32;
+	pc = posit_mul(pa, pb);
+	posit_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 32.2x%08xp\n", pc);
+	printf("posit value = 32.2x%08xp\n", posit_bits(pc));
 
 	pa = NAR32;
-	pb = 0;
-	pc = posit_div32(pa, pb);
-	posit_format32(pc, str);
+	pb = ZERO32;
+	pc = posit_div(pa, pb);
+	posit_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 32.2x%08xp\n", pc);
+	printf("posit value = 32.2x%08xp\n", posit_bits(pc));
 
 	// partial state space
 	int fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign32(a);
+		pa = posit32_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign32(b);
-			pc = posit_add32(pa, pb);
+			pb = posit32_reinterpret(b);
+			pc = posit_add(pa, pb);
 
 			double da, db, dref;
-			da = posit_value32(pa);
-			db = posit_value32(pb);
+			da = posit32_tod(pa);
+			db = posit32_tod(pb);
 			dref = da + db;
 
-			posit32_t pref = posit_float_assign32(dref);
-			if (pref != pc) {
-				printf("FAIL: 32.2x%08xp + 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
+			posit32_t pref = posit32_fromf(dref);
+			if (posit_cmp(pref, pc)) {
+				printf("FAIL: 32.2x%08xp + 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
+                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
 				++fails;
 				break;
 			}
@@ -76,19 +77,20 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign32(a);
+		pa = posit32_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign32(b);
-			pc = posit_sub32(pa, pb);
+			pb = posit32_reinterpret(b);
+			pc = posit_sub(pa, pb);
 
 			double da, db, dref;
-			da = posit_value32(pa);
-			db = posit_value32(pb);
+			da = posit32_tod(pa);
+			db = posit32_tod(pb);
 			dref = da - db;
 
-			posit32_t pref = posit_float_assign32(dref);
-			if (pref != pc) {
-				printf("FAIL: 32.2x%08xp - 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
+			posit32_t pref = posit32_fromf(dref);
+			if (pref.v != pc.v) {
+				printf("FAIL: 32.2x%08xp - 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
+                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
 				++fails;
 			}
 		}
@@ -104,19 +106,20 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign32(a);
+		pa = posit32_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign32(b);
-			pc = posit_mul32(pa, pb);
+			pb = posit32_reinterpret(b);
+			pc = posit_mul(pa, pb);
 
 			double da, db, dref;
-			da = posit_value32(pa);
-			db = posit_value32(pb);
+			da = posit32_tod(pa);
+			db = posit32_tod(pb);
 			dref = da * db;
 
-			posit32_t pref = posit_float_assign32(dref);
-			if (pref != pc) {
-				printf("FAIL: 32.2x%08xp * 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
+			posit32_t pref = posit32(dref);
+			if (posit_cmp(pref, pc) != 0) {
+				printf("FAIL: 32.2x%08xp * 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
+                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
 				++fails;
 			}
 		}
@@ -132,19 +135,20 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = posit_bit_assign32(a);
+		pa = posit32_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
-			pb = posit_bit_assign32(b);
-			pc = posit_div32(pa, pb);
+			pb = posit32_reinterpret(b);
+			pc = posit_div(pa, pb);
 
 			double da, db, dref;
-			da = posit_value32(pa);
-			db = posit_value32(pb);
+			da = posit_tod(pa);
+			db = posit_tod(pb);
 			dref = da / db;
 
-			posit32_t pref = posit_float_assign32(dref);
-			if (pref != pc) {
-				printf("FAIL: 32.2x%08xp / 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n", pa, pb, pc, pref);
+			posit32_t pref = posit32(dref);
+			if (posit_cmp(pref, pc) != 0) {
+				printf("FAIL: 32.2x%08xp / 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
+                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
 				++fails;
 			}
 		}
