@@ -16,10 +16,22 @@ extern "C" {
 
 	//////////////////////////////////////////////////////////////////////
 	/// Standard posit configuration per the POSIT standard
-	typedef struct posit8_s  { uint8_t v; }  	posit8_t;	// posit<8,0>
-	typedef struct posit16_s { uint16_t v; } 	posit16_t;	// posit<16,1>
-	typedef struct posit32_s { uint32_t v; } 	posit32_t;	// posit<32,2>
-	typedef struct posit64_s { uint64_t v; } 	posit64_t;	// posit<64,3>
+	typedef union posit8_u   { 
+		uint8_t x[1];
+		uint8_t v;
+	}											posit8_t;	// posit<8,0>
+	typedef union posit16_u  { 
+		uint8_t x[2];
+		uint16_t v;
+	}											posit16_t;	// posit<16,1>
+	typedef struct posit32_s { 
+		uint8_t x[4];
+		uint32_t v;
+	}											posit32_t;	// posit<32,2>
+	typedef struct posit64_s { 
+		uint8_t x[8];
+		uint64_t v;
+	}											posit64_t;	// posit<64,3>
 	typedef union posit128_u {
 		uint8_t x[16];
 		uint64_t longs[2];
@@ -102,19 +114,21 @@ extern "C" {
 	//////////////////////////////////////////////////////////////////////
 	// Important posit constants
 	static const posit8_t  NAR8  = { 0x80 };
-	static const posit16_t NAR16 = { 0x8000 };
-	static const posit32_t NAR32 = { 0x80000000 };
-	static const posit64_t NAR64 = { 0x8000000000000000 };
+	static const posit16_t NAR16 = { 0x00, 0x80 };
+	static const posit32_t NAR32 = { 0x00, 0x00, 0x00, 0x80 };
+	static const posit64_t NAR64 = { 
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 
+	};
 	static const posit128_t NAR128 = {{   // we a storing this in little endian
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
 	}};
-	static const posit256_t NAR256 = { {   // we are storing this in little endian
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
-		} };
+	static const posit256_t NAR256 = {{   // we are storing this in little endian
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
+	}};
 
 
 	static const posit8_t   ZERO8 = { 0 };
@@ -147,10 +161,10 @@ enum {
 };
 
 // reinterpret bits from an insigned integer type to a posit
-static inline posit8_t   posit8_reinterpret(uint8_t n) { posit8_t x = { n }; return x; }
-static inline posit16_t  posit16_reinterpret(uint16_t n) { posit16_t x = { n }; return x; }
-static inline posit32_t  posit32_reinterpret(uint32_t n) { posit32_t x = { n }; return x; }
-static inline posit64_t  posit64_reinterpret(uint64_t n) { posit64_t x = { n }; return x; }
+static inline posit8_t   posit8_reinterpret(uint8_t n)   { posit8_t  x; x.v = n; return x; }
+static inline posit16_t  posit16_reinterpret(uint16_t n) { posit16_t x; x.v = n; return x; }
+static inline posit32_t  posit32_reinterpret(uint32_t n) { posit32_t x; x.v = n; return x; }
+static inline posit64_t  posit64_reinterpret(uint64_t n) { posit64_t x; x.v = n; return x; }
 #ifdef __cplusplus
 static inline posit128_t posit128_reinterpret(uint64_t* n) {
     posit128_t out;
@@ -168,19 +182,19 @@ static inline posit256_t posit256_reinterpret(uint64_t* n) {
 }
 #else
 // static array parameters are illegal in C++ but they provide valuable verification in C
-static inline posit128_t posit128_reinterpret(uint64_t n[static 2]) {
+static inline posit128_t posit128_reinterpret(uint64_t n[2]) {
     return (posit128_t){ .longs = { n[0], n[1] } };
 }
-static inline posit256_t posit256_reinterpret(uint64_t n[static 4]) {
+static inline posit256_t posit256_reinterpret(uint64_t n[4]) {
     return (posit256_t){ .longs = { n[0], n[1], n[2], n[3] } };
 }
 #endif
 
 // And reinterpret the bits from a posit to an unsigned integer type (where possible)
-static inline uint8_t   posit8_bits(posit8_t n) { return n.v; }
-static inline uint16_t  posit16_bits(posit16_t n) { return n.v; }
-static inline uint32_t  posit32_bits(posit32_t n) { return n.v; }
-static inline uint64_t  posit64_bits(posit64_t n) { return n.v; }
+static inline uint8_t   posit8_bits(posit8_t p)   { return p.v; }
+static inline uint16_t  posit16_bits(posit16_t p) { return p.v; }
+static inline uint32_t  posit32_bits(posit32_t p) { return p.v; }
+static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 
 
 #define POSIT_NBITS 8
