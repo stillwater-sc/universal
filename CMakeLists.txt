@@ -76,13 +76,13 @@ macro(trace_variable variable)
         message(STATUS "${variable} = ${${variable}}")
     endif()
 endmacro()
-        
+
 
 # Use cmake scripts and modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake") 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake")
 trace_variable(CMAKE_MODULE_PATH)
 
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake") 
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake")
 trace_variable(CMAKE_PREFIX_PATH)
 
 # Must be located in root dir, doesn't work in tests
@@ -103,7 +103,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	check_cxx_compiler_flag("-msse3" COMPILER_HAS_SSE3_FLAG)
 	check_cxx_compiler_flag("-mavx"  COMPILER_HAS_AVX_FLAG)
 	check_cxx_compiler_flag("-mavx2" COMPILER_HAS_AVX2_FLAG)
-	
+
 	# Streaming SIMD Extension (SSE) ISA
 	if (USE_SSE3 AND COMPILER_HAS_SSE_FLAG)
 		add_definitions(-DUNUM_USE_SSE)
@@ -154,15 +154,15 @@ elseif(MSVC)
 
 	# correct __cplusplus variable setting
     # /Zc:__cplusplus
-    # You need to compile with the /Zc:__cplusplus switch to see the updated value of the __cplusplus macro. 
-	# Microsoft tried updating the macro by default and discovered that a lot of code doesn't compile correctly 
-	# when they changed the value of __cplusplus. 
+    # You need to compile with the /Zc:__cplusplus switch to see the updated value of the __cplusplus macro.
+	# Microsoft tried updating the macro by default and discovered that a lot of code doesn't compile correctly
+	# when they changed the value of __cplusplus.
 	# They'll continue to require use of the /Zc:__cplusplus switch for all minor versions of MSVC in the 19.xx family.
-	# 
-	# The version reported by the __cplusplus macro also depends upon the standard version switch used. 
-	# If you're compiling in C++14 mode the macro will be set to '201402L'. If you compile in C++17 mode 
-	# the macro will be set to '201703L'. And the /std:c++latest switch, used to enable features from the 
-	# Standard currently in development, sets a value that is more than the current Standard. 
+	#
+	# The version reported by the __cplusplus macro also depends upon the standard version switch used.
+	# If you're compiling in C++14 mode the macro will be set to '201402L'. If you compile in C++17 mode
+	# the macro will be set to '201703L'. And the /std:c++latest switch, used to enable features from the
+	# Standard currently in development, sets a value that is more than the current Standard.
 	# This chart shows the values of the __cplusplus macro with different switch combinations:
 	#
 	# /Zc:__cplusplus switch		/std:c++ switch				__cplusplus value
@@ -172,7 +172,7 @@ elseif(MSVC)
 	# Zc:__cplusplus			/std:c++latest					201704L
 	# Zc:__cplusplus- (disabled)		Any value					199711L
 	# Zc:__cplusplus not specified		Any value					199711L
-	# Note that the MSVC compiler does not, and never will, support a C++11, C++03, or C++98 standards version switch. 
+	# Note that the MSVC compiler does not, and never will, support a C++11, C++03, or C++98 standards version switch.
 	# Also, the value of the __cplusplus macro is not affected by the /permissive- switch.
 	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
 
@@ -225,10 +225,10 @@ endif()
 include_directories("./posit")
 
 # Possibly not under Windows
-add_compile_options ( -std=c++14 )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 ####
-# macro to read all cpp files in a directory 
+# macro to read all cpp files in a directory
 # and create a test target for that cpp file
 macro (compile_all testing prefix)
     # cycle through the sources

@@ -6,58 +6,60 @@
 
 #include <posit_c_api.h>
 
-int main(int argc, char* argv[]) 
+#ifdef __cplusplus
+#error "wtf"
+#endif
+
+int main(int argc, char* argv[])
 {
 	posit64_t pa, pb, pc;
-	char str[POSIT_FORMAT64_SIZE];
+	char str[posit64_str_SIZE];
 	bool failures = false;
 	bool bReportIndividualTestCases = false;
 
-	// special case values
+	// special case tolds
 	pa = NAR64;
 	pb = ZERO64;
-	pc = posit_add64(pa, pb);
-	posit_format64(pc, str);
-	printf("posit value = %s\n", str);
+	pc = posit_add(pa, pb);
+	posit64_str(str, pc);
+	printf("posit told = %s\n", str);
 
 	pa = NAR64;
 	pb = ZERO64;
-	pc = posit_sub64(pa, pb);
-	posit_format64(pc, str);
-	printf("posit value = %s\n", str);
+	pc = posit_sub(pa, pb);
+	posit_str(str, pc);
+	printf("posit told = %s\n", str);
 
 	pa = NAR64;
 	pb = ZERO64;
-	pc = posit_mul64(pa, pb);
-	posit_format64(pc, str);
-	printf("posit value = %s\n", str);
+	pc = posit_mul(pa, pb);
+	posit_str(str, pc);
+	printf("posit told = %s\n", str);
 
 	pa = NAR64;
 	pb = ZERO64;
-	pc = posit_div64(pa, pb);
-	posit_format64(pc, str);
-	printf("posit value = %s\n", str);
+	pc = posit_div(pa, pb);
+	posit_str(str, pc);
+	printf("posit told = %s\n", str);
 
 	// partial state space
 	int fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = (posit64_t)(a);
+		pa = posit64_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
-			pb = (posit64_t)(b);
-			pc = posit_add64(pa, pb);
-
+			pb = posit64_reinterpret(b);
+			pc = posit_add(pa, pb);
 			long double da, db, dref;
-			da = posit_value64(pa);
-			db = posit_value64(pb);
+			da = posit_told(pa);
+			db = posit_told(pb);
 			dref = da + db;
-
-			posit64_t pref = posit_assign64f(dref);
-			if (pref != pc) {
+			posit64_t pref = posit64(dref);
+			if (posit_cmp(pref, pc)) {
 				char sa[32], sb[32], sc[32], sref[32];
-				posit_format64(pa, sa);
-				posit_format64(pb, sb);
-				posit_format64(pc, sc);
-				posit_format64(pref, sref);
+				posit_str(sa, pa);
+				posit_str(sb, pb);
+				posit_str(sc, pc);
+				posit_str(sref, pref);
 				if (bReportIndividualTestCases) printf("FAIL: %s + %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
@@ -74,23 +76,21 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = (posit64_t)(a);
+		pa = posit64_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
-			pb = (posit64_t)(b);
-			pc = posit_sub64(pa, pb);
-
+			pb = posit64_reinterpret(b);
+			pc = posit_sub(pa, pb);
 			long double da, db, dref;
-			da = posit_value64(pa);
-			db = posit_value64(pb);
+			da = posit_told(pa);
+			db = posit_told(pb);
 			dref = da - db;
-
-			posit64_t pref = posit_assign64f(dref);
-			if (pref != pc) {
+			posit64_t pref = posit64(dref);
+			if (posit_cmp(pref, pc)) {
 				char sa[32], sb[32], sc[32], sref[32];
-				posit_format64(pa, sa);
-				posit_format64(pb, sb);
-				posit_format64(pc, sc);
-				posit_format64(pref, sref);
+				posit_str(sa, pa);
+				posit_str(sb, pb);
+				posit_str(sc, pc);
+				posit_str(sref, pref);
 				if (bReportIndividualTestCases) printf("FAIL: %s - %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
@@ -107,23 +107,21 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = (posit64_t)(a);
+		pa = posit64_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
-			pb = (posit64_t)(b);
-			pc = posit_mul64(pa, pb);
-
+			pb = posit64_reinterpret(b);
+			pc = posit_mul(pa, pb);
 			long double da, db, dref;
-			da = posit_value64(pa);
-			db = posit_value64(pb);
+			da = posit_told(pa);
+			db = posit_told(pb);
 			dref = da * db;
-
-			posit64_t pref = posit_assign64f(dref);
-			if (pref != pc) {
+			posit64_t pref = posit64(dref);
+			if (posit_cmp(pref, pc)) {
 				char sa[32], sb[32], sc[32], sref[32];
-				posit_format64(pa, sa);
-				posit_format64(pb, sb);
-				posit_format64(pc, sc);
-				posit_format64(pref, sref);
+				posit_str(sa, pa);
+				posit_str(sb, pb);
+				posit_str(sc, pc);
+				posit_str(sref, pref);
 				if (bReportIndividualTestCases) printf("FAIL: %s * %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
@@ -143,23 +141,21 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < 256; ++a) {
-		pa = (posit64_t)(a);
+		pa = posit64_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
-			pb = (posit64_t)(b);
-			pc = posit_div64(pa, pb);
-
+			pb = posit64_reinterpret(b);
+			pc = posit_div(pa, pb);
 			long double da, db, dref;
-			da = posit_value64(pa);
-			db = posit_value64(pb);
+			da = posit_told(pa);
+			db = posit_told(pb);
 			dref = da / db;
-
-			posit64_t pref = posit_assign64f(dref);
-			if (pref != pc) {
+			posit64_t pref = posit64(dref);
+			if (posit_cmp(pref, pc)) {
 				char sa[32], sb[32], sc[32], sref[32];
-				posit_format64(pa, sa);
-				posit_format64(pb, sb);
-				posit_format64(pc, sc);
-				posit_format64(pref, sref);
+				posit_str(sa, pa);
+				posit_str(sb, pb);
+				posit_str(sc, pc);
+				posit_str(sref, pref);
 				if (bReportIndividualTestCases) printf("FAIL: %s / %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
