@@ -50,8 +50,8 @@ int main(int argc, char* argv[])
 			pb = posit16_reinterpret(b);
 			pc = posit_add(pa, pb);
 			float da, db, dref;
-			da = posit_tod(pa);
-			db = posit_tod(pb);
+			da = posit_tof(pa);
+			db = posit_tof(pb);
 			dref = da + db;
 			posit16_t pref = posit16_fromf(dref);
 			if (posit_cmp(pref, pc)) {
@@ -77,8 +77,8 @@ int main(int argc, char* argv[])
 			pb = posit16_reinterpret(b);
 			pc = posit_sub(pa, pb);
 			float da, db, dref;
-			da = posit_tod(pa);
-			db = posit_tod(pb);
+			da = posit_tof(pa);
+			db = posit_tof(pb);
 			dref = da - db;
 			posit16_t pref = posit16_fromf(dref);
 			if (posit_cmp(pref, pc)) {
@@ -104,8 +104,8 @@ int main(int argc, char* argv[])
 			pb = posit16_reinterpret(b);
 			pc = posit_mul(pa, pb);
 			float da, db, dref;
-			da = posit_tod(pa);
-			db = posit_tod(pb);
+			da = posit_tof(pa);
+			db = posit_tof(pb);
 			dref = da * db;
 			posit16_t pref = posit16_fromf(dref);
 			if (posit_cmp(pref, pc)) {
@@ -131,8 +131,8 @@ int main(int argc, char* argv[])
 			pb = posit16_reinterpret(b);
 			pc = posit_div(pa, pb);
 			float da, db, dref;
-			da = posit_tod(pa);
-			db = posit_tod(pb);
+			da = posit_tof(pa);
+			db = posit_tof(pb);
 			dref = da / db;
 			posit16_t pref = posit16_fromf(dref);
 			if (posit_cmp(pref, pc)) {
