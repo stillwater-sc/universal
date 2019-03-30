@@ -61,7 +61,7 @@ namespace sw {
 				posit& operator=(const posit&) = default;
 				posit& operator=(posit&&) = default;
 
-				posit(int initial_value) { _bits = uint8_t(initial_value & 0x0f); }
+				posit(int initial_value) { _bits = uint8_t(initial_value & 0x07); }
 				// assignment operators for native types
 				posit& operator=(int rhs) {
 					return operator=((long long)(rhs));
@@ -108,7 +108,7 @@ namespace sw {
 					return *this;
 				}
 				posit& set_raw_bits(uint64_t value) {
-					_bits = uint8_t(value & 0x0f);
+					_bits = uint8_t(value & 0x07);
 					return *this;
 				}
 				posit operator-() const {
@@ -142,7 +142,7 @@ namespace sw {
 					return *this;
 				}
 				posit& operator++() {
-					++_bits;
+					_bits = (_bits + 1) & 0x07;
 					return *this;
 				}
 				posit operator++(int) {
@@ -151,7 +151,7 @@ namespace sw {
 					return tmp;
 				}
 				posit& operator--() {
-					--_bits;
+					_bits = (_bits - 1) & 0x07;
 					return *this;
 				}
 				posit operator--(int) {
@@ -161,24 +161,24 @@ namespace sw {
 				}
 				posit reciprocate() const {
 					posit p;
-					p.set_raw_bits(posit_3_1_reciprocal_lookup[_bits]);
+					p.set_raw_bits(posit_3_1_reciprocal_lookup[_bits & 0x07]);
 					return p;
 				}
 				// SELECTORS
 				inline bool isnar() const {
-					return (_bits == 0x8);
+					return (_bits == 0x04);
 				}
 				inline bool iszero() const {
 					return (_bits == 0);
 				}
-				inline bool isone() const { // pattern 010000....
-					return (_bits == 0x4);
+				inline bool isone() const { // pattern 010....
+					return (_bits == 0x02);
 				}
-				inline bool isminusone() const { // pattern 110000...
-					return (_bits == 0xC);
+				inline bool isminusone() const { // pattern 110...
+					return (_bits == 0x06);
 				}
 				inline bool isneg() const {
-					return (_bits & 0x8) & (_bits != 0x8);
+					return (_bits & 0x04);
 				}
 				inline bool ispos() const {
 					return !isneg();
@@ -187,14 +187,14 @@ namespace sw {
 					return !(_bits & 0x1);
 				}
 
-				inline int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
+				inline int sign_value() const { return (_bits & 0x04 ? -1 : 1); }
 
 				bitblock<NBITS_IS_3> get() const { bitblock<NBITS_IS_3> bb; bb = int(_bits); return bb; }
-				unsigned long long encoding() const { return (unsigned long long)(_bits); }
+				unsigned int encoding() const { return (unsigned int)(_bits 0x07); }
 
 				inline void clear() { _bits = 0; }
 				inline void setzero() { clear(); }
-				inline void setnar() { _bits = 0x8; }
+				inline void setnar() { _bits = 0x04; }
 
 			private:
 				uint8_t _bits;

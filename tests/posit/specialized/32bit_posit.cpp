@@ -57,7 +57,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 2 * 1000 * 1000;  // 2M
+	const size_t RND_TEST_CASES = 500000;
 
 	const size_t nbits = 32;
 	const size_t es = 2;

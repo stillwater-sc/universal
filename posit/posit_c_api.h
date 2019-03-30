@@ -3,6 +3,12 @@
 #include <stdint.h>
 
 // posit_api.h: generic C and C++ header defining the posit api
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <stdbool.h>
+#include <inttypes.h>
+
 #ifdef __cplusplus
 // export a C interface if used by C++ source code
 extern "C" {
@@ -103,13 +109,20 @@ extern "C" {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
 	}};
+	static const posit256_t NAR256 = { {   // we are storing this in little endian
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+			0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
+		} };
+
 
 	static const posit8_t   ZERO8 = { 0 };
 	static const posit16_t  ZERO16 = { 0 };
 	static const posit32_t  ZERO32 = { 0 };
 	static const posit64_t  ZERO64 = { 0 };
 	static const posit128_t ZERO128 = {{ 0 }};
-
+	static const posit256_t ZERO256 = {{ 0 }};
 
 enum {
 	/// report posit format for posit8_t. str must be at least 8 characters in size:    8.0x40p + /0 is 8 chars
@@ -302,7 +315,6 @@ static inline uint64_t  posit64_bits(posit64_t n) { return n.v; }
 #define POSIT_GLUE_(x,y) x ## y
 
 #endif // POSIT_NO_GENERICS
-
 
 #ifdef __cplusplus
 }

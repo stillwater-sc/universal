@@ -25,11 +25,42 @@ static void marshal128(posit128_t a, sw::unum::bitblock<128>& raw) {
 	}
 }
 
+// marshal256 takes a posit256_t and marshals it into a raw bitblock
+void marshal256(posit256_t a, sw::unum::bitblock<256>& raw) {
+	// 32 bytes
+	uint32_t bit_cntr = 0;
+	for (int c = 0; c < 32; ++c) {
+		unsigned char byte = a.x[c];
+		unsigned char mask = (unsigned char)(1);
+		for (int b = 0; b < 8; ++b) {
+			raw[bit_cntr++] = mask & byte;
+			mask <<= 1;
+		}
+	}
+}
+
 // unmarshal128 takes a raw bitblock and unmarshals it into a posit128_t
 static void unmarshal128(sw::unum::bitblock<128>& raw, posit128_t& a) {
 	// 16 bytes
 	uint32_t bit_cntr = 0;
 	for (int c = 0; c < 16; ++c) {
+		unsigned char byte = 0;
+		unsigned char mask = (unsigned char)(1);
+		for (int b = 0; b < 8; ++b) {
+			if (raw[bit_cntr++]) {
+				byte |= mask;
+			}
+			mask <<= 1;
+		}
+		a.x[c] = byte;
+	}
+}
+
+// unmarshal256 takes a raw bitblock and unmarshals it into a posit256_t
+void unmarshal256(sw::unum::bitblock<256>& raw, posit256_t& a) {
+	// 32 bytes
+	uint32_t bit_cntr = 0;
+	for (int c = 0; c < 32; ++c) {
 		unsigned char byte = 0;
 		unsigned char mask = (unsigned char)(1);
 		for (int b = 0; b < 8; ++b) {
@@ -105,6 +136,7 @@ template<size_t _nbits, size_t _es, class positN_t, class convert> class capi {
 		sprintf(str, "%s", s.c_str());
 	}
 
+
 	template<class out>
 	static out to(positN_t bits) {
 		using namespace sw::unum;
@@ -177,4 +209,44 @@ extern "C" {
 #include "posit_c_macros.h"
 #undef POSIT_NBITS
 
+}
+
+bool posit_equal256(posit256_t a, posit256_t b) {
+	bool bEqual = true;
+	for (int i = 0; i < 32; ++i) {
+		if (a.x[i] != b.x[i]) {
+			bEqual = false;
+			break;
+		}
+	}
+	return bEqual;
+}
+
+int posit_cmp8(posit8_t a, posit8_t b) {
+	return a - b;
+}
+
+int posit_cmp16(posit16_t a, posit16_t b) {
+	return a - b;
+}
+
+int posit_cmp32(posit32_t a, posit32_t b) {
+	return a - b;
+}
+
+int posit_cmp64(posit64_t a, posit64_t b) {
+	return int(a - b);
+}
+
+// TODO
+int posit_cmp128(posit128_t a, posit128_t b) {
+	int cmp = 0;
+
+	return cmp;
+}
+// TODO
+int posit_cmp256(posit256_t a, posit256_t b) {
+	int cmp = 0;
+
+	return cmp;
 }
