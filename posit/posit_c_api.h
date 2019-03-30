@@ -16,19 +16,19 @@ extern "C" {
 
 	//////////////////////////////////////////////////////////////////////
 	/// Standard posit configuration per the POSIT standard
-	typedef union posit8_u   { 
+	typedef union posit8_u   {
 		uint8_t x[1];
 		uint8_t v;
 	}											posit8_t;	// posit<8,0>
-	typedef union posit16_u  { 
+	typedef union posit16_u  {
 		uint8_t x[2];
 		uint16_t v;
 	}											posit16_t;	// posit<16,1>
-	typedef struct posit32_s { 
+	typedef struct posit32_s {
 		uint8_t x[4];
 		uint32_t v;
 	}											posit32_t;	// posit<32,2>
-	typedef struct posit64_s { 
+	typedef struct posit64_s {
 		uint8_t x[8];
 		uint64_t v;
 	}											posit64_t;	// posit<64,3>
