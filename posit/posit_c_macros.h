@@ -113,6 +113,10 @@ POSIT_OPS(p64, posit64_t)
 POSIT_T POSIT_MKNAME(fromp128)(posit128_t p) POSIT_IMPL({ return POSIT_API::fromp<capi128>(p); })
 POSIT_OPS(p128, posit128_t)
 #endif
+#if POSIT_NBITS != 256
+POSIT_T POSIT_MKNAME(fromp256)(posit256_t p) POSIT_IMPL({ return POSIT_API::fromp<capi256>(p); })
+POSIT_OPS(p256, posit256_t)
+#endif
 
 POSIT_FUNCS(ld, long double)
 POSIT_FUNCS(d, double)
