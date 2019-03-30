@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-// posit_api.h: generic C and C++ header defining the posit api
+// posit_c_api.h: generic C and C++ header defining the posit api
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -112,18 +112,24 @@ extern "C" {
 	// C API function definitions
 
 	//////////////////////////////////////////////////////////////////////
-	// Important posit constants
-	static const posit8_t  NAR8  = { 0x80 };
-	static const posit16_t NAR16 = { 0x00, 0x80 };
-	static const posit32_t NAR32 = { 0x00, 0x00, 0x00, 0x80 };
+	// Important posit constants // we a storing this in little endian
+	static const posit8_t  NAR8  = { 
+		0x80 
+	};
+	static const posit16_t NAR16 = { 
+		0x00, 0x80 
+	};
+	static const posit32_t NAR32 = { 
+		0x00, 0x00, 0x00, 0x80 
+	};
 	static const posit64_t NAR64 = { 
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 
 	};
-	static const posit128_t NAR128 = {{   // we a storing this in little endian
+	static const posit128_t NAR128 = {{
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
 	}};
-	static const posit256_t NAR256 = {{   // we are storing this in little endian
+	static const posit256_t NAR256 = {{ 
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -164,11 +170,12 @@ enum {
 	#define posit256_str_SIZE posit256_str_SIZE
 };
 
-// reinterpret bits from an insigned integer type to a posit
+// reinterpret bits from an unsigned integer type to a posit type
 static inline posit8_t   posit8_reinterpret(uint8_t n)   { posit8_t  x; x.v = n; return x; }
 static inline posit16_t  posit16_reinterpret(uint16_t n) { posit16_t x; x.v = n; return x; }
 static inline posit32_t  posit32_reinterpret(uint32_t n) { posit32_t x; x.v = n; return x; }
 static inline posit64_t  posit64_reinterpret(uint64_t n) { posit64_t x; x.v = n; return x; }
+
 #ifdef __cplusplus
 static inline posit128_t posit128_reinterpret(uint64_t* n) {
     posit128_t out;

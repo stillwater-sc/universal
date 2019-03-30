@@ -234,6 +234,7 @@ extern "C" {
 #define POSIT_NBITS 256
 #include "posit_c_macros.h"
 #undef POSIT_NBITS
+
 }
 
 bool posit_equal256(posit256_t a, posit256_t b) {
