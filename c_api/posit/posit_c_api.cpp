@@ -5,17 +5,31 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <posit_c_api.h>
-#define POSIT_FAST_POSIT_8_0  1
-#define POSIT_FAST_POSIT_16_1 1
-#define POSIT_FAST_POSIT_32_2 1
-#define POSIT_FAST_POSIT_64_3 0
+#define POSIT_FAST_POSIT_8_0   1
+#define POSIT_FAST_POSIT_16_1  1 
+#define POSIT_FAST_POSIT_32_2  1
+// thefollowing posit configurations do not have a fast implementation yet
+#define POSIT_FAST_POSIT_64_3  0
+#define POSIT_FAST_POSIT_128_4 0
+#define POSIT_FAST_POSIT_256_5 0
 #include <posit>
 
-// marshal128 takes a posit128_t and marshals it into a raw bitblock
-static void marshal128(posit128_t a, sw::unum::bitblock<128>& raw) {
-	// 16 bytes
+// marshal takes a positN_t and marshals it into a raw bitblock
+template<size_t nbits, size_t es, typename positN_t>
+void marshal(positN_t a, sw::unum::bitblock<nbits>& raw) {
+	int nrBytes = 0;
+	switch (nbits) {
+	case 128:
+		nrBytes = 16;
+		break;
+	case 256:
+		nrBytes = 32;
+		break;
+	default:
+		nrBytes = 0;
+	}
 	uint32_t bit_cntr = 0;
-	for (int c = 0; c < 16; ++c) {
+	for (int c = 0; c < nrBytes; ++c) {
 		unsigned char byte = a.x[c];
 		unsigned char mask = (unsigned char)(1);
 		for (int b = 0; b < 8; ++b) {
@@ -25,42 +39,22 @@ static void marshal128(posit128_t a, sw::unum::bitblock<128>& raw) {
 	}
 }
 
-// marshal256 takes a posit256_t and marshals it into a raw bitblock
-void marshal256(posit256_t a, sw::unum::bitblock<256>& raw) {
-	// 32 bytes
-	uint32_t bit_cntr = 0;
-	for (int c = 0; c < 32; ++c) {
-		unsigned char byte = a.x[c];
-		unsigned char mask = (unsigned char)(1);
-		for (int b = 0; b < 8; ++b) {
-			raw[bit_cntr++] = mask & byte;
-			mask <<= 1;
-		}
+// unmarshal takes a raw bitblock and unmarshals it into a positN_t
+template<size_t nbits, size_t es, typename positN_t>
+void unmarshal(sw::unum::bitblock<nbits>& raw, positN_t& a) {
+	int nrBytes = 0;
+	switch (nbits) {
+	case 128:
+		nrBytes = 16;
+		break;
+	case 256:
+		nrBytes = 32;
+		break;
+	default:
+		nrBytes = 0;
 	}
-}
-
-// unmarshal128 takes a raw bitblock and unmarshals it into a posit128_t
-static void unmarshal128(sw::unum::bitblock<128>& raw, posit128_t& a) {
-	// 16 bytes
 	uint32_t bit_cntr = 0;
-	for (int c = 0; c < 16; ++c) {
-		unsigned char byte = 0;
-		unsigned char mask = (unsigned char)(1);
-		for (int b = 0; b < 8; ++b) {
-			if (raw[bit_cntr++]) {
-				byte |= mask;
-			}
-			mask <<= 1;
-		}
-		a.x[c] = byte;
-	}
-}
-
-// unmarshal256 takes a raw bitblock and unmarshals it into a posit256_t
-void unmarshal256(sw::unum::bitblock<256>& raw, posit256_t& a) {
-	// 32 bytes
-	uint32_t bit_cntr = 0;
-	for (int c = 0; c < 32; ++c) {
+	for (int c = 0; c < nrBytes; ++c) {
 		unsigned char byte = 0;
 		unsigned char mask = (unsigned char)(1);
 		for (int b = 0; b < 8; ++b) {
@@ -93,14 +87,14 @@ template<size_t nbits, size_t es, class positN_t> class convert_big : convert<nb
 	static sw::unum::posit<nbits, es> decode(positN_t bits) {
 		sw::unum::posit<nbits, es> pa;
 		sw::unum::bitblock<nbits> raw;
-		marshal128(bits, raw);
+		marshal<nbits,es>(bits, raw);
 		pa.set(raw);
 		return pa;
 	}
 	static positN_t encode(sw::unum::posit<nbits, es> p) {
-		posit128_t out;
+		positN_t out;
 		sw::unum::bitblock<nbits> raw = p.get();
-		unmarshal128(raw, out);
+		unmarshal<nbits,es>(raw, out);
 		return out;
 	}
 };
@@ -183,6 +177,7 @@ typedef capi<16,1,posit16_t,convert_small<16,1,posit16_t>> capi16;
 typedef capi<32,2,posit32_t,convert_small<32,2,posit32_t>> capi32;
 typedef capi<64,3,posit64_t,convert_small<64,3,posit64_t>> capi64;
 typedef capi<128,4,posit128_t,convert_big<128,4,posit128_t>> capi128;
+typedef capi<256,5,posit256_t, convert_big<256,5,posit256_t>> capi256;
 
 // prevent any symbol mangling
 extern "C" {
@@ -209,6 +204,9 @@ extern "C" {
 #include "posit_c_macros.h"
 #undef POSIT_NBITS
 
+#define POSIT_NBITS 256
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
 }
 
 bool posit_equal256(posit256_t a, posit256_t b) {
@@ -222,31 +220,3 @@ bool posit_equal256(posit256_t a, posit256_t b) {
 	return bEqual;
 }
 
-int posit_cmp8(posit8_t a, posit8_t b) {
-	return a - b;
-}
-
-int posit_cmp16(posit16_t a, posit16_t b) {
-	return a - b;
-}
-
-int posit_cmp32(posit32_t a, posit32_t b) {
-	return a - b;
-}
-
-int posit_cmp64(posit64_t a, posit64_t b) {
-	return int(a - b);
-}
-
-// TODO
-int posit_cmp128(posit128_t a, posit128_t b) {
-	int cmp = 0;
-
-	return cmp;
-}
-// TODO
-int posit_cmp256(posit256_t a, posit256_t b) {
-	int cmp = 0;
-
-	return cmp;
-}
