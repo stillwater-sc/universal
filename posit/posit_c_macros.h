@@ -40,7 +40,7 @@
 
 // This creates functions for all ops for all types which can be converted to a posit.
 // e.g. posit8_addf(posit8_t p, float f)  posit8_addld(posit8_t, long double)
-// "name" is the pnumonic for the type (f, ld, sll, ul, ui)
+// "name" is the mnemonic for the type (f, ld, sll, ul, ui)
 // "type" is the type (float, long double, signed long long, unsigned long long, unsigned int)
 #define POSIT_FUNCS(name, type) \
 	type POSIT_GLUE(POSIT_MKNAME(to), name)(POSIT_T p) POSIT_IMPL({ return POSIT_API::to<type>(p); }) \
