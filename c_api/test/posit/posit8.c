@@ -9,7 +9,7 @@
 int main(int argc, char* argv[])
 {
 	posit8_t pa, pb, pc;
-	char str[posit16_str_SIZE];
+	char str[posit8_str_SIZE];
 	bool failures = false;
 
 	// special case values
@@ -49,11 +49,11 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit8_reinterpret(b);
 			pc = posit_add(pa, pb);
-			double da, db, dref;
+			float da, db, dref;
 			da = posit_tod(pa);
 			db = posit_tod(pb);
 			dref = da + db;
-			posit8_t pref = posit8_reinterpret((float)dref);
+			posit8_t pref = posit8_reinterpret(dref);
 			if (posit_cmp(pref, pc)) {
 				printf("FAIL: 8.0x%02xp + 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
                     posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
@@ -76,11 +76,11 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit8_reinterpret(b);
 			pc = posit_sub(pa, pb);
-			double da, db, dref;
+			float da, db, dref;
 			da = posit_tod(pa);
 			db = posit_tod(pb);
 			dref = da - db;
-			posit8_t pref = posit8_reinterpret((float)dref);
+			posit8_t pref = posit8_reinterpret(dref);
 			if (posit_cmp(pref, pc)) {
 				printf("FAIL: 8.0x%02xp - 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
                     posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
@@ -103,11 +103,11 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit8_reinterpret(b);
 			pc = posit_mul(pa, pb);
-			double da, db, dref;
+			float da, db, dref;
 			da = posit_tod(pa);
 			db = posit_tod(pb);
 			dref = da * db;
-			posit8_t pref = posit8_reinterpret((float)dref);
+			posit8_t pref = posit8_reinterpret(dref);
 			if (posit_cmp(pref, pc)) {
 				printf("FAIL: 8.0x%02xp * 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
                     posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
@@ -130,11 +130,11 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit8_reinterpret(b);
 			pc = posit_div(pa, pb);
-			double da, db, dref;
+			float da, db, dref;
 			da = posit_tod(pa);
 			db = posit_tod(pb);
 			dref = da / db;
-			posit8_t pref = posit8((float)dref);
+			posit8_t pref = posit8_reinterpret(dref);
 			if (posit_cmp(pref, pc)) {
 				printf("FAIL: 8.0x%02xp / 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
                     posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
