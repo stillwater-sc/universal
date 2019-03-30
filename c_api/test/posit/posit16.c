@@ -3,9 +3,7 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
+
 #include <posit_c_api.h>
 
 int main(int argc, char* argv[])
@@ -43,6 +41,7 @@ int main(int argc, char* argv[])
 	printf("posit value = %s\n", str);
 	printf("posit value = 16.1x%04xp\n", posit_bits(pc));
 
+
 	// partial state space
 	int fails = 0;
 	for (int a = 0; a < 256; ++a) {
@@ -50,12 +49,10 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit16_reinterpret(b);
 			pc = posit_add(pa, pb);
-
 			double da, db, dref;
 			da = posit_tod(pa);
 			db = posit_tod(pb);
 			dref = da + db;
-
 			posit16_t pref = posit16((float)dref);
 			if (posit_cmp(pref, pc)) {
 				printf("FAIL: 16.1x%04xp + 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n",
@@ -79,12 +76,10 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit16_reinterpret(b);
 			pc = posit_sub(pa, pb);
-
 			double da, db, dref;
 			da = posit_tod(pa);
 			db = posit_tod(pb);
 			dref = da - db;
-
 			posit16_t pref = posit16((float)dref);
 			if (posit_cmp(pref, pc)) {
 				printf("FAIL: 16.1x%04xp - 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n",
@@ -108,12 +103,10 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit16_reinterpret(b);
 			pc = posit_mul(pa, pb);
-
 			double da, db, dref;
 			da = posit_tod(pa);
 			db = posit_tod(pb);
 			dref = da * db;
-
 			posit16_t pref = posit16((float)dref);
 			if (posit_cmp(pref, pc)) {
 				printf("FAIL: 16.1x%04xp * 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n",
@@ -137,12 +130,10 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit16_reinterpret(b);
 			pc = posit_div(pa, pb);
-
 			double da, db, dref;
 			da = posit_tod(pa);
 			db = posit_tod(pb);
 			dref = da / db;
-
 			posit16_t pref = posit16((float)dref);
 			if (posit_cmp(pref, pc)) {
 				printf("FAIL: 16.1x%04xp / 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n",

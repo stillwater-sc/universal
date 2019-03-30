@@ -3,10 +3,7 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
-#include <inttypes.h>
+
 #include <posit_c_api.h>
 
 #ifdef __cplusplus
@@ -52,12 +49,10 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit64_reinterpret(b);
 			pc = posit_add(pa, pb);
-
 			long double da, db, dref;
 			da = posit_told(pa);
 			db = posit_told(pb);
 			dref = da + db;
-
 			posit64_t pref = posit64(dref);
 			if (posit_cmp(pref, pc)) {
 				char sa[32], sb[32], sc[32], sref[32];
@@ -85,12 +80,10 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit64_reinterpret(b);
 			pc = posit_sub(pa, pb);
-
 			long double da, db, dref;
 			da = posit_told(pa);
 			db = posit_told(pb);
 			dref = da - db;
-
 			posit64_t pref = posit64(dref);
 			if (posit_cmp(pref, pc)) {
 				char sa[32], sb[32], sc[32], sref[32];
@@ -118,12 +111,10 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit64_reinterpret(b);
 			pc = posit_mul(pa, pb);
-
 			long double da, db, dref;
 			da = posit_told(pa);
 			db = posit_told(pb);
 			dref = da * db;
-
 			posit64_t pref = posit64(dref);
 			if (posit_cmp(pref, pc)) {
 				char sa[32], sb[32], sc[32], sref[32];
@@ -154,12 +145,10 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit64_reinterpret(b);
 			pc = posit_div(pa, pb);
-
 			long double da, db, dref;
 			da = posit_told(pa);
 			db = posit_told(pb);
 			dref = da / db;
-
 			posit64_t pref = posit64(dref);
 			if (posit_cmp(pref, pc)) {
 				char sa[32], sb[32], sc[32], sref[32];
@@ -178,8 +167,8 @@ int main(int argc, char* argv[])
 		}
 		else {
 			printf("division        FAIL\n");
+			failures = true;
 		}
-		failures = true;
 	}
 	else {
 		printf("division        PASS\n");

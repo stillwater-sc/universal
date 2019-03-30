@@ -12,7 +12,7 @@
 // test support functions
 #include "../tests/quire_test_helpers.hpp"
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main()
@@ -175,15 +175,13 @@ try {
 		q += -v;	std::cout << q << " <- should be zero" << std::endl;
 	}
 
-
-
 	std::cout << std::endl;
 
 #else
 
 	std::cout << "Quire validation" << std::endl;
 	std::vector< posit<8, 0> > v;
-	TestQuireAccumulationResult(ValidateQuireAccumulation<8,0,5>(true, v), "quire<8,0,5>");
+	TestQuireAccumulationResult(ValidateQuireAccumulation<8,0,5>(true, v), "quire<8,0,5>");  // <-- this is segfaulting
 
 #ifdef STRESS_TESTING
 

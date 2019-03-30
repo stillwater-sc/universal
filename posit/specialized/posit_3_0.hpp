@@ -224,7 +224,7 @@ namespace sw {
 				return *this;
 			}
 			posit& operator++() {
-				++_bits;
+				_bits = (_bits + 1) & 0x07;
 				return *this;
 			}
 			posit operator++(int) {
@@ -233,7 +233,7 @@ namespace sw {
 				return tmp;
 			}
 			posit& operator--() {
-				--_bits;
+				_bits = (_bits - 1) & 0x07;
 				return *this;
 			}
 			posit operator--(int) {
@@ -253,10 +253,10 @@ namespace sw {
 			inline bool iszero() const {
 				return (_bits == 0);
 			}
-			inline bool isone() const { // pattern 010000....
+			inline bool isone() const { // pattern 010....
 				return (_bits == one_encoding);
 			}
-			inline bool isminusone() const { // pattern 110000...
+			inline bool isminusone() const { // pattern 110...
 				return (_bits == minus_one_encoding);
 			}
 			inline bool isneg() const {
@@ -272,7 +272,7 @@ namespace sw {
 			inline int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
 
 			bitblock<NBITS_IS_3> get() const { bitblock<NBITS_IS_3> bb; bb = int(_bits); return bb; }
-			unsigned long long encoding() const { return (unsigned long long)(_bits & bit_mask); }
+			unsigned int encoding() const { return (unsigned int)(_bits & bit_mask); }
 
 			inline void clear()   { _bits = 0x00; }
 			inline void setzero() { _bits = 0x00; }

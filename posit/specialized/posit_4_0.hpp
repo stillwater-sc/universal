@@ -102,6 +102,10 @@ namespace sw {
 				static constexpr size_t fbits = nbits - 3;
 				static constexpr size_t fhbits = fbits + 1;
 				static constexpr uint8_t index_shift = 4;
+				static constexpr uint8_t bit_mask = 0x0F;
+				static constexpr uint8_t nar_encoding = 0x08;
+				static constexpr uint8_t one_encoding = 0x04; // 0100
+				static constexpr uint8_t minusone_encoding = 0x0C; // 1100
 
 				posit() { _bits = 0; }
 				posit(const posit&) = default;
@@ -172,7 +176,7 @@ namespace sw {
 					return *this;
 				}
 				posit& set_raw_bits(uint64_t value) {
-					_bits = uint8_t(value & 0x0f);
+					_bits = uint8_t(value & bit_mask);
 					return *this;
 				}
 				posit operator-() const {
@@ -206,7 +210,7 @@ namespace sw {
 					return *this;
 				}
 				posit& operator++() {
-					++_bits;
+					_bits = (_bits + 1) & bit_mask;
 					return *this;
 				}
 				posit operator++(int) {
@@ -215,7 +219,7 @@ namespace sw {
 					return tmp;
 				}
 				posit& operator--() {
-					--_bits;
+					_bits = (_bits - 1) & bit_mask;
 					return *this;
 				}
 				posit operator--(int) {
@@ -230,19 +234,19 @@ namespace sw {
 				}
 				// SELECTORS
 				inline bool isnar() const {
-					return (_bits == 0x8);
+					return (_bits == nar_encoding);
 				}
 				inline bool iszero() const {
 					return (_bits == 0);
 				}
-				inline bool isone() const { // pattern 010000....
-					return (_bits == 0x4);
+				inline bool isone() const { // pattern 0100....
+					return (_bits == one_encoding);
 				}
-				inline bool isminusone() const { // pattern 110000...
-					return (_bits == 0xC);
+				inline bool isminusone() const { // pattern 1100...
+					return (_bits == minusone_encoding);
 				}
 				inline bool isneg() const {
-					return (_bits & 0x08) == (0x08);
+					return bool(_bits & 0x08);
 				}
 				inline bool ispos() const {
 					return !isneg();
@@ -251,14 +255,14 @@ namespace sw {
 					return !(_bits & 0x1);
 				}
 
-				inline int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
+				inline int sign_value() const { return (_bits & 0x08 ? -1 : 1); }
 
-				bitblock<NBITS_IS_4> get() const { bitblock<NBITS_IS_4> bb; bb = int(_bits); return bb; }
-				unsigned long long encoding() const { return (unsigned long long)(_bits); }
+				bitblock<NBITS_IS_4> get() const { bitblock<NBITS_IS_4> bb; bb = int(_bits & bit_mask); return bb; }
+				unsigned int encoding() const { return (unsigned int)(_bits & bit_mask); }
 
 				inline void clear() { _bits = 0; }
 				inline void setzero() { clear(); }
-				inline void setnar() { _bits = 0x8; }
+				inline void setnar() { _bits = nar_encoding; }
 
 			private:
 				uint8_t _bits;

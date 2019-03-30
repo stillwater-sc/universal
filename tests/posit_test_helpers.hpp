@@ -216,7 +216,7 @@ namespace sw {
 			const size_t HALF = (size_t(1) << nbits);
 			posit<nbits + 1, es> pref, pprev, pnext;
 
-			const unsigned max = nbits > 22 ? 22 : nbits + 1;
+			const unsigned max = nbits > 20 ? 20 : nbits + 1;
 			size_t max_tests = (size_t(1) << max);
 			if (max_tests < NR_TEST_CASES) {
 				std::cout << "ValidateConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
@@ -353,7 +353,7 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int ValidateIntegerConversion(std::string& tag, bool bReportIndividualTestCases) {
 			// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
-			const unsigned max = nbits > 22 ? 2 : nbits;
+			const unsigned max = nbits > 20 ? 20 : nbits;
 			size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;  
 			int nrOfFailedTestCases = 0;
 
@@ -424,7 +424,7 @@ namespace sw {
 		template<size_t nbits, size_t es>
 		int ValidateUintConversion(std::string& tag, bool bReportIndividualTestCases) {
 			// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
-			const unsigned max = nbits > 22 ? 22 : nbits;
+			const unsigned max = nbits > 20 ? 20 : nbits;
 			size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;
 			int nrOfFailedTestCases = 0;
 

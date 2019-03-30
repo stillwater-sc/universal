@@ -3,9 +3,7 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <stdlib.h>
-#include <stdio.h>
-#include <stdbool.h>
+
 #include <posit_c_api.h>
 
 int main(int argc, char* argv[])
@@ -50,12 +48,10 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit32_reinterpret(b);
 			pc = posit_add(pa, pb);
-
 			double da, db, dref;
 			da = posit32_tod(pa);
 			db = posit32_tod(pb);
 			dref = da + db;
-
 			posit32_t pref = posit32_fromf(dref);
 			if (posit_cmp(pref, pc)) {
 				printf("FAIL: 32.2x%08xp + 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
@@ -81,12 +77,10 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit32_reinterpret(b);
 			pc = posit_sub(pa, pb);
-
 			double da, db, dref;
 			da = posit32_tod(pa);
 			db = posit32_tod(pb);
 			dref = da - db;
-
 			posit32_t pref = posit32_fromf(dref);
 			if (pref.v != pc.v) {
 				printf("FAIL: 32.2x%08xp - 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
@@ -110,12 +104,10 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit32_reinterpret(b);
 			pc = posit_mul(pa, pb);
-
 			double da, db, dref;
 			da = posit32_tod(pa);
 			db = posit32_tod(pb);
 			dref = da * db;
-
 			posit32_t pref = posit32(dref);
 			if (posit_cmp(pref, pc) != 0) {
 				printf("FAIL: 32.2x%08xp * 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
@@ -139,12 +131,10 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit32_reinterpret(b);
 			pc = posit_div(pa, pb);
-
 			double da, db, dref;
 			da = posit_tod(pa);
 			db = posit_tod(pb);
 			dref = da / db;
-
 			posit32_t pref = posit32(dref);
 			if (posit_cmp(pref, pc) != 0) {
 				printf("FAIL: 32.2x%08xp / 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
