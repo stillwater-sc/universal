@@ -71,7 +71,7 @@
 #ifdef __cplusplus
 void POSIT_MKNAME(str)(char* out, POSIT_T p) POSIT_IMPL({ POSIT_API::format(p, out); })
 #else
-// Feature of C which is not preasent in C++
+// Feature of C which is not in C++
 // https://hamberg.no/erlend/posts/2013-02-18-static-array-indices.html
 //void POSIT_MKNAME(str)(char out[static POSIT_MKNAME(str_SIZE)], POSIT_T p);  // error in MSVC
 void POSIT_MKNAME(str)(char out[POSIT_MKNAME(str_SIZE)], POSIT_T p);
@@ -112,6 +112,10 @@ POSIT_OPS(p64, posit64_t)
 #if POSIT_NBITS != 128
 POSIT_T POSIT_MKNAME(fromp128)(posit128_t p) POSIT_IMPL({ return POSIT_API::fromp<capi128>(p); })
 POSIT_OPS(p128, posit128_t)
+#endif
+#if POSIT_NBITS != 256
+POSIT_T POSIT_MKNAME(fromp256)(posit256_t p) POSIT_IMPL({ return POSIT_API::fromp<capi256>(p); })
+POSIT_OPS(p256, posit256_t)
 #endif
 
 POSIT_FUNCS(ld, long double)

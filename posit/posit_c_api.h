@@ -156,8 +156,12 @@ enum {
 	#define posit64_str_SIZE posit64_str_SIZE
 
 	/// report posit format for posit128_t. str must be at least 40 characters in size:  128.4x12345678123456781234567812345678p + /0 is 40 chars
-	posit128_str_SIZE = 40
+	posit128_str_SIZE = 40,
 	#define posit128_str_SIZE posit128_str_SIZE
+
+	/// report posit format for posit128_t. str must be at least 40 characters in size:  128.4x1234567812345678123456781234567812345678123456781234567812345678p + /0 is 72 chars
+	posit256_str_SIZE = 72
+	#define posit256_str_SIZE posit256_str_SIZE
 };
 
 // reinterpret bits from an insigned integer type to a posit
