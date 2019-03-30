@@ -6,7 +6,7 @@
 
 #include <posit_c_api.h>
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
 	const int maxNr = 196;
 	posit256_t pa, pb, pc;
@@ -18,25 +18,25 @@ int main(int argc, char* argv[])
 	pa = NAR256;
 	pb = ZERO256;
 	pc = posit_add(pa, pb);
-	posit256_str(str, pc);
+	posit_str(str, pc);
 	printf("posit value = %s\n", str);
 
 	pa = NAR256;
 	pb = ZERO256;
 	pc = posit_sub(pa, pb);
-	posit256_str(str, pc);
+	posit_str(str, pc);
 	printf("posit value = %s\n", str);
 
 	pa = NAR256;
 	pb = ZERO256;
 	pc = posit_mul(pa, pb);
-	posit256_str(str, pc);
+	posit_str(str, pc);
 	printf("posit value = %s\n", str);
 
 	pa = NAR256;
 	pb = ZERO256;
 	pc = posit_div(pa, pb);
-	posit256_str(str, pc);
+	posit_str(str, pc);
 	printf("posit value = %s\n", str);
 
 	bool noReference = true;
@@ -45,17 +45,18 @@ int main(int argc, char* argv[])
 	// partial state space
 	int fails = 0;
 	for (int a = 0; a < maxNr; ++a) {
-		pa = posit256_reinterpret((uint64_t[]) { a, 0, 0, 0 });
+		pa = posit256_reinterpret( (uint64_t[]){ a, 0, 0, 0 } );
 		for (int b = 0; b < maxNr; ++b) {
-			pb = posit256_reinterpret((uint64_t[]) { b, 0, 0, 0 });
+			pb = posit256_reinterpret( (uint64_t[]){ b, 0, 0, 0 } );
 			pc = posit_add(pa, pb);
 
 			long double da, db, dref;
-			da = posit256_told(pa);
-			db = posit256_told(pb);
+			da = posit_told(pa);
+			db = posit_told(pb);
 			dref = da + db;
 
-			posit256_t pref = posit256_fromld(dref);
+			posit256_t pref = posit256(dref);
+
 			if (posit_cmp(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
 				posit_str(sa, pa);
@@ -84,17 +85,17 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < maxNr; ++a) {
-		pa = posit256_reinterpret((uint64_t[]) { a, 0, 0, 0 });
+		pa = posit256_reinterpret( (uint64_t[]){ a, 0, 0, 0 } );
 		for (int b = 0; b < maxNr; ++b) {
-			pb = posit256_reinterpret((uint64_t[]) { b, 0, 0, 0 });
+			pb = posit256_reinterpret( (uint64_t[]){ b, 0, 0, 0 } );
 			pc = posit_sub(pa, pb);
 
 			long double da, db, dref;
-			da = posit256_told(pa);
-			db = posit256_told(pb);
+			da = posit_told(pa);
+			db = posit_told(pb);
 			dref = da - db;
 
-			posit256_t pref = posit256_fromld(dref);
+			posit256_t pref = posit256(dref);
 			if (posit_cmp(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
 				posit_str(sa, pa);
@@ -123,17 +124,18 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < maxNr; ++a) {
-		pa = posit256_reinterpret((uint64_t[]) { a, 0, 0, 0 });
+		pa = posit256_reinterpret( (uint64_t[]){ a, 0, 0, 0 } );
 		for (int b = 0; b < maxNr; ++b) {
-			pb = posit256_reinterpret((uint64_t[]) { b, 0, 0, 0 });
+			pb = posit256_reinterpret( (uint64_t[]){ b, 0, 0, 0 } );
 			pc = posit_mul(pa, pb);
 
 			long double da, db, dref;
-			da = posit256_told(pa);
-			db = posit256_told(pb);
+			da = posit_told(pa);
+			db = posit_told(pb);
 			dref = da * db;
 
-			posit256_t pref = posit256_fromld(dref);
+			posit256_t pref = posit256(dref);
+
 			if (posit_cmp(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
 				posit_str(sa, pa);
@@ -162,17 +164,18 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < maxNr; ++a) {
-		pa = posit256_reinterpret((uint64_t[]) { a, 0, 0, 0 });
+		pa = posit256_reinterpret( (uint64_t[]){ a, 0, 0, 0 } );
 		for (int b = 0; b < maxNr; ++b) {
-			pb = posit256_reinterpret((uint64_t[]) { b, 0, 0, 0 });
+			pb = posit256_reinterpret( (uint64_t[]){ b, 0, 0, 0 } );
 			pc = posit_div(pa, pb);
 
 			long double da, db, dref;
-			da = posit256_told(pa);
-			db = posit256_told(pb);
+			da = posit_told(pa);
+			db = posit_told(pb);
 			dref = da / db;
 
-			posit256_t pref = posit256_fromld(dref);
+			posit256_t pref = posit256(dref);
+
 			if (posit_cmp(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
 				posit_str(sa, pa);
