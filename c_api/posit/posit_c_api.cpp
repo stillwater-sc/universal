@@ -19,6 +19,18 @@ template<size_t nbits, size_t es, typename positN_t>
 void marshal(positN_t a, sw::unum::bitblock<nbits>& raw) {
 	int nrBytes = 0;
 	switch (nbits) {
+	case 8:
+		nrBytes = 1;
+		break;
+	case 16:
+		nrBytes = 2;
+		break;
+	case 32:
+		nrBytes = 4;
+		break;
+	case 64:
+		nrBytes = 8;
+		break;
 	case 128:
 		nrBytes = 16;
 		break;
@@ -44,6 +56,18 @@ template<size_t nbits, size_t es, typename positN_t>
 void unmarshal(sw::unum::bitblock<nbits>& raw, positN_t& a) {
 	int nrBytes = 0;
 	switch (nbits) {
+	case 8:
+		nrBytes = 1;
+		break;
+	case 16:
+		nrBytes = 2;
+		break;
+	case 32:
+		nrBytes = 4;
+		break;
+	case 64:
+		nrBytes = 8;
+		break;
 	case 128:
 		nrBytes = 16;
 		break;
@@ -71,6 +95,7 @@ template<size_t nbits, size_t es, class positN_t> class convert {
 	static sw::unum::posit<nbits, es> decode(positN_t bits);
 	static positN_t encode(sw::unum::posit<nbits, es> p);
 };
+/*
 template<size_t nbits, size_t es, class positN_t> class convert_small : convert<nbits,es,positN_t> {
 	public:
 	static sw::unum::posit<nbits, es> decode(positN_t bits) {
@@ -78,11 +103,14 @@ template<size_t nbits, size_t es, class positN_t> class convert_small : convert<
 		pa.set_raw_bits((uint64_t) bits.v);
 		return pa;
 	}
+	//error C2397: conversion from 'unsigned __int64' to 'uint32_t' requires a narrowing conversion
+	//note: while compiling class template member function 'positN_t convert_small<32,2,positN_t>::encode(sw::unum::posit<32,2>)'
 	static positN_t encode(sw::unum::posit<nbits, es> p) {
 		return { p.encoding() };
 	}
 };
-template<size_t nbits, size_t es, class positN_t> class convert_big : convert<nbits,es,positN_t> {
+*/
+template<size_t nbits, size_t es, class positN_t> class convert_bytes : convert<nbits,es,positN_t> {
 	public:
 	static sw::unum::posit<nbits, es> decode(positN_t bits) {
 		sw::unum::posit<nbits, es> pa;
@@ -130,7 +158,6 @@ template<size_t _nbits, size_t _es, class positN_t, class convert> class capi {
 		sprintf(str, "%s", s.c_str());
 	}
 
-
 	template<class out>
 	static out to(positN_t bits) {
 		using namespace sw::unum;
@@ -172,12 +199,12 @@ template<size_t _nbits, size_t _es, class positN_t, class convert> class capi {
 	}
 };
 
-typedef capi<8,0,posit8_t,convert_small<8,0,posit8_t>> capi8;
-typedef capi<16,1,posit16_t,convert_small<16,1,posit16_t>> capi16;
-typedef capi<32,2,posit32_t,convert_small<32,2,posit32_t>> capi32;
-typedef capi<64,3,posit64_t,convert_small<64,3,posit64_t>> capi64;
-typedef capi<128,4,posit128_t,convert_big<128,4,posit128_t>> capi128;
-typedef capi<256,5,posit256_t, convert_big<256,5,posit256_t>> capi256;
+typedef capi<8,0,posit8_t,convert_bytes<8,0,posit8_t>> capi8;
+typedef capi<16,1,posit16_t,convert_bytes<16,1,posit16_t>> capi16;
+typedef capi<32,2,posit32_t,convert_bytes<32,2,posit32_t>> capi32;
+typedef capi<64,3,posit64_t,convert_bytes<64,3,posit64_t>> capi64;
+typedef capi<128,4,posit128_t,convert_bytes<128,4,posit128_t>> capi128;
+typedef capi<256,5,posit256_t,convert_bytes<256,5,posit256_t>> capi256;
 
 // prevent any symbol mangling
 extern "C" {
