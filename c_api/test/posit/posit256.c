@@ -55,7 +55,7 @@ int main(int argc, char* argv[])
 			db = posit256_told(pb);
 			dref = da + db;
 
-			posit256_t pref = posit256_fromf(dref);
+			posit256_t pref = posit256_fromld(dref);
 			if (posit_equal256(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
 				posit_str(sa, pa);
@@ -94,7 +94,7 @@ int main(int argc, char* argv[])
 			db = posit256_told(pb);
 			dref = da - db;
 
-			posit256_t pref = posit256_fromf(dref);
+			posit256_t pref = posit256_fromld(dref);
 			if (posit_equal256(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
 				posit_str(sa, pa);
@@ -133,7 +133,7 @@ int main(int argc, char* argv[])
 			db = posit256_told(pb);
 			dref = da * db;
 
-			posit256_t pref = posit256_fromf(dref);
+			posit256_t pref = posit256_fromld(dref);
 			if (posit_equal256(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
 				posit_str(sa, pa);
@@ -172,7 +172,7 @@ int main(int argc, char* argv[])
 			db = posit256_told(pb);
 			dref = da / db;
 
-			posit256_t pref = posit256_fromf(dref);
+			posit256_t pref = posit256_fromld(dref);
 			if (posit_equal256(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
 				posit_str(sa, pa);
