@@ -56,12 +56,14 @@ int main(int argc, char* argv[])
 			dref = da + db;
 
 			posit256_t pref = posit256(dref);
+
 			if (posit_cmp(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
 				posit_str(sa, pa);
 				posit_str(sb, pb);
 				posit_str(sc, pc);
 				posit_str(sref, pref);
+
 				if (bReportIndividualTestCases) printf("FAIL: %s + %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
@@ -100,6 +102,7 @@ int main(int argc, char* argv[])
 				posit_str(sb, pb);
 				posit_str(sc, pc);
 				posit_str(sref, pref);
+
 				if (bReportIndividualTestCases) printf("FAIL: %s - %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
@@ -132,12 +135,14 @@ int main(int argc, char* argv[])
 			dref = da * db;
 
 			posit256_t pref = posit256(dref);
+
 			if (posit_cmp(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
 				posit_str(sa, pa);
 				posit_str(sb, pb);
 				posit_str(sc, pc);
 				posit_str(sref, pref);
+
 				if (bReportIndividualTestCases) printf("FAIL: %s * %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
@@ -170,12 +175,14 @@ int main(int argc, char* argv[])
 			dref = da / db;
 
 			posit256_t pref = posit256(dref);
+
 			if (posit_cmp(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
 				posit_str(sa, pa);
 				posit_str(sb, pb);
 				posit_str(sc, pc);
 				posit_str(sref, pref);
+
 				if (bReportIndividualTestCases) printf("FAIL: %s / %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}

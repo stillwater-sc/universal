@@ -2,7 +2,7 @@
 
 #include <stdint.h>
 
-// posit_api.h: generic C and C++ header defining the posit api
+// posit_c_api.h: generic C and C++ header defining the posit api
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -112,18 +112,24 @@ extern "C" {
 	// C API function definitions
 
 	//////////////////////////////////////////////////////////////////////
-	// Important posit constants
-	static const posit8_t  NAR8  = { 0x80 };
-	static const posit16_t NAR16 = { 0x00, 0x80 };
-	static const posit32_t NAR32 = { 0x00, 0x00, 0x00, 0x80 };
-	static const posit64_t NAR64 = {
-		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
+	// Important posit constants // we a storing this in little endian
+	static const posit8_t  NAR8  = { 
+		0x80 
 	};
-	static const posit128_t NAR128 = {{   // we a storing this in little endian
+	static const posit16_t NAR16 = { 
+		0x00, 0x80 
+	};
+	static const posit32_t NAR32 = { 
+		0x00, 0x00, 0x00, 0x80 
+	};
+	static const posit64_t NAR64 = { 
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80, 
+	};
+	static const posit128_t NAR128 = {{
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
 	}};
-	static const posit256_t NAR256 = {{   // we are storing this in little endian
+	static const posit256_t NAR256 = {{ 
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -159,16 +165,17 @@ enum {
 	posit128_str_SIZE = 40,
 	#define posit128_str_SIZE posit128_str_SIZE
 
-	/// TODO: I don't know the max size of a printed posit256 but it should be less than 80
-	posit256_str_SIZE = 80
+	/// report posit format for posit128_t. str must be at least 40 characters in size:  128.4x1234567812345678123456781234567812345678123456781234567812345678p + /0 is 72 chars
+	posit256_str_SIZE = 72
 	#define posit256_str_SIZE posit256_str_SIZE
 };
 
-// reinterpret bits from an insigned integer type to a posit
+// reinterpret bits from an unsigned integer type to a posit type
 static inline posit8_t   posit8_reinterpret(uint8_t n)   { posit8_t  x; x.v = n; return x; }
 static inline posit16_t  posit16_reinterpret(uint16_t n) { posit16_t x; x.v = n; return x; }
 static inline posit32_t  posit32_reinterpret(uint32_t n) { posit32_t x; x.v = n; return x; }
 static inline posit64_t  posit64_reinterpret(uint64_t n) { posit64_t x; x.v = n; return x; }
+
 #ifdef __cplusplus
 static inline posit128_t posit128_reinterpret(uint64_t* n) {
     posit128_t out;
@@ -266,7 +273,7 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	posit32_t: 			POSIT_GLUE5(posit,nbits,_,op,p32), \
 	posit64_t: 			POSIT_GLUE5(posit,nbits,_,op,p64), \
 	posit128_t: 		POSIT_GLUE5(posit,nbits,_,op,p128), \
-	posit256_t: 		POSIT_GLUE5(posit,nbits,_,op,p256) \
+	posit256_t:			POSIT_GLUE5(posit,nbits,_,op,p256) \
 )
 #define POSIT_OP2X(nbits, op, x) _Generic((x), \
 	long double: 		POSIT_GLUE5(posit,nbits,_,ld,op), \
@@ -283,7 +290,7 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	posit32_t: 			POSIT_GLUE5(posit,nbits,_,p32,op), \
 	posit64_t: 			POSIT_GLUE5(posit,nbits,_,p64,op), \
 	posit128_t: 		POSIT_GLUE5(posit,nbits,_,p128,op), \
-	posit256_t: 		POSIT_GLUE5(posit,nbits,_,p256,op) \
+	posit256_t:			POSIT_GLUE5(posit,nbits,_,p256,op) \
 )
 
 #define POSIT_GENERIC_OP(p,x,op) (_Generic((p), \
@@ -292,14 +299,14 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	posit32_t:          POSIT_OP2(32, op, (x)), \
 	posit64_t:          POSIT_OP2(64, op, (x)), \
 	posit128_t:         POSIT_OP2(128, op, (x)), \
-    posit256_t:         POSIT_OP2(256, op, (x)), \
+	posit256_t:         POSIT_OP2(256, op, (x)), \
 	default: _Generic((x), \
 		posit8_t:       POSIT_OP2X(8, op, (p)), \
 		posit16_t:      POSIT_OP2X(16, op, (p)), \
 		posit32_t:      POSIT_OP2X(32, op, (p)), \
 		posit64_t:      POSIT_OP2X(64, op, (p)), \
 		posit128_t:     POSIT_OP2X(128, op, (p)), \
-        posit256_t:     POSIT_OP2X(256, op, (p)) \
+		posit256_t:		POSIT_OP2X(256, op, (p)) \
 	) \
 )((p),(x)))
 #define posit_add(p, x) POSIT_GENERIC_OP(p,x,add)
@@ -314,7 +321,7 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	posit32_t: POSIT_GLUE(posit32_,op), \
 	posit64_t: POSIT_GLUE(posit64_,op), \
 	posit128_t: POSIT_GLUE(posit128_,op), \
-    posit256_t: POSIT_GLUE(posit256_,op) \
+	posit256_t: POSIT_GLUE(posit256_, op) \
 )
 #define posit_str(buf, p)   POSIT_GENETIC1(p, str)((buf), (p))
 #define posit_sqrt(p)       POSIT_GENETIC1(p, sqrt)(p)
