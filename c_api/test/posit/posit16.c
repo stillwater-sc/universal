@@ -49,11 +49,11 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit16_reinterpret(b);
 			pc = posit_add(pa, pb);
-			double da, db, dref;
-			da = posit_tod(pa);
-			db = posit_tod(pb);
+			float da, db, dref;
+			da = posit_tof(pa);
+			db = posit_tof(pb);
 			dref = da + db;
-			posit16_t pref = posit16((float)dref);
+			posit16_t pref = posit16_fromf(dref);
 			if (posit_cmp(pref, pc)) {
 				printf("FAIL: 16.1x%04xp + 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n",
                     posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
@@ -76,11 +76,11 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit16_reinterpret(b);
 			pc = posit_sub(pa, pb);
-			double da, db, dref;
-			da = posit_tod(pa);
-			db = posit_tod(pb);
+			float da, db, dref;
+			da = posit_tof(pa);
+			db = posit_tof(pb);
 			dref = da - db;
-			posit16_t pref = posit16((float)dref);
+			posit16_t pref = posit16_fromf(dref);
 			if (posit_cmp(pref, pc)) {
 				printf("FAIL: 16.1x%04xp - 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n",
                     posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
@@ -103,11 +103,11 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit16_reinterpret(b);
 			pc = posit_mul(pa, pb);
-			double da, db, dref;
-			da = posit_tod(pa);
-			db = posit_tod(pb);
+			float da, db, dref;
+			da = posit_tof(pa);
+			db = posit_tof(pb);
 			dref = da * db;
-			posit16_t pref = posit16((float)dref);
+			posit16_t pref = posit16_fromf(dref);
 			if (posit_cmp(pref, pc)) {
 				printf("FAIL: 16.1x%04xp * 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n",
                     posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
@@ -130,11 +130,11 @@ int main(int argc, char* argv[])
 		for (int b = 0; b < 256; ++b) {
 			pb = posit16_reinterpret(b);
 			pc = posit_div(pa, pb);
-			double da, db, dref;
-			da = posit_tod(pa);
-			db = posit_tod(pb);
+			float da, db, dref;
+			da = posit_tof(pa);
+			db = posit_tof(pb);
 			dref = da / db;
-			posit16_t pref = posit16((float)dref);
+			posit16_t pref = posit16_fromf(dref);
 			if (posit_cmp(pref, pc)) {
 				printf("FAIL: 16.1x%04xp / 16.1x%04xp produced 16.1x%04xp instead of 16.1x%04xp\n",
                     posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));

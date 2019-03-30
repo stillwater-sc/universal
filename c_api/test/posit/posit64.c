@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 			da = posit_told(pa);
 			db = posit_told(pb);
 			dref = da + db;
-			posit64_t pref = posit64(dref);
+			posit64_t pref = posit64_fromd(dref);
 			if (posit_cmp(pref, pc)) {
 				char sa[32], sb[32], sc[32], sref[32];
 				posit_str(sa, pa);
@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
 			da = posit_told(pa);
 			db = posit_told(pb);
 			dref = da - db;
-			posit64_t pref = posit64(dref);
+			posit64_t pref = posit64_fromd(dref);
 			if (posit_cmp(pref, pc)) {
 				char sa[32], sb[32], sc[32], sref[32];
 				posit_str(sa, pa);
@@ -115,7 +115,7 @@ int main(int argc, char* argv[])
 			da = posit_told(pa);
 			db = posit_told(pb);
 			dref = da * db;
-			posit64_t pref = posit64(dref);
+			posit64_t pref = posit64_fromd(dref);
 			if (posit_cmp(pref, pc)) {
 				char sa[32], sb[32], sc[32], sref[32];
 				posit_str(sa, pa);
@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
 			da = posit_told(pa);
 			db = posit_told(pb);
 			dref = da / db;
-			posit64_t pref = posit64(dref);
+			posit64_t pref = posit64_fromd(dref);
 			if (posit_cmp(pref, pc)) {
 				char sa[32], sb[32], sc[32], sref[32];
 				posit_str(sa, pa);

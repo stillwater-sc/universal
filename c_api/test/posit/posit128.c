@@ -49,13 +49,12 @@ int main(int argc, char* argv[])
 			pb = posit128_reinterpret( (uint64_t[]){ b, 0 } );
 			pc = posit_add(pa, pb);
 
-
 			long double da, db, dref;
 			da = posit128_told(pa);
 			db = posit128_told(pb);
 			dref = da + db;
 
-			posit128_t pref = posit128(dref);
+			posit128_t pref = posit128_fromld(dref);
 			if (posit_cmp(pref, pc)) {
 				char sa[40], sb[40], sc[40], sref[40];
 				posit_str(sa, pa);
@@ -90,14 +89,12 @@ int main(int argc, char* argv[])
 			pb = posit128_reinterpret( (uint64_t[]){ b, 0 } );
 			pc = posit_sub(pa, pb);
 
-
 			long double da, db, dref;
 			da = posit_told(pa);
 			db = posit_told(pb);
 			dref = da - db;
 
-
-			posit128_t pref = posit128(dref);
+			posit128_t pref = posit128_fromld(dref);
 			if (posit_cmp(pref, pc)) {
 				char sa[40], sb[40], sc[40], sref[40];
 				posit_str(sa, pa);
@@ -132,14 +129,12 @@ int main(int argc, char* argv[])
 			pb = posit128_reinterpret( (uint64_t[]){ b, 0 } );
 			pc = posit_mul(pa, pb);
 
-
 			long double da, db, dref;
 			da = posit_told(pa);
 			db = posit_told(pb);
 			dref = da * db;
 
-
-			posit128_t pref = posit128(dref);
+			posit128_t pref = posit128_fromld(dref);
 			if (posit_cmp(pref, pc)) {
 				char sa[40], sb[40], sc[40], sref[40];
 				posit_str(sa, pa);
@@ -179,7 +174,7 @@ int main(int argc, char* argv[])
 			db = posit_told(pb);
 			dref = da / db;
 
-			posit128_t pref = posit128(dref);
+			posit128_t pref = posit128_fromld(dref);
 			if (posit_cmp(pref, pc)) {
 				char sa[40], sb[40], sc[40], sref[40];
 				posit_str(sa, pa);

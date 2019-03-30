@@ -40,7 +40,7 @@
 
 // This creates functions for all ops for all types which can be converted to a posit.
 // e.g. posit8_addf(posit8_t p, float f)  posit8_addld(posit8_t, long double)
-// "name" is the pnumonic for the type (f, ld, sll, ul, ui)
+// "name" is the mnemonic for the type (f, ld, sll, ul, ui)
 // "type" is the type (float, long double, signed long long, unsigned long long, unsigned int)
 #define POSIT_FUNCS(name, type) \
 	type POSIT_GLUE(POSIT_MKNAME(to), name)(POSIT_T p) POSIT_IMPL({ return POSIT_API::to<type>(p); }) \
@@ -71,7 +71,7 @@
 #ifdef __cplusplus
 void POSIT_MKNAME(str)(char* out, POSIT_T p) POSIT_IMPL({ POSIT_API::format(p, out); })
 #else
-// Feature of C which is not preasent in C++
+// Feature of C which is not in C++
 // https://hamberg.no/erlend/posts/2013-02-18-static-array-indices.html
 //void POSIT_MKNAME(str)(char out[static POSIT_MKNAME(str_SIZE)], POSIT_T p);  // error in MSVC
 void POSIT_MKNAME(str)(char out[POSIT_MKNAME(str_SIZE)], POSIT_T p);
@@ -112,6 +112,10 @@ POSIT_OPS(p64, posit64_t)
 #if POSIT_NBITS != 128
 POSIT_T POSIT_MKNAME(fromp128)(posit128_t p) POSIT_IMPL({ return POSIT_API::fromp<capi128>(p); })
 POSIT_OPS(p128, posit128_t)
+#endif
+#if POSIT_NBITS != 256
+POSIT_T POSIT_MKNAME(fromp256)(posit256_t p) POSIT_IMPL({ return POSIT_API::fromp<capi256>(p); })
+POSIT_OPS(p256, posit256_t)
 #endif
 
 POSIT_FUNCS(ld, long double)
