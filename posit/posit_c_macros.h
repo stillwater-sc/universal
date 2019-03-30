@@ -68,13 +68,12 @@
 // We're done defining stuff, now we make functions
 /////
 
-#ifdef __cplusplus
+#if defined(__cplusplus) || defined(_MSC_VER)
 void POSIT_MKNAME(str)(char* out, POSIT_T p) POSIT_IMPL({ POSIT_API::format(p, out); })
 #else
 // Feature of C which is not in C++
 // https://hamberg.no/erlend/posts/2013-02-18-static-array-indices.html
-//void POSIT_MKNAME(str)(char out[static POSIT_MKNAME(str_SIZE)], POSIT_T p);  // error in MSVC
-void POSIT_MKNAME(str)(char out[POSIT_MKNAME(str_SIZE)], POSIT_T p);
+void POSIT_MKNAME(str)(char out[static POSIT_MKNAME(str_SIZE)], POSIT_T p);
 #endif
 
 POSIT_BASE_OP(add)
