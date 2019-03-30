@@ -236,15 +236,3 @@ extern "C" {
 #undef POSIT_NBITS
 
 }
-
-bool posit_equal256(posit256_t a, posit256_t b) {
-	bool bEqual = true;
-	for (int i = 0; i < 32; ++i) {
-		if (a.x[i] != b.x[i]) {
-			bEqual = false;
-			break;
-		}
-	}
-	return bEqual;
-}
-
