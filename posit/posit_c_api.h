@@ -221,6 +221,10 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 #include "posit_c_macros.h"
 #undef POSIT_NBITS
 
+#define POSIT_NBITS 256
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
+
 #if __STDC_VERSION__ >= 201112L && !defined(POSIT_NO_GENERICS)
 
 #define POSIT_FROM(nbits, x) (_Generic((x), \
@@ -237,13 +241,15 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	posit16_t: 			POSIT_GLUE4(posit,nbits,_from,p16), \
 	posit32_t: 			POSIT_GLUE4(posit,nbits,_from,p32), \
 	posit64_t: 			POSIT_GLUE4(posit,nbits,_from,p64), \
-	posit128_t: 		POSIT_GLUE4(posit,nbits,_from,p128) \
+	posit128_t: 		POSIT_GLUE4(posit,nbits,_from,p128), \
+	posit256_t: 		POSIT_GLUE4(posit,nbits,_from,p256) \
 )(x))
 #define posit8(x)       POSIT_FROM(8, (x))
 #define posit16(x)      POSIT_FROM(16, (x))
 #define posit32(x)      POSIT_FROM(32, (x))
 #define posit64(x)      POSIT_FROM(64, (x))
 #define posit128(x)     POSIT_FROM(128, (x))
+#define posit256(x)     POSIT_FROM(256, (x))
 
 #define POSIT_OP2(nbits, op, y) _Generic((y), \
 	long double: 		POSIT_GLUE5(posit,nbits,_,op,ld), \
@@ -259,7 +265,8 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	posit16_t: 			POSIT_GLUE5(posit,nbits,_,op,p16), \
 	posit32_t: 			POSIT_GLUE5(posit,nbits,_,op,p32), \
 	posit64_t: 			POSIT_GLUE5(posit,nbits,_,op,p64), \
-	posit128_t: 		POSIT_GLUE5(posit,nbits,_,op,p128) \
+	posit128_t: 		POSIT_GLUE5(posit,nbits,_,op,p128), \
+	posit256_t:			POSIT_GLUE5(posit,nbits,_,op,p256) \
 )
 #define POSIT_OP2X(nbits, op, x) _Generic((x), \
 	long double: 		POSIT_GLUE5(posit,nbits,_,ld,op), \
@@ -275,7 +282,8 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	posit16_t: 			POSIT_GLUE5(posit,nbits,_,p16,op), \
 	posit32_t: 			POSIT_GLUE5(posit,nbits,_,p32,op), \
 	posit64_t: 			POSIT_GLUE5(posit,nbits,_,p64,op), \
-	posit128_t: 		POSIT_GLUE5(posit,nbits,_,p128,op) \
+	posit128_t: 		POSIT_GLUE5(posit,nbits,_,p128,op), \
+	posit256_t:			POSIT_GLUE5(posit,nbits,_,p256,op) \
 )
 
 #define POSIT_GENERIC_OP(p,x,op) (_Generic((p), \
@@ -284,12 +292,14 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	posit32_t:          POSIT_OP2(32, op, (x)), \
 	posit64_t:          POSIT_OP2(64, op, (x)), \
 	posit128_t:         POSIT_OP2(128, op, (x)), \
+	posit256_t:         POSIT_OP2(256, op, (x)), \
 	default: _Generic((x), \
 		posit8_t:       POSIT_OP2X(8, op, (p)), \
 		posit16_t:      POSIT_OP2X(16, op, (p)), \
 		posit32_t:      POSIT_OP2X(32, op, (p)), \
 		posit64_t:      POSIT_OP2X(64, op, (p)), \
-		posit128_t:     POSIT_OP2X(128, op, (p)) \
+		posit128_t:     POSIT_OP2X(128, op, (p)), \
+		posit256_t:		POSIT_OP2X(256, op, (p)) \
 	) \
 )((p),(x)))
 #define posit_add(p, x) POSIT_GENERIC_OP(p,x,add)
@@ -303,7 +313,8 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	posit16_t: POSIT_GLUE(posit16_,op), \
 	posit32_t: POSIT_GLUE(posit32_,op), \
 	posit64_t: POSIT_GLUE(posit64_,op), \
-	posit128_t: POSIT_GLUE(posit128_,op) \
+	posit128_t: POSIT_GLUE(posit128_,op), \
+	posit256_t: POSIT_GLUE(posit256_, op) \
 )
 #define posit_str(buf, p)   POSIT_GENETIC1(p, str)((buf), (p))
 #define posit_sqrt(p)       POSIT_GENETIC1(p, sqrt)(p)
