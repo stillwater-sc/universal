@@ -10,33 +10,33 @@ int main(int argc, char* argv[])
 {
 	const int maxNr = 196;
 	posit256_t pa, pb, pc;
-	char str[POSIT_FORMAT256_SIZE];
+	char str[posit256_str_SIZE];
 	bool failures = false;
 	bool bReportIndividualTestCases = false;
 
 	// special case values
 	pa = NAR256;
 	pb = ZERO256;
-	pc = posit_add256(pa, pb);
-	posit_format256(pc, str);
+	pc = posit_add(pa, pb);
+	posit256_str(str, pc);
 	printf("posit value = %s\n", str);
 
 	pa = NAR256;
 	pb = ZERO256;
-	pc = posit_sub256(pa, pb);
-	posit_format256(pc, str);
+	pc = posit_sub(pa, pb);
+	posit256_str(str, pc);
 	printf("posit value = %s\n", str);
 
 	pa = NAR256;
 	pb = ZERO256;
-	pc = posit_mul256(pa, pb);
-	posit_format256(pc, str);
+	pc = posit_mul(pa, pb);
+	posit256_str(str, pc);
 	printf("posit value = %s\n", str);
 
 	pa = NAR256;
 	pb = ZERO256;
 	pc = posit_div256(pa, pb);
-	posit_format256(pc, str);
+	posit256_str(str, pc);
 	printf("posit value = %s\n", str);
 
 	bool noReference = true;
@@ -45,23 +45,24 @@ int main(int argc, char* argv[])
 	// partial state space
 	int fails = 0;
 	for (int a = 0; a < maxNr; ++a) {
-		pa = posit_assign256(a, 0, 0, 0);
+		pa = posit256_reinterpret((uint64_t[]) { a, 0, 0, 0 });
 		for (int b = 0; b < maxNr; ++b) {
-			pb = posit_assign256(b, 0, 0, 0);
-			pc = posit_add256(pa, pb);
+			pb = posit256_reinterpret((uint64_t[]) { b, 0, 0, 0 });
+			pc = posit_add(pa, pb);
 
 			long double da, db, dref;
-			da = posit_value256(pa);
-			db = posit_value256(pb);
+			da = posit256_told(pa);
+			db = posit256_told(pb);
 			dref = da + db;
 
-			posit256_t pref = posit_assign256f(dref);
+			posit256_t pref = posit256_fromf(dref);
 			if (posit_equal256(pref, pc)) {
-				char sa[POSIT_FORMAT256_SIZE], sb[POSIT_FORMAT256_SIZE], sc[POSIT_FORMAT256_SIZE], sref[POSIT_FORMAT256_SIZE];
-				posit_format256(pa, sa);
-				posit_format256(pb, sb);
-				posit_format256(pc, sc);
-				posit_format256(pref, sref);
+				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
+				posit_str(sa, pa);
+				posit_str(sb, pb);
+				posit_str(sc, pc);
+				posit_str(sref, pref);
+
 				if (bReportIndividualTestCases) printf("FAIL: %s + %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
@@ -83,23 +84,24 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < maxNr; ++a) {
-		pa = posit_assign256(a, 0, 0, 0);
+		pa = posit256_reinterpret((uint64_t[]) { a, 0, 0, 0 });
 		for (int b = 0; b < maxNr; ++b) {
-			pb = posit_assign256(b, 0, 0, 0);
-			pc = posit_sub256(pa, pb);
+			pb = posit256_reinterpret((uint64_t[]) { b, 0, 0, 0 });
+			pc = posit_sub(pa, pb);
 
 			long double da, db, dref;
-			da = posit_value256(pa);
-			db = posit_value256(pb);
+			da = posit256_told(pa);
+			db = posit256_told(pb);
 			dref = da - db;
 
-			posit256_t pref = posit_assign256f(dref);
+			posit256_t pref = posit256_fromf(dref);
 			if (posit_equal256(pref, pc)) {
-				char sa[POSIT_FORMAT256_SIZE], sb[POSIT_FORMAT256_SIZE], sc[POSIT_FORMAT256_SIZE], sref[POSIT_FORMAT256_SIZE];
-				posit_format256(pa, sa);
-				posit_format256(pb, sb);
-				posit_format256(pc, sc);
-				posit_format256(pref, sref);
+				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
+				posit_str(sa, pa);
+				posit_str(sb, pb);
+				posit_str(sc, pc);
+				posit_str(sref, pref);
+
 				if (bReportIndividualTestCases) printf("FAIL: %s - %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
@@ -121,23 +123,24 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < maxNr; ++a) {
-		pa = posit_assign256(a, 0, 0, 0);
+		pa = posit256_reinterpret((uint64_t[]) { a, 0, 0, 0 });
 		for (int b = 0; b < maxNr; ++b) {
-			pb = posit_assign256(b, 0, 0, 0);
-			pc = posit_mul256(pa, pb);
+			pb = posit256_reinterpret((uint64_t[]) { b, 0, 0, 0 });
+			pc = posit_mul(pa, pb);
 
 			long double da, db, dref;
-			da = posit_value256(pa);
-			db = posit_value256(pb);
+			da = posit256_told(pa);
+			db = posit256_told(pb);
 			dref = da * db;
 
-			posit256_t pref = posit_assign256f(dref);
+			posit256_t pref = posit256_fromf(dref);
 			if (posit_equal256(pref, pc)) {
-				char sa[POSIT_FORMAT256_SIZE], sb[POSIT_FORMAT256_SIZE], sc[POSIT_FORMAT256_SIZE], sref[POSIT_FORMAT256_SIZE];
-				posit_format256(pa, sa);
-				posit_format256(pb, sb);
-				posit_format256(pc, sc);
-				posit_format256(pref, sref);
+				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
+				posit_str(sa, pa);
+				posit_str(sb, pb);
+				posit_str(sc, pc);
+				posit_str(sref, pref);
+
 				if (bReportIndividualTestCases) printf("FAIL: %s * %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
@@ -159,23 +162,24 @@ int main(int argc, char* argv[])
 	// partial state space
 	fails = 0;
 	for (int a = 0; a < maxNr; ++a) {
-		pa = posit_assign256(a, 0, 0, 0);
+		pa = posit256_reinterpret((uint64_t[]) { a, 0, 0, 0 });
 		for (int b = 0; b < maxNr; ++b) {
-			pb = posit_assign256(b, 0, 0, 0);
-			pc = posit_div256(pa, pb);
+			pb = posit256_reinterpret((uint64_t[]) { b, 0, 0, 0 });
+			pc = posit_div(pa, pb);
 
 			long double da, db, dref;
-			da = posit_value256(pa);
-			db = posit_value256(pb);
+			da = posit256_told(pa);
+			db = posit256_told(pb);
 			dref = da / db;
 
-			posit256_t pref = posit_assign256f(dref);
+			posit256_t pref = posit256_fromf(dref);
 			if (posit_equal256(pref, pc)) {
-				char sa[POSIT_FORMAT256_SIZE], sb[POSIT_FORMAT256_SIZE], sc[POSIT_FORMAT256_SIZE], sref[POSIT_FORMAT256_SIZE];
-				posit_format256(pa, sa);
-				posit_format256(pb, sb);
-				posit_format256(pc, sc);
-				posit_format256(pref, sref);
+				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
+				posit_str(sa, pa);
+				posit_str(sb, pb);
+				posit_str(sc, pc);
+				posit_str(sref, pref);
+
 				if (bReportIndividualTestCases) printf("FAIL: %s / %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
 			}
