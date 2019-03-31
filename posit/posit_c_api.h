@@ -113,23 +113,23 @@ extern "C" {
 
 	//////////////////////////////////////////////////////////////////////
 	// Important posit constants // we a storing this in little endian
-	static const posit8_t  NAR8  = { 
-		0x80 
-	};
-	static const posit16_t NAR16 = { 
-		0x00, 0x80 
-	};
-	static const posit32_t NAR32 = { 
-		0x00, 0x00, 0x00, 0x80 
-	};
-	static const posit64_t NAR64 = { 
+	static const posit8_t  NAR8  = {{
+		0x80
+	}};
+	static const posit16_t NAR16 = {{
+		0x00, 0x80
+	}};
+	static const posit32_t NAR32 = {{
+		0x00, 0x00, 0x00, 0x80
+	}};
+	static const posit64_t NAR64 = {{
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80
-	};
+	}};
 	static const posit128_t NAR128 = {{
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
 	}};
-	static const posit256_t NAR256 = {{ 
+	static const posit256_t NAR256 = {{
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
@@ -137,10 +137,10 @@ extern "C" {
 	}};
 
 
-	static const posit8_t   ZERO8 = { 0 };
-	static const posit16_t  ZERO16 = { 0 };
-	static const posit32_t  ZERO32 = { 0 };
-	static const posit64_t  ZERO64 = { 0 };
+	static const posit8_t   ZERO8 = {{ 0 }};
+	static const posit16_t  ZERO16 = {{ 0 }};
+	static const posit32_t  ZERO32 = {{ 0 }};
+	static const posit64_t  ZERO64 = {{ 0 }};
 	static const posit128_t ZERO128 = {{ 0 }};
 	static const posit256_t ZERO256 = {{ 0 }};
 
