@@ -58,6 +58,10 @@
         return POSIT_GLUE3(POSIT_MKNAME(__op__), p, POSIT_NBITS)(x, y); \
     })
 
+#define POSIT_BASE_OP1(__op__) \
+    POSIT_T POSIT_MKNAME(__op__)(POSIT_T x) POSIT_IMPL({ \
+        return POSIT_API::op1<POSIT_GLUE(op_, __op__)<POSIT_API::nbits, POSIT_API::es>>(x); \
+    })
 
 #define POSIT_GLUE3(a,b,c) POSIT_GLUE(POSIT_GLUE(a,b),c)
 #define POSIT_GLUE4(a,b,c,d) POSIT_GLUE(POSIT_GLUE(a,b),POSIT_GLUE(c,d))
@@ -76,10 +80,12 @@ void POSIT_MKNAME(str)(char* out, POSIT_T p) POSIT_IMPL({ POSIT_API::format(p, o
 void POSIT_MKNAME(str)(char out[static POSIT_MKNAME(str_SIZE)], POSIT_T p);
 #endif
 
+// These are implemented in posit_c_api invocations of the OPERATION() macro
 POSIT_BASE_OP(add)
 POSIT_BASE_OP(sub)
 POSIT_BASE_OP(mul)
 POSIT_BASE_OP(div)
+POSIT_BASE_OP1(sqrt)
 
 // cmp is special because the return type is int and we need to call a different
 // function in the POSIT_API class
