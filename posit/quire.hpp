@@ -104,7 +104,7 @@ public:
 	static constexpr size_t radix_point = half_range;
 	// the upper is 1 bit bigger than the lower because maxpos^2 has that scale
 	static constexpr size_t upper_range = half_range + 1;     // size of the upper accumulator
-	static constexpr size_t qbits = range + capacity;     // size of the quire minus the sign bit: we are managing the sign explicitly
+	static constexpr size_t qbits = range + capacity;		  // size of the quire minus the sign bit: we are managing the sign explicitly
 	
 	// Constructors
 	quire() : _sign(false) { _capacity.reset(); _upper.reset(); _lower.reset(); }
@@ -444,10 +444,11 @@ public:
 		return 0;
 	}
 	// query functions for quire attributes
-	inline int dynamic_range() const { return range; }
-	inline int max_scale() const { return upper_range; }
+	inline int dynamic_range() const { return int(range); }
+	inline int max_scale() const { return int(upper_range); }
 	inline int min_scale() const { return -int(half_range); }
-	inline int capacity_range() const { return capacity; }
+	inline int capacity_range() const { return int(capacity); }
+	inline size_t total_bits() const { return qbits + 1; }
 	inline bool isneg() const { return _sign; }
 	inline bool ispos() const { return _sign; }
 	inline bool iszero() const { return _capacity.none() && _upper.none() && _lower.none(); }

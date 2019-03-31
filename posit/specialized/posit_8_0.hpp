@@ -52,11 +52,15 @@ namespace sw {
 						_bits = 0x00;
 						return *this;
 					}
-
+					if (rhs == -128) {
+						// 0x80 is special in int8 arithmetic as it is its own negation
+						_bits = 0x80; // NaR
+						return *this;
+					}
 					bool sign = bool(rhs & sign_mask);
-					int8_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
+					int8_t v = sign ? -rhs : rhs; // project to positive side of the projective reals
 					uint8_t raw;
-					if (v > 48 || v == -128) { // +-maxpos, 0x80 is special in int8 arithmetic as it is its own negation
+					if (v > 48) { // +-maxpos
 						raw = 0x7F;
 					}
 					else {
