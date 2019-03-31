@@ -127,25 +127,59 @@ template<size_t nbits, size_t es, class positN_t> class convert_bytes : convert<
 	}
 };
 
-template<size_t nbits, size_t es> class operation {
+// operation<2,1> = 2 args, 1 result
+template<size_t nbits, size_t es> class operation21 {
 	public:
 	static sw::unum::posit<nbits, es> op(
 		sw::unum::posit<nbits, es> a,
 		sw::unum::posit<nbits, es> b
 	);
 };
-#define OPERATION(name, ...) \
-	template<size_t nbits, size_t es> class name: operation<nbits,es> { \
+template<size_t nbits, size_t es> class operation22 {
+	public:
+	static std::tuple<sw::unum::posit<nbits, es>,sw::unum::posit<nbits, es>> op(
+		sw::unum::posit<nbits, es> a,
+		sw::unum::posit<nbits, es> b
+	);
+};
+template<size_t nbits, size_t es> class operation11 {
+	public:
+	static sw::unum::posit<nbits, es> op(
+		sw::unum::posit<nbits, es> a
+	);
+};
+#define OPERATION21(name, ...) \
+	template<size_t nbits, size_t es> class name: operation21<nbits,es> { \
 		public: static sw::unum::posit<nbits, es> \
 			op(sw::unum::posit<nbits, es> a, sw::unum::posit<nbits, es> b) __VA_ARGS__ \
 	}
-OPERATION(op_add, { return a + b; });
-OPERATION(op_sub, { return a - b; });
-OPERATION(op_mul, { return a * b; });
-OPERATION(op_div, { return a / b; });
-OPERATION(op_sqrt, { return sw::unum::sqrt<nbits, es>(a); });
+#define OPERATION22(name, ...) \
+	template<size_t nbits, size_t es> class name: operation22<nbits,es> { \
+		public: static std::tuple<sw::unum::posit<nbits, es>,sw::unum::posit<nbits, es>> \
+			op(sw::unum::posit<nbits, es> a, sw::unum::posit<nbits, es> b) __VA_ARGS__ \
+	}
+#define OPERATION11(name, ...) \
+	template<size_t nbits, size_t es> class name: operation11<nbits,es> { \
+		public: static sw::unum::posit<nbits, es> \
+			op(sw::unum::posit<nbits, es> a) __VA_ARGS__ \
+	}
+OPERATION21(op_add, { return a + b; });
+OPERATION21(op_sub, { return a - b; });
+OPERATION21(op_mul, { return a * b; });
+OPERATION21(op_div, { return a / b; });
+OPERATION11(op_sqrt, { return sw::unum::sqrt<nbits, es>(a); });
+OPERATION22(op_add_exact, {
+    // TODO
+    //return a.add_exact(b);
+    return std::make_tuple(sw::unum::posit<nbits, es>(0), sw::unum::posit<nbits, es>(0));
+});
+OPERATION22(op_sub_exact, {
+    // TODO
+    //return a.add_exact(b);
+    return std::make_tuple(sw::unum::posit<nbits, es>(0), sw::unum::posit<nbits, es>(0));
+});
 
-template<size_t _nbits, size_t _es, class positN_t, class convert> class capi {
+template<size_t _nbits, size_t _es, class positN_t, class positNx2_t, class convert> class capi {
 	public:
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t es = _es;
@@ -173,20 +207,34 @@ template<size_t _nbits, size_t _es, class positN_t, class convert> class capi {
 		return convert::encode(pa);
 	}
 
-	template<class operation>
-	static positN_t op(positN_t a, positN_t b) {
+    template<class operation22>
+	static positNx2_t op22(positN_t a, positN_t b) {
 		using namespace sw::unum;
 		posit<nbits, es> pa = convert::decode(a);
 		posit<nbits, es> pb = convert::decode(b);
-		posit<nbits, es> res = operation::op(pa, pb);
+        posit<nbits, es> x;
+        posit<nbits, es> y;
+        std::tie(x, y) = operation22::op(pa, pb);
+        positNx2_t out;
+        out.x = convert::encode(x);
+        out.y = convert::encode(y);
+		return out;
+	}
+
+	template<class operation21>
+	static positN_t op21(positN_t a, positN_t b) {
+		using namespace sw::unum;
+		posit<nbits, es> pa = convert::decode(a);
+		posit<nbits, es> pb = convert::decode(b);
+		posit<nbits, es> res = operation21::op(pa, pb);
 		return convert::encode(res);
 	}
 
-	template<class operation>
-	static positN_t op1(positN_t a) {
+	template<class operation11>
+	static positN_t op11(positN_t a) {
 		using namespace sw::unum;
 		posit<nbits, es> pa = convert::decode(a);
-		posit<nbits, es> res = operation::op(pa, NULL);
+		posit<nbits, es> res = operation11::op(pa);
 		return convert::encode(res);
 	}
 
@@ -208,12 +256,12 @@ template<size_t _nbits, size_t _es, class positN_t, class convert> class capi {
 	}
 };
 
-typedef capi<8,0,posit8_t,convert_bytes<8,0,posit8_t>> capi8;
-typedef capi<16,1,posit16_t,convert_bytes<16,1,posit16_t>> capi16;
-typedef capi<32,2,posit32_t,convert_bytes<32,2,posit32_t>> capi32;
-typedef capi<64,3,posit64_t,convert_bytes<64,3,posit64_t>> capi64;
-typedef capi<128,4,posit128_t,convert_bytes<128,4,posit128_t>> capi128;
-typedef capi<256,5,posit256_t,convert_bytes<256,5,posit256_t>> capi256;
+typedef capi<8,0,posit8_t,posit8x2_t,convert_bytes<8,0,posit8_t>> capi8;
+typedef capi<16,1,posit16_t,posit16x2_t,convert_bytes<16,1,posit16_t>> capi16;
+typedef capi<32,2,posit32_t,posit32x2_t,convert_bytes<32,2,posit32_t>> capi32;
+typedef capi<64,3,posit64_t,posit64x2_t,convert_bytes<64,3,posit64_t>> capi64;
+typedef capi<128,4,posit128_t,posit128x2_t,convert_bytes<128,4,posit128_t>> capi128;
+typedef capi<256,5,posit256_t,posit256x2_t,convert_bytes<256,5,posit256_t>> capi256;
 
 // prevent any symbol mangling
 extern "C" {
