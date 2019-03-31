@@ -18,12 +18,46 @@
 Standard posit with nbits = 32 have es = 2 exponent bits.
 */
 
+template<size_t nbits, size_t es>
+void CheckAddition() {
+	using namespace std;
+	using namespace sw::unum;
+
+	posit<nbits, es> pa, pb, pc;
+	int fails = 0;
+	for (int a = 0; a < 256; ++a) {
+		pa.set_raw_bits(a);
+		for (int b = 0; b < 256; ++b) {
+			pb.set_raw_bits(b);
+			pc = pa + pb;
+
+			double da, db, dref;
+			da = double(pa);
+			db = double(pb);
+			dref = da + db;
+
+			posit<nbits, es> pref = dref;
+			if (pref != pc) {
+				cout << "FAIL: " << posit_format(pa) << " + " << posit_format(pb) << " produced " << posit_format(pc) << " instead of " << posit_format(pref) << endl;
+				++fails;
+				break;
+			}
+		}
+	}
+	if (fails) {
+		printf("addition        FAIL\n");
+	}
+	else {
+		printf("addition        PASS\n");
+	}
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 2 * 1000 * 1000;  // 2M
+	const size_t RND_TEST_CASES = 500000;
 
 	const size_t nbits = 32;
 	const size_t es = 2;

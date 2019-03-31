@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.5)
 
 ####
 # Set project variables
-project (universal VERSION 1.0.0 LANGUAGES CXX)
+project (universal VERSION 1.0.0 LANGUAGES C CXX)
 
 ####
 ## Enable project() command to manage VERSION variables
@@ -40,24 +40,31 @@ endif(NOT CMAKE_BUILD_TYPE)
 ####
 # Set build options
 # MSVC generates SSE/SSE2 code by default. No support for SSE3 as of 7/15/2018
-option(USE_SSE3                          "Build code with SSE3 ISA support"                 OFF)
-option(USE_AVX                           "Build code with AVX ISA support"                  OFF)
-option(USE_AVX2                          "Build code with AVX2 ISA support"                 ON)
+option(USE_SSE3                          "Build code with SSE3 ISA support"                    OFF)
+option(USE_AVX                           "Build code with AVX ISA support"                     OFF)
+option(USE_AVX2                          "Build code with AVX2 ISA support"                    OFF)
 # control which projects get enabled
-option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 arithmetic"        OFF)
-option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 arithmetic"        OFF)
-option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3(posit) arithmetic" ON)
-option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3(valid) arithmetic" ON)
-option(BUILD_FLOAT_ARBITRARY_PRECISION   "Set to ON to build arbitrary precision floats"    ON)
-option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"          ON)
-option(BUILD_APPLICATION_EXAMPLES        "Set to ON to build epplication examples"          ON)
-option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                ON)
-option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"    ON)
-option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"      OFF)
-option(BUILD_PERFORMANCE_BENCHMARKS      "Set to ON to build performance benchmarking"      OFF)
-option(BUILD_VERIFICATION_SUITE          "Set to ON to build verification tests"            OFF)
-option(BUILD_CI_CHECK                    "Set to ON to build all components"                OFF)
-option(BUILD_DOCS                        "Set to ON to build documentation"                 OFF)
+# Continuous Integration override to build all components
+option(BUILD_CI_CHECK                    "Set to ON to build all components"                   OFF)
+# utilities and educational examples
+option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"             ON)
+option(BUILD_APPLICATION_EXAMPLES        "Set to ON to build epplication examples"             ON)
+option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   ON)
+option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
+# C API library and test programs
+option(BUILD_C_API_LIB                   "Set to ON to build C API library"                    OFF)
+# number systems and their verification suites
+option(BUILD_BITBLOCK                    "Set to ON to build bitblock tests"                   OFF)
+option(BUILD_REAL_NUMBER                 "Set to ON to build real value tests"                 OFF)
+option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 tests"                OFF)
+option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 tests"                OFF)
+option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3 posit tests"          OFF)
+option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3 valid tests"          OFF)
+option(BUILD_APF                         "Set to ON to build arbitrary precision float tests"  OFF)
+# performance benchmarking
+option(BUILD_PERF_TESTS                  "Set to ON to build performance benchmarks"           OFF)
+option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"         OFF)
+option(BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
 
 ####
 # Create the library target
@@ -75,13 +82,13 @@ macro(trace_variable variable)
         message(STATUS "${variable} = ${${variable}}")
     endif()
 endmacro()
-        
+
 
 # Use cmake scripts and modules
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake") 
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake")
 trace_variable(CMAKE_MODULE_PATH)
 
-list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake") 
+list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/tools/cmake")
 trace_variable(CMAKE_PREFIX_PATH)
 
 # Must be located in root dir, doesn't work in tests
@@ -102,20 +109,20 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	check_cxx_compiler_flag("-msse3" COMPILER_HAS_SSE3_FLAG)
 	check_cxx_compiler_flag("-mavx"  COMPILER_HAS_AVX_FLAG)
 	check_cxx_compiler_flag("-mavx2" COMPILER_HAS_AVX2_FLAG)
-	
+
 	# Streaming SIMD Extension (SSE) ISA
 	if (USE_SSE3 AND COMPILER_HAS_SSE_FLAG)
-		add_definitions(-DUNUM_USE_SSE)
+		add_definitions(-DLIB_USE_SSE)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -msse3")
 	endif(USE_SSE3 AND COMPILER_HAS_SSE_FLAG)
 	# Advanced Vector Extensions (AVX) ISA
 	if (USE_AVX AND COMPILER_HAS_AVX_FLAG)
-		add_definitions(-DUNUM_USE_AVX)
+		add_definitions(-DLIB_USE_AVX)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -mavx")
 	endif(USE_AVX AND COMPILER_HAS_AVX_FLAG)
 	# Advanced Vector Extensions 2 (AVX2) ISA
 	if (USE_AVX2 AND COMPILER_HAS_AVX2_FLAG)
-		add_definitions(-DUNUM_USE_AVX2)
+		add_definitions(-DLIB_USE_AVX2)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -mavx2")
 	endif(USE_AVX2 AND COMPILER_HAS_AVX2_FLAG)
 
@@ -127,19 +134,19 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 elseif(MSVC)
 	# Streaming SIMD Extension (SSE) ISA
 	if (USE_SSE3)
-		add_definitions(-DUNUM_USE_SSE3)
+		add_definitions(-DLIB_USE_SSE3)
 		set(COMPILER_HAS_SSE3_FLAG true)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:SSE3")
 	endif(USE_SSE3)
 	# Advanced Vector Extensions (AVX) ISA
 	if (USE_AVX)
-		add_definitions(-DUNUM_USE_AVX)
+		add_definitions(-DLIB_USE_AVX)
 		set(COMPILER_HAS_AVX_FLAG true)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:AVX")
 	endif(USE_AVX)
 	# Advanced Vector Extensions 2 (AVX2) ISA
 	if (USE_AVX2)
-		add_definitions(-DUNUM_USE_AVX2)
+		add_definitions(-DLIB_USE_AVX2)
 		set(COMPILER_HAS_AVX2_FLAG true)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:AVX2")
 	endif(USE_AVX2)
@@ -153,22 +160,25 @@ elseif(MSVC)
 
 	# correct __cplusplus variable setting
     # /Zc:__cplusplus
-    # You need to compile with the /Zc:__cplusplus switch to see the updated value of the __cplusplus macro. 
-	# Microsoft tried updating the macro by default and discovered that a lot of code doesn’t compile correctly 
-	# when they changed the value of __cplusplus. 
-	# They’ll continue to require use of the /Zc:__cplusplus switch for all minor versions of MSVC in the 19.xx family.
-	# 
-	# The version reported by the __cplusplus macro also depends upon the standard version switch used. 
-	# If you’re compiling in C++14 mode the macro will be set to “201402L”. If you compile in C++17 mode the macro will be set to “201703L”. And the /std:c++latest switch, used to enable features from the Standard currently in development, sets a value that is more than the current Standard. This chart shows the values of the __cplusplus macro with different switch combinations:
+    # You need to compile with the /Zc:__cplusplus switch to see the updated value of the __cplusplus macro.
+	# Microsoft tried updating the macro by default and discovered that a lot of code doesn't compile correctly
+	# when they changed the value of __cplusplus.
+	# They'll continue to require use of the /Zc:__cplusplus switch for all minor versions of MSVC in the 19.xx family.
 	#
-	# /Zc:__cplusplus switch		/std:c++ switch					__cplusplus value
-	# Zc:__cplusplus				Currently defaults to C++14		201402L
-	# Zc:__cplusplus				/std:c++14						201402L
-	# Zc:__cplusplus				/std:c++17						201703L
-	# Zc:__cplusplus				/std:c++latest					201704L
-	# Zc:__cplusplus- (disabled)	Any value						199711L
-	# Zc:__cplusplus not specified	Any value						199711L
-	# Note that the MSVC compiler does not, and never will, support a C++11, C++03, or C++98 standards version switch. 
+	# The version reported by the __cplusplus macro also depends upon the standard version switch used.
+	# If you're compiling in C++14 mode the macro will be set to '201402L'. If you compile in C++17 mode
+	# the macro will be set to '201703L'. And the /std:c++latest switch, used to enable features from the
+	# Standard currently in development, sets a value that is more than the current Standard.
+	# This chart shows the values of the __cplusplus macro with different switch combinations:
+	#
+	# /Zc:__cplusplus switch		/std:c++ switch				__cplusplus value
+	# Zc:__cplusplus			Currently defaults to C++14			201402L
+	# Zc:__cplusplus			/std:c++14					201402L
+	# Zc:__cplusplus			/std:c++17					201703L
+	# Zc:__cplusplus			/std:c++latest					201704L
+	# Zc:__cplusplus- (disabled)		Any value					199711L
+	# Zc:__cplusplus not specified		Any value					199711L
+	# Note that the MSVC compiler does not, and never will, support a C++11, C++03, or C++98 standards version switch.
 	# Also, the value of the __cplusplus macro is not affected by the /permissive- switch.
 	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
 
@@ -221,10 +231,10 @@ endif()
 include_directories("./posit")
 
 # Possibly not under Windows
-add_compile_options ( -std=c++11 )
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 ####
-# macro to read all cpp files in a directory 
+# macro to read all cpp files in a directory
 # and create a test target for that cpp file
 macro (compile_all testing prefix)
     # cycle through the sources
@@ -322,58 +332,93 @@ install(FILES
 install(DIRECTORY   ${PROJECT_SOURCE_DIR}/${project_library_target_name}
         DESTINATION ${include_install_dir})
 
-if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_1)
-add_subdirectory("tests/unum")
-endif()
+if(BUILD_CI_CHECK)
+	# core example applications that use the library
+	set(BUILD_EDUCATION_EXAMPLES ON)
+	set(BUILD_APPLICATION_EXAMPLES ON)
+	set(BUILD_CMD_LINE_TOOLS ON)
+	set(BUILD_PLAYGROUND ON)
+	# build the different test/verification suites for each number system
+	set(BUILD_BITBLOCK ON)
+	set(BUILD_REAL_NUMBER ON)
+	set(BUILD_UNUM_TYPE_1 ON)
+	set(BUILD_UNUM_TYPE_2 ON)
+	set(BUILD_UNUM_TYPE_3_POSIT ON)
+	set(BUILD_UNUM_TYPE_3_VALID ON)
+	set(BUILD_APF ON)
+	# build the performance suites
+	set(BUILD_PERF_TESTS ON)
+	# build the C API library
+	set(BUILD_C_API_LIB ON)
+	# build IEEE float/double quire capability
+	set(BUILD_IEEE_FLOAT_QUIRES ON)
+	#
+endif(BUILD_CI_CHECK)
 
-if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_2)
-add_subdirectory("tests/unum2")
-endif()
-
-if(BUILD_CI_CHECK OR BUILD_VERIFICATION_SUITE)
+if(BUILD_BITBLOCK)
 add_subdirectory("tests/bitblock")
+endif(BUILD_BITBLOCK)
+
+if(BUILD_REAL_NUMBER)
 add_subdirectory("tests/value")
-endif(BUILD_CI_CHECK OR BUILD_VERIFICATION_SUITE)
+endif(BUILD_REAL_NUMBER)
 
-if(BUILD_CI_CHECK OR BUILD_FLOAT_ARBITRARY_PRECISION)
-add_subdirectory("tests/areal")
-endif(BUILD_CI_CHECK OR BUILD_FLOAT_ARBITRARY_PRECISION)
+if(BUILD_UNUM_TYPE_1)
+add_subdirectory("tests/unum")
+endif(BUILD_UNUM_TYPE_1)
 
-if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_3_POSIT)
+if(BUILD_UNUM_TYPE_2)
+add_subdirectory("tests/unum2")
+endif(BUILD_UNUM_TYPE_2)
+
+if(BUILD_UNUM_TYPE_3_POSIT)
 add_subdirectory("tests/posit")
 add_subdirectory("tests/posit/specialized")
-endif(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_3_POSIT)
+endif(BUILD_UNUM_TYPE_3_POSIT)
 
-if(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_3_VALID)
+if(BUILD_UNUM_TYPE_3_VALID)
 add_subdirectory("tests/valid")
-endif(BUILD_CI_CHECK OR BUILD_UNUM_TYPE_3_VALID)
+endif(BUILD_UNUM_TYPE_3_VALID)
 
-if(BUILD_CI_CHECK OR BUILD_IEEE_FLOAT_QUIRES)
-add_subdirectory("tests/float")
-endif()
+if(BUILD_APF)
+add_subdirectory("tests/areal")
+endif(BUILD_APF)
 
-if(BUILD_CI_CHECK OR BUILD_CMD_LINE_TOOLS)
+# performance benchmarks
+if(BUILD_PERF_TESTS)
+add_subdirectory("perf")
+endif(BUILD_PERF_TESTS)
+
+# utilities, educational examples and example programs
+if(BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
 add_subdirectory("tools/utils")
-endif()
+endif(BUILD_CMD_LINE_TOOLS)
 
-if(BUILD_CI_CHECK OR BUILD_EDUCATION_EXAMPLES)
+if(BUILD_EDUCATION_EXAMPLES)
 add_subdirectory("education/posit")
 add_subdirectory("education/quire")
-endif()
+endif(BUILD_EDUCATION_EXAMPLES)
 
-if(BUILD_CI_CHECK OR BUILD_APPLICATION_EXAMPLES)
+if(BUILD_APPLICATION_EXAMPLES)
 add_subdirectory("examples/blas")
 add_subdirectory("examples/dsp")
-endif()
+endif(BUILD_APPLICATION_EXAMPLES)
 
-if(BUILD_CI_CHECK OR BUILD_PLAYGROUND)
+if(BUILD_PLAYGROUND)
 add_subdirectory("examples/playground")
-endif()
+endif(BUILD_PLAYGROUND)
 
-if(BUILD_CI_CHECK OR BUILD_PERFORMANCE_BENCHMARKS)
-add_subdirectory("perf")
-endif()
+# C API library and their tests
+if(BUILD_C_API_LIB)
+add_subdirectory("c_api/posit")
+add_subdirectory("c_api/test/posit")
+endif(BUILD_C_API_LIB)
+
+# IEEE float/double quire capability
+if(BUILD_IEEE_FLOAT_QUIRES)
+add_subdirectory("tests/float")
+endif(BUILD_IEEE_FLOAT_QUIRES)
 
 ####
 # Configuration summary
