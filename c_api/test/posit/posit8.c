@@ -50,8 +50,8 @@ int main(int argc, char* argv[])
 			pb = posit8_reinterpret(b);
 			pc = posit_add(pa, pb);
 			float da, db, dref;
-			da = posit_tod(pa);
-			db = posit_tod(pb);
+			da = posit_tof(pa);
+			db = posit_tof(pb);
 			dref = da + db;
 			posit8_t pref = posit8(dref);
 			if (posit_cmp(pref, pc)) {
@@ -77,8 +77,8 @@ int main(int argc, char* argv[])
 			pb = posit8_reinterpret(b);
 			pc = posit_sub(pa, pb);
 			float da, db, dref;
-			da = posit_tod(pa);
-			db = posit_tod(pb);
+			da = posit_tof(pa);
+			db = posit_tof(pb);
 			dref = da - db;
 			posit8_t pref = posit8(dref);
 			if (posit_cmp(pref, pc)) {
@@ -104,8 +104,8 @@ int main(int argc, char* argv[])
 			pb = posit8_reinterpret(b);
 			pc = posit_mul(pa, pb);
 			float da, db, dref;
-			da = posit_tod(pa);
-			db = posit_tod(pb);
+			da = posit_tof(pa);
+			db = posit_tof(pb);
 			dref = da * db;
 			posit8_t pref = posit8(dref);
 			if (posit_cmp(pref, pc)) {
@@ -131,8 +131,8 @@ int main(int argc, char* argv[])
 			pb = posit8_reinterpret(b);
 			pc = posit_div(pa, pb);
 			float da, db, dref;
-			da = posit_tod(pa);
-			db = posit_tod(pb);
+			da = posit_tof(pa);
+			db = posit_tof(pb);
 			dref = da / db;
 			posit8_t pref = posit8(dref);
 			if (posit_cmp(pref, pc)) {
@@ -148,6 +148,29 @@ int main(int argc, char* argv[])
 	}
 	else {
 		printf("division        PASS\n");
+	}
+
+	// full state space
+	fails = 0;
+	for (int a = 0; a < 256*256; ++a) {
+		pa = posit8_reinterpret(a);
+		pc = posit_sqrt(pa);
+		float da, dref;
+		da = posit_tof(pa);
+		dref = sqrt(da);
+		posit8_t pref = posit8(dref);
+		if (posit_cmp(pref, pc)) {
+			printf("FAIL: sqrt(8.0x%02xp) produced 8.0x%02xp instead of 8.0x%02xp\n",
+	    posit_bits(pa), posit_bits(pc), posit_bits(pref));
+			++fails;
+		}
+	}
+	if (fails) {
+		printf("sqrt            FAIL\n");
+		failures = true;
+	}
+	else {
+		printf("sqrt            PASS\n");
 	}
 
 	return failures > 0 ? EXIT_FAILURE : EXIT_SUCCESS;
