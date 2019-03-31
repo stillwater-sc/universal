@@ -15,6 +15,7 @@
 
 #define POSIT_MKNAME(name) POSIT_GLUE4(posit, POSIT_NBITS, _, name)
 #define POSIT_T POSIT_MKNAME(t)
+#define POSIT_VEC_T(width) POSIT_GLUE5(posit, POSIT_NBITS, x, width, _t)
 #define POSIT_API POSIT_GLUE(capi, POSIT_NBITS)
 
 // creates:  posit8_t posit8_subull(posit8_t p, unsigned long long x)
@@ -50,27 +51,33 @@
 
 // base functions, e.g.  posit8_t posit8_addp8(posit8_t x, posity_t y)
 // these functions must be made specially because everything else is defined in terms of them
-#define POSIT_BASE_OP(__op__) \
-    POSIT_T POSIT_GLUE3(POSIT_MKNAME(__op__),p,POSIT_NBITS)(POSIT_T x, POSIT_T y) POSIT_IMPL({ \
-        return POSIT_API::op<POSIT_GLUE(op_, __op__)<POSIT_API::nbits, POSIT_API::es>>(x, y); \
+#define POSIT_BASE_OP(__rett__, __type__, __op__) \
+    __rett__ POSIT_GLUE3(POSIT_MKNAME(__op__),p,POSIT_NBITS)(POSIT_T x, POSIT_T y) POSIT_IMPL({ \
+        return POSIT_API::__type__<POSIT_GLUE(op_, __op__)<POSIT_API::nbits, POSIT_API::es>>(x, y); \
     }) \
-    POSIT_INLINE(POSIT_T POSIT_GLUE3(POSIT_MKNAME(p), POSIT_NBITS, __op__)(POSIT_T x, POSIT_T y) { \
+    POSIT_INLINE(__rett__ POSIT_GLUE3(POSIT_MKNAME(p), POSIT_NBITS, __op__)(POSIT_T x, POSIT_T y) { \
         return POSIT_GLUE3(POSIT_MKNAME(__op__), p, POSIT_NBITS)(x, y); \
     })
 
-#define POSIT_BASE_OP1(__op__) \
+// single argument operation
+#define POSIT_BASE_OP1(__rett__, __type__, __op__) \
     POSIT_T POSIT_MKNAME(__op__)(POSIT_T x) POSIT_IMPL({ \
-        return POSIT_API::op1<POSIT_GLUE(op_, __op__)<POSIT_API::nbits, POSIT_API::es>>(x); \
+        return POSIT_API::__type__<POSIT_GLUE(op_, __op__)<POSIT_API::nbits, POSIT_API::es>>(x); \
     })
 
 #define POSIT_GLUE3(a,b,c) POSIT_GLUE(POSIT_GLUE(a,b),c)
 #define POSIT_GLUE4(a,b,c,d) POSIT_GLUE(POSIT_GLUE(a,b),POSIT_GLUE(c,d))
+#define POSIT_GLUE5(a,b,c,d,e) POSIT_GLUE(POSIT_GLUE4(a,b,c,d),e)
 #define POSIT_GLUE(x,y) _POSIT_GLUE(x,y)
 #define _POSIT_GLUE(x,y) x ## y
 
 /////
 // We're done defining stuff, now we make functions
 /////
+
+#ifndef POSIT_IMPLS
+typedef struct POSIT_GLUE3(posit, POSIT_NBITS, x2_s) { POSIT_T x; POSIT_T y; } POSIT_VEC_T(2);
+#endif
 
 #if defined(__cplusplus) || defined(_MSC_VER)
 void POSIT_MKNAME(str)(char* out, POSIT_T p) POSIT_IMPL({ POSIT_API::format(p, out); })
@@ -81,11 +88,14 @@ void POSIT_MKNAME(str)(char out[static POSIT_MKNAME(str_SIZE)], POSIT_T p);
 #endif
 
 // These are implemented in posit_c_api invocations of the OPERATION() macro
-POSIT_BASE_OP(add)
-POSIT_BASE_OP(sub)
-POSIT_BASE_OP(mul)
-POSIT_BASE_OP(div)
-POSIT_BASE_OP1(sqrt)
+POSIT_BASE_OP(POSIT_T, op21, add)
+POSIT_BASE_OP(POSIT_VEC_T(2), op22, add_exact)
+POSIT_BASE_OP(POSIT_T, op21, sub)
+POSIT_BASE_OP(POSIT_VEC_T(2), op22, sub_exact)
+POSIT_BASE_OP(POSIT_T, op21, mul)
+POSIT_BASE_OP(POSIT_T, op21, div)
+POSIT_BASE_OP1(POSIT_T, op11, sqrt)
+
 
 // cmp is special because the return type is int and we need to call a different
 // function in the POSIT_API class
