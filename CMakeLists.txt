@@ -42,22 +42,22 @@ endif(NOT CMAKE_BUILD_TYPE)
 # MSVC generates SSE/SSE2 code by default. No support for SSE3 as of 7/15/2018
 option(USE_SSE3                          "Build code with SSE3 ISA support"                 OFF)
 option(USE_AVX                           "Build code with AVX ISA support"                  OFF)
-option(USE_AVX2                          "Build code with AVX2 ISA support"                 ON)
+option(USE_AVX2                          "Build code with AVX2 ISA support"                 OFF)
 # control which projects get enabled
-option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 arithmetic"        OFF)
-option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 arithmetic"        OFF)
-option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3(posit) arithmetic" ON)
-option(BUILD_C_API_LIB                   "Set to ON to build C API library"                 OFF)
-option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3(valid) arithmetic" ON)
-option(BUILD_FLOAT_ARBITRARY_PRECISION   "Set to ON to build arbitrary precision floats"    ON)
 option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"          ON)
 option(BUILD_APPLICATION_EXAMPLES        "Set to ON to build epplication examples"          ON)
 option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                ON)
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"    ON)
-option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"      OFF)
-option(BUILD_PERFORMANCE_BENCHMARKS      "Set to ON to build performance benchmarking"      OFF)
+option(BUILD_C_API_LIB                   "Set to ON to build C API library"                 OFF)
+option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 arithmetic"        OFF)
+option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 arithmetic"        OFF)
+option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3(posit) arithmetic" OFF)
+option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3(valid) arithmetic" OFF)
+option(BUILD_PERF_TESTS                  "Set to ON to build performance benchmarks"        OFF)
 option(BUILD_VERIFICATION_SUITE          "Set to ON to build verification tests"            OFF)
 option(BUILD_CI_CHECK                    "Set to ON to build all components"                OFF)
+option(BUILD_APF                         "Set to ON to build arbitrary precision floats"    OFF)
+option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"      OFF)
 option(BUILD_DOCS                        "Set to ON to build documentation"                 OFF)
 
 ####
@@ -106,17 +106,17 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
 	# Streaming SIMD Extension (SSE) ISA
 	if (USE_SSE3 AND COMPILER_HAS_SSE_FLAG)
-		add_definitions(-DUNUM_USE_SSE)
+		add_definitions(-DLIB_USE_SSE)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -msse3")
 	endif(USE_SSE3 AND COMPILER_HAS_SSE_FLAG)
 	# Advanced Vector Extensions (AVX) ISA
 	if (USE_AVX AND COMPILER_HAS_AVX_FLAG)
-		add_definitions(-DUNUM_USE_AVX)
+		add_definitions(-DLIB_USE_AVX)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -mavx")
 	endif(USE_AVX AND COMPILER_HAS_AVX_FLAG)
 	# Advanced Vector Extensions 2 (AVX2) ISA
 	if (USE_AVX2 AND COMPILER_HAS_AVX2_FLAG)
-		add_definitions(-DUNUM_USE_AVX2)
+		add_definitions(-DLIB_USE_AVX2)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -mavx2")
 	endif(USE_AVX2 AND COMPILER_HAS_AVX2_FLAG)
 
@@ -128,19 +128,19 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 elseif(MSVC)
 	# Streaming SIMD Extension (SSE) ISA
 	if (USE_SSE3)
-		add_definitions(-DUNUM_USE_SSE3)
+		add_definitions(-DLIB_USE_SSE3)
 		set(COMPILER_HAS_SSE3_FLAG true)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:SSE3")
 	endif(USE_SSE3)
 	# Advanced Vector Extensions (AVX) ISA
 	if (USE_AVX)
-		add_definitions(-DUNUM_USE_AVX)
+		add_definitions(-DLIB_USE_AVX)
 		set(COMPILER_HAS_AVX_FLAG true)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:AVX")
 	endif(USE_AVX)
 	# Advanced Vector Extensions 2 (AVX2) ISA
 	if (USE_AVX2)
-		add_definitions(-DUNUM_USE_AVX2)
+		add_definitions(-DLIB_USE_AVX2)
 		set(COMPILER_HAS_AVX2_FLAG true)
 		set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /arch:AVX2")
 	endif(USE_AVX2)
@@ -327,20 +327,35 @@ install(DIRECTORY   ${PROJECT_SOURCE_DIR}/${project_library_target_name}
         DESTINATION ${include_install_dir})
 
 if(BUILD_CI_CHECK)
-	set(BUILD_UNUM_TYPE_1 ON)
-	set(BUILD_UNUM_TYPE_2 ON)
-	set(BUILD_VERIFICATION_SUITE ON)
-	set(BUILD_VERIFICATION_SUITE ON)
-	set(BUILD_FLOAT_ARBITRARY_PRECISION ON)
-	set(BUILD_UNUM_TYPE_3_POSIT ON)
-	set(BUILD_UNUM_TYPE_3_VALID ON)
-	set(BUILD_IEEE_FLOAT_QUIRES ON)
-	set(BUILD_CMD_LINE_TOOLS ON)
+	# core example applications that use the library
 	set(BUILD_EDUCATION_EXAMPLES ON)
 	set(BUILD_APPLICATION_EXAMPLES ON)
+	set(BUILD_CMD_LINE_TOOLS ON)
 	set(BUILD_PLAYGROUND ON)
-	set(BUILD_PERFORMANCE_BENCHMARKS ON)
+	# build the different test/verification suites for each number system
+	set(BUILD_BITBLOCK ON)
+	set(BUILD_REAL_NUMBER ON)
+	set(BUILD_UNUM_TYPE_1 ON)
+	set(BUILD_UNUM_TYPE_2 ON)
+	set(BUILD_UNUM_TYPE_3_POSIT ON)
+	set(BUILD_UNUM_TYPE_3_VALID ON)
+	set(BUILD_APF ON)
+	# build the performance suites
+	set(BUILD_PERF_TESTS ON)
+	# build the C API library
+	set(BUILD_C_API_LIB ON)
+	# build IEEE float/double quire capability
+	set(BUILD_IEEE_FLOAT_QUIRES ON)
+	#
 endif(BUILD_CI_CHECK)
+
+if(BUILD_BITBLOCK)
+add_subdirectory("tests/bitblock")
+endif(BUILD_BITBLOCK)
+
+if(BUILD_REAL_NUMBER)
+add_subdirectory("tests/value")
+endif(BUILD_REAL_NUMBER)
 
 if(BUILD_UNUM_TYPE_1)
 add_subdirectory("tests/unum")
@@ -349,15 +364,6 @@ endif(BUILD_UNUM_TYPE_1)
 if(BUILD_UNUM_TYPE_2)
 add_subdirectory("tests/unum2")
 endif(BUILD_UNUM_TYPE_2)
-
-if(BUILD_VERIFICATION_SUITE)
-add_subdirectory("tests/bitblock")
-add_subdirectory("tests/value")
-endif(BUILD_VERIFICATION_SUITE)
-
-if(BUILD_FLOAT_ARBITRARY_PRECISION)
-add_subdirectory("tests/areal")
-endif(BUILD_FLOAT_ARBITRARY_PRECISION)
 
 if(BUILD_UNUM_TYPE_3_POSIT)
 add_subdirectory("tests/posit")
@@ -368,10 +374,16 @@ if(BUILD_UNUM_TYPE_3_VALID)
 add_subdirectory("tests/valid")
 endif(BUILD_UNUM_TYPE_3_VALID)
 
-if(BUILD_IEEE_FLOAT_QUIRES)
-add_subdirectory("tests/float")
-endif(BUILD_IEEE_FLOAT_QUIRES)
+if(BUILD_APF)
+add_subdirectory("tests/areal")
+endif(BUILD_APF)
 
+# performance benchmarks
+if(BUILD_PERF_TESTS)
+add_subdirectory("perf")
+endif(BUILD_PERF_TESTS)
+
+# utilities, educational examples and example programs
 if(BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
 add_subdirectory("tools/utils")
@@ -391,14 +403,16 @@ if(BUILD_PLAYGROUND)
 add_subdirectory("examples/playground")
 endif(BUILD_PLAYGROUND)
 
-if(BUILD_PERFORMANCE_BENCHMARKS)
-add_subdirectory("perf")
-endif(BUILD_PERFORMANCE_BENCHMARKS)
-
+# C API library and their tests
 if(BUILD_C_API_LIB)
 add_subdirectory("c_api/posit")
 add_subdirectory("c_api/test/posit")
 endif(BUILD_C_API_LIB)
+
+# IEEE float/double quire capability
+if(BUILD_IEEE_FLOAT_QUIRES)
+add_subdirectory("tests/float")
+endif(BUILD_IEEE_FLOAT_QUIRES)
 
 ####
 # Configuration summary
