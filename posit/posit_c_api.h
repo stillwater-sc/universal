@@ -19,72 +19,93 @@ extern "C" {
 	typedef union posit8_u   {
 		uint8_t x[1];
 		uint8_t v;
-	}											posit8_t;	// posit<8,0>
+	}							posit8_t;	// posit<8,0>
 	typedef union posit16_u  {
 		uint8_t x[2];
 		uint16_t v;
-	}											posit16_t;	// posit<16,1>
+	}							posit16_t;	// posit<16,1>
 	typedef struct posit32_s {
 		uint8_t x[4];
 		uint32_t v;
-	}											posit32_t;	// posit<32,2>
+	}							posit32_t;	// posit<32,2>
 	typedef struct posit64_s {
 		uint8_t x[8];
 		uint64_t v;
-	}											posit64_t;	// posit<64,3>
+	}							posit64_t;	// posit<64,3>
 	typedef union posit128_u {
 		uint8_t x[16];
 		uint64_t longs[2];
-	} 											posit128_t; // posit<128,4>
+	} 							posit128_t;	// posit<128,4>
 	typedef struct posit256_u {
 		uint8_t x[32];
 		uint64_t longs[4];
-	}											posit256_t;	// posit<256,5>
+	}							posit256_t;	// posit<256,5>
 
 	///////////////////////////////////////////////////////////////////////
 	///   associated quire configurations
-	typedef unsigned long long	quire8_t;   // quire<8,0,39>
-	typedef struct quire16_t {
-		unsigned char x[16];
+	typedef union quire8_u {
+		uint8_t x[8];
+		uint64_t v;
+	}							quire8_t;	// quire<8,0,39>
+	typedef union quire16_u {
+		uint8_t x[16];
+		uint64_t v[2];
 	}							quire16_t;	// quire<16,1,15>
-	typedef struct quire32_t {
-		unsigned char x[64];
+	typedef union quire32_u {
+		uint8_t x[64];
+		uint64_t v[8];
 	}							quire32_t;	// quire<32,2,31>
-	typedef struct quire64_t {
-		unsigned char x[256];
+	typedef union quire64_u {
+		uint8_t x[256];
+		uint64_t v[32];
 	}							quire64_t;	// quire<64,3,63>
-	typedef struct quire128_t {
-		unsigned char x[1024];
+	typedef union quire128_u {
+		uint8_t x[1024];
+		uint64_t v[128];
 	}							quire128_t;	// quire<128,4,127>
-	typedef struct quire256_t {
-		unsigned char x[4096];
+	typedef union quire256_u {
+		uint8_t x[4096];
+		uint64_t v[512];
 	}							quire256_t; // quire<256,5,255>
 
-	/// quire<  8, 0, 7>      32 bits		<--- likely not enough capacity bits
+	///	quire<  8, 0, 7>      32 bits		<--- likely not enough capacity bits
 	///	quire< 16, 1, 15>    128 bits
 	///	quire< 32, 2, 31>    512 bits
 	///	quire< 64, 3, 63>   2048 bits
 	///	quire<128, 4, 127>  8192 bits		<--- likely too many capacity bits
 	///	quire<256, 5, 7>   32520 bits		<--- 4065 bytes: smallest size aligned to 4byte boundary
-	/// quire<256, 5, 255> 32768 bits       <--- 4096 bytes
+	///	quire<256, 5, 255> 32768 bits       <--- 4096 bytes
 
 	//////////////////////////////////////////////////////////////////////
 	/// special posits
 #ifdef DEEP_LEARNING
 	//////////////////////////////////////////////////////////////////////
 	// for Deep Learning/AI algorithms
-	typedef unsigned char       posit4_t;   // posit<4,0>
-	typedef unsigned char       posit5_t;   // posit<5,0>
-	typedef unsigned char       posit6_t;   // posit<6,0>
-	typedef unsigned char       posit7_t;   // posit<7,0>
+	typedef uint8_t posit4_t;   // posit<4,0>
+	typedef uint8_t posit5_t;   // posit<5,0>
+	typedef uint8_t posit6_t;   // posit<6,0>
+	typedef uint8_t posit7_t;   // posit<7,0>
 #endif // DEEP_LEARNING
 
 #ifdef DSP_PIPELINES
 	//////////////////////////////////////////////////////////////////////
 	// for DSP applications and ADC/DAC pipelines
-	typedef unsigned char       posit10_t;   // posit<10,0>
-	typedef unsigned char       posit12_t;   // posit<12,0>
-	typedef unsigned char       posit14_t;   // posit<14,0>
+	typedef union posit9_u  {
+		uint8_t x[2];
+		uint16_t v;
+	}							posit9_t;	// posit<9,0>
+	typedef union posit10_u  {
+		uint8_t x[2];
+		uint16_t v;
+	}							posit10_t;	// posit<10,0>
+	typedef union posit12_u  {
+		uint8_t x[2];
+		uint16_t v;
+	}							posit12_t;	// posit<12,0>
+	typedef union posit14_u  {
+		uint8_t x[2];
+		uint16_t v;
+	}							posit14_t;	// posit<14,0>
 #endif // DSP_PIPELINES
 
 #ifdef EXTENDED_STANDARD
@@ -93,19 +114,44 @@ extern "C" {
 
 	//////////////////////////////////////////////////////////////////////
 	// posits between posit<16,1> and posit<32,2> staying with ES = 1
-	typedef unsigned char       posit20_t;  // posit<20,1>
-	typedef unsigned char       posit28_t;	// posit<28,1>
+	typedef struct posit20_u {
+		uint8_t x[4];
+		uint32_t v;
+	}							posit20_t;	// posit<20,1>
+	typedef struct posit24_u {
+		uint8_t x[4];
+		uint32_t v;
+	}							posit24_t;	// posit<24,1>
 
 	// posits between posit<32,2> and posit<64,3> staying with ES = 2
-	typedef unsigned char       posit40_t;  // posit<40,2>
-	typedef unsigned char       posit48_t;	// posit<48,2>
-	typedef unsigned char       posit56_t;	// posit<56,2>
+	// notice we keep the cast to a uint64_t
+	typedef struct posit40_u {
+		uint8_t x[8];
+		uint64_t v;
+	}							posit40_t;	// posit<40,2>
+	typedef struct posit48_u {
+		uint8_t x[8];
+		uint64_t v;
+	}							posit48_t;	// posit<48,2>
+	typedef struct posit56_u {
+		uint8_t x[8];
+		uint64_t v;
+	}							posit56_t;	// posit<56,2>
 
 	//////////////////////////////////////////////////////////////////////
 	// posits between posit<64,3> and posit<128,4> staying with ES = 3
-	typedef unsigned char       posit80_t;  // posit<80,3>
-	typedef unsigned char       posit96_t;  // posit<96,3>
-	typedef unsigned char       posit112_t; // posit<112,3>
+	typedef struct posit80_u {
+		uint8_t x[10];
+		//uint64_t v[2];// if we cast it to exactly 10 bytes, this cast would not work
+	}							posit80_t;	// posit<80,3>
+	typedef struct posit96_u {
+		uint8_t x[12];
+		//uint64_t v[2];
+	}							posit96_t;	// posit<96,3>
+	typedef struct posit96_u {
+		uint8_t x[14];
+		//uint64_t v[2];
+	}							posit112_t;	// posit<112,3>
 #endif // EXTENDED_STANDARD
 
 	//////////////////////////////////////////////////////////////////////

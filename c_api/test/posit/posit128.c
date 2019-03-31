@@ -8,6 +8,7 @@
 
 int main(int argc, char* argv[])
 {
+	const int maxNr = 256;
 	posit128_t pa, pb, pc;
 	char str[posit128_str_SIZE];
 	bool failures = false;
@@ -43,15 +44,15 @@ int main(int argc, char* argv[])
 
 	// partial state space
 	int fails = 0;
-	for (int a = 0; a < 256; ++a) {
+	for (int a = 0; a < maxNr; ++a) {
 		pa = posit128_reinterpret( (uint64_t[]){ a, 0 } );
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < maxNr; ++b) {
 			pb = posit128_reinterpret( (uint64_t[]){ b, 0 } );
 			pc = posit_add(pa, pb);
 
 			long double da, db, dref;
-			da = posit128_told(pa);
-			db = posit128_told(pb);
+			da = posit_told(pa);
+			db = posit_told(pb);
 			dref = da + db;
 
 			posit128_t pref = posit128_fromld(dref);
@@ -82,10 +83,9 @@ int main(int argc, char* argv[])
 
 	// partial state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {
-
+	for (int a = 0; a < maxNr; ++a) {
 		pa = posit128_reinterpret( (uint64_t[]){ a, 0 } );
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < maxNr; ++b) {
 			pb = posit128_reinterpret( (uint64_t[]){ b, 0 } );
 			pc = posit_sub(pa, pb);
 
@@ -122,10 +122,9 @@ int main(int argc, char* argv[])
 
 	// partial state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {
-
+	for (int a = 0; a < maxNr; ++a) {
 		pa = posit128_reinterpret( (uint64_t[]){ a, 0 } );
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < maxNr; ++b) {
 			pb = posit128_reinterpret( (uint64_t[]){ b, 0 } );
 			pc = posit_mul(pa, pb);
 
@@ -162,10 +161,9 @@ int main(int argc, char* argv[])
 
 	// partial state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {
-
+	for (int a = 0; a < maxNr; ++a) {
 		pa = posit128_reinterpret( (uint64_t[]){ a, 0 } );
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < maxNr; ++b) {
 			pb = posit128_reinterpret( (uint64_t[]){ b, 0 } );
 			pc = posit_div(pa, pb);
 
