@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
 			da = posit32_tod(pa);
 			db = posit32_tod(pb);
 			dref = da + db;
-			posit32_t pref = posit32_fromf(dref);
+			posit32_t pref = posit32_fromd(dref);
 			if (posit32_cmp(pref, pc)) {
 				printf("FAIL: 32.2x%08xp + 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
                     posit32_bits(pa), posit32_bits(pb), posit32_bits(pc), posit32_bits(pref));
@@ -82,7 +82,7 @@ int main(int argc, char* argv[])
 			da = posit32_tod(pa);
 			db = posit32_tod(pb);
 			dref = da - db;
-			posit32_t pref = posit32_fromf(dref);
+			posit32_t pref = posit32_fromd(dref);
 			if (pref.v != pc.v) {
 				printf("FAIL: 32.2x%08xp - 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
                     posit32_bits(pa), posit32_bits(pb), posit32_bits(pc), posit32_bits(pref));
