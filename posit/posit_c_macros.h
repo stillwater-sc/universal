@@ -57,6 +57,9 @@
     }) \
     POSIT_INLINE(__rett__ POSIT_GLUE3(POSIT_MKNAME(p), POSIT_NBITS, __op__)(POSIT_T x, POSIT_T y) { \
         return POSIT_GLUE3(POSIT_MKNAME(__op__), p, POSIT_NBITS)(x, y); \
+    }) \
+    POSIT_INLINE(__rett__ POSIT_MKNAME(__op__)(POSIT_T x, POSIT_T y) { \
+        return POSIT_GLUE3(POSIT_MKNAME(__op__), p, POSIT_NBITS)(x, y); \
     })
 
 // single argument operation
@@ -103,6 +106,9 @@ int POSIT_GLUE3(POSIT_MKNAME(cmp),p,POSIT_NBITS)(POSIT_T x, POSIT_T y) POSIT_IMP
     return POSIT_API::cmp(x, y);
 })
 POSIT_INLINE(int POSIT_GLUE3(POSIT_MKNAME(p), POSIT_NBITS, cmp)(POSIT_T x, POSIT_T y) {
+    return POSIT_GLUE3(POSIT_MKNAME(cmp), p, POSIT_NBITS)(x, y);
+})
+POSIT_INLINE(int POSIT_MKNAME(cmp)(POSIT_T x, POSIT_T y) {
     return POSIT_GLUE3(POSIT_MKNAME(cmp), p, POSIT_NBITS)(x, y);
 })
 

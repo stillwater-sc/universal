@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#define POSIT_NO_GENERICS // MSVC doesn't support _Generic so we'll leave it out from these tests
 #include <posit_c_api.h>
 #include <math.h> // sqrt()
 
@@ -16,31 +17,31 @@ int main(int argc, char* argv[])
 	// special case values
 	pa = NAR8;
 	pb = ZERO8;
-	pc = posit_add(pa, pb);
-	posit_str(str, pc);
+	pc = posit8_add(pa, pb);
+	posit8_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 8.0x%02xp\n", posit_bits(pc));
+	printf("posit value = 8.0x%02xp\n", posit8_bits(pc));
 
 	pa = NAR8;
 	pb = ZERO8;
-	pc = posit_sub(pa, pb);
-	posit_str(str, pc);
+	pc = posit8_sub(pa, pb);
+	posit8_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 8.0x%02xp\n", posit_bits(pc));
+	printf("posit value = 8.0x%02xp\n", posit8_bits(pc));
 
 	pa = NAR8;
 	pb = ZERO8;
-	pc = posit_mul(pa, pb);
-	posit_str(str, pc);
+	pc = posit8_mul(pa, pb);
+	posit8_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 8.0x%02xp\n", posit_bits(pc));
+	printf("posit value = 8.0x%02xp\n", posit8_bits(pc));
 
 	pa = NAR8;
 	pb = ZERO8;
-	pc = posit_div(pa, pb);
-	posit_str(str, pc);
+	pc = posit8_div(pa, pb);
+	posit8_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 8.0x%02xp\n", posit_bits(pc));
+	printf("posit value = 8.0x%02xp\n", posit8_bits(pc));
 
 
 	// full state space
@@ -49,15 +50,15 @@ int main(int argc, char* argv[])
 		pa = posit8_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit8_reinterpret(b);
-			pc = posit_add(pa, pb);
+			pc = posit8_add(pa, pb);
 			float da, db, dref;
-			da = posit_tof(pa);
-			db = posit_tof(pb);
+			da = posit8_tof(pa);
+			db = posit8_tof(pb);
 			dref = da + db;
-			posit8_t pref = posit8(dref);
-			if (posit_cmp(pref, pc)) {
+			posit8_t pref = posit8_fromf(dref);
+			if (posit8_cmp(pref, pc)) {
 				printf("FAIL: 8.0x%02xp + 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
-                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
+                    posit8_bits(pa), posit8_bits(pb), posit8_bits(pc), posit8_bits(pref));
 				++fails;
 			}
 		}
@@ -76,15 +77,15 @@ int main(int argc, char* argv[])
 		pa = posit8_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit8_reinterpret(b);
-			pc = posit_sub(pa, pb);
+			pc = posit8_sub(pa, pb);
 			float da, db, dref;
-			da = posit_tof(pa);
-			db = posit_tof(pb);
+			da = posit8_tof(pa);
+			db = posit8_tof(pb);
 			dref = da - db;
-			posit8_t pref = posit8(dref);
-			if (posit_cmp(pref, pc)) {
+			posit8_t pref = posit8_fromf(dref);
+			if (posit8_cmp(pref, pc)) {
 				printf("FAIL: 8.0x%02xp - 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
-                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
+                    posit8_bits(pa), posit8_bits(pb), posit8_bits(pc), posit8_bits(pref));
 				++fails;
 			}
 		}
@@ -103,15 +104,15 @@ int main(int argc, char* argv[])
 		pa = posit8_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit8_reinterpret(b);
-			pc = posit_mul(pa, pb);
+			pc = posit8_mul(pa, pb);
 			float da, db, dref;
-			da = posit_tof(pa);
-			db = posit_tof(pb);
+			da = posit8_tof(pa);
+			db = posit8_tof(pb);
 			dref = da * db;
-			posit8_t pref = posit8(dref);
-			if (posit_cmp(pref, pc)) {
+			posit8_t pref = posit8_fromf(dref);
+			if (posit8_cmp(pref, pc)) {
 				printf("FAIL: 8.0x%02xp * 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
-                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
+                    posit8_bits(pa), posit8_bits(pb), posit8_bits(pc), posit8_bits(pref));
 				++fails;
 			}
 		}
@@ -130,15 +131,15 @@ int main(int argc, char* argv[])
 		pa = posit8_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit8_reinterpret(b);
-			pc = posit_div(pa, pb);
+			pc = posit8_div(pa, pb);
 			float da, db, dref;
-			da = posit_tof(pa);
-			db = posit_tof(pb);
+			da = posit8_tof(pa);
+			db = posit8_tof(pb);
 			dref = da / db;
-			posit8_t pref = posit8(dref);
-			if (posit_cmp(pref, pc)) {
+			posit8_t pref = posit8_fromf(dref);
+			if (posit8_cmp(pref, pc)) {
 				printf("FAIL: 8.0x%02xp / 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
-                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
+                    posit8_bits(pa), posit8_bits(pb), posit8_bits(pc), posit8_bits(pref));
 				++fails;
 			}
 		}
@@ -155,14 +156,14 @@ int main(int argc, char* argv[])
 	fails = 0;
 	for (int a = 0; a < 256*256; ++a) {
 		pa = posit8_reinterpret(a);
-		pc = posit_sqrt(pa);
+		pc = posit8_sqrt(pa);
 		float da, dref;
-		da = posit_tof(pa);
+		da = posit8_tof(pa);
 		dref = sqrt(da);
-		posit8_t pref = posit8(dref);
-		if (posit_cmp(pref, pc)) {
+		posit8_t pref = posit8_fromf(dref);
+		if (posit8_cmp(pref, pc)) {
 			printf("FAIL: sqrt(8.0x%02xp) produced 8.0x%02xp instead of 8.0x%02xp\n",
-	    posit_bits(pa), posit_bits(pc), posit_bits(pref));
+	    posit8_bits(pa), posit8_bits(pc), posit8_bits(pref));
 			++fails;
 		}
 	}
