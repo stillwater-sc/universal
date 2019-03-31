@@ -150,6 +150,7 @@ int main(int argc, char* argv[])
 		printf("division        PASS\n");
 	}
 
+#ifdef SQRT_ENABLED
 	// full state space
 	fails = 0;
 	for (int a = 0; a < 256*256; ++a) {
@@ -172,6 +173,7 @@ int main(int argc, char* argv[])
 	else {
 		printf("sqrt            PASS\n");
 	}
+#endif //SQRT_ENABLED
 
 	return failures > 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 }
