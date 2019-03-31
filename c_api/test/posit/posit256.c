@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#define POSIT_NO_GENERICS // MSVC doesn't support _Generic so we'll leave it out from these tests
 #include <posit_c_api.h>
 
 int main(int argc, char* argv[])
@@ -17,26 +18,26 @@ int main(int argc, char* argv[])
 	// special case values
 	pa = NAR256;
 	pb = ZERO256;
-	pc = posit_add(pa, pb);
-	posit_str(str, pc);
+	pc = posit256_add(pa, pb);
+	posit256_str(str, pc);
 	printf("posit value = %s\n", str);
 
 	pa = NAR256;
 	pb = ZERO256;
-	pc = posit_sub(pa, pb);
-	posit_str(str, pc);
+	pc = posit256_sub(pa, pb);
+	posit256_str(str, pc);
 	printf("posit value = %s\n", str);
 
 	pa = NAR256;
 	pb = ZERO256;
-	pc = posit_mul(pa, pb);
-	posit_str(str, pc);
+	pc = posit256_mul(pa, pb);
+	posit256_str(str, pc);
 	printf("posit value = %s\n", str);
 
 	pa = NAR256;
 	pb = ZERO256;
-	pc = posit_div(pa, pb);
-	posit_str(str, pc);
+	pc = posit256_div(pa, pb);
+	posit256_str(str, pc);
 	printf("posit value = %s\n", str);
 
 	bool noReference = true;
@@ -48,21 +49,21 @@ int main(int argc, char* argv[])
 		pa = posit256_reinterpret( (uint64_t[]){ a, 0, 0, 0 } );
 		for (int b = 0; b < maxNr; ++b) {
 			pb = posit256_reinterpret( (uint64_t[]){ b, 0, 0, 0 } );
-			pc = posit_add(pa, pb);
+			pc = posit256_add(pa, pb);
 
 			long double da, db, dref;
-			da = posit_told(pa);
-			db = posit_told(pb);
+			da = posit256_told(pa);
+			db = posit256_told(pb);
 			dref = da + db;
 
-			posit256_t pref = posit256(dref);
+			posit256_t pref = posit256_fromld(dref);
 
-			if (posit_cmp(pref, pc)) {
+			if (posit256_cmp(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
-				posit_str(sa, pa);
-				posit_str(sb, pb);
-				posit_str(sc, pc);
-				posit_str(sref, pref);
+				posit256_str(sa, pa);
+				posit256_str(sb, pb);
+				posit256_str(sc, pc);
+				posit256_str(sref, pref);
 
 				if (bReportIndividualTestCases) printf("FAIL: %s + %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
@@ -88,20 +89,20 @@ int main(int argc, char* argv[])
 		pa = posit256_reinterpret( (uint64_t[]){ a, 0, 0, 0 } );
 		for (int b = 0; b < maxNr; ++b) {
 			pb = posit256_reinterpret( (uint64_t[]){ b, 0, 0, 0 } );
-			pc = posit_sub(pa, pb);
+			pc = posit256_sub(pa, pb);
 
 			long double da, db, dref;
-			da = posit_told(pa);
-			db = posit_told(pb);
+			da = posit256_told(pa);
+			db = posit256_told(pb);
 			dref = da - db;
 
-			posit256_t pref = posit256(dref);
-			if (posit_cmp(pref, pc)) {
+			posit256_t pref = posit256_fromld(dref);
+			if (posit256_cmp(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
-				posit_str(sa, pa);
-				posit_str(sb, pb);
-				posit_str(sc, pc);
-				posit_str(sref, pref);
+				posit256_str(sa, pa);
+				posit256_str(sb, pb);
+				posit256_str(sc, pc);
+				posit256_str(sref, pref);
 
 				if (bReportIndividualTestCases) printf("FAIL: %s - %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
@@ -127,21 +128,21 @@ int main(int argc, char* argv[])
 		pa = posit256_reinterpret( (uint64_t[]){ a, 0, 0, 0 } );
 		for (int b = 0; b < maxNr; ++b) {
 			pb = posit256_reinterpret( (uint64_t[]){ b, 0, 0, 0 } );
-			pc = posit_mul(pa, pb);
+			pc = posit256_mul(pa, pb);
 
 			long double da, db, dref;
-			da = posit_told(pa);
-			db = posit_told(pb);
+			da = posit256_told(pa);
+			db = posit256_told(pb);
 			dref = da * db;
 
-			posit256_t pref = posit256(dref);
+			posit256_t pref = posit256_fromld(dref);
 
-			if (posit_cmp(pref, pc)) {
+			if (posit256_cmp(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
-				posit_str(sa, pa);
-				posit_str(sb, pb);
-				posit_str(sc, pc);
-				posit_str(sref, pref);
+				posit256_str(sa, pa);
+				posit256_str(sb, pb);
+				posit256_str(sc, pc);
+				posit256_str(sref, pref);
 
 				if (bReportIndividualTestCases) printf("FAIL: %s * %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
@@ -167,21 +168,21 @@ int main(int argc, char* argv[])
 		pa = posit256_reinterpret( (uint64_t[]){ a, 0, 0, 0 } );
 		for (int b = 0; b < maxNr; ++b) {
 			pb = posit256_reinterpret( (uint64_t[]){ b, 0, 0, 0 } );
-			pc = posit_div(pa, pb);
+			pc = posit256_div(pa, pb);
 
 			long double da, db, dref;
-			da = posit_told(pa);
-			db = posit_told(pb);
+			da = posit256_told(pa);
+			db = posit256_told(pb);
 			dref = da / db;
 
-			posit256_t pref = posit256(dref);
+			posit256_t pref = posit256_fromld(dref);
 
-			if (posit_cmp(pref, pc)) {
+			if (posit256_cmp(pref, pc)) {
 				char sa[posit256_str_SIZE], sb[posit256_str_SIZE], sc[posit256_str_SIZE], sref[posit256_str_SIZE];
-				posit_str(sa, pa);
-				posit_str(sb, pb);
-				posit_str(sc, pc);
-				posit_str(sref, pref);
+				posit256_str(sa, pa);
+				posit256_str(sb, pb);
+				posit256_str(sc, pc);
+				posit256_str(sref, pref);
 
 				if (bReportIndividualTestCases) printf("FAIL: %s / %s produced %s instead of %s\n", sa, sb, sc, sref);
 				++fails;
