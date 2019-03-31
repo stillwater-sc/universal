@@ -8,7 +8,7 @@
 
 int main(int argc, char* argv[])
 {
-	const int maxNr = 196;
+	const int maxNr = 256;
 	posit256_t pa, pb, pc;
 	char str[posit256_str_SIZE];
 	bool failures = false;
