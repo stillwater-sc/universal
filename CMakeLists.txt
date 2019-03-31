@@ -40,25 +40,31 @@ endif(NOT CMAKE_BUILD_TYPE)
 ####
 # Set build options
 # MSVC generates SSE/SSE2 code by default. No support for SSE3 as of 7/15/2018
-option(USE_SSE3                          "Build code with SSE3 ISA support"                 OFF)
-option(USE_AVX                           "Build code with AVX ISA support"                  OFF)
-option(USE_AVX2                          "Build code with AVX2 ISA support"                 OFF)
+option(USE_SSE3                          "Build code with SSE3 ISA support"                    OFF)
+option(USE_AVX                           "Build code with AVX ISA support"                     OFF)
+option(USE_AVX2                          "Build code with AVX2 ISA support"                    OFF)
 # control which projects get enabled
-option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"          ON)
-option(BUILD_APPLICATION_EXAMPLES        "Set to ON to build epplication examples"          ON)
-option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                ON)
-option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"    ON)
-option(BUILD_C_API_LIB                   "Set to ON to build C API library"                 OFF)
-option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 arithmetic"        OFF)
-option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 arithmetic"        OFF)
-option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3(posit) arithmetic" OFF)
-option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3(valid) arithmetic" OFF)
-option(BUILD_PERF_TESTS                  "Set to ON to build performance benchmarks"        OFF)
-option(BUILD_VERIFICATION_SUITE          "Set to ON to build verification tests"            OFF)
-option(BUILD_CI_CHECK                    "Set to ON to build all components"                OFF)
-option(BUILD_APF                         "Set to ON to build arbitrary precision floats"    OFF)
-option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"      OFF)
-option(BUILD_DOCS                        "Set to ON to build documentation"                 OFF)
+# Continuous Integration override to build all components
+option(BUILD_CI_CHECK                    "Set to ON to build all components"                   OFF)
+# utilities and educational examples
+option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"             ON)
+option(BUILD_APPLICATION_EXAMPLES        "Set to ON to build epplication examples"             ON)
+option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   ON)
+option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
+# C API library and test programs
+option(BUILD_C_API_LIB                   "Set to ON to build C API library"                    OFF)
+# number systems and their verification suites
+option(BUILD_BITBLOCK                    "Set to ON to build bitblock tests"                   OFF)
+option(BUILD_REAL_NUMBER                 "Set to ON to build real value tests"                 OFF)
+option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 tests"                OFF)
+option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 tests"                OFF)
+option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3 posit tests"          OFF)
+option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3 valid tests"          OFF)
+option(BUILD_APF                         "Set to ON to build arbitrary precision float tests"  OFF)
+# performance benchmarking
+option(BUILD_PERF_TESTS                  "Set to ON to build performance benchmarks"           OFF)
+option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"         OFF)
+option(BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
 
 ####
 # Create the library target
