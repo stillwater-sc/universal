@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#define POSIT_NO_GENERICS // MSVC doesn't support _Generic so we'll leave it out from these tests
 #include <posit_c_api.h>
 
 int main(int argc, char* argv[])
@@ -15,31 +16,31 @@ int main(int argc, char* argv[])
 	// special case values
 	pa = NAR32;
 	pb = ZERO32;
-	pc = posit_add(pa, pb);
-	posit_str(str, pc);
+	pc = posit32_add(pa, pb);
+	posit32_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 32.2x%08xp\n", posit_bits(pc));
+	printf("posit value = 32.2x%08xp\n", posit32_bits(pc));
 
 	pa = NAR32;
 	pb = ZERO32;
-	pc = posit_sub(pa, pb);
-	posit_str(str, pc);
+	pc = posit32_sub(pa, pb);
+	posit32_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 32.2x%08xp\n", posit_bits(pc));
+	printf("posit value = 32.2x%08xp\n", posit32_bits(pc));
 
 	pa = NAR32;
 	pb = ZERO32;
-	pc = posit_mul(pa, pb);
-	posit_str(str, pc);
+	pc = posit32_mul(pa, pb);
+	posit32_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 32.2x%08xp\n", posit_bits(pc));
+	printf("posit value = 32.2x%08xp\n", posit32_bits(pc));
 
 	pa = NAR32;
 	pb = ZERO32;
-	pc = posit_div(pa, pb);
-	posit_str(str, pc);
+	pc = posit32_div(pa, pb);
+	posit32_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 32.2x%08xp\n", posit_bits(pc));
+	printf("posit value = 32.2x%08xp\n", posit32_bits(pc));
 
 	// partial state space
 	int fails = 0;
@@ -47,15 +48,15 @@ int main(int argc, char* argv[])
 		pa = posit32_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit32_reinterpret(b);
-			pc = posit_add(pa, pb);
+			pc = posit32_add(pa, pb);
 			double da, db, dref;
 			da = posit32_tod(pa);
 			db = posit32_tod(pb);
 			dref = da + db;
 			posit32_t pref = posit32_fromf(dref);
-			if (posit_cmp(pref, pc)) {
+			if (posit32_cmp(pref, pc)) {
 				printf("FAIL: 32.2x%08xp + 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
-                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
+                    posit32_bits(pa), posit32_bits(pb), posit32_bits(pc), posit32_bits(pref));
 				++fails;
 				break;
 			}
@@ -76,7 +77,7 @@ int main(int argc, char* argv[])
 		pa = posit32_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit32_reinterpret(b);
-			pc = posit_sub(pa, pb);
+			pc = posit32_sub(pa, pb);
 			double da, db, dref;
 			da = posit32_tod(pa);
 			db = posit32_tod(pb);
@@ -84,7 +85,7 @@ int main(int argc, char* argv[])
 			posit32_t pref = posit32_fromf(dref);
 			if (pref.v != pc.v) {
 				printf("FAIL: 32.2x%08xp - 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
-                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
+                    posit32_bits(pa), posit32_bits(pb), posit32_bits(pc), posit32_bits(pref));
 				++fails;
 			}
 		}
@@ -103,15 +104,15 @@ int main(int argc, char* argv[])
 		pa = posit32_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit32_reinterpret(b);
-			pc = posit_mul(pa, pb);
+			pc = posit32_mul(pa, pb);
 			double da, db, dref;
 			da = posit32_tod(pa);
 			db = posit32_tod(pb);
 			dref = da * db;
-			posit32_t pref = posit32(dref);
-			if (posit_cmp(pref, pc) != 0) {
+			posit32_t pref = posit32_fromd(dref);
+			if (posit32_cmp(pref, pc) != 0) {
 				printf("FAIL: 32.2x%08xp * 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
-                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
+                    posit32_bits(pa), posit32_bits(pb), posit32_bits(pc), posit32_bits(pref));
 				++fails;
 			}
 		}
@@ -130,15 +131,15 @@ int main(int argc, char* argv[])
 		pa = posit32_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit32_reinterpret(b);
-			pc = posit_div(pa, pb);
+			pc = posit32_div(pa, pb);
 			double da, db, dref;
-			da = posit_tod(pa);
-			db = posit_tod(pb);
+			da = posit32_tod(pa);
+			db = posit32_tod(pb);
 			dref = da / db;
-			posit32_t pref = posit32(dref);
-			if (posit_cmp(pref, pc) != 0) {
+			posit32_t pref = posit32_fromd(dref);
+			if (posit32_cmp(pref, pc) != 0) {
 				printf("FAIL: 32.2x%08xp / 32.2x%08xp produced 32.2x%08xp instead of 32.2x%08xp\n",
-                    posit_bits(pa), posit_bits(pb), posit_bits(pc), posit_bits(pref));
+                    posit32_bits(pa), posit32_bits(pb), posit32_bits(pc), posit32_bits(pref));
 				++fails;
 			}
 		}
