@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <tuple>
 #include <posit_c_api.h>
 #define POSIT_FAST_POSIT_8_0   1
 #define POSIT_FAST_POSIT_16_1  1
@@ -13,6 +13,7 @@
 #define POSIT_FAST_POSIT_128_4 0
 #define POSIT_FAST_POSIT_256_5 0
 #include <posit>
+
 
 // marshal takes a positN_t and marshals it into a raw bitblock
 template<size_t nbits, size_t es, typename positN_t>
