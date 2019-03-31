@@ -6,7 +6,7 @@
 
 #include <posit_c_api.h>
 #define POSIT_FAST_POSIT_8_0   1
-#define POSIT_FAST_POSIT_16_1  1 
+#define POSIT_FAST_POSIT_16_1  1
 #define POSIT_FAST_POSIT_32_2  1
 // thefollowing posit configurations do not have a fast implementation yet
 #define POSIT_FAST_POSIT_64_3  0
@@ -134,15 +134,16 @@ template<size_t nbits, size_t es> class operation {
 		sw::unum::posit<nbits, es> b
 	);
 };
-#define OPERATION(name, impl) \
+#define OPERATION(name, ...) \
 	template<size_t nbits, size_t es> class name: operation<nbits,es> { \
 		public: static sw::unum::posit<nbits, es> \
-			op(sw::unum::posit<nbits, es> a, sw::unum::posit<nbits, es> b) impl \
+			op(sw::unum::posit<nbits, es> a, sw::unum::posit<nbits, es> b) __VA_ARGS__ \
 	}
 OPERATION(op_add, { return a + b; });
 OPERATION(op_sub, { return a - b; });
 OPERATION(op_mul, { return a * b; });
 OPERATION(op_div, { return a / b; });
+OPERATION(op_sqrt, { return sw::unum::sqrt<nbits, es>(a); });
 
 template<size_t _nbits, size_t _es, class positN_t, class convert> class capi {
 	public:
@@ -178,6 +179,14 @@ template<size_t _nbits, size_t _es, class positN_t, class convert> class capi {
 		posit<nbits, es> pa = convert::decode(a);
 		posit<nbits, es> pb = convert::decode(b);
 		posit<nbits, es> res = operation::op(pa, pb);
+		return convert::encode(res);
+	}
+
+	template<class operation>
+	static positN_t op1(positN_t a) {
+		using namespace sw::unum;
+		posit<nbits, es> pa = convert::decode(a);
+		posit<nbits, es> res = operation::op(pa, NULL);
 		return convert::encode(res);
 	}
 
