@@ -169,6 +169,8 @@ OPERATION21(op_sub, { return a - b; });
 OPERATION21(op_mul, { return a * b; });
 OPERATION21(op_div, { return a / b; });
 OPERATION11(op_sqrt, { return sw::unum::sqrt<nbits, es>(a); });
+OPERATION11(op_exp, { return sw::unum::exp<nbits, es>(a); });
+OPERATION11(op_log, { return sw::unum::log<nbits, es>(a); });
 OPERATION22(op_add_exact, {
     // TODO
     //return a.add_exact(b);
