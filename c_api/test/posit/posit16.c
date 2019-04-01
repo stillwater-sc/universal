@@ -9,6 +9,8 @@
 
 int main(int argc, char* argv[])
 {
+	const int maxNr = 1024;
+	const int fullState = 256*256;
 	posit16_t pa, pb, pc;
 	char str[posit16_str_SIZE];
 	bool failures = false;
@@ -19,35 +21,31 @@ int main(int argc, char* argv[])
 	pc = posit16_add(pa, pb);
 	posit16_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 16.1x%04xp\n", posit16_bits(pc));
 
 	pa = NAR16;
 	pb = ZERO16;
 	pc = posit16_sub(pa, pb);
 	posit16_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 16.1x%04xp\n", posit16_bits(pc));
 
 	pa = NAR16;
 	pb = ZERO16;
 	pc = posit16_mul(pa, pb);
 	posit16_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 16.1x%04xp\n", posit16_bits(pc));
 
 	pa = NAR16;
 	pb = ZERO16;
 	pc = posit16_div(pa, pb);
 	posit16_str(str, pc);
 	printf("posit value = %s\n", str);
-	printf("posit value = 16.1x%04xp\n", posit16_bits(pc));
 
 
 	// partial state space
 	int fails = 0;
-	for (int a = 0; a < 256; ++a) {
+	for (int a = 0; a < maxNr; ++a) {
 		pa = posit16_reinterpret(a);
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < maxNr; ++b) {
 			pb = posit16_reinterpret(b);
 			pc = posit16_add(pa, pb);
 			float da, db, dref;
@@ -72,9 +70,9 @@ int main(int argc, char* argv[])
 
 	// partial state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {
+	for (int a = 0; a < maxNr; ++a) {
 		pa = posit16_reinterpret(a);
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < maxNr; ++b) {
 			pb = posit16_reinterpret(b);
 			pc = posit16_sub(pa, pb);
 			float da, db, dref;
@@ -99,9 +97,9 @@ int main(int argc, char* argv[])
 
 	// partial state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {
+	for (int a = 0; a < maxNr; ++a) {
 		pa = posit16_reinterpret(a);
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < maxNr; ++b) {
 			pb = posit16_reinterpret(b);
 			pc = posit16_mul(pa, pb);
 			float da, db, dref;
@@ -126,9 +124,9 @@ int main(int argc, char* argv[])
 
 	// partial state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {
+	for (int a = 0; a < maxNr; ++a) {
 		pa = posit16_reinterpret(a);
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < maxNr; ++b) {
 			pb = posit16_reinterpret(b);
 			pc = posit16_div(pa, pb);
 			float da, db, dref;
@@ -149,6 +147,75 @@ int main(int argc, char* argv[])
 	}
 	else {
 		printf("division        PASS\n");
+	}
+
+	// full state space
+	fails = 0;
+	for (int a = 0; a < fullState; ++a) {   // includes negative numbers
+		pa = posit16_reinterpret(a);
+		pc = posit16_sqrt(pa);
+		double da, dref;
+		da = posit16_tod(pa);
+		dref = sqrt(da);
+		posit16_t pref = posit16_fromd(dref);
+		if (posit16_cmp(pref, pc)) {
+			printf("FAIL: sqrt(16.1x%04xp) produced 16.1x%04xp instead of 16.1x%04xp\n",
+				posit16_bits(pa), posit16_bits(pc), posit16_bits(pref));
+			++fails;
+		}
+	}
+	if (fails) {
+		printf("sqrt            FAIL\n");
+		failures = true;
+	}
+	else {
+		printf("sqrt            PASS\n");
+	}
+
+	// full state space
+	fails = 0;
+	for (int a = 0; a < fullState; ++a) {   // includes negative numbers
+		pa = posit16_reinterpret(a);
+		pc = posit16_exp(pa);
+		double da, dref;
+		da = posit16_tod(pa);
+		dref = exp(da);
+		posit16_t pref = posit16_fromd(dref);
+		if (posit16_cmp(pref, pc)) {
+			printf("FAIL: exp(16.1x%04xp) produced 16.1x%04xp instead of 16.1x%04xp\n",
+				posit16_bits(pa), posit16_bits(pc), posit16_bits(pref));
+			++fails;
+		}
+	}
+	if (fails) {
+		printf("exp             FAIL\n");
+		failures = true;
+	}
+	else {
+		printf("exp             PASS\n");
+	}
+
+	// full state space
+	fails = 0;
+	for (int a = 0; a < fullState; ++a) {   // includes negative numbers
+		pa = posit16_reinterpret(a);
+		pc = posit16_log(pa);
+		double da, dref;
+		da = posit16_tod(pa);
+		dref = log(da);
+		posit16_t pref = posit16_fromd(dref);
+		if (posit16_cmp(pref, pc)) {
+			printf("FAIL: log(16.1x%04xp) produced 16.1x%04xp instead of 16.1x%04xp\n",
+				posit16_bits(pa), posit16_bits(pc), posit16_bits(pref));
+			++fails;
+		}
+	}
+	if (fails) {
+		printf("log             FAIL\n");
+		failures = true;
+	}
+	else {
+		printf("log             PASS\n");
 	}
 
 	return failures > 0 ? EXIT_FAILURE : EXIT_SUCCESS;

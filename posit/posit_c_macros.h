@@ -98,6 +98,8 @@ POSIT_BASE_OP(POSIT_VEC_T(2), op22, sub_exact)
 POSIT_BASE_OP(POSIT_T, op21, mul)
 POSIT_BASE_OP(POSIT_T, op21, div)
 POSIT_BASE_OP1(POSIT_T, op11, sqrt)
+POSIT_BASE_OP1(POSIT_T, op11, log)
+POSIT_BASE_OP1(POSIT_T, op11, exp)
 
 
 // cmp is special because the return type is int and we need to call a different
