@@ -154,13 +154,13 @@ int main(int argc, char* argv[])
 
 	// full state space
 	fails = 0;
-	for (int a = 0; a < 256*256; ++a) {
+	for (int a = 0; a < 256; ++a) {   // includes negative numbers
 		pa = posit8_reinterpret(a);
 		pc = posit8_sqrt(pa);
-		float da, dref;
-		da = posit8_tof(pa);
+		double da, dref;
+		da = posit8_tod(pa);
 		dref = sqrt(da);
-		posit8_t pref = posit8_fromf(dref);
+		posit8_t pref = posit8_fromd(dref);
 		if (posit8_cmp(pref, pc)) {
 			printf("FAIL: sqrt(8.0x%02xp) produced 8.0x%02xp instead of 8.0x%02xp\n",
 	    posit8_bits(pa), posit8_bits(pc), posit8_bits(pref));
@@ -173,6 +173,52 @@ int main(int argc, char* argv[])
 	}
 	else {
 		printf("sqrt            PASS\n");
+	}
+
+	// full state space
+	fails = 0;
+	for (int a = 0; a < 256; ++a) {   // includes negative numbers
+		pa = posit8_reinterpret(a);
+		pc = posit8_exp(pa);
+		double da, dref;
+		da = posit8_tod(pa);
+		dref = exp(da);
+		posit8_t pref = posit8_fromd(dref);
+		if (posit8_cmp(pref, pc)) {
+			printf("FAIL: exp(8.0x%02xp) produced 8.0x%02xp instead of 8.0x%02xp\n",
+				posit8_bits(pa), posit8_bits(pc), posit8_bits(pref));
+			++fails;
+		}
+	}
+	if (fails) {
+		printf("exp             FAIL\n");
+		failures = true;
+	}
+	else {
+		printf("exp             PASS\n");
+	}
+
+	// full state space
+	fails = 0;
+	for (int a = 0; a < 256; ++a) {   // includes negative numbers
+		pa = posit8_reinterpret(a);
+		pc = posit8_log(pa);
+		double da, dref;
+		da = posit8_tod(pa);
+		dref = log(da);
+		posit8_t pref = posit8_fromd(dref);
+		if (posit8_cmp(pref, pc)) {
+			printf("FAIL: log(8.0x%02xp) produced 8.0x%02xp instead of 8.0x%02xp\n",
+				posit8_bits(pa), posit8_bits(pc), posit8_bits(pref));
+			++fails;
+		}
+	}
+	if (fails) {
+		printf("log             FAIL\n");
+		failures = true;
+	}
+	else {
+		printf("log             PASS\n");
 	}
 
 	return failures > 0 ? EXIT_FAILURE : EXIT_SUCCESS;

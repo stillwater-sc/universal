@@ -5,6 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <tuple>
 #include <posit_c_api.h>
+#define POSIT_FAST_POSIT_4_0   1
 #define POSIT_FAST_POSIT_8_0   1
 #define POSIT_FAST_POSIT_16_1  1
 #define POSIT_FAST_POSIT_32_2  1
@@ -19,7 +20,10 @@
 template<size_t nbits, size_t es, typename positN_t>
 void marshal(positN_t a, sw::unum::bitblock<nbits>& raw) {
 	int nrBytes = 0;
+	int maxBitsInByte = 8; // default is multi-byte data structures
 	switch (nbits) {
+	case 4:
+		maxBitsInByte = 4; // except for nbits < 8
 	case 8:
 		nrBytes = 1;
 		break;
@@ -45,7 +49,7 @@ void marshal(positN_t a, sw::unum::bitblock<nbits>& raw) {
 	for (int c = 0; c < nrBytes; ++c) {
 		unsigned char byte = a.x[c];
 		unsigned char mask = (unsigned char)(1);
-		for (int b = 0; b < 8; ++b) {
+		for (int b = 0; b < maxBitsInByte; ++b) {
 			raw[bit_cntr++] = mask & byte;
 			mask <<= 1;
 		}
@@ -56,7 +60,10 @@ void marshal(positN_t a, sw::unum::bitblock<nbits>& raw) {
 template<size_t nbits, size_t es, typename positN_t>
 void unmarshal(sw::unum::bitblock<nbits>& raw, positN_t& a) {
 	int nrBytes = 0;
+	int maxBitsInByte = 8; // default is multi-byte data structures
 	switch (nbits) {
+	case 4:
+		maxBitsInByte = 4; // except for nbits < 8
 	case 8:
 		nrBytes = 1;
 		break;
@@ -82,7 +89,7 @@ void unmarshal(sw::unum::bitblock<nbits>& raw, positN_t& a) {
 	for (int c = 0; c < nrBytes; ++c) {
 		unsigned char byte = 0;
 		unsigned char mask = (unsigned char)(1);
-		for (int b = 0; b < 8; ++b) {
+		for (int b = 0; b < maxBitsInByte; ++b) {
 			if (raw[bit_cntr++]) {
 				byte |= mask;
 			}
@@ -169,6 +176,8 @@ OPERATION21(op_sub, { return a - b; });
 OPERATION21(op_mul, { return a * b; });
 OPERATION21(op_div, { return a / b; });
 OPERATION11(op_sqrt, { return sw::unum::sqrt<nbits, es>(a); });
+OPERATION11(op_exp, { return sw::unum::exp<nbits, es>(a); });
+OPERATION11(op_log, { return sw::unum::log<nbits, es>(a); });
 OPERATION22(op_add_exact, {
     // TODO
     //return a.add_exact(b);
@@ -257,6 +266,7 @@ template<size_t _nbits, size_t _es, class positN_t, class positNx2_t, class conv
 	}
 };
 
+typedef capi<4,0,posit4_t,posit4x2_t,convert_bytes<4,0,posit4_t>> capi4;
 typedef capi<8,0,posit8_t,posit8x2_t,convert_bytes<8,0,posit8_t>> capi8;
 typedef capi<16,1,posit16_t,posit16x2_t,convert_bytes<16,1,posit16_t>> capi16;
 typedef capi<32,2,posit32_t,posit32x2_t,convert_bytes<32,2,posit32_t>> capi32;
@@ -268,6 +278,10 @@ typedef capi<256,5,posit256_t,posit256x2_t,convert_bytes<256,5,posit256_t>> capi
 extern "C" {
 
 #define POSIT_IMPLS
+
+#define POSIT_NBITS 4
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
 
 #define POSIT_NBITS 8
 #include "posit_c_macros.h"
