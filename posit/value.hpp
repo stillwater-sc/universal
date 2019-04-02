@@ -301,9 +301,18 @@ namespace sw {
 			bitblock<Size> nshift(long shift) const {
 				bitblock<Size> number;
 
+#if POSIT_THROW_ARITHMETIC_EXCEPTIONS
 				// Check range
 				if (long(fbits) + shift >= long(Size))
 					throw shift_too_large{};
+#else
+				// Check range
+				if (long(fbits) + shift >= long(Size)) {
+					std::cerr << "nshift: shift is too large\n";
+					number.reset();
+					return number;
+				}
+#endif // POSIT_THROW_ARITHMETIC_EXCEPTIONS
 
 				const long hpos = fbits + shift;       // position of hidden bit
 														  

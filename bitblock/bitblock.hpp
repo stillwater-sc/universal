@@ -520,7 +520,11 @@ namespace sw {
 				if (n >= src_size)
 					throw round_off_all{};
 #else
-				if (n >= src_size) return;
+				if (n >= src_size) {
+					bitblock<tgt_size> result;
+					result.reset();
+					return result;
+				}
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -532,7 +536,9 @@ namespace sw {
 				for (size_t leading = tgt_size + n; leading < src_size; ++leading) {
 					if (src[leading]) {
 						std::cerr << "cut_off_leading_bit\n";
-						return;
+						bitblock<tgt_size> result;
+						result.reset();
+						return result;
 					}
 				}
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
