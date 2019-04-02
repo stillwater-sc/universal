@@ -341,7 +341,7 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	unsigned long long:	POSIT_GLUE5(posit,nbits,_,op,ull), \
 	unsigned long: 		POSIT_GLUE5(posit,nbits,_,op,ul), \
 	unsigned int: 		POSIT_GLUE5(posit,nbits,_,op,ui), \
-	posit4_t: 		POSIT_GLUE5(posit,nbits,_,op,p4), \	
+	posit4_t: 		POSIT_GLUE5(posit,nbits,_,op,p4), \
 	posit8_t: 		POSIT_GLUE5(posit,nbits,_,op,p8), \
 	posit16_t: 		POSIT_GLUE5(posit,nbits,_,op,p16), \
 	posit32_t: 		POSIT_GLUE5(posit,nbits,_,op,p32), \
