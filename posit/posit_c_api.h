@@ -24,11 +24,11 @@ extern "C" {
 		uint8_t x[2];
 		uint16_t v;
 	}							posit16_t;	// posit<16,1>
-	typedef struct posit32_s {
+	typedef union posit32_u {
 		uint8_t x[4];
 		uint32_t v;
 	}							posit32_t;	// posit<32,2>
-	typedef struct posit64_s {
+	typedef union posit64_u {
 		uint8_t x[8];
 		uint64_t v;
 	}							posit64_t;	// posit<64,3>
@@ -36,7 +36,7 @@ extern "C" {
 		uint8_t x[16];
 		uint64_t longs[2];
 	} 							posit128_t;	// posit<128,4>
-	typedef struct posit256_u {
+	typedef union posit256_u {
 		uint8_t x[32];
 		uint64_t longs[4];
 	}							posit256_t;	// posit<256,5>
@@ -127,41 +127,41 @@ extern "C" {
 
 	//////////////////////////////////////////////////////////////////////
 	// posits between posit<16,1> and posit<32,2> staying with ES = 1
-	typedef struct posit20_u {
+	typedef union posit20_u {
 		uint8_t x[4];
 		uint32_t v;
 	}							posit20_t;	// posit<20,1>
-	typedef struct posit24_u {
+	typedef union posit24_u {
 		uint8_t x[4];
 		uint32_t v;
 	}							posit24_t;	// posit<24,1>
 
 	// posits between posit<32,2> and posit<64,3> staying with ES = 2
 	// notice we keep the cast to a uint64_t
-	typedef struct posit40_u {
+	typedef union posit40_u {
 		uint8_t x[8];
 		uint64_t v;
 	}							posit40_t;	// posit<40,2>
-	typedef struct posit48_u {
+	typedef union posit48_u {
 		uint8_t x[8];
 		uint64_t v;
 	}							posit48_t;	// posit<48,2>
-	typedef struct posit56_u {
+	typedef union posit56_u {
 		uint8_t x[8];
 		uint64_t v;
 	}							posit56_t;	// posit<56,2>
 
 	//////////////////////////////////////////////////////////////////////
 	// posits between posit<64,3> and posit<128,4> staying with ES = 3
-	typedef struct posit80_u {
+	typedef union posit80_u {
 		uint8_t x[10];
 		//uint64_t v[2];// if we cast it to exactly 10 bytes, this cast would not work
 	}							posit80_t;	// posit<80,3>
-	typedef struct posit96_u {
+	typedef union posit96_u {
 		uint8_t x[12];
 		//uint64_t v[2];
 	}							posit96_t;	// posit<96,3>
-	typedef struct posit96_u {
+	typedef union posit96_u {
 		uint8_t x[14];
 		//uint64_t v[2];
 	}							posit112_t;	// posit<112,3>
