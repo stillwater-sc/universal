@@ -78,13 +78,26 @@ extern "C" {
 
 	//////////////////////////////////////////////////////////////////////
 	/// special posits
-#ifdef DEEP_LEARNING
+
 	//////////////////////////////////////////////////////////////////////
 	// for Deep Learning/AI algorithms
-	typedef uint8_t posit4_t;   // posit<4,0>
-	typedef uint8_t posit5_t;   // posit<5,0>
-	typedef uint8_t posit6_t;   // posit<6,0>
-	typedef uint8_t posit7_t;   // posit<7,0>
+	typedef union posit4_u   {
+		uint8_t x[1];
+		uint8_t v;
+	}							posit4_t;	// posit<4,0>
+#ifdef DEEP_LEARNING
+	typedef union posit5_u   {
+		uint8_t x[1];
+		uint8_t v;
+	}							posit5_t;	// posit<5,0>
+	typedef union posit6_u   {
+		uint8_t x[1];
+		uint8_t v;
+	}							posit6_t;	// posit<6,0>
+	typedef union posit7_u   {
+		uint8_t x[1];
+		uint8_t v;
+	}							posit7_t;	// posit<7,0>
 #endif // DEEP_LEARNING
 
 #ifdef DSP_PIPELINES
@@ -159,6 +172,9 @@ extern "C" {
 
 	//////////////////////////////////////////////////////////////////////
 	// Important posit constants // we a storing this in little endian
+	static const posit4_t  NAR4  = {{
+		0x08
+	}};
 	static const posit8_t  NAR8  = {{
 		0x80
 	}};
@@ -182,7 +198,7 @@ extern "C" {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
 	}};
 
-
+	static const posit4_t   ZERO4 = { { 0 } };
 	static const posit8_t   ZERO8 = {{ 0 }};
 	static const posit16_t  ZERO16 = {{ 0 }};
 	static const posit32_t  ZERO32 = {{ 0 }};
@@ -191,6 +207,10 @@ extern "C" {
 	static const posit256_t ZERO256 = {{ 0 }};
 
 enum {
+	/// report posit format for posit4_t. str must be at least 7 characters in size:    4.0x4p + /0 is 7 chars
+	posit4_str_SIZE = 7,
+	#define posit4_str_SIZE posit4_str_SIZE
+
 	/// report posit format for posit8_t. str must be at least 8 characters in size:    8.0x40p + /0 is 8 chars
 	posit8_str_SIZE = 8,
 	#define posit8_str_SIZE posit8_str_SIZE
@@ -217,6 +237,7 @@ enum {
 };
 
 // reinterpret bits from an unsigned integer type to a posit type
+static inline posit4_t   posit4_reinterpret(uint8_t n)   { posit4_t  x; x.v = n; return x; }
 static inline posit8_t   posit8_reinterpret(uint8_t n)   { posit8_t  x; x.v = n; return x; }
 static inline posit16_t  posit16_reinterpret(uint16_t n) { posit16_t x; x.v = n; return x; }
 static inline posit32_t  posit32_reinterpret(uint32_t n) { posit32_t x; x.v = n; return x; }
@@ -248,11 +269,15 @@ static inline posit256_t posit256_reinterpret(uint64_t n[static 4]) {
 #endif
 
 // And reinterpret the bits from a posit to an unsigned integer type (where possible)
+static inline uint8_t   posit4_bits(posit4_t p)   { return p.v; }
 static inline uint8_t   posit8_bits(posit8_t p)   { return p.v; }
 static inline uint16_t  posit16_bits(posit16_t p) { return p.v; }
 static inline uint32_t  posit32_bits(posit32_t p) { return p.v; }
 static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 
+#define POSIT_NBITS 4
+#include "posit_c_macros.h"
+#undef POSIT_NBITS
 
 #define POSIT_NBITS 8
 #include "posit_c_macros.h"
@@ -290,6 +315,7 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	unsigned long long: POSIT_GLUE4(posit,nbits,_from,ull), \
 	unsigned long: 		POSIT_GLUE4(posit,nbits,_from,ul), \
 	unsigned int: 		POSIT_GLUE4(posit,nbits,_from,ui), \
+	posit4_t: 			POSIT_GLUE4(posit,nbits,_from,p4), \
 	posit8_t: 			POSIT_GLUE4(posit,nbits,_from,p8), \
 	posit16_t: 			POSIT_GLUE4(posit,nbits,_from,p16), \
 	posit32_t: 			POSIT_GLUE4(posit,nbits,_from,p32), \
@@ -297,6 +323,7 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	posit128_t: 		POSIT_GLUE4(posit,nbits,_from,p128), \
 	posit256_t: 		POSIT_GLUE4(posit,nbits,_from,p256) \
 )(x))
+#define posit4(x)       POSIT_FROM(4, (x))
 #define posit8(x)       POSIT_FROM(8, (x))
 #define posit16(x)      POSIT_FROM(16, (x))
 #define posit32(x)      POSIT_FROM(32, (x))
@@ -314,6 +341,7 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	unsigned long long:	POSIT_GLUE5(posit,nbits,_,op,ull), \
 	unsigned long: 		POSIT_GLUE5(posit,nbits,_,op,ul), \
 	unsigned int: 		POSIT_GLUE5(posit,nbits,_,op,ui), \
+	posit4_t: 		POSIT_GLUE5(posit,nbits,_,op,p4), \
 	posit8_t: 		POSIT_GLUE5(posit,nbits,_,op,p8), \
 	posit16_t: 		POSIT_GLUE5(posit,nbits,_,op,p16), \
 	posit32_t: 		POSIT_GLUE5(posit,nbits,_,op,p32), \
@@ -331,6 +359,7 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	unsigned long long:	POSIT_GLUE5(posit,nbits,_,ull,op), \
 	unsigned long: 		POSIT_GLUE5(posit,nbits,_,ul,op), \
 	unsigned int: 		POSIT_GLUE5(posit,nbits,_,ui,op), \
+	posit4_t: 		POSIT_GLUE5(posit,nbits,_,p4,op), \
 	posit8_t: 		POSIT_GLUE5(posit,nbits,_,p8,op), \
 	posit16_t: 		POSIT_GLUE5(posit,nbits,_,p16,op), \
 	posit32_t: 		POSIT_GLUE5(posit,nbits,_,p32,op), \
@@ -340,6 +369,7 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 )
 
 #define POSIT_GENERIC_OP(p,x,op) (_Generic((p), \
+	posit4_t:           POSIT_OP2(4, op, (x)), \
 	posit8_t:           POSIT_OP2(8, op, (x)), \
 	posit16_t:          POSIT_OP2(16, op, (x)), \
 	posit32_t:          POSIT_OP2(32, op, (x)), \
@@ -362,6 +392,7 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 #define posit_cmp(p, x) POSIT_GENERIC_OP(p,x,cmp)
 
 #define POSIT_GENETIC1(p, op) _Generic((p), \
+	posit4_t: POSIT_GLUE(posit4_,op), \
 	posit8_t: POSIT_GLUE(posit8_,op), \
 	posit16_t: POSIT_GLUE(posit16_,op), \
 	posit32_t: POSIT_GLUE(posit32_,op), \
@@ -384,6 +415,7 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 #define posit_toui(p)       POSIT_GENETIC1(p, toui)(p)
 
 #define posit_bits(p) (_Generic((p), \
+	posit4_t: posit4_bits, \
 	posit8_t: posit8_bits, \
 	posit16_t: posit16_bits, \
 	posit32_t: posit32_bits, \

@@ -98,6 +98,8 @@ POSIT_BASE_OP(POSIT_VEC_T(2), op22, sub_exact)
 POSIT_BASE_OP(POSIT_T, op21, mul)
 POSIT_BASE_OP(POSIT_T, op21, div)
 POSIT_BASE_OP1(POSIT_T, op11, sqrt)
+POSIT_BASE_OP1(POSIT_T, op11, log)
+POSIT_BASE_OP1(POSIT_T, op11, exp)
 
 
 // cmp is special because the return type is int and we need to call a different
@@ -114,6 +116,10 @@ POSIT_INLINE(int POSIT_MKNAME(cmp)(POSIT_T x, POSIT_T y) {
 
 // posit->posit conversions
 POSIT_INLINE(POSIT_T POSIT_GLUE(POSIT_MKNAME(fromp), POSIT_NBITS)(POSIT_T p) { return p; })
+#if POSIT_NBITS != 4
+POSIT_T POSIT_MKNAME(fromp4)(posit4_t p) POSIT_IMPL({ return POSIT_API::fromp<capi4>(p); })
+POSIT_OPS(p4, posit4_t)
+#endif
 #if POSIT_NBITS != 8
 POSIT_T POSIT_MKNAME(fromp8)(posit8_t p) POSIT_IMPL({ return POSIT_API::fromp<capi8>(p); })
 POSIT_OPS(p8, posit8_t)

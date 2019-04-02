@@ -19,12 +19,12 @@ RUN ls -la /usr/src/universal && cmake -version
 # set up the cmake/make environment to issue the build commands
 RUN mkdir build 
 WORKDIR /usr/src/universal/build
-RUN cmake -DBUILD_CI_CHECK=ON -DBUILD_C_API_LIB=ON .. && make
+RUN cmake -DBUILD_CI_CHECK=ON .. && make
 
 # actual command 'make test' is run as part of the test pipeline
 
 # add a command that when you run the container without a command, it produces something meaningful
-CMD ["echo", "Universal Numbers Library Version 1.0.0"]
+CMD ["echo", "Universal Numbers Library Version 2.0.0"]
 
 
 # RELEASE stage
@@ -44,6 +44,7 @@ COPY --from=builder /usr/src/universal/build/tests/posit/posit_*         	/usr/s
 COPY --from=builder /usr/src/universal/build/tests/posit/*.cmake         	/usr/src/universal/build/tests/posit/
 COPY --from=builder /usr/src/universal/build/perf/perf_*                 	/usr/src/universal/build/perf/
 COPY --from=builder /usr/src/universal/build/perf/*.cmake                	/usr/src/universal/build/perf/
+COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit4      /usr/src/universal/build/c_api/test/posit/c_api_posit4
 COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit8      /usr/src/universal/build/c_api/test/posit/c_api_posit8
 COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit16     /usr/src/universal/build/c_api/test/posit/c_api_posit16
 COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit32     /usr/src/universal/build/c_api/test/posit/c_api_posit32
@@ -68,4 +69,4 @@ WORKDIR /usr/src/universal/build
 RUN find .
 
 #CMD ["/usr/src/universal/tools/cmd/cmd_numeric_limits"]
-CMD ["echo", "Universal Numbers Library Version 1.0.0"]
+CMD ["echo", "Universal Numbers Library Version 2.0.0"]
