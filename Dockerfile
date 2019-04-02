@@ -44,6 +44,7 @@ COPY --from=builder /usr/src/universal/build/tests/posit/posit_*         	/usr/s
 COPY --from=builder /usr/src/universal/build/tests/posit/*.cmake         	/usr/src/universal/build/tests/posit/
 COPY --from=builder /usr/src/universal/build/perf/perf_*                 	/usr/src/universal/build/perf/
 COPY --from=builder /usr/src/universal/build/perf/*.cmake                	/usr/src/universal/build/perf/
+COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit4      /usr/src/universal/build/c_api/test/posit/c_api_posit4
 COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit8      /usr/src/universal/build/c_api/test/posit/c_api_posit8
 COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit16     /usr/src/universal/build/c_api/test/posit/c_api_posit16
 COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit32     /usr/src/universal/build/c_api/test/posit/c_api_posit32
