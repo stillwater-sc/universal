@@ -113,11 +113,19 @@ namespace sw {
 				posit& operator=(const posit&) = default;
 				posit& operator=(posit&&) = default;
 
-				posit(char initial_value) { *this = (long long)initial_value; }
+				posit(signed char initial_value) { *this = (long long)initial_value; }
 				posit(short initial_value) { *this = (long long)initial_value; }
 				posit(int initial_value) { *this = (long long)initial_value; }
 				posit(long int initial_value) { *this = (long long)initial_value; }
 				posit(long long initial_value) { *this = (long long)initial_value; }
+				posit(char initial_value) { *this = (long long)initial_value; }
+				posit(unsigned short initial_value) { *this = (long long)initial_value; }
+				posit(unsigned int initial_value) { *this = (long long)initial_value; }
+				posit(unsigned long int initial_value) { *this = (long long)initial_value; }
+				posit(unsigned long long initial_value) { *this = (long long)initial_value; }
+				posit(float initial_value) { *this = initial_value; }
+				posit(double initial_value) { *this = initial_value; }
+				posit(long double initial_value) { *this = initial_value; }
 				// assignment operators for native types
 				posit& operator=(int rhs) {
 					return operator=((long long)(rhs));
