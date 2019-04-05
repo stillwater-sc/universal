@@ -3,8 +3,9 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#if defined(_MSC_VER)
 #define POSIT_NO_GENERICS // MSVC doesn't support _Generic so we'll leave it out from these tests
+#endif
 #include <posit_c_api.h>
 
 int main(int argc, char* argv[])

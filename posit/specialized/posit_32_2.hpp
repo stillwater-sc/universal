@@ -144,7 +144,7 @@ namespace sw {
 		explicit operator unsigned int() const { return to_int(); }
 
 		posit& set(sw::unum::bitblock<NBITS_IS_32>& raw) {
-			_bits = uint8_t(raw.to_ulong());
+			_bits = uint32_t(raw.to_ulong());
 			return *this;
 		}
 		posit& set_raw_bits(uint64_t value) {
