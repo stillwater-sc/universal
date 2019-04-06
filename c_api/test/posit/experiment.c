@@ -71,28 +71,24 @@ int main(int argc, char* argv[])
 		printf("posit value = %s: real value = %15.9f\n", str, posit32_tod(pa));
 	}
 
-	// partial state space
-	int fails = 0;
-	for (int a = 0; a < 256; ++a) {
-		pa = posit32_reinterpret(a);
-		double da, dref;
-			da = posit32_tod(pa);
-			posit32_t pref = posit32_fromd(da);
-			if (posit32_cmp(pref, pa)) {
-				printf("FAIL: 32.2x%08xp produced %8.5f which returned into 32.2x%08xp\n",
-					posit32_bits(pa), da, posit32_bits(pref));
-				++fails;
-				break;
-			}
-		if (fails) break;
-	}
-	if (fails) {
-		printf("addition        FAIL\n");
-		failures = true;
-	}
-	else {
-		printf("addition        PASS\n");
-	}
+/*
+posit[2] posit_add_exact(posit a, posit b):
+the arguments are 2 posits a and b of the same parameters
+the return value is a pair of posits, the first one is the nearest value to the actual sum and the second result is the difference between the first value and the exact result.
+if the exponents of a and b are such that there is no bit-overlap in the mantissas, this function returns max(a,b), min(a,b)
+posit[2] posit_sub_exact(posit a, posit b): same as add_exact with b negated
+posit<nbits*2,es+1> posit_mul_promote(posit a, posit b):
+the arguments are 2 posits a and b of the same parameters
+the result is a posit with nbits twice that of the arguments and an es one more than that of the arguments
+this function is equivalent to converting a and b to the larger size and then multiplying.
+this function should never round (if it does then I've made a mistake)
+posit<nbits*2,es+1> posit_div_promote(posit a, posit b):
+Result should be the same as posit_div( posit<nbits2,es+1>(a), posit<nbits2,es+1>(b) )
+posit posit_frexp(posit a, int* exp_out):
+Defined in https://en.cppreference.com/w/cpp/numeric/math/frexp
+posit posit_ldexp(posit a, int exp):
+Defined here https://en.cppreference.com/w/cpp/numeric/math/ldexp
+*/
 
 	return failures > 0 ? EXIT_FAILURE : EXIT_SUCCESS;
 }
