@@ -565,8 +565,11 @@ public:
 	posit& operator=(const posit&) = default;
 	posit& operator=(posit&&) = default;
 
-	/// Construct posit from raw bits
-	//posit(const std::bitset<nbits>& raw_bits)   { *this = set(raw_bits); }
+	/// Construct posit from another posit
+	template<size_t nnbits, size_t ees>
+	posit(const posit<nnbits, ees>& a) {
+		*this = a.to_value();
+	}
 
 	// initializers for native types
 	posit(const signed char initial_value)        { *this = initial_value; }
@@ -1146,7 +1149,6 @@ public:
 
 private:
 	bitblock<nbits>      _raw_bits;	// raw bit representation
-//			int					 _scale;
 
 	// HELPER methods
 

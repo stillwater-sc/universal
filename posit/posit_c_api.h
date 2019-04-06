@@ -198,11 +198,11 @@ extern "C" {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80,
 	}};
 
-	static const posit4_t   ZERO4 = { { 0 } };
-	static const posit8_t   ZERO8 = {{ 0 }};
-	static const posit16_t  ZERO16 = {{ 0 }};
-	static const posit32_t  ZERO32 = {{ 0 }};
-	static const posit64_t  ZERO64 = {{ 0 }};
+	static const posit4_t   ZERO4   = {{ 0 }};
+	static const posit8_t   ZERO8   = {{ 0 }};
+	static const posit16_t  ZERO16  = {{ 0 }};
+	static const posit32_t  ZERO32  = {{ 0 }};
+	static const posit64_t  ZERO64  = {{ 0 }};
 	static const posit128_t ZERO128 = {{ 0 }};
 	static const posit256_t ZERO256 = {{ 0 }};
 
@@ -333,39 +333,39 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 
 #define POSIT_OP2(nbits, op, y) _Generic((y), \
 	long double: 		POSIT_GLUE5(posit,nbits,_,op,ld), \
-	double: 		POSIT_GLUE5(posit,nbits,_,op,d), \
-	float: 			POSIT_GLUE5(posit,nbits,_,op,f), \
-	long long: 		POSIT_GLUE5(posit,nbits,_,op,sll), \
-	long: 			POSIT_GLUE5(posit,nbits,_,op,sl), \
-	int: 			POSIT_GLUE5(posit,nbits,_,op,si), \
+	double: 			POSIT_GLUE5(posit,nbits,_,op,d), \
+	float: 				POSIT_GLUE5(posit,nbits,_,op,f), \
+	long long: 			POSIT_GLUE5(posit,nbits,_,op,sll), \
+	long: 				POSIT_GLUE5(posit,nbits,_,op,sl), \
+	int: 				POSIT_GLUE5(posit,nbits,_,op,si), \
 	unsigned long long:	POSIT_GLUE5(posit,nbits,_,op,ull), \
 	unsigned long: 		POSIT_GLUE5(posit,nbits,_,op,ul), \
 	unsigned int: 		POSIT_GLUE5(posit,nbits,_,op,ui), \
-	posit4_t: 		POSIT_GLUE5(posit,nbits,_,op,p4), \
-	posit8_t: 		POSIT_GLUE5(posit,nbits,_,op,p8), \
-	posit16_t: 		POSIT_GLUE5(posit,nbits,_,op,p16), \
-	posit32_t: 		POSIT_GLUE5(posit,nbits,_,op,p32), \
-	posit64_t: 		POSIT_GLUE5(posit,nbits,_,op,p64), \
+	posit4_t: 			POSIT_GLUE5(posit,nbits,_,op,p4), \
+	posit8_t: 			POSIT_GLUE5(posit,nbits,_,op,p8), \
+	posit16_t: 			POSIT_GLUE5(posit,nbits,_,op,p16), \
+	posit32_t: 			POSIT_GLUE5(posit,nbits,_,op,p32), \
+	posit64_t: 			POSIT_GLUE5(posit,nbits,_,op,p64), \
 	posit128_t: 		POSIT_GLUE5(posit,nbits,_,op,p128), \
-	posit256_t:		POSIT_GLUE5(posit,nbits,_,op,p256) \
+	posit256_t:			POSIT_GLUE5(posit,nbits,_,op,p256) \
 )
 #define POSIT_OP2X(nbits, op, x) _Generic((x), \
 	long double: 		POSIT_GLUE5(posit,nbits,_,ld,op), \
-	double: 		POSIT_GLUE5(posit,nbits,_,d,op), \
-	float: 			POSIT_GLUE5(posit,nbits,_,f,op), \
-	long long: 		POSIT_GLUE5(posit,nbits,_,op,sll), \
-	long: 			POSIT_GLUE5(posit,nbits,_,sl,op), \
-	int: 			POSIT_GLUE5(posit,nbits,_,si,op), \
+	double: 			POSIT_GLUE5(posit,nbits,_,d,op), \
+	float: 				POSIT_GLUE5(posit,nbits,_,f,op), \
+	long long: 			POSIT_GLUE5(posit,nbits,_,op,sll), \
+	long: 				POSIT_GLUE5(posit,nbits,_,sl,op), \
+	int: 				POSIT_GLUE5(posit,nbits,_,si,op), \
 	unsigned long long:	POSIT_GLUE5(posit,nbits,_,ull,op), \
 	unsigned long: 		POSIT_GLUE5(posit,nbits,_,ul,op), \
 	unsigned int: 		POSIT_GLUE5(posit,nbits,_,ui,op), \
-	posit4_t: 		POSIT_GLUE5(posit,nbits,_,p4,op), \
-	posit8_t: 		POSIT_GLUE5(posit,nbits,_,p8,op), \
-	posit16_t: 		POSIT_GLUE5(posit,nbits,_,p16,op), \
-	posit32_t: 		POSIT_GLUE5(posit,nbits,_,p32,op), \
-	posit64_t: 		POSIT_GLUE5(posit,nbits,_,p64,op), \
+	posit4_t: 			POSIT_GLUE5(posit,nbits,_,p4,op), \
+	posit8_t: 			POSIT_GLUE5(posit,nbits,_,p8,op), \
+	posit16_t: 			POSIT_GLUE5(posit,nbits,_,p16,op), \
+	posit32_t: 			POSIT_GLUE5(posit,nbits,_,p32,op), \
+	posit64_t: 			POSIT_GLUE5(posit,nbits,_,p64,op), \
 	posit128_t: 		POSIT_GLUE5(posit,nbits,_,p128,op), \
-	posit256_t:		POSIT_GLUE5(posit,nbits,_,p256,op) \
+	posit256_t:			POSIT_GLUE5(posit,nbits,_,p256,op) \
 )
 
 #define POSIT_GENERIC_OP(p,x,op) (_Generic((p), \
@@ -377,6 +377,7 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	posit128_t:         POSIT_OP2(128, op, (x)), \
 	posit256_t:         POSIT_OP2(256, op, (x)), \
 	default: _Generic((x), \
+		posit4_t:       POSIT_OP2X(4, op, (p)), \
 		posit8_t:       POSIT_OP2X(8, op, (p)), \
 		posit16_t:      POSIT_OP2X(16, op, (p)), \
 		posit32_t:      POSIT_OP2X(32, op, (p)), \
