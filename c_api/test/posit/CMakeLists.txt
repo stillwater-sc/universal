@@ -1,7 +1,7 @@
-file (GLOB SOURCES "./*.c")
+file (GLOB SOURCES "./*.c*")
 
 ####
-# macro to read all cpp files in a directory 
+# macro to read all cpp files in a directory
 # and create a test target for that cpp file
 macro (compile_and_link_all testing prefix)
     # cycle through the sources
