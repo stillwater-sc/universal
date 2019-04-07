@@ -1,5 +1,7 @@
 #include <posit_c_api.h>
+#if !(defined(_MSC_VER))
 #include <sys/time.h>
+#endif
 
 #include <random>
 
@@ -103,10 +105,14 @@ int testrun(std::default_random_engine& random, uint64_t* sum) {
     double ref = 0;
     for (int i = 0; i < sizeof buf; i++) { ref += posit8_tod(buf.posits[i]); }
 
+	int cycles = 0;
+	uint64_t micros = 0;
+#if !defined(_MSC_VER)
     struct timeval tv, tv2;
     gettimeofday(&tv, NULL);
-    int cycles = add_compress(&buf);
+    cycles = add_compress(&buf);
     gettimeofday(&tv2, NULL);
+#endif
 
     int nonzero = 0;
     double result = 0;
@@ -118,9 +124,11 @@ int testrun(std::default_random_engine& random, uint64_t* sum) {
         result += x;
     }
 
-    uint64_t micros = (tv2.tv_usec - tv.tv_usec);
+#if !defined(_MSC_VER)
+    micros = (tv2.tv_usec - tv.tv_usec);
     micros += ((tv2.tv_sec - tv.tv_sec) * 1000000);
     *sum += micros;
+#endif
 
     printf("%f == %f, 1024 posits compressed to %d in %d cycles \t%lld micros\n",
         ref, result, nonzero, cycles, (long long int)micros);
