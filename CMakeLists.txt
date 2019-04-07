@@ -53,6 +53,7 @@ option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"    
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
 # C API library and test programs
 option(BUILD_C_API_LIB                   "Set to ON to build C API library"                    OFF)
+option(C_API_LIB_PIC                     "Set to ON to compile C API library with -fPIC"       OFF)
 # number systems and their verification suites
 option(BUILD_BITBLOCK                    "Set to ON to build bitblock tests"                   OFF)
 option(BUILD_REAL_NUMBER                 "Set to ON to build real value tests"                 OFF)
@@ -217,6 +218,19 @@ endif()
 
 ####
 # set the aggregated compiler options
+
+# clear nonsensical defaults, like "-O3 -NDEBUG" for release
+set(CMAKE_C_FLAGS           "")
+set(CMAKE_C_FLAGS_RELEASE   "")
+set(CMAKE_C_FLAGS_DEBUG     "")
+set(CMAKE_CXX_FLAGS         "")
+set(CMAKE_CXX_FLAGS_RELEASE "")
+set(CMAKE_CXX_FLAGS_DEBUG   "")
+
+# bring in the flags set above
+set(CMAKE_C_FLAGS           "${CMAKE_CXX_FLAGS} ${EXTRA_C_FLAGS}")
+set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_CXX_FLAGS_RELEASE} ${EXTRA_C_FLAGS_RELEASE}")
+set(CMAKE_C_FLAGS_DEBUG     "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_C_FLAGS_DEBUG}")
 set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} ${EXTRA_C_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${EXTRA_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_C_FLAGS_DEBUG}")
