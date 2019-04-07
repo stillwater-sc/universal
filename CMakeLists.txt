@@ -53,6 +53,7 @@ option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"    
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
 # C API library and test programs
 option(BUILD_C_API_LIB                   "Set to ON to build C API library"                    OFF)
+option(C_API_LIB_PIC                     "Set to ON to compile C API library with -fPIC"       OFF)
 # number systems and their verification suites
 option(BUILD_BITBLOCK                    "Set to ON to build bitblock tests"                   OFF)
 option(BUILD_REAL_NUMBER                 "Set to ON to build real value tests"                 OFF)
@@ -129,7 +130,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	# include code quality flags
 	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -Wall -Wpedantic -Wno-narrowing -Wno-deprecated")
 	# specific flags for debug and release builds
-	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3")
+	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3 -DNDEBUG")
 	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
 elseif(MSVC)
 	# Streaming SIMD Extension (SSE) ISA
@@ -217,6 +218,19 @@ endif()
 
 ####
 # set the aggregated compiler options
+
+# clear nonsensical defaults, like "-O3 -NDEBUG" for release
+set(CMAKE_C_FLAGS           "")
+set(CMAKE_C_FLAGS_RELEASE   "")
+set(CMAKE_C_FLAGS_DEBUG     "")
+set(CMAKE_CXX_FLAGS         "")
+set(CMAKE_CXX_FLAGS_RELEASE "")
+set(CMAKE_CXX_FLAGS_DEBUG   "")
+
+# bring in the flags set above
+set(CMAKE_C_FLAGS           "${CMAKE_CXX_FLAGS} ${EXTRA_C_FLAGS}")
+set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_CXX_FLAGS_RELEASE} ${EXTRA_C_FLAGS_RELEASE}")
+set(CMAKE_C_FLAGS_DEBUG     "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_C_FLAGS_DEBUG}")
 set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} ${EXTRA_C_FLAGS}")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${EXTRA_C_FLAGS_RELEASE}")
 set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_C_FLAGS_DEBUG}")
@@ -231,7 +245,9 @@ endif()
 include_directories("./posit")
 
 # Possibly not under Windows
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+# What is this needed for? On linux it seems to conflict with -std=gnu++14,
+# which is being emitted presumably because CMAKE_CXX_STANDARD has been set to 14.
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 ####
 # macro to read all cpp files in a directory
