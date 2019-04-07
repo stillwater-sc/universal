@@ -245,7 +245,9 @@ endif()
 include_directories("./posit")
 
 # Possibly not under Windows
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+# What is this needed for? On linux it seems to conflict with -std=gnu++14,
+# which is being emitted presumably because CMAKE_CXX_STANDARD has been set to 14.
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
 ####
 # macro to read all cpp files in a directory
