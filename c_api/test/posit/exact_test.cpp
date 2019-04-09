@@ -18,6 +18,7 @@ static posit8x2_t posit8x2(posit8_t x, posit8_t y) {
 }
 
 static posit8x2_t posit8_add_exact_bruteforce(posit8_t a, posit8_t b, bool loud) {
+	using namespace std;
     // searching for [x,y] where x+y = a+b and y is the smallest
     // obvious first step is swap a,b so that b is always <= a
     if (posit8_cmp(posit8_abs(a), posit8_abs(b)) < 0) {
