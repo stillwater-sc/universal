@@ -34,12 +34,15 @@ log_e(10)		M_LN10		2.30258509299404568402
 template<size_t nbits, size_t es>
 void ColorPrintTable()
 {
+	using namespace std;
 	constexpr size_t NR_POSITS = (size_t(1) << nbits);
 	sw::unum::posit<nbits, es> p;
+	cout << "Color Printing a posit configuration\n";
 	for (size_t i = 0; i < NR_POSITS; ++i) {
 		p.set_raw_bits(i);
-		std::cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << std::endl;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << std::endl;
 	}
+	cout << endl << endl;
 }
 
 void HexVsDefaultFloatPrinting()
@@ -50,12 +53,15 @@ void HexVsDefaultFloatPrinting()
 	cout << "hexfloat: " << 0.12345678 << endl;
 	cout << defaultfloat;
 	cout << "default : " << 0.12345678 << endl;
+	cout << endl;
 }
+
 void LongDoubleExample()
 {
 	using namespace std;
 	using namespace sw::unum;
 
+	cout << "LongDouble values\n";
 	double d = (double)0.79432823472428150206586100479;
 	posit<32, 2> E_pos(d);
 	cout << setprecision(30) << fixed << d << setprecision(6) << endl;
@@ -65,7 +71,6 @@ void LongDoubleExample()
 	E_pos = ld;
 	cout << setprecision(30) << fixed << ld << setprecision(6) << endl;
 	cout << pretty_print(E_pos) << endl;
-
 
 	int _exp;
 	union {
@@ -86,6 +91,7 @@ void PiExamples()
 	using namespace std;
 	using namespace sw::unum;
 
+	cout << "Value of PI as a function of the posit configuration\n";
 	posit<nbits, es> p;
 
 	p = m_pi;
@@ -98,6 +104,8 @@ void PiExamples()
 	// calculate PI/2
 	p = p / 2.0;  // implicit conversions of literals
 	cout << type_tag(p) << " value of PI/2  = " << p << " " << color_print(p) << " " << pretty_print(p) << endl;
+	
+	cout << endl;
 }
 
 void DynamicRangeTable()
@@ -105,6 +113,7 @@ void DynamicRangeTable()
 	using namespace std;
 	using namespace sw::unum;
 
+	cout << "Dynamic Range table of posit with nbits = 8\n";
 	constexpr size_t nbits = 8;
 	{
 		posit<nbits, 0> p(1.0); --p;
@@ -133,43 +142,6 @@ void DynamicRangeTable()
 	{
 		posit<nbits, 6> p(1.0); --p;
 		cout << dynamic_range(p) << endl;
-	}
-	cout << endl;
-}
-
-void OnePlusEps()
-{
-	using namespace std;
-	using namespace sw::unum;
-
-	constexpr size_t nbits = 8;
-	{
-		posit<nbits, 0> p(1.0); --p;
-		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-	}
-	{
-		posit<nbits, 1> p(1.0); --p;
-		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-	}
-	{
-		posit<nbits, 2> p(1.0); --p;
-		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-	}
-	{
-		posit<nbits, 3> p(1.0); --p;
-		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-	}
-	{
-		posit<nbits, 4> p(1.0); --p;
-		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-	}
-	{
-		posit<nbits, 5> p(1.0); --p;
-		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
-	}
-	{
-		posit<nbits, 6> p(1.0); --p;
-		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
 	}
 	cout << endl;
 }
@@ -179,6 +151,45 @@ void OneMinusEps()
 	using namespace std;
 	using namespace sw::unum;
 
+	cout << "1.0 - epsilon\n";
+	constexpr size_t nbits = 8;
+	{
+		posit<nbits, 0> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 1> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 2> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 3> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 4> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 5> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	{
+		posit<nbits, 6> p(1.0); --p;
+		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
+	}
+	cout << endl;
+}
+
+void OnePlusEps()
+{
+	using namespace std;
+	using namespace sw::unum;
+
+	cout << "1.0 + epsilon\n";
 	constexpr size_t nbits = 8;
 	{
 		posit<nbits, 0> p(1.0); ++p;
@@ -211,6 +222,22 @@ void OneMinusEps()
 	cout << endl;
 }
 
+void Conversions() {
+	using namespace std;
+	using namespace sw::unum;
+
+	posit<8, 0> p8a;
+	posit<16, 1> p16;
+	posit<32, 2> p32;
+	cout << "Arbitrary conversions\n";
+	for (uint16_t i = 0; i < 256; ++i) {
+		p8a.set_raw_bits(i);
+		p16 = posit<16, 1>(p8a);
+		p32 = posit<32, 2>(p8a);
+		cout << "p8 " << setw(10) << p8a << " : " << color_print(p8a) << " p16 " << setw(10) << p16 << " : " << color_print(p16) << " p32 " << setw(10) << p32 << " : " << color_print(p32) << endl;
+	}
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -218,16 +245,21 @@ try {
 
 	bool bSuccess = true;
 
-	HexVsDefaultFloatPrinting(); cout << endl;
-	LongDoubleExample(); cout << endl;
-	PiExamples<8,1>();	cout << endl;
+	HexVsDefaultFloatPrinting();
+	LongDoubleExample();
+	PiExamples<8, 0>();
+	PiExamples<16, 1>();
+	PiExamples<32, 2>();
+	PiExamples<64, 3>();
 
 	DynamicRangeTable();
 
 	OnePlusEps();
 	OneMinusEps();
 
-	ColorPrintTable<8, 3>();
+	ColorPrintTable<8, 3>(); 
+
+	Conversions();
 
 	return (bSuccess ? EXIT_SUCCESS : EXIT_FAILURE);
 }

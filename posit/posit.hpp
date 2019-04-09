@@ -58,8 +58,20 @@ typedef __128bitdd double_double;
 
 #endif
 
+// calling environment should define behavioral flags
+// typically set in the library aggregation include file <posit>
+// but can be set by individual programs when including posit.hpp
+
+// define to non-zero if you want to enable arithmetic and logic literals
+// #define POSIT_ENABLE_LITERALS 1
+
+// define to non-zero if you want to throw exceptions on arithmetic errors
+// #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
 // Posits encode error conditions as NaR (Not a Real), propagating the error through arithmetic operations is preferred
 #include "exceptions.hpp"
+#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 #include "../bitblock/bitblock.hpp"
 #include "bit_functions.hpp"
 #include "trace_constants.hpp"
@@ -72,15 +84,6 @@ typedef __128bitdd double_double;
 namespace sw {
 namespace unum {
 
-// define behavioral flags
-// typically set in the library aggregation include file <posit>
-// but can be set by individual programs
-
-// define to non-zero if you want to enable arithmetic and logic literals
-// #define POSIT_ENABLE_LITERALS 1
-
-// define to non-zero if you want to throw exceptions on arithmetic errors
-// #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 
 // specialized configuration constants
 constexpr size_t NBITS_IS_2   =   2;
@@ -562,8 +565,11 @@ public:
 	posit& operator=(const posit&) = default;
 	posit& operator=(posit&&) = default;
 
-	/// Construct posit from raw bits
-	//posit(const std::bitset<nbits>& raw_bits)   { *this = set(raw_bits); }
+	/// Construct posit from another posit
+	template<size_t nnbits, size_t ees>
+	posit(const posit<nnbits, ees>& a) {
+		*this = a.to_value();
+	}
 
 	// initializers for native types
 	posit(const signed char initial_value)        { *this = initial_value; }
@@ -1143,7 +1149,6 @@ public:
 
 private:
 	bitblock<nbits>      _raw_bits;	// raw bit representation
-//			int					 _scale;
 
 	// HELPER methods
 

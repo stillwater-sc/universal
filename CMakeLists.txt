@@ -240,6 +240,10 @@ if(PROFILE AND (CMAKE_COMPILER_IS_GNUCXX OR MINGW OR
     set(CMAKE_CXX_FLAGS     "${CMAKE_CXX_FLAGS} -pg")
 endif()
 
+if(MSVC)
+	set(CMAKE_CXX_FLAGS     "${CMAKE_CXX_FLAGS} /EHsc")
+endif()
+
 ####
 # Set posit include directory
 include_directories("./posit")
