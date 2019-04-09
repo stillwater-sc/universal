@@ -334,6 +334,7 @@ namespace sw {
 				tgt.set(i + shift, src[i]);
 		}
 
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
 		// copy a slice of a bitset into a bigger bitset starting at position indicated by the shift value
 		template<size_t src_size, size_t tgt_size>
 		void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, size_t begin = 0, size_t end = src_size, size_t shift = 0) {
@@ -343,6 +344,17 @@ namespace sw {
 			for (size_t i = begin; i < end; i++)
 				tgt.set(i + shift, src[i]);
 		}
+#else
+		// copy a slice of a bitset into a bigger bitset starting at position indicated by the shift value
+		template<size_t src_size, size_t tgt_size>
+		void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, size_t begin = 0, size_t end = src_size, size_t shift = 0) {
+			// do NOT reset the target!!!
+			if (end <= src_size) return;
+			if (end + shift < tgt_size) return;
+			for (size_t i = begin; i < end; i++)
+				tgt.set(i + shift, src[i]);
+		}
+#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
 		template<size_t from, size_t to, size_t src_size>
 		bitblock<to - from> fixed_subset(const bitblock<src_size>& src) {
@@ -415,7 +427,11 @@ namespace sw {
 			accumulator = a;
 			int msb = findMostSignificantBit(b);
 			if (msb < 0) {
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
 				throw integer_divide_by_zero{};
+#else
+				std::cerr << "integer_divide_by_zero\n";
+#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 			}
 			else {
 				int shift = operand_size - msb - 1;
@@ -450,7 +466,11 @@ namespace sw {
 			copy_into<operand_size, result_size>(a, result_size - operand_size, accumulator);
 			int msb = findMostSignificantBit(b);
 			if (msb < 0) {
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
 				throw integer_divide_by_zero{};
+#else
+				std::cerr << "integer_divide_by_zero\n";
+#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 			}
 			else {
 				int shift = operand_size - msb - 1;
@@ -496,13 +516,32 @@ namespace sw {
 			static bitblock<tgt_size> eval(const bitblock<src_size>& src, size_t n)
 			{
 				static_assert(src_size > 0 && tgt_size > 0, "We don't bother with empty sets.");
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
 				if (n >= src_size)
 					throw round_off_all{};
+#else
+				if (n >= src_size) {
+					bitblock<tgt_size> result;
+					result.reset();
+					return result;
+				}
+#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
 				// look for cut-off leading bits
 				for (size_t leading = tgt_size + n; leading < src_size; ++leading)
 					if (src[leading])
 						throw cut_off_leading_bit{};
+#else
+				for (size_t leading = tgt_size + n; leading < src_size; ++leading) {
+					if (src[leading]) {
+						std::cerr << "cut_off_leading_bit\n";
+						bitblock<tgt_size> result;
+						result.reset();
+						return result;
+					}
+				}
+#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
 				bitblock<tgt_size> result((src >> n).to_ullong()); // convert to size_t to deal with different sizes
 

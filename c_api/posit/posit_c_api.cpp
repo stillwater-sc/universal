@@ -5,6 +5,14 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <tuple>
 #include <posit_c_api.h>
+// configure the C++ library
+// default behavior that is kept
+// POSIT_ROUNDING_ERROR_FREE_IO_FORMAT
+// enable literals in expressions
+// POSIT_ENABLE_LITERALS
+// Disable exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
+// Enable standard posit specializations
 #define POSIT_FAST_POSIT_4_0   1
 #define POSIT_FAST_POSIT_8_0   1
 #define POSIT_FAST_POSIT_16_1  1
@@ -13,6 +21,7 @@
 #define POSIT_FAST_POSIT_64_3  0
 #define POSIT_FAST_POSIT_128_4 0
 #define POSIT_FAST_POSIT_256_5 0
+// Now include the C++ library
 #include <posit>
 
 
