@@ -99,12 +99,12 @@ int add_compress(workbuf_t* buf) {
 
 int testrun(std::default_random_engine& random, uint64_t* sum) {
     workbuf_t buf;
-    for (int i = 0; i < sizeof buf / 4; i++) { buf.ints[i] = random(); }
+    for (unsigned int i = 0; i < sizeof buf / 4; i++) { buf.ints[i] = random(); }
     // kill off the NaRs because they're boring
-    for (int i = 0; i < sizeof buf; i++) { buf.bytes[i] += (buf.bytes[i] == 0x80); }
+    for (unsigned int i = 0; i < sizeof buf; i++) { buf.bytes[i] += (buf.bytes[i] == 0x80); }
 
     double ref = 0;
-    for (int i = 0; i < sizeof buf; i++) { ref += posit8_tod(buf.posits[i]); }
+    for (unsigned int i = 0; i < sizeof buf; i++) { ref += posit8_tod(buf.posits[i]); }
 
 	int cycles = 0;
 	uint64_t micros = 0;
@@ -117,7 +117,7 @@ int testrun(std::default_random_engine& random, uint64_t* sum) {
 
     int nonzero = 0;
     double result = 0;
-    for (int i = 0; i < sizeof buf; i++) {
+    for (unsigned int i = 0; i < sizeof buf; i++) {
         if (!buf.bytes[i]) { continue; }
         nonzero++;
         double x = posit8_tod(buf.posits[i]);
