@@ -59,9 +59,9 @@ The default build configuration will build the educational examples and utilitie
 cmake -DBUILD_CI_CHECK=ON ..
 ```
 
-For performance, the default build configuration compiles with AVX2. If your particular CPU doesn't support AVX2, you will need to build with that flag turned off:
+For performance, the build configuration can enable specific x86 instruction sets (SSE/AVX/AVX2). For example, if your processor supports the AVX2 instruction set, you can build the test suites and educational examples with the AVX2 flag turned on. This typically yields a 20% performance boost.
 ```
-cmake -DBUILD_CI_CHECK=on -DUSE_AVX2=OFF ..
+cmake -DBUILD_CI_CHECK=on -DUSE_AVX2=ON ..
 ```
 
 The library builds a set of useful command utilities, which can be found in the directory ".../build/tools/cmd".
