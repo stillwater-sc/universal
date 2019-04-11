@@ -1,5 +1,7 @@
 # Universal: a C++ template library for universal number arithmetic
 
+[![Awesome Cpp](https://awesome.re/mentioned-badge.svg)](https://github.com/fffaraz/awesome-cpp#math)
+
 Universal Numbers, or unums, are a collection of number systems to replace floating point with more efficient and mathematically correct arithmetic properties.
 
 # How to build
