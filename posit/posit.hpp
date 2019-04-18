@@ -733,6 +733,9 @@ public:
 		// TODO: how to get rid of this decode step?
 		return negated;
 	}
+	posit operator+() const {
+		return *this;
+	}
 
 	// we model a hw pipeline with register assignments, functional block, and conversion
 	posit& operator+=(const posit& rhs) {
