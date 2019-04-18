@@ -10,7 +10,7 @@ cmake_minimum_required(VERSION 3.5)
 
 ####
 # Set project variables
-project (universal VERSION 1.0.0 LANGUAGES C CXX)
+project (universal VERSION 2.0.0 LANGUAGES C CXX)
 
 ####
 ## Enable project() command to manage VERSION variables
