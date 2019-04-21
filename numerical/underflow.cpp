@@ -46,13 +46,46 @@ Scalar ConditionalProb_v2(int r, Scalar p1, Scalar p2) {
 	return 1.0 / (1.0 + integerPower(p2/p1, r));
 }
 
+/*
+bad for abs(z) << 1
+y = 1 - sqrt(1-z);
+better
+y = z/(1 + sqrt(1-z));
+*/
+template<typename Scalar>
+Scalar BadOneMinusSqrtOfOneMinusZ(Scalar z) {
+	return 1 - sqrt(1 - z);
+}
+template<typename Scalar>
+Scalar GoodOneMinusSqrtOfOneMinusZ(Scalar z) {
+	return z / (1 + sqrt(1 - z));
+}
+
+template<typename Scalar>
+void OneMinusSqrtOfOneMinusZ() {
+	using namespace std;
+	using namespace sw::unum;
+	constexpr size_t columnWidth = 20;
+	cout << setw(columnWidth) << "z"
+		<< setw(columnWidth) << "bad"
+		<< setw(columnWidth) << "good"
+		<< setw(columnWidth) << "error"
+		<< endl;
+	for (float z = 0.0f; z < 1.0f; z = z + 0.05f) {
+		Scalar bad = BadOneMinusSqrtOfOneMinusZ(z);
+		Scalar good = GoodOneMinusSqrtOfOneMinusZ(z);
+		Scalar error = abs(bad - good);
+		cout << setw(columnWidth) << z << " " << bad << " " << good << " " << error << endl;
+	}
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
 
-	constexpr size_t nbits = 64;
-	constexpr size_t es = 3;
+	constexpr size_t nbits = 32;
+	constexpr size_t es = 2;
 	using Scalar = posit<nbits,es>;
 	//using Scalar = double;
 
@@ -61,7 +94,7 @@ try {
 
 	// preserve the existing ostream precision
 	auto precision = cout.precision();
-	cout << setprecision(17);
+	cout << setprecision(12);
 
 	Scalar p1 = 1.0/6;
 	Scalar p2 = 1.001/6;
@@ -70,6 +103,11 @@ try {
 	for (int i = 0; i < r; ++i) {
 		cout << setw(3) << i << " " << ConditionalProb_v1(i, p1, p2) << " " << ConditionalProb_v2(i, p1, p2) << endl;
 	}
+
+	cout << "1 - SQRT(1 - z)\n";
+	OneMinusSqrtOfOneMinusZ< posit<16, 1> >();
+	OneMinusSqrtOfOneMinusZ< posit<32, 2> >();
+	OneMinusSqrtOfOneMinusZ< posit<64, 3> >();
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);

@@ -9,6 +9,12 @@
 #include "../tests/posit_test_helpers.hpp"
 
 /*
+floating point arithmetic:
+ - integers are represented exactly
+ - float(x - y) = x - y when x/2 <= y <= 2x: difference is represented exactly when two numbers are less than 2x of each other
+ - float(2x)    = 2x barring overflow
+ - float(x/2)   = x/2 barring underflow
+
 TwoSum denotes an algorithm introduced by Knuth in "The Art of Computer Programming", vol 2, Seminumerical Algorithms.
 
 Given two floating point values a and b, generate a rounded sum s and a remainder r, such that
