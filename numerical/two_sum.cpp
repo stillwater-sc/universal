@@ -93,7 +93,9 @@ bool GenerateTwoSumTestCase(const Scalar& a, const Scalar& b) {
 	std::cout << "a + b                  : " << std::setw(nbits) << (a + b).get() << " : " << (a + b) << std::endl;
 	Scalar a_and_b = a + b;
 	Scalar s_and_r = s + r;
-	return a_and_b == s_and_r;
+	bool equal = (a_and_b == s_and_r);
+	std::cout << (equal ? " PASS\n" : " FAIL\n");
+	return equal;
 }
 
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
@@ -153,29 +155,32 @@ try {
 	cout << "Posit TwoSum validation" << endl;
 
 #if MANUAL_TEST
-	/*
+
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 1;
 	using Posit = posit<nbits, es>;
 	Posit a, b;
+
 	a = b = minpos<nbits, es>();
 	cout << "geometric rounding region\n";
-	cout << (GenerateTwoSumTestCase(a, b) ? "PASS\n" : "FAIL\n");
-	cout << (GenerateTwoSumTestCase(a, ++b) ? "PASS\n" : "FAIL\n");
-	cout << (GenerateTwoSumTestCase(++a, b) ? "PASS\n" : "FAIL\n");
+	GenerateTwoSumTestCase(a, b);
+	GenerateTwoSumTestCase(-a, b);
+	GenerateTwoSumTestCase(a, -b);
+	GenerateTwoSumTestCase(-a, -b);
 	cout << endl << "arithmetic rounding region\n";
 	a = 1.0;
+	GenerateTwoSumTestCase(a, b);
+	GenerateTwoSumTestCase(-a, b);
 	b = 1.0;
-	++b;
-	cout << (GenerateTwoSumTestCase(a, b) ? "PASS\n" : "FAIL\n");
-	*/
+	GenerateTwoSumTestCase(a, b);
+	return 0;
 	
 	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "twoSum");
 	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "twoSum");
 	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "twoSum");
-//	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "twoSum");
-//	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "twoSum");
-//	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "twoSum");
 
 #else
 	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "twoSum");
