@@ -50,6 +50,7 @@ option(BUILD_CI_CHECK                    "Set to ON to build all components"    
 option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"             ON)
 option(BUILD_APPLICATION_EXAMPLES        "Set to ON to build epplication examples"             ON)
 option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   ON)
+option(BUILD_NUMERICAL                   "Set to ON to build numerical test programs"          ON)
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
 # C API library and test programs
 option(BUILD_C_API_LIB                   "Set to ON to build C API library"                    OFF)
@@ -181,7 +182,9 @@ elseif(MSVC)
 	# Zc:__cplusplus not specified		Any value					199711L
 	# Note that the MSVC compiler does not, and never will, support a C++11, C++03, or C++98 standards version switch.
 	# Also, the value of the __cplusplus macro is not affected by the /permissive- switch.
-	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
+	#set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
+	# for the moment turn off since we are getting: cl : COmmand line warning D9002: ignoring unknown option '/Zc:__cplusplus`
+	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /std:c++14")
 
 	# Optimization
 	# Option	Purpose
@@ -357,6 +360,7 @@ if(BUILD_CI_CHECK)
 	set(BUILD_EDUCATION_EXAMPLES ON)
 	set(BUILD_APPLICATION_EXAMPLES ON)
 	set(BUILD_CMD_LINE_TOOLS ON)
+	set(BUILD_NUMERICAL ON)
 	set(BUILD_PLAYGROUND ON)
 	# build the different test/verification suites for each number system
 	set(BUILD_BITBLOCK ON)
@@ -424,6 +428,10 @@ if(BUILD_APPLICATION_EXAMPLES)
 add_subdirectory("examples/blas")
 add_subdirectory("examples/dsp")
 endif(BUILD_APPLICATION_EXAMPLES)
+
+if(BUILD_NUMERICAL)
+add_subdirectory("numerical")
+endif(BUILD_NUMERICAL)
 
 if(BUILD_PLAYGROUND)
 add_subdirectory("examples/playground")
