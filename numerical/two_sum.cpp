@@ -54,17 +54,17 @@ namespace sw {
 		}
 
 		/*
-when rounding of s falls in the geometric rounding region, there doesn't exist an r which satisfies s+r=a+b.
+			when rounding of s falls in the geometric rounding region, there doesn't exist an r which satisfies s+r=a+b.
 
-So for add_exact, if we determine that finding the best s,r is too complex for a subset of values,
-we can define the standard as returning ( max(|a|,|b|), min(|a|,|b|) ) in those scenarios
-and it will probably just be a bit less efficient summing lists (though we need to verify it doesn't
-get into silly states).
+			So for add_exact, if we determine that finding the best s,r is too complex for a subset of values,
+			we can define the standard as returning ( max(|a|,|b|), min(|a|,|b|) ) in those scenarios
+			and it will probably just be a bit less efficient summing lists (though we need to verify it doesn't
+			get into silly states).
 
-However, because it's going into a mining algorithm, whatever we define as the rule now is what all
-hardware will end up targeting... "When you make a bug in blockchain code, people write books about it"
-so we should make a reasonable effort to find (s,r) of the smallest r where s+r=a+b.
-		*/
+			However, because it's going into a mining algorithm, whatever we define as the rule now is what all
+			hardware will end up targeting... "When you make a bug in blockchain code, people write books about it"
+			so we should make a reasonable effort to find (s,r) of the smallest r where s+r=a+b.
+
 		template<size_t nbits, size_t es>
 		std::pair< posit<nbits, es>, posit<nbits, es> > add_exact(const posit<nbits, es>& a, const posit<nbits, es>& b) {
 			using Scalar = posit<nbits, es>;
@@ -79,8 +79,9 @@ so we should make a reasonable effort to find (s,r) of the smallest r where s+r=
 			s = posit<nbits, es>::convert_truncate_bits(temp);
 			temp = temp - posit<nbits * 2, es>(s);
 			r = posit<nbits, es>::convert_assert_exact(temp);
-			return[s, r];
+			return  std::pair<Scalar, Scalar>(s, r);
 		}
+		*/
 	}
 }
 
@@ -236,7 +237,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "twoSum");
 	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "twoSum");
 
-#endif MANUAL_TEST
+#endif // MANUAL_TEST
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);
