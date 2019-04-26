@@ -38,9 +38,11 @@ namespace sw {
 
 		template<size_t nbits, size_t es>
 		std::pair< posit<nbits, es>, posit<nbits, es> > twoSum(const posit<nbits, es>& a, const posit<nbits, es>& b) {
+#ifdef GEOMETRIC_ROUNDING_CASES
 			if ((minpos<nbits, es>() == a && minpos<nbits, es>() == b) || (maxpos<nbits, es>() == a && maxpos<nbits, es>() == b)) {
 				return std::pair< posit<nbits, es>, posit<nbits, es> >(a, b);
 			}
+#endif
 			using Scalar = posit<nbits, es>;
 			Scalar s = a + b;
 			Scalar aApprox = s - b;
@@ -49,6 +51,35 @@ namespace sw {
 			Scalar bDiff = b - bApprox;
 			Scalar r = aDiff + bDiff;
 			return std::pair<Scalar, Scalar>(s, r);
+		}
+
+		/*
+when rounding of s falls in the geometric rounding region, there doesn't exist an r which satisfies s+r=a+b.
+
+So for add_exact, if we determine that finding the best s,r is too complex for a subset of values,
+we can define the standard as returning ( max(|a|,|b|), min(|a|,|b|) ) in those scenarios
+and it will probably just be a bit less efficient summing lists (though we need to verify it doesn't
+get into silly states).
+
+However, because it's going into a mining algorithm, whatever we define as the rule now is what all
+hardware will end up targeting... "When you make a bug in blockchain code, people write books about it"
+so we should make a reasonable effort to find (s,r) of the smallest r where s+r=a+b.
+		*/
+		template<size_t nbits, size_t es>
+		std::pair< posit<nbits, es>, posit<nbits, es> > add_exact(const posit<nbits, es>& a, const posit<nbits, es>& b) {
+			using Scalar = posit<nbits, es>;
+
+			if (abs(b) > abs(a)) { return add_exact(b, a); }
+			temp = posit<nbits * 2, es>(a) + posit<nbits * 2, es>(b)
+
+			// no bits intersect
+			if (posit<nbits, es>(temp) == a) { return std::pair<Scalar, Scalar>(a, b); }
+
+			// bits intersect, therefore we believe that temp is added exactly
+			s = posit<nbits, es>::convert_truncate_bits(temp);
+			temp = temp - posit<nbits * 2, es>(s);
+			r = posit<nbits, es>::convert_assert_exact(temp);
+			return[s, r];
 		}
 	}
 }
@@ -67,7 +98,6 @@ void ReportTwoSumError(std::string test_case, std::string op, const sw::unum::po
 		<< std::setw(nbits) << (a + b).get()
 		<< " vs "
 		<< std::setw(nbits) << (s + r).get()
-		<< " : " << sw::unum::pretty_print(s + r)
 		<< std::endl;
 }
 
@@ -121,12 +151,14 @@ int ValidateTwoSum(std::string tag, bool bReportIndividualTestCases) {
 			pref = ps + pr;
 			psum = pa + pb;
 
+//			cout << pa << " + " << pb << " = " << ps << " + " << pr << "    " << psum << " vs " << pref << endl;
+
 			if (psum != pref) {
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases)	ReportTwoSumError("FAIL", "+", pa, pb, ps, pr);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
+				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
 			}
 		}
 	}
@@ -134,7 +166,7 @@ int ValidateTwoSum(std::string tag, bool bReportIndividualTestCases) {
 	return nrOfFailedTests;
 }
 
-#define MANUAL_TEST 1
+#define MANUAL_TEST 0
 
 int main(int argc, char** argv)
 try {
@@ -162,25 +194,19 @@ try {
 	Posit a, b;
 
 	a = b = minpos<nbits, es>();
-	cout << "geometric rounding region\n";
 	GenerateTwoSumTestCase(a, b);
-	GenerateTwoSumTestCase(-a, b);
-	GenerateTwoSumTestCase(a, -b);
 	GenerateTwoSumTestCase(-a, -b);
-	cout << endl << "arithmetic rounding region\n";
-	a = 1.0;
+	++a;
 	GenerateTwoSumTestCase(a, b);
-	GenerateTwoSumTestCase(-a, b);
-	b = 1.0;
+	++b;
 	GenerateTwoSumTestCase(a, b);
-	return 0;
-	
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "twoSum");
-	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "twoSum");
+	a = minpos<nbits, es>();
+	cout << a.get() << " : " << a << " : sum(a,a) " << a+a << " : " << (a+a).get() << endl;
+	++a;
+	cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << endl;
+	++a;
+	cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << endl;
+
 
 #else
 	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "twoSum");
@@ -202,6 +228,14 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "twoSum");
 	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "twoSum");
 	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<6, 4>(tag, bReportIndividualTestCases), "posit<6,4>", "twoSum");
+
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "twoSum");
+	nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "twoSum");
+
 #endif MANUAL_TEST
 
 	// restore the previous ostream precision
