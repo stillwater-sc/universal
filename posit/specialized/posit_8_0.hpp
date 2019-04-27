@@ -5,6 +5,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include "posit8_t.h"
+
 namespace sw {
 	namespace unum {
 
@@ -114,6 +116,7 @@ namespace sw {
 					return *this;
 				}
 				posit operator-() const {
+					/*
 					if (iszero()) {
 						return *this;
 					}
@@ -122,6 +125,8 @@ namespace sw {
 					}
 					posit p;
 					return p.set_raw_bits((~_bits) + 1);
+					*/
+					return c_impl::posit8_negate(_bits);
 				}
 				posit& operator+=(const posit& b) { // derived from SoftPosit
 					uint8_t lhs = _bits;
@@ -341,7 +346,7 @@ namespace sw {
 				inline bool ispos() const      { return !isneg(); }
 				inline bool ispowerof2() const { return !(_bits & 0x1); }
 
-				inline int sign_value() const  { return (_bits & 0x8 ? -1 : 1); }
+				inline int sign_value() const  { return (_bits & 0x80 ? -1 : 1); }
 
 				bitblock<NBITS_IS_8> get() const { bitblock<NBITS_IS_8> bb; bb = int(_bits); return bb; }
 				unsigned long long encoding() const { return (unsigned long long)(_bits); }
