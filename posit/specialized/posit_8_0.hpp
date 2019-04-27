@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "posit8_t.h"
+
 
 namespace sw {
 	namespace unum {
@@ -13,6 +13,9 @@ namespace sw {
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_8_0
 #pragma message("Fast specialization of posit<8,0>")
+
+		// injecting the C API into namespace sw::unum
+#include "posit8_t.h"
 
 			template<>
 			class posit<NBITS_IS_8, ES_IS_0> {
@@ -116,19 +119,17 @@ namespace sw {
 					return *this;
 				}
 				posit operator-() const {
-					/*
-					if (iszero()) {
-						return *this;
-					}
-					if (isnar()) {
-						return *this;
-					}
-					posit p;
-					return p.set_raw_bits((~_bits) + 1);
-					*/
-					return c_impl::posit8_negate(_bits);
+					posit negated;
+					posit8_t b = { { _bits } };
+					return negated.set_raw_bits(posit8_negate(b).v);
 				}
-				posit& operator+=(const posit& b) { // derived from SoftPosit
+				posit& operator+=(const posit& b) {
+					posit8_t lhs = { { _bits } };
+					posit8_t rhs = { { b._bits} };
+					posit8_t sum = posit8_addp8(lhs, rhs);
+					_bits = sum.v;
+					return *this;
+						/*
 					uint8_t lhs = _bits;
 					uint8_t rhs = b._bits;
 					// process special cases
@@ -171,6 +172,7 @@ namespace sw {
 					_bits = round(m, frac16A);
 					if (sign) _bits = -_bits & 0xFF;
 					return *this;
+					*/
 				}
 				posit& operator-=(const posit& b) {  // derived from SoftPosit
 					uint8_t lhs = _bits;
@@ -671,27 +673,17 @@ namespace sw {
 				return !operator< (lhs, rhs);
 			}
 
-			inline posit<NBITS_IS_8, ES_IS_0> operator+(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
+			/* base class has these operators: no need to specialize */
+			inline posit<NBITS_IS_8, ES_IS_0> operator+(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {				
 				posit<NBITS_IS_8, ES_IS_0> result = lhs;
-				if (lhs.isneg() == rhs.isneg()) {  // are the posits the same sign?
-					result += rhs;
-				} 
-				else {
-					result -= rhs;
-				}
-				return result;
+				return result += rhs;
 			}
 			inline posit<NBITS_IS_8, ES_IS_0> operator-(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
 				posit<NBITS_IS_8, ES_IS_0> result = lhs;
-				if (lhs.isneg() == rhs.isneg()) {  // are the posits the same sign?
-					result -= rhs.twosComplement();
-				}
-				else {
-					result += rhs.twosComplement();
-				}
-				return result;
+				return result -= rhs;
 
 			}
+			
 			// binary operator*() is provided by generic class
 
 #if POSIT_ENABLE_LITERALS

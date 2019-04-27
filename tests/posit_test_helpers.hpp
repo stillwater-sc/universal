@@ -632,7 +632,7 @@ namespace sw {
 			return nrOfFailedTests;
 		}
 
-		// enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
+		// enumerate all addition cases for a posit configuration
 		template<size_t nbits, size_t es>
 		int ValidateAddition(std::string tag, bool bReportIndividualTestCases) {
 			const size_t NR_POSITS = (size_t(1) << nbits);

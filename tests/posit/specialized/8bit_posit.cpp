@@ -7,8 +7,7 @@
 #include "common.hpp"
 // Configure the posit template environment
 // first: enable fast specialized posit<8,0>
-// #define POSIT_FAST_SPECIALIZATION
-#define POSIT_FAST_POSIT_8_0 1
+#define POSIT_FAST_POSIT_8_0 0
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
@@ -19,6 +18,22 @@
 /*
 Standard posits with nbits = 8 have no exponent bits, i.e. es = 0.
 */
+template<size_t nbits, size_t es>
+void placeholder(sw::unum::posit<nbits, es>& a) {
+	using namespace std;
+	using namespace sw::unum;
+	bool		     	 _sign;
+	regime<nbits, es>    _regime;
+	exponent<nbits, es>  _exponent;
+	fraction<5>          _fraction;
+	bitblock<nbits>		 _raw_bits;
+	decode(a.get(), _sign, _regime, _exponent, _fraction);
+	double s = (_sign ? -1.0 : 1.0);
+	double r = _regime.value();
+	double e = _exponent.value();
+	double f = (1.0 + _fraction.value());
+	cout << "fraction = " << _fraction << " faction value = " << f << endl;
+}
 
 int main(int argc, char** argv)
 try {
@@ -42,6 +57,7 @@ try {
 
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl;
+
 
 	// special cases
 	p = 0;
