@@ -1,4 +1,6 @@
-add_library(posit_c_api STATIC posit_c_api.cpp)
+file (GLOB SOURCES "./*.c")
+
+add_library(posit_c_api_shim STATIC ${SOURCES})
 
 if(C_API_LIB_PIC)
   if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")

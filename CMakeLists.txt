@@ -54,6 +54,7 @@ option(BUILD_NUMERICAL                   "Set to ON to build numerical test prog
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
 # C API library and test programs
 option(BUILD_C_API_LIB                   "Set to ON to build C API library"                    OFF)
+option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"               OFF)
 option(C_API_LIB_PIC                     "Set to ON to compile C API library with -fPIC"       OFF)
 # number systems and their verification suites
 option(BUILD_BITBLOCK                    "Set to ON to build bitblock tests"                   OFF)
@@ -374,6 +375,7 @@ if(BUILD_CI_CHECK)
 	set(BUILD_PERF_TESTS ON)
 	# build the C API library
 	set(BUILD_C_API_LIB ON)
+	set(BUILD_C_API_SHIM_LIB ON)
 	# build IEEE float/double quire capability
 	set(BUILD_IEEE_FLOAT_QUIRES ON)
 	#
@@ -439,9 +441,14 @@ endif(BUILD_PLAYGROUND)
 
 # C API library and their tests
 if(BUILD_C_API_LIB)
-add_subdirectory("c_api/posit")
-add_subdirectory("c_api/test/posit")
+add_subdirectory("c_api/pure_c/posit")
+add_subdirectory("c_api/pure_c/test/posit")
 endif(BUILD_C_API_LIB)
+
+if(BUILD_C_API_SHIM_LIB)
+add_subdirectory("c_api/shim/posit")
+add_subdirectory("c_api/shim/test/posit")
+endif(BUILD_C_API_SHIM_LIB)
 
 # IEEE float/double quire capability
 if(BUILD_IEEE_FLOAT_QUIRES)

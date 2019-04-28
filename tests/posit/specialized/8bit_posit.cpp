@@ -58,7 +58,6 @@ try {
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl;
 
-
 	// special cases
 	p = 0;
 	if (!p.iszero()) ++nrOfFailedTestCases;
