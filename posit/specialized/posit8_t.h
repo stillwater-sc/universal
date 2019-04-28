@@ -5,12 +5,13 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+/*
 //#include <posit_c_api.h>
 typedef union posit8_u {
 	uint8_t x[1];
 	uint8_t v;
 }							posit8_t;	// posit<8,0>
-
+*/
 static const posit8_t posit8_sign_mask = { { 0x80 } };
 
 // characterization tests
