@@ -6,7 +6,6 @@
 
 #define POSIT_NO_GENERICS // MSVC doesn't support _Generic so we'll leave it out from these tests
 #include <posit_c_api.h>
-#include <math.h> // sqrt()
 
 int main(int argc, char* argv[])
 {
@@ -43,20 +42,22 @@ int main(int argc, char* argv[])
 	printf("posit value = %s\n", str);
 	printf("posit value = 8.0x%02xp\n", posit8_bits(pc));
 
-
+	bool bReportIndividualTestFailure = false;
 	// full state space
 	int fails = 0;
 	for (int a = 0; a < 256; ++a) {
 		pa = posit8_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit8_reinterpret(b);
-			pc = posit8_add(pa, pb);
+			pc = posit8_addp8(pa, pb);
 			float da, db, dref;
 			da = posit8_tof(pa);
 			db = posit8_tof(pb);
 			dref = da + db;
 			posit8_t pref = posit8_fromf(dref);
+//			printf("dref = %f  pref = 0x%2x\n", dref, pref.v);
 			if (posit8_cmp(pref, pc)) {
+				if (bReportIndividualTestFailure)
 				printf("FAIL: 8.0x%02xp + 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
                     posit8_bits(pa), posit8_bits(pb), posit8_bits(pc), posit8_bits(pref));
 				++fails;
@@ -77,14 +78,16 @@ int main(int argc, char* argv[])
 		pa = posit8_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit8_reinterpret(b);
-			pc = posit8_sub(pa, pb);
+			pc = posit8_subp8(pa, pb);
 			float da, db, dref;
 			da = posit8_tof(pa);
 			db = posit8_tof(pb);
 			dref = da - db;
 			posit8_t pref = posit8_fromf(dref);
-			if (posit8_cmp(pref, pc)) {
-				printf("FAIL: 8.0x%02xp - 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
+			printf("%d %d\n", a, b);
+			if (posit8_cmpp8(pref, pc)) {
+				if (bReportIndividualTestFailure)
+					printf("FAIL: 8.0x%02xp - 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
                     posit8_bits(pa), posit8_bits(pb), posit8_bits(pc), posit8_bits(pref));
 				++fails;
 			}
@@ -104,14 +107,15 @@ int main(int argc, char* argv[])
 		pa = posit8_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit8_reinterpret(b);
-			pc = posit8_mul(pa, pb);
+			pc = posit8_mulp8(pa, pb);
 			float da, db, dref;
 			da = posit8_tof(pa);
 			db = posit8_tof(pb);
 			dref = da * db;
 			posit8_t pref = posit8_fromf(dref);
 			if (posit8_cmp(pref, pc)) {
-				printf("FAIL: 8.0x%02xp * 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
+				if (bReportIndividualTestFailure)
+					printf("FAIL: 8.0x%02xp * 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
                     posit8_bits(pa), posit8_bits(pb), posit8_bits(pc), posit8_bits(pref));
 				++fails;
 			}
@@ -131,14 +135,15 @@ int main(int argc, char* argv[])
 		pa = posit8_reinterpret(a);
 		for (int b = 0; b < 256; ++b) {
 			pb = posit8_reinterpret(b);
-			pc = posit8_div(pa, pb);
+			pc = posit8_divp8(pa, pb);
 			float da, db, dref;
 			da = posit8_tof(pa);
 			db = posit8_tof(pb);
 			dref = da / db;
 			posit8_t pref = posit8_fromf(dref);
 			if (posit8_cmp(pref, pc)) {
-				printf("FAIL: 8.0x%02xp / 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
+				if (bReportIndividualTestFailure)
+					printf("FAIL: 8.0x%02xp / 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
                     posit8_bits(pa), posit8_bits(pb), posit8_bits(pc), posit8_bits(pref));
 				++fails;
 			}
@@ -162,8 +167,9 @@ int main(int argc, char* argv[])
 		dref = sqrt(da);
 		posit8_t pref = posit8_fromd(dref);
 		if (posit8_cmp(pref, pc)) {
-			printf("FAIL: sqrt(8.0x%02xp) produced 8.0x%02xp instead of 8.0x%02xp\n",
-	    posit8_bits(pa), posit8_bits(pc), posit8_bits(pref));
+			if (bReportIndividualTestFailure)
+				printf("FAIL: sqrt(8.0x%02xp) produced 8.0x%02xp instead of 8.0x%02xp\n",
+						 posit8_bits(pa), posit8_bits(pc), posit8_bits(pref));
 			++fails;
 		}
 	}
@@ -185,7 +191,8 @@ int main(int argc, char* argv[])
 		dref = exp(da);
 		posit8_t pref = posit8_fromd(dref);
 		if (posit8_cmp(pref, pc)) {
-			printf("FAIL: exp(8.0x%02xp) produced 8.0x%02xp instead of 8.0x%02xp\n",
+			if (bReportIndividualTestFailure)
+				printf("FAIL: exp(8.0x%02xp) produced 8.0x%02xp instead of 8.0x%02xp\n",
 				posit8_bits(pa), posit8_bits(pc), posit8_bits(pref));
 			++fails;
 		}
@@ -208,7 +215,8 @@ int main(int argc, char* argv[])
 		dref = log(da);
 		posit8_t pref = posit8_fromd(dref);
 		if (posit8_cmp(pref, pc)) {
-			printf("FAIL: log(8.0x%02xp) produced 8.0x%02xp instead of 8.0x%02xp\n",
+			if (bReportIndividualTestFailure)
+				printf("FAIL: log(8.0x%02xp) produced 8.0x%02xp instead of 8.0x%02xp\n",
 				posit8_bits(pa), posit8_bits(pc), posit8_bits(pref));
 			++fails;
 		}

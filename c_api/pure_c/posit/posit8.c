@@ -26,7 +26,14 @@ posit8_t posit8_exp(posit8_t a) {
 // logic functions
 // cmp returns -1 if a < b, 0 if a == b, and 1 if a > b
 int posit8_cmpp8(posit8_t a, posit8_t b) {
-	return a.v - b.v;
+	posit8_t diff = posit8_subp8(a, b);
+	if (posit8_iszero(diff)) {
+		return 0;
+	}
+	else if (posit8_isneg(diff)) {
+		return -1;
+	}
+	return 1;
 }
 
 // string conversion functions

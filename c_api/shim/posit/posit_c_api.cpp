@@ -12,12 +12,11 @@
 // POSIT_ENABLE_LITERALS
 // Disable exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-// Enable standard posit specializations
-#define POSIT_FAST_POSIT_4_0   1
-#define POSIT_FAST_POSIT_8_0   1
-#define POSIT_FAST_POSIT_16_1  1
-#define POSIT_FAST_POSIT_32_2  1
-// thefollowing posit configurations do not have a fast implementation yet
+// Disable standard posit specializations for the shim
+#define POSIT_FAST_POSIT_4_0   0
+#define POSIT_FAST_POSIT_8_0   0
+#define POSIT_FAST_POSIT_16_1  0
+#define POSIT_FAST_POSIT_32_2  0
 #define POSIT_FAST_POSIT_64_3  0
 #define POSIT_FAST_POSIT_128_4 0
 #define POSIT_FAST_POSIT_256_5 0
@@ -112,21 +111,7 @@ template<size_t nbits, size_t es, class positN_t> class convert {
 	static sw::unum::posit<nbits, es> decode(positN_t bits);
 	static positN_t encode(sw::unum::posit<nbits, es> p);
 };
-/*
-template<size_t nbits, size_t es, class positN_t> class convert_small : convert<nbits,es,positN_t> {
-	public:
-	static sw::unum::posit<nbits, es> decode(positN_t bits) {
-		sw::unum::posit<nbits, es> pa;
-		pa.set_raw_bits((uint64_t) bits.v);
-		return pa;
-	}
-	//error C2397: conversion from 'unsigned __int64' to 'uint32_t' requires a narrowing conversion
-	//note: while compiling class template member function 'positN_t convert_small<32,2,positN_t>::encode(sw::unum::posit<32,2>)'
-	static positN_t encode(sw::unum::posit<nbits, es> p) {
-		return { p.encoding() };
-	}
-};
-*/
+
 template<size_t nbits, size_t es, class positN_t> class convert_bytes : convert<nbits,es,positN_t> {
 	public:
 	static sw::unum::posit<nbits, es> decode(positN_t bits) {
