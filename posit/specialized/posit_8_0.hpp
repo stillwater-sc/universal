@@ -95,8 +95,8 @@ namespace sw {
 			posit& operator=(const unsigned long rhs)     { return operator=((signed char)(rhs)); }
 			posit& operator=(const unsigned long long rhs){ return operator=((signed char)(rhs)); }
 			posit& operator=(const float rhs)             { return float_assign(rhs); }
-			posit& operator=(const double rhs)            { return float_assign(rhs); }
-			posit& operator=(const long double rhs)       { return float_assign(rhs); }
+			posit& operator=(const double rhs)            { return float_assign(float(rhs)); }
+			posit& operator=(const long double rhs)       { return float_assign(float(rhs)); }
 
 			explicit operator long double() const { return to_long_double(); }
 			explicit operator double() const { return to_double(); }
@@ -124,195 +124,29 @@ namespace sw {
 			posit& operator+=(const posit& b) {
 				posit8_t lhs = { { _bits } };
 				posit8_t rhs = { { b._bits} };
-				posit8_t sum = posit8_addp8(lhs, rhs);
-				_bits = sum.v;
+				posit8_t add = posit8_addp8(lhs, rhs);
+				_bits = add.v;
 				return *this;
-					/*
-				uint8_t lhs = _bits;
-				uint8_t rhs = b._bits;
-				// process special cases
-				if (isnar() || b.isnar()) {  // infinity
-					_bits = 0x80;
-					return *this;
-				}
-				if (iszero() || b.iszero()) { // zero
-					_bits = lhs | rhs;
-					return *this;
-				}
-				bool sign = bool(_bits & sign_mask);
-				if (sign) {
-					lhs = -lhs & 0xFF;
-					rhs = -rhs & 0xFF;
-				}
-				if (lhs < rhs) std::swap(lhs, rhs);
-					
-				// decode the regime of lhs
-				int8_t m = 0; // pattern length
-				uint8_t remaining = 0;
-				decode_regime(lhs, m, remaining);
-				uint16_t frac16A = (0x80 | remaining) << 7;
-				int8_t shiftRight = m;
-				// adjust shift and extract fraction bits of rhs
-				extractAddand(rhs, shiftRight, remaining);
-				uint16_t frac16B = (0x80 | remaining) << 7;
-
-				// Work-around CLANG (LLVM) compiler when shifting right more than number of bits
-				(shiftRight>7) ? (frac16B = 0) : (frac16B >>= shiftRight); 
-
-				frac16A += frac16B;
-
-				bool rcarry = bool(0x8000 & frac16A); // is MSB set
-				if (rcarry) {
-					m++;
-					frac16A >>= 1;
-				}
-
-				_bits = round(m, frac16A);
-				if (sign) _bits = -_bits & 0xFF;
-				return *this;
-				*/
 			}
-			posit& operator-=(const posit& b) {  // derived from SoftPosit
-				uint8_t lhs = _bits;
-				uint8_t rhs = b._bits;
-				// process special cases
-				if (isnar() || b.isnar()) {
-					_bits = 0x80;
-					return *this;
-				}
-				if (iszero() || b.iszero()) {
-					_bits = lhs | rhs;
-					return *this;
-				}
-				// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
-				bool sign = bool(lhs & sign_mask);
-				(sign) ? (lhs = (-lhs & 0xFF)) : (rhs = (-rhs & 0xFF));
-
-				if (lhs == rhs) {
-					_bits = 0x00;
-					return *this;
-				}
-				if (lhs < rhs) {
-					std::swap(lhs, rhs);
-					sign = !sign;
-				}
-
-				// decode the regime of lhs
-				int8_t m = 0; // pattern length
-				uint8_t remaining = 0;
-				decode_regime(lhs, m, remaining);
-				uint16_t frac16A = (0x80 | remaining) << 7;
-				int8_t shiftRight = m;
-				// adjust shift and extract fraction bits of rhs
-				extractAddand(rhs, shiftRight, remaining);
-				uint16_t frac16B = (0x80 | remaining) << 7;
-
-				// do the subtraction of the fractions
-				if (shiftRight >= 14) {
-					_bits = lhs;
-					if (sign) _bits = -_bits & 0xFFFF;
-					return *this;
-				}
-				else {
-					frac16B >>= shiftRight;
-				}
-				frac16A -= frac16B;
-
-				while ((frac16A >> 14) == 0) {
-					m--;
-					frac16A <<= 1;
-				}
-				bool ecarry = bool (0x4000 & frac16A);
-				if (!ecarry) {
-					m--;
-					frac16A <<= 1;
-				}
-
-				_bits = round(m, frac16A);
-				if (sign) _bits = -_bits & 0xFF;
+			posit& operator-=(const posit& b) {
+				posit8_t lhs = { { _bits } };
+				posit8_t rhs = { { b._bits } };
+				posit8_t sub = posit8_subp8(lhs, rhs);
+				_bits = sub.v;
 				return *this;
 			}
 			posit& operator*=(const posit& b) {
-				uint8_t lhs = _bits;
-				uint8_t rhs = b._bits;
-				// process special cases
-				if (isnar() || b.isnar()) {
-					_bits = 0x80;
-					return *this;
-				}
-				if (iszero() || b.iszero()) {
-					_bits = 0x00;
-					return *this;
-				}
-
-				// calculate the sign of the result
-				bool sign = bool(lhs & 0x80) ^ bool(rhs & 0x80);
-				lhs = lhs & 0x80 ? -lhs : lhs;
-				rhs = rhs & 0x80 ? -rhs : rhs;
-
-				// decode the regime of lhs
-				int8_t m = 0; // pattern length
-				uint8_t remaining = 0;
-				decode_regime(lhs, m, remaining);
-				uint8_t lhs_fraction = (0x80 | remaining);
-				// adjust shift and extract fraction bits of rhs
-				extractMultiplicand(rhs, m, remaining);
-				uint8_t rhs_fraction = (0x80 | remaining);
-				uint16_t result_fraction = uint16_t(lhs_fraction) * uint16_t(rhs_fraction);
-
-				bool rcarry = bool(result_fraction & 0x8000);
-				if (rcarry) {
-					m++;
-					result_fraction >>= 1;
-				}
-
-				// round
-				_bits = round(m, result_fraction);
-				if (sign) _bits = -_bits & 0xFF;
+				posit8_t lhs = { { _bits } };
+				posit8_t rhs = { { b._bits } };
+				posit8_t mul = posit8_mulp8(lhs, rhs);
+				_bits = mul.v;
 				return *this;
 			}
 			posit& operator/=(const posit& b) {
-				uint8_t lhs = _bits;
-				uint8_t rhs = b._bits;
-				// process special cases
-				if (isnar() || b.isnar() || b.iszero()) {
-					_bits = 0x80;
-					return *this;
-				}
-				if (iszero()) {
-					_bits = 0x00;
-					return *this;
-				}
-
-				// calculate the sign of the result
-				bool sign = bool(lhs & 0x80) ^ bool(rhs & 0x80);
-				lhs = lhs & 0x80 ? -lhs : lhs;
-				rhs = rhs & 0x80 ? -rhs : rhs;
-
-				// decode the regime of lhs
-				int8_t m = 0; // pattern length
-				uint8_t remaining = 0;
-				decode_regime(lhs, m, remaining);
-				uint16_t lhs_fraction = (0x80 | remaining) << 7;
-				// adjust shift and extract fraction bits of rhs
-				extractDividand(rhs, m, remaining);
-				uint8_t rhs_fraction = (0x80 | remaining);
-				div_t result = div(lhs_fraction, uint16_t(rhs_fraction));
-				uint16_t result_fraction = result.quot;
-				uint16_t remainder = result.rem;
-
-				if (result_fraction != 0) {
-					bool rcarry = result_fraction >> 7; // this is the hidden bit (7th bit) , extreme right bit is bit 0
-					if (!rcarry) {
-						--m;
-						result_fraction <<= 1;
-					}
-				}
-
-				// round
-				_bits = adjustAndRound(m, result_fraction, remainder != 0);
-				if (sign) _bits = -_bits & 0xFF;
-
+				posit8_t lhs = { { _bits } };
+				posit8_t rhs = { { b._bits } };
+				posit8_t div = posit8_divp8(lhs, rhs);
+				_bits = div.v;
 				return *this;
 			}
 			posit& operator++() {
@@ -398,53 +232,21 @@ namespace sw {
 			}
 #endif
 			float       to_float() const {
-				return (float)to_double();
+				posit8_t p = { { _bits } };
+				return posit8_tof(p);
 			}
 			double      to_double() const {
-				if (iszero())	return 0.0;
-				if (isnar())	return NAN;
-				bool		     	 _sign;
-				regime<nbits, es>    _regime;
-				exponent<nbits, es>  _exponent;
-				fraction<fbits>      _fraction;
-				bitblock<nbits>		 _raw_bits;
-				_raw_bits.reset();
-				uint64_t mask = 1;
-				for (size_t i = 0; i < nbits; i++) {
-					_raw_bits.set(i, (_bits & mask));
-					mask <<= 1;
-				}
-				decode(_raw_bits, _sign, _regime, _exponent, _fraction);
-				double s = (_sign ? -1.0 : 1.0);
-				double r = _regime.value();
-				double e = _exponent.value();
-				double f = (1.0 + _fraction.value());
-				return s * r * e * f;
+				return (double)to_float();
 			}
 			long double to_long_double() const {
-				if (iszero())  return 0.0;
-				if (isnar())   return NAN;
-				bool		     	 _sign;
-				regime<nbits, es>    _regime;
-				exponent<nbits, es>  _exponent;
-				fraction<fbits>      _fraction;
-				bitblock<nbits>		 _raw_bits;
-				_raw_bits.reset();
-				uint64_t mask = 1;
-				for (size_t i = 0; i < nbits; i++) {
-					_raw_bits.set(i, (_bits & mask));
-					mask <<= 1;
-				}
-				decode(_raw_bits, _sign, _regime, _exponent, _fraction);
-				long double s = (_sign ? -1.0 : 1.0);
-				long double r = _regime.value();
-				long double e = _exponent.value();
-				long double f = (1.0 + _fraction.value());
-				return s * r * e * f;
+				return (long double)to_float();
 			}
 
-			template <typename T>
-			posit& float_assign(const T& rhs) {
+			posit& float_assign(float rhs) {
+				posit8_t p = posit8_fromf(rhs);
+				_bits = p.v;
+				return *this;
+				/*
 				constexpr int dfbits = std::numeric_limits<T>::digits - 1;
 				value<dfbits> v((T)rhs);
 
@@ -462,9 +264,11 @@ namespace sw {
 				convert_to_bb<NBITS_IS_8, ES_IS_0, dfbits>(v.sign(), v.scale(), v.fraction(), ptt); // TODO: needs to be faster
 				_bits = uint8_t(ptt.to_ulong());
 				return *this;
+				*/
 			}
 
 			// helper method
+			/*
 			// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder
 			inline void decode_regime(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
 				remaining = (bits << 2) & 0xFF;
@@ -598,6 +402,8 @@ namespace sw {
 				}
 				return bits;
 			}
+			*/
+
 			// I/O operators
 			friend std::ostream& operator<< (std::ostream& ostr, const posit<NBITS_IS_8, ES_IS_0>& p);
 			friend std::istream& operator>> (std::istream& istr, posit<NBITS_IS_8, ES_IS_0>& p);

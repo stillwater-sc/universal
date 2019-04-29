@@ -14,7 +14,7 @@
 posit8_t posit8_sqrt(posit8_t a) {
 	posit8_t p;
 	float f = posit8_tof(a);
-	float root = sqrt(f);
+	float root = sqrtf(f);
 	p = posit8_fromf(root);
 	return p;
 }

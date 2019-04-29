@@ -210,7 +210,7 @@ int main(int argc, char* argv[])
 
 	// full state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {   // includes negative numbers
+	for (int a = 0; a < 128; ++a) {   // excludes negative numbers
 		pa = posit8_reinterpret(a);
 		pc = posit8_log(pa);
 		double da, dref;
@@ -232,5 +232,5 @@ int main(int argc, char* argv[])
 		printf("log             PASS\n");
 	}
 
-	return failures > 0 ? EXIT_FAILURE : EXIT_SUCCESS;
+	return failures ? EXIT_FAILURE : EXIT_SUCCESS;
 }
