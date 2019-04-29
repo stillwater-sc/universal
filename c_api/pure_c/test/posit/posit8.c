@@ -13,36 +13,40 @@ int main(int argc, char* argv[])
 	char str[posit8_str_SIZE];
 	bool failures = false;
 
+	uint8_t v, w;
+	v = 127;
+	w = -v & 0xFF;
+
 	// special case values
 	pa = NAR8;
 	pb = ZERO8;
-	pc = posit8_add(pa, pb);
+	pc = posit8_addp8(pa, pb);
 	posit8_str(str, pc);
 	printf("posit value = %s\n", str);
 	printf("posit value = 8.0x%02xp\n", posit8_bits(pc));
 
 	pa = NAR8;
 	pb = ZERO8;
-	pc = posit8_sub(pa, pb);
+	pc = posit8_subp8(pa, pb);
 	posit8_str(str, pc);
 	printf("posit value = %s\n", str);
 	printf("posit value = 8.0x%02xp\n", posit8_bits(pc));
 
 	pa = NAR8;
 	pb = ZERO8;
-	pc = posit8_mul(pa, pb);
+	pc = posit8_mulp8(pa, pb);
 	posit8_str(str, pc);
 	printf("posit value = %s\n", str);
 	printf("posit value = 8.0x%02xp\n", posit8_bits(pc));
 
 	pa = NAR8;
 	pb = ZERO8;
-	pc = posit8_div(pa, pb);
+	pc = posit8_divp8(pa, pb);
 	posit8_str(str, pc);
 	printf("posit value = %s\n", str);
 	printf("posit value = 8.0x%02xp\n", posit8_bits(pc));
 
-	bool bReportIndividualTestFailure = false;
+	bool bReportIndividualTestFailure = true;
 	// full state space
 	int fails = 0;
 	for (int a = 0; a < 256; ++a) {
@@ -84,7 +88,6 @@ int main(int argc, char* argv[])
 			db = posit8_tof(pb);
 			dref = da - db;
 			posit8_t pref = posit8_fromf(dref);
-			printf("%d %d\n", a, b);
 			if (posit8_cmpp8(pref, pc)) {
 				if (bReportIndividualTestFailure)
 					printf("FAIL: 8.0x%02xp - 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",

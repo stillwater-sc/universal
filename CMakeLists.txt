@@ -223,13 +223,15 @@ endif()
 ####
 # set the aggregated compiler options
 
-# clear nonsensical defaults, like "-O3 -NDEBUG" for release
-set(CMAKE_C_FLAGS           "")
-set(CMAKE_C_FLAGS_RELEASE   "")
-set(CMAKE_C_FLAGS_DEBUG     "")
-set(CMAKE_CXX_FLAGS         "")
-set(CMAKE_CXX_FLAGS_RELEASE "")
-set(CMAKE_CXX_FLAGS_DEBUG   "")
+if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	# clear nonsensical defaults, like "-O3 -NDEBUG" for release
+	set(CMAKE_C_FLAGS           "")
+	set(CMAKE_C_FLAGS_RELEASE   "")
+	set(CMAKE_C_FLAGS_DEBUG     "")
+	set(CMAKE_CXX_FLAGS         "")
+	set(CMAKE_CXX_FLAGS_RELEASE "")
+	set(CMAKE_CXX_FLAGS_DEBUG   "")
+endif()
 
 # bring in the flags set above
 set(CMAKE_C_FLAGS           "${CMAKE_CXX_FLAGS} ${EXTRA_C_FLAGS}")
