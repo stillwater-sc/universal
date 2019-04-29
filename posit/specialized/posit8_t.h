@@ -7,7 +7,9 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <math.h>  // for INFINITY
+#include <math.h>  // for NAN and INFINITY
+
+#include <positctypes.h>
 
 static const posit8_t posit8_sign_mask = { { 0x80 } };
 
@@ -433,8 +435,8 @@ float posit8_fraction_value(uint8_t fraction) {
 }
 
 // conversion functions
-void checkExtraTwoBitsP8(float f, double temp, bool* bitsNPlusOne, bool* bitsMore) {
-	temp /= 2;
+void checkExtraTwoBitsP8(float f, float temp, bool* bitsNPlusOne, bool* bitsMore) {
+	temp /= 2.0;
 	if (temp <= f) {
 		*bitsNPlusOne = 1;
 		f -= temp;
@@ -453,7 +455,7 @@ uint16_t convertFractionP8(float f, uint8_t fracLength, bool* bitsNPlusOne, bool
 	if (fracLength == 0)
 		checkExtraTwoBitsP8(f, 1.0, bitsNPlusOne, bitsMore);
 	else {
-		double temp = 1;
+		float temp = 1;
 		while (true) {
 			temp /= 2;
 			if (temp <= f) {
@@ -489,7 +491,7 @@ uint16_t convertFractionP8(float f, uint8_t fracLength, bool* bitsNPlusOne, bool
 posit8_t posit8_fromf(float f) {
 	posit8_t p;
 	bool sign;
-	uint8_t reg, frac = 0;
+	uint8_t reg = 0;
 	bool bitNPlusOne = 0, bitsMore = 0;
 
 	sign = (f < 0 ? true : false);
@@ -552,9 +554,9 @@ posit8_t posit8_fromf(float f) {
 				p.v = 0x7F;
 			else {
 				int8_t fracLength = 6 - reg;
-				frac = convertFractionP8(f, fracLength, &bitNPlusOne, &bitsMore);
+				uint8_t frac = (uint8_t)convertFractionP8(f, fracLength, &bitNPlusOne, &bitsMore);
 				uint_fast8_t regime = 0x7F - (0x7F >> reg);
-				p.v = ((uint8_t)regime + ((uint8_t)(frac)));
+				p.v = (regime + frac);
 				if (bitNPlusOne) p.v += ((p.v & 1) | bitsMore);
 			}
 			p.v = (sign ? -p.v : p.v);
@@ -577,9 +579,9 @@ posit8_t posit8_fromf(float f) {
 			p.v = 0x1;
 		else {
 			int8_t fracLength = 6 - reg;
-			frac = convertFractionP8(f, fracLength, &bitNPlusOne, &bitsMore);
+			uint8_t frac = (uint8_t)convertFractionP8(f, fracLength, &bitNPlusOne, &bitsMore);
 			uint8_t regime = 0x40 >> reg;
-			p.v = ((uint8_t)regime + ((uint8_t)(frac)));
+			p.v = (regime + frac);
 			if (bitNPlusOne) p.v += ((p.v & 1) | bitsMore);
 		}
 		p.v = (sign ? -p.v : p.v);
@@ -604,8 +606,8 @@ float posit8_tof(posit8_t p) {
 
 	float s = (float)(posit8_sign_value(p));
 	float r = (m > 0 ? (float)((uint32_t)(1) << m) : (1.0f / (float)((uint32_t)(1) << -m)));
-	float e = 1.0;
-	float f = (1.0 + posit8_fraction_value(fraction));
+	float e = 1.0f;
+	float f = (1.0f + posit8_fraction_value(fraction));
 
 //	printf("sign = %f : m = %d : regime = %f : fraction = 0x%x : fraction_value %f\n", s, m, r, fraction, f);
 	return s * r * e * f;
@@ -616,7 +618,7 @@ double posit8_tod(posit8_t p) {
 }
 
 int posit8_to_int(posit8_t p) {
-	if (posit8_isnar(p)) return NAN; // INFINITY;
+	if (posit8_isnar(p)) return (int)NAN; // INFINITY;
 	return (int)(posit8_tof(p));
 }
 
