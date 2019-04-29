@@ -157,13 +157,80 @@ inline uint8_t posit8_adjustAndRound(const int8_t k, uint16_t fraction, bool non
 	return bits;
 }
 
+// conversion functions
+
+float       posit8_fraction_value(uint8_t fraction) {
+	float v = 0.0f;
+	float scale = 1.0f;
+	uint8_t mask = 0x80;
+	for (int i = 5; i >= 0; i--) {
+		if (fraction & mask) v += scale;
+		scale *= 0.5f;
+		mask >>= 1;
+		if (scale == 0.0) break;
+	}
+	return v;
+}
+void        posit8_checkExtraTwoBits(float f, float temp, bool* bitsNPlusOne, bool* bitsMore) {
+	temp /= 2.0;
+	if (temp <= f) {
+		*bitsNPlusOne = 1;
+		f -= temp;
+	}
+	if (f>0)
+		*bitsMore = 1;
+}
+uint16_t    posit8_convertFraction(float f, uint8_t fracLength, bool* bitsNPlusOne, bool* bitsMore) {
+
+	uint_fast8_t frac = 0;
+
+	if (f == 0) return 0;
+	else if (f == INFINITY) return 0x80;
+
+	f -= 1; //remove hidden bit
+	if (fracLength == 0)
+		posit8_checkExtraTwoBits(f, 1.0, bitsNPlusOne, bitsMore);
+	else {
+		float temp = 1;
+		while (true) {
+			temp /= 2;
+			if (temp <= f) {
+				f -= temp;
+				fracLength--;
+				frac = (frac << 1) + 1; //shift in one
+				if (f == 0) {
+					//put in the rest of the bits
+					frac <<= (uint_fast8_t)fracLength;
+					break;
+				}
+
+				if (fracLength == 0) {
+					posit8_checkExtraTwoBits(f, temp, bitsNPlusOne, bitsMore);
+
+					break;
+				}
+			}
+			else {
+				frac <<= 1; //shift in a zero
+				fracLength--;
+				if (fracLength == 0) {
+					posit8_checkExtraTwoBits(f, temp, bitsNPlusOne, bitsMore);
+					break;
+				}
+			}
+		}
+	}
+	//printf("convertfloat: frac:%d bitsNPlusOne: %d, bitsMore: %d\n", frac, bitsNPlusOne, bitsMore);
+	return frac;
+}
 // assignment operators for native types
-posit8_t posit8_assign_int8(const signed char rhs) {
+posit8_t    posit8_fromsi(int a) {
 	// special case for speed as this is a common initialization
 	posit8_t p = { { 0x00} };
-	if (rhs == 0) {
+	if (a == 0) {
 		return p;
 	}
+	int8_t rhs = (int8_t)a;
 	if (rhs == -128) {
 		// 0x80 is special in int8 arithmetic as it is its own negation= 
 		p.v = 0x80;// NaR
@@ -195,9 +262,142 @@ posit8_t posit8_assign_int8(const signed char rhs) {
 	p.v = (sign ? -raw : raw);
 	return p;
 }
-posit8_t posit8_assign_float32(const float rhs) {
-	posit8_t p = { { 0x00} };
+posit8_t    posit8_fromf(float f) {
+	posit8_t p;
+	bool sign;
+	uint8_t reg = 0;
+	bool bitNPlusOne = 0, bitsMore = 0;
+
+	sign = (f < 0 ? true : false);
+	if (f == 0) {
+		p.v = 0;
+		return p;
+	}
+	else if (f == INFINITY || f == -INFINITY || f == NAN) {
+		p = NAR8;
+		p.v = 0x80;
+		return p;
+	}
+	else if (f == 1) {
+		p.v = 0x40;
+		return p;
+	}
+	else if (f == -1) {
+		p.v = 0xC0;
+		return p;
+	}
+	else if (f >= 64) {
+		//maxpos
+		p.v = 0x7F;
+		return p;
+	}
+	else if (f <= -64) {
+		// -maxpos
+		p.v = 0x81;
+		return p;
+	}
+	else if (f <= 0.015625 && !sign) {
+		//minpos
+		p.v = 0x1;
+		return p;
+	}
+	else if (f >= -0.015625 && sign) {
+		//-minpos
+		p.v = 0xFF;
+		return p;
+	}
+	else if (f>1 || f<-1) {
+		if (sign) {
+			//Make negative numbers positive for easier computation
+			f = -f;
+		}
+		reg = 1; //because k = m-1; so need to add back 1
+				 // minpos
+		if (f <= 0.015625) {
+			p.v = 0x01;
+		}
+		else {
+			//regime
+			while (f >= 2) {
+				f *= 0.5;
+				reg++;
+			}
+
+			//rounding off regime bits
+			if (reg>6)
+				p.v = 0x7F;
+			else {
+				int8_t fracLength = 6 - reg;
+				uint8_t frac = (uint8_t)posit8_convertFraction(f, fracLength, &bitNPlusOne, &bitsMore);
+				uint_fast8_t regime = 0x7F - (0x7F >> reg);
+				p.v = (regime + frac);
+				if (bitNPlusOne) p.v += ((p.v & 1) | bitsMore);
+			}
+			p.v = (sign ? -p.v : p.v);
+		}
+	}
+	else if (f < 1 || f > -1) {
+		if (sign) {
+			//Make negative numbers positive for easier computation
+			f = -f;
+		}
+		reg = 0;
+
+		//regime
+		while (f<1) {
+			f *= 2;
+			reg++;
+		}
+		//rounding off regime bits
+		if (reg>6)
+			p.v = 0x1;
+		else {
+			int8_t fracLength = 6 - reg;
+			uint8_t frac = (uint8_t)posit8_convertFraction(f, fracLength, &bitNPlusOne, &bitsMore);
+			uint8_t regime = 0x40 >> reg;
+			p.v = (regime + frac);
+			if (bitNPlusOne) p.v += ((p.v & 1) | bitsMore);
+		}
+		p.v = (sign ? -p.v : p.v);
+	}
+	else {
+		//NaR - for NaN, INF and all other combinations
+		p = NAR8;
+	}
 	return p;
+}
+posit8_t    posit8_fromd(double d) {
+	return posit8_fromf((float)d);
+}
+posit8_t    posit8_fromld(long double ld) {
+	return posit8_fromf((float)ld);
+}
+float       posit8_tof(posit8_t p) {
+	if (p.v == 0) return 0.0f;
+	if (p.v == 0x80) return NAN;   //  INFINITY is not semantically correct. NaR is Not a Real and thus is more closely related to a NAN, or Not a Number
+
+	uint8_t bits = (p.v & 0x80 ? -p.v : p.v);  // use 2's complement when negative	
+	uint8_t fraction = 0;
+	int8_t m = posit8_decode_regime(bits, &fraction);
+
+	float s = (float)(posit8_sign_value(p));
+	float r = (m > 0 ? (float)((uint32_t)(1) << m) : (1.0f / (float)((uint32_t)(1) << -m)));
+	float e = 1.0f;
+	float f = 1.0f;
+	f += posit8_fraction_value(fraction);
+
+//	printf("sign = %f : m = %d : regime = %f : fraction = 0x%x : fraction_value %f\n", s, m, r, fraction, f);
+	return s * r * e * f;
+}
+double      posit8_tod(posit8_t p) {
+	return (double)posit8_tof(p);
+}
+long double posit8_told(posit8_t p) {
+	return (long double)posit8_tof(p);
+}
+int         posit8_tosi(posit8_t p) {
+	if (posit8_isnar(p)) return (int)NAN; // INFINITY;
+	return (int)(posit8_tof(p));
 }
 
 posit8_t posit8_set_raw_bits(uint64_t value) {
@@ -205,6 +405,7 @@ posit8_t posit8_set_raw_bits(uint64_t value) {
 	return p;
 }
 
+// arithmetic operators
 posit8_t posit8_negate(posit8_t p) {
 	p.v = -p.v; // 0 and NaR are invariant under uint8 arithmetic
 	return p;
@@ -415,217 +616,11 @@ posit8_t posit8_divp8(posit8_t lhs, posit8_t rhs) {
 	p.v = (sign ? -raw : raw);
 	return p;
 }
-
 posit8_t posit8_reciprocate(posit8_t rhs) {
 	posit8_t one = { { 0x40 } };
 	return posit8_divp8(one, rhs);
 }
 
-float posit8_fraction_value(uint8_t fraction) {
-	float v = 0.0f;
-	float scale = 1.0f;
-	uint8_t mask = 0x80;
-	for (int i = 5; i >= 0; i--) {
-		if (fraction & mask) v += scale;
-		scale *= 0.5f;
-		mask >>= 1;
-		if (scale == 0.0) break;
-	}
-	return v;
-}
-
-// conversion functions
-void checkExtraTwoBitsP8(float f, float temp, bool* bitsNPlusOne, bool* bitsMore) {
-	temp /= 2.0;
-	if (temp <= f) {
-		*bitsNPlusOne = 1;
-		f -= temp;
-	}
-	if (f>0)
-		*bitsMore = 1;
-}
-uint16_t convertFractionP8(float f, uint8_t fracLength, bool* bitsNPlusOne, bool* bitsMore) {
-
-	uint_fast8_t frac = 0;
-
-	if (f == 0) return 0;
-	else if (f == INFINITY) return 0x80;
-
-	f -= 1; //remove hidden bit
-	if (fracLength == 0)
-		checkExtraTwoBitsP8(f, 1.0, bitsNPlusOne, bitsMore);
-	else {
-		float temp = 1;
-		while (true) {
-			temp /= 2;
-			if (temp <= f) {
-				f -= temp;
-				fracLength--;
-				frac = (frac << 1) + 1; //shift in one
-				if (f == 0) {
-					//put in the rest of the bits
-					frac <<= (uint_fast8_t)fracLength;
-					break;
-				}
-
-				if (fracLength == 0) {
-					checkExtraTwoBitsP8(f, temp, bitsNPlusOne, bitsMore);
-
-					break;
-				}
-			}
-			else {
-				frac <<= 1; //shift in a zero
-				fracLength--;
-				if (fracLength == 0) {
-					checkExtraTwoBitsP8(f, temp, bitsNPlusOne, bitsMore);
-					break;
-				}
-			}
-		}
-	}
-	//printf("convertfloat: frac:%d bitsNPlusOne: %d, bitsMore: %d\n", frac, bitsNPlusOne, bitsMore);
-	return frac;
-}
-
-posit8_t posit8_fromf(float f) {
-	posit8_t p;
-	bool sign;
-	uint8_t reg = 0;
-	bool bitNPlusOne = 0, bitsMore = 0;
-
-	sign = (f < 0 ? true : false);
-	if (f == 0) {
-		p.v = 0;
-		return p;
-	}
-	else if (f == INFINITY || f == -INFINITY || f == NAN) {
-		p = NAR8;
-		p.v = 0x80;
-		return p;
-	}
-	else if (f == 1) {
-		p.v = 0x40;
-		return p;
-	}
-	else if (f == -1) {
-		p.v = 0xC0;
-		return p;
-	}
-	else if (f >= 64) {
-		//maxpos
-		p.v = 0x7F;
-		return p;
-	}
-	else if (f <= -64) {
-		// -maxpos
-		p.v = 0x81;
-		return p;
-	}
-	else if (f <= 0.015625 && !sign) {
-		//minpos
-		p.v = 0x1;
-		return p;
-	}
-	else if (f >= -0.015625 && sign) {
-		//-minpos
-		p.v = 0xFF;
-		return p;
-	}
-	else if (f>1 || f<-1) {
-		if (sign) {
-			//Make negative numbers positive for easier computation
-			f = -f;
-		}
-		reg = 1; //because k = m-1; so need to add back 1
-				 // minpos
-		if (f <= 0.015625) {
-			p.v = 0x01;
-		}
-		else {
-			//regime
-			while (f >= 2) {
-				f *= 0.5;
-				reg++;
-			}
-
-			//rounding off regime bits
-			if (reg>6)
-				p.v = 0x7F;
-			else {
-				int8_t fracLength = 6 - reg;
-				uint8_t frac = (uint8_t)convertFractionP8(f, fracLength, &bitNPlusOne, &bitsMore);
-				uint_fast8_t regime = 0x7F - (0x7F >> reg);
-				p.v = (regime + frac);
-				if (bitNPlusOne) p.v += ((p.v & 1) | bitsMore);
-			}
-			p.v = (sign ? -p.v : p.v);
-		}
-	}
-	else if (f < 1 || f > -1) {
-		if (sign) {
-			//Make negative numbers positive for easier computation
-			f = -f;
-		}
-		reg = 0;
-
-		//regime
-		while (f<1) {
-			f *= 2;
-			reg++;
-		}
-		//rounding off regime bits
-		if (reg>6)
-			p.v = 0x1;
-		else {
-			int8_t fracLength = 6 - reg;
-			uint8_t frac = (uint8_t)convertFractionP8(f, fracLength, &bitNPlusOne, &bitsMore);
-			uint8_t regime = 0x40 >> reg;
-			p.v = (regime + frac);
-			if (bitNPlusOne) p.v += ((p.v & 1) | bitsMore);
-		}
-		p.v = (sign ? -p.v : p.v);
-	}
-	else {
-		//NaR - for NaN, INF and all other combinations
-		p = NAR8;
-	}
-	return p;
-}
-posit8_t posit8_fromd(double d) {
-	return posit8_fromf((float)d);
-}
-
-float posit8_tof(posit8_t p) {
-	if (p.v == 0) return 0.0f;
-	if (p.v == 0x80) return NAN;   //  INFINITY is not semantically correct. NaR is Not a Real and thus is more closely related to a NAN, or Not a Number
-
-	uint8_t bits = (p.v & 0x80 ? -p.v : p.v);  // use 2's complement when negative	
-	uint8_t fraction = 0;
-	int8_t m = posit8_decode_regime(bits, &fraction);
-
-	float s = (float)(posit8_sign_value(p));
-	float r = (m > 0 ? (float)((uint32_t)(1) << m) : (1.0f / (float)((uint32_t)(1) << -m)));
-	float e = 1.0f;
-	float f = (1.0f + posit8_fraction_value(fraction));
-
-//	printf("sign = %f : m = %d : regime = %f : fraction = 0x%x : fraction_value %f\n", s, m, r, fraction, f);
-	return s * r * e * f;
-}
-
-double posit8_tod(posit8_t p) {
-	return (double)posit8_tof(p);
-}
-
-int posit8_to_int(posit8_t p) {
-	if (posit8_isnar(p)) return (int)NAN; // INFINITY;
-	return (int)(posit8_tof(p));
-}
-
-posit8_t posit8_float_assign(float rhs) {
-	posit8_t p = { { 0x00} };
-	return p;
-}
 
 // posit - posit binary logic functions
 bool posit8_equal(posit8_t lhs, posit8_t rhs)          { return lhs.v == rhs.v;  }
@@ -634,30 +629,4 @@ bool posit8_lessThan(posit8_t lhs, posit8_t rhs)       { return lhs.v < rhs.v; }
 bool posit8_greaterThan(posit8_t lhs, posit8_t rhs)    { return lhs.v > rhs.v;  }
 bool posit8_lessOrEqual(posit8_t lhs, posit8_t rhs)    { return lhs.v <= rhs.v; }
 bool posit8_greaterOrEqual(posit8_t lhs, posit8_t rhs) { return lhs.v >= rhs.v; }
-
-	// preprocessin for add and sub
-	/*
-	inline posit<NBITS_IS_8, ES_IS_0> operator+(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
-		posit<NBITS_IS_8, ES_IS_0> result = lhs;
-		if (lhs.isneg() == rhs.isneg()) {  // are the posits the same sign?
-			result += rhs;
-		} 
-		else {
-			result -= rhs;
-		}
-		return result;
-	}
-	inline posit<NBITS_IS_8, ES_IS_0> operator-(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
-		posit<NBITS_IS_8, ES_IS_0> result = lhs;
-		if (lhs.isneg() == rhs.isneg()) {  // are the posits the same sign?
-			result -= rhs.twosComplement();
-		}
-		else {
-			result += rhs.twosComplement();
-		}
-		return result;
-
-	}
-	// binary operator*() is provided by generic class
-	*/
 
