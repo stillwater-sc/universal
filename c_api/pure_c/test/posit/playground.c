@@ -108,10 +108,12 @@ void TestCaseDiv(posit8_t pa, posit8_t pb) {
 
 int main(int argc, char* argv[]) 
 {
-	posit8_t pa, pb;
+	posit8_t pa, pb, pc;
 
 	pa.v = 0x00;
 	pb.v = 0x80;
+	pc = posit8_addp8(pa, pb);
+	printf("%f + %f = %f (8.0x%02x)\n", posit8_tof(pa), posit8_tof(pb), posit8_tof(pc), posit8_bits(pc));
 
 	printf("sqrt(0) = %f\n", sqrt(0.0));
 }
