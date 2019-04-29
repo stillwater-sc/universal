@@ -4,6 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <math.h>	// required to provide explicit sqrt/exp/log declarations
+
 #define POSIT_NO_GENERICS // MSVC doesn't support _Generic so we'll leave it out from these tests
 #include <posit_c_api.h>
 
@@ -12,10 +14,6 @@ int main(int argc, char* argv[])
 	posit8_t pa, pb, pc;
 	char str[posit8_str_SIZE];
 	bool failures = false;
-
-	uint8_t v, w;
-	v = 127;
-	w = -v & 0xFF;
 
 	// special case values
 	pa = NAR8;

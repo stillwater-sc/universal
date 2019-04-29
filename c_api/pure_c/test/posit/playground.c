@@ -7,9 +7,8 @@
 int ValidateAddition(char* tag) {
 	const int NR_POSITS = 256;
 	int nrOfFailedTests = 0;
-	posit8_t pa, pb, pc, pref;
+	posit8_t pa, pb, pc;
 
-	double da, db;
 	nrOfFailedTests = 0;
 	for (int a = 0; a < NR_POSITS; ++a) {
 		pa = posit8_reinterpret(a);
@@ -41,9 +40,8 @@ int ValidateAddition(char* tag) {
 int ValidateSubtraction(char* tag) {
 	const int NR_POSITS = 256;
 	int nrOfFailedTests = 0;
-	posit8_t pa, pb, pc, pref;
+	posit8_t pa, pb, pc;
 
-	double da, db;
 	nrOfFailedTests = 0;
 	for (int a = 0; a < NR_POSITS; ++a) {
 		pa = posit8_reinterpret(a);
