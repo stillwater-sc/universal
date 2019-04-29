@@ -208,49 +208,49 @@ posit8_t posit8_negate(posit8_t p) {
 	return p;
 }
 posit8_t posit8_addMagnitude(posit8_t lhs, posit8_t rhs) {
-//	printf("lhs = 0x%02x  rhs = 0x%02x\n", (uint8_t)(lhs.v), (uint8_t)(rhs.v));
-	posit8_t p = { { 0x80 } };
-// process special cases
-if (posit8_isnar(lhs) || posit8_isnar(rhs)) {   // NaR
+	//	printf("lhs = 0x%02x  rhs = 0x%02x\n", (uint8_t)(lhs.v), (uint8_t)(rhs.v));
+		posit8_t p = { { 0x80 } };
+	// process special cases
+	if (posit8_isnar(lhs) || posit8_isnar(rhs)) {   // NaR
+		return p;
+	}
+	if (posit8_iszero(lhs) || posit8_iszero(rhs)) { // zero
+		p.v = (uint8_t)(lhs.v | rhs.v);
+		return p;
+	}
+	bool sign = (bool)(lhs.v & posit8_sign_mask.v);
+	if (sign) {
+		lhs.v = -lhs.v & 0xFF;
+		rhs.v = -rhs.v & 0xFF;
+	}
+	if (lhs.v < rhs.v) {
+		uint8_t tmp = lhs.v;
+		lhs.v = rhs.v;
+		rhs.v = tmp;
+	}
+
+	// decode the regime of lhs
+	uint8_t remaining = 0;
+	int8_t m = posit8_decode_regime(lhs.v, &remaining);
+	uint16_t frac16A = (0x80 | remaining) << 7;
+	// adjust shift and extract fraction bits of rhs
+	int8_t shiftRight = posit8_extractAddand(rhs.v, m, &remaining);
+	uint16_t frac16B = (0x80 | remaining) << 7;
+
+	// Work-around CLANG (LLVM) compiler when shifting right more than number of bits
+	(shiftRight > 7) ? (frac16B = 0) : (frac16B >>= shiftRight);
+
+	frac16A += frac16B;
+
+	bool rcarry = (bool)(0x8000 & frac16A); // is MSB set
+	if (rcarry) {
+		m++;
+		frac16A >>= 1;
+	}
+
+	uint8_t raw = posit8_round(m, frac16A);
+	p.v = (sign ? -raw : raw);
 	return p;
-}
-if (posit8_iszero(lhs) || posit8_iszero(rhs)) { // zero
-	p.v = (uint8_t)(lhs.v | rhs.v);
-	return p;
-}
-bool sign = (bool)(lhs.v & posit8_sign_mask.v);
-if (sign) {
-	lhs.v = -lhs.v & 0xFF;
-	rhs.v = -rhs.v & 0xFF;
-}
-if (lhs.v < rhs.v) {
-	uint8_t tmp = lhs.v;
-	lhs.v = rhs.v;
-	rhs.v = tmp;
-}
-
-// decode the regime of lhs
-uint8_t remaining = 0;
-int8_t m = posit8_decode_regime(lhs.v, &remaining);
-uint16_t frac16A = (0x80 | remaining) << 7;
-// adjust shift and extract fraction bits of rhs
-int8_t shiftRight = posit8_extractAddand(rhs.v, m, &remaining);
-uint16_t frac16B = (0x80 | remaining) << 7;
-
-// Work-around CLANG (LLVM) compiler when shifting right more than number of bits
-(shiftRight > 7) ? (frac16B = 0) : (frac16B >>= shiftRight);
-
-frac16A += frac16B;
-
-bool rcarry = (bool)(0x8000 & frac16A); // is MSB set
-if (rcarry) {
-	m++;
-	frac16A >>= 1;
-}
-
-uint8_t raw = posit8_round(m, frac16A);
-p.v = (sign ? -raw : raw);
-return p;
 }
 posit8_t posit8_subMagnitude(posit8_t lhs, posit8_t rhs) {
 	// process special cases
@@ -262,9 +262,15 @@ posit8_t posit8_subMagnitude(posit8_t lhs, posit8_t rhs) {
 		p.v = (uint8_t)(lhs.v | rhs.v);
 		return p;
 	}
+
 	// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
 	bool sign = (bool)(lhs.v & posit8_sign_mask.v);
-	(sign) ? (lhs.v = (-lhs.v & 0xFF)) : (rhs.v = (-rhs.v & 0xFF));
+	if (sign) {
+		lhs.v = -lhs.v;
+	}
+	else {
+		rhs.v = -rhs.v;
+	}
 
 	if (lhs.v == rhs.v) {
 		p.v = 0;
@@ -321,7 +327,9 @@ posit8_t posit8_addp8(posit8_t lhs, posit8_t rhs) {
 }
 posit8_t posit8_subp8(posit8_t lhs, posit8_t rhs) {
 	posit8_t p;
-	if ((lhs.v^rhs.v) >> 7) {
+	bool differentSign = (bool)((lhs.v^rhs.v) >> 7);
+	rhs.v = -rhs.v;
+	if (differentSign) {
 		p = posit8_addMagnitude(lhs, rhs);
 	}
 	else {
@@ -588,7 +596,7 @@ posit8_t posit8_fromd(double d) {
 
 float posit8_tof(posit8_t p) {
 	if (p.v == 0) return 0.0f;
-	if (p.v == 0x80) return INFINITY;
+	if (p.v == 0x80) return NAN;   //  INFINITY is not semantically correct. NaR is Not a Real and thus is more closely related to a NAN, or Not a Number
 
 	uint8_t bits = (p.v & 0x80 ? -p.v : p.v);  // use 2's complement when negative	
 	uint8_t fraction = 0;
@@ -608,7 +616,7 @@ double posit8_tod(posit8_t p) {
 }
 
 int posit8_to_int(posit8_t p) {
-	if (posit8_isnar(p))  return INFINITY;
+	if (posit8_isnar(p)) return NAN; // INFINITY;
 	return (int)(posit8_tof(p));
 }
 

@@ -24,21 +24,21 @@ int main(int argc, char* argv[])
 
 	pa = NAR8;
 	pb = ZERO8;
-	pc = posit8_sub(pa, pb);
+	pc = posit8_subp8(pa, pb);
 	posit8_str(str, pc);
 	printf("posit value = %s\n", str);
 	printf("posit value = 8.0x%02xp\n", posit8_bits(pc));
 
 	pa = NAR8;
 	pb = ZERO8;
-	pc = posit8_mul(pa, pb);
+	pc = posit8_mulp8(pa, pb);
 	posit8_str(str, pc);
 	printf("posit value = %s\n", str);
 	printf("posit value = 8.0x%02xp\n", posit8_bits(pc));
 
 	pa = NAR8;
 	pb = ZERO8;
-	pc = posit8_div(pa, pb);
+	pc = posit8_divp8(pa, pb);
 	posit8_str(str, pc);
 	printf("posit value = %s\n", str);
 	printf("posit value = 8.0x%02xp\n", posit8_bits(pc));
