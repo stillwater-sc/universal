@@ -11,23 +11,19 @@
 
 #include <positctypes.h>
 
-static const posit8_t posit8_sign_mask = { { 0x80 } };
+static const uint8_t posit8_sign_mask = 0x80;
 
 // characterization tests
-inline bool posit8_isnar(posit8_t p) { return (p.v == 0x80); }
+inline bool posit8_isnar(posit8_t p) { return (p.v == posit8_sign_mask); }
 inline bool posit8_iszero(posit8_t p) { return (p.v == 0x00); }
 inline bool posit8_isone(posit8_t p) { return (p.v == 0x40); }      // pattern 010000...
 inline bool posit8_isminusone(posit8_t p) { return (p.v == 0xC0); } // pattern 110000...
-inline bool posit8_isneg(posit8_t p) { return (p.v & 0x80); }
-inline bool posit8_ispos(posit8_t p) { return !(p.v & 0x80); }
+inline bool posit8_isneg(posit8_t p) { return (p.v & posit8_sign_mask); }
+inline bool posit8_ispos(posit8_t p) { return !(p.v & posit8_sign_mask); }
 inline bool posit8_ispowerof2(posit8_t p) { return !(p.v & 0x1); }
 
-inline int posit8_sign_value(posit8_t p) { return (p.v & 0x80 ? -1 : 1); }
-
-// decode and extraction
-
-// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder
-inline int8_t posit8_decode_regime(const uint8_t bits, uint8_t* remaining) {
+// decode takes the raw bits of the posit, and returns the regime, m, and returns the fraction bits in 'remainder'
+inline int8_t  posit8_decode_regime(const uint8_t bits, uint8_t* remaining) {
 	int8_t m = 0;
 	*remaining = (bits << 2) & 0xFF;
 	if (bits & 0x40) {  // positive regimes
@@ -46,60 +42,7 @@ inline int8_t posit8_decode_regime(const uint8_t bits, uint8_t* remaining) {
 	}
 	return m;
 }
-inline int8_t posit8_extractAddand(const uint8_t bits, int8_t m, uint8_t* remaining) {
-	*remaining = (bits << 2) & 0xFF;
-	if (bits & 0x40) {  // positive regimes
-		while (*remaining >> 7) {
-			--m;
-			*remaining = (*remaining << 1) & 0xFF;
-		}
-	}
-	else {              // negative regimes
-		++m;
-		while (!(*remaining >> 7)) {
-			++m;
-			*remaining = (*remaining << 1) & 0xFF;
-		}
-		*remaining &= 0x7F;
-	}
-	return m;
-}
-inline int8_t posit8_extractMultiplicand(const uint8_t bits, int8_t m, uint8_t* remaining) {
-	*remaining = (bits << 2) & 0xFF;
-	if (bits & 0x40) {  // positive regimes
-		while (*remaining >> 7) {
-			++m;
-			*remaining = (*remaining << 1) & 0xFF;
-		}
-	}
-	else {              // negative regimes
-		--m;
-		while (!(*remaining >> 7)) {
-			--m;
-			*remaining = (*remaining << 1) & 0xFF;
-		}
-		*remaining &= 0x7F;
-	}
-	return m;
-}
-inline int8_t posit8_extractDividand(const uint8_t bits, int8_t m, uint8_t* remaining) {
-	*remaining = (bits << 2) & 0xFF;
-	if (bits & 0x40) {  // positive regimes
-		while (*remaining >> 7) {
-			--m;
-			*remaining = (*remaining << 1) & 0xFF;
-		}
-	}
-	else {              // negative regimes
-		++m;
-		while (!(*remaining >> 7)) {
-			++m;
-			*remaining = (*remaining << 1) & 0xFF;
-		}
-		*remaining &= 0x7F;
-	}
-	return m;
-}
+// rounding
 inline uint8_t posit8_round(const int8_t m, uint16_t fraction) {
 	uint8_t scale, regime, bits;
 	if (m < 0) {
@@ -127,24 +70,24 @@ inline uint8_t posit8_round(const int8_t m, uint16_t fraction) {
 	}
 	return bits;
 }
-inline uint8_t posit8_adjustAndRound(const int8_t k, uint16_t fraction, bool nonZeroRemainder) {
+inline uint8_t posit8_roundDiv(const int8_t m, uint16_t fraction, bool nonZeroRemainder) {
 	uint8_t scale, regime, bits;
-	if (k < 0) {
-		scale = (-k & 0xFF);
+	if (m < 0) {
+		scale = (-m & 0xFF);
 		regime = 0x40 >> scale;
 	}
 	else {
-		scale = k + 1;
+		scale = m + 1;
 		regime = 0x7F - (0x7F >> scale);
 	}
 
 	if (scale > 6) {
-		bits = k<0 ? 0x1 : 0x7F;  // minpos and maxpos
+		bits = m<0 ? 0x1 : 0x7F;  // minpos and maxpos
 	}
 	else {
-		//remove carry and rcarry bits and shift to correct position
+		// remove carry and rcarry bits and shift to correct position
 		fraction &= 0x7F;
-		uint8_t final_fbits = (uint_fast16_t)fraction >> (scale + 1);
+		uint8_t final_fbits = fraction >> (scale + 1);
 		bool bitNPlusOne = (bool)(0x1 & (fraction >> scale));
 		bits = (uint8_t)regime + (uint8_t)final_fbits;
 		if (bitNPlusOne) {
@@ -158,7 +101,7 @@ inline uint8_t posit8_adjustAndRound(const int8_t k, uint16_t fraction, bool non
 }
 
 // conversion functions
-
+inline int  posit8_sign_value(posit8_t p) { return (p.v & 0x80 ? -1 : 1); }
 float       posit8_fraction_value(uint8_t fraction) {
 	float v = 0.0f;
 	float scale = 1.0f;
@@ -236,7 +179,7 @@ posit8_t    posit8_fromsi(int a) {
 		p.v = 0x80;// NaR
 		return p; 
 	}
-	bool sign = (bool)(rhs & posit8_sign_mask.v);
+	bool sign = (bool)(rhs & posit8_sign_mask);
 	int8_t v = sign ? -rhs : rhs; // project to positive side of the projective reals
 	uint8_t raw;
 	if (v > 48) { // +-maxpos
@@ -400,11 +343,6 @@ int         posit8_tosi(posit8_t p) {
 	return (int)(posit8_tof(p));
 }
 
-posit8_t posit8_set_raw_bits(uint64_t value) {
-	posit8_t p = { { (uint8_t)(value & 0xff) } };
-	return p;
-}
-
 // arithmetic operators
 posit8_t posit8_negate(posit8_t p) {
 	p.v = -p.v; // 0 and NaR are invariant under uint8 arithmetic
@@ -421,7 +359,7 @@ posit8_t posit8_addMagnitude(posit8_t lhs, posit8_t rhs) {
 		p.v = (uint8_t)(lhs.v | rhs.v);
 		return p;
 	}
-	bool sign = (bool)(lhs.v & posit8_sign_mask.v);
+	bool sign = (bool)(lhs.v & posit8_sign_mask);
 	if (sign) {
 		lhs.v = -lhs.v & 0xFF;
 		rhs.v = -rhs.v & 0xFF;
@@ -432,26 +370,29 @@ posit8_t posit8_addMagnitude(posit8_t lhs, posit8_t rhs) {
 		rhs.v = tmp;
 	}
 
-	// decode the regime of lhs
+	// decode the regimes and extract the fractions of the operands
 	uint8_t remaining = 0;
-	int8_t m = posit8_decode_regime(lhs.v, &remaining);
-	uint16_t frac16A = (0x80 | remaining) << 7;
-	// adjust shift and extract fraction bits of rhs
-	int8_t shiftRight = posit8_extractAddand(rhs.v, m, &remaining);
-	uint16_t frac16B = (0x80 | remaining) << 7;
+	int8_t mA = posit8_decode_regime(lhs.v, &remaining);
+	uint16_t lhs_fraction = (0x80 | remaining) << 7;
+	int8_t mB = posit8_decode_regime(rhs.v, &remaining);
+	uint16_t rhs_fraction = (0x80 | remaining) << 7;
+	int8_t shiftRight = mA - mB; // calculate the shift to normalize the fractions
+	
+	if (shiftRight > 7) {  // catastrophic cancellation case
+		rhs_fraction = 0;
+	}
+	else {
+		rhs_fraction >>= shiftRight; // align the rhs fraction
+	}
+	uint16_t result_fraction = lhs_fraction + rhs_fraction; // add
 
-	// Work-around CLANG (LLVM) compiler when shifting right more than number of bits
-	(shiftRight > 7) ? (frac16B = 0) : (frac16B >>= shiftRight);
-
-	frac16A += frac16B;
-
-	bool rcarry = (bool)(0x8000 & frac16A); // is MSB set
+	bool rcarry = (bool)(0x8000 & result_fraction); // is MSB set
 	if (rcarry) {
-		m++;
-		frac16A >>= 1;
+		mA++;
+		result_fraction >>= 1;
 	}
 
-	uint8_t raw = posit8_round(m, frac16A);
+	uint8_t raw = posit8_round(mA, result_fraction);
 	p.v = (sign ? -raw : raw);
 	return p;
 }
@@ -467,7 +408,7 @@ posit8_t posit8_subMagnitude(posit8_t lhs, posit8_t rhs) {
 	}
 
 	// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
-	bool sign = (bool)(lhs.v & posit8_sign_mask.v);
+	bool sign = (bool)(lhs.v & posit8_sign_mask);
 	if (sign) {
 		lhs.v = -lhs.v;
 	}
@@ -486,35 +427,34 @@ posit8_t posit8_subMagnitude(posit8_t lhs, posit8_t rhs) {
 		sign = !sign;
 	}
 
-	// decode the regime of lhs
+	// decode the regimes and extract the fractions of the operands
 	uint8_t remaining = 0;
-	int8_t m = posit8_decode_regime(lhs.v, &remaining);
-	uint16_t frac16A = (0x80 | remaining) << 7;
-	// adjust shift and extract fraction bits of rhs
-	int8_t shiftRight = posit8_extractAddand(rhs.v, m, &remaining);
-	uint16_t frac16B = (0x80 | remaining) << 7;
+	int8_t mA = posit8_decode_regime(lhs.v, &remaining);
+	uint16_t lhs_fraction = (0x80 | remaining) << 7;
+	int8_t mB = posit8_decode_regime(rhs.v, &remaining);
+	uint16_t rhs_fraction = (0x80 | remaining) << 7;	
+	int8_t shiftRight = mA - mB;  // calculate the shift to normalize the fractions
 
-	// do the subtraction of the fractions
-	if (shiftRight >= 14) {
+	if (shiftRight >= 14) { // catastrophic cancellation case
 		p.v = (sign ? -lhs.v : lhs.v);
 		return p;
 	}
 	else {
-		frac16B >>= shiftRight;
+		rhs_fraction >>= shiftRight;	// align the rhs fraction
 	}
-	frac16A -= frac16B;
+	uint16_t result_fraction = lhs_fraction - rhs_fraction;
 
-	while ((frac16A >> 14) == 0) {
-		m--;
-		frac16A <<= 1;
+	while ((result_fraction >> 14) == 0) {
+		mA--;
+		result_fraction <<= 1;
 	}
-	bool ecarry = (bool)(0x4000 & frac16A);
+	bool ecarry = (bool)(0x4000 & result_fraction);
 	if (!ecarry) {
-		m--;
-		frac16A <<= 1;
+		mA--;
+		result_fraction <<= 1;
 	}
 
-	uint8_t raw = posit8_round(m, frac16A);
+	uint8_t raw = posit8_round(mA, result_fraction);
 	p.v = (sign ? -raw : raw);
 	return p;
 }
@@ -556,23 +496,23 @@ posit8_t posit8_mulp8(posit8_t lhs, posit8_t rhs) {
 	lhs.v = lhs.v & 0x80 ? -lhs.v : lhs.v;
 	rhs.v = rhs.v & 0x80 ? -rhs.v : rhs.v;
 
-	// decode the regime of lhs
+	// decode the regimes and extract the fractions of the operands
 	uint8_t remaining = 0;
-	int8_t m = posit8_decode_regime(lhs.v, &remaining);
-	uint8_t lhs_fraction = (0x80 | remaining);
-	// adjust shift and extract fraction bits of rhs
-	m = posit8_extractMultiplicand(rhs.v, m, &remaining);
-	uint8_t rhs_fraction = (0x80 | remaining);
-	uint16_t result_fraction = (uint16_t)(lhs_fraction) * (uint16_t)(rhs_fraction);
+	int8_t mA = posit8_decode_regime(lhs.v, &remaining);
+	uint16_t lhs_fraction = (0x80 | remaining);
+	int8_t mB = posit8_decode_regime(rhs.v, &remaining);
+	uint16_t rhs_fraction = (0x80 | remaining);
+	uint16_t result_fraction = (lhs_fraction * rhs_fraction);
+	int8_t scale = mA + mB;
 
 	bool rcarry = (bool)(result_fraction & 0x8000);
 	if (rcarry) {
-		m++;
+		scale++;
 		result_fraction >>= 1;
 	}
 
 	// round
-	uint8_t raw = posit8_round(m, result_fraction);
+	uint8_t raw = posit8_round(scale, result_fraction);
 	p.v = (sign ? -raw : raw);
 	return p;
 }
@@ -592,27 +532,27 @@ posit8_t posit8_divp8(posit8_t lhs, posit8_t rhs) {
 	lhs.v = lhs.v & 0x80 ? -lhs.v : lhs.v;
 	rhs.v = rhs.v & 0x80 ? -rhs.v : rhs.v;
 
-	// decode the regime of lhs
+	// decode the regimes and extract the fractions of the operands
 	uint8_t remaining = 0;
-	int8_t m = posit8_decode_regime(lhs.v, &remaining);
+	int8_t mA = posit8_decode_regime(lhs.v, &remaining);
 	uint16_t lhs_fraction = (0x80 | remaining) << 7;
-	// adjust shift and extract fraction bits of rhs
-	m = posit8_extractDividand(rhs.v, m, &remaining);
-	uint8_t rhs_fraction = (0x80 | remaining);
-	div_t result = div(lhs_fraction, (uint16_t)(rhs_fraction));
+	int8_t mB = posit8_decode_regime(rhs.v, &remaining);
+	uint16_t rhs_fraction = (0x80 | remaining);
+	div_t result = div(lhs_fraction, rhs_fraction);
 	uint16_t result_fraction = result.quot;
 	uint16_t remainder = result.rem;
+	int8_t scale = mA - mB;
 
 	if (result_fraction != 0) {
 		bool rcarry = result_fraction >> 7; // this is the hidden bit (7th bit) , extreme right bit is bit 0
 		if (!rcarry) {
-			--m;
+			--scale;
 			result_fraction <<= 1;
 		}
 	}
 
 	// round
-	uint8_t raw = posit8_adjustAndRound(m, result_fraction, remainder != 0);
+	uint8_t raw = posit8_roundDiv(scale, result_fraction, remainder != 0);
 	p.v = (sign ? -raw : raw);
 	return p;
 }
@@ -620,7 +560,6 @@ posit8_t posit8_reciprocate(posit8_t rhs) {
 	posit8_t one = { { 0x40 } };
 	return posit8_divp8(one, rhs);
 }
-
 
 // posit - posit binary logic functions
 bool posit8_equal(posit8_t lhs, posit8_t rhs)          { return lhs.v == rhs.v;  }
