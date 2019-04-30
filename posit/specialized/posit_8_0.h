@@ -167,20 +167,23 @@ uint16_t    posit8_convertFraction(float f, uint8_t fracLength, bool* bitsNPlusO
 	return frac;
 }
 // assignment operators for native types
-posit8_t    posit8_fromsi(int a) {
+posit8_t    posit8_fromsi(int rhs) {
 	// special case for speed as this is a common initialization
 	posit8_t p = { { 0x00} };
-	if (a == 0) {
+	if (rhs == 0) {
 		return p;
 	}
+	/*
+	  this is trouble: int values can never be NaR, so don't encode it as such
 	int8_t rhs = (int8_t)a;
 	if (rhs == -128) {
 		// 0x80 is special in int8 arithmetic as it is its own negation= 
 		p.v = 0x80;  // NaR
 		return p; 
 	}
-	bool sign = (bool)(rhs & posit8_sign_mask);
-	int8_t v = sign ? -rhs : rhs; // project to positive side of the projective reals
+	*/
+	bool sign = (rhs < 0 ? true : false);
+	int v = sign ? -rhs : rhs; // project to positive side of the projective reals
 	uint8_t raw;
 	if (v > 48) { // +-maxpos
 		raw = 0x7F;
@@ -188,7 +191,7 @@ posit8_t    posit8_fromsi(int a) {
 	else {
 		uint8_t mask = 0x40;
 		int8_t k = 6;
-		uint8_t fraction_bits = v;
+		uint8_t fraction_bits = (v & 0xff);
 		while (!(fraction_bits & mask)) {
 			k--;
 			fraction_bits <<= 1;
