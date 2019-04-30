@@ -1,4 +1,4 @@
-// 8bit_posit.cpp: Functionality tests for standard 8-bit posits
+// posit_8_1.cpp: Functionality tests for posit<8,1>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
@@ -6,8 +6,8 @@
 
 #include "common.hpp"
 // Configure the posit template environment
-// first: enable fast specialized posit<8,0>
-#define POSIT_FAST_POSIT_8_0 1
+// first: enable fast specialized posit<8,1>
+#define POSIT_FAST_POSIT_8_1 1
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
@@ -43,21 +43,21 @@ try {
 	// const size_t RND_TEST_CASES = 0;  // no randoms, 8-bit posits can be done exhaustively
 
 	const size_t nbits = 8;
-	const size_t es = 0;
+	const size_t es = 1;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<8,0>";
+	std::string tag = " posit<8,1>";
 
-#if POSIT_FAST_POSIT_8_0
-	cout << "Fast specialization posit<8,0> configuration tests" << endl;
+#if POSIT_FAST_POSIT_8_1
+	cout << "Fast specialization posit<8,1> configuration tests" << endl;
 #else
-	cout << "Standard posit<8,0> configuration tests" << endl;
+	cout << "Standard posit<8,1> configuration tests" << endl;
 #endif
 
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl;
-
+	
 	// special cases
 	p = 0;
 	if (!p.iszero()) ++nrOfFailedTestCases;

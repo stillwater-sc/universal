@@ -18,6 +18,7 @@
 #define POSIT_FAST_POSIT_3_1   1
 #define POSIT_FAST_POSIT_4_0   1
 #define POSIT_FAST_POSIT_8_0   1
+#define POSIT_FAST_POSIT_8_1   1
 #define POSIT_FAST_POSIT_16_1  1
 #define POSIT_FAST_POSIT_32_2  1
 #define POSIT_FAST_POSIT_64_3  0
@@ -31,6 +32,7 @@
 #include "specialized/posit_3_1.hpp"
 #include "specialized/posit_4_0.hpp"
 #include "specialized/posit_8_0.hpp"
+#include "specialized/posit_8_1.hpp"
 #include "specialized/posit_16_1.hpp"
 #include "specialized/posit_32_2.hpp"
 #include "specialized/posit_64_3.hpp"

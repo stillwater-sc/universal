@@ -1,6 +1,6 @@
 // 2bit_posit.cpp: Functionality tests for specialized 2-bit posits based on look-up tables
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

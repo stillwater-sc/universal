@@ -38,6 +38,24 @@ extern "C" {
 		uint64_t longs[4];
 	}							posit256_t;	// posit<256,5>
 
+	// these storage formats are the same, but interpretation of the bits is specialized
+	typedef posit8_t posit8_0_t; 
+	typedef posit8_t posit8_1_t; 
+	typedef posit8_t posit8_2_t; 
+	typedef posit8_t posit8_3_t; 
+	typedef posit16_t posit16_0_t; 
+	typedef posit16_t posit16_1_t; 
+	typedef posit16_t posit16_2_t; 
+	typedef posit16_t posit16_3_t; 
+	typedef posit32_t posit32_0_t; 
+	typedef posit32_t posit32_1_t; 
+	typedef posit32_t posit32_2_t; 
+	typedef posit32_t posit32_3_t; 
+	typedef posit64_t posit64_0_t; 
+	typedef posit64_t posit64_1_t; 
+	typedef posit64_t posit64_2_t; 
+	typedef posit64_t posit64_3_t; 
+
 	///////////////////////////////////////////////////////////////////////
 	///   associated quire configurations
 	typedef union quire8_u {

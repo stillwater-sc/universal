@@ -13,7 +13,7 @@ namespace sw {
 #pragma message("Fast specialization of posit<8,0>")
 
 		// injecting the C API into namespace sw::unum
-#include "posit8_t.h"
+#include "posit_8_0.h"
 
 		template<>
 		class posit<NBITS_IS_8, ES_IS_0> {
@@ -49,54 +49,19 @@ namespace sw {
 			posit(const long double initial_value)        { *this = initial_value; }
 
 			// assignment operators for native types
-			posit& operator=(const signed char rhs)       { 
-				// special case for speed as this is a common initialization
-				if (rhs == 0) {
-					_bits = 0x00;
-					return *this;
-				}
-				if (rhs == -128) {
-					// 0x80 is special in int8 arithmetic as it is its own negation
-					_bits = 0x80; // NaR
-					return *this;
-				}
-				bool sign = bool(rhs & sign_mask);
-				int8_t v = sign ? -rhs : rhs; // project to positive side of the projective reals
-				uint8_t raw;
-				if (v > 48) { // +-maxpos
-					raw = 0x7F;
-				}
-				else {
-					uint8_t mask = 0x40;
-					int8_t k = 6;
-					uint8_t fraction_bits = v;
-					while (!(fraction_bits & mask)) {
-						k--;
-						fraction_bits <<= 1;
-					}
-					fraction_bits = (fraction_bits ^ mask);
-					raw = (0x7F ^ (0x3F >> k)) | (fraction_bits >> (k + 1));
-
-					mask = 0x1 << k; //bitNPlusOne
-					if (mask & fraction_bits) {
-						if (((mask - 1) & fraction_bits) | ((mask << 1) & fraction_bits)) raw++;
-					}
-				}
-				_bits = sign ? -raw : raw;
-				return *this;
-			}
-			posit& operator=(const short rhs)             { return operator=((signed char)(rhs)); }
-			posit& operator=(const int rhs)               { return operator=((signed char)(rhs)); }
-			posit& operator=(const long rhs)              { return operator=((signed char)(rhs)); }
-			posit& operator=(const long long rhs)         { return operator=((signed char)(rhs)); }
-			posit& operator=(const char rhs)              { return operator=((signed char)(rhs)); }
-			posit& operator=(const unsigned short rhs)    { return operator=((signed char)(rhs)); }
-			posit& operator=(const unsigned int rhs)      { return operator=((signed char)(rhs)); }
-			posit& operator=(const unsigned long rhs)     { return operator=((signed char)(rhs)); }
-			posit& operator=(const unsigned long long rhs){ return operator=((signed char)(rhs)); }
+			posit& operator=(const signed char rhs)       { return operator=((int)(rhs)); }
+			posit& operator=(const short rhs)             { return operator=((int)(rhs)); }
+			posit& operator=(const int rhs)               { return integer_assign(rhs); }
+			posit& operator=(const long rhs)              { return operator=((int)(rhs)); }
+			posit& operator=(const long long rhs)         { return operator=((int)(rhs)); }
+			posit& operator=(const char rhs)              { return operator=((int)(rhs)); }
+			posit& operator=(const unsigned short rhs)    { return operator=((int)(rhs)); }
+			posit& operator=(const unsigned int rhs)      { return operator=((int)(rhs)); }
+			posit& operator=(const unsigned long rhs)     { return operator=((int)(rhs)); }
+			posit& operator=(const unsigned long long rhs){ return operator=((int)(rhs)); }
 			posit& operator=(const float rhs)             { return float_assign(rhs); }
-			posit& operator=(const double rhs)            { return float_assign(float(rhs)); }
-			posit& operator=(const long double rhs)       { return float_assign(float(rhs)); }
+			posit& operator=(const double rhs)            { return operator=(float(rhs)); }
+			posit& operator=(const long double rhs)       { return operator=(float(rhs)); }
 
 			explicit operator long double() const { return to_long_double(); }
 			explicit operator double() const { return to_double(); }
@@ -172,11 +137,11 @@ namespace sw {
 				return p;
 			}
 			// SELECTORS
-			inline bool isnar() const      { return (_bits == 0x80); }
+			inline bool isnar() const      { return (_bits == sign_mask); }
 			inline bool iszero() const     { return (_bits == 0x00); }
 			inline bool isone() const      { return (_bits == 0x40); } // pattern 010000...
 			inline bool isminusone() const { return (_bits == 0xC0); } // pattern 110000...
-			inline bool isneg() const      { return (_bits & 0x80); }
+			inline bool isneg() const      { return (_bits & sign_mask); }
 			inline bool ispos() const      { return !isneg(); }
 			inline bool ispowerof2() const { return !(_bits & 0x1); }
 
@@ -242,167 +207,18 @@ namespace sw {
 				return (long double)to_float();
 			}
 
+
+			// helper method			
+			posit& integer_assign(int rhs) {
+				posit8_t p = posit8_fromsi(rhs);
+				_bits = p.v;
+				return *this;
+			}
 			posit& float_assign(float rhs) {
 				posit8_t p = posit8_fromf(rhs);
 				_bits = p.v;
 				return *this;
-				/*
-				constexpr int dfbits = std::numeric_limits<T>::digits - 1;
-				value<dfbits> v((T)rhs);
-
-				// special case processing
-				if (v.iszero()) {
-					setzero();
-					return *this;
-				}
-				if (v.isinf() || v.isnan()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
-					setnar();
-					return *this;
-				}
-
-				bitblock<NBITS_IS_8> ptt;
-				convert_to_bb<NBITS_IS_8, ES_IS_0, dfbits>(v.sign(), v.scale(), v.fraction(), ptt); // TODO: needs to be faster
-				_bits = uint8_t(ptt.to_ulong());
-				return *this;
-				*/
 			}
-
-			// helper method
-			/*
-			// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder
-			inline void decode_regime(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
-				remaining = (bits << 2) & 0xFF;
-				if (bits & 0x40) {  // positive regimes
-					while (remaining >> 7) {
-						++m;
-						remaining = (remaining << 1) & 0xFF;
-					}
-				}
-				else {              // negative regimes
-					m = -1;
-					while (!(remaining >> 7)) {
-						--m;
-						remaining = (remaining << 1) & 0xFF;
-					}
-					remaining &= 0x7F;
-				}
-			}
-			inline void extractAddand(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
-				remaining = (bits << 2) & 0xFF;
-				if (bits & 0x40) {  // positive regimes
-					while (remaining >> 7) {
-						--m;
-						remaining = (remaining << 1) & 0xFF;
-					}
-				}
-				else {              // negative regimes
-					++m;
-					while (!(remaining >> 7)) {
-						++m;
-						remaining = (remaining << 1) & 0xFF;
-					}
-					remaining &= 0x7F;
-				}
-			}
-			inline void extractMultiplicand(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
-				remaining = (bits << 2) & 0xFF;
-				if (bits & 0x40) {  // positive regimes
-					while (remaining >> 7) {
-						++m;
-						remaining = (remaining << 1) & 0xFF;
-					}
-				}
-				else {              // negative regimes
-					--m;
-					while (!(remaining >> 7)) {
-						--m;
-						remaining = (remaining << 1) & 0xFF;
-					}
-					remaining &= 0x7F;
-				}
-			}
-			inline void extractDividand(const uint8_t bits, int8_t& m, uint8_t& remaining) const {
-				remaining = (bits << 2) & 0xFF;
-				if (bits & 0x40) {  // positive regimes
-					while (remaining >> 7) {
-						--m;
-						remaining = (remaining << 1) & 0xFF;
-					}
-				}
-				else {              // negative regimes
-					++m;
-					while (!(remaining >> 7)) {
-						++m;
-						remaining = (remaining << 1) & 0xFF;
-					}
-					remaining &= 0x7F;
-				}
-			}
-			inline uint8_t round(const int8_t m, uint16_t fraction) const {
-				uint8_t scale, regime, bits;
-				if (m < 0) {
-					scale = (-m & 0xFF);
-					regime = 0x40 >> scale;
-				}
-				else {
-					scale = m + 1;
-					regime = 0x7F - (0x7F >> scale);
-				}
-
-				if (scale > 6) {
-					bits = m<0 ? 0x1 : 0x7F;  // minpos and maxpos
-				}
-				else {
-					fraction = (fraction & 0x3FFF) >> scale;
-					uint8_t final_fbits = uint8_t(fraction >> 8);
-					bool bitNPlusOne = bool(0x80 & fraction);
-					bits = uint8_t(regime) + uint8_t(final_fbits);
-					// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-					if (bitNPlusOne) {
-						uint8_t moreBits = (0x7F & fraction) ? 0x01 : 0x00;
-						bits += (bits & 0x01) | moreBits;
-					}
-				}
-				return bits;
-			}
-			inline uint8_t adjustAndRound(const int8_t k, uint16_t fraction, bool nonZeroRemainder) const {
-				uint8_t scale, regime, bits;
-				if (k < 0) {
-					scale = (-k & 0xFF);
-					regime = 0x40 >> scale;
-				}
-				else {
-					scale = k + 1;
-					regime = 0x7F - (0x7F >> scale);
-				}
-
-				if (scale > 6) {
-					bits = k<0 ? 0x1 : 0x7F;  // minpos and maxpos
-				}
-				else {
-					//remove carry and rcarry bits and shift to correct position
-					fraction &= 0x7F;
-					uint8_t final_fbits = (uint_fast16_t)fraction >> (scale + 1);
-					bool bitNPlusOne = (0x1 & (fraction >> scale));
-					bits = uint8_t(regime) + uint8_t(final_fbits);
-#ifdef NOW
-					std::cout << std::hex;
-					std::cout << "fraction raw   = " << int(fraction) << std::endl;
-					std::cout << "fraction final = " << int(final_fbits) << std::endl;
-					std::cout << "posit bits     = " << int(bits) << std::endl;
-					std::cout << std::dec;
-#endif
-					if (bitNPlusOne) {
-						uint8_t moreBits = (((1 << scale) - 1) & fraction) ? 0x01 : 0x00;
-						if (nonZeroRemainder) moreBits = 0x01;
-						//std::cout << "bitsMore = " << (moreBits ? "true" : "false") << std::endl;
-						// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
-						bits += (bits & 0x01) | moreBits;
-					}
-				}
-				return bits;
-			}
-			*/
 
 			// I/O operators
 			friend std::ostream& operator<< (std::ostream& ostr, const posit<NBITS_IS_8, ES_IS_0>& p);

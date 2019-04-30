@@ -1,22 +1,21 @@
-// 64bit_posit.cpp: Functionality tests for standard 64-bit posits
+// posit_48_2.cpp: Functionality tests for extended standard 48-bit posit<48,2>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-// Configure the posit template environment
-// first: enable fast specialized posit<64,3>
-// #define POSIT_FAST_SPECIALIZATION
-#define POSIT_FAST_POSIT_64_3 0
-// second: enable posit arithmetic exceptions
+// enable fast specialized posit<48,2>
+//#define POSIT_FAST_SPECIALIZATION
+#define POSIT_FAST_POSIT_48_2 1
+// enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
 #include "../../test_helpers.hpp"
 #include "../../posit_test_randoms.hpp"
 
 /*
-Standard posit with nbits = 64 have es = 3 exponent bits.
+Extended Standard posit with nbits = 48 have es = 2 exponent bits.
 */
 
 #define STRESS_TESTING 1
@@ -26,19 +25,19 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 100000;
+	const size_t RND_TEST_CASES = 150000;
 
-	const size_t nbits = 64;
-	const size_t es = 3;
+	const size_t nbits = 48;
+	const size_t es = 2;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<64,3>";
+	std::string tag = " posit<48,2>";
 
-#if POSIT_FAST_POSIT_64_3
-	cout << "Fast specialization posit<64,3> configuration tests" << endl;
+#if defined(POSIT_FAST_POSIT_48_2)
+	cout << "Fast specialization posit<48,2> configuration tests" << endl;
 #else
-	cout << "Standard posit<64,3> configuration tests" << endl;
+	cout << "Extended Standard posit<48,2> configuration tests" << endl;
 #endif
 
 	posit<nbits, es> p;
@@ -81,3 +80,4 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
+

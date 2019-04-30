@@ -8,7 +8,7 @@
 #include <posit_c_api.h>
 
 // pull in the source code to be compiled as a C library
-#include <specialized/posit8_t.h>
+#include <specialized/posit_8_0.h>
 
 // elementary functions
 posit8_t posit8_sqrt(posit8_t a) {
