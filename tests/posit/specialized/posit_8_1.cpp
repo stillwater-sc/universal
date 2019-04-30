@@ -61,7 +61,9 @@ try {
 	// special cases
 	p = 0;
 	if (!p.iszero()) ++nrOfFailedTestCases;
-	p = (unsigned char)0x80;
+	p = NAN;
+	if (!p.isnar()) ++nrOfFailedTestCases;
+	p = INFINITY;
 	if (!p.isnar()) ++nrOfFailedTestCases;
 
 	// logic tests
@@ -76,7 +78,7 @@ try {
 	// conversion tests
 	cout << "Assignment/conversion tests " << endl;
 	nrOfFailedTestCases += ReportTestResult( ValidateIntegerConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "integer assign (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   (native)  ");
+//	nrOfFailedTestCases += ReportTestResult( ValidateConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   (native)  ");
 
 	// arithmetic tests
 	cout << "Arithmetic tests " << endl;
@@ -89,7 +91,7 @@ try {
 
 	// elementary function tests
 	cout << "Elementary function tests " << endl;
-	nrOfFailedTestCases += ReportTestResult( ValidateSqrt             <nbits, es>(tag, bReportIndividualTestCases), tag, "sqrt           (native)  ");
+//	nrOfFailedTestCases += ReportTestResult( ValidateSqrt             <nbits, es>(tag, bReportIndividualTestCases), tag, "sqrt           (native)  ");
 	nrOfFailedTestCases += ReportTestResult( ValidateExp              <nbits, es>(tag, bReportIndividualTestCases), tag, "exp                      ");
 	nrOfFailedTestCases += ReportTestResult( ValidateExp2             <nbits, es>(tag, bReportIndividualTestCases), tag, "exp2                     ");
 	nrOfFailedTestCases += ReportTestResult( ValidateLog              <nbits, es>(tag, bReportIndividualTestCases), tag, "log                      ");

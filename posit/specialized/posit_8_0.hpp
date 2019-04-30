@@ -49,19 +49,19 @@ namespace sw {
 			posit(const long double initial_value)        { *this = initial_value; }
 
 			// assignment operators for native types
-			posit& operator=(const signed char rhs)       { return operator=((int)(rhs)); }
-			posit& operator=(const short rhs)             { return operator=((int)(rhs)); }
-			posit& operator=(const int rhs)               { return integer_assign(rhs); }
-			posit& operator=(const long rhs)              { return operator=((int)(rhs)); }
-			posit& operator=(const long long rhs)         { return operator=((int)(rhs)); }
-			posit& operator=(const char rhs)              { return operator=((int)(rhs)); }
-			posit& operator=(const unsigned short rhs)    { return operator=((int)(rhs)); }
-			posit& operator=(const unsigned int rhs)      { return operator=((int)(rhs)); }
-			posit& operator=(const unsigned long rhs)     { return operator=((int)(rhs)); }
-			posit& operator=(const unsigned long long rhs){ return operator=((int)(rhs)); }
-			posit& operator=(const float rhs)             { return float_assign(rhs); }
-			posit& operator=(const double rhs)            { return operator=(float(rhs)); }
-			posit& operator=(const long double rhs)       { return operator=(float(rhs)); }
+			posit& operator=(signed char rhs)             { return operator=((int)(rhs)); }
+			posit& operator=(short rhs)                   { return operator=((int)(rhs)); }
+			posit& operator=(int rhs)                     { return integer_assign(rhs); }
+			posit& operator=(long rhs)                    { return operator=((int)(rhs)); }
+			posit& operator=(long long rhs)               { return operator=((int)(rhs)); }
+			posit& operator=(char rhs)                    { return operator=((int)(rhs)); }
+			posit& operator=(unsigned short rhs)          { return operator=((int)(rhs)); }
+			posit& operator=(unsigned int rhs)            { return operator=((int)(rhs)); }
+			posit& operator=(unsigned long rhs)           { return operator=((int)(rhs)); }
+			posit& operator=(unsigned long long rhs)      { return operator=((int)(rhs)); }
+			posit& operator=(float rhs)                   { return float_assign(rhs); }
+			posit& operator=(double rhs)                  { return operator=(float(rhs)); }
+			posit& operator=(long double rhs)             { return operator=(float(rhs)); }
 
 			explicit operator long double() const { return to_long_double(); }
 			explicit operator double() const { return to_double(); }

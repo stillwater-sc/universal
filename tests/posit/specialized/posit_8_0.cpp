@@ -61,7 +61,9 @@ try {
 	// special cases
 	p = 0;
 	if (!p.iszero()) ++nrOfFailedTestCases;
-	p = (unsigned char)0x80;
+	p = NAN;
+	if (!p.isnar()) ++nrOfFailedTestCases;
+	p = INFINITY;
 	if (!p.isnar()) ++nrOfFailedTestCases;
 
 	// logic tests
