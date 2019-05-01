@@ -42,6 +42,14 @@ try {
 	posit<nbits,es> p;
 	cout << dynamic_range(p) << endl;
 
+	// special cases
+	p = 0;
+	if (!p.iszero()) ++nrOfFailedTestCases;
+	p = NAN;
+	if (!p.isnar()) ++nrOfFailedTestCases;
+	p = INFINITY;
+	if (!p.isnar()) ++nrOfFailedTestCases;
+
 	// logic tests
 	cout << "Logic operator tests " << endl;
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");

@@ -21,26 +21,25 @@ int main(int argc, char* argv[])
 	pb = ZERO16;
 	pc = posit16_add(pa, pb);
 	posit16_str(str, pc);
-	printf("posit value = %s\n", str);
+	printf("NAR16 + 0 = %s (16.1x%04xp)\n", str, posit16_bits(pc));
 
 	pa = NAR16;
 	pb = ZERO16;
 	pc = posit16_sub(pa, pb);
 	posit16_str(str, pc);
-	printf("posit value = %s\n", str);
+	printf("NAR16 + 0 = %s (16.1x%04xp)\n", str, posit16_bits(pc));
 
 	pa = NAR16;
 	pb = ZERO16;
 	pc = posit16_mul(pa, pb);
 	posit16_str(str, pc);
-	printf("posit value = %s\n", str);
+	printf("NAR16 + 0 = %s (16.1x%04xp)\n", str, posit16_bits(pc));
 
 	pa = NAR16;
 	pb = ZERO16;
 	pc = posit16_div(pa, pb);
 	posit16_str(str, pc);
-	printf("posit value = %s\n", str);
-
+	printf("NAR16 + 0 = %s (16.1x%04xp)\n", str, posit16_bits(pc));
 
 	// partial state space
 	int fails = 0;

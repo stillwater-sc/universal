@@ -32,19 +32,19 @@ namespace sw {
 		posit& operator=(posit&&) = default;
 
 		// initializers for native types
-		posit(const signed char initial_value)        { *this = initial_value; }
-		posit(const short initial_value)              { *this = initial_value; }
-		posit(const int initial_value)                { *this = initial_value; }
-		posit(const long initial_value)               { *this = initial_value; }
-		posit(const long long initial_value)          { *this = initial_value; }
-		posit(const char initial_value)               { *this = initial_value; }
-		posit(const unsigned short initial_value)     { *this = initial_value; }
-		posit(const unsigned int initial_value)       { *this = initial_value; }
-		posit(const unsigned long initial_value)      { *this = initial_value; }
-		posit(const unsigned long long initial_value) { *this = initial_value; }
-		posit(const float initial_value)              { *this = initial_value; }
-		posit(const double initial_value)             { *this = initial_value; }
-		posit(const long double initial_value)        { *this = initial_value; }
+		posit(signed char initial_value)        { *this = initial_value; }
+		posit(short initial_value)              { *this = initial_value; }
+		posit(int initial_value)                { *this = initial_value; }
+		posit(long initial_value)               { *this = initial_value; }
+		posit(long long initial_value)          { *this = initial_value; }
+		posit(char initial_value)               { *this = initial_value; }
+		posit(unsigned short initial_value)     { *this = initial_value; }
+		posit(unsigned int initial_value)       { *this = initial_value; }
+		posit(unsigned long initial_value)      { *this = initial_value; }
+		posit(unsigned long long initial_value) { *this = initial_value; }
+		posit(float initial_value)              { *this = initial_value; }
+		posit(double initial_value)             { *this = initial_value; }
+		posit(long double initial_value)        { *this = initial_value; }
 
 		// assignment operators for native types
 		posit& operator=(const signed char rhs)       { return operator=((long)(rhs)); }
@@ -60,11 +60,7 @@ namespace sw {
 			bool sign = (rhs < 0);
 			uint32_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
 			uint16_t raw = 0;
-			if (v == sign_mask) { // +-maxpos, 0x8000 is special in int16 arithmetic as it is its own negation
-				_bits = 0x8000;
-				return *this;
-			}
-			else if (v > 0x0800'0000) { // v > 134,217,728
+			if (v > 0x0800'0000) { // v > 134,217,728
 				raw = 0x7FFFu;  // +-maxpos
 			}
 			else if (v > 0x02FF'FFFF) { // 50,331,647 < v < 134,217,728
@@ -105,11 +101,7 @@ namespace sw {
 				return *this;
 			}
 			uint32_t v = rhs;
-			if (v == sign_mask) { // +-maxpos, 0x8000 is special in int16 arithmetic as it is its own negation
-				_bits = 0x8000;
-				return *this;
-			}
-			else if (v > 0x0800'0000) { // v > 134,217,728
+			if (v > 0x0800'0000) { // v > 134,217,728
 				_bits = 0x7FFFu;  // +-maxpos
 				return *this;
 			}
@@ -202,36 +194,36 @@ namespace sw {
 			uint16_t exp = remaining >> 14;
 
 			// extract remaining fraction bits
-			uint32_t frac32A = (0x4000 | remaining) << 16;
+			uint32_t lhs_fraction = (0x4000 | remaining) << 16;
 			int8_t shiftRight = m;
 
 			// adjust shift and extract fraction bits of rhs
 			extractAddand(rhs, shiftRight, remaining);
-			uint32_t frac32B = (0x4000 | remaining) << 16;
+			uint32_t rhs_fraction = (0x4000 | remaining) << 16;
 
 			//This is 2kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
 			shiftRight = (shiftRight << 1) + exp - (remaining >> 14);
 
 			if (shiftRight == 0) {
-				frac32A += frac32B;  // this will always product a carry
+				lhs_fraction += rhs_fraction;  // this will always product a carry
 				if (exp) ++m;
 				exp ^= 1;
-				frac32A >>= 1;
+				lhs_fraction >>= 1;
 			}
 			else {
 				//Manage CLANG (LLVM) compiler when shifting right more than number of bits
-				(shiftRight>31) ? (frac32B = 0) : (frac32B >>= shiftRight); //frac32B >>= shiftRight
-				frac32A += frac32B;
+				(shiftRight>31) ? (rhs_fraction = 0) : (rhs_fraction >>= shiftRight); //frac32B >>= shiftRight
+				lhs_fraction += rhs_fraction;
 
-				bool rcarry = 0x8000'0000 & frac32A; // first left bit
+				bool rcarry = 0x8000'0000 & lhs_fraction; // first left bit
 				if (rcarry) {
 					if (exp) ++m;
 					exp ^= 1;
-					frac32A >>= 1;
+					lhs_fraction >>= 1;
 				}
 			}
 
-			_bits = round(m, exp, frac32A);
+			_bits = round(m, exp, lhs_fraction);
 			if (sign) _bits = -_bits & 0xFFFF;
 			return *this;
 		}
@@ -268,12 +260,12 @@ namespace sw {
 			// extract the exponent
 			uint16_t exp = remaining >> 14;
 
-			uint32_t frac32A = (0x4000 | remaining) << 16;
+			uint32_t lhs_fraction = (0x4000 | remaining) << 16;
 			int8_t shiftRight = m;
 
 			// adjust shift and extract fraction bits of rhs
 			extractAddand(rhs, shiftRight, remaining);
-			uint32_t frac32B = (0x4000 | remaining) << 16;
+			uint32_t rhs_fraction = (0x4000 | remaining) << 16;
 
 			// align the fractions for subtraction
 			shiftRight = (shiftRight << 1) + exp - (remaining >> 14);
@@ -284,26 +276,26 @@ namespace sw {
 					return *this;
 				}
 				else {
-					frac32B >>= shiftRight;
+					rhs_fraction >>= shiftRight;
 				}
 			}
 			else {
-				frac32B >>= shiftRight;
+				rhs_fraction >>= shiftRight;
 			}
-			frac32A -= frac32B;
+			lhs_fraction -= rhs_fraction;
 
-			while ((frac32A >> 29) == 0) {
+			while ((lhs_fraction >> 29) == 0) {
 				--m;
-				frac32A <<= 2;
+				lhs_fraction <<= 2;
 			}
-			bool ecarry = bool (0x4000'0000 & frac32A);
+			bool ecarry = bool (0x4000'0000 & lhs_fraction);
 			if (!ecarry) {
 				if (exp == 0) --m;
 				exp ^= 1;
-				frac32A <<= 1;
+				lhs_fraction <<= 1;
 			}
 
-			_bits = round(m, exp, frac32A);
+			_bits = round(m, exp, lhs_fraction);
 			if (sign) _bits = -_bits & 0xFFFF;
 			return *this;
 		}
