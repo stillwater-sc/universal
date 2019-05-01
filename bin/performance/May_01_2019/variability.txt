@@ -1,0 +1,62 @@
+Tremendous variability on a laptop: for example: 4 repeated runs: mul ranges from 63 MPOP to 130 MPOP
+
+tomtz@SW-LAPTOP-250 MINGW64 /C/Users/tomtz/Documents/dev/clones/universal/bin/performance/May_01_2019 (c_api)
+$ ./!$
+./perf_8b_posit_x64.exe
+Performance Report: posit<8,0>
+Conversion int  : 312 MPOPS
+Conversion ieee : 780 MPOPS
+Prefix          :   1 GPOPS
+Postfix         : 902 MPOPS
+Negation        :   1 GPOPS
+Addition        :  56 MPOPS
+Subtraction     :  66 MPOPS
+Multiplication  :  85 MPOPS
+Division        :  33 MPOPS
+Square Root     :   1 GPOPS
+
+
+tomtz@SW-LAPTOP-250 MINGW64 /C/Users/tomtz/Documents/dev/clones/universal/bin/performance/May_01_2019 (c_api)
+$ ./perf_8b_posit_x64.exe
+Performance Report: posit<8,0>
+Conversion int  : 454 MPOPS
+Conversion ieee : 788 MPOPS
+Prefix          :   1 GPOPS
+Postfix         :   1 GPOPS
+Negation        :   1 GPOPS
+Addition        :  95 MPOPS
+Subtraction     :  76 MPOPS
+Multiplication  : 130 MPOPS
+Division        :  56 MPOPS
+Square Root     :   1 GPOPS
+
+
+tomtz@SW-LAPTOP-250 MINGW64 /C/Users/tomtz/Documents/dev/clones/universal/bin/performance/May_01_2019 (c_api)
+$ ./perf_8b_posit_x64.exe
+Performance Report: posit<8,0>
+Conversion int  : 358 MPOPS
+Conversion ieee : 899 MPOPS
+Prefix          :   1 GPOPS
+Postfix         :   1 GPOPS
+Negation        :   1 GPOPS
+Addition        :  93 MPOPS
+Subtraction     :  78 MPOPS
+Multiplication  :  63 MPOPS
+Division        :  42 MPOPS
+Square Root     :   1 GPOPS
+
+
+tomtz@SW-LAPTOP-250 MINGW64 /C/Users/tomtz/Documents/dev/clones/universal/bin/performance/May_01_2019 (c_api)
+$ ./perf_8b_posit_x64.exe
+Performance Report: posit<8,0>
+Conversion int  : 294 MPOPS
+Conversion ieee : 803 MPOPS
+Prefix          : 993 MPOPS
+Postfix         : 973 MPOPS
+Negation        :   1 GPOPS
+Addition        :  67 MPOPS
+Subtraction     :  87 MPOPS
+Multiplication  : 125 MPOPS
+Division        :  40 MPOPS
+Square Root     : 714 MPOPS
+
