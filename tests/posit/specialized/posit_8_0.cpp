@@ -45,6 +45,13 @@ try {
 	const size_t nbits = 8;
 	const size_t es = 0;
 
+	posit<nbits, es> a, b, c;
+	a = 1;
+	b = 0.5;
+	c = a + b;
+	cout << c << endl;
+	return 0;
+
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
 	std::string tag = " posit<8,0>";
