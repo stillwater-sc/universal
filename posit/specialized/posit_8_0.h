@@ -209,7 +209,7 @@ posit8_t    posit8_fromsi(int rhs) {
 	return p;
 }
 posit8_t    posit8_fromf(float f) {
-	posit8_t p;
+	posit8_t p = { { 0x00} };
 	bool sign;
 	uint8_t reg = 0;
 	bool bitNPlusOne = 0, bitsMore = 0;
@@ -220,7 +220,6 @@ posit8_t    posit8_fromf(float f) {
 		return p;
 	}
 	else if (f == INFINITY || f == -INFINITY || f == NAN) {
-		p = NAR8;
 		p.v = 0x80;
 		return p;
 	}
@@ -244,7 +243,7 @@ posit8_t    posit8_fromf(float f) {
 	}
 	else if (f <= 0.015625 && !sign) {
 		//minpos
-		p.v = 0x1;
+		p.v = 0x01;
 		return p;
 	}
 	else if (f >= -0.015625 && sign) {

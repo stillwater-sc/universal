@@ -48,16 +48,28 @@ void SpecialCases() {
 int main(int argc, char* argv[])
 {
 	posit8_t pa, pb, pc;
+	int NR_POSITS = 256;
 	bool failures = false;
 	bool bReportIndividualTestFailure = true;
 
 	SpecialCases();
 
+	// conversion tests
+	for (int a = 0; a < NR_POSITS; ++a) {
+		pa = posit8_reinterpret(a);
+		float fa = posit8_tof(pa);
+		pb = posit8_fromf(fa);
+		pc = posit8_subp8(pa, pb);
+		if (pc.v != 0) {
+			printf("FAIL: 8.0x%02x != 8.0x%02x\n", pa.v, pb.v);
+		}
+	}
+
 	// full state space
 	int fails = 0;
-	for (int a = 0; a < 256; ++a) {
+	for (int a = 0; a < NR_POSITS; ++a) {
 		pa = posit8_reinterpret(a);
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < NR_POSITS; ++b) {
 			pb = posit8_reinterpret(b);
 			pc = posit8_addp8(pa, pb);
 			float da, db, dref;
@@ -65,8 +77,8 @@ int main(int argc, char* argv[])
 			db = posit8_tof(pb);
 			dref = da + db;
 			posit8_t pref = posit8_fromf(dref);
-			// printf("dref = %f  pref = 0x%2x\n", dref, pref.v);
-			if (posit8_cmp(pref, pc)) {
+			//printf("dref = %f  pref = 0x%2x\n", dref, pref.v);
+			if (posit8_cmpp8(pref, pc)) {
 				if (bReportIndividualTestFailure)
 				printf("FAIL: 8.0x%02xp + 8.0x%02xp produced 8.0x%02xp instead of 8.0x%02xp\n",
                     posit8_bits(pa), posit8_bits(pb), posit8_bits(pc), posit8_bits(pref));
@@ -84,9 +96,9 @@ int main(int argc, char* argv[])
 
 	// full state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {
+	for (int a = 0; a < NR_POSITS; ++a) {
 		pa = posit8_reinterpret(a);
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < NR_POSITS; ++b) {
 			pb = posit8_reinterpret(b);
 			pc = posit8_subp8(pa, pb);
 			float da, db, dref;
@@ -112,9 +124,9 @@ int main(int argc, char* argv[])
 
 	// full state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {
+	for (int a = 0; a < NR_POSITS; ++a) {
 		pa = posit8_reinterpret(a);
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < NR_POSITS; ++b) {
 			pb = posit8_reinterpret(b);
 			pc = posit8_mulp8(pa, pb);
 			float da, db, dref;
@@ -140,9 +152,9 @@ int main(int argc, char* argv[])
 
 	// full state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {
+	for (int a = 0; a < NR_POSITS; ++a) {
 		pa = posit8_reinterpret(a);
-		for (int b = 0; b < 256; ++b) {
+		for (int b = 0; b < NR_POSITS; ++b) {
 			pb = posit8_reinterpret(b);
 			pc = posit8_divp8(pa, pb);
 			float da, db, dref;
@@ -168,7 +180,7 @@ int main(int argc, char* argv[])
 
 	// full state space
 	fails = 0;
-	for (int a = 0; a < 256; ++a) {   // includes negative numbers
+	for (int a = 0; a < NR_POSITS; ++a) {   // includes negative numbers
 		pa = posit8_reinterpret(a);
 		pc = posit8_sqrt(pa);
 		double da, dref;
