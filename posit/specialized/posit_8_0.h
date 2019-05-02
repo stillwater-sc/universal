@@ -209,17 +209,18 @@ posit8_t    posit8_fromsi(int rhs) {
 	return p;
 }
 posit8_t    posit8_fromf(float f) {
-	posit8_t p = { { 0x00} };
+	posit8_t p = { { 0x00 } };
 	bool sign;
 	uint8_t reg = 0;
 	bool bitNPlusOne = 0, bitsMore = 0;
-
+	printf("%f\n", f);
 	sign = (f < 0 ? true : false);
 	if (f == 0) {
 		p.v = 0;
 		return p;
 	}
-	else if (f == INFINITY || f == -INFINITY || f == NAN) {
+	else if (!isfinite(f) || isnan(f)) {
+		printf("nan\n");
 		p.v = 0x80;
 		return p;
 	}
