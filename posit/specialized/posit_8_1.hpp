@@ -1,5 +1,5 @@
 #pragma once
-// posit_8_1.hpp: specialized 8-bit posit using fast compute specialized for posit<8,1>
+// posit_8_1.hpp: specialized 8-bit posit using fast implementation specialized for posit<8,1>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
