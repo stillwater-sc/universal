@@ -173,20 +173,14 @@ posit8_t    posit8_fromsi(int rhs) {
 	if (rhs == 0) {
 		return p;
 	}
-	/*
-	  this is trouble: int values can never be NaR, so don't encode it as such
-	int8_t rhs = (int8_t)a;
-	if (rhs == -128) {
-		// 0x80 is special in int8 arithmetic as it is its own negation= 
-		p.v = 0x80;  // NaR
-		return p; 
-	}
-	*/
 	bool sign = (rhs < 0 ? true : false);
 	int v = sign ? -rhs : rhs; // project to positive side of the projective reals
 	uint8_t raw;
 	if (v > 48) { // +-maxpos
 		raw = 0x7F;
+	}
+	else if (v < 2) {
+		raw = (v << 6);
 	}
 	else {
 		uint8_t mask = 0x40;
@@ -211,8 +205,10 @@ posit8_t    posit8_fromsi(int rhs) {
 posit8_t    posit8_fromf(float f) {
 	posit8_t p = { { 0x00 } };
 	bool sign;
-	uint8_t reg = 0;
+	uint8_t k = 0;
 	bool bitNPlusOne = 0, bitsMore = 0;
+	const float _minpos = 0.015625f;
+	const float _maxpos = 64.0f;
 
 	sign = (f < 0.0 ? true : false);
 
@@ -229,46 +225,40 @@ posit8_t    posit8_fromf(float f) {
 		p.v = 0xC0;
 		return p;
 	}
-	else if (f >= 64) {
-		//maxpos
+	else if (f >= _maxpos) {
 		p.v = 0x7F;
 	}
-	else if (f <= -64) {
-		// -maxpos
+	else if (f <= -_maxpos) {
 		p.v = 0x81;
 	}
-	else if (f <= 0.015625 && !sign) {
-		//minpos
+	else if (f <= _minpos && !sign) {
 		p.v = 0x01;
 	}
-	else if (f >= -0.015625 && sign) {
-		//-minpos
+	else if (f >= -_minpos && sign) {
 		p.v = 0xFF;
 	}
-	else if (f>1 || f<-1) {
+	else if (f > 1 || f < -1) {
 		if (sign) {
-			//Make negative numbers positive for easier computation
-			f = -f;
+			f = -f; // project to positive reals to simplify computation
 		}
-		reg = 1; //because k = m-1; so need to add back 1
-				 // minpos
-		if (f <= 0.015625) {
+		k = 1; //because k = m-1; so need to add back 1
+		if (f <= _minpos) {
 			p.v = 0x01;
 		}
 		else {
 			//regime
 			while (f >= 2) {
 				f *= 0.5;
-				reg++;
+				k++;
 			}
 
 			//rounding off regime bits
-			if (reg>6)
+			if (k > 6)
 				p.v = 0x7F;
 			else {
-				int8_t fracLength = 6 - reg;
+				int8_t fracLength = 6 - k;
 				uint8_t frac = (uint8_t)posit8_convertFraction(f, fracLength, &bitNPlusOne, &bitsMore);
-				uint_fast8_t regime = 0x7F - (0x7F >> reg);
+				uint_fast8_t regime = 0x7F - (0x7F >> k);
 				p.v = (regime + frac);
 				if (bitNPlusOne) p.v += ((p.v & 1) | bitsMore);
 			}
@@ -277,23 +267,20 @@ posit8_t    posit8_fromf(float f) {
 	}
 	else if (f < 1 || f > -1) {
 		if (sign) {
-			//Make negative numbers positive for easier computation
 			f = -f;
 		}
-		reg = 0;
-
-		//regime
+		k = 0;
 		while (f<1) {
 			f *= 2;
-			reg++;
+			k++;
 		}
-		//rounding off regime bits
-		if (reg>6)
+		// rounding off regime bits
+		if (k > 6)
 			p.v = 0x1;
 		else {
-			int8_t fracLength = 6 - reg;
+			int8_t fracLength = 6 - k;
 			uint8_t frac = (uint8_t)posit8_convertFraction(f, fracLength, &bitNPlusOne, &bitsMore);
-			uint8_t regime = 0x40 >> reg;
+			uint8_t regime = 0x40 >> k;
 			p.v = (regime + frac);
 			if (bitNPlusOne) p.v += ((p.v & 1) | bitsMore);
 		}

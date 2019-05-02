@@ -35,6 +35,16 @@ void placeholder(sw::unum::posit<nbits, es>& a) {
 	cout << "fraction = " << _fraction << " faction value = " << f << endl;
 }
 
+void GenerateValues() {
+	using namespace std;
+	using namespace sw::unum;
+	posit<8, 1> a;
+	for (unsigned int i = 0; i < 256; ++i) {
+		a.set_raw_bits(i);
+		cout << hex << i << " " << dec << a << endl;
+	}
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -44,6 +54,11 @@ try {
 
 	const size_t nbits = 8;
 	const size_t es = 1;
+
+	GenerateValues();
+	posit<nbits, es> a = 15;
+	cout << a << endl;
+	return 0;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
@@ -78,7 +93,7 @@ try {
 	// conversion tests
 	cout << "Assignment/conversion tests " << endl;
 	nrOfFailedTestCases += ReportTestResult( ValidateIntegerConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "integer assign (native)  ");
-//	nrOfFailedTestCases += ReportTestResult( ValidateConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   (native)  ");
 
 	// arithmetic tests
 	cout << "Arithmetic tests " << endl;
