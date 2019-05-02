@@ -61,7 +61,13 @@ int main(int argc, char* argv[])
 		pb = posit8_fromf(fa);
 		pc = posit8_subp8(pa, pb);
 		if (pc.v != 0) {
-			printf("FAIL: 8.0x%02x != 8.0x%02x\n", pa.v, pb.v);
+			if (pa.v == 0x80 || pb.v == 0x80) {
+				// all good
+			}
+			else {
+				printf("FAIL: 8.0x%02x != 8.0x%02x\n", pa.v, pb.v);
+			}
+			
 		}
 	}
 
