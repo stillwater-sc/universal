@@ -57,7 +57,7 @@ int main(int argc, char* argv[])
 
 	// conversion tests
 	printf("\nConversion tests\n");
-	for (int a = 127; a < 129; ++a) {
+	for (int a = 0; a < NR_POSITS; ++a) {
 		pa = posit8_reinterpret(a);
 		float fa = posit8_tof(pa);
 		pb = posit8_fromf(fa);
@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 			printf("FAIL: 8.0x%02x != 8.0x%02x\n", pa.v, pb.v);
 		}
 	}
-	return 0;
+
 	// full state space
 	int fails = 0;
 	for (int a = 0; a < NR_POSITS; ++a) {

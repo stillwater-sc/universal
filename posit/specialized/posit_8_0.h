@@ -213,20 +213,17 @@ posit8_t    posit8_fromf(float f) {
 	bool sign;
 	uint8_t reg = 0;
 	bool bitNPlusOne = 0, bitsMore = 0;
-	printf("%f\n", f);
-	sign = (f < 0 ? true : false);
-	if (f == 0) {
-		p.v = 0;
-		return p;
-	}
-	else if (!isfinite(f) || isnan(f)) {
-		printf("nan\n");
+
+	sign = (f < 0.0 ? true : false);
+
+	if (isinf(f) || isnan(f)) {
 		p.v = 0x80;
-		return p;
+	}
+	else if (f == 0) {
+		p.v = 0;
 	}
 	else if (f == 1) {
 		p.v = 0x40;
-		return p;
 	}
 	else if (f == -1) {
 		p.v = 0xC0;
@@ -235,22 +232,18 @@ posit8_t    posit8_fromf(float f) {
 	else if (f >= 64) {
 		//maxpos
 		p.v = 0x7F;
-		return p;
 	}
 	else if (f <= -64) {
 		// -maxpos
 		p.v = 0x81;
-		return p;
 	}
 	else if (f <= 0.015625 && !sign) {
 		//minpos
 		p.v = 0x01;
-		return p;
 	}
 	else if (f >= -0.015625 && sign) {
 		//-minpos
 		p.v = 0xFF;
-		return p;
 	}
 	else if (f>1 || f<-1) {
 		if (sign) {
