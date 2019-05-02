@@ -47,96 +47,19 @@ namespace sw {
 		posit(long double initial_value)        { *this = initial_value; }
 
 		// assignment operators for native types
-		posit& operator=(const signed char rhs)       { return operator=((long)(rhs)); }
-		posit& operator=(const short rhs)             { return operator=((long)(rhs)); }
-		posit& operator=(const int rhs)               { return operator=((long)(rhs)); }
-		posit& operator=(const long rhs)              { 
-			// special case for speed as this is a common initialization
-			if (rhs == 0) {
-				_bits = 0x0;
-				return *this;
-			}
-
-			bool sign = (rhs < 0);
-			uint32_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
-			uint16_t raw = 0;
-			if (v > 0x0800'0000) { // v > 134,217,728
-				raw = 0x7FFFu;  // +-maxpos
-			}
-			else if (v > 0x02FF'FFFF) { // 50,331,647 < v < 134,217,728
-				raw = 0x7FFEu;  // 0.5 of maxpos
-			}
-			else if (v < 2) {  // v == 0 or v == 1
-				raw = (v << 14); // generates 0x0000 if v is 0, or 0x4000 if 1
-			}
-			else {
-				uint32_t mask = 0x0200'0000;
-				int8_t scale = 25;
-				uint32_t fraction_bits = v;
-				while (!(fraction_bits & mask)) {
-					--scale;
-					fraction_bits <<= 1;
-				}
-				int8_t k = scale >> 1;
-				uint16_t exp = (scale & 0x01) << (12 - k); // extract exponent and shift to correct location
-				fraction_bits = (fraction_bits ^ mask);
-				raw = (0x7FFF ^ (0x3FFF >> k)) | exp |  (fraction_bits >> (k + 13));
-
-				mask = 0x1000 << k; // bitNPlusOne
-				if (mask & fraction_bits) {
-					if (((mask - 1) & fraction_bits) | ((mask << 1) & fraction_bits)) raw++; // increment by 1
-				}
-			}
-			_bits = sign ? -raw : raw;
-			return *this;
-		}
-		posit& operator=(const long long rhs)         { return operator=((long)(rhs)); }
-		posit& operator=(const char rhs)              { return operator=((unsigned long)(rhs)); }
-		posit& operator=(const unsigned short rhs)    { return operator=((unsigned long)(rhs)); }
-		posit& operator=(const unsigned int rhs)      { return operator=((unsigned long)(rhs)); }
-		posit& operator=(const unsigned long rhs)     { 
-			// special case for speed as this is a common initialization
-			if (rhs == 0) {
-				_bits = 0x0;
-				return *this;
-			}
-			uint32_t v = rhs;
-			if (v > 0x0800'0000) { // v > 134,217,728
-				_bits = 0x7FFFu;  // +-maxpos
-				return *this;
-			}
-			else if (v > 0x02FF'FFFF) { // 50,331,647 < v < 134,217,728
-				_bits = 0x7FFEu;  // 0.5 of maxpos
-				return *this;
-			}
-			else if (v < 2) {  // v == 0 or v == 1
-				_bits = (v << 14); // generates 0x0000 if v is 0, or 0x4000 if 1
-				return *this;
-			}
-			else {
-				uint32_t mask = 0x0200'0000;
-				int8_t scale = 25;
-				uint32_t fraction_bits = v;
-				while (!(fraction_bits & mask)) {
-					--scale;
-					fraction_bits <<= 1;
-				}
-				int8_t k = scale >> 1;
-				uint16_t exp = (scale & 0x01) << (12 - k); // extract exponent and shift to correct location
-				fraction_bits = (fraction_bits ^ mask);
-				_bits = (0x7FFF ^ (0x3FFF >> k)) | exp | (fraction_bits >> (k + 13));
-
-				mask = 0x1000 << k; // bitNPlusOne
-				if (mask & fraction_bits) {
-					if (((mask - 1) & fraction_bits) | ((mask << 1) & fraction_bits)) _bits++; // increment by 1
-				}
-			}
-			return *this;
-		}
-		posit& operator=(const unsigned long long rhs){ return operator=((unsigned long)(rhs)); }
-		posit& operator=(const float rhs)             { return float_assign(rhs); }
-		posit& operator=(const double rhs)            { return float_assign(rhs); }
-		posit& operator=(const long double rhs)       { return float_assign(rhs); }
+		posit& operator=(signed char rhs)       { return integer_assign((long)rhs); }
+		posit& operator=(short rhs)             { return integer_assign((long)rhs); }
+		posit& operator=(int rhs)               { return integer_assign((long)rhs); }
+		posit& operator=(long rhs)              { return integer_assign(rhs); }
+		posit& operator=(long long rhs)         { return integer_assign((long)rhs);	}
+		posit& operator=(char rhs)              { return integer_assign((long)rhs); }
+		posit& operator=(unsigned short rhs)    { return integer_assign((long)rhs); }
+		posit& operator=(unsigned int rhs)      { return integer_assign((long)rhs); }
+		posit& operator=(unsigned long rhs)     { return integer_assign((long)rhs); }
+		posit& operator=(unsigned long long rhs){ return integer_assign((long)rhs); }
+		posit& operator=(float rhs)             { return float_assign(double(rhs)); }
+		posit& operator=(double rhs)            { return float_assign(rhs); }
+		posit& operator=(long double rhs)       { return float_assign(double(rhs)); }
 
 		explicit operator long double() const { return to_long_double(); }
 		explicit operator double() const { return to_double(); }
@@ -538,10 +461,57 @@ namespace sw {
 			return s * r * e * f;
 		}
 
-		template <typename T>
-		posit& float_assign(const T& rhs) {
-			constexpr int dfbits = std::numeric_limits<T>::digits - 1;
-			value<dfbits> v((T)rhs);
+
+		// helper methods
+		posit& integer_assign(long rhs) {
+			// special case for speed as this is a common initialization
+			if (rhs == 0) {
+				_bits = 0x0;
+				return *this;
+			}
+
+			bool sign = (rhs < 0);
+			uint32_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
+			uint16_t raw = 0;
+			if (v > 0x0800'0000) { // v > 134,217,728
+				raw = 0x7FFFu;  // +-maxpos
+			}
+			else if (v > 0x02FF'FFFF) { // 50,331,647 < v < 134,217,728
+				raw = 0x7FFEu;  // 0.5 of maxpos
+			}
+			else if (v < 2) {  // v == 0 or v == 1
+				raw = (v << 14); // generates 0x0000 if v is 0, or 0x4000 if 1
+			}
+			else {
+				uint32_t mask = 0x0200'0000;
+				int8_t scale = 25;
+				uint32_t fraction_bits = v;
+				while (!(fraction_bits & mask)) {
+					--scale;
+					fraction_bits <<= 1;
+				}
+				int8_t k = scale >> 1;
+				uint16_t exp = (scale & 0x01) << (12 - k); // extract exponent and shift to correct location
+				fraction_bits = (fraction_bits ^ mask);
+				raw = (0x7FFF ^ (0x3FFF >> k)) | exp | (fraction_bits >> (k + 13));
+
+				mask = 0x1000 << k; // bitNPlusOne
+				if (mask & fraction_bits) {
+					if (((mask - 1) & fraction_bits) | ((mask << 1) & fraction_bits)) raw++; // increment by 1
+				}
+			}
+			_bits = sign ? -raw : raw;
+			return *this;
+		}
+		
+		// convert a double precision IEEE floating point to a posit<16,1>. You need to use at least doubles to capture
+		// enough bits to correctly round mul/div and elementary function results. That is, if you use a single precision
+		// float, you will inject errors in the validation suites.
+		posit& float_assign(double rhs) {
+			//posit16_t p = posit16_fromf(rhs);
+			//_bits = p.v;
+			constexpr int dfbits = std::numeric_limits<double>::digits - 1;
+			value<dfbits> v((double)rhs);
 
 			// special case processing
 			if (v.iszero()) {
@@ -559,7 +529,6 @@ namespace sw {
 			return *this;
 		}
 
-		// helper method
 
 
 		// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder

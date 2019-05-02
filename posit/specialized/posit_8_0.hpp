@@ -208,7 +208,7 @@ namespace sw {
 			}
 
 
-			// helper method			
+			// helper methods			
 			posit& integer_assign(int rhs) {
 				posit8_t p = posit8_fromsi(rhs);
 				_bits = p.v;
