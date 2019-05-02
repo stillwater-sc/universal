@@ -212,13 +212,13 @@ posit8_1_t    posit8_1_fromf(float f) {
 	bool bitNPlusOne = 0, bitsMore = 0;
 
 	sign = (f < 0 ? true : false);
-	if (f == 0) {
-		p.v = 0;
+	
+	if (isinf(f) || isnan(f)) {
+		p.v = 0x80;
 		return p;
 	}
-	else if (f == INFINITY || f == -INFINITY || f == NAN) {
-		p = NAR8;
-		p.v = 0x80;
+	else if (f == 0) {
+		p.v = 0;
 		return p;
 	}
 	else if (f == 1) {
