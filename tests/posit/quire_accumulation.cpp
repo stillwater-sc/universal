@@ -279,7 +279,8 @@ try {
 	cout << endl;
 
 	vector< posit<16, 1> > t;
-	t = GenerateVectorForZeroValueFDP(16, maxpos<16,1>());
+	constexpr size_t nrElements = 16;
+	t = GenerateVectorForZeroValueFDP(nrElements, maxpos<16,1>());
 	// PrintTestVector(cout, t);
 	std::vector< posit<16, 1> > ones = {
 		1, 1, 1, 1,
@@ -287,7 +288,7 @@ try {
 		1, 1, 1, 1,
 		1, 1, 1, 1,
 	};
-	posit<16, 1> result = fdp(size(ones), ones, 1, t, 1);
+	posit<16, 1> result = fdp(nrElements, ones, 1, t, 1);
 	cout << "zero value FDP test yields = " << result << endl << endl;
 
 	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<8, 1>();
