@@ -12,6 +12,8 @@
 // type definitions for the important types, posit<> and quire<>
 #include "../../posit/posit.hpp"
 #include "../../posit/quire.hpp"
+#include "../../posit/fdp.hpp"
+
 // test support functions
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
@@ -26,9 +28,9 @@ template<size_t nbits, size_t es, size_t capacity> void Issue45_2();
 
 template<size_t nbits, size_t es>
 void PrintTestVector(std::ostream& ostr, const std::vector< sw::unum::posit<nbits,es> >& pv) {
-	for (typename std::vector< sw::unum::posit<nbits,es> >::const_iterator it = pv.begin(); it != pv.end(); it++) {
-		ostr << *it << std::endl;
-	}
+	std::for_each (begin(pv), end(pv), [&ostr](const sw::unum::posit<nbits,es>& p){
+		ostr << p << std::endl;
+	});
 }
 
 template<size_t nbits, size_t es, size_t capacity>
@@ -39,6 +41,48 @@ int GenerateQuireAccumulationTestCase(bool bReportIndividualTestCases, size_t nr
 	std::vector< sw::unum::posit<nbits, es> > t = GenerateVectorForZeroValueFDP(nrOfElements, seed);
 	nrOfFailedTestCases += ReportTestResult(sw::unum::ValidateQuireAccumulation<nbits, es, capacity>(bReportIndividualTestCases, t), ss.str(), "accumulation");
 	return nrOfFailedTestCases;
+}
+
+// initialize a vector
+template<typename Vector, typename Scalar>
+void init(Vector& x, const Scalar& value) {
+	for (size_t i = 0; i < x.size(); ++i) x[i] = value;
+}
+
+template<size_t nbits, size_t es, size_t nrElements = 16>
+int ValidateExactDotProduct() {
+	using namespace std;
+	using namespace sw::unum;
+	int nrOfFailures = 0;
+	using Scalar = posit<nbits, es>;
+	using Vector = vector<Scalar>;
+	Vector pv = GenerateVectorForZeroValueFDP(nrElements, maxpos<nbits, es>());
+	Vector ones(nrElements);
+
+	{
+		init(ones, Scalar(1));
+
+		Scalar result = fdp(nrElements, ones, 1, pv, 1);
+		cout << "exact FDP test yields   = " << float(result) << endl;
+
+		if (!result.iszero()) ++nrOfFailures;
+	}
+
+	{
+		using Vector = vector<float>;
+		Vector fv;
+		for_each(begin(pv), end(pv), [&fv](const Scalar& p) {
+			fv.push_back(float(p));
+		});
+		Vector fones;
+		for_each(begin(pv), end(pv), [&fones](const Scalar& p) {
+			fones.push_back(float(p));
+		});
+		float result = dot(nrElements, fones, 1, fv, 1);
+		cout << "regular DOT test yields = " << result << endl << endl;
+	}
+
+	return nrOfFailures;
 }
 
 int ValidateQuireMagnitudeComparison() {
@@ -276,9 +320,7 @@ try {
 
 	cout << endl;
 
-	std::vector< posit<16, 1> > t;
-	t = GenerateVectorForZeroValueFDP(16, maxpos<16,1>());
-	PrintTestVector(cout, t);
+	nrOfFailedTestCases += ValidateExactDotProduct<16, 1>();
 
 	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<8, 1>();
 

@@ -1,30 +1,13 @@
-// blas_operators.hpp :  include file containing templated C++ interfaces to BLAS routines
+// fdp.hpp :  include file containing templated C++ interfaces to fused dot product
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <vector>
 
-
-// LEVEL 1 BLAS operator
-// vector copy
-template<typename vector_T>
-void copy(size_t n, const vector_T& x, size_t incx, vector_T& y, size_t incy) {
-	size_t cnt, ix, iy;
-	for (cnt = 0, ix = 0, iy = 0; cnt < n && ix < x.size() && iy < y.size(); ++cnt, ix += incx, iy += incy) {
-		y[iy] = x[ix];
-	}
-}
-
-// a time x plus y
-template<typename scale_T, typename vector_T>
-void axpy(size_t n, scale_T a, const vector_T& x, size_t incx, vector_T& y, size_t incy) {
-	size_t cnt, ix, iy;
-	for (cnt = 0, ix = 0, iy = 0; cnt < n && ix < x.size() && iy < y.size(); ++cnt, ix += incx, iy += incy) {
-		y[iy] += a * x[ix];
-	}
-}
+namespace sw {
+	namespace unum {
 
 // dot product: the operator vector::x[index] is limited to uint32_t, so the arguments are limited to uint32_t as well
 // since we do not support arbitrary posit configuration conversions, the element type of the vectors x and y are declared to be the same.
@@ -39,39 +22,34 @@ Ty dot(size_t n, const std::vector<Ty>& x, size_t incx, const std::vector<Ty>& y
 	}
 	return sum_of_products;
 }
+
+/////////////////////////////////////////////////////////////////////
 // fused dot product operators
+
 // Fused dot product with quire continuation
 template<typename Qy, typename Ty>
 void fused_dot(Qy& sum_of_products, size_t n, const std::vector<Ty>& x, size_t incx, const std::vector<Ty>& y, size_t incy) {
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
-		sum_of_products += sw::unum::quire_mul(x[ix], y[iy]);
+		sum_of_products += quire_mul(x[ix], y[iy]);
 	}
 }
-// Standalone fused dot product
+
+// fused dot product
 template<size_t nbits, size_t es, size_t capacity = 10>
-sw::unum::posit<nbits, es> fused_dot(size_t n, const std::vector< sw::unum::posit<nbits, es> >& x, size_t incx, const std::vector< sw::unum::posit<nbits, es> >& y, size_t incy) {
-	sw::unum::quire<nbits, es, capacity> sum_of_products;   // initialized to 0 by constructor
+posit<nbits, es> fdp(size_t n, const std::vector< posit<nbits, es> >& x, size_t incx, const std::vector< posit<nbits, es> >& y, size_t incy) {
+	quire<nbits, es, capacity> sum_of_products;   // initialized to 0 by constructor
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
 		sw::unum::value<2*(nbits - 2 - es)> unrounded_product = sw::unum::quire_mul(x[ix], y[iy]);
 		sum_of_products += unrounded_product;
 		if (sw::unum::_trace_quire_add) std::cout << sum_of_products << '\n';
 	}
-	sw::unum::posit<nbits, es> sum;
+	posit<nbits, es> sum;
 	convert(sum_of_products.to_value(), sum);     // one and only rounding step of the fused-dot product
 	return sum;
 }
 
-
-// scale a vector
-template<typename scale_T, typename vector_T>
-void scale(size_t n, scale_T a, vector_T& x, size_t incx) {
-	size_t cnt, ix;
-	for (cnt = 0, ix = 0; cnt < n && ix < x.size(); ix += incx) {
-		x[ix] *= a;
-	}
-}
 
 // LEVEL 2 BLAS operators
 template<typename Ty>
@@ -108,18 +86,6 @@ void matvec(const std::vector< sw::unum::posit<nbits, es> >& A, const std::vecto
 		}  
 		convert(q.to_value(), b[i]);  // one and only rounding step of the fused-dot product
 		//std::cout << "b[" << i << "] = " << b[i] << std::endl;
-	}
-}
-
-template<typename Ty>
-void eye(std::vector<Ty>& I) {
-	// preconditions
-	size_t d = size_t(std::sqrt(I.size()));
-	assert(I.size() == d*d);
-	for (size_t i = 0; i < d; ++i) {
-		for (size_t j = 0; j < d; ++j) {
-			I[i*d + j] = (i == j ? Ty(1) : Ty(0));
-		}
 	}
 }
 
@@ -163,4 +129,8 @@ void matmul(const std::vector<sw::unum::posit<nbits,es> >& A, const std::vector<
 		}
 	}
 }
+
+
+    }  // namespace unum
+} // namespace sw
 

@@ -25,14 +25,15 @@ try {
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
-	const size_t nbits = 5;
-	const size_t es = 0;
+	constexpr size_t nbits = 5;
+	constexpr size_t es = 0;
+	using Scalar = posit<nbits, es>;
 	const std::string positConfig = "posit<5,0>";
-	std::vector< posit<nbits, es> > set;
+	std::vector< Scalar > set;
 	GenerateOrderedPositSet<nbits, es>(set);
-	for (typename std::vector< posit<nbits, es> >::iterator it = set.begin(); it != set.end(); it++) {
-		std::cout << it->get() << " " << *it << std::endl;
-	}
+	for_each (begin(set), end(set), [](const Scalar& s){
+		std::cout << s.get() << " " << s << std::endl;
+	});
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDecrement<nbits, es>("Decrement failed", bReportIndividualTestCases), positConfig, "operator++");
 
