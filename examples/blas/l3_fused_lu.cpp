@@ -7,7 +7,7 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
-#include "blas_operators.hpp"
+#include "blas_utils.hpp"
 
 // can the ratio a/b be represented exactly
 bool isRepresentable(int a, int b) {

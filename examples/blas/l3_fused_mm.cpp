@@ -11,7 +11,7 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
-#include "blas_operators.hpp"
+#include "blas_utils.hpp"
 
 int main(int argc, char** argv)
 try {
