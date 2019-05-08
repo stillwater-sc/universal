@@ -5,6 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
 #include <posit>
+#include "blas_utils.hpp"
 #include "blas_operators.hpp"
 
 int main(int argc, char** argv)

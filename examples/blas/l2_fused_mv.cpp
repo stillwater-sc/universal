@@ -7,7 +7,7 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
-#include "blas_operators.hpp"
+#include "blas_utils.hpp"
 
 int main(int argc, char** argv)
 try {
@@ -23,7 +23,7 @@ try {
 		};
 		vector<double> x = { DBL_EPSILON, DBL_EPSILON, DBL_EPSILON };
 		vector<double> b(3);
-		matvec(A, x, b);
+		sw::unum::matvec(A, x, b);
 		cout << setprecision(21);
 		print(cout, 3, b, 1);
 		cout << setprecision(5) << endl;

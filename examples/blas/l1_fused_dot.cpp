@@ -11,7 +11,7 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
-#include "blas_operators.hpp"
+#include "blas_utils.hpp"
 
 template<typename Ty>
 Ty minValue(const std::vector<Ty>& samples) {
@@ -86,35 +86,35 @@ try {
 			vector<PositType> xposit = { a1, a2, a3, a4 };
 			vector<PositType> yposit = { b1, b2, b3, b4 };
 
-			cout << "posit< 8,3> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit< 8,3> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
 		}
 		{
 			using PositType = posit<16, 2>;
 			vector<PositType> xposit = { a1, a2, a3, a4 };
 			vector<PositType> yposit = { b1, b2, b3, b4 };
 
-			cout << "posit<16,2> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit<16,2> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
 		}
 		{
 			using PositType = posit<32, 2>;
 			vector<PositType> xposit = { a1, a2, a3, a4 };
 			vector<PositType> yposit = { b1, b2, b3, b4 };
 
-			cout << "posit<32,2> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit<32,2> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
 		}
 		{
 			using PositType = posit<64, 1>;
 			vector<PositType> xposit = { a1, a2, a3, a4 };
 			vector<PositType> yposit = { b1, b2, b3, b4 };
 
-			cout << "posit<64,1> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit<64,1> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
 		}
 		{
 			using PositType = posit<64, 0>;
 			vector<PositType> xposit = { a1, a2, a3, a4 };
 			vector<PositType> yposit = { b1, b2, b3, b4 };
 
-			cout << "posit<64,0> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit<64,0> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
 		}
 
 		{
@@ -122,14 +122,14 @@ try {
 			vector<PositType> xposit = { a1, a2, a3, a4 };
 			vector<PositType> yposit = { b1, b2, b3, b4 };
 
-			cout << "posit<16,1> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit<16,1> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
 		}
 		{
 			using PositType = posit<32, 1>;
 			vector<PositType> xposit = { a1, a2, a3, a4 };
 			vector<PositType> yposit = { b1, b2, b3, b4 };
 
-			cout << "posit<32,1> fused dot(x,y)  : " << fused_dot(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit<32,1> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
 		}
 
 		cout << setprecision(prec);

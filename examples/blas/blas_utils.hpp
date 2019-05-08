@@ -6,6 +6,12 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <random>
 
+// initialize a vector
+template<typename Vector, typename Scalar>
+void init(Vector& x, const Scalar& value) {
+	for (size_t i = 0; i < x.size(); ++i) x[i] = value;
+}
+
 // These functions print matrices and vectors in a nice format
 template<typename Ty>
 void printMatrix(std::ostream& ostr, const std::string& name, const std::vector<Ty>& m) {
