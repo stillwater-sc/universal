@@ -12,6 +12,8 @@
 // type definitions for the important types, posit<> and quire<>
 #include "../../posit/posit.hpp"
 #include "../../posit/quire.hpp"
+#include "../../posit/fdp.hpp"
+
 // test support functions
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
@@ -26,9 +28,9 @@ template<size_t nbits, size_t es, size_t capacity> void Issue45_2();
 
 template<size_t nbits, size_t es>
 void PrintTestVector(std::ostream& ostr, const std::vector< sw::unum::posit<nbits,es> >& pv) {
-	for (typename std::vector< sw::unum::posit<nbits,es> >::const_iterator it = pv.begin(); it != pv.end(); it++) {
-		ostr << *it << std::endl;
-	}
+	std::for_each (begin(pv), end(pv), [&ostr](const sw::unum::posit<nbits,es>& p){
+		ostr << p << std::endl;
+	});
 }
 
 template<size_t nbits, size_t es, size_t capacity>
@@ -276,9 +278,17 @@ try {
 
 	cout << endl;
 
-	std::vector< posit<16, 1> > t;
+	vector< posit<16, 1> > t;
 	t = GenerateVectorForZeroValueFDP(16, maxpos<16,1>());
-	PrintTestVector(cout, t);
+	// PrintTestVector(cout, t);
+	std::vector< posit<16, 1> > ones = {
+		1, 1, 1, 1,
+		1, 1, 1, 1,
+		1, 1, 1, 1,
+		1, 1, 1, 1,
+	};
+	posit<16, 1> result = fdp(size(ones), ones, 1, t, 1);
+	cout << "zero value FDP test yields = " << result << endl << endl;
 
 	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<8, 1>();
 
