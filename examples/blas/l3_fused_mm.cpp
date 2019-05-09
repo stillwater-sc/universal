@@ -9,9 +9,23 @@
 // #define POSIT_VERBOSE_OUTPUT
 #define QUIRE_TRACE_ADD
 // enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <posit>
 #include "blas_utils.hpp"
+
+template<typename Scalar, size_t N>
+void GenerateHilbertMatrixTest() {
+	using namespace std;
+	using namespace sw::unum;
+	vector<Scalar> A(N*N), B(N*N), C(N*N);
+	GenerateHilbertMatrix(N, A);
+	GenerateHilbertMatrixInverse(N, B);
+	init(C, Scalar(0.0));
+	matmul(A, B, C);
+	printMatrix(cout, "A matrix", A);
+	printMatrix(cout, "B matrix", B);
+	printMatrix(cout, "C matrix", C);
+}
 
 int main(int argc, char** argv)
 try {
@@ -20,21 +34,14 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	{
-		using value_type = sw::unum::posit<8, 0>;
-		constexpr size_t n = 3;
-		vector<value_type> A(n*n), B(n*n), C(n*n);
-		randomVectorFillAroundOneEPS(n*n, A, 3);
-		randomVectorFillAroundOneEPS(n*n, B, 3);
-		init(C, 0.0);
-		matmul(A, B, C);
-		printMatrix(cout, "A matrix", A);
-		printMatrix(cout, "B matrix", B);
-		printMatrix(cout, "C matrix", C);
-		cout << endl;
-		posit<32, 2> p = minpos<32, 2>();
-		cout << p << " vs " << std::fixed << p << endl;
-	}
+	constexpr size_t N = 5;
+	GenerateHilbertMatrixTest<posit<32, 2>, N>();
+	GenerateHilbertMatrixTest<posit<64, 3>, N>();
+	GenerateHilbertMatrixTest<posit<128, 4>, N>();
+
+	GenerateHilbertMatrixTest<float, N>();
+	GenerateHilbertMatrixTest<double, N>();
+	GenerateHilbertMatrixTest<long double, N>();
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
