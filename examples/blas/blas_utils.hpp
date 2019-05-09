@@ -122,7 +122,7 @@ void GenerateHilbertMatrix(int N, std::vector<Scalar>& m) {
 	assert(N*N == m.size());
 	for (int i = 1; i <= N; ++i) {
 		for (int j = 1; j <= N; ++j) {
-			m[(i-1)*N + (j-1)] = Scalar(1.0) / Scalar(i + j - 1);
+			m[(i-1)*N + (j-1)] = Scalar(5*7*9) / Scalar(i + j - 1);
 		}
 	}
 }
