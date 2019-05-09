@@ -116,3 +116,43 @@ void sampleVector(std::string vec_name, std::vector<element_T>& vec, uint32_t st
 	}
 	std::cout << std::setprecision(prec) << std::endl;
 }
+
+template<typename Scalar>
+void GenerateHilbertMatrix(int N, std::vector<Scalar>& m) {
+	assert(N*N == m.size());
+	for (int i = 1; i <= N; ++i) {
+		for (int j = 1; j <= N; ++j) {
+			m[(i-1)*N + (j-1)] = Scalar(1.0) / Scalar(i + j - 1);
+		}
+	}
+}
+
+uint64_t factorial(uint64_t n) {
+	return (n == 0 || n == 1) ? 1 : factorial(n - 1) * n;
+}
+
+// (n over k) = n! / k!(n-k)!
+template<typename Scalar>
+Scalar BinomialCoefficient(uint64_t n, uint64_t k) {
+	Scalar numerator = Scalar(factorial(n));
+	Scalar denominator = Scalar(factorial(k)*factorial(n - k));
+	Scalar coef = numerator / denominator;
+//	std::cout << numerator << " / " << denominator << " = " << coef << std::endl;
+	if (coef * denominator != numerator) std::cout << "FAIL: (" << n << " over " << k << ")" << std::endl;
+	return coef;
+}
+
+template<typename Scalar>
+void GenerateHilbertMatrixInverse(int N, std::vector<Scalar>& m) {
+	assert(N*N == m.size());
+	for (int i = 1; i <= N; ++i) {
+		for (int j = 1; j <= N; ++j) {
+			Scalar sign = ((i + j) % 2) ? Scalar(-1) : Scalar(1);
+			Scalar factor1 = Scalar(i + j - 1);
+			Scalar factor2 = BinomialCoefficient<Scalar>(N + i - 1, N - j);
+			Scalar factor3 = BinomialCoefficient<Scalar>(N + j - 1, N - i);
+			Scalar factor4 = BinomialCoefficient<Scalar>(i + j - 2, i - 1);
+			m[(i - 1)*N + (j - 1)] = Scalar(sign * factor1 * factor2 * factor3 * factor4 * factor4);
+		}
+	}
+}
