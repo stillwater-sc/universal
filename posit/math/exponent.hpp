@@ -15,13 +15,31 @@ namespace sw {
 		// Base-e exponential function
 		template<size_t nbits, size_t es>
 		posit<nbits,es> exp(posit<nbits,es> x) {
-			return posit<nbits,es>(std::exp(double(x)));
+			if (isnar(x)) return x;
+			posit<nbits, es> p;
+			double d = std::exp(double(x));
+			if (d == 0.0) {
+				p = minpos<nbits, es>();
+			}
+			else {
+				p = d;
+			}
+			return p;
 		}
 
 		// Base-2 exponential function
 		template<size_t nbits, size_t es>
 		posit<nbits,es> exp2(posit<nbits,es> x) {
-			return posit<nbits,es>(std::exp2(double(x)));
+			if (isnar(x)) return x;
+			posit<nbits, es> p;
+			double d = std::exp2(double(x));
+			if (d == 0.0) {
+				p = minpos<nbits, es>();
+			}
+			else {
+				p = d;
+			}
+			return p;
 		}
 
 		// Base-10 exponential function
