@@ -170,8 +170,10 @@ namespace sw {
 				da = double(pa);
 				pref = std::exp(da);
 				if (pexp != pref) {
-					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "exp", pa, pref, pexp);
+					if (std::exp(da) != 0.0) { // exclude special posit rounding rule that projects to minpos
+						nrOfFailedTests++;
+						if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "exp", pa, pref, pexp);	
+					}
 				}
 				else {
 					//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "exp", pa, pref, pexp);
@@ -195,8 +197,10 @@ namespace sw {
 				da = double(pa);
 				pref = std::exp2(da);
 				if (pexp2 != pref) {
-					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "exp2", pa, pref, pexp2);
+					if (std::exp(da) != 0.0) { // exclude special posit rounding rule that projects to minpos
+						nrOfFailedTests++;
+						if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "exp2", pa, pref, pexp2);
+					}
 				}
 				else {
 					//if (bReportIndividualTestCases) ReportOneInputFunctionSuccess("PASS", "exp2", pa, pref, pexp2);

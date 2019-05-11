@@ -10,6 +10,7 @@
 #include <iostream>
 #include <limits>
 #include <regex>
+#include <type_traits>
 
 // to yield a fast regression environment for productive development
 // we want to leverage the IEEE floating point hardware available on x86 and ARM.
@@ -2668,6 +2669,17 @@ value<nbits> fmma(const posit<nbits, es>& a, const posit<nbits, es>& b, const po
 	return result;
 }
 
+// Type traits
+
 }  // namespace unum
 
 }  // namespace sw
+
+// arithmetic type is defined as the OR of an integral type or a floating point type
+// so the only thing we need to do is define the specialization for floating point types
+// and we'll get the arithmetic type trait for free.
+template<size_t nbits, size_t es>
+struct std::is_floating_point< sw::unum::posit<nbits, es> >
+	: true_type
+{	// determine whether _Ty is floating point
+};
