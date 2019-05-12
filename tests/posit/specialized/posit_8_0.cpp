@@ -1,4 +1,4 @@
-// posit_8_0.cpp: Functionality tests for posit<8,0>
+// posit_8_0.cpp: Functionality tests for fast specialized posit<8,0>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //

@@ -1,4 +1,4 @@
-// posit_32_2.cpp: Functionality tests for standard 32-bit posit<32,2>
+// posit_32_2.cpp: Functionality tests for fast specialized posit<32,2>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //

@@ -1,4 +1,4 @@
-// posit_48_2.cpp: Functionality tests for extended standard 48-bit posit<48,2>
+// posit_48_2.cpp: Functionality tests for fast specialized posit<48,2>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //

@@ -1,4 +1,4 @@
-// posit_16_1.cpp: Functionality tests for posit<16,1>
+// posit_16_1.cpp: Functionality tests for specialized posit<16,1>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
