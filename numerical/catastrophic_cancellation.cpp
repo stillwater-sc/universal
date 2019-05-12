@@ -3,7 +3,6 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#define ALIASING_ALLOWED
 #include "common.hpp"
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
@@ -29,7 +28,7 @@ try {
 	// bool verbose = false;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = true;
+	// bool bReportIndividualTestCases = true;
 	std::string tag = "Catastrophic Cancellation: ";
 
 	// preserve the existing ostream precision
@@ -109,7 +108,7 @@ try {
 	// restore the previous ostream precision
 	cout << setprecision(precision);
 
-	return EXIT_SUCCESS;
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

@@ -1,4 +1,4 @@
-// 16bit_posit.cpp: Functionality tests for standard 16-bit posits
+// posit_16_1.cpp: Functionality tests for posit<16,1>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
@@ -42,6 +42,14 @@ try {
 
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
+
+	// special cases
+	p = 0;
+	if (!p.iszero()) ++nrOfFailedTestCases;
+	p = NAN;
+	if (!p.isnar()) ++nrOfFailedTestCases;
+	p = INFINITY;
+	if (!p.isnar()) ++nrOfFailedTestCases;
 
 	// logic tests
 	cout << "Logic operator tests " << endl;

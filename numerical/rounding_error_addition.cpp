@@ -3,7 +3,6 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#define ALIASING_ALLOWED
 #include "common.hpp"
 #include "../tests/posit_test_helpers.hpp"
 
@@ -46,12 +45,12 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	using Posit = posit<nbits,es>;
+	//constexpr size_t nbits = 32;
+	//constexpr size_t es = 2;
+	//using Posit = posit<nbits,es>;
 
 	// print detailed bit-level computational intermediate results
-	bool verbose = false;
+	// bool verbose = false;
 	bool bReportIndividualTestCases = false;
 
 	// preserve the existing ostream precision

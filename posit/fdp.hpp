@@ -27,8 +27,8 @@ Ty dot(size_t n, const std::vector<Ty>& x, size_t incx, const std::vector<Ty>& y
 // fused dot product operators
 
 // Fused dot product with quire continuation
-template<typename Qy, typename Ty>
-void fused_dot(Qy& sum_of_products, size_t n, const std::vector<Ty>& x, size_t incx, const std::vector<Ty>& y, size_t incy) {
+template<typename QuireType, typename Scalar>
+void fused_dot(QuireType& sum_of_products, size_t n, const std::vector<Scalar>& x, size_t incx, const std::vector<Scalar>& y, size_t incy) {
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
 		sum_of_products += quire_mul(x[ix], y[iy]);
@@ -72,16 +72,16 @@ void matvec(const std::vector<Ty>& A, const std::vector<Ty>& x, std::vector<Ty>&
 
 // leverage template parameter inference to specialize matvec to use the quire when the inputs are posit vectors
 template<size_t nbits, size_t es, size_t capacity = 10>
-void matvec(const std::vector< sw::unum::posit<nbits, es> >& A, const std::vector< sw::unum::posit<nbits, es> >& x, std::vector< sw::unum::posit<nbits, es> >& b) {
+void matvec(const std::vector< posit<nbits, es> >& A, const std::vector< posit<nbits, es> >& x, std::vector< posit<nbits, es> >& b) {
 	// preconditions
 	size_t d = x.size();
 	assert(A.size() == d*d);
 	assert(b.size() == d);
 	for (size_t i = 0; i < d; ++i) {
 		b[i] = 0;
-		sw::unum::quire<nbits, es, capacity> q;   // initialized to 0 by constructor
+		quire<nbits, es, capacity> q;   // initialized to 0 by constructor
 		for (size_t j = 0; j < d; ++j) {
-			q += sw::unum::quire_mul(A[i*d + j], x[j]);
+			q += quire_mul(A[i*d + j], x[j]);
 			if (sw::unum::_trace_quire_add) std::cout << q << '\n';
 		}  
 		convert(q.to_value(), b[i]);  // one and only rounding step of the fused-dot product
@@ -108,9 +108,9 @@ void matmul(const std::vector<Ty>& A, const std::vector<Ty>& B, std::vector<Ty>&
 	}
 }
 
-// leverage template parameter inference to specialize matvec to use the quire when the inputs are posit vectors
+// leverage template parameter inference to specialize matmul to use the quire when the inputs are posit vectors
 template<size_t nbits, size_t es, size_t capacity = 10>
-void matmul(const std::vector<sw::unum::posit<nbits,es> >& A, const std::vector<sw::unum::posit<nbits, es> >& B, std::vector<sw::unum::posit<nbits, es> >& C) {
+void matmul(const std::vector<posit<nbits,es> >& A, const std::vector< posit<nbits, es> >& B, std::vector< posit<nbits, es> >& C) {
 	// preconditions
 	size_t d = size_t(std::sqrt(A.size()));
 	assert(A.size() == d*d);
@@ -119,10 +119,10 @@ void matmul(const std::vector<sw::unum::posit<nbits,es> >& A, const std::vector<
 	for (size_t i = 0; i < d; ++i) {
 		for (size_t j = 0; j < d; ++j) {
 			C[i*d + j] = 0;
-			sw::unum::quire<nbits, es, capacity> q;   // initialized to 0 by constructor
+			quire<nbits, es, capacity> q;   // initialized to 0 by constructor
 			for (size_t k = 0; k < d; ++k) {
 				// C[i*d + j] = C[i*d + j] + A[i*d + k] * B[k*d + j];
-				q += sw::unum::quire_mul(A[i*d + k], B[k*d + j]);
+				q += quire_mul(A[i*d + k], B[k*d + j]);
 				if (sw::unum::_trace_quire_add) std::cout << q << '\n';
 			}
 			convert(q.to_value(), C[i*d + j]);  // one and only rounding step of the fused-dot product

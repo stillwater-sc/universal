@@ -1,8 +1,8 @@
 file (GLOB SOURCES "./*.c*")
 
 ####
-# macro to read all cpp files in a directory
-# and create a test target for that cpp file
+# macro to read all source files in a directory
+# and create a test target for each source file
 macro (compile_and_link_all testing prefix)
     # cycle through the sources
     # For the according directories, we assume that each cpp file is a separate test
@@ -13,7 +13,7 @@ macro (compile_and_link_all testing prefix)
         set(test_name ${prefix}_${test})
         message(STATUS "Add test ${test_name} from source ${new_source}.")
         add_executable (${test_name} ${new_source})
-        target_link_libraries(${test_name} posit_c_api)
+        target_link_libraries(${test_name} posit_c_api_shim)
         if (${testing} STREQUAL "true")
             if (UNIVERSAL_CMAKE_TRACE)
                 message(STATUS "testing: ${test_name} ${RUNTIME_OUTPUT_DIRECTORY}/${test_name}")
@@ -23,4 +23,4 @@ macro (compile_and_link_all testing prefix)
     endforeach (source)
 endmacro (compile_and_link_all)
 
-compile_and_link_all("true" "c_api" "${SOURCES}")
+compile_and_link_all("true" "c_api_shim" "${SOURCES}")

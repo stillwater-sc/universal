@@ -2670,15 +2670,36 @@ value<nbits> fmma(const posit<nbits, es>& a, const posit<nbits, es>& b, const po
 }
 
 // Type traits
-template<typename Ty>
+template<typename Ty, Ty val>
+struct integral_constant
+{
+	static constexpr Ty value = val;
+	using value_type = Ty;
+	using type = integral_constant;
+
+	constexpr operator value_type() const noexcept
+	{
+		return (value);
+	}
+	constexpr value_type operator()() const noexcept
+	{
+		return (value);
+	}
+};
+template<bool val>
+using bool_constant = integral_constant<bool, val>;
+using true_type = bool_constant<true>;
+using false_type = bool_constant<false>;
+
+template<typename _Ty>
 struct is_posit
-	: std::bool_constant<false>
+	: false_type
 {
 };
 template<size_t nbits, size_t es>
 struct is_posit< sw::unum::posit<nbits, es> >
-	: std::bool_constant<true>
-{	// determine whether _Ty is floating point
+	: true_type
+{
 };
 
 }  // namespace unum

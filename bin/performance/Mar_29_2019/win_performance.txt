@@ -1,0 +1,115 @@
+Date run : 3/29/2019
+Processor: Intel Core i7-7500 CPU @ 2.70GHz, 2 cores, 4 threads, 15W mobile processor
+Memory   : 16GB
+System   : 64-bit Windows 10 Pro, Version 1803, x64-based processor, OS build 17134.165
+
+Fast specialization configuration performance tests
+
+Performance Report: posit<4,0>
+Conversion int  : 310 MPOPS
+Conversion ieee :   4 MPOPS
+Prefix          : 927 MPOPS
+Postfix         : 929 MPOPS
+Negation        : 698 MPOPS
+Addition        : 697 MPOPS
+Subtraction     : 613 MPOPS
+Multiplication  : 688 MPOPS
+Division        : 441 MPOPS
+Square Root     : 450 MPOPS
+
+Performance Report: posit<8,0>
+Conversion int  : 288 MPOPS
+Conversion ieee :   4 MPOPS
+Prefix          :   1 GPOPS
+Postfix         :   1 GPOPS
+Negation        :   1 GPOPS
+Addition        :  99 MPOPS
+Subtraction     :  99 MPOPS
+Multiplication  : 167 MPOPS
+Division        :  64 MPOPS
+Square Root     :   1 GPOPS
+
+Performance Report: posit<10,0>
+Conversion int  :   9 MPOPS
+Conversion ieee :   4 MPOPS
+Prefix          :  18 MPOPS
+Postfix         :  18 MPOPS
+Negation        :  86 MPOPS
+Addition        :   1 MPOPS
+Subtraction     :   1 MPOPS
+Multiplication  :   1 MPOPS
+Division        : 443 KPOPS
+Square Root     :   2 MPOPS
+
+Performance Report: posit<12,0>
+Conversion int  :   8 MPOPS
+Conversion ieee :   4 MPOPS
+Prefix          :  15 MPOPS
+Postfix         :  15 MPOPS
+Negation        :  75 MPOPS
+Addition        :   2 MPOPS
+Subtraction     :   2 MPOPS
+Multiplication  :   1 MPOPS
+Division        : 322 KPOPS
+Square Root     :   2 MPOPS
+
+Performance Report: posit<14,0>
+Conversion int  :   6 MPOPS
+Conversion ieee :   3 MPOPS
+Prefix          :  11 MPOPS
+Postfix         :  12 MPOPS
+Negation        :  63 MPOPS
+Addition        :   1 MPOPS
+Subtraction     :   1 MPOPS
+Multiplication  :   1 MPOPS
+Division        : 274 KPOPS
+Square Root     :   2 MPOPS
+
+Performance Report: posit<16,1>
+Conversion int  :  76 MPOPS
+Conversion ieee :   3 MPOPS
+Prefix          :   1 GPOPS
+Postfix         :   1 GPOPS
+Negation        :   1 GPOPS
+Addition        :  65 MPOPS
+Subtraction     :  84 MPOPS
+Multiplication  :  95 MPOPS
+Division        :  46 MPOPS
+Square Root     :  96 MPOPS
+
+Performance Report: posit<32,2>
+Conversion int  :  83 MPOPS
+Conversion ieee :   2 MPOPS
+Prefix          :   1 GPOPS
+Postfix         :   1 GPOPS
+Negation        : 951 MPOPS
+Addition        :  62 MPOPS
+Subtraction     :  66 MPOPS
+Multiplication  :  67 MPOPS
+Division        :  35 MPOPS
+Square Root     :  48 MPOPS
+
+Performance Report: posit<48,3>
+Conversion int  :   2 MPOPS
+Conversion ieee :   2 MPOPS
+Prefix          :   6 MPOPS
+Postfix         :   6 MPOPS
+Negation        :  22 MPOPS
+Addition        :   1 MPOPS
+Subtraction     :   1 MPOPS
+Multiplication  : 725 KPOPS
+Division        :  40 KPOPS
+Square Root     : 940 KPOPS
+
+Performance Report: posit<64,3>
+Conversion int  :   1 MPOPS
+Conversion ieee :   2 MPOPS
+Prefix          :   4 MPOPS
+Postfix         :   4 MPOPS
+Negation        :  15 MPOPS
+Addition        : 982 KPOPS
+Subtraction     : 768 KPOPS
+Multiplication  : 626 KPOPS
+Division        :  22 KPOPS
+Square Root     : 777 KPOPS
+

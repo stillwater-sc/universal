@@ -40,7 +40,7 @@
     POSIT_OP(int, cmp, name, type)
 
 // This creates functions for all ops for all types which can be converted to a posit.
-// e.g. posit8_addf(posit8_t p, float f)  posit8_addld(posit8_t, long double)
+// e.g. float posit8_tof(posit8_t p)  double posit8_tod(posit8_t, double)
 // "name" is the mnemonic for the type (f, ld, sll, ul, ui)
 // "type" is the type (float, long double, signed long long, unsigned long long, unsigned int)
 #define POSIT_FUNCS(name, type) \
@@ -120,10 +120,10 @@ POSIT_INLINE(POSIT_T POSIT_GLUE(POSIT_MKNAME(fromp), POSIT_NBITS)(POSIT_T p) { r
 POSIT_T POSIT_MKNAME(fromp4)(posit4_t p) POSIT_IMPL({ return POSIT_API::fromp<capi4>(p); })
 POSIT_OPS(p4, posit4_t)
 #endif
-#if POSIT_NBITS != 8
-POSIT_T POSIT_MKNAME(fromp8)(posit8_t p) POSIT_IMPL({ return POSIT_API::fromp<capi8>(p); })
-POSIT_OPS(p8, posit8_t)
-#endif
+//#if POSIT_NBITS != 8
+//POSIT_T POSIT_MKNAME(fromp8)(posit8_t p) POSIT_IMPL({ return POSIT_API::fromp<capi8>(p); })
+//POSIT_OPS(p8, posit8_t)
+//#endif
 #if POSIT_NBITS != 16
 POSIT_T POSIT_MKNAME(fromp16)(posit16_t p) POSIT_IMPL({ return POSIT_API::fromp<capi16>(p); })
 POSIT_OPS(p16, posit16_t)
