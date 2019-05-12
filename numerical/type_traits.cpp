@@ -3,7 +3,6 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#define ALIASING_ALLOWED
 #include "common.hpp"
 
 int main(int argc, char** argv)
@@ -23,10 +22,12 @@ try {
 	cout << setprecision(12);
 
 	static_assert( !is_integral< sw::unum::posit<nbits,es> >(), "a posit<nbits,es> is not an integral type");
-	static_assert( is_floating_point< sw::unum::posit<nbits, es> >(), "a posit<nbits,es> is a floating point type");
-	static_assert( is_arithmetic< sw::unum::posit<nbits, es> >(), "a posit<nbits,es> is an arithmetic type");
+	static_assert( !is_floating_point< sw::unum::posit<nbits, es> >(), "a posit<nbits,es> is a floating point type");
+	static_assert( !is_arithmetic< sw::unum::posit<nbits, es> >(), "a posit<nbits,es> is not an arithmetic type");
+	static_assert( !is_arithmetic< Scalar >(), "This Scalar is not an arithmetic type");
 
-	static_assert( is_arithmetic< Scalar >(), "This Scalar is an arithmetic type");
+	static_assert( is_posit< sw::unum::posit<nbits, es> >(), "a posit<nbits,es> is a posit type");
+	static_assert( is_posit< Scalar >(), "This Scalar is a posit type");
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);
