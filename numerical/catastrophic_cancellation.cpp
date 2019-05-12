@@ -26,7 +26,7 @@ try {
 	using namespace sw::unum;
 
 	// print detailed bit-level computational intermediate results
-	bool verbose = false;
+	// bool verbose = false;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = true;

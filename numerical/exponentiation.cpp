@@ -31,7 +31,7 @@ try {
 	using Posit = posit<nbits,es>;
 
 	// print detailed bit-level computational intermediate results
-	bool verbose = false;
+	// bool verbose = false;
 
 	// preserve the existing ostream precision
 	auto precision = cout.precision();

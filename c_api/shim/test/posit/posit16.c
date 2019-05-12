@@ -182,9 +182,11 @@ int main(int argc, char* argv[])
 		dref = exp(da);
 		posit16_t pref = posit16_fromd(dref);
 		if (posit16_cmp(pref, pc)) {
-			printf("FAIL: exp(16.1x%04xp) produced 16.1x%04xp instead of 16.1x%04xp\n",
-				posit16_bits(pa), posit16_bits(pc), posit16_bits(pref));
-			++fails;
+			if (dref > 0.0) {
+			    printf("FAIL: exp(16.1x%04xp) produced 16.1x%04xp instead of 16.1x%04xp\n",
+			    	posit16_bits(pa), posit16_bits(pc), posit16_bits(pref));
+			    ++fails;
+			} // special case of posit rounding to minpos
 		}
 	}
 	if (fails) {

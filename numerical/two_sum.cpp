@@ -138,13 +138,10 @@ int ValidateTwoSum(std::string tag, bool bReportIndividualTestCases) {
 	using Posit = sw::unum::posit<nbits, es>;
 	Posit pa, pb, ps, pr, psum, pref;
 	pair<Posit, Posit> s_and_r;
-	double da, db;
 	for (size_t i = 0; i < NR_POSITS; i++) {
 		pa.set_raw_bits(i);
-		da = double(pa);
 		for (size_t j = 0; j < NR_POSITS; j++) {
 			pb.set_raw_bits(j);
-			db = double(pb);
 
 			s_and_r = sw::unum::twoSum(pa, pb);
 			ps = s_and_r.first;
@@ -175,7 +172,7 @@ try {
 	using namespace sw::unum;
 
 	// print detailed bit-level computational intermediate results
-	bool verbose = false;
+	// bool verbose = false;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = true;
