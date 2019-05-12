@@ -1,4 +1,4 @@
-// posit_8_1.cpp: Functionality tests for posit<8,1>
+// posit_8_1.cpp: Functionality tests for fast specialized posit<8,1>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
@@ -15,9 +15,6 @@
 #include "../../posit_test_helpers.hpp"
 #include "../../posit_math_helpers.hpp"
 
-/*
-Standard posits with nbits = 8 have no exponent bits, i.e. es = 0.
-*/
 template<size_t nbits, size_t es>
 void placeholder(sw::unum::posit<nbits, es>& a) {
 	using namespace std;
@@ -38,6 +35,8 @@ void placeholder(sw::unum::posit<nbits, es>& a) {
 void GenerateValues() {
 	using namespace std;
 	using namespace sw::unum;
+	constexpr unsigned int NR_POSITS = 256;
+
 	posit<8, 1> a;
 	for (unsigned int i = 0; i < 256; ++i) {
 		a.set_raw_bits(i);
@@ -52,12 +51,15 @@ try {
 
 	// const size_t RND_TEST_CASES = 0;  // no randoms, 8-bit posits can be done exhaustively
 
-	const size_t nbits = 8;
-	const size_t es = 1;
+	constexpr size_t nbits = 8;
+	constexpr size_t es = 1;
 
-	GenerateValues();
+	//GenerateValues();
+
 	posit<nbits, es> a = 15;
 	cout << a << endl;
+
+	cout << "fast posit<8,1> disabled due to bugs in implementation\n";
 	return 0;
 
 	int nrOfFailedTestCases = 0;
