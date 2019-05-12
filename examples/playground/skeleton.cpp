@@ -261,6 +261,10 @@ try {
 
 	Conversions();
 
+	posit<32, 2> p;
+	p.set_raw_bits(0xb0bfe591u);
+	cout << color_print(p) << " " << setprecision(30) << p << endl;
+
 	return (bSuccess ? EXIT_SUCCESS : EXIT_FAILURE);
 }
 catch (char const* msg) {
