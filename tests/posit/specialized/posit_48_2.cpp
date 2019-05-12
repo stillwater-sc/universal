@@ -1,22 +1,21 @@
-// 128bit_posit.cpp: Functionality tests for standard 128-bit posits
+// posit_48_2.cpp: Functionality tests for extended standard 48-bit posit<48,2>
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "common.hpp"
-// Configure the posit template environment
-// first: enable fast specialized posit<128,4>
-//#define POSIT_FAST_SPECIALIZATION   // turns on all fast specializations
-#define POSIT_FAST_POSIT_128_4 0
-// second: enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 0
+// enable fast specialized posit<48,2>
+//#define POSIT_FAST_SPECIALIZATION
+#define POSIT_FAST_POSIT_48_2 1
+// enable posit arithmetic exceptions
+#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
 #include "../../test_helpers.hpp"
 #include "../../posit_test_randoms.hpp"
 
 /*
-Standard posits with nbits = 128 have 4 exponent bits.
+Extended Standard posit with nbits = 48 have es = 2 exponent bits.
 */
 
 #define STRESS_TESTING 1
@@ -26,23 +25,31 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 10000;
+	const size_t RND_TEST_CASES = 150000;
 
-	const size_t nbits = 128;
-	const size_t es = 4;
+	const size_t nbits = 48;
+	const size_t es = 2;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
-	std::string tag = " posit<128,4>";
+	std::string tag = " posit<48,2>";
 
-#if POSIT_FAST_POSIT_128_4
-	cout << "Fast specialization posit<128,4> configuration tests" << endl;
+#if defined(POSIT_FAST_POSIT_48_2)
+	cout << "Fast specialization posit<48,2> configuration tests" << endl;
 #else
-	cout << "Standard posit<128,4> configuration tests" << endl;
+	cout << "Extended Standard posit<48,2> configuration tests" << endl;
 #endif
 
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
+
+	// special cases
+	p = 0;
+	if (!p.iszero()) ++nrOfFailedTestCases;
+	p = NAN;
+	if (!p.isnar()) ++nrOfFailedTestCases;
+	p = INFINITY;
+	if (!p.isnar()) ++nrOfFailedTestCases;
 
 	// TODO: as we don't have a reference floating point implementation to validate
 	// the arithmetic operations we are going to ignore the failures
@@ -59,7 +66,7 @@ try {
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
-	return EXIT_SUCCESS; //as we manually throwing the not supported yet it should not fall through the cracks     EXIT_FAILURE;
+	return EXIT_FAILURE;
 }
 catch (const posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
@@ -81,3 +88,4 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
+

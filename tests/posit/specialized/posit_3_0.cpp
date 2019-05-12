@@ -1,6 +1,6 @@
 // 3bit_posit.cpp: Functionality tests for specialized 3-bit posits based on look-up tables
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -40,6 +40,14 @@ try {
 
 	posit<nbits,es> p;
 	cout << dynamic_range(p) << endl;
+
+	// special cases
+	p = 0;
+	if (!p.iszero()) ++nrOfFailedTestCases;
+	p = NAN;
+	if (!p.isnar()) ++nrOfFailedTestCases;
+	p = INFINITY;
+	if (!p.isnar()) ++nrOfFailedTestCases;
 
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");

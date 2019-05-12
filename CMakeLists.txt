@@ -53,7 +53,8 @@ option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"    
 option(BUILD_NUMERICAL                   "Set to ON to build numerical test programs"          ON)
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
 # C API library and test programs
-option(BUILD_C_API_LIB                   "Set to ON to build C API library"                    OFF)
+option(BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
+option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"               OFF)
 option(C_API_LIB_PIC                     "Set to ON to compile C API library with -fPIC"       OFF)
 # number systems and their verification suites
 option(BUILD_BITBLOCK                    "Set to ON to build bitblock tests"                   OFF)
@@ -222,13 +223,15 @@ endif()
 ####
 # set the aggregated compiler options
 
-# clear nonsensical defaults, like "-O3 -NDEBUG" for release
-set(CMAKE_C_FLAGS           "")
-set(CMAKE_C_FLAGS_RELEASE   "")
-set(CMAKE_C_FLAGS_DEBUG     "")
-set(CMAKE_CXX_FLAGS         "")
-set(CMAKE_CXX_FLAGS_RELEASE "")
-set(CMAKE_CXX_FLAGS_DEBUG   "")
+if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	# clear nonsensical defaults, like "-O3 -NDEBUG" for release
+	set(CMAKE_C_FLAGS           "")
+	set(CMAKE_C_FLAGS_RELEASE   "")
+	set(CMAKE_C_FLAGS_DEBUG     "")
+	set(CMAKE_CXX_FLAGS         "")
+	set(CMAKE_CXX_FLAGS_RELEASE "")
+	set(CMAKE_CXX_FLAGS_DEBUG   "")
+endif()
 
 # bring in the flags set above
 set(CMAKE_C_FLAGS           "${CMAKE_CXX_FLAGS} ${EXTRA_C_FLAGS}")
@@ -373,7 +376,8 @@ if(BUILD_CI_CHECK)
 	# build the performance suites
 	set(BUILD_PERF_TESTS ON)
 	# build the C API library
-	set(BUILD_C_API_LIB ON)
+	set(BUILD_C_API_PURE_LIB ON)
+	set(BUILD_C_API_SHIM_LIB ON)
 	# build IEEE float/double quire capability
 	set(BUILD_IEEE_FLOAT_QUIRES ON)
 	#
@@ -438,10 +442,15 @@ add_subdirectory("examples/playground")
 endif(BUILD_PLAYGROUND)
 
 # C API library and their tests
-if(BUILD_C_API_LIB)
-add_subdirectory("c_api/posit")
-add_subdirectory("c_api/test/posit")
-endif(BUILD_C_API_LIB)
+if(BUILD_C_API_PURE_LIB)
+add_subdirectory("c_api/pure_c/posit")
+add_subdirectory("c_api/pure_c/test/posit")
+endif(BUILD_C_API_PURE_LIB)
+
+if(BUILD_C_API_SHIM_LIB)
+add_subdirectory("c_api/shim/posit")
+add_subdirectory("c_api/shim/test/posit")
+endif(BUILD_C_API_SHIM_LIB)
 
 # IEEE float/double quire capability
 if(BUILD_IEEE_FLOAT_QUIRES)

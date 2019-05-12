@@ -1,4 +1,4 @@
-// 64bit_posit.cpp: Functionality tests for standard 64-bit posits
+// posit_64_3.cpp: Functionality tests for standard 64-bit posit<64,3>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
@@ -43,6 +43,14 @@ try {
 
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
+
+	// special cases
+	p = 0;
+	if (!p.iszero()) ++nrOfFailedTestCases;
+	p = NAN;
+	if (!p.isnar()) ++nrOfFailedTestCases;
+	p = INFINITY;
+	if (!p.isnar()) ++nrOfFailedTestCases;
 
 	// TODO: as we don't have a reference floating point implementation to validate
 	// the arithmetic operations we are going to ignore the failures

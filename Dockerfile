@@ -38,33 +38,36 @@ RUN apt-get update && apt-get install -y make cmake
 # after building, the test executables are organized in the build directory under root
 # ctest gets its configuration for CTestTestfile.cmake files. There is one at the root of the build tree
 # and one for each directory that contains test executables.
-COPY --from=builder /usr/src/universal/build/tools/cmd/cmd_*             	/usr/src/universal/build/tools/cmd/
-COPY --from=builder /usr/src/universal/build/tools/cmd/*.cmake           	/usr/src/universal/build/tools/cmd/
-COPY --from=builder /usr/src/universal/build/tests/posit/posit_*         	/usr/src/universal/build/tests/posit/
-COPY --from=builder /usr/src/universal/build/tests/posit/*.cmake         	/usr/src/universal/build/tests/posit/
-COPY --from=builder /usr/src/universal/build/perf/perf_*                 	/usr/src/universal/build/perf/
-COPY --from=builder /usr/src/universal/build/perf/*.cmake                	/usr/src/universal/build/perf/
-COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_exact_test  /usr/src/universal/build/c_api/test/posit/c_api_exact_test
-COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_experiment  /usr/src/universal/build/c_api/test/posit/c_api_experiment
-COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit4      /usr/src/universal/build/c_api/test/posit/c_api_posit4
-COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit8      /usr/src/universal/build/c_api/test/posit/c_api_posit8
-COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit16     /usr/src/universal/build/c_api/test/posit/c_api_posit16
-COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit32     /usr/src/universal/build/c_api/test/posit/c_api_posit32
-COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit64     /usr/src/universal/build/c_api/test/posit/c_api_posit64
-COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit128    /usr/src/universal/build/c_api/test/posit/c_api_posit128
-COPY --from=builder /usr/src/universal/build/c_api/test/posit/c_api_posit256    /usr/src/universal/build/c_api/test/posit/c_api_posit256
-COPY --from=builder /usr/src/universal/build/c_api/test/posit/*.cmake    	/usr/src/universal/build/c_api/test/posit/
-COPY --from=builder /usr/src/universal/build/examples/blas/blas_*        	/usr/src/universal/build/examples/blas/
-COPY --from=builder /usr/src/universal/build/examples/blas/*.cmake       	/usr/src/universal/build/examples/blas/
-COPY --from=builder /usr/src/universal/build/examples/dsp/dsp_*          	/usr/src/universal/build/examples/dsp/
-COPY --from=builder /usr/src/universal/build/examples/dsp/*.cmake        	/usr/src/universal/build/examples/dsp/
-COPY --from=builder /usr/src/universal/build/education/posit/edu_*       	/usr/src/universal/build/education/posit/
-COPY --from=builder /usr/src/universal/build/education/posit/*.cmake     	/usr/src/universal/build/education/posit/
-COPY --from=builder /usr/src/universal/build/examples/playground/playgr* 	/usr/src/universal/build/examples/playground/
-COPY --from=builder /usr/src/universal/build/examples/playground/*.cmake 	/usr/src/universal/build/examples/playground/
+COPY --from=builder /usr/src/universal/build/tools/cmd/cmd_*             	              /usr/src/universal/build/tools/cmd/
+COPY --from=builder /usr/src/universal/build/tools/cmd/*.cmake           	              /usr/src/universal/build/tools/cmd/
+COPY --from=builder /usr/src/universal/build/tests/posit/posit_*         	              /usr/src/universal/build/tests/posit/
+COPY --from=builder /usr/src/universal/build/tests/posit/*.cmake         	              /usr/src/universal/build/tests/posit/
+COPY --from=builder /usr/src/universal/build/perf/perf_*                 	              /usr/src/universal/build/perf/
+COPY --from=builder /usr/src/universal/build/perf/*.cmake                	              /usr/src/universal/build/perf/
+COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_exact_test      /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_exact_test
+COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_experiment      /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_experiment
+COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit4          /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit4
+COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit8          /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit8
+COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit16         /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit16
+COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit32         /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit32
+COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit64         /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit64
+COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit128        /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit128
+COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit256        /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit256
+COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/*.cmake    	              /usr/src/universal/build/c_api/shim/test/posit/
+COPY --from=builder /usr/src/universal/build/c_api/pure_c/test/posit/c_api_pure_posit8        /usr/src/universal/build/c_api/pure_c/test/posit/c_api_pure_posit8
+COPY --from=builder /usr/src/universal/build/c_api/pure_c/test/posit/c_api_pure_playground    /usr/src/universal/build/c_api/pure_c/test/posit/c_api_pure_playground
+COPY --from=builder /usr/src/universal/build/c_api/pure_c/test/posit/*.cmake                  /usr/src/universal/build/c_api/pure_c/test/posit/
+COPY --from=builder /usr/src/universal/build/examples/blas/blas_*        	              /usr/src/universal/build/examples/blas/
+COPY --from=builder /usr/src/universal/build/examples/blas/*.cmake       	              /usr/src/universal/build/examples/blas/
+COPY --from=builder /usr/src/universal/build/examples/dsp/dsp_*          	              /usr/src/universal/build/examples/dsp/
+COPY --from=builder /usr/src/universal/build/examples/dsp/*.cmake        	              /usr/src/universal/build/examples/dsp/
+COPY --from=builder /usr/src/universal/build/education/posit/edu_*       	              /usr/src/universal/build/education/posit/
+COPY --from=builder /usr/src/universal/build/education/posit/*.cmake     	              /usr/src/universal/build/education/posit/
+COPY --from=builder /usr/src/universal/build/examples/playground/playgr* 	              /usr/src/universal/build/examples/playground/
+COPY --from=builder /usr/src/universal/build/examples/playground/*.cmake 	              /usr/src/universal/build/examples/playground/
 # the ctest configuration root and Makefile so we can execute _make test_ in the test stage of the CI/CD pipeline
-COPY --from=builder /usr/src/universal/build/Makefile              		/usr/src/universal/build/
-COPY --from=builder /usr/src/universal/build/CTestTestfile.cmake   		/usr/src/universal/build/
+COPY --from=builder /usr/src/universal/build/Makefile              		              /usr/src/universal/build/
+COPY --from=builder /usr/src/universal/build/CTestTestfile.cmake   		              /usr/src/universal/build/
 
 WORKDIR /usr/src/universal/build
 # double check we have all the executables of interest

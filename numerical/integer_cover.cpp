@@ -3,7 +3,6 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#define ALIASING_ALLOWED
 #include "common.hpp"
 #include "../tests/test_helpers.hpp"
 #include "../tests/posit_test_helpers.hpp"
@@ -51,7 +50,7 @@ try {
 	// bool verbose = false;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = true;
+	// bool bReportIndividualTestCases = true;
 	std::string tag = "TwoSum failed: ";
 
 	// preserve the existing ostream precision
