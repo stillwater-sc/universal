@@ -23,9 +23,9 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	using Posit = posit<nbits,es>;
+	//constexpr size_t nbits = 32;
+	//constexpr size_t es = 2;
+	//using Posit = posit<nbits,es>;
 
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;
