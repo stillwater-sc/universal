@@ -48,7 +48,7 @@ try {
 	using namespace sw::unum;
 
 	// print detailed bit-level computational intermediate results
-	bool verbose = false;
+	// bool verbose = false;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = true;
@@ -73,7 +73,7 @@ try {
 		cout << "posit<32,2>: 2^10 integer cover is : " << CalculateIntegerCover<32, 2, 10>(true) << "%\n";
 #else
 
-#endif MANUAL_TEST
+#endif // MANUAL_TEST
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);

@@ -3,7 +3,6 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#define ALIASING_ALLOWED
 #include "common.hpp"
 
 
@@ -12,18 +11,25 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
+	constexpr size_t nbits = 16;
+	constexpr size_t es = 1;
 	using Posit = posit<nbits,es>;
 
 	// print detailed bit-level computational intermediate results
-	bool verbose = false;
+	// bool verbose = false;
 
 	// preserve the existing ostream precision
 	auto precision = cout.precision();
 	cout << setprecision(12);
 
-
+	// with dynamic precision, we have the situation where multiplying
+	// extreme numbers creates precision we do not have..
+	Posit max = maxpos<nbits,es>();
+	Posit min = minpos<nbits,es>();
+	Posit one = min * max;
+	cout << "maxpos : " << info_print(max) << endl;
+	cout << "minpos : " << info_print(min) << endl;
+	cout << "one    : " << info_print(one) << endl;
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);
