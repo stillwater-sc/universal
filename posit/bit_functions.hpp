@@ -163,12 +163,16 @@ namespace sw {
 			return ss.str();
 		}
 
-#ifdef ALIASING_ALLOWED
 		// full binary representation of a float number
 		inline std::string to_binary(float number) {
 			std::stringstream ss;
 
-			uint32_t bits = *(uint32_t*) &number;
+			union {
+				float f;
+				uint32_t bits;
+			} u;
+			u.f = number;
+			uint32_t bits = u.bits;
 			unsigned int msb = 31;
 			uint64_t mask = (uint64_t(1) << msb);
 			ss << (mask & bits ? "1|" : "0|");
@@ -186,7 +190,12 @@ namespace sw {
 		inline std::string to_binary(double number) {
 			std::stringstream ss;
 
-			uint64_t bits = *(uint64_t*)&number;
+			union {
+				double d;
+				uint64_t bits;
+			} u;
+			u.d = number;
+			uint64_t bits = u.bits;
 			unsigned int msb = 63;
 			uint64_t mask = (uint64_t(1) << msb);
 			ss << (mask & bits ? "1|" : "0|");
@@ -199,7 +208,6 @@ namespace sw {
 
 			return ss.str();
 		}
-#endif
 
 /*
 		// binary exponent representation
