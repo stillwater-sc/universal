@@ -100,10 +100,12 @@ namespace sw {
 			case OPCODE_EXP:
 				presult = sw::unum::exp(pa);
 				reference = std::exp(da);
+				if (0.0 == reference) reference = double(sw::unum::minpos<nbits, es>());
 				break;
 			case OPCODE_EXP2:
 				presult = sw::unum::exp2(pa);
 				reference = std::exp2(da);
+				if (0.0 == reference) reference = double(sw::unum::minpos<nbits, es>());
 				break;
 			case OPCODE_LOG:
 				presult = sw::unum::log(pa);
