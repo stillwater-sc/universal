@@ -2670,16 +2670,19 @@ value<nbits> fmma(const posit<nbits, es>& a, const posit<nbits, es>& b, const po
 }
 
 // Type traits
+template<typename Ty>
+struct is_posit
+	: std::bool_constant<false>
+{
+};
+template<size_t nbits, size_t es>
+struct is_posit< sw::unum::posit<nbits, es> >
+	: std::bool_constant<true>
+{	// determine whether _Ty is floating point
+};
 
 }  // namespace unum
 
 }  // namespace sw
 
-// arithmetic type is defined as the OR of an integral type or a floating point type
-// so the only thing we need to do is define the specialization for floating point types
-// and we'll get the arithmetic type trait for free.
-template<size_t nbits, size_t es>
-struct std::is_floating_point< sw::unum::posit<nbits, es> >
-	: true_type
-{	// determine whether _Ty is floating point
-};
+
