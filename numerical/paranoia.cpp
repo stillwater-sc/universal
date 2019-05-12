@@ -314,14 +314,10 @@ int     Break, Done, NotMonot, Monot, Anomaly, IEEE, SqRWrng, UfNGrad;
 
 int     batchmode;              /* global batchmode test */
 
-								/* program name and version variables and macro */
+				/* program name and version variables and macro */
 char   *temp;
 char   *program_name;
-char   *program_vers;
-
-#ifndef VERSION
-#define VERSION "1.1 [cygnus]"
-#endif /* VERSION */
+const char   *program_vers = "1.1 [cygnus]";
 
 #define basename(cp)    ((temp=(char *)strrchr((cp), '/')) ? temp+1 : (cp))
 
@@ -378,9 +374,9 @@ Pause()
 }
 
 void
-BadCond(int K, char* T)
+BadCond(int K, const char* T)
 {
-	static char *msg[] =
+	static const char *msg[] =
 	{ "FAILURE", "SERIOUS DEFECT", "DEFECT", "FLAW" };
 
 	ErrCnt[K] = ErrCnt[K] + 1;
@@ -392,7 +388,7 @@ BadCond(int K, char* T)
 }
 
 void
-TstCond(int K, int Valid, char* T)
+TstCond(int K, int Valid, const char* T)
 {
 #ifdef CYGNUS
 	printf("TEST: %s\n", T);
@@ -582,14 +578,14 @@ TstPtUf()
 }
 
 void
-notify(char* s)
+notify(const char* s)
 {
 	printf("%s test appears to be inconsistent...\n", s);
 	printf("   PLEASE NOTIFY KARPINKSI!\n");
 }
 
 void
-msglist(char  **s)
+msglist(const char  **s)
 {
 	while (*s)
 		printf("%s\n", *s++);
@@ -598,7 +594,7 @@ msglist(char  **s)
 void
 Instructions()
 {
-	static char *instr[] =
+	static const char *instr[] =
 	{
 		"Lest this program stop prematurely, i.e. before displaying\n",
 		"    `END OF TEST',\n",
@@ -617,7 +613,7 @@ Instructions()
 void
 Heading()
 {
-	static char *head[] =
+	static const char *head[] =
 	{
 		"Users are invited to help debug and augment this program so it will",
 		"cope with unanticipated and newly uncovered arithmetic pathologies.\n",
@@ -645,7 +641,7 @@ Heading()
 void
 Characteristics()
 {
-	static char *chars[] =
+	static const char *chars[] =
 	{
 		"Running this program should reveal these characteristics:",
 		"     Radix = 1, 2, 4, 8, 10, 16, 100, 256 ...",
@@ -677,7 +673,7 @@ History()
 								/* Converted from Brian Wichmann's Pascal version to C by Thos Sumner,
 								with further massaging by David M. Gay. */
 
-	static char *hist[] =
+	static const char *hist[] =
 	{
 		"The program attempts to discriminate among",
 		"   FLAWs, like lack of a sticky bit,",
@@ -732,7 +728,6 @@ main(int argc, char** argv)
 #endif /* BATCHMODE */
 
 	program_name = basename(argv[0]);
-	program_vers = VERSION;
 
 	printf("%s version %s\n", program_name, program_vers);
 
@@ -1388,11 +1383,12 @@ or  1/3  and  3/9  and  9/27 may disagree");
 	J = Zero;
 	X = Two;
 	Y = Radix;
-	if ((Radix != One))
+	if ((Radix != One)) {
 		do {
 			X = Y;
 			Y = Radix * Y;
 		} while (!((Y - X >= NoTrials)));
+	}
 		OneUlp = X * U2;
 		I = 1;
 		while (I <= NoTrials) {
@@ -2233,7 +2229,7 @@ the system traps on overflow.\n");
 		Pause();
 		printf("\n");
 		{
-			static char *msg[] =
+			static const char *msg[] =
 			{
 				"FAILUREs  encountered =",
 				"SERIOUS DEFECTs  discovered =",
@@ -2314,13 +2310,14 @@ try {
 	using Posit = posit<nbits,es>;
 
 	// print detailed bit-level computational intermediate results
-	bool verbose = false;
+	// bool verbose = false;
 
 	// preserve the existing ostream precision
 	auto precision = cout.precision();
 	cout << setprecision(12);
 
-
+	Posit p = minpos<nbits,es>();
+	cout << "minpos : " << p << endl;
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);
