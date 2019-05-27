@@ -9,7 +9,7 @@ bool GenerateData(size_t nrOfSamples, std::vector<Ty>& data) {
 	std::uniform_int_distribution<Ty> dist(0, 100);
 	data.clear();
 	data.reserve(nrOfSamples);
-	for (int i = 0; i < nrOfSamples; ++i) {
+	for (size_t i = 0; i < nrOfSamples; ++i) {
 		data.push_back(dist(engine));
 	}
 	return true;
@@ -23,7 +23,7 @@ bool GenerateData(size_t nrOfSamples, std::vector<float>& data) {
 	std::uniform_real_distribution<float> dist(0, 100);
 	data.clear();
 	data.reserve(nrOfSamples);
-	for (int i = 0; i < nrOfSamples; ++i) {
+	for (size_t i = 0; i < nrOfSamples; ++i) {
 		data.push_back(dist(engine));
 	}
 	return true;
@@ -36,7 +36,7 @@ bool GenerateData(size_t nrOfSamples, std::vector<double>& data) {
 	std::uniform_real_distribution<double> dist(0, 100);
 	data.clear();
 	data.reserve(nrOfSamples);
-	for (int i = 0; i < nrOfSamples; ++i) {
+	for (size_t i = 0; i < nrOfSamples; ++i) {
 		data.push_back(dist(engine));
 	}
 	return true;
@@ -48,7 +48,7 @@ bool GenerateData(size_t nrOfSamples, std::vector<long double>& data) {
 	std::uniform_real_distribution<long double> dist(0, 100);
 	data.clear();
 	data.reserve(nrOfSamples);
-	for (int i = 0; i < nrOfSamples; ++i) {
+	for (size_t i = 0; i < nrOfSamples; ++i) {
 		data.push_back(dist(engine));
 	}
 	return true;
@@ -61,7 +61,7 @@ bool GenerateData(size_t nrOfSamples, std::vector< sw::unum::posit<nbits, es> >&
 	std::uniform_real_distribution< double > dist(0, 100);  // use automatic conversion to take it from double to posit
 	data.clear();
 	data.reserve(nrOfSamples);
-	for (int i = 0; i < nrOfSamples; ++i) {
+	for (size_t i = 0; i < nrOfSamples; ++i) {
 		//data.push_back(sw::posit<nbits, es>(dist(engine)));
 		data.push_back(dist(engine));
 	}
@@ -70,7 +70,7 @@ bool GenerateData(size_t nrOfSamples, std::vector< sw::unum::posit<nbits, es> >&
 
 template <typename Container>
 void TimedAccumulate(Container& X, const std::string& legend) {
-	using value_type = Container::value_type;
+	using value_type = typename Container::value_type;
 	// time the operation
 	auto begin = std::chrono::steady_clock::now();
 		value_type totalSum = std::accumulate(X.begin(), X.end(), value_type(0));
