@@ -429,6 +429,7 @@ add_subdirectory("education/quire")
 endif(BUILD_EDUCATION_EXAMPLES)
 
 if(BUILD_APPLICATION_EXAMPLES)
+add_subdirectory("examples/stl")
 add_subdirectory("examples/blas")
 add_subdirectory("examples/dsp")
 endif(BUILD_APPLICATION_EXAMPLES)
