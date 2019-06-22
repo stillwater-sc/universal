@@ -17,6 +17,8 @@
 #include "../test_helpers.hpp"
 #include "../posit_math_helpers.hpp"
 
+// Background: http://numbers.computation.free.fr/Constants/E/e.html
+//
 // generate digits of Euler's number
 void GenerateEulersNumber() {
 	int N = 9009, a[9009], x = 0;
