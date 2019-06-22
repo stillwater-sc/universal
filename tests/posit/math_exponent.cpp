@@ -17,6 +17,24 @@
 #include "../test_helpers.hpp"
 #include "../posit_math_helpers.hpp"
 
+// generate digits of Euler's number
+void GenerateEulersNumber() {
+	int N = 9009, a[9009], x = 0;
+	for (int n = N - 1; n > 0; --n) {
+		a[n] = 1;
+	}
+	a[1] = 2;
+	while (N > 9) {
+		int n = N--;
+		while (--n) {
+			a[n] = x % n;
+			x = 10 * a[n - 1] + x / n;
+		}
+		std::cout << x;
+	}
+	std::cout << std::endl;
+}
+
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
@@ -43,6 +61,9 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
+	GenerateEulersNumber();
+
+	return 0;
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
