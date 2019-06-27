@@ -11,7 +11,6 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <posit>
-#include "blas_utils.hpp"
 
 template<typename Ty>
 Ty minValue(const std::vector<Ty>& samples) {
@@ -22,6 +21,16 @@ template<typename Ty>
 Ty maxValue(const std::vector<Ty>& samples) {
 	typename std::vector<Ty>::const_iterator it = max_element(samples.begin(), samples.end());
 	return *it;
+}
+
+template<typename Ty>
+void PrintVector(std::ostream& ostr, const std::string& name, const std::vector<Ty>& v) {
+	size_t d = v.size();
+	ostr << "Vector: " << name << " is of size " << d << " elements" << std::endl;
+	std::streamsize prec = ostr.precision();
+	ostr << std::setprecision(17);
+	for (size_t j = 0; j<d; ++j) std::cout << std::setw(20) << v[j] << " ";
+	ostr << std::setprecision(prec) << std::endl;
 }
 
 template<typename Vector>
@@ -67,8 +76,8 @@ try {
 		vector<IEEEType> xieee = { a1, a2, a3, a4 };
 		vector<IEEEType> yieee = { b1, b2, b3, b4 };
 
-		printVector(cout, "a: ", xieee);
-		printVector(cout, "b: ", yieee);
+		PrintVector(cout, "a: ", xieee);
+		PrintVector(cout, "b: ", yieee);
 
 		cout << endl << endl;
 		cout << "IEEE float   BLAS dot(x,y)  : " << dot(xieee.size(), xieee, 1, yieee, 1) << "           <----- correct answer is 2" << endl;
