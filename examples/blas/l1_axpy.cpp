@@ -1,6 +1,6 @@
 // l1_axpy.cpp: example program contrasting a BLAS L1 ?axpy routine between FLOAT and POSIT
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"

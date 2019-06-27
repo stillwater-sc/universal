@@ -1,6 +1,6 @@
 // l1_fused_dot.cpp: example program showing a fused-dot product for error free linear algebra
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
@@ -22,6 +22,20 @@ template<typename Ty>
 Ty maxValue(const std::vector<Ty>& samples) {
 	typename std::vector<Ty>::const_iterator it = max_element(samples.begin(), samples.end());
 	return *it;
+}
+
+template<typename Vector>
+void PrintProducts(const Vector& a, const Vector& b) {
+	constexpr size_t nbits = typename Vector::value_type::nbits;
+	constexpr size_t es = typename Vector::value_type::es;
+	sw::unum::quire<nbits, es> q = 0;
+	for (size_t i = 0; i < size(a); ++i) {
+		q += sw::unum::quire_mul(a[i], b[i]);
+		std::cout << a[i] << " * " << b[i] << " = " << a[i] * b[i] << std::endl << "quire " << q << std::endl;
+	}
+	typename Vector::value_type sum;
+	sw::unum::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
+	std::cout << "fdp result " << sum << std::endl;
 }
 
 int main(int argc, char** argv)
@@ -83,53 +97,63 @@ try {
 
 		{
 			using PositType = posit<8, 3>;
-			vector<PositType> xposit = { a1, a2, a3, a4 };
-			vector<PositType> yposit = { b1, b2, b3, b4 };
+			vector<PositType> x = { a1, a2, a3, a4 };
+			vector<PositType> y = { b1, b2, b3, b4 };
 
-			cout << "posit< 8,3> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit< 8,3> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
 		}
 		{
 			using PositType = posit<16, 2>;
-			vector<PositType> xposit = { a1, a2, a3, a4 };
-			vector<PositType> yposit = { b1, b2, b3, b4 };
+			vector<PositType> x = { a1, a2, a3, a4 };
+			vector<PositType> y = { b1, b2, b3, b4 };
 
-			cout << "posit<16,2> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit<16,2> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
 		}
 		{
 			using PositType = posit<32, 2>;
-			vector<PositType> xposit = { a1, a2, a3, a4 };
-			vector<PositType> yposit = { b1, b2, b3, b4 };
+			vector<PositType> x = { a1, a2, a3, a4 };
+			vector<PositType> y = { b1, b2, b3, b4 };
 
-			cout << "posit<32,2> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit<32,2> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
+			//PrintProducts(x, y);
 		}
 		{
 			using PositType = posit<64, 1>;
-			vector<PositType> xposit = { a1, a2, a3, a4 };
-			vector<PositType> yposit = { b1, b2, b3, b4 };
+			vector<PositType> x = { a1, a2, a3, a4 };
+			vector<PositType> y = { b1, b2, b3, b4 };
 
-			cout << "posit<64,1> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit<64,1> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
 		}
 		{
 			using PositType = posit<64, 0>;
-			vector<PositType> xposit = { a1, a2, a3, a4 };
-			vector<PositType> yposit = { b1, b2, b3, b4 };
+			vector<PositType> x = { a1, a2, a3, a4 };
+			vector<PositType> y = { b1, b2, b3, b4 };
 
-			cout << "posit<64,0> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit<64,0> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
 		}
 
 		{
 			using PositType = posit<16, 1>;
-			vector<PositType> xposit = { a1, a2, a3, a4 };
-			vector<PositType> yposit = { b1, b2, b3, b4 };
+			vector<PositType> x = { a1, a2, a3, a4 };
+			vector<PositType> y = { b1, b2, b3, b4 };
 
-			cout << "posit<16,1> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit<16,1> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
 		}
 		{
 			using PositType = posit<32, 1>;
-			vector<PositType> xposit = { a1, a2, a3, a4 };
-			vector<PositType> yposit = { b1, b2, b3, b4 };
+			vector<PositType> x = { a1, a2, a3, a4 };
+			vector<PositType> y = { b1, b2, b3, b4 };
 
-			cout << "posit<32,1> fused dot(x,y)  : " << fdp(xposit.size(), xposit, 1, yposit, 1) << "           <----- correct answer is 2" << endl;
+			cout << "posit<32,1> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
+
+			cout << "Reason why posit<32,1> fails\n";
+			PrintProducts(x, y);
+			cout << "Cannot represent integer value " << a1 << " != " << x[0] << endl;
+//			cout << "Cannot represent integer value " << b1 << " != " << y[0] << endl;
+			cout << "Product is " << a1*b1 << " but quire_mul approximation yields " << quire_mul(x[0],y[0]) << endl;
+			cout << "Cannot represent integer value " << a4 << " != " << x[3] << endl;
+			cout << "Cannot represent integer value " << b4 << " != " << y[3] << endl;
+			cout << "Product is " << a4*b4 << " but quire_mul approximation yields " << quire_mul(x[3],y[3]) << endl;
 		}
 
 		cout << setprecision(prec);

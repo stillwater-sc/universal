@@ -1,11 +1,13 @@
 // l3_fused_lu.cpp example program comparing float vs posit LU Decomposition equation solver
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+#define BLAS_L2
+#define BLAS_L3
 #include <posit>
 #include "blas_utils.hpp"
 

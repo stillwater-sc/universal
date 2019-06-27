@@ -62,7 +62,7 @@ int ValidateExactDotProduct() {
 	{
 		init(ones, Scalar(1));
 
-		Scalar result = fdp(nrElements, ones, 1, pv, 1);
+		Scalar result = fdp(ones, pv);
 		cout << "exact FDP test yields   = " << float(result) << endl;
 
 		if (!result.iszero()) ++nrOfFailures;
