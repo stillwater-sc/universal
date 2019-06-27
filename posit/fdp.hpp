@@ -23,34 +23,54 @@ Ty dot(size_t n, const std::vector<Ty>& x, size_t incx, const std::vector<Ty>& y
 	return sum_of_products;
 }
 
-/////////////////////////////////////////////////////////////////////
-// fused dot product operators
+/// //////////////////////////////////////////////////////////////////
+/// fused dot product operators
+/// fdp_qc         fused dot product with quire continuation
+/// fdp_stride     fused dot product with non-negative stride
+/// fdp            fused dot product of two vectors
 
 // Fused dot product with quire continuation
-template<typename QuireType, typename Scalar>
-void fused_dot(QuireType& sum_of_products, size_t n, const std::vector<Scalar>& x, size_t incx, const std::vector<Scalar>& y, size_t incy) {
+template<typename Qy, typename Vector>
+void fdp_qc(Qy& sum_of_products, size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy) {
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
-		sum_of_products += quire_mul(x[ix], y[iy]);
+		sum_of_products += sw::unum::quire_mul(x[ix], y[iy]);
 	}
 }
 
-// fused dot product
-template<size_t nbits, size_t es, size_t capacity = 10>
-posit<nbits, es> fdp(size_t n, const std::vector< posit<nbits, es> >& x, size_t incx, const std::vector< posit<nbits, es> >& y, size_t incy) {
-	quire<nbits, es, capacity> sum_of_products;   // initialized to 0 by constructor
+// Resolved fused dot product, with the option to control capacity bits in the quire
+template<typename Vector, size_t capacity = 10>
+typename Vector::value_type fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy) {
+	constexpr size_t nbits = typename Vector::value_type::nbits;
+	constexpr size_t es = typename Vector::value_type::es;
+	quire<nbits, es, capacity> q = 0;
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
-		sw::unum::value<2*(nbits - 2 - es)> unrounded_product = sw::unum::quire_mul(x[ix], y[iy]);
-		sum_of_products += unrounded_product;
-		if (sw::unum::_trace_quire_add) std::cout << sum_of_products << '\n';
+		q += sw::unum::quire_mul(x[ix], y[iy]);
+		if (sw::unum::_trace_quire_add) std::cout << q << '\n';
 	}
-	posit<nbits, es> sum;
-	convert(sum_of_products.to_value(), sum);     // one and only rounding step of the fused-dot product
+	typename Vector::value_type sum;
+	convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 	return sum;
 }
 
+// Specialized resolved fused dot product that assumes unit stride and a standard vector,
+// with the option to control capacity bits in the quire
+template<typename Vector, size_t capacity = 10>
+typename Vector::value_type fdp(const Vector& x, const Vector& y) {
+	constexpr size_t nbits = typename Vector::value_type::nbits;
+	constexpr size_t es = typename Vector::value_type::es;
+	quire<nbits, es, capacity> q = 0;
+	size_t ix, iy, n = size(x);
+	for (ix = 0, iy = 0; ix < n && iy < n; ++ix, ++iy) {
+		q += sw::unum::quire_mul(x[ix], y[iy]);
+	}
+	typename Vector::value_type sum;
+	convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
+	return sum;
+}
 
+#ifdef BLAS_L2
 // LEVEL 2 BLAS operators
 template<typename Ty>
 void matvec(const std::vector<Ty>& A, const std::vector<Ty>& x, std::vector<Ty>& b) {
@@ -88,9 +108,12 @@ void matvec(const std::vector< posit<nbits, es> >& A, const std::vector< posit<n
 		//std::cout << "b[" << i << "] = " << b[i] << std::endl;
 	}
 }
+#endif  // BLAS_L2
 
+#ifdef BLAS_L3
 // LEVEL 3 BLAS operators
 
+// matrix-matrix multiplication
 template<typename Ty>
 void matmul(const std::vector<Ty>& A, const std::vector<Ty>& B, std::vector<Ty>& C) {
 	// preconditions
@@ -130,7 +153,8 @@ void matmul(const std::vector<posit<nbits,es> >& A, const std::vector< posit<nbi
 	}
 }
 
+#endif  // BLAS_L3
 
-    }  // namespace unum
+} // namespace unum
 } // namespace sw
 
