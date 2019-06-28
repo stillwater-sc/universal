@@ -35,10 +35,10 @@ void PrintVector(std::ostream& ostr, const std::string& name, const std::vector<
 
 template<typename Vector>
 void PrintProducts(const Vector& a, const Vector& b) {
-	constexpr size_t nbits = typename Vector::value_type::nbits;
-	constexpr size_t es = typename Vector::value_type::es;
+	constexpr size_t nbits = Vector::value_type::nbits;
+	constexpr size_t es = Vector::value_type::es;
 	sw::unum::quire<nbits, es> q = 0;
-	for (size_t i = 0; i < size(a); ++i) {
+	for (size_t i = 0; i < a.size(); ++i) {
 		q += sw::unum::quire_mul(a[i], b[i]);
 		std::cout << a[i] << " * " << b[i] << " = " << a[i] * b[i] << std::endl << "quire " << q << std::endl;
 	}
