@@ -69,6 +69,7 @@ try {
 	std::streamsize prec = cout.precision();
 	cout << setprecision(17);
 
+
 	{
 		using IEEEType = float;
 		IEEEType a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
