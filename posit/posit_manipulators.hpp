@@ -19,6 +19,17 @@ namespace sw {
 
 		// DEBUG/REPORTING HELPERS
 
+		// report the minimum and maximum of a type
+		template<typename Ty>
+		std::string minmax_range() {
+			std::stringstream ss;
+			Ty v(0);
+			ss << std::setw(30) << typeid(v).name() << " ";
+			ss << "min " << std::setw(13) << std::numeric_limits<Ty>::min() << "     ";
+			ss << "max " << std::setw(13) << std::numeric_limits<Ty>::max() << "     ";
+			return ss.str();
+		}
+
 		template<typename Ty>
 		std::string dynamic_range(Ty v) {
 			std::stringstream ss;
@@ -30,8 +41,28 @@ namespace sw {
 			ss << "maximum " << std::setw(12) << std::numeric_limits<Ty>::max() << "     ";
 			return ss.str();
 		}
-
+		template<typename Ty>
+		std::string dynamic_range() {
+			std::stringstream ss;
+			Ty v(0);
+			ss << std::setw(13) << typeid(v).name();
+			ss << "                       ";
+			ss << "minexp scale " << std::setw(10) << std::numeric_limits<Ty>::min_exponent << "     ";
+			ss << "maxexp scale " << std::setw(10) << std::numeric_limits<Ty>::max_exponent << "     ";
+			ss << "minimum " << std::setw(12) << std::numeric_limits<Ty>::min() << "     ";
+			ss << "maximum " << std::setw(12) << std::numeric_limits<Ty>::max() << "     ";
+			return ss.str();
+		}
 		// Report the posit minpos/maxpos scales
+		template<size_t nbits, size_t es>
+		std::string dynamic_range() {
+			std::stringstream ss;
+			ss << " posit<" << std::setw(3) << nbits << "," << es << "> ";
+			ss << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
+			ss << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
+			ss << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>();
+			return ss.str();
+		}
 		template<size_t nbits, size_t es>
 		std::string dynamic_range(const posit<nbits, es>& p) {
 			std::stringstream ss;
