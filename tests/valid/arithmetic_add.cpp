@@ -1,11 +1,18 @@
-// arithmetic_add.cpp: functional tests for addition
+// arithmetic_add.cpp: functional tests for valid addition
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
-
+// Configure the valid template environment
+// first: enable  general or specialized posit configurations
+//#define VALID_FAST_SPECIALIZATION
+// second: enable/disable posit arithmetic exceptions
+#define VALID_THROW_ARITHMETIC_EXCEPTION 0
+// third: enable tracing 
+// when you define VALID_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
+//#define VALID_VERBOSE_OUTPUT
+#define VALID_TRACE_SUB
 #include "../../posit/exceptions.hpp"
 #include "../../bitblock/bitblock.hpp"
 #include "../../posit/value.hpp"
