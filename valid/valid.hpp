@@ -1,87 +1,86 @@
 #pragma once
 // valid.hpp: definition of arbitrary valid number configurations
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <limits>
 
 namespace sw {
+namespace unum {
 
-	namespace unum {
+template<size_t nbits, size_t es>
+class valid {
 
-		template<size_t nbits, size_t es>
-		class valid {
+	static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
+	//static_assert(sizeof(long double) == 16, "Valid library requires compiler support for 128 bit long double.");
 
-			static_assert(es + 3 <= nbits, "Value for 'es' is too large for this 'nbits' value");
-			//static_assert(sizeof(long double) == 16, "Valid library requires compiler support for 128 bit long double.");
+	template <typename T>
+	valid<nbits, es>& _assign(const T& rhs) {
+		constexpr int fbits = std::numeric_limits<T>::digits - 1;
+		value<fbits> v((T)rhs);
 
-			template <typename T>
-			valid<nbits, es>& _assign(const T& rhs) {
-				constexpr int fbits = std::numeric_limits<T>::digits - 1;
-				value<fbits> v((T)rhs);
+		return *this;
+	}
 
-				return *this;
-			}
+public:
+	static constexpr size_t somebits = 10;
 
-		public:
-			static constexpr size_t somebits = 10;
+	valid<nbits, es>() { clear(); }
 
-			valid<nbits, es>() { clear(); }
+	valid(const valid&) = default;
+	valid(valid&&) = default;
 
-			valid(const valid&) = default;
-			valid(valid&&) = default;
+	valid& operator=(const valid&) = default;
+	valid& operator=(valid&&) = default;
 
-			valid& operator=(const valid&) = default;
-			valid& operator=(valid&&) = default;
+	valid(long initial_value) { *this = initial_value; }
+	valid(unsigned long long initial_value) { *this = initial_value; }
+	valid(double initial_value) { *this = initial_value; }
+	valid(long double initial_value) { *this = initial_value; }
 
-			valid(long initial_value) { *this = initial_value; }
-			valid(unsigned long long initial_value) { *this = initial_value; }
-			valid(double initial_value) { *this = initial_value; }
-			valid(long double initial_value) { *this = initial_value; }
+	valid& operator=(int rhs) { return _assign(rhs); }
+	valid& operator=(unsigned long long rhs) { return _assign(rhs); }
+	valid& operator=(double rhs) { return _assign(rhs); }
+	valid& operator=(long double rhs) { return _assign(rhs); }
 
-			valid& operator=(int rhs) { return _assign(rhs); }
-			valid& operator=(unsigned long long rhs) { return _assign(rhs); }
-			valid& operator=(double rhs) { return _assign(rhs); }
-			valid& operator=(long double rhs) { return _assign(rhs); }
+	valid& operator+=(const valid& rhs) {
+		return *this;
+	}
+	valid& operator-=(const valid& rhs) {
+		return *this;
+	}
+	valid& operator*=(const valid& rhs) {
+		return *this;
+	}
+	valid& operator/=(const valid& rhs) {
+		return *this;
+	}
 
-			valid& operator+=(const valid& rhs) {
-				return *this;
-			}
-			valid& operator-=(const valid& rhs) {
-				return *this;
-			}
-			valid& operator*=(const valid& rhs) {
-				return *this;
-			}
-			valid& operator/=(const valid& rhs) {
-				return *this;
-			}
+	// conversion operators
 
-			// conversion operators
-
-			// selectors
-			inline bool isopen() const {
-				return !isclosed();
-			}
-			inline bool isclosed() const {
-				return lubit && uubit;
-			}
-			inline bool isopenlower() const {
-				return lubit;
-			}
-			inline bool isopenupper() const {
-				return uubit;
-			}
-			inline bool getlb(sw::unum::posit<nbits, es>& _lb) const {
-				_lb = lb;
-				return lubit;
-			}
-			inline bool getub(sw::unum::posit<nbits, es>& _ub) const {
-				_ub = ub;
-				return uubit;
-			}
+	// selectors
+	inline bool isopen() const {
+		return !isclosed();
+	}
+	inline bool isclosed() const {
+		return lubit && uubit;
+	}
+	inline bool isopenlower() const {
+		return lubit;
+	}
+	inline bool isopenupper() const {
+		return uubit;
+	}
+	inline bool getlb(sw::unum::posit<nbits, es>& _lb) const {
+		_lb = lb;
+		return lubit;
+	}
+	inline bool getub(sw::unum::posit<nbits, es>& _ub) const {
+		_ub = ub;
+		return uubit;
+	}
 
 	// modifiers
 
