@@ -493,7 +493,7 @@ template<size_t nbits, size_t es>
 bool parse(std::string& txt, posit<nbits, es>& p) {
 	bool bSuccess = false;
 	// check if the txt is of the native posit form: nbits.esXhexvalue
-	std::regex posit_regex("[\\d]+\\.[012345][xX][\\w]+[p]*");
+	std::regex posit_regex("[\\d]+\\.[0123456789][xX][\\w]+[p]*");
 	if (std::regex_match(txt, posit_regex)) {
 		// found a posit representation
 		std::string nbitsStr, esStr, bitStr;

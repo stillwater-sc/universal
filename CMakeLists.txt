@@ -58,7 +58,8 @@ option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"
 option(C_API_LIB_PIC                     "Set to ON to compile C API library with -fPIC"       OFF)
 # number systems and their verification suites
 option(BUILD_BITBLOCK                    "Set to ON to build bitblock tests"                   OFF)
-option(BUILD_REAL_NUMBER                 "Set to ON to build real value tests"                 OFF)
+option(BUILD_REAL_NUMBERS                "Set to ON to build real value tests"                 OFF)
+option(BUILD_INTEGER_NUMBERS             "Set to ON to build integer tests"                    OFF)
 option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 tests"                OFF)
 option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 tests"                OFF)
 option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3 posit tests"          OFF)
@@ -367,7 +368,8 @@ if(BUILD_CI_CHECK)
 	set(BUILD_PLAYGROUND ON)
 	# build the different test/verification suites for each number system
 	set(BUILD_BITBLOCK ON)
-	set(BUILD_REAL_NUMBER ON)
+	set(BUILD_REAL_NUMBERS ON)
+	set(BUILD_INTEGER_NUMBERS ON)
 	set(BUILD_UNUM_TYPE_1 ON)
 	set(BUILD_UNUM_TYPE_2 ON)
 	set(BUILD_UNUM_TYPE_3_POSIT ON)
@@ -387,9 +389,16 @@ if(BUILD_BITBLOCK)
 add_subdirectory("tests/bitblock")
 endif(BUILD_BITBLOCK)
 
-if(BUILD_REAL_NUMBER)
+# Arbitrary integers tests
+if(BUILD_INTEGER_NUMBERS)
+add_subdirectory("tests/decimal")
+add_subdirectory("tests/integer")
+endif(BUILD_INTEGER_NUMBERS)
+
+# Arbitrary reals tests
+if(BUILD_REAL_NUMBERS)
 add_subdirectory("tests/value")
-endif(BUILD_REAL_NUMBER)
+endif(BUILD_REAL_NUMBERS)
 
 if(BUILD_UNUM_TYPE_1)
 add_subdirectory("tests/unum")
