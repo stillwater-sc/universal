@@ -1,3 +1,4 @@
+#pragma once
 // fdp.hpp :  include file containing templated C++ interfaces to fused dot product
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
