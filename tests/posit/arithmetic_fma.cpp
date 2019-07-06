@@ -3,7 +3,9 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include "common.hpp"
+#include <cstdint>	// uint8_t, etc.
+#include <cmath>	// for frexp/frexpf and std::fma
+#include <cfenv>	// feclearexcept/fetestexcept
 
 // minimum set of include files to reflect source code dependencies
 // enable/disable posit arithmetic exceptions
