@@ -1,16 +1,14 @@
 // decode.cpp: functional tests of the posit decode method
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "common.hpp"
 
 #define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_DECODE
 
 // minimum set of include files to reflect source code dependencies
-#include "../../posit/posit.hpp"
+#include "universal/posit/posit.hpp"
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
 

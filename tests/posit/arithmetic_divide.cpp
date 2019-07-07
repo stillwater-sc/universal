@@ -15,12 +15,12 @@
 #define POSIT_TRACE_DIV
 
 // minimum set of include files to reflect source code dependencies
-#include "../../posit/posit.hpp"
-#include "../../posit/numeric_limits.hpp"
-#include "../../posit/specializations.hpp"
+#include "universal/posit/posit.hpp"
+#include "universal/posit/numeric_limits.hpp"
+#include "universal/posit/specializations.hpp"
 // posit type manipulators such as pretty printers
-#include "../../posit/posit_manipulators.hpp"
-#include "../../posit/math_functions.hpp"
+#include "universal/posit/posit_manipulators.hpp"
+#include "universal/posit/math_functions.hpp"
 // test helpers
 #include "../test_helpers.hpp"
 #include "../posit_math_helpers.hpp"
