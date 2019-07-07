@@ -1,11 +1,10 @@
 //  bitblock_test_helpers.cpp : bitblock-based arithmetic test helpers
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 namespace sw {
-
 namespace unum {
 
 template<size_t nbits, size_t rbits>
@@ -36,9 +35,9 @@ void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const 
 		<< std::endl;
 }
 
-
+// verify bitset addition operator
 template<size_t nbits>
-int ValidateBitsetAddition(bool bReportIndividualTestCases = false) {
+int VerifyBitsetAddition(bool bReportIndividualTestCases = false) {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	bool carry;
@@ -69,8 +68,9 @@ int ValidateBitsetAddition(bool bReportIndividualTestCases = false) {
 	return nrOfFailedTestCases;
 }
 
+// verify bitset subtraction operator
 template<size_t nbits>
-int ValidateBitsetSubtraction(bool bReportIndividualTestCases = false) {
+int VerifyBitsetSubtraction(bool bReportIndividualTestCases = false) {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	bool borrow = false;
@@ -100,8 +100,9 @@ int ValidateBitsetSubtraction(bool bReportIndividualTestCases = false) {
 	return nrOfFailedTestCases;
 }
 
+// verify bitset multiplication operator
 template<size_t nbits>
-int ValidateBitsetMultiplication(bool bReportIndividualTestCases = false) {
+int VerifyBitsetMultiplication(bool bReportIndividualTestCases = false) {
 	constexpr size_t rbits = 2 * nbits;
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
@@ -128,8 +129,9 @@ int ValidateBitsetMultiplication(bool bReportIndividualTestCases = false) {
 	return nrOfFailedTestCases;
 }
 
+// verify bitset division operator
 template<size_t nbits>
-int ValidateBitsetDivision(bool bReportIndividualTestCases = false) {
+int VerifyBitsetDivision(bool bReportIndividualTestCases = false) {
 	constexpr size_t rbits = 2 * nbits;
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
