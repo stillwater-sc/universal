@@ -1,6 +1,0 @@
-set(UNUM_COMMON_CONFIG "${UNUM_DIR}/tools/cmake/UNUMCommon.cmake")
-if( EXISTS ${UNUM_COMMON_CONFIG})
-	include(${UNUM_COMMON_CONFIG})
-else()
-	message(ERROR "Could not find the common unum configuration.")
-endif()
