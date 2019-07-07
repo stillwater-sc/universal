@@ -1,13 +1,12 @@
 // tables.cpp: create detailed component tables that spell out all the components that make up a posit
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-201 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
 // enable/disable special posit format I/O
 #define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 1
-#include <posit>
+#include <universal/posit/posit>
 
 /*
   Posit values are a combination of 

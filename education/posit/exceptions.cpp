@@ -1,13 +1,13 @@
 // exception.cpp : special posit/quire arithmetic exceptions to be used by applications
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
+// Configure the posit library to enable arithmetic exceptions
 // enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <posit>
+#include <universal/posit/posit>
 
 int main()
 try {

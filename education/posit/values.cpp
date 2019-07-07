@@ -1,13 +1,12 @@
 //  values.cpp : tests on values in scientific notation (sign, scale, fraction)
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_CONVERSION
-#include <posit>
+#include <universal/posit/posit>
 
 /*-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
 //
