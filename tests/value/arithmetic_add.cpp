@@ -1,6 +1,6 @@
 // arithmetic_add.cpp: functional tests for arithmetic add of values
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -12,9 +12,10 @@
 // turn on tracing: kinda misleading that these flags carry the POSIT prefix
 #define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_ADD
-#include "../../posit/exceptions.hpp"
-#include "../../bitblock/bitblock.hpp"
-#include "../../posit/value.hpp"
+#include "universal/posit/exceptions.hpp"
+#include "universal/bitblock/bitblock.hpp"
+#include "universal/posit/value.hpp"
+// test helpers
 #include "../test_helpers.hpp"
 
 // (sign, scale, fraction) representation with sbits in scale and fbits in fraction

@@ -4,17 +4,15 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
-
 // when you define POSIT_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_SQRT
 
 // minimum set of include files to reflect source code dependencies
-#include "../../posit/posit.hpp"
-#include "../../posit/posit_manipulators.hpp"
-#include "../../posit/math/constants.hpp"   // for m_pi etc.
-#include "../../posit/math/trigonometry.hpp"
+#include "universal/posit/posit.hpp"
+#include "universal/posit/posit_manipulators.hpp"
+#include "universal/posit/math/constants.hpp"   // for m_pi etc.
+#include "universal/posit/math/trigonometry.hpp"
 #include "../test_helpers.hpp"
 #include "../posit_math_helpers.hpp"
 
