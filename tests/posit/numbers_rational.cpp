@@ -32,10 +32,10 @@ try {
 	using namespace sw::unum;
 	using namespace sw::sequences;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	using Scalar = uint64_t;
+	//using Scalar = uint64_t;
 
 	streamsize precision = cout.precision();
 	for (unsigned i = 40; i < 50; i++) {

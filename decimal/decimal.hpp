@@ -203,7 +203,6 @@ public:
 			// found a decimal representation
 			setzero();
 			auto it = digits.begin();
-			bool neg = false;
 			if (*it == '-') {
 				setneg();
 				++it;
@@ -224,7 +223,7 @@ protected:
 
 	template<typename Ty>
 	decimal& float_assign(Ty& rhs) {
-
+		return *this;
 	}
 
 private:
@@ -245,7 +244,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
 	// we need to transform the integer into a string
 	std::stringstream ss;
 
-	std::streamsize width = ostr.width();
+	//std::streamsize width = ostr.width();
 	std::ios_base::fmtflags ff;
 	ff = ostr.flags();
 	ss.flags(ff);
