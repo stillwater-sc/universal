@@ -4,7 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <tuple>
-#include <posit_c_api.h>
+#include <universal/posit/posit_c_api.h>
+
 // configure the C++ library
 // default behavior that is kept
 // POSIT_ROUNDING_ERROR_FREE_IO_FORMAT
@@ -21,7 +22,7 @@
 #define POSIT_FAST_POSIT_128_4 0
 #define POSIT_FAST_POSIT_256_5 0
 // Now include the C++ library
-#include <posit>
+#include <universal/posit/posit>
 
 
 // marshal takes a positN_t and marshals it into a raw bitblock

@@ -9,7 +9,7 @@
 #include <stdbool.h>
 #include <math.h>  // for NAN and INFINITY
 
-#include <positctypes.h>
+#include <universal/posit/positctypes.h>
 
 static const uint8_t posit8_sign_mask = 0x80;
 
