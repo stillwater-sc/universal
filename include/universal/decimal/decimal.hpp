@@ -14,6 +14,8 @@
 #include <regex>
 #include <algorithm>
 
+#include "universal/string/strmanip.hpp"
+
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 
@@ -50,31 +52,6 @@ namespace unum {
 	// Forward references
 class decimal;
 template<typename Ty> void convert_to_decimal(Ty v, decimal& d);
-
-std::string& ltrim(std::string& s)
-{
-	auto it = std::find_if(s.begin(), s.end(),
-		[](char c) {
-		return !std::isspace<char>(c, std::locale::classic());
-	});
-	s.erase(s.begin(), it);
-	return s;
-}
-
-std::string& rtrim(std::string& s)
-{
-	auto it = std::find_if(s.rbegin(), s.rend(),
-		[](char c) {
-		return !std::isspace<char>(c, std::locale::classic());
-	});
-	s.erase(it.base(), s.end());
-	return s;
-}
-
-std::string& trim(std::string& s)
-{
-	return ltrim(rtrim(s));
-}
 
 // Arbitrary precision decimal number
 class decimal : public std::vector<char> {
@@ -421,6 +398,7 @@ private:
 
 ////////////////// helper functions
 
+// Convert integer types to a decimal representation
 template<typename Ty>
 void convert_to_decimal(Ty v, decimal& d) {
 	using namespace std;
@@ -455,7 +433,7 @@ void convert_to_decimal(Ty v, decimal& d) {
 
 /// stream operators
 
-// generate an integer format ASCII format
+// generate an ASCII decimal format and send to ostream
 inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
 	// to make certain that setw and left/right operators work properly
 	// we need to transform the integer into a string
@@ -472,7 +450,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
 	return ostr << ss.str();
 }
 
-// read an ASCII integer format
+// read an ASCII decimal format from an istream
 inline std::istream& operator>> (std::istream& istr, decimal& p) {
 	std::string txt;
 	istr >> txt;
@@ -483,25 +461,26 @@ inline std::istream& operator>> (std::istream& istr, decimal& p) {
 }
 
 /// decimal binary arithmetic operators
-// BINARY ADDITION
+
+// binary addition of decimal numbers
 inline decimal operator+(const decimal& lhs, const decimal& rhs) {
 	decimal sum = lhs;
 	sum += rhs;
 	return sum;
 }
-// BINARY SUBTRACTION
+// binary subtraction of decimal numbers
 inline decimal operator-(const decimal& lhs, const decimal& rhs) {
 	decimal diff = lhs;
 	diff -= rhs;
 	return diff;
 }
-// BINARY MULTIPLICATION
+// binary mulitplication of decimal numbers
 inline decimal operator*(const decimal& lhs, const decimal& rhs) {
 	decimal mul = lhs;
 	mul *= rhs;
 	return mul;
 }
-// BINARY DIVISION
+// binary division of decimal numbers
 inline decimal operator/(const decimal& lhs, const decimal& rhs) {
 	decimal ratio = lhs;
 	ratio /= rhs;
@@ -511,13 +490,16 @@ inline decimal operator/(const decimal& lhs, const decimal& rhs) {
 /// logic operators
 
 	// decimal - decimal logic operators
+// equality test
 bool operator==(const decimal& lhs, const decimal& rhs) {
 	bool areEqual = std::equal(lhs.begin(), lhs.end(), rhs.begin());
 	return areEqual;
 }
+// inequality test
 bool operator!=(const decimal& lhs, const decimal& rhs) {
 	return !operator==(lhs, rhs);
 }
+// less-than test
 bool operator<(const decimal& lhs, const decimal& rhs) {
 	// this logic assumes that there is no padding in the operands
 	size_t l = lhs.size();
@@ -535,12 +517,15 @@ bool operator<(const decimal& lhs, const decimal& rhs) {
 	// at this point we know the two operands are the same
 	return false;
 }
+// greater-than test
 bool operator>(const decimal& lhs, const decimal& rhs) {
 	return operator<(rhs, lhs);
 }
+// less-or-equal test
 bool operator<=(const decimal& lhs, const decimal& rhs) {
 	return operator<(lhs, rhs) || operator==(lhs, rhs);
 }
+// greater-or-equal test
 bool operator>=(const decimal& lhs, const decimal& rhs) {
 	return !operator<(lhs, rhs);
 }
