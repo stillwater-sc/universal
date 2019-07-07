@@ -4,14 +4,13 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
 // Configure the posit template environment
 // first: enable fast specialized posit<16,1>
 //#define POSIT_FAST_SPECIALIZATION
 #define POSIT_FAST_POSIT_16_1 1
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <posit>
+#include <universal/posit/posit>
 #include "../../test_helpers.hpp"
 #include "../../posit_math_helpers.hpp"
 #include "../../posit_test_randoms.hpp"
