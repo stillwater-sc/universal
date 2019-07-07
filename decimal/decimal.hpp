@@ -49,37 +49,7 @@ namespace unum {
 
 	// Forward references
 class decimal;
-
-template<typename Ty>
-void convert_to_decimal(Ty v, decimal& d) {
-	using namespace std;
-	//cout << numeric_limits<Ty>::digits << " max value " << numeric_limits<Ty>::max() << endl;
-	d.setzero();
-	bool sign = false;
-	if (v == 0) return;
-	if (numeric_limits<Ty>::is_signed) {
-		if (v < 0) {
-			sign = true; // negative number
-			// transform to sign-magnitude on positive side
-			v *= -1;
-		}
-	}
-	int msb = numeric_limits<Ty>::digits;
-	uint64_t mask = 0x1;
-	// can't use assignment operator as it would yield an infinite loop calling convert
-	d.push_back(0); // initialize the decimal value to 0
-	decimal base;
-	base.push_back(1); // set to the value of 1, and double it each iteration
-	while (v) {
-		if (v & mask) {
-			d += base;
-		}
-		base += base;
-		v >>= 1;
-	}
-	// finally set the sign
-	d.setsign(sign);
-}
+template<typename Ty> void convert_to_decimal(Ty v, decimal& d);
 
 std::string& ltrim(std::string& s)
 {
@@ -448,6 +418,39 @@ private:
 	friend bool operator<=(const decimal& lhs, const decimal& rhs);
 	friend bool operator>=(const decimal& lhs, const decimal& rhs);
 };
+
+////////////////// helper functions
+
+template<typename Ty>
+void convert_to_decimal(Ty v, decimal& d) {
+	using namespace std;
+	//cout << numeric_limits<Ty>::digits << " max value " << numeric_limits<Ty>::max() << endl;
+	d.setzero();
+	bool sign = false;
+	if (v == 0) return;
+	if (numeric_limits<Ty>::is_signed) {
+		if (v < 0) {
+			sign = true; // negative number
+			// transform to sign-magnitude on positive side
+			v *= -1;
+		}
+	}
+	int msb = numeric_limits<Ty>::digits;
+	uint64_t mask = 0x1;
+	// can't use assignment operator as it would yield an infinite loop calling convert
+	d.push_back(0); // initialize the decimal value to 0
+	decimal base;
+	base.push_back(1); // set to the value of 1, and double it each iteration
+	while (v) {
+		if (v & mask) {
+			d += base;
+		}
+		base += base;
+		v >>= 1;
+	}
+	// finally set the sign
+	d.setsign(sign);
+}
 
 ////////////////// DECIMAL operators
 
