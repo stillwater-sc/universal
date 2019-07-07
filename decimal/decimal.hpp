@@ -435,13 +435,12 @@ void convert_to_decimal(Ty v, decimal& d) {
 			v *= -1;
 		}
 	}
-	int msb = numeric_limits<Ty>::digits;
 	uint64_t mask = 0x1;
 	// can't use assignment operator as it would yield an infinite loop calling convert
 	d.push_back(0); // initialize the decimal value to 0
 	decimal base;
 	base.push_back(1); // set to the value of 1, and double it each iteration
-	while (v) {
+	while (v) { // minimum loop iterations; exits when no bits left
 		if (v & mask) {
 			d += base;
 		}
