@@ -14,12 +14,12 @@
 static const uint8_t posit8_1_sign_mask = 0x80;
 
 // characterization tests
-inline bool posit8_1_isnar(posit8_1_t p) { return (p.v == posit8_1_sign_mask); }
+inline bool posit8_1_isnar(posit8_1_t p) { return (p.v == 0x80); }
 inline bool posit8_1_iszero(posit8_1_t p) { return (p.v == 0x00); }
 inline bool posit8_1_isone(posit8_1_t p) { return (p.v == 0x40); }      // pattern 010000...
 inline bool posit8_1_isminusone(posit8_1_t p) { return (p.v == 0xC0); } // pattern 110000...
-inline bool posit8_1_isneg(posit8_1_t p) { return (p.v & posit8_1_sign_mask); }
-inline bool posit8_1_ispos(posit8_1_t p) { return !(p.v & posit8_1_sign_mask); }
+inline bool posit8_1_isneg(posit8_1_t p) { return (p.v & 0x80); }
+inline bool posit8_1_ispos(posit8_1_t p) { return !(p.v & 0x80); }
 inline bool posit8_1_ispowerof2(posit8_1_t p) { return !(p.v & 0x1); }
 
 // decode takes the raw bits of the posit, and returns the regime, m, and returns the fraction bits in 'remainder'

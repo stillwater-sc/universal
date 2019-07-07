@@ -211,7 +211,7 @@ bool parse(std::string& txt, integer<nbits>& i) {
 	bool bSuccess = false;
 	// check if the txt is an integer form: [0123456789]+
 	std::regex decimal_regex("[0123456789]+");
-	std::regex hex_regex("[0x][0123456789aAbBcCdDeEfF]")
+	std::regex hex_regex("[0x][0123456789aAbBcCdDeEfF]");
 	if (std::regex_match(txt, decimal_regex)) {
 		// found a posit representation
 		std::string digitStr;
