@@ -1,11 +1,9 @@
 //  basic_operators.cpp : examples of the basic arithmetic operators using posits
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "common.hpp"
-#include <posit>
+#include <universal/posit/posit>
 
 // quick helper to report on a posit's specialness
 template<size_t nbits, size_t es>
