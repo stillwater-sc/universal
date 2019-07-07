@@ -1,10 +1,8 @@
 // conversion.cpp : functional tests for conversion operators to posit numbers
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "common.hpp"
 
 // if you want to trace the posit intermediate results
 // #define POSIT_VERBOSE_OUTPUT
@@ -12,10 +10,11 @@
 // enable the ability to use literals in binary logic and arithmetic operators
 #define POSIT_ENABLE_LITERALS 1
 // minimum set of include files to reflect source code dependencies
-#include "../../posit/posit.hpp"
-#include "../../posit/posit_decoded.hpp"
-#include "../../posit/posit_functions.hpp"
-#include "../../posit/posit_manipulators.hpp"
+#include "universal/posit/posit.hpp"
+#include "universal/posit/posit_decoded.hpp"
+#include "universal/posit/posit_functions.hpp"
+#include "universal/posit/posit_manipulators.hpp"
+// test helpers
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
 

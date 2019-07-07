@@ -17,11 +17,11 @@
 #define POSIT_ENABLE_LITERALS 1
 
 // minimum set of include files to reflect source code dependencies
-#include "../../posit/posit.hpp"
-#include "../../posit/numeric_limits.hpp"
-#include "../../posit/specializations.hpp"
+#include "universal/posit/posit.hpp"
+#include "universal/posit/numeric_limits.hpp"
+#include "universal/posit/specializations.hpp"
 // posit type manipulators such as pretty printers
-#include "../../posit/posit_manipulators.hpp"
+#include "universal/posit/posit_manipulators.hpp"
 // test helpers
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"

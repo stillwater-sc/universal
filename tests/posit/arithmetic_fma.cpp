@@ -10,9 +10,9 @@
 // minimum set of include files to reflect source code dependencies
 // enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-#include "../../posit/posit.hpp"
+#include "universal/posit/posit.hpp"
 // posit type manipulators such as pretty printers
-#include "../../posit/posit_manipulators.hpp"
+#include "universal/posit/posit_manipulators.hpp"
 // test helpers
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
