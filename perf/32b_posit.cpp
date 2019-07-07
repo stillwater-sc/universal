@@ -4,13 +4,12 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
 // Configure the posit template environment
 // first: enable fast specialized posit<32,2>
 #define POSIT_FAST_POSIT_32_2 1
 // second: disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-#include <posit>
+#include <universal/posit/posit>
 #include "posit_performance.hpp"
 
 int main(int argc, char** argv)
