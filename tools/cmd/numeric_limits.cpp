@@ -1,11 +1,9 @@
-// numeric_limits.cpp: show the numeric limits of the compiler environment
+// numeric_limits.cpp: cli to show the numeric limits of the compiler environment
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "common.hpp"
-#include <posit>
+#include <universal/posit/posit>
 
 //#define POSIT_DECODED_CLASS
 #ifdef POSIT_DECODED_CLASS
