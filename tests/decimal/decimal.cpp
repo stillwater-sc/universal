@@ -19,8 +19,8 @@ namespace sw {
 				<< " " << op << " "
 				<< std::setw(DECIMAL_TABLE_WIDTH) << rhs
 				<< " != "
-				<< std::setw(DECIMAL_TABLE_WIDTH) << ref << " instead it yielded "
-				<< std::setw(DECIMAL_TABLE_WIDTH) << dref
+				<< std::setw(DECIMAL_TABLE_WIDTH) << dref << " it should have been "
+				<< std::setw(DECIMAL_TABLE_WIDTH) << ref
 				<< std::setprecision(5)
 				<< std::endl;
 		}
@@ -31,16 +31,18 @@ namespace sw {
 				<< " " << op << " "
 				<< std::setw(DECIMAL_TABLE_WIDTH) << rhs
 				<< " == "
-				<< std::setw(DECIMAL_TABLE_WIDTH) << ref << " correctly yielded "
-				<< std::setw(DECIMAL_TABLE_WIDTH) << dref
+				<< std::setw(DECIMAL_TABLE_WIDTH) << dref << " equal to the reference "
+				<< std::setw(DECIMAL_TABLE_WIDTH) << ref
 				<< std::setprecision(5)
 				<< std::endl;
 		}
-		int ValidateAddition(std::string tag, long ub, bool bReportIndividualTestCases) {
+
+		// verification of addition
+		int VerifyAddition(std::string tag, long ub, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
-			for (long i = -ub; i < ub; ++i) {
+			for (long i = -ub; i <= ub; ++i) {
 				decimal d1 = i;
-				for (long j = -ub; j < ub; ++j) {
+				for (long j = -ub; j <= ub; ++j) {
 					decimal d2 = j;
 					long ref = i + j;
 					decimal dref = d1 + d2;
@@ -49,7 +51,28 @@ namespace sw {
 						if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "add", d1, d2, dref, ref);
 					}
 					else {
-						//if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "add", d1, d2, dref, ref);
+						// if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "add", d1, d2, dref, ref);
+					}
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// verification of subtraction
+		int VerifySubtraction(std::string tag, long ub, bool bReportIndividualTestCases) {
+			int nrOfFailedTests = 0;
+			for (long i = -ub; i <= ub; ++i) {
+				decimal d1 = i;
+				for (long j = -ub; j <= ub; ++j) {
+					decimal d2 = j;
+					long ref = i - j;
+					decimal dref = d1 - d2;
+					if (dref != ref) {
+						++nrOfFailedTests;
+						if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "add", d1, d2, dref, ref);
+					}
+					else {
+						// if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "add", d1, d2, dref, ref);
 					}
 				}
 			}
@@ -58,34 +81,22 @@ namespace sw {
 	}
 }
 
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
-
-int main()
-try {
+void examples() {
 	using namespace std;
 	using namespace sw::unum;
-
-	//bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
-
-	std::string tag = "Decimal Arithmetic tests failed";
-
-#if MANUAL_TESTING
 	decimal d1, d2, d3;
 	
 //	d1.parse("0000"); cout << "bad parse: " << d1 << endl;
 
-	d1 = 12345;
-	d2 =   -78;
+	d1 = -49;
+	d2 =  50;
 	d3 = d2 + d1;
 	cout << d1 << " + " << d2 << " = " << d3 << endl;
 
-	nrOfFailedTestCases += ValidateAddition("addition", 10, true);
-
-	exit(0);
 	//cin >> d2;
 	//cout << d2 << endl;
+
+
 
 	std::string val = "1234567890";
 	if (!d1.parse(val)) {
@@ -129,12 +140,33 @@ try {
 	cout << " char       = " << (uint16_t)utest << endl;
 	signed char test = 127;
 	cout << "signed char = " << (int)test << endl;
+}
 
+#define MANUAL_TESTING 1
+#define STRESS_TESTING 0
+
+int main()
+try {
+	using namespace std;
+	using namespace sw::unum;
+
+	bool bReportIndividualTestCases = false;
+	int nrOfFailedTestCases = 0;
+
+	std::string tag = "Decimal Arithmetic tests failed";
+
+#if MANUAL_TESTING
+
+	nrOfFailedTestCases += VerifyAddition("addition", 100, bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySubtraction("subtraction", 100, bReportIndividualTestCases);
 
 #else
 	std::cout << "Decimal Arithmetic verfication" << std::endl;
 
 #ifdef STRESS_TESTING
+
+	nrOfFailedTestCases += VerifyAddition("addition", 1000, true);
+	nrOfFailedTestCases += VerifySubtraction("subtraction", 1000, true);
 
 
 #endif // STRESS_TESTING
