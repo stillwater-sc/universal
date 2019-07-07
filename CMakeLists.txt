@@ -2,7 +2,8 @@
 # Set minimum version of CMake. Since we are using the VERSION option of the
 # project command, we need at least 3.0. To honor the amazing work that
 # the folks at KitWare have done for the open source community, we are
-# going to specify a recent version.
+# going to specify a recent version. 
+# As of UNIVERSAL v2.0 December 2018
 # Ubuntu 16.04 LTS runs cmake 3.5.1
 # Ubuntu 18.04 LTS runs cmake 3.10.2
 # container runs cmake 3.7.1
@@ -185,7 +186,7 @@ elseif(MSVC)
 	# Note that the MSVC compiler does not, and never will, support a C++11, C++03, or C++98 standards version switch.
 	# Also, the value of the __cplusplus macro is not affected by the /permissive- switch.
 	#set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
-	# for the moment turn off since we are getting: cl : COmmand line warning D9002: ignoring unknown option '/Zc:__cplusplus`
+	# for the moment turn off since we are getting: cl : Command line warning D9002: ignoring unknown option '/Zc:__cplusplus`
 	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /std:c++14")
 
 	# Optimization
@@ -252,13 +253,23 @@ if(MSVC)
 endif()
 
 ####
-# Set posit include directory
-include_directories("./posit")
+# Set UNIVERSAL include directory that contains all the different number systems
+# universal/unum
+# universal/unum2
+# universal/posit
+# universal/valid
+# universal/integer
+# universal/decimal
+include_directories("./include")
 
-# Possibly not under Windows
-# What is this needed for? On linux it seems to conflict with -std=gnu++14,
+# What is this needed for? On linux -std=c++14 seems to conflict with -std=gnu++14,
 # which is being emitted presumably because CMAKE_CXX_STANDARD has been set to 14.
+if(MSVC)
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+endif(MSVC)
+if(UNIX)
+#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+endif(UNIX)
 
 ####
 # macro to read all cpp files in a directory
