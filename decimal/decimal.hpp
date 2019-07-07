@@ -258,29 +258,28 @@ public:
 	}
 
 	// arithmetic operators
-	decimal& operator+=(const decimal& d) {
-		if (negative != d.negative) {  // different signs
-			decimal _d(d);
-			_d.setsign(!d.sign());
-			return operator-=(_d);
+	decimal& operator+=(const decimal& rhs) {
+		decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
+		if (negative != rhs.negative) {  // different signs
+			_rhs.setsign(!rhs.sign());
+			return operator-=(_rhs);
 		}
 		else {
 			// same sign implies this->negative is invariant
 		}
 		size_t l = size();
-		size_t r = d.size();
-		decimal _d(d);
+		size_t r = _rhs.size();
 		// zero pad the shorter decimal
 		if (l < r) {
 			insert(end(), r-l, 0);
 		}
 		else {
-			_d.insert(_d.end(), l - r, 0);
+			_rhs.insert(_rhs.end(), l - r, 0);
 		}
 		decimal::iterator lit = begin();
-		decimal::iterator rit = _d.begin();
+		decimal::iterator rit = _rhs.begin();
 		char carry = 0;
-		for (; lit != end() || rit != _d.end(); ++lit, ++rit) {
+		for (; lit != end() || rit != _rhs.end(); ++lit, ++rit) {
 			*lit += *rit + carry;
 			if (*lit > 9) {
 				carry = 1;
@@ -293,32 +292,36 @@ public:
 		if (carry) push_back(1);
 		return *this;
 	}
-	decimal& operator-=(const decimal& d) {
-		if (negative != d.negative) {
-			decimal _d(d);
-			_d.setsign(!d.sign());
-			return operator+=(_d);
+	decimal& operator-=(const decimal& rhs) {
+		decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
+		bool sign = this->sign();
+		if (negative != rhs.negative) {
+			_rhs.setsign(!rhs.sign());
+			return operator+=(_rhs);
 		}
-		// largest value will be subtracted from
+		// largest value must be subtracted from
 		size_t l = size();
-		size_t r = d.size();
-		decimal _d(d);
+		size_t r = _rhs.size();
 		// zero pad the shorter decimal
 		if (l < r) {
 			insert(end(), r - l, 0);
-			std::swap(*this, _d);
+			std::swap(*this, _rhs);
+			sign = !sign;
 		}
 		else if (r < l) {
-			_d.insert(_d.end(), l - r, 0);
+			_rhs.insert(_rhs.end(), l - r, 0);
 		}
 		else {
-			// the are the same size, so need to check their magnitude
-			if (*this < _d) std::swap(*this, _d);
+			// the operands are the same size, thus we need to check their magnitude
+			if (*this < _rhs) {
+				std::swap(*this, _rhs);
+				sign = !sign;
+			}
 		}
 		decimal::iterator lit = begin();
-		decimal::iterator rit = _d.begin();
+		decimal::iterator rit = _rhs.begin();
 		char borrow = 0;
-		for (; lit != end() || rit != _d.end(); ++lit, ++rit) {			
+		for (; lit != end() || rit != _rhs.end(); ++lit, ++rit) {			
 			if (*rit > *lit - borrow) {
 				*lit = 10 + *lit - borrow - *rit;
 				borrow = 1;
@@ -328,7 +331,9 @@ public:
 				borrow = 0;
 			}
 		}
-		if (borrow) std::cout << "can this happen" << std::endl;
+		if (borrow) std::cout << "can this happen?" << std::endl;
+		unpad();
+		this->setsign(sign);
 		return *this;
 	}
 	decimal& operator*=(const decimal& d) {
@@ -351,6 +356,14 @@ public:
 	inline void setsign(bool sign) { negative = sign; }
 	inline void setneg() { negative = true; }
 	inline void setpos() { negative = false; }
+
+	// remove any leading zeros from a decimal representation
+	void unpad() {
+		int n = (int)size();
+		for (int i = n - 1; i > 0; --i) {
+			if (operator[](i) == 0) pop_back();
+		}
+	}
 
 	// read a decimal ASCII format and make a decimal type out of it
 	bool parse(std::string digits) {
@@ -504,18 +517,21 @@ bool operator!=(const decimal& lhs, const decimal& rhs) {
 	return !operator==(lhs, rhs);
 }
 bool operator<(const decimal& lhs, const decimal& rhs) {
+	// this logic assumes that there is no padding in the operands
 	size_t l = lhs.size();
 	size_t r = rhs.size();
 	if (l < r) return true;
 	if (l > r) return false;
-	// numbers are the same size
+	// numbers are the same size, need to compare magnitude
 	decimal::const_reverse_iterator ritl = lhs.rbegin();
 	decimal::const_reverse_iterator ritr = rhs.rbegin();
 	for (; ritl != lhs.rend() || ritr != rhs.rend(); ++ritl, ++ritr) {
+		if (*ritl < *ritr) return true;
 		if (*ritl > *ritr) return false;
+		// if the digits are equal we need to check the next set
 	}
-	if (lhs == rhs) return false;
-	return true;
+	// at this point we know the two operands are the same
+	return false;
 }
 bool operator>(const decimal& lhs, const decimal& rhs) {
 	return operator<(rhs, lhs);
