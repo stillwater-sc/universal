@@ -4,13 +4,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
-#include <vector>
-#include <algorithm>
-
-#include "../../posit/posit.hpp"
-#include "../../posit/posit_manipulators.hpp"
-#include "../../functions/sequences.hpp"
+#include "universal/posit/posit.hpp"
+#include "universal/posit/posit_manipulators.hpp"
+#include "../functions/sequences.hpp"
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
 

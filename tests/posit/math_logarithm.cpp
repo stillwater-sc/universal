@@ -1,19 +1,17 @@
 // math_logarithm.cpp: functional tests for logarithms
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "common.hpp"
 
 // when you define POSIT_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_SQRT
 
 // minimum set of include files to reflect source code dependencies
-#include "../../posit/posit.hpp"
-#include "../../posit/posit_manipulators.hpp"
-#include "../../posit/math/logarithm.hpp"
+#include "universal/posit/posit.hpp"
+#include "universal/posit/posit_manipulators.hpp"
+#include "universal/posit/math/logarithm.hpp"
 #include "../test_helpers.hpp"
 #include "../posit_math_helpers.hpp"
 
