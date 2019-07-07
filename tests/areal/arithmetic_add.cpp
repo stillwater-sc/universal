@@ -4,13 +4,13 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
 // minimum set of include files to reflect source code dependencies
-#include "../../posit/exceptions.hpp"
-#include "../../posit/trace_constants.hpp"
-#include "../../bitblock/bitblock.hpp"
-#include "../../posit/bit_functions.hpp"
-#include "../../areal/areal.hpp"
+#include "universal/posit/exceptions.hpp"
+#include "universal/posit/trace_constants.hpp"
+#include "universal/bitblock/bitblock.hpp"
+#include "universal/posit/bit_functions.hpp"
+#include "universal/areal/areal.hpp"
+// test helpers
 #include "../test_helpers.hpp"
 #include "areal_test_helpers.hpp"
 

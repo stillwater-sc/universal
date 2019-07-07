@@ -8,9 +8,9 @@
 #include <limits>
 #include <bitset>
 
-#include "exponent.hpp"
-#include "fraction.hpp"
-#include "value.hpp"
+#include "universal/posit/exponent.hpp"
+#include "universal/posit/fraction.hpp"
+#include "universal/posit/value.hpp"
 
 namespace sw {
 	namespace unum {

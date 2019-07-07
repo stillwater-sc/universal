@@ -1,16 +1,16 @@
 // 8dot2_float.cpp: Functionality tests for 8bit precision floats
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
 // minimum set of include files to reflect source code dependencies
 // TODO: the dependency on posit exceptions and trace_constants need to be removed
-#include "../../posit/exceptions.hpp"
-#include "../../posit/trace_constants.hpp"
-#include "../../bitblock/bitblock.hpp"
-#include "../../areal/areal.hpp"
+#include "universal/posit/exceptions.hpp"
+#include "universal/posit/trace_constants.hpp"
+#include "universal/bitblock/bitblock.hpp"
+#include "universal/areal/areal.hpp"
+// test helpers
 #include "../test_helpers.hpp"
 #include "areal_test_helpers.hpp"
 

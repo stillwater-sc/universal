@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
-#include "../../decimal/decimal.hpp"
+#include "universal/decimal/decimal.hpp"
 
 namespace sw {
 	namespace unum {
@@ -157,8 +157,14 @@ try {
 
 #if MANUAL_TESTING
 
-	nrOfFailedTestCases += VerifyAddition("addition", 100, bReportIndividualTestCases);
-	nrOfFailedTestCases += VerifySubtraction("subtraction", 100, bReportIndividualTestCases);
+	decimal d1, d2, d3;
+
+	d1.parse("50000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
+	cout << d1 << endl;
+	cout << d1 + d1 << endl;
+
+	//nrOfFailedTestCases += VerifyAddition("addition", 100, bReportIndividualTestCases);
+	//nrOfFailedTestCases += VerifySubtraction("subtraction", 100, bReportIndividualTestCases);
 
 #else
 	std::cout << "Decimal Arithmetic verfication" << std::endl;
