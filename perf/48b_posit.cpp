@@ -1,15 +1,14 @@
 // 48b_posit.cpp: performance characterization of standard posit<48,3> configuration
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
 // first: enable fast specialized posit<48,3>
 #define POSIT_FAST_POSIT_48_3 0
 // second: disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-#include <posit>
+#include <universal/posit/posit>
 #include "posit_performance.hpp"
 
 int main(int argc, char** argv)
