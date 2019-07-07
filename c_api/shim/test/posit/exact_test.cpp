@@ -1,4 +1,9 @@
-#include <posit_c_api.h>
+// exact_test.cpp: functional tests for C API
+//
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/posit/posit_c_api.h>
 #if !(defined(_MSC_VER))
 #include <sys/time.h>
 #endif

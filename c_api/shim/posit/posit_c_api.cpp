@@ -275,31 +275,31 @@ extern "C" {
 #define POSIT_IMPLS
 
 #define POSIT_NBITS 4
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 8
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 16
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 32
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 64
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 128
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 256
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 }
