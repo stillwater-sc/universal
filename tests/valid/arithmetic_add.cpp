@@ -13,12 +13,13 @@
 // when you define VALID_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define VALID_VERBOSE_OUTPUT
 #define VALID_TRACE_SUB
-#include "../../posit/exceptions.hpp"
-#include "../../bitblock/bitblock.hpp"
-#include "../../posit/value.hpp"
-#include "../../posit/posit.hpp"
-#include "../../valid/valid.hpp"
-#include "../../valid/valid_manipulators.hpp"
+#include "universal/posit/exceptions.hpp"
+#include "universal/bitblock/bitblock.hpp"
+#include "universal/posit/value.hpp"
+#include "universal/posit/posit.hpp"
+#include "universal/valid/valid.hpp"
+#include "universal/valid/valid_manipulators.hpp"
+// test helpers
 #include "../tests/test_helpers.hpp"
 #include "../tests/valid_test_helpers.hpp"
 
