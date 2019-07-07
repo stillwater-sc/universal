@@ -4,7 +4,6 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
-#include <posit>
 
 /*
 The 2019 redefinition of the SI base units came into force on 20 May 2019,[1][2] the 144th anniversary 
