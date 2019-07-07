@@ -3,9 +3,7 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iostream>
-#include <string>
-#include "../../integer/integer.hpp"
+#include "universal/integer/integer.hpp"
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
