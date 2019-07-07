@@ -5,11 +5,14 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cstdint>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
 #include <vector>
+#include <limits>
 #include <regex>
+#include <algorithm>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -44,6 +47,68 @@
 namespace sw {
 namespace unum {
 
+	// Forward references
+class decimal;
+
+template<typename Ty>
+void convert_to_decimal(Ty v, decimal& d) {
+	using namespace std;
+	//cout << numeric_limits<Ty>::digits << " max value " << numeric_limits<Ty>::max() << endl;
+	d.setzero();
+	if (v == 0) return;
+	if (numeric_limits<Ty>::is_signed) {
+		if (v < 0) {
+			d.setneg();
+			// transform to sign-magnitude on positive side
+			v *= -1;
+		}
+		else {
+			d.setpos();
+		}
+	}
+	int msb = numeric_limits<Ty>::digits;
+	uint64_t mask = 0x1;
+	// can't use assignment operator as it would yield an infinite loop calling convert
+	decimal two;
+	two.push_back(2); // set to the value of 2
+	decimal base;
+	base.push_back(1); // set to the value of 1
+	while (v) {
+		if (v & mask) {
+			//cout << "adding " << base << endl;
+			d += base;
+		}
+		//base *= two;
+		base += base;
+		v >>= 1;
+	}
+}
+
+std::string& ltrim(std::string& s)
+{
+	auto it = std::find_if(s.begin(), s.end(),
+		[](char c) {
+		return !std::isspace<char>(c, std::locale::classic());
+	});
+	s.erase(s.begin(), it);
+	return s;
+}
+
+std::string& rtrim(std::string& s)
+{
+	auto it = std::find_if(s.rbegin(), s.rend(),
+		[](char c) {
+		return !std::isspace<char>(c, std::locale::classic());
+	});
+	s.erase(it.base(), s.end());
+	return s;
+}
+
+std::string& trim(std::string& s)
+{
+	return ltrim(rtrim(s));
+}
+
 // Arbitrary precision decimal number
 class decimal : public std::vector<char> {
 public:
@@ -56,12 +121,12 @@ public:
 	decimal& operator=(decimal&&) = default;
 
 	// initializers for native types
-	decimal(const signed char initial_value) { *this = initial_value; }
+	decimal(const char initial_value) { *this = initial_value; }
 	decimal(const short initial_value) { *this = initial_value; }
 	decimal(const int initial_value) { *this = initial_value; }
 	decimal(const long initial_value) { *this = initial_value; }
 	decimal(const long long initial_value) { *this = initial_value; }
-	decimal(const char initial_value) { *this = initial_value; }
+	decimal(const unsigned char initial_value) { *this = initial_value; }
 	decimal(const unsigned short initial_value) { *this = initial_value; }
 	decimal(const unsigned int initial_value) { *this = initial_value; }
 	decimal(const unsigned long initial_value) { *this = initial_value; }
@@ -75,103 +140,113 @@ public:
 		parse(digits);
 		return *this;
 	}
-	decimal& operator=(const signed char rhs) {
+	decimal& operator=(const char rhs) {
 		if (0 == rhs) {
 			setzero();
+			push_back(0);
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_to_decimal(rhs, *this);
 		}
 		return *this;
 	}
 	decimal& operator=(const short rhs) {
 		if (0 == rhs) {
 			setzero();
+			push_back(0);
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_to_decimal(rhs, *this);
 		}
 		return *this;
 	}
 	decimal& operator=(const int rhs) {
 		if (0 == rhs) {
 			setzero();
+			push_back(0);
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_to_decimal(rhs, *this);
 		}
 		return *this;
 	}
 	decimal& operator=(const long rhs) {
 		if (0 == rhs) {
 			setzero();
+			push_back(0);
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_to_decimal(rhs, *this);
 		}
 		return *this;
 	}
 	decimal& operator=(const long long rhs) {
 		if (0 == rhs) {
 			setzero();
+			push_back(0);
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_to_decimal(rhs, *this);
 		}
 		return *this;
 	}
-	decimal& operator=(const char rhs) {
+	decimal& operator=(const unsigned char rhs) {
 		if (0 == rhs) {
 			setzero();
+			push_back(0);
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_to_decimal(rhs, *this);
 		}
 		return *this;
 	}
 	decimal& operator=(const unsigned short rhs) {
 		if (0 == rhs) {
 			setzero();
+			push_back(0);
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_to_decimal(rhs, *this);
 		}
 		return *this;
 	}
 	decimal& operator=(const unsigned int rhs) {
 		if (0 == rhs) {
 			setzero();
+			push_back(0);
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_to_decimal(rhs, *this);
 		}
 		return *this;
 	}
 	decimal& operator=(const unsigned long rhs) {
 		if (0 == rhs) {
 			setzero();
+			push_back(0);
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_to_decimal(rhs, *this);
 		}
 		return *this;
 	}
 	decimal& operator=(const unsigned long long rhs) {
 		if (0 == rhs) {
 			setzero();
+			push_back(0);
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_to_decimal(rhs, *this);
 		}
 		return *this;
 	}
@@ -185,7 +260,48 @@ public:
 		return float_assign(rhs);
 	}
 
+	// arithmetic operators
+	decimal& operator+=(const decimal& d) {
+		size_t l = size();
+		size_t r = d.size();
+		decimal _d(d);
+		// zero pad the shorter decimal
+		if (l < r) {
+			insert(end(), r-l, 0);
+		}
+		else {
+			_d.insert(_d.end(), l - r, 0);
+		}
+		decimal::iterator lit = begin();
+		decimal::iterator rit = _d.begin();
+		char carry = 0;
+		for (; lit != end() || rit != _d.end(); ++lit, ++rit) {
+			*lit += *rit + carry;
+			if (*lit > 9) {
+				carry = 1;
+				*lit -= 10;
+			} 
+			else {
+				carry = 0;
+			}
+		}
+		if (carry) push_back(1);
+		return *this;
+	}
+	decimal& operator-=(const decimal& d) {
+		return *this;
+	}
+	decimal& operator*=(const decimal& d) {
+		return *this;
+	}
+	decimal& operator/=(const decimal& d) {
+		return *this;
+	}
 	// selectors
+	inline bool iszero() const {
+		if (size() == 0) return true;
+		return std::all_of(begin(), end(), [](uint8_t i) { return 0 == i; });
+	}
 	inline bool isneg() const { return negative; }
 	inline bool ispos() const { return !negative; }
 
@@ -195,9 +311,10 @@ public:
 	inline void setpos() { negative = false; }
 
 	// read a decimal ASCII format and make a decimal type out of it
-	bool parse(const std::string& digits) {
+	bool parse(std::string digits) {
 		bool bSuccess = false;
-		// check if the txt is an decimal form: [0123456789]+
+		trim(digits);
+		// check if the txt is an decimal form:[+-]*[0123456789]+
 		std::regex decimal_regex("[+-]*[0123456789]+");
 		if (std::regex_match(digits, decimal_regex)) {
 			// found a decimal representation
@@ -211,7 +328,42 @@ public:
 				++it;
 			}
 			for (; it != digits.end(); ++it) {
-				push_back(*it);
+				uint8_t v;
+				switch (*it) {
+				case '0':
+					v = 0;
+					break;
+				case '1':
+					v = 1;
+					break;
+				case '2':
+					v = 2;
+					break;
+				case '3':
+					v = 3;
+					break;
+				case '4':
+					v = 4;
+					break;
+				case '5':
+					v = 5;
+					break;
+				case '6':
+					v = 6;
+					break;
+				case '7':
+					v = 7;
+					break;
+				case '8':
+					v = 8;
+					break;
+				case '9':
+					v = 9;
+					break;
+				default:
+					v = 0;
+				}
+				push_back(v);
 			}
 			std::reverse(begin(), end());
 			bSuccess = true;
@@ -227,16 +379,24 @@ protected:
 	}
 
 private:
+	// sign-magnitude number: indicate if number is positive or negative
 	bool negative;
 
 	friend std::ostream& operator<<(std::ostream& ostr, const decimal& d);
 	friend std::istream& operator>>(std::istream& istr, decimal& d);
+
+	// decimal - decimal logic operators
+	friend bool operator==(const decimal& lhs, const decimal& rhs);
+	friend bool operator!=(const decimal& lhs, const decimal& rhs);
+	friend bool operator<(const decimal& lhs, const decimal& rhs);
+	friend bool operator>(const decimal& lhs, const decimal& rhs);
+	friend bool operator<=(const decimal& lhs, const decimal& rhs);
+	friend bool operator>=(const decimal& lhs, const decimal& rhs);
 };
 
-////////////////// INTEGER operators
+////////////////// DECIMAL operators
 
-// stream operators
-
+/// stream operators
 
 // generate an integer format ASCII format
 inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
@@ -249,8 +409,8 @@ inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
 	ff = ostr.flags();
 	ss.flags(ff);
 	if (d.isneg()) ss << '-';
-	for (int i = (int)d.size() - 1; i >= 0; --i) {
-		ss << d[i];
+	for (decimal::const_reverse_iterator rit = d.rbegin(); rit != d.rend(); ++rit) {
+		ss << (int)*rit;
 	}
 	return ostr << ss.str();
 }
@@ -260,10 +420,109 @@ inline std::istream& operator>> (std::istream& istr, decimal& p) {
 	std::string txt;
 	istr >> txt;
 	if (!p.parse(txt)) {
-		std::cerr << "unable to parse -" << txt << "- into a posit value\n";
+		std::cerr << "unable to parse -" << txt << "- into a decimal value\n";
 	}
 	return istr;
 }
 
+/// decimal binary arithmetic operators
+// BINARY ADDITION
+inline decimal operator+(const decimal& lhs, const decimal& rhs) {
+	decimal sum = lhs;
+	sum += rhs;
+	return sum;
+}
+// BINARY SUBTRACTION
+inline decimal operator-(const decimal& lhs, const decimal& rhs) {
+	decimal diff = lhs;
+	diff -= rhs;
+	return diff;
+}
+// BINARY MULTIPLICATION
+inline decimal operator*(const decimal& lhs, const decimal& rhs) {
+	decimal mul = lhs;
+	mul *= rhs;
+	return mul;
+}
+// BINARY DIVISION
+inline decimal operator/(const decimal& lhs, const decimal& rhs) {
+	decimal ratio = lhs;
+	ratio /= rhs;
+	return ratio;
+}
+
+/// logic operators
+
+	// decimal - decimal logic operators
+bool operator==(const decimal& lhs, const decimal& rhs) {
+	bool areEqual = std::equal(lhs.begin(), lhs.end(), rhs.begin());
+	return areEqual;
+}
+bool operator!=(const decimal& lhs, const decimal& rhs) {
+	return !operator==(lhs, rhs);
+}
+bool operator<(const decimal& lhs, const decimal& rhs) {
+	size_t l = lhs.size();
+	size_t r = rhs.size();
+	if (l < r) return true;
+	if (l > r) return false;
+	// numbers are the same size
+	decimal::const_reverse_iterator ritl = lhs.rbegin();
+	decimal::const_reverse_iterator ritr = rhs.rbegin();
+	for (; ritl != lhs.rend() || ritr != rhs.rend(); ++ritl, ++ritr) {
+		if (*ritl > *ritr) return false;
+	}
+	if (lhs == rhs) return false;
+	return true;
+}
+bool operator>(const decimal& lhs, const decimal& rhs) {
+	return operator<(rhs, lhs);
+}
+bool operator<=(const decimal& lhs, const decimal& rhs) {
+	return operator<(lhs, rhs) || operator==(lhs, rhs);
+}
+bool operator>=(const decimal& lhs, const decimal& rhs) {
+	return !operator<(lhs, rhs);
+}
+
+// decimal - long logic operators
+inline bool operator==(const decimal& lhs, long rhs) {
+	return lhs == decimal(rhs);
+}
+inline bool operator!=(const decimal& lhs, long rhs) {
+	return !operator==(lhs, decimal(rhs));
+}
+inline bool operator< (const decimal& lhs, long rhs) {
+	return false;
+}
+inline bool operator> (const decimal& lhs, long rhs) {
+	return operator< (decimal(rhs), lhs);
+}
+inline bool operator<=(decimal& lhs, long rhs) {
+	return operator< (lhs, decimal(rhs)) || operator==(lhs, decimal(rhs));
+}
+inline bool operator>=(const decimal& lhs, long rhs) {
+	return !operator<(lhs, decimal(rhs));
+}
+
+// long - decimal logic operators
+inline bool operator==(long lhs, const decimal& rhs) {
+	return decimal(lhs) == rhs;
+}
+inline bool operator!=(long lhs, const decimal& rhs) {
+	return !operator==(decimal(lhs), rhs);
+}
+inline bool operator< (long lhs, const decimal& rhs) {
+	return false;
+}
+inline bool operator> (long lhs, const decimal& rhs) {
+	return operator< (decimal(lhs), rhs);
+}
+inline bool operator<=(long lhs, const decimal& rhs) {
+	return operator< (decimal(lhs), rhs) || operator==(decimal(lhs), rhs);
+}
+inline bool operator>=(long lhs, const decimal& rhs) {
+	return !operator<(decimal(lhs), rhs);
+}
 } // namespace unum
 } // namespace sw
