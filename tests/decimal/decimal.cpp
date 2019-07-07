@@ -24,18 +24,32 @@ namespace sw {
 				<< std::setprecision(5)
 				<< std::endl;
 		}
-
+		void ReportBinaryDecimalSuccess(std::string test_case, std::string op, const decimal& lhs, const decimal& rhs, const decimal& dref, const long& ref) {
+			std::cerr << test_case << " "
+				<< std::setprecision(20)
+				<< std::setw(DECIMAL_TABLE_WIDTH) << lhs
+				<< " " << op << " "
+				<< std::setw(DECIMAL_TABLE_WIDTH) << rhs
+				<< " == "
+				<< std::setw(DECIMAL_TABLE_WIDTH) << ref << " correctly yielded "
+				<< std::setw(DECIMAL_TABLE_WIDTH) << dref
+				<< std::setprecision(5)
+				<< std::endl;
+		}
 		int ValidateAddition(std::string tag, long ub, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
-			for (long i = -0; i < ub; ++i) {
+			for (long i = -ub; i < ub; ++i) {
 				decimal d1 = i;
-				for (long j = -0; j < ub; ++j) {
+				for (long j = -ub; j < ub; ++j) {
 					decimal d2 = j;
 					long ref = i + j;
 					decimal dref = d1 + d2;
 					if (dref != ref) {
 						++nrOfFailedTests;
 						if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "add", d1, d2, dref, ref);
+					}
+					else {
+						//if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "add", d1, d2, dref, ref);
 					}
 				}
 			}
@@ -60,9 +74,14 @@ try {
 #if MANUAL_TESTING
 	decimal d1, d2, d3;
 	
-	d1.parse("0000"); cout << "bad parse: " << d1 << endl;
+//	d1.parse("0000"); cout << "bad parse: " << d1 << endl;
 
-	ValidateAddition("addition", 10, true);
+	d1 = 12345;
+	d2 =   -78;
+	d3 = d2 + d1;
+	cout << d1 << " + " << d2 << " = " << d3 << endl;
+
+	nrOfFailedTestCases += ValidateAddition("addition", 10, true);
 
 	exit(0);
 	//cin >> d2;

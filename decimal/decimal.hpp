@@ -55,33 +55,30 @@ void convert_to_decimal(Ty v, decimal& d) {
 	using namespace std;
 	//cout << numeric_limits<Ty>::digits << " max value " << numeric_limits<Ty>::max() << endl;
 	d.setzero();
+	bool sign = false;
 	if (v == 0) return;
 	if (numeric_limits<Ty>::is_signed) {
 		if (v < 0) {
-			d.setneg();
+			sign = true; // negative number
 			// transform to sign-magnitude on positive side
 			v *= -1;
-		}
-		else {
-			d.setpos();
 		}
 	}
 	int msb = numeric_limits<Ty>::digits;
 	uint64_t mask = 0x1;
 	// can't use assignment operator as it would yield an infinite loop calling convert
-	decimal two;
-	two.push_back(2); // set to the value of 2
+	d.push_back(0); // initialize the decimal value to 0
 	decimal base;
-	base.push_back(1); // set to the value of 1
+	base.push_back(1); // set to the value of 1, and double it each iteration
 	while (v) {
 		if (v & mask) {
-			//cout << "adding " << base << endl;
 			d += base;
 		}
-		//base *= two;
 		base += base;
 		v >>= 1;
 	}
+	// finally set the sign
+	d.setsign(sign);
 }
 
 std::string& ltrim(std::string& s)
@@ -262,6 +259,14 @@ public:
 
 	// arithmetic operators
 	decimal& operator+=(const decimal& d) {
+		if (negative != d.negative) {  // different signs
+			decimal _d(d);
+			_d.setsign(!d.sign());
+			return operator-=(_d);
+		}
+		else {
+			// same sign implies this->negative is invariant
+		}
 		size_t l = size();
 		size_t r = d.size();
 		decimal _d(d);
@@ -289,6 +294,41 @@ public:
 		return *this;
 	}
 	decimal& operator-=(const decimal& d) {
+		if (negative != d.negative) {
+			decimal _d(d);
+			_d.setsign(!d.sign());
+			return operator+=(_d);
+		}
+		// largest value will be subtracted from
+		size_t l = size();
+		size_t r = d.size();
+		decimal _d(d);
+		// zero pad the shorter decimal
+		if (l < r) {
+			insert(end(), r - l, 0);
+			std::swap(*this, _d);
+		}
+		else if (r < l) {
+			_d.insert(_d.end(), l - r, 0);
+		}
+		else {
+			// the are the same size, so need to check their magnitude
+			if (*this < _d) std::swap(*this, _d);
+		}
+		decimal::iterator lit = begin();
+		decimal::iterator rit = _d.begin();
+		char borrow = 0;
+		for (; lit != end() || rit != _d.end(); ++lit, ++rit) {			
+			if (*rit > *lit - borrow) {
+				*lit = 10 + *lit - borrow - *rit;
+				borrow = 1;
+			}
+			else {
+				*lit = *lit - borrow - *rit;
+				borrow = 0;
+			}
+		}
+		if (borrow) std::cout << "can this happen" << std::endl;
 		return *this;
 	}
 	decimal& operator*=(const decimal& d) {
@@ -302,11 +342,13 @@ public:
 		if (size() == 0) return true;
 		return std::all_of(begin(), end(), [](uint8_t i) { return 0 == i; });
 	}
+	inline bool sign() const { return negative; }
 	inline bool isneg() const { return negative; }
 	inline bool ispos() const { return !negative; }
 
 	// modifiers
 	inline void setzero() { clear(); negative = false; }
+	inline void setsign(bool sign) { negative = sign; }
 	inline void setneg() { negative = true; }
 	inline void setpos() { negative = false; }
 
