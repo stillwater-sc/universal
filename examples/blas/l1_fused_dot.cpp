@@ -3,14 +3,14 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include "common.hpp"
+
 // enable the following define to show the intermediate steps in the fused-dot product
 // #define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_MUL
 #define QUIRE_TRACE_ADD
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <posit>
+#include <universal/posit/posit>
 
 template<typename Ty>
 Ty minValue(const std::vector<Ty>& samples) {
