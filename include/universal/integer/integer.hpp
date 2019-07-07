@@ -1,10 +1,10 @@
 #pragma once
 // integer.hpp: definition of arbitrary integer configurations
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <string>
 #include <sstream>
 #include <iostream>
 #include <iomanip>
