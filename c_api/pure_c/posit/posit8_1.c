@@ -1,14 +1,19 @@
-// create the correct C11 infrastructure
+// posit8_1.c: example program showing the use of the posit8_1_t type of the C API of the posit library
+//
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+// setup the correct C11 infrastructure
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <math.h>  // for INFINITY
 
-// pull in the specialized posit C definitions
-#include <specialized/posit_8_1.h>
+// pull in the posit C API definitions
+#include <universal/posit/posit_c_api.h>
 
 // pull in the source code to be compiled as a C library
-#include <specialized/posit_8_1.h>
+#include <universal/posit/specialized/posit_8_1.h>
 
 // elementary functions
 posit8_1_t posit8_1_sqrt(posit8_1_t a) {

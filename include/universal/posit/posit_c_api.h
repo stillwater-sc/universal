@@ -1,13 +1,18 @@
 #pragma once
-// posit_c_api.h: generic C and C++ header defining the posit api
+// posit_c_api.h: generic C API defining the posit api
+//
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+// setup the correct C11 infrastructure
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
 
 // posit C types
-#include <positctypes.h>
+#include <universal/posit/positctypes.h>
 
 #ifdef __cplusplus
 // export a C interface if used by C++ source code
