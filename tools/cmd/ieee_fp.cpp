@@ -1,12 +1,9 @@
-// ieee_fp.cpp: show the sign/scale/fraction components of a 32b/64/128b floats
+// ieee_fp.cpp: cli to show the sign/scale/fraction components of a 32b/64/128b IEEE floats
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "common.hpp"
-#include "posit.hpp"
-#include <value>
+#include <universal/posit/value>
 
 std::string version_string(int a, int b, int c) {
 	std::ostringstream ss;

@@ -1,13 +1,9 @@
-// fc.cpp: float components: show the sign/scale/fraction components of a float 
+// fc.cpp: float components: cli to show the sign/scale/fraction components of a float 
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "common.hpp"
-
-#include <value>
-
+#include <universal/posit/value>
 
 // receive a float and print its components
 int main(int argc, char** argv)
