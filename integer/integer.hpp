@@ -5,7 +5,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <limits>
+#include <sstream>
+#include <regex>
+
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 
