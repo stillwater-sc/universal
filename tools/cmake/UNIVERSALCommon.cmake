@@ -21,11 +21,11 @@ if (USE_ASSERTS)
   list(APPEND UNIVERSAL_CXX_DEFINITIONS "-DUNIVERSAL_ASSERT_FOR_THROW")
 endif()
 
-if(EXISTS ${UNIVERSAL_DIR}/posit/posit.hpp)
-	list(APPEND UNIVERSAL_INCLUDE_DIRS "${UNIVERSAL_DIR}/posit")
+if(EXISTS ${UNIVERSAL_DIR}/include/universal/posit/posit.hpp)
+	list(APPEND UNIVERSAL_INCLUDE_DIRS "${UNIVERSAL_DIR}/include/universal/posit")
 else()
 	list(APPEND UNIVERSAL_INCLUDE_DIRS "${UNIVERSAL_DIR}/../../include")
-endif(EXISTS ${UNIVERSAL_DIR}/posit/posit.hpp)
+endif(EXISTS ${UNIVERSAL_DIR}/include/universal/posit/posit.hpp)
 
 macro(unum_check_cxx_compiler_flag FLAG RESULT)
   # counts entirely on compiler's return code, maybe better to combine it with check_cxx_compiler_flag
