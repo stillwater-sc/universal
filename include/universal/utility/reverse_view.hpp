@@ -42,7 +42,7 @@ namespace unum {
 #else
 	// for cases where the container is an xvalue, we need to copy the contents
 	// if we want to apply a reverse view on it
-	template<typename Ty, bool CopyValue = !std::is_lvalue_reference_v<Ty> >
+	template<typename Ty, bool CopyValue = !std::is_lvalue_reference<Ty>::value >
 	struct ContainerContainer;
 
 	// lvalue ContainerContainer: contains a reference to the container
