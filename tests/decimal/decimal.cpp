@@ -5,7 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
-#include "universal/decimal/decimal.hpp"
+#include <universal/decimal/decimal.hpp>
+#include <universal/decimal/numeric_limits.hpp>
 
 namespace sw {
 	namespace unum {
@@ -142,6 +143,43 @@ void examples() {
 	cout << "signed char = " << (int)test << endl;
 }
 
+template<typename Ty>
+void reportType(Ty v) {
+	using namespace std;
+
+	cout << "Numeric limits for type " << typeid(v).name() << '\n';
+	cout << "Type              : " << typeid(v).name() << endl;
+	cout << "mangled C++ type  : " << typeid(v).raw_name() << endl;
+	cout << "min()             : " << numeric_limits<Ty>::min() << '\n';
+	cout << "max()             : " << numeric_limits<Ty>::max() << '\n';
+	cout << "lowest()          : " << numeric_limits<Ty>::lowest() << '\n';
+	cout << "epsilon()         : " << numeric_limits<Ty>::epsilon() << '\n';
+
+	cout << "digits            : " << numeric_limits<Ty>::digits << '\n';
+	cout << "digits10          : " << numeric_limits<Ty>::digits10 << '\n';
+	cout << "max_digits10      : " << numeric_limits<Ty>::max_digits10 << '\n';
+	cout << "is_signed         : " << numeric_limits<Ty>::is_signed << '\n';
+	cout << "is_integer        : " << numeric_limits<Ty>::is_integer << '\n';
+	cout << "is_exact          : " << numeric_limits<Ty>::is_exact << '\n';
+
+	cout << "min_exponent      : " << numeric_limits<Ty>::min_exponent << '\n';
+	cout << "min_exponent10    : " << numeric_limits<Ty>::min_exponent10 << '\n';
+	cout << "max_exponent      : " << numeric_limits<Ty>::max_exponent << '\n';
+	cout << "max_exponent10    : " << numeric_limits<Ty>::max_exponent10 << '\n';
+	cout << "has_infinity      : " << numeric_limits<Ty>::has_infinity << '\n';
+	cout << "has_quiet_NaN     : " << numeric_limits<Ty>::has_quiet_NaN << '\n';
+	cout << "has_signaling_NaN : " << numeric_limits<Ty>::has_signaling_NaN << '\n';
+	cout << "has_denorm        : " << numeric_limits<Ty>::has_denorm << '\n';
+	cout << "has_denorm_loss   : " << numeric_limits<Ty>::has_denorm_loss << '\n';
+
+	cout << "is_iec559         : " << numeric_limits<Ty>::is_iec559 << '\n';
+	cout << "is_bounded        : " << numeric_limits<Ty>::is_bounded << '\n';
+	cout << "is_modulo         : " << numeric_limits<Ty>::is_modulo << '\n';
+	cout << "traps             : " << numeric_limits<Ty>::traps << '\n';
+	cout << "tinyness_before   : " << numeric_limits<Ty>::tinyness_before << '\n';
+	cout << "round_style       : " << numeric_limits<Ty>::round_style << '\n';
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -158,7 +196,7 @@ try {
 #if MANUAL_TESTING
 
 	decimal d1, d2, d3;
-
+	reportType(d1);
 	d1.parse("50000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 	cout << d1 << endl;
 	cout << d1 + d1 << endl;

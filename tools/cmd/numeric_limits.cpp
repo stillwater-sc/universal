@@ -80,7 +80,6 @@ void ReportNumericLimitsOfPosit() {
 	cout << posit_tag << "traps             : " << numeric_limits< posit<nbits, es> >::traps << '\n';
 	cout << posit_tag << "tinyness_before   : " << numeric_limits< posit<nbits, es> >::tinyness_before << '\n';
 	cout << posit_tag << "round_style       : " << numeric_limits< posit<nbits, es> >::round_style << '\n';
-
 }
 
 
