@@ -149,7 +149,9 @@ void reportType(Ty v) {
 
 	cout << "Numeric limits for type " << typeid(v).name() << '\n';
 	cout << "Type              : " << typeid(v).name() << endl;
+#if MSVC
 	cout << "mangled C++ type  : " << typeid(v).raw_name() << endl;
+#endif
 	cout << "min()             : " << numeric_limits<Ty>::min() << '\n';
 	cout << "max()             : " << numeric_limits<Ty>::max() << '\n';
 	cout << "lowest()          : " << numeric_limits<Ty>::lowest() << '\n';
@@ -201,8 +203,8 @@ try {
 	cout << d1 << endl;
 	cout << d1 + d1 << endl;
 
-	//nrOfFailedTestCases += VerifyAddition("addition", 100, bReportIndividualTestCases);
-	//nrOfFailedTestCases += VerifySubtraction("subtraction", 100, bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifyAddition("addition", 100, bReportIndividualTestCases);
+	nrOfFailedTestCases += VerifySubtraction("subtraction", 100, bReportIndividualTestCases);
 
 #else
 	std::cout << "Decimal Arithmetic verfication" << std::endl;
