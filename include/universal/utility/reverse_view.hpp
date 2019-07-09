@@ -56,10 +56,9 @@ namespace unum {
 
 	// rvalue ContainerContainer: contains a reference to the container
 	template<typename Ty>
-	struct ContainerContainer<Ty, true> {
-		
+	struct ContainerContainer<Ty, true> {	
 		const Ty c;
-		explicit ContainerContainer(Ty& c)
+		explicit ContainerContainer(Ty c)
 			: c{ std::move(c) }// move will construct a new copy of the container
 		{}
 	};
