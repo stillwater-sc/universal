@@ -12,6 +12,10 @@ namespace sw {
 namespace unum {
 
 #if NO_XVALUE_CONTAINER_REQUIRED
+
+	// simpler condition where we have an rvalue-based container that the
+	// ReverseContainerView can iterate over.
+
 	// Reverse container view
 	template<typename Container>
 	class ReverseContainerView {
@@ -50,19 +54,21 @@ namespace unum {
 	struct ContainerContainer<Ty, false> {
 		Ty& c;
 		explicit ContainerContainer(Ty& c)
-			: c{ c }
+			: c{ c }  // for lvalues store the reference to the container
 		{}
 	};
 
-	// rvalue ContainerContainer: contains a reference to the container
+	// rvalue ContainerContainer: we first need to copy the contents into the ContainerContainer
+	// so we can provide the ReverseContainerView access to something to iterate over
 	template<typename Ty>
 	struct ContainerContainer<Ty, true> {	
 		const Ty c;
 		explicit ContainerContainer(Ty c)
-			: c{ std::move(c) }// move will construct a new copy of the container
+			: c{ std::move(c) }  // move will construct a new copy of the container
 		{}
 	};
 
+	// ReverseContainerView for range based loops
 	template<typename Container>
 	class ReverseContainerView : ContainerContainer<Container> {
 		using Base = ContainerContainer<Container>;
@@ -70,7 +76,6 @@ namespace unum {
 		explicit ReverseContainerView(Container&& c)
 			: Base{ std::forward<Container>(c) }
 		{}
-
 		auto begin() {
 			return std::rbegin(Base::c);
 		}
