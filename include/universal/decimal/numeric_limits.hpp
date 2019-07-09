@@ -1,5 +1,5 @@
 #pragma once
-// numeric_limits.hpp: definition of numeric_limits for posit types
+// numeric_limits.hpp: definition of numeric_limits for decimal types
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
@@ -126,49 +126,62 @@ namespace std {
 	};
 #endif
 
-	template <size_t nbits, size_t es> 
-	class numeric_limits< sw::unum::posit<nbits, es> >
+		using namespace sw::unum;
+/*
+		Trait class that identifies whether T is a literal type.
+
+			A literal type is a type that can qualify as constexpr. This is true for scalar types, references, certain classes, and arrays of any such types.
+
+			A class that is a literal type is a class (defined with class, struct or union) that :
+			1- has a trivial destructor,
+			2- every constructor call and any non - static data member that has brace - or equal - initializers is a constant expression,
+			3- is an aggregate type, or has at least one constexpr constructor or constructor template that is not a copy or move constructor, and
+			4- has all non - static data members and base classes of literal types
+
+		TODO: how to make the decimal class a literal type so that we can use it as a return type for min/max/lowest etc.
+*/
+	template <> 
+	class numeric_limits< sw::unum::decimal >
 	{
 	public:
 		static constexpr bool is_specialized = true;
-		static constexpr sw::unum::posit<nbits, es> min() { return sw::unum::minpos<nbits, es>(); } // return minimum value
-		static constexpr sw::unum::posit<nbits, es> max() { return sw::unum::maxpos<nbits, es>(); } // return maximum value
-		static constexpr sw::unum::posit<nbits, es> lowest() { return -(max)(); } // return most negative value
-		static constexpr sw::unum::posit<nbits, es> epsilon() { // return smallest effective increment from 1.0
-			sw::unum::posit<nbits, es> p_one(1), p_one_plus_eps(1);
-			return ++p_one_plus_eps - p_one;
+		static constexpr long min() { return 1; } // return minimum value
+		static constexpr uint64_t max() { return INT64_MAX; } // return maximum value
+		static constexpr int64_t lowest() { return -INT64_MAX; } // return most negative value
+		static constexpr long epsilon() { // return smallest effective increment from 1.0
+			return long(1);
 		}
-		static constexpr sw::unum::posit<nbits, es> round_error() { // return largest rounding error
-			return sw::unum::posit<nbits, es>(0.5);
+		static constexpr long round_error() { // return largest rounding error
+			return long(0.5);
 		}
-		static constexpr sw::unum::posit<nbits, es> denorm_min() {  // return minimum denormalized value
-			return sw::unum::minpos<nbits, es>(); 
+		static constexpr long denorm_min() {  // return minimum denormalized value
+			return 1; 
 		}
-		static constexpr sw::unum::posit<nbits, es> infinity() { // return positive infinity
-			return sw::unum::posit<nbits, es>(NAR); 
+		static constexpr uint64_t infinity() { // return positive infinity
+			return INT64_MAX; 
 		}
-		static constexpr sw::unum::posit<nbits, es> quiet_NaN() { // return non-signaling NaN
-			return sw::unum::posit<nbits, es>(NAR); 
+		static constexpr uint64_t quiet_NaN() { // return non-signaling NaN
+			return INT64_MAX; 
 		}
-		static constexpr sw::unum::posit<nbits, es> signaling_NaN() { // return signaling NaN
-			return sw::unum::posit<nbits, es>(NAR); 
+		static constexpr uint64_t signaling_NaN() { // return signaling NaN
+			return INT64_MAX;
 		}
 
-		static constexpr int digits = (es + 2 > nbits ? 0 : nbits - 3 - es);
-		static constexpr int digits10 = int((digits) / 3.3);
-		static constexpr int max_digits10 = 0;
-		static constexpr bool is_signed = true;
-		static constexpr bool is_integer = false;
-		static constexpr bool is_exact = false;
-		static constexpr int radix = 2;
+		static constexpr int digits       = 3333333;
+		static constexpr int digits10     = 1000000;
+		static constexpr int max_digits10 = 1000000;
+		static constexpr bool is_signed   = true;
+		static constexpr bool is_integer  = true;
+		static constexpr bool is_exact    = true;
+		static constexpr int radix        = 10;
 
-		static constexpr int min_exponent = static_cast<int>(2 - int(nbits)) * (1 << es);
-		static constexpr int min_exponent10 = int((min_exponent) / 3.3);
-		static constexpr int max_exponent = (nbits - 2) * (1 << es);
-		static constexpr int max_exponent10 = int((max_exponent) / 3.3);
-		static constexpr bool has_infinity = true;
-		static constexpr bool has_quiet_NaN = true;
-		static constexpr bool has_signaling_NaN = true;
+		static constexpr int min_exponent = 0;
+		static constexpr int min_exponent10 = 0;
+		static constexpr int max_exponent = 0;
+		static constexpr int max_exponent10 = 0;
+		static constexpr bool has_infinity = false;
+		static constexpr bool has_quiet_NaN = false;
+		static constexpr bool has_signaling_NaN = false;
 		static constexpr float_denorm_style has_denorm = denorm_absent;
 		static constexpr bool has_denorm_loss = false;
 
