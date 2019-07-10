@@ -53,9 +53,18 @@ namespace sw {
 			ss << "maximum " << std::setw(12) << std::numeric_limits<Ty>::max() << "     ";
 			return ss.str();
 		}
-		// Report the posit minpos/maxpos scales
+		// Specialized for <nbits,es> templates which are then interpreted as posit minpos/maxpos scales
 		template<size_t nbits, size_t es>
 		std::string dynamic_range() {
+			std::stringstream ss;
+			ss << " posit<" << std::setw(3) << nbits << "," << es << "> ";
+			ss << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
+			ss << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
+			ss << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>();
+			return ss.str();
+		}
+		template<size_t nbits, size_t es>
+		std::string posit_range() {
 			std::stringstream ss;
 			ss << " posit<" << std::setw(3) << nbits << "," << es << "> ";
 			ss << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
