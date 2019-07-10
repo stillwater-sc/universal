@@ -198,11 +198,11 @@ public:
 		return float_assign(rhs);
 	}
 	decimal& operator=(const double rhs) {
-		return float_assign(rhs);
-	}
+	return float_assign(rhs);
+}
 	decimal& operator=(const long double rhs) {
-		return float_assign(rhs);
-	}
+	return float_assign(rhs);
+}
 
 	// arithmetic operators
 	decimal& operator+=(const decimal& rhs) {
@@ -218,7 +218,7 @@ public:
 		size_t r = _rhs.size();
 		// zero pad the shorter decimal
 		if (l < r) {
-			insert(end(), r-l, 0);
+			insert(end(), r - l, 0);
 		}
 		else {
 			_rhs.insert(_rhs.end(), l - r, 0);
@@ -231,7 +231,7 @@ public:
 			if (*lit > 9) {
 				carry = 1;
 				*lit -= 10;
-			} 
+			}
 			else {
 				carry = 0;
 			}
@@ -268,7 +268,7 @@ public:
 		decimal::iterator lit = begin();
 		decimal::iterator rit = _rhs.begin();
 		char borrow = 0;
-		for (; lit != end() || rit != _rhs.end(); ++lit, ++rit) {			
+		for (; lit != end() || rit != _rhs.end(); ++lit, ++rit) {
 			if (*rit > *lit - borrow) {
 				*lit = 10 + *lit - borrow - *rit;
 				borrow = 1;
@@ -283,10 +283,56 @@ public:
 		this->setsign(sign);
 		return *this;
 	}
-	decimal& operator*=(const decimal& d) {
+	decimal& operator*=(const decimal& rhs) {
+		bool signOfFinalResult = (negative != rhs.negative) ? true : false;
+		decimal product;
+		// find the smallest decimal to minimize the amount of work
+		size_t l = size();
+		size_t r = rhs.size();
+		decimal::const_iterator sit, bit; // sit = smallest iterator, bit = biggest iterator
+		if (l < r) {
+			size_t position = 0;
+			for (sit = begin(); sit != end(); ++sit) {
+				decimal partial_sum;
+				partial_sum.insert(partial_sum.end(), r + position, 0);
+				decimal::iterator pit = partial_sum.begin() + position;
+				char carry = 0;
+				for (bit = rhs.begin(); bit != rhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
+					char digit = *sit * *bit + carry;
+					*pit = digit % 10;
+					carry = digit / 10;
+				}
+				if (carry) partial_sum.push_back(carry);
+				product += partial_sum;
+//				std::cout << "partial sum " << partial_sum << " intermediate product " << product << std::endl;
+				++position;
+			}
+		}
+		else {
+			size_t position = 0;
+			for (sit = rhs.begin(); sit != rhs.end(); ++sit) {
+				decimal partial_sum;
+				partial_sum.insert(partial_sum.end(), l + position, 0);
+				decimal::iterator pit = partial_sum.begin() + position;
+				char carry = 0;
+				for (bit = begin(); bit != end() || pit != partial_sum.end(); ++bit, ++pit) {
+					char digit = *sit * *bit + carry;
+					*pit = digit % 10;
+					carry = digit / 10;
+				}
+				if (carry) partial_sum.push_back(carry);
+				product += partial_sum;
+//				std::cout << "partial sum " << partial_sum << " intermediate product " << product << std::endl;
+				++position;
+			}
+		}
+		product.unpad();
+		*this = product;
+		setsign(signOfFinalResult);
 		return *this;
+
 	}
-	decimal& operator/=(const decimal& d) {
+	decimal& operator/=(const decimal& rhs) {
 		return *this;
 	}
 	// selectors

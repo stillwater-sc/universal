@@ -7,6 +7,8 @@
 #include <string>
 #include <universal/decimal/decimal.hpp>
 #include <universal/decimal/numeric_limits.hpp>
+// test helpers
+#include "../test_helpers.hpp"
 
 namespace sw {
 	namespace unum {
@@ -70,10 +72,31 @@ namespace sw {
 					decimal dref = d1 - d2;
 					if (dref != ref) {
 						++nrOfFailedTests;
-						if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "add", d1, d2, dref, ref);
+						if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "sub", d1, d2, dref, ref);
 					}
 					else {
-						// if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "add", d1, d2, dref, ref);
+						// if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "seb", d1, d2, dref, ref);
+					}
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// verification of multiplication
+		int VerifyMultiplication(std::string tag, long ub, bool bReportIndividualTestCases) {
+			int nrOfFailedTests = 0;
+			for (long i = -ub; i <= ub; ++i) {
+				decimal d1 = i;
+				for (long j = -ub; j <= ub; ++j) {
+					decimal d2 = j;
+					long ref = i * j;
+					decimal dref = d1 * d2;
+					if (dref != ref) {
+						++nrOfFailedTests;
+						if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "mul", d1, d2, dref, ref);
+					}
+					else {
+						// if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "mul", d1, d2, dref, ref);
 					}
 				}
 			}
@@ -182,8 +205,8 @@ void reportType(Ty v) {
 	cout << "round_style       : " << numeric_limits<Ty>::round_style << '\n';
 }
 
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 1
 
 int main()
 try {
@@ -199,21 +222,25 @@ try {
 
 	decimal d1, d2, d3;
 	reportType(d1);
+
 	d1.parse("50000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 	cout << d1 << endl;
 	cout << d1 + d1 << endl;
 
-	nrOfFailedTestCases += VerifyAddition("addition", 100, bReportIndividualTestCases);
-	nrOfFailedTestCases += VerifySubtraction("subtraction", 100, bReportIndividualTestCases);
+	long rangeBound = 100;
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
 
 #else
 	std::cout << "Decimal Arithmetic verfication" << std::endl;
 
 #ifdef STRESS_TESTING
 
-	nrOfFailedTestCases += VerifyAddition("addition", 1000, true);
-	nrOfFailedTestCases += VerifySubtraction("subtraction", 1000, true);
-
+	long rangeBound = 500;
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
 
 #endif // STRESS_TESTING
 
