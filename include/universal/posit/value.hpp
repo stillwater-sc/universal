@@ -79,7 +79,7 @@ namespace sw {
 				if (_sign) {
 					// process negative number: process 2's complement of the input
 					_scale = findMostSignificantBit(-rhs) - 1;
-					uint64_t _fraction_without_hidden_bit = (-rhs << (64 - _scale));
+					uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0 : (-rhs << (64 - _scale));
 					_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 					//take_2s_complement();
 					_nrOfBits = fbits;
@@ -89,7 +89,7 @@ namespace sw {
 					// process positive number
 					if (rhs != 0) {
 						_scale = findMostSignificantBit(rhs) - 1;
-						uint64_t _fraction_without_hidden_bit = (rhs << (64 - _scale));
+						uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0 : (rhs << (64 - _scale));
 						_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 						_nrOfBits = fbits;
 						if (_trace_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
@@ -121,7 +121,7 @@ namespace sw {
 				else {
 					reset();
 					_scale = findMostSignificantBit(rhs) - 1;
-					uint64_t _fraction_without_hidden_bit = (rhs << (64 - _scale));
+					uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0ull : (rhs << (64 - _scale)); // the scale == -1 case is handled above
 					_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 					_nrOfBits = fbits;
 				}
@@ -571,14 +571,14 @@ namespace sw {
 		inline std::string components(const value<fbits>& v) {
 			std::stringstream s;
 			if (v.iszero()) {
-				s << " zero b" << std::setw(fbits) << v.fraction();
+				s << "(+,0," << std::setw(fbits) << v.fraction() << ')';
 				return s.str();
 			}
 			else if (v.isinf()) {
-				s << " infinite b" << std::setw(fbits) << v.fraction();
+				s << "(inf," << std::setw(fbits) << v.fraction() << ')';
 				return s.str();
 			}
-			s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
+			s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ')';
 			return s.str();
 		}
 
