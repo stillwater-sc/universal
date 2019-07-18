@@ -25,12 +25,12 @@ std::string quire_properties() {
 
 	std::stringstream ss;
 	ss << "Properties of a quire<" << nbits << ", " << es << ", " << capacity << ">\n";
-	ss << "dynamic range of product   : " << range << std::endl;
-	ss << "radix point of accumulator : " << radix_point << std::endl;
-	ss << "full  quire size in bits   : " << qbits << std::endl;
-	ss << "lower quire size in bits   : " << half_range << std::endl;
-	ss << "upper quire size in bits   : " << upper_range << std::endl;
-	ss << "capacity bits              : " << capacity << std::endl;
+	ss << "  dynamic range of product   : " << range << std::endl;
+	ss << "  radix point of accumulator : " << radix_point << std::endl;
+	ss << "  full  quire size in bits   : " << qbits << std::endl;
+	ss << "  lower quire size in bits   : " << half_range << std::endl;
+	ss << "  upper quire size in bits   : " << upper_range << std::endl;
+	ss << "  capacity bits              : " << capacity << std::endl;
 	return ss.str();
 }
 

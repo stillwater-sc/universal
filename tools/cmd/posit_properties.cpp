@@ -6,28 +6,33 @@
 #include <universal/posit/posit>
 
 typedef std::numeric_limits< double > dbl;
-const char* msg = "arithmetic properties of a posit<32, 1> environment\n\
-posit< 32, 1> useed scale     2     minpos scale - 60     maxpos scale         60\n\
-Properties of a quire<32, 1, 10>\n\
-dynamic range of product   : 240\n\
-radix point of accumulator : 120\n\
-full  quire size in bits   : 250\n\
-lower quire size in bits   : 120\n\
-upper quire size in bits   : 121\n\
-capacity bits : 10\n\
-\n\
-+ : 0000000000_0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000.000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+const char* msg = "arithmetic properties of a posit<16, 1> environment\n\
+ posit< 16, 1> useed scale     2     minpos scale - 28     maxpos scale         28\n\
+  minpos                     : 16.1x0001p + 3.72529e-09\n\
+  maxpos                     : 16.1x7fffp + 2.68435e+08\n\
+Properties of a quire<16, 1, 8>\n\
+  dynamic range of product   : 112\n\
+  radix point of accumulator :  56\n\
+  full  quire size in bits   : 120\n\
+  lower quire size in bits   :  56\n\
+  upper quire size in bits   :  57\n\
+  capacity bits              :   8\n\
+Quire segments\n\
++ : 00000000_000000000000000000000000000000000000000000000000000000000.00000000000000000000000000000000000000000000000000000000\n";
 
 template<size_t nbits, size_t es, size_t capacity = 10>
 void arithmetic_properties(std::ostream& ostr) {
-	ostr << dynamic_range(sw::unum::posit<nbits, es>()) << std::endl;
+	ostr << sw::unum::posit_range<nbits, es>() << std::endl;
+	ostr << "  minpos                     : " << sw::unum::posit_format(sw::unum::minpos<nbits, es>()) << " " << sw::unum::minpos<nbits, es>() << std::endl;
+	ostr << "  maxpos                     : " << sw::unum::posit_format(sw::unum::maxpos<nbits, es>()) << " " << sw::unum::maxpos<nbits, es>() << std::endl;
 	ostr << sw::unum::quire_properties<nbits, es, capacity>() << std::endl;
+	ostr << "Quire segments" << std::endl;
 	ostr << sw::unum::quire<nbits, es, capacity>() << std::endl;
 }
 
-
 // transformation of user-provided values to constexpr values
-void ReportArithmeticProperties(size_t nbits, size_t es, size_t capacity) {
+template<size_t capacity>
+void ReportArithmeticProperties(size_t nbits, size_t es) {
 	using namespace std;
 	using namespace sw::unum;
 
@@ -55,37 +60,37 @@ void ReportArithmeticProperties(size_t nbits, size_t es, size_t capacity) {
 		constexpr size_t nbits = 8;
 		switch (es) {
 		case 0:
-			arithmetic_properties<nbits, 0, 10>(cout);
+			arithmetic_properties<nbits, 0, capacity>(cout);
 			break;
 		case 1:
-			arithmetic_properties<nbits, 1, 10>(cout);
+			arithmetic_properties<nbits, 1, capacity>(cout);
 			break;
 		case 2:
-			arithmetic_properties<nbits, 2, 10>(cout);
+			arithmetic_properties<nbits, 2, capacity>(cout);
 			break;
 		case 3:
-			arithmetic_properties<nbits, 3, 10>(cout);
+			arithmetic_properties<nbits, 3, capacity>(cout);
 			break;
 		case 4:
-			arithmetic_properties<nbits, 4, 10>(cout);
+			arithmetic_properties<nbits, 4, capacity>(cout);
 			break;
 		case 5:
-			arithmetic_properties<nbits, 5, 10>(cout);
+			arithmetic_properties<nbits, 5, capacity>(cout);
 			break;
 		case 6:
-			arithmetic_properties<nbits, 6, 10>(cout);
+			arithmetic_properties<nbits, 6, capacity>(cout);
 			break;
 		case 7:
-			arithmetic_properties<nbits, 7, 10>(cout);
+			arithmetic_properties<nbits, 7, capacity>(cout);
 			break;
 		case 8:
-			arithmetic_properties<nbits, 8, 10>(cout);
+			arithmetic_properties<nbits, 8, capacity>(cout);
 			break;
 		case 9:
-			arithmetic_properties<nbits, 9, 10>(cout);
+			arithmetic_properties<nbits, 9, capacity>(cout);
 			break;
 		default:
-			cerr << "es = " << es << " unsupported" << endl;
+			cerr << "es = " << es << " reporting is not supported by this program" << endl;
 		}
 	}
 		break;
@@ -94,37 +99,37 @@ void ReportArithmeticProperties(size_t nbits, size_t es, size_t capacity) {
 		constexpr size_t nbits = 16;
 		switch (es) {
 		case 0:
-			arithmetic_properties<nbits, 0, 10>(cout);
+			arithmetic_properties<nbits, 0, capacity>(cout);
 			break;
 		case 1:
-			arithmetic_properties<nbits, 1, 10>(cout);
+			arithmetic_properties<nbits, 1, capacity>(cout);
 			break;
 		case 2:
-			arithmetic_properties<nbits, 2, 10>(cout);
+			arithmetic_properties<nbits, 2, capacity>(cout);
 			break;
 		case 3:
-			arithmetic_properties<nbits, 3, 10>(cout);
+			arithmetic_properties<nbits, 3, capacity>(cout);
 			break;
 		case 4:
-			arithmetic_properties<nbits, 4, 10>(cout);
+			arithmetic_properties<nbits, 4, capacity>(cout);
 			break;
 		case 5:
-			arithmetic_properties<nbits, 5, 10>(cout);
+			arithmetic_properties<nbits, 5, capacity>(cout);
 			break;
 		case 6:
-			arithmetic_properties<nbits, 6, 10>(cout);
+			arithmetic_properties<nbits, 6, capacity>(cout);
 			break;
 		case 7:
-			arithmetic_properties<nbits, 7, 10>(cout);
+			arithmetic_properties<nbits, 7, capacity>(cout);
 			break;
 		case 8:
-			arithmetic_properties<nbits, 8, 10>(cout);
+			arithmetic_properties<nbits, 8, capacity>(cout);
 			break;
 		case 9:
-			arithmetic_properties<nbits, 9, 10>(cout);
+			arithmetic_properties<nbits, 9, capacity>(cout);
 			break;
 		default:
-			cerr << "es = " << es << " unsupported" << endl;
+			cerr << "es = " << es << " reporting is not supported by this program" << endl;
 		}
 	}
 		break;
@@ -133,37 +138,37 @@ void ReportArithmeticProperties(size_t nbits, size_t es, size_t capacity) {
 		constexpr size_t nbits = 31;
 		switch (es) {
 		case 0:
-			arithmetic_properties<nbits, 0, 10>(cout);
+			arithmetic_properties<nbits, 0, capacity>(cout);
 			break;
 		case 1:
-			arithmetic_properties<nbits, 1, 10>(cout);
+			arithmetic_properties<nbits, 1, capacity>(cout);
 			break;
 		case 2:
-			arithmetic_properties<nbits, 2, 10>(cout);
+			arithmetic_properties<nbits, 2, capacity>(cout);
 			break;
 		case 3:
-			arithmetic_properties<nbits, 3, 10>(cout);
+			arithmetic_properties<nbits, 3, capacity>(cout);
 			break;
 		case 4:
-			arithmetic_properties<nbits, 4, 10>(cout);
+			arithmetic_properties<nbits, 4, capacity>(cout);
 			break;
 		case 5:
-			arithmetic_properties<nbits, 5, 10>(cout);
+			arithmetic_properties<nbits, 5, capacity>(cout);
 			break;
 		case 6:
-			arithmetic_properties<nbits, 6, 10>(cout);
+			arithmetic_properties<nbits, 6, capacity>(cout);
 			break;
 		case 7:
-			arithmetic_properties<nbits, 7, 10>(cout);
+			arithmetic_properties<nbits, 7, capacity>(cout);
 			break;
 		case 8:
-			arithmetic_properties<nbits, 8, 10>(cout);
+			arithmetic_properties<nbits, 8, capacity>(cout);
 			break;
 		case 9:
-			arithmetic_properties<nbits, 9, 10>(cout);
+			arithmetic_properties<nbits, 9, capacity>(cout);
 			break;
 		default:
-			cerr << "es = " << es << " unsupported" << endl;
+			cerr << "es = " << es << " reporting is not supported by this program" << endl;
 		}
 	}
 		break;
@@ -172,37 +177,37 @@ void ReportArithmeticProperties(size_t nbits, size_t es, size_t capacity) {
 		constexpr size_t nbits = 32;
 		switch (es) {
 		case 0:
-			arithmetic_properties<nbits, 0, 10>(cout);
+			arithmetic_properties<nbits, 0, capacity>(cout);
 			break;
 		case 1:
-			arithmetic_properties<nbits, 1, 10>(cout);
+			arithmetic_properties<nbits, 1, capacity>(cout);
 			break;
 		case 2:
-			arithmetic_properties<nbits, 2, 10>(cout);
+			arithmetic_properties<nbits, 2, capacity>(cout);
 			break;
 		case 3:
-			arithmetic_properties<nbits, 3, 10>(cout);
+			arithmetic_properties<nbits, 3, capacity>(cout);
 			break;
 		case 4:
-			arithmetic_properties<nbits, 4, 10>(cout);
+			arithmetic_properties<nbits, 4, capacity>(cout);
 			break;
 		case 5:
-			arithmetic_properties<nbits, 5, 10>(cout);
+			arithmetic_properties<nbits, 5, capacity>(cout);
 			break;
 		case 6:
-			arithmetic_properties<nbits, 6, 10>(cout);
+			arithmetic_properties<nbits, 6, capacity>(cout);
 			break;
 		case 7:
-			arithmetic_properties<nbits, 7, 10>(cout);
+			arithmetic_properties<nbits, 7, capacity>(cout);
 			break;
 		case 8:
-			arithmetic_properties<nbits, 8, 10>(cout);
+			arithmetic_properties<nbits, 8, capacity>(cout);
 			break;
 		case 9:
-			arithmetic_properties<nbits, 9, 10>(cout);
+			arithmetic_properties<nbits, 9, capacity>(cout);
 			break;
 		default:
-			cerr << "es = " << es << " unsupported" << endl;
+			cerr << "es = " << es << " reporting is not supported by this program" << endl;
 		}
 	}
 		break;
@@ -211,42 +216,42 @@ void ReportArithmeticProperties(size_t nbits, size_t es, size_t capacity) {
 			constexpr size_t nbits = 64;
 			switch (es) {
 			case 0:
-				arithmetic_properties<nbits, 0, 10>(cout);
+				arithmetic_properties<nbits, 0, capacity>(cout);
 				break;
 			case 1:
-				arithmetic_properties<nbits, 1, 10>(cout);
+				arithmetic_properties<nbits, 1, capacity>(cout);
 				break;
 			case 2:
-				arithmetic_properties<nbits, 2, 10>(cout);
+				arithmetic_properties<nbits, 2, capacity>(cout);
 				break;
 			case 3:
-				arithmetic_properties<nbits, 3, 10>(cout);
+				arithmetic_properties<nbits, 3, capacity>(cout);
 				break;
 			case 4:
-				arithmetic_properties<nbits, 4, 10>(cout);
+				arithmetic_properties<nbits, 4, capacity>(cout);
 				break;
 			case 5:
-				arithmetic_properties<nbits, 5, 10>(cout);
+				arithmetic_properties<nbits, 5, capacity>(cout);
 				break;
 			case 6:
-				arithmetic_properties<nbits, 6, 10>(cout);
+				arithmetic_properties<nbits, 6, capacity>(cout);
 				break;
 			case 7:
-				arithmetic_properties<nbits, 7, 10>(cout);
+				arithmetic_properties<nbits, 7, capacity>(cout);
 				break;
 			case 8:
-				arithmetic_properties<nbits, 8, 10>(cout);
+				arithmetic_properties<nbits, 8, capacity>(cout);
 				break;
 			case 9:
-				arithmetic_properties<nbits, 9, 10>(cout);
+				arithmetic_properties<nbits, 9, capacity>(cout);
 				break;
 			default:
-				cerr << "es = " << es << " unsupported" << endl;
+				cerr << "es = " << es << " reporting is not supported by this program" << endl;
 			}
 		}
 		break;
 	default:
-		cerr << "nbits = " << nbits << " unsupported" << endl;
+		cerr << "nbits = " << nbits << " reporting is not supported by this program" << endl;
 	}
 }
 
@@ -273,7 +278,7 @@ void QuireSizeTable(std::ostream& ostr) {
 	using namespace std;
 	using namespace sw::unum;
 
-	ostr << "Quire size table as a function of <nbits, es, capacity>" << endl;
+	ostr << "Quire size table as a function of <nbits, es, capacity = " << capacity << ">" << endl;
 	ostr << "Capacity is 2^" << capacity << " accumulations of max_pos^2" << endl;
 	unsigned first_column = 8;
 	unsigned size_column = 8;
@@ -306,12 +311,17 @@ try {
 		QuireSizeTable<8>(cout); cout << endl;
 		QuireSizeTable<16>(cout); cout << endl;
 		QuireSizeTable<24>(cout); cout << endl;
+		QuireSizeTable<32>(cout); cout << endl;
+		QuireSizeTable<40>(cout); cout << endl;
+		QuireSizeTable<48>(cout); cout << endl;
+		QuireSizeTable<56>(cout); cout << endl;
+		QuireSizeTable<64>(cout); cout << endl;
 		return EXIT_SUCCESS;
 	}
 	else if (argc != 4) {
 		cerr << "Show the arithmetic properties of a posit." << endl;
 	    cerr << "Usage: posit_properties [nbits es capacity]" << endl;
-		cerr << "Example: posit_properties 32 1 10" << endl;
+		cerr << "Example: posit_properties 16 1 8" << endl;
 		cerr <<  msg << endl;
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
@@ -320,9 +330,35 @@ try {
 	size_t es = atoi(argv[2]);
 	size_t capacity = atoi(argv[3]);
 
-	ReportArithmeticProperties(nbits, es, capacity);
-
-
+	switch (capacity) {
+	case 0:
+		ReportArithmeticProperties<0>(nbits, es);
+		break;
+	case 4:
+		ReportArithmeticProperties<4>(nbits, es);
+		break;
+	case 8:
+		ReportArithmeticProperties<8>(nbits, es);
+		break;
+	case 10:
+		ReportArithmeticProperties<10>(nbits, es);
+		break;
+	case 16:
+		ReportArithmeticProperties<16>(nbits, es);
+		break;
+	case 20:
+		ReportArithmeticProperties<20>(nbits, es);
+		break;
+	case 24:
+		ReportArithmeticProperties<24>(nbits, es);
+		break;
+	case 32:
+		ReportArithmeticProperties<32>(nbits, es);
+		break;
+	default:
+		cerr << "capacity = " << capacity << " reporting is not supported by this program: set of values to select from is [0,4,8,10,16,20,24,32]";
+	}
+	
 	return EXIT_SUCCESS;
 }
 catch (const char* const msg) {
