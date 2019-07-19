@@ -194,7 +194,7 @@ template<size_t _nbits, size_t _es, class positN_t, class positNx2_t, class conv
 	static void format(positN_t p, char* str) {
 		using namespace sw::unum;
 		posit<nbits, es> pa = convert::decode(p);
-		std::string s = posit_format(pa);
+		std::string s = hex_format(pa);
 		sprintf(str, "%s", s.c_str());
 	}
 

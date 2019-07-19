@@ -1701,10 +1701,17 @@ inline std::istream& operator>> (std::istream& istr, posit<nbits, es>& p) {
 
 // generate a posit format ASCII format nbits.esxNN...NNp
 template<size_t nbits, size_t es>
-inline std::string posit_format(const posit<nbits, es>& p) {
+inline std::string hex_format(const posit<nbits, es>& p) {
 	// we need to transform the posit into a string
 	std::stringstream ss;
 	ss << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
+	return ss.str();
+}
+
+template<typename Float>
+inline std::string hex_format(Float f) {
+	std::stringstream ss;
+	ss << std::hexfloat << std::setprecision(std::numeric_limits<Float>::digits10) << f;
 	return ss.str();
 }
 
@@ -1718,7 +1725,6 @@ inline std::string to_string(const posit<nbits, es>& p, std::streamsize precisio
 	ss << std::setprecision(precision) << (long double)p;
 	return ss.str();
 }
-
 
 // binary representation of a posit with delimiters: i.e. 0|10|00|000000 => s|r|e|f
 template<typename Posit>
