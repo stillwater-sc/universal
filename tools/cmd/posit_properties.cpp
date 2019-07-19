@@ -23,8 +23,8 @@ Quire segments\n\
 template<size_t nbits, size_t es, size_t capacity = 10>
 void arithmetic_properties(std::ostream& ostr) {
 	ostr << sw::unum::posit_range<nbits, es>() << std::endl;
-	ostr << "  minpos                     : " << sw::unum::posit_format(sw::unum::minpos<nbits, es>()) << " " << sw::unum::minpos<nbits, es>() << std::endl;
-	ostr << "  maxpos                     : " << sw::unum::posit_format(sw::unum::maxpos<nbits, es>()) << " " << sw::unum::maxpos<nbits, es>() << std::endl;
+	ostr << "  minpos                     : " << sw::unum::hex_format(sw::unum::minpos<nbits, es>()) << " " << sw::unum::minpos<nbits, es>() << std::endl;
+	ostr << "  maxpos                     : " << sw::unum::hex_format(sw::unum::maxpos<nbits, es>()) << " " << sw::unum::maxpos<nbits, es>() << std::endl;
 	ostr << sw::unum::quire_properties<nbits, es, capacity>() << std::endl;
 	ostr << "Quire segments" << std::endl;
 	ostr << sw::unum::quire<nbits, es, capacity>() << std::endl;
