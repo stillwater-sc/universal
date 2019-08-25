@@ -23,7 +23,6 @@ endif()
 
 if(EXISTS ${UNIVERSAL_DIR}/include/universal/posit/posit.hpp)
   list(APPEND UNIVERSAL_INCLUDE_DIRS "${UNIVERSAL_DIR}/include")
-  list(APPEND UNIVERSAL_INCLUDE_DIRS "${UNIVERSAL_DIR}/include/universal/posit")
 else()
   message(STATUS "Couldn't find the posit include directory at ${UNIVERSAL_DIR}/include")
 endif(EXISTS ${UNIVERSAL_DIR}/include/universal/posit/posit.hpp)
