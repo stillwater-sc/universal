@@ -7,6 +7,8 @@
 #ifndef _VALID_
 #define _VALID_
 
-#include <posit>
+#include <universal/posit/posit>
+#include <universal/valid/valid.hpp>
+#include <universal/valid/valid_manipulators.hpp>
 
 #endif
