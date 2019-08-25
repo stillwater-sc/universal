@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-// setup the correct C11 infrastructure
+// set up the correct C11 infrastructure
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdbool.h>
@@ -206,7 +206,7 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 #define posit_div(p, x) POSIT_GENERIC_OP(p,x,div)
 #define posit_cmp(p, x) POSIT_GENERIC_OP(p,x,cmp)
 
-#define POSIT_GENETIC1(p, op) _Generic((p), \
+#define POSIT_GENERIC_1(p, op) _Generic((p), \
 	posit4_t: POSIT_GLUE(posit4_,op), \
 	posit8_t: POSIT_GLUE(posit8_,op), \
 	posit16_t: POSIT_GLUE(posit16_,op), \
@@ -215,19 +215,19 @@ static inline uint64_t  posit64_bits(posit64_t p) { return p.v; }
 	posit128_t: POSIT_GLUE(posit128_,op), \
 	posit256_t: POSIT_GLUE(posit256_,op) \
 )
-#define posit_str(buf, p)   POSIT_GENETIC1(p, str)((buf), (p))
-#define posit_sqrt(p)       POSIT_GENETIC1(p, sqrt)(p)
-#define posit_log(p)        POSIT_GENETIC1(p, log)(p)
-#define posit_exp(p)        POSIT_GENETIC1(p, exp)(p)
-#define posit_told(p)       POSIT_GENETIC1(p, told)(p)
-#define posit_tod(p)        POSIT_GENETIC1(p, tod)(p)
-#define posit_tof(p)        POSIT_GENETIC1(p, tof)(p)
-#define posit_tosll(p)      POSIT_GENETIC1(p, tosll)(p)
-#define posit_tosl(p)       POSIT_GENETIC1(p, tosl)(p)
-#define posit_tosi(p)       POSIT_GENETIC1(p, tosi)(p)
-#define posit_toull(p)      POSIT_GENETIC1(p, toull)(p)
-#define posit_toul(p)       POSIT_GENETIC1(p, toul)(p)
-#define posit_toui(p)       POSIT_GENETIC1(p, toui)(p)
+#define posit_str(buf, p)   POSIT_GENERIC_1(p, str)((buf), (p))
+#define posit_sqrt(p)       POSIT_GENERIC_1(p, sqrt)(p)
+#define posit_log(p)        POSIT_GENERIC_1(p, log)(p)
+#define posit_exp(p)        POSIT_GENERIC_1(p, exp)(p)
+#define posit_told(p)       POSIT_GENERIC_1(p, told)(p)
+#define posit_tod(p)        POSIT_GENERIC_1(p, tod)(p)
+#define posit_tof(p)        POSIT_GENERIC_1(p, tof)(p)
+#define posit_tosll(p)      POSIT_GENERIC_1(p, tosll)(p)
+#define posit_tosl(p)       POSIT_GENERIC_1(p, tosl)(p)
+#define posit_tosi(p)       POSIT_GENERIC_1(p, tosi)(p)
+#define posit_toull(p)      POSIT_GENERIC_1(p, toull)(p)
+#define posit_toul(p)       POSIT_GENERIC_1(p, toul)(p)
+#define posit_toui(p)       POSIT_GENERIC_1(p, toui)(p)
 
 #define posit_bits(p) (_Generic((p), \
 	posit4_t: posit4_bits, \

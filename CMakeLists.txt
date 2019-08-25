@@ -262,15 +262,6 @@ endif()
 # universal/decimal
 include_directories("./include")
 
-# What is this needed for? On linux -std=c++14 seems to conflict with -std=gnu++14,
-# which is being emitted presumably because CMAKE_CXX_STANDARD has been set to 14.
-if(MSVC)
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-endif(MSVC)
-if(UNIX)
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
-endif(UNIX)
-
 ####
 # macro to read all cpp files in a directory
 # and create a test target for that cpp file
