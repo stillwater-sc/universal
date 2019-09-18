@@ -30,13 +30,13 @@ public:
 	size_t nrBits() const { return _NrOfBits;	}
 	// fractions are assumed to have a hidden bit, the case where they do not must be managed by the container of the fraction
 	// calculate the value of the fraction ignoring the hidden bit. So a fraction of 1010 has the value 0.5+0.125=5/8
-	double value() const { 
-		double v = 0.0;
+	long double value() const { 
+		long double v = 0.0;
 		if (_Bits.none()) return v;
-		double scale = 0.5;
+		long double scale = 0.5;
 		for (int i = int(fbits) - 1; i >= 0; i--) {
 			if (_Bits.test(i)) v += scale;
-			scale *= (double)0.5;
+			scale *= (long double)0.5;
 			if (scale == 0.0) break;
 		}
 		return v;
