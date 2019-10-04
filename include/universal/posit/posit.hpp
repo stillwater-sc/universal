@@ -1727,11 +1727,9 @@ inline std::string to_string(const posit<nbits, es>& p, std::streamsize precisio
 }
 
 // binary representation of a posit with delimiters: i.e. 0|10|00|000000 => s|r|e|f
-template<typename Posit>
-inline std::string to_binary(const Posit& number) {
-	constexpr size_t nbits = number.nbits;
-	constexpr size_t es = number.es;
-	constexpr size_t fbits = number.fbits;
+template<size_t nbits, size_t es>
+inline std::string to_binary(const posit<nbits, es>& number) {
+	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
 	bool s;
 	regime<nbits, es> r;
 	exponent<nbits, es> e;
@@ -1749,11 +1747,9 @@ inline std::string to_binary(const Posit& number) {
 }
 
 // binary exponent representation: i.e. 1.0101010e2^-37
-template<typename Posit>
-inline std::string to_base2_scientific(const Posit& number) {
-	constexpr size_t nbits = number.nbits;
-	constexpr size_t es    = number.es;
-	constexpr size_t fbits = number.fbits;
+template<size_t nbits, size_t es>
+inline std::string to_base2_scientific(const posit<nbits, es>& number) {
+	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
 	bool s;
 	scale(number);
 	regime<nbits, es> r;
