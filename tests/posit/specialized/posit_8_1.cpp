@@ -16,7 +16,7 @@
 #include "../../posit_math_helpers.hpp"
 
 /*
-Standard posits with nbits = 8 have no exponent bits, i.e. es = 0.
+specialized small 8-bit posit with es = 1 to increase dynamic range over standard posit<8,0>.
 */
 
 void GenerateValues() {

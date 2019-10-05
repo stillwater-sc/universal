@@ -174,7 +174,7 @@ posit8_1_t  posit8_1_fromsi(int rhs) {
 		return p;
 	}
 	bool sign = (rhs < 0 ? true : false);
-	int8_t v = sign ? -rhs : rhs; // project to positive side of the projective reals
+	int v = sign ? -rhs : rhs; // project to positive side of the projective reals
 	uint8_t raw; // 0x7C = 256, 0x7D = 512, 0x7E = 1024, 0x7F = 4096
 	if (v > 2048) { // +-maxpos
 		raw = 0x7F;
@@ -188,13 +188,13 @@ posit8_1_t  posit8_1_fromsi(int rhs) {
 	else {
 		uint8_t mask = 0x40;
 		int8_t log2 = 12;
-		uint8_t fraction_bits = v;
+		uint16_t fraction_bits = v;
 		while (!(fraction_bits & mask)) {
 			log2--;
 			fraction_bits <<= 1;
 		}
 		int8_t k = log2 >> 1;
-		uint8_t exp_bits = (log2 & 0x1) << (6 - k);
+		uint16_t exp_bits = (log2 & 0x1) << (12 - k);
 		fraction_bits = (fraction_bits ^ mask);
 		raw = (0x7F ^ (0x3F >> k)) | exp_bits | (fraction_bits >> (k + 1));
 
