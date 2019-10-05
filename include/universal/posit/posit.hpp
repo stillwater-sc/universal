@@ -1746,6 +1746,14 @@ inline std::string to_binary(const posit<nbits, es>& number) {
 	return ss.str();
 }
 
+// numerical helpers
+
+template<size_t nbits, size_t es>
+inline posit<nbits, es> ulp(const posit<nbits, es>& a) {
+	posit<nbits, es> b(a);
+	return ++b - a;
+}
+
 // binary exponent representation: i.e. 1.0101010e2^-37
 template<size_t nbits, size_t es>
 inline std::string to_base2_scientific(const posit<nbits, es>& number) {

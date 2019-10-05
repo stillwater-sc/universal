@@ -250,19 +250,8 @@ namespace sw {
 		}
 
 		// numerical helpers
-
 		template<typename Scalar>
 		Scalar ulp(const Scalar& a) {
-			Scalar b(a);
-			return ++b - a;
-		}
-
-		template<>
-		float ulp(const float& a) {
-			return std::nextafter(a, a + 1.0f) - a;
-		}
-		template<>
-		double ulp(const double& a) {
 			return std::nextafter(a, a + 1.0f) - a;
 		}
 		

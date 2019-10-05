@@ -76,6 +76,7 @@ try {
 	float f = float(p);
 	double d = double(p);
 	long double ld = (long double)(p);
+	double u = ulp(d);
 
 	p = f;
 	cout << color_print(p) << " " << p << endl;
