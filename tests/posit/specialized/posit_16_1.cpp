@@ -1,4 +1,4 @@
-// posit_16_1.cpp: Functionality tests for posit<16,1>
+// posit_16_1.cpp: Functionality tests for specialized posit<16,1>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
@@ -26,8 +26,8 @@ try {
 
 	const size_t RND_TEST_CASES = 2*1024*1024;
 
-	const size_t nbits = 16;
-	const size_t es = 1;
+	constexpr size_t nbits = 16;
+	constexpr size_t es = 1;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;

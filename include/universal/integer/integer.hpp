@@ -189,7 +189,9 @@ public:
 		return float_assign(rhs);
 	}
 protected:
-	inline void setzero() {}
+	inline void setzero() {
+		std::memset(&b, 0, nrBytes);
+	}
 
 	template<typename Ty>
 	integer& float_assign(Ty& rhs) {
@@ -211,21 +213,22 @@ bool parse(std::string& txt, integer<nbits>& i) {
 	bool bSuccess = false;
 	// check if the txt is an integer form: [0123456789]+
 	std::regex decimal_regex("[0123456789]+");
+	std::regex octal_regex("[0][01234567]+");
 	std::regex hex_regex("[0x][0123456789aAbBcCdDeEfF]");
 	if (std::regex_match(txt, decimal_regex)) {
-		// found a posit representation
-		std::string digitStr;
-		auto it = txt.begin();
-		for (; it != txt.end(); it++) {
-			if (*it == '.') break;
-			digitStr.append(1, *it);
-		}
-		unsigned long long ull = std::stoull("12345");
-		bSuccess = true;
+		std::cout << "found a decimal integer representation\n";
+
+		bSuccess = false; // TODO
+	}
+	else if (std::regex_match(txt, octal_regex)) {
+		std::cout << "found an octal representation\n";
+
+		bSuccess = false; // TODO
 	}
 	else if (std::regex_match(txt, hex_regex)) {
+		std::cout << "found a hexadecimal representation\n";
 
-		bSuccess = true;
+		bSuccess = false;  // TODO
 	}
 	return bSuccess;
 }

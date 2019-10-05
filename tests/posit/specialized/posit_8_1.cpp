@@ -1,4 +1,4 @@
-// posit_8_1.cpp: Functionality tests for posit<8,1>
+// posit_8_1.cpp: Functionality tests for specialized posit<8,1>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
@@ -6,7 +6,8 @@
 
 // Configure the posit template environment
 // first: enable fast specialized posit<8,1>
-#define POSIT_FAST_POSIT_8_1 1
+// TODO: no implementation yet
+#define POSIT_FAST_POSIT_8_1 0
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
@@ -17,22 +18,6 @@
 /*
 Standard posits with nbits = 8 have no exponent bits, i.e. es = 0.
 */
-template<size_t nbits, size_t es>
-void placeholder(sw::unum::posit<nbits, es>& a) {
-	using namespace std;
-	using namespace sw::unum;
-	bool		     	 _sign;
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
-	fraction<5>          _fraction;
-	bitblock<nbits>		 _raw_bits;
-	decode(a.get(), _sign, _regime, _exponent, _fraction);
-	double s = (_sign ? -1.0 : 1.0);
-	double r = _regime.value();
-	double e = _exponent.value();
-	double f = (1.0 + _fraction.value());
-	cout << "fraction = " << _fraction << " faction value = " << f << endl;
-}
 
 void GenerateValues() {
 	using namespace std;
@@ -49,15 +34,10 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	// const size_t RND_TEST_CASES = 0;  // no randoms, 8-bit posits can be done exhaustively
+	// no randoms, 8-bit posits can be done exhaustively
 
-	const size_t nbits = 8;
-	const size_t es = 1;
-
-	GenerateValues();
-	posit<nbits, es> a = 15;
-	cout << a << endl;
-	return 0;
+	constexpr size_t nbits = 8;
+	constexpr size_t es = 1;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;

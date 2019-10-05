@@ -53,8 +53,6 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Conversion test";
 
@@ -75,8 +73,7 @@ try {
 
 	float f = float(p);
 	double d = double(p);
-	long double ld = (long double)(p);
-	double u = ulp(d);
+//	long double ld = (long double)(p);
 
 	p = f;
 	cout << color_print(p) << " " << p << endl;
@@ -92,7 +89,12 @@ try {
 	// s rrrrr e ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'f
 	// 0 11110 1 1001'1001'0001'1010'1001'0101'0000'0000'0000'0000'0000'0000'0000'1001'1 +204.552
 	// 0 11110 1 1001'1001'0001'1010'1001'0100'0000'0000'0000'0000'0000'0000'0000'0000'0 +204.552
+	return EXIT_SUCCESS;
+
 #else
+
+	bool bReportIndividualTestCases = false;
+	int nrOfFailedTestCases = 0;
 
 	cout << "Posit casting validation" << endl;
 
@@ -103,10 +105,10 @@ try {
 
 #endif // STRESS_TESTING
 
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif // MANUAL_TESTING
 
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

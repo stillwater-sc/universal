@@ -1,4 +1,4 @@
-// posit_8_0.cpp: Functionality tests for posit<8,0>
+// posit_8_0.cpp: Functionality tests for specialized posit<8,0>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
@@ -17,32 +17,16 @@
 /*
 Standard posits with nbits = 8 have no exponent bits, i.e. es = 0.
 */
-template<size_t nbits, size_t es>
-void placeholder(sw::unum::posit<nbits, es>& a) {
-	using namespace std;
-	using namespace sw::unum;
-	bool		     	 _sign;
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
-	fraction<5>          _fraction;
-	bitblock<nbits>		 _raw_bits;
-	decode(a.get(), _sign, _regime, _exponent, _fraction);
-	double s = (_sign ? -1.0 : 1.0);
-	double r = _regime.value();
-	double e = _exponent.value();
-	double f = (1.0 + _fraction.value());
-	cout << "fraction = " << _fraction << " faction value = " << f << endl;
-}
 
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
 
-	// const size_t RND_TEST_CASES = 0;  // no randoms, 8-bit posits can be done exhaustively
+	// no randoms, 8-bit posits can be done exhaustively
 
-	const size_t nbits = 8;
-	const size_t es = 0;
+	constexpr size_t nbits = 8;
+	constexpr size_t es = 0;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;

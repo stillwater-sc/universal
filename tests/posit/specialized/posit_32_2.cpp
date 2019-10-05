@@ -1,4 +1,4 @@
-// posit_32_2.cpp: Functionality tests for standard 32-bit posit<32,2>
+// posit_32_2.cpp: Functionality tests for specialized 32-bit posit<32,2>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
@@ -57,10 +57,10 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 500000;
+	constexpr size_t RND_TEST_CASES = 500000;
 
-	const size_t nbits = 32;
-	const size_t es = 2;
+	constexpr size_t nbits = 32;
+	constexpr size_t es = 2;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;

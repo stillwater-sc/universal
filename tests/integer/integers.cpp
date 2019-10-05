@@ -13,8 +13,6 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	//bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Integer Arithmetic tests failed";
 
@@ -23,13 +21,7 @@ try {
 	using int64 = integer<64>;
 	using int128 = integer<128>;
 
-	int8 a, b;
-	a = 1;
-	b = 2;
-	int8 c(3);
-	//c = a + b;
-//	cout << "sum: " << c << endl;
-
+	int8 a;
 	int64 k;
 	int128 m;
 	cout << "Nr of bytes\n";
@@ -37,17 +29,24 @@ try {
 	cout << typeid(k).name() << "  size in bytes " << k.nrBytes << endl;
 	cout << typeid(m).name() << "  size in bytes " << m.nrBytes << endl;
 
+	return EXIT_SUCCESS;
 #else
 	std::cout << "Integer Arithmetic verfication" << std::endl;
+
+	bool bReportIndividualTestCases = false;
+	int nrOfFailedTestCases = 0;
+
+	// allocation is the only functionality of integer<N> at this time
+
+	// TODO: implement parsing, assigment, conversion, arithmetic
 
 #ifdef STRESS_TESTING
 
 
 #endif // STRESS_TESTING
-
+	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif // MANUAL_TESTING
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

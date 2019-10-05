@@ -22,10 +22,10 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	// const size_t RND_TEST_CASES = 0;  // no randoms, 4-bit posits can be done exhaustively
+	// no randoms, 4-bit posits can be done exhaustively
 
-	const size_t nbits = 4;
-	const size_t es = 0;
+	constexpr size_t nbits = 4;
+	constexpr size_t es = 0;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = true;
@@ -36,7 +36,6 @@ try {
 #else
 	cout << "Reference posit<4,0> configuration tests" << endl;
 #endif
-
 
 	posit<nbits,es> p;
 	cout << dynamic_range(p) << endl;
