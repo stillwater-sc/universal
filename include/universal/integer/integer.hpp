@@ -281,14 +281,14 @@ protected:
 	unsigned short to_ushort() const {
 		if (iszero()) return 0;
 		unsigned short us;
-		char* p = &us;
+		char* p = (char*)&us;
 		*p = b[0];
 		*(p + 1) = b[1];
 		return us;
 	}
 	unsigned int to_uint() const {
 		unsigned int ui;
-		char* p = &ui;
+		char* p = (char*)&ui;
 		*p = b[0];
 		*(p + 1) = b[1];
 		*(p + 2) = b[2];
