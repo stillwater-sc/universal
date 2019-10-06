@@ -4,6 +4,83 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "universal/integer/integer.hpp"
+// test helpers
+#include "../test_helpers.hpp"
+
+/*
+   The goal of the arbitrary integers is to provide a constrained big integer type
+   that enables fast computation with exceptions for overflow, so that the type
+   can be used for forward error analysis studies.
+*/
+
+namespace sw {
+namespace unum {
+
+#define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
+
+#define FLOAT_TABLE_WIDTH 20
+	template<size_t nbits>
+	void ReportBinaryArithmeticError(std::string test_case, std::string op, const integer<nbits>& lhs, const integer<nbits>& rhs, const integer<nbits>& pref, const integer<nbits>& presult) {
+		std::cerr << test_case << " "
+			<< std::setprecision(20)
+			<< std::setw(FLOAT_TABLE_WIDTH) << lhs
+			<< " " << op << " "
+			<< std::setw(FLOAT_TABLE_WIDTH) << rhs
+			<< " != "
+			<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
+			<< std::setw(FLOAT_TABLE_WIDTH) << presult
+			<< " " << to_binary(pref) << " vs " << to_binary(presult)
+			<< std::setprecision(5)
+			<< std::endl;
+	}
+
+	// enumerate all addition cases for an integer<nbits> configuration
+	template<size_t nbits>
+	int ValidateAddition(std::string tag, bool bReportIndividualTestCases) {
+		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		int nrOfFailedTests = 0;
+		integer<nbits> ia, ib, isum, iref;
+
+		int64_t i64a, i64b;
+		for (size_t i = 0; i < NR_INTEGERS; i++) {
+			ia.set_raw_bits(i);
+			i64a = int64_t(ia);
+			for (size_t j = 0; j < NR_INTEGERS; j++) {
+				ib.set_raw_bits(j);
+				i64b = int64_t(ib);
+				iref = i64a + i64b;
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				try {
+					isum = ia + ib;
+				}
+				catch (...) {
+					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+						// correctly caught the exception
+	
+					}
+					else {
+						throw "unknown exception";
+					}
+				}
+
+#else
+				isum = ia + ib;
+#endif
+				if (isum != iref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, isum);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, isum);
+				}
+			}
+		}
+
+		return nrOfFailedTests;
+	}
+}
+}
+
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -39,6 +116,8 @@ try {
 	// allocation is the only functionality of integer<N> at this time
 
 	// TODO: implement parsing, assigment, conversion, arithmetic
+	// manual exhaustive test
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8>("Manual Testing", true), "integer<8>", "addition");
 
 #ifdef STRESS_TESTING
 
