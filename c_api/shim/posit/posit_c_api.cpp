@@ -4,7 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <tuple>
-#include <posit_c_api.h>
+#include <universal/posit/posit_c_api.h>
+
 // configure the C++ library
 // default behavior that is kept
 // POSIT_ROUNDING_ERROR_FREE_IO_FORMAT
@@ -21,7 +22,7 @@
 #define POSIT_FAST_POSIT_128_4 0
 #define POSIT_FAST_POSIT_256_5 0
 // Now include the C++ library
-#include <posit>
+#include <universal/posit/posit>
 
 
 // marshal takes a positN_t and marshals it into a raw bitblock
@@ -193,7 +194,7 @@ template<size_t _nbits, size_t _es, class positN_t, class positNx2_t, class conv
 	static void format(positN_t p, char* str) {
 		using namespace sw::unum;
 		posit<nbits, es> pa = convert::decode(p);
-		std::string s = posit_format(pa);
+		std::string s = hex_format(pa);
 		sprintf(str, "%s", s.c_str());
 	}
 
@@ -274,31 +275,31 @@ extern "C" {
 #define POSIT_IMPLS
 
 #define POSIT_NBITS 4
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 8
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 16
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 32
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 64
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 128
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 256
-#include "posit_c_macros.h"
+#include "universal/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 }

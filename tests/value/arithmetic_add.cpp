@@ -1,6 +1,6 @@
 // arithmetic_add.cpp: functional tests for arithmetic add of values
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -12,14 +12,15 @@
 // turn on tracing: kinda misleading that these flags carry the POSIT prefix
 #define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_ADD
-#include "../../posit/exceptions.hpp"
-#include "../../bitblock/bitblock.hpp"
-#include "../../posit/value.hpp"
+#include "universal/posit/exceptions.hpp"
+#include "universal/bitblock/bitblock.hpp"
+#include "universal/posit/value.hpp"
+// test helpers
 #include "../test_helpers.hpp"
 
 // (sign, scale, fraction) representation with sbits in scale and fbits in fraction
 template<size_t sbits, size_t fbits>
-int ValidateValueAdd(std::string tag, bool bReportIndividualTestCases) {
+int VerifyValueAdd(std::string tag, bool bReportIndividualTestCases) {
 	//constexpr size_t NR_OF_VALUES = (size_t(1) << (1 + scale + fbits));
 	constexpr size_t abits = fbits + 4;
 	int nrOfFailedTestCases = 0;
@@ -72,7 +73,7 @@ try {
 #if MANUAL_TESTING
 
 	// a posit<8,0> has 5 sbits, and 5 fbits. it needs 5 sbits to capture products
-	// nrOfFailedTestCases += ReportTestResult(ValidateValueAdd<3, 5>("FAIL", bReportIndividualTestCases), "value<5,5>", "addition");
+	// nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 5>("FAIL", bReportIndividualTestCases), "value<5,5>", "addition");
 	value<5> a = 8;
 	value<5> b = -64;
 	value<5> c = -56;
@@ -83,17 +84,27 @@ try {
 	module_add<5,9>(a, b, sum);
 	cout << components(sum) << endl;
 
+	value<64> d = 1ull;
+	cout << components(d) << " " << d << endl;
+	d = -1ll;
+	cout << components(d) << " " << d << endl;
+	for (int i = 0; i < 8; ++i) {
+		value<64> a = i;
+		cout << components(a) << " " << a << endl;
+	}
+	for (uint64_t i = 0; i < 8; ++i) {
+		value<64> a = i;
+		cout << components(a) << " " << a << endl;
+	}
 #else
 	// Note: increment/decrement depend on the 2's complement ordering of the posit encoding
 	// This implies that this functionality is independent of the <nbits,es> configuration of the posit.
 	// Otherwise stated, an enumeration of tests for different posit configurations is a bit superfluous.
 
-	nrOfFailedTestCases += ReportTestResult(ValidateValueAdd<3,5>("FAIL", bReportIndividualTestCases), "value<3,5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 5>("FAIL", bReportIndividualTestCases), "value<3,5>", "addition");
 
 
 #endif // MANUAL_TESTING
-
-
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

@@ -1,16 +1,15 @@
 // logic.cpp : test suite for bitblock logic operators
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "common.hpp"
+#include "universal/posit/exceptions.hpp"  // TODO: remove namespace pollution
+#include "universal/bitblock/bitblock.hpp"
+// test helpers
 #include "../tests/test_helpers.hpp"
-#include "../../posit/exceptions.hpp"
-#include "../../bitblock/bitblock.hpp"
 
 template<size_t nbits>
-int ValidateBitsetLogicLessThan() {
+int VerifyBitsetLogicLessThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	sw::unum::bitblock<nbits> a, b;
@@ -32,7 +31,7 @@ int ValidateBitsetLogicLessThan() {
 }
 
 template<size_t nbits>
-int ValidateBitsetLogicGreaterThan() {
+int VerifyBitsetLogicGreaterThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	sw::unum::bitblock<nbits> a, b;
@@ -54,7 +53,7 @@ int ValidateBitsetLogicGreaterThan() {
 }
 
 template<size_t nbits>
-int ValidateBitsetLogicEqual() {
+int VerifyBitsetLogicEqual() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	sw::unum::bitblock<nbits> a, b;
@@ -76,7 +75,7 @@ int ValidateBitsetLogicEqual() {
 }
 
 template<size_t nbits>
-int ValidateBitsetLogicNotEqual() {
+int VerifyBitsetLogicNotEqual() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	sw::unum::bitblock<nbits> a, b;
@@ -98,7 +97,7 @@ int ValidateBitsetLogicNotEqual() {
 }
 
 template<size_t nbits>
-int ValidateBitsetLogicLessOrEqualThan() {
+int VerifyBitsetLogicLessOrEqualThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	sw::unum::bitblock<nbits> a, b;
@@ -120,7 +119,7 @@ int ValidateBitsetLogicLessOrEqualThan() {
 }
 
 template<size_t nbits>
-int ValidateBitsetLogicGreaterOrEqualThan() {
+int VerifyBitsetLogicGreaterOrEqualThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
 	sw::unum::bitblock<nbits> a, b;
@@ -162,62 +161,62 @@ try {
 	std::cout << gt << " " << let << endl;
 
 
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicEqual<3>(), "bitblock<3>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicNotEqual<3>(), "bitblock<3>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessThan<3>(), "bitblock<3>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterThan<3>(), "bitblock<3>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessOrEqualThan<3>(), "bitblock<3>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterOrEqualThan<3>(), "bitblock<3>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<3>(), "bitblock<3>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<3>(), "bitblock<3>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessThan<3>(), "bitblock<3>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterThan<3>(), "bitblock<3>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessOrEqualThan<3>(), "bitblock<3>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterOrEqualThan<3>(), "bitblock<3>", ">=");
 
 #else
 
 	cout << "Logic: operator==()" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicEqual<3>(), "bitblock<3>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicEqual<4>(), "bitblock<4>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicEqual<5>(), "bitblock<5>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicEqual<6>(), "bitblock<6>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicEqual<7>(), "bitblock<7>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicEqual<8>(), "bitblock<8>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<3>(), "bitblock<3>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<4>(), "bitblock<4>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<5>(), "bitblock<5>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<6>(), "bitblock<6>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<7>(), "bitblock<7>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicEqual<8>(), "bitblock<8>", "==");
 
 	cout << "Logic: operator!=()" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicNotEqual<3>(), "bitblock<3>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicNotEqual<4>(), "bitblock<4>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicNotEqual<5>(), "bitblock<5>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicNotEqual<6>(), "bitblock<6>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicNotEqual<7>(), "bitblock<7>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicNotEqual<8>(), "bitblock<8>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<3>(), "bitblock<3>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<4>(), "bitblock<4>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<5>(), "bitblock<5>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<6>(), "bitblock<6>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<7>(), "bitblock<7>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicNotEqual<8>(), "bitblock<8>", "!=");
 
 	std::cout << "Logic: operator<()" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessThan<3>(), "bitblock<3>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessThan<4>(), "bitblock<4>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessThan<5>(), "bitblock<5>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessThan<6>(), "bitblock<6>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessThan<7>(), "bitblock<7>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessThan<8>(), "bitblock<8>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessThan<3>(), "bitblock<3>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessThan<4>(), "bitblock<4>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessThan<5>(), "bitblock<5>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessThan<6>(), "bitblock<6>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessThan<7>(), "bitblock<7>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessThan<8>(), "bitblock<8>", "<");
 
 	std::cout << "Logic: operator<=()" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessOrEqualThan<3>(), "bitblock<3>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessOrEqualThan<4>(), "bitblock<4>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessOrEqualThan<5>(), "bitblock<5>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessOrEqualThan<6>(), "bitblock<6>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessOrEqualThan<7>(), "bitblock<7>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicLessOrEqualThan<8>(), "bitblock<8>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessOrEqualThan<3>(), "bitblock<3>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessOrEqualThan<4>(), "bitblock<4>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessOrEqualThan<5>(), "bitblock<5>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessOrEqualThan<6>(), "bitblock<6>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessOrEqualThan<7>(), "bitblock<7>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicLessOrEqualThan<8>(), "bitblock<8>", "<=");
 
 	std::cout << "Logic: operator>()" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterThan<3>(), "bitblock<3>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterThan<4>(), "bitblock<4>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterThan<5>(), "bitblock<5>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterThan<6>(), "bitblock<6>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterThan<7>(), "bitblock<7>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterThan<8>(), "bitblock<8>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterThan<3>(), "bitblock<3>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterThan<4>(), "bitblock<4>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterThan<5>(), "bitblock<5>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterThan<6>(), "bitblock<6>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterThan<7>(), "bitblock<7>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterThan<8>(), "bitblock<8>", ">");
 
 	std::cout << "Logic: operator>=()" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterOrEqualThan<3>(), "bitblock<3>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterOrEqualThan<4>(), "bitblock<4>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterOrEqualThan<5>(), "bitblock<5>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterOrEqualThan<6>(), "bitblock<6>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterOrEqualThan<7>(), "bitblock<7>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidateBitsetLogicGreaterOrEqualThan<8>(), "bitblock<8>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterOrEqualThan<3>(), "bitblock<3>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterOrEqualThan<4>(), "bitblock<4>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterOrEqualThan<5>(), "bitblock<5>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterOrEqualThan<6>(), "bitblock<6>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterOrEqualThan<7>(), "bitblock<7>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyBitsetLogicGreaterOrEqualThan<8>(), "bitblock<8>", ">=");
 
 #if STRESS_TESTING
 

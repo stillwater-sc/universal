@@ -2,7 +2,8 @@
 # Set minimum version of CMake. Since we are using the VERSION option of the
 # project command, we need at least 3.0. To honor the amazing work that
 # the folks at KitWare have done for the open source community, we are
-# going to specify a recent version.
+# going to specify a recent version. 
+# As of UNIVERSAL v2.0 December 2018
 # Ubuntu 16.04 LTS runs cmake 3.5.1
 # Ubuntu 18.04 LTS runs cmake 3.10.2
 # container runs cmake 3.7.1
@@ -58,7 +59,8 @@ option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"
 option(C_API_LIB_PIC                     "Set to ON to compile C API library with -fPIC"       OFF)
 # number systems and their verification suites
 option(BUILD_BITBLOCK                    "Set to ON to build bitblock tests"                   OFF)
-option(BUILD_REAL_NUMBER                 "Set to ON to build real value tests"                 OFF)
+option(BUILD_REAL_NUMBERS                "Set to ON to build real value tests"                 OFF)
+option(BUILD_INTEGER_NUMBERS             "Set to ON to build integer tests"                    OFF)
 option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 tests"                OFF)
 option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 tests"                OFF)
 option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3 posit tests"          OFF)
@@ -184,7 +186,7 @@ elseif(MSVC)
 	# Note that the MSVC compiler does not, and never will, support a C++11, C++03, or C++98 standards version switch.
 	# Also, the value of the __cplusplus macro is not affected by the /permissive- switch.
 	#set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
-	# for the moment turn off since we are getting: cl : COmmand line warning D9002: ignoring unknown option '/Zc:__cplusplus`
+	# for the moment turn off since we are getting: cl : Command line warning D9002: ignoring unknown option '/Zc:__cplusplus`
 	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /std:c++14")
 
 	# Optimization
@@ -251,13 +253,14 @@ if(MSVC)
 endif()
 
 ####
-# Set posit include directory
-include_directories("./posit")
-
-# Possibly not under Windows
-# What is this needed for? On linux it seems to conflict with -std=gnu++14,
-# which is being emitted presumably because CMAKE_CXX_STANDARD has been set to 14.
-#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+# Set UNIVERSAL include directory that contains all the different number systems
+# universal/unum
+# universal/unum2
+# universal/posit
+# universal/valid
+# universal/integer
+# universal/decimal
+include_directories("./include")
 
 ####
 # macro to read all cpp files in a directory
@@ -367,7 +370,8 @@ if(BUILD_CI_CHECK)
 	set(BUILD_PLAYGROUND ON)
 	# build the different test/verification suites for each number system
 	set(BUILD_BITBLOCK ON)
-	set(BUILD_REAL_NUMBER ON)
+	set(BUILD_REAL_NUMBERS ON)
+	set(BUILD_INTEGER_NUMBERS ON)
 	set(BUILD_UNUM_TYPE_1 ON)
 	set(BUILD_UNUM_TYPE_2 ON)
 	set(BUILD_UNUM_TYPE_3_POSIT ON)
@@ -387,9 +391,16 @@ if(BUILD_BITBLOCK)
 add_subdirectory("tests/bitblock")
 endif(BUILD_BITBLOCK)
 
-if(BUILD_REAL_NUMBER)
+# Arbitrary integers tests
+if(BUILD_INTEGER_NUMBERS)
+add_subdirectory("tests/decimal")
+add_subdirectory("tests/integer")
+endif(BUILD_INTEGER_NUMBERS)
+
+# Arbitrary reals tests
+if(BUILD_REAL_NUMBERS)
 add_subdirectory("tests/value")
-endif(BUILD_REAL_NUMBER)
+endif(BUILD_REAL_NUMBERS)
 
 if(BUILD_UNUM_TYPE_1)
 add_subdirectory("tests/unum")
@@ -429,6 +440,7 @@ add_subdirectory("education/quire")
 endif(BUILD_EDUCATION_EXAMPLES)
 
 if(BUILD_APPLICATION_EXAMPLES)
+add_subdirectory("examples/stl")
 add_subdirectory("examples/blas")
 add_subdirectory("examples/dsp")
 endif(BUILD_APPLICATION_EXAMPLES)

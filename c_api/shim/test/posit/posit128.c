@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #define POSIT_NO_GENERICS // MSVC doesn't support _Generic so we'll leave it out from these tests
-#include <posit_c_api.h>
+#include <universal/posit/posit_c_api.h>
 
 int main(int argc, char* argv[])
 {
@@ -58,7 +58,7 @@ int main(int argc, char* argv[])
 
 			posit128_t pref = posit128_fromld(dref);
 			if (posit128_cmp(pref, pc)) {
-				char sa[40], sb[40], sc[40], sref[40];
+				char sa[posit128_str_SIZE], sb[posit128_str_SIZE], sc[posit128_str_SIZE], sref[posit128_str_SIZE];
 				posit128_str(sa, pa);
 				posit128_str(sb, pb);
 				posit128_str(sc, pc);
@@ -97,7 +97,7 @@ int main(int argc, char* argv[])
 
 			posit128_t pref = posit128_fromld(dref);
 			if (posit128_cmp(pref, pc)) {
-				char sa[40], sb[40], sc[40], sref[40];
+				char sa[posit128_str_SIZE], sb[posit128_str_SIZE], sc[posit128_str_SIZE], sref[posit128_str_SIZE];
 				posit128_str(sa, pa);
 				posit128_str(sb, pb);
 				posit128_str(sc, pc);
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
 
 			posit128_t pref = posit128_fromld(dref);
 			if (posit128_cmp(pref, pc)) {
-				char sa[40], sb[40], sc[40], sref[40];
+				char sa[posit128_str_SIZE], sb[posit128_str_SIZE], sc[posit128_str_SIZE], sref[posit128_str_SIZE];
 				posit128_str(sa, pa);
 				posit128_str(sb, pb);
 				posit128_str(sc, pc);
@@ -175,7 +175,7 @@ int main(int argc, char* argv[])
 
 			posit128_t pref = posit128_fromld(dref);
 			if (posit128_cmp(pref, pc)) {
-				char sa[40], sb[40], sc[40], sref[40];
+				char sa[posit128_str_SIZE], sb[posit128_str_SIZE], sc[posit128_str_SIZE], sref[posit128_str_SIZE];
 				posit128_str(sa, pa);
 				posit128_str(sb, pb);
 				posit128_str(sc, pc);

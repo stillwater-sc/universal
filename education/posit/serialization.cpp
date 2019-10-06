@@ -1,13 +1,11 @@
 //  serialization.cpp : examples how to serialize posit values
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
-
 #define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 1
-#include <posit>
+#include <universal/posit/posit>
 
 int main()
 try {

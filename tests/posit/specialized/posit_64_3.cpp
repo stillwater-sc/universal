@@ -4,14 +4,12 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
 // Configure the posit template environment
 // first: enable fast specialized posit<64,3>
-// #define POSIT_FAST_SPECIALIZATION
 #define POSIT_FAST_POSIT_64_3 0
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <posit>
+#include <universal/posit/posit>
 #include "../../test_helpers.hpp"
 #include "../../posit_test_randoms.hpp"
 
@@ -26,10 +24,10 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t RND_TEST_CASES = 100000;
+	constexpr size_t RND_TEST_CASES = 100000;
 
-	const size_t nbits = 64;
-	const size_t es = 3;
+	constexpr size_t nbits = 64;
+	constexpr size_t es = 3;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;

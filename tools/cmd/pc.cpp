@@ -1,12 +1,9 @@
-// pc.cpp: posit components: show the sign/scale/regime/exponent/fraction components of standard posit configurations
+// pc.cpp: posit components: cli to show the sign/scale/regime/exponent/fraction components of standard posit configurations
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "common.hpp"
-
-#include <posit>
+#include <universal/posit/posit>
 
 typedef std::numeric_limits< double > dbl;
 const char* msg = "posit< 8, 0> = s1 r1111111 e f qNW v-64\n\
@@ -25,7 +22,7 @@ posit<48, 3> = s1 r111111110 e000 f10001111001000011100110010111010111 qNW v-1.1
 posit<64, 1> = s1 r111111111111111111111111111110 e0 f10001111001000011100110010111011 qNW v-1.1234567890193613e+17\n\
 posit<64, 2> = s1 r1111111111111110 e00 f100011110010000111001100101110101110001001111 qNW v-1.1234567890000077e+17\n\
 posit<64, 3> = s1 r111111110 e000 f100011110010000111001100101110101110001001110101000 qNW v-1.123456789e+17\n\
-posit<64, 4> = s1 r11110 e1000 f100011110010000111001100101110101110001001110101000000 qNW v-1.123456789e+17";
+posit<64, 4> = s1 r11110 e1000 f100011110010000111001100101110101110001001110101000000 qNW v-1.123456789e+17\n";
 
 // receive a float and print its components
 int main(int argc, char** argv)

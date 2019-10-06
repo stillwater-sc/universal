@@ -1,11 +1,9 @@
 // extract.cpp : extracting IEEE floating point components and relate them to posit components
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "common.hpp"
-#include <posit>
+#include <universal/posit/posit>
 
 /*
 Laid out as bits, floating point numbers look like this:

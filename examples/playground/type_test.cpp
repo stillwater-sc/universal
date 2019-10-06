@@ -1,6 +1,6 @@
-// gismo_test.cpp example testing cricial features for G+Smo integration
+// type_test.cpp: type testing 
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
@@ -14,7 +14,7 @@
 #include <typeinfo>
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <posit>
+#include <universal/posit/posit>
 
 typedef sw::unum::posit<32,2> posit_32_2;
 
@@ -60,13 +60,13 @@ try {
 
     test<size_t>("size_t");
 
-    test<signed char>("signed char");
+    test<char>("char");
     test<short>("short");
     test<int>("int");
     test<long>("long");
     test<long long>("long long");
 
-    test<char>("char");
+    test<unsigned char>("unsigned char");
     test<unsigned short>("unsigned short");
     test<unsigned int>("unsigned int");
     test<unsigned long>("unsigned long");

@@ -1,15 +1,14 @@
 //  quire_accumulations.cpp : computational path experiments with quires
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
 // minimum set of include files
-#include "../../posit/exceptions.hpp"
-#include "../../bitblock/bitblock.hpp"
-#include "../../posit/value.hpp"
-#include "../../float/quire.hpp"
+#include "universal/posit/exceptions.hpp"
+#include "universal/bitblock/bitblock.hpp"
+#include "universal/posit/value.hpp"
+#include "universal/float/quire.hpp"
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0

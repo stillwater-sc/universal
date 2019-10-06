@@ -4,33 +4,20 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
 // Configure the posit template environment
 // first: enable fast specialized posit<8,1>
-#define POSIT_FAST_POSIT_8_1 1
+// TODO: no implementation yet
+#define POSIT_FAST_POSIT_8_1 0
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <posit>
+#include <universal/posit/posit>
 #include "../../test_helpers.hpp"
 #include "../../posit_test_helpers.hpp"
 #include "../../posit_math_helpers.hpp"
 
-template<size_t nbits, size_t es>
-void placeholder(sw::unum::posit<nbits, es>& a) {
-	using namespace std;
-	using namespace sw::unum;
-	bool		     	 _sign;
-	regime<nbits, es>    _regime;
-	exponent<nbits, es>  _exponent;
-	fraction<5>          _fraction;
-	bitblock<nbits>		 _raw_bits;
-	decode(a.get(), _sign, _regime, _exponent, _fraction);
-	double s = (_sign ? -1.0 : 1.0);
-	double r = _regime.value();
-	double e = _exponent.value();
-	double f = (1.0 + _fraction.value());
-	cout << "fraction = " << _fraction << " faction value = " << f << endl;
-}
+/*
+specialized small 8-bit posit with es = 1 to increase dynamic range over standard posit<8,0>.
+*/
 
 void GenerateValues() {
 	using namespace std;
@@ -49,18 +36,10 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	// const size_t RND_TEST_CASES = 0;  // no randoms, 8-bit posits can be done exhaustively
+	// no randoms, 8-bit posits can be done exhaustively
 
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 1;
-
-	//GenerateValues();
-
-	posit<nbits, es> a = 15;
-	cout << a << endl;
-
-	cout << "fast posit<8,1> disabled due to bugs in implementation\n";
-	return 0;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;

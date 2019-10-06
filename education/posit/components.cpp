@@ -1,11 +1,9 @@
 // components.cpp : examples working with regime/exponent/fraction components of a posit
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "common.hpp"
-#include <posit>
+#include <universal/posit/posit>
 
 // Examples of working with the core components that make up a posit.
 // These examples show the dynamic behavior of the different segments.

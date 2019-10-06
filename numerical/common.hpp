@@ -15,5 +15,6 @@
 #include <algorithm>
 #include <utility>
 
-#include <valid>
+// pull in the posit number system
+#include <universal/posit/posit>
 

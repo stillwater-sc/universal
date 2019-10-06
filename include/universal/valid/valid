@@ -1,0 +1,14 @@
+#pragma once
+// valid standard header
+//
+// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#ifndef _VALID_
+#define _VALID_
+
+#include <universal/posit/posit>
+#include <universal/valid/valid.hpp>
+#include <universal/valid/valid_manipulators.hpp>
+
+#endif

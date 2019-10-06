@@ -9,7 +9,7 @@
 #define POSIT_TRACE_CONVERSION
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <posit>
+#include <universal/posit/posit>
 
 /*
 

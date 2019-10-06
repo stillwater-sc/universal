@@ -1,16 +1,15 @@
 // posit_8b.cpp: performance characterization of standard posit<8,0> configuration
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "common.hpp"
 // Configure the posit template environment
 // first: enable fast specialized posit<8,0>
 #define POSIT_FAST_POSIT_8_0 1
 // second: disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-#include <posit>
+#include <universal/posit/posit>
 #include "posit_performance.hpp"
 
 int main(int argc, char** argv)

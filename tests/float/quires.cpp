@@ -1,21 +1,19 @@
 //  quires.cpp : test suite for IEEE float quires
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "common.hpp"
 
 // till we figure out how to derive sizes from types
 #define TEMPLATIZED_TYPE 0
 // enable/disable quire exceptions
 #define QUIRE_THROW_EXCEPTION 0
-#include "../../posit/exceptions.hpp"
-#include "../../bitblock/bitblock.hpp"
-#include "../../posit/bit_functions.hpp"
-#include "../../float/float_functions.hpp"
-#include "../../posit/value.hpp"
-#include "../../float/quire.hpp"
+#include "universal/posit/exceptions.hpp"
+#include "universal/bitblock/bitblock.hpp"
+#include "universal/posit/bit_functions.hpp"
+#include "universal/float/float_functions.hpp"
+#include "universal/posit/value.hpp"
+#include "universal/float/quire.hpp"
 
 int TestQuireAccumulationResult(int nrOfFailedTests, std::string descriptor)
 {

@@ -1,6 +1,6 @@
 // math_functions.cpp example showing the supported math functions
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
@@ -11,7 +11,7 @@
 #define POSIT_TRACE_CONVERSION
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <posit>
+#include <universal/posit/posit>
 
 int main(int argc, char** argv)
 try {

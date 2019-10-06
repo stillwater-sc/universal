@@ -1,18 +1,16 @@
 //  quire_accumulations.cpp : computational path experiments with quires
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include "common.hpp"
 
 // set to 1 if you want to generate hw test vectors
 #define HARDWARE_QA_OUTPUT 0
 
 // type definitions for the important types, posit<> and quire<>
-#include "../../posit/posit.hpp"
-#include "../../posit/quire.hpp"
-#include "../../posit/fdp.hpp"
+#include "universal/posit/posit.hpp"
+#include "universal/posit/quire.hpp"
+#include "universal/posit/fdp.hpp"
 
 // test support functions
 #include "../test_helpers.hpp"
@@ -62,7 +60,7 @@ int ValidateExactDotProduct() {
 	{
 		init(ones, Scalar(1));
 
-		Scalar result = fdp(nrElements, ones, 1, pv, 1);
+		Scalar result = fdp(ones, pv);
 		cout << "exact FDP test yields   = " << float(result) << endl;
 
 		if (!result.iszero()) ++nrOfFailures;
