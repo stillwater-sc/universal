@@ -1,4 +1,4 @@
-// posit_64_3.cpp: Functionality tests for standard 64-bit posit<64,3>
+// posit_64_3.cpp: Functionality tests for fast specialized posit<64,3>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //

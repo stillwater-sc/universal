@@ -1,4 +1,4 @@
-// 3bit_posit.cpp: Functionality tests for specialized 3-bit posits based on look-up tables
+// posit_3_0.cpp: Functionality tests for specialized 3-bit posits based on look-up tables
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //

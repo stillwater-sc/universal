@@ -1,4 +1,4 @@
-// posit_128_4.cpp: Functionality tests for standard 128-bit posit<128,4>
+// posit_128_4.cpp: Functionality tests for specialized 128-bit posit<128,4>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //

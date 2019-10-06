@@ -1,4 +1,4 @@
-// posit_256_5.cpp: Functionality tests for standard 256-bit posit<256,5>
+// posit_256_5.cpp: Functionality tests for fast specialized 256-bit posit<256,5>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //

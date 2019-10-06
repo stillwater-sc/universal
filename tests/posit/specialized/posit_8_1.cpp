@@ -1,4 +1,4 @@
-// posit_8_1.cpp: Functionality tests for specialized posit<8,1>
+// posit_8_1.cpp: Functionality tests for fast specialized posit<8,1>
 //
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
@@ -22,6 +22,8 @@ specialized small 8-bit posit with es = 1 to increase dynamic range over standar
 void GenerateValues() {
 	using namespace std;
 	using namespace sw::unum;
+	constexpr unsigned int NR_POSITS = 256;
+
 	posit<8, 1> a;
 	for (unsigned int i = 0; i < 256; ++i) {
 		a.set_raw_bits(i);
