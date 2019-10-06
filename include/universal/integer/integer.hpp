@@ -282,14 +282,14 @@ protected:
 		if (iszero()) return 0;
 		unsigned short us;
 		char* p = &us;
-		*p = b.[0];
+		*p = b[0];
 		*(p + 1) = b[1];
 		return us;
 	}
 	unsigned int to_uint() const {
 		unsigned int ui;
 		char* p = &ui;
-		*p = b.[0];
+		*p = b[0];
 		*(p + 1) = b[1];
 		*(p + 2) = b[2];
 		*(p + 3) = b[3];
