@@ -259,6 +259,9 @@ public:
 		return true;
 	}
 protected:
+	// HELPER methods
+
+	// conversion functions
 	short to_short() const {
 		short s = 0;
 		return s;
@@ -300,6 +303,10 @@ protected:
 		unsigned long long ull = 0;
 		return ull;
 	}
+	float to_float() const { return 0.0f; }
+	double to_double() const { return 0.0; }
+	long double to_long_double() const { return 0.0l; }
+
 	template<typename Ty>
 	integer& float_assign(Ty& rhs) {
 
