@@ -330,7 +330,6 @@ public:
 		*this = product;
 		setsign(signOfFinalResult);
 		return *this;
-
 	}
 	decimal& operator/=(const decimal& rhs) {
 		return *this;

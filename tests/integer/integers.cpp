@@ -3,7 +3,10 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include "universal/integer/integer.hpp"
+#include <iostream>
+#include <string>
+#include <universal/integer/integer.hpp>
+#include <universal/integer/numeric_limits.hpp>
 // test helpers
 #include "../test_helpers.hpp"
 
@@ -36,7 +39,7 @@ namespace unum {
 
 	// enumerate all addition cases for an integer<nbits> configuration
 	template<size_t nbits>
-	int ValidateAddition(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib, isum, iref;
@@ -106,6 +109,16 @@ try {
 	cout << typeid(k).name() << "  size in bytes " << k.nrBytes << endl;
 	cout << typeid(m).name() << "  size in bytes " << m.nrBytes << endl;
 
+	integer<128> i1, i2, i3;
+	i1 = 0; 
+	cout << i1 << endl;
+
+	i1 = 123456789;
+//	i2 = 1.23456789e8;
+//	i3.parse("123456789");
+
+	cout << i1 << endl;
+
 	return EXIT_SUCCESS;
 #else
 	std::cout << "Integer Arithmetic verfication" << std::endl;
@@ -117,7 +130,7 @@ try {
 
 	// TODO: implement parsing, assigment, conversion, arithmetic
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8>("Manual Testing", true), "integer<8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8>("Manual Testing", true), "integer<8>", "addition");
 
 #ifdef STRESS_TESTING
 

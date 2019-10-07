@@ -98,6 +98,15 @@ public:
 	integer(const double initial_value) { *this = initial_value; }
 	integer(const long double initial_value) { *this = initial_value; }
 
+	// access operator for bits
+	bool operator[](const unsigned int i) const {
+		if (i < nbits) {
+			uint8_t byte = b[i / 8];
+			uint8_t mask = 1 << (i % 8);
+			return (byte & mask);
+		}
+		throw "bit index out of bounds";
+	}
 	// assignment operators for native types
 	integer& operator=(const signed char rhs) {
 		if (0 == rhs) {
@@ -260,7 +269,12 @@ public:
 	}
 protected:
 	// HELPER methods
-
+	uint8_t byte(unsigned int i) const {
+		if (i < nrBytes) {
+			return b[i];
+		}
+		throw "byte index out of bound";
+	}
 	// conversion functions
 	short to_short() const {
 		short s = 0;
@@ -316,6 +330,10 @@ private:
 	//array<uint8_t, (1 + ((nbits - 1) / 8))> bytes;
 	uint8_t b[nrBytes];
 
+	// convert
+	template<size_t nnbits>
+	friend std::string convert_to_decimal_string(const integer<nnbits>& value);
+
 	// integer - integer logic comparisons
 	template<size_t nnbits>
 	friend bool operator==(const integer<nnbits>& lhs, const integer<nnbits>& rhs);
@@ -331,9 +349,109 @@ private:
 	friend bool operator>=(const integer<nnbits>& lhs, const integer<nnbits>& rhs);
 };
 
+void add(std::vector<char>& lhs, const std::vector<char>& rhs) {
+	std::vector<char> _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
+//	if (negative != rhs.negative) {  // different signs
+	//	_rhs.setsign(!rhs.sign());
+//		return operator-=(_rhs);
+//	}
+//	else {
+		// same sign implies this->negative is invariant
+//	}
+	size_t l = lhs.size();
+	size_t r = _rhs.size();
+	// zero pad the shorter decimal
+	if (l < r) {
+		lhs.insert(lhs.end(), r - l, 0);
+	}
+	else {
+		_rhs.insert(_rhs.end(), l - r, 0);
+	}
+	std::vector<char>::iterator lit = lhs.begin();
+	std::vector<char>::iterator rit = _rhs.begin();
+	char carry = 0;
+	for (; lit != lhs.end() || rit != _rhs.end(); ++lit, ++rit) {
+		*lit += *rit + carry;
+		if (*lit > 9) {
+			carry = 1;
+			*lit -= 10;
+		}
+		else {
+			carry = 0;
+		}
+	}
+	if (carry) lhs.push_back(1);
+}
+
+// helper to deal with multiplying decimal representations
+std::vector<char> mul(const std::vector<char>& lhs, const std::vector<char>& rhs) {
+	bool signOfFinalResult = false; // (lhs.negative != rhs.negative) ? true : false;
+	std::vector<char> product;
+	// find the smallest decimal to minimize the amount of work
+	size_t l = lhs.size();
+	size_t r = rhs.size();
+	std::vector<char>::const_iterator sit, bit; // sit = smallest iterator, bit = biggest iterator
+	if (l < r) {
+		size_t position = 0;
+		for (sit = lhs.begin(); sit != lhs.end(); ++sit) {
+			std::vector<char> partial_sum;
+			partial_sum.insert(partial_sum.end(), r + position, 0);
+			std::vector<char>::iterator pit = partial_sum.begin() + position;
+			char carry = 0;
+			for (bit = rhs.begin(); bit != rhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
+				char digit = *sit * *bit + carry;
+				*pit = digit % 10;
+				carry = digit / 10;
+			}
+			if (carry) partial_sum.push_back(carry);
+			add(product, partial_sum);
+//			std::cout << "partial sum " << partial_sum << " intermediate product " << product << std::endl;
+			++position;
+		}
+	}
+	else {
+		size_t position = 0;
+		for (sit = rhs.begin(); sit != rhs.end(); ++sit) {
+			std::vector<char> partial_sum;
+			partial_sum.insert(partial_sum.end(), l + position, 0);
+			std::vector<char>::iterator pit = partial_sum.begin() + position;
+			char carry = 0;
+			for (bit = lhs.begin(); bit != lhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
+				char digit = *sit * *bit + carry;
+				*pit = digit % 10;
+				carry = digit / 10;
+			}
+			if (carry) partial_sum.push_back(carry);
+			add(product, partial_sum);
+//			std::cout << "partial sum " << partial_sum << " intermediate product " << product << std::endl;
+			++position;
+		}
+	}
+//	product.unpad();
+	return product;
+//	setsign(signOfFinalResult);
+}
+
 ////////////////// INTEGER operators
 
-// stream operators
+// convert integer to decimal string
+template<size_t nbits>
+std::string convert_to_decimal_string(const integer<nbits>& value) {
+	if (value.iszero()) {
+		return std::string("0");
+	}
+	constexpr size_t nrBytes = value.nrBytes;
+	std::vector<char> partial, multiplier;
+	partial.push_back('1');
+	multiplier.push_back('1');
+	// convert integer to decimal by multiplication by powers of 2
+	for (unsigned i = 0; i < nbits; ++i) {
+		if (value[i]) {
+
+		}
+	}
+}
+/// stream operators
 
 // read a integer ASCII format and make a binary integer out of it
 template<size_t nbits>
@@ -373,7 +491,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits>& i) {
 	std::ios_base::fmtflags ff;
 	ff = ostr.flags();
 	ss.flags(ff);
-	ss << std::setw(width) << std::setprecision(prec) << "###";
+	ss << std::setw(width) << std::setprecision(prec) << convert_to_decimal_string(i);
 
 	return ostr << ss.str();
 }
