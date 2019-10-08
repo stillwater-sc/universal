@@ -88,11 +88,18 @@ namespace unum {
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
+std::string convert_to_string(const std::vector<char>& v) {
+	std::stringstream ss;
+	for (std::vector<char>::const_reverse_iterator rit = v.rbegin(); rit != v.rend(); ++rit) {
+		ss << (int)*rit;
+	}
+	return ss.str();
+}
+
 int main()
 try {
 	using namespace std;
 	using namespace sw::unum;
-
 
 	std::string tag = "Integer Arithmetic tests failed";
 
@@ -110,14 +117,35 @@ try {
 	cout << typeid(m).name() << "  size in bytes " << m.nrBytes << endl;
 
 	integer<128> i1, i2, i3;
-	i1 = 0; 
-	cout << i1 << endl;
+
+	cout << "conversion" << endl;
 
 	i1 = 123456789;
-//	i2 = 1.23456789e8;
-//	i3.parse("123456789");
-
 	cout << i1 << endl;
+	//i2 = 1.23456789e8;
+	//i3.parse("123456789");
+
+	{
+		integer<16> x, y, z;
+		x = int16_t(0xffff);   // does that make it -1?
+		cout << x << endl;
+		y = 1;
+		z = x + y;
+		cout << z << endl;
+	}
+
+	{
+		using Scalar = int16_t;
+		Scalar x, y, z;
+		x = Scalar(0xfffe);
+		y = 1;
+		z = x + y;
+		cout << z << endl;
+	}
+
+	//ReportTestResult(VerifyAddition<4>("Manual Testing", true), "integer<4>", "addition");
+
+	cout << "done" << endl;
 
 	return EXIT_SUCCESS;
 #else
@@ -130,7 +158,7 @@ try {
 
 	// TODO: implement parsing, assigment, conversion, arithmetic
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8>("Manual Testing", true), "integer<8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8>(tag, bReportIndividualTestCases), "integer<8>", "addition");
 
 #ifdef STRESS_TESTING
 

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <iomanip>
 #include <regex>
+#include <vector>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -64,6 +65,53 @@ inline integer<nbits> min_int() {
 }
 
 template<size_t nbits>
+inline void convert(int64_t v, integer<nbits>& result) {
+	constexpr uint64_t mask = 0x1;
+	bool negative = (v < 0 ? true : false);
+	result.clear();
+	unsigned upper = (nbits <= 64 ? nbits : 64);
+	for (unsigned i = 0; i < upper && v != 0; ++i) {
+		if (v & mask) result.set(i);
+		v >>= 1;
+	}
+	if (nbits > 64 && negative) {
+		// sign extend
+		for (unsigned i = upper; i < nbits; ++i) {
+			result.set(i);
+		}
+	}
+}
+template<size_t nbits>
+inline void convert_unsigned(uint64_t v, integer<nbits>& result) {
+	constexpr uint64_t mask = 0x1;
+	result.clear();
+	unsigned upper = (nbits <= 64 ? nbits : 64);
+	for (unsigned i = 0; i < upper; ++i) {
+		if (v & mask) result[i] = true;
+		v >>= 1;
+	}
+}
+
+/*
+The rules for detecting overflow in a two's complement sum are simple:
+ - If the sum of two positive numbers yields a negative result, the sum has overflowed.
+ - If the sum of two negative numbers yields a positive result, the sum has overflowed.
+ - Otherwise, the sum has not overflowed.
+It is important to note the overflow and carry out can each occur without the other. 
+In unsigned numbers, carry out is equivalent to overflow. In two's complement, carry out tells 
+you nothing about overflow.
+
+The reason for the rules is that overflow in two's complement occurs, not when a bit is carried out 
+out of the left column, but when one is carried into it. That is, when there is a carry into the sign. 
+The rules detect this error by examining the sign of the result. A negative and positive added together 
+cannot overflow, because the sum is between the addends. Since both of the addends fit within the
+allowable range of numbers, and their sum is between them, it must fit as well.
+
+When implementing addition/subtraction on chuncks the overflow condition must be deduced from the 
+chunk values. The chunks need to be interpreted as unsigned binary segments.
+*/
+// integer is an arbitrary size 2's complement integer
+template<size_t nbits>
 class integer {
 public:
 	static constexpr size_t nrBytes = (1 + ((nbits - 1) / 8));
@@ -99,14 +147,11 @@ public:
 	integer(const long double initial_value) { *this = initial_value; }
 
 	// access operator for bits
-	bool operator[](const unsigned int i) const {
-		if (i < nbits) {
-			uint8_t byte = b[i / 8];
-			uint8_t mask = 1 << (i % 8);
-			return (byte & mask);
-		}
-		throw "bit index out of bounds";
-	}
+	// this needs a proxy to be able to create l-values
+	// bool operator[](const unsigned int i) const //
+
+	// simpler interface for now, using at(i) and set(i)/reset(i)
+
 	// assignment operators for native types
 	integer& operator=(const signed char rhs) {
 		if (0 == rhs) {
@@ -114,7 +159,7 @@ public:
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert(rhs, *this);
 		}
 		return *this;
 	}
@@ -124,7 +169,7 @@ public:
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert(rhs, *this);
 		}
 		return *this;
 	}
@@ -134,7 +179,7 @@ public:
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert(rhs, *this);
 		}
 		return *this;
 	}
@@ -144,7 +189,7 @@ public:
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert(rhs, *this);
 		}
 		return *this;
 	}
@@ -154,7 +199,7 @@ public:
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert(rhs, *this);
 		}
 		return *this;
 	}
@@ -164,7 +209,7 @@ public:
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_unsigned(rhs, *this);
 		}
 		return *this;
 	}
@@ -174,7 +219,7 @@ public:
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_unsigned(rhs, *this);
 		}
 		return *this;
 	}
@@ -184,7 +229,7 @@ public:
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_unsigned(rhs, *this);
 		}
 		return *this;
 	}
@@ -194,7 +239,7 @@ public:
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_unsigned(rhs, *this);
 		}
 		return *this;
 	}
@@ -204,7 +249,7 @@ public:
 			return *this;
 		}
 		else {
-			//convert(v, *this);
+			convert_unsigned(rhs, *this);
 		}
 		return *this;
 	}
@@ -218,6 +263,22 @@ public:
 		return float_assign(rhs);
 	}
 
+	// one's complement
+	integer operator~() const { 
+		integer<nbits> complement(*this);
+		complement.flip(); 
+		return complement;
+	}
+
+	integer operator++(int) {
+		integer<nbits> tmp(*this);
+		operator++();
+		return tmp;
+	}
+	integer& operator++() {
+		*this += integer<nbits>(1);
+		return *this;
+	}
 	// conversion operators
 // Maybe remove explicit, MTL compiles, but we have lots of double computation then
 	explicit operator unsigned short() const { return to_ushort(); }
@@ -234,6 +295,17 @@ public:
 
 	// arithmetic operators
 	integer& operator+=(const integer& rhs) {
+		integer<nbits> sum;
+		bool carry = false;
+		for (unsigned i = 0; i < nrBytes; ++i) {
+			// cast up so we can test for overflow
+			uint16_t l = uint16_t(b[i]);
+			uint16_t r = uint16_t(rhs.b[i]);
+			uint16_t s = l + r + (carry ? uint16_t(0x0001) : uint16_t(0x0000));
+			carry = (s > 255 ? true : false);
+			sum.b[i] = (uint8_t)(s & 0xFF);
+		}
+		*this = sum;
 		return *this;
 	}
 	integer& operator-=(const integer& rhs) {
@@ -252,11 +324,26 @@ public:
 	// modifiers
 	inline void clear() { std::memset(&b, 0, nrBytes); }
 	inline void setzero() { clear(); }
+	inline void set(unsigned int i) {
+		if (i < nbits) {
+			uint8_t byte = b[i / 8];
+			uint8_t mask = 1 << (i % 8);
+			b[i / 8] = byte | mask;
+			return;
+		}
+		throw "bit index out of bounds";
+	}
 	// use un-interpreted raw bits to set the bits of the integer
 	void set_raw_bits(unsigned long long value) {
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			b[i] = value & 0xFF;
 			value >>= 1;
+		}
+	}
+	// in-place one's complement
+	inline void flip() {
+		for (unsigned i = 0; i < nrBytes; ++i) {
+			b[i] = ~b[i];
 		}
 	}
 
@@ -267,6 +354,16 @@ public:
 		}
 		return true;
 	}
+	inline bool sign() const { return at(nbits - 1); }
+	inline bool at(unsigned int i) const {
+		if (i < nbits) {
+			uint8_t byte = b[i / 8];
+			uint8_t mask = 1 << (i % 8);
+			return (byte & mask);
+		}
+		throw "bit index out of bounds";
+	}
+
 protected:
 	// HELPER methods
 	uint8_t byte(unsigned int i) const {
@@ -349,15 +446,68 @@ private:
 	friend bool operator>=(const integer<nnbits>& lhs, const integer<nnbits>& rhs);
 };
 
-void add(std::vector<char>& lhs, const std::vector<char>& rhs) {
-	std::vector<char> _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
-//	if (negative != rhs.negative) {  // different signs
-	//	_rhs.setsign(!rhs.sign());
-//		return operator-=(_rhs);
-//	}
-//	else {
+namespace impl {
+	// Decimal representation as a set of decimal digits with sign used for creating decimal representations of the integers
+class decimal : public std::vector<uint8_t> {
+public:
+	bool sign;
+	// remove any leading zeros from a decimal representation
+	void unpad() {
+		int n = (int)size();
+		for (int i = n - 1; i > 0; --i) {
+			if (operator[](i) == 0) pop_back();
+		}
+	}
+private:
+	friend std::ostream& operator<<(std::ostream& ostr, const decimal& d);
+};
+
+// generate an ASCII decimal format and send to ostream
+inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
+	// to make certain that setw and left/right operators work properly
+	// we need to transform the integer into a string
+	std::stringstream ss;
+
+	//std::streamsize width = ostr.width();
+	std::ios_base::fmtflags ff;
+	ff = ostr.flags();
+	ss.flags(ff);
+	if (d.sign) ss << '-';
+	for (decimal::const_reverse_iterator rit = d.rbegin(); rit != d.rend(); ++rit) {
+		ss << (int)*rit;
+	}
+	return ostr << ss.str();
+}
+// forward reference
+void sub(decimal& lhs, const decimal& rhs);
+
+bool less(const decimal& lhs, const decimal& rhs) {
+	// this logic assumes that there is no padding in the operands
+	size_t l = lhs.size();
+	size_t r = rhs.size();
+	if (l < r) return true;
+	if (l > r) return false;
+	// numbers are the same size, need to compare magnitude
+	decimal::const_reverse_iterator ritl = lhs.rbegin();
+	decimal::const_reverse_iterator ritr = rhs.rbegin();
+	for (; ritl != lhs.rend() || ritr != rhs.rend(); ++ritl, ++ritr) {
+		if (*ritl < *ritr) return true;
+		if (*ritl > *ritr) return false;
+		// if the digits are equal we need to check the next set
+	}
+	// at this point we know the two operands are the same
+	return false;
+}
+
+void add(decimal& lhs, const decimal& rhs) {
+	decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
+	if (lhs.sign != rhs.sign) {  // different signs
+		_rhs.sign = !rhs.sign;
+		return sub(lhs, _rhs);
+	}
+	else {
 		// same sign implies this->negative is invariant
-//	}
+	}
 	size_t l = lhs.size();
 	size_t r = _rhs.size();
 	// zero pad the shorter decimal
@@ -367,8 +517,8 @@ void add(std::vector<char>& lhs, const std::vector<char>& rhs) {
 	else {
 		_rhs.insert(_rhs.end(), l - r, 0);
 	}
-	std::vector<char>::iterator lit = lhs.begin();
-	std::vector<char>::iterator rit = _rhs.begin();
+	decimal::iterator lit = lhs.begin();
+	decimal::iterator rit = _rhs.begin();
 	char carry = 0;
 	for (; lit != lhs.end() || rit != _rhs.end(); ++lit, ++rit) {
 		*lit += *rit + carry;
@@ -382,21 +532,62 @@ void add(std::vector<char>& lhs, const std::vector<char>& rhs) {
 	}
 	if (carry) lhs.push_back(1);
 }
-
-// helper to deal with multiplying decimal representations
-std::vector<char> mul(const std::vector<char>& lhs, const std::vector<char>& rhs) {
-	bool signOfFinalResult = false; // (lhs.negative != rhs.negative) ? true : false;
-	std::vector<char> product;
+void sub(decimal& lhs, const decimal& rhs) {
+	decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
+	bool sign = lhs.sign;
+	if (lhs.sign != rhs.sign) {
+		_rhs.sign = !rhs.sign;
+		return add(lhs, _rhs);
+	}
+	// largest value must be subtracted from
+	size_t l = lhs.size();
+	size_t r = _rhs.size();
+	// zero pad the shorter decimal
+	if (l < r) {
+		lhs.insert(lhs.end(), r - l, 0);
+		std::swap(lhs, _rhs);
+		sign = !sign;
+	}
+	else if (r < l) {
+		_rhs.insert(_rhs.end(), l - r, 0);
+	}
+	else {
+		// the operands are the same size, thus we need to check their magnitude
+		if (less(lhs, _rhs)) {
+			std::swap(lhs, _rhs);
+			sign = !sign;
+		}
+	}
+	decimal::iterator lit = lhs.begin();
+	decimal::iterator rit = _rhs.begin();
+	char borrow = 0;
+	for (; lit != lhs.end() || rit != _rhs.end(); ++lit, ++rit) {
+		if (*rit > *lit - borrow) {
+			*lit = 10 + *lit - borrow - *rit;
+			borrow = 1;
+		}
+		else {
+			*lit = *lit - borrow - *rit;
+			borrow = 0;
+		}
+	}
+	if (borrow) std::cout << "can this happen?" << std::endl;
+	lhs.unpad();
+	lhs.sign = sign;
+}
+void mul(decimal& lhs, const decimal& rhs) {
+	bool signOfFinalResult = (lhs.sign != rhs.sign) ? true : false;
+	decimal product;
 	// find the smallest decimal to minimize the amount of work
 	size_t l = lhs.size();
 	size_t r = rhs.size();
-	std::vector<char>::const_iterator sit, bit; // sit = smallest iterator, bit = biggest iterator
+	decimal::const_iterator sit, bit; // sit = smallest iterator, bit = biggest iterator
 	if (l < r) {
 		size_t position = 0;
 		for (sit = lhs.begin(); sit != lhs.end(); ++sit) {
-			std::vector<char> partial_sum;
+			decimal partial_sum;
 			partial_sum.insert(partial_sum.end(), r + position, 0);
-			std::vector<char>::iterator pit = partial_sum.begin() + position;
+			decimal::iterator pit = partial_sum.begin() + position;
 			char carry = 0;
 			for (bit = rhs.begin(); bit != rhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
 				char digit = *sit * *bit + carry;
@@ -412,9 +603,9 @@ std::vector<char> mul(const std::vector<char>& lhs, const std::vector<char>& rhs
 	else {
 		size_t position = 0;
 		for (sit = rhs.begin(); sit != rhs.end(); ++sit) {
-			std::vector<char> partial_sum;
+			decimal partial_sum;
 			partial_sum.insert(partial_sum.end(), l + position, 0);
-			std::vector<char>::iterator pit = partial_sum.begin() + position;
+			decimal::iterator pit = partial_sum.begin() + position;
 			char carry = 0;
 			for (bit = lhs.begin(); bit != lhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
 				char digit = *sit * *bit + carry;
@@ -427,12 +618,24 @@ std::vector<char> mul(const std::vector<char>& lhs, const std::vector<char>& rhs
 			++position;
 		}
 	}
-//	product.unpad();
-	return product;
-//	setsign(signOfFinalResult);
+	product.unpad();
+	product.sign = signOfFinalResult;
+	lhs = product;
 }
 
+} // namespace impl
+
+
+
+
 ////////////////// INTEGER operators
+
+template<size_t nbits>
+inline integer<nbits> twos_complement(const integer<nbits>& value) {
+	integer<nbits> complement = ~value;
+	++complement;
+	return complement;
+}
 
 // convert integer to decimal string
 template<size_t nbits>
@@ -441,16 +644,26 @@ std::string convert_to_decimal_string(const integer<nbits>& value) {
 		return std::string("0");
 	}
 	constexpr size_t nrBytes = value.nrBytes;
-	std::vector<char> partial, multiplier;
-	partial.push_back('1');
-	multiplier.push_back('1');
+	integer<nbits> number = value.sign() ? twos_complement(value) : value;
+	impl::decimal partial, multiplier;
+	partial.push_back(0); partial.sign = false;
+	multiplier.push_back(1); multiplier.sign = false;
 	// convert integer to decimal by multiplication by powers of 2
 	for (unsigned i = 0; i < nbits; ++i) {
-		if (value[i]) {
-
+		if (number.at(i)) {
+			impl::add(partial, multiplier);
+			// std::cout << partial << std::endl;
 		}
+		impl::add(multiplier, multiplier);
 	}
+	std::stringstream ss;
+	if (value.sign()) ss << '-';
+	for (impl::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
+		ss << (int)*rit;
+	}
+	return ss.str();
 }
+
 /// stream operators
 
 // read a integer ASCII format and make a binary integer out of it
