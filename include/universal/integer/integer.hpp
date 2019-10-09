@@ -114,7 +114,9 @@ chunk values. The chunks need to be interpreted as unsigned binary segments.
 template<size_t nbits>
 class integer {
 public:
-	static constexpr size_t nrBytes = (1 + ((nbits - 1) / 8));
+	static constexpr unsigned nrBytes = (1 + ((nbits - 1) / 8));
+	static constexpr unsigned MS_BYTE = nrBytes - 1;
+	static constexpr uint8_t MS_BYTE_MASK = (0xFF >> (nrBytes * 8 - nbits));
 
 	integer() { setzero(); }
 
@@ -305,6 +307,9 @@ public:
 			carry = (s > 255 ? true : false);
 			sum.b[i] = (uint8_t)(s & 0xFF);
 		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		sum.b[MS_BYTE] = MS_BYTE_MASK & sum.b[MS_BYTE];
+		//if (carry) throw "overflow";
 		*this = sum;
 		return *this;
 	}
@@ -335,9 +340,10 @@ public:
 	}
 	// use un-interpreted raw bits to set the bits of the integer
 	void set_raw_bits(unsigned long long value) {
+		clear();
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			b[i] = value & 0xFF;
-			value >>= 1;
+			value >>= 8;
 		}
 	}
 	// in-place one's complement
@@ -375,18 +381,66 @@ protected:
 	// conversion functions
 	short to_short() const {
 		short s = 0;
+		short mask = 1;
+		unsigned upper = (nbits < 8 * sizeof(short) ? nbits : 8 * sizeof(short));
+		for (unsigned i = 0; i < upper; ++i) {
+			s |= at(i) ? mask : 0;
+			mask <<= 1;
+		}
+		if (sign() && upper < nbits) { // sign extend
+			for (unsigned i = upper; i < nbits; ++i) {
+				s |= mask;
+				mask <<= 1;
+			}
+		}
 		return s;
 	}
 	int to_int() const {
 		int i = 0;
+		int mask = 1;
+		unsigned upper = (nbits < 8 * sizeof(int) ? nbits : 8 * sizeof(int));
+		for (unsigned i = 0; i < upper; ++i) {
+			i |= at(i) ? mask : 0;
+			mask <<= 1;
+		}
+		if (sign() && upper < nbits) { // sign extend
+			for (unsigned i = upper; i < nbits; ++i) {
+				i |= mask;
+				mask <<= 1;
+			}
+		}
 		return i;
 	}
 	long to_long() const {
 		long l = 0;
+		long mask = 1;
+		unsigned upper = (nbits < 8 * sizeof(long) ? nbits : 8 * sizeof(long));
+		for (unsigned i = 0; i < upper; ++i) {
+			l |= at(i) ? mask : 0;
+			mask <<= 1;
+		}
+		if (sign() && upper < nbits) { // sign extend
+			for (unsigned i = upper; i < nbits; ++i) {
+				l |= mask;
+				mask <<= 1;
+			}
+		}
 		return l;
 	}
 	long long to_long_long() const {
 		long long ll = 0;
+		long long mask = 1;
+		unsigned upper = (nbits < 8 * sizeof(long long) ? nbits : 8 * sizeof(long long));
+		for (unsigned i = 0; i < upper; ++i) {
+			ll |= at(i) ? mask : 0;
+			mask <<= 1;
+		}
+		if (sign() && upper < nbits) { // sign extend
+			for (unsigned i = upper; i < nbits; ++i) {
+				ll |= mask;
+				mask <<= 1;
+			}
+		}
 		return ll;
 	}
 	unsigned short to_ushort() const {
@@ -724,12 +778,15 @@ inline std::istream& operator>> (std::istream& istr, integer<nbits>& p) {
 template<size_t nbits>
 inline std::string to_binary(const integer<nbits>& number) {
 	std::stringstream ss;
-	ss << "TBD";
+	for (int i = nbits - 1; i >= 0; --i) {
+		ss << (number.at(i) ? "1" : "0");
+	}
 	return ss.str();
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // integer binary logic operators
 
+// equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
 template<size_t nbits>
 inline bool operator==(const integer<nbits>& lhs, const integer<nbits>& rhs) {
 	for (unsigned i = 0; i < lhs.nrBytes; ++i) {

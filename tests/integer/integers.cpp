@@ -39,6 +39,55 @@ namespace unum {
 
 	// enumerate all addition cases for an integer<nbits> configuration
 	template<size_t nbits>
+	int VerifyShortAddition(std::string tag, bool bReportIndividualTestCases) {
+		static_assert(nbits == 16, "nbits needs to be 16");
+
+		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		int nrOfFailedTests = 0;
+		integer<nbits> ia, ib, isum, iref;
+
+		short i64a, i64b;
+		for (size_t i = 0; i < NR_INTEGERS; i++) {
+			ia.set_raw_bits(i);
+			i64a = short(ia);
+			for (size_t j = 0; j < NR_INTEGERS; j++) {
+				ib.set_raw_bits(j);
+				i64b = short(ib);
+				iref = i64a + i64b;
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				try {
+					isum = ia + ib;
+				}
+				catch (...) {
+					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+						// correctly caught the exception
+
+					}
+					else {
+						nrOfFailedTests++;
+					}
+				}
+
+#else
+				isum = ia + ib;
+#endif
+				if (isum != iref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, isum);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, isum);
+				}
+			}
+			if (i % 1024 == 0) std::cout << '.';
+		}
+		std::cout << std::endl;
+
+		return nrOfFailedTests;
+	}
+
+	// enumerate all addition cases for an integer<nbits> configuration
+	template<size_t nbits>
 	int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
@@ -62,7 +111,7 @@ namespace unum {
 	
 					}
 					else {
-						throw "unknown exception";
+						nrOfFailedTests++;
 					}
 				}
 
@@ -76,16 +125,71 @@ namespace unum {
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, isum);
 				}
+				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
+			if (i % 1024 == 0) std::cout << '.';
 		}
+		std::cout << std::endl;
+		return nrOfFailedTests;
+	}
 
+	template<size_t nbits>
+	int VerifySubtraction(std::string tag, bool bReportIndividualTestCases) {
+		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		int nrOfFailedTests = 0;
+		integer<nbits> ia, ib, isum, iref;
+
+		int64_t i64a, i64b;
+		for (size_t i = 0; i < NR_INTEGERS; i++) {
+			ia.set_raw_bits(i);
+			i64a = int64_t(ia);
+			for (size_t j = 0; j < NR_INTEGERS; j++) {
+				ib.set_raw_bits(j);
+				i64b = int64_t(ib);
+				iref = i64a - i64b;
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				try {
+					isum = ia - ib;
+				}
+				catch (...) {
+					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+						// correctly caught the exception
+
+					}
+					else {
+						nrOfFailedTests++;
+					}
+				}
+
+#else
+				isum = ia + ib;
+#endif
+				if (isum != iref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, isum);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, isum);
+				}
+				if (nrOfFailedTests > 100) return nrOfFailedTests;
+			}
+			if (i % 1024 == 0) std::cout << '.';
+		}
+		std::cout << std::endl;
 		return nrOfFailedTests;
 	}
 }
 }
 
+#include <typeinfo>
+template<typename Scalar>
+void GenerateTest(const Scalar& x, const Scalar& y, Scalar& z) {
+	using namespace sw::unum;
+	z = x + y;
+	std::cout << typeid(Scalar).name() << ": " << x << " + " << y << " = " << z << std::endl;
+}
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 std::string convert_to_string(const std::vector<char>& v) {
@@ -126,24 +230,28 @@ try {
 	//i3.parse("123456789");
 
 	{
-		integer<16> x, y, z;
-		x = int16_t(0xffff);   // does that make it -1?
-		cout << x << endl;
-		y = 1;
-		z = x + y;
-		cout << z << endl;
+		using Scalar = short;
+		Scalar z;
+		GenerateTest<Scalar>(Scalar(0xffff), Scalar(1), z);
+	}
+	{
+		using Scalar = integer<12>;
+		Scalar z;
+		GenerateTest<Scalar>(Scalar(0xffff), Scalar(1), z);
 	}
 
 	{
-		using Scalar = int16_t;
-		Scalar x, y, z;
-		x = Scalar(0xfffe);
-		y = 1;
-		z = x + y;
-		cout << z << endl;
+		integer<4> a, b, c, d;
+		a = 1;
+		b = -1;
+		c = a + b;
+		d = 0;
+		if (c != d) {
+			cout << "bad" << endl;
+		}
 	}
 
-	//ReportTestResult(VerifyAddition<4>("Manual Testing", true), "integer<4>", "addition");
+	ReportTestResult(VerifyAddition<12>("Manual Testing", true), "integer<12>", "addition");
 
 	cout << "done" << endl;
 
@@ -158,10 +266,29 @@ try {
 
 	// TODO: implement parsing, assigment, conversion, arithmetic
 	// manual exhaustive test
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4>(tag, bReportIndividualTestCases), "integer<4>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8>(tag, bReportIndividualTestCases), "integer<8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<9>(tag, bReportIndividualTestCases), "integer<9>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10>(tag, bReportIndividualTestCases), "integer<10>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11>(tag, bReportIndividualTestCases), "integer<11>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12>(tag, bReportIndividualTestCases), "integer<12>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<13>(tag, bReportIndividualTestCases), "integer<13>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<14>(tag, bReportIndividualTestCases), "integer<14>", "addition");
 
-#ifdef STRESS_TESTING
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4>(tag, bReportIndividualTestCases), "integer<4>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8>(tag, bReportIndividualTestCases), "integer<8>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9>(tag, bReportIndividualTestCases), "integer<9>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10>(tag, bReportIndividualTestCases), "integer<10>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<11>(tag, bReportIndividualTestCases), "integer<11>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12>(tag, bReportIndividualTestCases), "integer<12>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13>(tag, bReportIndividualTestCases), "integer<13>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<14>(tag, bReportIndividualTestCases), "integer<14>", "subtraction");
 
+#if STRESS_TESTING
+	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
+	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition<16>(tag, bReportIndividualTestCases), "integer<16>", "addition");
+	// this is a 'standard' comparision against a native int64_t
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<16>(tag, bReportIndividualTestCases), "integer<16>", "addition");
 
 #endif // STRESS_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
