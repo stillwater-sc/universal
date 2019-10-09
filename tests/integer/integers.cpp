@@ -56,7 +56,7 @@ namespace unum {
 				iref = i64a + i64b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
-					isum = ia + ib;
+					iresult = ia + ib;
 				}
 				catch (...) {
 					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
@@ -69,14 +69,14 @@ namespace unum {
 				}
 
 #else
-				isum = ia + ib;
+				iresult = ia + ib;
 #endif
-				if (isum != iref) {
+				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, isum);
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, isum);
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
 				}
 			}
 			if (i % 1024 == 0) std::cout << '.';
@@ -91,7 +91,7 @@ namespace unum {
 	int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib, isum, iref;
+		integer<nbits> ia, ib, iresult, iref;
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -103,7 +103,7 @@ namespace unum {
 				iref = i64a + i64b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
-					isum = ia + ib;
+					iresult = ia + ib;
 				}
 				catch (...) {
 					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
@@ -116,14 +116,14 @@ namespace unum {
 				}
 
 #else
-				isum = ia + ib;
+				iresult = ia + ib;
 #endif
-				if (isum != iref) {
+				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, isum);
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, isum);
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -137,7 +137,7 @@ namespace unum {
 	int VerifySubtraction(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib, isum, iref;
+		integer<nbits> ia, ib, iresult, iref;
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -149,7 +149,7 @@ namespace unum {
 				iref = i64a - i64b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
-					isum = ia - ib;
+					iresult = ia - ib;
 				}
 				catch (...) {
 					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
@@ -162,14 +162,60 @@ namespace unum {
 				}
 
 #else
-				isum = ia + ib;
+				iresult = ia - ib;
 #endif
-				if (isum != iref) {
+				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, isum);
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, isum);
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
+				}
+				if (nrOfFailedTests > 100) return nrOfFailedTests;
+			}
+			if (i % 1024 == 0) std::cout << '.';
+		}
+		std::cout << std::endl;
+		return nrOfFailedTests;
+	}
+
+	template<size_t nbits>
+	int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
+		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		int nrOfFailedTests = 0;
+		integer<nbits> ia, ib, iresult, iref;
+
+		int64_t i64a, i64b;
+		for (size_t i = 0; i < NR_INTEGERS; i++) {
+			ia.set_raw_bits(i);
+			i64a = int64_t(ia);
+			for (size_t j = 0; j < NR_INTEGERS; j++) {
+				ib.set_raw_bits(j);
+				i64b = int64_t(ib);
+				iref = i64a * i64b;
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				try {
+					iresult = ia * ib;
+				}
+				catch (...) {
+					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+						// correctly caught the exception
+
+					}
+					else {
+						nrOfFailedTests++;
+					}
+				}
+
+#else
+				iresult = ia * ib;
+#endif
+				if (iresult != iref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -183,10 +229,16 @@ namespace unum {
 
 #include <typeinfo>
 template<typename Scalar>
-void GenerateTest(const Scalar& x, const Scalar& y, Scalar& z) {
+void GenerateAddTest(const Scalar& x, const Scalar& y, Scalar& z) {
 	using namespace sw::unum;
 	z = x + y;
 	std::cout << typeid(Scalar).name() << ": " << x << " + " << y << " = " << z << std::endl;
+}
+template<typename Scalar>
+void GenerateMulTest(const Scalar& x, const Scalar& y, Scalar& z) {
+	using namespace sw::unum;
+	z = x * y;
+	std::cout << typeid(Scalar).name() << ": " << x << " * " << y << " = " << z << std::endl;
 }
 
 #define MANUAL_TESTING 0
@@ -229,29 +281,20 @@ try {
 	//i2 = 1.23456789e8;
 	//i3.parse("123456789");
 
-	{
-		using Scalar = short;
-		Scalar z;
-		GenerateTest<Scalar>(Scalar(0xffff), Scalar(1), z);
-	}
-	{
-		using Scalar = integer<12>;
-		Scalar z;
-		GenerateTest<Scalar>(Scalar(0xffff), Scalar(1), z);
-	}
+	short s = 0;
+	GenerateMulTest<short>(2, 16, s);
+	integer<16> z = 0;
+	GenerateMulTest<integer<16> >(2, 16, z);
 
 	{
-		integer<4> a, b, c, d;
-		a = 1;
-		b = -1;
-		c = a + b;
-		d = 0;
-		if (c != d) {
-			cout << "bad" << endl;
-		}
+		integer<16> a = 0x0AA1;
+		a <<= 1;
+		cout << to_binary(a) << endl;
+		a <<= 2;
+		cout << to_binary(a) << endl;
 	}
 
-	ReportTestResult(VerifyAddition<12>("Manual Testing", true), "integer<12>", "addition");
+	ReportTestResult(VerifyMultiplication<4>("manual test", true), "integer<4>", "multiply");
 
 	cout << "done" << endl;
 
@@ -265,30 +308,37 @@ try {
 	// allocation is the only functionality of integer<N> at this time
 
 	// TODO: implement parsing, assigment, conversion, arithmetic
-	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4>(tag, bReportIndividualTestCases), "integer<4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8>(tag, bReportIndividualTestCases), "integer<8>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<9>(tag, bReportIndividualTestCases), "integer<9>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10>(tag, bReportIndividualTestCases), "integer<10>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11>(tag, bReportIndividualTestCases), "integer<11>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12>(tag, bReportIndividualTestCases), "integer<12>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<13>(tag, bReportIndividualTestCases), "integer<13>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<14>(tag, bReportIndividualTestCases), "integer<14>", "addition");
+	std::string type = "integer<4>";
+#define NBITS 4
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<NBITS>(tag, bReportIndividualTestCases), type, "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<NBITS>(tag, bReportIndividualTestCases), type, "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<NBITS>(tag, bReportIndividualTestCases), type, "multiply");
+#undef NBITS
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4>(tag, bReportIndividualTestCases), "integer<4>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8>(tag, bReportIndividualTestCases), "integer<8>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9>(tag, bReportIndividualTestCases), "integer<9>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10>(tag, bReportIndividualTestCases), "integer<10>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<11>(tag, bReportIndividualTestCases), "integer<11>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12>(tag, bReportIndividualTestCases), "integer<12>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13>(tag, bReportIndividualTestCases), "integer<13>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<14>(tag, bReportIndividualTestCases), "integer<14>", "subtraction");
+	type = "integer<8>";
+#define NBITS 8
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<NBITS>(tag, bReportIndividualTestCases), type, "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<NBITS>(tag, bReportIndividualTestCases), type, "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<NBITS>(tag, bReportIndividualTestCases), type, "multiply");
+#undef NBITS
+
+	type = "integer<12>";
+#define NBITS 12
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<NBITS>(tag, bReportIndividualTestCases), type, "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<NBITS>(tag, bReportIndividualTestCases), type, "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<NBITS>(tag, bReportIndividualTestCases), type, "multiply");
+#undef NBITS
 
 #if STRESS_TESTING
 	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
 	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition<16>(tag, bReportIndividualTestCases), "integer<16>", "addition");
 	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<16>(tag, bReportIndividualTestCases), "integer<16>", "addition");
+	type = "integer<16>";
+#define NBITS 16
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<NBITS>(tag, bReportIndividualTestCases), type, "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<NBITS>(tag, bReportIndividualTestCases), type, "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<NBITS>(tag, bReportIndividualTestCases), type, "multiply");
+#undef NBITS
 
 #endif // STRESS_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

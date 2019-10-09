@@ -314,11 +314,19 @@ public:
 		return *this;
 	}
 	integer& operator-=(const integer& rhs) {
-		integer<nbits> sub = twos_complement(rhs);
-		operator+=(sub);
+		operator+=(twos_complement(rhs));
 		return *this;
 	}
 	integer& operator*=(const integer& rhs) {
+		integer<nbits> base(*this);
+		integer<nbits> multiplicant(rhs);
+		clear();
+		for (unsigned i = 0; i < nbits; ++i) {
+			if (base.at(i)) {
+				operator+=(multiplicant);
+			}
+			multiplicant <<= 1;
+		}
 		return *this;
 	}
 	integer& operator/=(const integer& rhs) {
@@ -327,7 +335,14 @@ public:
 	integer& operator%=(const integer& rhs) {
 		return *this;
 	}
-
+	integer& operator<<=(const unsigned shift) {
+		integer<nbits> target;
+		for (unsigned i = shift; i < nbits; ++i) {
+			target.set(i, at(i - shift));
+		}
+		*this = target;
+		return *this;
+	}
 	// modifiers
 	inline void clear() { std::memset(&b, 0, nrBytes); }
 	inline void setzero() { clear(); }
@@ -338,7 +353,27 @@ public:
 			b[i / 8] = byte | mask;
 			return;
 		}
-		throw "bit index out of bounds";
+		throw "integer<nbits> bit index out of bounds";
+	}
+	inline void reset(unsigned int i) {
+		if (i < nbits) {
+			uint8_t byte = b[i / 8];
+			uint8_t mask = ~(1 << (i % 8));
+			b[i / 8] = byte & mask;
+			return;
+		}
+		throw "integer<nbits> bit index out of bounds";
+	}
+	inline void set(unsigned i, bool v) {
+		if (i < nbits) {
+			uint8_t byte = b[i / 8];
+			uint8_t null = ~(1 << (i % 8));
+			uint8_t bit = (v ? 1 : 0);
+			uint8_t mask = (bit << (i % 8));
+			b[i / 8] = (byte & null) | mask;
+			return;
+		}
+		throw "integer<nbits> bit index out of bounds";
 	}
 	// use un-interpreted raw bits to set the bits of the integer
 	void set_raw_bits(unsigned long long value) {
