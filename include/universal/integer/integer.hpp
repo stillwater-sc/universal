@@ -314,6 +314,8 @@ public:
 		return *this;
 	}
 	integer& operator-=(const integer& rhs) {
+		integer<nbits> sub = twos_complement(rhs);
+		operator+=(sub);
 		return *this;
 	}
 	integer& operator*=(const integer& rhs) {

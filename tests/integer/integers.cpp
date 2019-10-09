@@ -275,14 +275,14 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<13>(tag, bReportIndividualTestCases), "integer<13>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<14>(tag, bReportIndividualTestCases), "integer<14>", "addition");
 
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4>(tag, bReportIndividualTestCases), "integer<4>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8>(tag, bReportIndividualTestCases), "integer<8>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9>(tag, bReportIndividualTestCases), "integer<9>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10>(tag, bReportIndividualTestCases), "integer<10>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<11>(tag, bReportIndividualTestCases), "integer<11>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12>(tag, bReportIndividualTestCases), "integer<12>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13>(tag, bReportIndividualTestCases), "integer<13>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<14>(tag, bReportIndividualTestCases), "integer<14>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4>(tag, bReportIndividualTestCases), "integer<4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8>(tag, bReportIndividualTestCases), "integer<8>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9>(tag, bReportIndividualTestCases), "integer<9>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10>(tag, bReportIndividualTestCases), "integer<10>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<11>(tag, bReportIndividualTestCases), "integer<11>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12>(tag, bReportIndividualTestCases), "integer<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13>(tag, bReportIndividualTestCases), "integer<13>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<14>(tag, bReportIndividualTestCases), "integer<14>", "subtraction");
 
 #if STRESS_TESTING
 	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
