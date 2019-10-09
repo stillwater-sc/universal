@@ -44,7 +44,7 @@ namespace unum {
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib, isum, iref;
+		integer<nbits> ia, ib, iresult, iref;
 
 		short i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {

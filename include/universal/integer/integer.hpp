@@ -734,7 +734,6 @@ std::string convert_to_decimal_string(const integer<nbits>& value) {
 	if (value.iszero()) {
 		return std::string("0");
 	}
-	constexpr size_t nrBytes = value.nrBytes;
 	integer<nbits> number = value.sign() ? twos_complement(value) : value;
 	impl::decimal partial, multiplier;
 	partial.push_back(0); partial.sign = false;
