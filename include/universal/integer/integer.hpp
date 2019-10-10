@@ -337,8 +337,16 @@ public:
 	}
 	integer& operator<<=(const unsigned shift) {
 		integer<nbits> target;
-		for (unsigned i = shift; i < nbits; ++i) {
+		for (unsigned i = shift; i < nbits; ++i) {  // TODO: inefficient as it works at the bit level
 			target.set(i, at(i - shift));
+		}
+		*this = target;
+		return *this;
+	}
+	integer& operator>>=(const unsigned shift) {
+		integer<nbits> target;
+		for (int i = nbits - 1; i >= shift; --i) {  // TODO: inefficient as it works at the bit level
+			target.set(i - shift, at(i));
 		}
 		*this = target;
 		return *this;
@@ -537,6 +545,7 @@ private:
 	friend bool operator>=(const integer<nnbits>& lhs, const integer<nnbits>& rhs);
 };
 
+// paired down implementation of a decimal type to generate decimal representations for integer<nbits> types
 namespace impl {
 	// Decimal representation as a set of decimal digits with sign used for creating decimal representations of the integers
 class decimal : public std::vector<uint8_t> {
@@ -589,7 +598,6 @@ bool less(const decimal& lhs, const decimal& rhs) {
 	// at this point we know the two operands are the same
 	return false;
 }
-
 void add(decimal& lhs, const decimal& rhs) {
 	decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
 	if (lhs.sign != rhs.sign) {  // different signs
