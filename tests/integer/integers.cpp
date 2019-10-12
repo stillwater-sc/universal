@@ -456,22 +456,22 @@ int operator%(const unsigned char n, const fastdiv& divisor)	{	return ((int)n) %
 
 
 int check() {
-	const int divisor_count = 100000;
-	const int divident_count = 1000000;
-	std::cout << "Functional test on " << divisor_count << " divisors, with " << divident_count << " dividents for each divisor" << std::endl;
+	const int divisor_count = 10000;
+	const int dividend_count = 10000;
+	std::cout << "Functional test on " << divisor_count << " divisors, with " << dividend_count << " dividends for each divisor" << std::endl;
 	for (int d = 1; d < divisor_count; ++d) {
 		for (int sign = 1; sign >= -1; sign -= 2) {
 			int divisor = d * sign;
 			fastdiv fast_divisor(divisor);
 
-			for (int dd = 0; dd < divident_count; ++dd) {
+			for (int dd = 0; dd < dividend_count; ++dd) {
 				for (int ss = 1; ss >= -1; ss -= 2) {
-					int divident = dd * ss;
+					int dividend = dd * ss;
 
-					int quotient = divident / divisor;
-					int fast_quotient = divident / fast_divisor;
+					int quotient = dividend / divisor;
+					int fast_quotient = dividend / fast_divisor;
 					if (quotient != fast_quotient) {
-						std::cout << "wrong result for divident " << divident << ", correct quotient = " << quotient << ", fast computed quotient = " << fast_quotient << std::endl;
+						std::cout << "FAIL " << dividend << ", correct quotient = " << quotient << ", fast computed quotient = " << fast_quotient << std::endl;
 						return 1;
 					}
 				}
@@ -481,6 +481,76 @@ int check() {
 
 	return 0;
 }
+}
+
+void TestSizeof() {
+	using namespace std;
+	using namespace sw::unum;
+
+	cout << endl << "TestSizeof" << endl;
+	using int8 = integer<8>;
+	using int64 = integer<64>;
+	using int128 = integer<128>;
+
+	int8 a;
+	int64 k;
+	int128 m;
+	cout << "Nr of bytes\n";
+	cout << typeid(a).name() << "  size in bytes " << a.nrBytes << endl;
+	cout << typeid(k).name() << "  size in bytes " << k.nrBytes << endl;
+	cout << typeid(m).name() << "  size in bytes " << m.nrBytes << endl;
+}
+
+void TestConversion() {
+	using namespace std;
+	using namespace sw::unum;
+
+	cout << endl << "TestConversion" << endl;
+
+	integer<128> i1, i2, i3;
+
+	cout << "TestConversion" << endl;
+
+	i1 = 123456789;
+	cout << "integer  " << i1 << endl;
+	i2 = 1.23456789e8;
+	cout << "double   " << i2 << " TBD " << endl;
+	//i3.parse("123456789");
+}
+
+void TestFindMsb() {
+	using namespace std;
+	using namespace sw::unum;
+
+	cout << endl << "TestFindMsb" << endl;
+	integer<32> a = 0x55555555;
+	for (int i = 0; i < 20; ++i) {
+		int msb = findMsb(a);
+		cout << "msb of " << to_binary(a) << " is " << msb << endl;
+		if (msb >= 0) a.reset(msb);
+	}
+}
+
+void TestFastdiv() {
+	using namespace std;
+	using namespace sw::unum;
+
+	cout << endl << "TestFastdiv" << endl;
+	// fast integer division by transformation to multiply with magic constant followed by a shift
+	fid::fastdiv fast_divisor(1);
+	cout << "size of fastdiv: " << sizeof(fast_divisor) << endl;
+	fast_divisor.info();
+
+	// int q = dividend / divisor;
+	// int q = hi32bits(dividend * M) >> s;
+	for (int i = 0; i < 10; i++) {
+		int divisor = rand();
+		fid::fastdiv fast_divisor(divisor);
+		cout << "divisor : " << divisor << std::endl;
+		fast_divisor.info();
+	}
+
+	fid::check();
 }
 
 #include <chrono>
@@ -503,6 +573,27 @@ void PerformanceTest() {
 	cout << "performance is " << double(NR_OPS) / elapsed << " integer<" << nbits << "> shifts/sec" << endl;
 }
 
+// do we need to fix the performance of the shift operator?
+void TestShiftOperatorPerformance() {
+	using namespace std;
+
+	cout << endl << "TestShiftOperatorPerformance" << endl;
+
+	PerformanceTest<16>();
+	PerformanceTest<32>();
+	PerformanceTest<64>();
+	PerformanceTest<128>();
+	PerformanceTest<1024>();
+	/*
+	performance of the serial implementation of the shift operators
+		performance is 1.99374e+07 integer<16> shifts / sec
+		performance is 8.44852e+06 integer<32> shifts / sec
+		performance is 3.85375e+06 integer<64> shifts / sec
+		performance is 1.77301e+06 integer<128> shifts / sec
+		performance is 219793 integer<1024> shifts / sec
+	*/
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -522,80 +613,28 @@ try {
 	std::string tag = "Integer Arithmetic tests failed";
 
 #if MANUAL_TESTING
-	using int8 = integer<8>;
-	using int64 = integer<64>;
-	using int128 = integer<128>;
 
-	int8 a;
-	int64 k;
-	int128 m;
-	cout << "Nr of bytes\n";
-	cout << typeid(a).name() << "  size in bytes " << a.nrBytes << endl;
-	cout << typeid(k).name() << "  size in bytes " << k.nrBytes << endl;
-	cout << typeid(m).name() << "  size in bytes " << m.nrBytes << endl;
-
-	integer<128> i1, i2, i3;
-
-	cout << "conversion" << endl;
-
-	i1 = 123456789;
-	cout << i1 << endl;
-	//i2 = 1.23456789e8;
-	//i3.parse("123456789");
-
-	{
-		integer<32> a = 0x55555555;
-		for (int i = 0; i < 20; ++i) {
-			int msb = a.findMsb();
-			cout << "msb of " << to_binary(a) << " is " << msb << endl;
-			if (msb >= 0) a.reset(a.findMsb());
-		}
-	}
-	PerformanceTest<16>();
-	PerformanceTest<32>();
-	PerformanceTest<64>();
-	PerformanceTest<128>();
-	PerformanceTest<1024>();
-	return 0;
+	//TestSizeof();
+	//TestConversion();
+	//TestFindMsb();
+	//TestShiftOperatorPerformance();
+	//TestFastdiv();
 
 	short s = 0;
 	GenerateMulTest<short>(2, 16, s);
 	integer<16> z = 0;
 	GenerateMulTest<integer<16> >(2, 16, z);
 
-	{
-		integer<16> a = 0x0AA1;
-		a <<= 1;
-		cout << to_binary(a) << endl;
-		a <<= 2;
-		cout << to_binary(a) << endl;
-	}
-
-	// fast_div
-	fid::fastdiv fast_divisor(7);
-	cout << "size of fastdiv: " << sizeof(fast_divisor) << endl;
-	fast_divisor.info();
-	fast_divisor = 2;
-	fast_divisor.info();
-	fast_divisor = 3;
-	fast_divisor.info();
-	fast_divisor = 4;
-	fast_divisor.info();
-	fast_divisor = 7;
-	fast_divisor.info();
-	fast_divisor = 8;
-	fast_divisor.info();
-
-	// int q = n / divisor;
-	// int q = hi32bits(n * M) >> s;
-	for (int i = 0; i < 10; i++) {
-		int divisor = rand();
-		fid::fastdiv fast_divisor(divisor);
-		cout << "divisor : " << divisor << std::endl;
-		fast_divisor.info();
-	}
-
-	//cpu_check();
+	integer<32> x, y;
+	constexpr int factor = 12345;
+	constexpr int divisor = 678;
+	x = factor * divisor;
+	y = divisor;
+	z = x / y;
+	cout << x << " / " << y << " = " << z << endl;
+	integer<64> zz;
+	divide(x, y, zz);
+	cout << zz << endl;
 
 	//ReportTestResult(VerifyDivision<4>("manual test", true), "integer<4>", "divides");
 

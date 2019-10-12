@@ -41,8 +41,17 @@
 
 #endif
 
+// default behavior of the integer<nbits> class is to silently deal with arithmetic exceptions
+#ifndef INTEGER_THROW_ARITHMETIC_EXCEPTION
+#define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
 namespace sw {
 namespace unum {
+
+	struct integer_divide_by_zero : public std::runtime_error {
+		integer_divide_by_zero() : std::runtime_error("integer division by zero") {}
+	};
 
 // forward references
 template<size_t nbits> class integer;
@@ -256,13 +265,16 @@ public:
 		return *this;
 	}
 	integer& operator=(const float rhs) {
-		return float_assign(rhs);
+		float_assign(rhs);
+		return *this;
 	}
 	integer& operator=(const double rhs) {
-		return float_assign(rhs);
+		float_assign(rhs);
+		return *this;
 	}
 	integer& operator=(const long double rhs) {
-		return float_assign(rhs);
+		float_assign(rhs);
+		return *this;
 	}
 
 	// one's complement
@@ -414,56 +426,8 @@ public:
 		}
 		throw "bit index out of bounds";
 	}
-	inline signed findMsb() const {
-		for (signed i = nrBytes - 1; i >= 0; --i) {
-			if (b[i] != 0) {
-				uint8_t mask = 0x80;
-				for (signed j = 7; j >= 0; --j) {
-					if (b[i] & mask) {
-						return i*8 + j;
-					}
-					mask >>= 1;
-				}
-			}
-		}
-		return -1;
-	}
-	// divide bitsets a and b and return result in bitset result.
-	template<size_t nbits>
-	void divide(const integer<nbits>& a, const integer<nbits>& b, integer<2 * nbits>& result) {
-		integer<nbits> subtractand, accumulator;
-		result.reset();
-		accumulator = a;
-		int msb = findMsb(b);
-		if (msb < 0) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
-			throw integer_divide_by_zero{};
-#else
-			std::cerr << "integer_divide_by_zero\n";
-#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
-		}
-		else {
-			int shift = operand_size - msb - 1;
-			// prepare the subtractand
-			subtractand = b;
-			subtractand <<= shift;
-			for (int i = operand_size - msb - 1; i >= 0; --i) {
-				if (subtractand <= accumulator) {
-#ifdef DEBUG
-					bool borrow = subtract(accumulator, subtractand);
-					assert(borrow == true);
-#else
-					accumulator -= subtractand;
-#endif
-					result.set(i);
-				}
-				else {
-					result.reset(i);
-				}
-				subtractand >>= 1;
-			}
-		}
-	}
+
+
 protected:
 	// HELPER methods
 	uint8_t byte(unsigned int i) const {
@@ -567,8 +531,9 @@ protected:
 	long double to_long_double() const { return 0.0l; }
 
 	template<typename Ty>
-	integer& float_assign(Ty& rhs) {
-
+	void float_assign(Ty& rhs) {
+		clear();
+		// TODO
 	}
 
 private:
@@ -592,6 +557,10 @@ private:
 	friend bool operator<=(const integer<nnbits>& lhs, const integer<nnbits>& rhs);
 	template<size_t nnbits>
 	friend bool operator>=(const integer<nnbits>& lhs, const integer<nnbits>& rhs);
+
+	// 
+	template<size_t nbits>
+	friend signed findMsb(const integer<nbits>& v); 
 };
 
 // paired down implementation of a decimal type to generate decimal representations for integer<nbits> types
@@ -809,6 +778,60 @@ std::string convert_to_decimal_string(const integer<nbits>& value) {
 		ss << (int)*rit;
 	}
 	return ss.str();
+}
+
+// findMsb takes an integer<nbits> reference and returns the position of the most significant bit, -1 if v == 0
+template<size_t nbits>
+inline signed findMsb(const integer<nbits>& v) {
+	for (signed i = v.nrBytes - 1; i >= 0; --i) {
+		if (v.b[i] != 0) {
+			uint8_t mask = 0x80;
+			for (signed j = 7; j >= 0; --j) {
+				if (v.b[i] & mask) {
+					return i * 8 + j;
+				}
+				mask >>= 1;
+			}
+		}
+	}
+	return -1; // no significant bit found, all bits are zero
+}
+
+// divide integer<nbits> a and b and return result argument
+template<size_t nbits>
+void divide(const integer<nbits>& a, const integer<nbits>& b, integer<2 * nbits>& result) {
+	integer<nbits> subtractand, accumulator;
+	result.setzero();
+	accumulator = a;
+	int msb = findMsb(b);
+	if (msb < 0) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+		throw integer_divide_by_zero{};
+#else
+		std::cerr << "integer_divide_by_zero\n";
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+	}
+	else {
+		int shift = nbits - msb - 1;
+		// prepare the subtractand
+		subtractand = b;
+		subtractand <<= shift;
+		for (int i = nbits - msb - 1; i >= 0; --i) {
+			if (subtractand <= accumulator) {
+#ifdef DEBUG
+				bool borrow = subtract(accumulator, subtractand);
+				assert(borrow == true);
+#else
+				accumulator -= subtractand;
+#endif
+				result.set(i);
+			}
+			else {
+				result.reset(i);
+			}
+			subtractand >>= 1;
+		}
+	}
 }
 
 /// stream operators
