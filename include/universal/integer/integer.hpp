@@ -87,7 +87,7 @@ inline void convert_unsigned(uint64_t v, integer<nbits>& result) {
 	result.clear();
 	unsigned upper = (nbits <= 64 ? nbits : 64);
 	for (unsigned i = 0; i < upper; ++i) {
-		if (v & mask) result[i] = true;
+		if (v & mask) result.set(i);
 		v >>= 1;
 	}
 }
@@ -345,7 +345,7 @@ public:
 	}
 	integer& operator>>=(const unsigned shift) {
 		integer<nbits> target;
-		for (int i = nbits - 1; i >= shift; --i) {  // TODO: inefficient as it works at the bit level
+		for (int i = nbits - 1; i >= int(shift); --i) {  // TODO: inefficient as it works at the bit level
 			target.set(i - shift, at(i));
 		}
 		*this = target;
@@ -414,7 +414,56 @@ public:
 		}
 		throw "bit index out of bounds";
 	}
-
+	inline signed findMsb() const {
+		for (signed i = nrBytes - 1; i >= 0; --i) {
+			if (b[i] != 0) {
+				uint8_t mask = 0x80;
+				for (signed j = 7; j >= 0; --j) {
+					if (b[i] & mask) {
+						return i*8 + j;
+					}
+					mask >>= 1;
+				}
+			}
+		}
+		return -1;
+	}
+	// divide bitsets a and b and return result in bitset result.
+	template<size_t nbits>
+	void divide(const integer<nbits>& a, const integer<nbits>& b, integer<2 * nbits>& result) {
+		integer<nbits> subtractand, accumulator;
+		result.reset();
+		accumulator = a;
+		int msb = findMsb(b);
+		if (msb < 0) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+			throw integer_divide_by_zero{};
+#else
+			std::cerr << "integer_divide_by_zero\n";
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+		}
+		else {
+			int shift = operand_size - msb - 1;
+			// prepare the subtractand
+			subtractand = b;
+			subtractand <<= shift;
+			for (int i = operand_size - msb - 1; i >= 0; --i) {
+				if (subtractand <= accumulator) {
+#ifdef DEBUG
+					bool borrow = subtract(accumulator, subtractand);
+					assert(borrow == true);
+#else
+					accumulator -= subtractand;
+#endif
+					result.set(i);
+				}
+				else {
+					result.reset(i);
+				}
+				subtractand >>= 1;
+			}
+		}
+	}
 protected:
 	// HELPER methods
 	uint8_t byte(unsigned int i) const {

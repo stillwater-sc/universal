@@ -5,6 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
+// configure the integer arithmetic class
+#define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/integer/integer.hpp>
 #include <universal/integer/numeric_limits.hpp>
 // test helpers
@@ -19,19 +21,18 @@
 namespace sw {
 namespace unum {
 
-#define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 
-#define FLOAT_TABLE_WIDTH 20
+#define INTEGER_TABLE_WIDTH 20
 	template<size_t nbits>
 	void ReportBinaryArithmeticError(std::string test_case, std::string op, const integer<nbits>& lhs, const integer<nbits>& rhs, const integer<nbits>& pref, const integer<nbits>& presult) {
 		std::cerr << test_case << " "
 			<< std::setprecision(20)
-			<< std::setw(FLOAT_TABLE_WIDTH) << lhs
+			<< std::setw(INTEGER_TABLE_WIDTH) << lhs
 			<< " " << op << " "
-			<< std::setw(FLOAT_TABLE_WIDTH) << rhs
+			<< std::setw(INTEGER_TABLE_WIDTH) << rhs
 			<< " != "
-			<< std::setw(FLOAT_TABLE_WIDTH) << pref << " instead it yielded "
-			<< std::setw(FLOAT_TABLE_WIDTH) << presult
+			<< std::setw(INTEGER_TABLE_WIDTH) << pref << " instead it yielded "
+			<< std::setw(INTEGER_TABLE_WIDTH) << presult
 			<< " " << to_binary(pref) << " vs " << to_binary(presult)
 			<< std::setprecision(5)
 			<< std::endl;
@@ -338,17 +339,16 @@ void GenerateMulTest(const Scalar& x, const Scalar& y, Scalar& z) {
 
 namespace fid {
 // fast integer divide
-class int_fastdiv
-{
+class fastdiv {
 public:
 	// divisor != 0 
-	int_fastdiv(int divisor = 0) : d(divisor) {
-		update_magic_numbers();
+	fastdiv(int divisor = 0) : d(divisor) {
+		generate_magic_constants();
 	}
 
-	int_fastdiv& operator =(int divisor) {
+	fastdiv& operator =(int divisor) {
 		this->d = divisor;
-		update_magic_numbers();
+		generate_magic_constants();
 		return *this;
 	}
 
@@ -368,8 +368,7 @@ private:
 	int n_add_sign;
 
 	// Hacker's Delight, Second Edition, Chapter 10, Integer Division By Constants
-	void update_magic_numbers()
-	{
+	void generate_magic_constants()	{
 		if (d == 1)	{
 			M = 0;
 			s = -1;
@@ -425,12 +424,12 @@ private:
 		}
 	}
 
-	friend int operator/(const int divident, const int_fastdiv& divisor);
+	friend int operator/(const int dividend, const fastdiv& divisor);
 };
 
-int operator/(const int n, const int_fastdiv& divisor) {
-	int q = (((unsigned long long)((long long)divisor.M * (long long)n)) >> 32);
-	q += n * divisor.n_add_sign;
+int operator/(const int dividend, const fastdiv& divisor) {
+	int q = (((unsigned long long)((long long)divisor.M * (long long)dividend)) >> 32);
+	q += dividend * divisor.n_add_sign;
 	if (divisor.s >= 0)	{
 		q >>= divisor.s; // we rely on this to be implemented as arithmetic shift
 		q += (((unsigned int)q) >> 31);
@@ -438,40 +437,35 @@ int operator/(const int n, const int_fastdiv& divisor) {
 	return q;
 }
 
-int operator%(const int n, const int_fastdiv& divisor){
-	int quotient = n / divisor;
-	int remainder = n - quotient * divisor;
+int operator%(const int dividend, const fastdiv& divisor){
+	int quotient = dividend / divisor;
+	int remainder = dividend - quotient * divisor;
 	return remainder;
 }
 
-int operator/(const unsigned int n, const int_fastdiv& divisor)		{	return ((int)n) / divisor; }
-int operator%(const unsigned int n, const int_fastdiv& divisor)		{	return ((int)n) % divisor; }
-int operator/(const short n, const int_fastdiv& divisor)			{	return ((int)n) / divisor; }
-int operator%(const short n, const int_fastdiv& divisor)			{	return ((int)n) % divisor; }
-int operator/(const unsigned short n, const int_fastdiv& divisor)	{	return ((int)n) / divisor; }
-int operator%(const unsigned short n, const int_fastdiv& divisor)	{	return ((int)n) % divisor; }
-int operator/(const char n, const int_fastdiv& divisor)				{	return ((int)n) / divisor; }
-int operator%(const char n, const int_fastdiv& divisor)				{	return ((int)n) % divisor; }
-int operator/(const unsigned char n, const int_fastdiv& divisor)	{	return ((int)n) / divisor; }
-int operator%(const unsigned char n, const int_fastdiv& divisor)	{	return ((int)n) % divisor; }
+int operator/(const unsigned int n, const fastdiv& divisor)		{	return ((int)n) / divisor; }
+int operator%(const unsigned int n, const fastdiv& divisor)		{	return ((int)n) % divisor; }
+int operator/(const short n, const fastdiv& divisor)			{	return ((int)n) / divisor; }
+int operator%(const short n, const fastdiv& divisor)			{	return ((int)n) % divisor; }
+int operator/(const unsigned short n, const fastdiv& divisor)	{	return ((int)n) / divisor; }
+int operator%(const unsigned short n, const fastdiv& divisor)	{	return ((int)n) % divisor; }
+int operator/(const char n, const fastdiv& divisor)				{	return ((int)n) / divisor; }
+int operator%(const char n, const fastdiv& divisor)				{	return ((int)n) % divisor; }
+int operator/(const unsigned char n, const fastdiv& divisor)	{	return ((int)n) / divisor; }
+int operator%(const unsigned char n, const fastdiv& divisor)	{	return ((int)n) % divisor; }
 
-}
 
-int cpu_check() {
-	using namespace fid;
+int check() {
 	const int divisor_count = 100000;
 	const int divident_count = 1000000;
-	std::cout << "Running CPU functional test on " << divisor_count << " divisors, with " << divident_count << " dividents for each divisor" << std::endl;
+	std::cout << "Functional test on " << divisor_count << " divisors, with " << divident_count << " dividents for each divisor" << std::endl;
 	for (int d = 1; d < divisor_count; ++d) {
 		for (int sign = 1; sign >= -1; sign -= 2) {
 			int divisor = d * sign;
+			fastdiv fast_divisor(divisor);
 
-			// std::cout << "Checking divisor " << divisor << "... ";
-
-			int_fastdiv fast_divisor(divisor);
-
-			for (int dd = 0; dd < divident_count; ++dd)	{
-				for (int ss = 1; ss >= -1; ss -= 2)	{
+			for (int dd = 0; dd < divident_count; ++dd) {
+				for (int ss = 1; ss >= -1; ss -= 2) {
 					int divident = dd * ss;
 
 					int quotient = divident / divisor;
@@ -482,12 +476,31 @@ int cpu_check() {
 					}
 				}
 			}
-
-			// std::cout << "done" << std::endl;
 		}
 	}
 
 	return 0;
+}
+}
+
+#include <chrono>
+template<size_t nbits>
+void PerformanceTest() {
+	using namespace std;
+	using namespace std::chrono;
+
+	constexpr uint64_t NR_OPS = 1000000;
+
+	integer<nbits> a = 0xFFFFFFFF;
+	steady_clock::time_point begin = steady_clock::now();
+	for (int64_t i = 0; i < NR_OPS; ++i) {
+		a >>= 8;
+		a <<= 8;
+	}
+	steady_clock::time_point end = steady_clock::now();
+	duration<double> time_span = duration_cast<duration<double>>(end - begin);;
+	double elapsed = time_span.count();
+	cout << "performance is " << double(NR_OPS) / elapsed << " integer<" << nbits << "> shifts/sec" << endl;
 }
 
 #define MANUAL_TESTING 1
@@ -530,6 +543,21 @@ try {
 	//i2 = 1.23456789e8;
 	//i3.parse("123456789");
 
+	{
+		integer<32> a = 0x55555555;
+		for (int i = 0; i < 20; ++i) {
+			int msb = a.findMsb();
+			cout << "msb of " << to_binary(a) << " is " << msb << endl;
+			if (msb >= 0) a.reset(a.findMsb());
+		}
+	}
+	PerformanceTest<16>();
+	PerformanceTest<32>();
+	PerformanceTest<64>();
+	PerformanceTest<128>();
+	PerformanceTest<1024>();
+	return 0;
+
 	short s = 0;
 	GenerateMulTest<short>(2, 16, s);
 	integer<16> z = 0;
@@ -544,7 +572,7 @@ try {
 	}
 
 	// fast_div
-	fid::int_fastdiv fast_divisor;
+	fid::fastdiv fast_divisor(7);
 	cout << "size of fastdiv: " << sizeof(fast_divisor) << endl;
 	fast_divisor.info();
 	fast_divisor = 2;
@@ -562,7 +590,7 @@ try {
 	// int q = hi32bits(n * M) >> s;
 	for (int i = 0; i < 10; i++) {
 		int divisor = rand();
-		fid::int_fastdiv fast_divisor(divisor);
+		fid::fastdiv fast_divisor(divisor);
 		cout << "divisor : " << divisor << std::endl;
 		fast_divisor.info();
 	}
