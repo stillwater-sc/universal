@@ -559,8 +559,8 @@ private:
 	friend bool operator>=(const integer<nnbits>& lhs, const integer<nnbits>& rhs);
 
 	// 
-	template<size_t nbits>
-	friend signed findMsb(const integer<nbits>& v); 
+	template<size_t nnbits>
+	friend signed findMsb(const integer<nnbits>& v); 
 };
 
 // paired down implementation of a decimal type to generate decimal representations for integer<nbits> types

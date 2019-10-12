@@ -563,7 +563,7 @@ void PerformanceTest() {
 
 	integer<nbits> a = 0xFFFFFFFF;
 	steady_clock::time_point begin = steady_clock::now();
-	for (int64_t i = 0; i < NR_OPS; ++i) {
+	for (uint64_t i = 0; i < NR_OPS; ++i) {
 		a >>= 8;
 		a <<= 8;
 	}
