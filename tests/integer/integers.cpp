@@ -531,6 +531,33 @@ void TestFindMsb() {
 	}
 }
 
+template<size_t nbits>
+void TestLessThan() {
+	using namespace std;
+	using namespace sw::unum;
+
+	cout << endl << "TestLessThen" << endl;
+	bool pass = true;
+	constexpr int NR_INTS = 1 << nbits;
+	integer<nbits> a, b;
+	int ia, ib;
+	for (int i = 0; i < NR_INTS; ++i) {
+		a.set_raw_bits(i);
+		ia = int(a);
+		for (int j = 0; j < NR_INTS; ++j) {
+			b.set_raw_bits(j);
+			ib = int(b);
+			if ((ia < ib) != (a < b)) {
+				cout << "FAIL : " << a << " " << b << " yielded " << (a < b ? "true" : "false") << endl;
+				pass = false;
+				i = NR_INTS;
+				break;
+			}
+		}
+	}
+	cout << (pass ? "PASS" : "FAIL") << endl;
+}
+
 void TestFastdiv() {
 	using namespace std;
 	using namespace sw::unum;
@@ -614,10 +641,16 @@ try {
 
 #if MANUAL_TESTING
 
-	//TestSizeof();
-	//TestConversion();
-	//TestFindMsb();
-	//TestShiftOperatorPerformance();
+	integer<4> bla = -8;
+	cout << bla << endl;
+	int ib = int(bla);
+	cout << ib << endl;
+
+	TestSizeof();
+	TestConversion();
+	TestFindMsb();
+	TestLessThan<12>();
+	TestShiftOperatorPerformance();
 	//TestFastdiv();
 
 	short s = 0;
@@ -636,7 +669,9 @@ try {
 	divide(x, y, zz);
 	cout << zz << endl;
 
-	//ReportTestResult(VerifyDivision<4>("manual test", true), "integer<4>", "divides");
+	integer<16> r;
+	divide(integer<8>(16), integer<8>(4), r);
+	ReportTestResult(VerifyDivision<4>("manual test", true), "integer<4>", "divides");
 
 	cout << "done" << endl;
 

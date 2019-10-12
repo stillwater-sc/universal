@@ -438,15 +438,16 @@ protected:
 	}
 	// conversion functions
 	short to_short() const {
+		constexpr unsigned sizeofshort = 8 * sizeof(short);
 		short s = 0;
 		short mask = 1;
-		unsigned upper = (nbits < 8 * sizeof(short) ? nbits : 8 * sizeof(short));
+		unsigned upper = (nbits < sizeofshort ? nbits : sizeofshort);
 		for (unsigned i = 0; i < upper; ++i) {
 			s |= at(i) ? mask : 0;
 			mask <<= 1;
 		}
-		if (sign() && upper < nbits) { // sign extend
-			for (unsigned i = upper; i < nbits; ++i) {
+		if (sign() && upper < sizeofshort) { // sign extend
+			for (unsigned i = upper; i < sizeofshort; ++i) {
 				s |= mask;
 				mask <<= 1;
 			}
@@ -454,31 +455,33 @@ protected:
 		return s;
 	}
 	int to_int() const {
-		int i = 0;
+		constexpr unsigned sizeofint = 8 * sizeof(int);
+		int value = 0;
 		int mask = 1;
-		unsigned upper = (nbits < 8 * sizeof(int) ? nbits : 8 * sizeof(int));
+		unsigned upper = (nbits < sizeofint ? nbits : sizeofint);
 		for (unsigned i = 0; i < upper; ++i) {
-			i |= at(i) ? mask : 0;
+			value |= at(i) ? mask : 0;
 			mask <<= 1;
 		}
-		if (sign() && upper < nbits) { // sign extend
-			for (unsigned i = upper; i < nbits; ++i) {
-				i |= mask;
+		if (sign() && upper < sizeofint) { // sign extend
+			for (unsigned i = upper; i < sizeofint; ++i) {
+				value |= mask;
 				mask <<= 1;
 			}
 		}
-		return i;
+		return value;
 	}
 	long to_long() const {
+		constexpr unsigned sizeoflong = 8 * sizeof(long);
 		long l = 0;
 		long mask = 1;
-		unsigned upper = (nbits < 8 * sizeof(long) ? nbits : 8 * sizeof(long));
+		unsigned upper = (nbits < sizeoflong ? nbits : sizeoflong);
 		for (unsigned i = 0; i < upper; ++i) {
 			l |= at(i) ? mask : 0;
 			mask <<= 1;
 		}
-		if (sign() && upper < nbits) { // sign extend
-			for (unsigned i = upper; i < nbits; ++i) {
+		if (sign() && upper < sizeoflong) { // sign extend
+			for (unsigned i = upper; i < sizeoflong; ++i) {
 				l |= mask;
 				mask <<= 1;
 			}
@@ -486,15 +489,16 @@ protected:
 		return l;
 	}
 	long long to_long_long() const {
+		constexpr unsigned sizeoflonglong = 8 * sizeof(long long);
 		long long ll = 0;
 		long long mask = 1;
-		unsigned upper = (nbits < 8 * sizeof(long long) ? nbits : 8 * sizeof(long long));
+		unsigned upper = (nbits < sizeoflonglong ? nbits : sizeoflonglong);
 		for (unsigned i = 0; i < upper; ++i) {
 			ll |= at(i) ? mask : 0;
 			mask <<= 1;
 		}
-		if (sign() && upper < nbits) { // sign extend
-			for (unsigned i = upper; i < nbits; ++i) {
+		if (sign() && upper < sizeoflonglong) { // sign extend
+			for (unsigned i = upper; i < sizeoflonglong; ++i) {
 				ll |= mask;
 				mask <<= 1;
 			}
@@ -802,9 +806,10 @@ template<size_t nbits>
 void divide(const integer<nbits>& a, const integer<nbits>& b, integer<2 * nbits>& result) {
 	integer<nbits> subtractand, accumulator;
 	result.setzero();
+	if (a < b) return; // 0
 	accumulator = a;
-	int msb = findMsb(b);
-	if (msb < 0) {
+	int msb_b = findMsb(b);
+	if (msb_b < 0) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
 #else
@@ -812,11 +817,12 @@ void divide(const integer<nbits>& a, const integer<nbits>& b, integer<2 * nbits>
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
 	else {
-		int shift = nbits - msb - 1;
+		int msb_a = findMsb(a);
+		int shift = msb_a - msb_b - 1;
 		// prepare the subtractand
 		subtractand = b;
 		subtractand <<= shift;
-		for (int i = nbits - msb - 1; i >= 0; --i) {
+		for (int i = shift; i >= 0; --i) {
 			if (subtractand <= accumulator) {
 #ifdef DEBUG
 				bool borrow = subtract(accumulator, subtractand);
@@ -916,7 +922,18 @@ inline bool operator!=(const integer<nbits>& lhs, const integer<nbits>& rhs) {
 }
 template<size_t nbits>
 inline bool operator< (const integer<nbits>& lhs, const integer<nbits>& rhs) {
-	return true; // TODO
+	bool lhs_is_negative = lhs.sign();
+	bool rhs_is_negative = rhs.sign();
+	if (lhs_is_negative && !rhs_is_negative) return true;
+	if (rhs_is_negative && !lhs_is_negative) return false;
+	// arguments have the same sign
+	for (int i = nbits - 1; i >= 0; --i) {
+		bool a = lhs.at(i);
+		bool b = rhs.at(i);
+		if (a ^ b)
+			if (a == false) return true; else return false;
+	}
+	return false; // lhs and rhs are the same
 }
 template<size_t nbits>
 inline bool operator> (const integer<nbits>& lhs, const integer<nbits>& rhs) {
