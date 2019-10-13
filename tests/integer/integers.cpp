@@ -194,8 +194,6 @@ namespace unum {
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.set_raw_bits(j);
 				i16b = short(ib);
-				if (i16b == 0) continue;
-				iref = i16a / i16b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia / ib;
@@ -203,16 +201,16 @@ namespace unum {
 				catch (...) {
 					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
 						// correctly caught the exception
-
+						continue;
 					}
 					else {
 						nrOfFailedTests++;
 					}
 				}
-
 #else
 				iresult = ia / ib;
 #endif
+				iref = i16a / i16b;
 				if (iresult != iref) {
 					nrOfFailedTests++;
 					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iresult);
@@ -227,7 +225,52 @@ namespace unum {
 
 		return nrOfFailedTests;
 	}
+	// enumerate all remainder cases for an integer<16> configuration compared against native short
+	int VerifyShortRemainder(std::string tag, bool bReportIndividualTestCases) {
+		constexpr size_t nbits = 16;
 
+		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		int nrOfFailedTests = 0;
+		integer<nbits> ia, ib, iresult, iref;
+
+		short i16a, i16b;
+		for (size_t i = 0; i < NR_INTEGERS; i++) {
+			ia.set_raw_bits(i);
+			i16a = short(ia);
+			for (size_t j = 0; j < NR_INTEGERS; j++) {
+				ib.set_raw_bits(j);
+				i16b = short(ib);
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				try {
+					iresult = ia % ib;
+				}
+				catch (...) {
+					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+						// correctly caught the exception
+						continue;
+					}
+					else {
+						nrOfFailedTests++;
+					}
+				}
+#else
+				iresult = ia % ib;
+#endif
+				iref = i16a % i16b;
+				if (iresult != iref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "%", ia, ib, iref, iresult);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "%", ia, ib, iref, iresult);
+				}
+			}
+			if (i % 1024 == 0) std::cout << '.';
+		}
+		std::cout << std::endl;
+
+		return nrOfFailedTests;
+	}
 
 	// enumerate all addition cases for an integer<nbits> configuration
 	template<size_t nbits>
@@ -381,7 +424,6 @@ namespace unum {
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.set_raw_bits(j);
 				i64b = int64_t(ib);
-
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia / ib;
@@ -406,6 +448,51 @@ namespace unum {
 				}
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iref, iresult);
+				}
+				if (nrOfFailedTests > 100) return nrOfFailedTests;
+			}
+			if (i % 1024 == 0) std::cout << '.';
+		}
+		std::cout << std::endl;
+		return nrOfFailedTests;
+	}
+	template<size_t nbits>
+	int VerifyRemainder(std::string tag, bool bReportIndividualTestCases) {
+		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		int nrOfFailedTests = 0;
+		integer<nbits> ia, ib, iresult, iref;
+
+		int64_t i64a, i64b;
+		for (size_t i = 0; i < NR_INTEGERS; i++) {
+			ia.set_raw_bits(i);
+			i64a = int64_t(ia);
+			for (size_t j = 0; j < NR_INTEGERS; j++) {
+				ib.set_raw_bits(j);
+				i64b = int64_t(ib);
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				try {
+					iresult = ia % ib;
+				}
+				catch (...) {
+					if (ib == integer<nbits>(0)) {
+						// correctly caught the exception
+						continue;
+					}
+					else {
+						nrOfFailedTests++;
+					}
+				}
+
+#else
+				iresult = ia % ib;
+#endif
+				iref = i64a % i64b;
+				if (iresult != iref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "%", ia, ib, iref, iresult);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "%", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -696,7 +783,7 @@ void TestFastdiv() {
 
 #include <chrono>
 template<size_t nbits>
-void PerformanceTest() {
+void ShiftPerformanceTest() {
 	using namespace std;
 	using namespace std::chrono;
 
@@ -720,11 +807,11 @@ void TestShiftOperatorPerformance() {
 
 	cout << endl << "TestShiftOperatorPerformance" << endl;
 
-	PerformanceTest<16>();
-	PerformanceTest<32>();
-	PerformanceTest<64>();
-	PerformanceTest<128>();
-	PerformanceTest<1024>();
+	ShiftPerformanceTest<16>();
+	ShiftPerformanceTest<32>();
+	ShiftPerformanceTest<64>();
+	ShiftPerformanceTest<128>();
+	ShiftPerformanceTest<1024>();
 	/*
 	performance of the serial implementation of the shift operators
 		performance is 1.99374e+07 integer<16> shifts / sec
@@ -732,6 +819,85 @@ void TestShiftOperatorPerformance() {
 		performance is 3.85375e+06 integer<64> shifts / sec
 		performance is 1.77301e+06 integer<128> shifts / sec
 		performance is 219793 integer<1024> shifts / sec
+	*/
+}
+
+template<size_t nbits>
+void ArithmeticPerformanceTest() {
+	using namespace std;
+	using namespace std::chrono;
+
+	constexpr uint64_t NR_OPS = 1000000;
+
+	steady_clock::time_point begin, end;
+	duration<double> time_span;
+	double elapsed;
+
+	integer<nbits> a, b, c, d;
+	for (int i = 0; i < a.nrBytes; ++i) {
+		a.setbyte(i, rand());
+		b.setbyte(i, rand());
+	}
+	begin = steady_clock::now();
+	for (uint64_t i = 0; i < NR_OPS; ++i) {
+		c = a + b;
+		a = c - b;
+	}
+	end = steady_clock::now();
+	time_span = duration_cast<duration<double>>(end - begin);;
+	 elapsed = time_span.count();
+	cout << "performance is " << double(NR_OPS) / elapsed << " integer<" << nbits << "> additions/subtractions" << endl;
+
+	begin = steady_clock::now();
+	for (uint64_t i = 0; i < NR_OPS; ++i) {
+		c = a * b;
+		c.clear();
+		d = c;
+	}
+	end = steady_clock::now();
+	time_span = duration_cast<duration<double>>(end - begin);;
+	elapsed = time_span.count();
+	cout << "performance is " << double(NR_OPS) / elapsed << " integer<" << nbits << "> multiplications" << endl;
+
+	begin = steady_clock::now();
+	for (uint64_t i = 0; i < NR_OPS; ++i) {
+		c = a / b;
+		c.clear();
+		d = c;
+	}
+	end = steady_clock::now();
+	time_span = duration_cast<duration<double>>(end - begin);;
+	elapsed = time_span.count();
+	cout << "performance is " << double(NR_OPS) / elapsed << " integer<" << nbits << "> divisions" << endl;
+}
+
+void TestArithmeticOperatorPerformance() {
+	using namespace std;
+
+	cout << endl << "TestShiftOperatorPerformance" << endl;
+
+	ArithmeticPerformanceTest<16>();
+	ArithmeticPerformanceTest<32>();
+	ArithmeticPerformanceTest<64>();
+	ArithmeticPerformanceTest<128>();
+//	ArithmeticPerformanceTest<1024>();
+	/*
+		TestShiftOperatorPerformance
+		performance is 1.01249e+08 integer<16> additions/subtractions
+		performance is 1.45226e+06 integer<16> multiplications
+		performance is 3.05808e+07 integer<16> divisions
+		performance is 6.75147e+07 integer<32> additions/subtractions
+		performance is 366806 integer<32> multiplications
+		performance is 1.93706e+06 integer<32> divisions
+		performance is 2.11016e+07 integer<64> additions/subtractions
+		performance is 93139 integer<64> multiplications
+		performance is 4.24692e+07 integer<64> divisions
+		performance is 1.29312e+07 integer<128> additions/subtractions
+		performance is 23545.5 integer<128> multiplications
+		performance is 543714 integer<128> divisions
+		performance is 2.06385e+06 integer<1024> additions/subtractions
+		performance is 407.244 integer<1024> multiplications
+		performance is 2.58264e+06 integer<1024> divisions
 	*/
 }
 
@@ -767,30 +933,13 @@ try {
 	TestConversion();
 	TestFindMsb();
 	TestLessThan<12>();
-	TestShiftOperatorPerformance();
-	//TestFastdiv();
-
-	integer<4> x, y, z;
-	int ix = -8;
-	int iy = 3;
-	int iz = 0;
-	x = ix;
-	y = iy;
-	iz = ix / iy;
-	cout << ix << " / " << iy << " = " << iz << endl;
-	divide(x, y, z);
-	cout << x << " / " << y << " = " << z << endl;
-
-	constexpr int factor = 12345;
-	constexpr int divisor = 678;
-	x = factor * divisor;
-	y = divisor;
-	z = x / y;
-	cout << x << " / " << y << " = " << z << endl;
-	divide(x, y, z);
-	cout << z << endl;
-
+//	TestShiftOperatorPerformance();
+//	TestArithmeticOperatorPerformance();
+//	TestFastdiv();
 	ReportTestResult(VerifyDivision<4>("manual test", true), "integer<4>", "divides");
+	ReportTestResult(VerifyRemainder<4>("manual test", true), "integer<4>", "remainder");
+	ReportTestResult(VerifyDivision<11>("manual test", true), "integer<11>", "divides");
+	ReportTestResult(VerifyRemainder<11>("manual test", true), "integer<11>", "remainder");
 
 	cout << "done" << endl;
 
@@ -810,6 +959,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<NBITS>(tag, bReportIndividualTestCases), type, "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<NBITS>(tag, bReportIndividualTestCases), type, "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<NBITS>(tag, bReportIndividualTestCases), type, "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<NBITS>(tag, bReportIndividualTestCases), type, "remainder");
 #undef NBITS
 
 	type = "integer<8>";
@@ -818,6 +968,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<NBITS>(tag, bReportIndividualTestCases), type, "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<NBITS>(tag, bReportIndividualTestCases), type, "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<NBITS>(tag, bReportIndividualTestCases), type, "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<NBITS>(tag, bReportIndividualTestCases), type, "remainder");
 #undef NBITS
 
 	type = "integer<12>";
@@ -826,6 +977,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<NBITS>(tag, bReportIndividualTestCases), type, "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<NBITS>(tag, bReportIndividualTestCases), type, "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<NBITS>(tag, bReportIndividualTestCases), type, "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<NBITS>(tag, bReportIndividualTestCases), type, "remainder");
 #undef NBITS
 
 #if STRESS_TESTING
@@ -835,12 +987,14 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyShortSubtraction(tag, bReportIndividualTestCases), type, "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortMultiplication(tag, bReportIndividualTestCases), type, "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision(tag, bReportIndividualTestCases), type, "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder(tag, bReportIndividualTestCases), type, "remainder");
 #define NBITS 16
 	// this is a 'standard' comparision against a native int64_t
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<NBITS>(tag, bReportIndividualTestCases), type, "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<NBITS>(tag, bReportIndividualTestCases), type, "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<NBITS>(tag, bReportIndividualTestCases), type, "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<NBITS>(tag, bReportIndividualTestCases), type, "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<NBITS>(tag, bReportIndividualTestCases), type, "remainder");
 #undef NBITS
 
 #endif // STRESS_TESTING

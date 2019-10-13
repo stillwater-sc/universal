@@ -104,6 +104,13 @@ inline void convert_unsigned(uint64_t v, integer<nbits>& result) {
 	}
 }
 
+// div_t for integer<nbits>
+template<size_t nbits>
+struct div_t {
+	integer<nbits> quot; // quotient
+	integer<nbits> rem;  // remainder
+};
+
 /*
 The rules for detecting overflow in a two's complement sum are simple:
  - If the sum of two positive numbers yields a negative result, the sum has overflowed.
@@ -141,8 +148,8 @@ public:
 	/// Construct a new integer from another, sign extend when necessary
 	template<size_t srcbits>
 	integer(const integer<srcbits>& a) {
-		static_assert(srcbits > nbits, "Source integer is bigger than target: potential loss of precision");
-		bit_copy(a);
+		static_assert(srcbits > nbits, "Source integer is bigger than target: potential loss of precision"); // TODO: do we want this?
+		bitcopy(a);
 		if (a.sign()) { // sign extend
 			for (int i = srcbits; i < nbits; ++i) {
 				set(i);
@@ -369,12 +376,13 @@ public:
 		return *this;
 	}
 	integer& operator/=(const integer& rhs) {
-		integer<nbits> quotient; 
-		divide(*this, rhs, quotient);
-		*this = quotient;
+		div_t<nbits> divresult = div<nbits>(*this, rhs);
+		*this = divresult.quot;
 		return *this;
 	}
 	integer& operator%=(const integer& rhs) {
+		div_t<nbits> divresult = div<nbits>(*this, rhs);
+		*this = divresult.rem;
 		return *this;
 	}
 	integer& operator<<=(const signed shift) {
@@ -437,6 +445,10 @@ public:
 		}
 		throw "integer<nbits> bit index out of bounds";
 	}
+	inline void setbyte(unsigned i, uint8_t value) {
+		if (i < nrBytes) { b[i] = value; return; }
+		throw integer_byte_index_out_of_bounds{};
+	}
 	// use un-interpreted raw bits to set the bits of the integer
 	inline void set_raw_bits(unsigned long long value) {
 		clear();
@@ -447,7 +459,7 @@ public:
 	}
 	// pure bit copy of source integer, no sign extension
 	template<size_t src_nbits>
-	inline void bit_copy(const integer<src_nbits>& src) {
+	inline void bitcopy(const integer<src_nbits>& src) {
 		int lastByte = (nrBytes < src.nrBytes ? nrBytes : src.nrBytes);
 		clear();
 		for (int i = 0; i < lastByte; ++i) {
@@ -853,7 +865,35 @@ inline signed findMsb(const integer<nbits>& v) {
 
 // divide integer<nbits> a and b and return result argument
 template<size_t nbits>
-void divide(const integer<nbits>& _a, const integer<nbits>& _b, integer<nbits>& result) {
+void divide(const integer<nbits>& a, const integer<nbits>& b, integer<nbits>& quotient) {
+	if (b == integer<nbits>(0)) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+		throw integer_divide_by_zero{};
+#else
+		std::cerr << "integer_divide_by_zero\n";
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+	}
+	div_t<nbits> divresult = div<nbits>(a, b);
+	quotient = divresult.quot;
+}
+
+// calculate remainder of integer<nbits> a and b and return result argument
+template<size_t nbits>
+void remainder(const integer<nbits>& a, const integer<nbits>& b, integer<nbits>& remainder) {
+	if (b == integer<nbits>(0)) {
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+		throw integer_divide_by_zero{};
+#else
+		std::cerr << "integer_divide_by_zero\n";
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+	}
+	div_t<nbits> divresult = div<nbits>(a, b);
+	remainder = divresult.rem;
+}
+
+// divide integer<nbits> a and b and return result argument
+template<size_t nbits>
+div_t<nbits> div(const integer<nbits>& _a, const integer<nbits>& _b) {
 	if (_b == integer<nbits>(0)) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
@@ -866,38 +906,44 @@ void divide(const integer<nbits>& _a, const integer<nbits>& _b, integer<nbits>& 
 	bool a_negative = _a.sign();
 	bool b_negative = _b.sign();
 	bool result_negative = (a_negative ^ b_negative);
-	integer<nbits + 1> a; a.bit_copy(a_negative ? -_a : _a);
-	integer<nbits + 1> b; b.bit_copy(b_negative ? -_b : _b);
-	result.setzero();
-	if (a < b) return; // a / b = 0 when b > a
+	integer<nbits + 1> a; a.bitcopy(a_negative ? -_a : _a);
+	integer<nbits + 1> b; b.bitcopy(b_negative ? -_b : _b);
+	div_t<nbits> divresult;
+	if (a < b) {
+		divresult.rem = _a; // a % b = a when a / b = 0
+		return divresult; // a / b = 0 when b > a
+	}
 	// initialize the long division
 	integer<nbits + 1> accumulator = a;
 	// prepare the subtractand
 	integer<nbits + 1> subtractand = b;
 	int msb_b = findMsb(b);
 	int msb_a = findMsb(a);
-	int shift = msb_a - msb_b;	
+	int shift = msb_a - msb_b;
 	subtractand <<= shift;
 	// long division
 	for (int i = shift; i >= 0; --i) {
 		if (subtractand <= accumulator) {
-#ifdef DEBUG
-			bool borrow = subtract(accumulator, subtractand);
-			assert(borrow == true);
-#else
 			accumulator -= subtractand;
-#endif
-			result.set(i);
+			divresult.quot.set(i);
 		}
 		else {
-			result.reset(i);
+			divresult.quot.reset(i);
 		}
 		subtractand >>= 1;
 	}
-	if (result_negative) {
-		result.flip();
-		result += 1;
+	if (result_negative) {  // take 2's complement
+		divresult.quot.flip();
+		divresult.quot += 1;
+	} 
+	if (_a < integer<nbits>(0)) {
+		divresult.rem = -accumulator;
 	}
+	else {
+		divresult.rem = accumulator;
+	}
+
+	return divresult;
 }
 
 /// stream operators
@@ -1042,7 +1088,7 @@ inline integer<nbits> operator/(const integer<nbits>& lhs, const integer<nbits>&
 template<size_t nbits>
 inline integer<nbits> operator%(const integer<nbits>& lhs, const integer<nbits>& rhs) {
 	integer<nbits> ratio = lhs;
-	ratio /= rhs;
+	ratio %= rhs;
 	return ratio;
 }
 
