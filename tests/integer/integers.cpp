@@ -722,7 +722,7 @@ void TestFindMsb() {
 	bool pass = true;
 	integer<32> a = 0xD5555555;
 	int golden_ref[] = { 31, 30, 28, 26, 24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 0, -1 };
-	for (int i = 0; i < sizeof(golden_ref)/sizeof(int); ++i) {
+	for (int i = 0; i < int(sizeof(golden_ref)/sizeof(int)); ++i) {
 		int msb = findMsb(a);
 		cout << "msb of " << to_binary(a) << " is " << msb << endl;
 		if (msb >= 0) a.reset(msb);
@@ -834,7 +834,7 @@ void ArithmeticPerformanceTest() {
 	double elapsed;
 
 	integer<nbits> a, b, c, d;
-	for (int i = 0; i < a.nrBytes; ++i) {
+	for (int i = 0; i < int(a.nrBytes); ++i) {
 		a.setbyte(i, rand());
 		b.setbyte(i, rand());
 	}

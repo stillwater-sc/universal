@@ -60,6 +60,8 @@ namespace unum {
 template<size_t nbits> class integer;
 template<size_t nbits> integer<nbits> max_int();
 template<size_t nbits> integer<nbits> min_int();
+template<size_t nbits> struct idiv_t;
+template<size_t nbits> idiv_t<nbits> idiv(const integer<nbits>&, const integer<nbits>&b);
 
 template<size_t nbits>
 inline integer<nbits> max_int() {
@@ -106,7 +108,7 @@ inline void convert_unsigned(uint64_t v, integer<nbits>& result) {
 
 // div_t for integer<nbits>
 template<size_t nbits>
-struct div_t {
+struct idiv_t {
 	integer<nbits> quot; // quotient
 	integer<nbits> rem;  // remainder
 };
@@ -151,7 +153,7 @@ public:
 		static_assert(srcbits > nbits, "Source integer is bigger than target: potential loss of precision"); // TODO: do we want this?
 		bitcopy(a);
 		if (a.sign()) { // sign extend
-			for (int i = srcbits; i < nbits; ++i) {
+			for (int i = int(srcbits); i < int(nbits); ++i) {
 				set(i);
 			}
 		}
@@ -376,19 +378,22 @@ public:
 		return *this;
 	}
 	integer& operator/=(const integer& rhs) {
-		div_t<nbits> divresult = div<nbits>(*this, rhs);
+		idiv_t<nbits> divresult = idiv<nbits>(*this, rhs);
 		*this = divresult.quot;
 		return *this;
 	}
 	integer& operator%=(const integer& rhs) {
-		div_t<nbits> divresult = div<nbits>(*this, rhs);
+		idiv_t<nbits> divresult = idiv<nbits>(*this, rhs);
 		*this = divresult.rem;
 		return *this;
 	}
 	integer& operator<<=(const signed shift) {
 		if (shift == 0) return *this;
-		if (shift < 0) operator>>=(-shift);
-		if (nbits <= shift) {
+		if (shift < 0) {
+			operator>>=(-shift);
+			return *this;
+		}
+		if (nbits <= unsigned(shift)) {
 			clear();
 			return *this;
 		}
@@ -401,8 +406,11 @@ public:
 	}
 	integer& operator>>=(const signed shift) {
 		if (shift == 0) return *this;
-		if (shift < 0) operator<<=(-shift);
-		if (nbits <= shift) {
+		if (shift < 0) {
+			operator<<=(-shift);
+			return *this;
+		}
+		if (nbits <= unsigned(shift)) {
 			clear();
 			return *this;
 		}
@@ -873,7 +881,7 @@ void divide(const integer<nbits>& a, const integer<nbits>& b, integer<nbits>& qu
 		std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
-	div_t<nbits> divresult = div<nbits>(a, b);
+	idiv_t<nbits> divresult = idiv<nbits>(a, b);
 	quotient = divresult.quot;
 }
 
@@ -887,13 +895,13 @@ void remainder(const integer<nbits>& a, const integer<nbits>& b, integer<nbits>&
 		std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
-	div_t<nbits> divresult = div<nbits>(a, b);
+	idiv_t<nbits> divresult = idiv<nbits>(a, b);
 	remainder = divresult.rem;
 }
 
 // divide integer<nbits> a and b and return result argument
 template<size_t nbits>
-div_t<nbits> div(const integer<nbits>& _a, const integer<nbits>& _b) {
+idiv_t<nbits> idiv(const integer<nbits>& _a, const integer<nbits>& _b) {
 	if (_b == integer<nbits>(0)) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
@@ -908,7 +916,7 @@ div_t<nbits> div(const integer<nbits>& _a, const integer<nbits>& _b) {
 	bool result_negative = (a_negative ^ b_negative);
 	integer<nbits + 1> a; a.bitcopy(a_negative ? -_a : _a);
 	integer<nbits + 1> b; b.bitcopy(b_negative ? -_b : _b);
-	div_t<nbits> divresult;
+	idiv_t<nbits> divresult;
 	if (a < b) {
 		divresult.rem = _a; // a % b = a when a / b = 0
 		return divresult; // a / b = 0 when b > a
@@ -1036,8 +1044,14 @@ inline bool operator< (const integer<nbits>& lhs, const integer<nbits>& rhs) {
 	for (int i = nbits - 1; i >= 0; --i) {
 		bool a = lhs.at(i);
 		bool b = rhs.at(i);
-		if (a ^ b)
-			if (a == false) return true; else return false;
+		if (a ^ b) {
+			if (a == false) {
+				return true; 
+			}
+			else {
+				return false;
+			}
+		}
 	}
 	return false; // lhs and rhs are the same
 }
