@@ -277,13 +277,20 @@ public:
 		return *this;
 	}
 
+	// prefix operators
+	integer operator-() const {
+		integer<nbits> negated(*this);
+		negated.flip();
+		negated += 1;
+		return negated;
+	}
 	// one's complement
 	integer operator~() const { 
 		integer<nbits> complement(*this);
 		complement.flip(); 
 		return complement;
 	}
-
+	// increment
 	integer operator++(int) {
 		integer<nbits> tmp(*this);
 		operator++();
@@ -291,6 +298,16 @@ public:
 	}
 	integer& operator++() {
 		*this += integer<nbits>(1);
+		return *this;
+	}
+	// decrement
+	integer operator--(int) {
+		integer<nbits> tmp(*this);
+		operator--();
+		return tmp;
+	}
+	integer& operator--() {
+		*this -= integer<nbits>(1);
 		return *this;
 	}
 	// conversion operators
@@ -342,12 +359,21 @@ public:
 		return *this;
 	}
 	integer& operator/=(const integer& rhs) {
+		integer<nbits> quotient; 
+		divide(*this, rhs, quotient);
+		*this = quotient;
 		return *this;
 	}
 	integer& operator%=(const integer& rhs) {
 		return *this;
 	}
-	integer& operator<<=(const unsigned shift) {
+	integer& operator<<=(const signed shift) {
+		if (shift == 0) return *this;
+		if (shift < 0) operator>>=(-shift);
+		if (nbits <= shift) {
+			clear();
+			return *this;
+		}
 		integer<nbits> target;
 		for (unsigned i = shift; i < nbits; ++i) {  // TODO: inefficient as it works at the bit level
 			target.set(i, at(i - shift));
@@ -355,7 +381,13 @@ public:
 		*this = target;
 		return *this;
 	}
-	integer& operator>>=(const unsigned shift) {
+	integer& operator>>=(const signed shift) {
+		if (shift == 0) return *this;
+		if (shift < 0) operator<<=(-shift);
+		if (nbits <= shift) {
+			clear();
+			return *this;
+		}
 		integer<nbits> target;
 		for (int i = nbits - 1; i >= int(shift); --i) {  // TODO: inefficient as it works at the bit level
 			target.set(i - shift, at(i));
@@ -803,40 +835,47 @@ inline signed findMsb(const integer<nbits>& v) {
 
 // divide integer<nbits> a and b and return result argument
 template<size_t nbits>
-void divide(const integer<nbits>& a, const integer<nbits>& b, integer<2 * nbits>& result) {
+void divide(const integer<nbits>& _a, const integer<nbits>& _b, integer<nbits>& result) {
 	integer<nbits> subtractand, accumulator;
-	result.setzero();
-	if (a < b) return; // 0
-	accumulator = a;
-	int msb_b = findMsb(b);
-	if (msb_b < 0) {
+	if (_b == integer<nbits>(0)) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
 #else
 		std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
-	else {
-		int msb_a = findMsb(a);
-		int shift = msb_a - msb_b - 1;
-		// prepare the subtractand
-		subtractand = b;
-		subtractand <<= shift;
-		for (int i = shift; i >= 0; --i) {
-			if (subtractand <= accumulator) {
+	bool a_negative = _a.sign();
+	bool b_negative = _b.sign();
+	bool result_negative = (a_negative ^ b_negative);
+	integer<nbits> a = (a_negative ? -_a : _a);
+	integer<nbits> b = (b_negative ? -_b : _b);
+	result.setzero();
+	if (a < b) return; // 0
+	accumulator = a;
+	int msb_b = findMsb(b);
+	int msb_a = findMsb(a);
+	int shift = msb_a - msb_b;
+	// prepare the subtractand
+	subtractand = b;
+	subtractand <<= shift;
+	for (int i = shift; i >= 0; --i) {
+		if (subtractand <= accumulator) {
 #ifdef DEBUG
-				bool borrow = subtract(accumulator, subtractand);
-				assert(borrow == true);
+			bool borrow = subtract(accumulator, subtractand);
+			assert(borrow == true);
 #else
-				accumulator -= subtractand;
+			accumulator -= subtractand;
 #endif
-				result.set(i);
-			}
-			else {
-				result.reset(i);
-			}
-			subtractand >>= 1;
+			result.set(i);
 		}
+		else {
+			result.reset(i);
+		}
+		subtractand >>= 1;
+	}
+	if (result_negative) {
+		result.flip();
+		result += 1;
 	}
 }
 

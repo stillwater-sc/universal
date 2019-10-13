@@ -102,6 +102,7 @@ namespace unum {
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.set_raw_bits(j);
 				i64b = short(ib);
+				if (i64b == 0) continue;
 				iref = i64a / i64b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
@@ -122,10 +123,10 @@ namespace unum {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iref, iresult);
 				}
 			}
 			if (i % 1024 == 0) std::cout << '.';
@@ -216,10 +217,10 @@ namespace unum {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -262,10 +263,10 @@ namespace unum {
 #endif
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -288,15 +289,15 @@ namespace unum {
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.set_raw_bits(j);
 				i64b = int64_t(ib);
-				iref = i64a / i64b;
+
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia / ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+					if (ib == integer<nbits>(0)) {
 						// correctly caught the exception
-
+						continue;
 					}
 					else {
 						nrOfFailedTests++;
@@ -306,12 +307,13 @@ namespace unum {
 #else
 				iresult = ia / ib;
 #endif
+				iref = i64a / i64b;
 				if (iresult != iref) {
 					nrOfFailedTests++;
-					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}
@@ -488,17 +490,28 @@ void TestSizeof() {
 	using namespace sw::unum;
 
 	cout << endl << "TestSizeof" << endl;
+	bool pass = true;
 	using int8 = integer<8>;
 	using int64 = integer<64>;
 	using int128 = integer<128>;
+	using int1024 = integer<1024>;
 
 	int8 a;
 	int64 k;
 	int128 m;
-	cout << "Nr of bytes\n";
-	cout << typeid(a).name() << "  size in bytes " << a.nrBytes << endl;
-	cout << typeid(k).name() << "  size in bytes " << k.nrBytes << endl;
-	cout << typeid(m).name() << "  size in bytes " << m.nrBytes << endl;
+	int1024 o;
+
+	constexpr int WIDTH = 30;
+	cout << setw(WIDTH) << typeid(a).name() << "  size in bytes " << a.nrBytes << endl;
+	cout << setw(WIDTH) << typeid(k).name() << "  size in bytes " << k.nrBytes << endl;
+	cout << setw(WIDTH) << typeid(m).name() << "  size in bytes " << m.nrBytes << endl;
+	cout << setw(WIDTH) << typeid(o).name() << "  size in bytes " << o.nrBytes << endl;
+	if (a.nrBytes != sizeof(a)) pass = false;
+	if (k.nrBytes != sizeof(k)) pass = false;
+	if (m.nrBytes != sizeof(m)) pass = false;
+	if (o.nrBytes != sizeof(o)) pass = false;
+
+	cout << (pass ? "PASS" : "FAIL") << endl;
 }
 
 void TestConversion() {
@@ -509,13 +522,17 @@ void TestConversion() {
 
 	integer<128> i1, i2, i3;
 
-	cout << "TestConversion" << endl;
-
-	i1 = 123456789;
+	bool pass = true;
+	constexpr int iconst = 123456789;
+	i1 = iconst;
+	int64_t ll = int64_t(i1);
 	cout << "integer  " << i1 << endl;
+	if (iconst != ll) pass = false;
 	i2 = 1.23456789e8;
 	cout << "double   " << i2 << " TBD " << endl;
 	//i3.parse("123456789");
+
+	cout << (pass ? "PASS" : "FAIL") << endl;
 }
 
 void TestFindMsb() {
@@ -523,12 +540,17 @@ void TestFindMsb() {
 	using namespace sw::unum;
 
 	cout << endl << "TestFindMsb" << endl;
-	integer<32> a = 0x55555555;
-	for (int i = 0; i < 20; ++i) {
+	bool pass = true;
+	integer<32> a = 0xD5555555;
+	int golden_ref[] = { 31, 30, 28, 26, 24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 0, -1 };
+	for (int i = 0; i < sizeof(golden_ref)/sizeof(int); ++i) {
 		int msb = findMsb(a);
 		cout << "msb of " << to_binary(a) << " is " << msb << endl;
 		if (msb >= 0) a.reset(msb);
+		if (msb != golden_ref[i]) pass = false;
 	}
+
+	cout << (pass ? "PASS" : "FAIL") << endl;
 }
 
 template<size_t nbits>
@@ -621,6 +643,14 @@ void TestShiftOperatorPerformance() {
 	*/
 }
 
+// ExamplePattern to check that short and integer<16> do exactly the same
+void ExamplePattern() {
+	short s = 0;
+	GenerateMulTest<short>(2, 16, s);
+	sw::unum::integer<16> z = 0;
+	GenerateMulTest<sw::unum::integer<16> >(2, 16, z);
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -641,36 +671,33 @@ try {
 
 #if MANUAL_TESTING
 
-	integer<4> bla = -8;
-	cout << bla << endl;
-	int ib = int(bla);
-	cout << ib << endl;
-
-	TestSizeof();
-	TestConversion();
-	TestFindMsb();
-	TestLessThan<12>();
-	TestShiftOperatorPerformance();
+//	TestSizeof();
+//	TestConversion();
+//	TestFindMsb();
+//	TestLessThan<12>();
+//	TestShiftOperatorPerformance();
 	//TestFastdiv();
 
-	short s = 0;
-	GenerateMulTest<short>(2, 16, s);
-	integer<16> z = 0;
-	GenerateMulTest<integer<16> >(2, 16, z);
+	integer<32> x, y, z;
+	int ix = -8;
+	int iy = 1;
+	int iz = 0;
+	x = ix;
+	y = iy;
+	iz = ix / iy;
+	cout << ix << " / " << iy << " = " << iz << endl;
+	divide(x, y, z);
+	cout << x << " / " << y << " = " << z << endl;
 
-	integer<32> x, y;
 	constexpr int factor = 12345;
 	constexpr int divisor = 678;
 	x = factor * divisor;
 	y = divisor;
 	z = x / y;
 	cout << x << " / " << y << " = " << z << endl;
-	integer<64> zz;
-	divide(x, y, zz);
-	cout << zz << endl;
+	divide(x, y, z);
+	cout << z << endl;
 
-	integer<16> r;
-	divide(integer<8>(16), integer<8>(4), r);
 	ReportTestResult(VerifyDivision<4>("manual test", true), "integer<4>", "divides");
 
 	cout << "done" << endl;
