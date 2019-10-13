@@ -54,7 +54,7 @@ class decimal;
 template<typename Ty> void convert_to_decimal(Ty v, decimal& d);
 
 // Arbitrary precision decimal number
-class decimal : public std::vector<char> {
+class decimal : public std::vector<uint8_t> {
 public:
 	decimal() { setzero(); }
 
@@ -330,7 +330,6 @@ public:
 		*this = product;
 		setsign(signOfFinalResult);
 		return *this;
-
 	}
 	decimal& operator/=(const decimal& rhs) {
 		return *this;
@@ -584,7 +583,7 @@ inline bool operator!=(const decimal& lhs, long rhs) {
 	return !operator==(lhs, decimal(rhs));
 }
 inline bool operator< (const decimal& lhs, long rhs) {
-	return false;
+	return operator<(lhs, decimal(rhs));
 }
 inline bool operator> (const decimal& lhs, long rhs) {
 	return operator< (decimal(rhs), lhs);

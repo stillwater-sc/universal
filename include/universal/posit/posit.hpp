@@ -1027,7 +1027,21 @@ public:
 		}
 		return p;
 	}
-			
+
+	// conversion operators
+	// Maybe remove explicit, MTL compiles, but we have lots of double computation then
+	explicit operator unsigned short() const { return to_ushort(); }
+	explicit operator unsigned int() const { return to_uint(); }
+	explicit operator unsigned long() const { return to_ulong(); }
+	explicit operator unsigned long long() const { return to_ulong_long(); }
+	explicit operator short() const { return to_short(); }
+	explicit operator int() const { return to_int(); }
+	explicit operator long() const { return to_long(); }
+	explicit operator long long() const { return to_long_long(); }
+	explicit operator float() const { return to_float(); }
+	explicit operator double() const { return to_double(); }
+	explicit operator long double() const { return to_long_double(); }
+
 	// SELECTORS
 	bool isnar() const {
 		if (_raw_bits[nbits - 1] == false) return false;
@@ -1092,17 +1106,6 @@ public:
 		_raw_bits = raw_bits;
 		return *this;
 	}
-	
-	// Maybe remove explicit, MTL compiles, but we have lots of double computation then
-	explicit operator long double() const { return to_long_double(); }
-	explicit operator double() const { return to_double(); }
-	explicit operator float() const { return to_float(); }
-	explicit operator long long() const { return to_long_long(); }
-	explicit operator long() const { return to_long(); }
-	explicit operator int() const { return to_int(); }
-	explicit operator unsigned long long() const { return to_long_long(); }
-	explicit operator unsigned long() const { return to_long(); }
-	explicit operator unsigned int() const { return to_int(); }
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	value<fbits> to_value() const {
@@ -1158,36 +1161,86 @@ private:
 
 	// Conversion functions
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
-	int         to_int() const {
+	short to_short() const {
 		if (iszero()) return 0;
 		if (isnar()) throw not_a_real{};
-		return int(to_float());
+		return short(to_float());
 	}
-	long        to_long() const {
+	int to_int() const {
 		if (iszero()) return 0;
 		if (isnar()) throw not_a_real{};
-		return long(to_double());
+		return int(to_double());
 	}
-	long long   to_long_long() const {
+	long to_long() const {
 		if (iszero()) return 0;
 		if (isnar()) throw not_a_real{};
 		return long(to_long_double());
+	}
+	long long to_long_long() const {
+		if (iszero()) return 0;
+		if (isnar()) throw not_a_real{};
+		return (long long)(to_long_double());
+	}
+	unsigned short to_ushort() const {
+		if (iszero()) return 0;
+		if (isnar()) throw not_a_real{};
+		return (unsigned short)(to_float());
+	}
+	unsigned int to_uint() const {
+		if (iszero()) return 0;
+		if (isnar()) throw not_a_real{};
+		return (unsigned int)(to_double());
+	}
+	unsigned long to_ulong() const {
+		if (iszero()) return 0;
+		if (isnar()) throw not_a_real{};
+		return (unsigned long)(to_long_double());
+	}
+	unsigned long long to_ulong_long() const {
+		if (iszero()) return 0;
+		if (isnar()) throw not_a_real{};
+		return (unsigned long long)(to_long_double());
 	}
 #else
-	int         to_int() const {
+	short to_short() const {
 		if (iszero()) return 0;
 		if (isnar()) return int(INFINITY);
-		return int(to_float());
+		return short(to_float());
 	}
-	long        to_long() const {
+	int to_int() const {
+		if (iszero()) return 0;
+		if (isnar()) return int(INFINITY);
+		return int(to_double());
+	}
+	long to_long() const {
 		if (iszero()) return 0;
 		if (isnar()) return long(INFINITY);
-		return long(to_double());
+		return long(to_long_double());
 	}
-	long long   to_long_long() const {
+	long long to_long_long() const {
 		if (iszero()) return 0;
 		if (isnar()) return (long long)(INFINITY);
-		return long(to_long_double());
+		return (long long)(to_long_double());
+	}
+	unsigned short to_ushort() const {
+		if (iszero()) return 0;
+		if (isnar()) return int(INFINITY);
+		return (unsigned short)(to_float());
+	}
+	unsigned int to_uint() const {
+		if (iszero()) return 0;
+		if (isnar()) return int(INFINITY);
+		return (unsigned int)(to_double());
+	}
+	unsigned long to_ulong() const {
+		if (iszero()) return 0;
+		if (isnar()) return long(INFINITY);
+		return (unsigned long)(to_long_double());
+	}
+	unsigned long long to_ulong_long() const {
+		if (iszero()) return 0;
+		if (isnar()) return (long long)(INFINITY);
+		return (unsigned long long)(to_long_double());
 	}
 #endif
 	float       to_float() const {

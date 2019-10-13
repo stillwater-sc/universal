@@ -25,7 +25,7 @@ void GenerateValues() {
 	constexpr unsigned int NR_POSITS = 256;
 
 	posit<8, 1> a;
-	for (unsigned int i = 0; i < 256; ++i) {
+	for (unsigned int i = 0; i < NR_POSITS; ++i) {
 		a.set_raw_bits(i);
 		cout << hex << i << " " << dec << a << endl;
 	}
