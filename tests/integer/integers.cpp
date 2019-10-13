@@ -38,10 +38,9 @@ namespace unum {
 			<< std::endl;
 	}
 
-	// enumerate all addition cases for an integer<16> configuration
-	template<size_t nbits>
+	// enumerate all addition cases for an integer<16> configuration compared against native short
 	int VerifyShortAddition(std::string tag, bool bReportIndividualTestCases) {
-		static_assert(nbits == 16, "nbits needs to be 16");
+		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
@@ -86,24 +85,117 @@ namespace unum {
 
 		return nrOfFailedTests;
 	}
-	// enumerate all division cases for an integer<16> configuration
-	template<size_t nbits>
-	int VerifyShortDivision(std::string tag, bool bReportIndividualTestCases) {
-		static_assert(nbits == 16, "nbits needs to be 16");
+	// enumerate all subtraction cases for an integer<16> configuration compared against native short
+	int VerifyShortSubtraction(std::string tag, bool bReportIndividualTestCases) {
+		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib, iresult, iref;
 
-		short i64a, i64b;
+		short i16a, i16b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
 			ia.set_raw_bits(i);
-			i64a = short(ia);
+			i16a = short(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
 				ib.set_raw_bits(j);
-				i64b = short(ib);
-				if (i64b == 0) continue;
-				iref = i64a / i64b;
+				i16b = short(ib);
+				iref = i16a - i16b;
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				try {
+					iresult = ia - ib;
+				}
+				catch (...) {
+					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+						// correctly caught the exception
+
+					}
+					else {
+						nrOfFailedTests++;
+					}
+				}
+
+#else
+				iresult = ia - ib;
+#endif
+				if (iresult != iref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", ia, ib, iref, iresult);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-", ia, ib, iref, iresult);
+				}
+			}
+			if (i % 1024 == 0) std::cout << '.';
+		}
+		std::cout << std::endl;
+
+		return nrOfFailedTests;
+	}
+	// enumerate all multiplication cases for an integer<16> configuration compared against native short
+	int VerifyShortMultiplication(std::string tag, bool bReportIndividualTestCases) {
+		constexpr size_t nbits = 16;
+
+		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		int nrOfFailedTests = 0;
+		integer<nbits> ia, ib, iresult, iref;
+
+		short i16a, i16b;
+		for (size_t i = 0; i < NR_INTEGERS; i++) {
+			ia.set_raw_bits(i);
+			i16a = short(ia);
+			for (size_t j = 0; j < NR_INTEGERS; j++) {
+				ib.set_raw_bits(j);
+				i16b = short(ib);
+				iref = i16a * i16b;
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+				try {
+					iresult = ia * ib;
+				}
+				catch (...) {
+					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+						// correctly caught the exception
+
+					}
+					else {
+						nrOfFailedTests++;
+					}
+				}
+
+#else
+				iresult = ia * ib;
+#endif
+				if (iresult != iref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", ia, ib, iref, iresult);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", ia, ib, iref, iresult);
+				}
+			}
+			if (i % 1024 == 0) std::cout << '.';
+		}
+		std::cout << std::endl;
+
+		return nrOfFailedTests;
+	}
+	// enumerate all division cases for an integer<16> configuration compared against native short
+	int VerifyShortDivision(std::string tag, bool bReportIndividualTestCases) {
+		constexpr size_t nbits = 16;
+
+		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
+		int nrOfFailedTests = 0;
+		integer<nbits> ia, ib, iresult, iref;
+
+		short i16a, i16b;
+		for (size_t i = 0; i < NR_INTEGERS; i++) {
+			ia.set_raw_bits(i);
+			i16a = short(ia);
+			for (size_t j = 0; j < NR_INTEGERS; j++) {
+				ib.set_raw_bits(j);
+				i16b = short(ib);
+				if (i16b == 0) continue;
+				iref = i16a / i16b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
 					iresult = ia / ib;
@@ -183,7 +275,7 @@ namespace unum {
 		std::cout << std::endl;
 		return nrOfFailedTests;
 	}
-
+	// enumerate all subtraction cases for an integer<nbits> configuration
 	template<size_t nbits>
 	int VerifySubtraction(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
@@ -229,7 +321,7 @@ namespace unum {
 		std::cout << std::endl;
 		return nrOfFailedTests;
 	}
-
+	// enumerate all multiplication cases for an integer<nbits> configuration
 	template<size_t nbits>
 	int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
@@ -275,7 +367,7 @@ namespace unum {
 		std::cout << std::endl;
 		return nrOfFailedTests;
 	}
-
+	// enumerate all division cases for an integer<nbits> configuration
 	template<size_t nbits>
 	int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
@@ -651,7 +743,7 @@ void ExamplePattern() {
 	GenerateMulTest<sw::unum::integer<16> >(2, 16, z);
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 std::string convert_to_string(const std::vector<char>& v) {
@@ -671,16 +763,16 @@ try {
 
 #if MANUAL_TESTING
 
-//	TestSizeof();
-//	TestConversion();
-//	TestFindMsb();
-//	TestLessThan<12>();
-//	TestShiftOperatorPerformance();
+	TestSizeof();
+	TestConversion();
+	TestFindMsb();
+	TestLessThan<12>();
+	TestShiftOperatorPerformance();
 	//TestFastdiv();
 
-	integer<32> x, y, z;
+	integer<4> x, y, z;
 	int ix = -8;
-	int iy = 1;
+	int iy = 3;
 	int iz = 0;
 	x = ix;
 	y = iy;
@@ -725,6 +817,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<NBITS>(tag, bReportIndividualTestCases), type, "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<NBITS>(tag, bReportIndividualTestCases), type, "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<NBITS>(tag, bReportIndividualTestCases), type, "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<NBITS>(tag, bReportIndividualTestCases), type, "division");
 #undef NBITS
 
 	type = "integer<12>";
@@ -732,17 +825,22 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<NBITS>(tag, bReportIndividualTestCases), type, "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<NBITS>(tag, bReportIndividualTestCases), type, "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<NBITS>(tag, bReportIndividualTestCases), type, "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<NBITS>(tag, bReportIndividualTestCases), type, "division");
 #undef NBITS
 
 #if STRESS_TESTING
-	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition<16>(tag, bReportIndividualTestCases), "integer<16>", "addition");
-	// this is a 'standard' comparision against a native int64_t
 	type = "integer<16>";
+	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
+	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition(tag, bReportIndividualTestCases), type, "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortSubtraction(tag, bReportIndividualTestCases), type, "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortMultiplication(tag, bReportIndividualTestCases), type, "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision(tag, bReportIndividualTestCases), type, "division");
 #define NBITS 16
+	// this is a 'standard' comparision against a native int64_t
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition<NBITS>(tag, bReportIndividualTestCases), type, "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<NBITS>(tag, bReportIndividualTestCases), type, "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<NBITS>(tag, bReportIndividualTestCases), type, "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<NBITS>(tag, bReportIndividualTestCases), type, "division");
 #undef NBITS
 
 #endif // STRESS_TESTING

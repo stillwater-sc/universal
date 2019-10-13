@@ -52,6 +52,9 @@ namespace unum {
 	struct integer_divide_by_zero : public std::runtime_error {
 		integer_divide_by_zero() : std::runtime_error("integer division by zero") {}
 	};
+	struct integer_byte_index_out_of_bounds : public std::runtime_error {
+		integer_byte_index_out_of_bounds() : std::runtime_error("byte index out of bounds") {}
+	};
 
 // forward references
 template<size_t nbits> class integer;
@@ -135,11 +138,16 @@ public:
 	integer& operator=(const integer&) = default;
 	integer& operator=(integer&&) = default;
 
-	/// Construct a new integer from another
+	/// Construct a new integer from another, sign extend when necessary
 	template<size_t srcbits>
 	integer(const integer<srcbits>& a) {
 		static_assert(srcbits > nbits, "Source integer is bigger than target: potential loss of precision");
-
+		bit_copy(a);
+		if (a.sign()) { // sign extend
+			for (int i = srcbits; i < nbits; ++i) {
+				set(i);
+			}
+		}
 	}
 
 	// initializers for native types
@@ -356,6 +364,8 @@ public:
 			}
 			multiplicant <<= 1;
 		}
+		// since we used operator++, which enforces the nulling of leading bits
+		// we don't need to null here
 		return *this;
 	}
 	integer& operator/=(const integer& rhs) {
@@ -428,12 +438,22 @@ public:
 		throw "integer<nbits> bit index out of bounds";
 	}
 	// use un-interpreted raw bits to set the bits of the integer
-	void set_raw_bits(unsigned long long value) {
+	inline void set_raw_bits(unsigned long long value) {
 		clear();
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			b[i] = value & 0xFF;
 			value >>= 8;
 		}
+	}
+	// pure bit copy of source integer, no sign extension
+	template<size_t src_nbits>
+	inline void bit_copy(const integer<src_nbits>& src) {
+		int lastByte = (nrBytes < src.nrBytes ? nrBytes : src.nrBytes);
+		clear();
+		for (int i = 0; i < lastByte; ++i) {
+			b[i] = src.byte(i);
+		}
+		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 	}
 	// in-place one's complement
 	inline void flip() {
@@ -458,16 +478,14 @@ public:
 		}
 		throw "bit index out of bounds";
 	}
-
+	inline uint8_t byte(unsigned int i) const {
+		if (i < nrBytes) return b[i];
+		throw integer_byte_index_out_of_bounds{};
+	}
 
 protected:
 	// HELPER methods
-	uint8_t byte(unsigned int i) const {
-		if (i < nrBytes) {
-			return b[i];
-		}
-		throw "byte index out of bound";
-	}
+
 	// conversion functions
 	short to_short() const {
 		constexpr unsigned sizeofshort = 8 * sizeof(short);
@@ -836,7 +854,6 @@ inline signed findMsb(const integer<nbits>& v) {
 // divide integer<nbits> a and b and return result argument
 template<size_t nbits>
 void divide(const integer<nbits>& _a, const integer<nbits>& _b, integer<nbits>& result) {
-	integer<nbits> subtractand, accumulator;
 	if (_b == integer<nbits>(0)) {
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 		throw integer_divide_by_zero{};
@@ -844,20 +861,24 @@ void divide(const integer<nbits>& _a, const integer<nbits>& _b, integer<nbits>& 
 		std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
+	// generate the absolute values to do long division 
+	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
 	bool a_negative = _a.sign();
 	bool b_negative = _b.sign();
 	bool result_negative = (a_negative ^ b_negative);
-	integer<nbits> a = (a_negative ? -_a : _a);
-	integer<nbits> b = (b_negative ? -_b : _b);
+	integer<nbits + 1> a; a.bit_copy(a_negative ? -_a : _a);
+	integer<nbits + 1> b; b.bit_copy(b_negative ? -_b : _b);
 	result.setzero();
-	if (a < b) return; // 0
-	accumulator = a;
+	if (a < b) return; // a / b = 0 when b > a
+	// initialize the long division
+	integer<nbits + 1> accumulator = a;
+	// prepare the subtractand
+	integer<nbits + 1> subtractand = b;
 	int msb_b = findMsb(b);
 	int msb_a = findMsb(a);
-	int shift = msb_a - msb_b;
-	// prepare the subtractand
-	subtractand = b;
+	int shift = msb_a - msb_b;	
 	subtractand <<= shift;
+	// long division
 	for (int i = shift; i >= 0; --i) {
 		if (subtractand <= accumulator) {
 #ifdef DEBUG
