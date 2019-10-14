@@ -17,4 +17,6 @@
 
 // pull in the posit number system
 #include <universal/posit/posit>
+// pull in the arbitrary integer number system
+#include <universal/integer/integer>
 

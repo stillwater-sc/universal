@@ -1,5 +1,5 @@
 # identity files
-.gitignore
+.gitconfig
 
 # Build directory
 build

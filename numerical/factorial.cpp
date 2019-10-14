@@ -11,38 +11,84 @@ Scalar factorial(const Scalar& n) {
 	return (n == 0 || n == 1) ? 1 : factorial(n - 1) * n;
 }
 
-/*
- i                               N!                      posit(N!)
- 2                               2                              +2
- 3                               6                              +6
- 4                              24                             +24
- 5                             120                            +120
- 6                             720                            +720
- 7                            5040                           +5040
- 8                           40320                          +40320
- 9                          362880                         +362880
-10                         3628800                        +3628800
-11                        39916800                       +39916800
-12                       479001600                      +479001600
-13                      6227020800                     +6227017728
-14                     87178291200                    +87178346496
-15                   1307674368000               +1.3076749353e+12
-16                  20922789888000              +2.09229331825e+13
-17                 355687428096000              +3.55692011586e+14
-18                6402373705728000              +6.40245620854e+15
-19              121645100408832000              +1.21649966497e+17
-20             2432902008176640000              +2.43306969869e+18
-21            14197454024290336768              +5.10888341729e+19    <- 21! cannot be represented by a 64-bit integer
-*/
+
+template<typename Integer, typename Posit>
+void convert(Integer& v, const Posit& p) {
+	// get the scale of the posit value
+	int scale = sw::unum::scale(p);
+	if (scale < 0) {
+		v = 0;
+		return;
+	}
+	if (scale == 0) {
+		v = 1;
+	}
+	else {
+		// gather all the fraction bits
+		sw::unum::bitblock<p.fhbits> significant = sw::unum::significant<p.nbits, p.es, p.fbits>(p);
+		// the radix point is at fbits, to make an integer out of this
+		// we shift that radix point fbits to the right.
+		// that is equivalent to a scale of 2^fbits
+		v.clear();
+		int msb = (v.nbits < p.fbits + 1) ? v.nbits : p.fbits + 1;
+		for (int i = msb-1; i >= 0; --i) {
+			v.set(i, significant[i]);
+		}
+		int shift = scale - p.fbits;  // if scale > fbits we need to shift left
+		v <<= shift;
+		if (p.isneg()) {
+			v.flip();
+			v += 1;
+		}
+	}
+}
+
+template<typename Posit>
+void convert(int& v, const Posit& p) {
+	v = int(p);
+}
+template<typename Posit>
+void convert(long& v, const Posit& p) {
+	v = long(p);
+}
+template<typename Posit>
+void convert(long long& v, const Posit& p) {
+	v = (long long)(p);
+}
+template<typename Posit>
+void convert(unsigned int& v, const Posit& p) {
+	v = (unsigned int)(p);
+}
+template<typename Posit>
+void convert(unsigned long& v, const Posit& p) {
+	v = (unsigned long)(p);
+}
+template<typename Posit>
+void convert(unsigned long long& v, const Posit& p) {
+	v = (unsigned long long)(p);
+}
+
+template<typename Integer, typename Posit>
+void GenerateFactorialTableComparison(unsigned upperbound, int columnWidth = 30) {
+	using namespace std;
+	Integer factorialValue = 1;
+	Posit positRef = 1;
+	cout << "  i    " << setw(columnWidth) << "N!" << "  " << setw(columnWidth) << "posit(N!)" << setw(columnWidth) << "abs(error)\n";
+	for (unsigned i = 2; i < upperbound; ++i) {
+		factorialValue *= i;
+		positRef *= i;
+		Integer integerRef;
+		convert(integerRef, positRef);
+		Integer error = (factorialValue > integerRef ? factorialValue - integerRef : integerRef - factorialValue);
+		cout << setw(5) << i << "  " << setw(columnWidth) << factorialValue << "  " << setw(columnWidth) << positRef << setw(columnWidth) << error << endl;
+	}
+}
+
 
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
-
-	constexpr size_t nbits = 32;
-	constexpr size_t es = 2;
-	using Posit = posit<nbits,es>;
 
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;
@@ -51,20 +97,89 @@ try {
 	auto precision = cout.precision();
 	cout << setprecision(12);
 
-	unsigned upperbound = 20;   
-	// 20! can still be represented by a 64-bit integer
-	// 21! can not be represented by a 64-bit integer
-	unsigned long long factorialValue = 1;
-	Posit ref = 1;
-	int columnWidth = 30;
-	cout << "  i    " << setw(columnWidth) << "N!" << "  " << setw(columnWidth) << "posit(N!)\n";
-	for (unsigned i = 2; i < upperbound; ++i) {
-		factorialValue *= i;
-		ref *= i;
-		cout << setw(5) << i << "  " << setw(columnWidth) << factorialValue << "  " << setw(columnWidth) << ref << endl;
+	{
+		posit<32, 2> p;
+		integer<128> i;
+		p = 1.5555555555555e10;
+		convert(i, p);
+		cout << p << " " << i << endl;
 	}
 
+	unsigned upperbound = 22;   
+	{
+		// 20! can still be represented by a 64-bit integer
+		// 21! can not be represented by a 64-bit integer
+		using Integer = unsigned long long;
+		constexpr size_t nbits = 32;
+		constexpr size_t es = 2;
+		using Posit = posit<nbits, es>;
+		int columnWidth = 40;
+		GenerateFactorialTableComparison<Integer, Posit>(upperbound, columnWidth);
+		/*
+		 i                                N!                       posit(N!)                   abs(error)
+			2                               2                              +2                             0
+			3                               6                              +6                             0
+			4                              24                             +24                             0
+			5                             120                            +120                             0
+			6                             720                            +720                             0
+			7                            5040                           +5040                             0
+			8                           40320                          +40320                             0
+			9                          362880                         +362880                             0
+		   10                         3628800                        +3628800                             0
+		   11                        39916800                       +39916800                             0
+		   12                       479001600                      +479001600                             0
+		   13                      6227020800                     +6227017728                          3072
+		   14                     87178291200                    +87178346496                         55296
+		   15                   1307674368000               +1.3076749353e+12                        567296
+		   16                  20922789888000              +2.09229331825e+13                     143294464
+		   17                 355687428096000              +3.55692011586e+14                    4583489536
+		   18                6402373705728000              +6.40245620854e+15                   82502811648
+		   19              121645100408832000              +1.21649966497e+17                 4866088304640
+		   20             2432902008176640000              +2.43306969869e+18               167690510270464
+		   21            14197454024290336768              +5.10888341729e+19           4974081987435560960    <- 21! cannot be represented by a 64-bit integer
+		*/
+	}
 
+	{
+		unsigned upperbound = 30;
+		using Integer = sw::unum::integer<128>;
+		constexpr size_t nbits = 64;
+		constexpr size_t es = 3;
+		using Posit = posit<nbits, es>;
+		int columnWidth = 40;
+		GenerateFactorialTableComparison<Integer, Posit>(upperbound, columnWidth);
+		/*
+		i                                          N!                                 posit(N!)                             abs(error)
+		2                                         2                                         2                                       0
+		3                                         6                                         6                                       0
+		4                                        24                                        24                                       0
+		5                                       120                                       120                                       0
+		6                                       720                                       720                                       0
+		7                                      5040                                      5040                                       0
+		8                                     40320                                     40320                                       0
+		9                                    362880                                    362880                                       0
+	   10                                   3628800                                   3628800                                       0
+	   11                                  39916800                                  39916800                                       0
+	   12                                 479001600                                 479001600                                       0
+	   13                                6227020800                                6227020800                                       0
+	   14                               87178291200                               87178291200                                       0
+	   15                             1307674368000                           1.307674368e+12                                       0
+	   16                            20922789888000                          2.0922789888e+13                                       0
+	   17                           355687428096000                         3.55687428096e+14                                       0
+	   18                          6402373705728000                         6.40237370573e+15                                       0
+	   19                        121645100408832000                         1.21645100409e+17                                       0
+	   20                       2432902008176640000                         2.43290200818e+18                                       0
+	   21                      51090942171709440000                         5.10909421717e+19                                       0
+	   22                    1124000727777607680000                         1.12400072778e+21                                       0
+	   23                   25852016738884976640000                         2.58520167389e+22                                 9961472
+	   24                  620448401733239439360000                         6.20448401733e+23                               775946240
+	   25                15511210043330985984000000                         1.55112100433e+25                             32283557888
+	   26               403291461126605635584000000                         4.03291461127e+26                           1457847795712
+	   27             10888869450418352160768000000                         1.08888694504e+28                          21769704439808
+	   28            304888344611713860501504000000                         3.04888344612e+29                         891026701025280
+	   29           8841761993739701954543616000000                         8.84176199374e+30                        5685423061860352
+		*/
+	}
 	// restore the previous ostream precision
 	cout << setprecision(precision);
 

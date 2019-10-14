@@ -423,8 +423,7 @@ inline posit<nbits, es>& convert(const value<fbits>& v, posit<nbits, es>& p) {
 	}
 	return convert_<nbits, es, fbits>(v.sign(), v.scale(), v.fraction(), p);
 }
-
-		
+	
 // quadrant returns a two character string indicating the quadrant of the projective reals the posit resides: from 0, SE, NE, NaR, NW, SW
 template<size_t nbits, size_t es>
 std::string quadrant(const posit<nbits,es>& p) {
@@ -486,7 +485,6 @@ posit<nbits, es>& construct(bool s, const regime<nbits, es>& r, const exponent<n
 	p.set(_raw_bits);
 	return p;
 }
-
 
 // read a posit ASCII format and make a memory posit out of it
 template<size_t nbits, size_t es>
@@ -715,7 +713,8 @@ public:
 		convert(rhs, *this);
 		return *this;
 	}
-	// prefix operator
+	
+	// negation operator
 	posit operator-() const {
 		if (iszero()) {
 			return *this;
@@ -734,8 +733,24 @@ public:
 		// TODO: how to get rid of this decode step?
 		return negated;
 	}
-	posit operator+() const {
+	// prefix/postfix operators
+	posit& operator++() {
+		increment_posit();
 		return *this;
+	}
+	posit operator++(int) {
+		posit tmp(*this);
+		operator++();
+		return tmp;
+	}
+	posit& operator--() {
+		decrement_posit();
+		return *this;
+	}
+	posit operator--(int) {
+		posit tmp(*this);
+		operator--();
+		return tmp;
 	}
 
 	// we model a hw pipeline with register assignments, functional block, and conversion
@@ -932,25 +947,7 @@ public:
 	posit& operator/=(double rhs) {
 		return *this /= posit<nbits, es>(rhs);
 	}
-	posit& operator++() {
-		increment_posit();
-		return *this;
-	}
-	posit operator++(int) {
-		posit tmp(*this);
-		operator++();
-		return tmp;
-	}
-	posit& operator--() {
-		decrement_posit();
-		return *this;
-	}
-	posit operator--(int) {
-		posit tmp(*this);
-		operator--();
-		return tmp;
-	}
-
+	
 	posit reciprocate() const {
 		if (_trace_reciprocate) std::cout << "-------------------- RECIPROCATE ----------------" << std::endl;
 		posit<nbits, es> p;
@@ -1016,7 +1013,7 @@ public:
 		}
 		return p;
 	}
-	// absolute value is 2's complement when negative
+	// absolute value is simply the 2's complement when negative
 	posit abs() const {
 		posit p;
 		if (isneg()) {
@@ -1736,7 +1733,8 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 	std::ios_base::fmtflags ff;
 	ff = ostr.flags();
 	ss.flags(ff);
-	ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
+//	ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
+	ss << std::setw(width) << std::setprecision(prec) << (long double)p;  // TODO: we need a true native serialization function
 #endif
 	return ostr << ss.str();
 }

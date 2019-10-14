@@ -125,6 +125,7 @@ chunk values. The chunks need to be interpreted as unsigned binary segments.
 template<size_t nbits>
 class integer {
 public:
+	static constexpr size_t nbits = nbits;
 	static constexpr unsigned nrBytes = (1 + ((nbits - 1) / 8));
 	static constexpr unsigned MS_BYTE = nrBytes - 1;
 	static constexpr uint8_t MS_BYTE_MASK = (0xFF >> (nrBytes * 8 - nbits));

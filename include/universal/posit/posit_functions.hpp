@@ -119,7 +119,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		inline double regime_value(const posit<nbits, es>& p) {
+		inline long double regime_value(const posit<nbits, es>& p) {
 			regime<nbits, es>    _regime;
 			bitblock<nbits> tmp(p.get());
 			tmp = sign(p) ? twos_complement(tmp) : tmp;
@@ -128,7 +128,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		inline double exponent_value(const posit<nbits, es>& p) {
+		inline long double exponent_value(const posit<nbits, es>& p) {
 			regime<nbits, es>    _regime;
 			exponent<nbits, es>  _exponent;
 			bitblock<nbits> tmp(p.get());
@@ -139,7 +139,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		inline double fraction_value(const posit<nbits, es>& p) {
+		inline long double fraction_value(const posit<nbits, es>& p) {
 			constexpr size_t fbits = nbits - 3 - es;
 			bool		     	 _sign;
 			regime<nbits, es>    _regime;
@@ -166,6 +166,18 @@ namespace sw {
 			_exponent.extract_exponent_bits(tmp, nrRegimeBits);							// get the exponent bits
 			// return the scale
 			return _regime.scale() + _exponent.scale();
+		}
+
+		// calculate the significant of a posit
+		template<size_t nbits, size_t es, size_t fbits>
+		inline bitblock<fbits+1> significant(const posit<nbits, es>& p) {
+			//constexpr size_t fbits = nbits - 3 - es;
+			bool		     	 _sign;
+			regime<nbits, es>    _regime;
+			exponent<nbits, es>  _exponent;
+			fraction<fbits>      _fraction;
+			decode(p.get(), _sign, _regime, _exponent, _fraction);
+			return _fraction.get_fixed_point();
 		}
 
 		// get the fraction bits of a posit
