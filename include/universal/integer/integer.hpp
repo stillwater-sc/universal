@@ -122,10 +122,10 @@ When implementing addition/subtraction on chuncks the overflow condition must be
 chunk values. The chunks need to be interpreted as unsigned binary segments.
 */
 // integer is an arbitrary size 2's complement integer
-template<size_t nbits>
+template<size_t _nbits>
 class integer {
 public:
-	static constexpr size_t nbits = nbits;
+	static constexpr size_t nbits = _nbits;
 	static constexpr unsigned nrBytes = (1 + ((nbits - 1) / 8));
 	static constexpr unsigned MS_BYTE = nrBytes - 1;
 	static constexpr uint8_t MS_BYTE_MASK = (0xFF >> (nrBytes * 8 - nbits));
