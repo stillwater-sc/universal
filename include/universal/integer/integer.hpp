@@ -11,6 +11,8 @@
 #include <regex>
 #include <vector>
 
+#include "./exception.hpp"
+
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 
@@ -41,20 +43,8 @@
 
 #endif
 
-// default behavior of the integer<nbits> class is to silently deal with arithmetic exceptions
-#ifndef INTEGER_THROW_ARITHMETIC_EXCEPTION
-#define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
-#endif
-
 namespace sw {
 namespace unum {
-
-	struct integer_divide_by_zero : public std::runtime_error {
-		integer_divide_by_zero() : std::runtime_error("integer division by zero") {}
-	};
-	struct integer_byte_index_out_of_bounds : public std::runtime_error {
-		integer_byte_index_out_of_bounds() : std::runtime_error("byte index out of bounds") {}
-	};
 
 // forward references
 template<size_t nbits> class integer;
