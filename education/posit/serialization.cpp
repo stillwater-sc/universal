@@ -14,7 +14,7 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "Serialization of posit values\n";
+	cout << "Lossless serialization of posit values\n";
 
 	constexpr size_t nbits = 40;
 	constexpr size_t es    =  3;
