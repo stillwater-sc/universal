@@ -25,7 +25,8 @@ void convert(Integer& v, const Posit& p) {
 	}
 	else {
 		// gather all the fraction bits
-		sw::unum::bitblock<p.fhbits> significant = sw::unum::significant<p.nbits, p.es, p.fbits>(p);
+		// sw::unum::bitblock<p.fhbits> significant = sw::unum::significant<p.nbits, p.es, p.fbits>(p);
+                sw::unum::bitblock<Posit::fhbits> significant = sw::unum::significant<Posit::nbits, Posit::es, Posit::fbits>(p);
 		// the radix point is at fbits, to make an integer out of this
 		// we shift that radix point fbits to the right.
 		// that is equivalent to a scale of 2^fbits
