@@ -5,6 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/posit/posit>
 
+
+// generate the maximum value unit in the last place
 template<size_t nbits, size_t es>
 void GenerateMaxRangeUlp(int64_t startValue = 0, int precision = 20) {
 	using namespace std;
@@ -15,15 +17,17 @@ void GenerateMaxRangeUlp(int64_t startValue = 0, int precision = 20) {
 		p = pn;
 		pn += 1.0f;
 	}
+	std::streamsize old_precision = cout.precision();
 	cout << setprecision(precision);
 	cout << "posit<" << nbits << "," << es << ">\n";
-	cout << "p     = " << p << endl;     
-	cout << "p - 1 = " << p - 1 << endl; // 8.388607e6
-	cout << "p + 1 = " << p + 1 << endl; // 8.388608e6
-	cout << "ulp(p)= " << ulp(p) << endl;
+	cout << "p       = " << p << endl;     
+	cout << "p - 1   = " << p - 1 << endl; // 8.388607e6
+	cout << "p + 1   = " << p + 1 << endl; // 8.388608e6
+	cout << "ulp(p)  = " << ulp(p) << endl;
+	cout << setprecision(old_precision);
 }
 
-// example of enumerating the state space of a posit configuration
+// examples of Unit in the Last Place (ULP) measurements
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -71,10 +75,11 @@ try {
 	}
 	cout << setprecision(8);
 	cout << "float 32-bit\n";
-	cout << "f     = " << f << endl;     // 1.6777216e7
-	cout << "f - 1 = " << f - 1 << endl; // 1.6777215e7
-	cout << "f + 1 = " << f + 1 << endl; // 1.6777216e7
-	cout << "ulp(f)= " << ulp(f) << endl;
+	cout << "f       = " << f << endl;     // 1.6777216e7
+	cout << "f - 1   = " << f - 1 << endl; // 1.6777215e7
+	cout << "f + 1   = " << f + 1 << endl; // 1.6777216e7
+	cout << "ulp(f-1)= " << ulp(f - 1) << endl;
+	cout << "ulp(f)  = " << ulp(f) << endl;
 
 	GenerateMaxRangeUlp<32, 2>(    8000000);//    8388608  ~ 8.3e6
 	GenerateMaxRangeUlp<40, 2>(  536870000);//  536870912  ~ 5.36e8
