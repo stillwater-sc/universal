@@ -55,6 +55,8 @@ typename Vector::value_type fdp_stride(size_t n, const Vector& x, size_t incx, c
 	return sum;
 }
 
+#if defined(_MSC_VER)
+/* Microsoft Visual Studio. --------------------------------- */
 // Specialized resolved fused dot product that assumes unit stride and a standard vector,
 // with the option to control capacity bits in the quire
 template<typename Vector, size_t capacity = 10>
@@ -70,6 +72,23 @@ typename Vector::value_type fdp(const Vector& x, const Vector& y) {
 	convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 	return sum;
 }
+#else
+// Specialized resolved fused dot product that assumes unit stride and a standard vector,
+// with the option to control capacity bits in the quire
+template<typename Vector, size_t capacity = 10>
+typename Vector::value_type fdp(const Vector& x, const Vector& y) {
+	constexpr size_t nbits = Vector::value_type::nbits;
+	constexpr size_t es = Vector::value_type::es;
+	quire<nbits, es, capacity> q = 0;
+	size_t ix, iy, n = x.size();
+	for (ix = 0, iy = 0; ix < n && iy < n; ++ix, ++iy) {
+		q += sw::unum::quire_mul(x[ix], y[iy]);
+	}
+	typename Vector::value_type sum;
+	convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
+	return sum;
+}
+#endif
 
 } // namespace unum
 } // namespace sw
