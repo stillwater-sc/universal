@@ -358,6 +358,13 @@ namespace sw {
 			int nrOfFailedTestCases = 0;
 
 			posit<nbits, es> p, presult;
+			// special cases in case we are clipped by the nbits > 20
+			long ref = 0x8000'0000;  // -2147483648
+			presult = ref;
+			if (ref != presult) {
+				std::cout << tag << " FAIL long(" << ref << ") != long(" << presult << ") : reference = -2147483648" << std::endl;
+				nrOfFailedTestCases++;
+			}
 			p = 1;
 			for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 				if (!p.isnar()) {

@@ -136,6 +136,15 @@ namespace sw {
 			return ss.str();
 		}
 
+		// generate a posit format ASCII format nbits.esxNN...NNp
+		template<size_t nbits, size_t es>
+		inline std::string hex_print(const posit<nbits, es>& p) {
+			// we need to transform the posit into a string
+			std::stringstream ss;
+			ss << nbits << '.' << es << 'x' << to_hex(p.get()) << 'p';
+			return ss.str();
+		}
+
 		template<size_t nbits, size_t es>
 		std::string pretty_print(const posit<nbits, es>& p, int printPrecision = std::numeric_limits<double>::max_digits10) {
 			constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);

@@ -51,12 +51,12 @@ namespace sw {
 		posit& operator=(short rhs)             { return integer_assign((long)(rhs)); }
 		posit& operator=(int rhs)               { return integer_assign((long)(rhs)); }
 		posit& operator=(long rhs)              { return integer_assign(rhs); }
-		posit& operator=(long long rhs)         { return integer_assign((long)(rhs)); }
+		posit& operator=(long long rhs)         { return float_assign((long double)(rhs)); }
 		posit& operator=(char rhs)              { return integer_assign((long)(rhs)); }
 		posit& operator=(unsigned short rhs)    { return integer_assign((long)(rhs)); }
 		posit& operator=(unsigned int rhs)      { return integer_assign((long)(rhs)); }
-		posit& operator=(unsigned long rhs)     { return integer_assign((long)(rhs)); }
-		posit& operator=(unsigned long long rhs){ return integer_assign((long)(rhs)); }
+		posit& operator=(unsigned long rhs)     { return float_assign((long double)(rhs)); }
+		posit& operator=(unsigned long long rhs){ return float_assign((long double)(rhs)); }
 		posit& operator=(float rhs)             { return float_assign((long double)rhs); }
 		posit& operator=(double rhs)            { return float_assign((long double)rhs); }
 		posit& operator=(long double rhs)       { return float_assign(rhs); }
@@ -517,15 +517,15 @@ namespace sw {
 				return *this;
 			}
 
-			bool sign = bool(rhs & sign_mask);
+			bool sign = rhs < 0 ? true : false;
 			uint32_t v = sign ? -rhs : rhs; // project to positive side of the projective reals
-			uint32_t raw;
+			int32_t raw;          // we can use signed integer representation as we are taking care of the sign bit
 			if (v == sign_mask) { // +-maxpos, 0x8000'0000 is special in int32 arithmetic as it is its own negation
-				raw = sign_mask;
+				raw = 0x7FB0'0000;     // -2147483648
 			}
-			else if (v > 0xFFFFFBFF) { // 4294966271
-				raw = 0x7FC0'0000;     // 4294967296
-			}
+//			else if (v > 0xFFFFFBFF) { //  4294966271        // this is for unsigned arguments
+//				raw = 0x7FC0'0000;     //  4294967296
+//			}
 			else if (v < 0x2) {        // 0 and 1
 				raw = (v << 30);
 			}

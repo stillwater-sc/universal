@@ -67,6 +67,10 @@ try {
 
 	cout << color_print(p) << " " << p << endl;
 
+	unsigned long ul = 0x80000000;
+	posit<32, 2> p32_2 = ul;
+	cout << color_print(p32_2) << " " << pretty_print(p32_2) << " " << hex_print(p32_2) << endl;
+
 	// Posit = 0x7B32352A00000013
 	// Stillwater’s result = 0x434C8D4A
 	// Expected result = 0x434C8D4B
