@@ -52,6 +52,7 @@ option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational example
 option(BUILD_APPLICATION_EXAMPLES        "Set to ON to build epplication examples"             ON)
 option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   ON)
 option(BUILD_NUMERICAL                   "Set to ON to build numerical test programs"          ON)
+option(BUILD_FUNCTIONS                   "Set to ON to build special functions programs"       ON)
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
 # C API library and test programs
 option(BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
@@ -367,6 +368,7 @@ if(BUILD_CI_CHECK)
 	set(BUILD_APPLICATION_EXAMPLES ON)
 	set(BUILD_CMD_LINE_TOOLS ON)
 	set(BUILD_NUMERICAL ON)
+	set(BUILD_FUNCTIONS ON)
 	set(BUILD_PLAYGROUND ON)
 	# build the different test/verification suites for each number system
 	set(BUILD_BITBLOCK ON)
@@ -448,6 +450,10 @@ endif(BUILD_APPLICATION_EXAMPLES)
 if(BUILD_NUMERICAL)
 add_subdirectory("numerical")
 endif(BUILD_NUMERICAL)
+
+if(BUILD_FUNCTIONS)
+add_subdirectory("functions")
+endif(BUILD_FUNCTIONS)
 
 if(BUILD_PLAYGROUND)
 add_subdirectory("examples/playground")

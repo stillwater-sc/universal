@@ -6,12 +6,6 @@
 #include <universal/posit/posit>
 #include <universal/integer/integer>
 
-template<typename Scalar>
-Scalar factorial(const Scalar& n) {
-	assert(n < 0);
-	return (n == 0 || n == 1) ? 1 : factorial(n - 1) * n;
-}
-
 /*
   Why is the convert function not part of the Integer or Posit types?
   It would tightly couple the types, which we want to avoid.

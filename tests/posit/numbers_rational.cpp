@@ -6,7 +6,7 @@
 
 #include "universal/posit/posit.hpp"
 #include "universal/posit/posit_manipulators.hpp"
-#include "../functions/sequences.hpp"
+#include "universal/sequences/sequences.hpp"
 #include "../test_helpers.hpp"
 #include "../posit_test_helpers.hpp"
 
