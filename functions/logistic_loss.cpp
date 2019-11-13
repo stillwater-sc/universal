@@ -23,7 +23,18 @@ try {
 	auto precision = cout.precision();
 	cout << setprecision(12);
 
-	cout << sw::function::logt(Posit(0), Posit(1)) << endl;
+	Posit tmps[] = { Posit(0.0), Posit(0.2), Posit(0.4), Posit(0.6), Posit(0.8), --Posit(1.0) };
+
+	for (Posit t : tmps) {
+		Posit ub = Posit(4.0);
+		constexpr unsigned nrSamples = 16;
+		Posit step = ub / nrSamples;
+		Posit x = Posit(0); // minpos<nbits, es>();
+		for (unsigned i = 0; i <= nrSamples; ++i) {
+			cout << "x = " << x << " logt(" << t << "," << x << ") = " << sw::function::logt(t, x) << endl;
+			x += step;
+		}
+	}
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);
