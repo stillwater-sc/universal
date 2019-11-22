@@ -10,6 +10,7 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
+#include <universal/posit/posit.hpp>
 
 /*
 

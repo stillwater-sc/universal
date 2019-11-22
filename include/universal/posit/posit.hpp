@@ -725,12 +725,6 @@ public:
 		posit<nbits, es> negated(0);  // TODO: artificial initialization to pass -Wmaybe-uninitialized
 		bitblock<nbits> raw_bits = twos_complement(_raw_bits);
 		negated.set(raw_bits);
-		bool local_sign;
-		regime<nbits, es> local_regime;
-		exponent<nbits, es> local_exponent;
-		fraction<fbits> local_fraction;
-		decode(raw_bits, local_sign, local_regime, local_exponent, local_fraction);
-		// TODO: how to get rid of this decode step?
 		return negated;
 	}
 	// prefix/postfix operators
