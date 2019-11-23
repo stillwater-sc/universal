@@ -246,6 +246,15 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
+	cout << "epsilon for floats       : " << generic_number_traits<float>::epsilon() << endl;
+	cout << "epsilon for doubles      : " << generic_number_traits<double>::epsilon() << endl;
+	cout << "epsilon for posit<8,0>   : " << generic_number_traits<posit<8, 0> >::epsilon() << endl;
+	cout << "epsilon for posit<16,1>  : " << generic_number_traits<posit<16, 1> >::epsilon() << endl;
+	cout << "epsilon for posit<32,2>  : " << generic_number_traits<posit<32, 2> >::epsilon() << endl;
+	cout << "epsilon for posit<64,3>  : " << generic_number_traits<posit<64, 3> >::epsilon() << endl;
+	cout << "epsilon for posit<128,4> : " << generic_number_traits<posit<128, 4> >::epsilon() << endl;
+	cout << "epsilon for posit<256,5> : " << generic_number_traits<posit<256, 5> >::epsilon() << endl;
+
 	bool bSuccess = true;
 
 	HexVsDefaultFloatPrinting();
