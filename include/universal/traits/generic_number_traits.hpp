@@ -7,34 +7,6 @@
 #include <universal/traits/metaprogramming.hpp>
 
 namespace sw { 
-	
-namespace internal {
-
-	// default implementation of digits10(), based on numeric_limits if specialized,
-	// 0 for integer types, and log10(epsilon()) otherwise.
-	template< typename ScalarType,
-		bool use_numeric_limits = std::numeric_limits<ScalarType>::is_specialized,
-		bool is_integer = sw::unum::number_traits<ScalarType>::is_integer>
-	struct default_digits10_impl
-	{
-		static int run() { return std::numeric_limits<ScalarType>::digits10; }
-	};
-
-	template<typename ScalarType>
-	struct default_digits10_impl<ScalarType, false, false> // Floating point
-	{
-		static int run() {
-			return int(ceil(-log10(sw::unum::number_traits<ScalarType>::epsilon())));
-		}
-	};
-
-	template<typename ScalarType>
-	struct default_digits10_impl<ScalarType, false, true> // Integer
-	{
-		static int run() { return 0; }
-	};
-
-} // namespace internal
 
 namespace unum {
 
@@ -44,7 +16,7 @@ namespace unum {
 			is_integer = std::numeric_limits<ScalarType>::is_integer,
 			is_signed = std::numeric_limits<ScalarType>::is_signed,
 			is_complex = 0,
-			needs_init = internal::is_arithmetic<ScalarType>::value ? 0 : 1,
+			needs_init = internal::is_arithmetic<ScalarType>::value ? 0 : 1
 		};
 		static inline ScalarType epsilon() {
 			return numext::numeric_limits<ScalarType>::epsilon();
@@ -78,16 +50,51 @@ namespace unum {
 		: generic_number_traits<float>
 	{
 		//UNUM_DEVICE_FUNC
-		static inline float dummy_precision() { return 1e-5f; }
+		static inline float rough_precision() { return 1e-5f; }
 	};
 
 	template<> struct number_traits<double> 
 		: generic_number_traits<double>
 	{
 		//UNUM_DEVICE_FUNC
-		static inline double dummy_precision() { return 1e-12; }
+		static inline double rough_precision() { return 1e-12; }
+	};
+
+	template<> struct number_traits<long double>
+		: generic_number_traits<long double>
+	{
+		//UNUM_DEVICE_FUNC
+		static inline long double rough_precision() { return 1e-15l; }
 	};
 
 } // namespace unum
+
+namespace internal {
+
+	// default implementation of digits10(), based on numeric_limits if specialized,
+	// 0 for integer types, and log10(epsilon()) otherwise.
+	template< typename ScalarType,
+		bool use_numeric_limits = std::numeric_limits<ScalarType>::is_specialized,
+		bool is_integer = sw::unum::number_traits<ScalarType>::is_integer>
+		struct default_digits10_impl
+	{
+		static int run() { return std::numeric_limits<ScalarType>::digits10; }
+	};
+
+	template<typename ScalarType>
+	struct default_digits10_impl<ScalarType, false, false> // Floating point
+	{
+		static int run() {
+			return int(ceil(-log10(sw::unum::number_traits<ScalarType>::epsilon())));
+		}
+	};
+
+	template<typename ScalarType>
+	struct default_digits10_impl<ScalarType, false, true> // Integer
+	{
+		static int run() { return 0; }
+	};
+
+} // namespace internal
 
 } // namespace sw
