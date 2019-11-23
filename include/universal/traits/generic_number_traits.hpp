@@ -8,13 +8,19 @@
 
 namespace sw { 
 
+namespace unum {
+	// forward reference
+	template<typename ScalarType> struct number_traits;
+}
+
 namespace internal {
+
 
 	// default implementation of digits10(), based on numeric_limits if specialized,
 	// 0 for integer types, and log10(epsilon()) otherwise.
 	template< typename ScalarType,
 		bool use_numeric_limits = std::numeric_limits<ScalarType>::is_specialized,
-		bool is_integer = unum::number_traits<ScalarType>::is_integer>
+		bool is_integer = sw::unum::number_traits<ScalarType>::is_integer>
 		struct default_digits10_impl
 	{
 		static int run() { return std::numeric_limits<ScalarType>::digits10; }
@@ -24,7 +30,7 @@ namespace internal {
 	struct default_digits10_impl<ScalarType, false, false> // Floating point
 	{
 		static int run() {
-			return int(ceil(-log10(unum::number_traits<ScalarType>::epsilon())));
+			return int(ceil(-log10(sw::unum::number_traits<ScalarType>::epsilon())));
 		}
 	};
 
