@@ -1,5 +1,5 @@
 #pragma once
-//  generic_number_traits.hpp : base type of number system traits
+//  number_traits.hpp : number system traits
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -14,7 +14,6 @@ namespace unum {
 }
 
 namespace internal {
-
 
 	// default implementation of digits10(), based on numeric_limits if specialized,
 	// 0 for integer types, and log10(epsilon()) otherwise.

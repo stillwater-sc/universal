@@ -2769,6 +2769,13 @@ std::pair<Scalar, Scalar> twoSum(const Scalar& a, const Scalar& b) {
 	return std::make_pair(s, r);
 }
 
+// Standard posit short-hand types
+using posit8 = posit<8, 0>;
+using posit16 = posit<16, 1>;
+using posit32 = posit<32, 2>;
+using posit64 = posit<64, 3>;
+using posit128 = posit<128, 4>;
+using posit256 = posit<256, 5>;
 
 }  // namespace unum
 
