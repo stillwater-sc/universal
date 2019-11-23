@@ -4,7 +4,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
-#include <universal/traits/metaprogramming.hpp>
 #include <universal/traits/generic_number_traits.hpp>
 // when you define POSIT_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define POSIT_VERBOSE_OUTPUT
@@ -67,12 +66,13 @@ void LongDoubleExample()
 	cout << "LongDouble values\n";
 	double d = (double)0.79432823472428150206586100479;
 	posit<32, 2> E_pos(d);
-	cout << setprecision(30) << fixed << d << setprecision(6) << endl;
+	auto old_precision = cout.precision();
+	cout << setprecision(30) << fixed << d << setprecision(old_precision) << scientific << endl;
 	cout << pretty_print(E_pos) << endl;
 
 	long double ld = (long double)0.79432823472428150206586100479;
 	E_pos = ld;
-	cout << setprecision(30) << fixed << ld << setprecision(6) << endl;
+	cout << setprecision(30) << fixed << ld << setprecision(old_precision) << scientific << endl;
 	cout << pretty_print(E_pos) << endl;
 
 	int _exp;
@@ -149,13 +149,13 @@ void DynamicRangeTable()
 	cout << endl;
 }
 
+template<size_t nbits = 8>
 void OneMinusEps()
 {
 	using namespace std;
 	using namespace sw::unum;
 
 	cout << "1.0 - epsilon\n";
-	constexpr size_t nbits = 8;
 	{
 		posit<nbits, 0> p(1.0); --p;
 		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
@@ -187,13 +187,13 @@ void OneMinusEps()
 	cout << endl;
 }
 
+template<size_t nbits = 8>
 void OnePlusEps()
 {
 	using namespace std;
 	using namespace sw::unum;
 
 	cout << "1.0 + epsilon\n";
-	constexpr size_t nbits = 8;
 	{
 		posit<nbits, 0> p(1.0); ++p;
 		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << endl;
@@ -241,21 +241,65 @@ void Conversions() {
 	}
 }
 
+void NumberTraits() {
+	using namespace std;
+	using namespace sw::unum;
+
+	cout << "epsilon for floats       : " << number_traits<float>::epsilon() << endl;
+	cout << "epsilon for doubles      : " << number_traits<double>::epsilon() << endl;
+	cout << "epsilon for posit<8,0>   : " << number_traits<posit<8, 0> >::epsilon() << endl;
+	cout << "epsilon for posit<16,1>  : " << number_traits<posit<16, 1> >::epsilon() << endl;
+	cout << "epsilon for posit<32,2>  : " << number_traits<posit<32, 2> >::epsilon() << endl;
+	cout << "epsilon for posit<64,3>  : " << number_traits<posit<64, 3> >::epsilon() << endl;
+	cout << "epsilon for posit<128,4> : " << number_traits<posit<128, 4> >::epsilon() << endl;  // TODO
+	cout << "epsilon for posit<256,5> : " << number_traits<posit<256, 5> >::epsilon() << endl;  // TODO
+
+	/* call the raw implementation
+	cout << "digit10 for floats       : " << sw::internal::default_digits10_impl<float, false, false>().run() << endl;
+	cout << "digit10 for doubles      : " << sw::internal::default_digits10_impl<double, false, false>().run() << endl;
+	cout << "digit10 for posit<8,0>   : " << sw::internal::default_digits10_impl<posit<8, 0>, false, false>().run() << endl;
+	cout << "digit10 for posit<16,1>  : " << sw::internal::default_digits10_impl<posit<16, 1>, false, false>().run() << endl;
+	cout << "digit10 for posit<32,2>  : " << sw::internal::default_digits10_impl<posit<32, 2>, false, false>().run() << endl;
+	cout << "digit10 for posit<64,3>  : " << sw::internal::default_digits10_impl<posit<64, 3>, false, false>().run() << endl;
+	cout << "digit10 for posit<128,4> : " << sw::internal::default_digits10_impl<posit<128, 4>, false, false>().run() << endl;
+	cout << "digit10 for posit<256,5> : " << sw::internal::default_digits10_impl<posit<256, 5>, false, false>().run() << endl;
+	*/
+
+	cout << "digit10 for floats       : " << number_traits<float>::digits10() << endl;
+	cout << "digit10 for doubles      : " << number_traits<double>::digits10() << endl;
+	cout << "digit10 for posit<8,0>   : " << number_traits<posit<8, 0> >::digits10() << endl;
+	cout << "digit10 for posit<16,1>  : " << number_traits<posit<16, 1> >::digits10() << endl;
+	cout << "digit10 for posit<32,2>  : " << number_traits<posit<32, 2> >::digits10() << endl;
+	cout << "digit10 for posit<64,3>  : " << number_traits<posit<64, 3> >::digits10() << endl;
+	cout << "digit10 for posit<128,4> : " << number_traits<posit<128, 4> >::digits10() << endl;
+	cout << "digit10 for posit<256,5> : " << number_traits<posit<256, 5> >::digits10() << endl;
+
+	cout << "min pos for floats       : " << number_traits<float>::min() << endl;
+	cout << "min pos for doubles      : " << number_traits<double>::min() << endl;
+	cout << "min pos for posit<8,0>   : " << number_traits<posit<8, 0> >::min() << endl;
+	cout << "min pos for posit<16,1>  : " << number_traits<posit<16, 1> >::min() << endl;
+	cout << "min pos for posit<32,2>  : " << number_traits<posit<32, 2> >::min() << endl;
+	cout << "min pos for posit<64,3>  : " << number_traits<posit<64, 3> >::min() << endl;  // TODO
+	cout << "min pos for posit<128,4> : " << number_traits<posit<128, 4> >::min() << endl; // TODO
+	cout << "min pos for posit<256,5> : " << number_traits<posit<256, 5> >::min() << endl; // TODO
+
+	cout << "max pos for floats       : " << number_traits<float>::max() << endl;
+	cout << "max pos for doubles      : " << number_traits<double>::max() << endl;
+	cout << "max pos for posit<8,0>   : " << number_traits<posit<8, 0> >::max() << endl;
+	cout << "max pos for posit<16,1>  : " << number_traits<posit<16, 1> >::max() << endl;
+	cout << "max pos for posit<32,2>  : " << number_traits<posit<32, 2> >::max() << endl;
+	cout << "max pos for posit<64,3>  : " << number_traits<posit<64, 3> >::max() << endl;  // TODO
+	cout << "max pos for posit<128,4> : " << number_traits<posit<128, 4> >::max() << endl; // TODO
+	cout << "max pos for posit<256,5> : " << number_traits<posit<256, 5> >::max() << endl; // TODO
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
 
-	cout << "epsilon for floats       : " << generic_number_traits<float>::epsilon() << endl;
-	cout << "epsilon for doubles      : " << generic_number_traits<double>::epsilon() << endl;
-	cout << "epsilon for posit<8,0>   : " << generic_number_traits<posit<8, 0> >::epsilon() << endl;
-	cout << "epsilon for posit<16,1>  : " << generic_number_traits<posit<16, 1> >::epsilon() << endl;
-	cout << "epsilon for posit<32,2>  : " << generic_number_traits<posit<32, 2> >::epsilon() << endl;
-	cout << "epsilon for posit<64,3>  : " << generic_number_traits<posit<64, 3> >::epsilon() << endl;
-	cout << "epsilon for posit<128,4> : " << generic_number_traits<posit<128, 4> >::epsilon() << endl;
-	cout << "epsilon for posit<256,5> : " << generic_number_traits<posit<256, 5> >::epsilon() << endl;
-
 	bool bSuccess = true;
+	auto old_precision = cout.precision();
 
 	HexVsDefaultFloatPrinting();
 	LongDoubleExample();
@@ -266,8 +310,19 @@ try {
 
 	DynamicRangeTable();
 
-	OnePlusEps();
-	OneMinusEps();
+	NumberTraits();
+	OnePlusEps<8>();
+	OneMinusEps<8>();
+	OnePlusEps<16>();
+	OneMinusEps<16>();
+	OnePlusEps<32>();
+	OneMinusEps<32>();
+	OnePlusEps<64>();
+	OneMinusEps<64>();
+	OnePlusEps<128>();
+	OneMinusEps<128>();
+	OnePlusEps<256>();
+	OneMinusEps<256>();
 
 	ColorPrintTable<8, 3>(); 
 
@@ -275,7 +330,7 @@ try {
 
 	posit<32, 2> p;
 	p.set_raw_bits(0xb0bfe591u);
-	cout << color_print(p) << " " << setprecision(30) << p << endl;
+	cout << color_print(p) << " " << setprecision(30) << p << setprecision(old_precision) << endl;
 
 	return (bSuccess ? EXIT_SUCCESS : EXIT_FAILURE);
 }

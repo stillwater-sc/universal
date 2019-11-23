@@ -4,6 +4,7 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/traits/metaprogramming.hpp>
 
 namespace sw { 
 	
@@ -13,25 +14,22 @@ namespace internal {
 	// 0 for integer types, and log10(epsilon()) otherwise.
 	template< typename ScalarType,
 		bool use_numeric_limits = std::numeric_limits<ScalarType>::is_specialized,
-		bool is_integer = unum::number_traits<ScalarType>::is_integer>
-		struct default_digits10_impl
+		bool is_integer = sw::unum::number_traits<ScalarType>::is_integer>
+	struct default_digits10_impl
 	{
-		static int run() { return std::numeric_limits<T>::digits10; }
+		static int run() { return std::numeric_limits<ScalarType>::digits10; }
 	};
 
-	template<typename T>
-	struct default_digits10_impl<T, false, false> // Floating point
+	template<typename ScalarType>
+	struct default_digits10_impl<ScalarType, false, false> // Floating point
 	{
 		static int run() {
-			using std::log10;
-			using std::ceil;
-			typedef typename NumTraits<T>::Real Real;
-			return int(ceil(-log10(NumTraits<Real>::epsilon())));
+			return int(ceil(-log10(sw::unum::number_traits<ScalarType>::epsilon())));
 		}
 	};
 
-	template<typename T>
-	struct default_digits10_impl<T, false, true> // Integer
+	template<typename ScalarType>
+	struct default_digits10_impl<ScalarType, false, true> // Integer
 	{
 		static int run() { return 0; }
 	};
@@ -52,14 +50,14 @@ namespace unum {
 			return numext::numeric_limits<ScalarType>::epsilon();
 		}
 		static inline int digits10() {
-			return internal::default_digits10_impl<T>::run();
+			return internal::default_digits10_impl<ScalarType>::run();
 		}
 
-		static inline ScalarType maxpos() {
+		static inline ScalarType max() {
 			return (numext::numeric_limits<ScalarType>::max)();
 		}
 	
-		static inline ScalarType minpos() {
+		static inline ScalarType min() {
 			return (numext::numeric_limits<ScalarType>::min)();
 		}
 

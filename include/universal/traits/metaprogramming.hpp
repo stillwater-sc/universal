@@ -168,7 +168,7 @@ namespace device {
 			static unsigned long long (min)() { return 0; }
 	};
 #endif // __CUDA_ARCH__
-};
+} // namespace device
 
 namespace numext {
 
