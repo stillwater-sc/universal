@@ -1,7 +1,7 @@
 #pragma once
 // math_functions.hpp: definition of integer mathematical functions
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <exception>

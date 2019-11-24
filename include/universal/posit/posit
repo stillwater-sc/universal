@@ -1,6 +1,6 @@
 // posit standard header
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _POSIT_STANDARD_HEADER_
@@ -32,10 +32,18 @@
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
+///                         END OF BEHAVIOR SWITCHES                                 ///
+////////////////////////////////////////////////////////////////////////////////////////
+
+
+////////////////////////////////////////////////////////////////////////////////////////
+/// define generic number system traits to be specialized by the posit library
+#include <universal/traits/number_traits.hpp>
+
+////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
 #include "posit.hpp"
 #include "numeric_limits.hpp"
-//#include "posit_decoded.hpp"
 
 // fast specializations for special posit configurations
 // enable fast implementations of the standard posits
@@ -61,5 +69,10 @@
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
 #include "math_functions.hpp"
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// numerical functions
+#include "twoSum.hpp"
+
 
 #endif
