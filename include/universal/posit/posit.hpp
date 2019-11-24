@@ -2757,28 +2757,21 @@ struct is_posit< sw::unum::posit<nbits, es> >
 {
 };
 
-// Numerical property functions
-template<typename Scalar>
-std::pair<Scalar, Scalar> twoSum(const Scalar& a, const Scalar& b) {
-	Scalar s = a + b;
-	Scalar aApproximate = s - b;
-	Scalar bApproximate = s - aApproximate;
-	Scalar aDiff = a - aApproximate;
-	Scalar bDiff = b - bApproximate;
-	Scalar r = aDiff + bDiff;
-	return std::make_pair(s, r);
-}
-
 // Standard posit short-hand types
-using posit8 = posit<8, 0>;
-using posit16 = posit<16, 1>;
-using posit32 = posit<32, 2>;
-using posit64 = posit<64, 3>;
-using posit128 = posit<128, 4>;
-using posit256 = posit<256, 5>;
+/*
+TODO: how do we use the same names as the posit C-types?
+right now, because we pull in the C++ as run-time to the C functions
+ this causes a redefinition error
+using posit8_t   = posit<8, 0>;
+using posit16_t  = posit<16, 1>;
+using posit32_t  = posit<32, 2>;
+using posit64_t  = posit<64, 3>;
+using posit128_t = posit<128, 4>;
+using posit256_t = posit<256, 5>;
+*/
+
 
 }  // namespace unum
-
 }  // namespace sw
 
 
