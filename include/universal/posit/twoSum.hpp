@@ -8,9 +8,9 @@
 namespace sw {
 namespace unum {
 
-	// D
+// Default is to return a and b in exponential range of posits
 #ifndef GEOMETRIC_ROUNDING_CASES
-#define GEOMETRIC_ROUNDING_CASES 0
+#define GEOMETRIC_ROUNDING_CASES 1
 #endif
 
 /*

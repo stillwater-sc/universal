@@ -452,7 +452,7 @@ add_subdirectory("numerical")
 endif(BUILD_NUMERICAL)
 
 if(BUILD_FUNCTIONS)
-add_subdirectory("functions")
+add_subdirectory("tests/functions")
 endif(BUILD_FUNCTIONS)
 
 if(BUILD_PLAYGROUND)
