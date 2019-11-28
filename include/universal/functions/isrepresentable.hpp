@@ -17,5 +17,10 @@ bool isRepresentable(IntegerType a, IntegerType b) {
 	return a % b == 0;
 }
 
+template<typename IntegerType>
+void reportRepresentability(IntegerType a, IntegerType b) {
+	std::cout << a << "/" << b << (isRepresentable(a, b) ? " is    " : " is not") << " representable " << ((long double)a / (long double)(b)) << std::endl;
+}
+
 } // namespace unum
 } // namespace sw
