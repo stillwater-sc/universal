@@ -1,5 +1,5 @@
 #pragma once
-// twoSum.hpp: definition of the twoSum function
+// twosum.hpp: definition of the twoSum function
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

@@ -1,10 +1,20 @@
 #pragma once
-// math_functions.hpp: general include file of all the math functions
+// math_functions.hpp: elementary functions for the posit number system
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+/*
+https://en.wikipedia.org/wiki/Elementary_function
+
+In mathematics, an elementary function is a function of one variable which is a finite sum, 
+product, and/or composition of the rational functions (P(x)/Q(x) for polynomials P and Q), 
+sin, cos, exp, and their inverse functions (including arcsin, log, x^(1/n)).
+
+Elementary functions were introduced by Joseph Liouville in a series of papers from 1833 to 1841. 
+An algebraic treatment of elementary functions was started by Joseph Fels Ritt in the 1930s.
+*/
 #include "math/classify.hpp"
 #include "math/complex.hpp"
 #include "math/constants.hpp"

@@ -1,5 +1,5 @@
 #pragma once
-// factorial.hpp: definition of a recursive factorial function
+// factorial.hpp: definition of recursive and iterative factorial functions
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

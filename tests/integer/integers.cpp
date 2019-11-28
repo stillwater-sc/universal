@@ -1,6 +1,6 @@
 //  integers.cpp : test suite for abitrary precision integers
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -9,6 +9,8 @@
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/integer/integer.hpp>
 #include <universal/integer/numeric_limits.hpp>
+// is representable
+#include <universal/functions/isrepresentable.hpp>
 // test helpers
 #include "../test_helpers.hpp"
 
@@ -909,7 +911,17 @@ void ExamplePattern() {
 	GenerateMulTest<sw::unum::integer<16> >(2, 16, z);
 }
 
-#define MANUAL_TESTING 0
+// enumerate a couple ratios to test representability
+void ReproducibilityTestSuite() {
+	for (int i = 0; i < 30; i += 3) {
+		for (int j = 0; j < 70; j += 7) {
+			sw::unum::reportRepresentability(i, j);
+		}
+	}
+}
+
+
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 std::string convert_to_string(const std::vector<char>& v) {
@@ -940,6 +952,7 @@ try {
 	ReportTestResult(VerifyRemainder<4>("manual test", true), "integer<4>", "remainder");
 	ReportTestResult(VerifyDivision<11>("manual test", true), "integer<11>", "divides");
 	ReportTestResult(VerifyRemainder<11>("manual test", true), "integer<11>", "remainder");
+	ReproducibilityTestSuite();
 
 	cout << "done" << endl;
 
