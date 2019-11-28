@@ -11,10 +11,10 @@ namespace unum {
 // isRepresentable tests if the ratio a/b can be represented exactly by a binary Real
 template<typename IntegerType>
 bool isRepresentable(IntegerType a, IntegerType b) {
-	if (b == IntegerType(0)) return false;
-	while (b % 2 == IntegerType(0)) { b /= IntegerType(2); }
-	while (b % 5 == IntegerType(0)) { b /= IntegerType(5); }
-	return a % b == IntegerType(0);
+	if (b == 0) return false;
+	while (b % 2 == 0) { b /= 2; }
+	while (b % 5 == 0) { b /= 5; }
+	return a % b == 0;
 }
 
 } // namespace unum

@@ -26,20 +26,26 @@ try {
 #if MANUAL_TESTING
 	std::cout << "Manual isRepresentable verfication" << std::endl;
 
-	for (int a = 0; a < 10; ++a) {
-		for (int b = 1; b < 10; ++b) {
+	for (int a = 0; a < 5; ++a) {
+		for (int b = 1; b < 5; ++b) {
 			cout << a << "/" << b << " = " << float(a)/float(b) << " is " << (isRepresentable(a,b) ? "representable\n" : "is not representable\n");
 		}
 	}
-	/*
-	TODO: need to implement literal comparisons and operator%()
+
 	using int16 = integer<16>;
-	for (int16 a = 0; a < 10; ++a) {
-		for (int16 b = 1; b < 10; ++b) {
-			cout << a << "/" << b << " = " << float(a)/float(b) << " is " << (isRepresentable(a,b) ? "representable" : "is not representable");
+	for (int16 a = 0; a < 5; ++a) {
+		for (int16 b = 1; b < 5; ++b) {
+			cout << a << "/" << b << " = " << float(a)/float(b) << " is " << (isRepresentable(a,b) ? "representable\n" : "is not representable\n");
 		}
 	}
-	*/
+
+	integer<128> a, b;
+	a = 123456789012;
+	b = 210987654321;
+	cout << a << "/" << b << " = " << (long double)(a) / (long double)(b) << " is " << (isRepresentable(a, b) ? "representable\n" : "is not representable\n");
+	b = 210987654323;
+	cout << a << "/" << b << " = " << (long double)(a) / (long double)(b) << " is " << (isRepresentable(a, b) ? "representable\n" : "is not representable\n");
+
 	cout << "done" << endl;
 	return EXIT_SUCCESS;
 #else

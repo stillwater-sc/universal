@@ -1,7 +1,7 @@
 #pragma once
-// integer.hpp: definition of arbitrary integer configurations
+// integer.hpp: definition of a fixed-size arbitrary integer precision number
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
@@ -585,15 +585,32 @@ protected:
 	}
 	unsigned long to_ulong() const {
 		unsigned long ul = 0;
+		char* p = (char*)&ul;
+		for (int i = 0; i < nrBytes; ++i) {
+			*(p + i) = b[i];
+		}
 		return ul;
 	}
 	unsigned long long to_ulong_long() const {
 		unsigned long long ull = 0;
+		char* p = (char*)&ull;
+		for (int i = 0; i < nrBytes; ++i) {
+			*(p + i) = b[i];
+		}
 		return ull;
 	}
-	float to_float() const { return 0.0f; }
-	double to_double() const { return 0.0; }
-	long double to_long_double() const { return 0.0l; }
+	float to_float() const { 
+		float f = float((long long)(*this));
+		return f; 
+	}
+	double to_double() const {
+		double d = double((long long)(*this));
+		return d;
+	}
+	long double to_long_double() const {
+		long double ld = (long double)((long long)(*this));
+		return ld;
+	}
 
 	template<typename Ty>
 	void float_assign(Ty& rhs) {
@@ -623,7 +640,35 @@ private:
 	template<size_t nnbits>
 	friend bool operator>=(const integer<nnbits>& lhs, const integer<nnbits>& rhs);
 
-	// 
+	// integer - literal logic comparisons
+	template<size_t nnbits>
+	friend bool operator==(const integer<nnbits>& lhs, const long long rhs);
+	template<size_t nnbits>
+	friend bool operator!=(const integer<nnbits>& lhs, const long long rhs);
+	template<size_t nnbits>
+	friend bool operator< (const integer<nnbits>& lhs, const long long rhs);
+	template<size_t nnbits>
+	friend bool operator> (const integer<nnbits>& lhs, const long long rhs);
+	template<size_t nnbits>
+	friend bool operator<=(const integer<nnbits>& lhs, const long long rhs);
+	template<size_t nnbits>
+	friend bool operator>=(const integer<nnbits>& lhs, const long long rhs);
+
+	// literal - integer logic comparisons
+	template<size_t nnbits>
+	friend bool operator==(const long long lhs, const integer<nnbits>& rhs);
+	template<size_t nnbits>
+	friend bool operator!=(const long long lhs, const integer<nnbits>& rhs);
+	template<size_t nnbits>
+	friend bool operator< (const long long lhs, const integer<nnbits>& rhs);
+	template<size_t nnbits>
+	friend bool operator> (const long long lhs, const integer<nnbits>& rhs);
+	template<size_t nnbits>
+	friend bool operator<=(const long long& lhs, const integer<nnbits>& rhs);
+	template<size_t nnbits>
+	friend bool operator>=(const long long lhs, const integer<nnbits>& rhs);
+
+	// find the most significant bit set
 	template<size_t nnbits>
 	friend signed findMsb(const integer<nnbits>& v); 
 };
@@ -1010,8 +1055,9 @@ inline std::string to_binary(const integer<nbits>& number) {
 	}
 	return ss.str();
 }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// integer binary logic operators
+// integer - integer binary logic operators
 
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
 template<size_t nbits>
@@ -1059,8 +1105,67 @@ inline bool operator>=(const integer<nbits>& lhs, const integer<nbits>& rhs) {
 	return !operator< (lhs, rhs);
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////
-// intege binary arithmetic operators
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// integer - literal binary logic operators
+// equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
+template<size_t nbits>
+inline bool operator==(const integer<nbits>& lhs, const long long rhs) {
+	return operator==(lhs, integer<nbits>(rhs));
+}
+template<size_t nbits>
+inline bool operator!=(const integer<nbits>& lhs, const long long rhs) {
+	return !operator==(lhs, rhs);
+}
+template<size_t nbits>
+inline bool operator< (const integer<nbits>& lhs, const long long rhs) {
+	return operator<(lhs, integer<nbits>(rhs));
+}
+template<size_t nbits>
+inline bool operator> (const integer<nbits>& lhs, const long long rhs) {
+	return operator< (integer<nbits>(rhs), lhs);
+}
+template<size_t nbits>
+inline bool operator<=(const integer<nbits>& lhs, const long long rhs) {
+	return operator< (lhs, rhs) || operator==(lhs, rhs);
+}
+template<size_t nbits>
+inline bool operator>=(const integer<nbits>& lhs, const long long rhs) {
+	return !operator< (lhs, rhs);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// literal - integer binary logic operators
+// precondition is that the byte-storage is properly nulled in all arithmetic paths
+
+template<size_t nbits>
+inline bool operator==(const long long lhs, const integer<nbits>& rhs) {
+	return operator==(integer<nbits>(lhs), rhs);
+}
+template<size_t nbits>
+inline bool operator!=(const long long lhs, const integer<nbits>& rhs) {
+	return !operator==(lhs, rhs);
+}
+template<size_t nbits>
+inline bool operator< (const long long lhs, const integer<nbits>& rhs) {
+	return operator<(integer<nbits>(lhs), rhs);
+}
+template<size_t nbits>
+inline bool operator> (const long long lhs, const integer<nbits>& rhs) {
+	return operator< (rhs, lhs);
+}
+template<size_t nbits>
+inline bool operator<=(const long long lhs, const integer<nbits>& rhs) {
+	return operator< (lhs, rhs) || operator==(lhs, rhs);
+}
+template<size_t nbits>
+inline bool operator>=(const long long lhs, const integer<nbits>& rhs) {
+	return !operator< (lhs, rhs);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// integer - integer binary arithmetic operators
 // BINARY ADDITION
 template<size_t nbits>
 inline integer<nbits> operator+(const integer<nbits>& lhs, const integer<nbits>& rhs) {
@@ -1095,6 +1200,62 @@ inline integer<nbits> operator%(const integer<nbits>& lhs, const integer<nbits>&
 	integer<nbits> ratio = lhs;
 	ratio %= rhs;
 	return ratio;
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// integer - literal binary arithmetic operators
+// BINARY ADDITION
+template<size_t nbits>
+inline integer<nbits> operator+(const integer<nbits>& lhs, const long long rhs) {
+	return operator+(lhs, integer<nbits>(rhs));
+}
+// BINARY SUBTRACTION
+template<size_t nbits>
+inline integer<nbits> operator-(const integer<nbits>& lhs, const long long rhs) {
+	return operator-(lhs, integer<nbits>(rhs));
+}
+// BINARY MULTIPLICATION
+template<size_t nbits>
+inline integer<nbits> operator*(const integer<nbits>& lhs, const long long rhs) {
+	return operator*(lhs, integer<nbits>(rhs));
+}
+// BINARY DIVISION
+template<size_t nbits>
+inline integer<nbits> operator/(const integer<nbits>& lhs, const long long rhs) {
+	return operator/(lhs, integer<nbits>(rhs));
+}
+// BINARY REMAINDER
+template<size_t nbits>
+inline integer<nbits> operator%(const integer<nbits>& lhs, const long long rhs) {
+	return operator%(lhs, integer<nbits>(rhs));
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// literal - integer binary arithmetic operators
+// BINARY ADDITION
+template<size_t nbits>
+inline integer<nbits> operator+(const long long lhs, const integer<nbits>& rhs) {
+	return operator+(integer<nbits>(lhs), rhs);
+}
+// BINARY SUBTRACTION
+template<size_t nbits>
+inline integer<nbits> operator-(const long long lhs, const integer<nbits>& rhs) {
+	return operator-(integer<nbits>(lhs), rhs);
+}
+// BINARY MULTIPLICATION
+template<size_t nbits>
+inline integer<nbits> operator*(const long long lhs, const integer<nbits>& rhs) {
+	return operator*(integer<nbits>(lhs), rhs);
+}
+// BINARY DIVISION
+template<size_t nbits>
+inline integer<nbits> operator/(const long long lhs, const integer<nbits>& rhs) {
+	return operator/(integer<nbits>(lhs), rhs);
+}
+// BINARY REMAINDER
+template<size_t nbits>
+inline integer<nbits> operator%(const long long lhs, const integer<nbits>& rhs) {
+	return operator%(integer<nbits>(lhs), rhs);
 }
 
 
