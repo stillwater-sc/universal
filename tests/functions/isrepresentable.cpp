@@ -15,7 +15,7 @@
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
-
+// Test isRepresentable function across different number systems and scales
 int main()
 try {
 	using namespace std;
