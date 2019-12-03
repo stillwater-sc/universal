@@ -29,7 +29,7 @@ void PascalsTriangle(Scalar N) {
 	std::cout << "Computed with type: " << typeid(N).name() << '\n';
 	int widths[] = { 2, 2, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7, 7, 7 };
 	int order = int(N);
-	int columnWidth = N < (sizeof(widths) / sizeof(int)) ? widths[order] : 10;
+	int columnWidth = unsigned(order) < (sizeof(widths) / sizeof(int)) ? widths[order] : 10;
 	int width = (order + 1) * (columnWidth + 2);
 	int middle = width / 2;
 	int leftMargin = middle;
