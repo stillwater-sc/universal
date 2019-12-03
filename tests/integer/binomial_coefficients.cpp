@@ -37,7 +37,7 @@ void PascalsTriangle(Scalar N) {
 	std::cout << spacing(leftMargin) << "             1\n";
 	leftMargin -= columnWidth/2;
 	//// GOTCHA!!!!! we have redefined the increment/decrement operators for posits to be working on ULP. Here we want pure integer behavior, so we need to be explicity if we want to support posits as Scalar
-	for (n = 1; n < N; n += 1) {
+	for (n = 1; n <= N; n += 1) {
 		std::cout << "n = " << std::setw(3) << n << spacing(leftMargin);
 		for (k = 0; k <= n; k += 1) {
 			std::cout << std::setw(columnWidth) << std::right << sw::function::BinomialCoefficient(n, k) << ' ';
@@ -67,9 +67,9 @@ try {
 
 	PascalsTriangle(long(20));
 	PascalsTriangle(int128_t(20));
-	//PascalsTriangle(posit(20));
+	PascalsTriangle(posit(20));
 	
-	Binomials(posit(20));
+	Binomials(posit(21));
 
 	return EXIT_SUCCESS;
 }
