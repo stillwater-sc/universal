@@ -1,75 +1,11 @@
 ﻿// factorial.cpp: evaluation of factorials in the posit number systems
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/posit/posit>
 #include <universal/integer/integer>
-
-/*
-  Why is the convert function not part of the Integer or Posit types?
-  It would tightly couple the types, which we want to avoid.
-  If we want to productize these convertions we would need a new
-  layer in the module design that sits above the Universal types. TODO
- */
-
-// convert a Posit to an Integer
-template<typename Integer, typename Posit>
-void convert(Integer& v, const Posit& p) {
-	// get the scale of the posit value
-	int scale = sw::unum::scale(p);
-	if (scale < 0) {
-		v = 0;
-		return;
-	}
-	if (scale == 0) {
-		v = 1;
-	}
-	else {
-		// gather all the fraction bits
-		// sw::unum::bitblock<p.fhbits> significant = sw::unum::significant<p.nbits, p.es, p.fbits>(p);
-                sw::unum::bitblock<Posit::fhbits> significant = sw::unum::significant<Posit::nbits, Posit::es, Posit::fbits>(p);
-		// the radix point is at fbits, to make an integer out of this
-		// we shift that radix point fbits to the right.
-		// that is equivalent to a scale of 2^fbits
-		v.clear();
-		int msb = (v.nbits < p.fbits + 1) ? v.nbits : p.fbits + 1;
-		for (int i = msb-1; i >= 0; --i) {
-			v.set(i, significant[i]);
-		}
-		int shift = scale - p.fbits;  // if scale > fbits we need to shift left
-		v <<= shift;
-		if (p.isneg()) {
-			v.flip();
-			v += 1;
-		}
-	}
-}
-
-template<typename Posit>
-void convert(int& v, const Posit& p) {
-	v = int(p);
-}
-template<typename Posit>
-void convert(long& v, const Posit& p) {
-	v = long(p);
-}
-template<typename Posit>
-void convert(long long& v, const Posit& p) {
-	v = (long long)(p);
-}
-template<typename Posit>
-void convert(unsigned int& v, const Posit& p) {
-	v = (unsigned int)(p);
-}
-template<typename Posit>
-void convert(unsigned long& v, const Posit& p) {
-	v = (unsigned long)(p);
-}
-template<typename Posit>
-void convert(unsigned long long& v, const Posit& p) {
-	v = (unsigned long long)(p);
-}
+#include <universal/conversion/integer_to_posit.hpp>
 
 // generate factorials in an Integer and a Posit number system to compare
 template<typename Integer, typename Posit>
@@ -82,7 +18,7 @@ void GenerateFactorialTableComparison(unsigned upperbound, int columnWidth = 30)
 		factorialValue *= i;
 		positRef *= i;
 		Integer integerRef;
-		convert(integerRef, positRef);
+		sw::unum::convert_p2i(positRef, integerRef);
 		Integer error = (factorialValue > integerRef ? factorialValue - integerRef : integerRef - factorialValue);
 		cout << setw(5) << i << "  " << setw(columnWidth) << factorialValue << "  " << setw(columnWidth) << positRef << setw(columnWidth) << error << endl;
 	}
