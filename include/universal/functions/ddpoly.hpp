@@ -7,6 +7,12 @@
 namespace sw {
 namespace function {
 
+// just need this for GNU
+template<typename Scalar>
+inline size_t size(const std::vector<Scalar>& v) {
+    return v.size();
+}
+
 // ddpoly evaluate a polynomial of degree N at point x as well as its ND derivatives
 template<typename Vector, typename Scalar>
 void ddpoly(const Scalar& x, const Vector& c, Vector& pd) {
