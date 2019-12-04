@@ -24,13 +24,17 @@ try {
 	// define a polynomial
 	// p(x) = c0 + c1 * x + c2 * x^2 + c3 * x^3
 	std::vector<float> c = { 1, 2, 3, 4 };
-	std::vector<float> pd(3);
+	std::vector<float> pd(4);
 
 	ddpoly(1.0f, c, pd);
-	cout << pd[0] << endl;
-	cout << pd[1] << endl;
-	cout << pd[2] << endl;
-	
+	cout << "p(x)      = " << c[0] << " + " << c[1] << "*x + " << c[2] << "*x^2 + " << c[3] << "*x^3" << endl;
+	cout << "p(1.0)    = " << pd[0] << endl;
+	cout << "p'(x)     = " << c[1] << " + " << 2*c[2] << "*x + " << 3*c[3] << "*x^2" << endl;
+	cout << "p'(1.0)   = " << pd[1] << endl;
+	cout << "p''(x)    = " << 2 * c[2] << " + " << 6 * c[3] << "*x" << endl;
+	cout << "p''(1.0)  = " << pd[2] << endl;
+	cout << "p'''(x)   = " << 6 * c[3] << endl;
+	cout << "p'''(1.0) = " << pd[2] << endl;
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);
