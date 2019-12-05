@@ -23,6 +23,7 @@ try {
 
 	// define a polynomial
 	// p(x) = c0 + c1 * x + c2 * x^2 + c3 * x^3
+	//std::vector<float> c = { 1, 1, 1, 1 };
 	std::vector<float> c = { 1, 2, 3, 4 };
 	std::vector<float> pd(4);
 
@@ -34,7 +35,7 @@ try {
 	cout << "p''(x)    = " << 2 * c[2] << " + " << 6 * c[3] << "*x" << endl;
 	cout << "p''(1.0)  = " << pd[2] << endl;
 	cout << "p'''(x)   = " << 6 * c[3] << endl;
-	cout << "p'''(1.0) = " << pd[2] << endl;
+	cout << "p'''(1.0) = " << pd[3] << endl;
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);

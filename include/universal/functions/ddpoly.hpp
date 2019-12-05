@@ -37,26 +37,44 @@ namespace function {
 
 #endif
 
-
+/*
+	pd[0] = c0 + c1*x + c2*x^2 + c3*x^3
+	pd[1] = c1 + 2*c2*x + 3*c3*x^2
+	pd[2] = 2*c2 + 3*2*c3*x
+	pd[3] = 3*2*c3
+	
+	p = c0 + (c1 + c2*x + c3*x^2)*x
+	  = c0 + (c1 + (c2 + c3*x)*x)*x
+	
+	p' = c1 + 2*c2*x + 3*c3*x^2
+	   = c1 + (2*c2 + 3*c3*x)*x
+	
+	p'' = 2*c2 + 3*2*c3*x
+	
+	p''' = 3*2*c3
+*/
 // ddpoly evaluate a polynomial of degree N at point x as well as its ND derivatives
 template<typename Vector, typename Scalar>
 void ddpoly(const Scalar& x, const Vector& c, Vector& pd) {
 	int N  = int(size(c))-1;  // c0 + c1*x + c2*x^2, etc., so we have N+1 coefficients for a polynomial of degree N
-	int ND = int(size(pd)) - 1;   // pd[0] is the value of the polynomial at x, and pd[1..ND] are the derivatives at x
+	int ND = int(size(pd))-1; // pd[0] is the value of the polynomial at x, and pd[1..ND] are the derivatives at x
 
-	for (int i = 0; i < int(size(pd)); ++i) pd[i] = 0;
-	for (int i = N; i >= 0; --i) {
+	for (auto&& v : pd) v = Scalar(0);
+	pd[0] = c[N];
+	for (int i = N-1; i >= 0; --i) {
 		int nnd = (ND < (N - i) ? ND : N - i);
-		for (int j = nnd; j >= i; --j) {
+		for (int j = nnd; j >= 1; --j) {
 			pd[j] = pd[j] * x + pd[j - 1];
+			//std::cout << "pd[" << j << "] = " << pd[j] << std::endl;
 		}
 		pd[0] = pd[0] * x + c[i];
 	}
 	// after the first derivative, factorial constants come in
 	Scalar cnst(1);
-	for (int i = 2; i < ND; ++i) {
+	for (int i = 2; i <= ND; ++i) {
 		cnst *= i;
 		pd[i] *= cnst;
+		//std::cout << "pd[" << i << "] = " << pd[i] << std::endl;
 	}
 }
 
