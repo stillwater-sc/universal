@@ -50,7 +50,22 @@ void GeneratePositConversionTestCase(sw::unum::posit<nbits, es>& p, const sw::un
 	cout << "posit is   " << color_print(p) << " " << p << " " << hex_format(p) << endl;
 }
 
-#define MANUAL_TESTING 1
+template<size_t ibits, size_t pbits, size_t pes>
+int VerifyInteger2PositConversion(const std::string& tag, bool bReportIndividualTestCases) {
+	using namespace std;
+	using namespace sw::unum;
+	int nrOfFailedTests = 0;
+	posit<pbits, pes> p;
+	for (integer<ibits> i = min_int<ibits>(); i <= max_int<ibits>(); ++i) {
+		convert_i2p(i, p);
+		long diff = long(p) - long(i);
+		cout << setw(ibits) << i << " " << to_binary(i) << " -> " << color_print(p) << setw(ibits) << p << " diff is " << diff << std::endl;
+		if (diff != 0) ++nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
+
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main()
@@ -114,15 +129,21 @@ try {
 
 	return EXIT_SUCCESS;
 #else
-	std::cout << "Integer Arithmetic verfication" << std::endl;
+	std::cout << "Integer to posit conversion verfication" << std::endl;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<5, 5, 1>(tag, bReportIndividualTestCases), "integer<5> -> posit<5,1>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<5, 8, 1>(tag, bReportIndividualTestCases), "integer<5> -> posit<8,1>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<5, 12, 1>(tag, bReportIndividualTestCases), "integer<5> -> posit<12,1>", "=");
+
 
 #if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<16, 16, 1>(tag, bReportIndividualTestCases), "integer<16> -> posit<16,1>", "=");
 
 #endif // STRESS_TESTING
+
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif // MANUAL_TESTING

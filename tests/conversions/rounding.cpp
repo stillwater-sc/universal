@@ -29,6 +29,26 @@ namespace unum {
 }
 }
 
+
+////////////////// rounding rules
+
+/*
+Rounding rules:
+  ULP = Unit in the Last Place
+  G   = guard bit
+  R   = round bit
+  S   = sticky bit
+ ...ULP|GRS...
+  GRS | Action
+  0xx | round-down
+  100 | tie: round-up to even when ULP = 1, else round down
+  101 | round-up
+  110 | round-up
+  111 | round-up
+
+  sticky = OR(remaining bits)
+ */
+
 // generate a posit conversion test case
 // process to convert an integer to a posit is to
 // transform the integer into a 1.####eExp format
@@ -62,35 +82,6 @@ void GeneratePositConversionTestCase(sw::unum::posit<nbits, es>& p, const sw::un
 }
 
 
-////////////////// free form integer rounding operation /////////////////////////
-
-/*
-Rounding rules:
-  ULP = Unit in the Last Place
-  G   = guard bit
-  R   = round bit
-  S   = sticky bit
- ...ULP|GRS...
-  GRS | Action
-  0xx | round-down
-  100 | tie: round-up to even when ULP = 1, else round down
-  101 | round-up
-  110 | round-up
-  111 | round-up
-
-  sticky = OR(remaining bits)
- */
-
- // rounding to even
-template<size_t src_bits, size_t tgt_bits>
-void round(const sw::unum::integer<src_bits>& src, sw::unum::integer<tgt_bits>& tgt) {
-	tgt.bitcopy(src);
-	// NOTE:  use integer operators that work for unsigned values
-	if (1) {
-	}
-	else {
-	}
-}
 
 template<size_t nbits>
 void VerifyScale() {

@@ -86,9 +86,28 @@ void convert_p2i(const Posit& p, unsigned long long& v) {
 /////////////////////////////////////////////////////////////////////////
 // convert a Posit to an Integer
 template<typename Integer, typename Posit>
-void convert_i2p(const Integer& v, Posit& p) {
-	// find the scale of the incoming value
-	std::cout << "scale is : " << scale(v) << std::endl;
+void convert_i2p(const Integer& w, Posit& p) {
+	using namespace std;
+	using namespace sw::unum;
+
+	constexpr size_t ibits = w.nbits;
+
+	bool sign = w < 0;
+	bool isZero = w == 0;
+	bool isInf = false;
+	bool isNan = false;
+	long _scale = scale(w);
+	int msb = findMsb(w);
+	Integer w2 = sign ? twos_complement(w) : w;
+	bitblock<ibits> fraction_without_hidden_bit;
+	int fbit = ibits - 1;
+	for (int i = msb - 1; i >= 0; --i) {
+		fraction_without_hidden_bit.set(fbit, w2.at(i));
+		--fbit;
+	}
+	value<ibits> v;
+	v.set(sign, _scale, fraction_without_hidden_bit, isZero, isInf, isNan);
+	p = v;
 }
 
 // native type specializations
