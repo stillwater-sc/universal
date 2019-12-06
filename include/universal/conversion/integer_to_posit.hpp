@@ -87,7 +87,7 @@ void convert_p2i(const Posit& p, unsigned long long& v) {
 // convert a Posit to an Integer
 template<typename Integer, typename Posit>
 void convert_i2p(const Integer& v, Posit& p) {
-	std::cerr << "NOT IMPLEMENTED YET" << std::endl;
+	// find the scale of the incoming value
 }
 
 // native type specializations

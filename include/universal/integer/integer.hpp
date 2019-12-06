@@ -416,6 +416,7 @@ public:
 		*this = target;
 		return *this;
 	}
+	
 	// modifiers
 	inline void clear() { std::memset(&b, 0, nrBytes); }
 	inline void setzero() { clear(); }
@@ -460,10 +461,11 @@ public:
 			value >>= 8;
 		}
 	}
-	inline void assign(const std::string& txt) {
+	inline integer& assign(const std::string& txt) {
 		if (!parse(txt, *this)) {
 			std::cerr << "Unable to parse: " << txt << std::endl;
 		}
+		return *this;
 	}
 	// pure bit copy of source integer, no sign extension
 	template<size_t src_nbits>
@@ -476,10 +478,11 @@ public:
 		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 	}
 	// in-place one's complement
-	inline void flip() {
+	inline integer& flip() {
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			b[i] = ~b[i];
 		}
+		return *this;
 	}
 
 	// selectors
@@ -501,6 +504,35 @@ public:
 	inline uint8_t byte(unsigned int i) const {
 		if (i < nrBytes) return b[i];
 		throw integer_byte_index_out_of_bounds{};
+	}
+	inline long double scale() const {
+		integer<nbits> v(*this);
+		long double scale; // we need dynamic range as we are powers of 2, so just have one significant bit
+		if (sign()) {
+			v = twos_complement(v);
+			if (v == *this) {  // special case of 10000..... largest negative number in 2's complement encoding
+				// scale = -std::pow(2.0l, (long double)(nbits)); // horrible way to compute the scale
+				scale = -1;
+				for (size_t i = 0; i < nbits; ++i) {
+					scale *= 2;
+				}
+			}
+			else {
+				scale = -1;
+				while (v > 0) {
+					scale *= 2;
+					v >>= 1;
+				}
+			}
+		}
+		else {
+			scale = 1;
+			while (v > 0) {
+				scale *= 2;
+				v >>= 1;
+			}
+		}
+		return scale;
 	}
 
 protected:
