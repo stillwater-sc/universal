@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <regex>
 #include <vector>
+#include <map>
 
 #include "./exception.hpp"
 
@@ -95,6 +96,9 @@ inline void convert_unsigned(uint64_t v, integer<nbits>& result) {
 		v >>= 1;
 	}
 }
+
+template<size_t nbits>
+bool parse(const std::string& number, integer<nbits>& v);
 
 // div_t for integer<nbits>
 template<size_t nbits>
@@ -454,6 +458,11 @@ public:
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			b[i] = value & 0xFF;
 			value >>= 8;
+		}
+	}
+	inline void assign(const std::string& txt) {
+		if (!parse(txt, *this)) {
+			std::cerr << "Unable to parse: " << txt << std::endl;
 		}
 	}
 	// pure bit copy of source integer, no sign extension
@@ -994,27 +1003,91 @@ idiv_t<nbits> idiv(const integer<nbits>& _a, const integer<nbits>& _b) {
 
 // read a integer ASCII format and make a binary integer out of it
 template<size_t nbits>
-bool parse(std::string& txt, integer<nbits>& i) {
+bool parse(const std::string& number, integer<nbits>& value) {
 	bool bSuccess = false;
 	// check if the txt is an integer form: [0123456789]+
-	std::regex decimal_regex("[0123456789]+");
-	std::regex octal_regex("[0][01234567]+");
-	std::regex hex_regex("[0x][0123456789aAbBcCdDeEfF]");
-	if (std::regex_match(txt, decimal_regex)) {
-		std::cout << "found a decimal integer representation\n";
-
-		bSuccess = false; // TODO
-	}
-	else if (std::regex_match(txt, octal_regex)) {
+	std::regex decimal_regex("[0-9]+");
+	std::regex octal_regex("^0[1-7][0-7]*$");
+	std::regex hex_regex("0[xX][0-9a-fA-F']+");
+	// setup associative array to map chars to nibbles
+	std::map<char, int> hexit{
+		{ '0', 0 },
+		{ '1', 1 },
+		{ '2', 2 },
+		{ '3', 3 },
+		{ '4', 4 },
+		{ '5', 5 },
+		{ '6', 6 },
+		{ '7', 7 },
+		{ '8', 8 },
+		{ '9', 9 },
+		{ 'a', 10 },
+		{ 'b', 11 },
+		{ 'c', 12 },
+		{ 'd', 13 },
+		{ 'e', 14 },
+		{ 'f', 15 },
+		{ 'A', 10 },
+		{ 'B', 11 },
+		{ 'C', 12 },
+		{ 'D', 13 },
+		{ 'E', 14 },
+		{ 'F', 15 },
+	};
+	if (std::regex_match(number, octal_regex)) {
 		std::cout << "found an octal representation\n";
+		for (std::string::const_reverse_iterator r = number.rbegin();
+			r != number.rend();
+			++r) {
+			std::cout << "char = " << *r << std::endl;
+		}
+		bSuccess = false; // TODO
+	}
+	else if (std::regex_match(number, hex_regex)) {
+		std::cout << "found a hexadecimal representation\n";
+		// each char is a nibble
+		int byte;
+		int byteIndex = 0;
+		bool odd = false;
+		for (std::string::const_reverse_iterator r = number.rbegin();
+			r != number.rend();
+			++r) {
+			if (*r == '\'') {
+				// ignore
+			}
+			else if (*r == 'x' || *r == 'X') {
+				// we have reached the end of our parse
+				if (odd) {
+					// complete the most significant byte
+					value.setbyte(byteIndex, byte);
+				}
+				bSuccess = true;
+			}
+			else {
+				if (odd) {
+					byte += hexit.at(*r) << 4;
+					value.setbyte(byteIndex, byte);
+					++byteIndex;
+				}
+				else {
+					byte = hexit.at(*r);
+				}
+				odd = !odd;
+//				std::cout << "byte = " << std::hex << byte << " " << *r << std::endl;
+			}
+		}
+	}
+	else if (std::regex_match(number, decimal_regex)) {
+		std::cout << "found a decimal integer representation\n";
+		for (std::string::const_reverse_iterator r = number.rbegin();
+			r != number.rend();
+			++r) {
+			std::cout << "char = " << *r << std::endl;
+		}
 
 		bSuccess = false; // TODO
 	}
-	else if (std::regex_match(txt, hex_regex)) {
-		std::cout << "found a hexadecimal representation\n";
 
-		bSuccess = false;  // TODO
-	}
 	return bSuccess;
 }
 
@@ -1037,7 +1110,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits>& i) {
 
 // read an ASCII integer format
 template<size_t nbits>
-inline std::istream& operator>> (std::istream& istr, integer<nbits>& p) {
+inline std::istream& operator>>(std::istream& istr, integer<nbits>& p) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, p)) {
