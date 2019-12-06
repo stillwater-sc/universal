@@ -5,6 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
+// configure the posit arithmetic
+#include <universal/posit/posit>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/integer/integer.hpp>
@@ -59,6 +61,27 @@ void round(const sw::unum::integer<src_bits>& src, sw::unum::integer<tgt_bits>& 
 	}
 }
 
+template<size_t nbits>
+void VerifyScale() {
+	assert(nbits > 1); // we are representing numbers not booleans
+	int cntr = 0;
+	sw::unum::integer<nbits> i = 1;
+	while (cntr < nbits) {
+		std::cout << std::setw(20) << sw::unum::to_binary(i) << std::setw(20) << i << " scale is " << sw::unum::scale(i) << std::endl;
+		i *= 2;
+		++cntr;
+	}
+	// enumerate the negative integers
+	// i is zero at this point
+	i.set(nbits - 1, true); i >>= 1; i.set(nbits-1, true);
+	cntr = 1;
+	while (cntr < nbits) {
+		std::cout << std::setw(20) << sw::unum::to_binary(i) << std::setw(20) << i << " scale is " << sw::unum::scale(i) << std::endl;
+		i >>= 1; i.set(nbits-1, true);
+		++cntr;
+	}
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -93,6 +116,12 @@ try {
 	using int32_t = integer<32>;
 	// create the 5 rounding configurations for a 14bit integer
 	int32_t tie = 0x00001fff;
+
+	// using posit32_t = posit<32, 2>;
+
+	VerifyScale<16>();
+	VerifyScale<24>();
+	VerifyScale<32>();
 
 
 	cout << "done" << endl;

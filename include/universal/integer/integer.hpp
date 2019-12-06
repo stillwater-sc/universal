@@ -58,15 +58,35 @@ template<size_t nbits>
 inline integer<nbits> max_int() {
 	// two's complement max is 01111111
 	integer<nbits> mx;
-	mx.set_raw_bits(0x7F); // TODO
+	mx.set(nbits - 1, true);
+	mx.flip();
 	return mx;
 }
 template<size_t nbits>
 inline integer<nbits> min_int() {
 	// two's complement min is 10000000
 	integer<nbits> mn;
-	mn.set_raw_bits(0x80);  // TODO
+	mx.set(nbits - 1, true);
 	return mn;
+}
+
+// scale calculate the power of 2 exponent that would capture an approximation of a normalized real value
+template<size_t nbits>
+inline long scale(const integer<nbits>& i) {
+	integer<nbits> v(i);
+	if (i.sign()) { // special case handling
+		v = twos_complement(v);
+		if (v == i) {  // special case of 10000..... largest negative number in 2's complement encoding
+			return long(nbits - 1);
+		}
+	}
+	// calculate scale
+	long scale = 0;
+	while (v > 1) {
+		++scale;
+		v >>= 1;
+	}
+	return scale;
 }
 
 template<size_t nbits>
@@ -505,35 +525,6 @@ public:
 		if (i < nrBytes) return b[i];
 		throw integer_byte_index_out_of_bounds{};
 	}
-	inline long double scale() const {
-		integer<nbits> v(*this);
-		long double scale; // we need dynamic range as we are powers of 2, so just have one significant bit
-		if (sign()) {
-			v = twos_complement(v);
-			if (v == *this) {  // special case of 10000..... largest negative number in 2's complement encoding
-				// scale = -std::pow(2.0l, (long double)(nbits)); // horrible way to compute the scale
-				scale = -1;
-				for (size_t i = 0; i < nbits; ++i) {
-					scale *= 2;
-				}
-			}
-			else {
-				scale = -1;
-				while (v > 0) {
-					scale *= 2;
-					v >>= 1;
-				}
-			}
-		}
-		else {
-			scale = 1;
-			while (v > 0) {
-				scale *= 2;
-				v >>= 1;
-			}
-		}
-		return scale;
-	}
 
 protected:
 	// HELPER methods
@@ -912,7 +903,7 @@ std::string convert_to_decimal_string(const integer<nbits>& value) {
 	impl::decimal partial, multiplier;
 	partial.push_back(0); partial.sign = false;
 	multiplier.push_back(1); multiplier.sign = false;
-	// convert integer to decimal by multiplication by powers of 2
+	// convert integer to decimal by adding and doubling multipliers
 	for (unsigned i = 0; i < nbits; ++i) {
 		if (number.at(i)) {
 			impl::add(partial, multiplier);

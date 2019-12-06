@@ -88,6 +88,7 @@ void convert_p2i(const Posit& p, unsigned long long& v) {
 template<typename Integer, typename Posit>
 void convert_i2p(const Integer& v, Posit& p) {
 	// find the scale of the incoming value
+	std::cout << "scale is : " << scale(v) << std::endl;
 }
 
 // native type specializations

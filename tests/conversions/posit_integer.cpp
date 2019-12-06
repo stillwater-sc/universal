@@ -53,7 +53,7 @@ try {
 
 	// decimal
 	int128.assign("1234567890");
-	cout << to_binary(int128) << " " << int128 << " " << hexfloat << int128.scale() << defaultfloat << endl;
+	cout << to_binary(int128) << " " << int128 << " " << hexfloat << scale(int128) << defaultfloat << endl;
 
 	// octal
 	//	int128.assign("01234567");
@@ -61,17 +61,17 @@ try {
 
 	// hex
 	int128.assign("0x5555'5555");
-	cout << to_binary(int128) << " " << int128 << " " << hexfloat << int128.scale() << defaultfloat << endl;
+	cout << to_binary(int128) << " " << int128 << " " << hexfloat << scale(int128) << defaultfloat << endl;
 	int128.assign("0x5555'5555'5555'5555");
-	cout << to_binary(int128) << " " << int128 << " " << hexfloat << int128.scale() << defaultfloat << endl;
+	cout << to_binary(int128) << " " << int128 << " " << hexfloat << scale(int128) << defaultfloat << endl;
 	int128.assign("0x5555'5555'5555'5555'5555'5555'5555'5555");
-	cout << to_binary(int128) << " " << int128 << " " << hexfloat << int128.scale() << defaultfloat << endl;
+	cout << to_binary(int128) << " " << int128 << " " << hexfloat << scale(int128) << defaultfloat << endl;
 	int128.assign("0x8000'0000'0000'0000'0000'0000'0000'0000");
-	cout << to_binary(int128) << " " << int128 << " " << hexfloat << int128.scale() << defaultfloat << endl;
+	cout << to_binary(int128) << " " << int128 << " " << hexfloat << scale(int128) << defaultfloat << endl;
 	int128.assign("0xAAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA");
-	cout << to_binary(int128) << " " << int128 << " " << hexfloat << int128.scale() << defaultfloat << endl;
+	cout << to_binary(int128) << " " << int128 << " " << hexfloat << scale(int128) << defaultfloat << endl;
 	int128.assign("0xffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff");
-	cout << to_binary(int128) << " " << int128 << " " << hexfloat << int128.scale() << defaultfloat << endl;
+	cout << to_binary(int128) << " " << int128 << " " << hexfloat << scale(int128) << defaultfloat << endl;
 
 	convert_i2p(int128, p8);
 	cout << color_print(p8) << endl;
