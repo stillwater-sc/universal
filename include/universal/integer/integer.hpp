@@ -66,7 +66,7 @@ template<size_t nbits>
 inline integer<nbits> min_int() {
 	// two's complement min is 10000000
 	integer<nbits> mn;
-	mx.set(nbits - 1, true);
+	mn.set(nbits - 1, true);
 	return mn;
 }
 

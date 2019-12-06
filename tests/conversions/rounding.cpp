@@ -123,6 +123,8 @@ try {
 	VerifyScale<24>();
 	VerifyScale<32>();
 
+	cout << "minimum for integer<16> " << min_int<16>() << endl;
+	cout << "maximum for integer<16> " << max_int<16>() << endl;
 
 	cout << "done" << endl;
 
