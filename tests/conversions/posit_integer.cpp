@@ -10,7 +10,7 @@
 #include <universal/integer/integer>
 // configure the posit arithmetic class
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
+#include <universal/posit/posit.hpp>
 // conversion layer
 #include <universal/conversion/integer_to_posit.hpp>
 // is representable
@@ -18,10 +18,40 @@
 // test helpers
 #include "../test_helpers.hpp"
 
+// generate a posit conversion test case
+// process to convert an integer to a posit is to
+// transform the integer into a 1.####eExp format
+// find msb -> scale is msb
+// shift all the msb-1 bits into a fraction, making the msb the hidden bit
+// round the bits we have with respect to the scale of the number
+template<size_t nbits, size_t es, size_t ibits>
+void GeneratePositConversionTestCase(sw::unum::posit<nbits, es>& p, const sw::unum::integer<ibits>& w) {
+	using namespace std;
+	using namespace sw::unum;
+
+	value<ibits> v;
+
+	bool sign = w < 0;
+	bool isZero = w == 0;
+	bool isInf = false;
+	bool isNan = false;
+	long _scale = scale(w);
+	int msb = findMsb(w);
+	bitblock<ibits> fraction_without_hidden_bit;
+	int fbit = ibits - 1;
+	for (int i = msb - 1; i >= 0; --i) {
+		fraction_without_hidden_bit.set(fbit, w.at(i));
+		--fbit;
+	}
+	v.set(sign, _scale, fraction_without_hidden_bit, isZero, isInf, isNan);
+	cout << "integer is " << w << endl;
+	cout << "value is   " << v << endl;
+	p = v;
+	cout << "posit is   " << color_print(p) << " " << p << " " << hex_format(p) << endl;
+}
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
-
 
 int main()
 try {
@@ -73,8 +103,9 @@ try {
 	int128.assign("0xffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff");
 	cout << to_binary(int128) << " " << int128 << " " << hexfloat << scale(int128) << defaultfloat << endl;
 
-	convert_i2p(int128, p8);
-	cout << color_print(p8) << endl;
+	int128.assign("0x5555'5555'5555'5555'5555'5555'5555'5555");
+	posit<32, 5> p;
+	GeneratePositConversionTestCase(p, int128);
 
 
 	int256.assign("0xAAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA");

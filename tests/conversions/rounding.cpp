@@ -29,6 +29,37 @@ namespace unum {
 }
 }
 
+// generate a posit conversion test case
+// process to convert an integer to a posit is to
+// transform the integer into a 1.####eExp format
+// find msb -> scale is msb
+// shift all the msb-1 bits into a fraction, making the msb the hidden bit
+// round the bits we have with respect to the scale of the number
+template<size_t nbits, size_t es, size_t ibits>
+void GeneratePositConversionTestCase(sw::unum::posit<nbits, es>& p, const sw::unum::integer<ibits>& w) {
+	using namespace std;
+	using namespace sw::unum;
+
+	value<ibits> v;
+
+	bool sign = w < 0;
+	bool isZero = w == 0;
+	bool isInf = false;
+	bool isNan = false;
+	long _scale = scale(w);
+	int msb = findMsb(w);
+	bitblock<ibits> fraction_without_hidden_bit;
+	int fbit = ibits - 1;
+	for (int i = msb - 1; i >= 0; --i) {
+		fraction_without_hidden_bit.set(fbit, w.at(i));
+		--fbit;
+	}
+	v.set(sign, _scale, fraction_without_hidden_bit, isZero, isInf, isNan);
+	cout << "integer is " << w << endl;
+	cout << "value is   " << v << endl;
+	p = v;
+	cout << "posit is   " << color_print(p) << " " << p << " " << hex_format(p) << endl;
+}
 
 
 ////////////////// free form integer rounding operation /////////////////////////
@@ -113,18 +144,35 @@ try {
 	cout << to_binary(i15) << " " << i15 << endl;
 	cout << to_binary(i16) << " " << i16 << endl;
 
+	using posit8_t = posit<8, 0>;
+	posit8_t p8;
+	GeneratePositConversionTestCase(p8, i14);
+	GeneratePositConversionTestCase(p8, i15);
+	GeneratePositConversionTestCase(p8, i16);
+
+	using posit16_t = posit<16, 1>;
+	posit16_t p16;
+	GeneratePositConversionTestCase(p16, i14);
+	GeneratePositConversionTestCase(p16, i15);
+	GeneratePositConversionTestCase(p16, i16);
+
 	using int32_t = integer<32>;
 	// create the 5 rounding configurations for a 14bit integer
 	int32_t tie = 0x00001fff;
 
+	// if we take the posit around 1.0 then we know exactly that the scale is 0
+	// and the rounding-down and rounding-up cases are then easily constructed.
+	// say we have a posit<16,1>, it has 1 sign bit, 2 regime bits, 1 exponent
+	// bit, and 12 mantissa bits
+
 	// using posit32_t = posit<32, 2>;
 
-	VerifyScale<16>();
-	VerifyScale<24>();
-	VerifyScale<32>();
+	//VerifyScale<16>();
+	//VerifyScale<24>();
+	//VerifyScale<32>();
 
-	cout << "minimum for integer<16> " << min_int<16>() << endl;
-	cout << "maximum for integer<16> " << max_int<16>() << endl;
+	//cout << "minimum for integer<16> " << min_int<16>() << endl;
+	//cout << "maximum for integer<16> " << max_int<16>() << endl;
 
 	cout << "done" << endl;
 
