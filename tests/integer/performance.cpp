@@ -27,14 +27,6 @@ namespace unum {
 }
 }
 
-#include <typeinfo>
-template<typename Scalar>
-void GenerateGreaterThanTest(const Scalar& x, const Scalar& y, Scalar& z) {
-	using namespace sw::unum;
-	bool z = x > y;
-	std::cout << typeid(Scalar).name() << ": " << x << " > " << y << " = " << z << std::endl;
-}
-
 #include <chrono>
 template<size_t nbits>
 void ShiftPerformanceTest() {
