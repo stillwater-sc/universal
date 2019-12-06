@@ -234,24 +234,6 @@ namespace unum {
 }
 }
 
-#include <typeinfo>
-template<typename Scalar>
-void GenerateGreaterThanTest(const Scalar& x, const Scalar& y, Scalar& z) {
-	using namespace sw::unum;
-	bool z = x > y;
-	std::cout << typeid(Scalar).name() << ": " << x << " > " << y << " = " << z << std::endl;
-}
-
-// enumerate a couple ratios to test representability
-void ReproducibilityTestSuite() {
-	for (int i = 0; i < 30; i += 3) {
-		for (int j = 0; j < 70; j += 7) {
-			sw::unum::reportRepresentability(i, j);
-		}
-	}
-}
-
-
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
@@ -285,21 +267,32 @@ try {
 #else
 	std::cout << "Integer Logic Operator verfication" << std::endl;
 
-	ReportTestResult(VerifyEqual<12>("manual test", true), "integer<12>", "==");
-	ReportTestResult(VerifyNotEqual<12>("manual test", true), "integer<12>", "!=");
-	ReportTestResult(VerifyLessThan<12>("manual test", true), "integer<12>", "<");
-	ReportTestResult(VerifyLessOrEqualThan<12>("manual test", true), "integer<12>", "<=");
-	ReportTestResult(VerifyGreaterThan<12>("manual test", true), "integer<12>", ">");
-	ReportTestResult(VerifyGreaterOrEqualThan<12>("manual test", true), "integer<12>", ">=");
-
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<8>(tag, bReportIndividualTestCases), "integer<8>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<8>(tag, bReportIndividualTestCases), "integer<8>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<8>(tag, bReportIndividualTestCases), "integer<8>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<8>(tag, bReportIndividualTestCases), "integer<8>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<8>(tag, bReportIndividualTestCases), "integer<8>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<8>(tag, bReportIndividualTestCases), "integer<8>", ">=");
 
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<12>(tag, bReportIndividualTestCases), "integer<12>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<12>(tag, bReportIndividualTestCases), "integer<12>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<12>(tag, bReportIndividualTestCases), "integer<12>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<12>(tag, bReportIndividualTestCases), "integer<12>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<12>(tag, bReportIndividualTestCases), "integer<12>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<12>(tag, bReportIndividualTestCases), "integer<12>", ">=");
 
 #if STRESS_TESTING
-
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<16>(tag, bReportIndividualTestCases), "integer<16>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<16>(tag, bReportIndividualTestCases), "integer<16>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<16>(tag, bReportIndividualTestCases), "integer<16>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<16>(tag, bReportIndividualTestCases), "integer<16>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<16>(tag, bReportIndividualTestCases), "integer<16>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<16>(tag, bReportIndividualTestCases), "integer<16>", ">=");
 #endif // STRESS_TESTING
+
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif // MANUAL_TESTING
