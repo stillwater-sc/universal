@@ -893,10 +893,7 @@ void mul(decimal& lhs, const decimal& rhs) {
 
 } // namespace impl
 
-
-
-
-////////////////// INTEGER operators
+////////////////////////    INTEGER functions   /////////////////////////////////
 
 template<size_t nbits>
 inline integer<nbits> twos_complement(const integer<nbits>& value) {
@@ -947,6 +944,8 @@ inline signed findMsb(const integer<nbits>& v) {
 	}
 	return -1; // no significant bit found, all bits are zero
 }
+
+////////////////////////    INTEGER operators   /////////////////////////////////
 
 // divide integer<nbits> a and b and return result argument
 template<size_t nbits>
