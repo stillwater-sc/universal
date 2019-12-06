@@ -41,15 +41,28 @@ try {
 	//	int256.assign("0xAAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA");
 
 	int128_t int128;
-//	int128.assign("1234567890");
-//	int128.assign("01234567");
-	int128.assign("0xAAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA");
-
+	// decimal
+	int128.assign("1234567890");
 	cout << to_binary(int128) << " " << int128 << endl;
 
+	// octal
+	//	int128.assign("01234567");
+	//cout << to_binary(int128) << " " << int128 << endl;
+
+	// hex
+	int128.assign("0x5555'5555");
+	cout << to_binary(int128) << " " << int128 << endl;
+	int128.assign("0x5555'5555'5555'5555");
+	cout << to_binary(int128) << " " << int128 << endl;
 	int128.assign("0x5555'5555'5555'5555'5555'5555'5555'5555");
-
 	cout << to_binary(int128) << " " << int128 << endl;
+	int128.assign("0x8000'0000'0000'0000'0000'0000'0000'0000");
+	cout << to_binary(int128) << " " << int128 << endl;
+	int128.assign("0xAAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA'AAAA");
+	cout << to_binary(int128) << " " << int128 << endl;
+	int128.assign("0xffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff");
+	cout << to_binary(int128) << " " << int128 << endl;
+
 
 	cout << "done" << endl;
 

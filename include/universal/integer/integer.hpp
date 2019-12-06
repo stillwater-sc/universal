@@ -1005,12 +1005,13 @@ idiv_t<nbits> idiv(const integer<nbits>& _a, const integer<nbits>& _b) {
 template<size_t nbits>
 bool parse(const std::string& number, integer<nbits>& value) {
 	bool bSuccess = false;
+	value.clear();
 	// check if the txt is an integer form: [0123456789]+
 	std::regex decimal_regex("[0-9]+");
 	std::regex octal_regex("^0[1-7][0-7]*$");
 	std::regex hex_regex("0[xX][0-9a-fA-F']+");
 	// setup associative array to map chars to nibbles
-	std::map<char, int> hexit{
+	std::map<char, int> charLookup{
 		{ '0', 0 },
 		{ '1', 1 },
 		{ '2', 2 },
@@ -1044,7 +1045,7 @@ bool parse(const std::string& number, integer<nbits>& value) {
 		bSuccess = false; // TODO
 	}
 	else if (std::regex_match(number, hex_regex)) {
-		std::cout << "found a hexadecimal representation\n";
+		//std::cout << "found a hexadecimal representation\n";
 		// each char is a nibble
 		int byte;
 		int byteIndex = 0;
@@ -1065,27 +1066,28 @@ bool parse(const std::string& number, integer<nbits>& value) {
 			}
 			else {
 				if (odd) {
-					byte += hexit.at(*r) << 4;
+					byte += charLookup.at(*r) << 4;
 					value.setbyte(byteIndex, byte);
 					++byteIndex;
 				}
 				else {
-					byte = hexit.at(*r);
+					byte = charLookup.at(*r);
 				}
 				odd = !odd;
-//				std::cout << "byte = " << std::hex << byte << " " << *r << std::endl;
 			}
 		}
 	}
 	else if (std::regex_match(number, decimal_regex)) {
-		std::cout << "found a decimal integer representation\n";
+		//std::cout << "found a decimal integer representation\n";
+		integer<nbits> scale = 1;
 		for (std::string::const_reverse_iterator r = number.rbegin();
 			r != number.rend();
 			++r) {
-			std::cout << "char = " << *r << std::endl;
+			integer<nbits> digit = charLookup.at(*r);
+			value += scale * digit;
+			scale *= 10;
 		}
-
-		bSuccess = false; // TODO
+		bSuccess = true;
 	}
 
 	return bSuccess;
