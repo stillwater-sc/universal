@@ -1,12 +1,12 @@
 //  multi_word.cpp :  test suite for bitblock-based multi-word operators
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "universal/posit/exceptions.hpp"	// TODO: remove namespace polution
 #include "universal/bitblock/bitblock.hpp"
-// test helpers
-#include "../test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../utils/test_helpers.hpp"
 #include "bitblock_test_helpers.hpp"
 
 #if defined(_MSC_VER)

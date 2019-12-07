@@ -1,6 +1,6 @@
 //  quires.cpp : test suite for quires
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,7 +9,7 @@
 // type definitions for the important types, posit<> and quire<>
 #include <universal/posit/posit>
 // test support functions
-#include "../tests/quire_test_helpers.hpp"
+#include "../tests/utils/quire_test_helpers.hpp"
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0

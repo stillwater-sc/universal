@@ -1,6 +1,6 @@
 // arithmetic_add.cpp: functional tests for arithmetic add of values
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -15,8 +15,8 @@
 #include "universal/posit/exceptions.hpp"
 #include "universal/bitblock/bitblock.hpp"
 #include "universal/posit/value.hpp"
-// test helpers
-#include "../test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../utils/test_helpers.hpp"
 
 // (sign, scale, fraction) representation with sbits in scale and fbits in fraction
 template<size_t sbits, size_t fbits>

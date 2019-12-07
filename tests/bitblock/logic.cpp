@@ -1,12 +1,12 @@
 // logic.cpp : test suite for bitblock logic operators
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "universal/posit/exceptions.hpp"  // TODO: remove namespace pollution
 #include "universal/bitblock/bitblock.hpp"
-// test helpers
-#include "../tests/test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../utils/test_helpers.hpp"
 
 template<size_t nbits>
 int VerifyBitsetLogicLessThan() {

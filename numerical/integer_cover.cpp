@@ -1,11 +1,12 @@
 ﻿// integer_cover.cpp: covering the integers with a posit
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
-#include "../tests/test_helpers.hpp"
-#include "../tests/posit_test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../tests/utils/test_helpers.hpp"
+#include "../tests/utils/posit_test_helpers.hpp"
 
 /*
 When using a discretization scheme, for example, an Analog-to-Digital converter, 

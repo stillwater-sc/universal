@@ -1,6 +1,6 @@
 // conversion.cpp : functional tests for conversion operators to posit numbers
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -14,9 +14,9 @@
 #include "universal/posit/posit_decoded.hpp"
 #include "universal/posit/posit_functions.hpp"
 #include "universal/posit/posit_manipulators.hpp"
-// test helpers
-#include "../test_helpers.hpp"
-#include "../posit_test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../utils/test_helpers.hpp"
+#include "../utils/posit_test_helpers.hpp"
 
 template<size_t nbits, size_t es>
 void GenerateLogicPattern(double input, const sw::unum::posit<nbits, es>& presult, const sw::unum::posit<nbits+1, es>& pnext) {

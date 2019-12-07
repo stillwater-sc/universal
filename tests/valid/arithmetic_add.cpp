@@ -1,6 +1,6 @@
 // arithmetic_add.cpp: functional tests for valid addition
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -19,9 +19,9 @@
 #include "universal/posit/posit.hpp"
 #include "universal/valid/valid.hpp"
 #include "universal/valid/valid_manipulators.hpp"
-// test helpers
-#include "../tests/test_helpers.hpp"
-#include "../tests/valid_test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../utils/test_helpers.hpp"
+#include "../utils/valid_test_helpers.hpp"
 
 
 // generate specific test case that you can trace with the trace conditions in posit.h

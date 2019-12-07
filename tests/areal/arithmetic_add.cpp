@@ -10,8 +10,8 @@
 #include "universal/bitblock/bitblock.hpp"
 #include "universal/posit/bit_functions.hpp"
 #include "universal/areal/areal.hpp"
-// test helpers
-#include "../test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../utils/test_helpers.hpp"
 #include "areal_test_helpers.hpp"
 
 // generate specific test case that you can trace with the trace conditions in areal.hpp
