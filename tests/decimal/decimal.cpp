@@ -1,14 +1,14 @@
 //  decimal.cpp : test suite for abitrary precision decimal integers
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
 #include <universal/decimal/decimal.hpp>
 #include <universal/decimal/numeric_limits.hpp>
-// test helpers
-#include "../test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../utils/test_helpers.hpp"
 
 namespace sw {
 	namespace unum {
@@ -97,6 +97,27 @@ namespace sw {
 					}
 					else {
 						// if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "mul", d1, d2, dref, ref);
+					}
+				}
+			}
+			return nrOfFailedTests;
+		}
+
+		// verification of division
+		int VerifyDivision(std::string tag, long ub, bool bReportIndividualTestCases) {
+			int nrOfFailedTests = 0;
+			for (long i = -ub; i <= ub; ++i) {
+				decimal d1 = i;
+				for (long j = -ub; j <= ub; ++j) {
+					decimal d2 = j;
+					long ref = i / j;
+					decimal dref = d1 / d2;
+					if (dref != ref) {
+						++nrOfFailedTests;
+						if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "div", d1, d2, dref, ref);
+					}
+					else {
+						// if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "div", d1, d2, dref, ref);
 					}
 				}
 			}
@@ -237,10 +258,11 @@ try {
 
 #ifdef STRESS_TESTING
 
-	long rangeBound = 500;
+	long rangeBound = (1 << 9);
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
+	//nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
 
 #endif // STRESS_TESTING
 

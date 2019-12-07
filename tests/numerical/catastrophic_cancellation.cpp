@@ -1,12 +1,13 @@
 ﻿// catastrophic_cancellation.cpp: examples of catastrophic cancellation
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
 #include "universal/posit/posit"
-#include "../tests/test_helpers.hpp"
-#include "../tests/posit_test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../tests/utils/test_helpers.hpp"
+#include "../tests/utils/posit_test_helpers.hpp"
 
 // example of catastrophic cancellation if the number representation doesn't have enough precision bits
 template<typename Scalar>

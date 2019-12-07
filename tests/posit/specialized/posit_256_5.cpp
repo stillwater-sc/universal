@@ -1,6 +1,6 @@
 // posit_256_5.cpp: Functionality tests for fast specialized 256-bit posit<256,5>
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -11,8 +11,9 @@
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/posit/posit>
-#include "../../test_helpers.hpp"
-#include "../../posit_test_randoms.hpp"
+// test helpers, such as, ReportTestResults
+#include "../../utils/test_helpers.hpp"
+#include "../../utils/posit_test_randoms.hpp"
 
 /*
 Standard posits with nbits = 256 have 5 exponent bits.

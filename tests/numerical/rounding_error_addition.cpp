@@ -1,10 +1,12 @@
 ﻿// rounding_error_addition.cpp: rounding error comparision for addition
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
-#include "../tests/posit_test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../tests/utils/test_helpers.hpp"
+#include "../tests/utils/posit_test_helpers.hpp"
 
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
 template<size_t nbits, size_t es>

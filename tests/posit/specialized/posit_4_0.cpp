@@ -1,6 +1,6 @@
 // posit_4_0.cpp: Functionality tests for specialized 4-bit posits based on look-up tables
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -10,8 +10,9 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
-#include "../../test_helpers.hpp"
-#include "../../posit_test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../../utils/test_helpers.hpp"
+#include "../../utils/posit_test_helpers.hpp"
 
 /*
  posits with nbits = 4 have no exponent bits, i.e. es = 0.

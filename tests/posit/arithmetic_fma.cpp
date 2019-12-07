@@ -1,6 +1,6 @@
 // arithmetic_fma.cpp: functional tests for fused-multiply-add
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>	// uint8_t, etc.
@@ -13,9 +13,9 @@
 #include "universal/posit/posit.hpp"
 // posit type manipulators such as pretty printers
 #include "universal/posit/posit_manipulators.hpp"
-// test helpers
-#include "../test_helpers.hpp"
-#include "../posit_test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../utils/test_helpers.hpp"
+#include "../utils/posit_math_helpers.hpp"
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_sub

@@ -13,8 +13,8 @@
 #include <universal/integer/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-// test helpers
-#include "../test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../utils/test_helpers.hpp"
 
 /*
    The goal of the arbitrary integers is to provide a constrained big integer type

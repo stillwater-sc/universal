@@ -4,8 +4,9 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
-#include "../tests/test_helpers.hpp"
-#include "../tests/posit_test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../tests/utils/test_helpers.hpp"
+#include "../tests/utils/posit_test_helpers.hpp"
 
 /*
 floating point arithmetic:

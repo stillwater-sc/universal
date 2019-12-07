@@ -5,8 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "universal/posit/exceptions.hpp"	// TODO: remove namespace polution
 #include "universal/bitblock/bitblock.hpp"
-// test helpers
-#include "../test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../utils/test_helpers.hpp"
 #include "bitblock_test_helpers.hpp"
 
 int Conversions() {

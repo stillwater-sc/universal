@@ -6,17 +6,19 @@
 # after cloning the repo 
 # $ git clone https://github.com/stillwater-sc/universal
 # $ cd universal
+# edit the program components below to enable specific components by changing OFF to ON
 # create a build directory
-# $ make build
-# edit the program components you want to build by setting them from OFF to ON
+# $ mkdir build
 # go into the build directory
 # $ cd build
-# and execute the script
+# and execute this script
 # $ sh ../build_generator.sh
 # build the software
 # $ make -j 16
 # test the software built
 # $ ctest -j 16
+
+# BUILD_CI_CHECK is special: when set to ON, it will enable all the components in the Universal library
 cmake \
 -DUSE_SSE3=OFF \
 -DUSE_AVX=OFF \
@@ -29,6 +31,7 @@ cmake \
  \
 -DBUILD_BITBLOCK=OFF \
 -DBUILD_REAL_NUMBER=OFF \
+-DBUILD_INTEGER_NUMBER=OFF \
 -DBUILD_UNUM_TYPE_1=OFF \
 -DBUILD_UNUM_TYPE_2=OFF \
 -DBUILD_UNUM_TYPE_3_POSIT=OFF \

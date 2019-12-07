@@ -12,10 +12,10 @@
 #include "universal/posit/quire.hpp"
 #include "universal/posit/fdp.hpp"
 
-// test support functions
-#include "../test_helpers.hpp"
-#include "../posit_test_helpers.hpp"
-#include "../quire_test_helpers.hpp"
+// test helpers, such as, ReportTestResults
+#include "../utils/test_helpers.hpp"
+#include "../utils/posit_test_helpers.hpp"
+#include "../utils/quire_test_helpers.hpp"
 
 // if you want to enable ISSUE_45
 //#define ISSUE_45_DEBUG

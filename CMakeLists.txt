@@ -462,7 +462,7 @@ add_subdirectory("examples/dsp")
 endif(BUILD_APPLICATION_EXAMPLES)
 
 if(BUILD_NUMERICAL)
-add_subdirectory("numerical")
+add_subdirectory("tests/numerical")
 endif(BUILD_NUMERICAL)
 
 if(BUILD_FUNCTIONS)
