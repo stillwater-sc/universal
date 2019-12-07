@@ -330,6 +330,7 @@ public:
 	}
 	integer& operator++() {
 		*this += integer<nbits>(1);
+		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 	// decrement
@@ -340,6 +341,7 @@ public:
 	}
 	integer& operator--() {
 		*this -= integer<nbits>(1);
+		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 	// conversion operators
@@ -480,11 +482,15 @@ public:
 			b[i] = value & 0xFF;
 			value >>= 8;
 		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		b[MS_BYTE] = MS_BYTE_MASK & b[MS_BYTE];
 	}
 	inline integer& assign(const std::string& txt) {
 		if (!parse(txt, *this)) {
 			std::cerr << "Unable to parse: " << txt << std::endl;
 		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		b[MS_BYTE] = MS_BYTE_MASK & b[MS_BYTE];
 		return *this;
 	}
 	// pure bit copy of source integer, no sign extension
@@ -502,6 +508,7 @@ public:
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			b[i] = ~b[i];
 		}
+		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 

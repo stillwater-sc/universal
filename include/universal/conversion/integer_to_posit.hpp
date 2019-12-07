@@ -97,8 +97,8 @@ void convert_i2p(const Integer& w, Posit& p) {
 	bool isInf = false;
 	bool isNan = false;
 	long _scale = scale(w);
-	int msb = findMsb(w);
 	Integer w2 = sign ? twos_complement(w) : w;
+	int msb = findMsb(w2);
 	bitblock<ibits> fraction_without_hidden_bit;
 	int fbit = ibits - 1;
 	for (int i = msb - 1; i >= 0; --i) {
