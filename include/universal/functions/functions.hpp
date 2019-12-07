@@ -11,4 +11,5 @@
 
 // special functions
 #include "factorial.hpp"
+#include "binomial.hpp"
 #include "loss.hpp"

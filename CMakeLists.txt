@@ -62,11 +62,14 @@ option(C_API_LIB_PIC                     "Set to ON to compile C API library wit
 option(BUILD_BITBLOCK                    "Set to ON to build bitblock tests"                   OFF)
 option(BUILD_REAL_NUMBERS                "Set to ON to build real value tests"                 OFF)
 option(BUILD_INTEGER_NUMBERS             "Set to ON to build integer tests"                    OFF)
+option(BUILD_DECIMAL_NUMBERS             "Set to ON to build decimal tests"                    OFF)
 option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 tests"                OFF)
 option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 tests"                OFF)
 option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3 posit tests"          OFF)
 option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3 valid tests"          OFF)
 option(BUILD_APF                         "Set to ON to build arbitrary precision float tests"  OFF)
+# conversion test suites
+option(BUILD_CONVERSION_TESTS            "Set to ON to build conversion test suites"           OFF)
 # performance benchmarking
 option(BUILD_PERF_TESTS                  "Set to ON to build performance benchmarks"           OFF)
 option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"         OFF)
@@ -374,11 +377,14 @@ if(BUILD_CI_CHECK)
 	set(BUILD_BITBLOCK ON)
 	set(BUILD_REAL_NUMBERS ON)
 	set(BUILD_INTEGER_NUMBERS ON)
+	set(BUILD_DECIMAL_NUMBERS ON)
 	set(BUILD_UNUM_TYPE_1 ON)
 	set(BUILD_UNUM_TYPE_2 ON)
 	set(BUILD_UNUM_TYPE_3_POSIT ON)
 	set(BUILD_UNUM_TYPE_3_VALID ON)
 	set(BUILD_APF ON)
+	# build the conversion test suites
+	set(BUILD_CONVERSION_TESTS ON)
 	# build the performance suites
 	set(BUILD_PERF_TESTS ON)
 	# build the C API library
@@ -395,9 +401,12 @@ endif(BUILD_BITBLOCK)
 
 # Arbitrary integers tests
 if(BUILD_INTEGER_NUMBERS)
-add_subdirectory("tests/decimal")
 add_subdirectory("tests/integer")
 endif(BUILD_INTEGER_NUMBERS)
+
+if(BUILD_DECIMAL_NUMBERS)
+add_subdirectory("tests/decimal")
+endif(BUILD_DECIMAL_NUMBERS)
 
 # Arbitrary reals tests
 if(BUILD_REAL_NUMBERS)
@@ -424,6 +433,11 @@ endif(BUILD_UNUM_TYPE_3_VALID)
 if(BUILD_APF)
 add_subdirectory("tests/areal")
 endif(BUILD_APF)
+
+# conversion tests suites
+if(BUILD_CONVERSION_TESTS)
+add_subdirectory("tests/conversions")
+endif(BUILD_CONVERSION_TESTS)
 
 # performance benchmarks
 if(BUILD_PERF_TESTS)

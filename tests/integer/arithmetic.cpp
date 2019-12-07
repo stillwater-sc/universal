@@ -1,4 +1,4 @@
-//  integers.cpp : test suite for abitrary precision integers
+//  arithmetic.cpp : arithmetic test suite for abitrary precision integers
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -27,6 +27,7 @@ namespace unum {
 #define INTEGER_TABLE_WIDTH 20
 	template<size_t nbits>
 	void ReportBinaryArithmeticError(std::string test_case, std::string op, const integer<nbits>& lhs, const integer<nbits>& rhs, const integer<nbits>& pref, const integer<nbits>& presult) {
+		auto old_precision = std::cerr.precision(); 
 		std::cerr << test_case << " "
 			<< std::setprecision(20)
 			<< std::setw(INTEGER_TABLE_WIDTH) << lhs
@@ -36,7 +37,7 @@ namespace unum {
 			<< std::setw(INTEGER_TABLE_WIDTH) << pref << " instead it yielded "
 			<< std::setw(INTEGER_TABLE_WIDTH) << presult
 			<< " " << to_binary(pref) << " vs " << to_binary(presult)
-			<< std::setprecision(5)
+			<< std::setprecision(old_precision)
 			<< std::endl;
 	}
 
@@ -666,101 +667,6 @@ int check() {
 }
 }
 
-void TestSizeof() {
-	using namespace std;
-	using namespace sw::unum;
-
-	cout << endl << "TestSizeof" << endl;
-	bool pass = true;
-	using int8 = integer<8>;
-	using int64 = integer<64>;
-	using int128 = integer<128>;
-	using int1024 = integer<1024>;
-
-	int8 a;
-	int64 k;
-	int128 m;
-	int1024 o;
-
-	constexpr int WIDTH = 30;
-	cout << setw(WIDTH) << typeid(a).name() << "  size in bytes " << a.nrBytes << endl;
-	cout << setw(WIDTH) << typeid(k).name() << "  size in bytes " << k.nrBytes << endl;
-	cout << setw(WIDTH) << typeid(m).name() << "  size in bytes " << m.nrBytes << endl;
-	cout << setw(WIDTH) << typeid(o).name() << "  size in bytes " << o.nrBytes << endl;
-	if (a.nrBytes != sizeof(a)) pass = false;
-	if (k.nrBytes != sizeof(k)) pass = false;
-	if (m.nrBytes != sizeof(m)) pass = false;
-	if (o.nrBytes != sizeof(o)) pass = false;
-
-	cout << (pass ? "PASS" : "FAIL") << endl;
-}
-
-void TestConversion() {
-	using namespace std;
-	using namespace sw::unum;
-
-	cout << endl << "TestConversion" << endl;
-
-	integer<128> i1, i2, i3;
-
-	bool pass = true;
-	constexpr int iconst = 123456789;
-	i1 = iconst;
-	int64_t ll = int64_t(i1);
-	cout << "integer  " << i1 << endl;
-	if (iconst != ll) pass = false;
-	i2 = 1.23456789e8;
-	cout << "double   " << i2 << " TBD " << endl;
-	//i3.parse("123456789");
-
-	cout << (pass ? "PASS" : "FAIL") << endl;
-}
-
-void TestFindMsb() {
-	using namespace std;
-	using namespace sw::unum;
-
-	cout << endl << "TestFindMsb" << endl;
-	bool pass = true;
-	integer<32> a = 0xD5555555;
-	int golden_ref[] = { 31, 30, 28, 26, 24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 0, -1 };
-	for (int i = 0; i < int(sizeof(golden_ref)/sizeof(int)); ++i) {
-		int msb = findMsb(a);
-		cout << "msb of " << to_binary(a) << " is " << msb << endl;
-		if (msb >= 0) a.reset(msb);
-		if (msb != golden_ref[i]) pass = false;
-	}
-
-	cout << (pass ? "PASS" : "FAIL") << endl;
-}
-
-template<size_t nbits>
-void TestLessThan() {
-	using namespace std;
-	using namespace sw::unum;
-
-	cout << endl << "TestLessThen" << endl;
-	bool pass = true;
-	constexpr int NR_INTS = 1 << nbits;
-	integer<nbits> a, b;
-	int ia, ib;
-	for (int i = 0; i < NR_INTS; ++i) {
-		a.set_raw_bits(i);
-		ia = int(a);
-		for (int j = 0; j < NR_INTS; ++j) {
-			b.set_raw_bits(j);
-			ib = int(b);
-			if ((ia < ib) != (a < b)) {
-				cout << "FAIL : " << a << " " << b << " yielded " << (a < b ? "true" : "false") << endl;
-				pass = false;
-				i = NR_INTS;
-				break;
-			}
-		}
-	}
-	cout << (pass ? "PASS" : "FAIL") << endl;
-}
-
 void TestFastdiv() {
 	using namespace std;
 	using namespace sw::unum;
@@ -783,126 +689,6 @@ void TestFastdiv() {
 	fid::check();
 }
 
-#include <chrono>
-template<size_t nbits>
-void ShiftPerformanceTest() {
-	using namespace std;
-	using namespace std::chrono;
-
-	constexpr uint64_t NR_OPS = 1000000;
-
-	integer<nbits> a = 0xFFFFFFFF;
-	steady_clock::time_point begin = steady_clock::now();
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a >>= 8;
-		a <<= 8;
-	}
-	steady_clock::time_point end = steady_clock::now();
-	duration<double> time_span = duration_cast<duration<double>>(end - begin);;
-	double elapsed = time_span.count();
-	cout << "performance is " << double(NR_OPS) / elapsed << " integer<" << nbits << "> shifts/sec" << endl;
-}
-
-// do we need to fix the performance of the shift operator?
-void TestShiftOperatorPerformance() {
-	using namespace std;
-
-	cout << endl << "TestShiftOperatorPerformance" << endl;
-
-	ShiftPerformanceTest<16>();
-	ShiftPerformanceTest<32>();
-	ShiftPerformanceTest<64>();
-	ShiftPerformanceTest<128>();
-	ShiftPerformanceTest<1024>();
-	/*
-	performance of the serial implementation of the shift operators
-		performance is 1.99374e+07 integer<16> shifts / sec
-		performance is 8.44852e+06 integer<32> shifts / sec
-		performance is 3.85375e+06 integer<64> shifts / sec
-		performance is 1.77301e+06 integer<128> shifts / sec
-		performance is 219793 integer<1024> shifts / sec
-	*/
-}
-
-template<size_t nbits>
-void ArithmeticPerformanceTest() {
-	using namespace std;
-	using namespace std::chrono;
-
-	constexpr uint64_t NR_OPS = 1000000;
-
-	steady_clock::time_point begin, end;
-	duration<double> time_span;
-	double elapsed;
-
-	integer<nbits> a, b, c, d;
-	for (int i = 0; i < int(a.nrBytes); ++i) {
-		a.setbyte(i, rand());
-		b.setbyte(i, rand());
-	}
-	begin = steady_clock::now();
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a + b;
-		a = c - b;
-	}
-	end = steady_clock::now();
-	time_span = duration_cast<duration<double>>(end - begin);;
-	 elapsed = time_span.count();
-	cout << "performance is " << double(NR_OPS) / elapsed << " integer<" << nbits << "> additions/subtractions" << endl;
-
-	begin = steady_clock::now();
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a * b;
-		c.clear();
-		d = c;
-	}
-	end = steady_clock::now();
-	time_span = duration_cast<duration<double>>(end - begin);;
-	elapsed = time_span.count();
-	cout << "performance is " << double(NR_OPS) / elapsed << " integer<" << nbits << "> multiplications" << endl;
-
-	begin = steady_clock::now();
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a / b;
-		c.clear();
-		d = c;
-	}
-	end = steady_clock::now();
-	time_span = duration_cast<duration<double>>(end - begin);;
-	elapsed = time_span.count();
-	cout << "performance is " << double(NR_OPS) / elapsed << " integer<" << nbits << "> divisions" << endl;
-}
-
-void TestArithmeticOperatorPerformance() {
-	using namespace std;
-
-	cout << endl << "TestShiftOperatorPerformance" << endl;
-
-	ArithmeticPerformanceTest<16>();
-	ArithmeticPerformanceTest<32>();
-	ArithmeticPerformanceTest<64>();
-	ArithmeticPerformanceTest<128>();
-//	ArithmeticPerformanceTest<1024>();
-	/*
-		TestShiftOperatorPerformance
-		performance is 1.01249e+08 integer<16> additions/subtractions
-		performance is 1.45226e+06 integer<16> multiplications
-		performance is 3.05808e+07 integer<16> divisions
-		performance is 6.75147e+07 integer<32> additions/subtractions
-		performance is 366806 integer<32> multiplications
-		performance is 1.93706e+06 integer<32> divisions
-		performance is 2.11016e+07 integer<64> additions/subtractions
-		performance is 93139 integer<64> multiplications
-		performance is 4.24692e+07 integer<64> divisions
-		performance is 1.29312e+07 integer<128> additions/subtractions
-		performance is 23545.5 integer<128> multiplications
-		performance is 543714 integer<128> divisions
-		performance is 2.06385e+06 integer<1024> additions/subtractions
-		performance is 407.244 integer<1024> multiplications
-		performance is 2.58264e+06 integer<1024> divisions
-	*/
-}
-
 // ExamplePattern to check that short and integer<16> do exactly the same
 void ExamplePattern() {
 	short s = 0;
@@ -921,7 +707,7 @@ void ReproducibilityTestSuite() {
 }
 
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 std::string convert_to_string(const std::vector<char>& v) {
@@ -941,10 +727,6 @@ try {
 
 #if MANUAL_TESTING
 
-	TestSizeof();
-	TestConversion();
-	TestFindMsb();
-	TestLessThan<12>();
 //	TestShiftOperatorPerformance();
 //	TestArithmeticOperatorPerformance();
 //	TestFastdiv();

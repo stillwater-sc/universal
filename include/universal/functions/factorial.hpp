@@ -5,13 +5,11 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <tuple>
-
 namespace sw {
 namespace function {
 
-	// these factorials can take a Real type and thus have a very funky behavior
-	// TODO: do we ceil that incoming argument?
+	// these factorials can take a Real type and thus could have a very funky behavior
+	// TODO: do we ceil that incoming argument or test on integer properties?
 
 // factorial implemented using recursion. Should yield reasonable results even for Real types
 // as left-to-right evaluation starts with the smallest values first.

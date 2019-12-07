@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <regex>
 #include <vector>
+#include <map>
 
 #include "./exception.hpp"
 
@@ -57,15 +58,35 @@ template<size_t nbits>
 inline integer<nbits> max_int() {
 	// two's complement max is 01111111
 	integer<nbits> mx;
-	mx.set_raw_bits(0x7F); // TODO
+	mx.set(nbits - 1, true);
+	mx.flip();
 	return mx;
 }
 template<size_t nbits>
 inline integer<nbits> min_int() {
 	// two's complement min is 10000000
 	integer<nbits> mn;
-	mn.set_raw_bits(0x80);  // TODO
+	mn.set(nbits - 1, true);
 	return mn;
+}
+
+// scale calculate the power of 2 exponent that would capture an approximation of a normalized real value
+template<size_t nbits>
+inline long scale(const integer<nbits>& i) {
+	integer<nbits> v(i);
+	if (i.sign()) { // special case handling
+		v = twos_complement(v);
+		if (v == i) {  // special case of 10000..... largest negative number in 2's complement encoding
+			return long(nbits - 1);
+		}
+	}
+	// calculate scale
+	long scale = 0;
+	while (v > 1) {
+		++scale;
+		v >>= 1;
+	}
+	return scale;
 }
 
 template<size_t nbits>
@@ -95,6 +116,9 @@ inline void convert_unsigned(uint64_t v, integer<nbits>& result) {
 		v >>= 1;
 	}
 }
+
+template<size_t nbits>
+bool parse(const std::string& number, integer<nbits>& v);
 
 // div_t for integer<nbits>
 template<size_t nbits>
@@ -306,6 +330,7 @@ public:
 	}
 	integer& operator++() {
 		*this += integer<nbits>(1);
+		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 	// decrement
@@ -316,6 +341,7 @@ public:
 	}
 	integer& operator--() {
 		*this -= integer<nbits>(1);
+		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 	// conversion operators
@@ -412,6 +438,7 @@ public:
 		*this = target;
 		return *this;
 	}
+	
 	// modifiers
 	inline void clear() { std::memset(&b, 0, nrBytes); }
 	inline void setzero() { clear(); }
@@ -455,6 +482,16 @@ public:
 			b[i] = value & 0xFF;
 			value >>= 8;
 		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		b[MS_BYTE] = MS_BYTE_MASK & b[MS_BYTE];
+	}
+	inline integer& assign(const std::string& txt) {
+		if (!parse(txt, *this)) {
+			std::cerr << "Unable to parse: " << txt << std::endl;
+		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		b[MS_BYTE] = MS_BYTE_MASK & b[MS_BYTE];
+		return *this;
 	}
 	// pure bit copy of source integer, no sign extension
 	template<size_t src_nbits>
@@ -467,10 +504,12 @@ public:
 		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 	}
 	// in-place one's complement
-	inline void flip() {
+	inline integer& flip() {
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			b[i] = ~b[i];
 		}
+		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
+		return *this;
 	}
 
 	// selectors
@@ -852,10 +891,7 @@ void mul(decimal& lhs, const decimal& rhs) {
 
 } // namespace impl
 
-
-
-
-////////////////// INTEGER operators
+////////////////////////    INTEGER functions   /////////////////////////////////
 
 template<size_t nbits>
 inline integer<nbits> twos_complement(const integer<nbits>& value) {
@@ -874,7 +910,7 @@ std::string convert_to_decimal_string(const integer<nbits>& value) {
 	impl::decimal partial, multiplier;
 	partial.push_back(0); partial.sign = false;
 	multiplier.push_back(1); multiplier.sign = false;
-	// convert integer to decimal by multiplication by powers of 2
+	// convert integer to decimal by adding and doubling multipliers
 	for (unsigned i = 0; i < nbits; ++i) {
 		if (number.at(i)) {
 			impl::add(partial, multiplier);
@@ -906,6 +942,8 @@ inline signed findMsb(const integer<nbits>& v) {
 	}
 	return -1; // no significant bit found, all bits are zero
 }
+
+////////////////////////    INTEGER operators   /////////////////////////////////
 
 // divide integer<nbits> a and b and return result argument
 template<size_t nbits>
@@ -994,27 +1032,93 @@ idiv_t<nbits> idiv(const integer<nbits>& _a, const integer<nbits>& _b) {
 
 // read a integer ASCII format and make a binary integer out of it
 template<size_t nbits>
-bool parse(std::string& txt, integer<nbits>& i) {
+bool parse(const std::string& number, integer<nbits>& value) {
 	bool bSuccess = false;
+	value.clear();
 	// check if the txt is an integer form: [0123456789]+
-	std::regex decimal_regex("[0123456789]+");
-	std::regex octal_regex("[0][01234567]+");
-	std::regex hex_regex("[0x][0123456789aAbBcCdDeEfF]");
-	if (std::regex_match(txt, decimal_regex)) {
-		std::cout << "found a decimal integer representation\n";
-
-		bSuccess = false; // TODO
-	}
-	else if (std::regex_match(txt, octal_regex)) {
+	std::regex decimal_regex("[0-9]+");
+	std::regex octal_regex("^0[1-7][0-7]*$");
+	std::regex hex_regex("0[xX][0-9a-fA-F']+");
+	// setup associative array to map chars to nibbles
+	std::map<char, int> charLookup{
+		{ '0', 0 },
+		{ '1', 1 },
+		{ '2', 2 },
+		{ '3', 3 },
+		{ '4', 4 },
+		{ '5', 5 },
+		{ '6', 6 },
+		{ '7', 7 },
+		{ '8', 8 },
+		{ '9', 9 },
+		{ 'a', 10 },
+		{ 'b', 11 },
+		{ 'c', 12 },
+		{ 'd', 13 },
+		{ 'e', 14 },
+		{ 'f', 15 },
+		{ 'A', 10 },
+		{ 'B', 11 },
+		{ 'C', 12 },
+		{ 'D', 13 },
+		{ 'E', 14 },
+		{ 'F', 15 },
+	};
+	if (std::regex_match(number, octal_regex)) {
 		std::cout << "found an octal representation\n";
-
+		for (std::string::const_reverse_iterator r = number.rbegin();
+			r != number.rend();
+			++r) {
+			std::cout << "char = " << *r << std::endl;
+		}
 		bSuccess = false; // TODO
 	}
-	else if (std::regex_match(txt, hex_regex)) {
-		std::cout << "found a hexadecimal representation\n";
-
-		bSuccess = false;  // TODO
+	else if (std::regex_match(number, hex_regex)) {
+		//std::cout << "found a hexadecimal representation\n";
+		// each char is a nibble
+		int byte;
+		int byteIndex = 0;
+		bool odd = false;
+		for (std::string::const_reverse_iterator r = number.rbegin();
+			r != number.rend();
+			++r) {
+			if (*r == '\'') {
+				// ignore
+			}
+			else if (*r == 'x' || *r == 'X') {
+				// we have reached the end of our parse
+				if (odd) {
+					// complete the most significant byte
+					value.setbyte(byteIndex, byte);
+				}
+				bSuccess = true;
+			}
+			else {
+				if (odd) {
+					byte += charLookup.at(*r) << 4;
+					value.setbyte(byteIndex, byte);
+					++byteIndex;
+				}
+				else {
+					byte = charLookup.at(*r);
+				}
+				odd = !odd;
+			}
+		}
 	}
+	else if (std::regex_match(number, decimal_regex)) {
+		//std::cout << "found a decimal integer representation\n";
+		integer<nbits> scale = 1;
+		for (std::string::const_reverse_iterator r = number.rbegin();
+			r != number.rend();
+			++r) {
+			integer<nbits> digit = charLookup.at(*r);
+			value += scale * digit;
+			scale *= 10;
+		}
+		bSuccess = true;
+	}
+
 	return bSuccess;
 }
 
@@ -1037,7 +1141,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits>& i) {
 
 // read an ASCII integer format
 template<size_t nbits>
-inline std::istream& operator>> (std::istream& istr, integer<nbits>& p) {
+inline std::istream& operator>>(std::istream& istr, integer<nbits>& p) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, p)) {
