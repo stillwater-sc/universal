@@ -10,9 +10,9 @@
 #include <universal/integer/integer>
 // configure the posit arithmetic class
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit.hpp>
-// conversion layer
+#include <universal/posit/posit>
 #include <universal/conversion/integer_to_posit.hpp>
+
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 // test helpers, such as, ReportTestResults
@@ -62,8 +62,35 @@ int VerifyInteger2PositConversion(const std::string& tag, bool bReportIndividual
 	for (size_t pattern = 0; pattern < NR_INTEGERS; ++pattern) {
 		i.set_raw_bits(pattern);
 		convert_i2p(i, p);
+		// p = i; is what we want
 		long diff = long(p) - long(i);
 		cout << setw(ibits) << i << " " << to_binary(i) << " -> " << color_print(p) << setw(ibits) << p << " diff is " << diff << std::endl;
+		if (diff != 0) ++nrOfFailedTests;
+	}
+	return nrOfFailedTests;
+}
+
+template<size_t ibits, size_t pbits, size_t pes>
+int VerifyPosit2IntegerConversion(const std::string& tag, bool bReportIndividualTestCases) {
+	using namespace std;
+	using namespace sw::unum;
+	int nrOfFailedTests = 0;
+	posit<pbits, pes> p;
+	integer<ibits> i;
+	constexpr size_t NR_POSITS = (1 << pbits);
+	for (size_t pattern = 0; pattern < NR_POSITS; ++pattern) {
+		p.set_raw_bits(pattern);
+		long diff;
+		if (p.isnar()) {
+			i = 0;
+			diff = 0;
+		}
+		else {
+			convert_p2i(p, i);
+			// i = p;  this is what we want
+			diff = long(p) - long(i);
+		}
+		cout << setw(ibits) << i << " " << to_binary(i) << " <- " << color_print(p) << setw(12) << p << " diff is " << diff << std::endl;
 		if (diff != 0) ++nrOfFailedTests;
 	}
 	return nrOfFailedTests;
@@ -145,6 +172,9 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<5, 5, 1>(tag, bReportIndividualTestCases), "integer<5> -> posit<5,1>", "=");
 	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<5, 8, 1>(tag, bReportIndividualTestCases), "integer<5> -> posit<8,1>", "=");
 	nrOfFailedTestCases += ReportTestResult(VerifyInteger2PositConversion<5, 12, 1>(tag, bReportIndividualTestCases), "integer<5> -> posit<12,1>", "=");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyPosit2IntegerConversion<5, 5, 1>(tag, bReportIndividualTestCases), "posit<5,1> -> integer<5>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPosit2IntegerConversion<5, 5, 2>(tag, bReportIndividualTestCases), "posit<5,2> -> integer<5>", "=");
 
 	nrOfFailedTestCases = 0; // TODO: our test plan is not automated yet
 

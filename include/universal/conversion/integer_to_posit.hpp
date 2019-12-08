@@ -84,7 +84,7 @@ void convert_p2i(const Posit& p, unsigned long long& v) {
 }
 
 /////////////////////////////////////////////////////////////////////////
-// convert a Posit to an Integer
+// convert an Integer to a Posit
 template<typename Integer, typename Posit>
 void convert_i2p(const Integer& w, Posit& p) {
 	using namespace std;
