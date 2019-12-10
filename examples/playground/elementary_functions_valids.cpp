@@ -1,4 +1,4 @@
-// elementary_functions_valids.cpp: playgound to experiment with the elementary math functions on valids
+// efunc_valids.cpp: playgound to experiment with the elementary math functions on valids
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

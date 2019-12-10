@@ -1,4 +1,4 @@
-// elementary_functions_posits.cpp: playgound to experiment with the elementary math functions on posits
+// efunc_posits.cpp: playgound to experiment with the elementary functions on posits
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
