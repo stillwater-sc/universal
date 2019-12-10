@@ -1,4 +1,4 @@
-// elementary_functions_posits.cpp: playgound to experiment with the elementary math functions on posits
+// elementary_functions_valids.cpp: playgound to experiment with the elementary math functions on valids
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -6,20 +6,20 @@
 #include "common.hpp"
 #include <complex>
 
-// when you define POSIT_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
-//#define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_CONVERSION
-// enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
+// when you define VALID_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
+//#define VALID_VERBOSE_OUTPUT
+#define VALID_TRACE_CONVERSION
+// enable valid arithmetic exceptions
+#define VALID_THROW_ARITHMETIC_EXCEPTION 1
+#include <universal/valid/valid>
 
 int main(int argc, char** argv)
 try {
 	using namespace sw::unum;
 	bool bSuccess = true;
 
-	posit<32, 2> x(1.0), y(-1.0), p(0);
-	std::complex< posit<32, 2> > c(x,y),d;
+	valid<32, 2> x(1.0), y(-1.0), p(0);
+	std::complex< valid<32, 2> > c(x,y),d;
 
 	// sign and absolute value
 	bool s;
