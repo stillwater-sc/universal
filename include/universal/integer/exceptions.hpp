@@ -1,7 +1,7 @@
 #pragma once
-// exception.hpp: definition of integer exceptions
+// integer_exceptions.hpp: definition of integer exceptions
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <exception>
@@ -39,12 +39,17 @@
 namespace sw {
 namespace unum {
 
-	struct integer_divide_by_zero : public std::runtime_error {
-		integer_divide_by_zero() : std::runtime_error("integer division by zero") {}
-	};
-	struct integer_byte_index_out_of_bounds : public std::runtime_error {
-		integer_byte_index_out_of_bounds() : std::runtime_error("byte index out of bounds") {}
-	};
+// divide by zero arithmetic exception for integers
+struct integer_divide_by_zero : public std::runtime_error {
+	integer_divide_by_zero() : std::runtime_error("integer division by zero") {}
+};
+
+///////////////////////////////////////////////////////////////
+// internal implementation exceptions
+
+struct integer_byte_index_out_of_bounds : public std::runtime_error {
+	integer_byte_index_out_of_bounds() : std::runtime_error("byte index out of bounds") {}
+};
 
 } // namespace unum
 } // namespace sw

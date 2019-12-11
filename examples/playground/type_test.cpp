@@ -66,7 +66,7 @@ try {
     test<long>("long");
     test<long long>("long long");
 
-    test<unsigned char>("unsigned char");
+//    test<unsigned char>("unsigned char");
     test<unsigned short>("unsigned short");
     test<unsigned int>("unsigned int");
     test<unsigned long>("unsigned long");

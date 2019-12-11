@@ -12,7 +12,7 @@
 #include <vector>
 #include <map>
 
-#include "./exception.hpp"
+#include "./exceptions.hpp"
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -308,6 +308,42 @@ public:
 		float_assign(rhs);
 		return *this;
 	}
+
+#ifdef POSIT_CONCEPT_GENERALIZATION
+	// TODO: SFINAE to assure we only match a posit<nbits,es> concept
+	template<typename PositType>
+	integer& operator=(const PositType& rhs) {
+		// get the scale of the posit value
+		int scale = sw::unum::scale(rhs);
+		if (scale < 0) {
+			*this = 0;
+			return *this;
+		}
+		if (scale == 0) {
+			*this = 1;
+		}
+		else {
+			// gather all the fraction bits
+			// sw::unum::bitblock<p.fhbits> significant = sw::unum::significant<p.nbits, p.es, p.fbits>(p);
+			sw::unum::bitblock<rhs.fhbits> significant = sw::unum::significant<rhs.nbits, rhs.es, rhs.fbits>(rhs);
+			// the radix point is at fbits, to make an integer out of this
+			// we shift that radix point fbits to the right.
+			// that is equivalent to a scale of 2^fbits
+			this->clear();
+			int msb = (nbits < rhs.fbits + 1) ? nbits : rhs.fbits + 1;
+			for (int i = msb - 1; i >= 0; --i) {
+				this->set(i, significant[i]);
+			}
+			int shift = scale - rhs.fbits;  // if scale > fbits we need to shift left
+			*this <<= shift;
+			if (rhs.isneg()) {
+				this->flip();
+				*this += 1;
+			}
+		}
+		return *this;
+	}
+#endif
 
 	// prefix operators
 	integer operator-() const {

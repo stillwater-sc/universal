@@ -1,6 +1,6 @@
-// math_functions.cpp example showing the supported math functions
+// efunc_posits.cpp: playgound to experiment with the elementary functions on posits
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
@@ -18,27 +18,27 @@ try {
 	using namespace sw::unum;
 	bool bSuccess = true;
 
-	posit<32, 2> x(1.0), y(-1.0), p(0);
+	posit<32, 2> x(1.0), y(-1.0625), p(0);
 	std::complex< posit<32, 2> > c(x,y),d;
 
 	// sign and absolute value
 	bool s;
 	s = sign(x); std::cout << "Sign of " << x << " is " << s << '\n';
 	s = sign(y); std::cout << "Sign of " << y << " is " << s << '\n';
-	p =  abs(y); std::cout << " abs(" << y << ") = " << p << '\n';
-	p = fabs(y); std::cout << "fabs(" << y << ") = " << p << '\n';
+	p =  abs(y); std::cout << "   abs(" << y << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = fabs(y); std::cout << "  fabs(" << y << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
 
 	// truncation functions
-	x = 1.5;
-	p =  ceil(x); std::cout << " ceil(" << x << ") = " << p << '\n';
-	p = floor(x); std::cout << "floor(" << x << ") = " << p << '\n';
-	p = round(x); std::cout << "round(" << x << ") = " << p << '\n';
-	p = trunc(x); std::cout << "trunc(" << x << ") = " << p << '\n';
+	x = 1.50001;
+	p =  ceil(x); std::cout << " ceil(" << x << ")     = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = floor(x); std::cout << "floor(" << x << ")     = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = round(x); std::cout << "round(" << x << ")     = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p = trunc(x); std::cout << "trunc(" << x << ")     = " << std::setw(10) << p << " " << color_print(p) << '\n';
 
 	// complex functions
-	p = real(c); std::cout << "real(" << c << ") = " << p << '\n';
-	p = imag(c); std::cout << "imag(" << c << ") = " << p << '\n';
-	d = conj(c); std::cout << "conj(" << c << ") = " << d << '\n';
+	p =  real(c); std::cout << " real(" << c << ") = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =  imag(c); std::cout << " imag(" << c << ") = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	d =  conj(c); std::cout << " conj(" << c << ") = " << std::setw(10) << d << " " << color_print(d.real()) << "," << color_print(d.imag()) << '\n';
 	
 	// sqrt and inverse sqrt
 	x = m_pi_4;
@@ -46,12 +46,12 @@ try {
 	p = rsqrt(x); std::cout << "rsqrt(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
 
 	// trigonometric functions
-	p =  sin(x); std::cout << "  sin(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
-	p = asin(x); std::cout << " asin(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
-	p =  cos(x); std::cout << "  cos(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
-	p = acos(x); std::cout << " acos(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
-	p =  tan(x); std::cout << "  tan(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
-	p = atan(x); std::cout << " atan(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =   sin(x); std::cout << "  sin(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =  asin(x); std::cout << " asin(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =   cos(x); std::cout << "  cos(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =  acos(x); std::cout << " acos(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =   tan(x); std::cout << "  tan(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
+	p =  atan(x); std::cout << " atan(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
 
 	// hyperbolic functions
 	p =  sinh(x); std::cout << " sinh(" << x << ")    = " << std::setw(10) << p << " " << color_print(p) << '\n';
