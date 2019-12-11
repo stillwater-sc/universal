@@ -19,13 +19,13 @@ struct hasSerialize {
 	typedef char no[2];
 
 	// helper to determine if serialize is a function
-	template<typename T, T function>
+	template<typename U, U function>
 	struct reallyHas;
 
-	template<typename T> static yes& test(reallyHas<std::string(T::*)(), &T::serialize>* /*unused*/) {}
-	template<typename T> static yes& test(reallyHas<std::string(T::*)() const, &T::serialize>* /*unused*/) {}
+	template<typename S> static yes& test(reallyHas<std::string(S::*)(), &S::serialize>* /*unused*/) {return ' '; }
+	template<typename S> static yes& test(reallyHas<std::string(S::*)() const, &S::serialize>* /*unused*/) {return ' '; }
 
-	template<typename T> static no& test(...) {}
+	template<typename> static no& test(...) { return ' ';}
 
 	// constant used as return value for the test
 	static const bool value = sizeof(test<T>(0)) == sizeof(yes);
@@ -94,6 +94,9 @@ try {
 	// pedantic
 	sw::enable_if<true, int>::type t1; // type t1 is an int
 	sw::enable_if<hasSerialize<B>::value, int>::type t2; // t2 is an int
+	// to get rid of warnings in g++
+	t1 = t2 = 1;
+	cout << t1 << t2 << endl;
 	// enable_if<false, int>::type t3;  doesn't compile as enable_if<false, ...> doesn't have a type type
 	// enable_if<hasSerialize<A>::value, int>::type t4; doesn't compile as enable_if<false, ...> doesn't have a type type
 
