@@ -12,8 +12,7 @@
 #include <vector>
 #include <map>
 
-#include "./exception.hpp"
-#include <universal/bitblock/bitblock.hpp>  // just because you want to support PositType assignments
+#include "./exceptions.hpp"
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -310,7 +309,7 @@ public:
 		return *this;
 	}
 
-#ifdef PROPER_GENERALIZATION
+#ifdef POSIT_CONCEPT_GENERALIZATION
 	// TODO: SFINAE to assure we only match a posit<nbits,es> concept
 	template<typename PositType>
 	integer& operator=(const PositType& rhs) {

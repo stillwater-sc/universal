@@ -71,7 +71,7 @@ typedef __128bitdd double_double;
 
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 // Posits encode error conditions as NaR (Not a Real), propagating the error through arithmetic operations is preferred
-#include "exceptions.hpp"
+#include "./exceptions.hpp"
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 #include "../bitblock/bitblock.hpp"
 #include "bit_functions.hpp"
@@ -706,7 +706,7 @@ public:
        	return float_assign(rhs);
 	}
 
-#ifdef PROPER_GENERALIZATION
+#ifdef INTEGER_TYPE_CONCEPT_GENERALIZATION
 	// TODO: SFINAE to assure we only match an integer<nbits> concept
 	template<typename IntegerType>
 	posit& operator=(const IntegerType& rhs) {

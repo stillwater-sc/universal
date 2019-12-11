@@ -62,7 +62,7 @@ int VerifyInteger2PositConversion(const std::string& tag, bool bReportIndividual
 	for (size_t pattern = 0; pattern < NR_INTEGERS; ++pattern) {
 		i.set_raw_bits(pattern);
 		convert_i2p(i, p);
-		// p = i; is what we want
+		// p = i; we can't get this without an integer type concept
 		long diff = long(p) - long(i);
 		cout << setw(ibits) << i << " " << to_binary(i) << " -> " << color_print(p) << setw(ibits) << p << " diff is " << diff << std::endl;
 		if (diff != 0) ++nrOfFailedTests;
@@ -87,7 +87,7 @@ int VerifyPosit2IntegerConversion(const std::string& tag, bool bReportIndividual
 		}
 		else {
 			convert_p2i(p, i);
-			// i = p;  this is what we want
+			// i = p;  we can't get this without a posit type concept
 			diff = long(p) - long(i);
 		}
 		cout << setw(ibits) << i << " " << to_binary(i) << " <- " << color_print(p) << setw(12) << p << " diff is " << diff << std::endl;
