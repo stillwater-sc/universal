@@ -1,6 +1,6 @@
 // l1_fused_dot.cpp: example program showing a fused-dot product for error free linear algebra
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -68,8 +68,7 @@ try {
 
 	std::streamsize prec = cout.precision();
 	cout << setprecision(17);
-
-
+	
 	{
 		using IEEEType = float;
 		IEEEType a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
