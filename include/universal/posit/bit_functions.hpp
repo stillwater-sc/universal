@@ -1,7 +1,7 @@
 #pragma once
 // bit_functions.hpp: definitions of helper functions for bit operations on integers and floats
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <limits>
 #include <cmath>    // for frexpf/frexp/frexpl  float/double/long double fraction/exponent extraction
+#include <bitset>
 
 // This file contains functions that DO NOT use the posit type.
 // If you have helpers that use the posit type, add them to the file posit_manipulators.hpp
