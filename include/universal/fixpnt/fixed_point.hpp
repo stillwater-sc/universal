@@ -49,6 +49,8 @@ namespace unum {
 
 // forward references
 template<size_t nbits, size_t rbits> class fixpnt;
+template<size_t nbits, size_t rbits> struct fixpntdiv_t;
+template<size_t nbits, size_t rbits> fixpntdiv_t<nbits, rbits> fixpntdiv(const fixpnt<nbits, rbits>&, const fixpnt<nbits, rbits>&);
 
 // fixpntdiv_t for fixpnt<nbits,rbits> to capture quotient and remainder during long division
 template<size_t nbits, size_t rbits>
@@ -59,6 +61,25 @@ struct fixpntdiv_t {
 
 template<size_t nbits, size_t rbits>
 bool parse(const std::string& number, fixpnt<nbits, rbits>& v);
+
+// scale calculate the power of 2 exponent that would capture an approximation of a normalized real value
+template<size_t nbits, size_t rbits>
+inline long scale(const fixpnt<nbits, rbits>& i) {
+	fixpnt<nbits,rbits> v(i);
+	if (i.sign()) { // special case handling
+		v = twos_complement(v);
+		if (v == i) {  // special case of 10000..... largest negative number in 2's complement encoding
+			return long(nbits - 1);
+		}
+	}
+	// calculate scale
+	long scale = 0;
+	while (v > 1) {
+		++scale;
+		v >>= 1;
+	}
+	return scale;
+}
 
 // conversion helpers
 template<size_t nbits, size_t rbits>
@@ -305,7 +326,7 @@ public:
 	}
 	// increment
 	fixpnt operator++(int) {
-		fixpnt<nbits> tmp(*this);
+		fixpnt tmp(*this);
 		operator++();
 		return tmp;
 	}
@@ -341,7 +362,7 @@ public:
 
 	// arithmetic operators
 	fixpnt& operator+=(const fixpnt& rhs) {
-		fixpnt<nbits,rbits> sum;
+		fixpnt sum;
 		bool carry = false;
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			// cast up so we can test for overflow
@@ -936,7 +957,7 @@ void divide(const fixpnt<nbits, rbits>& a, const fixpnt<nbits, rbits>& b, fixpnt
 		std::cerr << "fixpnt_divide_by_zero\n";
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
 	}
-	idiv_t<nbits> divresult = idiv<nbits>(a, b);
+	fixpntdiv_t<nbits, rbits> divresult = fixpntdiv<nbits>(a, b);
 	quotient = divresult.quot;
 }
 
@@ -944,11 +965,11 @@ void divide(const fixpnt<nbits, rbits>& a, const fixpnt<nbits, rbits>& b, fixpnt
 template<size_t nbits, size_t rbits>
 void remainder(const fixpnt<nbits, rbits>& a, const fixpnt<nbits, rbits>& b, fixpnt<nbits, rbits>& remainder) {
 	if (b == fixpnt<nbits>(0)) {
-#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 		throw fixpnt_divide_by_zero{};
 #else
 		std::cerr << "fixpnt_divide_by_zero\n";
-#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+#endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
 	}
 	fixpntdiv_t<nbits, rbits> divresult = fixpntdiv<nbits>(a, b);
 	remainder = divresult.rem;
@@ -969,17 +990,17 @@ fixpntdiv_t<nbits, rbits> fixpntdiv(const fixpnt<nbits, rbits>& _a, const fixpnt
 	bool a_negative = _a.sign();
 	bool b_negative = _b.sign();
 	bool result_negative = (a_negative ^ b_negative);
-	fixpnt<nbits + 1> a; a.bitcopy(a_negative ? -_a : _a);
-	fixpnt<nbits + 1> b; b.bitcopy(b_negative ? -_b : _b);
-	idiv_t<nbits> divresult;
+	fixpnt<nbits + 1, rbits> a; a.bitcopy(a_negative ? -_a : _a);
+	fixpnt<nbits + 1, rbits> b; b.bitcopy(b_negative ? -_b : _b);
+	fixpntdiv_t<nbits, rbits> divresult;
 	if (a < b) {
 		divresult.rem = _a; // a % b = a when a / b = 0
 		return divresult; // a / b = 0 when b > a
 	}
 	// initialize the long division
-	fixpnt<nbits + 1> accumulator = a;
+	fixpnt<nbits + 1, rbits> accumulator = a;
 	// prepare the subtractand
-	fixpnt<nbits + 1> subtractand = b;
+	fixpnt<nbits + 1, rbits> subtractand = b;
 	int msb_b = findMsb(b);
 	int msb_a = findMsb(a);
 	int shift = msb_a - msb_b;
