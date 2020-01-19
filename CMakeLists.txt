@@ -378,6 +378,7 @@ if(BUILD_CI_CHECK)
 	set(BUILD_REAL_NUMBERS ON)
 	set(BUILD_INTEGER_NUMBERS ON)
 	set(BUILD_DECIMAL_NUMBERS ON)
+	set(BUILD_FIXPNT_NUMBERS ON)
 	set(BUILD_UNUM_TYPE_1 ON)
 	set(BUILD_UNUM_TYPE_2 ON)
 	set(BUILD_UNUM_TYPE_3_POSIT ON)
@@ -407,6 +408,11 @@ endif(BUILD_INTEGER_NUMBERS)
 if(BUILD_DECIMAL_NUMBERS)
 add_subdirectory("tests/decimal")
 endif(BUILD_DECIMAL_NUMBERS)
+
+# Arbitrary fixed-point tests
+if(BUILD_FIXPNT_NUMBERS)
+add_subdirectory("tests/fixpnt")
+endif(BUILD_FIXPNT_NUMBERS)
 
 # Arbitrary reals tests
 if(BUILD_REAL_NUMBERS)
