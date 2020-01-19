@@ -1,5 +1,5 @@
 ﻿#pragma once
-// integer_to_posit.hpp: conversion routines to take an integer<size> type into a posit<nbits,es> type
+// adapt_integer_and_posit.hpp: adapter functions to convert integer<size> type and posit<nbits,es> types
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

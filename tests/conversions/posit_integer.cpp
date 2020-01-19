@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 // enable conversion between posits and integers
-#include <universal/conversion/integer_to_posit.hpp>
+#include <universal/adapters/adapt_integer_and_posit.hpp>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/integer/integer>
@@ -65,7 +65,7 @@ int VerifyInteger2PositConversion(const std::string& tag, bool bReportIndividual
 		i.set_raw_bits(pattern);
 		p = i; 
 		// p = i requires ADAPTER_POSIT_AND_INTEGER to be set which is accomplished by
-		// #include <universal/conversion/integer_to_posit.hpp>
+		// #include <universal/adapters/adapt_integer_and_posit.hpp>
 		// we need to enhance this with an integer type concept
 		long diff = long(p) - long(i);
 		cout << setw(ibits) << i << " " << to_binary(i) << " -> " << color_print(p) << setw(ibits) << p << " diff is " << diff << std::endl;
@@ -91,7 +91,7 @@ int VerifyPosit2IntegerConversion(const std::string& tag, bool bReportIndividual
 		}
 		else {
 			// i = p requires ADAPTER_POSIT_AND_INTEGER to be set which is accomplished by
-			// #include <universal/conversion/integer_to_posit.hpp>
+			// #include <universal/adapters/adapt_integer_and_posit.hpp>
 			// we need to enhance this with an integer type concept	
 			diff = long(p) - long(i);
 		}
