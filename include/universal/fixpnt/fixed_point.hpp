@@ -433,7 +433,7 @@ public:
 			clear();
 			return *this;
 		}
-		fixpnt<nbits> target;
+		fixpnt target;
 		for (int i = nbits - 1; i >= int(shift); --i) {  // TODO: inefficient as it works at the bit level
 			target.set(i - shift, at(i));
 		}
@@ -451,7 +451,7 @@ public:
 			b[i / 8] = byte | mask;
 			return;
 		}
-		throw "fixpnt<nbits> bit index out of bounds";
+		throw "fixpnt bit index out of bounds";
 	}
 	inline void reset(unsigned int i) {
 		if (i < nbits) {
@@ -460,7 +460,7 @@ public:
 			b[i / 8] = byte & mask;
 			return;
 		}
-		throw "fixpnt<nbits> bit index out of bounds";
+		throw "fixpnt bit index out of bounds";
 	}
 	inline void set(unsigned i, bool v) {
 		if (i < nbits) {
@@ -471,7 +471,7 @@ public:
 			b[i / 8] = (byte & null) | mask;
 			return;
 		}
-		throw "fixpnt<nbits> bit index out of bounds";
+		throw "fixpnt bit index out of bounds";
 	}
 	inline void setbyte(unsigned i, uint8_t value) {
 		if (i < nrBytes) { b[i] = value; return; }
@@ -714,7 +714,7 @@ private:
 	friend signed findMsb(const fixpnt<nnbits, rrbits>& v);
 };
 
-// paired down implementation of a decimal type to generate decimal representations for fixpnt<nbits> types
+// paired down implementation of a decimal type to generate decimal representations for fixpnt<nbits,rbits> types
 namespace impl {
 	// Decimal representation as a set of decimal digits with sign used for creating decimal representations of the fixpnts
 class decimal : public std::vector<uint8_t> {
@@ -928,7 +928,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits>& value) {
 	return ss.str();
 }
 
-// findMsb takes an fixpnt<nbits> reference and returns the position of the most significant bit, -1 if v == 0
+// findMsb takes an fixpnt<nbits,rbits> reference and returns the position of the most significant bit, -1 if v == 0
 template<size_t nbits, size_t rbits>
 inline signed findMsb(const fixpnt<nbits, rbits>& v) {
 	for (signed i = v.nrBytes - 1; i >= 0; --i) {
@@ -947,7 +947,7 @@ inline signed findMsb(const fixpnt<nbits, rbits>& v) {
 
 ////////////////////////    INTEGER operators   /////////////////////////////////
 
-// divide fixpnt<nbits> a and b and return result argument
+// divide fixpnt<nbits,rbits> a and b and return result argument
 template<size_t nbits, size_t rbits>
 void divide(const fixpnt<nbits, rbits>& a, const fixpnt<nbits, rbits>& b, fixpnt<nbits, rbits>& quotient) {
 	if (b == fixpnt<nbits, rbits>(0)) {
@@ -961,10 +961,10 @@ void divide(const fixpnt<nbits, rbits>& a, const fixpnt<nbits, rbits>& b, fixpnt
 	quotient = divresult.quot;
 }
 
-// calculate remainder of fixpnt<nbits> a and b and return result argument
+// calculate remainder of fixpnt<nbits,rbits> a and b and return result argument
 template<size_t nbits, size_t rbits>
 void remainder(const fixpnt<nbits, rbits>& a, const fixpnt<nbits, rbits>& b, fixpnt<nbits, rbits>& remainder) {
-	if (b == fixpnt<nbits>(0)) {
+	if (b == fixpnt<nbits, rbits>(0)) {
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 		throw fixpnt_divide_by_zero{};
 #else
@@ -1110,11 +1110,11 @@ bool parse(const std::string& number, fixpnt<nbits, rbits>& value) {
 	}
 	else if (std::regex_match(number, decimal_regex)) {
 		//std::cout << "found a decimal fixpnt representation\n";
-		fixpnt<nbits> scale = 1;
+		fixpnt<nbits, rbits> scale = 1;
 		for (std::string::const_reverse_iterator r = number.rbegin();
 			r != number.rend();
 			++r) {
-			fixpnt<nbits> digit = charLookup.at(*r);
+			fixpnt<nbits, rbits> digit = charLookup.at(*r);
 			value += scale * digit;
 			scale *= 10;
 		}
@@ -1216,7 +1216,7 @@ inline bool operator>=(const fixpnt<nbits, rbits>& lhs, const fixpnt<nbits, rbit
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
 template<size_t nbits, size_t rbits>
 inline bool operator==(const fixpnt<nbits, rbits>& lhs, const long long rhs) {
-	return operator==(lhs, fixpnt<nbits>(rhs));
+	return operator==(lhs, fixpnt<nbits, rbits>(rhs));
 }
 template<size_t nbits, size_t rbits>
 inline bool operator!=(const fixpnt<nbits, rbits>& lhs, const long long rhs) {
@@ -1224,11 +1224,11 @@ inline bool operator!=(const fixpnt<nbits, rbits>& lhs, const long long rhs) {
 }
 template<size_t nbits, size_t rbits>
 inline bool operator< (const fixpnt<nbits, rbits>& lhs, const long long rhs) {
-	return operator<(lhs, fixpnt<nbits>(rhs));
+	return operator<(lhs, fixpnt<nbits, rbits>(rhs));
 }
 template<size_t nbits, size_t rbits>
 inline bool operator> (const fixpnt<nbits, rbits>& lhs, const long long rhs) {
-	return operator< (fixpnt<nbits>(rhs), lhs);
+	return operator< (fixpnt<nbits, rbits>(rhs), lhs);
 }
 template<size_t nbits, size_t rbits>
 inline bool operator<=(const fixpnt<nbits, rbits>& lhs, const long long rhs) {
@@ -1245,7 +1245,7 @@ inline bool operator>=(const fixpnt<nbits, rbits>& lhs, const long long rhs) {
 
 template<size_t nbits, size_t rbits>
 inline bool operator==(const long long lhs, const fixpnt<nbits, rbits>& rhs) {
-	return operator==(fixpnt<nbits>(lhs), rhs);
+	return operator==(fixpnt<nbits, rbits>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits>
 inline bool operator!=(const long long lhs, const fixpnt<nbits, rbits>& rhs) {
@@ -1253,7 +1253,7 @@ inline bool operator!=(const long long lhs, const fixpnt<nbits, rbits>& rhs) {
 }
 template<size_t nbits, size_t rbits>
 inline bool operator< (const long long lhs, const fixpnt<nbits, rbits>& rhs) {
-	return operator<(fixpnt<nbits>(lhs), rhs);
+	return operator<(fixpnt<nbits, rbits>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits>
 inline bool operator> (const long long lhs, const fixpnt<nbits, rbits>& rhs) {
@@ -1341,22 +1341,22 @@ inline fixpnt<nbits, rbits> operator%(const fixpnt<nbits, rbits>& lhs, const lon
 // BINARY ADDITION
 template<size_t nbits, size_t rbits>
 inline fixpnt<nbits, rbits> operator+(const long long lhs, const fixpnt<nbits, rbits>& rhs) {
-	return operator+(fixpnt<nbits>(lhs), rhs);
+	return operator+(fixpnt<nbits, rbits>(lhs), rhs);
 }
 // BINARY SUBTRACTION
 template<size_t nbits, size_t rbits>
 inline fixpnt<nbits, rbits> operator-(const long long lhs, const fixpnt<nbits, rbits>& rhs) {
-	return operator-(fixpnt<nbits>(lhs), rhs);
+	return operator-(fixpnt<nbits, rbits>(lhs), rhs);
 }
 // BINARY MULTIPLICATION
 template<size_t nbits, size_t rbits>
 inline fixpnt<nbits, rbits> operator*(const long long lhs, const fixpnt<nbits, rbits>& rhs) {
-	return operator*(fixpnt<nbits>(lhs), rhs);
+	return operator*(fixpnt<nbits, rbits>(lhs), rhs);
 }
 // BINARY DIVISION
 template<size_t nbits, size_t rbits>
 inline fixpnt<nbits, rbits> operator/(const long long lhs, const fixpnt<nbits, rbits>& rhs) {
-	return operator/(fixpnt<nbits>(lhs), rhs);
+	return operator/(fixpnt<nbits, rbits>(lhs), rhs);
 }
 // BINARY REMAINDER
 template<size_t nbits, size_t rbits>
