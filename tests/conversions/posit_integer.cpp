@@ -5,13 +5,15 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
+// enable conversion between posits and integers
+#include <universal/conversion/integer_to_posit.hpp>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/integer/integer>
 // configure the posit arithmetic class
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
-#include <universal/conversion/integer_to_posit.hpp>
+
 
 // is representable
 #include <universal/functions/isrepresentable.hpp>
@@ -61,8 +63,10 @@ int VerifyInteger2PositConversion(const std::string& tag, bool bReportIndividual
 	//for (integer<ibits> i = min_int<ibits>(); i <= max_int<ibits>(); ++i) {  // this doesn't work for signed integers
 	for (size_t pattern = 0; pattern < NR_INTEGERS; ++pattern) {
 		i.set_raw_bits(pattern);
-		convert_i2p(i, p);
-		// p = i; we can't get this without an integer type concept
+		p = i; 
+		// p = i requires ADAPTER_POSIT_AND_INTEGER to be set which is accomplished by
+		// #include <universal/conversion/integer_to_posit.hpp>
+		// we need to enhance this with an integer type concept
 		long diff = long(p) - long(i);
 		cout << setw(ibits) << i << " " << to_binary(i) << " -> " << color_print(p) << setw(ibits) << p << " diff is " << diff << std::endl;
 		if (diff != 0) ++nrOfFailedTests;
@@ -86,8 +90,9 @@ int VerifyPosit2IntegerConversion(const std::string& tag, bool bReportIndividual
 			diff = 0;
 		}
 		else {
-			convert_p2i(p, i);
-			// i = p;  we can't get this without a posit type concept
+			// i = p requires ADAPTER_POSIT_AND_INTEGER to be set which is accomplished by
+			// #include <universal/conversion/integer_to_posit.hpp>
+			// we need to enhance this with an integer type concept	
 			diff = long(p) - long(i);
 		}
 		cout << setw(ibits) << i << " " << to_binary(i) << " <- " << color_print(p) << setw(12) << p << " diff is " << diff << std::endl;

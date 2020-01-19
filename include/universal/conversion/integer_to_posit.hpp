@@ -1,10 +1,18 @@
-﻿// integer_to_posit.hpp: conversion routines to take an integer<size> type into a posit<nbits,es> type
+﻿#pragma once
+// integer_to_posit.hpp: conversion routines to take an integer<size> type into a posit<nbits,es> type
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include <universal/posit/posit>
-#include <universal/integer/integer>
+
+// include this adapter before the src/tgt types that you want to connect
+
+// if included, set the compilation flag that will enable the operator=(const TargetType&) in the SourceType.
+#ifndef ADAPTER_POSIT_AND_INTEGER
+#define ADAPTER_POSIT_AND_INTEGER 1
+#else
+#define ADAPTER_POSIT_AND_INTEGER 0
+#endif // ADAPTER_POSIT_AND_INTEGER
 
 namespace sw {
 namespace unum {
@@ -18,7 +26,7 @@ namespace unum {
 
 // convert a Posit to an Integer
 template<typename Integer, typename Posit>
-void convert_p2i(const Posit& p, Integer& v) {
+inline void convert_p2i(const Posit& p, Integer& v) {
 	// get the scale of the posit value
 	int scale = sw::unum::scale(p);
 	if (scale < 0) {
@@ -49,44 +57,10 @@ void convert_p2i(const Posit& p, Integer& v) {
 	}
 }
 
-// native type specializations
-template<typename Posit>
-void convert_p2i(const Posit& p, short& v) {
-	v = short(p);
-}
-template<typename Posit>
-void convert_p2i(const Posit& p, int& v) {
-	v = int(p);
-}
-template<typename Posit>
-void convert_p2i(const Posit& p, long& v) {
-	v = long(p);
-}
-template<typename Posit>
-void convert_p2i(const Posit& p, long long& v) {
-	v = (long long)(p);
-}
-template<typename Posit>
-void convert_p2i(const Posit& p, unsigned short& v) {
-	v = (unsigned short)(p);
-}
-template<typename Posit>
-void convert_p2i(const Posit& p, unsigned int& v) {
-	v = (unsigned int)(p);
-}
-template<typename Posit>
-void convert_p2i(const Posit& p, unsigned long& v) {
-	v = (unsigned long)(p);
-}
-template<typename Posit>
-void convert_p2i(const Posit& p, unsigned long long& v) {
-	v = (unsigned long long)(p);
-}
-
 /////////////////////////////////////////////////////////////////////////
 // convert an Integer to a Posit
 template<typename Integer, typename Posit>
-void convert_i2p(const Integer& w, Posit& p) {
+inline void convert_i2p(const Integer& w, Posit& p) {
 	using namespace std;
 	using namespace sw::unum;
 
@@ -108,40 +82,6 @@ void convert_i2p(const Integer& w, Posit& p) {
 	value<ibits> v;
 	v.set(sign, _scale, fraction_without_hidden_bit, isZero, isInf, isNan);
 	p = v;
-}
-
-// native type specializations
-template<typename Posit>
-void convert_i2p(short& v, Posit& p) {
-	v = short(p);
-}
-template<typename Posit>
-void convert_i2p(int& v, Posit& p) {
-	v = int(p);
-}
-template<typename Posit>
-void convert_i2p(long& v, Posit& p) {
-	v = long(p);
-}
-template<typename Posit>
-void convert_i2p(long long& v, Posit& p) {
-	v = (long long)(p);
-}
-template<typename Posit>
-void convert_i2p(unsigned short& v, Posit& p) {
-	v = (unsigned short)(p);
-}
-template<typename Posit>
-void convert_i2p(unsigned int& v, Posit& p) {
-	v = (unsigned int)(p);
-}
-template<typename Posit>
-void convert_i2p(unsigned long& v, Posit& p) {
-	v = (unsigned long)(p);
-}
-template<typename Posit>
-void convert_i2p(unsigned long long& v, Posit& p) {
-	v = (unsigned long long)(p);
 }
 
 } // namespace unum
