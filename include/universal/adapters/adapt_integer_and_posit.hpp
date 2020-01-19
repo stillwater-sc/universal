@@ -17,6 +17,14 @@
 namespace sw {
 namespace unum {
 
+// forward references
+template<size_t nbits> class bitblock;
+template<size_t nbits> class value;
+template<size_t nbits, size_t es> class posit;
+template<size_t nbits, size_t es> int scale(const posit<nbits, es>&);
+template<size_t nbits, size_t es, size_t fbits> bitblock<fbits+1> significant(const posit<nbits, es>&);
+template<size_t nbits> class integer;
+
 /*
   Why is the convert function not part of the Integer or Posit types?
   It would tightly couple the types, which we want to avoid.

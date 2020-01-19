@@ -3,9 +3,9 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
+#include <universal/adapters/adapt_integer_and_posit.hpp>
 #include <universal/posit/posit>
 #include <universal/integer/integer>
-#include <universal/conversion/integer_to_posit.hpp>
 
 // generate factorials in an Integer and a Posit number system to compare
 template<typename Integer, typename Posit>

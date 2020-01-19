@@ -117,15 +117,15 @@ try {
 
 #if MANUAL_TESTING
 
-	using int10_t = integer<10>;
-	using int11_t = integer<11>;
-	using int12_t = integer<12>;
-	using int13_t = integer<13>;
+	//using int10_t = integer<10>;
+	//using int11_t = integer<11>;
+	//using int12_t = integer<12>;
+	//using int13_t = integer<13>;
 	using int14_t = integer<14>;
 	using int15_t = integer<15>;
 	using int16_t = integer<16>;
-	using int17_t = integer<17>;
-	using int18_t = integer<18>;
+	//using int17_t = integer<17>;
+	//using int18_t = integer<18>;
 
 	int14_t i14 = 0x1fff;
 	int15_t i15 = 0x3fff;
@@ -147,9 +147,9 @@ try {
 	GeneratePositConversionTestCase(p16, i15);
 	GeneratePositConversionTestCase(p16, i16);
 
-	using int32_t = integer<32>;
 	// create the 5 rounding configurations for a 14bit integer
-	int32_t tie = 0x00001fff;
+	//using int32_t = integer<32>;
+	//int32_t tie = 0x00001fff;
 
 	// if we take the posit around 1.0 then we know exactly that the scale is 0
 	// and the rounding-down and rounding-up cases are then easily constructed.
