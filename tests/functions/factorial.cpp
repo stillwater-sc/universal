@@ -71,7 +71,7 @@ try {
 		constexpr size_t es = 2;
 		using Posit = posit<nbits, es>;
 		int columnWidth = 40;
-		GenerateFactorialTableComparison(upperbound, unsigned long long(1), posit<nbits,es>(1), columnWidth);
+		GenerateFactorialTableComparison(upperbound, (unsigned long long)(1), posit<nbits,es>(1), columnWidth);
  
 		   /*
 +---------------
@@ -109,7 +109,7 @@ unsigned __int64 and class sw::unum::posit<32,2>
 		constexpr size_t es = 2;
 		using Posit = posit<nbits, es>;
 		int columnWidth = 40;
-		GenerateFactorialTableComparison(upperbound, Integer(1), Posit(1), columnWidth);
+		GenerateFactorialTableComparison(upperbound, (unsigned long long)(1), posit<nbits,es>(1), columnWidth);
 		/*
 +---------------
 unsigned __int64 and class sw::unum::posit<64,2>
@@ -145,7 +145,7 @@ unsigned __int64 and class sw::unum::posit<64,2>
 		constexpr size_t es = 3;
 		using Posit = posit<nbits, es>;
 		int columnWidth = 40;
-		GenerateFactorialTableComparison(upperbound, Integer(1), Posit(1), columnWidth);
+		GenerateFactorialTableComparison(upperbound, integer<128>(1), posit<nbits,es>(1), columnWidth);
 		/*
 +---------------
 class sw::unum::integer<128> and class sw::unum::posit<64,3>
@@ -187,7 +187,7 @@ class sw::unum::integer<128> and class sw::unum::posit<64,3>
 		constexpr size_t es = 4;
 		using Posit = posit<nbits, es>;
 		int columnWidth = 40;
-		GenerateFactorialTableComparison(upperbound, Integer(1), Posit(1), columnWidth);
+		GenerateFactorialTableComparison(upperbound, integer<128>(1), posit<nbits,es>(1), columnWidth);
 		/*
 +---------------
 class sw::unum::integer<128> and class sw::unum::posit<128,4>

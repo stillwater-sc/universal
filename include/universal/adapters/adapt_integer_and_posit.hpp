@@ -4,6 +4,7 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
+#include <iostream>
 
 // include this adapter before the src/tgt types that you want to connect
 
