@@ -1,31 +1,9 @@
 #pragma once
 // sqrt.hpp: sqrt functions for posits
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-
-/*
-
-Mathematical 	C++ Symbol	Decimal Representation
-Expression
-pi			M_PI		3.14159265358979323846
-pi/2			M_PI_2		1.57079632679489661923
-pi/4			M_PI_4		0.785398163397448309616
-1/pi			M_1_PI		0.318309886183790671538
-2/pi			M_2_PI		0.636619772367581343076
-2/sqrt(pi)		M_2_SQRTPI	1.12837916709551257390
-sqrt(2)			M_SQRT2		1.41421356237309504880
-1/sqrt(2)		M_SQRT1_2	0.707106781186547524401
-e			M_E		2.71828182845904523536
-log_2(e)		M_LOG2E		1.44269504088896340736
-log_10(e)		M_LOG10E	0.434294481903251827651
-log_e(2)		M_LN2		0.693147180559945309417
-log_e(10)		M_LN10		2.30258509299404568402
-
-*/
-
 #include "sqrt_tables.hpp"
 
 namespace sw {
@@ -378,8 +356,8 @@ namespace sw {
 			result_fraction++;
 			if (!(result_fraction & 0x0007)) {
 				uint32_t shiftedFraction = result_fraction >> 1;
-				uint32_t negRem = (shiftedFraction * shiftedFraction) & 0x0003'FFFF;
-				if (negRem & 0x0002'0000) {
+				uint32_t negRem = (shiftedFraction * shiftedFraction) & 0x0003FFFF;  // 0x0003'FFFF;
+				if (negRem & 0x00020000) {
 					result_fraction |= 1;
 				}
 				else {
@@ -387,7 +365,7 @@ namespace sw {
 				}
 			}
 			// Strip off the hidden bit and round-to-nearest using last 4 bits.
-			result_fraction -= (0x0001'0000 >> shift);
+			result_fraction -= (0x00010000 >> shift);
 			bool bitNPlusOne = bool((result_fraction >> 3) & 0x1);
 			if (bitNPlusOne) {
 				if (((result_fraction >> 4) & 1) | (result_fraction & 7)) result_fraction += 0x0010;
@@ -418,27 +396,27 @@ namespace sw {
 			int32_t scale;
 			// Compute the square root; shiftZ is the power-of-2 scaling of the result.
 			// Decode regime and exponent; scale the input to be in the range 1 to 4:
-			if (raw & 0x4000'0000) {
+			if (raw & 0x40000000) {
 				scale = -2;
-				while (raw & 0x4000'0000) {
+				while (raw & 0x40000000) {
 					scale += 2;
-					raw = (raw << 1) & 0xFFFF'FFFF;
+					raw = (raw << 1) & 0xFFFFFFFF;
 				}
 			}
 			else {
 				scale = 0;
 				while (!(raw & 0x40000000)) {
 					scale -= 2;
-					raw = (raw << 1) & 0xFFFF'FFFF;
+					raw = (raw << 1) & 0xFFFFFFFF;
 				}
 			}
 
-			raw &= 0x3FFF'FFFF;
+			raw &= 0x3FFFFFFF;
 			uint32_t exp = (raw >> 28);
 			scale += (exp >> 1);
 			exp = (0x1 ^ (exp & 0x1));
-			raw &= 0x0FFF'FFFF;
-			uint32_t rhs_fraction = (raw | 0x1000'0000);
+			raw &= 0x0FFFFFFF;
+			uint32_t rhs_fraction = (raw | 0x10000000);
 
 			// Use table look-up of first 4 bits for piecewise linear approx. of 1/sqrt:
 			uint32_t index = ((rhs_fraction >> 24) & 0x000E) + exp;
@@ -448,7 +426,7 @@ namespace sw {
 			// Use Newton-Raphson refinement to get 33 bits of accuracy for 1/sqrt:
 			uint64_t eSqrR0 = (uint64_t)r0 * r0;
 			if (!exp) eSqrR0 <<= 1;
-			uint64_t sigma0 = 0xFFFF'FFFF & (0xFFFF'FFFF ^ ((eSqrR0 * (uint64_t)rhs_fraction) >> 20));
+			uint64_t sigma0 = 0xFFFFFFFF & (0xFFFFFFFF ^ ((eSqrR0 * (uint64_t)rhs_fraction) >> 20));
 			uint64_t recipSqrt = ((uint64_t)r0 << 20) + (((uint64_t)r0 * sigma0) >> 21);
 
 			uint64_t sqrSigma0 = ((sigma0 * sigma0) >> 35);
@@ -463,19 +441,19 @@ namespace sw {
 			uint32_t shift;
 			if (scale < 0) {
 				shift = (-1 - scale) >> 2;
-				raw = 0x2000'0000 >> shift;     // build up the raw bits of the result posit
+				raw = 0x20000000 >> shift;     // build up the raw bits of the result posit
 			}
 			else {
 				shift = scale >> 2;
-				raw = 0x7FFF'FFFF - (0x3FFF'FFFF >> shift);
+				raw = 0x7FFFFFFF - (0x3FFFFFFF >> shift);
 			}
 
 			// Trick for eliminating off-by-one cases that only uses one multiply:
 			result_fraction++;
 			if (!(result_fraction & 0x000F)) {
 				uint64_t shiftedFraction = result_fraction >> 1;
-				uint64_t negRem = (shiftedFraction * shiftedFraction) & 0x1'FFFF'FFFF;
-				if (negRem & 0x1'0000'0000) {
+				uint64_t negRem = (shiftedFraction * shiftedFraction) & 0x1FFFFFFFF; // 0x1'FFFF'FFFF;
+				if (negRem & 0x100000000) {  // 0x1'0000'0000 
 					result_fraction |= 1;
 				}
 				else {
@@ -483,7 +461,7 @@ namespace sw {
 				}
 			}
 			// Strip off the hidden bit and round-to-nearest using last shift+5 bits.
-			result_fraction &= 0xFFFF'FFFF;
+			result_fraction &= 0xFFFFFFFF;
 			uint32_t mask = (1 << (4 + shift));
 			if (mask & result_fraction) {
 				if (((mask - 1) & result_fraction) | ((mask << 1) & result_fraction)) result_fraction += (mask << 1);

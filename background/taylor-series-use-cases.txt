@@ -1,0 +1,13 @@
+Taylor Series are studied because polynomial functions are easy and if one could find a way to represent 
+complicated functions as series (infinite polynomials) then one can easily study the properties of difficult functions.
+
+Evaluating definite Integrals: Some functions have no antiderivative which can be expressed in 
+terms of familiar functions. This makes evaluating definite integrals of these functions difficult 
+because the Fundamental Theorem of Calculus cannot be used. If we have a polynomial representation 
+of a function, we can oftentimes use that to evaluate a definite integral.
+
+Understanding asymptotic behaviour: Sometimes, a Taylor series can tell us useful information about 
+how a function behaves in an important part of its domain.
+
+Understanding the growth of functions
+Solving differential equations

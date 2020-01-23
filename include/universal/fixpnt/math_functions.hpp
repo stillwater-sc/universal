@@ -1,5 +1,5 @@
 #pragma once
-// integer_manipulators.hpp: definition of manipulation functions for integer types
+// math_functions.hpp: definition of fixed-point mathematical functions
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

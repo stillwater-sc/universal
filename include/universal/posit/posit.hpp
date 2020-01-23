@@ -706,28 +706,12 @@ public:
        	return float_assign(rhs);
 	}
 
-#ifdef INTEGER_TYPE_CONCEPT_GENERALIZATION
+#ifdef ADAPTER_POSIT_AND_INTEGER
+	// INTEGER_TYPE_CONCEPT_GENERALIZATION
 	// TODO: SFINAE to assure we only match an integer<nbits> concept
 	template<typename IntegerType>
 	posit& operator=(const IntegerType& rhs) {
-		constexpr size_t ibits = rhs.nbits;
-
-		bool sign = rhs < 0;
-		bool isZero = rhs == 0;
-		bool isInf = false;
-		bool isNan = false;
-		long _scale = scale(rhs);
-		IntegerType w = sign ? twos_complement(rhs) : rhs;
-		int msb = findMsb(w);
-		bitblock<ibits> fraction_without_hidden_bit;
-		int fbit = ibits - 1;
-		for (int i = msb - 1; i >= 0; --i) {
-			fraction_without_hidden_bit.set(fbit, w.at(i));
-			--fbit;
-		}
-		value<ibits> v;
-		v.set(sign, _scale, fraction_without_hidden_bit, isZero, isInf, isNan);
-		*this = v;
+		convert_i2p(rhs, *this);
 		return *this;
 	}
 #endif
