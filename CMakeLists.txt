@@ -466,6 +466,8 @@ add_subdirectory("examples/stl")
 add_subdirectory("examples/blas")
 add_subdirectory("examples/dsp")
 add_subdirectory("examples/roots")
+add_subdirectory("examples/engineering")
+add_subdirectory("examples/science")
 endif(BUILD_APPLICATION_EXAMPLES)
 
 if(BUILD_NUMERICAL)
