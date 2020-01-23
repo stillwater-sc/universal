@@ -23,7 +23,7 @@ namespace sw {
 		static constexpr size_t ebits = es;
 		static constexpr size_t fbits = nbits - 3 - es;
 		static constexpr size_t fhbits = fbits + 1;
-		static constexpr uint32_t sign_mask = 0x8000'0000ul;
+		static constexpr uint32_t sign_mask = 0x80000000ul;  // 0x8000'0000ul;
 
 		posit() { _bits = 0; }
 		posit(const posit&) = default;

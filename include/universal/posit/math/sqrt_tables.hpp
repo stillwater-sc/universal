@@ -1,8 +1,7 @@
 #pragma once
-
 // sqrt_tables.hpp: specialized posit configurations to support efficient sqrt for small posits
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
