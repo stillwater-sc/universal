@@ -23,6 +23,23 @@
 namespace sw {
 namespace unum {
 
+// integer power function, for efficiency
+template<size_t nbits>
+integer<nbits> ipow(integer<nbits> base, integer<nbits> exp) {
+	integer<nbits> result = 1;
+	for (;;) {
+		if (exp.isodd()) {    // if (exp & 1)
+			result *= base;
+		}
+		exp >>= 1;
+		if (exp.iszero()) {   // if (!exp)
+			break;
+		}
+		base *= base;
+	}
+
+	return result;
+}
 
 }
 }
@@ -121,6 +138,16 @@ try {
 	TestConversion();
 	TestFindMsb();
 	ReproducibilityTestSuite();
+
+	using int1024 = integer<1024>;
+	int1024 a, b;
+
+	a = 1024;
+	b = 2;
+	cout << "1K ^ 2 = " << ipow(a, b) << " reference : " << 1024 * 1024 << endl;
+	a = 1024 * 1024 * 1024 ; // 1G
+	cout << "1G ^ 2 = " << ipow(a, b) << endl;
+	cout << "ref    = " << a * a << endl;
 
 	cout << "done" << endl;
 
