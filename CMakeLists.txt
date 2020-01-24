@@ -7,7 +7,8 @@
 # Ubuntu 16.04 LTS runs cmake 3.5.1
 # Ubuntu 18.04 LTS runs cmake 3.10.2
 # container runs cmake 3.7.1
-cmake_minimum_required(VERSION 3.5)
+# gcc5 container runs cmake 3.0.2
+cmake_minimum_required(VERSION 3.0)
 
 ####
 # Set project variables
@@ -138,8 +139,10 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	# include code quality flags
 	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} -Wall -Wpedantic -Wno-narrowing -Wno-deprecated")
 	# specific flags for debug and release builds
-	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3 -DNDEBUG")
-	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
+	#set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3 -DNDEBUG")
+	#set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
+
+	set(EXTRA_CXX_FLAGS "-std=c++14")
 elseif(MSVC)
 	# Streaming SIMD Extension (SSE) ISA
 	if (USE_SSE3)
@@ -191,7 +194,7 @@ elseif(MSVC)
 	# Also, the value of the __cplusplus macro is not affected by the /permissive- switch.
 	#set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
 	# for the moment turn off since we are getting: cl : Command line warning D9002: ignoring unknown option '/Zc:__cplusplus`
-	set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /std:c++14")
+	set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} /std:c++14")
 
 	# Optimization
 	# Option	Purpose
@@ -231,21 +234,24 @@ endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	# clear nonsensical defaults, like "-O3 -NDEBUG" for release
-	set(CMAKE_C_FLAGS           "")
-	set(CMAKE_C_FLAGS_RELEASE   "")
-	set(CMAKE_C_FLAGS_DEBUG     "")
-	set(CMAKE_CXX_FLAGS         "")
-	set(CMAKE_CXX_FLAGS_RELEASE "")
-	set(CMAKE_CXX_FLAGS_DEBUG   "")
+	#set(CMAKE_C_FLAGS           "")
+	#set(CMAKE_C_FLAGS_RELEASE   "")
+	#set(CMAKE_C_FLAGS_DEBUG     "")
+	#set(CMAKE_CXX_FLAGS         "")
+	#set(CMAKE_CXX_FLAGS_RELEASE "")
+	#set(CMAKE_CXX_FLAGS_DEBUG   "")
 endif()
 
 # bring in the flags set above
-set(CMAKE_C_FLAGS           "${CMAKE_CXX_FLAGS} ${EXTRA_C_FLAGS}")
-set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_CXX_FLAGS_RELEASE} ${EXTRA_C_FLAGS_RELEASE}")
-set(CMAKE_C_FLAGS_DEBUG     "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_C_FLAGS_DEBUG}")
-set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} ${EXTRA_C_FLAGS}")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${EXTRA_C_FLAGS_RELEASE}")
-set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_C_FLAGS_DEBUG}")
+set(EXTRA_CXX_FLAGS         "${EXTRA_CXX_FLAGS} ${EXTRA_C_FLAGS}")
+set(EXTRA_CXX_FLAGS_RELEASE "${EXTRA_CXX_FLAGS} ${EXTRA_C_FLAGS_RELEASE}")
+set(EXTRA_CXX_FLAGS_DEBUG   "${EXTRA_CXX_FLAGS} ${EXTRA_C_FLAGS_DEBUG}")
+set(CMAKE_C_FLAGS           "${CMAKE_C_FLAGS} ${EXTRA_C_FLAGS}")
+set(CMAKE_C_FLAGS_RELEASE   "${CMAKE_C_FLAGS_RELEASE} ${EXTRA_C_FLAGS_RELEASE}")
+set(CMAKE_C_FLAGS_DEBUG     "${CMAKE_C_FLAGS_DEBUG} ${EXTRA_C_FLAGS_DEBUG}")
+set(CMAKE_CXX_FLAGS         "${CMAKE_CXX_FLAGS} ${EXTRA_CXX_FLAGS}")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ${EXTRA_CXX_FLAGS_RELEASE}")
+set(CMAKE_CXX_FLAGS_DEBUG   "${CMAKE_CXX_FLAGS_DEBUG} ${EXTRA_CXX_FLAGS_DEBUG}")
 
 if(PROFILE AND (CMAKE_COMPILER_IS_GNUCXX OR MINGW OR
     CMAKE_CXX_COMPILER_ID MATCHES "Clang"))
@@ -264,6 +270,8 @@ endif()
 # universal/valid
 # universal/integer
 # universal/decimal
+# universal/fixpnt
+# universal/afloat
 include_directories("./include")
 
 ####

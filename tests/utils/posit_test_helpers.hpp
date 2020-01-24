@@ -359,7 +359,7 @@ namespace sw {
 
 			posit<nbits, es> p, presult;
 			// special cases in case we are clipped by the nbits > 20
-			long ref = 0x8000'0000;  // -2147483648
+			long ref = 0x80000000;  // -2147483648
 			presult = ref;
 			if (ref != presult) {
 				std::cout << tag << " FAIL long(" << ref << ") != long(" << presult << ") : reference = -2147483648" << std::endl;
@@ -439,7 +439,7 @@ namespace sw {
 
 			if (nbits > 24) {
 				// cycle from largest value down to 0 via positive regime
-				constexpr unsigned long upper_bound = 0xFFFF'FFFF;
+				constexpr unsigned long upper_bound = 0xFFFFFFFF;
 				p = upper_bound;
 				for (unsigned long i = upper_bound; i > upper_bound - (unsigned long)(NR_TEST_CASES); --i) {
 					unsigned long ref = (unsigned long)p;   // obtain the integer cast of this posit

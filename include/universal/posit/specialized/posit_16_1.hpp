@@ -1,7 +1,7 @@
 #pragma once
 // posit_16_1.hpp: specialized 16-bit posit using fast compute specialized for posit<16,1>
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -138,7 +138,7 @@ namespace sw {
 				(shiftRight>31) ? (rhs_fraction = 0) : (rhs_fraction >>= shiftRight); //frac32B >>= shiftRight
 				lhs_fraction += rhs_fraction;
 
-				bool rcarry = 0x8000'0000 & lhs_fraction; // first left bit
+				bool rcarry = 0x80000000 & lhs_fraction; // first left bit
 				if (rcarry) {
 					if (exp) ++m;
 					exp ^= 1;
@@ -211,7 +211,7 @@ namespace sw {
 				--m;
 				lhs_fraction <<= 2;
 			}
-			bool ecarry = bool (0x4000'0000 & lhs_fraction);
+			bool ecarry = bool (0x40000000 & lhs_fraction);
 			if (!ecarry) {
 				if (exp == 0) --m;
 				exp ^= 1;
@@ -261,7 +261,7 @@ namespace sw {
 				++m;
 				exp ^= 0x2;
 			}
-			bool rcarry = bool(result_fraction & 0x2000'0000);
+			bool rcarry = bool(result_fraction & 0x20000000);
 			if (rcarry) {
 				if (exp) m++;
 				exp ^= 0x1;
@@ -473,17 +473,17 @@ namespace sw {
 			bool sign = (rhs < 0);
 			uint32_t v = sign ? -rhs : rhs; // project to positve side of the projective reals
 			uint16_t raw = 0;
-			if (v > 0x0800'0000) { // v > 134,217,728
+			if (v > 0x08000000) { // v > 134,217,728
 				raw = 0x7FFFu;  // +-maxpos
 			}
-			else if (v > 0x02FF'FFFF) { // 50,331,647 < v < 134,217,728
+			else if (v > 0x02FFFFFF) { // 50,331,647 < v < 134,217,728
 				raw = 0x7FFEu;  // 0.5 of maxpos
 			}
 			else if (v < 2) {  // v == 0 or v == 1
 				raw = (v << 14); // generates 0x0000 if v is 0, or 0x4000 if 1
 			}
 			else {
-				uint32_t mask = 0x0200'0000;
+				uint32_t mask = 0x02000000;
 				int8_t scale = 25;
 				uint32_t fraction_bits = v;
 				while (!(fraction_bits & mask)) {
@@ -615,7 +615,7 @@ namespace sw {
 				bits = m<0 ? 0x0001 : 0x7FFF;  // minpos and maxpos
 			}
 			else {
-				fraction = (fraction & 0x3FFF'FFFF) >> (scale + 1); // remove both carry bits
+				fraction = (fraction & 0x3FFFFFFF) >> (scale + 1); // remove both carry bits
 				uint16_t final_fbits = uint16_t(fraction >> 16);
 				bool bitNPlusOne = false;
 				if (scale != 14) { 
@@ -687,7 +687,7 @@ namespace sw {
 				bits = m<0 ? 0x0001 : 0x7FFF;  // minpos and maxpos
 			}
 			else {
-				fraction = (fraction & 0x0FFF'FFFF) >> (scale - 1); // remove both carry bits
+				fraction = (fraction & 0x0FFFFFFF) >> (scale - 1); // remove both carry bits
 				uint16_t final_fbits = uint16_t(fraction >> 16);
 				bool bitNPlusOne = false;
 				if (scale != 14) {

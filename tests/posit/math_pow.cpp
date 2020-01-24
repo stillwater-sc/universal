@@ -4,6 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
+#include <cmath>  // standard C++ version of pow()
+
 // when you define POSIT_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_POW
@@ -34,9 +36,106 @@ void GenerateTestCase(Ty a, Ty b) {
 	std::cout << std::setprecision(5);
 }
 
+// integer power function, for efficiency
+int ipow(int base, int exp)
+{
+	int result = 1;
+	for (;;) {
+		if (exp & 1)
+			result *= base;
+		exp >>= 1;
+		if (!exp)
+			break;
+		base *= base;
+	}
+
+	return result;
+}
+
+// super fast ipow, courtesy of 
+// Orson Peters
+// github: orlp
+// location: Leiden, Netherlands 
+// email: orsonpeters@gmail.com
+int64_t ipow(int64_t base, uint8_t exp) {
+	static const uint8_t highest_bit_set[] = {
+		0, 1, 2, 2, 3, 3, 3, 3,
+		4, 4, 4, 4, 4, 4, 4, 4,
+		5, 5, 5, 5, 5, 5, 5, 5,
+		5, 5, 5, 5, 5, 5, 5, 5,
+		6, 6, 6, 6, 6, 6, 6, 6,
+		6, 6, 6, 6, 6, 6, 6, 6,
+		6, 6, 6, 6, 6, 6, 6, 6,
+		6, 6, 6, 6, 6, 6, 6, 255, // anything past 63 is a guaranteed overflow with base > 1
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+	};
+
+	uint64_t result = 1;
+
+	switch (highest_bit_set[exp]) {
+	case 255: // we use 255 as an overflow marker and return 0 on overflow/underflow
+		if (base == 1) {
+			return 1;
+		}
+
+		if (base == -1) {
+			return 1 - 2 * (exp & 1);
+		}
+
+		return 0;
+	case 6:
+		if (exp & 1) result *= base;
+		exp >>= 1;
+		base *= base;
+	case 5:
+		if (exp & 1) result *= base;
+		exp >>= 1;
+		base *= base;
+	case 4:
+		if (exp & 1) result *= base;
+		exp >>= 1;
+		base *= base;
+	case 3:
+		if (exp & 1) result *= base;
+		exp >>= 1;
+		base *= base;
+	case 2:
+		if (exp & 1) result *= base;
+		exp >>= 1;
+		base *= base;
+	case 1:
+		if (exp & 1) result *= base;
+	default:
+		return result;
+	}
+}
+
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
-
 
 int main(int argc, char** argv)
 try {
@@ -51,6 +150,15 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<16, 1, float>(4.0f, 2.0f);
+
+	int a = 2;
+	int b = 5;
+	cout << "2 ^ 32   = " << ipow(a, b) << endl;
+
+	uint64_t c = 1024;
+	uint8_t d = 2;
+	cout << "1024 ^ 2 = " << ipow(c, d) << endl;
+	cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << endl;
 
 #if GENERATE_POW_TABLES
 	GeneratePowTable<3, 0>();

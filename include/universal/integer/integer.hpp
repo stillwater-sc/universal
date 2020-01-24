@@ -529,6 +529,12 @@ public:
 		}
 		return true;
 	}
+	inline bool isodd() const {
+		return (b[0] & 0x01) ? true : false;
+	}
+	inline bool iseven() const {
+		return !isodd();
+	}
 	inline bool sign() const { return at(nbits - 1); }
 	inline bool at(unsigned int i) const {
 		if (i < nbits) {

@@ -13,7 +13,7 @@ RUN apt-get update && apt-get install -y build-essential apt-utils cmake \
 
 # make certain you have a good .dockerignore file installed so that this layer isn't ginormous
 COPY . /usr/src/universal
-# print contextual information of the container at this state for validation the process is solid
+# print contextual information of the container at this state for visual inspection
 RUN ls -la /usr/src/universal && cmake -version 
 
 # set up the cmake/make environment to issue the build commands
