@@ -21,6 +21,17 @@ RUN ls -la /usr/src/universal && cmake -version
 RUN mkdir build 
 WORKDIR /usr/src/universal/build
 RUN cmake -DBUILD_CI_CHECK=ON .. && make
+# 
+# Default build flags
+#   BUILD_CMD_LINE_TOOLS         :   ON
+#   BUILD_EDUCATION_EXAMPLES     :   ON
+#   BUILD_APPLICATION_EXAMPLES   :   ON
+#   BUILD_NUMERICAL              :   ON
+#   BUILD_FUNCTIONS              :   ON
+#   BUILD_PLAYGROUND             :   ON
+#
+# Just compile the C SHIM environment
+#RUN cmake -DBUILD_C_API_SHIM_LIB=ON -DBUILD_CMD_LINE_TOOLS=OFF -DBUILD_EDUCATION_EXAMPLES=OFF -DBUILD_APPLICATION_EXAMPLES=OFF -DBUILD_NUMERICAL=OFF -DBUILD_FUNCTIONS=OFF -DBUILD_PLAYGROUND=OFF .. && make
 
 # now build the actual code that will get functionality tested
 # BUILDER stage
