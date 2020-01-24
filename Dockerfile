@@ -3,26 +3,6 @@
 # docker build --target builder -t stillwater/universal:builder will just build a builder container
 # docker build --target release -t stillwater/universal:release will just build a release container
 
-# first some compatibility compilation runs with old, non-compliant compilers
-FROM gcc:5 as gcc5_compile_test
-MAINTAINER Theodore Omtzigt
-# create a cmake build environment
-RUN apt-get update && apt-get install -y build-essential apt-utils cmake \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
-
-# copy in the source tree and store at /usr/src/universal
-# make certain you have a good .dockerignore file installed so that this layer isn't ginormous
-COPY . /usr/src/universal
-# print contextual information of the container at this state for visual inspection
-RUN ls -la /usr/src/universal && cmake -version 
-
-# set up the cmake/make environment to issue the build commands
-RUN mkdir build 
-WORKDIR /usr/src/universal/build
-RUN cmake -DBUILD_CI_CHECK=ON .. && make
-
-# now build the actual code that will get functionality tested
 # BUILDER stage
 FROM gcc:7 as builder
 MAINTAINER Theodore Omtzigt
