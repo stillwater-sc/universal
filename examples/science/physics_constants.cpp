@@ -59,6 +59,12 @@ the ampere, and the kelvin were replaced. The definition of the mole was revised
 of redefining the SI base units, though the definitions of the SI derived units in terms of the base units remain the same.
  */
 
+std::string version_string(int a, int b, int c) {
+	std::ostringstream ss;
+	ss << a << '.' << b << '.' << c;
+	return ss.str();
+}
+
 std::string report_compiler_version() {
 #if defined(__clang__)
 	/* Clang/LLVM. ---------------------------------------------- */
