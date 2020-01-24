@@ -4,6 +4,7 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/posit/posit>
+#include <universal/integer/integer>
 
 /*
 The 2019 redefinition of the SI base units came into force on 20 May 2019,[1][2] the 144th anniversary 
@@ -29,10 +30,10 @@ were redefined by setting exact numerical values for
  speed of light, the BIPM's Consultative Committee for Units (CCU) recommended and the BIPM proposed that 
  four further constants of nature should be defined to have exact values. These are:
 
-The Planck constant h is exactly 6.62607015×10−34 joule-second (J⋅s).
-The elementary charge e is exactly 1.602176634×10−19 coulomb (C).
-The Boltzmann constant k is exactly 1.380649×10−23 joule per kelvin (J⋅K−1).
-The Avogadro constant NA is exactly 6.02214076×1023 reciprocal mole (mol−1).
+The Planck constant h is exactly 6.62607015×10^−34 joule-second (J⋅s).
+The elementary charge e is exactly 1.602176634×10^−19 coulomb (C).
+The Boltzmann constant k is exactly 1.380649×10^−23 joule per kelvin (J⋅K−1).
+The Avogadro constant NA is exactly 6.02214076×10^23 reciprocal mole (mol−1).
 
 These constants are described in the 2006 version of the SI manual but in that version, the latter three 
 are defined as "constants to be obtained by experiment" rather than as "defining constants". The redefinition 
@@ -57,6 +58,44 @@ As part of the redefinition, the international prototype kilogram was retired an
 the ampere, and the kelvin were replaced. The definition of the mole was revised. These changes have the effect 
 of redefining the SI base units, though the definitions of the SI derived units in terms of the base units remain the same.
  */
+
+std::string report_compiler_version() {
+#if defined(__clang__)
+	/* Clang/LLVM. ---------------------------------------------- */
+	return version_string(__clang_major__, __clang_minor__, __clang_patchlevel__);
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+	/* Intel ICC/ICPC. ------------------------------------------ */
+	return std::string("Intel Compiler");
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+	/* GNU GCC/G++. --------------------------------------------- */
+	return version_string(__GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+	/* Hewlett-Packard C/C++. ---------------------------------- */
+	return std::string("Hewlett-Packard C/C++ compiler");
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+	/* IBM XL C/C++. -------------------------------------------- */
+	return std::string("IBM XL C/C++");
+
+#elif defined(_MSC_VER)
+	/* Microsoft Visual Studio. --------------------------------- */
+	// Visual C++ compiler is 15.00.20706.01, the _MSC_FULL_VER will be 15002070601
+	char version[16];
+	sprintf(version, "%d", _MSC_FULL_VER);
+	return std::string("Microsoft Visual Studio C++ compiler version ") + std::string(version);
+
+#elif defined(__PGI)
+	/* Portland Group PGCC/PGCPP. ------------------------------- */
+	return std::string("Portland Group PGCC/PGCPP");
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+	/* Oracle Solaris Studio. ----------------------------------- */
+	return std::string("Oracle Solaris Studio");
+#endif
+}
 
 template<typename Scalar>
 void Represent(std::ostream& ostr, Scalar s, std::streamsize precision = 17) {
@@ -83,6 +122,45 @@ void Sample(std::ostream& ostr, long double constant) {
 	Represent(ostr << minmax_range< posit<64, 3> >() << " : ", posit<64, 3>(constant));
 }
 
+void CompareIEEEValues(std::ostream& ostr, long double constant) {
+	using namespace std;
+	using namespace sw::unum;
+
+	constexpr int f_prec = std::numeric_limits<float>::max_digits10;
+	constexpr int d_prec = std::numeric_limits<double>::max_digits10;
+	constexpr int q_prec = std::numeric_limits<long double>::max_digits10;
+
+	constexpr int f_fbits = std::numeric_limits<float>::digits - 1;
+	constexpr int d_fbits = std::numeric_limits<double>::digits - 1;
+	constexpr int q_fbits = std::numeric_limits<long double>::digits - 1;
+
+	float f = float(constant);
+	double d = double(constant);
+	long double q = constant;
+
+	value<f_fbits> vf(f);
+	value<d_fbits> vd(d);
+	value<q_fbits> vq(q);
+
+	int width = q_prec + 5;
+
+	std::streamsize old_precision = cout.precision();
+
+	ostr << report_compiler_version() << endl;
+	ostr << "float precision       : " << f_fbits << " bits\n";
+	ostr << "double precision      : " << d_fbits << " bits\n";
+	ostr << "long double precision : " << q_fbits << " bits\n";
+
+	cout << endl;
+
+//	ostr << "input value: " << setprecision(f_prec) << setw(width) << constant << endl;
+	ostr << "      float: " << setprecision(f_prec) << setw(width) << f << " " << components(vf) << endl;
+	ostr << "     double: " << setprecision(d_prec) << setw(width) << d << " " << components(vd) << endl;
+	ostr << "long double: " << setprecision(q_prec) << setw(width) << q << " " << components(vq) << endl;
+
+	cout << setprecision(old_precision);
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -94,7 +172,6 @@ try {
 
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;
-
 
 	long double h = 6.62607015e-34;  // (J⋅s)
 	long double e = 1.602176634e-19; // (C)
@@ -117,6 +194,18 @@ try {
 	cout << "The Avogadro constant NA is exactly 6.02214076*10^+23 reciprocal mole.\n";
 	Sample(cout, NA);
 	cout << endl;
+
+
+	cout << "----\n\n";
+	CompareIEEEValues(cout, h);
+
+	integer<128> i;
+	if (parse("66260701500000000000000000000000000", i)) {
+		cout << "h = " << i << endl;
+	}
+	else {
+		cerr << "error parsing h" << endl;
+	}
 
 	return EXIT_SUCCESS;
 }
@@ -144,3 +233,45 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
+
+/*
+The Planck constant h is exactly 6.62607015*10^-34 joule - second.
+				   long double min  2.22507e-308     max  1.79769e+308      : 6.6260701499999998297249e-34
+						double min  2.22507e-308     max  1.79769e+308      : 6.62607015e-34
+						 float min   1.17549e-38     max   3.40282e+38      : 6.62607e-34
+   class sw::unum::posit<32,2> min   7.52316e-37     max   1.32923e+36      : 7.7037197775489434e-34
+   class sw::unum::posit<32,3> min    5.6598e-73     max   1.76685e+72      : 6.6260265567150702e-34
+   class sw::unum::posit<40,3> min   3.06818e-92     max   3.25926e+91      : 6.6260706377532261e-34
+   class sw::unum::posit<48,3> min  1.66327e-111     max  6.01227e+110      : 6.6260701498771527e-34
+   class sw::unum::posit<64,3> min   4.8879e-150     max  2.04587e+149      : 6.6260701499999853e-34
+
+The elementary charge e is exactly 1.602176634*10^-19 coulomb.
+				   long double min  2.22507e-308     max  1.79769e+308      : 1.6021766339999998937562e-19
+						double min  2.22507e-308     max  1.79769e+308      : 1.602176634e-19
+						 float min   1.17549e-38     max   3.40282e+38      : 1.60218e-19
+   class sw::unum::posit<32,2> min   7.52316e-37     max   1.32923e+36      : 1.6022157592907125e-19
+   class sw::unum::posit<32,3> min    5.6598e-73     max   1.76685e+72      : 1.6021764682116162e-19
+   class sw::unum::posit<40,3> min   3.06818e-92     max   3.25926e+91      : 1.6021766378482653e-19
+   class sw::unum::posit<48,3> min  1.66327e-111     max  6.01227e+110      : 1.6021766339986241e-19
+   class sw::unum::posit<64,3> min   4.8879e-150     max  2.04587e+149      : 1.6021766340000001e-19
+
+The Boltzmann constant k is exactly 1.380649*10^-23 joule per kelvin.
+				   long double min  2.22507e-308     max  1.79769e+308      : 1.3806490000000000921522e-23
+						double min  2.22507e-308     max  1.79769e+308      : 1.380649e-23
+						 float min   1.17549e-38     max   3.40282e+38      : 1.38065e-23
+   class sw::unum::posit<32,2> min   7.52316e-37     max   1.32923e+36      : 1.3803576471978649e-23
+   class sw::unum::posit<32,3> min    5.6598e-73     max   1.76685e+72      : 1.380650472365883e-23
+   class sw::unum::posit<40,3> min   3.06818e-92     max   3.25926e+91      : 1.3806490129732083e-23
+   class sw::unum::posit<48,3> min  1.66327e-111     max  6.01227e+110      : 1.3806490000309591e-23
+   class sw::unum::posit<64,3> min   4.8879e-150     max  2.04587e+149      : 1.3806490000000013e-23
+
+The Avogadro constant NA is exactly 6.02214076*10^+23 reciprocal mole.
+				   long double min  2.22507e-308     max  1.79769e+308      : 6.0221407599999998702387e+23
+						double min  2.22507e-308     max  1.79769e+308      : 6.02214076e+23
+						 float min   1.17549e-38     max   3.40282e+38      : 6.02214e+23
+   class sw::unum::posit<32,2> min   7.52316e-37     max   1.32923e+36      : 6.0210172656587976e+23
+   class sw::unum::posit<32,3> min    5.6598e-73     max   1.76685e+72      : 6.0221471287333124e+23
+   class sw::unum::posit<40,3> min   3.06818e-92     max   3.25926e+91      : 6.0221407336218415e+23
+   class sw::unum::posit<48,3> min  1.66327e-111     max  6.01227e+110      : 6.0221407600101206e+23
+   class sw::unum::posit<64,3> min   4.8879e-150     max  2.04587e+149      : 6.0221407600000005e+23
+ */
