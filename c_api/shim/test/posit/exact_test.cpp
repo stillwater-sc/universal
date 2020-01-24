@@ -1,6 +1,6 @@
 // exact_test.cpp: functional tests for C API
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/posit/posit_c_api.h>
@@ -32,7 +32,7 @@ static posit8x2_t posit8_add_exact_bruteforce(posit8_t a, posit8_t b, bool loud)
     }
     double realsum = posit8_tod(a) + posit8_tod(b);
     // nan special case
-    if (isnan(realsum)) {
+    if (::isnan(realsum)) {  // work-around for bug in gcc 5 and 6
         // return a NAR and a ZERO so that someone running add_exact
         // as a mutative sorting comparitor and discarding zeros
         // will end with 1 NAR only.
