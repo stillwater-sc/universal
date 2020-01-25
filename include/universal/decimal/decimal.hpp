@@ -55,16 +55,10 @@ namespace unum {
 // Forward references
 class decimal;
 struct decintdiv;
-decintdiv decint_divide(const decimal&, const decimal&);
+decimal quotient(const decimal&, const decimal&);
+decimal remainder(const decimal&, const decimal&);
 int findMsd(const decimal&);
 template<typename Ty> void convert_to_decimal(Ty, decimal&);
-
-///////////////////////
-// decintdiv_t for decimal to capture quotient and remainder during long division
-struct decintdiv {
-	decimal quot; // quotient
-	decimal rem;  // remainder
-};
 
 // Arbitrary precision decimal integer number
 class decimal : public std::vector<uint8_t> {
@@ -345,13 +339,11 @@ public:
 		return *this;
 	}
 	decimal& operator/=(const decimal& rhs) {
-		decintdiv divresult = decint_divide(*this, rhs);
-		*this = divresult.quot;
+		*this = quotient(*this, rhs);
 		return *this;
 	}
 	decimal& operator%=(const decimal& rhs) {
-		decintdiv divresult = decint_divide(*this, rhs);
-		*this = divresult.rem;
+		*this = remainder(*this, rhs);
 		return *this;
 	}
 	decimal& operator<<=(const signed shift) {
@@ -598,84 +590,6 @@ void convert_to_decimal(Ty v, decimal& d) {
 	d.setsign(sign);
 }
 
-// find largest multiplier of rhs being less or equal to lhs by subtraction; assumes 0*rhs <= lhs <= 9*rhs 
-decimal findLargestMultiple(const decimal& lhs, const decimal& rhs) {
-	// check argument assumption	assert(0 <= lhs && lhs >= 9 * rhs);
-	decimal remainder = lhs;
-	remainder.setpos();
-	decimal multiplier;
-	multiplier.setdigit(0);
-	for (int i = 0; i <= 11; ++i) {  // function works for 9 into 99, just as an aside
-		if (remainder > 0) {
-			remainder -= rhs;
-			++multiplier;
-		}
-		else {
-			if (remainder < 0) {  // we went too far
-				--multiplier;
-			}
-			// else implies remainder is 0										
-			break;
-		}
-	}
-	return multiplier;
-}
-
-// divide integer decimal a and b and return result argument
-decintdiv decint_divide(const decimal& _a, const decimal& _b) {
-	if (_b == 0) {
-#if DECIMAL_THROW_ARITHMETIC_EXCEPTION
-		throw decimal_integer_divide_by_zero{};
-#else
-		std::cerr << "integer_divide_by_zero\n";
-#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
-	}
-	// generate the absolute values to do long division 
-	bool a_negative = _a.sign();
-	bool b_negative = _b.sign();
-	bool result_negative = (a_negative ^ b_negative);
-	decimal a(_a); a.setpos();
-	decimal b(_b); b.setpos();
-	decintdiv divresult;
-	if (a < b) {
-		divresult.quot = 0;
-		divresult.rem = _a; // a % b = a when a / b = 0
-		return divresult; // a / b = 0 when b > a
-	}
-	// initialize the long division
-	decimal accumulator = a;
-	// prepare the subtractand
-	decimal subtractand = b;
-	int msd_b = findMsd(b);
-	int msd_a = findMsd(a);
-	int shift = msd_a - msd_b;
-	subtractand <<= shift;
-	// long division
-	for (int i = shift; i >= 0; --i) {
-		if (subtractand <= accumulator) {
-			decimal multiple = findLargestMultiple(accumulator, subtractand);
-			accumulator -= multiple * subtractand;
-			uint8_t multiplier = 0;
-
-			divresult.quot.push_back(multiplier);
-		}
-		else {
-			divresult.quot.push_back(0);
-		}
-		subtractand >>= 1;
-	}
-	if (result_negative) {
-		divresult.quot.setneg();
-	}
-	if (_a < 0) {
-		divresult.rem = -accumulator;
-	}
-	else {
-		divresult.rem = accumulator;
-	}
-
-	return divresult;
-}
 
 ////////////////// DECIMAL operators
 
@@ -821,6 +735,104 @@ inline bool operator<=(long lhs, const decimal& rhs) {
 }
 inline bool operator>=(long lhs, const decimal& rhs) {
 	return !operator<(decimal(lhs), rhs);
+}
+
+///////////////////////////////////////////////////////////////////////
+// 
+// find largest multiplier of rhs being less or equal to lhs by subtraction; assumes 0*rhs <= lhs <= 9*rhs 
+decimal findLargestMultiple(const decimal& lhs, const decimal& rhs) {
+	// check argument assumption	assert(0 <= lhs && lhs >= 9 * rhs);
+	decimal remainder = lhs;
+	remainder.setpos();
+	decimal multiplier;
+	multiplier.setdigit(0);
+	for (int i = 0; i <= 11; ++i) {  // function works for 9 into 99, just as an aside
+		if (remainder > 0) {
+			remainder -= rhs;
+			++multiplier;
+		}
+		else {
+			if (remainder < 0) {  // we went too far
+				--multiplier;
+			}
+			// else implies remainder is 0										
+			break;
+		}
+	}
+	return multiplier;
+}
+
+
+///////////////////////
+// decintdiv_t for decimal to capture quotient and remainder during long division
+struct decintdiv {
+	decimal quot; // quotient
+	decimal rem;  // remainder
+};
+
+// divide integer decimal a and b and return result argument
+decintdiv decint_divide(const decimal& _a, const decimal& _b) {
+	if (_b == 0) {
+#if DECIMAL_THROW_ARITHMETIC_EXCEPTION
+		throw decimal_integer_divide_by_zero{};
+#else
+		std::cerr << "integer_divide_by_zero\n";
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+	}
+	// generate the absolute values to do long division 
+	bool a_negative = _a.sign();
+	bool b_negative = _b.sign();
+	bool result_negative = (a_negative ^ b_negative);
+	decimal a(_a); a.setpos();
+	decimal b(_b); b.setpos();
+	decintdiv divresult;
+	if (a < b) {
+		divresult.quot = 0;
+		divresult.rem = _a; // a % b = a when a / b = 0
+		return divresult; // a / b = 0 when b > a
+	}
+	// initialize the long division
+	decimal accumulator = a;
+	// prepare the subtractand
+	decimal subtractand = b;
+	int msd_b = findMsd(b);
+	int msd_a = findMsd(a);
+	int shift = msd_a - msd_b;
+	subtractand <<= shift;
+	// long division
+	for (int i = shift; i >= 0; --i) {
+		if (subtractand <= accumulator) {
+			decimal multiple = findLargestMultiple(accumulator, subtractand);
+			accumulator -= multiple * subtractand;
+			uint8_t multiplier = 0;
+
+			divresult.quot.push_back(multiplier);
+		}
+		else {
+			divresult.quot.push_back(0);
+		}
+		subtractand >>= 1;
+	}
+	if (result_negative) {
+		divresult.quot.setneg();
+	}
+	if (_a < 0) {
+		divresult.rem = -accumulator;
+	}
+	else {
+		divresult.rem = accumulator;
+	}
+
+	return divresult;
+}
+
+// return quotient of a decimal integer division
+decimal quotient(const decimal& _a, const decimal& _b) {
+	return decint_divide(_a, _b).quot;
+}
+// return remainder of a decimal integer division
+decimal remainder(const decimal& _a, const decimal& _b) {
+	return decint_divide(_a, _b).rem;
 }
 } // namespace unum
 } // namespace sw
