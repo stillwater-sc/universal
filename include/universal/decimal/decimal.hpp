@@ -363,7 +363,7 @@ public:
 			operator<<=(-shift);
 			return *this;
 		}
-		if (size() <= shift) {
+		if (signed(size()) <= shift) {
 			this->setzero();
 		}
 		else {
@@ -575,7 +575,7 @@ private:
 
 // find the order of the most significant digit, precondition decimal is unpadded
 inline int findMsd(const decimal& v) {
-	int msd = int(size(v)) - 1;
+	int msd = int(v.size()) - 1;
 	if (msd == 0 && v == 0) return -1; // no significant digit found, all digits are zero
 	assert(v.at(msd) != 0); // indicates the decimal wasn't unpadded
 	return msd; 
@@ -677,7 +677,7 @@ inline decimal operator/(const decimal& lhs, const decimal& rhs) {
 	// decimal - decimal logic operators
 // equality test
 bool operator==(const decimal& lhs, const decimal& rhs) {
-	if (size(lhs) != size(rhs)) return false;
+	if (lhs.size() != rhs.size()) return false;
 	bool areEqual = std::equal(lhs.begin(), lhs.end(), rhs.begin()) && lhs.sign() == rhs.sign();
 	return areEqual;
 }
