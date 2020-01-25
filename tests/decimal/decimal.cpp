@@ -123,8 +123,59 @@ namespace sw {
 			}
 			return nrOfFailedTests;
 		}
-	}
-}
+
+		bool less(const decimal& lhs, const decimal& rhs) {
+			return lhs < rhs;
+		}
+
+#include <cassert>
+		// find largest multiplier assumes 0*rhs <= lhs <= 9*rhs
+		decimal findLargestMultiple(const decimal& lhs, const decimal& rhs) {
+			// double check precondition
+			assert(size(lhs) == size(rhs) || size(lhs) == size(rhs) + 1);
+			bool search = true;
+			decimal multiple;
+			multiple.setdigit('5');
+			decimal estimate;
+			estimate = rhs;
+			estimate *= multiple;
+			if (less(lhs, estimate)) {
+				// estimate is too large
+				multiple.setdigit('3');
+				estimate = rhs;
+				estimate *= multiple;
+				if (less(lhs, estimate)) {
+					// estimate is too large, try multiple of '1'
+					if (less(lhs, rhs)) {
+						multiple.setzero();
+						return multiple;
+					}
+					else {
+						// estimate is too low, could be '1' or '2'
+						multiple.setdigit('2');
+						estimate = rhs;
+						estimate *= multiple;
+						if (less(lhs, estimate)) {
+							multiple.setdigit('1');
+							return multiple;
+						}
+						else {
+							return multiple;
+						}
+					}
+				}
+				else {
+					// estimate is too small, thus it is '4'
+					multiple.setdigit('4');
+					return multiple;
+				}
+			}
+			else {
+			}
+		}
+
+	}  // namespace unum
+} // namespace sw
 
 void examples() {
 	using namespace std;
@@ -226,8 +277,8 @@ void reportType(Ty v) {
 	cout << "round_style       : " << numeric_limits<Ty>::round_style << '\n';
 }
 
-#define MANUAL_TESTING 0
-#define STRESS_TESTING 1
+#define MANUAL_TESTING 1
+#define STRESS_TESTING 0
 
 int main()
 try {
@@ -242,7 +293,25 @@ try {
 #if MANUAL_TESTING
 
 	decimal d1, d2, d3;
-	reportType(d1);
+	//reportType(d1);
+
+	d1 = 1234;
+	d2 = 1;
+	cout << d1 * d2 << endl;
+	d2 = 2;
+	cout << d1 * d2 << endl;
+	d2 = 3;
+	d3 = d1 * d2;
+	cout << d1 * d2 << endl;
+
+//	return 0;
+
+	d1 = 123;
+	d2 = 34;
+	d3 = findLargestMultiple(d1, d2);
+	cout << d3 << endl;
+
+//	return 0;
 
 	d1.parse("50000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 	cout << d1 << endl;
@@ -252,6 +321,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
+	//nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
 
 #else
 	std::cout << "Decimal Arithmetic verfication" << std::endl;

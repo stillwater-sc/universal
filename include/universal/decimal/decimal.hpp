@@ -53,7 +53,7 @@ namespace unum {
 class decimal;
 template<typename Ty> void convert_to_decimal(Ty v, decimal& d);
 
-// Arbitrary precision decimal number
+// Arbitrary precision decimal integer number
 class decimal : public std::vector<uint8_t> {
 public:
 	decimal() { setzero(); }
@@ -298,7 +298,7 @@ public:
 				decimal::iterator pit = partial_sum.begin() + position;
 				char carry = 0;
 				for (bit = rhs.begin(); bit != rhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
-					char digit = *sit * *bit + carry;
+					uint8_t digit = *sit * *bit + carry;
 					*pit = digit % 10;
 					carry = digit / 10;
 				}
@@ -316,7 +316,7 @@ public:
 				decimal::iterator pit = partial_sum.begin() + position;
 				char carry = 0;
 				for (bit = begin(); bit != end() || pit != partial_sum.end(); ++bit, ++pit) {
-					char digit = *sit * *bit + carry;
+					uint8_t digit = *sit * *bit + carry;
 					*pit = digit % 10;
 					carry = digit / 10;
 				}
@@ -348,12 +348,22 @@ public:
 	inline void setsign(bool sign) { negative = sign; }
 	inline void setneg() { negative = true; }
 	inline void setpos() { negative = false; }
+	inline void setdigit(char c, bool sign = false) {
+		clear();
+		push_back(c);
+		negative = sign;
+	}
 
 	// remove any leading zeros from a decimal representation
 	void unpad() {
 		int n = (int)size();
 		for (int i = n - 1; i > 0; --i) {
-			if (operator[](i) == 0) pop_back();
+			if (operator[](i) == 0) {
+				pop_back();
+			}
+			else {
+				return;  // found the most significant digit
+			}
 		}
 	}
 
