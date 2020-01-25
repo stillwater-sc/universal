@@ -1,7 +1,7 @@
 #pragma once
 // decimal.hpp: definition of arbitrary decimal integer configurations
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -16,6 +16,7 @@
 #include <algorithm>
 
 #include "universal/string/strmanip.hpp"
+#include "./decimal_exceptions.hpp"
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -50,9 +51,20 @@
 namespace sw {
 namespace unum {
 
-	// Forward references
+/////////////////////////////////////////////
+// Forward references
 class decimal;
-template<typename Ty> void convert_to_decimal(Ty v, decimal& d);
+struct decintdiv;
+decintdiv decint_divide(const decimal&, const decimal&);
+int findMsd(const decimal&);
+template<typename Ty> void convert_to_decimal(Ty, decimal&);
+
+///////////////////////
+// decintdiv_t for decimal to capture quotient and remainder during long division
+struct decintdiv {
+	decimal quot; // quotient
+	decimal rem;  // remainder
+};
 
 // Arbitrary precision decimal integer number
 class decimal : public std::vector<uint8_t> {
@@ -333,10 +345,44 @@ public:
 		return *this;
 	}
 	decimal& operator/=(const decimal& rhs) {
+		decintdiv divresult = decint_divide(*this, rhs);
+		*this = divresult.quot;
+		return *this;
+	}
+	decimal& operator%=(const decimal& rhs) {
+		decintdiv divresult = decint_divide(*this, rhs);
+		*this = divresult.rem;
+		return *this;
+	}
+	decimal& operator<<=(const signed shift) {
+		if (shift == 0) return *this;
+		if (shift < 0) {
+			operator>>=(-shift);
+			return *this;
+		}
+		for (int i = 0; i < shift; ++i) {
+			this->push_back(0);
+		}
+		return *this;
+	}
+	decimal& operator>>=(const signed shift) {
+		if (shift == 0) return *this;
+		if (shift < 0) {
+			operator<<=(-shift);
+			return *this;
+		}
+		for (int i = 0; i < shift; ++i) {
+			this->pop_back();
+		}
 		return *this;
 	}
 
 	// unitary operators
+	decimal operator-() {
+		decimal tmp(*this);
+		tmp.setsign(!tmp.sign());
+		return tmp;
+	}
 	decimal operator++() {
 		decimal tmp(*this);
 		decimal plusOne;
@@ -364,6 +410,19 @@ public:
 		return *this;
 	}
 
+	// conversion operators: Maybe remove explicit, MTL compiles, but we have lots of double computation then
+	explicit operator unsigned short() const { return to_ushort(); }
+	explicit operator unsigned int() const { return to_uint(); }
+	explicit operator unsigned long() const { return to_ulong(); }
+	explicit operator unsigned long long() const { return to_ulong_long(); }
+	explicit operator short() const { return to_short(); }
+	explicit operator int() const { return to_int(); }
+	explicit operator long() const { return to_long(); }
+	explicit operator long long() const { return to_long_long(); }
+	explicit operator float() const { return to_float(); }
+	explicit operator double() const { return to_double(); }
+	explicit operator long double() const { return to_long_double(); }
+
 	// selectors
 	inline bool iszero() const {
 		if (size() == 0) return true;
@@ -372,6 +431,7 @@ public:
 	inline bool sign() const { return negative; }
 	inline bool isneg() const { return negative; }
 	inline bool ispos() const { return !negative; }
+
 
 	// modifiers
 	inline void setzero() { clear(); negative = false; }
@@ -460,6 +520,20 @@ public:
 	}
 
 protected:
+	// HELPER methods
+
+	// conversion functions
+	inline short to_short() const { return short(to_long_long()); }
+	inline int to_int() const { return short(to_long_long()); }
+	inline long to_long() const { return short(to_long_long()); }
+	inline long long to_long_long() const {}
+	inline unsigned short to_ushort() const { return short(to_ulong_long()); }
+	inline unsigned int to_uint() const { return short(to_ulong_long()); }
+	inline unsigned long to_ulong() const { return short(to_ulong_long()); }
+	inline unsigned long long to_ulong_long() const {}
+	inline float to_float() const {}
+	inline double to_double() const {}
+	inline long double to_long_double() const {}
 
 	template<typename Ty>
 	decimal& float_assign(Ty& rhs) {
@@ -484,7 +558,16 @@ private:
 
 ////////////////// helper functions
 
+// find the order of the most significant digit, precondition decimal is unpadded
+inline int findMsd(const decimal& v) {
+	int msd = int(size(v)) - 1;
+	assert(v.at(msd) == 0); // indicates it isn't unpadded
+	if (msd == 0 && v == 0) return -1; // no significant digit found, all digits are zero
+	return msd; 
+}
+
 // Convert integer types to a decimal representation
+// TODO: needs SFINAE enable_if to constrain it to native integer types
 template<typename Ty>
 void convert_to_decimal(Ty v, decimal& d) {
 	using namespace std;
@@ -536,6 +619,62 @@ decimal findLargestMultiple(const decimal& lhs, const decimal& rhs) {
 		}
 	}
 	return multiplier;
+}
+
+// divide integer decimal a and b and return result argument
+decintdiv decint_divide(const decimal& _a, const decimal& _b) {
+	if (_b == 0) {
+#if DECIMAL_THROW_ARITHMETIC_EXCEPTION
+		throw decimal_integer_divide_by_zero{};
+#else
+		std::cerr << "integer_divide_by_zero\n";
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+	}
+	// generate the absolute values to do long division 
+	bool a_negative = _a.sign();
+	bool b_negative = _b.sign();
+	bool result_negative = (a_negative ^ b_negative);
+	decimal a(_a); a.setpos();
+	decimal b(_b); b.setpos();
+	decintdiv divresult;
+	if (a < b) {
+		divresult.quot = 0;
+		divresult.rem = _a; // a % b = a when a / b = 0
+		return divresult; // a / b = 0 when b > a
+	}
+	// initialize the long division
+	decimal accumulator = a;
+	// prepare the subtractand
+	decimal subtractand = b;
+	int msd_b = findMsd(b);
+	int msd_a = findMsd(a);
+	int shift = msd_a - msd_b;
+	subtractand <<= shift;
+	// long division
+	for (int i = shift; i >= 0; --i) {
+		if (subtractand <= accumulator) {
+			decimal multiple = findLargestMultiple(accumulator, subtractand);
+			accumulator -= multiple * subtractand;
+			uint8_t multiplier = 0;
+
+			divresult.quot.push_back(multiplier);
+		}
+		else {
+			divresult.quot.push_back(0);
+		}
+		subtractand >>= 1;
+	}
+	if (result_negative) {
+		divresult.quot.setneg();
+	}
+	if (_a < 0) {
+		divresult.rem = -accumulator;
+	}
+	else {
+		divresult.rem = accumulator;
+	}
+
+	return divresult;
 }
 
 ////////////////// DECIMAL operators

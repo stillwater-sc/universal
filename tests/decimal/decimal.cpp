@@ -5,6 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
+// configure the decimal integer arithmetic class
+#define DECIMAL_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/decimal/decimal.hpp>
 #include <universal/decimal/numeric_limits.hpp>
 // test helpers, such as, ReportTestResults
@@ -106,12 +108,25 @@ namespace sw {
 		// verification of division
 		int VerifyDivision(std::string tag, long ub, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
+			decimal dref;
 			for (long i = -ub; i <= ub; ++i) {
 				decimal d1 = i;
 				for (long j = -ub; j <= ub; ++j) {
 					decimal d2 = j;
+					if (j == 0) {
+						try {
+							dref = d1 / d2;
+						}
+						catch (decimal_integer_divide_by_zero& e) {
+							std::cerr << "properly caught divide by zero exception" << std::endl;
+							continue;
+						}
+						catch (...) {
+							++nrOfFailedTests;
+							continue;
+						}
+					}
 					long ref = i / j;
-					decimal dref = d1 / d2;
 					if (dref != ref) {
 						++nrOfFailedTests;
 						if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "div", d1, d2, dref, ref);
@@ -258,7 +273,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Decimal Arithmetic tests failed";
@@ -266,21 +281,19 @@ try {
 #if MANUAL_TESTING
 
 	decimal d1, d2, d3;
-	//reportType(d1);
+	reportType(d1);
 
 	findLargestMultipleTest();
-
-	return 0;
 
 	d1.parse("50000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 	cout << d1 << endl;
 	cout << d1 + d1 << endl;
 
-	long rangeBound = 100;
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
-	//nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
+	long rangeBound = 10; // 100;
+	//nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
+	//nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
+	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
 
 #else
 	std::cout << "Decimal Arithmetic verfication" << std::endl;
