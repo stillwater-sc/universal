@@ -353,7 +353,7 @@ public:
 			return *this;
 		}
 		for (int i = 0; i < shift; ++i) {
-			this->push_back(0);
+			this->insert(this->begin(), 0);
 		}
 		return *this;
 	}
@@ -363,8 +363,13 @@ public:
 			operator<<=(-shift);
 			return *this;
 		}
-		for (int i = 0; i < shift; ++i) {
-			this->pop_back();
+		if (size() <= shift) {
+			this->setzero();
+		}
+		else {
+			for (int i = 0; i < shift; ++i) {
+				this->erase(this->begin());
+			}
 		}
 		return *this;
 	}
@@ -518,14 +523,32 @@ protected:
 	inline short to_short() const { return short(to_long_long()); }
 	inline int to_int() const { return short(to_long_long()); }
 	inline long to_long() const { return short(to_long_long()); }
-	inline long long to_long_long() const {}
+	inline long long to_long_long() const {
+		long long v = 0;
+		decimal::const_iterator it;
+		long long order;
+		order = sign() ? -1 : 1;
+		for (it = this->begin(); it != this->end(); ++it) {
+			v += *it * order;
+			order *= 10;
+		}
+		return v;
+	}
 	inline unsigned short to_ushort() const { return short(to_ulong_long()); }
 	inline unsigned int to_uint() const { return short(to_ulong_long()); }
 	inline unsigned long to_ulong() const { return short(to_ulong_long()); }
-	inline unsigned long long to_ulong_long() const {}
-	inline float to_float() const {}
-	inline double to_double() const {}
-	inline long double to_long_double() const {}
+	inline unsigned long long to_ulong_long() const {
+		return (unsigned long long)to_long_long();
+	}
+	inline float to_float() const {
+		return 0.0f;
+	}
+	inline double to_double() const {
+		return 0.0;
+	}
+	inline long double to_long_double() const {
+		return 0.0l;
+	}
 
 	template<typename Ty>
 	decimal& float_assign(Ty& rhs) {
@@ -553,8 +576,8 @@ private:
 // find the order of the most significant digit, precondition decimal is unpadded
 inline int findMsd(const decimal& v) {
 	int msd = int(size(v)) - 1;
-	assert(v.at(msd) == 0); // indicates it isn't unpadded
 	if (msd == 0 && v == 0) return -1; // no significant digit found, all digits are zero
+	assert(v.at(msd) != 0); // indicates the decimal wasn't unpadded
 	return msd; 
 }
 
@@ -654,6 +677,7 @@ inline decimal operator/(const decimal& lhs, const decimal& rhs) {
 	// decimal - decimal logic operators
 // equality test
 bool operator==(const decimal& lhs, const decimal& rhs) {
+	if (size(lhs) != size(rhs)) return false;
 	bool areEqual = std::equal(lhs.begin(), lhs.end(), rhs.begin()) && lhs.sign() == rhs.sign();
 	return areEqual;
 }
@@ -804,14 +828,14 @@ decintdiv decint_divide(const decimal& _a, const decimal& _b) {
 		if (subtractand <= accumulator) {
 			decimal multiple = findLargestMultiple(accumulator, subtractand);
 			accumulator -= multiple * subtractand;
-			uint8_t multiplier = 0;
-
-			divresult.quot.push_back(multiplier);
+			uint8_t multiplier = int(multiple);
+			divresult.quot.insert(divresult.quot.begin(), multiplier);
 		}
 		else {
-			divresult.quot.push_back(0);
+			divresult.quot.insert(divresult.quot.begin(), 0);
 		}
 		subtractand >>= 1;
+		if (subtractand == 0) break;
 	}
 	if (result_negative) {
 		divresult.quot.setneg();
@@ -822,7 +846,8 @@ decintdiv decint_divide(const decimal& _a, const decimal& _b) {
 	else {
 		divresult.rem = accumulator;
 	}
-
+	divresult.quot.unpad();
+	divresult.rem.unpad();
 	return divresult;
 }
 

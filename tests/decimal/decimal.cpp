@@ -118,7 +118,7 @@ namespace sw {
 							dref = d1 / d2;
 						}
 						catch (decimal_integer_divide_by_zero& e) {
-							std::cerr << "properly caught divide by zero exception" << std::endl;
+							std::cerr << "properly caught divide by zero exception: " << e.what() << std::endl;
 							continue;
 						}
 						catch (...) {
@@ -126,13 +126,16 @@ namespace sw {
 							continue;
 						}
 					}
+					else {
+						dref = d1 / d2;
+					}
 					long ref = i / j;
 					if (dref != ref) {
 						++nrOfFailedTests;
 						if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "div", d1, d2, dref, ref);
 					}
 					else {
-						// if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "div", d1, d2, dref, ref);
+						//if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "div", d1, d2, dref, ref);
 					}
 				}
 			}
@@ -281,6 +284,13 @@ try {
 #if MANUAL_TESTING
 
 	decimal d1, d2, d3;
+
+	d1 = -9;
+	d2 = 10;
+	d3 = d1 / d2;
+	cout << d1 << " / " << d2 << " = " << d3 << endl;
+
+
 	reportType(d1);
 
 	findLargestMultipleTest();
@@ -290,9 +300,9 @@ try {
 	cout << d1 + d1 << endl;
 
 	long rangeBound = 10; // 100;
-	//nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
-	//nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
-	//nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
 
 #else
