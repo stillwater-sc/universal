@@ -641,22 +641,29 @@ protected:
 		return ull;
 	}
 	float to_float() const { 
-		float f = float((long long)(*this));
+		float f = float((long long)(*this)) / float(0x1ll << rbits);   // TODO: only works for nbits < 64
 		return f; 
 	}
 	double to_double() const {
-		double d = double((long long)(*this));
+		double d = double((long long)(*this)) / double(0x1ll << rbits);   // TODO: only works for nbits < 64
 		return d;
 	}
 	long double to_long_double() const {
-		long double ld = (long double)((long long)(*this));
+		long double ld = (long double)((long long)(*this)) / (long double)(0x1ll << rbits);   // TODO: only works for nbits < 64
 		return ld;
 	}
 
 	template<typename Ty>
 	void float_assign(Ty& rhs) {
 		clear();
-		// TODO
+		// the value of a binary fixed point number is an binary integer that is scaled by a fixed factor, 2^rbits
+		// so the number 0100.0100 is the value 01000100 with an implicit scaling of 2^4 = 16
+		// 01000100 = 64 + 4 = 68 -> scaled by 16 = 4 + 0.25 = 0100 + 0100
+
+		// generate the representation of one and cast to Ty
+		Ty one = Ty(0x1ll << rbits);
+		Ty tmp = rhs * one;
+		*this = uint64_t(tmp);
 	}
 
 private:
@@ -913,7 +920,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits>& value) {
 	partial.push_back(0); partial.sign = false;
 	multiplier.push_back(1); multiplier.sign = false;
 	// convert fixpnt to decimal by adding and doubling multipliers
-	for (unsigned i = 0; i < nbits; ++i) {
+	for (unsigned i = rbits; i < nbits; ++i) {
 		if (number.at(i)) {
 			impl::add(partial, multiplier);
 			// std::cout << partial << std::endl;

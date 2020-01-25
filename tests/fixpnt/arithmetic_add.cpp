@@ -21,19 +21,19 @@
 // generate specific test case that you can trace with the trace conditions in fixpnt.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t rbits, typename Ty>
-void GenerateTestCase(Ty a, Ty b) {
+void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::unum::fixpnt<nbits, rbits> pa, pb, pref, psum;
-	pa = a;
-	pb = b;
-	ref = a + b;
-	pref = ref;
-	psum = pa + pb;
+	sw::unum::fixpnt<nbits, rbits> a, b, cref, result;
+	a = _a;
+	b = _b;
+	result = a + b;
+	ref = _a + _b;
+	cref = ref;
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << a << " + " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " (reference: " << pref.get() << ")   " ;
-	std::cout << (pref == psum ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
+	std::cout << a << " + " << b << " = " << result << " (reference: " << cref << ")   " ;
+	std::cout << (cref == result ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
@@ -42,7 +42,7 @@ namespace unum {
 
 #define FIXPNT_TABLE_WIDTH 20
 template<size_t nbits, size_t rbits>
-void ReportBinaryArithmeticError(std::string test_case, std::string op, const fixpnt<nbits, rbits>& lhs, const fixpnt<nbits, rbits>& rhs, const fixpnt<nbits, rbits>& pref, const fixpnt<nbits, rbits>& presult) {
+void ReportBinaryArithmeticError(std::string test_case, std::string op, const fixpnt<nbits, rbits>& lhs, const fixpnt<nbits, rbits>& rhs, const fixpnt<nbits, rbits>& ref, const fixpnt<nbits, rbits>& result) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
@@ -50,9 +50,25 @@ void ReportBinaryArithmeticError(std::string test_case, std::string op, const fi
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
 		<< " != "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << pref << " instead it yielded "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << presult
-		<< " " << to_binary(pref) << " vs " << to_binary(presult)
+		<< std::setw(FIXPNT_TABLE_WIDTH) << ref << " instead it yielded "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << result
+		<< " " << to_binary(ref) << " vs " << to_binary(result)
+		<< std::setprecision(old_precision)
+		<< std::endl;
+}
+
+template<size_t nbits, size_t rbits>
+void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const fixpnt<nbits, rbits>& lhs, const fixpnt<nbits, rbits>& rhs, const fixpnt<nbits, rbits>& ref, const fixpnt<nbits, rbits>& result) {
+	auto old_precision = std::cerr.precision();
+	std::cerr << test_case << " "
+		<< std::setprecision(20)
+		<< std::setw(FIXPNT_TABLE_WIDTH) << lhs
+		<< " " << op << " "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
+		<< " == "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << ref << " matches reference "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << result
+		<< " " << to_binary(ref) << " vs " << to_binary(result)
 		<< std::setprecision(old_precision)
 		<< std::endl;
 }
@@ -62,24 +78,25 @@ template<size_t nbits, size_t rbits>
 int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
-	fixpnt<nbits, rbits> ia, ib, iresult, iref;
+	fixpnt<nbits, rbits> a, b, result, cref;
+	double ref;
 
-	int64_t i64a, i64b;
+	double da, db;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		ia.set_raw_bits(i);
-		i64a = int64_t(ia);
+		a.set_raw_bits(i);
+		da = double(a);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			ib.set_raw_bits(j);
-			i64b = int64_t(ib);
-			iref = i64a + i64b;
+			b.set_raw_bits(j);
+			db = double(b);
+			ref = da + db;
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 			try {
-				iresult = ia + ib;
+				result = a + b;
 			}
 			catch (...) {
-				if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+				if (ref > max_int<nbits>() || iref < min_int<nbits>()) {
 					// correctly caught the exception
-
+					continue;
 				}
 				else {
 					nrOfFailedTests++;
@@ -87,14 +104,15 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 			}
 
 #else
-			iresult = ia + ib;
+			result = a + b;
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
-			if (iresult != iref) {
+			cref = ref;
+			if (result != cref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", ia, ib, iref, iresult);
+				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", ia, ib, iref, iresult);
+				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
@@ -108,7 +126,7 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 } // namespace unum
 } // namespace sw
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -126,11 +144,25 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 4>(0.5f, 1.0f);
 
+	{
+		fixpnt<8, 0> fp;
+		fp = 4;
+		cout << fp << endl;
+	}
+
+	{
+		fixpnt<8, 4> fp;
+		fp = 4.125f;
+		cout << fp << endl;
+	}
+
+
+
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 0>("Manual Testing", true), "fixpnt<3,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 1>("Manual Testing", true), "fixpnt<3,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 2>("Manual Testing", true), "fixpnt<3,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<3, 3>("Manual Testing", true), "fixpnt<3,3>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0>("Manual Testing", true), "fixpnt<4,0>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1>("Manual Testing", true), "fixpnt<4,1>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2>("Manual Testing", true), "fixpnt<4,2>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3>("Manual Testing", true), "fixpnt<4,3>", "addition");
 
 #else
 
