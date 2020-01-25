@@ -7,6 +7,7 @@
 
 #include <cstdint>
 #include <sstream>
+#include <cassert>
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -334,6 +335,35 @@ public:
 	decimal& operator/=(const decimal& rhs) {
 		return *this;
 	}
+
+	// unitary operators
+	decimal operator++() {
+		decimal tmp(*this);
+		decimal plusOne;
+		plusOne.setdigit(1);
+		*this += plusOne;
+		return tmp;
+	}
+	decimal& operator++(int d) {
+		decimal plusOne;
+		plusOne.setdigit(1);
+		*this += plusOne;
+		return *this;
+	}
+	decimal operator--() {
+		decimal tmp(*this);
+		decimal plusOne;
+		plusOne.setdigit(1);
+		*this -= plusOne;
+		return tmp;
+	}
+	decimal& operator--(int d) {
+		decimal plusOne;
+		plusOne.setdigit(1);
+		*this -= plusOne;
+		return *this;
+	}
+
 	// selectors
 	inline bool iszero() const {
 		if (size() == 0) return true;
@@ -348,9 +378,10 @@ public:
 	inline void setsign(bool sign) { negative = sign; }
 	inline void setneg() { negative = true; }
 	inline void setpos() { negative = false; }
-	inline void setdigit(char c, bool sign = false) {
+	inline void setdigit(uint8_t d, bool sign = false) {
+		assert(d >= 0 && d <= 9); // test argument assumption
 		clear();
-		push_back(c);
+		push_back(d);
 		negative = sign;
 	}
 
@@ -484,6 +515,29 @@ void convert_to_decimal(Ty v, decimal& d) {
 	d.setsign(sign);
 }
 
+// find largest multiplier of rhs being less or equal to lhs by subtraction; assumes 0*rhs <= lhs <= 9*rhs 
+decimal findLargestMultiple(const decimal& lhs, const decimal& rhs) {
+	// check argument assumption	assert(0 <= lhs && lhs >= 9 * rhs);
+	decimal remainder = lhs;
+	remainder.setpos();
+	decimal multiplier;
+	multiplier.setdigit(0);
+	for (int i = 0; i <= 11; ++i) {  // function works for 9 into 99, just as an aside
+		if (remainder > 0) {
+			remainder -= rhs;
+			++multiplier;
+		}
+		else {
+			if (remainder < 0) {  // we went too far
+				--multiplier;
+			}
+			// else implies remainder is 0										
+			break;
+		}
+	}
+	return multiplier;
+}
+
 ////////////////// DECIMAL operators
 
 /// stream operators
@@ -547,7 +601,7 @@ inline decimal operator/(const decimal& lhs, const decimal& rhs) {
 	// decimal - decimal logic operators
 // equality test
 bool operator==(const decimal& lhs, const decimal& rhs) {
-	bool areEqual = std::equal(lhs.begin(), lhs.end(), rhs.begin());
+	bool areEqual = std::equal(lhs.begin(), lhs.end(), rhs.begin()) && lhs.sign() == rhs.sign();
 	return areEqual;
 }
 // inequality test
@@ -556,17 +610,22 @@ bool operator!=(const decimal& lhs, const decimal& rhs) {
 }
 // less-than test
 bool operator<(const decimal& lhs, const decimal& rhs) {
+	if (lhs.sign() != rhs.sign()) {
+		return lhs.sign() ? true : false;
+	}
+
+	// signs are the same
 	// this logic assumes that there is no padding in the operands
 	size_t l = lhs.size();
 	size_t r = rhs.size();
-	if (l < r) return true;
-	if (l > r) return false;
+	if (l < r) return lhs.sign() ? false : true;
+	if (l > r) return lhs.sign() ? true : false;
 	// numbers are the same size, need to compare magnitude
 	decimal::const_reverse_iterator ritl = lhs.rbegin();
 	decimal::const_reverse_iterator ritr = rhs.rbegin();
 	for (; ritl != lhs.rend() || ritr != rhs.rend(); ++ritl, ++ritr) {
-		if (*ritl < *ritr) return true;
-		if (*ritl > *ritr) return false;
+		if (*ritl < *ritr) return lhs.sign() ? false : true;
+		if (*ritl > *ritr) return lhs.sign() ? true : false;
 		// if the digits are equal we need to check the next set
 	}
 	// at this point we know the two operands are the same

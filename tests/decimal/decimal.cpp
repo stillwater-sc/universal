@@ -128,52 +128,6 @@ namespace sw {
 			return lhs < rhs;
 		}
 
-#include <cassert>
-		// find largest multiplier assumes 0*rhs <= lhs <= 9*rhs
-		decimal findLargestMultiple(const decimal& lhs, const decimal& rhs) {
-			// double check precondition
-			assert(size(lhs) == size(rhs) || size(lhs) == size(rhs) + 1);
-			bool search = true;
-			decimal multiple;
-			multiple.setdigit('5');
-			decimal estimate;
-			estimate = rhs;
-			estimate *= multiple;
-			if (less(lhs, estimate)) {
-				// estimate is too large
-				multiple.setdigit('3');
-				estimate = rhs;
-				estimate *= multiple;
-				if (less(lhs, estimate)) {
-					// estimate is too large, try multiple of '1'
-					if (less(lhs, rhs)) {
-						multiple.setzero();
-						return multiple;
-					}
-					else {
-						// estimate is too low, could be '1' or '2'
-						multiple.setdigit('2');
-						estimate = rhs;
-						estimate *= multiple;
-						if (less(lhs, estimate)) {
-							multiple.setdigit('1');
-							return multiple;
-						}
-						else {
-							return multiple;
-						}
-					}
-				}
-				else {
-					// estimate is too small, thus it is '4'
-					multiple.setdigit('4');
-					return multiple;
-				}
-			}
-			else {
-			}
-		}
-
 	}  // namespace unum
 } // namespace sw
 
@@ -244,7 +198,7 @@ void reportType(Ty v) {
 
 	cout << "Numeric limits for type " << typeid(v).name() << '\n';
 	cout << "Type              : " << typeid(v).name() << endl;
-#if MSVC
+#if _MSC_VER
 	cout << "mangled C++ type  : " << typeid(v).raw_name() << endl;
 #endif
 	cout << "min()             : " << numeric_limits<Ty>::min() << '\n';
@@ -277,6 +231,25 @@ void reportType(Ty v) {
 	cout << "round_style       : " << numeric_limits<Ty>::round_style << '\n';
 }
 
+void findLargestMultipleTest() {
+	sw::unum::decimal d;
+	int fails = 0;
+	int numerator = 9;
+	d = numerator;
+	for (int i = 0; i < 100; ++i) {
+		sw::unum::decimal multiple = sw::unum::findLargestMultiple(i, d);
+		if (multiple != (i / 9)) {
+			std::cout << d << " into " << i << " yields multiplier " << multiple << " but should have been " << (i/numerator) << std::endl;
+			++fails;
+		}	
+	}
+	if (fails == 0) {
+		std::cout << "PASS  : findLargestMultipleTest" << std::endl;
+	}
+	else {
+		std::cout << fails << " FAILURES in findLargestMultipleTest"  << std::endl;
+	}
+}
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -295,23 +268,9 @@ try {
 	decimal d1, d2, d3;
 	//reportType(d1);
 
-	d1 = 1234;
-	d2 = 1;
-	cout << d1 * d2 << endl;
-	d2 = 2;
-	cout << d1 * d2 << endl;
-	d2 = 3;
-	d3 = d1 * d2;
-	cout << d1 * d2 << endl;
+	findLargestMultipleTest();
 
-//	return 0;
-
-	d1 = 123;
-	d2 = 34;
-	d3 = findLargestMultiple(d1, d2);
-	cout << d3 << endl;
-
-//	return 0;
+	return 0;
 
 	d1.parse("50000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 	cout << d1 << endl;
