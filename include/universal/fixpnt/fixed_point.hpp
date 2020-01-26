@@ -723,37 +723,60 @@ private:
 
 // paired down implementation of a decimal type to generate decimal representations for fixpnt<nbits,rbits> types
 namespace impl {
-	// Decimal representation as a set of decimal digits with sign used for creating decimal representations of the fixpnts
+
+// Decimal representation as a set of decimal digits with sign used for creating decimal representations of the fixpnts
 class decimal : public std::vector<uint8_t> {
 public:
-	bool sign;
+	decimal() { setzero(); }
+	decimal(const decimal&) = default;
+	decimal(decimal&&) = default;
+	decimal& operator=(const decimal&) = default;
+	decimal& operator=(decimal&&) = default;
+
+	inline bool sign() const { return _sign; }
+	inline bool iszero() const { return (size() == 1 && at(0) == 0) ? true : false; }
+	inline bool ispos() const {
+		return (!iszero() && _sign == false) ? true : false;
+	}
+	inline bool isneg() const { return !ispos(); }
+	inline void setzero() {
+		clear();
+		push_back('0');
+		_sign = false;
+	}
+	inline void setpos() { _sign = false; }
+	inline void setneg() {	_sign = true; }
+	inline void setsign(bool sign) { _sign = sign; }
+	inline void setdigit(const uint8_t d, bool negative = false) {
+		clear();
+		push_back(d);
+		_sign = negative;
+	}
+	
+
 	// remove any leading zeros from a decimal representation
 	void unpad() {
 		int n = (int)size();
 		for (int i = n - 1; i > 0; --i) {
-			if (operator[](i) == 0) pop_back();
+			if (operator[](i) == 0) {
+				pop_back();
+			}
+			else {
+				return; // found the most significant digit
+			}
+		}
+	}
+	// shift left operator for decimal
+	void shiftLeft(size_t orders) {
+		for (size_t i = 0; i < orders; ++i) {
+			push_back('0');
 		}
 	}
 private:
+	bool _sign;
 	friend std::ostream& operator<<(std::ostream& ostr, const decimal& d);
 };
 
-// generate an ASCII decimal format and send to ostream
-inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
-	// to make certain that setw and left/right operators work properly
-	// we need to transform the fixpnt into a string
-	std::stringstream ss;
-
-	//std::streamsize width = ostr.width();
-	std::ios_base::fmtflags ff;
-	ff = ostr.flags();
-	ss.flags(ff);
-	if (d.sign) ss << '-';
-	for (decimal::const_reverse_iterator rit = d.rbegin(); rit != d.rend(); ++rit) {
-		ss << (int)*rit;
-	}
-	return ostr << ss.str();
-}
 // forward reference
 void sub(decimal& lhs, const decimal& rhs);
 
@@ -774,11 +797,29 @@ bool less(const decimal& lhs, const decimal& rhs) {
 	// at this point we know the two operands are the same
 	return false;
 }
+bool lessOrEqual(const decimal& lhs, const decimal& rhs) {
+	// this logic assumes that there is no padding in the operands
+	size_t l = lhs.size();
+	size_t r = rhs.size();
+	if (l < r) return true;
+	if (l > r) return false;
+	// numbers are the same size, need to compare magnitude
+	decimal::const_reverse_iterator ritl = lhs.rbegin();
+	decimal::const_reverse_iterator ritr = rhs.rbegin();
+	for (; ritl != lhs.rend() || ritr != rhs.rend(); ++ritl, ++ritr) {
+		if (*ritl < *ritr) return true;
+		if (*ritl > *ritr) return false;
+		// if the digits are equal we need to check the next set
+	}
+	// at this point we know the two operands are the same
+	return true;
+}
+// in-place addition (equivalent to +=)
 void add(decimal& lhs, const decimal& rhs) {
 	decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
-	if (lhs.sign != rhs.sign) {  // different signs
-		_rhs.sign = !rhs.sign;
-		return sub(lhs, _rhs);
+	if (lhs.sign() != rhs.sign()) {  // different signs
+		_rhs.setsign(!rhs.sign());
+		sub(lhs, _rhs);
 	}
 	else {
 		// same sign implies this->negative is invariant
@@ -807,11 +848,12 @@ void add(decimal& lhs, const decimal& rhs) {
 	}
 	if (carry) lhs.push_back(1);
 }
+// in-place subtraction (equivalent to -=)
 void sub(decimal& lhs, const decimal& rhs) {
 	decimal _rhs(rhs);   // is this copy necessary? I introduced it to have a place to pad
-	bool sign = lhs.sign;
-	if (lhs.sign != rhs.sign) {
-		_rhs.sign = !rhs.sign;
+	bool sign = lhs.sign();
+	if (lhs.sign() != rhs.sign()) {
+		_rhs.setsign(!rhs.sign());
 		return add(lhs, _rhs);
 	}
 	// largest value must be subtracted from
@@ -848,10 +890,11 @@ void sub(decimal& lhs, const decimal& rhs) {
 	}
 	if (borrow) std::cout << "can this happen?" << std::endl;
 	lhs.unpad();
-	lhs.sign = sign;
+	lhs.setsign(sign);
 }
+// in-place multiplication (equivalent to *=)
 void mul(decimal& lhs, const decimal& rhs) {
-	bool signOfFinalResult = (lhs.sign != rhs.sign) ? true : false;
+	bool signOfFinalResult = (lhs.sign() != rhs.sign()) ? true : false;
 	decimal product;
 	// find the smallest decimal to minimize the amount of work
 	size_t l = lhs.size();
@@ -894,8 +937,56 @@ void mul(decimal& lhs, const decimal& rhs) {
 		}
 	}
 	product.unpad();
-	product.sign = signOfFinalResult;
+	product.setsign(signOfFinalResult);
 	lhs = product;
+}
+
+// find largest multiplier
+decimal findLargestMultiple(const decimal& lhs, const decimal& rhs) {
+	// check argument assumption	assert(0 <= lhs && lhs >= 9 * rhs);
+	decimal plusOne, minusOne;
+	plusOne[0] = 1;
+	minusOne[0] = 1; minusOne.setneg();
+	decimal remainder = lhs;
+	remainder.setpos();
+	decimal multiplier;
+	multiplier.setdigit(0);
+	for (int i = 0; i <= 11; ++i) {  // function works for 9 into 99, just as an aside
+		if (remainder.ispos()) {
+			sub(remainder, rhs); //  remainder -= rhs;
+			add(multiplier, plusOne);  // ++multiplier
+		}
+		else {
+			if (remainder.isneg()) {  // we went too far
+				sub(multiplier, minusOne); // --multiplier
+			}
+			// else implies remainder is 0										
+			break;
+		}
+	}
+	return multiplier;
+}
+
+// in-place integer division (equivalent to /=)
+void div(decimal& lhs, const decimal& rhs) {
+
+}
+
+// generate an ASCII decimal format and send to ostream
+inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
+	// to make certain that setw and left/right operators work properly
+	// we need to transform the fixpnt into a string
+	std::stringstream ss;
+
+	//std::streamsize width = ostr.width();
+	std::ios_base::fmtflags ff;
+	ff = ostr.flags();
+	ss.flags(ff);
+	if (d.sign()) ss << '-';
+	for (decimal::const_reverse_iterator rit = d.rbegin(); rit != d.rend(); ++rit) {
+		ss << (int)*rit;
+	}
+	return ostr << ss.str();
 }
 
 } // namespace impl
@@ -909,16 +1000,17 @@ inline fixpnt<nbits, rbits> twos_complement(const fixpnt<nbits, rbits>& value) {
 	return complement;
 }
 
-// convert fixpnt to decimal string
+// convert fixpnt to decimal string, i.e. "-1234.5678"
 template<size_t nbits, size_t rbits>
 std::string convert_to_decimal_string(const fixpnt<nbits, rbits>& value) {
 	if (value.iszero()) {
 		return std::string("0");
 	}
+	// convert the fixed point by first handling the integer part
 	fixpnt<nbits, rbits> number = value.sign() ? twos_complement(value) : value;
 	impl::decimal partial, multiplier;
-	partial.push_back(0); partial.sign = false;
-	multiplier.push_back(1); multiplier.sign = false;
+	partial.push_back(0); partial.setsign(false);
+	multiplier.push_back(1); multiplier.setsign(false);
 	// convert fixpnt to decimal by adding and doubling multipliers
 	for (unsigned i = rbits; i < nbits; ++i) {
 		if (number.at(i)) {
@@ -932,6 +1024,26 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits>& value) {
 	for (impl::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
 		ss << (int)*rit;
 	}
+	// and secondly the fraction part
+	impl::decimal range, discretization;
+	range.push_back(1);
+	range.shiftLeft(rbits);  // create the range we are discretizing
+//	discretization = range / (0x1 << rbits);
+	partial.clear();  partial.push_back(0);
+	multiplier.clear();  multiplier.push_back(1);
+	// convert the fraction part
+	for (unsigned i = 0; i < rbits; ++i) {
+		if (number.at(i)) {
+			impl::add(partial, multiplier);
+		}
+		impl::add(multiplier, multiplier);
+	}
+	impl::mul(partial, discretization);
+	ss << ".";
+	for (impl::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
+		ss << (int)*rit;
+	}
+
 	return ss.str();
 }
 
