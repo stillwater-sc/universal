@@ -118,7 +118,10 @@ namespace sw {
 							dref = d1 / d2;
 						}
 						catch (decimal_integer_divide_by_zero& e) {
-							std::cerr << "properly caught divide by zero exception: " << e.what() << std::endl;
+							if (bReportIndividualTestCases) {
+								std::cout << "properly caught divide by zero exception: " << e.what() << std::endl;
+							}
+							
 							continue;
 						}
 						catch (...) {
@@ -268,15 +271,15 @@ void findLargestMultipleTest() {
 		std::cout << fails << " FAILURES in findLargestMultipleTest"  << std::endl;
 	}
 }
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 1
 
 int main()
 try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Decimal Arithmetic tests failed";
@@ -286,10 +289,9 @@ try {
 	decimal d1, d2, d3;
 
 	d1 = -9;
-	d2 = 10;
-	d3 = d1 / d2;
-	cout << d1 << " / " << d2 << " = " << d3 << endl;
-
+	d2 = 1;
+	d3 = d1 + d2;
+	cout << d1 << " + " << d2 << " = " << d3 << endl;
 
 	reportType(d1);
 
@@ -314,7 +316,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
-	//nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
 
 #endif // STRESS_TESTING
 

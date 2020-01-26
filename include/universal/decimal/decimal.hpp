@@ -94,7 +94,6 @@ public:
 	decimal& operator=(const char rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -105,7 +104,6 @@ public:
 	decimal& operator=(const short rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -116,7 +114,6 @@ public:
 	decimal& operator=(const int rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -127,7 +124,6 @@ public:
 	decimal& operator=(const long rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -138,7 +134,6 @@ public:
 	decimal& operator=(const long long rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -149,7 +144,6 @@ public:
 	decimal& operator=(const unsigned char rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -160,7 +154,6 @@ public:
 	decimal& operator=(const unsigned short rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -171,7 +164,6 @@ public:
 	decimal& operator=(const unsigned int rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -182,7 +174,6 @@ public:
 	decimal& operator=(const unsigned long rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -193,7 +184,6 @@ public:
 	decimal& operator=(const unsigned long long rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -205,11 +195,11 @@ public:
 		return float_assign(rhs);
 	}
 	decimal& operator=(const double rhs) {
-	return float_assign(rhs);
-}
+		return float_assign(rhs);
+	}
 	decimal& operator=(const long double rhs) {
-	return float_assign(rhs);
-}
+		return float_assign(rhs);
+	}
 
 	// arithmetic operators
 	decimal& operator+=(const decimal& rhs) {
@@ -267,6 +257,8 @@ public:
 		}
 		else {
 			// the operands are the same size, thus we need to check their magnitude
+			this->setpos();
+			_rhs.setpos();
 			if (*this < _rhs) {
 				std::swap(*this, _rhs);
 				sign = !sign;
@@ -287,10 +279,20 @@ public:
 		}
 		if (borrow) std::cout << "can this happen?" << std::endl;
 		unpad();
-		this->setsign(sign);
+		if (this->iszero()) { // special case of zero having positive sign
+			this->setpos();
+		}
+		else {
+			this->setsign(sign);
+		}
 		return *this;
 	}
 	decimal& operator*=(const decimal& rhs) {
+		// special case
+		if (iszero() || rhs.iszero()) {
+			setzero();
+			return *this;
+		}
 		bool signOfFinalResult = (negative != rhs.negative) ? true : false;
 		decimal product;
 		// find the smallest decimal to minimize the amount of work
@@ -300,11 +302,11 @@ public:
 		if (l < r) {
 			size_t position = 0;
 			for (sit = begin(); sit != end(); ++sit) {
-				decimal partial_sum;
+				decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 				partial_sum.insert(partial_sum.end(), r + position, 0);
 				decimal::iterator pit = partial_sum.begin() + position;
 				char carry = 0;
-				for (bit = rhs.begin(); bit != rhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
+				for (bit = rhs.begin(); bit != rhs.end() && pit != partial_sum.end(); ++bit, ++pit) {
 					uint8_t digit = *sit * *bit + carry;
 					*pit = digit % 10;
 					carry = digit / 10;
@@ -318,11 +320,11 @@ public:
 		else {
 			size_t position = 0;
 			for (sit = rhs.begin(); sit != rhs.end(); ++sit) {
-				decimal partial_sum;
+				decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 				partial_sum.insert(partial_sum.end(), l + position, 0);
 				decimal::iterator pit = partial_sum.begin() + position;
 				char carry = 0;
-				for (bit = begin(); bit != end() || pit != partial_sum.end(); ++bit, ++pit) {
+				for (bit = begin(); bit != end() && pit != partial_sum.end(); ++bit, ++pit) {
 					uint8_t digit = *sit * *bit + carry;
 					*pit = digit % 10;
 					carry = digit / 10;
@@ -429,9 +431,8 @@ public:
 	inline bool isneg() const { return negative; }
 	inline bool ispos() const { return !negative; }
 
-
 	// modifiers
-	inline void setzero() { clear(); negative = false; }
+	inline void setzero() { clear(); push_back(0); negative = false; }
 	inline void setsign(bool sign) { negative = sign; }
 	inline void setneg() { negative = true; }
 	inline void setpos() { negative = false; }
@@ -587,7 +588,6 @@ template<typename Ty>
 void convert_to_decimal(Ty v, decimal& d) {
 	using namespace std;
 	//cout << numeric_limits<Ty>::digits << " max value " << numeric_limits<Ty>::max() << endl;
-	d.setzero();
 	bool sign = false;
 	if (v == 0) return;
 	if (numeric_limits<Ty>::is_signed) {
@@ -598,10 +598,13 @@ void convert_to_decimal(Ty v, decimal& d) {
 		}
 	}
 	uint64_t mask = 0x1;
-	// can't use assignment operator as it would yield an infinite loop calling convert
-	d.push_back(0); // initialize the decimal value to 0
-	decimal base;
-	base.push_back(1); // set to the value of 1, and double it each iteration
+	d.setzero(); // initialize the decimal value to 0
+	// IMPORTANT: can't use initializer or assignment operator as it would yield 
+	// an infinite loop calling convert_to_decimal. So we need to construct the
+	// decimal from first principals
+	decimal base; // can't use base(1) semantics here as it would cause an infinite loop
+	base.clear();
+	base.push_back(1);
 	while (v) { // minimum loop iterations; exits when no bits left
 		if (v & mask) {
 			d += base;
