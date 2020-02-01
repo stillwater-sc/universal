@@ -126,8 +126,9 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 } // namespace unum
 } // namespace sw
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
+#include <bitset>
 
 int main(int argc, char** argv)
 try {
@@ -140,6 +141,12 @@ try {
 	std::string tag = "Addition failed: ";
 
 #if MANUAL_TESTING
+
+	fixpnt<8, 4> f;
+	f = 3.5f;
+	bitset<8> bs(f.byte(0));
+	cout << bs << endl;
+	cout << f << endl;
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 4>(0.5f, 1.0f);
@@ -159,10 +166,10 @@ try {
 
 
 	// manual exhaustive test
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0>("Manual Testing", true), "fixpnt<4,0>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1>("Manual Testing", true), "fixpnt<4,1>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2>("Manual Testing", true), "fixpnt<4,2>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3>("Manual Testing", true), "fixpnt<4,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0>("Manual Testing", true), "fixpnt<4,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1>("Manual Testing", true), "fixpnt<4,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2>("Manual Testing", true), "fixpnt<4,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3>("Manual Testing", true), "fixpnt<4,3>", "addition");
 
 #else
 

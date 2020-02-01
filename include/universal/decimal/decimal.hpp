@@ -428,8 +428,8 @@ public:
 		return std::all_of(begin(), end(), [](uint8_t i) { return 0 == i; });
 	}
 	inline bool sign() const { return negative; }
-	inline bool isneg() const { return negative; }
-	inline bool ispos() const { return !negative; }
+	inline bool isneg() const { return negative; }   // <  0
+	inline bool ispos() const { return !negative; }  // >= 0
 
 	// modifiers
 	inline void setzero() { clear(); push_back(0); negative = false; }
@@ -589,6 +589,7 @@ void convert_to_decimal(Ty v, decimal& d) {
 	using namespace std;
 	//cout << numeric_limits<Ty>::digits << " max value " << numeric_limits<Ty>::max() << endl;
 	bool sign = false;
+	d.setzero(); // initialize the decimal value to 0
 	if (v == 0) return;
 	if (numeric_limits<Ty>::is_signed) {
 		if (v < 0) {
@@ -598,7 +599,6 @@ void convert_to_decimal(Ty v, decimal& d) {
 		}
 	}
 	uint64_t mask = 0x1;
-	d.setzero(); // initialize the decimal value to 0
 	// IMPORTANT: can't use initializer or assignment operator as it would yield 
 	// an infinite loop calling convert_to_decimal. So we need to construct the
 	// decimal from first principals
