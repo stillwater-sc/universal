@@ -1,4 +1,4 @@
-// arithmetic_add.cpp: functional tests for fixed-point addition
+// arithmetic_div.cpp: functional tests for fixed-point division
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -26,13 +26,13 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	sw::unum::fixpnt<nbits, rbits> a, b, cref, result;
 	a = _a;
 	b = _b;
-	result = a + b;
-	ref = _a + _b;
+	result = a / b;
+	ref = _a / _b;
 	cref = ref;
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << a << " + " << b << " = " << result << " (reference: " << cref << ")   " ;
+	std::cout << std::setw(nbits) << _a << " / " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
+	std::cout << a << " / " << b << " = " << result << " (reference: " << cref << ")   " ;
 	std::cout << (cref == result ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
@@ -73,9 +73,9 @@ void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const 
 		<< std::endl;
 }
 
-// enumerate all addition cases for an fixpnt<nbits,rbits> configuration
+// enumerate all division cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits>
-int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
+int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits> a, b, result, cref;
@@ -88,11 +88,15 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 		for (size_t j = 0; j < NR_VALUES; j++) {
 			b.set_raw_bits(j);
 			db = double(b);
-			ref = da + db;
+			if (j != 0) {
+			    ref = da / db;
+			}
+			else {
+			    ref = 0;
+			}
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
-			// catching overflow
 			try {
-				result = a + b;
+				result = a / b;
 			}
 			catch (...) {
 				if (ref > max_int<nbits>() || iref < min_int<nbits>()) {
@@ -105,15 +109,15 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 			}
 
 #else
-			result = a + b;
+			result = a / b;
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
 			cref = ref;
 			if (result != cref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
+				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", a, b, cref, result);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
+				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, cref, result);
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
@@ -139,7 +143,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Addition failed: ";
+	std::string tag = "Division failed: ";
 
 #if MANUAL_TESTING
 
@@ -152,49 +156,28 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 4>(0.5f, 1.0f);
 
-	{
-		fixpnt<8, 0> fp;
-		fp = 4;
-		cout << fp << endl;
-	}
-
-	{
-		fixpnt<8, 4> fp;
-		fp = 4.125f;
-		cout << fp << endl;
-	}
-
-	{
-		fixpnt<8, 4> fp;
-		for (int i = 0; i < 256; ++i) {
-			bitset<8> bs(fp.byte(0));
-			cout << bs << " = " << fp << endl;
-			++fp;
-		}
-	}
-
 #if STRESS_TESTING
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0>("Manual Testing", true), "fixpnt<4,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1>("Manual Testing", true), "fixpnt<4,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2>("Manual Testing", true), "fixpnt<4,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3>("Manual Testing", true), "fixpnt<4,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 4>("Manual Testing", true), "fixpnt<4,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0>("Manual Testing", true), "fixpnt<4,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1>("Manual Testing", true), "fixpnt<4,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2>("Manual Testing", true), "fixpnt<4,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3>("Manual Testing", true), "fixpnt<4,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4>("Manual Testing", true), "fixpnt<4,4>", "division");
 #endif
 
 #else
 
-	cout << "Fixed-point addition validation" << endl;
+	cout << "Fixed-point division validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "division");
 
 #if STRESS_TESTING
 
