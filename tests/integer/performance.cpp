@@ -157,7 +157,7 @@ void ReproducibilityTestSuite() {
 }
 
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 std::string convert_to_string(const std::vector<char>& v) {
@@ -187,9 +187,10 @@ try {
 #else
 	std::cout << tag << std::endl;
 
-	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 	   
+	TestArithmeticOperatorPerformance();
+
 #if STRESS_TESTING
 
 #endif // STRESS_TESTING

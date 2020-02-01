@@ -769,7 +769,7 @@ public:
 	}
 	// shift left operator for decimal
 	void shiftLeft(size_t orders) {
-		for (int i = 0; i < orders; ++i) {
+		for (size_t i = 0; i < orders; ++i) {
 			this->insert(this->begin(), 0);
 		}
 	}
@@ -779,7 +779,7 @@ public:
 			this->setzero();
 		}
 		else {
-			for (int i = 0; i < orders; ++i) {
+			for (size_t i = 0; i < orders; ++i) {
 				this->erase(this->begin());
 			}
 		}

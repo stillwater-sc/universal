@@ -54,7 +54,6 @@ try {
 		float fb = float(b);
 		float fc = fa - fb;
 		c = a - b;
-		float ref = float(c);
 		if (fc != c) {
 			cout << "FAIL: " << a << " - " << b << " = " << c << " reference = " << fc << endl;
 			++nrOfFailures;

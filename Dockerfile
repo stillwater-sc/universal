@@ -40,8 +40,16 @@ RUN apt-get update && apt-get install -y make cmake
 # and one for each directory that contains test executables.
 COPY --from=builder /usr/src/universal/build/tools/cmd/cmd_*             	              /usr/src/universal/build/tools/cmd/
 COPY --from=builder /usr/src/universal/build/tools/cmd/*.cmake           	              /usr/src/universal/build/tools/cmd/
+COPY --from=builder /usr/src/universal/build/tests/integer/integer_*         	              /usr/src/universal/build/tests/integer/
+COPY --from=builder /usr/src/universal/build/tests/integer/*.cmake         	              /usr/src/universal/build/tests/integer/
+COPY --from=builder /usr/src/universal/build/tests/decimal/decimal_*         	              /usr/src/universal/build/tests/decimal/
+COPY --from=builder /usr/src/universal/build/tests/decimal/*.cmake         	              /usr/src/universal/build/tests/decimal/
+COPY --from=builder /usr/src/universal/build/tests/fixpnt/fixpnt_*         	              /usr/src/universal/build/tests/fixpnt/
+COPY --from=builder /usr/src/universal/build/tests/fixpnt/*.cmake         	              /usr/src/universal/build/tests/fixpnt/
 COPY --from=builder /usr/src/universal/build/tests/posit/posit_*         	              /usr/src/universal/build/tests/posit/
 COPY --from=builder /usr/src/universal/build/tests/posit/*.cmake         	              /usr/src/universal/build/tests/posit/
+COPY --from=builder /usr/src/universal/build/tests/valid/valid_*         	              /usr/src/universal/build/tests/valid/
+COPY --from=builder /usr/src/universal/build/tests/valid/*.cmake         	              /usr/src/universal/build/tests/valid/
 COPY --from=builder /usr/src/universal/build/perf/perf_*                 	              /usr/src/universal/build/perf/
 COPY --from=builder /usr/src/universal/build/perf/*.cmake                	              /usr/src/universal/build/perf/
 COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_exact_test      /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_exact_test
