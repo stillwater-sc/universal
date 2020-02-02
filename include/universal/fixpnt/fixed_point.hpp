@@ -280,12 +280,12 @@ public:
 	fixpnt& operator=(const fixpnt<src_bits, rbits>& src) {
 		if (src_bits <= nbits) {
 			// simple copy of the bytes
-			for (int i = 0; i < src.nrBytes; ++i) {
+			for (unsigned i = 0; i < unsigned(src.nrBytes); ++i) {
 				b[i] = src.byte(i);
 			}
 			if (src < 0) {
 				// we need to sign extent
-				for (int i = nbits; i < src_bits; ++i) {
+				for (unsigned i = nbits; i < unsigned(src_bits); ++i) {
 					this->set(i, true);
 				}
 			}
@@ -796,7 +796,7 @@ public:
 	}
 	// shift right operator for decimal
 	void shiftRight(size_t orders) {
-		if (signed(size()) <= orders) {
+		if (size() <= orders) {
 			this->setzero();
 		}
 		else {
