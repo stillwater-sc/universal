@@ -37,6 +37,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
+// conditional compile flags
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
