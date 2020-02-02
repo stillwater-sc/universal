@@ -64,6 +64,7 @@ option(BUILD_BITBLOCK                    "Set to ON to build bitblock tests"    
 option(BUILD_REAL_NUMBERS                "Set to ON to build real value tests"                 OFF)
 option(BUILD_INTEGER_NUMBERS             "Set to ON to build integer tests"                    OFF)
 option(BUILD_DECIMAL_NUMBERS             "Set to ON to build decimal tests"                    OFF)
+option(BUILD_FIXPNT_NUMBERS              "Set to ON to build fixed-point tests"                OFF)
 option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 tests"                OFF)
 option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 tests"                OFF)
 option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3 posit tests"          OFF)

@@ -293,6 +293,7 @@ public:
 		else {
 			throw "to be implemented";
 		}
+		return *this;
 	}
 #ifdef POSIT_CONCEPT_GENERALIZATION
 	// TODO: SFINAE to assure we only match a posit<nbits,es> concept
