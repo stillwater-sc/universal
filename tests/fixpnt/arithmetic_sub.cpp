@@ -3,11 +3,10 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <bitset> // temporary to look at binary forms
 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
-//#define FIXPNT_FAST_SPECIALIZATION
+#define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 

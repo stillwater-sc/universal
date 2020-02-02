@@ -46,9 +46,14 @@ struct fixpnt_arithmetic_exception
 	fixpnt_arithmetic_exception(const std::string& error) : std::runtime_error(std::string("fixed-point arithmetic exception: ") + error) {};
 };
 
-// divide by zero arithmetic exception for integers
+// divide by zero arithmetic exception for fixed-point
 struct fixpnt_divide_by_zero : public fixpnt_arithmetic_exception {
 	fixpnt_divide_by_zero(const std::string& error = "fixed-point division by zero") : fixpnt_arithmetic_exception(error) {}
+};
+
+// overflow exception for fixed-point
+struct fixpnt_overflow : public fixpnt_arithmetic_exception {
+	fixpnt_overflow(const std::string& error = "fixed-point overflow") : fixpnt_arithmetic_exception(error) {}
 };
 
 ///////////////////////////////////////////////////////////////

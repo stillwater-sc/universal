@@ -1,4 +1,4 @@
-// arithmetic_div.cpp: functional tests for fixed-point division
+// conversion.cpp: functional tests for fixed-point conversions
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -25,13 +25,13 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	sw::unum::fixpnt<nbits, rbits> a, b, cref, result;
 	a = _a;
 	b = _b;
-	result = a / b;
-	ref = _a / _b;
+	result = a + b;
+	ref = _a + _b;
 	cref = ref;
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " / " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << a << " / " << b << " = " << result << " (reference: " << cref << ")   " ;
+	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
+	std::cout << a << " + " << b << " = " << result << " (reference: " << cref << ")   " ;
 	std::cout << (cref == result ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
@@ -45,46 +45,32 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "division failed: ";
+	std::string tag = "conversion failed: ";
 
 #if MANUAL_TESTING
 
-	fixpnt<8, 4> a, b, c;
-	a = 3.5f;
-	c = a / b;
-	cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
+	fixpnt<4, 1> f4_1;
+	fixpnt<8, 1> f8_1;
+	f4_1 = 4.5f;
+	cout << to_binary(f4_1) << " " << f4_1 << endl;
+	f8_1 = f4_1;
+	cout << to_binary(f8_1) << " " << f8_1 << endl;
 
-
-	// generate individual testcases to hand trace/debug
-	GenerateTestCase<8, 4>(0.5f, 1.0f);
 
 #if STRESS_TESTING
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyDivisin<4, 0>("Manual Testing", true), "fixpnt<4,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1>("Manual Testing", true), "fixpnt<4,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2>("Manual Testing", true), "fixpnt<4,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3>("Manual Testing", true), "fixpnt<4,3>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4>("Manual Testing", true), "fixpnt<4,4>", "division");
 
 #endif
 
 #else
-	bool bReportIndividualTestCases = false;
 
-	cout << "Fixed-point division validation" << endl;
+	cout << "Fixed-point conversion validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "division");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "addition");
 
 #if STRESS_TESTING
 
