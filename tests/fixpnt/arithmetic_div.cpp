@@ -140,7 +140,6 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Division failed: ";
@@ -157,15 +156,18 @@ try {
 	GenerateTestCase<8, 4>(0.5f, 1.0f);
 
 #if STRESS_TESTING
+
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0>("Manual Testing", true), "fixpnt<4,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivisin<4, 0>("Manual Testing", true), "fixpnt<4,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1>("Manual Testing", true), "fixpnt<4,1>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2>("Manual Testing", true), "fixpnt<4,2>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3>("Manual Testing", true), "fixpnt<4,3>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4>("Manual Testing", true), "fixpnt<4,4>", "division");
+
 #endif
 
 #else
+	bool bReportIndividualTestCases = false;
 
 	cout << "Fixed-point division validation" << endl;
 
