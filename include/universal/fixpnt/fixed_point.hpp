@@ -275,6 +275,25 @@ public:
 		return *this;
 	}
 
+	// conversion operator between different fixed point formats with the same rbits
+	template<size_t src_bits>
+	fixpnt& operator=(const fixpnt<src_bits, rbits>& src) {
+		if (src_bits <= nbits) {
+			// simple copy of the bytes
+			for (int i = 0; i < src.nrBytes; ++i) {
+				b[i] = src.byte(i);
+			}
+			if (src < 0) {
+				// we need to sign extent
+				for (int i = nbits; i < src_bits; ++i) {
+					this->set(i, true);
+				}
+			}
+		}
+		else {
+			throw "to be implemented";
+		}
+	}
 #ifdef POSIT_CONCEPT_GENERALIZATION
 	// TODO: SFINAE to assure we only match a posit<nbits,es> concept
 	template<typename PositType>
@@ -383,8 +402,10 @@ public:
 		return *this;
 	}
 	fixpnt& operator*=(const fixpnt& rhs) {
-		fixpnt base(*this);
-		fixpnt multiplicant(rhs);
+		// how are we going to deal with overflow?
+		fixpnt<2*nbits, rbits> base, multiplicant;
+		base = *this;
+		multiplicant = rhs;
 		clear();
 		for (unsigned i = 0; i < nbits; ++i) {
 			if (base.at(i)) {
@@ -392,8 +413,8 @@ public:
 			}
 			multiplicant <<= 1;
 		}
-		// since we used operator++, which enforces the nulling of leading bits
-		// we don't need to null here
+		// if rbit >= 1 we need to round
+		std::cout << "base " << base << std::endl;
 		return *this;
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {

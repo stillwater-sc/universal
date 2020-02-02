@@ -143,8 +143,24 @@ try {
 
 #if MANUAL_TESTING
 
+
+	fixpnt<4, 1> a, b, c;
+	// overflow test
+	a = 4.0f; cout << a << endl;
+	b = 4.0f;
+	c = a * b;
+	cout << bitset<4>(a.byte(0)) << " * " << bitset<4>(b.byte(0)) << " = " << bitset<8>(c.byte(0)) << " " << c << endl;
+
+	// rounding test
+	a = 0.5f;
+	b = 0.5f;
+	c = a * b;
+	cout << bitset<4>(a.byte(0)) << " * " << bitset<4>(b.byte(0)) << " = " << bitset<8>(c.byte(0)) << " " << c << endl;
+
+	return 0;
+
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<8, 4>(0.5f, 1.0f);
+	GenerateTestCase<8, 4>(0.5f, 0.5f);
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");
 
