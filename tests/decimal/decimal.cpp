@@ -5,6 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
+// configure the decimal integer arithmetic class
+#define DECIMAL_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/decimal/decimal.hpp>
 #include <universal/decimal/numeric_limits.hpp>
 // test helpers, such as, ReportTestResults
@@ -106,25 +108,49 @@ namespace sw {
 		// verification of division
 		int VerifyDivision(std::string tag, long ub, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
+			decimal dref;
 			for (long i = -ub; i <= ub; ++i) {
 				decimal d1 = i;
 				for (long j = -ub; j <= ub; ++j) {
 					decimal d2 = j;
+					if (j == 0) {
+						try {
+							dref = d1 / d2;
+						}
+						catch (decimal_integer_divide_by_zero& e) {
+							if (bReportIndividualTestCases) {
+								std::cout << "properly caught divide by zero exception: " << e.what() << std::endl;
+							}
+							
+							continue;
+						}
+						catch (...) {
+							++nrOfFailedTests;
+							continue;
+						}
+					}
+					else {
+						dref = d1 / d2;
+					}
 					long ref = i / j;
-					decimal dref = d1 / d2;
 					if (dref != ref) {
 						++nrOfFailedTests;
 						if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "div", d1, d2, dref, ref);
 					}
 					else {
-						// if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "div", d1, d2, dref, ref);
+						//if (bReportIndividualTestCases) ReportBinaryDecimalSuccess("SUCCESS", "div", d1, d2, dref, ref);
 					}
 				}
 			}
 			return nrOfFailedTests;
 		}
-	}
-}
+
+		bool less(const decimal& lhs, const decimal& rhs) {
+			return lhs < rhs;
+		}
+
+	}  // namespace unum
+} // namespace sw
 
 void examples() {
 	using namespace std;
@@ -193,7 +219,7 @@ void reportType(Ty v) {
 
 	cout << "Numeric limits for type " << typeid(v).name() << '\n';
 	cout << "Type              : " << typeid(v).name() << endl;
-#if MSVC
+#if _MSC_VER
 	cout << "mangled C++ type  : " << typeid(v).raw_name() << endl;
 #endif
 	cout << "min()             : " << numeric_limits<Ty>::min() << '\n';
@@ -226,6 +252,25 @@ void reportType(Ty v) {
 	cout << "round_style       : " << numeric_limits<Ty>::round_style << '\n';
 }
 
+void findLargestMultipleTest() {
+	sw::unum::decimal d;
+	int fails = 0;
+	int numerator = 9;
+	d = numerator;
+	for (int i = 0; i < 100; ++i) {
+		sw::unum::decimal multiple = sw::unum::findLargestMultiple(i, d);
+		if (multiple != (i / 9)) {
+			std::cout << d << " into " << i << " yields multiplier " << multiple << " but should have been " << (i/numerator) << std::endl;
+			++fails;
+		}	
+	}
+	if (fails == 0) {
+		std::cout << "PASS  : findLargestMultipleTest" << std::endl;
+	}
+	else {
+		std::cout << fails << " FAILURES in findLargestMultipleTest"  << std::endl;
+	}
+}
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 1
 
@@ -242,16 +287,25 @@ try {
 #if MANUAL_TESTING
 
 	decimal d1, d2, d3;
+
+	d1 = -9;
+	d2 = 1;
+	d3 = d1 + d2;
+	cout << d1 << " + " << d2 << " = " << d3 << endl;
+
 	reportType(d1);
+
+	findLargestMultipleTest();
 
 	d1.parse("50000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000");
 	cout << d1 << endl;
 	cout << d1 + d1 << endl;
 
-	long rangeBound = 100;
+	long rangeBound = 10; // 100;
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
 
 #else
 	std::cout << "Decimal Arithmetic verfication" << std::endl;
@@ -262,7 +316,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
-	//nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
 
 #endif // STRESS_TESTING
 

@@ -3,6 +3,37 @@
 # docker build --target builder -t stillwater/universal:builder will just build a builder container
 # docker build --target release -t stillwater/universal:release will just build a release container
 
+# first some compatibility compilation runs with old, non-compliant compilers
+FROM gcc:5 as gcc5_compile_test
+MAINTAINER Theodore Omtzigt
+# create a cmake build environment
+RUN apt-get update && apt-get install -y build-essential apt-utils cmake \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+# copy in the source tree and store at /usr/src/universal
+# make certain you have a good .dockerignore file installed so that this layer isn't ginormous
+COPY . /usr/src/universal
+# print contextual information of the container at this state for visual inspection
+RUN ls -la /usr/src/universal && cmake -version 
+
+# set up the cmake/make environment to issue the build commands
+RUN mkdir build 
+WORKDIR /usr/src/universal/build
+RUN cmake -DBUILD_CI_CHECK=ON .. && make
+# 
+# Default build flags
+#   BUILD_CMD_LINE_TOOLS         :   ON
+#   BUILD_EDUCATION_EXAMPLES     :   ON
+#   BUILD_APPLICATION_EXAMPLES   :   ON
+#   BUILD_NUMERICAL              :   ON
+#   BUILD_FUNCTIONS              :   ON
+#   BUILD_PLAYGROUND             :   ON
+#
+# Just compile the C SHIM environment
+#RUN cmake -DBUILD_C_API_SHIM_LIB=ON -DBUILD_CMD_LINE_TOOLS=OFF -DBUILD_EDUCATION_EXAMPLES=OFF -DBUILD_APPLICATION_EXAMPLES=OFF -DBUILD_NUMERICAL=OFF -DBUILD_FUNCTIONS=OFF -DBUILD_PLAYGROUND=OFF .. && make
+
+# now build the actual code that will get functionality tested
 # BUILDER stage
 FROM gcc:7 as builder
 MAINTAINER Theodore Omtzigt
@@ -40,16 +71,8 @@ RUN apt-get update && apt-get install -y make cmake
 # and one for each directory that contains test executables.
 COPY --from=builder /usr/src/universal/build/tools/cmd/cmd_*             	              /usr/src/universal/build/tools/cmd/
 COPY --from=builder /usr/src/universal/build/tools/cmd/*.cmake           	              /usr/src/universal/build/tools/cmd/
-COPY --from=builder /usr/src/universal/build/tests/integer/integer_*         	              /usr/src/universal/build/tests/integer/
-COPY --from=builder /usr/src/universal/build/tests/integer/*.cmake         	              /usr/src/universal/build/tests/integer/
-COPY --from=builder /usr/src/universal/build/tests/decimal/decimal_*         	              /usr/src/universal/build/tests/decimal/
-COPY --from=builder /usr/src/universal/build/tests/decimal/*.cmake         	              /usr/src/universal/build/tests/decimal/
-COPY --from=builder /usr/src/universal/build/tests/fixpnt/fixpnt_*         	              /usr/src/universal/build/tests/fixpnt/
-COPY --from=builder /usr/src/universal/build/tests/fixpnt/*.cmake         	              /usr/src/universal/build/tests/fixpnt/
 COPY --from=builder /usr/src/universal/build/tests/posit/posit_*         	              /usr/src/universal/build/tests/posit/
 COPY --from=builder /usr/src/universal/build/tests/posit/*.cmake         	              /usr/src/universal/build/tests/posit/
-COPY --from=builder /usr/src/universal/build/tests/valid/valid_*         	              /usr/src/universal/build/tests/valid/
-COPY --from=builder /usr/src/universal/build/tests/valid/*.cmake         	              /usr/src/universal/build/tests/valid/
 COPY --from=builder /usr/src/universal/build/perf/perf_*                 	              /usr/src/universal/build/perf/
 COPY --from=builder /usr/src/universal/build/perf/*.cmake                	              /usr/src/universal/build/perf/
 COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_exact_test      /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_exact_test

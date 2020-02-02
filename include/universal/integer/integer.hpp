@@ -400,7 +400,7 @@ public:
 			}
 			multiplicant <<= 1;
 		}
-		// since we used operator++, which enforces the nulling of leading bits
+		// since we used operator+=, which enforces the nulling of leading bits
 		// we don't need to null here
 		return *this;
 	}

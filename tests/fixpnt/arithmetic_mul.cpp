@@ -1,4 +1,4 @@
-// arithmetic_add.cpp: functional tests for fixed-point addition
+// arithmetic_mul.cpp: functional tests for fixed-point multiplication
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -26,13 +26,13 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	sw::unum::fixpnt<nbits, rbits> a, b, cref, result;
 	a = _a;
 	b = _b;
-	result = a + b;
-	ref = _a + _b;
+	result = a * b;
+	ref = _a * _b;
 	cref = ref;
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << a << " + " << b << " = " << result << " (reference: " << cref << ")   " ;
+	std::cout << std::setw(nbits) << _a << " * " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
+	std::cout << a << " * " << b << " = " << result << " (reference: " << cref << ")   " ;
 	std::cout << (cref == result ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
@@ -73,9 +73,9 @@ void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const 
 		<< std::endl;
 }
 
-// enumerate all addition cases for an fixpnt<nbits,rbits> configuration
+// enumerate all multiplication cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits>
-int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
+int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits> a, b, result, cref;
@@ -88,11 +88,11 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 		for (size_t j = 0; j < NR_VALUES; j++) {
 			b.set_raw_bits(j);
 			db = double(b);
-			ref = da + db;
+			ref = da * db;
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 			// catching overflow
 			try {
-				result = a + b;
+				result = a * b;
 			}
 			catch (...) {
 				if (ref > max_int<nbits>() || iref < min_int<nbits>()) {
@@ -105,15 +105,15 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 			}
 
 #else
-			result = a + b;
+			result = a * b;
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
 			cref = ref;
 			if (result != cref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
+				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, cref, result);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
+				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, cref, result);
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
@@ -127,7 +127,7 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 } // namespace unum
 } // namespace sw
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 #include <bitset>
 
@@ -136,65 +136,56 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Addition failed: ";
+	std::string tag = "Multiplication failed: ";
 
 #if MANUAL_TESTING
 
-	fixpnt<8, 4> f;
-	f = 3.5f;
-	bitset<8> bs(f.byte(0));
-	cout << bs << endl;
-	cout << f << endl;
+
+	fixpnt<4, 1> a, b, c;
+	// overflow test
+	a = 4.0f; cout << a << endl;
+	b = 4.0f;
+	c = a * b;
+	cout << bitset<4>(a.byte(0)) << " * " << bitset<4>(b.byte(0)) << " = " << bitset<8>(c.byte(0)) << " " << c << endl;
+
+	// rounding test
+	a = 0.5f;
+	b = 0.5f;
+	c = a * b;
+	cout << bitset<4>(a.byte(0)) << " * " << bitset<4>(b.byte(0)) << " = " << bitset<8>(c.byte(0)) << " " << c << endl;
+
+	return 0;
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<8, 4>(0.5f, 1.0f);
+	GenerateTestCase<8, 4>(0.5f, 0.5f);
 
-	{
-		fixpnt<8, 0> fp;
-		fp = 4;
-		cout << fp << endl;
-	}
-
-	{
-		fixpnt<8, 4> fp;
-		fp = 4.125f;
-		cout << fp << endl;
-	}
-
-	{
-		fixpnt<8, 4> fp;
-		for (int i = 0; i < 256; ++i) {
-			bitset<8> bs(fp.byte(0));
-			cout << bs << " = " << fp << endl;
-			++fp;
-		}
-	}
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");
 
 #if STRESS_TESTING
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0>("Manual Testing", true), "fixpnt<4,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1>("Manual Testing", true), "fixpnt<4,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2>("Manual Testing", true), "fixpnt<4,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3>("Manual Testing", true), "fixpnt<4,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 4>("Manual Testing", true), "fixpnt<4,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0>("Manual Testing", true), "fixpnt<4,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1>("Manual Testing", true), "fixpnt<4,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2>("Manual Testing", true), "fixpnt<4,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 3>("Manual Testing", true), "fixpnt<4,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 4>("Manual Testing", true), "fixpnt<4,4>", "multiplication");
 #endif
 
 #else
 
-	cout << "Fixed-point addition validation" << endl;
+	cout << "Fixed-point multiplication validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "multiplication");
 
 #if STRESS_TESTING
 

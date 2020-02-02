@@ -1,12 +1,13 @@
 #pragma once
 // decimal.hpp: definition of arbitrary decimal integer configurations
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <cstdint>
 #include <sstream>
+#include <cassert>
 #include <iostream>
 #include <iomanip>
 #include <vector>
@@ -15,6 +16,7 @@
 #include <algorithm>
 
 #include "universal/string/strmanip.hpp"
+#include "./decimal_exceptions.hpp"
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -49,11 +51,16 @@
 namespace sw {
 namespace unum {
 
-	// Forward references
+/////////////////////////////////////////////
+// Forward references
 class decimal;
-template<typename Ty> void convert_to_decimal(Ty v, decimal& d);
+struct decintdiv;
+decimal quotient(const decimal&, const decimal&);
+decimal remainder(const decimal&, const decimal&);
+int findMsd(const decimal&);
+template<typename Ty> void convert_to_decimal(Ty, decimal&);
 
-// Arbitrary precision decimal number
+// Arbitrary precision decimal integer number
 class decimal : public std::vector<uint8_t> {
 public:
 	decimal() { setzero(); }
@@ -87,7 +94,6 @@ public:
 	decimal& operator=(const char rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -98,7 +104,6 @@ public:
 	decimal& operator=(const short rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -109,7 +114,6 @@ public:
 	decimal& operator=(const int rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -120,7 +124,6 @@ public:
 	decimal& operator=(const long rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -131,7 +134,6 @@ public:
 	decimal& operator=(const long long rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -142,7 +144,6 @@ public:
 	decimal& operator=(const unsigned char rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -153,7 +154,6 @@ public:
 	decimal& operator=(const unsigned short rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -164,7 +164,6 @@ public:
 	decimal& operator=(const unsigned int rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -175,7 +174,6 @@ public:
 	decimal& operator=(const unsigned long rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -186,7 +184,6 @@ public:
 	decimal& operator=(const unsigned long long rhs) {
 		if (0 == rhs) {
 			setzero();
-			push_back(0);
 			return *this;
 		}
 		else {
@@ -198,11 +195,11 @@ public:
 		return float_assign(rhs);
 	}
 	decimal& operator=(const double rhs) {
-	return float_assign(rhs);
-}
+		return float_assign(rhs);
+	}
 	decimal& operator=(const long double rhs) {
-	return float_assign(rhs);
-}
+		return float_assign(rhs);
+	}
 
 	// arithmetic operators
 	decimal& operator+=(const decimal& rhs) {
@@ -260,6 +257,8 @@ public:
 		}
 		else {
 			// the operands are the same size, thus we need to check their magnitude
+			this->setpos();
+			_rhs.setpos();
 			if (*this < _rhs) {
 				std::swap(*this, _rhs);
 				sign = !sign;
@@ -280,10 +279,20 @@ public:
 		}
 		if (borrow) std::cout << "can this happen?" << std::endl;
 		unpad();
-		this->setsign(sign);
+		if (this->iszero()) { // special case of zero having positive sign
+			this->setpos();
+		}
+		else {
+			this->setsign(sign);
+		}
 		return *this;
 	}
 	decimal& operator*=(const decimal& rhs) {
+		// special case
+		if (iszero() || rhs.iszero()) {
+			setzero();
+			return *this;
+		}
 		bool signOfFinalResult = (negative != rhs.negative) ? true : false;
 		decimal product;
 		// find the smallest decimal to minimize the amount of work
@@ -293,12 +302,12 @@ public:
 		if (l < r) {
 			size_t position = 0;
 			for (sit = begin(); sit != end(); ++sit) {
-				decimal partial_sum;
+				decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 				partial_sum.insert(partial_sum.end(), r + position, 0);
 				decimal::iterator pit = partial_sum.begin() + position;
 				char carry = 0;
-				for (bit = rhs.begin(); bit != rhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
-					char digit = *sit * *bit + carry;
+				for (bit = rhs.begin(); bit != rhs.end() && pit != partial_sum.end(); ++bit, ++pit) {
+					uint8_t digit = *sit * *bit + carry;
 					*pit = digit % 10;
 					carry = digit / 10;
 				}
@@ -311,12 +320,12 @@ public:
 		else {
 			size_t position = 0;
 			for (sit = rhs.begin(); sit != rhs.end(); ++sit) {
-				decimal partial_sum;
+				decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 				partial_sum.insert(partial_sum.end(), l + position, 0);
 				decimal::iterator pit = partial_sum.begin() + position;
 				char carry = 0;
-				for (bit = begin(); bit != end() || pit != partial_sum.end(); ++bit, ++pit) {
-					char digit = *sit * *bit + carry;
+				for (bit = begin(); bit != end() && pit != partial_sum.end(); ++bit, ++pit) {
+					uint8_t digit = *sit * *bit + carry;
 					*pit = digit % 10;
 					carry = digit / 10;
 				}
@@ -332,28 +341,118 @@ public:
 		return *this;
 	}
 	decimal& operator/=(const decimal& rhs) {
+		*this = quotient(*this, rhs);
 		return *this;
 	}
+	decimal& operator%=(const decimal& rhs) {
+		*this = remainder(*this, rhs);
+		return *this;
+	}
+	decimal& operator<<=(const signed shift) {
+		if (shift == 0) return *this;
+		if (shift < 0) {
+			operator>>=(-shift);
+			return *this;
+		}
+		for (int i = 0; i < shift; ++i) {
+			this->insert(this->begin(), 0);
+		}
+		return *this;
+	}
+	decimal& operator>>=(const signed shift) {
+		if (shift == 0) return *this;
+		if (shift < 0) {
+			operator<<=(-shift);
+			return *this;
+		}
+		if (signed(size()) <= shift) {
+			this->setzero();
+		}
+		else {
+			for (int i = 0; i < shift; ++i) {
+				this->erase(this->begin());
+			}
+		}
+		return *this;
+	}
+
+	// unitary operators
+	decimal operator-() {
+		decimal tmp(*this);
+		tmp.setsign(!tmp.sign());
+		return tmp;
+	}
+	decimal operator++() {
+		decimal tmp(*this);
+		decimal plusOne;
+		plusOne.setdigit(1);
+		*this += plusOne;
+		return tmp;
+	}
+	decimal& operator++(int d) {
+		decimal plusOne;
+		plusOne.setdigit(1);
+		*this += plusOne;
+		return *this;
+	}
+	decimal operator--() {
+		decimal tmp(*this);
+		decimal plusOne;
+		plusOne.setdigit(1);
+		*this -= plusOne;
+		return tmp;
+	}
+	decimal& operator--(int d) {
+		decimal plusOne;
+		plusOne.setdigit(1);
+		*this -= plusOne;
+		return *this;
+	}
+
+	// conversion operators: Maybe remove explicit, MTL compiles, but we have lots of double computation then
+	explicit operator unsigned short() const { return to_ushort(); }
+	explicit operator unsigned int() const { return to_uint(); }
+	explicit operator unsigned long() const { return to_ulong(); }
+	explicit operator unsigned long long() const { return to_ulong_long(); }
+	explicit operator short() const { return to_short(); }
+	explicit operator int() const { return to_int(); }
+	explicit operator long() const { return to_long(); }
+	explicit operator long long() const { return to_long_long(); }
+	explicit operator float() const { return to_float(); }
+	explicit operator double() const { return to_double(); }
+	explicit operator long double() const { return to_long_double(); }
+
 	// selectors
 	inline bool iszero() const {
 		if (size() == 0) return true;
 		return std::all_of(begin(), end(), [](uint8_t i) { return 0 == i; });
 	}
 	inline bool sign() const { return negative; }
-	inline bool isneg() const { return negative; }
-	inline bool ispos() const { return !negative; }
+	inline bool isneg() const { return negative; }   // <  0
+	inline bool ispos() const { return !negative; }  // >= 0
 
 	// modifiers
-	inline void setzero() { clear(); negative = false; }
+	inline void setzero() { clear(); push_back(0); negative = false; }
 	inline void setsign(bool sign) { negative = sign; }
 	inline void setneg() { negative = true; }
 	inline void setpos() { negative = false; }
+	inline void setdigit(uint8_t d, bool sign = false) {
+		assert(d >= 0 && d <= 9); // test argument assumption
+		clear();
+		push_back(d);
+		negative = sign;
+	}
 
 	// remove any leading zeros from a decimal representation
 	void unpad() {
 		int n = (int)size();
 		for (int i = n - 1; i > 0; --i) {
-			if (operator[](i) == 0) pop_back();
+			if (operator[](i) == 0) {
+				pop_back();
+			}
+			else {
+				return;  // found the most significant digit
+			}
 		}
 	}
 
@@ -419,6 +518,38 @@ public:
 	}
 
 protected:
+	// HELPER methods
+
+	// conversion functions
+	inline short to_short() const { return short(to_long_long()); }
+	inline int to_int() const { return short(to_long_long()); }
+	inline long to_long() const { return short(to_long_long()); }
+	inline long long to_long_long() const {
+		long long v = 0;
+		decimal::const_iterator it;
+		long long order;
+		order = sign() ? -1 : 1;
+		for (it = this->begin(); it != this->end(); ++it) {
+			v += *it * order;
+			order *= 10;
+		}
+		return v;
+	}
+	inline unsigned short to_ushort() const { return short(to_ulong_long()); }
+	inline unsigned int to_uint() const { return short(to_ulong_long()); }
+	inline unsigned long to_ulong() const { return short(to_ulong_long()); }
+	inline unsigned long long to_ulong_long() const {
+		return (unsigned long long)to_long_long();
+	}
+	inline float to_float() const {
+		return 0.0f;
+	}
+	inline double to_double() const {
+		return 0.0;
+	}
+	inline long double to_long_double() const {
+		return 0.0l;
+	}
 
 	template<typename Ty>
 	decimal& float_assign(Ty& rhs) {
@@ -443,13 +574,22 @@ private:
 
 ////////////////// helper functions
 
+// find the order of the most significant digit, precondition decimal is unpadded
+inline int findMsd(const decimal& v) {
+	int msd = int(v.size()) - 1;
+	if (msd == 0 && v == 0) return -1; // no significant digit found, all digits are zero
+	assert(v.at(msd) != 0); // indicates the decimal wasn't unpadded
+	return msd; 
+}
+
 // Convert integer types to a decimal representation
+// TODO: needs SFINAE enable_if to constrain it to native integer types
 template<typename Ty>
 void convert_to_decimal(Ty v, decimal& d) {
 	using namespace std;
 	//cout << numeric_limits<Ty>::digits << " max value " << numeric_limits<Ty>::max() << endl;
-	d.setzero();
 	bool sign = false;
+	d.setzero(); // initialize the decimal value to 0
 	if (v == 0) return;
 	if (numeric_limits<Ty>::is_signed) {
 		if (v < 0) {
@@ -459,10 +599,12 @@ void convert_to_decimal(Ty v, decimal& d) {
 		}
 	}
 	uint64_t mask = 0x1;
-	// can't use assignment operator as it would yield an infinite loop calling convert
-	d.push_back(0); // initialize the decimal value to 0
-	decimal base;
-	base.push_back(1); // set to the value of 1, and double it each iteration
+	// IMPORTANT: can't use initializer or assignment operator as it would yield 
+	// an infinite loop calling convert_to_decimal. So we need to construct the
+	// decimal from first principals
+	decimal base; // can't use base(1) semantics here as it would cause an infinite loop
+	base.clear();
+	base.push_back(1);
 	while (v) { // minimum loop iterations; exits when no bits left
 		if (v & mask) {
 			d += base;
@@ -473,6 +615,7 @@ void convert_to_decimal(Ty v, decimal& d) {
 	// finally set the sign
 	d.setsign(sign);
 }
+
 
 ////////////////// DECIMAL operators
 
@@ -537,7 +680,8 @@ inline decimal operator/(const decimal& lhs, const decimal& rhs) {
 	// decimal - decimal logic operators
 // equality test
 bool operator==(const decimal& lhs, const decimal& rhs) {
-	bool areEqual = std::equal(lhs.begin(), lhs.end(), rhs.begin());
+	if (lhs.size() != rhs.size()) return false;
+	bool areEqual = std::equal(lhs.begin(), lhs.end(), rhs.begin()) && lhs.sign() == rhs.sign();
 	return areEqual;
 }
 // inequality test
@@ -546,17 +690,22 @@ bool operator!=(const decimal& lhs, const decimal& rhs) {
 }
 // less-than test
 bool operator<(const decimal& lhs, const decimal& rhs) {
+	if (lhs.sign() != rhs.sign()) {
+		return lhs.sign() ? true : false;
+	}
+
+	// signs are the same
 	// this logic assumes that there is no padding in the operands
 	size_t l = lhs.size();
 	size_t r = rhs.size();
-	if (l < r) return true;
-	if (l > r) return false;
+	if (l < r) return lhs.sign() ? false : true;
+	if (l > r) return lhs.sign() ? true : false;
 	// numbers are the same size, need to compare magnitude
 	decimal::const_reverse_iterator ritl = lhs.rbegin();
 	decimal::const_reverse_iterator ritr = rhs.rbegin();
 	for (; ritl != lhs.rend() || ritr != rhs.rend(); ++ritl, ++ritr) {
-		if (*ritl < *ritr) return true;
-		if (*ritl > *ritr) return false;
+		if (*ritl < *ritr) return lhs.sign() ? false : true;
+		if (*ritl > *ritr) return lhs.sign() ? true : false;
 		// if the digits are equal we need to check the next set
 	}
 	// at this point we know the two operands are the same
@@ -613,6 +762,105 @@ inline bool operator<=(long lhs, const decimal& rhs) {
 }
 inline bool operator>=(long lhs, const decimal& rhs) {
 	return !operator<(decimal(lhs), rhs);
+}
+
+///////////////////////////////////////////////////////////////////////
+// 
+// find largest multiplier of rhs being less or equal to lhs by subtraction; assumes 0*rhs <= lhs <= 9*rhs 
+decimal findLargestMultiple(const decimal& lhs, const decimal& rhs) {
+	// check argument assumption	assert(0 <= lhs && lhs >= 9 * rhs);
+	decimal remainder = lhs;
+	remainder.setpos();
+	decimal multiplier;
+	multiplier.setdigit(0);
+	for (int i = 0; i <= 11; ++i) {  // function works for 9 into 99, just as an aside
+		if (remainder > 0) {
+			remainder -= rhs;
+			++multiplier;
+		}
+		else {
+			if (remainder < 0) {  // we went too far
+				--multiplier;
+			}
+			// else implies remainder is 0										
+			break;
+		}
+	}
+	return multiplier;
+}
+
+
+///////////////////////
+// decintdiv_t for decimal to capture quotient and remainder during long division
+struct decintdiv {
+	decimal quot; // quotient
+	decimal rem;  // remainder
+};
+
+// divide integer decimal a and b and return result argument
+decintdiv decint_divide(const decimal& _a, const decimal& _b) {
+	if (_b == 0) {
+#if DECIMAL_THROW_ARITHMETIC_EXCEPTION
+		throw decimal_integer_divide_by_zero{};
+#else
+		std::cerr << "integer_divide_by_zero\n";
+#endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
+	}
+	// generate the absolute values to do long division 
+	bool a_negative = _a.sign();
+	bool b_negative = _b.sign();
+	bool result_negative = (a_negative ^ b_negative);
+	decimal a(_a); a.setpos();
+	decimal b(_b); b.setpos();
+	decintdiv divresult;
+	if (a < b) {
+		divresult.quot = 0;
+		divresult.rem = _a; // a % b = a when a / b = 0
+		return divresult; // a / b = 0 when b > a
+	}
+	// initialize the long division
+	decimal accumulator = a;
+	// prepare the subtractand
+	decimal subtractand = b;
+	int msd_b = findMsd(b);
+	int msd_a = findMsd(a);
+	int shift = msd_a - msd_b;
+	subtractand <<= shift;
+	// long division
+	for (int i = shift; i >= 0; --i) {
+		if (subtractand <= accumulator) {
+			decimal multiple = findLargestMultiple(accumulator, subtractand);
+			accumulator -= multiple * subtractand;
+			uint8_t multiplier = int(multiple);
+			divresult.quot.insert(divresult.quot.begin(), multiplier);
+		}
+		else {
+			divresult.quot.insert(divresult.quot.begin(), 0);
+		}
+		subtractand >>= 1;
+		if (subtractand == 0) break;
+	}
+	if (result_negative) {
+		divresult.quot.setneg();
+	}
+	if (_a < 0) {
+		divresult.rem = -accumulator;
+	}
+	else {
+		divresult.rem = accumulator;
+	}
+	divresult.quot.unpad();
+	divresult.rem.unpad();
+	return divresult;
+}
+
+// return quotient of a decimal integer division
+decimal quotient(const decimal& _a, const decimal& _b) {
+	return decint_divide(_a, _b).quot;
+}
+// return remainder of a decimal integer division
+decimal remainder(const decimal& _a, const decimal& _b) {
+	return decint_divide(_a, _b).rem;
 }
 } // namespace unum
 } // namespace sw
