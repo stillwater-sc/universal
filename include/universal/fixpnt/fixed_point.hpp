@@ -1398,8 +1398,12 @@ inline std::istream& operator>>(std::istream& istr, fixpnt<nbits, rbits>& p) {
 template<size_t nbits, size_t rbits>
 inline std::string to_binary(const fixpnt<nbits, rbits>& number) {
 	std::stringstream ss;
-	for (int i = nbits - 1; i >= 0; --i) {
-		ss << (number.at(i) ? "1" : "0");
+	for (int i = int(nbits) - 1; i >= int(rbits); --i) {
+		ss << (number.at(i) ? '1' : '0');
+	}
+	ss << '.';
+	for (int i = int(rbits) - 1; i >= 0; --i) {
+		ss << (number.at(i) ? '1' : '0');
 	}
 	return ss.str();
 }

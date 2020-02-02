@@ -3,11 +3,10 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <bitset> // temporary to look at binary forms
 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
-//#define FIXPNT_FAST_SPECIALIZATION
+#define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 
@@ -58,13 +57,13 @@ try {
 	a = 4.0f; cout << a << endl;
 	b = 4.0f;
 	c = a * b;
-	cout << bitset<4>(a.byte(0)) << " * " << bitset<4>(b.byte(0)) << " = " << bitset<8>(c.byte(0)) << " " << c << endl;
+	cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
 
 	// rounding test
 	a = 0.5f;
 	b = 0.5f;
 	c = a * b;
-	cout << bitset<4>(a.byte(0)) << " * " << bitset<4>(b.byte(0)) << " = " << bitset<8>(c.byte(0)) << " " << c << endl;
+	cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
 
 	return 0;
 
