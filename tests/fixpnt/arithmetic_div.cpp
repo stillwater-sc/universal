@@ -131,7 +131,7 @@ int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
 } // namespace unum
 } // namespace sw
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 #include <bitset>
 

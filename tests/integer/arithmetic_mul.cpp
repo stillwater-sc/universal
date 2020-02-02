@@ -37,16 +37,7 @@ void ExamplePattern() {
 	GenerateMulTest<sw::unum::integer<16> >(2, 16, z);
 }
 
-// enumerate a couple ratios to test representability
-void ReproducibilityTestSuite() {
-	for (int i = 0; i < 30; i += 3) {
-		for (int j = 0; j < 70; j += 7) {
-			sw::unum::reportRepresentability(i, j);
-		}
-	}
-}
-
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main()
@@ -59,11 +50,12 @@ try {
 #if MANUAL_TESTING
 
 	integer<12> a, b, c;
-	a = 0x8000;
-	b = 0x8000;
+	a = 0x800; 
+	cout << to_binary(a) << " = " << a << endl;
+	b = 0x800;
 	GenerateMulTest(a, b, c);
+
 	ExamplePattern();
-	ReproducibilityTestSuite();
 
 	cout << "done" << endl;
 
