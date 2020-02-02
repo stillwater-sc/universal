@@ -15,8 +15,7 @@
 // fixed-point type manipulators such as pretty printers
 #include "universal/fixpnt/fixpnt_manipulators.hpp"
 #include "universal/fixpnt/math_functions.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
+#include "../utils/fixpnt_test_suite.hpp"
 
 // generate specific test case that you can trace with the trace conditions in fixpnt.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -36,96 +35,6 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << (cref == result ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
-
-namespace sw {
-namespace unum {
-
-#define FIXPNT_TABLE_WIDTH 20
-template<size_t nbits, size_t rbits>
-void ReportBinaryArithmeticError(std::string test_case, std::string op, const fixpnt<nbits, rbits>& lhs, const fixpnt<nbits, rbits>& rhs, const fixpnt<nbits, rbits>& ref, const fixpnt<nbits, rbits>& result) {
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(FIXPNT_TABLE_WIDTH) << lhs
-		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
-		<< " != "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref << " instead it yielded "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result
-		<< " " << to_binary(ref) << " vs " << to_binary(result)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t rbits>
-void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const fixpnt<nbits, rbits>& lhs, const fixpnt<nbits, rbits>& rhs, const fixpnt<nbits, rbits>& ref, const fixpnt<nbits, rbits>& result) {
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(FIXPNT_TABLE_WIDTH) << lhs
-		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
-		<< " == "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref << " matches reference "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result
-		<< " " << to_binary(ref) << " vs " << to_binary(result)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-
-// enumerate all multiplication cases for an fixpnt<nbits,rbits> configuration
-template<size_t nbits, size_t rbits>
-int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	int nrOfFailedTests = 0;
-	fixpnt<nbits, rbits> a, b, result, cref;
-	double ref;
-
-	double da, db;
-	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
-		da = double(a);
-		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
-			db = double(b);
-			ref = da * db;
-#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
-			// catching overflow
-			try {
-				result = a * b;
-			}
-			catch (...) {
-				if (ref > max_int<nbits>() || iref < min_int<nbits>()) {
-					// correctly caught the exception
-					continue;
-				}
-				else {
-					nrOfFailedTests++;
-				}
-			}
-
-#else
-			result = a * b;
-#endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
-			cref = ref;
-			if (result != cref) {
-				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, cref, result);
-			}
-			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, cref, result);
-			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
-		}
-		if (i % 1024 == 0) std::cout << '.';
-	}
-	std::cout << std::endl;
-	return nrOfFailedTests;
-}
-
-
-} // namespace unum
-} // namespace sw
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
