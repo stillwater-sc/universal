@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <bitset> // temporary to look at binary forms
 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
@@ -36,9 +37,9 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
+// conditional compile flags
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
-#include <bitset>
 
 int main(int argc, char** argv)
 try {

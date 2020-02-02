@@ -17,6 +17,7 @@ void ReproducibilityTestSuite() {
 	}
 }
 
+// conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
