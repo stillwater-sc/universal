@@ -1,4 +1,4 @@
-// conversion.cpp: functional tests for fixed-point conversions
+// assignment.cpp: functional tests for fixed-point assignments from native types
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -36,17 +36,6 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
-template<size_t nbits, size_t rbits>
-void GenerateFixedPointValues() {
-	constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
-	sw::unum::fixpnt<nbits, rbits> a;
-	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
-		a.set_raw_bits(i);
-		std::cout << to_binary(a) << " | " << a << std::endl;
-	}
-}
-
-
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -56,10 +45,10 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "conversion failed: ";
+	std::string tag = "assignment failed: ";
 
 #if MANUAL_TESTING
 
@@ -70,24 +59,11 @@ try {
 	f8_1 = f4_1;
 	cout << to_binary(f8_1) << " " << f8_1 << endl;
 
-	ReportFixedPointRanges<4, 0>(cout);
-	ReportFixedPointRanges<4, 1>(cout);
-	ReportFixedPointRanges<4, 2>(cout);
-	ReportFixedPointRanges<4, 3>(cout);
-	ReportFixedPointRanges<4, 4>();
-
-	return 0;
-
-	GenerateFixedPointValues<4, 0>();
-	GenerateFixedPointValues<4, 1>();
-
-	return 0;
-
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 0>(tag, bReportIndividualTestCases), tag, "posit<4,0>");
-	//nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 1>(tag, bReportIndividualTestCases), tag, "posit<4,1>");
-	//nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 2>(tag, bReportIndividualTestCases), tag, "posit<4,2>");
-	//nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 3>(tag, bReportIndividualTestCases), tag, "posit<4,3>");
-	//nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 4>(tag, bReportIndividualTestCases), tag, "posit<4,4>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 0, float>(bReportIndividualTestCases), tag, "posit<4,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 1, float>(bReportIndividualTestCases), tag, "posit<4,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 2, float>(bReportIndividualTestCases), tag, "posit<4,2>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 3, float>(bReportIndividualTestCases), tag, "posit<4,3>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 4, float>(bReportIndividualTestCases), tag, "posit<4,4>");
 
 #if STRESS_TESTING
 

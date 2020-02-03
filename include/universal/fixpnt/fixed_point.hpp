@@ -69,11 +69,12 @@ inline long scale(const fixpnt<nbits, rbits>& i) {
 	if (i.sign()) { // special case handling
 		v = twos_complement(v);
 		if (v == i) {  // special case of 10000..... largest negative number in 2's complement encoding
-			return long(nbits - 1);
+			return long(nbits - rbits);
 		}
 	}
 	// calculate scale
 	long scale = 0;
+	v >>= rbits;
 	while (v > 1) {
 		++scale;
 		v >>= 1;
