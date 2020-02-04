@@ -190,7 +190,7 @@ namespace sw {
 				inline int sign_value() const { return (_bits & 0x04 ? -1 : 1); }
 
 				bitblock<NBITS_IS_3> get() const { bitblock<NBITS_IS_3> bb; bb = int(_bits); return bb; }
-				unsigned int encoding() const { return (unsigned int)(_bits 0x07); }
+				unsigned int encoding() const { return (unsigned int)(_bits & 0x07); }
 
 				inline void clear() { _bits = 0; }
 				inline void setzero() { clear(); }
