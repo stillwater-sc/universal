@@ -81,14 +81,9 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t nbits = 8;
-	const size_t es = 2;
-
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 	std::string tag = "Assignment";
-
-	posit<nbits, es> p;
 
 	// 
 	// TODO: How to make this work for integers
