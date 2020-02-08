@@ -120,16 +120,16 @@ int ValidateAssignment(bool bReportIndividualTestCases) {
 	fixpnt<nbits, rbits> p, assigned;
 	for (size_t i = 0; i < NR_NUMBERS; i++) {
 		p.set_raw_bits(i); 
-		std::cout << to_binary(p) << std::endl;
+		//std::cout << to_binary(p) << std::endl;
 		Ty value = (Ty)(p);
 		assigned = value;
-		std::cout << p << " " << value << " " << assigned << std::endl;
+		//std::cout << p << " " << value << " " << assigned << std::endl;
 		if (p != assigned) {
 			nrOfFailedTestCases++;
 			if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", p, assigned, value);
 		}
 		else {
-			if (bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", p, assigned, value);
+			//if (bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", p, assigned, value);
 		}
 	}
 	return nrOfFailedTestCases;

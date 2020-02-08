@@ -158,21 +158,22 @@ inline void convert(int64_t v, fixpnt<nbits, rbits>& result) {
 	result.clear();
 	// we are implementing saturation for values that are outside of the fixed-point's range
 	// check if we are in the representable range
-	if ((long double)(v) > maxpos_fixed_point<nbits, rbits>()) {
+	if ((long double)(v) >= maxpos_fixed_point<nbits, rbits>()) {
 		// set to max value
 		result.flip();
 		result.set(nbits - 1, false);
 		return;
 	}
-	if ((long double)(v) < maxneg_fixed_point<nbits, rbits>()) {
+	if ((long double)(v) <= maxneg_fixed_point<nbits, rbits>()) {
 		// set to max neg value
 		result.set(nbits - 1, true);
 		return;
 	}
 
-	unsigned upper = (nbits <= 64 ? nbits : 64);
-	for (unsigned i = 0; i < upper && v != 0; ++i) {
-		if (v & mask) result.set(i);
+	// we only have an integer part, and no fraction to convert
+	unsigned upper = (nbits < 64 ? nbits : 64);
+	for (unsigned i = 0; i < upper - rbits && v != 0; ++i) {
+		if (v & mask) result.set(i + rbits);
 		v >>= 1;
 	}
 	if (nbits > 64 && negative) {
@@ -224,19 +225,19 @@ public:
 	}
 
 	// initializers for native types
-	fixpnt(const signed char initial_value) { *this = initial_value; }
-	fixpnt(const short initial_value) { *this = initial_value; }
-	fixpnt(const int initial_value) { *this = initial_value; }
-	fixpnt(const long initial_value) { *this = initial_value; }
-	fixpnt(const long long initial_value) { *this = initial_value; }
-	fixpnt(const char initial_value) { *this = initial_value; }
-	fixpnt(const unsigned short initial_value) { *this = initial_value; }
-	fixpnt(const unsigned int initial_value) { *this = initial_value; }
-	fixpnt(const unsigned long initial_value) { *this = initial_value; }
+	fixpnt(const signed char initial_value)        { *this = initial_value; }
+	fixpnt(const short initial_value)              { *this = initial_value; }
+	fixpnt(const int initial_value)                { *this = initial_value; }
+	fixpnt(const long initial_value)               { *this = initial_value; }
+	fixpnt(const long long initial_value)          { *this = initial_value; }
+	fixpnt(const char initial_value)               { *this = initial_value; }
+	fixpnt(const unsigned short initial_value)     { *this = initial_value; }
+	fixpnt(const unsigned int initial_value)       { *this = initial_value; }
+	fixpnt(const unsigned long initial_value)      { *this = initial_value; }
 	fixpnt(const unsigned long long initial_value) { *this = initial_value; }
-	fixpnt(const float initial_value) { *this = initial_value; }
-	fixpnt(const double initial_value) { *this = initial_value; }
-	fixpnt(const long double initial_value) { *this = initial_value; }
+	fixpnt(const float initial_value)              { *this = initial_value; }
+	fixpnt(const double initial_value)             { *this = initial_value; }
+	fixpnt(const long double initial_value)        { *this = initial_value; }
 
 	// access operator for bits
 	// this needs a proxy to be able to create l-values
@@ -644,18 +645,18 @@ protected:
 
 	// conversion functions
 	template<typename Integer,
-			 typename std::enable_if_t<std::is_integral<Integer>::value && std::is_signed<Integer>::value> = Integer >
+			 typename = std::enable_if_t<std::is_integral<Integer>::value && std::is_signed<Integer>::value> >
 	Integer convert_signed() const {
-		constexpr unsigned sizeOfInteger = 8 * sizeof(sizeOfInteger);
+		constexpr unsigned sizeOfInteger = 8 * sizeof(Integer);
 		Integer ll = 0;
 		Integer mask = 1;
 		unsigned upper = (nbits < sizeOfInteger ? nbits : sizeOfInteger);
-		for (unsigned i = 0; i < upper; ++i) {
+		for (unsigned i = rbits; i < upper; ++i) {
 			ll |= at(i) ? mask : 0;
 			mask <<= 1;
 		}
-		if (sign() && upper < sizeOfInteger) { // sign extend
-			for (unsigned i = upper; i < sizeOfInteger; ++i) {
+		if (sign() && upper < (sizeOfInteger+rbits)) { // sign extend
+			for (unsigned i = upper; i < (sizeOfInteger+rbits); ++i) {
 				ll |= mask;
 				mask <<= 1;
 			}
@@ -695,16 +696,40 @@ protected:
 		}
 		return ull;
 	}
-	float to_float() const { 
-		float f = float((long long)(*this)) / float(0x1ll << rbits);   // TODO: only works for nbits < 64
+	float to_float() const {
+		long integerPart = long(*this);
+		unsigned long fractionPart = 0;
+		unsigned long mask = 0x1;
+		for (unsigned i = 0; i < rbits; ++i) {
+			fractionPart |= (at(i) ? mask : 0);
+			mask <<= 1;
+		}
+		float range = (0x1 << rbits);
+		float f = float(integerPart) + float(fractionPart)/range;   // TODO: only works for nbits < 64
 		return f; 
 	}
 	double to_double() const {
-		double d = double((long long)(*this)) / double(0x1ll << rbits);   // TODO: only works for nbits < 64
+		long long integerPart = (long long)(*this);
+		unsigned long long fractionPart = 0;
+		unsigned long long mask = 0x1;
+		for (unsigned i = 0; i < rbits; ++i) {
+			fractionPart |= (at(i) ? mask : 0);
+			mask <<= 1;
+		}
+		double range = (0x1 << rbits);
+		double d = double(integerPart) + double(fractionPart) / range;   // TODO: only works for nbits < 64
 		return d;
 	}
-	long double to_long_double() const {
-		long double ld = (long double)((long long)(*this)) / (long double)(0x1ll << rbits);   // TODO: only works for nbits < 64
+	long double to_long_double() const {  // TODO : this is not a valid implementation
+		long long integerPart = (long long)(*this);
+		unsigned long long fractionPart = 0;
+		unsigned long long mask = 0x1;
+		for (unsigned i = 0; i < rbits; ++i) {
+			fractionPart |= (at(i) ? mask : 0);
+			mask <<= 1;
+		}
+		long double range = (0x1 << rbits);
+		long double ld = (long double)(integerPart) + (long double)(fractionPart) / range;   // TODO: only works for nbits < 64
 		return ld;
 	}
 
@@ -713,13 +738,13 @@ protected:
 		clear();
 		// we are implementing saturation for values that are outside of the fixed-point's range
 		// check if we are in the representable range
-		if (rhs > maxpos_fixed_point<nbits, rbits>()) {
+		if (rhs >= maxpos_fixed_point<nbits, rbits>()) {
 			// set to max value
 			flip();
 			set(nbits - 1, false);
 			return;
 		}
-		if (rhs < maxneg_fixed_point<nbits, rbits>()) {
+		if (rhs <= maxneg_fixed_point<nbits, rbits>()) {
 			// set to max neg value
 			set(nbits - 1, true);
 			return;
@@ -1161,7 +1186,9 @@ inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
 template<size_t nbits, size_t rbits>
 inline fixpnt<nbits, rbits> twos_complement(const fixpnt<nbits, rbits>& value) {
 	fixpnt<nbits, rbits> complement = ~value;
-	++complement;
+	fixpnt<nbits, rbits> increment;
+	increment.set_raw_bits(0x1);
+	complement += increment;
 	return complement;
 }
 
