@@ -52,21 +52,6 @@ try {
 
 #if MANUAL_TESTING
 
-	fixpnt<4, 1> a, b, c;
-	// overflow test
-	a = 4.0f; cout << a << endl;
-	b = 4.0f;
-	c = a * b;
-	cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
-
-	// rounding test
-	a = 0.5f;
-	b = 0.5f;
-	c = a * b;
-	cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
-
-	return 0;
-
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 4>(0.5f, 0.5f);
 

@@ -52,6 +52,24 @@ try {
 
 #if MANUAL_TESTING
 
+	int x = int(3.7f);
+	cout << x << endl;
+
+	fixpnt<4, 1> a, b, c;
+	// overflow test
+	a = -4; cout << a << endl;  // rounds to 3.5
+	b = 4.0f;
+	c = a * b;
+	cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
+
+	// rounding test
+	a = 0.5f; cout << a << endl;
+	b = 0.5f;
+	c = a * b;
+	cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
+
+	return 0;
+
 	fixpnt<4, 1> f4_1;
 	fixpnt<8, 1> f8_1;
 	f4_1 = 4.5f;

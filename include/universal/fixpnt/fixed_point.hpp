@@ -82,12 +82,94 @@ inline long scale(const fixpnt<nbits, rbits>& i) {
 	return scale;
 }
 
+// the value of a binary fixed point number is an binary integer that is scaled by a fixed factor, 2^rbits
+// so the number 0100.0100 is the value 01000100 with an implicit scaling of 2^4 = 16
+// 01000100 = 64 + 4 = 68 -> scaled by 16 = 4.25 -> 4 + 0.25 = 0100 + 0100
+
+// maximum value of the fixed point configuration
+// this function is used to compare native type values to the fixed point range
+// thus can use native math to calculate the value.
+template<size_t nbits, size_t rbits>
+long double maxpos_fixed_point() {
+	if (nbits > rbits) {
+		// maxpos = 01111....1111
+		fixpnt<nbits, rbits> maxpos;
+		maxpos.flip();
+		maxpos.set(nbits - 1, false);
+		return (long double)maxpos;
+	}
+	else if (nbits == rbits) {
+		// fractional value
+		return 1.0l;
+	}
+	else {
+		// TBD is this a valid format?
+		return 0.0l;
+	}
+}
+
+// maximum negative value of the fixed point configuration
+// this function is used to compare native type values to the fixed point range
+// thus can use native math to calculate the value.
+template<size_t nbits, size_t rbits>
+long double maxneg_fixed_point() {
+	if (nbits > rbits) {
+		// maxneg = 10000....000
+		fixpnt<nbits, rbits> maxneg;
+		maxneg.set(nbits - 1, true);
+		return (long double)maxneg;
+	}
+	else if (nbits == rbits) {
+		// fractional value
+		return 1.0l;
+	}
+	else {
+		// TBD is this a valid format?
+		return 0.0l;
+	}
+}
+
+// maximum value of the fixed point configuration
+// this function is used to compare native type values to the fixed point range
+// thus can use native math to calculate the value.
+template<size_t nbits, size_t rbits>
+long double minpos_fixed_point() {
+	if (nbits > rbits) {
+		// minpos = 0000.00001
+		fixpnt<nbits, rbits> minpos;
+		minpos.set(0, true);
+		return (long double)minpos;
+	}
+	else if (nbits == rbits) {
+		// fractional value
+		return 1.0l;
+	}
+	else {
+		// TBD is this a valid format?
+		return 0.0l;
+	}
+}
+
 // conversion helpers
 template<size_t nbits, size_t rbits>
 inline void convert(int64_t v, fixpnt<nbits, rbits>& result) {
 	constexpr uint64_t mask = 0x1;
 	bool negative = (v < 0 ? true : false);
 	result.clear();
+	// we are implementing saturation for values that are outside of the fixed-point's range
+	// check if we are in the representable range
+	if ((long double)(v) > maxpos_fixed_point<nbits, rbits>()) {
+		// set to max value
+		result.flip();
+		result.set(nbits - 1, false);
+		return;
+	}
+	if ((long double)(v) < maxneg_fixed_point<nbits, rbits>()) {
+		// set to max neg value
+		result.set(nbits - 1, true);
+		return;
+	}
+
 	unsigned upper = (nbits <= 64 ? nbits : 64);
 	for (unsigned i = 0; i < upper && v != 0; ++i) {
 		if (v & mask) result.set(i);
@@ -369,17 +451,17 @@ public:
 	}
 	// conversion operators
 // Maybe remove explicit, MTL compiles, but we have lots of double computation then
-	explicit operator unsigned short() const { return to_ushort(); }
-	explicit operator unsigned int() const { return to_uint(); }
-	explicit operator unsigned long() const { return to_ulong(); }
+	explicit operator unsigned short() const     { return to_ushort(); }
+	explicit operator unsigned int() const       { return to_uint(); }
+	explicit operator unsigned long() const      { return to_ulong(); }
 	explicit operator unsigned long long() const { return to_ulong_long(); }
-	explicit operator short() const { return to_short(); }
-	explicit operator int() const { return to_int(); }
-	explicit operator long() const { return to_long(); }
-	explicit operator long long() const { return to_long_long(); }
-	explicit operator float() const { return to_float(); }
-	explicit operator double() const { return to_double(); }
-	explicit operator long double() const { return to_long_double(); }
+	explicit operator short() const              { return convert_signed<short>(); }
+	explicit operator int() const                { return convert_signed<int>(); }
+	explicit operator long() const               { return convert_signed<long>(); }
+	explicit operator long long() const          { return convert_signed<long long>(); }
+	explicit operator float() const              { return to_float(); }
+	explicit operator double() const             { return to_double(); }
+	explicit operator long double() const        { return to_long_double(); }
 
 	// arithmetic operators
 	fixpnt& operator+=(const fixpnt& rhs) {
@@ -416,7 +498,6 @@ public:
 			multiplicant <<= 1;
 		}
 		// if rbit >= 1 we need to round
-		std::cout << "base " << base << std::endl;
 		return *this;
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
@@ -562,68 +643,19 @@ protected:
 	// HELPER methods
 
 	// conversion functions
-	short to_short() const {
-		constexpr unsigned sizeofshort = 8 * sizeof(short);
-		short s = 0;
-		short mask = 1;
-		unsigned upper = (nbits < sizeofshort ? nbits : sizeofshort);
-		for (unsigned i = 0; i < upper; ++i) {
-			s |= at(i) ? mask : 0;
-			mask <<= 1;
-		}
-		if (sign() && upper < sizeofshort) { // sign extend
-			for (unsigned i = upper; i < sizeofshort; ++i) {
-				s |= mask;
-				mask <<= 1;
-			}
-		}
-		return s;
-	}
-	int to_int() const {
-		constexpr unsigned sizeofint = 8 * sizeof(int);
-		int value = 0;
-		int mask = 1;
-		unsigned upper = (nbits < sizeofint ? nbits : sizeofint);
-		for (unsigned i = 0; i < upper; ++i) {
-			value |= at(i) ? mask : 0;
-			mask <<= 1;
-		}
-		if (sign() && upper < sizeofint) { // sign extend
-			for (unsigned i = upper; i < sizeofint; ++i) {
-				value |= mask;
-				mask <<= 1;
-			}
-		}
-		return value;
-	}
-	long to_long() const {
-		constexpr unsigned sizeoflong = 8 * sizeof(long);
-		long l = 0;
-		long mask = 1;
-		unsigned upper = (nbits < sizeoflong ? nbits : sizeoflong);
-		for (unsigned i = 0; i < upper; ++i) {
-			l |= at(i) ? mask : 0;
-			mask <<= 1;
-		}
-		if (sign() && upper < sizeoflong) { // sign extend
-			for (unsigned i = upper; i < sizeoflong; ++i) {
-				l |= mask;
-				mask <<= 1;
-			}
-		}
-		return l;
-	}
-	long long to_long_long() const {
-		constexpr unsigned sizeoflonglong = 8 * sizeof(long long);
-		long long ll = 0;
-		long long mask = 1;
-		unsigned upper = (nbits < sizeoflonglong ? nbits : sizeoflonglong);
+	template<typename Integer,
+			 typename std::enable_if_t<std::is_integral<Integer>::value && std::is_signed<Integer>::value> = Integer >
+	Integer convert_signed() const {
+		constexpr unsigned sizeOfInteger = 8 * sizeof(sizeOfInteger);
+		Integer ll = 0;
+		Integer mask = 1;
+		unsigned upper = (nbits < sizeOfInteger ? nbits : sizeOfInteger);
 		for (unsigned i = 0; i < upper; ++i) {
 			ll |= at(i) ? mask : 0;
 			mask <<= 1;
 		}
-		if (sign() && upper < sizeoflonglong) { // sign extend
-			for (unsigned i = upper; i < sizeoflonglong; ++i) {
+		if (sign() && upper < sizeOfInteger) { // sign extend
+			for (unsigned i = upper; i < sizeOfInteger; ++i) {
 				ll |= mask;
 				mask <<= 1;
 			}
@@ -679,10 +711,19 @@ protected:
 	template<typename Ty>
 	void float_assign(Ty& rhs) {
 		clear();
-		// the value of a binary fixed point number is an binary integer that is scaled by a fixed factor, 2^rbits
-		// so the number 0100.0100 is the value 01000100 with an implicit scaling of 2^4 = 16
-		// 01000100 = 64 + 4 = 68 -> scaled by 16 = 4 + 0.25 = 0100 + 0100
-
+		// we are implementing saturation for values that are outside of the fixed-point's range
+		// check if we are in the representable range
+		if (rhs > maxpos_fixed_point<nbits, rbits>()) {
+			// set to max value
+			flip();
+			set(nbits - 1, false);
+			return;
+		}
+		if (rhs < maxneg_fixed_point<nbits, rbits>()) {
+			// set to max neg value
+			set(nbits - 1, true);
+			return;
+		}
 		// generate the representation of one and cast to Ty
 		Ty one = Ty(0x1ll << rbits);
 		Ty tmp = rhs * one;
