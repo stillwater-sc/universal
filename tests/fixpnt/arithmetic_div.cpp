@@ -8,7 +8,7 @@
 // first: enable general or specialized fixed-point configurations
 #define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
-#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
+#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
 #include "universal/fixpnt/fixed_point.hpp"
@@ -47,7 +47,7 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "division failed: ";
+	std::string tag = "modular division failed: ";
 
 #if MANUAL_TESTING
 
@@ -64,11 +64,11 @@ try {
 #if STRESS_TESTING
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyDivisin<4, 0>("Manual Testing", true), "fixpnt<4,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1>("Manual Testing", true), "fixpnt<4,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2>("Manual Testing", true), "fixpnt<4,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3>("Manual Testing", true), "fixpnt<4,3>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4>("Manual Testing", true), "fixpnt<4,4>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivisin<4, 0>("Manual Testing", true), "fixpnt<4,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<4, 1>("Manual Testing", true), "fixpnt<4,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<4, 2>("Manual Testing", true), "fixpnt<4,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<4, 3>("Manual Testing", true), "fixpnt<4,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<4, 4>("Manual Testing", true), "fixpnt<4,4>", "division");
 
 #endif
 
@@ -77,15 +77,15 @@ try {
 
 	cout << "Fixed-point division validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "division");
 
 #if STRESS_TESTING
 

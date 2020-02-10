@@ -110,14 +110,14 @@ int Compare(double input, const fixpnt<nbits, rbits>& presult, double reference,
 	return fail;
 }
 
-template<size_t nbits, size_t rbits, typename Ty>
-int ValidateAssignment(bool bReportIndividualTestCases) {
+template<size_t nbits, size_t rbits, typename Ty, typename arithmetic = Modular>
+int ValidateModularAssignment(bool bReportIndividualTestCases) {
 	const size_t NR_NUMBERS = (size_t(1) << nbits);
 	int nrOfFailedTestCases = 0;
 
 	// use only valid fixed-point values
 	// fixpnt_raw -> to value in Ty -> assign to fixpnt -> compare fixpnts
-	fixpnt<nbits, rbits> p, assigned;
+	fixpnt<nbits, rbits, arithmetic> p, assigned;
 	for (size_t i = 0; i < NR_NUMBERS; i++) {
 		p.set_raw_bits(i); 
 		//std::cout << to_binary(p) << std::endl;
@@ -136,8 +136,8 @@ int ValidateAssignment(bool bReportIndividualTestCases) {
 }
 
 // enumerate all conversion cases for a posit configuration
-template<size_t nbits, size_t rbits>
-int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) {
+template<size_t nbits, size_t rbits, typename arithmetic = Modular>
+int ValidateModularConversion(const std::string& tag, bool bReportIndividualTestCases) {
 	// we are going to generate a test set that consists of all fixed-point configs and their midpoints
 	// we do this by enumerating a fixed-point that is 1-bit larger than the test configuration
 	// with the extra bit allocated to the fraction => rbits+1
@@ -156,10 +156,10 @@ int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) 
 
 	// execute the test
 	int nrOfFailedTests = 0;
-	double minpos = value_minpos_fixpnt<nbits + 1, rbits + 1>();
+	double minpos = value_minpos_fixpnt<nbits + 1, rbits + 1, arithmetic>();
 	double eps;
 	double da, input;
-	fixpnt<nbits, rbits> pa;
+	fixpnt<nbits, rbits, arithmetic> pa;
 	for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
 		pref.set_raw_bits(i);
 		da = double(pref);
@@ -258,10 +258,10 @@ int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) 
 
 // enumerate all addition cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits>
-int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
+int VerifyModularAddition(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
-	fixpnt<nbits, rbits> a, b, result, cref;
+	fixpnt<nbits, rbits, Modular> a, b, result, cref;
 	double ref;
 
 	double da, db;
@@ -278,8 +278,8 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 				result = a + b;
 			}
 			catch (...) {
-				if (ref > max_int<nbits>() || iref < min_int<nbits>()) {
-					// correctly caught the exception
+				if (ref > double(maxpos_fixpnt<nbits, rbits, Modular>()) || ref < double(maxneg_fixpnt<nbits, rbits, Modular>())) {
+					// correctly caught the overflow exception
 					continue;
 				}
 				else {
@@ -309,7 +309,7 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 
 // enumerate all subtraction cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits>
-int VerifySubtraction(std::string tag, bool bReportIndividualTestCases) {
+int VerifyModularSubtraction(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits> a, b, result, cref;
@@ -329,8 +329,8 @@ int VerifySubtraction(std::string tag, bool bReportIndividualTestCases) {
 				result = a - b;
 			}
 			catch (...) {
-				if (ref > max_int<nbits>() || iref < min_int<nbits>()) {
-					// correctly caught the exception
+				if (ref > double(maxpos_fixpnt<nbits, rbits, Modular>()) || ref < double(maxneg_fixpnt<nbits, rbits, Modular>())) {
+					// correctly caught the overflow exception
 					continue;
 				}
 				else {
@@ -359,7 +359,7 @@ int VerifySubtraction(std::string tag, bool bReportIndividualTestCases) {
 
 // enumerate all multiplication cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits>
-int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
+int VerifyModularMultiplication(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits> a, b, result, cref;
@@ -379,8 +379,8 @@ int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
 				result = a * b;
 			}
 			catch (...) {
-				if (ref > max_int<nbits>() || iref < min_int<nbits>()) {
-					// correctly caught the exception
+				if (ref > double(maxpos_fixpnt<nbits, rbits, Modular>()) || ref < double(maxneg_fixpnt<nbits, rbits, Modular>())) {
+					// correctly caught the overflow exception
 					continue;
 				}
 				else {
@@ -409,7 +409,7 @@ int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
 
 // enumerate all division cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits>
-int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
+int VerifyModularDivision(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits> a, b, result, cref;
@@ -433,8 +433,8 @@ int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
 				result = a / b;
 			}
 			catch (...) {
-				if (ref > max_int<nbits>() || iref < min_int<nbits>()) {
-					// correctly caught the exception
+				if (ref == 0 || ref > double(maxpos_fixpnt<nbits, rbits, Modular>()) || ref < double(maxneg_fixpnt<nbits, rbits, Modular>())) {
+					// correctly caught the overflow and divide by zero exception
 					continue;
 				}
 				else {

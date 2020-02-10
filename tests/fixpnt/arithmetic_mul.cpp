@@ -8,7 +8,7 @@
 // first: enable general or specialized fixed-point configurations
 #define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
-#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
+#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
 #include "universal/fixpnt/fixed_point.hpp"
@@ -48,22 +48,22 @@ try {
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Multiplication failed: ";
+	std::string tag = "Modular Multiplication failed: ";
 
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 4>(0.5f, 0.5f);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");
 
 #if STRESS_TESTING
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0>("Manual Testing", true), "fixpnt<4,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1>("Manual Testing", true), "fixpnt<4,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2>("Manual Testing", true), "fixpnt<4,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 3>("Manual Testing", true), "fixpnt<4,3>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 4>("Manual Testing", true), "fixpnt<4,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<4, 0>("Manual Testing", true), "fixpnt<4,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<4, 1>("Manual Testing", true), "fixpnt<4,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<4, 2>("Manual Testing", true), "fixpnt<4,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<4, 3>("Manual Testing", true), "fixpnt<4,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<4, 4>("Manual Testing", true), "fixpnt<4,4>", "multiplication");
 #endif
 
 #else

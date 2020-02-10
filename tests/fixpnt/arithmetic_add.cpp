@@ -8,7 +8,7 @@
 // first: enable general or specialized fixed-point configurations
 #define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
-#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
+#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
 #include "universal/fixpnt/fixed_point.hpp"
@@ -37,7 +37,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -48,7 +48,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Addition failed: ";
+	std::string tag = "Modular Addition failed: ";
 
 #if MANUAL_TESTING
 
@@ -73,37 +73,31 @@ try {
 		cout << fp << endl;
 	}
 
-	{
-		fixpnt<8, 4> fp;
-		for (int i = 0; i < 256; ++i) {
-			bitset<8> bs(fp.byte(0));
-			cout << bs << " = " << fp << endl;
-			++fp;
-		}
-	}
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 1>("Manual Testing", true), "fixpnt<4,1>", "addition");
+
 
 #if STRESS_TESTING
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0>("Manual Testing", true), "fixpnt<4,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1>("Manual Testing", true), "fixpnt<4,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2>("Manual Testing", true), "fixpnt<4,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3>("Manual Testing", true), "fixpnt<4,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 4>("Manual Testing", true), "fixpnt<4,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 0>("Manual Testing", true), "fixpnt<4,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 1>("Manual Testing", true), "fixpnt<4,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 2>("Manual Testing", true), "fixpnt<4,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 3>("Manual Testing", true), "fixpnt<4,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 4>("Manual Testing", true), "fixpnt<4,4>", "addition");
 #endif
 
 #else
 
 	cout << "Fixed-point addition validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "addition");
 
 #if STRESS_TESTING
 

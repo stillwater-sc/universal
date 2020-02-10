@@ -70,11 +70,11 @@ try {
 	f8_1 = f4_1;
 	cout << to_binary(f8_1) << " " << f8_1 << endl;
 
-	ReportFixedPointRanges<4, 0>(cout);
-	ReportFixedPointRanges<4, 1>(cout);
-	ReportFixedPointRanges<4, 2>(cout);
-	ReportFixedPointRanges<4, 3>(cout);
-	ReportFixedPointRanges<4, 4>();
+	ReportFixedPointRanges<4, 0, Modular>(cout);
+	ReportFixedPointRanges<4, 1, Modular>(cout);
+	ReportFixedPointRanges<4, 2, Modular>(cout);
+	ReportFixedPointRanges<4, 3, Modular>(cout);
+	ReportFixedPointRanges<4, 4, Modular>();
 
 	return 0;
 
@@ -83,11 +83,11 @@ try {
 
 	return 0;
 
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 0>(tag, bReportIndividualTestCases), tag, "posit<4,0>");
-	//nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 1>(tag, bReportIndividualTestCases), tag, "posit<4,1>");
-	//nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 2>(tag, bReportIndividualTestCases), tag, "posit<4,2>");
-	//nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 3>(tag, bReportIndividualTestCases), tag, "posit<4,3>");
-	//nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 4>(tag, bReportIndividualTestCases), tag, "posit<4,4>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 0>(tag, bReportIndividualTestCases), tag, "posit<4,0>");
+	//nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 1>(tag, bReportIndividualTestCases), tag, "posit<4,1>");
+	//nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 2>(tag, bReportIndividualTestCases), tag, "posit<4,2>");
+	//nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 3>(tag, bReportIndividualTestCases), tag, "posit<4,3>");
+	//nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 4>(tag, bReportIndividualTestCases), tag, "posit<4,4>");
 
 #if STRESS_TESTING
 
