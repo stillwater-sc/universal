@@ -86,7 +86,7 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic>& v);
 // scale calculate the power of 2 exponent that would capture an approximation of a normalized real value
 template<size_t nbits, size_t rbits, typename arithmetic = Modular>
 inline long scale(const fixpnt<nbits, rbits, arithmetic>& i) {
-	fixpnt<nbits,rbits> v(i);
+	fixpnt<nbits,rbits,arithmetic> v(i);
 	if (i.sign()) { // special case handling
 		v = twos_complement(v);
 		if (v == i) {  // special case of 10000..... largest negative number in 2's complement encoding
@@ -120,7 +120,7 @@ inline long scale(const fixpnt<nbits, rbits, arithmetic>& i) {
 template<size_t nbits, size_t rbits, typename arithmetic = Modular>
 fixpnt<nbits, rbits, arithmetic> maxpos_fixpnt() {
 	// maxpos = 01111....1111
-	fixpnt<nbits, rbits> maxpos;
+	fixpnt<nbits, rbits, arithmetic> maxpos;
 	maxpos.flip();
 	maxpos.set(nbits - 1, false);
 	return maxpos;
@@ -130,7 +130,7 @@ fixpnt<nbits, rbits, arithmetic> maxpos_fixpnt() {
 template<size_t nbits, size_t rbits, typename arithmetic = Modular>
 fixpnt<nbits, rbits, arithmetic> maxneg_fixpnt() {
 	// maxneg = 10000....000
-	fixpnt<nbits, rbits> maxneg;
+	fixpnt<nbits, rbits, arithmetic> maxneg;
 	maxneg.set(nbits - 1, true);
 	return maxneg;
 }
@@ -139,7 +139,7 @@ fixpnt<nbits, rbits, arithmetic> maxneg_fixpnt() {
 template<size_t nbits, size_t rbits, typename arithmetic = Modular>
 fixpnt<nbits, rbits, arithmetic> minpos_fixpnt() {
 	// minpos = 0000....00001
-	fixpnt<nbits, rbits> minpos;
+	fixpnt<nbits, rbits, arithmetic> minpos;
 	minpos.set(0, true);
 	return minpos;
 }
@@ -148,7 +148,7 @@ fixpnt<nbits, rbits, arithmetic> minpos_fixpnt() {
 template<size_t nbits, size_t rbits, typename arithmetic = Modular>
 fixpnt<nbits, rbits, arithmetic> minneg_fixpnt() {
 	// minpos = 11111....11111
-	fixpnt<nbits, rbits> minneg;
+	fixpnt<nbits, rbits, arithmetic> minneg;
 	minneg.flip();
 	return minneg;
 }
@@ -510,7 +510,7 @@ public:
 		return *this;
 	}
 	fixpnt& operator%=(const fixpnt& rhs) {
-		fixpntdiv_t<nbits, rbits> divresult = fixpntdiv<nbits, rbits>(*this, rhs);
+		fixpntdiv_t<nbits,rbits,arithmetic> divresult = fixpntdiv<nbits,rbits,arithmetic>(*this, rhs);
 		*this = divresult.rem;
 		return *this;
 	}
@@ -1264,35 +1264,35 @@ inline signed findMsb(const fixpnt<nbits, rbits, arithmetic>& v) {
 // divide fixpnt<nbits,rbits> a and b and return result argument
 template<size_t nbits, size_t rbits, typename arithmetic>
 void divide(const fixpnt<nbits, rbits, arithmetic>& a, const fixpnt<nbits, rbits, arithmetic>& b, fixpnt<nbits, rbits, arithmetic>& quotient) {
-	if (b == fixpnt<nbits, rbits>(0)) {
+	if (b == fixpnt<nbits, rbits, arithmetic>(0)) {
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 		throw fixpnt_divide_by_zero{};
 #else
 		std::cerr << "fixpnt_divide_by_zero\n";
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
 	}
-	fixpntdiv_t<nbits, rbits> divresult = fixpntdiv<nbits>(a, b);
+	fixpntdiv_t<nbits, rbits, arithmetic> divresult = fixpntdiv<nbits,rbits,arithmetic>(a, b);
 	quotient = divresult.quot;
 }
 
 // calculate remainder of fixpnt<nbits,rbits> a and b and return result argument
 template<size_t nbits, size_t rbits, typename arithmetic>
 void remainder(const fixpnt<nbits, rbits, arithmetic>& a, const fixpnt<nbits, rbits, arithmetic>& b, fixpnt<nbits, rbits, arithmetic>& remainder) {
-	if (b == fixpnt<nbits, rbits>(0)) {
+	if (b == fixpnt<nbits, rbits, arithmetic>(0)) {
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 		throw fixpnt_divide_by_zero{};
 #else
 		std::cerr << "fixpnt_divide_by_zero\n";
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
 	}
-	fixpntdiv_t<nbits, rbits> divresult = fixpntdiv<nbits>(a, b);
+	fixpntdiv_t<nbits, rbits, arithmetic> divresult = fixpntdiv<nbits, rbits, arithmetic>(a, b);
 	remainder = divresult.rem;
 }
 
 // divide fixpnt<nbits, rbits> a and b and return result argument
 template<size_t nbits, size_t rbits, typename arithmetic>
 fixpntdiv_t<nbits, rbits, arithmetic> fixpntdiv(const fixpnt<nbits, rbits, arithmetic>& _a, const fixpnt<nbits, rbits, arithmetic>& _b) {
-	if (_b == fixpnt<nbits,rbits>(0)) {
+	if (_b == fixpnt<nbits,rbits,arithmetic>(0)) {
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 		throw fixpnt_divide_by_zero{};
 #else
@@ -1304,8 +1304,8 @@ fixpntdiv_t<nbits, rbits, arithmetic> fixpntdiv(const fixpnt<nbits, rbits, arith
 	bool a_negative = _a.sign();
 	bool b_negative = _b.sign();
 	bool result_negative = (a_negative ^ b_negative);
-	fixpnt<nbits + 1, rbits> a; a.bitcopy(a_negative ? -_a : _a);
-	fixpnt<nbits + 1, rbits> b; b.bitcopy(b_negative ? -_b : _b);
+	fixpnt<nbits + 1, rbits, arithmetic> a; a.bitcopy(a_negative ? -_a : _a);
+	fixpnt<nbits + 1, rbits, arithmetic> b; b.bitcopy(b_negative ? -_b : _b);
 	fixpntdiv_t<nbits, rbits, arithmetic> divresult;
 	if (a < b) {
 		divresult.rem = _a; // a % b = a when a / b = 0
@@ -1424,11 +1424,11 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic>& value) {
 	}
 	else if (std::regex_match(number, decimal_regex)) {
 		//std::cout << "found a decimal fixpnt representation\n";
-		fixpnt<nbits, rbits> scale = 1;
+		fixpnt<nbits, rbits, arithmetic> scale = 1;
 		for (std::string::const_reverse_iterator r = number.rbegin();
 			r != number.rend();
 			++r) {
-			fixpnt<nbits, rbits> digit = charLookup.at(*r);
+			fixpnt<nbits, rbits, arithmetic> digit = charLookup.at(*r);
 			value += scale * digit;
 			scale *= 10;
 		}
