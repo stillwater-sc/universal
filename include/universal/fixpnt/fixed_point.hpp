@@ -647,9 +647,9 @@ protected:
 	// HELPER methods
 
 	// conversion functions
-	template<typename Integer,
-			 typename = std::enable_if_t<std::is_integral<Integer>::value && std::is_signed<Integer>::value> >
-	Integer convert_signed() const {
+	template<typename Integer>
+	typename std::enable_if< std::is_integral<Integer>::value && std::is_signed<Integer>::value,
+	                Integer>::type convert_signed() const {
 		constexpr unsigned sizeOfInteger = 8 * sizeof(Integer);
 		Integer ll = 0;
 		Integer mask = 1;
