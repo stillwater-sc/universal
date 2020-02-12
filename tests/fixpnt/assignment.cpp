@@ -48,7 +48,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "assignment: ";
+	std::string tag = "modular assignment failed: ";
 
 #if MANUAL_TESTING
 
@@ -84,7 +84,7 @@ try {
 #endif
 
 #else
-	cout << "Fixed-point assignment validation" << endl;
+	cout << "Fixed-point modular assignment validation" << endl;
 
 	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 0, float>(bReportIndividualTestCases), tag, "posit<4,0>");
 	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 1, float>(bReportIndividualTestCases), tag, "posit<4,1>");

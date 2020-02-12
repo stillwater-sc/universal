@@ -65,26 +65,26 @@ Run-time configuration is used to select modular vs saturation arithmetic.
 namespace sw {
 namespace unum {
 
-struct Modular {};
-struct Saturate {};
+	constexpr bool Modular = true;
+	constexpr bool Saturation = false;
 
 // forward references
-template<size_t nbits, size_t rbits, typename arithmetic> class fixpnt;
-template<size_t nbits, size_t rbits, typename arithmetic> struct fixpntdiv_t;
-template<size_t nbits, size_t rbits, typename arithmetic> fixpntdiv_t<nbits, rbits, arithmetic> fixpntdiv(const fixpnt<nbits, rbits, arithmetic>&, const fixpnt<nbits, rbits, arithmetic>&);
+template<size_t nbits, size_t rbits, bool arithmetic> class fixpnt;
+template<size_t nbits, size_t rbits, bool arithmetic> struct fixpntdiv_t;
+template<size_t nbits, size_t rbits, bool arithmetic> fixpntdiv_t<nbits, rbits, arithmetic> fixpntdiv(const fixpnt<nbits, rbits, arithmetic>&, const fixpnt<nbits, rbits, arithmetic>&);
 
 // fixpntdiv_t for fixpnt<nbits,rbits> to capture quotient and remainder during long division
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 struct fixpntdiv_t {
 	fixpnt<nbits, rbits, arithmetic> quot; // quotient
 	fixpnt<nbits, rbits, arithmetic> rem;  // remainder
 };
 
-template<size_t nbits, size_t rbits, typename arithmetic = Modular>
+template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic>& v);
 
 // scale calculate the power of 2 exponent that would capture an approximation of a normalized real value
-template<size_t nbits, size_t rbits, typename arithmetic = Modular>
+template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 inline long scale(const fixpnt<nbits, rbits, arithmetic>& i) {
 	fixpnt<nbits,rbits,arithmetic> v(i);
 	if (i.sign()) { // special case handling
@@ -117,7 +117,7 @@ inline long scale(const fixpnt<nbits, rbits, arithmetic>& i) {
 // what is maxpos when all bits are fraction bits?
 //   still #.01111...11111 as the rbits simply define the range this value is scaled by
 // when rbits > nbits: is that a valid format? yes, the rbits simply define the range
-template<size_t nbits, size_t rbits, typename arithmetic = Modular>
+template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 fixpnt<nbits, rbits, arithmetic> maxpos_fixpnt() {
 	// maxpos = 01111....1111
 	fixpnt<nbits, rbits, arithmetic> maxpos;
@@ -127,7 +127,7 @@ fixpnt<nbits, rbits, arithmetic> maxpos_fixpnt() {
 }
 
 // maximum negative value of the fixed point configuration
-template<size_t nbits, size_t rbits, typename arithmetic = Modular>
+template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 fixpnt<nbits, rbits, arithmetic> maxneg_fixpnt() {
 	// maxneg = 10000....000
 	fixpnt<nbits, rbits, arithmetic> maxneg;
@@ -136,7 +136,7 @@ fixpnt<nbits, rbits, arithmetic> maxneg_fixpnt() {
 }
 
 // minimum positive value of the fixed point configuration
-template<size_t nbits, size_t rbits, typename arithmetic = Modular>
+template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 fixpnt<nbits, rbits, arithmetic> minpos_fixpnt() {
 	// minpos = 0000....00001
 	fixpnt<nbits, rbits, arithmetic> minpos;
@@ -145,7 +145,7 @@ fixpnt<nbits, rbits, arithmetic> minpos_fixpnt() {
 }
 
 // minimum positive value of the fixed point configuration
-template<size_t nbits, size_t rbits, typename arithmetic = Modular>
+template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 fixpnt<nbits, rbits, arithmetic> minneg_fixpnt() {
 	// minpos = 11111....11111
 	fixpnt<nbits, rbits, arithmetic> minneg;
@@ -154,23 +154,25 @@ fixpnt<nbits, rbits, arithmetic> minneg_fixpnt() {
 }
 
 // conversion helpers
-template<size_t nbits, size_t rbits, typename arithmetic = Modular>
+template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 inline void convert(int64_t v, fixpnt<nbits, rbits, arithmetic>& result) {
 	constexpr uint64_t mask = 0x1;
 	bool negative = (v < 0 ? true : false);
 	result.clear();
-	// we are implementing saturation for values that are outside of the fixed-point's range
-	// check if we are in the representable range
-	if (v >= (long double)maxpos_fixpnt<nbits, rbits, arithmetic>()) {
-		// set to max value
-		result.flip();
-		result.set(nbits - 1, false);
-		return;
-	}
-	if (v <= (long double)maxneg_fixpnt<nbits, rbits, arithmetic>()) {
-		// set to max neg value
-		result.set(nbits - 1, true);
-		return;
+	if (arithmetic == Saturation) {
+		// we are implementing saturation for values that are outside of the fixed-point's range
+		// check if we are in the representable range
+		if (v >= (long double)maxpos_fixpnt<nbits, rbits, arithmetic>()) {
+			// set to max value
+			result.flip();
+			result.set(nbits - 1, false);
+			return;
+		}
+		if (v <= (long double)maxneg_fixpnt<nbits, rbits, arithmetic>()) {
+			// set to max neg value
+			result.set(nbits - 1, true);
+			return;
+		}
 	}
 
 	// we only have an integer part, and no fraction to convert
@@ -186,10 +188,25 @@ inline void convert(int64_t v, fixpnt<nbits, rbits, arithmetic>& result) {
 		}
 	}
 }
-template<size_t nbits, size_t rbits, typename arithmetic = Modular>
+template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 inline void convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic>& result) {
 	constexpr uint64_t mask = 0x1;
 	result.clear();
+	if (arithmetic == Saturation) {
+		// we are implementing saturation for values that are outside of the fixed-point's range
+		// check if we are in the representable range
+		if (v >= (long double)maxpos_fixpnt<nbits, rbits, arithmetic>()) {
+			// set to max value
+			result.flip();
+			result.set(nbits - 1, false);
+			return;
+		}
+		if (v <= (long double)maxneg_fixpnt<nbits, rbits, arithmetic>()) {
+			// set to max neg value
+			result.set(nbits - 1, true);
+			return;
+		}
+	}
 	unsigned upper = (nbits <= 64 ? nbits : 64);
 	for (unsigned i = 0; i < upper; ++i) {
 		if (v & mask) result.set(i);
@@ -198,7 +215,7 @@ inline void convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic>& resul
 }
 
 // fixpnt is a binary fixed point number of nbits with rbits after the radix point
-template<size_t _nbits, size_t _rbits, typename arithmetic = Modular>
+template<size_t _nbits, size_t _rbits, bool arithmetic = Modular>
 class fixpnt {
 public:
 	static constexpr size_t nbits = _nbits;
@@ -739,18 +756,20 @@ protected:
 	template<typename Ty>
 	void float_assign(Ty& rhs) {
 		clear();
-		// we are implementing saturation for values that are outside of the fixed-point's range
-		// check if we are in the representable range
-		if (rhs >= (Ty)maxpos_fixpnt<nbits, rbits, arithmetic>()) {
-			// set to max value
-			flip();
-			set(nbits - 1, false);
-			return;
-		}
-		if (rhs <= (Ty)maxneg_fixpnt<nbits, rbits, arithmetic>()) {
-			// set to max neg value
-			set(nbits - 1, true);
-			return;
+		if (arithmetic == Saturation) {
+			// we are implementing saturation for values that are outside of the fixed-point's range
+			// check if we are in the representable range
+			if (rhs >= (Ty)maxpos_fixpnt<nbits, rbits, arithmetic>()) {
+				// set to max value
+				flip();
+				set(nbits - 1, false);
+				return;
+			}
+			if (rhs <= (Ty)maxneg_fixpnt<nbits, rbits, arithmetic>()) {
+				// set to max neg value
+				set(nbits - 1, true);
+				return;
+			}
 		}
 		// generate the representation of one and cast to Ty
 		Ty one = Ty(0x1ll << rbits);
@@ -763,53 +782,53 @@ private:
 	uint8_t b[nrBytes];
 
 	// convert
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend std::string convert_to_decimal_string(const fixpnt<nnbits, rrbits, aarithmetic>& value);
 
 	// fixpnt - fixpnt logic comparisons
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator==(const fixpnt<nnbits, rrbits, aarithmetic>& lhs, const fixpnt<nnbits, rrbits, aarithmetic>& rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator!=(const fixpnt<nnbits, rrbits, aarithmetic>& lhs, const fixpnt<nnbits, rrbits, aarithmetic>& rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator< (const fixpnt<nnbits, rrbits, aarithmetic>& lhs, const fixpnt<nnbits, rrbits, aarithmetic>& rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator> (const fixpnt<nnbits, rrbits, aarithmetic>& lhs, const fixpnt<nnbits, rrbits, aarithmetic>& rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator<=(const fixpnt<nnbits, rrbits, aarithmetic>& lhs, const fixpnt<nnbits, rrbits, aarithmetic>& rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator>=(const fixpnt<nnbits, rrbits, aarithmetic>& lhs, const fixpnt<nnbits, rrbits, aarithmetic>& rhs);
 
 	// fixpnt - literal logic comparisons
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator==(const fixpnt<nnbits, rrbits, aarithmetic>& lhs, const long long rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator!=(const fixpnt<nnbits, rrbits, aarithmetic>& lhs, const long long rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator< (const fixpnt<nnbits, rrbits, aarithmetic>& lhs, const long long rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator> (const fixpnt<nnbits, rrbits, aarithmetic>& lhs, const long long rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator<=(const fixpnt<nnbits, rrbits, aarithmetic>& lhs, const long long rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator>=(const fixpnt<nnbits, rrbits, aarithmetic>& lhs, const long long rhs);
 
 	// literal - fixpnt logic comparisons
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator==(const long long lhs, const fixpnt<nnbits, rrbits, aarithmetic>& rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator!=(const long long lhs, const fixpnt<nnbits, rrbits, aarithmetic>& rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator< (const long long lhs, const fixpnt<nnbits, rrbits, aarithmetic>& rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator> (const long long lhs, const fixpnt<nnbits, rrbits, aarithmetic>& rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator<=(const long long& lhs, const fixpnt<nnbits, rrbits, aarithmetic>& rhs);
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend bool operator>=(const long long lhs, const fixpnt<nnbits, rrbits, aarithmetic>& rhs);
 
 	// find the most significant bit set
-	template<size_t nnbits, size_t rrbits, typename aarithmetic>
+	template<size_t nnbits, size_t rrbits, bool aarithmetic>
 	friend signed findMsb(const fixpnt<nnbits, rrbits, aarithmetic>& v);
 };
 
@@ -1186,7 +1205,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
 
 ////////////////////////    INTEGER functions   /////////////////////////////////
 
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> twos_complement(const fixpnt<nbits, rbits, arithmetic>& value) {
 	fixpnt<nbits, rbits> complement = ~value;
 	fixpnt<nbits, rbits> increment;
@@ -1196,7 +1215,7 @@ inline fixpnt<nbits, rbits, arithmetic> twos_complement(const fixpnt<nbits, rbit
 }
 
 // convert fixpnt to decimal string, i.e. "-1234.5678"
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic>& value) {
 	if (value.iszero()) {
 		return std::string("0");
@@ -1243,7 +1262,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic>& va
 }
 
 // findMsb takes an fixpnt<nbits,rbits> reference and returns the position of the most significant bit, -1 if v == 0
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline signed findMsb(const fixpnt<nbits, rbits, arithmetic>& v) {
 	for (signed i = v.nrBytes - 1; i >= 0; --i) {
 		if (v.b[i] != 0) {
@@ -1262,7 +1281,7 @@ inline signed findMsb(const fixpnt<nbits, rbits, arithmetic>& v) {
 ////////////////////////    INTEGER operators   /////////////////////////////////
 
 // divide fixpnt<nbits,rbits> a and b and return result argument
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 void divide(const fixpnt<nbits, rbits, arithmetic>& a, const fixpnt<nbits, rbits, arithmetic>& b, fixpnt<nbits, rbits, arithmetic>& quotient) {
 	if (b == fixpnt<nbits, rbits, arithmetic>(0)) {
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
@@ -1276,7 +1295,7 @@ void divide(const fixpnt<nbits, rbits, arithmetic>& a, const fixpnt<nbits, rbits
 }
 
 // calculate remainder of fixpnt<nbits,rbits> a and b and return result argument
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 void remainder(const fixpnt<nbits, rbits, arithmetic>& a, const fixpnt<nbits, rbits, arithmetic>& b, fixpnt<nbits, rbits, arithmetic>& remainder) {
 	if (b == fixpnt<nbits, rbits, arithmetic>(0)) {
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
@@ -1290,7 +1309,7 @@ void remainder(const fixpnt<nbits, rbits, arithmetic>& a, const fixpnt<nbits, rb
 }
 
 // divide fixpnt<nbits, rbits> a and b and return result argument
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 fixpntdiv_t<nbits, rbits, arithmetic> fixpntdiv(const fixpnt<nbits, rbits, arithmetic>& _a, const fixpnt<nbits, rbits, arithmetic>& _b) {
 	if (_b == fixpnt<nbits,rbits,arithmetic>(0)) {
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
@@ -1347,7 +1366,7 @@ fixpntdiv_t<nbits, rbits, arithmetic> fixpntdiv(const fixpnt<nbits, rbits, arith
 /// stream operators
 
 // read a fixed-point ASCII format and make a binary fixpnt out of it
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic>& value) {
 	bool bSuccess = false;
 	value.clear();
@@ -1439,7 +1458,7 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic>& value) {
 }
 
 // generate an fixpnt format ASCII format
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline std::ostream& operator<<(std::ostream& ostr, const fixpnt<nbits, rbits, arithmetic>& i) {
 	// to make certain that setw and left/right operators work properly
 	// we need to transform the fixpnt into a string
@@ -1456,7 +1475,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const fixpnt<nbits, rbits, a
 }
 
 // read an ASCII fixpnt format
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline std::istream& operator>>(std::istream& istr, fixpnt<nbits, rbits, arithmetic>& p) {
 	std::string txt;
 	istr >> txt;
@@ -1467,7 +1486,7 @@ inline std::istream& operator>>(std::istream& istr, fixpnt<nbits, rbits, arithme
 }
 
 ////////////////// string operators
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic>& number) {
 	std::stringstream ss;
 	for (int i = int(nbits) - 1; i >= int(rbits); --i) {
@@ -1484,18 +1503,18 @@ inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic>& number) {
 // fixpnt - fixpnt binary logic operators
 
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator==(const fixpnt<nbits, rbits, arithmetic>& lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	for (unsigned i = 0; i < lhs.nrBytes; ++i) {
 		if (lhs.b[i] != rhs.b[i]) return false;
 	}
 	return true;
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator!=(const fixpnt<nbits, rbits, arithmetic>& lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return !operator==(lhs, rhs);
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator< (const fixpnt<nbits, rbits, arithmetic>& lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	bool lhs_is_negative = lhs.sign();
 	bool rhs_is_negative = rhs.sign();
@@ -1516,15 +1535,15 @@ inline bool operator< (const fixpnt<nbits, rbits, arithmetic>& lhs, const fixpnt
 	}
 	return false; // lhs and rhs are the same
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator> (const fixpnt<nbits, rbits, arithmetic>& lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return operator< (rhs, lhs);
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator<=(const fixpnt<nbits, rbits, arithmetic>& lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator>=(const fixpnt<nbits, rbits, arithmetic>& lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return !operator< (lhs, rhs);
 }
@@ -1532,27 +1551,27 @@ inline bool operator>=(const fixpnt<nbits, rbits, arithmetic>& lhs, const fixpnt
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // fixpnt - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator==(const fixpnt<nbits, rbits, arithmetic>& lhs, const long long rhs) {
 	return operator==(lhs, fixpnt<nbits, rbits, arithmetic>(rhs));
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator!=(const fixpnt<nbits, rbits, arithmetic>& lhs, const long long rhs) {
 	return !operator==(lhs, rhs);
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator< (const fixpnt<nbits, rbits, arithmetic>& lhs, const long long rhs) {
 	return operator<(lhs, fixpnt<nbits, rbits, arithmetic>(rhs));
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator> (const fixpnt<nbits, rbits, arithmetic>& lhs, const long long rhs) {
 	return operator< (fixpnt<nbits, rbits, arithmetic>(rhs), lhs);
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator<=(const fixpnt<nbits, rbits, arithmetic>& lhs, const long long rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator>=(const fixpnt<nbits, rbits, arithmetic>& lhs, const long long rhs) {
 	return !operator< (lhs, rhs);
 }
@@ -1561,27 +1580,27 @@ inline bool operator>=(const fixpnt<nbits, rbits, arithmetic>& lhs, const long l
 // literal - fixpnt binary logic operators
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator==(const long long lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return operator==(fixpnt<nbits, rbits, arithmetic>(lhs), rhs);
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator!=(const long long lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return !operator==(lhs, rhs);
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator< (const long long lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return operator<(fixpnt<nbits, rbits, arithmetic>(lhs), rhs);
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator> (const long long lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return operator< (rhs, lhs);
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator<=(const long long lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline bool operator>=(const long long lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return !operator< (lhs, rhs);
 }
@@ -1591,35 +1610,35 @@ inline bool operator>=(const long long lhs, const fixpnt<nbits, rbits, arithmeti
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // fixpnt - fixpnt binary arithmetic operators
 // BINARY ADDITION
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator+(const fixpnt<nbits, rbits, arithmetic>& lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	fixpnt<nbits, rbits> sum = lhs;
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator-(const fixpnt<nbits, rbits, arithmetic>& lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	fixpnt<nbits, rbits> diff = lhs;
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator*(const fixpnt<nbits, rbits, arithmetic>& lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	fixpnt<nbits, rbits> mul = lhs;
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator/(const fixpnt<nbits, rbits, arithmetic>& lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	fixpnt<nbits, rbits> ratio = lhs;
 	ratio /= rhs;
 	return ratio;
 }
 // BINARY REMAINDER
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator%(const fixpnt<nbits, rbits, arithmetic>& lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	fixpnt<nbits, rbits> ratio = lhs;
 	ratio %= rhs;
@@ -1629,27 +1648,27 @@ inline fixpnt<nbits, rbits, arithmetic> operator%(const fixpnt<nbits, rbits, ari
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // fixpnt - literal binary arithmetic operators
 // BINARY ADDITION
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator+(const fixpnt<nbits, rbits, arithmetic>& lhs, const long long rhs) {
 	return operator+(lhs, fixpnt<nbits, rbits>(rhs));
 }
 // BINARY SUBTRACTION
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator-(const fixpnt<nbits, rbits, arithmetic>& lhs, const long long rhs) {
 	return operator-(lhs, fixpnt<nbits, rbits>(rhs));
 }
 // BINARY MULTIPLICATION
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator*(const fixpnt<nbits, rbits, arithmetic>& lhs, const long long rhs) {
 	return operator*(lhs, fixpnt<nbits, rbits>(rhs));
 }
 // BINARY DIVISION
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator/(const fixpnt<nbits, rbits, arithmetic>& lhs, const long long rhs) {
 	return operator/(lhs, fixpnt<nbits, rbits>(rhs));
 }
 // BINARY REMAINDER
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator%(const fixpnt<nbits, rbits, arithmetic>& lhs, const long long rhs) {
 	return operator%(lhs, fixpnt<nbits, rbits>(rhs));
 }
@@ -1657,27 +1676,27 @@ inline fixpnt<nbits, rbits, arithmetic> operator%(const fixpnt<nbits, rbits, ari
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - fixpnt binary arithmetic operators
 // BINARY ADDITION
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator+(const long long lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return operator+(fixpnt<nbits, rbits>(lhs), rhs);
 }
 // BINARY SUBTRACTION
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator-(const long long lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return operator-(fixpnt<nbits, rbits>(lhs), rhs);
 }
 // BINARY MULTIPLICATION
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator*(const long long lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return operator*(fixpnt<nbits, rbits>(lhs), rhs);
 }
 // BINARY DIVISION
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator/(const long long lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return operator/(fixpnt<nbits, rbits>(lhs), rhs);
 }
 // BINARY REMAINDER
-template<size_t nbits, size_t rbits, typename arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic>
 inline fixpnt<nbits, rbits, arithmetic> operator%(const long long lhs, const fixpnt<nbits, rbits, arithmetic>& rhs) {
 	return operator%(fixpnt<nbits, rbits>(lhs), rhs);
 }

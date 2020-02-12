@@ -75,7 +75,7 @@ try {
 #else
 	bool bReportIndividualTestCases = false;
 
-	cout << "Fixed-point division validation" << endl;
+	cout << "Fixed-point modular division validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "division");

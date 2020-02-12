@@ -110,14 +110,14 @@ int Compare(double input, const fixpnt<nbits, rbits>& presult, double reference,
 	return fail;
 }
 
-template<size_t nbits, size_t rbits, typename Ty, typename arithmetic = Modular>
+template<size_t nbits, size_t rbits, typename Ty>
 int ValidateModularAssignment(bool bReportIndividualTestCases) {
 	const size_t NR_NUMBERS = (size_t(1) << nbits);
 	int nrOfFailedTestCases = 0;
 
 	// use only valid fixed-point values
 	// fixpnt_raw -> to value in Ty -> assign to fixpnt -> compare fixpnts
-	fixpnt<nbits, rbits, arithmetic> p, assigned;
+	fixpnt<nbits, rbits, sw::unum::Modular> p, assigned;
 	for (size_t i = 0; i < NR_NUMBERS; i++) {
 		p.set_raw_bits(i); 
 		//std::cout << to_binary(p) << std::endl;
@@ -136,7 +136,7 @@ int ValidateModularAssignment(bool bReportIndividualTestCases) {
 }
 
 // enumerate all conversion cases for a posit configuration
-template<size_t nbits, size_t rbits, typename arithmetic = Modular>
+template<size_t nbits, size_t rbits>
 int ValidateModularConversion(const std::string& tag, bool bReportIndividualTestCases) {
 	// we are going to generate a test set that consists of all fixed-point configs and their midpoints
 	// we do this by enumerating a fixed-point that is 1-bit larger than the test configuration
@@ -146,7 +146,7 @@ int ValidateModularConversion(const std::string& tag, bool bReportIndividualTest
 	// to test the rounding logic of the conversion.
 	constexpr size_t NR_TEST_CASES = (size_t(1) << (nbits + 1));
 	constexpr size_t HALF = (size_t(1) << nbits);
-	fixpnt<nbits + 1, rbits + 1> pref, pprev, pnext;
+	fixpnt<nbits + 1, rbits + 1, sw::unum::Modular> pref, pprev, pnext;
 
 	const unsigned max = nbits > 20 ? 20 : nbits + 1;
 	size_t max_tests = (size_t(1) << max);
@@ -156,10 +156,10 @@ int ValidateModularConversion(const std::string& tag, bool bReportIndividualTest
 
 	// execute the test
 	int nrOfFailedTests = 0;
-	double minpos = value_minpos_fixpnt<nbits + 1, rbits + 1, arithmetic>();
+	double minpos = value_minpos_fixpnt<nbits + 1, rbits + 1, sw::unum::Modular>();
 	double eps;
 	double da, input;
-	fixpnt<nbits, rbits, arithmetic> pa;
+	fixpnt<nbits, rbits, sw::unum::Modular> pa;
 	for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
 		pref.set_raw_bits(i);
 		da = double(pref);

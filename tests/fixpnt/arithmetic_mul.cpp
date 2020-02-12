@@ -48,7 +48,7 @@ try {
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Modular Multiplication failed: ";
+	std::string tag = "modular multiplication failed: ";
 
 #if MANUAL_TESTING
 
@@ -68,7 +68,7 @@ try {
 
 #else
 
-	cout << "Fixed-point multiplication validation" << endl;
+	cout << "Fixed-point modular multiplication validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");

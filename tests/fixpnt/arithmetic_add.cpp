@@ -37,7 +37,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -48,7 +48,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Modular Addition failed: ";
+	std::string tag = "modular addition failed: ";
 
 #if MANUAL_TESTING
 
@@ -73,6 +73,14 @@ try {
 		cout << fp << endl;
 	}
 
+	{
+		fixpnt<4, 1> a, b, c;
+		a = 0;
+		b = 2;
+		c = a + b;
+		cout << a << " + " << b << " = " << c << endl;
+	}
+
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 1>("Manual Testing", true), "fixpnt<4,1>", "addition");
 
 
@@ -87,7 +95,7 @@ try {
 
 #else
 
-	cout << "Fixed-point addition validation" << endl;
+	cout << "Fixed-point modular addition validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "addition");

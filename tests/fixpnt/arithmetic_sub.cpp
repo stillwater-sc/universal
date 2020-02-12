@@ -48,7 +48,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Modular Subtraction failed: ";
+	std::string tag = "modular subtraction failed: ";
 
 #if MANUAL_TESTING
 
@@ -72,7 +72,7 @@ try {
 
 #else
 
-	cout << "Fixed-point subtraction validation" << endl;
+	cout << "Fixed-point modular subtraction validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "subtraction");
