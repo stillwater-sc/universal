@@ -65,8 +65,40 @@ Run-time configuration is used to select modular vs saturation arithmetic.
 namespace sw {
 namespace unum {
 
-	constexpr bool Modular = true;
-	constexpr bool Saturation = false;
+constexpr bool Modular    = true;
+constexpr bool Saturation = !Modular;
+
+// local helper to display the contents of a byte array
+void displayByteArray(std::string tag, const uint8_t byteArray[], unsigned N) {
+	char hexChar[16] = {
+		'0',
+		'1',
+		'2',
+		'3',
+		'4',
+		'5',
+		'6',
+		'7',
+		'8',
+		'9',
+		'A',
+		'B',
+		'C',
+		'D',
+		'E',
+		'F',
+	};
+	std::cout << tag << "= 0x" << std::hex;
+	for (int i = N - 1; i >= 0; --i) {
+		unsigned msNibble = ((0xF0 & byteArray[i]) >> 4);
+		unsigned lsNibble = (0x0F & byteArray[i]);
+//		std::cout << "nibbles: " << msNibble << " " << lsNibble << std::endl;
+//		std::cout << '-' << hexChar[msNibble] << '-' << std::endl << hexChar[lsNibble];
+		std::cout << hexChar[msNibble] << hexChar[lsNibble];
+
+	}
+	std::cout << std::endl;
+}
 
 // forward references
 template<size_t nbits, size_t rbits, bool arithmetic> class fixpnt;
@@ -509,7 +541,7 @@ public:
 		return *this;
 	}
 	fixpnt& operator*=(const fixpnt& rhs) {
-		// how are we going to deal with overflow?
+		// TODO: how are we going to deal with overflow?
 		uint8_t accumulator[mulBytes], multiplicant[mulBytes];
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			accumulator[i]            = uint8_t(0);
@@ -523,15 +555,21 @@ public:
 			if (byte & mask) { // check the multiplication bit
 				addBytes(accumulator, multiplicant);
 			}
-			shiftLeft(multiplicant);
+			shiftLeft(multiplicant, mulBytes);
 		}
 		// if rbit >= 1 we need to round
-		std::cout << "accu = 0x";
-		for (int i = mulBytes - 1; i >= 0; --i) {
-			std::cout << std::hex << int(0x0f && accumulator[i]) << int(0xf0 && accumulator[i]) << std::dec;
-		}
-		std::cout << std::endl;
+//		displayByteArray("accu", accumulator, mulBytes);
+		// capture rounding bits (guard, round, sticky)
+		// ...
+		// we are now a 2*nbits, 2*rbits representation, so shift the radix point back
+		shiftRight(accumulator, mulBytes, rbits);
 		clear();
+		// copy the value in
+		for (unsigned i = 0; i < nrBytes; ++i) {
+			b[i] = accumulator[i];
+		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		b[MS_BYTE] = MS_BYTE_MASK & b[MS_BYTE];
 		return *this;
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
@@ -806,18 +844,25 @@ protected:
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		accumulator[2*nrBytes - 1] = MS_BYTE_MASK & accumulator[2*nrBytes - 1];
 	}
-	void shiftLeft(uint8_t multiplicant[mulBytes]) {
+	void shiftLeft(uint8_t multiplicant[], unsigned N) {
 		// hardcoded shift by one bit
-		unsigned i = 2 * nrBytes - 1;
+		unsigned i = N - 1;
 		multiplicant[i] <<= 1;
-		multiplicant[i] |= ((0x80 & multiplicant[i - 1]) >> 7);
-		for (int i = 2 * nrBytes - 2; i > 0; --i) {
-			multiplicant[i] <<= 1;
+		if (N > 1) {
 			multiplicant[i] |= ((0x80 & multiplicant[i - 1]) >> 7);
+			for (int i = N - 2; i > 0; --i) {
+				multiplicant[i] <<= 1;
+				multiplicant[i] |= ((0x80 & multiplicant[i - 1]) >> 7);
+			}
 		}
 		multiplicant[0] <<= 1;
 	}
-
+	void shiftRight(uint8_t byteArray[], unsigned N, unsigned bitsToShift) {
+		for (unsigned i = 0; i < N; ++i) {
+			byteArray[i] >>= bitsToShift;
+			// mix in the bits from the left
+		}
+	}
 private:
 	//array<uint8_t, (1 + ((nbits - 1) / 8))> bytes;
 	uint8_t b[nrBytes];
