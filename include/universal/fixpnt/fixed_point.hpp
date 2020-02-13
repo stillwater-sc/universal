@@ -221,6 +221,7 @@ public:
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t rbits = _rbits;
 	static constexpr unsigned nrBytes = (1 + ((nbits - 1) / 8));
+	static constexpr unsigned mulBytes = 2 * nrBytes;
 	static constexpr unsigned MS_BYTE = nrBytes - 1;
 	static constexpr uint8_t MS_BYTE_MASK = (0xFF >> (nrBytes * 8 - nbits));
 
@@ -233,8 +234,9 @@ public:
 	fixpnt& operator=(fixpnt&&) = default;
 
 	/// Construct a new fixpnt from another, sign extend when necessary
-	template<size_t src_nbits, size_t src_rbits>
-	fixpnt(const fixpnt<src_nbits,src_rbits>& a) {
+	template<size_t src_nbits, size_t src_rbits, bool arithmetic>
+	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic>& a) {
+		std::cout << typeid(a).name() << " goes into " << typeid(*this).name() << std::endl;
 		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); // TODO: do we want this?
 		bitcopy(a);
 		if (a.sign()) { // sign extend
@@ -508,17 +510,28 @@ public:
 	}
 	fixpnt& operator*=(const fixpnt& rhs) {
 		// how are we going to deal with overflow?
-		fixpnt<2*nbits, rbits> base, multiplicant;
-		base = *this;
-		multiplicant = rhs;
-		clear();
+		uint8_t accumulator[mulBytes], multiplicant[mulBytes];
+		for (unsigned i = 0; i < nrBytes; ++i) {
+			accumulator[i]            = uint8_t(0);
+			accumulator[i + nrBytes]  = uint8_t(0);
+			multiplicant[i]           = rhs.b[i];
+			multiplicant[i + nrBytes] = uint8_t(0);
+		}
 		for (unsigned i = 0; i < nbits; ++i) {
-			if (base.at(i)) {
-				operator+=(multiplicant);
+			uint8_t byte = b[i / 8];
+			uint8_t mask = 1 << (i % 8);
+			if (byte & mask) { // check the multiplication bit
+				addBytes(accumulator, multiplicant);
 			}
-			multiplicant <<= 1;
+			shiftLeft(multiplicant);
 		}
 		// if rbit >= 1 we need to round
+		std::cout << "accu = 0x";
+		for (int i = mulBytes - 1; i >= 0; --i) {
+			std::cout << std::hex << int(0x0f && accumulator[i]) << int(0xf0 && accumulator[i]) << std::dec;
+		}
+		std::cout << std::endl;
+		clear();
 		return *this;
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
@@ -622,7 +635,7 @@ public:
 	}
 	// pure bit copy of source fixpnt, no sign extension
 	template<size_t src_nbits, size_t src_rbits>
-	inline void bitcopy(const fixpnt<src_nbits, src_rbits>& src) {
+	inline void bitcopy(const fixpnt<src_nbits, src_rbits> & src) {
 		int lastByte = (nrBytes < src.nrBytes ? nrBytes : src.nrBytes);
 		clear();
 		for (int i = 0; i < lastByte; ++i) {
@@ -664,6 +677,7 @@ protected:
 	// HELPER methods
 
 	// conversion functions
+	// from fixed-point to native
 	template<typename Integer>
 	typename std::enable_if< std::is_integral<Integer>::value && std::is_signed<Integer>::value,
 	                Integer>::type convert_signed() const {
@@ -753,6 +767,7 @@ protected:
 		return ld;
 	}
 
+	// from native to fixed-point
 	template<typename Ty>
 	void float_assign(Ty& rhs) {
 		clear();
@@ -775,6 +790,32 @@ protected:
 		Ty one = Ty(0x1ll << rbits);
 		Ty tmp = rhs * one;
 		*this = uint64_t(tmp);
+	}
+
+	// byte arithmetic for mul and div
+	void addBytes(uint8_t accumulator[mulBytes], uint8_t y[mulBytes]) {
+		bool carry = false;
+		for (unsigned i = 0; i < 2*nrBytes; ++i) {
+			// cast up so we can test for overflow
+			uint16_t l = uint16_t(accumulator[i]);
+			uint16_t r = uint16_t(y[i]);
+			uint16_t s = l + r + (carry ? uint16_t(0x0001) : uint16_t(0x0000));
+			carry = (s > 255 ? true : false);
+			accumulator[i] = (uint8_t)(s & 0xFF);
+		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		accumulator[2*nrBytes - 1] = MS_BYTE_MASK & accumulator[2*nrBytes - 1];
+	}
+	void shiftLeft(uint8_t multiplicant[mulBytes]) {
+		// hardcoded shift by one bit
+		unsigned i = 2 * nrBytes - 1;
+		multiplicant[i] <<= 1;
+		multiplicant[i] |= ((0x80 & multiplicant[i - 1]) >> 7);
+		for (int i = 2 * nrBytes - 2; i > 0; --i) {
+			multiplicant[i] <<= 1;
+			multiplicant[i] |= ((0x80 & multiplicant[i - 1]) >> 7);
+		}
+		multiplicant[0] <<= 1;
 	}
 
 private:
