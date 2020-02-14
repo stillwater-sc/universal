@@ -1,8 +1,11 @@
 // ieee_fp.cpp: cli to show the sign/scale/fraction components of a 32b/64/128b IEEE floats
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>
+#include <string>
+#include <universal/native/ieee-754.hpp>
 #include <universal/posit/value>
 
 std::string version_string(int a, int b, int c) {
@@ -75,9 +78,10 @@ try {
 
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}
-	double d      = atof(argv[1]);
-	float f       = (float)d;
-	long double q = d;
+	long double q = stold(argv[1]);
+	double d      = double(q);
+	float f       = float(d);
+
 	value<f_fbits> vf(f);
 	value<d_fbits> vd(d);
 	value<q_fbits> vq(q);
@@ -99,6 +103,12 @@ try {
 	cout << "long double: " << setprecision(q_prec) << setw(width) << q << " " << components(vq) << endl;
 
 	cout << setprecision(old_precision);
+
+	cout << sw::native::to_hex(f) << endl;
+	cout << sw::native::to_hex(d) << endl;
+
+	cout << sw::native::to_binary(f) << ' ' << sw::native::to_triple(f) << endl;
+	cout << sw::native::to_binary(d) << ' ' << sw::native::to_triple(d) << endl;
 
 	return EXIT_SUCCESS;
 }
