@@ -13,7 +13,6 @@
 #include <map>
 
 /*
-
 The fixed-point arithmetic can be configured to:
 - throw exception on overflow
 - saturation arithmetic: saturate on overflow
@@ -31,6 +30,8 @@ Run-time configuration is used to select modular vs saturation arithmetic.
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
+#include "universal/native/ieee-754.hpp"   // IEEE-754 decoders
+#include "universal/native/integers.hpp"   // manipulators for native integer types
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -430,6 +431,8 @@ public:
 		return *this;
 	}
 	fixpnt& operator=(const float rhs) {
+		native::float_decoder decoder;
+		decoder.f = rhs;
 		float_assign(rhs);
 		return *this;
 	}
@@ -594,7 +597,7 @@ public:
 		int roundingDecision = 0;
 		if (rbits > 0) {		// capture rounding bits
 			roundingDecision = round(accumulator, mulBytes, rbits-1);
-			//std::cout << (roundingDecision == 0 ? "tie" : (roundingDecision > 0 ? "up" : "down")) << std::endl;
+			std::cout << (roundingDecision == 0 ? "tie" : (roundingDecision > 0 ? "up" : "down")) << std::endl;
 		}
 		// shift the radix point back
 		shiftRight(accumulator, mulBytes, rbits);
@@ -869,6 +872,8 @@ protected:
 				return;
 			}
 		}
+		// for proper rounding, we need to get the full bit representation
+
 		// generate the representation of one and cast to Ty
 		Ty one = Ty(0x1ll << rbits);
 		Ty tmp = rhs * one;

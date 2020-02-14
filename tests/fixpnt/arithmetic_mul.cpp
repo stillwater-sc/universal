@@ -33,7 +33,9 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::setw(nbits) << _a << " * " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
 	std::cout << a << " * " << b << " = " << result << " (reference: " << cref << ")   " ;
 	std::cout << (cref == result ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::dec << std::setprecision(oldPrecision);
+	std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(result) << " (reference: " << to_binary(cref) << ")   ";
+
+	std::cout << std::endl <<  std::dec << std::setprecision(oldPrecision);
 }
 
 // conditional compile flags
@@ -54,9 +56,12 @@ try {
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 4>(0.5f, 0.5f);
-	GenerateTestCase<8, 1>(0.5f, -64.0f);
+	GenerateTestCase<8, 1>(0.5f, 63.5f);
+
+	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "multiplication");
 
 #if STRESS_TESTING
 	// manual exhaustive test
