@@ -49,9 +49,9 @@ void ReportBinaryArithmeticError(std::string test_case, std::string op, const fi
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
 		<< " != "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref << " instead it yielded "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result
-		<< " " << to_binary(ref) << " vs " << to_binary(result)
+		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " golden reference is "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << ref
+		<< " " << to_binary(result) << " vs " << to_binary(ref)
 		<< std::setprecision(old_precision)
 		<< std::endl;
 }
@@ -65,9 +65,9 @@ void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const 
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
 		<< " == "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref << " matches reference "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result
-		<< " " << to_binary(ref) << " vs " << to_binary(result)
+		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " matches reference "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << ref
+		<< " " << to_binary(result) << " vs " << to_binary(ref)
 		<< std::setprecision(old_precision)
 		<< std::endl;
 }
@@ -78,8 +78,8 @@ void ReportAssignmentError(std::string test_case, std::string op, const fixpnt<n
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << value
 		<< " != "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref << " instead it yielded "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result
+		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " golden reference is "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << ref
 		<< " " << to_binary(result) << " vs " << to_binary(ref) << std::endl;
 }
 
@@ -91,7 +91,7 @@ void ReportAssignmentSuccess(std::string test_case, std::string op, const fixpnt
 		<< " == "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " reference value is "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << ref
-		<< "               posit fields " << to_binary(result) << std::endl;
+		<< "               fixpnt bits " << to_binary(result) << std::endl;
 }
 
 /////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////

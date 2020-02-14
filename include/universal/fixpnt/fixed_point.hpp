@@ -71,22 +71,8 @@ constexpr bool Saturation = !Modular;
 // local helper to display the contents of a byte array
 void displayByteArray(std::string tag, const uint8_t byteArray[], unsigned N) {
 	char hexChar[16] = {
-		'0',
-		'1',
-		'2',
-		'3',
-		'4',
-		'5',
-		'6',
-		'7',
-		'8',
-		'9',
-		'A',
-		'B',
-		'C',
-		'D',
-		'E',
-		'F',
+		'0', '1', '2', '3', '4', '5', '6', '7',
+		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
 	};
 	std::cout << tag << "= 0x" << std::hex;
 	for (int i = N - 1; i >= 0; --i) {
@@ -98,6 +84,45 @@ void displayByteArray(std::string tag, const uint8_t byteArray[], unsigned N) {
 
 	}
 	std::cout << std::endl;
+}
+
+// determine the rounding mode: -1 round down, 0 tie, 1 round up
+// N sets the size of the byteArray, and bit indicats the location of the guard bit to round at
+int round(const uint8_t byteArray[], unsigned N, int bit) {
+	int rv = 0;
+	if (bit >= 0) {
+		bool guard, round, sticky;
+		// byte in which the guard bit resides
+		uint8_t byte = byteArray[bit / 8];
+		uint8_t mask = 1 << (bit % 8);
+		guard = (byte & mask) ? true : false;
+		if (guard == false) return -1; // round down
+		rv = 1; // round up, unless it is a tie
+		--bit;
+		if (bit >= 0) {
+			byte = byteArray[bit / 8];
+			mask = 1 << (bit % 8);
+			round = (byte & mask) ? true : false;
+			--bit;
+			if (bit >= 0) {
+				sticky = false;
+				int bb = bit / 8;
+				byte = byteArray[bit / 8];
+				mask = 0xFF >> (8 - (bit % 8));
+				if ((byte & mask) == 0x00) {
+					// for the remaining bytes check if there is any bit set
+					for (int bb = (bit / 8); bb >= 0; --bb) {
+						if (byteArray[bb]) {
+							sticky = true;
+							break;
+						}
+					}
+				}
+				rv = (!round && !sticky) ? 0 : -1;
+			}
+		}
+	}
+	return rv;
 }
 
 // forward references
@@ -253,7 +278,7 @@ public:
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t rbits = _rbits;
 	static constexpr unsigned nrBytes = (1 + ((nbits - 1) / 8));
-	static constexpr unsigned mulBytes = 2 * nrBytes;
+	static constexpr unsigned mulBytes = (1 + ((2 * nbits - 1) / 8)); // for the odd case of a half filled byte
 	static constexpr unsigned MS_BYTE = nrBytes - 1;
 	static constexpr uint8_t MS_BYTE_MASK = (0xFF >> (nrBytes * 8 - nbits));
 
@@ -266,8 +291,12 @@ public:
 	fixpnt& operator=(fixpnt&&) = default;
 
 	/// Construct a new fixpnt from another, sign extend when necessary
-	template<size_t src_nbits, size_t src_rbits, bool arithmetic>
-	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic>& a) {
+	template<size_t src_nbits, size_t src_rbits, bool src_arithmetic>
+	fixpnt(const fixpnt<src_nbits, src_rbits, src_arithmetic>& a) {
+		*this = a;
+	}
+	template<size_t src_nbits, size_t src_rbits, bool src_arithmetic>
+	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, src_arithmetic>& a) {
 		std::cout << typeid(a).name() << " goes into " << typeid(*this).name() << std::endl;
 		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); // TODO: do we want this?
 		bitcopy(a);
@@ -547,7 +576,7 @@ public:
 			accumulator[i]            = uint8_t(0);
 			accumulator[i + nrBytes]  = uint8_t(0);
 			multiplicant[i]           = rhs.b[i];
-			multiplicant[i + nrBytes] = uint8_t(0);
+			multiplicant[i + nrBytes] = (rhs.sign() ? uint8_t(0xFF) : uint8_t(0x00)); // sign extend if needed
 		}
 		for (unsigned i = 0; i < nbits; ++i) {
 			uint8_t byte = b[i / 8];
@@ -557,12 +586,28 @@ public:
 			}
 			shiftLeft(multiplicant, mulBytes);
 		}
-		// if rbit >= 1 we need to round
 //		displayByteArray("accu", accumulator, mulBytes);
-		// capture rounding bits (guard, round, sticky)
-		// ...
-		// we are now a 2*nbits, 2*rbits representation, so shift the radix point back
+
+		// if rbit >= 1 we need to round
+		// accumulator is a 2*nbits, 2*rbits representation
+
+		int roundingDecision = 0;
+		if (rbits > 0) {		// capture rounding bits
+			roundingDecision = round(accumulator, mulBytes, rbits-1);
+			//std::cout << (roundingDecision == 0 ? "tie" : (roundingDecision > 0 ? "up" : "down")) << std::endl;
+		}
+		// shift the radix point back
 		shiftRight(accumulator, mulBytes, rbits);
+//		displayByteArray("accu", accumulator, mulBytes);
+		if (roundingDecision > 0) {
+			uint8_t plusOne[mulBytes];
+			plusOne[0] = uint8_t(0x01);
+			for (unsigned i = 1; i < mulBytes; ++i) {
+				plusOne[i] = uint8_t(0);
+			}
+			addBytes(accumulator, plusOne);
+		}
+//		displayByteArray("accu", accumulator, mulBytes);
 		clear();
 		// copy the value in
 		for (unsigned i = 0; i < nrBytes; ++i) {
@@ -858,10 +903,18 @@ protected:
 		multiplicant[0] <<= 1;
 	}
 	void shiftRight(uint8_t byteArray[], unsigned N, unsigned bitsToShift) {
-		for (unsigned i = 0; i < N; ++i) {
-			byteArray[i] >>= bitsToShift;
-			// mix in the bits from the left
+		if (bitsToShift < 8) {
+			uint8_t mask = 0xFF;
+			mask >>= (8 - bitsToShift); // this is a mask for the lower bits in the byte that need to move the previous byte
+			for (unsigned i = 0; i < N-1; ++i) {
+				byteArray[i] >>= bitsToShift;
+				// mix in the bits from the left
+				uint8_t bits = (mask & byteArray[i + 1]);
+				byteArray[i] |= (bits << (8 - bitsToShift));
+			}
+			byteArray[N - 1] >>= bitsToShift;
 		}
+
 	}
 private:
 	//array<uint8_t, (1 + ((nbits - 1) / 8))> bytes;

@@ -54,10 +54,8 @@ try {
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 4>(0.5f, 0.5f);
-	GenerateTestCase<8, 4>(1.f, 1.f);
-	cout << std::hex << int(0xff) << std::endl;
+	GenerateTestCase<8, 1>(0.5f, -64.0f);
 
-	return 0;
 	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");
 
 #if STRESS_TESTING
