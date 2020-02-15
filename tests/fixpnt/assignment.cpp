@@ -37,7 +37,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -48,14 +48,22 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "modular assignment failed: ";
+	std::string tag = "modular assignment: ";
 
 #if MANUAL_TESTING
 
-	int x = int(3.7f);
-	cout << x << endl;
+	float fa, fb, fc;
+	fixpnt<16, 4> a, b, c;
 
-	fixpnt<5, 1> a, b, c;
+	a.set_raw_bits(0x5555);
+	b.set_raw_bits(0xAAAA);
+	fa = float(a);
+	fb = float(b);
+	fc = fa * fb;
+	c = fc;
+	cout << sw::native::to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << endl;
+	cout << sw::native::to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << endl;
+	cout << sw::native::to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << endl;
 
 	// overflow test
 	a = -4; cout << a << endl;  // rounds to 3.5

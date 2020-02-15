@@ -214,6 +214,10 @@ fixpnt<nbits, rbits, arithmetic> minneg_fixpnt() {
 // conversion helpers
 template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 inline void convert(int64_t v, fixpnt<nbits, rbits, arithmetic>& result) {
+	if (0 == v) {
+		result.setzero();
+		return;
+	}
 	constexpr uint64_t mask = 0x1;
 	bool negative = (v < 0 ? true : false);
 	result.clear();
@@ -248,6 +252,10 @@ inline void convert(int64_t v, fixpnt<nbits, rbits, arithmetic>& result) {
 }
 template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 inline void convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic>& result) {
+	if (0 == v) {
+		result.setzero();
+		return;
+	}
 	constexpr uint64_t mask = 0x1;
 	result.clear();
 	if (arithmetic == Saturation) {
@@ -331,123 +339,63 @@ public:
 
 	// assignment operators for native types
 	fixpnt& operator=(const signed char rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
+		convert(rhs, *this);
 		return *this;
 	}
 	fixpnt& operator=(const short rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
+		convert(rhs, *this);
 		return *this;
 	}
 	fixpnt& operator=(const int rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
+		convert(rhs, *this);
 		return *this;
 	}
 	fixpnt& operator=(const long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
+		convert(rhs, *this);
 		return *this;
 	}
 	fixpnt& operator=(const long long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
+		convert(rhs, *this);
 		return *this;
 	}
 	fixpnt& operator=(const char rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
+		convert_unsigned(rhs, *this);
 		return *this;
 	}
 	fixpnt& operator=(const unsigned short rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
+		convert_unsigned(rhs, *this);
 		return *this;
 	}
 	fixpnt& operator=(const unsigned int rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
+		convert_unsigned(rhs, *this);
 		return *this;
 	}
 	fixpnt& operator=(const unsigned long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
+		convert_unsigned(rhs, *this);
 		return *this;
 	}
 	fixpnt& operator=(const unsigned long long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
+		convert_unsigned(rhs, *this);
 		return *this;
 	}
 	fixpnt& operator=(const float rhs) {
 		sw::native::float_decoder decoder;
 		decoder.f = rhs;
-std::cout << decoder.f << std::endl;
+		
 		float_assign(rhs);
 		return *this;
 	}
 	fixpnt& operator=(const double rhs) {
 		sw::native::double_decoder decoder;
 		decoder.d = rhs;
-std::cout << decoder.d << std::endl;
+
 		float_assign(rhs);
 		return *this;
 	}
 	fixpnt& operator=(const long double rhs) {
 		sw::native::long_double_decoder decoder;
 		decoder.ld = rhs;
-std::cout << decoder.ld << std::endl;
+
 		float_assign(rhs);
 		return *this;
 	}
