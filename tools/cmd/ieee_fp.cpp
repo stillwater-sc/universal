@@ -78,37 +78,64 @@ try {
 
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}
+
+	std::streamsize old_precision = cout.precision();
+	int width = q_prec + 4;
+
 	long double q = stold(argv[1]);
 	double d      = double(q);
 	float f       = float(d);
 
-	value<f_fbits> vf(f);
-	value<d_fbits> vd(d);
-	value<q_fbits> vq(q);
-
-	int width = q_prec + 4;
-
-	std::streamsize old_precision = cout.precision();
-
-	cout << report_compiler_version() << endl;
+	cout << "compiler              : " << report_compiler_version() << endl;
 	cout << "float precision       : " << f_fbits << " bits\n";
 	cout << "double precision      : " << d_fbits << " bits\n";
 	cout << "long double precision : " << q_fbits << " bits\n";
 
 	cout << endl;
 
+	cout << "Decimal representations\n";
 	cout << "input value: " << setprecision(f_prec) << setw(width) << argv[1] << endl;
-	cout << "      float: " << setprecision(f_prec) << setw(width) << f << " " << components(vf) << endl;
-	cout << "     double: " << setprecision(d_prec) << setw(width) << d << " " << components(vd) << endl;
-	cout << "long double: " << setprecision(q_prec) << setw(width) << q << " " << components(vq) << endl;
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << endl;
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << endl;
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << endl;
+
+	cout << endl;
+
+	cout << "Hex representations\n";
+	cout << "input value: " << setprecision(f_prec) << setw(width) << argv[1] << endl;
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    hex: " << sw::native::to_hex(f) << endl;
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    hex: " << sw::native::to_hex(d) << endl;
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    hex: " << sw::native::to_hex(q) << endl;
+
+	cout << endl;
+
+	cout << "Binary representations:\n";
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    bin: " << sw::native::to_binary(f) << endl;
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    bin: " << sw::native::to_binary(d) << endl;
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    bin: " << sw::native::to_binary(q) << endl;
+
+	cout << endl;
+
+	cout << "Native triple representations (sign, scale, fraction):\n";
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    triple: " << sw::native::to_triple(f) << endl;
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    triple: " << sw::native::to_triple(d) << endl;
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    triple: " << sw::native::to_triple(q) << endl;
+
+	cout << endl;
+
+	value<f_fbits> vf(f);
+	value<d_fbits> vd(d);
+	value<q_fbits> vq(q);
+
+	cout << "Universal triple representation (sign, scale, fraction):\n";
+	cout << "input value: " << setprecision(f_prec) << setw(width) << argv[1] << endl;
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    triple: " << components(vf) << endl;
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    triple: " << components(vd) << endl;
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    triple: " << components(vq) << endl;
+	// TODO: implement a parse for that value to represent exactly
+	cout << "      exact: " << "TBD" << endl;
 
 	cout << setprecision(old_precision);
-
-	cout << sw::native::to_hex(f) << endl;
-	cout << sw::native::to_hex(d) << endl;
-
-	cout << sw::native::to_binary(f) << ' ' << sw::native::to_triple(f) << endl;
-	cout << sw::native::to_binary(d) << ' ' << sw::native::to_triple(d) << endl;
 
 	return EXIT_SUCCESS;
 }
