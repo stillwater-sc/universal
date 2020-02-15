@@ -107,12 +107,12 @@ int round(const uint8_t byteArray[], unsigned N, int bit) {
 			--bit;
 			if (bit >= 0) {
 				sticky = false;
-				int bb = bit / 8;
-				byte = byteArray[bit / 8];
+				int msByte = bit / 8; // most significant byte of the sticky bit calculation
+				byte = byteArray[msByte];
 				mask = 0xFF >> (8 - (bit % 8));
-				if ((byte & mask) == 0x00) {
+				if ((byte & mask) == 0x00 && msByte > 0) {
 					// for the remaining bytes check if there is any bit set
-					for (int bb = (bit / 8); bb >= 0; --bb) {
+					for (int bb = msByte - 1; bb >= 0; --bb) {
 						if (byteArray[bb]) {
 							sticky = true;
 							break;
@@ -431,16 +431,23 @@ public:
 		return *this;
 	}
 	fixpnt& operator=(const float rhs) {
-		native::float_decoder decoder;
+		sw::native::float_decoder decoder;
 		decoder.f = rhs;
+std::cout << decoder.f << std::endl;
 		float_assign(rhs);
 		return *this;
 	}
 	fixpnt& operator=(const double rhs) {
+		sw::native::double_decoder decoder;
+		decoder.d = rhs;
+std::cout << decoder.d << std::endl;
 		float_assign(rhs);
 		return *this;
 	}
 	fixpnt& operator=(const long double rhs) {
+		sw::native::long_double_decoder decoder;
+		decoder.ld = rhs;
+std::cout << decoder.ld << std::endl;
 		float_assign(rhs);
 		return *this;
 	}

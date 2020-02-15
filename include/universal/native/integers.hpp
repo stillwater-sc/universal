@@ -13,7 +13,7 @@ namespace native {
 // generate a binary string for a native integer
 	// optional nbits argument indicating the size of the integer, if 0 use full size of native type
 template<typename Integer,
-         typename = std::enable_if< std::is_integral<Integer>::value, Integer >::type
+         typename = typename std::enable_if< std::is_integral<Integer>::value, Integer >::type
 >
 inline std::string to_binary(const Integer& number, int nbits = 0) {
 	std::stringstream ss;
