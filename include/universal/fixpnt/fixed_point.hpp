@@ -381,8 +381,41 @@ public:
 	fixpnt& operator=(const float rhs) {
 		sw::native::float_decoder decoder;
 		decoder.f = rhs;
-		
-		float_assign(rhs);
+		uint32_t raw = (1 << 23) | decoder.parts.fraction;
+		int radixPoint = 23 + (decoder.parts.exponent - 127);
+		// our fixed-point has its radixPoint at rbits
+		int shiftRight = radixPoint - int(rbits);
+		raw = (decoder.parts.sign == 0) ? raw : (~raw + 1); // map to two's complement
+
+		if (shiftRight > 0) {
+			// collect guard, round, and sticky bits
+			uint32_t mask = (1 << (shiftRight - 1));
+			bool guard = (mask & raw);
+			mask >>= 1;
+			bool round = (mask & raw);
+			mask = (0xFFFFFFFF << (shiftRight - 2));
+			mask = ~mask;
+			bool sticky = (mask & raw);
+			// shift out the bits we are rounding away
+			raw >>= shiftRight;
+			bool lsb = (raw & 0x1);
+			//  ... lsb | guard  round sticky   round
+			//       x     0       x     x       down
+			//       0     1       0     0       down  round to even
+			//       1     1       0     0        up   round to even
+			//       x     1       0     1        up
+			//       x     1       1     0        up
+			//       x     1       1     1        up
+			if (guard) {
+				if (lsb && (!round && !sticky)) ++raw; // round to even
+				if (round || sticky) ++raw;
+			}
+			set_raw_bits(raw);
+		}
+		else {
+			std::cerr << "big floats not implemented yet\n";
+		}
+
 		return *this;
 	}
 	fixpnt& operator=(const double rhs) {

@@ -17,7 +17,7 @@ template<typename Integer,
 >
 inline std::string to_binary(const Integer& number, int nbits = 0) {
 	std::stringstream ss;
-	if (nbits == 0) nbits = sizeof(number);
+	if (nbits == 0) nbits = 8*sizeof(number);
 	uint64_t mask = (uint64_t(1) << (nbits - 1));
 	for (int i = int(nbits) - 1; i >= 0; --i) {
 		ss << ((number & mask) ? '1' : '0');

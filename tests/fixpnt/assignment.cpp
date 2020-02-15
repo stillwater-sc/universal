@@ -36,6 +36,156 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
+void PositiveTestCases() {
+	using namespace std;
+	using namespace sw::unum;
+
+	float fa, fb, fc, fd;
+	fixpnt<8, 4> a, b, c, d;
+
+	cout << "POSITIVE TEST CASES\n";
+	a.set_raw_bits(0x14);
+	b.set_raw_bits(0x15);
+	c.set_raw_bits(0x16);
+	d.set_raw_bits(0x17);
+	fa = float(a);
+	fb = float(b);
+	fc = float(c);
+	fd = float(d);
+	cout << sw::native::to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << endl;
+	cout << sw::native::to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << endl;
+	cout << sw::native::to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << endl;
+	cout << sw::native::to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << endl;
+
+	cout << sw::native::to_hex(fa) << endl;
+	cout << sw::native::to_hex(fb) << endl;
+	cout << sw::native::to_hex(fc) << endl;
+	cout << sw::native::to_hex(fd) << endl;
+
+	float eps[24];
+	for (int i = 23; i >= 0; --i) {
+		eps[i] = 1.0f / float(1 << i);
+	}
+
+	cout << sw::native::to_binary(eps[20]) << endl;
+	cout << sw::native::to_binary(eps[21]) << endl;
+	cout << sw::native::to_binary(eps[22]) << endl;
+	cout << sw::native::to_binary(eps[23]) << endl;
+
+	float mashup;
+	fixpnt<8, 4> fixedPoint;
+	cout << "fa + eps" << endl;
+	/*
+	for (int i = 5; i < 9; ++i) {
+		mashup = fa + eps[i];
+		fixedPoint = mashup;
+		cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	}
+	*/
+
+	mashup = fa + eps[5];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	mashup = fa + eps[5] + eps[6];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	mashup = fa + eps[5] + eps[20];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	mashup = fa + eps[6];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+
+	cout << "fb + eps" << endl;
+	mashup = fb + eps[5];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	mashup = fb + eps[5] + eps[6];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	mashup = fb + eps[5] + eps[20];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	mashup = fb + eps[6];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+}
+
+void NegativeTestCases() {
+	using namespace std;
+	using namespace sw::unum;
+
+	float fa, fb, fc, fd;
+	fixpnt<8, 4> a, b, c, d;
+
+	cout << "NEGATIVE TEST CASES\n";
+	a.set_raw_bits(~0x14 + 1);
+	b.set_raw_bits(~0x15 + 1);
+	c.set_raw_bits(~0x16 + 1);
+	d.set_raw_bits(~0x17 + 1);
+	fa = float(a);
+	fb = float(b);
+	fc = float(c);
+	fd = float(d);
+	cout << sw::native::to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << endl;
+	cout << sw::native::to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << endl;
+	cout << sw::native::to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << endl;
+	cout << sw::native::to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << endl;
+
+	cout << sw::native::to_hex(fa) << endl;
+	cout << sw::native::to_hex(fb) << endl;
+	cout << sw::native::to_hex(fc) << endl;
+	cout << sw::native::to_hex(fd) << endl;
+
+	float eps[24];
+	for (int i = 23; i >= 0; --i) {
+		eps[i] = 1.0f / float(1 << i);
+	}
+
+	cout << sw::native::to_binary(eps[20]) << endl;
+	cout << sw::native::to_binary(eps[21]) << endl;
+	cout << sw::native::to_binary(eps[22]) << endl;
+	cout << sw::native::to_binary(eps[23]) << endl;
+
+	float mashup;
+	fixpnt<8, 4> fixedPoint;
+	cout << "fa - eps" << endl;
+	/*
+	for (int i = 5; i < 9; ++i) {
+		mashup = fa + eps[i];
+		fixedPoint = mashup;
+		cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	}
+	*/
+
+	mashup = fa - eps[5];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	mashup = fa - eps[5] - eps[6];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	mashup = fa - eps[5] - eps[20];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	mashup = fa - eps[6];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+
+	cout << "fb - eps" << endl;
+	mashup = fb - eps[5];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	mashup = fb - eps[5] - eps[6];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	mashup = fb - eps[5] - eps[20];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	mashup = fb - eps[6];
+	fixedPoint = mashup;
+	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+}
+
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -52,30 +202,28 @@ try {
 
 #if MANUAL_TESTING
 
-	float fa, fb, fc;
-	fixpnt<16, 4> a, b, c;
+	PositiveTestCases();
+	NegativeTestCases();
 
-	a.set_raw_bits(0x5555);
-	b.set_raw_bits(0xAAAA);
-	fa = float(a);
-	fb = float(b);
-	fc = fa * fb;
-	c = fc;
-	cout << sw::native::to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << endl;
-	cout << sw::native::to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << endl;
-	cout << sw::native::to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << endl;
+	return 0;
+	{
+		fixpnt<4, 1> a, b, c;
+		// overflow test
+		a = -4; cout << a << endl;  // rounds to 3.5
+		b = 4.0f;
+		c = a * b;
+		cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
+	}
 
-	// overflow test
-	a = -4; cout << a << endl;  // rounds to 3.5
-	b = 4.0f;
-	c = a * b;
-	cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
+	{
+		fixpnt<4, 1> a, b, c;
+		// rounding test
+		a = 0.5f; cout << a << endl;
+		b = 0.5f;
+		c = a * b;
+		cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
+	}
 
-	// rounding test
-	a = 0.5f; cout << a << endl;
-	b = 0.5f;
-	c = a * b;
-	cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
 
 	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 0, float>(bReportIndividualTestCases), tag, "posit<4,0>");
 	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 1, float>(bReportIndividualTestCases), tag, "posit<4,1>");
