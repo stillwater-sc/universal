@@ -52,25 +52,25 @@ void PositiveTestCases() {
 	fb = float(b);
 	fc = float(c);
 	fd = float(d);
-	cout << sw::native::to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << endl;
-	cout << sw::native::to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << endl;
-	cout << sw::native::to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << endl;
-	cout << sw::native::to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << endl;
+	cout << to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << endl;
+	cout << to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << endl;
+	cout << to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << endl;
+	cout << to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << endl;
 
-	cout << sw::native::to_hex(fa) << endl;
-	cout << sw::native::to_hex(fb) << endl;
-	cout << sw::native::to_hex(fc) << endl;
-	cout << sw::native::to_hex(fd) << endl;
+	cout << to_hex(fa) << endl;
+	cout << to_hex(fb) << endl;
+	cout << to_hex(fc) << endl;
+	cout << to_hex(fd) << endl;
 
 	float eps[24];
 	for (int i = 23; i >= 0; --i) {
 		eps[i] = 1.0f / float(1 << i);
 	}
 
-	cout << sw::native::to_binary(eps[20]) << endl;
-	cout << sw::native::to_binary(eps[21]) << endl;
-	cout << sw::native::to_binary(eps[22]) << endl;
-	cout << sw::native::to_binary(eps[23]) << endl;
+	cout << to_binary(eps[20]) << endl;
+	cout << to_binary(eps[21]) << endl;
+	cout << to_binary(eps[22]) << endl;
+	cout << to_binary(eps[23]) << endl;
 
 	float mashup;
 	fixpnt<8, 4> fixedPoint;
@@ -79,36 +79,36 @@ void PositiveTestCases() {
 	for (int i = 5; i < 9; ++i) {
 		mashup = fa + eps[i];
 		fixedPoint = mashup;
-		cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+		cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	}
 	*/
 
 	mashup = fa + eps[5];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	mashup = fa + eps[5] + eps[6];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	mashup = fa + eps[5] + eps[20];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	mashup = fa + eps[6];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 
 	cout << "fb + eps" << endl;
 	mashup = fb + eps[5];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	mashup = fb + eps[5] + eps[6];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	mashup = fb + eps[5] + eps[20];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	mashup = fb + eps[6];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 }
 
 void NegativeTestCases() {
@@ -127,25 +127,25 @@ void NegativeTestCases() {
 	fb = float(b);
 	fc = float(c);
 	fd = float(d);
-	cout << sw::native::to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << endl;
-	cout << sw::native::to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << endl;
-	cout << sw::native::to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << endl;
-	cout << sw::native::to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << endl;
+	cout << to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << endl;
+	cout << to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << endl;
+	cout << to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << endl;
+	cout << to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << endl;
 
-	cout << sw::native::to_hex(fa) << endl;
-	cout << sw::native::to_hex(fb) << endl;
-	cout << sw::native::to_hex(fc) << endl;
-	cout << sw::native::to_hex(fd) << endl;
+	cout << to_hex(fa) << endl;
+	cout << to_hex(fb) << endl;
+	cout << to_hex(fc) << endl;
+	cout << to_hex(fd) << endl;
 
 	float eps[24];
 	for (int i = 23; i >= 0; --i) {
 		eps[i] = 1.0f / float(1 << i);
 	}
 
-	cout << sw::native::to_binary(eps[20]) << endl;
-	cout << sw::native::to_binary(eps[21]) << endl;
-	cout << sw::native::to_binary(eps[22]) << endl;
-	cout << sw::native::to_binary(eps[23]) << endl;
+	cout << to_binary(eps[20]) << endl;
+	cout << to_binary(eps[21]) << endl;
+	cout << to_binary(eps[22]) << endl;
+	cout << to_binary(eps[23]) << endl;
 
 	float mashup;
 	fixpnt<8, 4> fixedPoint;
@@ -154,36 +154,36 @@ void NegativeTestCases() {
 	for (int i = 5; i < 9; ++i) {
 		mashup = fa + eps[i];
 		fixedPoint = mashup;
-		cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+		cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	}
 	*/
 
 	mashup = fa - eps[5];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	mashup = fa - eps[5] - eps[6];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	mashup = fa - eps[5] - eps[20];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	mashup = fa - eps[6];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 
 	cout << "fb - eps" << endl;
 	mashup = fb - eps[5];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	mashup = fb - eps[5] - eps[6];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	mashup = fb - eps[5] - eps[20];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 	mashup = fb - eps[6];
 	fixedPoint = mashup;
-	cout << sw::native::to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << sw::native::to_triple(mashup) << endl;
+	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(fixedPoint) << ' ' << fixedPoint << ' ' << to_triple(mashup) << endl;
 }
 
 // conditional compile flags

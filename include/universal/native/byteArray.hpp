@@ -4,8 +4,11 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>
+#include <string>
+
 namespace sw {
-namespace native {
+namespace unum {
 
 // determine the rounding mode: -1 round down, 0 tie, 1 round up
 // N sets the size of the byteArray, and bit indicats the location of the guard bit to round at
@@ -119,5 +122,5 @@ void shiftRight(uint8_t byteArray[], unsigned N, unsigned bitsToShift) {
 
 
 
-} // namespace native
+} // namespace unum
 } // namespace sw

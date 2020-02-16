@@ -103,23 +103,23 @@ try {
 
 	cout << "Hex representations\n";
 	cout << "input value: " << setprecision(f_prec) << setw(width) << argv[1] << endl;
-	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    hex: " << sw::native::to_hex(f) << endl;
-	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    hex: " << sw::native::to_hex(d) << endl;
-	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    hex: " << sw::native::to_hex(q) << endl;
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    hex: " << to_hex(f) << endl;
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    hex: " << to_hex(d) << endl;
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    hex: " << to_hex(q) << endl;
 
 	cout << endl;
 
 	cout << "Binary representations:\n";
-	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    bin: " << sw::native::to_binary(f) << endl;
-	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    bin: " << sw::native::to_binary(d) << endl;
-	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    bin: " << sw::native::to_binary(q) << endl;
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    bin: " << to_binary(f) << endl;
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    bin: " << to_binary(d) << endl;
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    bin: " << to_binary(q) << endl;
 
 	cout << endl;
 
 	cout << "Native triple representations (sign, scale, fraction):\n";
-	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    triple: " << sw::native::to_triple(f) << endl;
-	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    triple: " << sw::native::to_triple(d) << endl;
-	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    triple: " << sw::native::to_triple(q) << endl;
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    triple: " << to_triple(f) << endl;
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    triple: " << to_triple(d) << endl;
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    triple: " << to_triple(q) << endl;
 
 	cout << endl;
 

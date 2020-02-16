@@ -1,15 +1,15 @@
 #pragma once
 // value standard header
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _VALUE_
 #define _VALUE_
 
 #include "exceptions.hpp"
+#include "../native/bit_functions.hpp"
 #include "../bitblock/bitblock.hpp"
-#include "bit_functions.hpp"
 #include "trace_constants.hpp"
 #include "value.hpp"
 

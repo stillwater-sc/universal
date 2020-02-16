@@ -1,7 +1,7 @@
 #pragma once
 // posit.hpp: definition of arbitrary posit number configurations
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -73,8 +73,9 @@ typedef __128bitdd double_double;
 // Posits encode error conditions as NaR (Not a Real), propagating the error through arithmetic operations is preferred
 #include "./exceptions.hpp"
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
+
+#include "../native/bit_functions.hpp"
 #include "../bitblock/bitblock.hpp"
-#include "bit_functions.hpp"
 #include "trace_constants.hpp"
 #include "value.hpp"
 #include "fraction.hpp"

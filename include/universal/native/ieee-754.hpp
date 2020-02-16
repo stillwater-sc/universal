@@ -7,7 +7,7 @@
 #include <sstream>
 
 namespace sw {
-namespace native {
+namespace unum {
 
 union float_decoder {
   float f;
@@ -456,5 +456,5 @@ inline std::string to_triple(const long double& number) {
 
 #endif
 
-} // namespace native
+} // namespace unum
 } // namespace sw

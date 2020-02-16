@@ -327,7 +327,7 @@ public:
 			setzero();
 			return *this;
 		}
-		sw::native::float_decoder decoder;
+		float_decoder decoder;
 		decoder.f = rhs;
 		uint32_t raw = (1 << 23) | decoder.parts.fraction;
 		int radixPoint = 23 - (decoder.parts.exponent - 127); // move radix point to the right if scale > 0, left if scale < 0
@@ -372,7 +372,7 @@ public:
 			setzero();
 			return *this;
 		}
-		sw::native::double_decoder decoder;
+		double_decoder decoder;
 		decoder.d = rhs;
 		uint64_t raw = (uint64_t(1) << 52) | decoder.parts.fraction;
 		int radixPoint = 52 - (int(decoder.parts.exponent) - 1023);  // move radix point to the right if scale > 0, left if scale < 0
@@ -417,7 +417,7 @@ public:
 			setzero();
 			return *this;
 		}
-		//sw::native::long_double_decoder decoder;
+		//long_double_decoder decoder;
 		//decoder.ld = rhs;
 		std::cerr << "assignment from long double not implemented yet\n";
 		float_assign(rhs);
@@ -564,34 +564,34 @@ public:
 			uint8_t byte = b[i / 8];
 			uint8_t mask = 1 << (i % 8);
 			if (byte & mask) { // check the multiplication bit
-				sw::native::addBytes(accumulator, multiplicant, mulBytes);
+				addBytes(accumulator, multiplicant, mulBytes);
 				// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 				accumulator[mulBytes - 1] = MS_BYTE_MASK & accumulator[mulBytes - 1];
 			}
-			sw::native::shiftLeft(multiplicant, mulBytes);
+			shiftLeft(multiplicant, mulBytes);
 		}
-//		sw::native::displayByteArray("accu", accumulator, mulBytes);
+//		displayByteArray("accu", accumulator, mulBytes);
 
 		// if rbit >= 1 we need to round
 		// accumulator is a 2*nbits, 2*rbits representation
 
 		int roundingDecision = 0;
 		if (rbits > 0) {		// capture rounding bits
-			roundingDecision = sw::native::round(accumulator, mulBytes, int(rbits)-1);
+			roundingDecision = round(accumulator, mulBytes, int(rbits)-1);
 			//std::cout << (roundingDecision == 0 ? "tie" : (roundingDecision > 0 ? "up" : "down")) << std::endl;
 		}
 		// shift the radix point back
-		sw::native::shiftRight(accumulator, mulBytes, rbits);
-//		sw::native::displayByteArray("accu", accumulator, mulBytes);
+		shiftRight(accumulator, mulBytes, rbits);
+//		displayByteArray("accu", accumulator, mulBytes);
 		if (roundingDecision > 0) {
 			uint8_t plusOne[mulBytes];
 			plusOne[0] = uint8_t(0x01);
 			for (unsigned i = 1; i < mulBytes; ++i) {
 				plusOne[i] = uint8_t(0);
 			}
-			sw::native::addBytes(accumulator, plusOne, mulBytes);
+			addBytes(accumulator, plusOne, mulBytes);
 		}
-//		sw::native::displayByteArray("accu", accumulator, mulBytes);
+//		displayByteArray("accu", accumulator, mulBytes);
 		clear();
 		// copy the value in
 		for (unsigned i = 0; i < nrBytes; ++i) {

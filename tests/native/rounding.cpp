@@ -1,21 +1,22 @@
-// rounding.cpp: functional tests for fixed-point rounding 
+// rounding.cpp: functional tests for byte array rounding 
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>
+#include <sstream>
 
 // Configure the fixpnt template environment
-// first: enable general or specialized fixed-point configurations
-#define FIXPNT_FAST_SPECIALIZATION
-// second: enable/disable fixpnt arithmetic exceptions
-#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
+// first: enable general or specialized array configurations
+#define NATIVE_FAST_SPECIALIZATION
+// second: enable/disable arithmetic exceptions
+#define NATIVE_THROW_ARITHMETIC_EXCEPTION 0
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/fixpnt/fixed_point.hpp"
-// fixed-point type manipulators such as pretty printers
-#include "universal/fixpnt/fixpnt_manipulators.hpp"
-#include "universal/fixpnt/math_functions.hpp"
-#include "../utils/fixpnt_test_suite.hpp"
+#include "universal/native/byteArray.hpp"
+// type manipulators such as pretty printers
+#include "universal/native/manipulators.hpp"
+//#include "../utils/native_test_suite.hpp"
 
 // generate specific test case that you can trace with the trace conditions in fixpnt.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -82,16 +83,8 @@ FAIL                  0.5 *                -60.5 !=                -30.0 instead
 
 	setAccu(accumulator, 0x00, 0x00, 0xFF, 0x81);
 
-	fixpnt<8, 1> fp = 31.75;
-	cout << to_binary(fp) << " " << fp << endl;
 
-	cout << roundingDecision(sw::native::round(accumulator, 2, 0)) << endl;
-
-	fixpnt<8, 1> a, b, c;
-	a = 0.5f;
-	b = -63.5f;
-	c = a * b;
-	cout << c << endl;
+	cout << roundingDecision(round(accumulator, 2, 0)) << endl;
 
 	//nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 3, float>(bReportIndividualTestCases), tag, "posit<4,3>");
 	
@@ -120,14 +113,6 @@ FAIL                  0.5 *                -60.5 !=                -30.0 instead
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::unum::fixpnt_arithmetic_exception& err) {
-	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::unum::fixpnt_internal_exception& err) {
-	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

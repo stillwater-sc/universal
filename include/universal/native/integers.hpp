@@ -6,7 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 namespace sw {
-namespace native {
+namespace unum {
 
 ////////////////// string operators
 
@@ -26,5 +26,5 @@ inline std::string to_binary(const Integer& number, int nbits = 0) {
 	return ss.str();
 }
 
-} // namespace native
+} // namespace unum
 } // namespace sw

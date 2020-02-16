@@ -9,7 +9,7 @@
 #include <iomanip>
 #include <limits>
 
-#include "bit_functions.hpp"
+#include "../native/bit_functions.hpp"
 #include "trace_constants.hpp"
 
 namespace sw {
