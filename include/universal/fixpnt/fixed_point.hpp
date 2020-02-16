@@ -32,6 +32,7 @@ Run-time configuration is used to select modular vs saturation arithmetic.
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
 #include "universal/native/ieee-754.hpp"   // IEEE-754 decoders
 #include "universal/native/integers.hpp"   // manipulators for native integer types
+#include "universal/native/byteArray.hpp"  // manipulators for byte arrays
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -68,63 +69,6 @@ namespace unum {
 
 constexpr bool Modular    = true;
 constexpr bool Saturation = !Modular;
-
-// local helper to display the contents of a byte array
-void displayByteArray(std::string tag, const uint8_t byteArray[], unsigned N) {
-	char hexChar[16] = {
-		'0', '1', '2', '3', '4', '5', '6', '7',
-		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
-	};
-	std::cout << tag << "= 0x" << std::hex;
-	for (int i = N - 1; i >= 0; --i) {
-		unsigned msNibble = ((0xF0 & byteArray[i]) >> 4);
-		unsigned lsNibble = (0x0F & byteArray[i]);
-//		std::cout << "nibbles: " << msNibble << " " << lsNibble << std::endl;
-//		std::cout << '-' << hexChar[msNibble] << '-' << std::endl << hexChar[lsNibble];
-		std::cout << hexChar[msNibble] << hexChar[lsNibble];
-
-	}
-	std::cout << std::endl;
-}
-
-// determine the rounding mode: -1 round down, 0 tie, 1 round up
-// N sets the size of the byteArray, and bit indicats the location of the guard bit to round at
-int round(const uint8_t byteArray[], unsigned N, int bit) {
-	int rv = 0;
-	if (bit >= 0) {
-		bool guard, round, sticky;
-		// byte in which the guard bit resides
-		uint8_t byte = byteArray[bit / 8];
-		uint8_t mask = 1 << (bit % 8);
-		guard = (byte & mask) ? true : false;
-		if (guard == false) return -1; // round down
-		rv = 1; // round up, unless it is a tie
-		--bit;
-		if (bit >= 0) {
-			byte = byteArray[bit / 8];
-			mask = 1 << (bit % 8);
-			round = (byte & mask) ? true : false;
-			--bit;
-			if (bit >= 0) {
-				sticky = false;
-				int msByte = bit / 8; // most significant byte of the sticky bit calculation
-				byte = byteArray[msByte];
-				mask = 0xFF >> (8 - (bit % 8));
-				if ((byte & mask) == 0x00 && msByte > 0) {
-					// for the remaining bytes check if there is any bit set
-					for (int bb = msByte - 1; bb >= 0; --bb) {
-						if (byteArray[bb]) {
-							sticky = true;
-							break;
-						}
-					}
-				}
-				rv = (!round && !sticky) ? 0 : -1;
-			}
-		}
-	}
-	return rv;
-}
 
 // forward references
 template<size_t nbits, size_t rbits, bool arithmetic> class fixpnt;
@@ -620,32 +564,34 @@ public:
 			uint8_t byte = b[i / 8];
 			uint8_t mask = 1 << (i % 8);
 			if (byte & mask) { // check the multiplication bit
-				addBytes(accumulator, multiplicant);
+				sw::native::addBytes(accumulator, multiplicant, mulBytes);
+				// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+				accumulator[mulBytes - 1] = MS_BYTE_MASK & accumulator[mulBytes - 1];
 			}
-			shiftLeft(multiplicant, mulBytes);
+			sw::native::shiftLeft(multiplicant, mulBytes);
 		}
-//		displayByteArray("accu", accumulator, mulBytes);
+//		sw::native::displayByteArray("accu", accumulator, mulBytes);
 
 		// if rbit >= 1 we need to round
 		// accumulator is a 2*nbits, 2*rbits representation
 
 		int roundingDecision = 0;
 		if (rbits > 0) {		// capture rounding bits
-			roundingDecision = round(accumulator, mulBytes, rbits-1);
+			roundingDecision = sw::native::round(accumulator, mulBytes, int(rbits)-1);
 			//std::cout << (roundingDecision == 0 ? "tie" : (roundingDecision > 0 ? "up" : "down")) << std::endl;
 		}
 		// shift the radix point back
-		shiftRight(accumulator, mulBytes, rbits);
-//		displayByteArray("accu", accumulator, mulBytes);
+		sw::native::shiftRight(accumulator, mulBytes, rbits);
+//		sw::native::displayByteArray("accu", accumulator, mulBytes);
 		if (roundingDecision > 0) {
 			uint8_t plusOne[mulBytes];
 			plusOne[0] = uint8_t(0x01);
 			for (unsigned i = 1; i < mulBytes; ++i) {
 				plusOne[i] = uint8_t(0);
 			}
-			addBytes(accumulator, plusOne);
+			sw::native::addBytes(accumulator, plusOne, mulBytes);
 		}
-//		displayByteArray("accu", accumulator, mulBytes);
+//		sw::native::displayByteArray("accu", accumulator, mulBytes);
 		clear();
 		// copy the value in
 		for (unsigned i = 0; i < nrBytes; ++i) {
@@ -915,47 +861,6 @@ protected:
 		*this = uint64_t(tmp);
 	}
 
-	// byte arithmetic for mul and div
-	void addBytes(uint8_t accumulator[mulBytes], uint8_t y[mulBytes]) {
-		bool carry = false;
-		for (unsigned i = 0; i < 2*nrBytes; ++i) {
-			// cast up so we can test for overflow
-			uint16_t l = uint16_t(accumulator[i]);
-			uint16_t r = uint16_t(y[i]);
-			uint16_t s = l + r + (carry ? uint16_t(0x0001) : uint16_t(0x0000));
-			carry = (s > 255 ? true : false);
-			accumulator[i] = (uint8_t)(s & 0xFF);
-		}
-		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		accumulator[2*nrBytes - 1] = MS_BYTE_MASK & accumulator[2*nrBytes - 1];
-	}
-	void shiftLeft(uint8_t multiplicant[], unsigned N) {
-		// hardcoded shift by one bit
-		unsigned i = N - 1;
-		multiplicant[i] <<= 1;
-		if (N > 1) {
-			multiplicant[i] |= ((0x80 & multiplicant[i - 1]) >> 7);
-			for (int i = N - 2; i > 0; --i) {
-				multiplicant[i] <<= 1;
-				multiplicant[i] |= ((0x80 & multiplicant[i - 1]) >> 7);
-			}
-		}
-		multiplicant[0] <<= 1;
-	}
-	void shiftRight(uint8_t byteArray[], unsigned N, unsigned bitsToShift) {
-		if (bitsToShift < 8) {
-			uint8_t mask = 0xFF;
-			mask >>= (8 - bitsToShift); // this is a mask for the lower bits in the byte that need to move the previous byte
-			for (unsigned i = 0; i < N-1; ++i) {
-				byteArray[i] >>= bitsToShift;
-				// mix in the bits from the left
-				uint8_t bits = (mask & byteArray[i + 1]);
-				byteArray[i] |= (bits << (8 - bitsToShift));
-			}
-			byteArray[N - 1] >>= bitsToShift;
-		}
-
-	}
 private:
 	//array<uint8_t, (1 + ((nbits - 1) / 8))> bytes;
 	uint8_t b[nrBytes];

@@ -85,7 +85,7 @@ FAIL                  0.5 *                -60.5 !=                -30.0 instead
 	fixpnt<8, 1> fp = 31.75;
 	cout << to_binary(fp) << " " << fp << endl;
 
-	cout << roundingDecision(round(accumulator, 2, 0)) << endl;
+	cout << roundingDecision(sw::native::round(accumulator, 2, 0)) << endl;
 
 	fixpnt<8, 1> a, b, c;
 	a = 0.5f;
