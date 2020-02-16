@@ -141,9 +141,9 @@ struct fixpntdiv_t {
 template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic>& v);
 
-// scale calculate the power of 2 exponent that would capture an approximation of a normalized real value
+// The free function scale calculates the power of 2 exponent that would capture an approximation of a normalized real value
 template<size_t nbits, size_t rbits, bool arithmetic = Modular>
-inline long scale(const fixpnt<nbits, rbits, arithmetic>& i) {
+inline int scale(const fixpnt<nbits, rbits, arithmetic>& i) {
 	fixpnt<nbits,rbits,arithmetic> v(i);
 	if (i.sign()) { // special case handling
 		v = twos_complement(v);
@@ -382,22 +382,27 @@ public:
 		sw::native::float_decoder decoder;
 		decoder.f = rhs;
 		uint32_t raw = (1 << 23) | decoder.parts.fraction;
-		int radixPoint = 23 + (decoder.parts.exponent - 127);
+		int radixPoint = 23;
+		int scale = (decoder.parts.exponent - 127);
 		// our fixed-point has its radixPoint at rbits
 		int shiftRight = radixPoint - int(rbits);
 		raw = (decoder.parts.sign == 0) ? raw : (~raw + 1); // map to two's complement
-
+		// do we need to round
 		if (shiftRight > 0) {
 			// collect guard, round, and sticky bits
+			// this same logic will work for the case where 
+			// we only have a guard bit  and no round and sticky bits
+			// because the mask logic will make round and sticky both 0
+			// so no need to special case it
 			uint32_t mask = (1 << (shiftRight - 1));
 			bool guard = (mask & raw);
 			mask >>= 1;
 			bool round = (mask & raw);
 			mask = (0xFFFFFFFF << (shiftRight - 2));
 			mask = ~mask;
-			bool sticky = (mask & raw);
-			// shift out the bits we are rounding away
-			raw >>= shiftRight;
+			bool sticky = (mask | raw);
+			
+			raw >>= shiftRight;  // shift out the bits we are rounding away
 			bool lsb = (raw & 0x1);
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
@@ -413,7 +418,8 @@ public:
 			set_raw_bits(raw);
 		}
 		else {
-			std::cerr << "big floats not implemented yet\n";
+			// no need to round
+			set_raw_bits(raw);
 		}
 
 		return *this;
@@ -421,14 +427,52 @@ public:
 	fixpnt& operator=(const double rhs) {
 		sw::native::double_decoder decoder;
 		decoder.d = rhs;
+		uint64_t raw = (uint64_t(1) << 52) | decoder.parts.fraction;
+		int radixPoint = 52 + (int(decoder.parts.exponent) - 1023);
+		// our fixed-point has its radixPoint at rbits
+		int shiftRight = radixPoint - int(rbits);
+		raw = (decoder.parts.sign == 0) ? raw : (~raw + 1); // map to two's complement
+		// do we need to round
+		if (shiftRight > 0) {
+			// collect guard, round, and sticky bits
+			// this same logic will work for the case where 
+			// we only have a guard bit  and no round and sticky bits
+			// because the mask logic will make round and sticky both 0
+			// so no need to special case it
+			uint64_t mask = (uint64_t(1) << (shiftRight - 1));
+			bool guard = (mask & raw);
+			mask >>= 1;
+			bool round = (mask & raw);
+			mask = (0xFFFFFFFF << (shiftRight - 2));
+			mask = ~mask;
+			bool sticky = (mask | raw);
 
-		float_assign(rhs);
+			raw >>= shiftRight;  // shift out the bits we are rounding away
+			bool lsb = (raw & 0x1);
+			//  ... lsb | guard  round sticky   round
+			//       x     0       x     x       down
+			//       0     1       0     0       down  round to even
+			//       1     1       0     0        up   round to even
+			//       x     1       0     1        up
+			//       x     1       1     0        up
+			//       x     1       1     1        up
+			if (guard) {
+				if (lsb && (!round && !sticky)) ++raw; // round to even
+				if (round || sticky) ++raw;
+			}
+			set_raw_bits(raw);
+		}
+		else {
+			// no need to round
+			set_raw_bits(raw);
+		}
+
 		return *this;
 	}
 	fixpnt& operator=(const long double rhs) {
-		sw::native::long_double_decoder decoder;
-		decoder.ld = rhs;
-
+		//sw::native::long_double_decoder decoder;
+		//decoder.ld = rhs;
+		std::cerr << "assignment from long double not implemented yet\n";
 		float_assign(rhs);
 		return *this;
 	}
@@ -585,7 +629,7 @@ public:
 		int roundingDecision = 0;
 		if (rbits > 0) {		// capture rounding bits
 			roundingDecision = round(accumulator, mulBytes, rbits-1);
-			std::cout << (roundingDecision == 0 ? "tie" : (roundingDecision > 0 ? "up" : "down")) << std::endl;
+			//std::cout << (roundingDecision == 0 ? "tie" : (roundingDecision > 0 ? "up" : "down")) << std::endl;
 		}
 		// shift the radix point back
 		shiftRight(accumulator, mulBytes, rbits);
@@ -1628,6 +1672,18 @@ inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic>& number) {
 	for (int i = int(rbits) - 1; i >= 0; --i) {
 		ss << (number.at(i) ? '1' : '0');
 	}
+	return ss.str();
+}
+
+template<size_t nbits, size_t rbits, bool arithmetic>
+inline std::string to_triple(const fixpnt<nbits, rbits, arithmetic>& number) {
+	std::stringstream ss;
+	ss << (number.sign() ? "(-," : "(+,");
+	ss << scale(number) << ',';
+	for (int i = int(rbits) - 1; i >= 0; --i) {
+		ss << (number.at(i) ? '1' : '0');
+	}
+	ss << (rbits == 0 ? "~)" : ")");
 	return ss.str();
 }
 

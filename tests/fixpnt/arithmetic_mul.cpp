@@ -55,10 +55,8 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<8, 4>(0.5f, 0.5f);
+	GenerateTestCase<8, 1>(0.5f, 0.5f);
 	GenerateTestCase<8, 1>(0.5f, 63.5f);
-
-	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "multiplication");

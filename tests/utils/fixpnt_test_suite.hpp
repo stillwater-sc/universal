@@ -24,20 +24,26 @@ namespace unum {
 
 template<size_t nbits, size_t rbits>
 void ReportConversionError(std::string test_case, std::string op, double input, double reference, const fixpnt<nbits, rbits>& result) {
-
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << input
 		<< " did not convert to "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << reference << " instead it yielded "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << reference << " instead it yielded  "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << double(result)
 		<< "  raw " << std::setw(nbits) << to_binary(result)
 		<< std::endl;
 }
 
 template<size_t nbits, size_t rbits>
-void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const fixpnt<nbits, rbits>& presult) {
-
+void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const fixpnt<nbits, rbits>& result) {
+	std::cerr << test_case
+		<< " " << op << " "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << input
+		<< " success            "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " golden reference is "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << reference
+		<< "  raw " << std::setw(nbits) << to_binary(result)
+		<< std::endl;
 }
 
 template<size_t nbits, size_t rbits>
@@ -105,7 +111,7 @@ int Compare(double input, const fixpnt<nbits, rbits>& presult, double reference,
 		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, presult);
 	}
 	else {
-		// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
+		if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
 	}
 	return fail;
 }
@@ -135,7 +141,11 @@ int ValidateModularAssignment(bool bReportIndividualTestCases) {
 	return nrOfFailedTestCases;
 }
 
-// enumerate all conversion cases for a posit configuration
+/*
+	relationship between fixpnt<nbits,rbits> and fixpnt<nbits+1,rbits+1>
+
+ */
+// enumerate all conversion cases for a fixed-point configuration
 template<size_t nbits, size_t rbits>
 int ValidateModularConversion(const std::string& tag, bool bReportIndividualTestCases) {
 	// we are going to generate a test set that consists of all fixed-point configs and their midpoints
@@ -151,7 +161,7 @@ int ValidateModularConversion(const std::string& tag, bool bReportIndividualTest
 	const unsigned max = nbits > 20 ? 20 : nbits + 1;
 	size_t max_tests = (size_t(1) << max);
 	if (max_tests < NR_TEST_CASES) {
-		std::cout << "ValidateConversion<" << nbits << "," << rbits << ">: NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
+		std::cout << "ValidateModularConversion<" << nbits << "," << rbits << ">: NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
 	}
 
 	// execute the test
@@ -159,7 +169,7 @@ int ValidateModularConversion(const std::string& tag, bool bReportIndividualTest
 	double minpos = value_minpos_fixpnt<nbits + 1, rbits + 1, sw::unum::Modular>();
 	double eps;
 	double da, input;
-	fixpnt<nbits, rbits, sw::unum::Modular> pa;
+	fixpnt<nbits, rbits, sw::unum::Modular> nut; // NUT: number under test
 	for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
 		pref.set_raw_bits(i);
 		da = double(pref);
@@ -171,85 +181,89 @@ int ValidateModularConversion(const std::string& tag, bool bReportIndividualTest
 		}
 		if (i % 2) {
 			if (i == 1) {
-				// special case of projecting to +minpos
-				// even the -delta goes to +minpos
-				input = da - eps;
-				pa = input;
-				pnext.set_raw_bits(i + 1);
-				nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
+				// special case of a tie that needs to round to even -> 0
+				input = da;
+				nut = input;
+				nrOfFailedTests += Compare(input, nut, 0.0, bReportIndividualTestCases);
+
+				// this rounds up
 				input = da + eps;
-				pa = input;
-				nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
+				nut = input;
+				pnext.set_raw_bits(i + 1);
+				nrOfFailedTests += Compare(input, nut, (double)pnext, bReportIndividualTestCases);
 
 			}
 			else if (i == HALF - 1) {
 				// special case of projecting to +maxpos
 				input = da - eps;
-				pa = input;
+				nut = input;
 				pprev.set_raw_bits(HALF - 2);
-				nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
 			}
 			else if (i == HALF + 1) {
 				// special case of projecting to -maxpos
 				input = da - eps;
-				pa = input;
+				nut = input;
 				pprev.set_raw_bits(HALF + 2);
-				nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
 			}
 			else if (i == NR_TEST_CASES - 1) {
 				// special case of projecting to -minpos
 				// even the +delta goes to -minpos
 				input = da - eps;
-				pa = input;
+				nut = input;
 				pprev.set_raw_bits(i - 1);
-				nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
 				input = da + eps;
-				pa = input;
-				nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
+				nut = input;
+				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
 			}
 			else {
 				// for odd values, we are between fixed point values, so we create the round-up and round-down cases
 				// round-down
 				input = da - eps;
-				pa = input;
+				nut = input;
 				pprev.set_raw_bits(i - 1);
-				nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
 				// round-up
 				input = da + eps;
-				pa = input;
+				nut = input;
 				pnext.set_raw_bits(i + 1);
-				nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, nut, (double)pnext, bReportIndividualTestCases);
 			}
 		}
 		else {
 			// for the even values, we generate the round-to-actual cases
 			if (i == 0) {
+				// pref = 0
+				// 0                 -> value = 0
+				// half of pnext     -> value = 0
 				// special case of assigning to 0
-				input = 0.0;
-				pa = input;
-				nrOfFailedTests += Compare(input, pa, da, bReportIndividualTestCases);
-				// special case of projecting to +minpos
+				input = da;
+				nut = input;
+				nrOfFailedTests += Compare(input, nut, da, bReportIndividualTestCases);
+
 				input = da + eps;
-				pa = input;
-				pnext.set_raw_bits(i + 2);
-				nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
+				nut = input;
+				nrOfFailedTests += Compare(input, nut, da, bReportIndividualTestCases);
 			}
 			else if (i == NR_TEST_CASES - 2) {
 				// special case of projecting to -minpos
 				input = da - eps;
-				pa = input;
+				nut = input;
 				pprev.set_raw_bits(NR_TEST_CASES - 2);
-				nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
 			}
 			else {
+				// for even values, we are on actual fixed point values, so we create the round-up and round-down cases
 				// round-up
 				input = da - eps;
-				pa = input;
-				nrOfFailedTests += Compare(input, pa, da, bReportIndividualTestCases);
+				nut = input;
+				nrOfFailedTests += Compare(input, nut, da, bReportIndividualTestCases);
 				// round-down
 				input = da + eps;
-				pa = input;
-				nrOfFailedTests += Compare(input, pa, da, bReportIndividualTestCases);
+				nut = input;
+				nrOfFailedTests += Compare(input, nut, da, bReportIndividualTestCases);
 			}
 		}
 	}

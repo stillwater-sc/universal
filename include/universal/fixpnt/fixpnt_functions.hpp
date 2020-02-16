@@ -80,13 +80,6 @@ inline bool sign(const fixpnt<nbits, rbits, arithmetic>& p) {
 	return (p < 0) ? true : false;
 }
 
-// calculate the scale of the fixed-point value
-template<size_t nbits, size_t rbits, bool arithmetic>
-inline int scale(const fixpnt<nbits, rbits, arithmetic>& p) {
-	int _scale;
-	return _scale;
-}
-
 // get the fraction bits of a posit
 template<size_t nbits, size_t rbits, bool arithmetic>
 inline bitblock<rbits> extract_fraction(const fixpnt<nbits, rbits, arithmetic>& p) {
