@@ -1291,15 +1291,22 @@ inline fixpnt<nbits, rbits, arithmetic> twos_complement(const fixpnt<nbits, rbit
 // convert fixpnt to decimal string, i.e. "-1234.5678"
 template<size_t nbits, size_t rbits, bool arithmetic>
 std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic>& value) {
-	if (value.iszero()) {
-		return std::string("0");
-	}
 	std::stringstream ss;
+	if (value.iszero()) {
+		ss << '0';
+		if (rbits > 0) {
+			ss << '.';
+			for (int i = 0; i < rbits; ++i) {
+				ss << '0';
+			}
+		}
+		return ss.str();
+	}
 	if (value.sign()) ss << '-';
 	impl::decimal partial, multiplier;
 	fixpnt<nbits, rbits> number;
-	// convert the fixed point by first handling the integer part
 
+		// convert the fixed point by first handling the integer part
 		number = value.sign() ? twos_complement(value) : value;
 		multiplier.setdigit(1);
 		// convert fixpnt to decimal by adding and doubling multipliers
@@ -1315,27 +1322,35 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic>& va
 		}
 
 
-	// and secondly the fraction part
-	impl::decimal range, discretizationLevels, step;
-	range.setdigit(1);
-	range.shiftLeft(rbits);  // create the decimal range we are discretizing
-	convert_to_decimal((0x1 << rbits), discretizationLevels); // TODO: limits rbits to 64 bits
-	step = div (range, discretizationLevels);
-	partial.setzero();
-	multiplier.setdigit(1);
-	// convert the fraction part
-	for (unsigned i = 0; i < rbits; ++i) {
-		if (number.at(i)) {
-			impl::add(partial, multiplier);
+	if (rbits > 0) {
+		// and secondly the fraction part
+		impl::decimal range, discretizationLevels, step;
+		range.setdigit(1);
+		range.shiftLeft(rbits);  // create the decimal range we are discretizing
+		convert_to_decimal((0x1 << rbits), discretizationLevels); // TODO: limits rbits to 64 bits
+		step = div(range, discretizationLevels);
+		partial.setzero();
+		multiplier.setdigit(1);
+		// convert the fraction part
+		for (unsigned i = 0; i < rbits; ++i) {
+			if (number.at(i)) {
+				impl::add(partial, multiplier);
+			}
+			impl::add(multiplier, multiplier);
 		}
-		impl::add(multiplier, multiplier);
+		impl::mul(partial, step);
+		ss << ".";
+		int digitsWritten = 0;
+		for (impl::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
+			ss << (int)*rit;
+			++digitsWritten;
+		}
+		if (digitsWritten < rbits) {
+			for (int i = digitsWritten; i < rbits; ++i) {
+				ss << '0';
+			}
+		}
 	}
-	impl::mul(partial, step);
-	ss << ".";
-	for (impl::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
-		ss << (int)*rit;
-	}
-
 	return ss.str();
 }
 
