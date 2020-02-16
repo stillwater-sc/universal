@@ -9,8 +9,8 @@
 // enable/disable quire exceptions
 #define QUIRE_THROW_EXCEPTION 0
 #include "universal/posit/exceptions.hpp"
+#include "universal/native/bit_functions.hpp"
 #include "universal/bitblock/bitblock.hpp"
-#include "universal/posit/bit_functions.hpp"
 #include "universal/float/float_functions.hpp"
 #include "universal/posit/value.hpp"
 #include "universal/float/quire.hpp"

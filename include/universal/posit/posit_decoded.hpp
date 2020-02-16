@@ -54,8 +54,8 @@ typedef __128bitdd double_double;
 
 // Posits encode error conditions as NaR (Not a Real), propagating the error through arithmetic operations is preferred
 #include "exceptions.hpp"
+#include "../native/bit_functions.hpp"
 #include "../bitblock/bitblock.hpp"
-#include "bit_functions.hpp"
 #include "trace_constants.hpp"
 #include "value.hpp"
 #include "fraction.hpp"

@@ -1,14 +1,14 @@
 // arithmetic_add.cpp: functional tests for addition on arbitrary reals
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // minimum set of include files to reflect source code dependencies
+#include "universal/native/bit_functions.hpp"
 #include "universal/posit/exceptions.hpp"
 #include "universal/posit/trace_constants.hpp"
 #include "universal/bitblock/bitblock.hpp"
-#include "universal/posit/bit_functions.hpp"
 #include "universal/areal/areal.hpp"
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
