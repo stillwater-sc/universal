@@ -97,10 +97,12 @@ inline int scale(const fixpnt<nbits, rbits, arithmetic>& i) {
 	}
 	// calculate scale
 	long scale = 0;
-	v >>= rbits;
-	while (v > 1) {
-		++scale;
-		v >>= 1;
+	if (nbits > rbits + 1) {  // subtle bug: in fixpnt numbers with only 1 bit before the radix point, '1' is maxneg, and thus while (v > 1) never completes
+		v >>= rbits;
+		while (v > 1) {
+			++scale;
+			v >>= 1;
+		}
 	}
 	return scale;
 }
@@ -1304,7 +1306,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic>& va
 		for (unsigned i = rbits; i < nbits; ++i) {
 			if (number.at(i)) {
 				impl::add(partial, multiplier);
-				std::cout << partial << std::endl;
+				//std::cout << partial << std::endl;
 			}
 			impl::add(multiplier, multiplier);
 		}

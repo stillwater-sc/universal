@@ -40,10 +40,11 @@ template<size_t nbits, size_t rbits>
 void GenerateFixedPointValues(std::ostream& ostr = std::cout) {
 	constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 	sw::unum::fixpnt<nbits, rbits> a;
+	ostr << "  fixpnt<" << nbits << "," << rbits << ">\n";
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 		a.set_raw_bits(i);
 		float f = float(a);
-		ostr << to_binary(a) << " | " << to_triple(a) << " | " << a << " | " << f << std::endl;
+		ostr << to_binary(a) << " | " << to_triple(a) << " | " << std::setw(10) << a << " | " << std::setw(10) << f << std::endl;
 	}
 }
 
@@ -86,9 +87,13 @@ try {
 	ReportFixedPointRanges<4, 3, Modular>(cout);
 	ReportFixedPointRanges<4, 4, Modular>();
 
-//	GenerateFixedPointValues<4, 0>();
-//	GenerateFixedPointValues<4, 1>();
+	GenerateFixedPointValues<4, 0>();
+	GenerateFixedPointValues<4, 1>();
+	GenerateFixedPointValues<4, 2>();
+	GenerateFixedPointValues<4, 3>();
 	GenerateFixedPointValues<4, 4>();
+
+	return 0;
 
 	fixpnt<4, 4> a = -0.46875f;
 	cout << to_binary(a) << ' ' << a << endl;
@@ -100,6 +105,7 @@ try {
 	cout << to_binary(a) << ' ' << a << endl;
 
 	return 0;
+
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 4>(tag, bReportIndividualTestCases), tag, "posit<4,4>");
 
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<8, 8>(tag, bReportIndividualTestCases), tag, "posit<8,8>");
