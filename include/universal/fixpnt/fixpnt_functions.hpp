@@ -18,7 +18,7 @@ namespace unum {
 template<size_t nbits, size_t rbits, bool arithmetic>
 int scale_maxpos_fixpnt() {
 	assert(nbits >= rbits);
-	return (nbits > rbits) ? (nbits - rbits - 1) : 1;
+	return (nbits > rbits) ? (nbits - rbits - 1) : 0;
 }
 
 // calculate exponential scale of minpos
@@ -30,25 +30,37 @@ int scale_minpos_fixpnt() {
 // calculate the value of maximum positive number
 template<size_t nbits, size_t rbits, bool arithmetic>
 long double value_maxpos_fixpnt() {
-	return (long double)((0x1 << scale_maxpos_fixpnt<nbits, rbits, arithmetic>()) - 1);
+	// 2's complement maxpos value = 2^(nbits-1) - 1
+	// fixed-point's shift is 2^rbits
+	// maxpos = 2's compl maxpos / shift
+	long double numerator = (long double)((uint64_t(0x1) << (nbits-1)) - 1);
+	long double denominator = (long double)((uint64_t(0x1) << rbits));
+	return numerator / denominator;
 }
 
 // calculate the value of maximum negative number
 template<size_t nbits, size_t rbits, bool arithmetic>
 long double value_maxneg_fixpnt() {
-	return -(long double)(0x1 << scale_maxpos_fixpnt<nbits, rbits, arithmetic>());
+	// 2's complement maxneg value = 2^(nbits-1)
+	// fixed-point's shift is 2^rbits
+	// maxneg = 2's compl maxneg / shift
+	long double numerator = (long double)(uint64_t(0x1) << (nbits-1));
+	long double denominator = (long double)((uint64_t(0x1) << rbits));
+	return -numerator / denominator;
 }
 
 // calculate the value of minimum positive number
 template<size_t nbits, size_t rbits, bool arithmetic>
 long double value_minpos_fixpnt() {
-	return (long double)(std::pow(2.0l, scale_minpos_fixpnt<nbits, rbits, arithmetic>()));
+	long double denominator = (long double)(uint64_t(0x1) << rbits);
+	return 1.0l / denominator;
 }
 
 // calculate the value of minimum positive number
 template<size_t nbits, size_t rbits, bool arithmetic>
 long double value_minneg_fixpnt() {
-	return -(long double)(std::pow(2.0l, scale_minpos_fixpnt<nbits, rbits, arithmetic>()));
+	long double denominator = (long double)(uint64_t(0x1) << rbits);
+	return -1.0l / denominator;
 }
 
 // generate the maxneg through maxpos value range of a fixed-point configuration

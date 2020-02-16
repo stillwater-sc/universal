@@ -42,7 +42,8 @@ void GenerateFixedPointValues(std::ostream& ostr = std::cout) {
 	sw::unum::fixpnt<nbits, rbits> a;
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 		a.set_raw_bits(i);
-		ostr << to_binary(a) << " | " << to_triple(a) << " | " << a << std::endl;
+		float f = float(a);
+		ostr << to_binary(a) << " | " << to_triple(a) << " | " << a << " | " << f << std::endl;
 	}
 }
 
@@ -64,7 +65,7 @@ void GenerateFixedPointComparisonTable(std::string& tag) {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -87,14 +88,23 @@ try {
 
 //	GenerateFixedPointValues<4, 0>();
 //	GenerateFixedPointValues<4, 1>();
+	GenerateFixedPointValues<4, 4>();
 
-	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 0>(tag, bReportIndividualTestCases), tag, "posit<4,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 1>(tag, bReportIndividualTestCases), tag, "posit<4,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 2>(tag, bReportIndividualTestCases), tag, "posit<4,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 3>(tag, bReportIndividualTestCases), tag, "posit<4,3>");
+	fixpnt<4, 4> a = -0.46875f;
+	cout << to_binary(a) << ' ' << a << endl;
+	a.set_raw_bits(0xe);
+	float f = float(a);
+	cout << to_binary(a) << ' ' << a << endl;
+	a.set_raw_bits(0xf);
+	f = float(a);
+	cout << to_binary(a) << ' ' << a << endl;
+
+	return 0;
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 4>(tag, bReportIndividualTestCases), tag, "posit<4,4>");
 
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<8, 8>(tag, bReportIndividualTestCases), tag, "posit<8,8>");
+
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<12, 1>(tag, bReportIndividualTestCases), tag, "posit<12,1>");
 
 #if STRESS_TESTING
 

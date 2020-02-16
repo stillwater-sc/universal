@@ -748,6 +748,7 @@ protected:
 	template<typename Integer>
 	typename std::enable_if< std::is_integral<Integer>::value && std::is_signed<Integer>::value,
 	                Integer>::type convert_signed() const {
+		if (nbits <= rbits) return 0;
 		constexpr unsigned sizeOfInteger = 8 * sizeof(Integer);
 		Integer ll = 0;
 		Integer mask = 1;
@@ -798,40 +799,27 @@ protected:
 		return ull;
 	}
 	float to_float() const {
-		long integerPart = long(*this);
-		unsigned long fractionPart = 0;
-		unsigned long mask = 0x1;
-		for (unsigned i = 0; i < rbits; ++i) {
-			fractionPart |= (at(i) ? mask : 0);
-			mask <<= 1;
-		}
-		float range = (0x1 << rbits);
-		float f = float(integerPart) + float(fractionPart)/range;   // TODO: only works for nbits < 64
-		return f; 
+		return (float)to_long_double();
 	}
 	double to_double() const {
-		long long integerPart = (long long)(*this);
-		unsigned long long fractionPart = 0;
-		unsigned long long mask = 0x1;
-		for (unsigned i = 0; i < rbits; ++i) {
-			fractionPart |= (at(i) ? mask : 0);
-			mask <<= 1;
-		}
-		double range = (0x1 << rbits);
-		double d = double(integerPart) + double(fractionPart) / range;   // TODO: only works for nbits < 64
-		return d;
+		return (double)to_long_double();
 	}
 	long double to_long_double() const {  // TODO : this is not a valid implementation
-		long long integerPart = (long long)(*this);
-		unsigned long long fractionPart = 0;
-		unsigned long long mask = 0x1;
-		for (unsigned i = 0; i < rbits; ++i) {
-			fractionPart |= (at(i) ? mask : 0);
+		int64_t value = 0;
+		uint64_t mask = 1;
+		for (unsigned i = 0; i < nbits; ++i) {
+			value |= at(i) ? mask : 0;
 			mask <<= 1;
 		}
-		long double range = (0x1 << rbits);
-		long double ld = (long double)(integerPart) + (long double)(fractionPart) / range;   // TODO: only works for nbits < 64
-		return ld;
+		if (sign()) { // sign extend
+			for (unsigned i = nbits; i < 64; ++i) {
+				value |= mask;
+				mask <<= 1;
+			}
+		}
+		long double numerator = (long double)value;
+		long double denominator = (long double)(uint64_t(0x1) << rbits);
+		return numerator / denominator;
 	}
 
 	// from native to fixed-point
@@ -1304,23 +1292,27 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic>& va
 	if (value.iszero()) {
 		return std::string("0");
 	}
-	// convert the fixed point by first handling the integer part
-	fixpnt<nbits, rbits> number = value.sign() ? twos_complement(value) : value;
-	impl::decimal partial, multiplier;
-	multiplier.setdigit(1);
-	// convert fixpnt to decimal by adding and doubling multipliers
-	for (unsigned i = rbits; i < nbits; ++i) {
-		if (number.at(i)) {
-			impl::add(partial, multiplier);
-			// std::cout << partial << std::endl;
-		}
-		impl::add(multiplier, multiplier);
-	}
 	std::stringstream ss;
 	if (value.sign()) ss << '-';
-	for (impl::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
-		ss << (int)*rit;
-	}
+	impl::decimal partial, multiplier;
+	fixpnt<nbits, rbits> number;
+	// convert the fixed point by first handling the integer part
+
+		number = value.sign() ? twos_complement(value) : value;
+		multiplier.setdigit(1);
+		// convert fixpnt to decimal by adding and doubling multipliers
+		for (unsigned i = rbits; i < nbits; ++i) {
+			if (number.at(i)) {
+				impl::add(partial, multiplier);
+				std::cout << partial << std::endl;
+			}
+			impl::add(multiplier, multiplier);
+		}
+		for (impl::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
+			ss << (int)*rit;
+		}
+
+
 	// and secondly the fraction part
 	impl::decimal range, discretizationLevels, step;
 	range.setdigit(1);
