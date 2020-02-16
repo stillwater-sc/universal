@@ -379,19 +379,23 @@ public:
 		return *this;
 	}
 	fixpnt& operator=(const float rhs) {
+		if (rhs == 0.0f) {
+			setzero();
+			return *this;
+		}
 		sw::native::float_decoder decoder;
 		decoder.f = rhs;
 		uint32_t raw = (1 << 23) | decoder.parts.fraction;
-		int radixPoint = 23;
-		int scale = (decoder.parts.exponent - 127);
+		int radixPoint = 23 - (decoder.parts.exponent - 127); // move radix point to the right if scale > 0, left if scale < 0
 		// our fixed-point has its radixPoint at rbits
 		int shiftRight = radixPoint - int(rbits);
 		raw = (decoder.parts.sign == 0) ? raw : (~raw + 1); // map to two's complement
-		// do we need to round
+		// do we need to round?
 		if (shiftRight > 0) {
+			// yes, round the raw bits
 			// collect guard, round, and sticky bits
 			// this same logic will work for the case where 
-			// we only have a guard bit  and no round and sticky bits
+			// we only have a guard bit and no round and/or sticky bits
 			// because the mask logic will make round and sticky both 0
 			// so no need to special case it
 			uint32_t mask = (1 << (shiftRight - 1));
@@ -400,7 +404,7 @@ public:
 			bool round = (mask & raw);
 			mask = (0xFFFFFFFF << (shiftRight - 2));
 			mask = ~mask;
-			bool sticky = (mask | raw);
+			bool sticky = (mask & raw);
 			
 			raw >>= shiftRight;  // shift out the bits we are rounding away
 			bool lsb = (raw & 0x1);
@@ -415,25 +419,25 @@ public:
 				if (lsb && (!round && !sticky)) ++raw; // round to even
 				if (round || sticky) ++raw;
 			}
-			set_raw_bits(raw);
 		}
-		else {
-			// no need to round
-			set_raw_bits(raw);
-		}
-
+		set_raw_bits(raw);
 		return *this;
 	}
 	fixpnt& operator=(const double rhs) {
+		if (rhs == 0.0) {
+			setzero();
+			return *this;
+		}
 		sw::native::double_decoder decoder;
 		decoder.d = rhs;
 		uint64_t raw = (uint64_t(1) << 52) | decoder.parts.fraction;
-		int radixPoint = 52 + (int(decoder.parts.exponent) - 1023);
+		int radixPoint = 52 - (int(decoder.parts.exponent) - 1023);  // move radix point to the right if scale > 0, left if scale < 0
 		// our fixed-point has its radixPoint at rbits
 		int shiftRight = radixPoint - int(rbits);
 		raw = (decoder.parts.sign == 0) ? raw : (~raw + 1); // map to two's complement
-		// do we need to round
+		// do we need to round?
 		if (shiftRight > 0) {
+			// yes, round the raw bits
 			// collect guard, round, and sticky bits
 			// this same logic will work for the case where 
 			// we only have a guard bit  and no round and sticky bits
@@ -443,9 +447,9 @@ public:
 			bool guard = (mask & raw);
 			mask >>= 1;
 			bool round = (mask & raw);
-			mask = (0xFFFFFFFF << (shiftRight - 2));
+			mask = (0xFFFFFFFFFFFFFFFF << (shiftRight - 2));
 			mask = ~mask;
-			bool sticky = (mask | raw);
+			bool sticky = (mask & raw);
 
 			raw >>= shiftRight;  // shift out the bits we are rounding away
 			bool lsb = (raw & 0x1);
@@ -460,16 +464,15 @@ public:
 				if (lsb && (!round && !sticky)) ++raw; // round to even
 				if (round || sticky) ++raw;
 			}
-			set_raw_bits(raw);
 		}
-		else {
-			// no need to round
-			set_raw_bits(raw);
-		}
-
+		set_raw_bits(raw);
 		return *this;
 	}
 	fixpnt& operator=(const long double rhs) {
+		if (rhs == 0.0l) {
+			setzero();
+			return *this;
+		}
 		//sw::native::long_double_decoder decoder;
 		//decoder.ld = rhs;
 		std::cerr << "assignment from long double not implemented yet\n";

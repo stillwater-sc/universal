@@ -24,6 +24,7 @@ namespace unum {
 
 template<size_t nbits, size_t rbits>
 void ReportConversionError(std::string test_case, std::string op, double input, double reference, const fixpnt<nbits, rbits>& result) {
+	auto old_precision = std::cerr.precision();
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << input
@@ -31,6 +32,7 @@ void ReportConversionError(std::string test_case, std::string op, double input, 
 		<< std::setw(FIXPNT_TABLE_WIDTH) << reference << " instead it yielded  "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << double(result)
 		<< "  raw " << std::setw(nbits) << to_binary(result)
+		<< std::setprecision(old_precision)
 		<< std::endl;
 }
 
@@ -111,7 +113,7 @@ int Compare(double input, const fixpnt<nbits, rbits>& presult, double reference,
 		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, presult);
 	}
 	else {
-		if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
+		// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
 	}
 	return fail;
 }
@@ -194,29 +196,30 @@ int ValidateModularConversion(const std::string& tag, bool bReportIndividualTest
 
 			}
 			else if (i == HALF - 1) {
-				// special case of projecting to +maxpos
+				// special case of projecting to maxpos
 				input = da - eps;
 				nut = input;
 				pprev.set_raw_bits(HALF - 2);
 				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
 			}
 			else if (i == HALF + 1) {
-				// special case of projecting to -maxpos
+				// special case of projecting to maxneg
 				input = da - eps;
 				nut = input;
-				pprev.set_raw_bits(HALF + 2);
-				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
+				double maxneg = value_maxneg_fixpnt<nbits, rbits, sw::unum::Modular>();
+				nrOfFailedTests += Compare(input, nut, maxneg, bReportIndividualTestCases);
 			}
 			else if (i == NR_TEST_CASES - 1) {
-				// special case of projecting to -minpos
-				// even the +delta goes to -minpos
+				// special case of projecting to minneg
 				input = da - eps;
 				nut = input;
 				pprev.set_raw_bits(i - 1);
 				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
+				// but the +delta goes to 0
 				input = da + eps;
 				nut = input;
-				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
+//				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, nut, 0.0, bReportIndividualTestCases);
 			}
 			else {
 				// for odd values, we are between fixed point values, so we create the round-up and round-down cases
@@ -248,7 +251,7 @@ int ValidateModularConversion(const std::string& tag, bool bReportIndividualTest
 				nrOfFailedTests += Compare(input, nut, da, bReportIndividualTestCases);
 			}
 			else if (i == NR_TEST_CASES - 2) {
-				// special case of projecting to -minpos
+				// special case of projecting to minneg
 				input = da - eps;
 				nut = input;
 				pprev.set_raw_bits(NR_TEST_CASES - 2);

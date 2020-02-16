@@ -39,7 +39,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -74,15 +74,15 @@ try {
 
 	cout << "Fixed-point modular multiplication validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "multiplication");
 
 #if STRESS_TESTING
 
