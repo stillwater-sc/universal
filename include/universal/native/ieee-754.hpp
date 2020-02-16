@@ -5,9 +5,39 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
+#include <iomanip>
+#include <cmath>    // for frexpf/frexp/frexpl  float/double/long double fraction/exponent extraction
 
 namespace sw {
 namespace unum {
+
+// floating point component extractions
+inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& _fr, unsigned int& _fraction) {
+	static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
+	_sign = fp < 0.0 ? true : false;
+	_fr = frexpf(fp, &_exponent);
+	_fraction = uint32_t(0x007FFFFFul) & reinterpret_cast<uint32_t&>(_fr);
+}
+inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double& _fr, unsigned long long& _fraction) {
+	static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
+	_sign = fp < 0.0 ? true : false;
+	_fr = frexp(fp, &_exponent);
+	_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+}
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
+	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
+	if (sizeof(long double) == 8) { // it is just a double
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexp(double(fp), &_exponent);
+		_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+	}
+	else if (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexpl(fp, &_exponent);
+		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
+	}
+}
+
 
 union float_decoder {
   float f;
@@ -28,6 +58,10 @@ union double_decoder {
 };
 
 ////////////////// string operators
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// native single precision IEEE floating point
 
 // generate a binary string for a native single precision IEEE floating point
 inline std::string to_hex(const float& number) {
@@ -102,6 +136,33 @@ inline std::string to_triple(const float& number) {
 	return ss.str();
 }
 
+
+// specialization for IEEE single precision floats
+inline std::string to_base2_scientific(const float& number) {
+	std::stringstream ss;
+	float_decoder decoder;
+	decoder.f = number;
+	ss << (decoder.parts.sign == 1 ? "-" : "+") << "1.";
+	uint32_t mask = (uint32_t(1) << 22);
+	for (int i = 22; i >= 0; --i) {
+		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
+		mask >>= 1;
+	}
+	ss << "e2^" << std::showpos << (decoder.parts.exponent - 127);
+/* deprecated
+	bool s;
+	int base2Exp;
+	float _fr;
+	unsigned int mantissa;
+	extract_fp_components(number, s, base2Exp, _fr, mantissa);
+	ss << (s ? "-" : "+") << "1." << std::bitset<23>(mantissa) << "e2^" << std::showpos << base2Exp - 1;
+*/
+	return ss.str();
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// native double precision IEEE floating point
+
 // generate a binary string for a native double precision IEEE floating point
 inline std::string to_hex(const double& number) {
 	std::stringstream ss;
@@ -174,6 +235,24 @@ inline std::string to_triple(const double& number) {
 	ss << ')';
 	return ss.str();
 }
+
+// specialization for IEEE double precision floats
+inline std::string to_base2_scientific(const double& number) {
+	std::stringstream ss;
+	double_decoder decoder;
+	decoder.d = number;
+	ss << (decoder.parts.sign == 1 ? "-" : "+") << "1.";
+	uint64_t mask = (uint64_t(1) << 52);
+	for (int i = 52; i >= 0; --i) {
+		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
+		mask >>= 1;
+	} 
+	ss << "e2^" << std::showpos << (decoder.parts.exponent - 1023);
+	return ss.str();
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////
+// compiler specific long double IEEE floating point
 
 /*
 	Long double is not consistently implemented across different compilers.

@@ -1,7 +1,7 @@
 #pragma once
 // value.hpp: definition of a (sign, scale, significant) representation of an approximation to a real value
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <limits>
 
+#include "../native/ieee-754.hpp"
 #include "../native/bit_functions.hpp"
 #include "trace_constants.hpp"
 
