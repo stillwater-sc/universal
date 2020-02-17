@@ -65,6 +65,117 @@ void GenerateFixedPointComparisonTable(std::string& tag) {
 	}
 }
 
+void GenerateFixedPointRangeTable() {
+	using namespace std;
+	using namespace sw::unum;
+	cout << "fixpnt<4,#> ranges\n";
+	ReportFixedPointRanges<4, 0, Modular>(cout);
+	ReportFixedPointRanges<4, 1, Modular>(cout);
+	ReportFixedPointRanges<4, 2, Modular>(cout);
+	ReportFixedPointRanges<4, 3, Modular>(cout);
+	ReportFixedPointRanges<4, 4, Modular>(cout);
+	cout << "fixpnt<6,#> ranges\n";
+	ReportFixedPointRanges<6, 0, Modular>(cout);
+	ReportFixedPointRanges<6, 1, Modular>(cout);
+	ReportFixedPointRanges<6, 2, Modular>(cout);
+	ReportFixedPointRanges<6, 3, Modular>(cout);
+	ReportFixedPointRanges<6, 4, Modular>(cout);
+	ReportFixedPointRanges<6, 5, Modular>(cout);
+	ReportFixedPointRanges<6, 6, Modular>(cout);
+	cout << "fixpnt<8,#> ranges\n";
+	ReportFixedPointRanges<8, 0, Modular>(cout);
+	ReportFixedPointRanges<8, 1, Modular>(cout);
+	ReportFixedPointRanges<8, 2, Modular>(cout);
+	ReportFixedPointRanges<8, 3, Modular>(cout);
+	ReportFixedPointRanges<8, 4, Modular>(cout);
+	ReportFixedPointRanges<8, 5, Modular>(cout);
+	ReportFixedPointRanges<8, 6, Modular>(cout);
+	ReportFixedPointRanges<8, 7, Modular>(cout);
+	ReportFixedPointRanges<8, 8, Modular>(cout);
+	cout << "fixpnt<10,#> ranges\n";
+	ReportFixedPointRanges<10, 0, Modular>(cout);
+	ReportFixedPointRanges<10, 1, Modular>(cout);
+	ReportFixedPointRanges<10, 2, Modular>(cout);
+	ReportFixedPointRanges<10, 3, Modular>(cout);
+	ReportFixedPointRanges<10, 4, Modular>(cout);
+	ReportFixedPointRanges<10, 5, Modular>(cout);
+	ReportFixedPointRanges<10, 6, Modular>(cout);
+	ReportFixedPointRanges<10, 7, Modular>(cout);
+	ReportFixedPointRanges<10, 8, Modular>(cout);
+	ReportFixedPointRanges<10, 9, Modular>(cout);
+	ReportFixedPointRanges<10, 10, Modular>(cout);
+	cout << "fixpnt<12,#> ranges\n";
+	ReportFixedPointRanges<12, 0, Modular>(cout);
+	ReportFixedPointRanges<12, 1, Modular>(cout);
+	ReportFixedPointRanges<12, 2, Modular>(cout);
+	ReportFixedPointRanges<12, 3, Modular>(cout);
+	ReportFixedPointRanges<12, 4, Modular>(cout);
+	ReportFixedPointRanges<12, 5, Modular>(cout);
+	ReportFixedPointRanges<12, 6, Modular>(cout);
+	ReportFixedPointRanges<12, 7, Modular>(cout);
+	ReportFixedPointRanges<12, 8, Modular>(cout);
+	ReportFixedPointRanges<12, 9, Modular>(cout);
+	ReportFixedPointRanges<12, 10, Modular>(cout);
+	ReportFixedPointRanges<12, 11, Modular>(cout);
+	ReportFixedPointRanges<12, 12, Modular>(cout);
+	cout << "fixpnt<14,#> ranges\n";
+	ReportFixedPointRanges<14, 0, Modular>(cout);
+	ReportFixedPointRanges<14, 1, Modular>(cout);
+	ReportFixedPointRanges<14, 2, Modular>(cout);
+	ReportFixedPointRanges<14, 3, Modular>(cout);
+	ReportFixedPointRanges<14, 4, Modular>(cout);
+	ReportFixedPointRanges<14, 5, Modular>(cout);
+	ReportFixedPointRanges<14, 6, Modular>(cout);
+	ReportFixedPointRanges<14, 7, Modular>(cout);
+	ReportFixedPointRanges<14, 8, Modular>(cout);
+	ReportFixedPointRanges<14, 9, Modular>(cout);
+	ReportFixedPointRanges<14, 10, Modular>(cout);
+	ReportFixedPointRanges<14, 11, Modular>(cout);
+	ReportFixedPointRanges<14, 12, Modular>(cout);
+	ReportFixedPointRanges<14, 13, Modular>(cout);
+	ReportFixedPointRanges<14, 14, Modular>(cout);
+	cout << "fixpnt<16,#> ranges\n";
+	ReportFixedPointRanges<16, 0, Modular>(cout);
+	ReportFixedPointRanges<16, 1, Modular>(cout);
+	ReportFixedPointRanges<16, 2, Modular>(cout);
+	ReportFixedPointRanges<16, 3, Modular>(cout);
+	ReportFixedPointRanges<16, 4, Modular>(cout);
+	ReportFixedPointRanges<16, 5, Modular>(cout);
+	ReportFixedPointRanges<16, 6, Modular>(cout);
+	ReportFixedPointRanges<16, 7, Modular>(cout);
+	ReportFixedPointRanges<16, 8, Modular>(cout);
+	ReportFixedPointRanges<16, 9, Modular>(cout);
+	ReportFixedPointRanges<16, 10, Modular>(cout);
+	ReportFixedPointRanges<16, 11, Modular>(cout);
+	ReportFixedPointRanges<16, 12, Modular>(cout);
+	ReportFixedPointRanges<16, 13, Modular>(cout);
+	ReportFixedPointRanges<16, 14, Modular>(cout);
+	ReportFixedPointRanges<16, 15, Modular>(cout);
+	ReportFixedPointRanges<16, 16, Modular>(cout);
+	cout << "fixpnt<20,#> ranges\n";
+	ReportFixedPointRanges<20, 0, Modular>(cout);
+	ReportFixedPointRanges<20, 1, Modular>(cout);
+	ReportFixedPointRanges<20, 2, Modular>(cout);
+	ReportFixedPointRanges<20, 3, Modular>(cout);
+	ReportFixedPointRanges<20, 4, Modular>(cout);
+	ReportFixedPointRanges<20, 5, Modular>(cout);
+	ReportFixedPointRanges<20, 6, Modular>(cout);
+	ReportFixedPointRanges<20, 7, Modular>(cout);
+	ReportFixedPointRanges<20, 8, Modular>(cout);
+	ReportFixedPointRanges<20, 9, Modular>(cout);
+	ReportFixedPointRanges<20, 10, Modular>(cout);
+	ReportFixedPointRanges<20, 11, Modular>(cout);
+	ReportFixedPointRanges<20, 12, Modular>(cout);
+	ReportFixedPointRanges<20, 13, Modular>(cout);
+	ReportFixedPointRanges<20, 14, Modular>(cout);
+	ReportFixedPointRanges<20, 15, Modular>(cout);
+	ReportFixedPointRanges<20, 16, Modular>(cout);
+	ReportFixedPointRanges<20, 17, Modular>(cout);
+	ReportFixedPointRanges<20, 18, Modular>(cout);
+	ReportFixedPointRanges<20, 19, Modular>(cout);
+	ReportFixedPointRanges<20, 20, Modular>(cout);
+}
+
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -81,38 +192,8 @@ try {
 
 #if MANUAL_TESTING
 
-	cout << "fixpnt<4,#> ranges\n";
-	ReportFixedPointRanges<4, 0, Modular>(cout);
-	ReportFixedPointRanges<4, 1, Modular>(cout);
-	ReportFixedPointRanges<4, 2, Modular>(cout);
-	ReportFixedPointRanges<4, 3, Modular>(cout);
-	ReportFixedPointRanges<4, 4, Modular>(cout);
-	cout << "fixpnt<8,#> ranges\n";
-	ReportFixedPointRanges<8, 0, Modular>(cout);
-	ReportFixedPointRanges<8, 1, Modular>(cout);
-	ReportFixedPointRanges<8, 2, Modular>(cout);
-	ReportFixedPointRanges<8, 3, Modular>(cout);
-	ReportFixedPointRanges<8, 4, Modular>(cout);
-	ReportFixedPointRanges<8, 5, Modular>(cout);
-	ReportFixedPointRanges<8, 6, Modular>(cout);
-	ReportFixedPointRanges<8, 7, Modular>(cout);
-	ReportFixedPointRanges<8, 8, Modular>(cout);
-	cout << "fixpnt<12,#> ranges\n";
-	ReportFixedPointRanges<12, 0, Modular>(cout);
-	ReportFixedPointRanges<12, 1, Modular>(cout);
-	ReportFixedPointRanges<12, 2, Modular>(cout);
-	ReportFixedPointRanges<12, 3, Modular>(cout);
-	ReportFixedPointRanges<12, 4, Modular>(cout);
-	ReportFixedPointRanges<12, 5, Modular>(cout);
-	ReportFixedPointRanges<12, 6, Modular>(cout);
-	ReportFixedPointRanges<12, 7, Modular>(cout);
-	ReportFixedPointRanges<12, 8, Modular>(cout);
-	ReportFixedPointRanges<12, 9, Modular>(cout);
-	ReportFixedPointRanges<12, 10, Modular>(cout);
-	ReportFixedPointRanges<12, 11, Modular>(cout);
-	ReportFixedPointRanges<12, 12, Modular>(cout);
+	//GenerateFixedPointRangeTable();
 
-	// this doesn't work yet
 	//cout << "quire<512,240>\n";
 	//ReportFixedPointRanges<512, 240, Modular>(cout);
 
@@ -139,7 +220,7 @@ FAIL =                -0.25 did not convert to                 -0.5 instead it y
 FAIL =                -0.25 did not convert to                    0 instead it yielded                   512  raw 01000000000.0
 conversion:  posit<12,1> FAIL 2 failed test cases
 	 */
-	//nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<12, 1>(tag, bReportIndividualTestCases), tag, "posit<12,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<12, 1>(tag, bReportIndividualTestCases), tag, "posit<12,1>");
 
 #if STRESS_TESTING
 

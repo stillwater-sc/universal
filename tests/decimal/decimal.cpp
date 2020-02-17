@@ -271,7 +271,7 @@ void findLargestMultipleTest() {
 		std::cout << fails << " FAILURES in findLargestMultipleTest"  << std::endl;
 	}
 }
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 1
 
 int main()
@@ -282,7 +282,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Decimal Arithmetic tests failed";
+	std::string tag = "decimal arithmetic";
 
 #if MANUAL_TESTING
 
@@ -307,8 +307,23 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
 
+	// can we create a binary shift operator?
+	d1 = 1;
+	for (int i = 0; i < 10; ++i) {
+		cout << d1 << endl;
+		d1 += d1;
+	}
+	cout << (1 << 9) << endl;
+
 #else
 	std::cout << "Decimal Arithmetic verfication" << std::endl;
+
+	long rangeBound = 1000;
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
+
 
 #ifdef STRESS_TESTING
 

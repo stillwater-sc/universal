@@ -12,7 +12,10 @@ namespace unum {
 
 // functions to provide details about
 // the properties of a fixed-point configuration
-
+// in terms of native types.
+// Since many fixed-point configurations cannot be represented by native types,
+// these are all convenience functions.
+// They should not be used for the core algorithms.
 
 // calculate exponential scale of maxpos
 template<size_t nbits, size_t rbits, bool arithmetic>
@@ -64,15 +67,15 @@ long double value_minneg_fixpnt() {
 }
 
 // generate the maxneg through maxpos value range of a fixed-point configuration
-template<size_t nbits, size_t rbits, bool arithmetic>
+template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 void ReportFixedPointRanges(std::ostream& ostr = std::cout) {
 	using namespace std;
-	ostr << "fixpnt<" << nbits << ", " << rbits << ", " << (arithmetic ? "Modulo" : "Saturating") << "> : "
-		<< value_maxneg_fixpnt<nbits, rbits, arithmetic>() << " "
-		<< value_minneg_fixpnt<nbits, rbits, arithmetic>() << " "
+	ostr << "fixpnt<" << nbits << ", " << rbits << ", " << (arithmetic ? "Modular" : "Saturating") << "> : "
+		<< maxneg_fixpnt<nbits, rbits, arithmetic>() << " "
+		<< minneg_fixpnt<nbits, rbits, arithmetic>() << " "
 		<< "0 "
-		<< value_minpos_fixpnt<nbits, rbits, arithmetic>() << " "
-		<< value_maxpos_fixpnt<nbits, rbits, arithmetic>()
+		<< minpos_fixpnt<nbits, rbits, arithmetic>() << " "
+		<< maxpos_fixpnt<nbits, rbits, arithmetic>()
 		<< endl;
 }
 

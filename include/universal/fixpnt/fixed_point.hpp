@@ -1327,13 +1327,19 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic>& va
 	}
 
 	if (rbits > 0) {
-		// and secondly the fraction part
+		ss << ".";
+		// and secondly, the fraction part
 		impl::decimal range, discretizationLevels, step;
+		// create the decimal range we are discretizing
 		range.setdigit(1);
-		range.shiftLeft(rbits);  // create the decimal range we are discretizing
-		assert(rbits < 64);
-		convert_to_decimal((0x1 << rbits), discretizationLevels); // TODO: limits rbits to 64 bits
+		range.shiftLeft(rbits);  
+		// calculate the discretization levels of this range
+		discretizationLevels.setdigit(1);
+		for (size_t i = 0; i < rbits; ++i) {
+			impl::add(discretizationLevels, discretizationLevels);
+		}
 		step = div(range, discretizationLevels);
+		// now construct the parts of this range the fraction samples
 		partial.setzero();
 		multiplier.setdigit(1);
 		// convert the fraction part
@@ -1344,7 +1350,6 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic>& va
 			impl::add(multiplier, multiplier);
 		}
 		impl::mul(partial, step);
-		ss << ".";
 		// leading 0s will cause the partial to be represented incorrectly
 		// if we simply convert it to digits.
 		// The partial represents the parts in the range, so we can deduce
