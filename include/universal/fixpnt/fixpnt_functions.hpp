@@ -33,8 +33,8 @@ long double value_maxpos_fixpnt() {
 	// 2's complement maxpos value = 2^(nbits-1) - 1
 	// fixed-point's shift is 2^rbits
 	// maxpos = 2's compl maxpos / shift
-	long double numerator = (long double)((uint64_t(0x1) << (nbits-1)) - 1);
-	long double denominator = (long double)((uint64_t(0x1) << rbits));
+	long double numerator = (long double)((1ul << (nbits-1)) - 1);
+	long double denominator = (long double)(1ul << (rbits));
 	return numerator / denominator;
 }
 
@@ -44,22 +44,22 @@ long double value_maxneg_fixpnt() {
 	// 2's complement maxneg value = 2^(nbits-1)
 	// fixed-point's shift is 2^rbits
 	// maxneg = 2's compl maxneg / shift
-	long double numerator = (long double)(uint64_t(0x1) << (nbits-1));
-	long double denominator = (long double)((uint64_t(0x1) << rbits));
+	long double numerator = (long double)(1ul << (nbits-1));
+	long double denominator = (long double)(1ul << (rbits));
 	return -numerator / denominator;
 }
 
 // calculate the value of minimum positive number
 template<size_t nbits, size_t rbits, bool arithmetic>
 long double value_minpos_fixpnt() {
-	long double denominator = (long double)(uint64_t(0x1) << rbits);
+	long double denominator = (long double)(1ul << (rbits));
 	return 1.0l / denominator;
 }
 
 // calculate the value of minimum positive number
 template<size_t nbits, size_t rbits, bool arithmetic>
 long double value_minneg_fixpnt() {
-	long double denominator = (long double)(uint64_t(0x1) << rbits);
+	long double denominator = (long double)(1ul << (rbits));
 	return -1.0l / denominator;
 }
 
@@ -67,7 +67,7 @@ long double value_minneg_fixpnt() {
 template<size_t nbits, size_t rbits, bool arithmetic>
 void ReportFixedPointRanges(std::ostream& ostr = std::cout) {
 	using namespace std;
-	ostr << "fixpnt<" << nbits << ", " << rbits << ", " << typeid(arithmetic).name() << "> : "
+	ostr << "fixpnt<" << nbits << ", " << rbits << ", " << (arithmetic ? "Modulo" : "Saturating") << "> : "
 		<< value_maxneg_fixpnt<nbits, rbits, arithmetic>() << " "
 		<< value_minneg_fixpnt<nbits, rbits, arithmetic>() << " "
 		<< "0 "

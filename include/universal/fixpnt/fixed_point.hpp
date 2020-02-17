@@ -11,6 +11,7 @@
 #include <regex>
 #include <vector>
 #include <map>
+#include <cassert>
 
 /*
 The fixed-point arithmetic can be configured to:
@@ -26,7 +27,7 @@ operators will be much faster than saturation.
 Compile-time configuration flags are used to select the exception mode.
 Run-time configuration is used to select modular vs saturation arithmetic.
 */
-#include "./fixpnt_exceptions.hpp"  // you need to exception types defined, but you may not throw them
+#include "./fixpnt_exceptions.hpp"  // you need the exception types defined, but you may not throw them
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
@@ -1305,9 +1306,9 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic>& va
 	if (value.sign()) ss << '-';
 	impl::decimal partial, multiplier;
 	fixpnt<nbits, rbits> number;
-
+	number = value.sign() ? twos_complement(value) : value;
+	if (nbits > rbits) {
 		// convert the fixed point by first handling the integer part
-		number = value.sign() ? twos_complement(value) : value;
 		multiplier.setdigit(1);
 		// convert fixpnt to decimal by adding and doubling multipliers
 		for (unsigned i = rbits; i < nbits; ++i) {
@@ -1320,13 +1321,17 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic>& va
 		for (impl::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
 			ss << (int)*rit;
 		}
-
+	}
+	else {
+		ss << '0';
+	}
 
 	if (rbits > 0) {
 		// and secondly the fraction part
 		impl::decimal range, discretizationLevels, step;
 		range.setdigit(1);
 		range.shiftLeft(rbits);  // create the decimal range we are discretizing
+		assert(rbits < 64);
 		convert_to_decimal((0x1 << rbits), discretizationLevels); // TODO: limits rbits to 64 bits
 		step = div(range, discretizationLevels);
 		partial.setzero();
@@ -1340,13 +1345,19 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic>& va
 		}
 		impl::mul(partial, step);
 		ss << ".";
-		int digitsWritten = 0;
+		// leading 0s will cause the partial to be represented incorrectly
+		// if we simply convert it to digits.
+		// The partial represents the parts in the range, so we can deduce
+		// the number of leading zeros by comparing to the length of range
+		size_t nrLeadingZeros = range.size() - partial.size() - 1;
+		for (size_t i = 0; i < nrLeadingZeros; ++i) ss << '0';
+		size_t digitsWritten = nrLeadingZeros;
 		for (impl::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
 			ss << (int)*rit;
 			++digitsWritten;
 		}
-		if (digitsWritten < rbits) {
-			for (int i = digitsWritten; i < rbits; ++i) {
+		if (digitsWritten < rbits) { // deal with trailing 0s
+			for (size_t i = digitsWritten; i < rbits; ++i) {
 				ss << '0';
 			}
 		}
