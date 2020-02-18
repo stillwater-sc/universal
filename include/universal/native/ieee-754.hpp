@@ -7,6 +7,7 @@
 #include <sstream>
 #include <iomanip>
 #include <cmath>    // for frexpf/frexp/frexpl  float/double/long double fraction/exponent extraction
+#include <limits>
 
 namespace sw {
 namespace unum {
