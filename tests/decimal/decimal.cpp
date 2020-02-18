@@ -271,7 +271,7 @@ void findLargestMultipleTest() {
 		std::cout << fails << " FAILURES in findLargestMultipleTest"  << std::endl;
 	}
 }
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 1
 
 int main()
@@ -307,31 +307,39 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
 
-	// can we create a binary shift operator?
-	d1 = 1;
-	for (int i = 0; i < 10; ++i) {
-		cout << d1 << endl;
-		d1 += d1;
-	}
-	cout << (1 << 9) << endl;
-
 #else
 	std::cout << "Decimal Arithmetic verfication" << std::endl;
 
-	long rangeBound = 1000;
+	long rangeBound = 100;
+	cout << "quick sample test with range bound: " << rangeBound << endl;
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
 
+	/* this currently fails
+	cout << "big number computation\n";
+	decimal a, b, c, d, e, f;
+	a.parse("1234567890");
+	b.parse("5432109876");
+	c = (1 << 5); cout << c << endl;
+	d = a * b * c; cout << d << endl;
+	e = d / a;  cout << e << endl;
+	f = e / b; cout << f << endl;
+	if (c != f) {
+		++nrOfFailedTestCases;
+		cout << "FAIL: " << c << " is not equal to " << f << endl;
+	}
+	*/
 
 #ifdef STRESS_TESTING
 
-	long rangeBound = (1 << 9);
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
+	long stressRangeBound = (1 << 9);
+	cout << "stress testing with range bound: " << stressRangeBound << endl;
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", stressRangeBound, bReportIndividualTestCases), "decimal", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", stressRangeBound, bReportIndividualTestCases), "decimal", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", stressRangeBound, bReportIndividualTestCases), "decimal", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", stressRangeBound, bReportIndividualTestCases), "decimal", "division");
 
 #endif // STRESS_TESTING
 
