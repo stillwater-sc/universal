@@ -65,6 +65,20 @@ void GenerateFixedPointComparisonTable(std::string& tag) {
 	}
 }
 
+template<size_t nbits, size_t rbits>
+void TestDenormalizedNumberConversions() {
+	using namespace std;
+	using namespace sw::unum;
+
+	fixpnt<nbits, rbits> a;
+	float eps = 0.0625;
+	for (int i = 0; i < 16; ++i) {
+		float f = i * eps;
+		a = -f;
+		cout << setw(10) << f << ' ' << to_binary(f) << ' ' << to_binary(a) << ' ' << a << endl;
+	}
+}
+
 /*
 void GenerateFixedPointRangeTable() {
 	using namespace std;
@@ -178,7 +192,7 @@ void GenerateFixedPointRangeTable() {
 }
 */
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -193,32 +207,11 @@ try {
 
 #if MANUAL_TESTING
 
-	/*
-	fixpnt<12, 0, Modular> : -2048 -1 0 1 2047
-	fixpnt<12, 1, Modular> : -1024.0 -0.5 0 0.5 1023.5
-	
-	FAIL = -0.5 did not convert to - 1 instead it yielded                  2047  raw 011111111111.
-	FAIL = -0.499999 did not convert to                    0 instead it yielded                  1024  raw 010000000000.
-		conversion:  posit<12, 0> FAIL 2 failed test cases
-	*/
 	ReportFixedPointRanges<12, 0, Modular>(cout);
 
 	//ReportFixedPointRanges<12, 1, Modular>(cout);
 	//GenerateFixedPointValues<12, 1>();
-
-	fixpnt<12, 0> a;
-	float eps = 0.0625;
-	for (int i = 0; i < 32; ++i) {
-		float f = i * eps;
-		a = -f;
-		cout << setw(10) << f << ' ' << to_binary(f) << ' ' << to_binary(a) << ' ' << a << endl;
-	}
-	ReportTestResult(ValidateModularConversion<12, 0>(tag, bReportIndividualTestCases), tag, "posit<12,0>");
-
-	return 0;
-
-
-
+	
 	//GenerateFixedPointRangeTable();
 
 	//cout << "quire<512,240>\n";
@@ -242,11 +235,7 @@ try {
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 4>(tag, bReportIndividualTestCases), tag, "posit<4,4>");
 
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<8, 8>(tag, bReportIndividualTestCases), tag, "posit<8,8>");
-	/*
-FAIL =                -0.25 did not convert to                 -0.5 instead it yielded                1023.5  raw 01111111111.1
-FAIL =                -0.25 did not convert to                    0 instead it yielded                   512  raw 01000000000.0
-conversion:  posit<12,1> FAIL 2 failed test cases
-	 */
+
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<12, 1>(tag, bReportIndividualTestCases), tag, "posit<12,1>");
 
 #if STRESS_TESTING
@@ -263,7 +252,7 @@ conversion:  posit<12,1> FAIL 2 failed test cases
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 1>(tag, bReportIndividualTestCases), tag, "posit<4,1>");
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 2>(tag, bReportIndividualTestCases), tag, "posit<4,2>");
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 3>(tag, bReportIndividualTestCases), tag, "posit<4,3>");
-	// nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 4>(tag, bReportIndividualTestCases), tag, "posit<4,4>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<4, 4>(tag, bReportIndividualTestCases), tag, "posit<4,4>");
 
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<8, 0>(tag, bReportIndividualTestCases), tag, "posit<8,0>");
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<8, 1>(tag, bReportIndividualTestCases), tag, "posit<8,1>");
@@ -273,14 +262,26 @@ conversion:  posit<12,1> FAIL 2 failed test cases
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<8, 5>(tag, bReportIndividualTestCases), tag, "posit<8,5>");
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<8, 6>(tag, bReportIndividualTestCases), tag, "posit<8,6>");
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<8, 7>(tag, bReportIndividualTestCases), tag, "posit<8,7>");
-	//nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<8, 8>(tag, bReportIndividualTestCases), tag, "posit<8,8>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<8, 8>(tag, bReportIndividualTestCases), tag, "posit<8,8>");
 
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<12, 0>(tag, bReportIndividualTestCases), tag, "posit<12,0>");
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<12, 1>(tag, bReportIndividualTestCases), tag, "posit<12,1>");
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<12, 2>(tag, bReportIndividualTestCases), tag, "posit<12,2>");
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<12, 3>(tag, bReportIndividualTestCases), tag, "posit<12,3>");
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<12, 4>(tag, bReportIndividualTestCases), tag, "posit<12,4>");
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<12, 6>(tag, bReportIndividualTestCases), tag, "posit<12,6>");
 	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<12, 8>(tag, bReportIndividualTestCases), tag, "posit<12,8>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<12, 10>(tag, bReportIndividualTestCases), tag, "posit<12,10>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<12, 12>(tag, bReportIndividualTestCases), tag, "posit<12,12>");
+
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<16, 0>(tag, bReportIndividualTestCases), tag, "posit<16,0>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<16, 1>(tag, bReportIndividualTestCases), tag, "posit<16,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<16, 2>(tag, bReportIndividualTestCases), tag, "posit<16,2>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<16, 3>(tag, bReportIndividualTestCases), tag, "posit<16,3>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<16, 4>(tag, bReportIndividualTestCases), tag, "posit<16,4>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<16, 8>(tag, bReportIndividualTestCases), tag, "posit<16,8>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<16, 12>(tag, bReportIndividualTestCases), tag, "posit<16,12>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularConversion<16, 16>(tag, bReportIndividualTestCases), tag, "posit<16,16>");
 
 #if STRESS_TESTING
 

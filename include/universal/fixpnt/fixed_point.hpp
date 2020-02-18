@@ -332,17 +332,10 @@ public:
 		}
 		float_decoder decoder;
 		decoder.f = rhs;
-		uint32_t raw = (1 << 23) | decoder.parts.fraction;
+		uint32_t raw = (1 << 23) | decoder.parts.fraction; // TODO: this only works for normalized numbers 1.###, need a test for denorm
 		int radixPoint = 23 - (decoder.parts.exponent - 127); // move radix point to the right if scale > 0, left if scale < 0
 		// our fixed-point has its radixPoint at rbits
 		int shiftRight = radixPoint - int(rbits);
-		raw = (decoder.parts.sign == 0) ? raw : (~raw + 1); // map to two's complement
-		/*
-		if (decoder.parts.sign == 1) {
-			uint32_t mask = ~(0xFFFFFFFF >> (32 - shiftRight));
-			raw = (~raw + 1) & mask; // 2's complement with invalid bits masked
-		}
-		*/
 		// do we need to round?
 		if (shiftRight > 0) {
 			// yes, round the raw bits
@@ -359,9 +352,7 @@ public:
 			mask = ~mask;
 			bool sticky = (mask & raw);
 			
-			std::cout << to_binary(raw) << ' ';
 			raw >>= shiftRight;  // shift out the bits we are rounding away
-			std::cout << to_binary(raw) << std::endl;
 			bool lsb = (raw & 0x1);
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
@@ -375,6 +366,7 @@ public:
 				if (round || sticky) ++raw;
 			}
 		}
+		raw = (decoder.parts.sign == 0) ? raw : (~raw + 1); // map to two's complement
 		set_raw_bits(raw);
 		return *this;
 	}
@@ -389,13 +381,6 @@ public:
 		int radixPoint = 52 - (int(decoder.parts.exponent) - 1023);  // move radix point to the right if scale > 0, left if scale < 0
 		// our fixed-point has its radixPoint at rbits
 		int shiftRight = radixPoint - int(rbits);
-		raw = (decoder.parts.sign == 0) ? raw : (~raw + 1); // map to two's complement
-		/*
-		if (decoder.parts.sign == 1) {
-			uint64_t mask = ~(0xFFFFFFFFFFFFFFFF >> (64 - shiftRight));
-			raw = (~raw + 1) & mask; // 2's complement with invalid bits masked
-		}
-		*/
 		// do we need to round?
 		if (shiftRight > 0) {
 			// yes, round the raw bits
@@ -412,9 +397,7 @@ public:
 			mask = ~mask;
 			bool sticky = (mask & raw);
 
-			std::cout << to_binary(raw) << ' ';
 			raw >>= shiftRight;  // shift out the bits we are rounding away
-			std::cout << to_binary(raw) << std::endl;
 			bool lsb = (raw & 0x1);
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
@@ -428,6 +411,7 @@ public:
 				if (round || sticky) ++raw;
 			}
 		}
+		raw = (decoder.parts.sign == 0) ? raw : (~raw + 1); // map to two's complement
 		set_raw_bits(raw);
 		return *this;
 	}
@@ -746,7 +730,7 @@ public:
 		return true;
 	}
 	inline bool sign() const { return at(nbits - 1); }
-	inline bool at(unsigned int i) const {
+	inline bool at(unsigned i) const {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
 			uint8_t mask = 1 << (i % 8);
