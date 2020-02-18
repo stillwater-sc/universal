@@ -65,6 +65,7 @@ void GenerateFixedPointComparisonTable(std::string& tag) {
 	}
 }
 
+/*
 void GenerateFixedPointRangeTable() {
 	using namespace std;
 	using namespace sw::unum;
@@ -175,7 +176,7 @@ void GenerateFixedPointRangeTable() {
 	ReportFixedPointRanges<20, 19, Modular>(cout);
 	ReportFixedPointRanges<20, 20, Modular>(cout);
 }
-
+*/
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -191,6 +192,32 @@ try {
 	std::string tag = "conversion: ";
 
 #if MANUAL_TESTING
+
+	/*
+	fixpnt<12, 0, Modular> : -2048 -1 0 1 2047
+	fixpnt<12, 1, Modular> : -1024.0 -0.5 0 0.5 1023.5
+	
+	FAIL = -0.5 did not convert to - 1 instead it yielded                  2047  raw 011111111111.
+	FAIL = -0.499999 did not convert to                    0 instead it yielded                  1024  raw 010000000000.
+		conversion:  posit<12, 0> FAIL 2 failed test cases
+	*/
+	ReportFixedPointRanges<12, 0, Modular>(cout);
+
+	//ReportFixedPointRanges<12, 1, Modular>(cout);
+	//GenerateFixedPointValues<12, 1>();
+
+	fixpnt<12, 0> a;
+	float eps = 0.0625;
+	for (int i = 0; i < 32; ++i) {
+		float f = i * eps;
+		a = -f;
+		cout << setw(10) << f << ' ' << to_binary(f) << ' ' << to_binary(a) << ' ' << a << endl;
+	}
+	ReportTestResult(ValidateModularConversion<12, 0>(tag, bReportIndividualTestCases), tag, "posit<12,0>");
+
+	return 0;
+
+
 
 	//GenerateFixedPointRangeTable();
 
