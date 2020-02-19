@@ -231,6 +231,7 @@ inline void convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic>& resul
 template<size_t _nbits, size_t _rbits, bool arithmetic = Modular>
 class fixpnt {
 public:
+	static_assert(_nbits >= _rbits, "fixpnt configuration error: nbits must be greater or equal to rbits");
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t rbits = _rbits;
 	static constexpr unsigned nrBytes = (1 + ((nbits - 1) / 8));
@@ -652,7 +653,7 @@ public:
 	// modifiers
 	inline void clear() { std::memset(&b, 0, nrBytes); }
 	inline void setzero() { clear(); }
-	inline void set(unsigned int i) {
+	inline void set(size_t i) {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
 			uint8_t mask = 1 << (i % 8);
@@ -661,7 +662,7 @@ public:
 		}
 		throw "fixpnt bit index out of bounds";
 	}
-	inline void reset(unsigned int i) {
+	inline void reset(size_t i) {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
 			uint8_t mask = ~(1 << (i % 8));
@@ -670,7 +671,7 @@ public:
 		}
 		throw "fixpnt bit index out of bounds";
 	}
-	inline void set(unsigned i, bool v) {
+	inline void set(size_t i, bool v) {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
 			uint8_t null = ~(1 << (i % 8));
@@ -681,12 +682,12 @@ public:
 		}
 		throw "fixpnt bit index out of bounds";
 	}
-	inline void setbyte(unsigned i, uint8_t value) {
+	inline void setbyte(size_t i, uint8_t value) {
 		if (i < nrBytes) { b[i] = value; return; }
 		throw fixpnt_byte_index_out_of_bounds{};
 	}
 	// use un-interpreted raw bits to set the bits of the fixpnt
-	inline void set_raw_bits(unsigned long long value) {
+	inline void set_raw_bits(size_t value) {
 		clear();
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			b[i] = value & 0xFF;
@@ -730,7 +731,7 @@ public:
 		return true;
 	}
 	inline bool sign() const { return at(nbits - 1); }
-	inline bool at(unsigned i) const {
+	inline bool at(size_t i) const {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
 			uint8_t mask = 1 << (i % 8);
@@ -802,10 +803,65 @@ protected:
 		return ull;
 	}
 	float to_float() const {
-		return (float)to_long_double();
+		// minimum positive normal value of a single precision float == 2^-126
+		// float minpos_normal = 1.1754943508222875079687365372222e-38
+		// minimum positive(subnormal) value is 2^-149
+		// float minpos_subnormal = 1.4012984643248170709237295832899e-45
+		static_assert(rbits <= 149, "to_float: fixpnt fraction is too small to represent with native float");
+		float multiplier = 0;
+		if (rbits > 126) { // value is a subnormal number
+			multiplier = 1.4012984643248170709237295832899e-45;
+			for (int i = 0; i < 149 - rbits; ++i) {
+				multiplier *= 2.0f; // these are error free multiplies
+			}
+		}
+		else {
+			// the value is a normal number
+			multiplier = 1.1754943508222875079687365372222e-38;
+			for (int i = 0; i < 126 - rbits; ++i) {
+				multiplier *= 2.0f; // these are error free multiplies
+			}
+		}
+		// you pop out here with the starting bit value
+		fixpnt<nbits, rbits> raw = (sign() ? twos_complement(*this) : *this);
+		// construct the value
+		float value = 0;
+		for (size_t i = 0; i < nbits; ++i) {
+			if (raw.at(i)) value += multiplier;
+			multiplier *= 2.0; // these are error free multiplies
+		}
+		return (sign() ? -value : value);
 	}
 	double to_double() const {
-		return (double)to_long_double();
+		// minimum positive normal value of a double precision float == 2^-1022
+		// double dbl_minpos_normal = 2.2250738585072013830902327173324e-308;
+		// minimum positive subnormal value of a double precision float == 2 ^ -1074
+		// double dbl_minpos_subnormal = 4.940656458412465441765687928622e-324;
+		static_assert(rbits <= 1074, "to_double: fixpnt fraction is too small to represent with native double");
+		double multiplier = 0;
+		if (rbits > 1022) { // value is a subnormal number
+			multiplier = 4.940656458412465441765687928622e-324;
+			for (int i = 0; i < 1074 - rbits; ++i) {
+				multiplier *= 2.0f; // these are error free multiplies
+			}
+		}
+		else {
+			// the value is a normal number
+			multiplier = 2.2250738585072013830902327173324e-308;
+			for (int i = 0; i < 1022 - rbits; ++i) {
+				multiplier *= 2.0f; // these are error free multiplies
+			}
+		}
+		// you pop out here with the starting bit value
+		fixpnt<nbits, rbits> raw = (sign() ? twos_complement(*this) : *this);
+		// construct the value
+		double value = 0;
+		for (size_t i = 0; i < nbits; ++i) {
+			if (raw.at(i)) value += multiplier;
+			multiplier *= 2.0; // these are error free multiplies
+		}
+		return (sign() ? -value : value);
+
 	}
 	long double to_long_double() const {  // TODO : this is not a valid implementation
 		int64_t value = 0;

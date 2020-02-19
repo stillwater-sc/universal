@@ -478,6 +478,22 @@ int VerifyModularDivision(std::string tag, bool bReportIndividualTestCases) {
 	return nrOfFailedTests;
 }
 
+//////////////////////////////////////////////////////////////////////////
+// enumeration utility functions
+
+
+template<size_t nbits, size_t rbits>
+void GenerateFixedPointValues(std::ostream& ostr = std::cout) {
+	constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
+	sw::unum::fixpnt<nbits, rbits> a;
+	ostr << "  fixpnt<" << nbits << "," << rbits << ">\n";
+	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
+		a.set_raw_bits(i);
+		float f = float(a);
+		ostr << to_binary(a) << " | " << to_triple(a) << " | " << std::setw(15) << a << " | " << std::setw(15) << f << std::endl;
+	}
+}
+
 } // namespace unum
 } // namespace sw
 

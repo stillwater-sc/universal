@@ -47,7 +47,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "modular multiplication failed: ";
@@ -75,6 +75,7 @@ try {
 	cout << "Fixed-point modular multiplication validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "multiplication");
+	/*
 	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "multiplication");
@@ -83,6 +84,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "multiplication");
+	*/
 
 #if STRESS_TESTING
 
