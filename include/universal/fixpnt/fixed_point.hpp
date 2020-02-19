@@ -811,14 +811,14 @@ protected:
 		float multiplier = 0;
 		if (rbits > 126) { // value is a subnormal number
 			multiplier = 1.4012984643248170709237295832899e-45;
-			for (int i = 0; i < 149 - rbits; ++i) {
+			for (size_t i = 0; i < 149 - rbits; ++i) {
 				multiplier *= 2.0f; // these are error free multiplies
 			}
 		}
 		else {
 			// the value is a normal number
 			multiplier = 1.1754943508222875079687365372222e-38;
-			for (int i = 0; i < 126 - rbits; ++i) {
+			for (size_t i = 0; i < 126 - rbits; ++i) {
 				multiplier *= 2.0f; // these are error free multiplies
 			}
 		}
@@ -841,14 +841,14 @@ protected:
 		double multiplier = 0;
 		if (rbits > 1022) { // value is a subnormal number
 			multiplier = 4.940656458412465441765687928622e-324;
-			for (int i = 0; i < 1074 - rbits; ++i) {
+			for (size_t i = 0; i < 1074 - rbits; ++i) {
 				multiplier *= 2.0f; // these are error free multiplies
 			}
 		}
 		else {
 			// the value is a normal number
 			multiplier = 2.2250738585072013830902327173324e-308;
-			for (int i = 0; i < 1022 - rbits; ++i) {
+			for (size_t i = 0; i < 1022 - rbits; ++i) {
 				multiplier *= 2.0f; // these are error free multiplies
 			}
 		}
@@ -866,12 +866,12 @@ protected:
 	long double to_long_double() const {  // TODO : this is not a valid implementation
 		int64_t value = 0;
 		uint64_t mask = 1;
-		for (unsigned i = 0; i < nbits; ++i) {
+		for (size_t i = 0; i < nbits; ++i) {
 			value |= at(i) ? mask : 0;
 			mask <<= 1;
 		}
 		if (sign()) { // sign extend
-			for (unsigned i = nbits; i < 64; ++i) {
+			for (size_t i = nbits; i < 64; ++i) {
 				value |= mask;
 				mask <<= 1;
 			}
