@@ -1353,7 +1353,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic>& va
 		ss << '0';
 		if (rbits > 0) {
 			ss << '.';
-			for (int i = 0; i < rbits; ++i) {
+			for (size_t i = 0; i < rbits; ++i) {
 				ss << '0';
 			}
 		}

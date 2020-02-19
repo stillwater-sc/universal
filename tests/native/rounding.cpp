@@ -22,19 +22,6 @@
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t rbits, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
-	Ty ref;
-	sw::unum::fixpnt<nbits, rbits> a, b, cref, result;
-	a = _a;
-	b = _b;
-	result = a + b;
-	ref = _a + _b;
-	cref = ref;
-	std::streamsize oldPrecision = std::cout.precision();
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << a << " + " << b << " = " << result << " (reference: " << cref << ")   " ;
-	std::cout << (cref == result ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
 void setAccu(uint8_t accu[4], uint8_t b3, uint8_t b2, uint8_t b1, uint8_t b0) {
@@ -59,7 +46,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "modular assignment failed: ";
