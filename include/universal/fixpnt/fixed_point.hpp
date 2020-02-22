@@ -553,8 +553,7 @@ public:
 		}
 		*/
 		sum = *this;
-		addBytes(sum.b, rhs.b, nrBytes);
-
+		addBytes<nbits>(sum.b, rhs.b);
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		sum.b[MS_BYTE] = MS_BYTE_MASK & sum.b[MS_BYTE];
 		//if (carry) throw "overflow";
@@ -567,14 +566,11 @@ public:
 	}
 	fixpnt& operator*=(const fixpnt& rhs) {
 		// TODO: how are we going to deal with overflow?
-		uint8_t accumulator[mulBytes], multiplicant[mulBytes];
-		for (unsigned i = 0; i < N; ++i) {
+		uint8_t accumulator[mulBytes];
+		for (unsigned i = 0; i < mulBytes; ++i) {
 			accumulator[i] = uint8_t(0);
-			accumulator[i + nrBytes] = uint8_t(0);
-			multiplicant[i] = rhs.b[i];
-			multiplicant[i + nrBytes] = (rhs.sign() ? uint8_t(0xFF) : uint8_t(0x00)); // sign extend if needed
 		}
-		multiplyBytes(accumulator, multiplicant, mulBytes);
+		multiplyBytes<nbits>(this->b, rhs.b, accumulator); // accumulator = *this * rhs
 
 		// if rbit >= 1 we need to round
 		// accumulator is a 2*nbits, 2*rbits representation
@@ -586,16 +582,16 @@ public:
 		}
 		// shift the radix point back
 		shiftRight(accumulator, mulBytes, rbits);
-		displayByteArray("accu", accumulator, mulBytes);
+		std::cout << "accu: " << to_hex<2 * nbits,uint8_t>(accumulator) << std::endl;
 		if (roundingDecision > 0) {
 			uint8_t plusOne[mulBytes];
 			plusOne[0] = uint8_t(0x01);
 			for (unsigned i = 1; i < mulBytes; ++i) {
 				plusOne[i] = uint8_t(0);
 			}
-			addBytes(accumulator, plusOne, mulBytes);
+			addBytes<2*nbits, uint8_t>(accumulator, plusOne);
 		}
-		displayByteArray("accu", accumulator, mulBytes);
+		std::cout << "accu: " << to_hex<2 * nbits, uint8_t>(accumulator) << std::endl;
 		clear();
 		// copy the value in
 		for (unsigned i = 0; i < nrBytes; ++i) {
