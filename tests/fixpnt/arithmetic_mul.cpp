@@ -47,12 +47,19 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "modular multiplication failed: ";
 
 #if MANUAL_TESTING
+
+	fixpnt<8, 1> a, b, c;
+	a = 0.5f;
+	b = a;
+	c = a * b;
+	cout << c << endl;
+	return 0;
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 1>(0.5f, 0.5f);

@@ -66,18 +66,36 @@ void displayByteArray(std::string tag, const uint8_t byteArray[], unsigned N) {
 	std::cout << std::endl;
 }
 
-// byte arithmetic for mul and div
-void addBytes(uint8_t accumulator[], uint8_t y[], unsigned mulBytes) {
+// addition of two byte arrays: semanticly: a = a + b
+void addBytes(uint8_t a[], const uint8_t b[], unsigned N) {
 	bool carry = false;
-	for (unsigned i = 0; i < mulBytes; ++i) {
+	for (unsigned i = 0; i < N; ++i) {
 		// cast up so we can test for overflow
-		uint16_t l = uint16_t(accumulator[i]);
-		uint16_t r = uint16_t(y[i]);
+		uint16_t l = uint16_t(a[i]);
+		uint16_t r = uint16_t(b[i]);
 		uint16_t s = l + r + (carry ? uint16_t(0x0001) : uint16_t(0x0000));
 		carry = (s > 255 ? true : false);
-		accumulator[i] = (uint8_t)(s & 0xFF);
+		a[i] = (uint8_t)(s & 0xFF);
 	}
 }
+
+#ifdef later
+// multiply two byte arrays, a * b, return unrounded result
+void multiplyBytes(uint8_t a[], uint8_t b[], unsigned N, uint8_t c[], unsigned M) {
+	for (unsigned i = 0; i < nbits; ++i) {
+		uint8_t byte = b[i / 8];
+		uint8_t mask = 1 << (i % 8);
+		if (byte & mask) { // check the multiplication bit
+			addBytes(accumulator, multiplicant, mulBytes);
+		}
+		shiftLeft(multiplicant, mulBytes);
+	}
+	// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+	accumulator[mulBytes - 1] = MS_BYTE_MASK & accumulator[mulBytes - 1];
+
+	displayByteArray("accu", accumulator, mulBytes);
+}
+#endif
 
 // shift left by one bit
 void shiftLeft(uint8_t multiplicant[], unsigned N) {

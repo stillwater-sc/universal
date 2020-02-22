@@ -121,9 +121,11 @@ inline int scale(const fixpnt<nbits, rbits, arithmetic>& i) {
 // maximum value of the fixed point configuration
 // what is maxpos when all bits are fraction bits?
 //   still #.01111...11111 as the rbits simply define the range this value is scaled by
-// when rbits > nbits: is that a valid format? yes, the rbits simply define the range
+// when rbits > nbits: is that a valid format? By definition, it is not:
+// a compile time assert has been added to enforce.
 template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 fixpnt<nbits, rbits, arithmetic> maxpos_fixpnt() {
+	static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
 	// maxpos = 01111....1111
 	fixpnt<nbits, rbits, arithmetic> maxpos;
 	maxpos.flip();
@@ -134,6 +136,7 @@ fixpnt<nbits, rbits, arithmetic> maxpos_fixpnt() {
 // maximum negative value of the fixed point configuration
 template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 fixpnt<nbits, rbits, arithmetic> maxneg_fixpnt() {
+	static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
 	// maxneg = 10000....000
 	fixpnt<nbits, rbits, arithmetic> maxneg;
 	maxneg.set(nbits - 1, true);
@@ -143,6 +146,7 @@ fixpnt<nbits, rbits, arithmetic> maxneg_fixpnt() {
 // minimum positive value of the fixed point configuration
 template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 fixpnt<nbits, rbits, arithmetic> minpos_fixpnt() {
+	static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
 	// minpos = 0000....00001
 	fixpnt<nbits, rbits, arithmetic> minpos;
 	minpos.set(0, true);
@@ -152,6 +156,7 @@ fixpnt<nbits, rbits, arithmetic> minpos_fixpnt() {
 // minimum positive value of the fixed point configuration
 template<size_t nbits, size_t rbits, bool arithmetic = Modular>
 fixpnt<nbits, rbits, arithmetic> minneg_fixpnt() {
+	static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
 	// minpos = 11111....11111
 	fixpnt<nbits, rbits, arithmetic> minneg;
 	minneg.flip();
@@ -536,6 +541,7 @@ public:
 	// arithmetic operators
 	fixpnt& operator+=(const fixpnt& rhs) {
 		fixpnt sum;
+		/*
 		bool carry = false;
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			// cast up so we can test for overflow
@@ -545,6 +551,10 @@ public:
 			carry = (s > 255 ? true : false);
 			sum.b[i] = (uint8_t)(s & 0xFF);
 		}
+		*/
+		sum = *this;
+		addBytes(sum.b, rhs.b, nrBytes);
+
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		sum.b[MS_BYTE] = MS_BYTE_MASK & sum.b[MS_BYTE];
 		//if (carry) throw "overflow";
@@ -558,23 +568,13 @@ public:
 	fixpnt& operator*=(const fixpnt& rhs) {
 		// TODO: how are we going to deal with overflow?
 		uint8_t accumulator[mulBytes], multiplicant[mulBytes];
-		for (unsigned i = 0; i < nrBytes; ++i) {
-			accumulator[i]            = uint8_t(0);
-			accumulator[i + nrBytes]  = uint8_t(0);
-			multiplicant[i]           = rhs.b[i];
+		for (unsigned i = 0; i < N; ++i) {
+			accumulator[i] = uint8_t(0);
+			accumulator[i + nrBytes] = uint8_t(0);
+			multiplicant[i] = rhs.b[i];
 			multiplicant[i + nrBytes] = (rhs.sign() ? uint8_t(0xFF) : uint8_t(0x00)); // sign extend if needed
 		}
-		for (unsigned i = 0; i < nbits; ++i) {
-			uint8_t byte = b[i / 8];
-			uint8_t mask = 1 << (i % 8);
-			if (byte & mask) { // check the multiplication bit
-				addBytes(accumulator, multiplicant, mulBytes);
-				// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-				accumulator[mulBytes - 1] = MS_BYTE_MASK & accumulator[mulBytes - 1];
-			}
-			shiftLeft(multiplicant, mulBytes);
-		}
-//		displayByteArray("accu", accumulator, mulBytes);
+		multiplyBytes(accumulator, multiplicant, mulBytes);
 
 		// if rbit >= 1 we need to round
 		// accumulator is a 2*nbits, 2*rbits representation
@@ -582,11 +582,11 @@ public:
 		int roundingDecision = 0;
 		if (rbits > 0) {		// capture rounding bits
 			roundingDecision = round(accumulator, mulBytes, int(rbits)-1);
-			//std::cout << (roundingDecision == 0 ? "tie" : (roundingDecision > 0 ? "up" : "down")) << std::endl;
+			std::cout << (roundingDecision == 0 ? "tie" : (roundingDecision > 0 ? "up" : "down")) << std::endl;
 		}
 		// shift the radix point back
 		shiftRight(accumulator, mulBytes, rbits);
-//		displayByteArray("accu", accumulator, mulBytes);
+		displayByteArray("accu", accumulator, mulBytes);
 		if (roundingDecision > 0) {
 			uint8_t plusOne[mulBytes];
 			plusOne[0] = uint8_t(0x01);
@@ -595,7 +595,7 @@ public:
 			}
 			addBytes(accumulator, plusOne, mulBytes);
 		}
-//		displayByteArray("accu", accumulator, mulBytes);
+		displayByteArray("accu", accumulator, mulBytes);
 		clear();
 		// copy the value in
 		for (unsigned i = 0; i < nrBytes; ++i) {

@@ -97,6 +97,12 @@ try {
 
 	cout << "Fixed-point modular addition validation" << endl;
 
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 0>(tag, bReportIndividualTestCases), "fixpnt<4,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 1>(tag, bReportIndividualTestCases), "fixpnt<4,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 2>(tag, bReportIndividualTestCases), "fixpnt<4,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 3>(tag, bReportIndividualTestCases), "fixpnt<4,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 4>(tag, bReportIndividualTestCases), "fixpnt<4,4>", "addition");
+
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "addition");
@@ -107,7 +113,17 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "addition");
 
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<11, 3>(tag, bReportIndividualTestCases), "fixpnt<11,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<11, 5>(tag, bReportIndividualTestCases), "fixpnt<11,5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<11, 7>(tag, bReportIndividualTestCases), "fixpnt<11,7>", "addition");
+
+
 #if STRESS_TESTING
+
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, 0>(tag, bReportIndividualTestCases), "fixpnt<12,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, 4>(tag, bReportIndividualTestCases), "fixpnt<12,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, 8>(tag, bReportIndividualTestCases), "fixpnt<12,8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, 12>(tag, bReportIndividualTestCases), "fixpnt<12,12>", "addition");
 
 #endif  // STRESS_TESTING
 
