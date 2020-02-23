@@ -87,6 +87,25 @@ try {
 
 	ShiftExamples();
 
+	blockBinaryNumber<37, uint8_t> a;
+	blockBinaryNumber<37, uint16_t> b;
+
+
+	a.set_raw_bits(0xAAAAAAAAAA);
+	b.set_raw_bits(0x5555555555);
+
+	a.set_raw_bits(0x1FFFFFFFF);
+	b.set_raw_bits(0x1FFFFFFFF);
+
+	cout << to_binary(a, true) << endl;
+	a <<= 9;
+	cout << to_binary(a, true) << endl;
+
+	cout << to_binary(b, true) << endl;
+	b <<= 17;
+	cout << to_binary(b, true) << endl;
+
+
 	//nrOfFailedTestCases += ReportTestResult(VerifyShiftLeft<4>("Manual Testing", true), "array<4,1>", "addition");
 	//nrOfFailedTestCases += ReportTestResult(VerifyShiftRight<4>("Manual Testing", true), "array<4,1>", "addition");
 

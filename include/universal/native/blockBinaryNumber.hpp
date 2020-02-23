@@ -132,22 +132,37 @@ public:
 	blockBinaryNumber& operator%=(const blockBinaryNumber& rhs) {
 		return *this;
 	}
-	blockBinaryNumber& operator<<=(const signed shift) {
-		// hardcoded shift by one bit
-		constexpr size_t msbMask = (StorageBlockType(1) << (bitsInBlock - 1));
-
-		int i = int(nrUnits - 1);
-		block[i] <<= 1;
-		if (nrUnits > 1) {
-			block[i] |= ((msbMask & block[i - 1]) >> (bitsInBlock - 1));
-			for (i = int(nrUnits - 2); i > 0; --i) {
-				block[i] <<= 1;
-				block[i] |= ((msbMask & block[i - 1]) >> (bitsInBlock - 1));
+	// shift left operator
+	blockBinaryNumber& operator<<=(long bitsToShift) {
+		signed blockShift = 0;
+		if (bitsToShift >= bitsInBlock) {
+			blockShift = bitsToShift / bitsInBlock;
+			for (signed i = signed(MSU); i >= blockShift; --i) {
+				block[i] = block[i - blockShift];
 			}
+			std::cout << "after block shift: " << to_binary(*this, true) << std::endl;
+
+			for (signed i = blockShift - 1; i >= 0; --i) {
+				block[i] = StorageBlockType(0);
+			}
+			std::cout << "after null: " << to_binary(*this, true) << std::endl;
+
+						// adjust the shift
+			bitsToShift -= (long long)(blockShift * bitsInBlock);
+			if (bitsToShift == 0) return *this;
 		}
-		block[0] <<= 1;
+		// construct the mask for the upper bits in the block that need to move to the higher word
+		StorageBlockType mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
+		for (unsigned i = MSU; i > 0; --i) {
+			block[i] <<= bitsToShift;
+			// mix in the bits from the right
+			StorageBlockType bits = (mask & block[i - 1]);
+			block[i] |= (bits >> (bitsInBlock - bitsToShift));
+		}
+		block[0] <<= bitsToShift;
 		return *this;
 	}
+	// shift right operator
 	blockBinaryNumber& operator>>=(long long bitsToShift) {
 		size_t blockShift = 0;
 		if (bitsToShift >= bitsInBlock) {
@@ -171,7 +186,7 @@ public:
 		for (unsigned i = 0; i < MSU; ++i) {
 			block[i] >>= bitsToShift;
 			// mix in the bits from the left
-			uint8_t bits = (mask & block[i + 1]);
+			StorageBlockType bits = (mask & block[i + 1]);
 			block[i] |= (bits << (bitsInBlock - bitsToShift));
 		}
 		block[MSU] >>= bitsToShift;
@@ -304,15 +319,15 @@ template<size_t nbits, typename StorageBlockType>
 void displayByteArray(std::string tag, const blockBinaryNumber<nbits, StorageBlockType>& storage) {
 	constexpr size_t bitsInBlock = sizeof(StorageBlockType) * 8;
 	constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInBlock);
-	constexpr size_t nibblesInStorageUnit = sizeof(StorageBlockType) * 2;
+	constexpr size_t nibblesInBlock = sizeof(StorageBlockType) * 2;
 	char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
 	};
 	std::cout << tag << "= 0x" << std::hex;
 	for (int i = int(nrUnits - 1); i >= 0; --i) {
-		StorageUnit mask = (0xFF00000000000000 >> (64 - bitsInBlock));
-		for (int j = int(nibblesInStorageUnit - 1); j >= 0; --j) {
+		StorageBlockType mask = (0xFF00000000000000 >> (64 - bitsInBlock));
+		for (int j = int(nibblesInBlock - 1); j >= 0; --j) {
 			unsigned nibble = (mask & storage[i]) >> (j * 4);
 			std::cout << hexChar[nibble];
 		}
@@ -326,35 +341,35 @@ void displayByteArray(std::string tag, const blockBinaryNumber<nbits, StorageBlo
 // precondition: 
 //   - a and b are in two's complement form
 //   - argument c can be 0 or a partial result from a chained multiplication
-template<size_t nbits, typename StorageUnit = uint8_t>
+template<size_t nbits, typename StorageBlockType = uint8_t>
 size_t multiplyBytes(const StorageUnit a[], const StorageUnit b[], StorageUnit accumulator[]) {
-	constexpr size_t bitsInBlock = sizeof(StorageUnit) * 8;
+	constexpr size_t bitsInBlock = sizeof(StorageBlockType) * 8;
 	constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInBlock);
 	constexpr size_t outbits = 2 * nbits;
 	constexpr size_t outUnits = 1 + ((outbits - 1) / bitsInBlock);
 	constexpr size_t MSU = nrUnits - 1; // Most Significant Unit
-	constexpr StorageUnit MSU_MASK = (StorageUnit(0xFFFFFFFFFFFFFFFFul) >> (outUnits * bitsInBlock - outbits));
+	constexpr StorageBlockType MSU_MASK = (StorageBlockType(0xFFFFFFFFFFFFFFFFul) >> (outUnits * bitsInBlock - outbits));
 
-	bool signExtend = sign<nbits, StorageUnit>(b);
+	bool signExtend = sign<nbits, StorageBlockType>(b);
 	uint8_t multiplicant[outUnits]; // map multiplicant to accumulator size
 	for (size_t i = 0; i < nrUnits; ++i) {
 		multiplicant[i] = b[i];
-		multiplicant[i + nrUnits] = (signExtend ? StorageUnit(0xFF) : StorageUnit(0x00)); // sign extend if needed
+		multiplicant[i + nrUnits] = (signExtend ? StorageBlockType(0xFF) : StorageBlockType(0x00)); // sign extend if needed
 	}
 
 	for (size_t i = 0; i < nbits; ++i) {
 		uint8_t byte = b[i / 8];
 		uint8_t mask = 1 << (i % 8);
 		if (byte & mask) { // check the multiplication bit
-			addBlockArray<outUnits, StorageUnit>(accumulator, multiplicant);
+			addBlockArray<outUnits, StorageBlockType>(accumulator, multiplicant);
 		}
-		shiftLeft<outbits, StorageUnit>(multiplicant);
+		shiftLeft<outbits, StorageBlockType>(multiplicant);
 	}
 	// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	accumulator[MSU] &= MSU_MASK;
 	std::cout << "accu: " << to_hex<outbits, uint8_t>(accumulator) << std::endl;
 
-	displayByteArray<outbits, StorageUnit>("accu", accumulator);
+	displayByteArray<outbits, StorageBlockType>("accu", accumulator);
 	return outbits;
 }
 #endif
