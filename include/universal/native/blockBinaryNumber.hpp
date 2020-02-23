@@ -50,9 +50,10 @@ namespace unum {
 	// generate the 2's complement of the block binary number
 	template<size_t nbits, typename StorageBlockType>
 	blockBinaryNumber<nbits, StorageBlockType> twosComplement(const blockBinaryNumber<nbits, StorageBlockType>& orig) {
-		blockBinaryNumber<nbits, StorageBlockType> twosC;
+		blockBinaryNumber<nbits, StorageBlockType> twosC(orig);
 		blockBinaryNumber<nbits, StorageBlockType> plusOne;
 		plusOne = 1;
+		twosC.flip();
 		twosC += plusOne;
 		return twosC;
 	}
@@ -105,6 +106,12 @@ public:
 		return *this;
 	}
 
+	// logic operators
+	blockBinaryNumber  operator~() {
+		blockBinaryNumber<nbits, StorageBlockType> complement(*this);
+		complement.flip();
+		return complement;
+	}
 	// arithmetic operators
 	blockBinaryNumber& operator+=(const blockBinaryNumber& rhs) {
 		bool carry = false;
@@ -121,7 +128,7 @@ public:
 		return *this;
 	}
 	blockBinaryNumber& operator-=(const blockBinaryNumber& rhs) {
-		return *this;
+		return operator+=(twosComplement(rhs));
 	}
 	blockBinaryNumber& operator*=(const blockBinaryNumber& rhs) {
 		return *this;
@@ -211,7 +218,15 @@ public:
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		block[MSU] &= MSU_MASK;
 	}
-
+	// in-place one's complement
+	inline blockBinaryNumber& flip() {
+		for (unsigned i = 0; i < nrUnits; ++i) {
+			block[i] = ~block[i];
+		}
+		// assert precondition of properly nulled leading non-bits
+		block[MSU] = block[MSU] & MSU_MASK; 
+		return *this;
+	}
 	// selectors
 	inline bool sign() const { return block[MSU] & MSU_MASK; }
 	inline bool at(size_t i) const {
@@ -232,16 +247,6 @@ public:
 		}
 		throw "nibble index out of bounds";
 	}
-	// test if the value is equal to a native signed integer type
-	inline bool isEqual(const blockBinaryNumber& lhs, const blockBinaryNumber& rhs) const {
-		for (size_t i = 0; i < nrUnits; ++i) {
-			if (lhs[i] != rhs[i]) {
-				return false;
-			}
-		}
-		return true;
-	}
-
 	// determine the rounding mode: -1 round down, 0 tie, 1 round up
 	int roundingMode(unsigned guardBitIndex) const {
 		int rv = 0;
@@ -250,7 +255,31 @@ public:
 	}
 private:
 	StorageBlockType block[nrUnits];
+
+	// integer - integer logic comparisons
+	template<size_t nnbits, typename B>
+	friend bool operator==(const blockBinaryNumber<nnbits, B>& lhs, const blockBinaryNumber<nnbits, B>& rhs);
+	template<size_t nnbits, typename B>
+	friend bool operator!=(const blockBinaryNumber<nnbits, B>& lhs, const blockBinaryNumber<nnbits, B>& rhs);
+
 };
+
+///////////////////////////////////////////////////////////////////////////////
+// logic operators
+
+template<size_t nnbits, typename B>
+inline bool operator==(const blockBinaryNumber<nnbits, B>& lhs, const blockBinaryNumber<nnbits, B>& rhs) {
+	for (size_t i = 0; i < lhs.nrUnits; ++i) {
+		if (lhs.block[i] != rhs.block[i]) {
+			return false;
+		}
+	}
+	return true;
+}
+template<size_t nnbits, typename B>
+inline bool operator!=(const blockBinaryNumber<nnbits, B>& lhs, const blockBinaryNumber<nnbits, B>& rhs) {
+	return !operator==(lhs, rhs);
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 // binary operators
