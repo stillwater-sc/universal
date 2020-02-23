@@ -78,7 +78,7 @@ public:
 
 	static constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInBlock);
 	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFF >> (64 - bitsInBlock));
-	static constexpr StorageBlockType maxBlockValue = (StorageBlockType(1) << bitsInBlock) - 1;
+	static constexpr StorageBlockType maxBlockValue = (uint64_t(1) << bitsInBlock) - 1;
 
 	static constexpr size_t MSU = nrUnits - 1; // Most Significant Unit
 	static constexpr size_t MSU_MASK = (StorageBlockType(0xFFFFFFFFFFFFFFFFul) >> (nrUnits * bitsInBlock - nbits));
@@ -134,6 +134,7 @@ public:
 	}
 	// shift left operator
 	blockBinaryNumber& operator<<=(long bitsToShift) {
+		if (bitsToShift < 0) return operator>>=(-bitsToShift);
 		signed blockShift = 0;
 		if (bitsToShift >= bitsInBlock) {
 			blockShift = bitsToShift / bitsInBlock;
@@ -148,7 +149,7 @@ public:
 			std::cout << "after null: " << to_binary(*this, true) << std::endl;
 
 						// adjust the shift
-			bitsToShift -= (long long)(blockShift * bitsInBlock);
+			bitsToShift -= (long)(blockShift * bitsInBlock);
 			if (bitsToShift == 0) return *this;
 		}
 		// construct the mask for the upper bits in the block that need to move to the higher word
@@ -163,7 +164,8 @@ public:
 		return *this;
 	}
 	// shift right operator
-	blockBinaryNumber& operator>>=(long long bitsToShift) {
+	blockBinaryNumber& operator>>=(long bitsToShift) {
+		if (bitsToShift < 0) return operator<<=(-bitsToShift);
 		size_t blockShift = 0;
 		if (bitsToShift >= bitsInBlock) {
 			blockShift = bitsToShift / bitsInBlock;
@@ -178,7 +180,7 @@ public:
 //			std::cout << "after null: " << to_binary(*this, true) << std::endl;
 
 			// adjust the shift
-			bitsToShift -= (long long)(blockShift * bitsInBlock);
+			bitsToShift -= (long)(blockShift * bitsInBlock);
 			if (bitsToShift == 0) return *this;
 		}
 		StorageBlockType mask = 0xFFFFFFFFFFFFFFFF >> (64 - bitsInBlock);
