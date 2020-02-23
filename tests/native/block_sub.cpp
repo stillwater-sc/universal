@@ -121,13 +121,13 @@ try {
 
 	cout << "block subtraction validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint8_t>("Manual Testing", true), "uint8_t<8>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint16_t>("Manual Testing", true), "uint16_t<8>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint32_t>("Manual Testing", true), "uint32_t<8>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint8_t>(tag, bReportIndividualTestCases), "uint8_t<8>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint16_t>(tag, bReportIndividualTestCases), "uint16_t<8>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint32_t>(tag, bReportIndividualTestCases), "uint32_t<8>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint8_t>("Manual Testing", true), "uint8_t<12>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint16_t>("Manual Testing", true), "uint16_t<12>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint32_t>("Manual Testing", true), "uint32_t<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint8_t>(tag, bReportIndividualTestCases), "uint8_t<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint16_t>(tag, bReportIndividualTestCases), "uint16_t<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint32_t>(tag, bReportIndividualTestCases), "uint32_t<12>", "subtraction");
 
 #if STRESS_TESTING
 

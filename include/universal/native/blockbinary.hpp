@@ -142,8 +142,9 @@ public:
 	// shift left operator
 	blockbinary& operator<<=(long bitsToShift) {
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
+		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
 		signed blockShift = 0;
-		if (bitsToShift >= bitsInBlock) {
+		if (bitsToShift >= long(bitsInBlock)) {
 			blockShift = bitsToShift / bitsInBlock;
 			for (signed i = signed(MSU); i >= blockShift; --i) {
 				block[i] = block[i - blockShift];
@@ -169,8 +170,9 @@ public:
 	// shift right operator
 	blockbinary& operator>>=(long bitsToShift) {
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
+		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
 		size_t blockShift = 0;
-		if (bitsToShift >= bitsInBlock) {
+		if (bitsToShift >= long(bitsInBlock)) {
 			blockShift = bitsToShift / bitsInBlock;
 			for (size_t i = 0; i <= MSU - blockShift; ++i) {
 				block[i] = block[i + blockShift];

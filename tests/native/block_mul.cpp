@@ -82,7 +82,6 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "block multiplication: ";
@@ -100,10 +99,11 @@ try {
 
 #if STRESS_TESTING
 
+
 #endif
 
 #else
-
+	bool bReportIndividualTestCases = false;
 	cout << "block multiplication validation" << endl;;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint8>", "multiplication");
