@@ -536,7 +536,7 @@ public:
 		return !isodd();
 	}
 	inline bool sign() const { return at(nbits - 1); }
-	inline bool at(unsigned int i) const {
+	inline bool at(size_t i) const {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
 			uint8_t mask = 1 << (i % 8);
@@ -674,7 +674,6 @@ protected:
 	}
 
 private:
-	//array<uint8_t, (1 + ((nbits - 1) / 8))> bytes;
 	uint8_t b[nrBytes];
 
 	// convert

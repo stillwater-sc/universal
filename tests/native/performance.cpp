@@ -1,4 +1,4 @@
-//  performance.cpp : performance benchmarking for block arithmetic
+//  performance.cpp : performance benchmarking for block binary number arithmetic
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -6,21 +6,13 @@
 #include <iostream>
 #include <string>
 #include <chrono>
-// configure the integer arithmetic class
-#define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/integer/integer.hpp>
-#include <universal/integer/numeric_limits.hpp>
-// is representable
-#include <universal/functions/isrepresentable.hpp>
+
+//#include <universal/integer/integer.hpp>
+#include <universal/native/blockBinaryNumber.hpp>
+
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 #include "../utils/performance_runner.hpp"
-
-/*
-   The goal of the arbitrary integers is to provide a constrained big integer type
-   that enables fast computation with exceptions for overflow, so that the type
-   can be used for forward error analysis studies.
-*/
 
 // workload for testing shift operations on integer types
 template<typename IntegerType>
@@ -39,13 +31,13 @@ void TestShiftOperatorPerformance() {
 
 	constexpr uint64_t NR_OPS = 1000000;
 
-	PerformanceRunner("integer<16>   shifts        ", ShiftPerformanceWorkload< sw::unum::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   shifts        ", ShiftPerformanceWorkload< sw::unum::integer<32> >, NR_OPS);
-	PerformanceRunner("integer<64>   shifts        ", ShiftPerformanceWorkload< sw::unum::integer<64> >, NR_OPS);
-	PerformanceRunner("integer<128>  shifts        ", ShiftPerformanceWorkload< sw::unum::integer<128> >, NR_OPS / 2);
-	PerformanceRunner("integer<256>  shifts        ", ShiftPerformanceWorkload< sw::unum::integer<256> >, NR_OPS / 4);
-	PerformanceRunner("integer<512>  shifts        ", ShiftPerformanceWorkload< sw::unum::integer<512> >, NR_OPS / 8);
-	PerformanceRunner("integer<1024> shifts        ", ShiftPerformanceWorkload< sw::unum::integer<1024> >, NR_OPS / 16);
+	PerformanceRunner("integer<16>   shifts        ", ShiftPerformanceWorkload< sw::unum::blockBinaryNumber<16> >, NR_OPS);
+	PerformanceRunner("integer<32>   shifts        ", ShiftPerformanceWorkload< sw::unum::blockBinaryNumber<32> >, NR_OPS);
+	PerformanceRunner("integer<64>   shifts        ", ShiftPerformanceWorkload< sw::unum::blockBinaryNumber<64> >, NR_OPS);
+	PerformanceRunner("integer<128>  shifts        ", ShiftPerformanceWorkload< sw::unum::blockBinaryNumber<128> >, NR_OPS / 2);
+	PerformanceRunner("integer<256>  shifts        ", ShiftPerformanceWorkload< sw::unum::blockBinaryNumber<256> >, NR_OPS / 4);
+	PerformanceRunner("integer<512>  shifts        ", ShiftPerformanceWorkload< sw::unum::blockBinaryNumber<512> >, NR_OPS / 8);
+	PerformanceRunner("integer<1024> shifts        ", ShiftPerformanceWorkload< sw::unum::blockBinaryNumber<1024> >, NR_OPS / 16);
 }
 
 template<typename IntegerType>
@@ -97,39 +89,39 @@ void TestArithmeticOperatorPerformance() {
 
 	size_t NR_OPS = 1000000;
 
-	PerformanceRunner("integer<16>   add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<32> >, NR_OPS);
-	PerformanceRunner("integer<64>   add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<64> >, NR_OPS);
-	PerformanceRunner("integer<128>  add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<128> >, NR_OPS / 2);
-	PerformanceRunner("integer<256>  add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<256> >, NR_OPS / 4);
-	PerformanceRunner("integer<512>  add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<512> >, NR_OPS / 8);
-	PerformanceRunner("integer<1024> add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<1024> >, NR_OPS / 16);
+	PerformanceRunner("integer<16>   add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockBinaryNumber<16> >, NR_OPS);
+	PerformanceRunner("integer<32>   add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockBinaryNumber<32> >, NR_OPS);
+	PerformanceRunner("integer<64>   add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockBinaryNumber<64> >, NR_OPS);
+	PerformanceRunner("integer<128>  add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockBinaryNumber<128> >, NR_OPS / 2);
+	PerformanceRunner("integer<256>  add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockBinaryNumber<256> >, NR_OPS / 4);
+	PerformanceRunner("integer<512>  add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockBinaryNumber<512> >, NR_OPS / 8);
+	PerformanceRunner("integer<1024> add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockBinaryNumber<1024> >, NR_OPS / 16);
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("integer<16>   division      ", DivisionWorkload< sw::unum::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   division      ", DivisionWorkload< sw::unum::integer<32> >, NR_OPS);
-	PerformanceRunner("integer<64>   division      ", DivisionWorkload< sw::unum::integer<64> >, NR_OPS / 2);
-	PerformanceRunner("integer<128>  division      ", DivisionWorkload< sw::unum::integer<128> >, NR_OPS / 4);
-	PerformanceRunner("integer<512>  division      ", DivisionWorkload< sw::unum::integer<512> >, NR_OPS / 8);
-	PerformanceRunner("integer<1024> division      ", DivisionWorkload< sw::unum::integer<1024> >, NR_OPS / 16);
+	PerformanceRunner("integer<16>   division      ", DivisionWorkload< sw::unum::blockBinaryNumber<16> >, NR_OPS);
+	PerformanceRunner("integer<32>   division      ", DivisionWorkload< sw::unum::blockBinaryNumber<32> >, NR_OPS);
+	PerformanceRunner("integer<64>   division      ", DivisionWorkload< sw::unum::blockBinaryNumber<64> >, NR_OPS / 2);
+	PerformanceRunner("integer<128>  division      ", DivisionWorkload< sw::unum::blockBinaryNumber<128> >, NR_OPS / 4);
+	PerformanceRunner("integer<512>  division      ", DivisionWorkload< sw::unum::blockBinaryNumber<512> >, NR_OPS / 8);
+	PerformanceRunner("integer<1024> division      ", DivisionWorkload< sw::unum::blockBinaryNumber<1024> >, NR_OPS / 16);
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("integer<16>   remainder     ", RemainderWorkload< sw::unum::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   remainder     ", RemainderWorkload< sw::unum::integer<32> >, NR_OPS);
-	PerformanceRunner("integer<64>   remainder     ", RemainderWorkload< sw::unum::integer<64> >, NR_OPS / 2);
-	PerformanceRunner("integer<128>  remainder     ", RemainderWorkload< sw::unum::integer<128> >, NR_OPS / 4);
-	PerformanceRunner("integer<512>  remainder     ", RemainderWorkload< sw::unum::integer<512> >, NR_OPS / 8);
-	PerformanceRunner("integer<1024> remainder     ", RemainderWorkload< sw::unum::integer<1024> >, NR_OPS / 16);
+	PerformanceRunner("integer<16>   remainder     ", RemainderWorkload< sw::unum::blockBinaryNumber<16> >, NR_OPS);
+	PerformanceRunner("integer<32>   remainder     ", RemainderWorkload< sw::unum::blockBinaryNumber<32> >, NR_OPS);
+	PerformanceRunner("integer<64>   remainder     ", RemainderWorkload< sw::unum::blockBinaryNumber<64> >, NR_OPS / 2);
+	PerformanceRunner("integer<128>  remainder     ", RemainderWorkload< sw::unum::blockBinaryNumber<128> >, NR_OPS / 4);
+	PerformanceRunner("integer<512>  remainder     ", RemainderWorkload< sw::unum::blockBinaryNumber<512> >, NR_OPS / 8);
+	PerformanceRunner("integer<1024> remainder     ", RemainderWorkload< sw::unum::blockBinaryNumber<1024> >, NR_OPS / 16);
 
 	// multiplication is the slowest operator
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("integer<16>   multiplication", MultiplicationWorkload< sw::unum::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   multiplication", MultiplicationWorkload< sw::unum::integer<32> >, NR_OPS / 2);
-	PerformanceRunner("integer<64>   multiplication", MultiplicationWorkload< sw::unum::integer<64> >, NR_OPS / 4);
-	PerformanceRunner("integer<128>  multiplication", MultiplicationWorkload< sw::unum::integer<128> >, NR_OPS / 8);
-	PerformanceRunner("integer<512>  multiplication", MultiplicationWorkload< sw::unum::integer<512> >, NR_OPS / 16);
-	PerformanceRunner("integer<1024> multiplication", MultiplicationWorkload< sw::unum::integer<1024> >, NR_OPS / 32);
+	PerformanceRunner("integer<16>   multiplication", MultiplicationWorkload< sw::unum::blockBinaryNumber<16> >, NR_OPS);
+	PerformanceRunner("integer<32>   multiplication", MultiplicationWorkload< sw::unum::blockBinaryNumber<32> >, NR_OPS / 2);
+	PerformanceRunner("integer<64>   multiplication", MultiplicationWorkload< sw::unum::blockBinaryNumber<64> >, NR_OPS / 4);
+	PerformanceRunner("integer<128>  multiplication", MultiplicationWorkload< sw::unum::blockBinaryNumber<128> >, NR_OPS / 8);
+	PerformanceRunner("integer<512>  multiplication", MultiplicationWorkload< sw::unum::blockBinaryNumber<512> >, NR_OPS / 16);
+	PerformanceRunner("integer<1024> multiplication", MultiplicationWorkload< sw::unum::blockBinaryNumber<1024> >, NR_OPS / 32);
 }
 
 #define MANUAL_TESTING 0
