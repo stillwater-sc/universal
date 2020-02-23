@@ -7,9 +7,10 @@
 #include <iomanip>
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/native/blockBinaryNumber.hpp"
+#include "universal/native/blockbinary.hpp"
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
+#include "../utils/blockbinary_helpers.hpp"
 
 //#include <bitset>
 
@@ -17,10 +18,10 @@ void ShiftExamples() {
 	using namespace std;
 	using namespace sw::unum;
 
-	blockBinaryNumber<37, uint8_t> a;
-	blockBinaryNumber<37, uint16_t> b;
-	blockBinaryNumber<37, uint32_t> c;
-	//	blockBinaryNumber<37, int64_t> d;
+	blockbinary<37, uint8_t> a;
+	blockbinary<37, uint16_t> b;
+	blockbinary<37, uint32_t> c;
+	//	blockbinary<37, int64_t> d;
 
 	a.set_raw_bits(0xAAAAAAAAAA);
 	b.set_raw_bits(0x5555555555);
@@ -87,8 +88,8 @@ try {
 
 	ShiftExamples();
 
-	blockBinaryNumber<37, uint8_t> a;
-	blockBinaryNumber<37, uint16_t> b;
+	blockbinary<37, uint8_t> a;
+	blockbinary<37, uint16_t> b;
 
 
 	a.set_raw_bits(0xAAAAAAAAAA);

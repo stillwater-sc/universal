@@ -8,44 +8,10 @@
 
 // minimum set of include files to reflect source code dependencies
 #include "universal/native/integers.hpp" // for to_binary(int)
-#include "universal/native/blockBinaryNumber.hpp"
+#include "universal/native/blockbinary.hpp"
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
-
-#define COLUMN_WIDTH 20
-template<size_t nbits, typename Ty = uint8_t>
-void ReportBinaryArithmeticError(std::string test_case, std::string op, const sw::unum::blockBinaryNumber<nbits, Ty>& a, const sw::unum::blockBinaryNumber<nbits, Ty>& b, const sw::unum::blockBinaryNumber<nbits, Ty>& result, int64_t reference) {
-	using namespace sw::unum;
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(COLUMN_WIDTH) << to_hex(a, true)
-		<< " " << op << " "
-		<< std::setw(COLUMN_WIDTH) << to_hex(b, true)
-		<< " != "
-		<< std::setw(COLUMN_WIDTH) << to_hex(result, true) << " golden reference is "
-		<< std::setw(COLUMN_WIDTH) << reference
-		<< " " << to_binary(result, true) << " vs " << to_binary(reference, nbits)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-
-template<size_t nbits, typename Ty = uint8_t>
-void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const sw::unum::blockBinaryNumber<nbits, Ty>& a, const sw::unum::blockBinaryNumber<nbits, Ty>& b, const sw::unum::blockBinaryNumber<nbits, Ty>& result, int64_t reference) {
-	using namespace sw::unum;
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(COLUMN_WIDTH) << to_hex(a)
-		<< " " << op << " "
-		<< std::setw(COLUMN_WIDTH) << to_hex(b)
-		<< " == "
-		<< std::setw(COLUMN_WIDTH) << to_hex(result) << " matches reference "
-		<< std::setw(COLUMN_WIDTH) << reference
-		<< " " << to_binary(result, true) << " vs " << to_binary(reference, nbits)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
+#include "../utils/blockbinary_helpers.hpp"
 
 
 // enumerate all addition cases for an fixpnt<nbits,rbits> configuration
@@ -55,7 +21,7 @@ int VerifyModularSubtraction(std::string tag, bool bReportIndividualTestCases) {
 	using namespace sw::unum;
 
 	int nrOfFailedTests = 0;
-	blockBinaryNumber<nbits, StorageBlockType> a, b, result, refResult;
+	blockbinary<nbits, StorageBlockType> a, b, result, refResult;
 	int64_t aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.set_raw_bits(i);
@@ -88,7 +54,7 @@ int VerifyModularSubtraction(std::string tag, bool bReportIndividualTestCases) {
 template<size_t nbits, typename StorageBlockType = uint8_t>
 void GenerateTestCase(int64_t _a, int64_t _b) {
 	using namespace sw::unum;
-	blockBinaryNumber<nbits, StorageBlockType> a, b, result, reference;
+	blockbinary<nbits, StorageBlockType> a, b, result, reference;
 
 	a.set_raw_bits(uint64_t(_a));
 	b.set_raw_bits(uint64_t(_b));
@@ -136,7 +102,7 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<12, uint8_t>(0, 1); 
 
-	blockBinaryNumber<12, uint8_t> a, b;
+	blockbinary<12, uint8_t> a, b;
 	a = 0xfff;
 	b = twosComplement(a);
 	cout << to_hex(a) << ' ' << to_hex(b) << ' ' << to_hex(twosComplement(b)) << endl;

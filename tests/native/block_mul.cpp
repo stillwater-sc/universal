@@ -5,13 +5,14 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <iomanip>
+#include <bitset>      // not used: just here to access the API
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/native/byteArray.hpp"
+#include <universal/native/blockbinary.hpp>
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
+#include "../utils/blockbinary_helpers.hpp"
 
-#include <bitset>
 
 // conditional compile flags
 #define MANUAL_TESTING 1

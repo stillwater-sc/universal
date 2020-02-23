@@ -1,5 +1,5 @@
 #pragma once
-// blockBinaryNumber.hpp: parameterized blocked binary number
+// blockbinary.hpp: parameterized blocked binary number system representing a 2's complement binary number
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -44,14 +44,14 @@ namespace unum {
 
 
 	// forward references
-	template<size_t nbits, typename StorageBlockType> class blockBinaryNumber;
-	template<size_t nbits, typename StorageBlockType> blockBinaryNumber<nbits, StorageBlockType> twosComplement(const blockBinaryNumber<nbits, StorageBlockType>&);
+	template<size_t nbits, typename BlockType> class blockbinary;
+	template<size_t nbits, typename BlockType> blockbinary<nbits, BlockType> twosComplement(const blockbinary<nbits, BlockType>&);
 
 	// generate the 2's complement of the block binary number
-	template<size_t nbits, typename StorageBlockType>
-	blockBinaryNumber<nbits, StorageBlockType> twosComplement(const blockBinaryNumber<nbits, StorageBlockType>& orig) {
-		blockBinaryNumber<nbits, StorageBlockType> twosC(orig);
-		blockBinaryNumber<nbits, StorageBlockType> plusOne;
+	template<size_t nbits, typename BlockType>
+	blockbinary<nbits, BlockType> twosComplement(const blockbinary<nbits, BlockType>& orig) {
+		blockbinary<nbits, BlockType> twosC(orig);
+		blockbinary<nbits, BlockType> plusOne;
 		plusOne = 1;
 		twosC.flip();
 		twosC += plusOne;
@@ -70,34 +70,34 @@ logic though.
 */
 
 // a block-based 2's complement binary number
-template<size_t nbits, typename StorageBlockType = uint8_t>
-class blockBinaryNumber {
+template<size_t nbits, typename BlockType = uint8_t>
+class blockbinary {
 public:
 	static constexpr size_t bitsInByte = 8;
-	static constexpr size_t bitsInBlock = sizeof(StorageBlockType) * bitsInByte;
+	static constexpr size_t bitsInBlock = sizeof(BlockType) * bitsInByte;
 	static_assert(bitsInBlock <= 32, "storage unit for block arithmetic needs to be <= uint32_t");
 
-	static constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInBlock);
+	static constexpr size_t nrBlocks = 1 + ((nbits - 1) / bitsInBlock);
 	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFF >> (64 - bitsInBlock));
-	static constexpr StorageBlockType maxBlockValue = (uint64_t(1) << bitsInBlock) - 1;
+	static constexpr BlockType maxBlockValue = (uint64_t(1) << bitsInBlock) - 1;
 
-	static constexpr size_t MSU = nrUnits - 1; // Most Significant Unit
-	static constexpr size_t MSU_MASK = (StorageBlockType(0xFFFFFFFFFFFFFFFFul) >> (nrUnits * bitsInBlock - nbits));
+	static constexpr size_t MSU = nrBlocks - 1; // MSU == Most Significant Unit
+	static constexpr size_t MSU_MASK = (BlockType(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
 
 	// constructors
-	blockBinaryNumber() { setzero(); }
+	blockbinary() { setzero(); }
 
-	blockBinaryNumber(const blockBinaryNumber&) = default;
-	blockBinaryNumber(blockBinaryNumber&&) = default;
+	blockbinary(const blockbinary&) = default;
+	blockbinary(blockbinary&&) = default;
 
-	blockBinaryNumber& operator=(const blockBinaryNumber&) = default;
-	blockBinaryNumber& operator=(blockBinaryNumber&&) = default;
+	blockbinary& operator=(const blockbinary&) = default;
+	blockbinary& operator=(blockbinary&&) = default;
 
 	// initializer for long long
-	blockBinaryNumber(const long long initial_value) { *this = initial_value; }
+	blockbinary(const long long initial_value) { *this = initial_value; }
 
-	blockBinaryNumber& operator=(long long rhs) {
-		for (unsigned i = 0; i < nrUnits; ++i) {
+	blockbinary& operator=(long long rhs) {
+		for (unsigned i = 0; i < nrBlocks; ++i) {
 			block[i] = rhs & storageMask;
 			rhs >>= bitsInBlock;
 		}
@@ -107,40 +107,40 @@ public:
 	}
 
 	// logic operators
-	blockBinaryNumber  operator~() {
-		blockBinaryNumber<nbits, StorageBlockType> complement(*this);
+	blockbinary  operator~() {
+		blockbinary<nbits, BlockType> complement(*this);
 		complement.flip();
 		return complement;
 	}
 	// arithmetic operators
-	blockBinaryNumber& operator+=(const blockBinaryNumber& rhs) {
+	blockbinary& operator+=(const blockbinary& rhs) {
 		bool carry = false;
-		for (unsigned i = 0; i < nrUnits; ++i) {
+		for (unsigned i = 0; i < nrBlocks; ++i) {
 			// cast up so we can test for overflow
 			uint64_t l = uint64_t(block[i]);
 			uint64_t r = uint64_t(rhs.block[i]);
 			uint64_t s = l + r + (carry ? uint64_t(1) : uint64_t(0));
 			carry = (s > maxBlockValue ? true : false);
-			block[i] = StorageBlockType(s);
+			block[i] = BlockType(s);
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		block[MSU] &= MSU_MASK;
 		return *this;
 	}
-	blockBinaryNumber& operator-=(const blockBinaryNumber& rhs) {
+	blockbinary& operator-=(const blockbinary& rhs) {
 		return operator+=(twosComplement(rhs));
 	}
-	blockBinaryNumber& operator*=(const blockBinaryNumber& rhs) {
+	blockbinary& operator*=(const blockbinary& rhs) {
 		return *this;
 	}
-	blockBinaryNumber& operator/=(const blockBinaryNumber& rhs) {
+	blockbinary& operator/=(const blockbinary& rhs) {
 		return *this;
 	}
-	blockBinaryNumber& operator%=(const blockBinaryNumber& rhs) {
+	blockbinary& operator%=(const blockbinary& rhs) {
 		return *this;
 	}
 	// shift left operator
-	blockBinaryNumber& operator<<=(long bitsToShift) {
+	blockbinary& operator<<=(long bitsToShift) {
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
 		signed blockShift = 0;
 		if (bitsToShift >= bitsInBlock) {
@@ -148,30 +148,26 @@ public:
 			for (signed i = signed(MSU); i >= blockShift; --i) {
 				block[i] = block[i - blockShift];
 			}
-			std::cout << "after block shift: " << to_binary(*this, true) << std::endl;
-
 			for (signed i = blockShift - 1; i >= 0; --i) {
-				block[i] = StorageBlockType(0);
+				block[i] = BlockType(0);
 			}
-			std::cout << "after null: " << to_binary(*this, true) << std::endl;
-
-						// adjust the shift
+			// adjust the shift
 			bitsToShift -= (long)(blockShift * bitsInBlock);
 			if (bitsToShift == 0) return *this;
 		}
 		// construct the mask for the upper bits in the block that need to move to the higher word
-		StorageBlockType mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
+		BlockType mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
 		for (unsigned i = MSU; i > 0; --i) {
 			block[i] <<= bitsToShift;
 			// mix in the bits from the right
-			StorageBlockType bits = (mask & block[i - 1]);
+			BlockType bits = (mask & block[i - 1]);
 			block[i] |= (bits >> (bitsInBlock - bitsToShift));
 		}
 		block[0] <<= bitsToShift;
 		return *this;
 	}
 	// shift right operator
-	blockBinaryNumber& operator>>=(long bitsToShift) {
+	blockbinary& operator>>=(long bitsToShift) {
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
 		size_t blockShift = 0;
 		if (bitsToShift >= bitsInBlock) {
@@ -179,23 +175,19 @@ public:
 			for (size_t i = 0; i <= MSU - blockShift; ++i) {
 				block[i] = block[i + blockShift];
 			}		
-//			std::cout << "after block shift: " << to_binary(*this, true) << std::endl;
-
 			for (size_t i = MSU - blockShift + 1; i <= MSU; ++i) {
-				block[i] = StorageBlockType(0);
+				block[i] = BlockType(0);
 			}
-//			std::cout << "after null: " << to_binary(*this, true) << std::endl;
-
 			// adjust the shift
 			bitsToShift -= (long)(blockShift * bitsInBlock);
 			if (bitsToShift == 0) return *this;
 		}
-		StorageBlockType mask = 0xFFFFFFFFFFFFFFFF >> (64 - bitsInBlock);
+		BlockType mask = 0xFFFFFFFFFFFFFFFF >> (64 - bitsInBlock);
 		mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
 		for (unsigned i = 0; i < MSU; ++i) {
 			block[i] >>= bitsToShift;
 			// mix in the bits from the left
-			StorageBlockType bits = (mask & block[i + 1]);
+			BlockType bits = (mask & block[i + 1]);
 			block[i] |= (bits << (bitsInBlock - bitsToShift));
 		}
 		block[MSU] >>= bitsToShift;
@@ -205,13 +197,13 @@ public:
 	// modifiers
 	 // clear a block binary number
 	inline void clear() {
-		for (size_t i = 0; i < nrUnits; ++i) {
-			block[i] = StorageBlockType(0);
+		for (size_t i = 0; i < nrBlocks; ++i) {
+			block[i] = BlockType(0);
 		}
 	}
 	inline void setzero() { clear(); }
 	void set_raw_bits(uint64_t value) {
-		for (unsigned i = 0; i < nrUnits; ++i) {
+		for (unsigned i = 0; i < nrBlocks; ++i) {
 			block[i] = value & storageMask;
 			value >>= bitsInBlock;
 		}
@@ -219,8 +211,8 @@ public:
 		block[MSU] &= MSU_MASK;
 	}
 	// in-place one's complement
-	inline blockBinaryNumber& flip() {
-		for (unsigned i = 0; i < nrUnits; ++i) {
+	inline blockbinary& flip() {
+		for (unsigned i = 0; i < nrBlocks; ++i) {
 			block[i] = ~block[i];
 		}
 		// assert precondition of properly nulled leading non-bits
@@ -231,18 +223,18 @@ public:
 	inline bool sign() const { return block[MSU] & MSU_MASK; }
 	inline bool at(size_t i) const {
 		if (i < nbits) {
-			StorageBlockType word = block[i / bitsInBlock];
-			StorageBlockType mask = (StorageBlockType(1) << (i % bitsInBlock));
+			BlockType word = block[i / bitsInBlock];
+			BlockType mask = (BlockType(1) << (i % bitsInBlock));
 			return (word & mask);
 		}
 		throw "bit index out of bounds";
 	}
 	inline uint8_t nibble(size_t n) const {
 		if (n < (1 + ((nbits - 1) >> 2))) {
-			StorageBlockType word = block[(n * 4) / bitsInBlock];
+			BlockType word = block[(n * 4) / bitsInBlock];
 			int nibbleIndexInWord = n % (bitsInBlock >> 2);
-			StorageBlockType mask = 0xF << (nibbleIndexInWord*4);
-			StorageBlockType nibblebits = mask & word;
+			BlockType mask = 0xF << (nibbleIndexInWord*4);
+			BlockType nibblebits = mask & word;
 			return (nibblebits >> (nibbleIndexInWord*4));
 		}
 		throw "nibble index out of bounds";
@@ -254,13 +246,13 @@ public:
 		return rv;
 	}
 private:
-	StorageBlockType block[nrUnits];
+	BlockType block[nrBlocks];
 
 	// integer - integer logic comparisons
 	template<size_t nnbits, typename B>
-	friend bool operator==(const blockBinaryNumber<nnbits, B>& lhs, const blockBinaryNumber<nnbits, B>& rhs);
+	friend bool operator==(const blockbinary<nnbits, B>& lhs, const blockbinary<nnbits, B>& rhs);
 	template<size_t nnbits, typename B>
-	friend bool operator!=(const blockBinaryNumber<nnbits, B>& lhs, const blockBinaryNumber<nnbits, B>& rhs);
+	friend bool operator!=(const blockbinary<nnbits, B>& lhs, const blockbinary<nnbits, B>& rhs);
 
 };
 
@@ -268,8 +260,8 @@ private:
 // logic operators
 
 template<size_t nnbits, typename B>
-inline bool operator==(const blockBinaryNumber<nnbits, B>& lhs, const blockBinaryNumber<nnbits, B>& rhs) {
-	for (size_t i = 0; i < lhs.nrUnits; ++i) {
+inline bool operator==(const blockbinary<nnbits, B>& lhs, const blockbinary<nnbits, B>& rhs) {
+	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs.block[i] != rhs.block[i]) {
 			return false;
 		}
@@ -277,36 +269,36 @@ inline bool operator==(const blockBinaryNumber<nnbits, B>& lhs, const blockBinar
 	return true;
 }
 template<size_t nnbits, typename B>
-inline bool operator!=(const blockBinaryNumber<nnbits, B>& lhs, const blockBinaryNumber<nnbits, B>& rhs) {
+inline bool operator!=(const blockbinary<nnbits, B>& lhs, const blockbinary<nnbits, B>& rhs) {
 	return !operator==(lhs, rhs);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // binary operators
 
-template<size_t nbits, typename StorageBlockType>
-inline blockBinaryNumber<nbits, StorageBlockType> operator+(const blockBinaryNumber<nbits, StorageBlockType>& a, const blockBinaryNumber<nbits, StorageBlockType>& b) {
-	blockBinaryNumber<nbits, StorageBlockType> c(a);
+template<size_t nbits, typename BlockType>
+inline blockbinary<nbits, BlockType> operator+(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
+	blockbinary<nbits, BlockType> c(a);
 	return c += b;
 }
-template<size_t nbits, typename StorageBlockType>
-inline blockBinaryNumber<nbits, StorageBlockType> operator-(const blockBinaryNumber<nbits, StorageBlockType>& a, const blockBinaryNumber<nbits, StorageBlockType>& b) {
-	blockBinaryNumber<nbits, StorageBlockType> c(a);
+template<size_t nbits, typename BlockType>
+inline blockbinary<nbits, BlockType> operator-(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
+	blockbinary<nbits, BlockType> c(a);
 	return c -= b;
 }
-template<size_t nbits, typename StorageBlockType>
-inline blockBinaryNumber<nbits, StorageBlockType> operator*(const blockBinaryNumber<nbits, StorageBlockType>& a, const blockBinaryNumber<nbits, StorageBlockType>& b) {
-	blockBinaryNumber<nbits, StorageBlockType> c(a);
+template<size_t nbits, typename BlockType>
+inline blockbinary<nbits, BlockType> operator*(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
+	blockbinary<nbits, BlockType> c(a);
 	return c *= b;
 }
-template<size_t nbits, typename StorageBlockType>
-inline blockBinaryNumber<nbits, StorageBlockType> operator/(const blockBinaryNumber<nbits, StorageBlockType>& a, const blockBinaryNumber<nbits, StorageBlockType>& b) {
-	blockBinaryNumber<nbits, StorageBlockType> c(a);
+template<size_t nbits, typename BlockType>
+inline blockbinary<nbits, BlockType> operator/(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
+	blockbinary<nbits, BlockType> c(a);
 	return c /= b;
 }
-template<size_t nbits, typename StorageBlockType>
-inline blockBinaryNumber<nbits, StorageBlockType> operator%(const blockBinaryNumber<nbits, StorageBlockType>& a, const blockBinaryNumber<nbits, StorageBlockType>& b) {
-	blockBinaryNumber<nbits, StorageBlockType> c(a);
+template<size_t nbits, typename BlockType>
+inline blockbinary<nbits, BlockType> operator%(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
+	blockbinary<nbits, BlockType> c(a);
 	return c %= b;
 }
 
@@ -314,8 +306,8 @@ inline blockBinaryNumber<nbits, StorageBlockType> operator%(const blockBinaryNum
 // conversions to string representations
 
 // create a binary representation of the storage
-template<size_t nbits, typename StorageBlockType>
-std::string to_binary(const blockBinaryNumber<nbits, StorageBlockType>& number, bool nibbleMarker = false) {
+template<size_t nbits, typename BlockType>
+std::string to_binary(const blockbinary<nbits, BlockType>& number, bool nibbleMarker = false) {
 	std::stringstream ss;
 	ss << 'b';
 	for (int i = int(nbits - 1); i >= 0; --i) {
@@ -326,10 +318,10 @@ std::string to_binary(const blockBinaryNumber<nbits, StorageBlockType>& number, 
 }
 
 // local helper to display the contents of a byte array
-template<size_t nbits, typename StorageBlockType>
-std::string to_hex(const blockBinaryNumber<nbits, StorageBlockType>& number, bool wordMarker = false) {
+template<size_t nbits, typename BlockType>
+std::string to_hex(const blockbinary<nbits, BlockType>& number, bool wordMarker = false) {
 	static constexpr size_t bitsInByte = 8;
-	static constexpr size_t bitsInBlock = sizeof(StorageBlockType) * bitsInByte;
+	static constexpr size_t bitsInBlock = sizeof(BlockType) * bitsInByte;
 	char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
@@ -346,18 +338,18 @@ std::string to_hex(const blockBinaryNumber<nbits, StorageBlockType>& number, boo
 }
 
 // local helper to display the contents of a byte array
-template<size_t nbits, typename StorageBlockType>
-void displayByteArray(std::string tag, const blockBinaryNumber<nbits, StorageBlockType>& storage) {
-	constexpr size_t bitsInBlock = sizeof(StorageBlockType) * 8;
-	constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInBlock);
-	constexpr size_t nibblesInBlock = sizeof(StorageBlockType) * 2;
+template<size_t nbits, typename BlockType>
+void displayByteArray(std::string tag, const blockbinary<nbits, BlockType>& storage) {
+	constexpr size_t bitsInBlock = sizeof(BlockType) * 8;
+	constexpr size_t nrBlocks = 1 + ((nbits - 1) / bitsInBlock);
+	constexpr size_t nibblesInBlock = sizeof(BlockType) * 2;
 	char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
 	};
 	std::cout << tag << "= 0x" << std::hex;
-	for (int i = int(nrUnits - 1); i >= 0; --i) {
-		StorageBlockType mask = (0xFF00000000000000 >> (64 - bitsInBlock));
+	for (int i = int(nrBlocks - 1); i >= 0; --i) {
+		BlockType mask = (0xFF00000000000000 >> (64 - bitsInBlock));
 		for (int j = int(nibblesInBlock - 1); j >= 0; --j) {
 			unsigned nibble = (mask & storage[i]) >> (j * 4);
 			std::cout << hexChar[nibble];
@@ -372,35 +364,35 @@ void displayByteArray(std::string tag, const blockBinaryNumber<nbits, StorageBlo
 // precondition: 
 //   - a and b are in two's complement form
 //   - argument c can be 0 or a partial result from a chained multiplication
-template<size_t nbits, typename StorageBlockType = uint8_t>
+template<size_t nbits, typename BlockType = uint8_t>
 size_t multiplyBytes(const StorageUnit a[], const StorageUnit b[], StorageUnit accumulator[]) {
-	constexpr size_t bitsInBlock = sizeof(StorageBlockType) * 8;
-	constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInBlock);
+	constexpr size_t bitsInBlock = sizeof(BlockType) * 8;
+	constexpr size_t nrBlocks = 1 + ((nbits - 1) / bitsInBlock);
 	constexpr size_t outbits = 2 * nbits;
 	constexpr size_t outUnits = 1 + ((outbits - 1) / bitsInBlock);
-	constexpr size_t MSU = nrUnits - 1; // Most Significant Unit
-	constexpr StorageBlockType MSU_MASK = (StorageBlockType(0xFFFFFFFFFFFFFFFFul) >> (outUnits * bitsInBlock - outbits));
+	constexpr size_t MSU = nrBlocks - 1; // Most Significant Unit
+	constexpr BlockType MSU_MASK = (BlockType(0xFFFFFFFFFFFFFFFFul) >> (outUnits * bitsInBlock - outbits));
 
-	bool signExtend = sign<nbits, StorageBlockType>(b);
+	bool signExtend = sign<nbits, BlockType>(b);
 	uint8_t multiplicant[outUnits]; // map multiplicant to accumulator size
-	for (size_t i = 0; i < nrUnits; ++i) {
+	for (size_t i = 0; i < nrBlocks; ++i) {
 		multiplicant[i] = b[i];
-		multiplicant[i + nrUnits] = (signExtend ? StorageBlockType(0xFF) : StorageBlockType(0x00)); // sign extend if needed
+		multiplicant[i + nrBlocks] = (signExtend ? BlockType(0xFF) : BlockType(0x00)); // sign extend if needed
 	}
 
 	for (size_t i = 0; i < nbits; ++i) {
 		uint8_t byte = b[i / 8];
 		uint8_t mask = 1 << (i % 8);
 		if (byte & mask) { // check the multiplication bit
-			addBlockArray<outUnits, StorageBlockType>(accumulator, multiplicant);
+			addBlockArray<outUnits, BlockType>(accumulator, multiplicant);
 		}
-		shiftLeft<outbits, StorageBlockType>(multiplicant);
+		shiftLeft<outbits, BlockType>(multiplicant);
 	}
 	// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	accumulator[MSU] &= MSU_MASK;
 	std::cout << "accu: " << to_hex<outbits, uint8_t>(accumulator) << std::endl;
 
-	displayByteArray<outbits, StorageBlockType>("accu", accumulator);
+	displayByteArray<outbits, BlockType>("accu", accumulator);
 	return outbits;
 }
 #endif

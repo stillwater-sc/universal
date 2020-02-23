@@ -244,16 +244,17 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6>(tag, bReportIndividualTestCases), "integer<6>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8>(tag, bReportIndividualTestCases), "integer<8>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10>(tag, bReportIndividualTestCases), "integer<10>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12>(tag, bReportIndividualTestCases), "integer<12>", "division");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<4>(tag, bReportIndividualTestCases), "integer<4>", "remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<6>(tag, bReportIndividualTestCases), "integer<6>", "remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<8>(tag, bReportIndividualTestCases), "integer<8>", "remainder");
 	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10>(tag, bReportIndividualTestCases), "integer<10>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12>(tag, bReportIndividualTestCases), "integer<12>", "remainder");
 
 #if STRESS_TESTING
 	type = "integer<16>";
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12>(tag, bReportIndividualTestCases), "integer<12>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12>(tag, bReportIndividualTestCases), "integer<12>", "remainder");
+
 	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
 	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision(tag, bReportIndividualTestCases), "integer<16>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder(tag, bReportIndividualTestCases), "integer<16>", "remainder");

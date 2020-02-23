@@ -70,10 +70,10 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6>(tag, bReportIndividualTestCases), "integer<6>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8>(tag, bReportIndividualTestCases), "integer<8>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10>(tag, bReportIndividualTestCases), "integer<10>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12>(tag, bReportIndividualTestCases), "integer<12>", "multiplication");
 
 #if STRESS_TESTING
 
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12>(tag, bReportIndividualTestCases), "integer<12>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<14>(tag, bReportIndividualTestCases), "integer<14>", "multiplication");
 
 	// VerifyShortMultiplication compares an integer<16> to native short type to make certain it has all the same behavior

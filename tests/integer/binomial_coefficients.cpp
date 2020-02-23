@@ -79,9 +79,20 @@ try {
 	Binomials(posit(21));
 
 #else // MANUAL_TESTING
+	using int128_t = sw::unum::integer<128>;
+	using posit = sw::unum::posit<32, 2>;
 
-	PascalsTriangle(sw::unum::posit<32, 2>(20));
+	PascalsTriangle(int128_t(15));
+	PascalsTriangle(posit(15));
 
+#if STRESS_TESTING
+	PascalsTriangle(long(20));
+	PascalsTriangle(int128_t(20));
+	PascalsTriangle(posit(20));
+
+	Binomials(posit(21));
+
+#endif // STRESS_TESTING
 #endif // MANUAL_TESTING
 
 
