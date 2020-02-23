@@ -282,7 +282,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Decimal Arithmetic tests failed";
+	std::string tag = "decimal arithmetic";
 
 #if MANUAL_TESTING
 
@@ -310,13 +310,36 @@ try {
 #else
 	std::cout << "Decimal Arithmetic verfication" << std::endl;
 
-#ifdef STRESS_TESTING
-
-	long rangeBound = (1 << 9);
+	long rangeBound = 100;
+	cout << "quick sample test with range bound: " << rangeBound << endl;
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", rangeBound, bReportIndividualTestCases), "decimal", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", rangeBound, bReportIndividualTestCases), "decimal", "subtraction");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", rangeBound, bReportIndividualTestCases), "decimal", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", rangeBound, bReportIndividualTestCases), "decimal", "division");
+
+	/* this currently fails
+	cout << "big number computation\n";
+	decimal a, b, c, d, e, f;
+	a.parse("1234567890");
+	b.parse("5432109876");
+	c = (1 << 5); cout << c << endl;
+	d = a * b * c; cout << d << endl;
+	e = d / a;  cout << e << endl;
+	f = e / b; cout << f << endl;
+	if (c != f) {
+		++nrOfFailedTestCases;
+		cout << "FAIL: " << c << " is not equal to " << f << endl;
+	}
+	*/
+
+#ifdef STRESS_TESTING
+
+	long stressRangeBound = (1 << 9);
+	cout << "stress testing with range bound: " << stressRangeBound << endl;
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition("addition", stressRangeBound, bReportIndividualTestCases), "decimal", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction("subtraction", stressRangeBound, bReportIndividualTestCases), "decimal", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication("multiplication", stressRangeBound, bReportIndividualTestCases), "decimal", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision("division", stressRangeBound, bReportIndividualTestCases), "decimal", "division");
 
 #endif // STRESS_TESTING
 

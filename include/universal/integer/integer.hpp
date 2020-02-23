@@ -175,19 +175,19 @@ public:
 	}
 
 	// initializers for native types
-	integer(const signed char initial_value) { *this = initial_value; }
-	integer(const short initial_value) { *this = initial_value; }
-	integer(const int initial_value) { *this = initial_value; }
-	integer(const long initial_value) { *this = initial_value; }
-	integer(const long long initial_value) { *this = initial_value; }
-	integer(const char initial_value) { *this = initial_value; }
-	integer(const unsigned short initial_value) { *this = initial_value; }
-	integer(const unsigned int initial_value) { *this = initial_value; }
-	integer(const unsigned long initial_value) { *this = initial_value; }
+	integer(const signed char initial_value)        { *this = initial_value; }
+	integer(const short initial_value)              { *this = initial_value; }
+	integer(const int initial_value)                { *this = initial_value; }
+	integer(const long initial_value)               { *this = initial_value; }
+	integer(const long long initial_value)          { *this = initial_value; }
+	integer(const char initial_value)               { *this = initial_value; }
+	integer(const unsigned short initial_value)     { *this = initial_value; }
+	integer(const unsigned int initial_value)       { *this = initial_value; }
+	integer(const unsigned long initial_value)      { *this = initial_value; }
 	integer(const unsigned long long initial_value) { *this = initial_value; }
-	integer(const float initial_value) { *this = initial_value; }
-	integer(const double initial_value) { *this = initial_value; }
-	integer(const long double initial_value) { *this = initial_value; }
+	integer(const float initial_value)              { *this = initial_value; }
+	integer(const double initial_value)             { *this = initial_value; }
+	integer(const long double initial_value)        { *this = initial_value; }
 
 	// access operator for bits
 	// this needs a proxy to be able to create l-values
@@ -536,7 +536,7 @@ public:
 		return !isodd();
 	}
 	inline bool sign() const { return at(nbits - 1); }
-	inline bool at(unsigned int i) const {
+	inline bool at(size_t i) const {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
 			uint8_t mask = 1 << (i % 8);
@@ -674,7 +674,6 @@ protected:
 	}
 
 private:
-	//array<uint8_t, (1 + ((nbits - 1) / 8))> bytes;
 	uint8_t b[nrBytes];
 
 	// convert

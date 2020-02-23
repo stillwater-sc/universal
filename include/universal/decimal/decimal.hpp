@@ -222,7 +222,7 @@ public:
 		}
 		decimal::iterator lit = begin();
 		decimal::iterator rit = _rhs.begin();
-		char carry = 0;
+		uint8_t carry = 0;
 		for (; lit != end() || rit != _rhs.end(); ++lit, ++rit) {
 			*lit += *rit + carry;
 			if (*lit > 9) {
@@ -266,7 +266,7 @@ public:
 		}
 		decimal::iterator lit = begin();
 		decimal::iterator rit = _rhs.begin();
-		char borrow = 0;
+		uint8_t borrow = 0;
 		for (; lit != end() || rit != _rhs.end(); ++lit, ++rit) {
 			if (*rit > *lit - borrow) {
 				*lit = 10 + *lit - borrow - *rit;
@@ -305,7 +305,7 @@ public:
 				decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 				partial_sum.insert(partial_sum.end(), r + position, 0);
 				decimal::iterator pit = partial_sum.begin() + position;
-				char carry = 0;
+				uint8_t carry = 0;
 				for (bit = rhs.begin(); bit != rhs.end() && pit != partial_sum.end(); ++bit, ++pit) {
 					uint8_t digit = *sit * *bit + carry;
 					*pit = digit % 10;
@@ -323,7 +323,7 @@ public:
 				decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 				partial_sum.insert(partial_sum.end(), l + position, 0);
 				decimal::iterator pit = partial_sum.begin() + position;
-				char carry = 0;
+				uint8_t carry = 0;
 				for (bit = begin(); bit != end() && pit != partial_sum.end(); ++bit, ++pit) {
 					uint8_t digit = *sit * *bit + carry;
 					*pit = digit % 10;

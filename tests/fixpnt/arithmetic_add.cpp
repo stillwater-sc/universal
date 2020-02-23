@@ -6,17 +6,16 @@
 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
-//#define FIXPNT_FAST_SPECIALIZATION
+#define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
-#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
+#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
 #include "universal/fixpnt/fixed_point.hpp"
 // fixed-point type manipulators such as pretty printers
 #include "universal/fixpnt/fixpnt_manipulators.hpp"
 #include "universal/fixpnt/math_functions.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
+#include "../utils/fixpnt_test_suite.hpp"
 
 // generate specific test case that you can trace with the trace conditions in fixpnt.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -37,99 +36,9 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
-namespace sw {
-namespace unum {
-
-#define FIXPNT_TABLE_WIDTH 20
-template<size_t nbits, size_t rbits>
-void ReportBinaryArithmeticError(std::string test_case, std::string op, const fixpnt<nbits, rbits>& lhs, const fixpnt<nbits, rbits>& rhs, const fixpnt<nbits, rbits>& ref, const fixpnt<nbits, rbits>& result) {
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(FIXPNT_TABLE_WIDTH) << lhs
-		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
-		<< " != "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref << " instead it yielded "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result
-		<< " " << to_binary(ref) << " vs " << to_binary(result)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t rbits>
-void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const fixpnt<nbits, rbits>& lhs, const fixpnt<nbits, rbits>& rhs, const fixpnt<nbits, rbits>& ref, const fixpnt<nbits, rbits>& result) {
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(FIXPNT_TABLE_WIDTH) << lhs
-		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
-		<< " == "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref << " matches reference "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result
-		<< " " << to_binary(ref) << " vs " << to_binary(result)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-
-// enumerate all addition cases for an fixpnt<nbits,rbits> configuration
-template<size_t nbits, size_t rbits>
-int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	int nrOfFailedTests = 0;
-	fixpnt<nbits, rbits> a, b, result, cref;
-	double ref;
-
-	double da, db;
-	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
-		da = double(a);
-		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
-			db = double(b);
-			ref = da + db;
-#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
-			// catching overflow
-			try {
-				result = a + b;
-			}
-			catch (...) {
-				if (ref > max_int<nbits>() || iref < min_int<nbits>()) {
-					// correctly caught the exception
-					continue;
-				}
-				else {
-					nrOfFailedTests++;
-				}
-			}
-
-#else
-			result = a + b;
-#endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
-			cref = ref;
-			if (result != cref) {
-				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
-			}
-			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
-			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
-		}
-		if (i % 1024 == 0) std::cout << '.';
-	}
-	std::cout << std::endl;
-	return nrOfFailedTests;
-}
-
-
-} // namespace unum
-} // namespace sw
-
+// conditional compile flags
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
-#include <bitset>
 
 int main(int argc, char** argv)
 try {
@@ -139,7 +48,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Addition failed: ";
+	std::string tag = "modular addition failed: ";
 
 #if MANUAL_TESTING
 
@@ -165,38 +74,59 @@ try {
 	}
 
 	{
-		fixpnt<8, 4> fp;
-		for (int i = 0; i < 256; ++i) {
-			bitset<8> bs(fp.byte(0));
-			cout << bs << " = " << fp << endl;
-			++fp;
-		}
+		fixpnt<4, 1> a, b, c;
+		a = 0;
+		b = 2;
+		c = a + b;
+		cout << a << " + " << b << " = " << c << endl;
 	}
+
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 1>("Manual Testing", true), "fixpnt<4,1>", "addition");
+
 
 #if STRESS_TESTING
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0>("Manual Testing", true), "fixpnt<4,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1>("Manual Testing", true), "fixpnt<4,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2>("Manual Testing", true), "fixpnt<4,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3>("Manual Testing", true), "fixpnt<4,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 4>("Manual Testing", true), "fixpnt<4,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 0>("Manual Testing", true), "fixpnt<4,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 1>("Manual Testing", true), "fixpnt<4,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 2>("Manual Testing", true), "fixpnt<4,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 3>("Manual Testing", true), "fixpnt<4,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 4>("Manual Testing", true), "fixpnt<4,4>", "addition");
 #endif
 
 #else
 
-	cout << "Fixed-point addition validation" << endl;
+	cout << "Fixed-point modular addition validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 0>(tag, bReportIndividualTestCases), "fixpnt<4,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 1>(tag, bReportIndividualTestCases), "fixpnt<4,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 2>(tag, bReportIndividualTestCases), "fixpnt<4,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 3>(tag, bReportIndividualTestCases), "fixpnt<4,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, 4>(tag, bReportIndividualTestCases), "fixpnt<4,4>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<10, 3>(tag, bReportIndividualTestCases), "fixpnt<10,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<10, 5>(tag, bReportIndividualTestCases), "fixpnt<10,5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<10, 7>(tag, bReportIndividualTestCases), "fixpnt<10,7>", "addition");
 
 #if STRESS_TESTING
+
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<11, 3>(tag, bReportIndividualTestCases), "fixpnt<11,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<11, 5>(tag, bReportIndividualTestCases), "fixpnt<11,5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<11, 7>(tag, bReportIndividualTestCases), "fixpnt<11,7>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, 0>(tag, bReportIndividualTestCases), "fixpnt<12,0>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, 4>(tag, bReportIndividualTestCases), "fixpnt<12,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, 8>(tag, bReportIndividualTestCases), "fixpnt<12,8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, 12>(tag, bReportIndividualTestCases), "fixpnt<12,12>", "addition");
 
 #endif  // STRESS_TESTING
 

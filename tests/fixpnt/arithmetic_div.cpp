@@ -6,17 +6,16 @@
 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
-//#define FIXPNT_FAST_SPECIALIZATION
+#define FIXPNT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
-#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
+#define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
 #include "universal/fixpnt/fixed_point.hpp"
 // fixed-point type manipulators such as pretty printers
 #include "universal/fixpnt/fixpnt_manipulators.hpp"
-#include "universal/fixpnt/math_functions.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
+#include "universal/fixpnt/fixpnt_functions.hpp"
+#include "../utils/fixpnt_test_suite.hpp"
 
 // generate specific test case that you can trace with the trace conditions in fixpnt.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -37,147 +36,56 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
-namespace sw {
-namespace unum {
-
-#define FIXPNT_TABLE_WIDTH 20
-template<size_t nbits, size_t rbits>
-void ReportBinaryArithmeticError(std::string test_case, std::string op, const fixpnt<nbits, rbits>& lhs, const fixpnt<nbits, rbits>& rhs, const fixpnt<nbits, rbits>& ref, const fixpnt<nbits, rbits>& result) {
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(FIXPNT_TABLE_WIDTH) << lhs
-		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
-		<< " != "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref << " instead it yielded "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result
-		<< " " << to_binary(ref) << " vs " << to_binary(result)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t rbits>
-void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const fixpnt<nbits, rbits>& lhs, const fixpnt<nbits, rbits>& rhs, const fixpnt<nbits, rbits>& ref, const fixpnt<nbits, rbits>& result) {
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(FIXPNT_TABLE_WIDTH) << lhs
-		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
-		<< " == "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref << " matches reference "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result
-		<< " " << to_binary(ref) << " vs " << to_binary(result)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-
-// enumerate all division cases for an fixpnt<nbits,rbits> configuration
-template<size_t nbits, size_t rbits>
-int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	int nrOfFailedTests = 0;
-	fixpnt<nbits, rbits> a, b, result, cref;
-	double ref;
-
-	double da, db;
-	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
-		da = double(a);
-		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
-			db = double(b);
-			if (j != 0) {
-			    ref = da / db;
-			}
-			else {
-			    ref = 0;
-			}
-#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
-			try {
-				result = a / b;
-			}
-			catch (...) {
-				if (ref > max_int<nbits>() || iref < min_int<nbits>()) {
-					// correctly caught the exception
-					continue;
-				}
-				else {
-					nrOfFailedTests++;
-				}
-			}
-
-#else
-			result = a / b;
-#endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
-			cref = ref;
-			if (result != cref) {
-				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", a, b, cref, result);
-			}
-			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, cref, result);
-			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
-		}
-		if (i % 1024 == 0) std::cout << '.';
-	}
-	std::cout << std::endl;
-	return nrOfFailedTests;
-}
-
-
-} // namespace unum
-} // namespace sw
-
+// conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
-#include <bitset>
 
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Division failed: ";
+	std::string tag = "modular division failed: ";
 
 #if MANUAL_TESTING
 
-	fixpnt<8, 4> f;
-	f = 3.5f;
-	bitset<8> bs(f.byte(0));
-	cout << bs << endl;
-	cout << f << endl;
+	fixpnt<8, 4> a, b, c;
+	a = 3.5f;
+        b = 1.0f;
+//	c = a / b;
+	cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
+
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 4>(0.5f, 1.0f);
 
 #if STRESS_TESTING
+
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0>("Manual Testing", true), "fixpnt<4,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1>("Manual Testing", true), "fixpnt<4,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2>("Manual Testing", true), "fixpnt<4,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3>("Manual Testing", true), "fixpnt<4,3>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4>("Manual Testing", true), "fixpnt<4,4>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivisin<4, 0>("Manual Testing", true), "fixpnt<4,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<4, 1>("Manual Testing", true), "fixpnt<4,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<4, 2>("Manual Testing", true), "fixpnt<4,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<4, 3>("Manual Testing", true), "fixpnt<4,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<4, 4>("Manual Testing", true), "fixpnt<4,4>", "division");
+
 #endif
 
 #else
+	bool bReportIndividualTestCases = false;
 
-	cout << "Fixed-point division validation" << endl;
+	cout << "Fixed-point modular division validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularDivision<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "division");
 
 #if STRESS_TESTING
 

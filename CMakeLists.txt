@@ -61,9 +61,11 @@ option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"
 option(C_API_LIB_PIC                     "Set to ON to compile C API library with -fPIC"       OFF)
 # number systems and their verification suites
 option(BUILD_BITBLOCK                    "Set to ON to build bitblock tests"                   OFF)
+option(BUILD_NATIVE_TYPES                "Set to ON to build native type tests"                OFF)
 option(BUILD_REAL_NUMBERS                "Set to ON to build real value tests"                 OFF)
 option(BUILD_INTEGER_NUMBERS             "Set to ON to build integer tests"                    OFF)
 option(BUILD_DECIMAL_NUMBERS             "Set to ON to build decimal tests"                    OFF)
+option(BUILD_FIXPNT_NUMBERS              "Set to ON to build fixed-point tests"                OFF)
 option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 tests"                OFF)
 option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 tests"                OFF)
 option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3 posit tests"          OFF)
@@ -264,6 +266,8 @@ endif()
 
 ####
 # Set UNIVERSAL include directory that contains all the different number systems
+# universal/native
+# universal/bitblock
 # universal/unum
 # universal/unum2
 # universal/posit
@@ -383,6 +387,7 @@ if(BUILD_CI_CHECK)
 	set(BUILD_PLAYGROUND ON)
 	# build the different test/verification suites for each number system
 	set(BUILD_BITBLOCK ON)
+	set(BUILD_NATIVE_TYPES ON)
 	set(BUILD_REAL_NUMBERS ON)
 	set(BUILD_INTEGER_NUMBERS ON)
 	set(BUILD_DECIMAL_NUMBERS ON)
@@ -407,6 +412,10 @@ endif(BUILD_CI_CHECK)
 if(BUILD_BITBLOCK)
 add_subdirectory("tests/bitblock")
 endif(BUILD_BITBLOCK)
+
+if(BUILD_NATIVE_TYPES)
+add_subdirectory("tests/native")
+endif(BUILD_NATIVE_TYPES)
 
 # Arbitrary integers tests
 if(BUILD_INTEGER_NUMBERS)

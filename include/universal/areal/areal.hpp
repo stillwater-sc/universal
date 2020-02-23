@@ -8,6 +8,7 @@
 #include <limits>
 #include <bitset>
 
+#include "universal/native/ieee-754.hpp"
 #include "universal/posit/exponent.hpp"
 #include "universal/posit/fraction.hpp"
 #include "universal/posit/value.hpp"
