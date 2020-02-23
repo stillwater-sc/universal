@@ -74,6 +74,22 @@ bool isEqual(const StorageUnit lhs[], const StorageUnit rhs[]) {
 	return true;
 }
 
+// create a binary representation of the storage
+template<size_t nbits, typename StorageUnit = uint8_t>
+std::string to_binary(const StorageUnit storage[]) {
+	constexpr size_t bitsInStorageUnit = sizeof(StorageUnit) * 8;
+	constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInStorageUnit);
+
+	std::stringstream ss;
+	ss << 'b';
+	for (int i = int(nbits - 1); i >= 0; --i) {
+		StorageUnit bitblock = storage[i / bitsInStorageUnit];
+		StorageUnit mask = StorageUnit(1) << (i % bitsInStorageUnit);
+		ss << (bitblock & mask ? '1' : '0');
+	}
+	return ss.str();
+}
+
 // local helper to display the contents of a byte array
 template<size_t nbits, typename StorageUnit = uint8_t>
 std::string to_hex(const StorageUnit storage[]) {
@@ -167,19 +183,72 @@ int round(const uint8_t byteArray[], unsigned N, int bit) {
 
 // addition of two byte arrays: semanticly: a = a + b
 template<size_t nbits, typename StorageUnit = uint8_t>
-void addBytes(StorageUnit a[], const StorageUnit b[]) {
+void addBlockArray(StorageUnit a[], const StorageUnit b[]) {
 	constexpr size_t bitsInStorageUnit = sizeof(StorageUnit) * 8;
+	static_assert(bitsInStorageUnit <= 32, "storage unit for block arithmetic needs to be <= uint32_t");
+
 	constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInStorageUnit);
+	constexpr size_t MSU = nrUnits - 1; // Most Significant Unit
+	constexpr StorageUnit MSU_MASK = (StorageUnit(0xFFFFFFFFFFFFFFFFul) >> (nrUnits * bitsInStorageUnit - nbits));
+	constexpr StorageUnit max = (uint64_t(1) << bitsInStorageUnit) - 1;
 
 	bool carry = false;
 	for (unsigned i = 0; i < nrUnits; ++i) {
 		// cast up so we can test for overflow
-		uint16_t l = uint16_t(a[i]);
-		uint16_t r = uint16_t(b[i]);
-		uint16_t s = l + r + (carry ? uint16_t(0x0001) : uint16_t(0x0000));
-		carry = (s > 255 ? true : false);
-		a[i] = (uint8_t)(s & 0xFF);
+		uint64_t l = uint64_t(a[i]);
+		uint64_t r = uint64_t(b[i]);
+		uint64_t s = l + r + (carry ? uint64_t(1) : uint64_t(0));
+		carry = (s > max ? true : false);
+		a[i] = StorageUnit(s);
 	}
+	// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+	a[MSU] &= MSU_MASK;
+
+}
+
+// return the 2's complement
+template<size_t nbits, typename StorageUnit = uint8_t>
+void twosComplement(const StorageUnit orig[], StorageUnit twosC[]) {
+	constexpr size_t bitsInStorageUnit = sizeof(StorageUnit) * 8;
+	constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInStorageUnit);
+	constexpr size_t MSU = nrUnits - 1; // Most Significant Unit
+	constexpr StorageUnit MSU_MASK = (StorageUnit(0xFFFFFFFFFFFFFFFFul) >> (nrUnits * bitsInStorageUnit - nbits));
+	for (size_t i = 0; i < nrUnits; ++i) {
+		twosC[i] = ~orig[i];
+	}
+	StorageUnit plusOne[nrUnits];
+	clear<nbits, StorageUnit>(plusOne);
+	plusOne[0] = 1;
+	addBlockArray<nbits, StorageUnit>(twosC, plusOne);
+	// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+	twosC[MSU] &= MSU_MASK;
+}
+
+// subtraction of two block arrays: semanticly: a = a - b
+template<size_t nbits, typename StorageUnit = uint8_t>
+void subtractBlockArray(StorageUnit a[], const StorageUnit b[]) {
+	constexpr size_t bitsInStorageUnit = sizeof(StorageUnit) * 8;
+	static_assert(bitsInStorageUnit <= 32, "storage unit for block arithmetic needs to be <= uint32_t");
+
+	constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInStorageUnit);
+	constexpr size_t MSU = nrUnits - 1; // Most Significant Unit
+	constexpr StorageUnit MSU_MASK = (StorageUnit(0xFFFFFFFFFFFFFFFFul) >> (nrUnits * bitsInStorageUnit - nbits));
+	constexpr StorageUnit max = (uint64_t(1) << bitsInStorageUnit) - 1;
+
+	StorageUnit b2s[nrUnits];
+	twosComplement<nbits, StorageUnit>(b, b2s);
+//	std::cout << to_hex<nbits, StorageUnit>(b) << " <-> " << to_hex<nbits, StorageUnit>(b2s) << std::endl;
+	bool carry = false;
+	for (unsigned i = 0; i < nrUnits; ++i) {
+		// cast up so we can test for overflow; TODO: how would you support StorageUnit = uint64_t?
+		uint64_t l = uint64_t(a[i]);
+		uint64_t r = uint64_t(b2s[i]);
+		uint64_t s = l + r + (carry ? uint64_t(1) : uint64_t(0));
+		carry = (s > max ? true : false);
+		a[i] = StorageUnit(s);
+	}
+	// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+	a[MSU] &= MSU_MASK;
 }
 
 template<size_t nbits, typename StorageUnit = uint8_t>
@@ -196,14 +265,15 @@ template<size_t nbits, typename StorageUnit = uint8_t>
 void shiftLeft(StorageUnit multiplicant[]) {
 	constexpr size_t bitsInStorageUnit = sizeof(StorageUnit) * 8;
 	constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInStorageUnit);
+	constexpr size_t msbMask = (StorageUnit(1) << (bitsInStorageUnit - 1));
 	// hardcoded shift by one bit
 	int i = int(nrUnits - 1);
 	multiplicant[i] <<= 1;
 	if (nrUnits > 1) {
-		multiplicant[i] |= ((0x80 & multiplicant[i - 1]) >> 7);
+		multiplicant[i] |= ((msbMask & multiplicant[i - 1]) >> (bitsInStorageUnit - 1));
 		for (i = int(nrUnits - 2); i > 0; --i) {
 			multiplicant[i] <<= 1;
-			multiplicant[i] |= ((0x80 & multiplicant[i - 1]) >> 7);
+			multiplicant[i] |= ((msbMask & multiplicant[i - 1]) >> (bitsInStorageUnit - 1));
 		}
 	}
 	multiplicant[0] <<= 1;
@@ -233,7 +303,7 @@ size_t multiplyBytes(const StorageUnit a[], const StorageUnit b[], StorageUnit a
 		uint8_t byte = b[i / 8];
 		uint8_t mask = 1 << (i % 8);
 		if (byte & mask) { // check the multiplication bit
-			addBytes<outUnits, StorageUnit>(accumulator, multiplicant);
+			addBlockArray<outUnits, StorageUnit>(accumulator, multiplicant);
 		}
 		shiftLeft<outbits, StorageUnit>(multiplicant);
 	}

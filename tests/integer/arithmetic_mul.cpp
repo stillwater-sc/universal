@@ -66,8 +66,6 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	// allocation is the only functionality of integer<N> at this time
-
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4>(tag, bReportIndividualTestCases), "integer<4>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6>(tag, bReportIndividualTestCases), "integer<6>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8>(tag, bReportIndividualTestCases), "integer<8>", "multiplication");

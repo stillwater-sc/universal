@@ -1,4 +1,4 @@
-// arithmetic_add.cpp: functional tests for block addition
+// arithmetic_sub.cpp: functional tests for block subtraction
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -50,7 +50,7 @@ void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const 
 
 // enumerate all addition cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, typename StorageUnit = uint8_t>
-int VerifyModularAddition(std::string tag, bool bReportIndividualTestCases) {
+int VerifyModularSubtraction(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t bitsInStorageUnit = sizeof(StorageUnit) * 8;
 	constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInStorageUnit);
 	StorageUnit a[nrUnits], b[nrUnits], result[nrUnits];
@@ -65,20 +65,20 @@ int VerifyModularAddition(std::string tag, bool bReportIndividualTestCases) {
 		for (size_t j = 0; j < NR_VALUES; j++) {
 			setRawBits<nbits,StorageUnit>(b, j);
 			bref = j;
-			cref = aref + bref;
+			cref = aref - bref;
 
 			copy<nbits, StorageUnit>(result, a);
-			addBlockArray<nbits, StorageUnit>(result, b);
+			subtractBlockArray<nbits, StorageUnit>(result, b);
 
 			StorageUnit refResult[nrUnits];
 			setRawBits<nbits, StorageUnit>(refResult, cref);
 //			std::cout << to_binary<nbits, StorageUnit>(result) << " <-> " << to_binary<nbits, StorageUnit>(refResult) << std::endl;
 			if (!isEqual<nbits, StorageUnit>(result, refResult)) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError<nbits, StorageUnit>("FAIL", "+", a, b, result, cref);
+				if (bReportIndividualTestCases)	ReportBinaryArithmeticError<nbits, StorageUnit>("FAIL", "-", a, b, result, cref);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess<nbits, StorageUnit>("PASS", "+", a, b, result, cref);
+				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess<nbits, StorageUnit>("PASS", "-", a, b, result, cref);
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
@@ -99,16 +99,16 @@ void GenerateTestCase(int64_t _a, int64_t _b) {
 	setRawBits<nbits, StorageUnit>(a, uint64_t(_a));
 	setRawBits<nbits, StorageUnit>(b, uint64_t(_b));
 	copy<nbits, StorageUnit>(result, a);
-	addBytes<nbits, StorageUnit>(result, b);
-	int64_t ref = _a + _b;
+	subtractBlockArray<nbits, StorageUnit>(result, b);
+	int64_t ref = _a - _b;
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
+	std::cout << std::setw(nbits) << _a << " - " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
 	std::cout << std::hex;
-	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
+	std::cout << std::setw(nbits) << _a << " - " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
 	std::cout << std::dec;
-	std::cout << to_binary<nbits, StorageUnit>(a) << " + " << to_binary<nbits, StorageUnit>(b) << " = " << to_binary<nbits, StorageUnit>(result) << " (reference: " << to_binary(int(ref)) << ")   " << std::endl;
-	std::cout << to_hex<nbits, StorageUnit>(a) << " + " << to_hex<nbits, StorageUnit>(b) << " = " << to_hex<nbits, StorageUnit>(result) << " (reference: " << std::hex << ref << ")   ";
+	std::cout << to_binary<nbits, StorageUnit>(a) << " - " << to_binary<nbits, StorageUnit>(b) << " = " << to_binary<nbits, StorageUnit>(result) << " (reference: " << to_binary(int(ref)) << ")   " << std::endl;
+	std::cout << to_hex<nbits, StorageUnit>(a) << " - " << to_hex<nbits, StorageUnit>(b) << " = " << to_hex<nbits, StorageUnit>(result) << " (reference: " << std::hex << ref << ")   ";
 	setRawBits<nbits, StorageUnit>(reference, ref);
 	std::cout << (isEqual<nbits, StorageUnit>(result, reference) ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::dec << std::setprecision(oldPrecision);
@@ -126,18 +126,12 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "modular addition failed: ";
+	std::string tag = "modular subtraction failed: ";
 
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<18, uint8_t>(12345, 54321); // result is 66,666, thus needs 18 bits to be represented by 2's complement
-	GenerateTestCase<18, uint8_t>(66666, -54321); // result is 12,345
-
-	int maxneg = -0x20000;
-	GenerateTestCase<18, uint8_t>(maxneg, -1); // result is overflow on the negative side
-
-	GenerateTestCase<12, uint16_t>(0, 0x100);
+	GenerateTestCase<12, uint8_t>(0, 1); 
 
 	unsigned max = (uint64_t(1) << 8) - 1;
 	std::cout << "max = " << max << std::endl;
@@ -147,10 +141,10 @@ try {
 	std::cout << "max = " << max << std::endl;
 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, uint8_t>("Manual Testing", true), "uint8_t<4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, uint16_t>("Manual Testing", true), "uint16_t<4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, uint32_t>("Manual Testing", true), "uint32_t<4>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, uint64_t>("Manual Testing", true), "uint64_t<4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<4, uint8_t>("Manual Testing", true), "uint8_t<4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<4, uint16_t>("Manual Testing", true), "uint16_t<4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<4, uint32_t>("Manual Testing", true), "uint32_t<4>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<4, uint64_t>("Manual Testing", true), "uint64_t<4>", "subtraction");
 
 
 #if STRESS_TESTING
@@ -159,16 +153,16 @@ try {
 
 #else
 
-	cout << "block addition validation" << endl;
+	cout << "block subtraction validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, uint8_t>("Manual Testing", true), "uint8_t<8>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, uint16_t>("Manual Testing", true), "uint16_t<8>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, uint32_t>("Manual Testing", true), "uint32_t<8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<8, uint8_t>("Manual Testing", true), "uint8_t<8>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<8, uint16_t>("Manual Testing", true), "uint16_t<8>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<8, uint32_t>("Manual Testing", true), "uint32_t<8>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, uint8_t>("Manual Testing", true), "uint8_t<12>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, uint16_t>("Manual Testing", true), "uint16_t<12>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, uint32_t>("Manual Testing", true), "uint32_t<12>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, uint64_t>("Manual Testing", true), "uint64_t<12>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<12, uint8_t>("Manual Testing", true), "uint8_t<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<12, uint16_t>("Manual Testing", true), "uint16_t<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<12, uint32_t>("Manual Testing", true), "uint32_t<12>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<12, uint64_t>("Manual Testing", true), "uint64_t<12>", "subtraction");
 
 
 #if STRESS_TESTING

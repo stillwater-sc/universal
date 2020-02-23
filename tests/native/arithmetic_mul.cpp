@@ -107,19 +107,6 @@ void GenerateTestCase(int64_t _a, int64_t _b) {
 	//	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
-template<size_t nbits, typename StorageUnit = uint8_t>
-void GenerateSequence(int upperbound, int stride = 1) {
-	using namespace std;
-	using namespace sw::unum;
-	constexpr size_t bitsInStorageUnit = sizeof(StorageUnit) * 8;
-	constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInStorageUnit);
-	StorageUnit storage[nrUnits];
-	for (int i = -upperbound; i < upperbound; i += stride) {
-		setRawBits<nbits, StorageUnit>(storage, i);
-		cout << to_hex<nbits, StorageUnit>(storage) << endl;
-	}
-}
-
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -135,11 +122,6 @@ try {
 	std::string tag = "block multiplication: ";
 
 #if MANUAL_TESTING
-
-	GenerateSequence<12, uint8_t>(32, 4);
-	GenerateSequence<12, uint16_t>(32, 4);
-	GenerateSequence<12, uint32_t>(32, 4);
-	GenerateSequence<12, uint64_t>(32, 4);
 
 	// generate individual testcases to hand trace/debug
 	//GenerateTestCase<8>(12345, 54321);

@@ -553,7 +553,7 @@ public:
 		}
 		*/
 		sum = *this;
-		addBytes<nbits>(sum.b, rhs.b);
+		addBlockArray<nbits>(sum.b, rhs.b);
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		sum.b[MS_BYTE] = MS_BYTE_MASK & sum.b[MS_BYTE];
 		//if (carry) throw "overflow";
@@ -589,7 +589,7 @@ public:
 			for (unsigned i = 1; i < mulBytes; ++i) {
 				plusOne[i] = uint8_t(0);
 			}
-			addBytes<2*nbits, uint8_t>(accumulator, plusOne);
+			addBlockArray<2*nbits, uint8_t>(accumulator, plusOne);
 		}
 		std::cout << "accu: " << to_hex<2 * nbits, uint8_t>(accumulator) << std::endl;
 		clear();
