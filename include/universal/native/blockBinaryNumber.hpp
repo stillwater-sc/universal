@@ -152,18 +152,22 @@ public:
 		size_t blockShift = 0;
 		if (bitsToShift >= bitsInBlock) {
 			blockShift = bitsToShift / bitsInBlock;
-			for (size_t i = 0; i < MSU - blockShift; ++i) {
+			for (size_t i = 0; i <= MSU - blockShift; ++i) {
 				block[i] = block[i + blockShift];
-			}
-			for (size_t i = MSU - blockShift; i < MSU; ++i) {
+			}		
+//			std::cout << "after block shift: " << to_binary(*this, true) << std::endl;
+
+			for (size_t i = MSU - blockShift + 1; i <= MSU; ++i) {
 				block[i] = StorageBlockType(0);
 			}
+//			std::cout << "after null: " << to_binary(*this, true) << std::endl;
+
 			// adjust the shift
 			bitsToShift -= (long long)(blockShift * bitsInBlock);
 			if (bitsToShift == 0) return *this;
 		}
-		StorageBlockType mask = 0xFFFFFFFFFFFFFFFF > (64 - bitsInBlock);
-		mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the previous byte
+		StorageBlockType mask = 0xFFFFFFFFFFFFFFFF >> (64 - bitsInBlock);
+		mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
 		for (unsigned i = 0; i < MSU; ++i) {
 			block[i] >>= bitsToShift;
 			// mix in the bits from the left
@@ -193,7 +197,7 @@ public:
 
 	// selectors
 	inline bool sign() const { return block[MSU] & MSU_MASK; }
-	inline bool at(size_t i) {
+	inline bool at(size_t i) const {
 		if (i < nbits) {
 			StorageBlockType word = block[i / bitsInBlock];
 			StorageBlockType mask = (StorageBlockType(1) << (i % bitsInBlock));
@@ -201,12 +205,13 @@ public:
 		}
 		throw "bit index out of bounds";
 	}
-	inline uint8_t nibble(size_t n) {
+	inline uint8_t nibble(size_t n) const {
 		if (n < (1 + ((nbits - 1) >> 2))) {
-			StorageBlockType word = block[(nibble * 4) / bitsInBlock];
-			uint8_t nibblebits = 0;
-			return nibblebits;
-
+			StorageBlockType word = block[(n * 4) / bitsInBlock];
+			int nibbleIndexInWord = n % (bitsInBlock >> 2);
+			StorageBlockType mask = 0xF << (nibbleIndexInWord*4);
+			StorageBlockType nibblebits = mask & word;
+			return (nibblebits >> (nibbleIndexInWord*4));
 		}
 		throw "nibble index out of bounds";
 	}
@@ -264,41 +269,32 @@ inline blockBinaryNumber<nbits, StorageBlockType> operator%(const blockBinaryNum
 
 // create a binary representation of the storage
 template<size_t nbits, typename StorageBlockType>
-std::string to_binary(const blockBinaryNumber<nbits, StorageBlockType>& number) {
+std::string to_binary(const blockBinaryNumber<nbits, StorageBlockType>& number, bool nibbleMarker = false) {
 	std::stringstream ss;
 	ss << 'b';
-	for (size_t i = nbits - 1; i >= 0; --i) {
+	for (int i = int(nbits - 1); i >= 0; --i) {
 		ss << (number.at(i) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0) ss << '\'';
 	}
 	return ss.str();
 }
 
 // local helper to display the contents of a byte array
 template<size_t nbits, typename StorageBlockType>
-std::string to_hex(const blockBinaryNumber<nbits, StorageBlockType>& storage) {
-	constexpr size_t bitsInBlock = sizeof(StorageBlockType) * 8;
-	constexpr size_t nrUnits = 1 + ((nbits - 1) / bitsInBlock);
-	constexpr size_t nibblesInStorageUnit = sizeof(StorageBlockType) * 2;
+std::string to_hex(const blockBinaryNumber<nbits, StorageBlockType>& number, bool wordMarker = false) {
+	static constexpr size_t bitsInByte = 8;
+	static constexpr size_t bitsInBlock = sizeof(StorageBlockType) * bitsInByte;
 	char hexChar[16] = {
 		'0', '1', '2', '3', '4', '5', '6', '7',
 		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
 	};
 	std::stringstream ss;
 	ss << "0x" << std::hex;
-	StorageBlockType nibble;
-	for (int i = int(nrUnits - 1); i >= 0; --i) {
-		StorageUnit mask = (0xF000000000000000 >> (64 - bitsInBlock));
-		for (int j = int(nibblesInStorageUnit - 1); j >= 0; --j) {
-			// check if this nibble is part of the number
-			size_t lsbOfNibble = (size_t(i)*nibblesInStorageUnit + size_t(j)) * 4;
-			if (lsbOfNibble < nbits) {
-				nibble = (mask & storage[i]) >> (j * 4);
-				//std::cout << "mask = " << std::hex << int64_t(mask) << " storage[" << i << "] = " << int64_t(storage[i]) << std::dec << std::endl;
-				//std::cout << "nibble[" << j << "] = " << std::hex << int(nibble) << std::dec << std::endl;
-				ss << hexChar[nibble];
-			}
-			mask >>= 4;
-		}
+	int nrNibbles = int(1 + ((nbits - 1) >> 2));
+	for (int n = nrNibbles - 1; n >= 0; --n) {
+		uint8_t nibble = number.nibble(n);
+		ss << hexChar[nibble];
+		if (n > 0 && ((n * 4) % bitsInBlock) == 0) ss << '\'';
 	}
 	return ss.str();
 }
