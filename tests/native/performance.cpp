@@ -1,4 +1,4 @@
-//  performance.cpp : performance benchmarking for abitrary precision integers
+//  performance.cpp : performance benchmarking for block arithmetic
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -154,7 +154,7 @@ try {
 	std::cout << tag << std::endl;
 
 	int nrOfFailedTestCases = 0;
-	   
+
 	TestShiftOperatorPerformance();
 	TestArithmeticOperatorPerformance();
 
