@@ -14,9 +14,9 @@
 #include "../utils/blockbinary_helpers.hpp"
 
 
-// enumerate all addition cases for an fixpnt<nbits,rbits> configuration
+// enumerate all addition cases for an blockbinary configuration
 template<size_t nbits, typename StorageBlockType = uint8_t>
-int VerifyModularSubtraction(std::string tag, bool bReportIndividualTestCases) {
+int VerifySubtraction(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace sw::unum;
 
@@ -107,10 +107,10 @@ try {
 	b = twosComplement(a);
 	cout << to_hex(a) << ' ' << to_hex(b) << ' ' << to_hex(twosComplement(b)) << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<4, uint8_t>("Manual Testing", true), "uint8_t<4>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<4, uint16_t>("Manual Testing", true), "uint16_t<4>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<4, uint32_t>("Manual Testing", true), "uint32_t<4>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<4, uint64_t>("Manual Testing", true), "uint64_t<4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint8_t>("Manual Testing", true), "uint8_t<4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint16_t>("Manual Testing", true), "uint16_t<4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint32_t>("Manual Testing", true), "uint32_t<4>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint64_t>("Manual Testing", true), "uint64_t<4>", "subtraction");
 
 
 #if STRESS_TESTING
@@ -121,13 +121,13 @@ try {
 
 	cout << "block subtraction validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<8, uint8_t>("Manual Testing", true), "uint8_t<8>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<8, uint16_t>("Manual Testing", true), "uint16_t<8>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<8, uint32_t>("Manual Testing", true), "uint32_t<8>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint8_t>("Manual Testing", true), "uint8_t<8>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint16_t>("Manual Testing", true), "uint16_t<8>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint32_t>("Manual Testing", true), "uint32_t<8>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<12, uint8_t>("Manual Testing", true), "uint8_t<12>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<12, uint16_t>("Manual Testing", true), "uint16_t<12>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularSubtraction<12, uint32_t>("Manual Testing", true), "uint32_t<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint8_t>("Manual Testing", true), "uint8_t<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint16_t>("Manual Testing", true), "uint16_t<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint32_t>("Manual Testing", true), "uint32_t<12>", "subtraction");
 
 #if STRESS_TESTING
 

@@ -12,9 +12,9 @@
 #include "../utils/test_helpers.hpp"
 #include "../utils/blockbinary_helpers.hpp"
 
-// enumerate all addition cases for an fixpnt<nbits,rbits> configuration
+// enumerate all addition cases for an blockbinary configuration
 template<size_t nbits, typename StorageBlockType = uint8_t>
-int VerifyModularAddition(std::string tag, bool bReportIndividualTestCases) {
+int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace sw::unum;
 	
@@ -105,10 +105,10 @@ try {
 	std::cout << "max = " << max << std::endl;
 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, uint8_t>("Manual Testing", true), "uint8_t<4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, uint16_t>("Manual Testing", true), "uint16_t<4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, uint32_t>("Manual Testing", true), "uint32_t<4>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<4, uint64_t>("Manual Testing", true), "uint64_t<4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint8_t>("Manual Testing", true), "uint8_t<4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint16_t>("Manual Testing", true), "uint16_t<4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint32_t>("Manual Testing", true), "uint32_t<4>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint64_t>("Manual Testing", true), "uint64_t<4>", "addition");
 
 
 #if STRESS_TESTING
@@ -119,13 +119,13 @@ try {
 
 	cout << "block addition validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, uint8_t>("Manual Testing", true), "uint8_t<8>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, uint16_t>("Manual Testing", true), "uint16_t<8>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, uint32_t>("Manual Testing", true), "uint32_t<8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint8_t>("Manual Testing", true), "uint8_t<8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint16_t>("Manual Testing", true), "uint16_t<8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint32_t>("Manual Testing", true), "uint32_t<8>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, uint8_t>("Manual Testing", true), "uint8_t<12>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, uint16_t>("Manual Testing", true), "uint16_t<12>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, uint32_t>("Manual Testing", true), "uint32_t<12>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>("Manual Testing", true), "uint8_t<12>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint16_t>("Manual Testing", true), "uint16_t<12>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint32_t>("Manual Testing", true), "uint32_t<12>", "addition");
 
 #if STRESS_TESTING
 
