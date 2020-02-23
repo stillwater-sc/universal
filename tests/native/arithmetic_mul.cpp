@@ -66,7 +66,7 @@ int VerifyModularAddition(std::string tag, bool bReportIndividualTestCases) {
 			cref = aref + bref;
 
 			copy<nbits, StorageUnit>(result, a);
-			addBytes<nbits, StorageUnit>(result, b);
+			addBlockArray<nbits, StorageUnit>(result, b);
 
 			StorageUnit refResult[nrUnits];
 			setRawBits<nbits, StorageUnit>(refResult, cref);
@@ -97,7 +97,7 @@ void GenerateTestCase(int64_t _a, int64_t _b) {
 	setRawBits<nbits, StorageUnit>(a, uint64_t(_a));
 	setRawBits<nbits, StorageUnit>(b, uint64_t(_b));
 	copy<nbits, StorageUnit>(result, a);
-	addBytes<nbits, StorageUnit>(result, b);
+	addBlockArray<nbits, StorageUnit>(result, b);
 	int64_t ref = _a + _b;
 	std::streamsize oldPrecision = std::cout.precision();
 	//	std::cout << std::setprecision(nbits - 2);
