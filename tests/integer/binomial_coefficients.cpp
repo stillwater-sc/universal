@@ -51,17 +51,24 @@ void PascalsTriangle(Scalar N) {
 template<typename Scalar>
 void Binomials(Scalar n) {
 	Scalar k;
-	//// GOTCHA!!!!! we have redefined the increment/decrement operators for posits to be working on ULP. Here we want pure integer behavior, so we need to be explicity if we want to support posits as Scalar
+	//// NOTE!!!!! the posit library has redefined the increment/decrement operators for posits to work at the ULP (Unit in Last Position). 
+	//// Here we want pure integer behavior, so we need to be explicity in our adding of the integer value of 1
+	//// if we want to use posits as an integer scalar.
 	for (k = 0; k <= n; k = k + 1) {
 		std::cout << "Binomial(" << std::setw(3) << n << "," << std::setw(3) << k << ") = " << std::setw(10) << sw::function::BinomialCoefficient(n, k) << std::endl;
 	}
 }
+
+// conditional compilation
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 0
 
 int main() 
 try {
 	using namespace std;
 	using namespace sw::function;
 
+#if MANUAL_TESTING
 	using int128_t = sw::unum::integer<128>;
 	using posit = sw::unum::posit<32, 2>;
 
@@ -70,6 +77,13 @@ try {
 	PascalsTriangle(posit(20));
 	
 	Binomials(posit(21));
+
+#else // MANUAL_TESTING
+
+	PascalsTriangle(sw::unum::posit<32, 2>(20));
+
+#endif // MANUAL_TESTING
+
 
 	return EXIT_SUCCESS;
 }

@@ -132,6 +132,7 @@ void TestArithmeticOperatorPerformance() {
 	PerformanceRunner("integer<1024> multiplication", MultiplicationWorkload< sw::unum::integer<1024> >, NR_OPS / 32);
 }
 
+// conditional compilation
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 

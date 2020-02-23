@@ -113,12 +113,15 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "addition");
 
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<10, 3>(tag, bReportIndividualTestCases), "fixpnt<10,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<10, 5>(tag, bReportIndividualTestCases), "fixpnt<10,5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<10, 7>(tag, bReportIndividualTestCases), "fixpnt<10,7>", "addition");
+
+#if STRESS_TESTING
+
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<11, 3>(tag, bReportIndividualTestCases), "fixpnt<11,3>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<11, 5>(tag, bReportIndividualTestCases), "fixpnt<11,5>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<11, 7>(tag, bReportIndividualTestCases), "fixpnt<11,7>", "addition");
-
-
-#if STRESS_TESTING
 
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, 0>(tag, bReportIndividualTestCases), "fixpnt<12,0>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<12, 4>(tag, bReportIndividualTestCases), "fixpnt<12,4>", "addition");
