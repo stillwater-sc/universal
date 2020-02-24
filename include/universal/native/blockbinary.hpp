@@ -43,20 +43,19 @@ namespace sw {
 namespace unum {
 
 
-	// forward references
-	template<size_t nbits, typename BlockType> class blockbinary;
-	template<size_t nbits, typename BlockType> blockbinary<nbits, BlockType> twosComplement(const blockbinary<nbits, BlockType>&);
+// forward references
+template<size_t nbits, typename BlockType> class blockbinary;
+template<size_t nbits, typename BlockType> blockbinary<nbits, BlockType> twosComplement(const blockbinary<nbits, BlockType>&);
 
-	// generate the 2's complement of the block binary number
-	template<size_t nbits, typename BlockType>
-	blockbinary<nbits, BlockType> twosComplement(const blockbinary<nbits, BlockType>& orig) {
-		blockbinary<nbits, BlockType> twosC(orig);
-		blockbinary<nbits, BlockType> plusOne;
-		plusOne = 1;
-		twosC.flip();
-		twosC += plusOne;
-		return twosC;
-	}
+// generate the 2's complement of the block binary number
+template<size_t nbits, typename BlockType>
+blockbinary<nbits, BlockType> twosComplement(const blockbinary<nbits, BlockType>& orig) {
+	blockbinary<nbits, BlockType> twosC(orig);
+	blockbinary<nbits, BlockType> plusOne(1);
+	twosC.flip();
+	twosC += plusOne;
+	return twosC;
+}
 
 /*
 NOTES
@@ -338,66 +337,6 @@ std::string to_hex(const blockbinary<nbits, BlockType>& number, bool wordMarker 
 	}
 	return ss.str();
 }
-
-// local helper to display the contents of a byte array
-template<size_t nbits, typename BlockType>
-void displayByteArray(std::string tag, const blockbinary<nbits, BlockType>& storage) {
-	constexpr size_t bitsInBlock = sizeof(BlockType) * 8;
-	constexpr size_t nrBlocks = 1 + ((nbits - 1) / bitsInBlock);
-	constexpr size_t nibblesInBlock = sizeof(BlockType) * 2;
-	char hexChar[16] = {
-		'0', '1', '2', '3', '4', '5', '6', '7',
-		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
-	};
-	std::cout << tag << "= 0x" << std::hex;
-	for (int i = int(nrBlocks - 1); i >= 0; --i) {
-		BlockType mask = (0xFF00000000000000 >> (64 - bitsInBlock));
-		for (int j = int(nibblesInBlock - 1); j >= 0; --j) {
-			unsigned nibble = (mask & storage[i]) >> (j * 4);
-			std::cout << hexChar[nibble];
-		}
-	}
-	std::cout << std::endl;
-}
-
-
-#ifdef later
-// multiply two byte arrays, a * b, return unrounded result in c and the size of outbits as value
-// precondition: 
-//   - a and b are in two's complement form
-//   - argument c can be 0 or a partial result from a chained multiplication
-template<size_t nbits, typename BlockType = uint8_t>
-size_t multiplyBytes(const StorageUnit a[], const StorageUnit b[], StorageUnit accumulator[]) {
-	constexpr size_t bitsInBlock = sizeof(BlockType) * 8;
-	constexpr size_t nrBlocks = 1 + ((nbits - 1) / bitsInBlock);
-	constexpr size_t outbits = 2 * nbits;
-	constexpr size_t outUnits = 1 + ((outbits - 1) / bitsInBlock);
-	constexpr size_t MSU = nrBlocks - 1; // Most Significant Unit
-	constexpr BlockType MSU_MASK = (BlockType(0xFFFFFFFFFFFFFFFFul) >> (outUnits * bitsInBlock - outbits));
-
-	bool signExtend = sign<nbits, BlockType>(b);
-	uint8_t multiplicant[outUnits]; // map multiplicant to accumulator size
-	for (size_t i = 0; i < nrBlocks; ++i) {
-		multiplicant[i] = b[i];
-		multiplicant[i + nrBlocks] = (signExtend ? BlockType(0xFF) : BlockType(0x00)); // sign extend if needed
-	}
-
-	for (size_t i = 0; i < nbits; ++i) {
-		uint8_t byte = b[i / 8];
-		uint8_t mask = 1 << (i % 8);
-		if (byte & mask) { // check the multiplication bit
-			addBlockArray<outUnits, BlockType>(accumulator, multiplicant);
-		}
-		shiftLeft<outbits, BlockType>(multiplicant);
-	}
-	// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-	accumulator[MSU] &= MSU_MASK;
-	std::cout << "accu: " << to_hex<outbits, uint8_t>(accumulator) << std::endl;
-
-	displayByteArray<outbits, BlockType>("accu", accumulator);
-	return outbits;
-}
-#endif
 
 } // namespace unum
 } // namespace sw
