@@ -343,12 +343,11 @@ inline blockbinary<nbits + 1, BlockType> uradd(const blockbinary<nbits, BlockTyp
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 template<size_t nbits, typename BlockType>
 inline blockbinary<2*nbits, BlockType> urmul(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
-	blockbinary<2 * nbits, BlockType> result(a);
+	blockbinary<2 * nbits, BlockType> result;
 	blockbinary<2 * nbits, BlockType> multiplicant(b);
-	clear();
 	for (size_t i = 0; i < nbits; ++i) {
-		if (result.at(i)) {
-			operator+=(multiplicant);
+		if (a.at(i)) {
+			result += multiplicant;
 		}
 		multiplicant <<= 1;
 	}

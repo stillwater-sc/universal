@@ -92,13 +92,24 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8>(12345, 54321);
 
-	blockbinary<12> a, b, c;
-	blockbinary<13> d;
-	a = 0x7FF;  // maxpos
-	b = 0x001;  // +1
-	c = a + b;  // rounded add yields 0
-	d = uradd(a, b); // unrounded add yields 0x401
-	cout << to_hex(a) << " + " << to_hex(b) << " = " << to_hex(c) << " modular, " << to_hex(d) << " unrounded" << endl;
+	{
+		blockbinary<12> a, b, c;
+		blockbinary<13> d;
+		a = 0x7FF;  // maxpos
+		b = 0x001;  // +1
+		c = a + b;  // modulo add yields maxneg
+		d = uradd(a, b); // unrounded add yields 0x401
+		cout << to_hex(a) << " + " << to_hex(b) << " = " << to_hex(c) << " modular, " << to_hex(d) << " unrounded" << endl;
+	}
+	{
+		blockbinary<12> a, b, c;
+		blockbinary<24> d;
+		a = 0x7FF;  // maxpos
+		b = 0x7FF;  // maxpos
+		c = a * b;  // rounded mul
+		d = urmul(a, b); // unrounded mul yields
+		cout << to_hex(a) << " + " << to_hex(b) << " = " << to_hex(c) << " modular, " << to_hex(d) << " unrounded" << endl;
+	}
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, uint8_t>("Manual Testing", true), "blockbinary<4,uint8>", "multiplication");
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, uint8_t>("Manual Testing", true), "blockbinary<8,uint8>", "multiplication");
