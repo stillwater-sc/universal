@@ -92,16 +92,26 @@ public:
 	blockbinary& operator=(const blockbinary&) = default;
 	blockbinary& operator=(blockbinary&&) = default;
 
+	/// construct a blockbinary from another
+	template<size_t nnbits>
+	blockbinary(const blockbinary<nnbits, BlockType>& rhs) {
+		clear();
+		// can simply copy the blocks in
+		for (size_t i = 0; i < nrBlocks; ++i) {
+			_block[i] = rhs.block(i);
+		}
+	}
+
 	// initializer for long long
 	blockbinary(const long long initial_value) { *this = initial_value; }
 
 	blockbinary& operator=(long long rhs) {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
-			block[i] = rhs & storageMask;
+			_block[i] = rhs & storageMask;
 			rhs >>= bitsInBlock;
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		block[MSU] &= MSU_MASK;
+		_block[MSU] &= MSU_MASK;
 		return *this;
 	}
 
@@ -116,20 +126,31 @@ public:
 		bool carry = false;
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			// cast up so we can test for overflow
-			uint64_t l = uint64_t(block[i]);
-			uint64_t r = uint64_t(rhs.block[i]);
+			uint64_t l = uint64_t(_block[i]);
+			uint64_t r = uint64_t(rhs._block[i]);
 			uint64_t s = l + r + (carry ? uint64_t(1) : uint64_t(0));
 			carry = (s > maxBlockValue ? true : false);
-			block[i] = BlockType(s);
+			_block[i] = BlockType(s);
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		block[MSU] &= MSU_MASK;
+		_block[MSU] &= MSU_MASK;
 		return *this;
 	}
 	blockbinary& operator-=(const blockbinary& rhs) {
 		return operator+=(twosComplement(rhs));
 	}
-	blockbinary& operator*=(const blockbinary& rhs) {
+	blockbinary& operator*=(const blockbinary& rhs) { // modulo in-place
+		blockbinary base(*this);
+		blockbinary multiplicant(rhs);
+		clear();
+		for (size_t i = 0; i < nbits; ++i) {
+			if (base.at(i)) {
+				operator+=(multiplicant);
+			}
+			multiplicant <<= 1;
+		}
+		// since we used operator+=, which enforces the nulling of leading bits
+		// we don't need to null here
 		return *this;
 	}
 	blockbinary& operator/=(const blockbinary& rhs) {
@@ -146,10 +167,10 @@ public:
 		if (bitsToShift >= long(bitsInBlock)) {
 			blockShift = bitsToShift / bitsInBlock;
 			for (signed i = signed(MSU); i >= blockShift; --i) {
-				block[i] = block[i - blockShift];
+				_block[i] = _block[i - blockShift];
 			}
 			for (signed i = blockShift - 1; i >= 0; --i) {
-				block[i] = BlockType(0);
+				_block[i] = BlockType(0);
 			}
 			// adjust the shift
 			bitsToShift -= (long)(blockShift * bitsInBlock);
@@ -158,12 +179,12 @@ public:
 		// construct the mask for the upper bits in the block that need to move to the higher word
 		BlockType mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
 		for (unsigned i = MSU; i > 0; --i) {
-			block[i] <<= bitsToShift;
+			_block[i] <<= bitsToShift;
 			// mix in the bits from the right
-			BlockType bits = (mask & block[i - 1]);
-			block[i] |= (bits >> (bitsInBlock - bitsToShift));
+			BlockType bits = (mask & _block[i - 1]);
+			_block[i] |= (bits >> (bitsInBlock - bitsToShift));
 		}
-		block[0] <<= bitsToShift;
+		_block[0] <<= bitsToShift;
 		return *this;
 	}
 	// shift right operator
@@ -174,10 +195,10 @@ public:
 		if (bitsToShift >= long(bitsInBlock)) {
 			blockShift = bitsToShift / bitsInBlock;
 			for (size_t i = 0; i <= MSU - blockShift; ++i) {
-				block[i] = block[i + blockShift];
+				_block[i] = _block[i + blockShift];
 			}		
 			for (size_t i = MSU - blockShift + 1; i <= MSU; ++i) {
-				block[i] = BlockType(0);
+				_block[i] = BlockType(0);
 			}
 			// adjust the shift
 			bitsToShift -= (long)(blockShift * bitsInBlock);
@@ -186,12 +207,12 @@ public:
 		BlockType mask = 0xFFFFFFFFFFFFFFFF >> (64 - bitsInBlock);
 		mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
 		for (unsigned i = 0; i < MSU; ++i) {
-			block[i] >>= bitsToShift;
+			_block[i] >>= bitsToShift;
 			// mix in the bits from the left
-			BlockType bits = (mask & block[i + 1]);
-			block[i] |= (bits << (bitsInBlock - bitsToShift));
+			BlockType bits = (mask & _block[i + 1]);
+			_block[i] |= (bits << (bitsInBlock - bitsToShift));
 		}
-		block[MSU] >>= bitsToShift;
+		_block[MSU] >>= bitsToShift;
 		return *this;
 	}
 
@@ -199,32 +220,32 @@ public:
 	 // clear a block binary number
 	inline void clear() {
 		for (size_t i = 0; i < nrBlocks; ++i) {
-			block[i] = BlockType(0);
+			_block[i] = BlockType(0);
 		}
 	}
 	inline void setzero() { clear(); }
 	void set_raw_bits(uint64_t value) {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
-			block[i] = value & storageMask;
+			_block[i] = value & storageMask;
 			value >>= bitsInBlock;
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		block[MSU] &= MSU_MASK;
+		_block[MSU] &= MSU_MASK;
 	}
 	// in-place one's complement
 	inline blockbinary& flip() {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
-			block[i] = ~block[i];
+			_block[i] = ~_block[i];
 		}
 		// assert precondition of properly nulled leading non-bits
-		block[MSU] = block[MSU] & MSU_MASK; 
+		_block[MSU] = _block[MSU] & MSU_MASK; 
 		return *this;
 	}
 	// selectors
-	inline bool sign() const { return block[MSU] & MSU_MASK; }
+	inline bool sign() const { return _block[MSU] & MSU_MASK; }
 	inline bool at(size_t i) const {
 		if (i < nbits) {
-			BlockType word = block[i / bitsInBlock];
+			BlockType word = _block[i / bitsInBlock];
 			BlockType mask = (BlockType(1) << (i % bitsInBlock));
 			return (word & mask);
 		}
@@ -232,13 +253,19 @@ public:
 	}
 	inline uint8_t nibble(size_t n) const {
 		if (n < (1 + ((nbits - 1) >> 2))) {
-			BlockType word = block[(n * 4) / bitsInBlock];
+			BlockType word = _block[(n * 4) / bitsInBlock];
 			int nibbleIndexInWord = n % (bitsInBlock >> 2);
 			BlockType mask = 0xF << (nibbleIndexInWord*4);
 			BlockType nibblebits = mask & word;
 			return (nibblebits >> (nibbleIndexInWord*4));
 		}
 		throw "nibble index out of bounds";
+	}
+	inline BlockType block(size_t b) const {
+		if (b < nrBlocks) {
+			return _block[b];
+		}
+		throw "block index out of bounds";
 	}
 	// determine the rounding mode: -1 round down, 0 tie, 1 round up
 	int roundingMode(unsigned guardBitIndex) const {
@@ -247,7 +274,7 @@ public:
 		return rv;
 	}
 private:
-	BlockType block[nrBlocks];
+	BlockType _block[nrBlocks];
 
 	// integer - integer logic comparisons
 	template<size_t nnbits, typename B>
@@ -263,7 +290,7 @@ private:
 template<size_t nnbits, typename B>
 inline bool operator==(const blockbinary<nnbits, B>& lhs, const blockbinary<nnbits, B>& rhs) {
 	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
-		if (lhs.block[i] != rhs.block[i]) {
+		if (lhs._block[i] != rhs._block[i]) {
 			return false;
 		}
 	}
@@ -301,6 +328,33 @@ template<size_t nbits, typename BlockType>
 inline blockbinary<nbits, BlockType> operator%(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
 	blockbinary<nbits, BlockType> c(a);
 	return c %= b;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// specialty binary operators
+
+// unrounded addition, returns a blockbinary that is of size nbits+1
+template<size_t nbits, typename BlockType>
+inline blockbinary<nbits + 1, BlockType> uradd(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
+	blockbinary<nbits + 1, BlockType> result(a);
+	return result += blockbinary<nbits + 1, BlockType>(b);
+}
+
+// unrounded multiplication, returns a blockbinary that is of size 2*nbits
+template<size_t nbits, typename BlockType>
+inline blockbinary<2*nbits, BlockType> urmul(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
+	blockbinary<2 * nbits, BlockType> result(a);
+	blockbinary<2 * nbits, BlockType> multiplicant(b);
+	clear();
+	for (size_t i = 0; i < nbits; ++i) {
+		if (result.at(i)) {
+			operator+=(multiplicant);
+		}
+		multiplicant <<= 1;
+	}
+	// since we used operator+=, which enforces the nulling of leading bits
+	// we don't need to null here
+	return result;
 }
 
 //////////////////////////////////////////////////////////////////////////////

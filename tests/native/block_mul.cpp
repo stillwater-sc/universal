@@ -12,6 +12,7 @@
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 #include "../utils/blockbinary_helpers.hpp"
+#include <universal/posit/posit.hpp>
 
 // enumerate all multiplication cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, typename StorageBlockType = uint8_t>
@@ -57,7 +58,7 @@ void GenerateTestCase(int64_t _a, int64_t _b) {
 
 	a.set_raw_bits(uint64_t(_a));
 	b.set_raw_bits(uint64_t(_b));
-	result = a + b;
+	result = a * b;
 
 	int64_t ref = _a * _b;
 	std::streamsize oldPrecision = std::cout.precision();
@@ -74,7 +75,7 @@ void GenerateTestCase(int64_t _a, int64_t _b) {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -90,6 +91,14 @@ try {
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8>(12345, 54321);
+
+	blockbinary<12> a, b, c;
+	blockbinary<13> d;
+	a = 0x7FF;  // maxpos
+	b = 0x001;  // +1
+	c = a + b;  // rounded add yields 0
+	d = uradd(a, b); // unrounded add yields 0x401
+	cout << to_hex(a) << " + " << to_hex(b) << " = " << to_hex(c) << " modular, " << to_hex(d) << " unrounded" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, uint8_t>("Manual Testing", true), "blockbinary<4,uint8>", "multiplication");
 //	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, uint8_t>("Manual Testing", true), "blockbinary<8,uint8>", "multiplication");
