@@ -35,6 +35,22 @@ namespace unum {
 			<< std::endl;
 	}
 
+	template<size_t nbits>
+	void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const integer<nbits>& lhs, const integer<nbits>& rhs, const integer<nbits>& pref, const integer<nbits>& presult) {
+		auto old_precision = std::cerr.precision();
+		std::cerr << test_case << " "
+			<< std::setprecision(20)
+			<< std::setw(INTEGER_TABLE_WIDTH) << lhs
+			<< " " << op << " "
+			<< std::setw(INTEGER_TABLE_WIDTH) << rhs
+			<< " == "
+			<< std::setw(INTEGER_TABLE_WIDTH) << pref << " matches reference "
+			<< std::setw(INTEGER_TABLE_WIDTH) << presult
+			<< " " << to_binary(pref) << " vs " << to_binary(presult)
+			<< std::setprecision(old_precision)
+			<< std::endl;
+	}
+
 	// enumerate all addition cases for an integer<16> configuration compared against native short
 	int VerifyShortAddition(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
@@ -399,7 +415,7 @@ namespace unum {
 					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", ia, ib, iref, iresult);
 				}
 				else {
-					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", ia, ib, iref, iresult);
+					if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", ia, ib, iref, iresult);
 				}
 				if (nrOfFailedTests > 100) return nrOfFailedTests;
 			}

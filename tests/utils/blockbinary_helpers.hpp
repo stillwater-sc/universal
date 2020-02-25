@@ -19,7 +19,7 @@ void ReportBinaryArithmeticError(std::string test_case, std::string op, const sw
 		<< std::setw(COLUMN_WIDTH) << to_hex(b, true)
 		<< " != "
 		<< std::setw(COLUMN_WIDTH) << to_hex(result, true) << " golden reference is "
-		<< std::setw(COLUMN_WIDTH) << reference
+		<< std::setw(COLUMN_WIDTH) << reference << ' ' << to_binary(reference,2*nbits)
 		<< " " << to_binary(result, true) << " vs " << to_binary(reference, nbits)
 		<< std::setprecision(old_precision)
 		<< std::endl;
@@ -36,7 +36,7 @@ void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const 
 		<< std::setw(COLUMN_WIDTH) << to_hex(b)
 		<< " == "
 		<< std::setw(COLUMN_WIDTH) << to_hex(result) << " matches reference "
-		<< std::setw(COLUMN_WIDTH) << reference
+		<< std::setw(COLUMN_WIDTH) << reference << ' ' << to_binary(reference, 2 * nbits)
 		<< " " << to_binary(result, true) << " vs " << to_binary(reference, nbits)
 		<< std::setprecision(old_precision)
 		<< std::endl;
