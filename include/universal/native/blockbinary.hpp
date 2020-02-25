@@ -229,10 +229,13 @@ public:
 		size_t blockShift = 0;
 		if (bitsToShift >= long(bitsInBlock)) {
 			blockShift = bitsToShift / bitsInBlock;
-			for (size_t i = 0; i <= MSU - blockShift; ++i) {
-				_block[i] = _block[i + blockShift];
-			}		
-			for (size_t i = MSU - blockShift + 1; i <= MSU; ++i) {
+			if (MSU > blockShift) {
+				// shift by blocks
+				for (size_t i = 0; i <= MSU - blockShift; ++i) {
+					_block[i] = _block[i + blockShift];
+				}
+			}
+			for (size_t i = 1 + MSU - blockShift; i <= MSU; ++i) {
 				_block[i] = BlockType(0);
 			}
 			// adjust the shift
