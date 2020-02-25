@@ -82,7 +82,7 @@ public:
 
 	static constexpr size_t MSU = nrBlocks - 1; // MSU == Most Significant Unit
 	static constexpr size_t MSU_MASK = (BlockType(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
-	static constexpr BlockType SIGN_BIT_MASK = BlockType(BlockType(1) << ((nbits - 1) % (nrBlocks * bitsInBlock)));
+	static constexpr BlockType SIGN_BIT_MASK = BlockType(BlockType(1) << ((nbits - 1) % bitsInBlock));
 
 	// constructors
 	blockbinary() { setzero(); }
