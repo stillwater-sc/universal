@@ -16,20 +16,39 @@
 template<size_t nbits, typename StorageBlockType = uint8_t>
 int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	using namespace std;
 	using namespace sw::unum;
 	
+	cout << endl;
+	cout << "blockbinary<" << nbits << ',' << typeid(StorageBlockType).name() << '>' << endl;
+
+	bool bReportOverflowCondition = false;
 	int nrOfFailedTests = 0;
+	int nrOfOverflows = 0;   // ref > maxpos
+	int nrOfUnderflows = 0;  // ref < maxneg
 	blockbinary<nbits, StorageBlockType> a, b, result, refResult;
 	int64_t aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.set_raw_bits(i);
-		aref = i;
+		aref = int64_t(a.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
 		for (size_t j = 0; j < NR_VALUES; j++) {
 			b.set_raw_bits(j);
-			bref = j;
+			bref = int64_t(b.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
 			cref = aref + bref;
-
 			result = a + b;
+
+			if (bReportOverflowCondition) cout << setw(5) << aref << " + " << setw(5) << bref << " = " << setw(5) << cref << " : ";
+			if (cref < -(1 << (nbits - 1))) {
+				if (bReportOverflowCondition) cout << "underflow: " << setw(5) << cref << " < " << setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
+				++nrOfUnderflows;
+			}
+			else if (cref > ((1 << (nbits - 1)) - 1)) {
+				if (bReportOverflowCondition) cout << "overflow: " << setw(5) << cref << " > " << setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
+				++nrOfOverflows;
+			}
+			else {
+				if (bReportOverflowCondition)cout << endl;
+			}
 
 			refResult.set_raw_bits(cref);
 			if (result != refResult) {
@@ -41,9 +60,9 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
-		if (i % 1024 == 0) std::cout << '.';
+//		if (i % 1024 == 0) cout << '.'; /// if you enable this, put the endl back
 	}
-	std::cout << std::endl;
+	cout << "Total State Space: " << setw(10) << NR_VALUES*NR_VALUES << " Overflows: " << setw(10) << nrOfOverflows << " Underflows " << setw(10) << nrOfUnderflows << endl;
 	return nrOfFailedTests;
 }
 
@@ -52,8 +71,8 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 template<size_t nbits, typename StorageBlockType = uint8_t>
 void GenerateTestCase(int64_t _a, int64_t _b) {
 	using namespace sw::unum;
-	blockbinary<nbits, StorageBlockType> a, b, result, reference;
 
+	blockbinary<nbits, StorageBlockType> a, b, result, reference;
 	a.set_raw_bits(uint64_t(_a));
 	b.set_raw_bits(uint64_t(_b));
 	result = a + b;
@@ -104,10 +123,24 @@ try {
 	max = (uint64_t(1) << 32) - 1;
 	std::cout << "max = " << max << std::endl;
 
+	blockbinary<12> a, b, c;
+	a = (long long)-1024;
+	b = a;
+	c = a + b;
+	a.sign();
+	cout << (a.sign() ? "neg" : "pos") << endl;
+	cout << (c.sign() ? "neg" : "pos") << endl;
+	cout << a.to_long_long() << endl;	
+	cout << c.to_long_long() << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint8_t>("Manual Testing", true), "uint8_t<4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint16_t>("Manual Testing", true), "uint16_t<4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint32_t>("Manual Testing", true), "uint32_t<4>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>(tag, bReportIndividualTestCases), "uint8_t<12>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint16_t>(tag, bReportIndividualTestCases), "uint16_t<12>", "addition");
+
+
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint8_t>("Manual Testing", true), "uint8_t<4>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint16_t>("Manual Testing", true), "uint16_t<4>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint32_t>("Manual Testing", true), "uint32_t<4>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint64_t>("Manual Testing", true), "uint64_t<4>", "addition");
 
 
@@ -119,13 +152,29 @@ try {
 
 	cout << "block addition validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint8_t>(tag, bReportIndividualTestCases), "uint8_t<8>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint16_t>(tag, bReportIndividualTestCases), "uint16_t<8>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint32_t>(tag, bReportIndividualTestCases), "uint32_t<8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<4,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<4,uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<4,uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>(tag, bReportIndividualTestCases), "uint8_t<12>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint16_t>(tag, bReportIndividualTestCases), "uint16_t<12>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint32_t>(tag, bReportIndividualTestCases), "uint32_t<12>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint32_t>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<9, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<9,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<9, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<9,uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<9, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<9,uint32_t>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<10,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<10,uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<10,uint32_t>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<11,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<11,uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<11,uint32_t>", "addition");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint32_t>", "addition");
 
 #if STRESS_TESTING
 

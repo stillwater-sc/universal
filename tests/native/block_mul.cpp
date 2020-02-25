@@ -18,34 +18,40 @@
 
 // enumerate all multiplication cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, typename StorageBlockType = uint8_t>
-int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases, bool bReportOverflowCondition = false) {
+int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace std;
 	using namespace sw::unum;
 
+	cout << endl;
+	cout << "blockbinary<" << nbits << ',' << typeid(StorageBlockType).name() << '>' << endl;
+
+	bool bReportOverflowCondition = false;
 	int nrOfFailedTests = 0;
+	int nrOfOverflows = 0;   // ref > maxpos
+	int nrOfUnderflows = 0;  // ref < maxneg
 	blockbinary<nbits, StorageBlockType> a, b, result, refResult;
 	int64_t aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.set_raw_bits(i);
-		aref = int64_t(a.to_long_long());
+		aref = int64_t(a.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
 		for (size_t j = 0; j < NR_VALUES; j++) {
 			b.set_raw_bits(j);
-			bref = int64_t(b.to_long_long());
+			bref = int64_t(b.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
 			result = a * b;
 			cref = aref * bref;
 
-			if (bReportOverflowCondition) {
-				cout << setw(5) << aref << " * " << setw(5) << bref << " = " << setw(5) << cref << " : ";
-				if (cref < -(1 << (nbits - 1))) {
-					cout << "overflow: " << setw(5) << cref << " < " << setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
-				}
-				else if (cref > ((1 << (nbits - 1)) - 1)) {
-					cout << "overflow: " << setw(5) << cref << " > " << setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
-				}
-				else {
-					cout << endl;
-				}
+			if (bReportOverflowCondition) cout << setw(5) << aref << " * " << setw(5) << bref << " = " << setw(5) << cref << " : ";
+			if (cref < -(1 << (nbits - 1))) {
+				if (bReportOverflowCondition) cout << "underflow: " << setw(5) << cref << " < " << setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
+				++nrOfUnderflows;
+			}
+			else if (cref > ((1 << (nbits - 1)) - 1)) {
+				if (bReportOverflowCondition) cout << "overflow: " << setw(5) << cref << " > " << setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
+				++nrOfOverflows;
+			}
+			else {
+				if (bReportOverflowCondition)cout << endl;
 			}
 
 			refResult.set_raw_bits(cref);
@@ -58,9 +64,9 @@ int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases, bool 
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
-		if (i % 1024 == 0) std::cout << '.';
+//		if (i % 1024 == 0) std::cout << '.';
 	}
-	std::cout << std::endl;
+	cout << "Total State Space: " << setw(10) << NR_VALUES * NR_VALUES << " Overflows: " << setw(10) << nrOfOverflows << " Underflows " << setw(10) << nrOfUnderflows << endl;
 	return nrOfFailedTests;
 }
 
@@ -104,16 +110,17 @@ try {
 
 #if MANUAL_TESTING
 
-	uint64_t mask;
+	uint8_t mask;
 //	mask = (1 << (bitsInBlock - ((nbits % (nrBlocks * bitsInBlock)) - 1)))
 	int bitsInBlock = 8;
-	for (int nbits = 31; nbits < 36; ++nbits) {
+	for (int nbits = 0; nbits < 36; ++nbits) {
 		bitsInBlock = 8;
 		int nrBlocks = 1 + ((nbits - 1) / bitsInBlock);
-		mask = (uint64_t(1) << ((nbits-1) % (nrBlocks * bitsInBlock)));
-		cout << "nbits = " << nbits << " nrBlocks = " << nrBlocks << " mask = 0x" << to_binary(mask, 36) << " " << mask << endl;
+		mask = (uint8_t(1) << ((nbits-1) % bitsInBlock));
+		cout << "nbits = " << nbits << " nrBlocks = " << nrBlocks << " mask = 0x" << to_binary(mask) << " " << int(mask) << endl;
 	}
 
+	return 0;
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8>(12345, 54321);
 	
@@ -164,9 +171,25 @@ try {
 	bool bReportIndividualTestCases = false;
 	cout << "block multiplication validation" << endl;;
 
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint8>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint32>", "multiplication");
+
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint8>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint16>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint32>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<9, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<9,uint8>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<9, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<9,uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<9, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<9,uint32>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<10,uint8>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<10,uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<10,uint32>", "multiplication");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<11, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<11,uint8>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<11, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<11,uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<11, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<11,uint32>", "multiplication");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint16>", "multiplication");
