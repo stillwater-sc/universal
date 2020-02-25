@@ -28,10 +28,10 @@ int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases, bool 
 	int64_t aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.set_raw_bits(i);
-		aref = int64_t(a);
+		aref = int64_t(a.to_long_long());
 		for (size_t j = 0; j < NR_VALUES; j++) {
 			b.set_raw_bits(j);
-			bref = int64_t(b);
+			bref = int64_t(b.to_long_long());
 			result = a * b;
 			cref = aref * bref;
 
