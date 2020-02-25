@@ -1,4 +1,4 @@
-//  arithmetic.cpp : arithmetic test suite for abitrary precision integers
+//  divide.cpp : arithmetic division test suite for abitrary precision integers
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -223,10 +223,8 @@ try {
 	GenerateDivTest(a, b, c);
 
 //	TestFastdiv();
-	ReportTestResult(VerifyDivision<4>("manual test", true), "integer<4>", "divides");
-	ReportTestResult(VerifyRemainder<4>("manual test", true), "integer<4>", "remainder");
-	ReportTestResult(VerifyDivision<11>("manual test", true), "integer<11>", "divides");
-	ReportTestResult(VerifyRemainder<11>("manual test", true), "integer<11>", "remainder");
+	ReportTestResult(VerifyDivision<4>("manual test", true), "integer<4>", "divisio");
+	ReportTestResult(VerifyDivision<11>("manual test", true), "integer<11>", "divisio");
 
 	cout << "done" << endl;
 
@@ -237,32 +235,20 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	// allocation is the only functionality of integer<N> at this time
-
 	// samples of number systems
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4>(tag, bReportIndividualTestCases), "integer<4>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6>(tag, bReportIndividualTestCases), "integer<6>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8>(tag, bReportIndividualTestCases), "integer<8>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10>(tag, bReportIndividualTestCases), "integer<10>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<4>(tag, bReportIndividualTestCases), "integer<4>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<6>(tag, bReportIndividualTestCases), "integer<6>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<8>(tag, bReportIndividualTestCases), "integer<8>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10>(tag, bReportIndividualTestCases), "integer<10>", "remainder");
-
 #if STRESS_TESTING
 	type = "integer<16>";
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12>(tag, bReportIndividualTestCases), "integer<12>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12>(tag, bReportIndividualTestCases), "integer<12>", "remainder");
 
 	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
 	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision(tag, bReportIndividualTestCases), "integer<16>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder(tag, bReportIndividualTestCases), "integer<16>", "remainder");
-#define NBITS 16
 	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<NBITS>(tag, bReportIndividualTestCases), "integer<16>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<NBITS>(tag, bReportIndividualTestCases), "integer<16>", "remainder");
-#undef NBITS
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16>(tag, bReportIndividualTestCases), "integer<16>", "division");
 
 #endif // STRESS_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

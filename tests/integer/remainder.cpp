@@ -1,4 +1,4 @@
-//  arithmetic_add.cpp : arithmetic test suite for addition of abitrary precision integers
+//  remainder.cpp : arithmetic remainder test suite for abitrary precision integers
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -23,41 +23,22 @@
 
 #include <typeinfo>
 template<typename Scalar>
-void GenerateAddTest(const Scalar& x, const Scalar& y, Scalar& z) {
+void GenerateDivTest(const Scalar& x, const Scalar& y, Scalar& z) {
 	using namespace sw::unum;
-	z = x + y;
-	std::cout << typeid(Scalar).name() << ": " << x << " + " << y << " = " << z << std::endl;
+	z = x / y;
+	std::cout << typeid(Scalar).name() << ": " << x << " / " << y << " = " << z << std::endl;
 }
-
 
 // ExamplePattern to check that short and integer<16> do exactly the same
 void ExamplePattern() {
 	short s = 0;
-	GenerateAddTest<short>(2, 16, s);
+	GenerateDivTest<short>(2, 16, s);
 	sw::unum::integer<16> z = 0;
-	GenerateAddTest<sw::unum::integer<16> >(2, 16, z);
+	GenerateDivTest<sw::unum::integer<16> >(2, 16, z);
 }
-
-// enumerate a couple ratios to test representability
-void ReproducibilityTestSuite() {
-	for (int i = 0; i < 30; i += 3) {
-		for (int j = 0; j < 70; j += 7) {
-			sw::unum::reportRepresentability(i, j);
-		}
-	}
-}
-
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
-
-std::string convert_to_string(const std::vector<char>& v) {
-	std::stringstream ss;
-	for (std::vector<char>::const_reverse_iterator rit = v.rbegin(); rit != v.rend(); ++rit) {
-		ss << (int)*rit;
-	}
-	return ss.str();
-}
 
 int main()
 try {
@@ -68,6 +49,14 @@ try {
 
 #if MANUAL_TESTING
 
+	integer<12> a, b, c;
+	a = 10000;
+	b = 100;
+	GenerateDivTest(a, b, c);
+
+	ReportTestResult(VerifyRemainder<4>("manual test", true), "integer<4>", "remainder");
+	ReportTestResult(VerifyRemainder<11>("manual test", true), "integer<11>", "remainder");
+
 	cout << "done" << endl;
 
 	return EXIT_SUCCESS;
@@ -77,22 +66,21 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	// allocation is the only functionality of integer<N> at this time
-
-	// sample tests
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4>(tag, bReportIndividualTestCases), "integer<4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6>(tag, bReportIndividualTestCases), "integer<6>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8>(tag, bReportIndividualTestCases), "integer<8>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10>(tag, bReportIndividualTestCases), "integer<10>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12>(tag, bReportIndividualTestCases), "integer<12>", "addition");
-
+	// samples of number systems
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<4>(tag, bReportIndividualTestCases), "integer<4>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<6>(tag, bReportIndividualTestCases), "integer<6>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<8>(tag, bReportIndividualTestCases), "integer<8>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10>(tag, bReportIndividualTestCases), "integer<10>", "remainder");
 
 #if STRESS_TESTING
+	type = "integer<16>";
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12>(tag, bReportIndividualTestCases), "integer<12>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12>(tag, bReportIndividualTestCases), "integer<12>", "remainder");
 
-	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortAddition(tag, bReportIndividualTestCases), "integer<16>", "addition");
+	// VerifyShortRemainder compares an integer<16> to native short type to make certain it has all the same behavior
+	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder(tag, bReportIndividualTestCases), "integer<16>", "remainder");
 	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<16>(tag, bReportIndividualTestCases), "integer<16>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<NBITS>(tag, bReportIndividualTestCases), "integer<16>", "remainder");
 
 #endif // STRESS_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
