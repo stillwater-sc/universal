@@ -31,9 +31,9 @@ void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const 
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
-		<< std::setw(COLUMN_WIDTH) << to_hex(a)
+		<< std::setw(COLUMN_WIDTH) << to_hex(a, true)
 		<< " " << op << " "
-		<< std::setw(COLUMN_WIDTH) << to_hex(b)
+		<< std::setw(COLUMN_WIDTH) << to_hex(b, true)
 		<< " == "
 		<< std::setw(COLUMN_WIDTH) << to_hex(result) << " matches reference "
 		<< std::setw(COLUMN_WIDTH) << reference << ' ' << to_binary(reference, 2 * nbits)

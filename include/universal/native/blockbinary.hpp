@@ -46,6 +46,16 @@ namespace unum {
 // forward references
 template<size_t nbits, typename BlockType> class blockbinary;
 template<size_t nbits, typename BlockType> blockbinary<nbits, BlockType> twosComplement(const blockbinary<nbits, BlockType>&);
+template<size_t nbits, typename BlockType> struct quorem;
+template<size_t nbits, typename BlockType> quorem<nbits, BlockType> longdivision(const blockbinary<nbits, BlockType>&, const blockbinary<nbits, BlockType>&);
+
+// idiv_t for blockbinary<nbits> to capture quotient and remainder during long division
+template<size_t nbits, typename BlockType>
+struct quorem {
+	int exceptionId;
+	blockbinary<nbits, BlockType> quo; // quotient
+	blockbinary<nbits, BlockType> rem;  // remainder
+};
 
 // generate the 2's complement of the block binary number
 template<size_t nbits, typename BlockType>
@@ -102,6 +112,8 @@ public:
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = rhs.block(i);
 		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block[MSU] &= MSU_MASK;
 	}
 
 	// initializer for long long
@@ -120,6 +132,20 @@ public:
 	// conversion operators
 	explicit operator long long() const { return to_long_long(); }
 
+	// prefix operators
+	blockbinary operator-() const {
+		blockbinary negated(*this);
+		blockbinary plusOne(1);
+		negated.flip();
+		negated += plusOne;
+		return negated;
+	}
+	// one's complement
+	blockbinary operator~() const {
+		blockbinary complement(*this);
+		complement.flip();
+		return complement;
+	}
 	// logic operators
 	blockbinary  operator~() {
 		blockbinary<nbits, BlockType> complement(*this);
@@ -159,9 +185,13 @@ public:
 		return *this;
 	}
 	blockbinary& operator/=(const blockbinary& rhs) {
+		quorem<nbits, BlockType> result = longdivision(*this, rhs);
+		*this = result.quo;
 		return *this;
 	}
 	blockbinary& operator%=(const blockbinary& rhs) {
+		quorem<nbits, BlockType> result = longdivision(*this, rhs);
+		*this = result.rem;
 		return *this;
 	}
 	// shift left operator
@@ -229,6 +259,26 @@ public:
 		}
 	}
 	inline void setzero() { clear(); }
+	inline void reset(size_t i) {
+		if (i < nbits) {
+			BlockType block = _block[i / bitsInBlock];
+			BlockType mask = ~(1 << (i % bitsInBlock));
+			_block[i / bitsInBlock] = block & mask;
+			return;
+		}
+		throw "blockbinary<nbits, BlockType>.reset(index): bit index out of bounds";
+	}
+	inline void set(size_t i, bool v = true) {
+		if (i < nbits) {
+			BlockType block = _block[i / bitsInBlock];
+			BlockType null = ~(1 << (i % bitsInBlock));
+			BlockType bit = (v ? 1 : 0);
+			BlockType mask = (bit << (i % bitsInBlock));
+			_block[i / bitsInBlock] = (block & null) | mask;
+			return;
+		}
+		throw "blockbinary<nbits, BlockType>.set(index): bit index out of bounds";
+	}
 	void set_raw_bits(uint64_t value) {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = value & storageMask;
@@ -246,8 +296,17 @@ public:
 		_block[MSU] = _block[MSU] & MSU_MASK; 
 		return *this;
 	}
+
 	// selectors
 	inline bool sign() const { return _block[MSU] & SIGN_BIT_MASK; }
+	inline bool ispos() const { return !sign(); }
+	inline bool isneg() const { return sign(); }
+	inline bool iszero() const {
+		for (size_t i = 0; i < nrBlocks; ++i) if (_block[i] != 0) return false;
+		return true;
+	}
+	inline bool isodd() const {	return _block[0] & 0x1;	}
+	inline bool iseven() const { return !isodd(); }
 	inline bool at(size_t i) const {
 		if (i < nbits) {
 			BlockType word = _block[i / bitsInBlock];
@@ -272,6 +331,23 @@ public:
 		}
 		throw "block index out of bounds";
 	}
+	
+	// return the position of the most significant bit, -1 if v == 0
+	inline signed msb() const {
+		for (signed i = int(MSU); i >= 0; --i) {
+			if (_block[i] != 0) {
+				BlockType mask = (BlockType(1) << (bitsInBlock-1));
+				for (signed j = bitsInBlock - 1; j >= 0; --j) {
+					if (_block[i] & mask) {
+						return i * bitsInBlock + j;
+					}
+					mask >>= 1;
+				}
+			}
+		}
+		return -1; // no significant bit found, all bits are zero
+	}
+	// conversion to native types
 	long long to_long_long() const {
 		constexpr unsigned sizeoflonglong = 8 * sizeof(long long);
 		long long ll = 0;
@@ -304,17 +380,18 @@ private:
 	BlockType _block[nrBlocks];
 
 	// integer - integer logic comparisons
-	template<size_t nnbits, typename B>
-	friend bool operator==(const blockbinary<nnbits, B>& lhs, const blockbinary<nnbits, B>& rhs);
-	template<size_t nnbits, typename B>
-	friend bool operator!=(const blockbinary<nnbits, B>& lhs, const blockbinary<nnbits, B>& rhs);
+	template<size_t N, typename B>
+	friend bool operator==(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs);
+	template<size_t N, typename B>
+	friend bool operator!=(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs);
+	// the other logic operators are defined in terms of arithmetic terms
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 // logic operators
 
-template<size_t nnbits, typename B>
-inline bool operator==(const blockbinary<nnbits, B>& lhs, const blockbinary<nnbits, B>& rhs) {
+template<size_t N, typename B>
+inline bool operator==(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs) {
 	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
 		if (lhs._block[i] != rhs._block[i]) {
 			return false;
@@ -322,11 +399,30 @@ inline bool operator==(const blockbinary<nnbits, B>& lhs, const blockbinary<nnbi
 	}
 	return true;
 }
-template<size_t nnbits, typename B>
-inline bool operator!=(const blockbinary<nnbits, B>& lhs, const blockbinary<nnbits, B>& rhs) {
+template<size_t N, typename B>
+inline bool operator!=(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs) {
 	return !operator==(lhs, rhs);
 }
-
+template<size_t N, typename B>
+inline bool operator<(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs) {
+	blockbinary<N, B> diff = lhs - rhs;
+	return diff.isneg();
+}
+template<size_t N, typename B>
+inline bool operator<=(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs) {
+	blockbinary<N, B> diff = lhs - rhs;
+	return diff.isneg() || diff.iszero();
+}
+template<size_t N, typename B>
+inline bool operator>(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs) {
+	blockbinary<N, B> diff = lhs - rhs;
+	return diff.ispos();
+}
+template<size_t N, typename B>
+inline bool operator>=(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs) {
+	blockbinary<N, B> diff = lhs - rhs;
+	return diff.ispos() || diff.iszero();
+}
 ///////////////////////////////////////////////////////////////////////////////
 // binary operators
 
@@ -354,6 +450,60 @@ template<size_t nbits, typename BlockType>
 inline blockbinary<nbits, BlockType> operator%(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
 	blockbinary<nbits, BlockType> c(a);
 	return c %= b;
+}
+
+
+// divide a by b and return both quotient and remainder
+template<size_t nbits, typename BlockType>
+quorem<nbits, BlockType> longdivision(const blockbinary<nbits, BlockType>& _a, const blockbinary<nbits, BlockType>& _b) {
+	quorem<nbits, BlockType> result = { 0, 0, 0 };
+	if (_b.iszero()) {
+		result.exceptionId = 1; // division by zero
+		return result;
+	}
+	// generate the absolute values to do long division 
+	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
+	bool a_sign = _a.sign();
+	bool b_sign = _b.sign();
+	bool result_negative = (a_sign ^ b_sign);
+	// normalize to positive, which requires expension by 1-bit
+	blockbinary<nbits + 1, BlockType> a; a = (a_sign ? -_a : _a);
+	blockbinary<nbits + 1, BlockType> b; b = (b_sign ? -_b : _b);
+
+	if (a < b) {
+		result.rem = _a; // a % b = a when a / b = 0
+		return result;   // a / b = 0 when b > a
+	}
+	// initialize the long division
+	blockbinary<nbits + 1, BlockType> accumulator = a;
+	// prepare the subtractand
+	blockbinary<nbits + 1, BlockType> subtractand = b;
+	int msb_b = b.msb();
+	int msb_a = a.msb();
+	int shift = msb_a - msb_b;
+	subtractand <<= shift;
+	// long division
+	for (int i = shift; i >= 0; --i) {
+		if (subtractand <= accumulator) {
+			accumulator -= subtractand;
+			result.quo.set(i);
+		}
+		else {
+			result.quo.reset(i);
+		}
+		subtractand >>= 1;
+	}
+	if (result_negative) {  // take 2's complement
+		result.quo.flip();
+		result.quo += 1;
+	}
+	if (_a.isneg()) {
+		result.rem = -accumulator;
+	}
+	else {
+		result.rem = accumulator;
+	}
+	return result;
 }
 
 ///////////////////////////////////////////////////////////////////////////////

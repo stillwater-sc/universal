@@ -1,4 +1,4 @@
-//  arithmetic_sub.cpp : arithmetic test suite for subracting abitrary precision integers
+//  subtraction.cpp : arithmetic test suite for subracting abitrary precision integers
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -37,7 +37,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	std::string tag = "integer subtraction failed";
+	std::string tag = "integer subtraction";
 
 #if MANUAL_TESTING
 

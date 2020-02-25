@@ -1,4 +1,4 @@
-// block_div.cpp: functional tests for block binary number division
+// block_rem.cpp: functional tests for block binary number remainder
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -15,15 +15,15 @@
 
 // generic division test generator
 template<typename Scalar>
-void GenerateDivTest(const Scalar& x, const Scalar& y, Scalar& z) {
+void GenerateRemTest(const Scalar& x, const Scalar& y, Scalar& z) {
 	using namespace sw::unum;
-	z = x / y;
-	std::cout << typeid(Scalar).name() << ": " << to_binary(x) << " / " << to_binary(y) << " = " << to_binary(z) << std::endl;
+	z = x % y;
+	std::cout << typeid(Scalar).name() << ": " << to_binary(x) << " % " << to_binary(y) << " = " << to_binary(z) << std::endl;
 }
 
 // enumerate all multiplication cases for an blockbinary<nbits,BlockType> configuration
 template<size_t nbits, typename BlockType = uint8_t>
-int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
+int VerifyRemainder(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace std;
 	using namespace sw::unum;
@@ -43,18 +43,18 @@ int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
 		for (size_t j = 0; j < NR_VALUES; j++) {
 			b.set_raw_bits(j);
 			bref = int64_t(b.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
-			result = a / b;
+			result = a % b;
 		
 			if (bref == 0) continue;
-			cref = aref / bref;
+			cref = aref % bref;
 
 			if (cref < -(1 << (nbits - 1))) {
-				if (bReportOverflowCondition) cout << setw(5) << aref << " / " << setw(5) << bref << " = " << setw(5) << cref << " : ";
+				if (bReportOverflowCondition) cout << setw(5) << aref << " % " << setw(5) << bref << " = " << setw(5) << cref << " : ";
 				if (bReportOverflowCondition) cout << "underflow: " << setw(5) << cref << " < " << setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
 				++nrOfUnderflows;
 			}
 			else if (cref > ((1 << (nbits - 1)) - 1)) {
-				if (bReportOverflowCondition) cout << setw(5) << aref << " / " << setw(5) << bref << " = " << setw(5) << cref << " : ";
+				if (bReportOverflowCondition) cout << setw(5) << aref << " % " << setw(5) << bref << " = " << setw(5) << cref << " : ";
 				if (bReportOverflowCondition) cout << "overflow: " << setw(5) << cref << " > " << setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << setw(5) << result.to_long_long() << " " << setw(5) << to_hex(result) << " vs " << to_binary(cref, 12) << endl;
 				++nrOfOverflows;
 			}
@@ -62,10 +62,10 @@ int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
 			refResult.set_raw_bits(cref);
 			if (result != refResult) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", a, b, result, cref);
+				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "%", a, b, result, cref);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, result, cref);
+				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "%", a, b, result, cref);
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
@@ -96,7 +96,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "block binary division: ";
@@ -107,13 +107,18 @@ try {
 //	TestMostSignificantBit<27, uint16_t>();
 //	TestMostSignificantBit<33, uint32_t>();
 
-	blockbinary<4> a, b, c;
-	a = 1;
-	b = 2;
-	c = a / b;
-	GenerateDivTest(a, b, c);
+	int ia, ib, ic;
+	blockbinary<4> a, b, c, d;
+	a = -8;
+	b = 3;
+	c = a % b;
+	cout << c.to_long_long() << " " << to_binary(c) << endl;
+	d.set_raw_bits(-8 % 3);
+	cout << d.to_long_long() << " " << to_binary(d) << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<4>", "division");
+
+
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<4, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<4>", "division");
 
 
 #if STRESS_TESTING
@@ -124,25 +129,25 @@ try {
 
 	cout << "block binary division validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<4,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<5,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<6,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<7,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<9, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<9,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<10,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<4, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<4,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<5, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<5,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<6, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<6,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<7, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<7,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<8, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<9, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<9,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<10,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8_t>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<9, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<9,uint16_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<11, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<11,uint16_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<13, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<13,uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<9, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<9,uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<11, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<11,uint16_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<13, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<13,uint16_t>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint32_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint32_t>", "division");
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<14, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<14,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<14, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<14,uint8_t>", "division");
 
 
 #endif  // STRESS_TESTING
