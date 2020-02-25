@@ -1,4 +1,4 @@
-//  arithmetic_mul.cpp : arithmetic test suite for multiplication of abitrary precision integers
+//  multiplication.cpp : arithmetic test suite for multiplication of abitrary precision integers
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

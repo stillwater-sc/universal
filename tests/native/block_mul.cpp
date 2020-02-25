@@ -12,25 +12,22 @@
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 #include "../utils/blockbinary_helpers.hpp"
-#include <universal/posit/posit.hpp>
 
-#define FLAG_OVERFLOW
-
-// enumerate all multiplication cases for an fixpnt<nbits,rbits> configuration
-template<size_t nbits, typename StorageBlockType = uint8_t>
+// enumerate all multiplication cases for an blockbinary<nbits,BlockType> configuration
+template<size_t nbits, typename BlockType = uint8_t>
 int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace std;
 	using namespace sw::unum;
 
 	cout << endl;
-	cout << "blockbinary<" << nbits << ',' << typeid(StorageBlockType).name() << '>' << endl;
+	cout << "blockbinary<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
 	bool bReportOverflowCondition = false;
 	int nrOfFailedTests = 0;
 	int nrOfOverflows = 0;   // ref > maxpos
 	int nrOfUnderflows = 0;  // ref < maxneg
-	blockbinary<nbits, StorageBlockType> a, b, result, refResult;
+	blockbinary<nbits, BlockType> a, b, result, refResult;
 	int64_t aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.set_raw_bits(i);
