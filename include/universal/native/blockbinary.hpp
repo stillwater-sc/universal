@@ -82,6 +82,7 @@ public:
 
 	static constexpr size_t MSU = nrBlocks - 1; // MSU == Most Significant Unit
 	static constexpr size_t MSU_MASK = (BlockType(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr BlockType SIGN_BIT_MASK = BlockType(BlockType(1) << ((nbits - 1) % (nrBlocks * bitsInBlock)));
 
 	// constructors
 	blockbinary() { setzero(); }
@@ -97,6 +98,7 @@ public:
 	blockbinary(const blockbinary<nnbits, BlockType>& rhs) {
 		clear();
 		// can simply copy the blocks in
+		size_t nrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = rhs.block(i);
 		}
@@ -114,6 +116,9 @@ public:
 		_block[MSU] &= MSU_MASK;
 		return *this;
 	}
+
+	// conversion operators
+	explicit operator long long() const { return to_long_long(); }
 
 	// logic operators
 	blockbinary  operator~() {
@@ -242,7 +247,7 @@ public:
 		return *this;
 	}
 	// selectors
-	inline bool sign() const { return _block[MSU] & MSU_MASK; }
+	inline bool sign() const { return _block[MSU] & SIGN_BIT_MASK; }
 	inline bool at(size_t i) const {
 		if (i < nbits) {
 			BlockType word = _block[i / bitsInBlock];
@@ -267,12 +272,34 @@ public:
 		}
 		throw "block index out of bounds";
 	}
+	long long to_long_long() const {
+		constexpr unsigned sizeoflonglong = 8 * sizeof(long long);
+		long long ll = 0;
+		long long mask = 1;
+		unsigned upper = (nbits < sizeoflonglong ? nbits : sizeoflonglong);
+		for (unsigned i = 0; i < upper; ++i) {
+			ll |= at(i) ? mask : 0;
+			mask <<= 1;
+		}
+		if (sign() && upper < sizeoflonglong) { // sign extend
+			for (unsigned i = upper; i < sizeoflonglong; ++i) {
+				ll |= mask;
+				mask <<= 1;
+			}
+		}
+		return ll;
+	}
+
 	// determine the rounding mode: -1 round down, 0 tie, 1 round up
 	int roundingMode(unsigned guardBitIndex) const {
 		int rv = 0;
 
 		return rv;
 	}
+
+protected:
+	// HELPER methods
+
 private:
 	BlockType _block[nrBlocks];
 
@@ -281,7 +308,6 @@ private:
 	friend bool operator==(const blockbinary<nnbits, B>& lhs, const blockbinary<nnbits, B>& rhs);
 	template<size_t nnbits, typename B>
 	friend bool operator!=(const blockbinary<nnbits, B>& lhs, const blockbinary<nnbits, B>& rhs);
-
 };
 
 ///////////////////////////////////////////////////////////////////////////////

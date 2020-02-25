@@ -37,7 +37,7 @@ void ExamplePattern() {
 	GenerateMulTest<sw::unum::integer<16> >(2, 16, z);
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main()
@@ -59,7 +59,9 @@ try {
 
 	cout << "done" << endl;
 
-	return EXIT_SUCCESS;
+	ReportTestResult(VerifyMultiplication<4>(tag, true), "integer<4>", "multiplication");
+
+
 #else
 	std::cout << "Integer Arithmetic verfication" << std::endl;
 
