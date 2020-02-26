@@ -59,38 +59,37 @@ try {
 	b = a;
 	c = a * b;
 	cout << c << endl;
-	return 0;
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 1>(0.5f, 0.5f);
 	GenerateTestCase<8, 1>(0.5f, 63.5f);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1, Modular, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,1,Modular,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4, Modular, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Modular,uint8_t>", "multiplication");
 
 #if STRESS_TESTING
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<4, 0>("Manual Testing", true), "fixpnt<4,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<4, 1>("Manual Testing", true), "fixpnt<4,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<4, 2>("Manual Testing", true), "fixpnt<4,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<4, 3>("Manual Testing", true), "fixpnt<4,3>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<4, 4>("Manual Testing", true), "fixpnt<4,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modular,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,2,Modular,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 3, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,3,Modular,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 4, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,4,Modular,uint8_t>", "multiplication");
 #endif
 
 #else
 
 	cout << "Fixed-point modular multiplication validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 0, Modular, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,0,Modular,uint8_t>", "multiplication");
 	/*
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 1>(tag, bReportIndividualTestCases), "fixpnt<8,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 2>(tag, bReportIndividualTestCases), "fixpnt<8,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 3>(tag, bReportIndividualTestCases), "fixpnt<8,3>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 4>(tag, bReportIndividualTestCases), "fixpnt<8,4>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 5>(tag, bReportIndividualTestCases), "fixpnt<8,5>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 6>(tag, bReportIndividualTestCases), "fixpnt<8,6>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 7>(tag, bReportIndividualTestCases), "fixpnt<8,7>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyModularMultiplication<8, 8>(tag, bReportIndividualTestCases), "fixpnt<8,8>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1,Modular,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,1,Modular,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 2,Modular,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,2,Modular,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 3,Modular,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,3,Modular,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4,Modular,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Modular,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 5,Modular,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,5,Modular,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 6,Modular,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,6,Modular,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 7,Modular,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,7,Modular,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 8,Modular,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,8,Modular,uint8_t>", "multiplication");
 	*/
 
 #if STRESS_TESTING

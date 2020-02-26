@@ -549,46 +549,23 @@ public:
 	}
 	fixpnt& operator*=(const fixpnt& rhs) {
 		// TODO: how are we going to deal with overflow?
+		bb *= rhs.bb;
 		return *this;
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
+		bb /= rhs.bb;
 		return *this;
 	}
 	fixpnt& operator%=(const fixpnt& rhs) {
+		bb %= rhs.bb;
 		return *this;
 	}
 	fixpnt& operator<<=(const signed shift) {
-		if (shift == 0) return *this;
-		if (shift < 0) {
-			operator>>=(-shift);
-			return *this;
-		}
-		if (nbits <= unsigned(shift)) {
-			clear();
-			return *this;
-		}
-		fixpnt target;
-		for (unsigned i = shift; i < nbits; ++i) {  // TODO: inefficient as it works at the bit level
-			target.set(i, at(i - shift));
-		}
-		*this = target;
+		bb <<= shift;
 		return *this;
 	}
 	fixpnt& operator>>=(const signed shift) {
-		if (shift == 0) return *this;
-		if (shift < 0) {
-			operator<<=(-shift);
-			return *this;
-		}
-		if (nbits <= unsigned(shift)) {
-			clear();
-			return *this;
-		}
-		fixpnt target;
-		for (int i = nbits - 1; i >= int(shift); --i) {  // TODO: inefficient as it works at the bit level
-			target.set(i - shift, at(i));
-		}
-		*this = target;
+		bb >>= shift;
 		return *this;
 	}
 	

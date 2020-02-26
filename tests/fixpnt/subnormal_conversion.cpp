@@ -127,12 +127,9 @@ try {
 
 	return 0;
 
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 0, float>(bReportIndividualTestCases), tag, "posit<4,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 1, float>(bReportIndividualTestCases), tag, "posit<4,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 2, float>(bReportIndividualTestCases), tag, "posit<4,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 3, float>(bReportIndividualTestCases), tag, "posit<4,3>");
+	// can't use the regular exhaustive test suites for these very large fixed-points
+	// nrOfFailedTestCases = ReportTestResult(ValidateAssignment<256, 150, Modular, uint32_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,0, Modular, uint32_t>");
 	
-
 #if STRESS_TESTING
 
 	// manual exhaustive test

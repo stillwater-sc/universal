@@ -225,13 +225,13 @@ try {
 	}
 
 
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 0, float>(bReportIndividualTestCases), tag, "posit<4,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 1, float>(bReportIndividualTestCases), tag, "posit<4,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 2, float>(bReportIndividualTestCases), tag, "posit<4,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 3, float>(bReportIndividualTestCases), tag, "posit<4,3>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 0, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,0,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 1, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,1,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 2, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,2,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 3, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,3,Modular,uint8_t>");
 	
 	// TODO: fixed-point is failing on pure fractional configurations
-	//nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 4, float>(bReportIndividualTestCases), tag, "posit<4,4>");
+	//nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 4,Modular,uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,4,Modular,uint8_t>");
 
 #if STRESS_TESTING
 
@@ -242,30 +242,30 @@ try {
 #else
 	cout << "Fixed-point modular assignment validation" << endl;
 
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 0, float>(bReportIndividualTestCases), tag, "posit<4,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 1, float>(bReportIndividualTestCases), tag, "posit<4,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 2, float>(bReportIndividualTestCases), tag, "posit<4,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 3, float>(bReportIndividualTestCases), tag, "posit<4,3>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 0, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,0,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 1, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,1,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 2, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,2,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 3, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,3,Modular,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<6, 0, float>(bReportIndividualTestCases), tag, "posit<6,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<6, 1, float>(bReportIndividualTestCases), tag, "posit<6,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<6, 2, float>(bReportIndividualTestCases), tag, "posit<6,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<6, 3, float>(bReportIndividualTestCases), tag, "posit<6,3>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 0, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<6,0,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 1, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<6,1,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 2, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<6,2,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 3, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<6,3,Modular,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<8, 0, float>(bReportIndividualTestCases), tag, "posit<8,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<8, 1, float>(bReportIndividualTestCases), tag, "posit<8,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<8, 2, float>(bReportIndividualTestCases), tag, "posit<8,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<8, 3, float>(bReportIndividualTestCases), tag, "posit<8,3>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<8, 4, float>(bReportIndividualTestCases), tag, "posit<8,4>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 0, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<8,0,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 1, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<8,1,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 2, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<8,2,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 3, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<8,3,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 4, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<8,4,Modular,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<10, 0, float>(bReportIndividualTestCases), tag, "posit<10,0>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<10, 1, float>(bReportIndividualTestCases), tag, "posit<10,1>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<10, 2, float>(bReportIndividualTestCases), tag, "posit<10,2>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<10, 3, float>(bReportIndividualTestCases), tag, "posit<10,3>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<10, 4, float>(bReportIndividualTestCases), tag, "posit<10,4>");
-	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<10, 5, float>(bReportIndividualTestCases), tag, "posit<10,5>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<10, 0, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<10,0,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<10, 1, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<10,1,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<10, 2, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<10,2,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<10, 3, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<10,3,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<10, 4, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<10,4,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<10, 5, Modular, uint8_t, float>(bReportIndividualTestCases), tag, "fixpnt<10,5,Modular,uint8_t>");
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyModularAddition<8, 0>(tag, bReportIndividualTestCases), "fixpnt<8,0>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 0, Modular,uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,0,Modular,uint8_t>", "addition");
 
 #if STRESS_TESTING
 

@@ -81,7 +81,7 @@ void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const 
 }
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType, typename Ty>
-void ReportAssignmentError(std::string test_case, std::string op, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt < nbits, rbits>& result, const Ty& value) {
+void ReportAssignmentError(std::string test_case, std::string op, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt <nbits, rbits, arithmetic, BlockType>& result, const Ty& value) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << value
@@ -92,7 +92,7 @@ void ReportAssignmentError(std::string test_case, std::string op, const fixpnt<n
 }
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType, typename Ty>
-void ReportAssignmentSuccess(std::string test_case, std::string op, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt < nbits, rbits>& result, const Ty& value) {
+void ReportAssignmentSuccess(std::string test_case, std::string op, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt <nbits, rbits, arithmetic, BlockType>& result, const Ty& value) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << value
