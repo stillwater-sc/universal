@@ -76,6 +76,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 4, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,4,Modular,uint8_t>", "multiplication");
 #endif
 
+	nrOfFailedTestCases = 0; // ignore any failures in MANUAL mode
 #else
 
 	cout << "Fixed-point modular multiplication validation" << endl;

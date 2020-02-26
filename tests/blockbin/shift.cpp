@@ -1,4 +1,4 @@
-// block_shift.cpp: functional tests for block binary number shifts
+// shift.cpp: functional tests for block binary number shifts
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

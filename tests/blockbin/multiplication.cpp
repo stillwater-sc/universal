@@ -1,4 +1,4 @@
-// arithmetic_mul.cpp: functional tests for block multiplication
+// multiplication.cpp: functional tests for block binary multiplication
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

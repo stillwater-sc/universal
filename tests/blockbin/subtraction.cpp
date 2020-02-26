@@ -1,4 +1,4 @@
-// arithmetic_sub.cpp: functional tests for block subtraction
+// subtraction.cpp: functional tests for block binary subtraction
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

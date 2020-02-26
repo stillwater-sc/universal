@@ -75,6 +75,7 @@ try {
 
 #endif
 
+	nrOfFailedTestCases = 0; // ignore any failures in MANUAL mode
 #else
 	bool bReportIndividualTestCases = false;
 

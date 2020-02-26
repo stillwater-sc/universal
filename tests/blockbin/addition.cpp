@@ -1,4 +1,4 @@
-// block_add.cpp: functional tests for block binary number addition
+// addition.cpp: functional tests for block binary number addition
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

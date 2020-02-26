@@ -1,4 +1,4 @@
-// block_div.cpp: functional tests for block binary number division
+// division.cpp: functional tests for block binary number division
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
