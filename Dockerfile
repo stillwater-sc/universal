@@ -40,6 +40,10 @@ RUN apt-get update && apt-get install -y make cmake
 # and one for each directory that contains test executables.
 COPY --from=builder /usr/src/universal/build/tools/cmd/cmd_*             	              /usr/src/universal/build/tools/cmd/
 COPY --from=builder /usr/src/universal/build/tools/cmd/*.cmake           	              /usr/src/universal/build/tools/cmd/
+COPY --from=builder /usr/src/universal/build/tests/bitblock/bitblock_*         	              /usr/src/universal/build/tests/bitblock/
+COPY --from=builder /usr/src/universal/build/tests/bitblock/*.cmake         	              /usr/src/universal/build/tests/bitblock/
+COPY --from=builder /usr/src/universal/build/tests/blockbin/blockbin_*         	              /usr/src/universal/build/tests/blockbin/
+COPY --from=builder /usr/src/universal/build/tests/blockbin/*.cmake         	              /usr/src/universal/build/tests/blockbin/
 COPY --from=builder /usr/src/universal/build/tests/integer/integer_*         	              /usr/src/universal/build/tests/integer/
 COPY --from=builder /usr/src/universal/build/tests/integer/*.cmake         	              /usr/src/universal/build/tests/integer/
 COPY --from=builder /usr/src/universal/build/tests/decimal/decimal_*         	              /usr/src/universal/build/tests/decimal/
