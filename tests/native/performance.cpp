@@ -8,7 +8,7 @@
 #include <chrono>
 
 //#include <universal/integer/integer.hpp>
-#include <universal/native/blockbinary.hpp>
+#include <universal/blockbin/blockbinary.hpp>
 
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"

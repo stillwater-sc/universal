@@ -33,7 +33,7 @@ Run-time configuration is used to select modular vs saturation arithmetic.
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
 #include "universal/native/ieee-754.hpp"   // IEEE-754 decoders
 #include "universal/native/integers.hpp"   // manipulators for native integer types
-#include "universal/native/blockbinary.hpp"
+#include "universal/blockbin/blockbinary.hpp"
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
