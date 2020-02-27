@@ -42,10 +42,10 @@ int VerifyEqual(std::string tag, bool bReportIndividualTestCases) {
 	int64_t i64a, i64b;
 	for (size_t i = 0; i < NR_INTEGERS; i++) {
 		ia.set_raw_bits(i);
-		i64a = int64_t(ia);
+		i64a = (long long)(ia);
 		for (size_t j = 0; j < NR_INTEGERS; j++) {
 			ib.set_raw_bits(j);
-			i64b = int64_t(ib);
+			i64b = (long long)(ib);
 			iref = i64a == i64b;
 			iresult = ia == ib;
 			if (iresult != iref) {
@@ -74,10 +74,10 @@ int VerifyNotEqual(std::string tag, bool bReportIndividualTestCases) {
 	int64_t i64a, i64b;
 	for (size_t i = 0; i < NR_INTEGERS; i++) {
 		ia.set_raw_bits(i);
-		i64a = int64_t(ia);
+		i64a = (long long)(ia);
 		for (size_t j = 0; j < NR_INTEGERS; j++) {
 			ib.set_raw_bits(j);
-			i64b = int64_t(ib);
+			i64b = (long long)(ib);
 			iref = i64a != i64b;
 			iresult = ia != ib;
 			if (iresult != iref) {
@@ -106,10 +106,10 @@ int VerifyLessThan(std::string tag, bool bReportIndividualTestCases) {
 	int64_t i64a, i64b;
 	for (size_t i = 0; i < NR_INTEGERS; i++) {
 		ia.set_raw_bits(i);
-		i64a = int64_t(ia);
+		i64a = (long long)(ia);
 		for (size_t j = 0; j < NR_INTEGERS; j++) {
 			ib.set_raw_bits(j);
-			i64b = int64_t(ib);
+			i64b = (long long)(ib);
 			iref = i64a < i64b;
 			iresult = ia < ib;
 			if (iresult != iref) {
@@ -138,10 +138,10 @@ int VerifyLessOrEqualThan(std::string tag, bool bReportIndividualTestCases) {
 	int64_t i64a, i64b;
 	for (size_t i = 0; i < NR_INTEGERS; i++) {
 		ia.set_raw_bits(i);
-		i64a = int64_t(ia);
+		i64a = (long long)(ia);
 		for (size_t j = 0; j < NR_INTEGERS; j++) {
 			ib.set_raw_bits(j);
-			i64b = int64_t(ib);
+			i64b = (long long)(ib);
 			iref = i64a <= i64b;
 			iresult = ia <= ib;
 			if (iresult != iref) {
@@ -170,10 +170,10 @@ int VerifyGreaterThan(std::string tag, bool bReportIndividualTestCases) {
 	int64_t i64a, i64b;
 	for (size_t i = 0; i < NR_INTEGERS; i++) {
 		ia.set_raw_bits(i);
-		i64a = int64_t(ia);
+		i64a = (long long)(ia);
 		for (size_t j = 0; j < NR_INTEGERS; j++) {
 			ib.set_raw_bits(j);
-			i64b = int64_t(ib);
+			i64b = (long long)(ib);
 			iref = i64a < i64b;
 			iresult = ia < ib;
 			if (iresult != iref) {
@@ -202,10 +202,10 @@ int VerifyGreaterOrEqualThan(std::string tag, bool bReportIndividualTestCases) {
 	int64_t i64a, i64b;
 	for (size_t i = 0; i < NR_INTEGERS; i++) {
 		ia.set_raw_bits(i);
-		i64a = int64_t(ia);
+		i64a = (long long)(ia);
 		for (size_t j = 0; j < NR_INTEGERS; j++) {
 			ib.set_raw_bits(j);
-			i64b = int64_t(ib);
+			i64b = (long long)(ib);
 			iref = i64a >= i64b;
 			iresult = ia >= ib;
 			if (iresult != iref) {
