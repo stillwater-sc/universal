@@ -1,4 +1,4 @@
-// arithmetic_sub.cpp: functional tests for fixed-point subtraction
+// subtraction.cpp: functional tests for arbitrary configuration fixed-point subtraction
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

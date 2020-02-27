@@ -1,4 +1,4 @@
-// arithmetic_div.cpp: functional tests for fixed-point division
+// division.cpp: functional tests for arbitrary configuration fixed-point division
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

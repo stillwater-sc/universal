@@ -1,4 +1,4 @@
-// arithmetic_mul.cpp: functional tests for fixed-point multiplication
+// multiplication.cpp: functional tests for arbitrary configuration fixed-point multiplication
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
