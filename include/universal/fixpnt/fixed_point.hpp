@@ -86,10 +86,20 @@ struct fixpntdiv_t {
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, BlockType>& v);
 
+// free function to create the 2's complement of a fixpnt
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+inline fixpnt<nbits, rbits, arithmetic, BlockType> twos_complement(const fixpnt<nbits, rbits, arithmetic, BlockType>& value) {
+	fixpnt<nbits, rbits, arithmetic, BlockType> complement = ~value;
+	fixpnt<nbits, rbits, arithmetic, BlockType> plusOne;
+	plusOne.set_raw_bits(0x1);
+	complement += plusOne;
+	return complement;
+}
+
 // The free function scale calculates the power of 2 exponent that would capture an approximation of a normalized real value
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline int scale(const fixpnt<nbits, rbits, arithmetic, BlockType>& i) {
-	fixpnt<nbits,rbits,arithmetic> v(i);
+	fixpnt<nbits,rbits,arithmetic,BlockType> v(i);
 	if (i.sign()) { // special case handling
 		v = twos_complement(v);
 		if (v == i) {  // special case of 10000..... largest negative number in 2's complement encoding
@@ -239,10 +249,11 @@ public:
 	static_assert(_nbits >= _rbits, "fixpnt configuration error: nbits must be greater or equal to rbits");
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t rbits = _rbits;
-	static constexpr unsigned nrBytes = (1 + ((nbits - 1) / 8));
-	static constexpr unsigned mulBytes = (1 + ((2 * nbits - 1) / 8)); // for the odd case of a half filled byte
-	static constexpr unsigned MS_BYTE = nrBytes - 1;
-	static constexpr uint8_t MS_BYTE_MASK = (0xFF >> (nrBytes * 8 - nbits));
+        static constexpr size_t bitsInChar = 8;
+        static constexpr size_t bitsInBlock = sizeof(BlockType) * bitsInChar;
+	static constexpr size_t nrBlocks = (1 + ((nbits - 1) / bitsInBlock));
+	static constexpr size_t MSU = nrBlocks - 1;
+	static constexpr BlockType MSU_MASK = (BlockType(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
 
 	fixpnt() { setzero(); }
 
@@ -438,8 +449,8 @@ public:
 	fixpnt& operator=(const fixpnt<src_bits, rbits, arithmetic, BlockType>& src) {
 		if (src_bits <= nbits) {
 			// simple copy of the bytes
-			for (unsigned i = 0; i < unsigned(src.nrBytes); ++i) {
-				b[i] = src.byte(i);
+			for (unsigned i = 0; i < unsigned(src.nrBlocks); ++i) {
+				bb[i] = src.block(i);
 			}
 			if (src < 0) {
 				// we need to sign extent
@@ -510,7 +521,6 @@ public:
 	}
 	fixpnt& operator++() {
 		*this += fixpnt(1);
-		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 	// decrement
@@ -521,7 +531,6 @@ public:
 	}
 	fixpnt& operator--() {
 		*this -= fixpnt(1);
-		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
 	// conversion operators
@@ -594,18 +603,18 @@ public:
 			std::cerr << "Unable to parse: " << txt << std::endl;
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		b[MS_BYTE] = MS_BYTE_MASK & b[MS_BYTE];
+		bb[MSU] = MSU_MASK & bb[MSU];
 		return *this;
 	}
 	// pure bit copy of source fixpnt, no sign extension
 	template<size_t src_nbits, size_t src_rbits>
 	inline void bitcopy(const fixpnt<src_nbits, src_rbits> & src) {
-		int lastByte = (nrBytes < src.nrBytes ? nrBytes : src.nrBytes);
+		int lastByte = (nrBlocks < src.nrBlocks ? nrBlocks : src.nrBlocks);
 		clear();
 		for (int i = 0; i < lastByte; ++i) {
-			b[i] = src.byte(i);
+			bb[i] = src.block(i);
 		}
-		b[MS_BYTE] = b[MS_BYTE] & MS_BYTE_MASK; // assert precondition of properly nulled leading non-bits
+		bb[MSU] = bb[MSU] & MSU_MASK; // assert precondition of properly nulled leading non-bits
 	}
 	// in-place one's complement
 	inline fixpnt& flip() {
@@ -644,37 +653,16 @@ protected:
 		return ll;
 	}
 	unsigned short to_ushort() const {
-		if (iszero()) return 0;
-		unsigned short us;
-		char* p = (char*)&us;
-		*p = b[0];
-		*(p + 1) = b[1];
-		return us;
+		return (unsigned short)(to_ulong_long());
 	}
 	unsigned int to_uint() const {
-		unsigned int ui;
-		char* p = (char*)&ui;
-		*p = b[0];
-		*(p + 1) = b[1];
-		*(p + 2) = b[2];
-		*(p + 3) = b[3];
-		return ui;
+		return (unsigned int)(to_ulong_long());
 	}
 	unsigned long to_ulong() const {
-		unsigned long ul = 0;
-		char* p = (char*)&ul;
-		for (int i = 0; i < nrBytes; ++i) {
-			*(p + i) = b[i];
-		}
-		return ul;
+		return (unsigned long)(to_ulong_long());
 	}
 	unsigned long long to_ulong_long() const {
-		unsigned long long ull = 0;
-		char* p = (char*)&ull;
-		for (int i = 0; i < nrBytes; ++i) {
-			*(p + i) = b[i];
-		}
-		return ull;
+		return bb.to_long_long();
 	}
 	float to_float() const {
 		// minimum positive normal value of a single precision float == 2^-126
@@ -1209,15 +1197,6 @@ inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
 
 ////////////////////////    INTEGER functions   /////////////////////////////////
 
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-inline fixpnt<nbits, rbits, arithmetic, BlockType> twos_complement(const fixpnt<nbits, rbits, arithmetic, BlockType>& value) {
-	fixpnt<nbits, rbits> complement = ~value;
-	fixpnt<nbits, rbits> increment;
-	increment.set_raw_bits(0x1);
-	complement += increment;
-	return complement;
-}
-
 // convert fixpnt to decimal string, i.e. "-1234.5678"
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, BlockType>& value) {
@@ -1302,7 +1281,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, Blo
 // findMsb takes an fixpnt<nbits,rbits> reference and returns the position of the most significant bit, -1 if v == 0
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline signed findMsb(const fixpnt<nbits, rbits, arithmetic, BlockType>& v) {
-	for (signed i = v.nrBytes - 1; i >= 0; --i) {
+	for (signed i = v.nrBlocks - 1; i >= 0; --i) {
 		if (v.b[i] != 0) {
 			uint8_t mask = 0x80;
 			for (signed j = 7; j >= 0; --j) {
