@@ -30,6 +30,9 @@ try {
 
 	cout << "fixed-point class interface tests" << endl;
 
+	/////////////////////////////////////////////////////////////////////////////////////
+	//// MODULAR fixed-point (the default)
+
 	// construction
 	{
 		// default construction using default arithmetic (Modular) and default BlockType (uint8_t)
@@ -37,7 +40,7 @@ try {
 		// b initialized to -8.125 in modular arithmetic becomes 7.875: -8.125 = b1000.0010 > maxneg -> becomes b0111.1110
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a != (b - c)) ++nrOfFailedTestCases;
-		cout << a << ' ' << b << ' ' << c << ' ' << d << endl;
+		//cout << a << ' ' << b << ' ' << c << ' ' << d << endl;
 	}
 
 	{
@@ -46,8 +49,12 @@ try {
 		// b initialized to -8.125 in modular arithmetic becomes 7.875: -8.125 = b1000.0010 > maxneg -> becomes b0111.1110
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a != (b - c)) ++nrOfFailedTestCases;
-		cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
+		//cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
 	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////
+	//// SATURATING fixed-point
 
 	{
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
@@ -55,17 +62,23 @@ try {
 		// b initialized to -8.125 in saturating arithmetic becomes -8
 		if (0 != (c + d)) ++nrOfFailedTestCases;
 		if (a != b) ++nrOfFailedTestCases;
+		if (a != (d - 1)) ++nrOfFailedTestCases; // saturating to maxneg
+		if (a != (d - 0.5)) ++nrOfFailedTestCases; // saturating to maxneg
 		cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
 	}
+
+
+	/////////////////////////////////////////////////////////////////////////////////////
+	//// improving efficiency for bigger fixed-points through explicit BlockType specification
 
 	{
 		// construction with explicit arithmetic type and BlockType
 		fixpnt<16, 4, Modular, uint16_t> a, b(-2048.125f), c(2047.875), d(-2047.875);
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a != (b - c)) ++nrOfFailedTestCases;
-//		cout << to_binary(a, true) << ' ' << to_binary(b, true) << ' ' << to_binary(c, true) << ' ' << to_binary(d, true) << endl;
-		cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
-		cout << a << ' ' << b << ' ' << c << ' ' << d << endl;
+		//		cout << to_binary(a, true) << ' ' << to_binary(b, true) << ' ' << to_binary(c, true) << ' ' << to_binary(d, true) << endl;
+		//cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
+		//cout << a << ' ' << b << ' ' << c << ' ' << d << endl;
 	}
 
 	if (nrOfFailedTestCases < 0) {
