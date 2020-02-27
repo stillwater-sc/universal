@@ -1,0 +1,2 @@
+# Notes on Chebyshev nodes
+
