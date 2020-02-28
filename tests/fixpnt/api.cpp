@@ -52,7 +52,7 @@ try {
 		//cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
 	}
 
-
+#ifdef LATER
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// SATURATING fixed-point
 
@@ -81,7 +81,64 @@ try {
 		//cout << a << ' ' << b << ' ' << c << ' ' << d << endl;
 	}
 
-	if (nrOfFailedTestCases < 0) {
+	/////////////////////////////////////////////////////////////////////////////////////
+	// modifiers
+
+	{
+		// state/bit management
+		constexpr size_t nbits = 8;
+		constexpr size_t rbits = 4;
+		fixpnt<nbits, rbits> a, b, c, d;
+		for (size_t i = 0; i < rbits; ++i) {
+			a.set(i, true);
+		}
+		b.set_raw_bits(0x0F); // same as the fixpnt a above
+		if ((a - b) != 0) ++nrOfFailedTestCases;
+		c = b;
+		// manually flip the bits of b
+		for (size_t i = 0; i < nbits; ++i) {
+			b.at(i) ? b.reset(i) : b.set(i);
+		}
+		c.flip();  // in-place 1's complement, so now b and c are the same
+		if (b != c) ++nrOfFailedTestCases;	
+		d.set_raw_bits(0xFFFFFFF);
+		if (0 == d) ++nrOfFailedTestCases;
+		d.setzero();
+		if (d != 0) ++nrOfFailedTestCases;
+	}
+#endif
+	////////////////////////////////////////////////////////////////////////////////////
+	// parsing of text input
+	{
+		/* TODO: implement parse
+		constexpr size_t nbits = 128;
+		constexpr size_t rbits = 64;
+		fixpnt<nbits, rbits, Modular, uint32_t> a, b, c, d;
+		a.assign("123456789.987654321");
+		parse("123456789.987654321", b);
+		*/
+	}
+
+	///////////////////////////////////////////////////////////////////////////////////
+	// arithmetic
+	{
+		constexpr size_t nbits = 16;
+		constexpr size_t rbits = 8;
+		constexpr bool arithmetic = Modular;
+		using blocktype = uint32_t;
+		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
+		a = maxpos_fixpnt<nbits, rbits, arithmetic, blocktype>();
+		b = maxneg_fixpnt<nbits, rbits, arithmetic, blocktype>();
+		c = minpos_fixpnt<nbits, rbits, arithmetic, blocktype>();
+		d = minneg_fixpnt<nbits, rbits, arithmetic, blocktype>();
+		if ((c + d) != 0) ++nrOfFailedTestCases;
+		cout << to_binary(c + d) << " vs " << to_binary(0,nbits) << endl;
+
+		if ((a + c) != b) ++nrOfFailedTestCases;
+		cout << to_binary(a + c) << " vs " << to_binary(b) << endl;
+	}
+
+	if (nrOfFailedTestCases > 0) {
 		cout << "FAIL" << endl;
 	}
 	else {
