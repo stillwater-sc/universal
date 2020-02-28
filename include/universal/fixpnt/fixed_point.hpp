@@ -89,17 +89,14 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, BlockType
 // free function to create a 1's complement copy of a fixpnt
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline fixpnt<nbits, rbits, arithmetic, BlockType> ones_complement(const fixpnt<nbits, rbits, arithmetic, BlockType>& value) {
-	fixpnt<nbits, rbits, arithmetic, BlockType> complement = ~value;
-	return complement;
+	fixpnt<nbits, rbits, arithmetic, BlockType> ones(value);
+	return ones.flip();
 }
 // free function to create the 2's complement of a fixpnt
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline fixpnt<nbits, rbits, arithmetic, BlockType> twos_complement(const fixpnt<nbits, rbits, arithmetic, BlockType>& value) {
-	fixpnt<nbits, rbits, arithmetic, BlockType> complement = ~value;
-	fixpnt<nbits, rbits, arithmetic, BlockType> plusOne;
-	plusOne.set_raw_bits(0x1);
-	complement += plusOne;
-	return complement;
+	fixpnt<nbits, rbits, arithmetic, BlockType> twos(value);
+	return twos.twoscomplement();;
 }
 
 // The free function scale calculates the power of 2 exponent that would capture an approximation of a normalized real value
