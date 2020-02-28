@@ -59,7 +59,7 @@ try {
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
 		fixpnt<8, 4, Saturation> a(-8.0), b(-8.125), c(7.875), d(-7.875);
 		// b initialized to -8.125 in saturating arithmetic becomes -8
-		if (0 != (c + d)) ++nrOfFailedTestCases; cout << to_binary(c + d) << endl;
+		if (0 != (c + d)) ++nrOfFailedTestCases; //cout << to_binary(c + d) << endl;
 		if (a != b) ++nrOfFailedTestCases;
 		// TODO: don't have saturating arithmetic yet
 		//if (a != (d - 1)) ++nrOfFailedTestCases; // saturating to maxneg
@@ -107,6 +107,42 @@ try {
 		if (d != 0) ++nrOfFailedTestCases;
 	}
 
+	/////////////////////////////////////////////////////////////////////////////
+	// complements
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t rbits = 4;
+		fixpnt<nbits, rbits> a, b;
+		a.set_raw_bits(0xFF);
+		b = ones_complement(a);
+		if (b != 0) ++nrOfFailedTestCases;
+		a = -1;
+		b = twos_complement(a);
+		if (b != 1) ++nrOfFailedTestCases;
+	}
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t rbits = 4;
+		fixpnt<nbits, rbits, Modular, uint16_t> a, b; // testing poorly selected BlockType
+		a.set_raw_bits(0xFF);
+		b = ones_complement(a);
+		if (b != 0) ++nrOfFailedTestCases;
+		a = -1;
+		b = twos_complement(a);
+		if (b != 1) ++nrOfFailedTestCases;
+	}
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t rbits = 4;
+		fixpnt<nbits, rbits, Modular, uint32_t> a, b; // testing poorly selected BlockType
+		a.set_raw_bits(0xFF);
+		b = ones_complement(a);
+		if (b != 0) ++nrOfFailedTestCases;
+		a = -1;
+		b = twos_complement(a);
+		if (b != 1) ++nrOfFailedTestCases;
+	}
+
 	////////////////////////////////////////////////////////////////////////////////////
 	// parsing of text input
 	{
@@ -132,10 +168,10 @@ try {
 		c = minpos_fixpnt<nbits, rbits, arithmetic, blocktype>();
 		d = minneg_fixpnt<nbits, rbits, arithmetic, blocktype>();
 		if ((c + d) != 0) ++nrOfFailedTestCases;
-		cout << to_binary(c + d) << " vs " << to_binary(0,nbits) << endl;
+		//cout << to_binary(c + d) << " vs " << to_binary(0,nbits) << endl;
 
 		if ((a + c) != b) ++nrOfFailedTestCases;
-		cout << to_binary(a + c) << " vs " << to_binary(b) << endl;
+		//cout << to_binary(a + c) << " vs " << to_binary(b) << endl;
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////
@@ -159,14 +195,47 @@ try {
 		if (3ull != c) ++nrOfFailedTestCases;
 		if (d != c - b - a) ++nrOfFailedTestCases;
 		// signed literals
-//		if (-a != -1) ++nrOfFailedTestCases;
-//		if (-b != -2l) ++nrOfFailedTestCases;
-//		if (-c != -3ll) ++nrOfFailedTestCases;
-//		if (-1 != -a) ++nrOfFailedTestCases;
-//		if (-2l != -b) ++nrOfFailedTestCases;
-//		if (-3ll != -c) ++nrOfFailedTestCases;
-
+		if (-a != -1) ++nrOfFailedTestCases;
+		if (-b != -2l) ++nrOfFailedTestCases;
+		if (-c != -3ll) ++nrOfFailedTestCases;
+		if (-1 != -a) ++nrOfFailedTestCases;
+		if (-2l != -b) ++nrOfFailedTestCases;
+		if (-3ll != -c) ++nrOfFailedTestCases;
 	}
+
+#ifdef SHOW_STATE_SPACE
+	{
+		constexpr size_t nbits = 7;
+		constexpr size_t rbits = 4;
+		constexpr bool arithmetic = Modular;
+		constexpr size_t NR_VALUES = (1 << nbits);
+		using blocktype = uint32_t;
+
+		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
+		for (size_t i = 0; i < NR_VALUES; ++i) {
+			a.set_raw_bits(i);
+			float f = float(a);
+			b = int(f);
+			c = f;
+			d = double(a);
+			if (a != c && a != d) ++nrOfFailedTestCases;
+			cout << setw(3) << i << ' ' << to_binary(a) << ' ' << setw(10) << a << ' ' << setw(3) << int(f) << ' ' << to_binary(b) << ' ' << b << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
+		}
+	}
+
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t rbits = 4;
+		constexpr bool arithmetic = Modular;
+		using blocktype = uint32_t;
+		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
+
+		for (int i = -16; i < 16; ++i) {
+			a = i;
+			cout << to_binary(i) << ' ' << a << ' ' << to_binary(a) << ' ' << to_binary(-a) << ' ' << -a << ' ' << to_binary(-i) << endl;
+		}
+	}
+#endif // LATER
 
 	if (nrOfFailedTestCases > 0) {
 		cout << "FAIL" << endl;

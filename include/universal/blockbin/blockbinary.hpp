@@ -299,22 +299,24 @@ public:
 		}
 		throw "blockbinary<nbits, BlockType>.set(index): bit index out of bounds";
 	}
-	void set_raw_bits(uint64_t value) {
+	inline void set_raw_bits(uint64_t value) {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = value & storageMask;
 			value >>= bitsInBlock;
 		}
-		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		_block[MSU] &= MSU_MASK;
+		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	// in-place one's complement
-	inline blockbinary& flip() {
+	inline blockbinary& flip() { // in-place one's complement
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = ~_block[i];
-		}
-		// assert precondition of properly nulled leading non-bits
-		_block[MSU] = _block[MSU] & MSU_MASK; 
+		}		
+		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
+	}
+	inline blockbinary& twoscomplement() { // in-place 2's complement
+		blockbinary<nbits, BlockType> plusOne(1);
+		flip();
+		return *this += plusOne;
 	}
 
 	// selectors

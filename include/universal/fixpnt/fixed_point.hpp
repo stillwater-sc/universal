@@ -86,6 +86,12 @@ struct fixpntdiv_t {
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, BlockType>& v);
 
+// free function to create a 1's complement copy of a fixpnt
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+inline fixpnt<nbits, rbits, arithmetic, BlockType> ones_complement(const fixpnt<nbits, rbits, arithmetic, BlockType>& value) {
+	fixpnt<nbits, rbits, arithmetic, BlockType> complement = ~value;
+	return complement;
+}
 // free function to create the 2's complement of a fixpnt
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline fixpnt<nbits, rbits, arithmetic, BlockType> twos_complement(const fixpnt<nbits, rbits, arithmetic, BlockType>& value) {
@@ -179,17 +185,17 @@ inline void convert(int64_t v, fixpnt<nbits, rbits, arithmetic, BlockType>& resu
 		result.setmaxpos();	if (v >= (long double)result) return;
 		result.setmaxneg();	if (v <= (long double)result) return;
 	}
+	bool negative = (v < 0 ? true : false);
+	v = (v < 0 ? -v : v); // how do you deal with maxneg?
+	v <<= rbits; // we are modeling the fixed-point as a binary with a shift
+	result.clear();
 	constexpr uint64_t mask = 0x1;
 	unsigned upper = (nbits < 64 ? nbits : 64);
-	for (unsigned i = 0; i < upper - rbits; ++i) {
-		if (v & mask) result.set(i + rbits); // we have no fractional part in v
+	for (unsigned i = 0; i < upper; ++i) {
+		if (v & mask) result.set(i);
 		v >>= 1;
 	}
-	if (nbits > 64 && v < 0) {	// sign extend
-		for (unsigned i = upper; i < nbits; ++i) {
-			result.set(i);
-		}
-	}
+	if (negative) result.twoscomplement();
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline void convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
@@ -198,9 +204,10 @@ inline void convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic, BlockT
 		result.setmaxpos();	if (v >= (long double)result) return;
 		result.setmaxneg();	if (v <= (long double)result) return;
 	}
+	result.clear();
 	constexpr uint64_t mask = 0x1;
 	unsigned upper = (nbits <= 64 ? nbits : 64);
-	for (unsigned i = 0; i < upper - rbits; ++i) {
+	for (unsigned i = 0; i < upper - rbits && v > 0; ++i) {
 		if (v & mask) result.set(i + rbits); // we have no fractional part in v
 		v >>= 1;
 	}
@@ -483,12 +490,7 @@ public:
 #endif
 
 	// prefix operators
-	fixpnt operator-() const {
-		fixpnt negated(*this);
-		negated.flip();
-		negated += 1;
-		return negated;
-	}
+	fixpnt operator-() const { return twos_complement(*this); }
 	// one's complement
 	fixpnt operator~() const { 
 		fixpnt complement(*this);
@@ -588,13 +590,15 @@ public:
 		// must enforce precondition for fast comparison by  
 		// properly nulling bits that are outside of nbits
 		return *this;
-	}
-	// in-place one's complement
-	inline fixpnt& flip() {
+	}	
+	inline fixpnt& flip() { // in-place 1's complement
 		bb.flip();
 		return *this;
 	}
-
+	inline fixpnt& twoscomplement() { // in-place 2's complement
+		bb.twoscomplement();
+		return *this;
+	}
 	// selectors
 	inline bool iszero() const { return bb.iszero(); }
 	inline bool sign() const { return bb.sign(); }
@@ -699,21 +703,7 @@ protected:
 
 	}
 	long double to_long_double() const {  // TODO : this is not a valid implementation
-		int64_t value = 0;
-		uint64_t mask = 1;
-		for (size_t i = 0; i < nbits; ++i) {
-			value |= at(i) ? mask : 0;
-			mask <<= 1;
-		}
-		if (sign()) { // sign extend
-			for (size_t i = nbits; i < 64; ++i) {
-				value |= mask;
-				mask <<= 1;
-			}
-		}
-		long double numerator = (long double)value;
-		long double denominator = (long double)(uint64_t(0x1) << rbits);
-		return numerator / denominator;
+		return (long double)to_double();
 	}
 
 	// from native to fixed-point
@@ -1081,8 +1071,8 @@ decimal div(const decimal& _a, const decimal& _b) {
 	decimal subtractand = b;
 	int msd_b = findMsd(b);
 	int msd_a = findMsd(a);
-	int shift = msd_a - msd_b;
-	subtractand.shiftLeft(shift);
+	int shift = msd_a - msd_b; // precondition is a >= b, shift >= 0
+	subtractand.shiftLeft(size_t(shift));
 	// long division
 	for (int i = shift; i >= 0; --i) {
 		if (lessOrEqual(subtractand, accumulator)) {
