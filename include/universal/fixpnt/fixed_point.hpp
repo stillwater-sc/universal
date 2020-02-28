@@ -137,20 +137,18 @@ template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 fixpnt<nbits, rbits, arithmetic, BlockType> maxpos_fixpnt() {
 	static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
 	// maxpos = 01111....1111
-	fixpnt<nbits, rbits, arithmetic, BlockType> maxpos;
-	maxpos.flip();
-	maxpos.set(nbits - 1, false);
-	return maxpos;
+	fixpnt<nbits, rbits, arithmetic, BlockType> a;
+	a.setmaxpos();
+	return a;
 }
 
 // maximum negative value of the fixed point configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 fixpnt<nbits, rbits, arithmetic, BlockType> maxneg_fixpnt() {
 	static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
-	// maxneg = 10000....000
-	fixpnt<nbits, rbits, arithmetic, BlockType> maxneg;
-	maxneg.set(nbits - 1, true);
-	return maxneg;
+	fixpnt<nbits, rbits, arithmetic, BlockType> a;
+	a.setmaxneg();
+	return a;
 }
 
 // minimum positive value of the fixed point configuration
@@ -176,37 +174,18 @@ fixpnt<nbits, rbits, arithmetic, BlockType> minneg_fixpnt() {
 // conversion helpers
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline void convert(int64_t v, fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
-	if (0 == v) {
-		result.setzero();
-		return;
+	if (0 == v) { result.setzero();	return; }
+	if (arithmetic == Saturation) { // check if we are in the representable range
+		result.setmaxpos();	if (v >= (long double)result) return;
+		result.setmaxneg();	if (v <= (long double)result) return;
 	}
 	constexpr uint64_t mask = 0x1;
-	bool negative = (v < 0 ? true : false);
-	result.clear();
-	if (arithmetic == Saturation) {
-		// we are implementing saturation for values that are outside of the fixed-point's range
-		// check if we are in the representable range
-		if (v >= (long double)maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>()) {
-			// set to max value
-			result.flip();
-			result.set(nbits - 1, false);
-			return;
-		}
-		if (v <= (long double)maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>()) {
-			// set to max neg value
-			result.set(nbits - 1, true);
-			return;
-		}
-	}
-
-	// we only have an integer part, and no fraction to convert
 	unsigned upper = (nbits < 64 ? nbits : 64);
-	for (unsigned i = 0; i < upper - rbits && v != 0; ++i) {
-		if (v & mask) result.set(i + rbits);
+	for (unsigned i = 0; i < upper - rbits; ++i) {
+		if (v & mask) result.set(i + rbits); // we have no fractional part in v
 		v >>= 1;
 	}
-	if (nbits > 64 && negative) {
-		// sign extend
+	if (nbits > 64 && v < 0) {	// sign extend
 		for (unsigned i = upper; i < nbits; ++i) {
 			result.set(i);
 		}
@@ -214,30 +193,15 @@ inline void convert(int64_t v, fixpnt<nbits, rbits, arithmetic, BlockType>& resu
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline void convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
-	if (0 == v) {
-		result.setzero();
-		return;
+	if (0 == v) { result.setzero();	return;	}
+	if (arithmetic == Saturation) {	// check if we are in the representable range
+		result.setmaxpos();	if (v >= (long double)result) return;
+		result.setmaxneg();	if (v <= (long double)result) return;
 	}
 	constexpr uint64_t mask = 0x1;
-	result.clear();
-	if (arithmetic == Saturation) {
-		// we are implementing saturation for values that are outside of the fixed-point's range
-		// check if we are in the representable range
-		if (v >= (long double)maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>()) {
-			// set to max value
-			result.flip();
-			result.set(nbits - 1, false);
-			return;
-		}
-		if (v <= (long double)maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>()) {
-			// set to max neg value
-			result.set(nbits - 1, true);
-			return;
-		}
-	}
 	unsigned upper = (nbits <= 64 ? nbits : 64);
-	for (unsigned i = 0; i < upper; ++i) {
-		if (v & mask) result.set(i);
+	for (unsigned i = 0; i < upper - rbits; ++i) {
+		if (v & mask) result.set(i + rbits); // we have no fractional part in v
 		v >>= 1;
 	}
 }
@@ -249,8 +213,8 @@ public:
 	static_assert(_nbits >= _rbits, "fixpnt configuration error: nbits must be greater or equal to rbits");
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t rbits = _rbits;
-        static constexpr size_t bitsInChar = 8;
-        static constexpr size_t bitsInBlock = sizeof(BlockType) * bitsInChar;
+	static constexpr size_t bitsInChar = 8;
+	static constexpr size_t bitsInBlock = sizeof(BlockType) * bitsInChar;
 	static constexpr size_t nrBlocks = (1 + ((nbits - 1) / bitsInBlock));
 	static constexpr size_t MSU = nrBlocks - 1;
 	static constexpr BlockType MSU_MASK = (BlockType(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
@@ -346,9 +310,16 @@ public:
 		return *this;
 	}
 	fixpnt& operator=(const float rhs) {
-		if (rhs == 0.0f) {
-			setzero();
+		clear();
+		if (rhs == 0.0) {
 			return *this;
+		}
+		if (arithmetic == Saturation) {	// check if the value is in the representable range
+			fixpnt<nbits, rbits, arithmetic, BlockType> a;
+			a.setmaxpos();
+			if (rhs >= float(a)) { return *this = a; } // set to max pos value
+			a.setmaxneg();
+			if (rhs <= float(a)) { return *this = a; } // set to max neg value
 		}
 		float_decoder decoder;
 		decoder.f = rhs;
@@ -391,10 +362,18 @@ public:
 		return *this;
 	}
 	fixpnt& operator=(const double rhs) {
+		clear();
 		if (rhs == 0.0) {
-			setzero();
 			return *this;
 		}
+		if (arithmetic == Saturation) {	// check if the value is in the representable range
+			fixpnt<nbits, rbits, arithmetic, BlockType> a;
+			a.setmaxpos();
+			if (rhs >= float(a)) { return *this = a; } // set to max pos value
+			a.setmaxneg();
+			if (rhs <= float(a)) { return *this = a; } // set to max neg value
+		}
+
 		double_decoder decoder;
 		decoder.d = rhs;
 		uint64_t raw = (uint64_t(1) << 52) | decoder.parts.fraction;
@@ -584,6 +563,8 @@ public:
 	// modifiers
 	inline void clear() { bb.clear(); }
 	inline void setzero() { bb.clear(); }
+	inline void setmaxpos() { bb.clear(); bb.flip(); bb.reset(nbits - 1); } // maxpos = 01111....111
+	inline void setmaxneg() { bb.clear(); bb.set(nbits - 1, true); } 	    // maxneg = 10000....000
 	inline void reset(size_t i) {
 		if (i < nbits) {
 			bb.reset(i);
@@ -677,7 +658,7 @@ protected:
 			}
 		}
 		// you pop out here with the starting bit value
-		fixpnt<nbits, rbits> raw = (sign() ? twos_complement(*this) : *this);
+		fixpnt<nbits, rbits, arithmetic, BlockType> raw = (sign() ? twos_complement(*this) : *this);
 		// construct the value
 		float value = 0;
 		for (size_t i = 0; i < nbits; ++i) {
@@ -707,7 +688,7 @@ protected:
 			}
 		}
 		// you pop out here with the starting bit value
-		fixpnt<nbits, rbits> raw = (sign() ? twos_complement(*this) : *this);
+		fixpnt<nbits, rbits, arithmetic, BlockType> raw = (sign() ? twos_complement(*this) : *this);
 		// construct the value
 		double value = 0;
 		for (size_t i = 0; i < nbits; ++i) {
@@ -1438,7 +1419,7 @@ inline bool operator==(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, c
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const int rhs) {
-	return !operator==(lhs, rhs);
+	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator< (const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const int rhs) {
@@ -1450,11 +1431,11 @@ inline bool operator> (const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, c
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const int rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs)) || operator==(lhs, rfixpnt<nbits, rbits, arithmetic, BlockType>(rhs)hs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const int rhs) {
-	return !operator< (lhs, rhs);
+	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator==(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const long rhs) {
@@ -1462,7 +1443,7 @@ inline bool operator==(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, c
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const long rhs) {
-	return !operator==(lhs, rhs);
+	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator< (const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const long rhs) {
@@ -1474,11 +1455,11 @@ inline bool operator> (const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, c
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const long rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const long rhs) {
-	return !operator< (lhs, rhs);
+	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator==(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const long long rhs) {
@@ -1486,7 +1467,7 @@ inline bool operator==(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, c
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const long long rhs) {
-	return !operator==(lhs, rhs);
+	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator< (const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const long long rhs) {
@@ -1498,11 +1479,11 @@ inline bool operator> (const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, c
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const long long rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const long long rhs) {
-	return !operator< (lhs, rhs);
+	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator==(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned int rhs) {
@@ -1510,7 +1491,7 @@ inline bool operator==(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, c
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned int rhs) {
-	return !operator==(lhs, rhs);
+	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator< (const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned int rhs) {
@@ -1522,11 +1503,11 @@ inline bool operator> (const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, c
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned int rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned int rhs) {
-	return !operator< (lhs, rhs);
+	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator==(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned long rhs) {
@@ -1534,7 +1515,7 @@ inline bool operator==(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, c
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned long rhs) {
-	return !operator==(lhs, rhs);
+	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator< (const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned long rhs) {
@@ -1546,11 +1527,11 @@ inline bool operator> (const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, c
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned long rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned long rhs) {
-	return !operator< (lhs, rhs);
+	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator==(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned long long rhs) {
@@ -1558,7 +1539,7 @@ inline bool operator==(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, c
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator!=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned long long rhs) {
-	return !operator==(lhs, rhs);
+	return !operator==(lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator< (const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned long long rhs) {
@@ -1570,11 +1551,11 @@ inline bool operator> (const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, c
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned long long rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const unsigned long long rhs) {
-	return !operator< (lhs, rhs);
+	return !operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - fixpnt binary logic operators
@@ -1585,7 +1566,7 @@ inline bool operator==(const int lhs, const fixpnt<nbits, rbits, arithmetic, Blo
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator!=(const int lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return !operator==(lhs, rhs);
+	return !operator==(fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator< (const int lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
@@ -1593,15 +1574,15 @@ inline bool operator< (const int lhs, const fixpnt<nbits, rbits, arithmetic, Blo
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator> (const int lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return operator< (rhs, lhs);
+	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, BlockType>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator<=(const int lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator< (fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator>=(const int lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return !operator< (lhs, rhs);
+	return !operator< (fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator==(const long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
@@ -1609,7 +1590,7 @@ inline bool operator==(const long lhs, const fixpnt<nbits, rbits, arithmetic, Bl
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator!=(const long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return !operator==(lhs, rhs);
+	return !operator==(fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator< (const long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
@@ -1617,15 +1598,15 @@ inline bool operator< (const long lhs, const fixpnt<nbits, rbits, arithmetic, Bl
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator> (const long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return operator< (rhs, lhs);
+	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, BlockType>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator<=(const long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator< (fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator>=(const long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return !operator< (lhs, rhs);
+	return !operator< (fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator==(const long long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
@@ -1633,7 +1614,7 @@ inline bool operator==(const long long lhs, const fixpnt<nbits, rbits, arithmeti
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator!=(const long long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return !operator==(lhs, rhs);
+	return !operator==(fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator< (const long long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
@@ -1641,15 +1622,15 @@ inline bool operator< (const long long lhs, const fixpnt<nbits, rbits, arithmeti
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator> (const long long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return operator< (rhs, lhs);
+	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, BlockType>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator<=(const long long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator< (fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator>=(const long long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return !operator< (lhs, rhs);
+	return !operator< (fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator==(const unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
@@ -1657,7 +1638,7 @@ inline bool operator==(const unsigned int lhs, const fixpnt<nbits, rbits, arithm
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator!=(const unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return !operator==(lhs, rhs);
+	return !operator==(fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator< (const unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
@@ -1665,15 +1646,15 @@ inline bool operator< (const unsigned int lhs, const fixpnt<nbits, rbits, arithm
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator> (const unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return operator< (rhs, lhs);
+	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, BlockType>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator<=(const unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator< (fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator>=(const unsigned int lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return !operator< (lhs, rhs);
+	return !operator< (fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator==(const unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
@@ -1681,7 +1662,7 @@ inline bool operator==(const unsigned long lhs, const fixpnt<nbits, rbits, arith
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator!=(const unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return !operator==(lhs, rhs);
+	return !operator==(fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator< (const unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
@@ -1689,15 +1670,15 @@ inline bool operator< (const unsigned long lhs, const fixpnt<nbits, rbits, arith
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator> (const unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return operator< (rhs, lhs);
+	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, BlockType>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator<=(const unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator< (fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator>=(const unsigned long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return !operator< (lhs, rhs);
+	return !operator< (fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator==(const unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
@@ -1705,7 +1686,7 @@ inline bool operator==(const unsigned long long lhs, const fixpnt<nbits, rbits, 
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator!=(const unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return !operator==(lhs, rhs);
+	return !operator==(fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator< (const unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
@@ -1713,15 +1694,15 @@ inline bool operator< (const unsigned long long lhs, const fixpnt<nbits, rbits, 
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator> (const unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return operator< (rhs, lhs);
+	return operator< (rhs, fixpnt<nbits, rbits, arithmetic, BlockType>(lhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator<=(const unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return operator< (lhs, rhs) || operator==(lhs, rhs);
+	return operator< (fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs) || operator==(fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator>=(const unsigned long long lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs) {
-	return !operator< (lhs, rhs);
+	return !operator< (fixpnt<nbits, rbits, arithmetic, BlockType>(lhs), rhs);
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // fixpnt - literal float/double binary logic operators

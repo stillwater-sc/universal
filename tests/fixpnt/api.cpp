@@ -52,7 +52,6 @@ try {
 		//cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
 	}
 
-#ifdef LATER
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// SATURATING fixed-point
 
@@ -60,13 +59,14 @@ try {
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
 		fixpnt<8, 4, Saturation> a(-8.0), b(-8.125), c(7.875), d(-7.875);
 		// b initialized to -8.125 in saturating arithmetic becomes -8
-		if (0 != (c + d)) ++nrOfFailedTestCases;
+		if (0 != (c + d)) ++nrOfFailedTestCases; cout << to_binary(c + d) << endl;
 		if (a != b) ++nrOfFailedTestCases;
-		if (a != (d - 1)) ++nrOfFailedTestCases; // saturating to maxneg
-		if (a != (d - 0.5)) ++nrOfFailedTestCases; // saturating to maxneg
-		cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
+		// TODO: don't have saturating arithmetic yet
+		//if (a != (d - 1)) ++nrOfFailedTestCases; // saturating to maxneg
+		//if (a != (d - 0.5)) ++nrOfFailedTestCases; // saturating to maxneg
+		//cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
+		//cout << to_binary(d - 1) << ' ' << to_binary(d - 0.5) << endl;
 	}
-
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// improving efficiency for bigger fixed-points through explicit BlockType specification
@@ -106,7 +106,7 @@ try {
 		d.setzero();
 		if (d != 0) ++nrOfFailedTestCases;
 	}
-#endif
+
 	////////////////////////////////////////////////////////////////////////////////////
 	// parsing of text input
 	{
@@ -136,6 +136,36 @@ try {
 
 		if ((a + c) != b) ++nrOfFailedTestCases;
 		cout << to_binary(a + c) << " vs " << to_binary(b) << endl;
+	}
+
+	///////////////////////////////////////////////////////////////////////////////////
+	// logic, in particular, all the literal constant combinations
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t rbits = 4;
+		constexpr bool arithmetic = Modular;
+		using blocktype = uint32_t;
+		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
+		a = 1;
+		b = 2l;
+		c = 3ll;
+		d = 0ull;
+		// unsigned literals
+		if (a != 1u) ++nrOfFailedTestCases;
+		if (b != 2ul) ++nrOfFailedTestCases;
+		if (c != 3ull) ++nrOfFailedTestCases;
+		if (1u != a) ++nrOfFailedTestCases;
+		if (2ul != b) ++nrOfFailedTestCases;
+		if (3ull != c) ++nrOfFailedTestCases;
+		if (d != c - b - a) ++nrOfFailedTestCases;
+		// signed literals
+//		if (-a != -1) ++nrOfFailedTestCases;
+//		if (-b != -2l) ++nrOfFailedTestCases;
+//		if (-c != -3ll) ++nrOfFailedTestCases;
+//		if (-1 != -a) ++nrOfFailedTestCases;
+//		if (-2l != -b) ++nrOfFailedTestCases;
+//		if (-3ll != -c) ++nrOfFailedTestCases;
+
 	}
 
 	if (nrOfFailedTestCases > 0) {
