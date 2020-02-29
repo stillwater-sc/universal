@@ -300,6 +300,20 @@ try {
 	//    x       1       1       0      round up
 	//    x       1       1       1      round up
 
+	//  111111...110101010101
+	//               |  the source arithmetic needs to round at this point
+	//                | guard bit
+	//                 | rounding bit
+	//                  ----- OR'ed to generate the sticky bit
+	// rounding logic table
+	//   lsb    guard   round   sticky   rounding decision
+	//    0       0       x       x      round down
+	//    0       1       0       0      tie, round to even -> LSB = 0, thus round down
+	//    1       1       0       0      tie, round to even -> LSB = 1, thus round up
+	//    x       1       0       1      round up
+	//    x       1       1       0      round up
+	//    x       1       1       1      round up
+
 	nrOfFailedTestCases = ReportTestResult(ValidateSpecialRoundingCases(bReportIndividualTestCases), tag, "special rounding cases");
 
 	//nrOfFailedTestCases = ReportTestResult(ValidateRounding<4>(bReportIndividualTestCases), tag, "urmul");

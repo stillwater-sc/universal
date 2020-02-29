@@ -21,21 +21,22 @@
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t rbits, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
-	Ty ref;
 	sw::unum::fixpnt<nbits, rbits> a, b, cref, result;
+	sw::unum::blockbinary<2 * nbits> full;
 	a = _a;
 	b = _b;
 	result = a * b;
-	ref = _a * _b;
+	Ty ref = _a * _b;
+	full = (long long)ref;
 	cref = ref;
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " * " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << a << " * " << b << " = " << result << " (reference: " << cref << ")   " ;
-	std::cout << (cref == result ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << std::setw(nbits + 1) << _a << " * " << std::setw(nbits + 1) << _b << " = " << std::setw(nbits + 1) << ref << " (reference: " << to_binary(full) << ")" << std::endl;
+	std::cout << std::setw(nbits + 1) << a << " * " << std::setw(nbits + 1) << b << " = " << std::setw(nbits + 1) << result << " (reference: " << cref << ")   " ;
+	std::cout << (cref == result ? "PASS" : "FAIL") << std::endl;
 	std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(result) << " (reference: " << to_binary(cref) << ")   ";
 
-	std::cout << std::endl <<  std::dec << std::setprecision(oldPrecision);
+	std::cout << std::endl << std::endl << std::dec << std::setprecision(oldPrecision);
 }
 
 // conditional compile flags
@@ -61,11 +62,24 @@ try {
 	cout << c << endl;
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<8, 1>(0.5f, 0.5f);
-	GenerateTestCase<8, 1>(0.5f, 63.5f);
+	GenerateTestCase<4, 1>(-0.5f, -3.5f);
+	GenerateTestCase<4, 1>(-3.5f, -0.5f);
+
+	//	GenerateTestCase<8, 1>(0.5f, 0.5f);
+	GenerateTestCase<8, 1>(0.5f, -32.0f);
+	GenerateTestCase<8, 1>(-64.0f, 0.5f);
+	GenerateTestCase<8, 1>(0.0f, -64.0f);
+	GenerateTestCase<8, 1>(1.5f, -16.0f);
+	GenerateTestCase<8, 1>(1.5f, -64.0f);
+	GenerateTestCase<8, 1>(-64.0f, -63.5f);
+	GenerateTestCase<8, 1>(-63.5f, -64.0f);
+	GenerateTestCase<8, 1>(-64.0f, -63.0f);
+	GenerateTestCase<8, 1>(-64.0f, -62.5f);
+
+	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1, Modular, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,1,Modular,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4, Modular, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Modular,uint8_t>", "multiplication");
+//	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4, Modular, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Modular,uint8_t>", "multiplication");
 
 #if STRESS_TESTING
 	// manual exhaustive test

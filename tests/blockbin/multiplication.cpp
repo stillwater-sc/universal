@@ -70,30 +70,31 @@ int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
 // generate specific test case that you can trace with the trace conditions in fixpnt.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, typename StorageBlockType = uint8_t>
-void GenerateTestCase(int64_t _a, int64_t _b) {
+void GenerateTestCase(int64_t lhs, int64_t rhs) {
 	using namespace sw::unum;
 	blockbinary<nbits, StorageBlockType> a, b, result, reference;
 
-	a.set_raw_bits(uint64_t(_a));
-	b.set_raw_bits(uint64_t(_b));
+	a.set_raw_bits(uint64_t(lhs));
+	b.set_raw_bits(uint64_t(rhs));
+	long long _a, _b, _c;
+	_a = (long long)a;
+	_b = (long long)b;
 	result = a * b;
+	_c = (long long)result;
 
-	int64_t ref = _a * _b;
+
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " * " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << std::hex;
-	std::cout << std::setw(nbits) << _a << " * " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << std::dec;
-	std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(result) << " (reference: " << to_binary(int(ref)) << ")   " << std::endl;
-	std::cout << to_hex(a) << " * " << to_hex(b) << " = " << to_hex(result) << " (reference: " << std::hex << ref << ")   ";
-	reference.set_raw_bits(ref);
+	std::cout << std::setw(nbits) << _a << " * " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _a * _b << std::endl;
+	std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _a * _b << ")   " << std::endl;
+//	std::cout << to_hex(a) << " * " << to_hex(b) << " = " << to_hex(result) << " (reference: " << std::hex << ref << ")   ";
+	reference.set_raw_bits(_a * _b);
 	std::cout << (result == reference ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -106,6 +107,20 @@ try {
 	std::string tag = "block multiplication: ";
 
 #if MANUAL_TESTING
+
+	GenerateTestCase<4>(0x1, 0x9);
+	GenerateTestCase<4>(0xF, 0x9);
+	GenerateTestCase<4>(0xF, 0x8);
+
+	blockbinary<4> a, b;
+	blockbinary<8> c;
+	a.set_raw_bits(0xF);
+	b.set_raw_bits(0x9);
+	c = urmul(a, b);
+	blockbinary<4> result = c; // take the lower nbits
+	cout << to_binary(result) << endl;
+
+	return 0;
 
 	uint8_t mask;
 //	mask = (1 << (bitsInBlock - ((nbits % (nrBlocks * bitsInBlock)) - 1)))

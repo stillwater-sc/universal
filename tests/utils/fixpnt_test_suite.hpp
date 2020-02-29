@@ -416,7 +416,7 @@ int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
 			else {
 				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, cref, result);
 			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
+			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
 		if (i % 1024 == 0) std::cout << '.';
 	}
@@ -470,7 +470,7 @@ int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
 			else {
 				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, cref, result);
 			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
+			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
 		if (i % 1024 == 0) std::cout << '.';
 	}

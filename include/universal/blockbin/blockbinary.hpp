@@ -129,6 +129,13 @@ public:
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = rhs.block(i);
 		}
+		if (nbits > nnbits) { // check if we need to sign extend
+			if (rhs.sign()) {
+				for (size_t i = nnbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
+					set(i);
+				}
+			}
+		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] &= MSU_MASK;
 	}
@@ -554,17 +561,40 @@ inline blockbinary<nbits + 1, BlockType> uradd(const blockbinary<nbits, BlockTyp
 	return result += blockbinary<nbits + 1, BlockType>(b);
 }
 
+#define TRACE_URMUL 1
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 template<size_t nbits, typename BlockType>
 inline blockbinary<2*nbits, BlockType> urmul(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
 	blockbinary<2 * nbits, BlockType> result;
+	if (a.iszero() || b.iszero()) return result;
+
+	// compute the result
 	blockbinary<2 * nbits, BlockType> multiplicant(b);
+#if TRACE_URMUL
+	std::cout << "    " << to_binary(a) << std::endl;
+	std::cout << "  0 " << to_binary(multiplicant) << " multiplicant" << std::endl;
+	std::cout << "  0 " << to_binary(result) << " accumulator" << std::endl;
+#endif
 	for (size_t i = 0; i < nbits; ++i) {
 		if (a.at(i)) {
 			result += multiplicant;
 		}
 		multiplicant <<= 1;
+#if TRACE_URMUL
+		std::cout << std::setw(3) << i << ' ' << to_binary(result) << std::endl;
+#endif
+
 	}
+	if (a.sign() & !b.sign()) { // need so sign extend
+		for (size_t i = nbits; i < 2 * nbits; ++i) {
+			result += multiplicant;
+			multiplicant <<= 1;
+		}
+	}
+#if TRACE_URMUL
+	std::cout << "fnl " << to_binary(result) << std::endl;
+#endif
+	//blockbinary<2 * nbits, BlockType> clipped(result);
 	// since we used operator+=, which enforces the nulling of leading bits
 	// we don't need to null here
 	return result;

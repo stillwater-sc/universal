@@ -549,7 +549,13 @@ public:
 	}
 	fixpnt& operator*=(const fixpnt& rhs) {
 		if (arithmetic == Modular) {
-			bb *= rhs.bb;
+			blockbinary<2 * nbits, BlockType> c = urmul(this->bb, rhs.bb);
+			blockbinary<nbits, BlockType> result = c; // take lower nbits
+			bool roundUp = result.roundingMode(rbits);
+//			bool negative = sign() ^ rhs.sign();
+			result >>= rbits;
+			if (roundUp) result += 1;
+			this->bb = result;
 		}
 		else {
 			std::cerr << "saturating multiply not implemented yet\n";
@@ -750,7 +756,7 @@ protected:
 	}
 
 private:
-	blockbinary<_nbits, BlockType> bb;
+	blockbinary<nbits, BlockType> bb;
 
 	// convert
 	template<size_t nnbits, size_t rrbits, bool aarithmetic, typename BBlockType>
