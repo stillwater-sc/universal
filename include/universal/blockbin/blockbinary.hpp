@@ -561,7 +561,7 @@ inline blockbinary<nbits + 1, BlockType> uradd(const blockbinary<nbits, BlockTyp
 	return result += blockbinary<nbits + 1, BlockType>(b);
 }
 
-#define TRACE_URMUL 1
+#define TRACE_URMUL 0
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 template<size_t nbits, typename BlockType>
 inline blockbinary<2*nbits, BlockType> urmul(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
