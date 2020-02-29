@@ -13,23 +13,8 @@
 #define NATIVE_THROW_ARITHMETIC_EXCEPTION 0
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/native/byteArray.hpp"
-// type manipulators such as pretty printers
-#include "universal/native/manipulators.hpp"
-//#include "../utils/native_test_suite.hpp"
-
-// generate specific test case that you can trace with the trace conditions in fixpnt.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t rbits, typename Ty>
-void GenerateTestCase(Ty _a, Ty _b) {
-}
-
-void setAccu(uint8_t accu[4], uint8_t b3, uint8_t b2, uint8_t b1, uint8_t b0) {
-	accu[3] = b3;
-	accu[2] = b2;
-	accu[1] = b1;
-	accu[0] = b0;
-}
+#include "universal/blockbin/blockbinary.hpp"
+#include "../utils/blockbinary_helpers.hpp"
 
 std::string roundingDecision(int roundingDirection) {
 	std::stringstream ss;
@@ -46,37 +31,26 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	//bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "modular assignment failed: ";
 
 #if MANUAL_TESTING
 
-	/*
-accu= 0xFF81
-FAIL                  0.5 *                -63.5 !=                -31.5 instead it yielded                -32.0 1100000.1 vs 1100000.0
-
-accu= 0xFF83
-FAIL                  0.5 *                -62.5 !=                -31.0 instead it yielded                -31.5 1100001.0 vs 1100000.1
-
-accu= 0xFF85
-FAIL                  0.5 *                -61.5 !=                -30.5 instead it yielded                -31.0 1100001.1 vs 1100001.0
-
-accu= 0xFF87
-FAIL                  0.5 *                -60.5 !=                -30.0 instead it yielded                -30.5 1100010.0 vs 1100001.1
-	*/
-	uint8_t accumulator[4];
-
-	setAccu(accumulator, 0x00, 0x00, 0xFF, 0x81);
+	blockbinary<8> a, b;
+	blockbinary<16> c;
+	a = 1;
+	b = -1;
+	c = urmul(a, b);
+	cout << to_hex(a) << " * " << to_hex(b) << " = " << to_hex(c, true) << endl;
 
 
-	cout << roundingDecision(round(accumulator, 2, 0)) << endl;
 
-	//nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 3, float>(bReportIndividualTestCases), tag, "posit<4,3>");
+	nrOfFailedTestCases = ReportTestResult(ValidateModularAssignment<4, 3, float>(bReportIndividualTestCases), tag, "fixpnt<4,3>");
 	
 	// TODO: fixed-point is failing on pure fractional configurations
-	//nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 4, float>(bReportIndividualTestCases), tag, "posit<4,4>");
+	//nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 4, float>(bReportIndividualTestCases), tag, "fixpnt<4,4>");
 
 #if STRESS_TESTING
 
