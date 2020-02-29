@@ -106,6 +106,27 @@ try {
 	b <<= 17;
 	cout << to_binary(b, true) << endl;
 
+	a.set_raw_bits(0xAA00FF00FF);
+	cout << to_binary(a, true) << endl;
+	a <<= 8;
+	cout << to_binary(a, true) << endl;
+	a <<= 16;
+	cout << to_binary(a, true) << endl;
+	a.set_raw_bits(0xAA00FF00FF);
+	cout << to_binary(a, true) << endl;
+	a <<= 16;
+	cout << to_binary(a, true) << endl;
+	a <<= 8;
+	cout << to_binary(a, true) << endl;
+	a.set_raw_bits(0x0000FF00FF);
+	cout << to_binary(a, true) << endl;
+	a <<= 16;
+	cout << to_binary(a, true) << endl;
+	a.set_raw_bits(0x0000FF00FF);
+	cout << to_binary(a, true) << endl;
+	a <<= 8;
+	cout << to_binary(a, true) << endl;
+
 
 	//nrOfFailedTestCases += ReportTestResult(VerifyShiftLeft<4>("Manual Testing", true), "array<4,1>", "addition");
 	//nrOfFailedTestCases += ReportTestResult(VerifyShiftRight<4>("Manual Testing", true), "array<4,1>", "addition");

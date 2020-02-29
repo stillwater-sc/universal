@@ -246,7 +246,7 @@ public:
 		size_t blockShift = 0;
 		if (bitsToShift >= long(bitsInBlock)) {
 			blockShift = bitsToShift / bitsInBlock;
-			if (MSU > blockShift) {
+			if (MSU >= blockShift) {
 				// shift by blocks
 				for (size_t i = 0; i <= MSU - blockShift; ++i) {
 					_block[i] = _block[i + blockShift];
@@ -300,14 +300,14 @@ public:
 		throw "blockbinary<nbits, BlockType>.set(index): bit index out of bounds";
 	}
 	inline void set_raw_bits(uint64_t value) {
-		for (unsigned i = 0; i < nrBlocks; ++i) {
+		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = value & storageMask;
 			value >>= bitsInBlock;
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
 	inline blockbinary& flip() { // in-place one's complement
-		for (unsigned i = 0; i < nrBlocks; ++i) {
+		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = ~_block[i];
 		}		
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
@@ -388,15 +388,29 @@ public:
 		return ll;
 	}
 
-	// determine the rounding mode: -1 round down, 0 tie, 1 round up
-	int roundingMode(unsigned guardBitIndex) const {
-		int rv = 0;
-
-		return rv;
+	// determine the rounding mode: result needs to be rounded up if true
+	bool roundingMode(size_t targetLsb) const {
+		bool lsb = at(targetLsb);
+		bool guard = (targetLsb == 0 ? false : at(targetLsb - 1));
+		bool round = (targetLsb > 1 ? at(targetLsb - 2) : false);
+		bool sticky =(targetLsb < 2 ? false : any(targetLsb - 3));
+		bool tie = guard & !round & !sticky;
+		return (lsb & tie) || (guard & !tie);
+	}
+	bool any(size_t msb) const {
+		size_t topBlock = msb / bitsInBlock;
+		BlockType mask = BlockType(0xFFFFFFFFFFFFFFFFull) >> (bitsInBlock - 1 - (msb % bitsInBlock));
+		for (size_t i = 0; i < topBlock; ++i) {
+			if (_block[i] > 0) return true;
+		}
+		// process the partial block
+		if (_block[topBlock] & mask) return true;
+		return false;
 	}
 
 protected:
 	// HELPER methods
+
 
 private:
 	BlockType _block[nrBlocks];

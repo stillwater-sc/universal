@@ -530,20 +530,39 @@ public:
 
 	// arithmetic operators
 	fixpnt& operator+=(const fixpnt& rhs) {
-		bb += rhs.bb;
+		if (arithmetic == Modular) {
+			bb += rhs.bb;
+		}
+		else {
+			std::cerr << "saturating add not implemented yet\n";
+		}
 		return *this;
 	}
 	fixpnt& operator-=(const fixpnt& rhs) {
-		operator+=(twos_complement(rhs));
+		if (arithmetic == Modular) {
+			operator+=(twos_complement(rhs));
+		}
+		else {
+			std::cerr << "saturating subtract not implemented yet\n";
+		}
 		return *this;
 	}
 	fixpnt& operator*=(const fixpnt& rhs) {
-		// TODO: how are we going to deal with overflow?
-		bb *= rhs.bb;
+		if (arithmetic == Modular) {
+			bb *= rhs.bb;
+		}
+		else {
+			std::cerr << "saturating multiply not implemented yet\n";
+		}
 		return *this;
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
-		bb /= rhs.bb;
+		if (arithmetic == Modular) {
+			bb /= rhs.bb;
+		}
+		else {
+			std::cerr << "saturating divide not implemented yet\n";
+		}
 		return *this;
 	}
 	fixpnt& operator%=(const fixpnt& rhs) {
