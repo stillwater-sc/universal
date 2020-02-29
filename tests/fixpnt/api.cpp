@@ -201,6 +201,81 @@ try {
 		if (-1 != -a) ++nrOfFailedTestCases;
 		if (-2l != -b) ++nrOfFailedTestCases;
 		if (-3ll != -c) ++nrOfFailedTestCases;
+
+		// less than unsigned literal
+		d = 4.0f;
+		if (d < 1u) ++nrOfFailedTestCases;
+		if (d < 2ul) ++nrOfFailedTestCases;
+		if (d < 3ull) ++nrOfFailedTestCases;
+		d = 0.0;
+		if (1u < d) ++nrOfFailedTestCases;
+		if (2ul < d) ++nrOfFailedTestCases;
+		if (3ull < d) ++nrOfFailedTestCases;
+
+		// greater than unsigned literal
+		if (d > 1u) ++nrOfFailedTestCases;
+		if (d > 2ul) ++nrOfFailedTestCases;
+		if (d > 3ull) ++nrOfFailedTestCases;
+		d = 4ll;
+		if (1u > d) ++nrOfFailedTestCases;
+		if (2ul > d) ++nrOfFailedTestCases;
+		if (3ull > d) ++nrOfFailedTestCases;
+
+		// less than or equal unsigned literal
+		if (d <= 1u) ++nrOfFailedTestCases;
+		if (d <= 2ul) ++nrOfFailedTestCases;
+		if (d <= 3ull) ++nrOfFailedTestCases;
+		d = 0.0f;
+		if (1u <= d) ++nrOfFailedTestCases;
+		if (2ul <= d) ++nrOfFailedTestCases;
+		if (3ull <= d) ++nrOfFailedTestCases;
+
+		// greater than or equal unsigned literal
+		if (d >= 1u) ++nrOfFailedTestCases;
+		if (d >= 2ul) ++nrOfFailedTestCases;
+		if (d >= 3ull) ++nrOfFailedTestCases;
+		d = 4.0;
+		if (1u >= d) ++nrOfFailedTestCases;
+		if (2ul >= d) ++nrOfFailedTestCases;
+		if (3ull >= d) ++nrOfFailedTestCases;
+
+		// comparisons with signed literals
+		// less than signed literal
+		d = 4.0f;
+		if (d < 1) ++nrOfFailedTestCases;
+		if (d < 2l) ++nrOfFailedTestCases;
+		if (d < 3ll) ++nrOfFailedTestCases;
+		d = 0.0;
+		if (1 < d) ++nrOfFailedTestCases;
+		if (2l < d) ++nrOfFailedTestCases;
+		if (3ll < d) ++nrOfFailedTestCases;
+
+		// greater than signed literal
+		if (d > 1) ++nrOfFailedTestCases;
+		if (d > 2l) ++nrOfFailedTestCases;
+		if (d > 3ll) ++nrOfFailedTestCases;
+		d = 4ll;
+		if (1 > d) ++nrOfFailedTestCases;
+		if (2l > d) ++nrOfFailedTestCases;
+		if (3ll > d) ++nrOfFailedTestCases;
+
+		// less than or equal signed literal
+		if (d <= 1) ++nrOfFailedTestCases;
+		if (d <= 2l) ++nrOfFailedTestCases;
+		if (d <= 3ll) ++nrOfFailedTestCases;
+		d = 0.0f;
+		if (1 <= d) ++nrOfFailedTestCases;
+		if (2l <= d) ++nrOfFailedTestCases;
+		if (3ll <= d) ++nrOfFailedTestCases;
+
+		// greater than or equal signed literal
+		if (d >= 1) ++nrOfFailedTestCases;
+		if (d >= 2l) ++nrOfFailedTestCases;
+		if (d >= 3ll) ++nrOfFailedTestCases;
+		d = 4.0;
+		if (1 >= d) ++nrOfFailedTestCases;
+		if (2l >= d) ++nrOfFailedTestCases;
+		if (3ll >= d) ++nrOfFailedTestCases;
 	}
 
 #ifdef SHOW_STATE_SPACE

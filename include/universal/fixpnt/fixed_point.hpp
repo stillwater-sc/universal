@@ -1418,7 +1418,7 @@ inline bool operator> (const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, c
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator<=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const int rhs) {
-	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs)) || operator==(lhs, rfixpnt<nbits, rbits, arithmetic, BlockType>(rhs)hs);
+	return operator< (lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs)) || operator==(lhs, fixpnt<nbits, rbits, arithmetic, BlockType>(rhs));
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline bool operator>=(const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const int rhs) {
