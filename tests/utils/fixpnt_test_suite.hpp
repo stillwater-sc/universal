@@ -22,8 +22,8 @@ namespace unum {
 
 #define FIXPNT_TABLE_WIDTH 20
 
-template<size_t nbits, size_t rbits>
-void ReportConversionError(std::string test_case, std::string op, double input, double reference, const fixpnt<nbits, rbits>& result) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+void ReportConversionError(std::string test_case, std::string op, double input, double reference, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case
 		<< " " << op << " "
@@ -36,8 +36,8 @@ void ReportConversionError(std::string test_case, std::string op, double input, 
 		<< std::endl;
 }
 
-template<size_t nbits, size_t rbits>
-void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const fixpnt<nbits, rbits>& result) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << input
@@ -48,8 +48,8 @@ void ReportConversionSuccess(std::string test_case, std::string op, double input
 		<< std::endl;
 }
 
-template<size_t nbits, size_t rbits>
-void ReportBinaryArithmeticError(std::string test_case, std::string op, const fixpnt<nbits, rbits>& lhs, const fixpnt<nbits, rbits>& rhs, const fixpnt<nbits, rbits>& ref, const fixpnt<nbits, rbits>& result) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+void ReportBinaryArithmeticError(std::string test_case, std::string op, const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
@@ -64,8 +64,8 @@ void ReportBinaryArithmeticError(std::string test_case, std::string op, const fi
 		<< std::endl;
 }
 
-template<size_t nbits, size_t rbits>
-void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const fixpnt<nbits, rbits>& lhs, const fixpnt<nbits, rbits>& rhs, const fixpnt<nbits, rbits>& ref, const fixpnt<nbits, rbits>& result) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
@@ -80,8 +80,8 @@ void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const 
 		<< std::endl;
 }
 
-template<size_t nbits, size_t rbits, typename Ty>
-void ReportAssignmentError(std::string test_case, std::string op, const fixpnt<nbits, rbits>& ref, const fixpnt < nbits, rbits>& result, const Ty& value) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType, typename Ty>
+void ReportAssignmentError(std::string test_case, std::string op, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt <nbits, rbits, arithmetic, BlockType>& result, const Ty& value) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << value
@@ -91,8 +91,8 @@ void ReportAssignmentError(std::string test_case, std::string op, const fixpnt<n
 		<< " " << to_binary(result) << " vs " << to_binary(ref) << std::endl;
 }
 
-template<size_t nbits, size_t rbits, typename Ty>
-void ReportAssignmentSuccess(std::string test_case, std::string op, const fixpnt<nbits, rbits>& ref, const fixpnt < nbits, rbits>& result, const Ty& value) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType, typename Ty>
+void ReportAssignmentSuccess(std::string test_case, std::string op, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt <nbits, rbits, arithmetic, BlockType>& result, const Ty& value) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << value
@@ -104,8 +104,8 @@ void ReportAssignmentSuccess(std::string test_case, std::string op, const fixpnt
 
 /////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
-template<size_t nbits, size_t rbits>
-int Compare(double input, const fixpnt<nbits, rbits>& presult, double reference, bool bReportIndividualTestCases) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+int Compare(double input, const fixpnt<nbits, rbits, arithmetic, BlockType>& presult, double reference, bool bReportIndividualTestCases) {
 	int fail = 0;
 	double result = double(presult);
 	if (std::fabs(result - reference) > 0.000000001) {
@@ -118,14 +118,14 @@ int Compare(double input, const fixpnt<nbits, rbits>& presult, double reference,
 	return fail;
 }
 
-template<size_t nbits, size_t rbits, typename Ty>
-int ValidateModularAssignment(bool bReportIndividualTestCases) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType, typename Ty>
+int ValidateAssignment(bool bReportIndividualTestCases) {
 	const size_t NR_NUMBERS = (size_t(1) << nbits);
 	int nrOfFailedTestCases = 0;
 
 	// use only valid fixed-point values
 	// fixpnt_raw -> to value in Ty -> assign to fixpnt -> compare fixpnts
-	fixpnt<nbits, rbits, sw::unum::Modular> p, assigned;
+	fixpnt<nbits, rbits, arithmetic, BlockType> p, assigned;
 	for (size_t i = 0; i < NR_NUMBERS; i++) {
 		p.set_raw_bits(i); 
 		//std::cout << to_binary(p) << std::endl;
@@ -148,8 +148,8 @@ int ValidateModularAssignment(bool bReportIndividualTestCases) {
 
  */
 // enumerate all conversion cases for a fixed-point configuration
-template<size_t nbits, size_t rbits>
-int ValidateModularConversion(const std::string& tag, bool bReportIndividualTestCases) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) {
 	// we are going to generate a test set that consists of all fixed-point configs and their midpoints
 	// we do this by enumerating a fixed-point that is 1-bit larger than the test configuration
 	// with the extra bit allocated to the fraction => rbits+1
@@ -274,8 +274,8 @@ int ValidateModularConversion(const std::string& tag, bool bReportIndividualTest
 }
 
 // enumerate all addition cases for an fixpnt<nbits,rbits> configuration
-template<size_t nbits, size_t rbits>
-int VerifyModularAddition(std::string tag, bool bReportIndividualTestCases) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, Modular> a, b, result, cref;
@@ -295,7 +295,7 @@ int VerifyModularAddition(std::string tag, bool bReportIndividualTestCases) {
 				result = a + b;
 			}
 			catch (...) {
-				if (ref > double(maxpos_fixpnt<nbits, rbits, Modular>()) || ref < double(maxneg_fixpnt<nbits, rbits, Modular>())) {
+				if (ref > double(maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>()) || ref < double(maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>())) {
 					// correctly caught the overflow exception
 					continue;
 				}
@@ -325,11 +325,11 @@ int VerifyModularAddition(std::string tag, bool bReportIndividualTestCases) {
 
 
 // enumerate all subtraction cases for an fixpnt<nbits,rbits> configuration
-template<size_t nbits, size_t rbits>
-int VerifyModularSubtraction(std::string tag, bool bReportIndividualTestCases) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+int VerifySubtraction(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
-	fixpnt<nbits, rbits> a, b, result, cref;
+	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
 	double ref;
 
 	double da, db;
@@ -346,7 +346,7 @@ int VerifyModularSubtraction(std::string tag, bool bReportIndividualTestCases) {
 				result = a - b;
 			}
 			catch (...) {
-				if (ref > double(maxpos_fixpnt<nbits, rbits, Modular>()) || ref < double(maxneg_fixpnt<nbits, rbits, Modular>())) {
+				if (ref > double(maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>()) || ref < double(maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>())) {
 					// correctly caught the overflow exception
 					continue;
 				}
@@ -375,11 +375,11 @@ int VerifyModularSubtraction(std::string tag, bool bReportIndividualTestCases) {
 }
 
 // enumerate all multiplication cases for an fixpnt<nbits,rbits> configuration
-template<size_t nbits, size_t rbits>
-int VerifyModularMultiplication(std::string tag, bool bReportIndividualTestCases) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
-	fixpnt<nbits, rbits> a, b, result, cref;
+	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
 	double ref;
 
 	double da, db;
@@ -396,7 +396,7 @@ int VerifyModularMultiplication(std::string tag, bool bReportIndividualTestCases
 				result = a * b;
 			}
 			catch (...) {
-				if (ref > double(maxpos_fixpnt<nbits, rbits, Modular>()) || ref < double(maxneg_fixpnt<nbits, rbits, Modular>())) {
+				if (ref > double(maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>()) || ref < double(maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>())) {
 					// correctly caught the overflow exception
 					continue;
 				}
@@ -425,11 +425,11 @@ int VerifyModularMultiplication(std::string tag, bool bReportIndividualTestCases
 }
 
 // enumerate all division cases for an fixpnt<nbits,rbits> configuration
-template<size_t nbits, size_t rbits>
-int VerifyModularDivision(std::string tag, bool bReportIndividualTestCases) {
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
-	fixpnt<nbits, rbits> a, b, result, cref;
+	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
 	double ref;
 
 	double da, db;
@@ -450,7 +450,7 @@ int VerifyModularDivision(std::string tag, bool bReportIndividualTestCases) {
 				result = a / b;
 			}
 			catch (...) {
-				if (ref == 0 || ref > double(maxpos_fixpnt<nbits, rbits, Modular>()) || ref < double(maxneg_fixpnt<nbits, rbits, Modular>())) {
+				if (ref == 0 || ref > double(maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>()) || ref < double(maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>())) {
 					// correctly caught the overflow and divide by zero exception
 					continue;
 				}
@@ -482,10 +482,10 @@ int VerifyModularDivision(std::string tag, bool bReportIndividualTestCases) {
 // enumeration utility functions
 
 
-template<size_t nbits, size_t rbits>
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 void GenerateFixedPointValues(std::ostream& ostr = std::cout) {
 	constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
-	sw::unum::fixpnt<nbits, rbits> a;
+	sw::unum::fixpnt<nbits, rbits, arithmetic, BlockType> a;
 	ostr << "  fixpnt<" << nbits << "," << rbits << ">\n";
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 		a.set_raw_bits(i);

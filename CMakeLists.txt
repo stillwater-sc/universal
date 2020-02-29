@@ -411,6 +411,7 @@ endif(BUILD_CI_CHECK)
 
 if(BUILD_BITBLOCK)
 add_subdirectory("tests/bitblock")
+add_subdirectory("tests/blockbin")
 endif(BUILD_BITBLOCK)
 
 if(BUILD_NATIVE_TYPES)

@@ -1,4 +1,4 @@
-// block_add.cpp: functional tests for block binary number addition
+// addition.cpp: functional tests for block binary number addition
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -7,7 +7,7 @@
 #include <iomanip>
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/native/blockbinary.hpp"
+#include "universal/blockbin/blockbinary.hpp"
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 #include "../utils/blockbinary_helpers.hpp"

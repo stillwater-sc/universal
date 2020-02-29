@@ -39,6 +39,9 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 	}
 }
 
+static constexpr unsigned IEEE_FLOAT_FRACTION_BITS = 23;
+static constexpr unsigned IEEE_FLOAT_EXPONENT_BITS = 8;
+static constexpr unsigned IEEE_FLOAT_SIGN_BITS = 1;
 
 union float_decoder {
   float f;

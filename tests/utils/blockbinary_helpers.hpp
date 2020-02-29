@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <universal/native/integers.hpp> // for to_binary(int)
-#include <universal/native/blockbinary.hpp>
+#include <universal/blockbin/blockbinary.hpp>
 
 #define COLUMN_WIDTH 20
 template<size_t nbits, typename Ty = uint8_t>

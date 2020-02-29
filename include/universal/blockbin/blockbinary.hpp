@@ -57,6 +57,23 @@ struct quorem {
 	blockbinary<nbits, BlockType> rem;  // remainder
 };
 
+// maximum positive 2's complement number: b01111...1111
+template<size_t nbits, typename BlockType>
+blockbinary<nbits, BlockType> maxpos() {
+	blockbinary<nbits, BlockType> mpos;
+	mpos.flip();
+	mpos.reset(nbits - 1);
+	return mpos;
+}
+
+// maximum negative 2's complement number: b1000...0000
+template<size_t nbits, typename BlockType>
+blockbinary<nbits, BlockType> maxneg() {
+	blockbinary<nbits, BlockType> maximum;
+	maximum.set(nbits - 1);
+	return maximum;
+}
+
 // generate the 2's complement of the block binary number
 template<size_t nbits, typename BlockType>
 blockbinary<nbits, BlockType> twosComplement(const blockbinary<nbits, BlockType>& orig) {
@@ -282,22 +299,24 @@ public:
 		}
 		throw "blockbinary<nbits, BlockType>.set(index): bit index out of bounds";
 	}
-	void set_raw_bits(uint64_t value) {
+	inline void set_raw_bits(uint64_t value) {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = value & storageMask;
 			value >>= bitsInBlock;
 		}
-		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		_block[MSU] &= MSU_MASK;
+		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	// in-place one's complement
-	inline blockbinary& flip() {
+	inline blockbinary& flip() { // in-place one's complement
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = ~_block[i];
-		}
-		// assert precondition of properly nulled leading non-bits
-		_block[MSU] = _block[MSU] & MSU_MASK; 
+		}		
+		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
+	}
+	inline blockbinary& twoscomplement() { // in-place 2's complement
+		blockbinary<nbits, BlockType> plusOne(1);
+		flip();
+		return *this += plusOne;
 	}
 
 	// selectors
@@ -408,23 +427,25 @@ inline bool operator!=(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rh
 }
 template<size_t N, typename B>
 inline bool operator<(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs) {
+	if (lhs.ispos() && rhs.isneg()) return false; // need to filter out possible overflow conditions
+	if (lhs.isneg() && rhs.ispos()) return true;  // need to filter out possible underflow conditions
+	if (lhs == rhs) return false; // so the maxneg logic works
+	blockbinary<N, B> mneg = maxneg<N, B>();
+	if (rhs == mneg) return false; // special case: nothing is smaller than maximum negative
 	blockbinary<N, B> diff = lhs - rhs;
 	return diff.isneg();
 }
 template<size_t N, typename B>
 inline bool operator<=(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs) {
-	blockbinary<N, B> diff = lhs - rhs;
-	return diff.isneg() || diff.iszero();
+	return (lhs < rhs || lhs == rhs);
 }
 template<size_t N, typename B>
 inline bool operator>(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs) {
-	blockbinary<N, B> diff = lhs - rhs;
-	return diff.ispos();
+	return !(lhs <= rhs);
 }
 template<size_t N, typename B>
 inline bool operator>=(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs) {
-	blockbinary<N, B> diff = lhs - rhs;
-	return diff.ispos() || diff.iszero();
+	return !(lhs < rhs);
 }
 ///////////////////////////////////////////////////////////////////////////////
 // binary operators
