@@ -49,6 +49,217 @@ int ValidateAny(bool bReportIndividualTestCases) {
 	return nrFailures;
 }
 
+int ValidateSpecialRoundingCases(bool bReportIndividualTestCases) {
+	using namespace std;
+	using namespace sw::unum;
+
+	blockbinary<8> a, b, roundedResult;
+	blockbinary<16> c;
+	bool roundUp;
+
+
+	int nrOfFailedTestCases = 0;
+
+	// test cases at the boundary
+//                   | lsb
+//               '0001     round down                         1 -> 1
+//                '0010    round down                         1 -> 1
+//                 '0010   tie with lsb == 0, round down      0 -> 0
+//                 '0100   round down                         1 -> 1
+//                 '0101   round down                         1 -> 1
+//                 '0110   tie with lsb == 1, round up        1 -> 2
+	a = 1;
+	roundUp = a.roundingMode(0);
+	if (roundUp) ++nrOfFailedTestCases;
+	a = 2;
+	roundUp = a.roundingMode(1);
+	if (roundUp) ++nrOfFailedTestCases;
+	a = 2;
+	roundUp = a.roundingMode(2);
+	if (roundUp) ++nrOfFailedTestCases;
+	a = 4;
+	roundUp = a.roundingMode(2);
+	if (roundUp) ++nrOfFailedTestCases;
+	a = 5;
+	roundUp = a.roundingMode(2);
+	if (roundUp) ++nrOfFailedTestCases;
+	a = 6;
+	roundUp = a.roundingMode(2);
+	if (!roundUp) ++nrOfFailedTestCases;
+
+	// test cases at the boundary
+	//                  | lsb
+	//                 '0001   round down                         0 -> 0
+	//                 '0010   round down                         0 -> 0
+	//                 '0011   round down                         0 -> 0
+	//                 '0100   tie with lsb == 0, round down      0 -> 0
+	//                 '0101   round up                           0 -> 0
+	//                 '0110   round up                           0 -> 1
+	//                 '0111   round up                           0 -> 1
+	//                 '1100   tie with lsb == 1, round up        1 -> 2
+	a = 1;
+	roundUp = a.roundingMode(3);
+	if (roundUp) ++nrOfFailedTestCases;
+	a = 2;
+	roundUp = a.roundingMode(3);
+	if (roundUp) ++nrOfFailedTestCases;
+	a = 3;
+	roundUp = a.roundingMode(3);
+	if (roundUp) ++nrOfFailedTestCases;
+	a = 4;
+	roundUp = a.roundingMode(3);
+	if (roundUp) ++nrOfFailedTestCases;
+	a = 5;
+	roundUp = a.roundingMode(3);
+	if (!roundUp) ++nrOfFailedTestCases;
+	a = 6;
+	roundUp = a.roundingMode(3);
+	if (!roundUp) ++nrOfFailedTestCases;
+	a = 7;
+	roundUp = a.roundingMode(3);
+	if (!roundUp) ++nrOfFailedTestCases;
+	a = 12;
+	roundUp = a.roundingMode(3);
+	if (!roundUp) ++nrOfFailedTestCases;
+
+	cout << "First Nibble: " << (nrOfFailedTestCases > 0 ? "FAIL" : "PASS") << endl;
+
+	// test cases at the boundary
+	//             | lsb
+	//             1000'0000   round down                         1 -> 1
+	//             0100'0000   tie with lsb == 0, round down      0 -> 0
+	//             1100'0000   tie with lsb == 1, round up        1 -> 2
+	//             0100'0001   round up                           0 -> 1
+	//             0110'0000   round up                           0 -> 1
+	//             0110'0001   round up                           0 -> 1
+
+	a = 0x80;
+	roundUp = a.roundingMode(7);
+	if (roundUp) ++nrOfFailedTestCases;
+	a = 0x40;
+	roundUp = a.roundingMode(7);
+	if (roundUp) ++nrOfFailedTestCases;
+	a = 0xC0;
+	roundUp = a.roundingMode(7);
+	if (!roundUp) ++nrOfFailedTestCases;
+	a = 0x41;
+	roundUp = a.roundingMode(7);
+	if (!roundUp) ++nrOfFailedTestCases;
+	a = 0x60;
+	roundUp = a.roundingMode(7);
+	if (!roundUp) ++nrOfFailedTestCases;
+	a = 0x61;
+	roundUp = a.roundingMode(7);
+	if (!roundUp) ++nrOfFailedTestCases;
+
+	cout << "Second Nibble: " << (nrOfFailedTestCases > 0 ? "FAIL" : "PASS") << endl;
+
+
+	// test case  16 bits with lsb at 9
+	//           | lsb
+	//   0000'0000'0000'0000   round down                         0 -> 0
+	//   0000'0000'1000'0000   tie with lsb == 0, round down    128 -> 0
+	//   0000'0001'1000'0000   tie with lsb == 1, round up      384 -> 2
+	//   0000'0000'1000'0001   round up                         129 -> 1
+	//   0000'0000'1100'0000   round up                         192 -> 1
+	//   0000'0000'1100'0001   round up                         193 -> 1
+	//   0000'0000'0100'0001   round down                        65 -> 0
+
+	// result is 128 -> rounds to 0
+	a = 64;
+	b = 2;
+	c = urmul(a, b);
+	if (bReportIndividualTestCases) cout << "unrounded result is " << to_hex(c, true) << endl;
+	roundUp = c.roundingMode(8);
+	if (bReportIndividualTestCases) cout << (roundUp ? "round up" : "round down") << endl;
+	c >>= 8;
+	roundedResult = c;
+	if (bReportIndividualTestCases) cout << "shifted unrounded result: " << to_hex(c) << " result in orginal system: " << to_hex(roundedResult) << endl;
+	if (roundUp) roundedResult += 1;
+	if (bReportIndividualTestCases) cout << "final rounded result: " << to_hex(roundedResult) << endl;
+	if (bReportIndividualTestCases) cout << endl;
+	if (roundedResult != blockbinary<8>(0ll)) ++nrOfFailedTestCases;
+
+	// result is 384 -> rounds to 2
+	a = 96;
+	b = 4;
+	c = urmul(a, b);
+	if (bReportIndividualTestCases) cout << "unrounded result is " << to_hex(c, true) << endl;
+	roundUp = c.roundingMode(8);
+	if (bReportIndividualTestCases) cout << (roundUp ? "round up" : "round down") << endl;
+	c >>= 8;
+	roundedResult = c;
+	if (bReportIndividualTestCases) cout << "shifted unrounded result: " << to_hex(c) << " result in orginal system: " << to_hex(roundedResult) << endl;
+	if (roundUp) roundedResult += 1;
+	if (bReportIndividualTestCases) cout << "final rounded result: " << to_hex(roundedResult) << endl;
+	if (bReportIndividualTestCases) cout << endl;
+	if (roundedResult != blockbinary<8>(2ll)) ++nrOfFailedTestCases;
+
+	// result is 129 -> rounds to 1
+	a = 64;
+	b = 2;
+	c = urmul(a, b); c += 1;
+	if (bReportIndividualTestCases) cout << "unrounded result is " << to_hex(c, true) << endl;
+	roundUp = c.roundingMode(8);
+	if (bReportIndividualTestCases) cout << (roundUp ? "round up" : "round down") << endl;
+	c >>= 8;
+	roundedResult = c;
+	if (bReportIndividualTestCases) cout << "shifted unrounded result: " << to_hex(c) << " result in orginal system: " << to_hex(roundedResult) << endl;
+	if (roundUp) roundedResult += 1;
+	if (bReportIndividualTestCases) cout << "final rounded result: " << to_hex(roundedResult) << endl;
+	if (bReportIndividualTestCases) cout << endl;
+	if (roundedResult != blockbinary<8>(1ll)) ++nrOfFailedTestCases;
+
+	// result is 192 -> rounds to 1
+	a = 96;
+	b = 2;
+	c = urmul(a, b);
+	if (bReportIndividualTestCases) cout << "unrounded result is " << to_hex(c, true) << endl;
+	roundUp = c.roundingMode(8);
+	if (bReportIndividualTestCases) cout << (roundUp ? "round up" : "round down") << endl;
+	c >>= 8;
+	roundedResult = c;
+	if (bReportIndividualTestCases) cout << "shifted unrounded result: " << to_hex(c) << " result in orginal system: " << to_hex(roundedResult) << endl;
+	if (roundUp) roundedResult += 1;
+	if (bReportIndividualTestCases) cout << "final rounded result: " << to_hex(roundedResult) << endl;
+	if (bReportIndividualTestCases) cout << endl;
+	if (roundedResult != blockbinary<8>(1ll)) ++nrOfFailedTestCases;
+
+	// result is 193 -> rounds to 1
+	a = 96;
+	b = 2;
+	c = urmul(a, b); c += 1;
+	if (bReportIndividualTestCases) cout << "unrounded result is " << to_hex(c, true) << endl;
+	roundUp = c.roundingMode(8);
+	if (bReportIndividualTestCases) cout << (roundUp ? "round up" : "round down") << endl;
+	c >>= 8;
+	roundedResult = c;
+	if (bReportIndividualTestCases) cout << "shifted unrounded result: " << to_hex(c) << " result in orginal system: " << to_hex(roundedResult) << endl;
+	if (roundUp) roundedResult += 1;
+	if (bReportIndividualTestCases) cout << "final rounded result: " << to_hex(roundedResult) << endl;
+	if (bReportIndividualTestCases) cout << endl;
+	if (roundedResult != blockbinary<8>(1ll)) ++nrOfFailedTestCases;
+
+	// result is 65 -> rounds to 0
+	a = 32;
+	b = 2;
+	c = urmul(a, b); c += 1;
+	if (bReportIndividualTestCases) cout << "unrounded result is " << to_hex(c, true) << endl;
+	roundUp = c.roundingMode(8);
+	if (bReportIndividualTestCases) cout << (roundUp ? "round up" : "round down") << endl;
+	c >>= 8;
+	roundedResult = c;
+	if (bReportIndividualTestCases) cout << "shifted unrounded result: " << to_hex(c) << " result in orginal system: " << to_hex(roundedResult) << endl;
+	if (roundUp) roundedResult += 1;
+	if (bReportIndividualTestCases) cout << "final rounded result: " << to_hex(roundedResult) << endl;
+	if (bReportIndividualTestCases) cout << endl;
+	if (roundedResult != blockbinary<8>(0ll)) ++nrOfFailedTestCases;
+
+	cout << "Second Byte: " << (nrOfFailedTestCases > 0 ? "FAIL" : "PASS") << endl;
+
+	return nrOfFailedTestCases;
+}
+
 template<size_t nbits>
 int ValidateRounding(bool bReportIndividualTestCases) {
 	int nrTestFailures = 0;
@@ -74,10 +285,6 @@ try {
 
 	nrOfFailedTestCases += ValidateAny(bReportIndividualTestCases);
 
-	blockbinary<8> a, b, roundedResult;
-	blockbinary<16> c;
-	bool roundUp;
-
 	// basic algorithm
 	//  010101...010101010101
 	//               |  the source arithmetic needs to round at this point
@@ -93,101 +300,9 @@ try {
 	//    x       1       1       0      round up
 	//    x       1       1       1      round up
 
-	// test case  16 bits with lsb at 9
-	//           | lsb
-	//   0000'0000'0000'0000   round down                         0 -> 0
-	//   0000'0000'1000'0000   tie with lsb == 0, round down    128 -> 0
-	//   0000'0001'1000'0000   tie with lsb == 1, round up      384 -> 2
-	//   0000'0000'1000'0001   round up                         129 -> 1
-	//   0000'0000'1100'0000   round up                         192 -> 1
-	//   0000'0000'1100'0001   round up                         193 -> 1
-	//   0000'0000'0100'0001   round down                        65 -> 0
+	nrOfFailedTestCases = ReportTestResult(ValidateSpecialRoundingCases(bReportIndividualTestCases), tag, "special rounding cases");
 
-	// result is 128 -> rounds to 0
-	a = 64;
-	b = 2;
-	c = urmul(a, b);
-	cout << "unrounded result is " << to_hex(c, true) << endl;
-	roundUp = c.roundingMode(8); 
-	cout << (roundUp ? "round up" : "round down") << endl;
-	c >>= 8;
-	roundedResult = c;
-	cout << "shifted unrounded result: " << to_hex(c) << " result in orginal system: " << to_hex(roundedResult) << endl;
-	if (roundUp) roundedResult += 1;
-	cout << "final rounded result: " << to_hex(roundedResult) << endl;
-	cout << endl;
-
-	// result is 384 -> rounds to 2
-	a = 96;
-	b = 4;
-	c = urmul(a, b);
-	cout << "unrounded result is " << to_hex(c, true) << endl;
-	roundUp = c.roundingMode(8);
-	cout << (roundUp ? "round up" : "round down") << endl;
-	c >>= 8;
-	roundedResult = c;
-	cout << "shifted unrounded result: " << to_hex(c) << " result in orginal system: " << to_hex(roundedResult) << endl;
-	if (roundUp) roundedResult += 1;
-	cout << "final rounded result: " << to_hex(roundedResult) << endl;
-	cout << endl;
-
-	// result is 129 -> rounds to 1
-	a = 64;
-	b = 2;
-	c = urmul(a, b); c += 1;
-	cout << "unrounded result is " << to_hex(c, true) << endl;
-	roundUp = c.roundingMode(8);
-	cout << (roundUp ? "round up" : "round down") << endl;
-	c >>= 8;
-	roundedResult = c;
-	cout << "shifted unrounded result: " << to_hex(c) << " result in orginal system: " << to_hex(roundedResult) << endl;
-	if (roundUp) roundedResult += 1;
-	cout << "final rounded result: " << to_hex(roundedResult) << endl;
-	cout << endl;
-
-	// result is 192 -> rounds to 1
-	a = 96;
-	b = 2;
-	c = urmul(a, b);
-	cout << "unrounded result is " << to_hex(c, true) << endl;
-	roundUp = c.roundingMode(8);
-	cout << (roundUp ? "round up" : "round down") << endl;
-	c >>= 8;
-	roundedResult = c;
-	cout << "shifted unrounded result: " << to_hex(c) << " result in orginal system: " << to_hex(roundedResult) << endl;
-	if (roundUp) roundedResult += 1;
-	cout << "final rounded result: " << to_hex(roundedResult) << endl;
-	cout << endl;
-
-	// result is 193 -> rounds to 1
-	a = 96;
-	b = 2;
-	c = urmul(a, b); c += 1;
-	cout << "unrounded result is " << to_hex(c, true) << endl;
-	roundUp = c.roundingMode(8);
-	cout << (roundUp ? "round up" : "round down") << endl;
-	c >>= 8;
-	roundedResult = c;
-	cout << "shifted unrounded result: " << to_hex(c) << " result in orginal system: " << to_hex(roundedResult) << endl;
-	if (roundUp) roundedResult += 1;
-	cout << "final rounded result: " << to_hex(roundedResult) << endl;
-	cout << endl;
-
-	// result is 65 -> rounds to 0
-	a = 32;
-	b = 2;
-	c = urmul(a, b); c += 1;
-	cout << "unrounded result is " << to_hex(c, true) << endl;
-	roundUp = c.roundingMode(8);
-	cout << (roundUp ? "round up" : "round down") << endl;
-	c >>= 8;
-	roundedResult = c;
-	cout << "shifted unrounded result: " << to_hex(c) << " result in orginal system: " << to_hex(roundedResult) << endl;
-	if (roundUp) roundedResult += 1;
-	cout << "final rounded result: " << to_hex(roundedResult) << endl;
-	cout << endl;
-
-	nrOfFailedTestCases = ReportTestResult(ValidateRounding<4>(bReportIndividualTestCases), tag, "urmul");
+	//nrOfFailedTestCases = ReportTestResult(ValidateRounding<4>(bReportIndividualTestCases), tag, "urmul");
 	
 #if STRESS_TESTING
 

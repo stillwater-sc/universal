@@ -393,7 +393,7 @@ public:
 		bool lsb = at(targetLsb);
 		bool guard = (targetLsb == 0 ? false : at(targetLsb - 1));
 		bool round = (targetLsb > 1 ? at(targetLsb - 2) : false);
-		bool sticky =(targetLsb < 2 ? false : any(targetLsb - 3));
+		bool sticky =(targetLsb < 3 ? false : any(targetLsb - 3));
 		bool tie = guard & !round & !sticky;
 		return (lsb & tie) || (guard & !tie);
 	}
