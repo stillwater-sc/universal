@@ -111,6 +111,12 @@ try {
 
 #if MANUAL_TESTING
 
+	blockbinary<4> a, b;
+	a = -8;
+	b = -8;
+	blockbinary<8> c = urmul(a, b);
+
+	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<4, uint8_t>("Manual Testing", true), "blockbinary<4,uint8>", "multiplication");
 //	nrOfFailedTestCases += ReportTestResult(VerifyUnroundedMultiplication<8, uint8_t>("Manual Testing", true), "blockbinary<8,uint8>", "multiplication");

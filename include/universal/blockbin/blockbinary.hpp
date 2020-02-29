@@ -561,7 +561,7 @@ inline blockbinary<nbits + 1, BlockType> uradd(const blockbinary<nbits, BlockTyp
 	return result += blockbinary<nbits + 1, BlockType>(b);
 }
 
-#define TRACE_URMUL 0
+#define TRACE_URMUL 1
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 template<size_t nbits, typename BlockType>
 inline blockbinary<2*nbits, BlockType> urmul(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
@@ -569,27 +569,21 @@ inline blockbinary<2*nbits, BlockType> urmul(const blockbinary<nbits, BlockType>
 	if (a.iszero() || b.iszero()) return result;
 
 	// compute the result
+	blockbinary<2 * nbits, BlockType> signext_a(a);
 	blockbinary<2 * nbits, BlockType> multiplicant(b);
 #if TRACE_URMUL
-	std::cout << "    " << to_binary(a) << std::endl;
-	std::cout << "  0 " << to_binary(multiplicant) << " multiplicant" << std::endl;
-	std::cout << "  0 " << to_binary(result) << " accumulator" << std::endl;
+	std::cout << "    " << to_binary(a) << " * " << to_binary(b) << std::endl;
+	std::cout << std::setw(3) << 0 << ' ' << to_binary(multiplicant) << ' ' << to_binary(result) << std::endl;
 #endif
-	for (size_t i = 0; i < nbits; ++i) {
-		if (a.at(i)) {
+	for (size_t i = 0; i < 2 * nbits; ++i) {
+		if (signext_a.at(i)) {
 			result += multiplicant;
 		}
 		multiplicant <<= 1;
 #if TRACE_URMUL
-		std::cout << std::setw(3) << i << ' ' << to_binary(result) << std::endl;
+		std::cout << std::setw(3) << i << ' ' << to_binary(multiplicant) << ' ' << to_binary(result) << std::endl;
 #endif
 
-	}
-	if (a.sign() & !b.sign()) { // need so sign extend
-		for (size_t i = nbits; i < 2 * nbits; ++i) {
-			result += multiplicant;
-			multiplicant <<= 1;
-		}
 	}
 #if TRACE_URMUL
 	std::cout << "fnl " << to_binary(result) << std::endl;
