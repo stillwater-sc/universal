@@ -1,5 +1,5 @@
 #pragma once
-// native standard header
+// native standard header aggregating all native type introspection and manipulation functionality
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -8,7 +8,6 @@
 #define _NATIVE_
 
 #include <universal/native/bit_functions.hpp>
-#include <universal/native/byteArray.hpp>
 #include <universal/native/integers.hpp>
 #include <universal/native/ieee-754.hpp>
 #include <universal/native/manipulators.hpp>

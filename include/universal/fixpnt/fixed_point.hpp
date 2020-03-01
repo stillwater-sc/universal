@@ -774,10 +774,11 @@ private:
 	friend bool operator< (const fixpnt<nnbits, rrbits, aarithmetic, BBlockType>& lhs, const fixpnt<nnbits, rrbits, aarithmetic, BBlockType>& rhs);
 };
 
+#define TRACE_DIV 0
+
 // divide a by b and return both quotient and remainder
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 fixpnt<nbits, rbits, arithmetic, BlockType> fixpnt_longdivision(const fixpnt<nbits, rbits, arithmetic, BlockType>& _a, const fixpnt<nbits, rbits, arithmetic, BlockType>& _b) {
-	fixpnt<nbits, rbits, arithmetic, BlockType> c;
 	if (_b.iszero()) {
 		// division by zero
 		throw fixpnt_divide_by_zero();
@@ -787,31 +788,45 @@ fixpnt<nbits, rbits, arithmetic, BlockType> fixpnt_longdivision(const fixpnt<nbi
 	bool a_sign = _a.sign();
 	bool b_sign = _b.sign();
 	bool result_negative = (a_sign ^ b_sign);
-	// normalize both arguments to positive, which requires expansion by 1-bit to deal with maxneg
-	blockbinary<nbits + 1, BlockType> a(_a.getbb()); // BAD: double create and copy
-	blockbinary<nbits + 1, BlockType> b(_b.getbb());
+	// normalize both arguments to positive in new size
+	blockbinary<2*nbits, BlockType> a(_a.getbb()); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
+	blockbinary<2*nbits, BlockType> b(_b.getbb());
+	blockbinary<nbits, BlockType> result;
 	if (a_sign) a.twoscomplement();
 	if (b_sign) b.twoscomplement();
 
 	// initialize the long division
-	blockbinary<nbits + 1, BlockType> accumulator = a;
-	// prepare the subtractand
-	blockbinary<nbits + 1, BlockType> subtractand = b;
+	blockbinary<nbits + 1, BlockType> decimator = a;	
+	blockbinary<nbits + 1, BlockType> subtractand = b; // prepare the subtractand
+#if TRACE_DIV
+	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
+#endif
 	int msb_b = b.msb();
 	int msb_a = a.msb();
 	int shift = msb_a - msb_b;
 	subtractand <<= shift;
+#if TRACE_DIV
+	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << " shift: " << shift << std::endl;
+#endif
 	// long division
 	for (int i = shift; i >= 0; --i) {
-		if (subtractand <= accumulator) {
-			accumulator -= subtractand;
-			c.set(i);
+#if TRACE_DIV
+		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
+#endif
+		if (subtractand <= decimator) {
+			decimator -= subtractand;
+			result.set(i);
 		}
 		else {
-			c.reset(i);
+			result.reset(i);
 		}
 		subtractand >>= 1;
+#if TRACE_DIV
+		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << std::endl;
+#endif
 	}
+	std::cout << to_binary(result) << std::endl;
+	fixpnt<nbits, rbits, arithmetic, BlockType> c; // = result;
 	if (result_negative) {  // take 2's complement
 		c.twoscomplement();
 	}

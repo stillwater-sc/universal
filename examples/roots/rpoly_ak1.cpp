@@ -563,6 +563,10 @@ void QuadIT_ak1(int N, int* NZ, double uu, double vv, double* szr, double* szi, 
 int i, j = 0, tFlag, triedFlag = 0;
 double c, ee, mp, omp, relstp, t, u, ui, v, vi, zm;
 
+// TODO: figure out if this is correct
+omp = 0.0;
+relstp = 0.01;
+
 *NZ = 0; // Number of zeros found
 u = uu; // uu and vv are coefficients of the starting quadratic
 v = vv;
@@ -658,7 +662,7 @@ void RealIT_ak1(int* iFlag, int* NZ, double* sss, int N, double p[MDP1], int NN,
 // iFlag - flag to indicate a pair of zeros near real axis
 
 int i, j = 0, nm1 = N - 1;
-double ee, kv, mp, ms, omp, pv, s, t;
+double ee, kv, mp, ms, omp, pv, s, t = 0;
 
 *iFlag = *NZ = 0;
 s = *sss;

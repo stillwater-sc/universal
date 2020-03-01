@@ -51,9 +51,14 @@ try {
 
 #if MANUAL_TESTING
 
+	/*
+	0100.0000 / 0001.0000  -> b0000'0100 in bb form
+	0100.0000 / 0001.1000  -> b0000'0010 in bb form
+
+	 */
 	fixpnt<8, 4> a, b, c;
-	a = 3.5f;
-	b = 1.0f;
+	a = 4.0f;
+	b = 1.5f;
 	c = fixpnt_longdivision(a, b);;
 	cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
 

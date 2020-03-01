@@ -119,7 +119,7 @@ inline std::string to_triple(const float& number) {
 	// the exponent value used in the arithmetic is the exponent shifted by a bias 
 	// for the IEEE 754 binary32 case, an exponent value of 127 represents the actual zero 
 	// (i.e. for 2^(e - 127) to be one, e must be 127). 
-	// Exponents range from ¿126 to +127 because exponents of ¿127 (all 0s) and +128 (all 1s) are reserved for special numbers.
+	// Exponents range from Â¿126 to +127 because exponents of Â¿127 (all 0s) and +128 (all 1s) are reserved for special numbers.
 	if (decoder.parts.exponent == 0) {
 		ss << "exp=0,";
 	}
@@ -218,8 +218,8 @@ inline std::string to_triple(const double& number) {
 	// exponent 
 	// the exponent value used in the arithmetic is the exponent shifted by a bias 
 	// for the IEEE 754 binary32 case, an exponent value of 127 represents the actual zero 
-	// (i.e. for 2^(e ¿ 127) to be one, e must be 127). 
-	// Exponents range from ¿126 to +127 because exponents of ¿127 (all 0s) and +128 (all 1s) are reserved for special numbers.
+	// (i.e. for 2^(e Â¿ 127) to be one, e must be 127). 
+	// Exponents range from Â¿126 to +127 because exponents of Â¿127 (all 0s) and +128 (all 1s) are reserved for special numbers.
 	if (decoder.parts.exponent == 0) {
 		ss << "exp=0,";
 	}
@@ -275,7 +275,7 @@ inline std::string to_base2_scientific(const double& number) {
 	An exponent field value of 32767 (all fifteen bits 1) is reserved
 	so as to enable the representation of special states such as
 	infinity and Not a Number.If the exponent field is zero, the
-	value is a denormal number and the exponent of 2 is ¿16382.
+	value is a denormal number and the exponent of 2 is Â¿16382.
 */
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -340,8 +340,8 @@ inline std::string to_triple(const long double& number) {
 	// exponent 
 	// the exponent value used in the arithmetic is the exponent shifted by a bias 
 	// for the IEEE 754 binary32 case, an exponent value of 127 represents the actual zero 
-	// (i.e. for 2^(e ¿ 127) to be one, e must be 127). 
-	// Exponents range from ¿126 to +127 because exponents of ¿127 (all 0s) and +128 (all 1s) are reserved for special numbers.
+	// (i.e. for 2^(e Â¿ 127) to be one, e must be 127). 
+	// Exponents range from Â¿126 to +127 because exponents of Â¿127 (all 0s) and +128 (all 1s) are reserved for special numbers.
 	if (decoder.parts.exponent == 0) {
 		ss << "exp=0,";
 	}
@@ -444,8 +444,8 @@ inline std::string to_triple(const long double& number) {
 	// exponent 
 	// the exponent value used in the arithmetic is the exponent shifted by a bias 
 	// for the IEEE 754 binary32 case, an exponent value of 127 represents the actual zero 
-	// (i.e. for 2^(e ¿ 127) to be one, e must be 127). 
-	// Exponents range from ¿126 to +127 because exponents of ¿127 (all 0s) and +128 (all 1s) are reserved for special numbers.
+	// (i.e. for 2^(e Â¿ 127) to be one, e must be 127). 
+	// Exponents range from Â¿126 to +127 because exponents of Â¿127 (all 0s) and +128 (all 1s) are reserved for special numbers.
 	if (decoder.parts.exponent == 0) {
 		ss << "exp=0,";
 	}
