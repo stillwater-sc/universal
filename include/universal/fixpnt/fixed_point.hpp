@@ -501,7 +501,9 @@ public:
 		return tmp;
 	}
 	fixpnt& operator++() {
-		*this += fixpnt(1);
+		fixpnt increment;
+		increment.set_raw_bits(0x1);
+		*this += increment;
 		return *this;
 	}
 	// decrement
@@ -511,8 +513,9 @@ public:
 		return tmp;
 	}
 	fixpnt& operator--() {
-		*this -= fixpnt(1);
-		return *this;
+		fixpnt decrement;
+		decrement.set_raw_bits(0x1);
+		return *this -= decrement;
 	}
 	// conversion operators
 // Maybe remove explicit, MTL compiles, but we have lots of double computation then
@@ -550,12 +553,10 @@ public:
 	fixpnt& operator*=(const fixpnt& rhs) {
 		if (arithmetic == Modular) {
 			blockbinary<2 * nbits, BlockType> c = urmul(this->bb, rhs.bb);
-			blockbinary<nbits, BlockType> result = c; // take lower nbits
-			bool roundUp = result.roundingMode(rbits);
-//			bool negative = sign() ^ rhs.sign();
-			result >>= rbits;
-			if (roundUp) result += 1;
-			this->bb = result;
+			bool roundUp = c.roundingMode(rbits);
+			c >>= rbits;
+			if (roundUp) ++c;
+			this->bb = c; // select the lower nbits of the result
 		}
 		else {
 			std::cerr << "saturating multiply not implemented yet\n";

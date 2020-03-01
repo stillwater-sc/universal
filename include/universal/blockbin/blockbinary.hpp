@@ -170,6 +170,28 @@ public:
 		complement.flip();
 		return complement;
 	}
+	// increment/decrement
+	blockbinary operator++(int) {
+		blockbinary tmp(*this);
+		operator++();
+		return tmp;
+	}
+	blockbinary& operator++() {
+		blockbinary increment;
+		increment.set_raw_bits(0x1);
+		*this += increment;
+		return *this;
+	}
+	blockbinary operator--(int) {
+		blockbinary tmp(*this);
+		operator--();
+		return tmp;
+	}
+	blockbinary& operator--() {
+		blockbinary decrement;
+		decrement.set_raw_bits(0x1);
+		return *this -= decrement;
+	}
 	// logic operators
 	blockbinary  operator~() {
 		blockbinary<nbits, BlockType> complement(*this);
@@ -561,8 +583,9 @@ inline blockbinary<nbits + 1, BlockType> uradd(const blockbinary<nbits, BlockTyp
 	return result += blockbinary<nbits + 1, BlockType>(b);
 }
 
-#define TRACE_URMUL 1
+#define TRACE_URMUL 0
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
+// using brute-force sign-extending of operands to yield correct sign-extended result.
 template<size_t nbits, typename BlockType>
 inline blockbinary<2*nbits, BlockType> urmul(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
 	blockbinary<2 * nbits, BlockType> result;
