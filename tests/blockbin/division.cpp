@@ -12,15 +12,6 @@
 #include "../utils/test_helpers.hpp"
 #include "../utils/blockbinary_helpers.hpp"
 
-
-// generic division test generator
-template<typename Scalar>
-void GenerateDivTest(const Scalar& x, const Scalar& y, Scalar& z) {
-	using namespace sw::unum;
-	z = x / y;
-	std::cout << typeid(Scalar).name() << ": " << to_binary(x) << " / " << to_binary(y) << " = " << to_binary(z) << std::endl;
-}
-
 // enumerate all multiplication cases for an blockbinary<nbits,BlockType> configuration
 template<size_t nbits, typename BlockType = uint8_t>
 int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
@@ -67,7 +58,7 @@ int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
 			else {
 				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", a, b, result, cref);
 			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
+			if (nrOfFailedTests > 24) return nrOfFailedTests;
 		}
 		//		if (i % 1024 == 0) std::cout << '.';
 	}
@@ -87,6 +78,33 @@ void TestMostSignificantBit() {
 		a <<= 1;
 	}
 }
+
+// generate specific test case that you can trace with the trace conditions in blockbinary
+// for most bugs they are traceable with _trace_conversion and _trace_add
+template<size_t nbits, typename StorageBlockType = uint8_t>
+void GenerateTestCase(int64_t lhs, int64_t rhs) {
+	using namespace sw::unum;
+	blockbinary<nbits, StorageBlockType> a, b, result, reference;
+
+	a.set_raw_bits(uint64_t(lhs));
+	b.set_raw_bits(uint64_t(rhs));
+	result = a / b;
+
+	long long _a, _b, _c;
+	_a = (long long)a;
+	_b = (long long)b;
+	_c = _a / _b;
+
+	std::streamsize oldPrecision = std::cout.precision();
+	std::cout << std::setprecision(nbits - 2);
+	std::cout << std::setw(nbits) << _a << " / " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << std::endl;
+	std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _c << ")   " << std::endl;
+	//	std::cout << to_hex(a) << " * " << to_hex(b) << " = " << to_hex(result) << " (reference: " << std::hex << ref << ")   ";
+	reference.set_raw_bits(_c);
+	std::cout << (result == reference ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << std::dec << std::setprecision(oldPrecision);
+}
+
 // conditional compile flags
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
@@ -99,7 +117,7 @@ try {
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "block binary division: ";
+	std::string tag = "blockbinary division: ";
 
 #if MANUAL_TESTING
 
@@ -107,13 +125,10 @@ try {
 //	TestMostSignificantBit<27, uint16_t>();
 //	TestMostSignificantBit<33, uint32_t>();
 
-	blockbinary<4> a, b, c;
-	a = 1;
-	b = 2;
-	c = a / b;
-	GenerateDivTest(a, b, c);
+	GenerateTestCase<4>(0x8,0x1);  // -8 / 1 => -8
 
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<4>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8>", "division");
 
 
 #if STRESS_TESTING
@@ -122,7 +137,7 @@ try {
 
 #else
 
-	cout << "block binary division validation" << endl;
+	cout << "blockbinary division validation" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<4,uint8_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<5,uint8_t>", "division");
@@ -141,8 +156,8 @@ try {
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<14, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<14,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<16,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<16,uint16_t>", "division");
 
 
 #endif  // STRESS_TESTING
