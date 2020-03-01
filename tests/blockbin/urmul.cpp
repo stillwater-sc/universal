@@ -5,7 +5,6 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <iomanip>
-#include <bitset>      // not used: just here to access the API
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/blockbin/blockbinary.hpp>

@@ -11,13 +11,13 @@
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/fixpnt/fixed_point.hpp"
+#include <universal/fixpnt/fixed_point.hpp>
 // fixed-point type manipulators such as pretty printers
-#include "universal/fixpnt/fixpnt_manipulators.hpp"
-#include "universal/fixpnt/math_functions.hpp"
+#include <universal/fixpnt/fixpnt_manipulators.hpp>
+#include <universal/fixpnt/math_functions.hpp>
 #include "../utils/fixpnt_test_suite.hpp"
 
-// generate specific test case that you can trace with the trace conditions in fixpnt.h
+// generate specific test case that you can trace with the trace conditions in fixed_point.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t rbits, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {

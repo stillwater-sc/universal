@@ -6,20 +6,12 @@
 #include <iostream>
 #include <iomanip>
 #include <typeinfo>
+
 // minimum set of include files to reflect source code dependencies
-#include "universal/blockbin/blockbinary.hpp"
+#include <universal/blockbin/blockbinary.hpp>
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 #include "../utils/blockbinary_helpers.hpp"
-
-
-// generic division test generator
-template<typename Scalar>
-void GenerateRemTest(const Scalar& x, const Scalar& y, Scalar& z) {
-	using namespace sw::unum;
-	z = x % y;
-	std::cout << typeid(Scalar).name() << ": " << to_binary(x) << " % " << to_binary(y) << " = " << to_binary(z) << std::endl;
-}
 
 // enumerate all multiplication cases for an blockbinary<nbits,BlockType> configuration
 template<size_t nbits, typename BlockType = uint8_t>

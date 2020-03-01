@@ -13,7 +13,7 @@
 #define BLOCKBIN_THROW_ARITHMETIC_EXCEPTION 0
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/blockbin/blockbinary.hpp"
+#include <universal/blockbin/blockbinary.hpp>
 #include "../utils/test_helpers.hpp"
 #include "../utils/blockbinary_helpers.hpp"
 

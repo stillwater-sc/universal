@@ -17,7 +17,7 @@
 #include "universal/fixpnt/math_functions.hpp"
 #include "../utils/fixpnt_test_suite.hpp"
 
-// generate specific test case that you can trace with the trace conditions in fixpnt.h
+// generate specific test case that you can trace with the trace conditions in fixed_point.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t rbits, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {

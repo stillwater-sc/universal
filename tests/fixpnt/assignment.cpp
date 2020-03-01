@@ -11,30 +11,11 @@
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 0
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/fixpnt/fixed_point.hpp"
+#include <universal/fixpnt/fixed_point.hpp>
 // fixed-point type manipulators such as pretty printers
-#include "universal/fixpnt/fixpnt_manipulators.hpp"
-#include "universal/fixpnt/math_functions.hpp"
+#include <universal/fixpnt/fixpnt_manipulators.hpp>
+#include <universal/fixpnt/math_functions.hpp>
 #include "../utils/fixpnt_test_suite.hpp"
-
-// generate specific test case that you can trace with the trace conditions in fixpnt.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t rbits, typename Ty>
-void GenerateTestCase(Ty _a, Ty _b) {
-	Ty ref;
-	sw::unum::fixpnt<nbits, rbits> a, b, cref, result;
-	a = _a;
-	b = _b;
-	result = a + b;
-	ref = _a + _b;
-	cref = ref;
-	std::streamsize oldPrecision = std::cout.precision();
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << a << " + " << b << " = " << result << " (reference: " << cref << ")   " ;
-	std::cout << (cref == result ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::dec << std::setprecision(oldPrecision);
-}
 
 void PositiveTestCases() {
 	using namespace std;
