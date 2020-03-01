@@ -358,10 +358,13 @@ public:
 	}
 	inline bool isodd() const {	return _block[0] & 0x1;	}
 	inline bool iseven() const { return !isodd(); }
-	inline bool at(size_t i) const {
-		if (i < nbits) {
-			BlockType word = _block[i / bitsInBlock];
-			BlockType mask = (BlockType(1) << (i % bitsInBlock));
+	inline bool test(size_t bitIndex) const {
+		return at(bitIndex);
+	}
+	inline bool at(size_t bitIndex) const {
+		if (bitIndex < nbits) {
+			BlockType word = _block[bitIndex / bitsInBlock];
+			BlockType mask = (BlockType(1) << (bitIndex % bitsInBlock));
 			return (word & mask);
 		}
 		throw "bit index out of bounds";

@@ -53,10 +53,9 @@ try {
 
 	fixpnt<8, 4> a, b, c;
 	a = 3.5f;
-        b = 1.0f;
-//	c = a / b;
+	b = 1.0f;
+	c = a / b;
 	cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
-
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 4>(0.5f, 1.0f);

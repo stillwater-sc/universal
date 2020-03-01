@@ -81,6 +81,19 @@ try {
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////
+	// selectors
+
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t rbits = 4;
+		fixpnt<nbits, rbits> a, b;
+		a = 1;
+		if (!a.test(4)) ++nrOfFailedTestCases;
+		b.set_raw_bits(1); // set the ULP
+		if (!b.at(0)) ++nrOfFailedTestCases;
+	}
+
+	/////////////////////////////////////////////////////////////////////////////////////
 	// modifiers
 
 	{

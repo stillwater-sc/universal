@@ -494,24 +494,26 @@ public:
 		complement.flip(); 
 		return complement;
 	}
-	// increment
+	// increment by 1 ULP
 	fixpnt operator++(int) {
 		fixpnt tmp(*this);
 		operator++();
 		return tmp;
 	}
+	// increment by 1 ULP
 	fixpnt& operator++() {
 		fixpnt increment;
 		increment.set_raw_bits(0x1);
 		*this += increment;
 		return *this;
 	}
-	// decrement
+	// decrement by 1 ULP
 	fixpnt operator--(int) {
 		fixpnt tmp(*this);
 		operator--();
 		return tmp;
 	}
+	// decrement by 1 ULP
 	fixpnt& operator--() {
 		fixpnt decrement;
 		decrement.set_raw_bits(0x1);
@@ -590,20 +592,22 @@ public:
 	inline void setzero() { bb.clear(); }
 	inline void setmaxpos() { bb.clear(); bb.flip(); bb.reset(nbits - 1); } // maxpos = 01111....111
 	inline void setmaxneg() { bb.clear(); bb.set(nbits - 1, true); } 	    // maxneg = 10000....000
-	inline void reset(size_t i) {
-		if (i < nbits) {
-			bb.reset(i);
+	inline void reset(size_t bitIndex) {
+		if (bitIndex < nbits) {
+			bb.reset(bitIndex);
 			return;
 		}
 		throw "fixpnt bit index out of bounds";
 	}
-	inline void set(size_t i, bool v = true) {
-		if (i < nbits) {
-			bb.set(i, v);
+	inline void set(size_t bitIndex, bool v = true) {
+		if (bitIndex < nbits) {
+			bb.set(bitIndex, v);
 			return;
 		}
 		throw "fixpnt bit index out of bounds";
 	}
+	// in-place 1's complement
+	inline fixpnt& flip() { bb.flip(); return *this; }
 	// use un-interpreted raw bits to set the bits of the fixpnt
 	inline void set_raw_bits(size_t value) { bb.set_raw_bits(value); }
 	inline fixpnt& assign(const std::string& txt) {
@@ -614,19 +618,17 @@ public:
 		// properly nulling bits that are outside of nbits
 		return *this;
 	}	
-	inline fixpnt& flip() { // in-place 1's complement
-		bb.flip();
-		return *this;
-	}
+	// in-place 2's complement
 	inline fixpnt& twoscomplement() { // in-place 2's complement
 		bb.twoscomplement();
 		return *this;
 	}
+
 	// selectors
 	inline bool iszero() const { return bb.iszero(); }
 	inline bool sign() const { return bb.sign(); }
-	inline bool at(size_t i) const { return bb.at(i); }
-
+	inline bool at(size_t bitIndex) const { return bb.at(bitIndex); }
+	inline bool test(size_t bitIndex) const { return bb.test(bitIndex); }
 protected:
 	// HELPER methods
 

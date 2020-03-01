@@ -888,7 +888,6 @@ public:
 	}
 	posit& operator/=(const posit& rhs) {
 		if (_trace_div) std::cout << "---------------------- DIV -------------------" << std::endl;
-		// since we are encoding error conditions as NaR (Not a Real), we need to process that condition first
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (rhs.iszero()) {
 			throw divide_by_zero{};    // not throwing is a quiet signalling NaR
