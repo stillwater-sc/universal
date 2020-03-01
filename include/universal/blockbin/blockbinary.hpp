@@ -536,13 +536,13 @@ quorem<nbits, BlockType> longdivision(const blockbinary<nbits, BlockType>& _a, c
 	bool a_sign = _a.sign();
 	bool b_sign = _b.sign();
 	bool result_negative = (a_sign ^ b_sign);
-	// normalize to positive, which requires expansion by 1-bit to deal with maxneg
+	// normalize both arguments to positive, which requires expansion by 1-bit to deal with maxneg
 	blockbinary<nbits + 1, BlockType> a(_a);
 	blockbinary<nbits + 1, BlockType> b(_b);
 	if (a_sign) a.twoscomplement();
 	if (b_sign) b.twoscomplement();
 
-	if (a < b) {
+	if (a < b) { // optimization for integer numbers
 		result.rem = _a; // a % b = a when a / b = 0
 		return result;   // a / b = 0 when b > a
 	}
