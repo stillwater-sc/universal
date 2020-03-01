@@ -76,12 +76,10 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 
 	a.set_raw_bits(uint64_t(lhs));
 	b.set_raw_bits(uint64_t(rhs));
-	long long _a, _b, _c;
+	long long _a, _b;
 	_a = (long long)a;
 	_b = (long long)b;
 	result = a * b;
-	_c = (long long)result;
-
 
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(nbits - 2);

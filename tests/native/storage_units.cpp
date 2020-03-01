@@ -23,8 +23,8 @@ void GenerateTestCase(int64_t _a, int64_t _b) {
 	setRawBits<nbits, StorageUnit>(b, uint64_t(_b));
 	copy<nbits, StorageUnit>(result, a);
 	addBlockArray<nbits, StorageUnit>(result, b);
-	int64_t ref = _a + _b;
-	std::streamsize oldPrecision = std::cout.precision();
+	//	int64_t ref = _a + _b;
+	//	std::streamsize oldPrecision = std::cout.precision();
 	//	std::cout << std::setprecision(nbits - 2);
 	//	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
 	//	std::cout << a << " + " << b << " = " << result << " (reference: " << ref << ")   " ;
@@ -54,7 +54,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "storage units: ";
