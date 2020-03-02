@@ -21,6 +21,42 @@ namespace unum {
 template<size_t ebits, size_t fbits, typename BlockType> class blocktriple;
 template<size_t ebits, size_t fbits, typename BlockType> blocktriple<ebits,fbits,BlockType> abs(const blocktriple<ebits,fbits,BlockType>& v);
 
+template<size_t nbits, typename BlockType>
+blockbinary<nbits> extract_23b_fraction(uint32_t _23b_fraction_without_hidden_bit) {
+	blockbinary<nbits, typename BlockType> _fraction;
+	uint32_t mask = uint32_t(0x00400000ul);
+	unsigned int ub = (nbits < 23 ? nbits : 23);
+	for (unsigned int i = 0; i < ub; i++) {
+		_fraction[nbits - 1 - i] = _23b_fraction_without_hidden_bit & mask;
+		mask >>= 1;
+	}
+	return _fraction;
+}
+
+template<size_t nbits, typename BlockType>
+blockbinary<nbits, BlockType> extract_52b_fraction(uint64_t _52b_fraction_without_hidden_bit) {
+	blockbinary<nbits, BlockType> _fraction;
+	uint64_t mask = uint64_t(0x0008000000000000ull);
+	unsigned int ub = (nbits < 52 ? nbits : 52);
+	for (unsigned int i = 0; i < ub; i++) {
+		_fraction[nbits - 1 - i] = _52b_fraction_without_hidden_bit & mask;
+		mask >>= 1;
+	}
+	return _fraction;
+}
+
+template<size_t nbits, typename BlockType>
+blockbinary<nbits, BlockType> extract_63b_fraction(uint64_t _63b_fraction_without_hidden_bit) {
+	blockbinary<nbits, BlockType> _fraction;
+	uint64_t mask = uint64_t(0x4000000000000000ull);
+	unsigned int ub = (nbits < 63 ? nbits : 63);
+	for (unsigned int i = 0; i < ub; i++) {
+		_fraction[nbits - 1 - i] = _63b_fraction_without_hidden_bit & mask;
+		mask >>= 1;
+	}
+	return _fraction;
+}
+
 // template class representing a value in scientific notation
 // using a template parameter for the number of exponent and fraction bits
 template<size_t ebits, size_t fbits, typename BlockType = uint8_t>
@@ -85,7 +121,7 @@ public:
 			// process negative number: process 2's complement of the input
 			_scale = findMostSignificantBit(-rhs) - 1;
 			uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0 : (-rhs << (64 - _scale));
-			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
+			_fraction.set_raw_bits(_fraction_without_hidden_bit);
 			//take_2s_complement();
 			_nrOfBits = fbits;
 			if (_trace_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
@@ -95,7 +131,7 @@ public:
 			if (rhs != 0) {
 				_scale = findMostSignificantBit(rhs) - 1;
 				uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0 : (rhs << (64 - _scale));
-				_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
+				_fraction.set_raw_bits(_fraction_without_hidden_bit);
 				_nrOfBits = fbits;
 				if (_trace_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 			}
@@ -227,13 +263,13 @@ public:
 				// how to interpret the fraction bits: TODO: this should be a static compile-time code block
 				if (sizeof(long double) == 8) {
 					// we are just a double and thus only have 52bits of fraction
-					_fraction = extract_52b_fraction<fbits>(_63b_fraction_without_hidden_bit);
+					_fraction = extract_52b_fraction<fbits,BlockType>(_63b_fraction_without_hidden_bit);
 					if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 
 				}
 				else if (sizeof(long double) == 16) {
 					// how to differentiate between 80bit and 128bit formats?
-					_fraction = extract_63b_fraction<fbits>(_63b_fraction_without_hidden_bit);
+					_fraction = extract_63b_fraction<fbits,BlockType>(_63b_fraction_without_hidden_bit);
 					if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 63b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 
 				}
@@ -245,7 +281,9 @@ public:
 	}
 
 	// conversion operators
-	explicit operator long long() const { return to_long_long(); }
+	explicit operator float() const { return to_float(); }
+	explicit operator double() const { return to_double(); }
+	explicit operator long double() const { return to_long_double(); }
 
 	// operators
 	blocktriple operator-() const {				
@@ -260,7 +298,7 @@ public:
 		_inf = false;
 		_zero = false;
 		_nan = false;
-		_fraction.reset();
+		_fraction.clear();
 	}
 	void set(bool sign, int scale, blockbinary<fbits> fraction_without_hidden_bit, bool zero, bool inf, bool nan = false) {
 		_sign     = sign;
@@ -277,7 +315,7 @@ public:
 		_nan      = false;
 		_scale    = 0;
 		_nrOfBits = fbits;
-		_fraction.reset();
+		_fraction.clear();
 	}
 	void setinf() {      // this maps to NaR on the posit side, and that has a sign = 1
 		_inf      = true;
@@ -386,16 +424,12 @@ public:
 	long double to_long_double() const {
 		return sign_value() * scale_value() * fraction_value<long double>();
 	}
-	double to_double() const {
+	double      to_double() const {
 		return sign_value() * scale_value() * fraction_value<double>();
 	}
-	float to_float() const {
+	float       to_float() const {
 		return float(sign_value() * scale_value() * fraction_value<float>());
 	}
-	// Maybe remove explicit
-	explicit operator long double() const { return to_long_double(); }
-	explicit operator double() const { return to_double(); }
-	explicit operator float() const { return to_float(); }
 
 	// TODO: this does not implement a 'real' right extend. tgtbits need to be shorter than fbits
 	template<size_t srcbits, size_t tgtbits>
@@ -500,7 +534,7 @@ inline std::istream& operator>> (std::istream& istr, const blocktriple<ebits, fb
 }
 
 template<size_t ebits, size_t fbits, typename BlockType>
-inline bool operator/(const blocktriple<ebits, fbits, BlockType>& lhs, const blocktriple<ebits, fbits, BlockType>& rhs) {
+inline blocktriple<ebits, fbits, BlockType> operator/(const blocktriple<ebits, fbits, BlockType>& lhs, const blocktriple<ebits, fbits, BlockType>& rhs) {
 	return lhs;
 }
 

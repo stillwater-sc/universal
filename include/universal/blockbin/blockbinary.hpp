@@ -453,6 +453,9 @@ private:
 	template<size_t N, typename B>
 	friend bool operator!=(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs);
 	// the other logic operators are defined in terms of arithmetic terms
+
+	template<size_t nbits, typename BlockType>
+	friend std::ostream& operator<<(std::ostream& ostr, const blockbinary<nbits, BlockType>& v);
 };
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -622,6 +625,65 @@ inline blockbinary<2*nbits, BlockType> urmul(const blockbinary<nbits, BlockType>
 	return result;
 }
 
+#define TRACE_DIV 0
+// unrounded division, returns a blockbinary that is of size 2*nbits
+// using brute-force 2's complement normalization (lot's of create/copy/destroy inefficiency)
+template<size_t nbits, typename BlockType>
+inline blockbinary<2 * nbits, BlockType> urdiv(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
+	if (b.iszero()) {
+		// division by zero
+		throw "urdiv divide by zero";
+	}
+	// generate the absolute values to do long division 
+	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
+	bool a_sign = a.sign();
+	bool b_sign = b.sign();
+	bool result_negative = (a_sign ^ b_sign);
+	// normalize both arguments to positive in new size
+	blockbinary<nbits + 1, BlockType> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
+	blockbinary<nbits + 1, BlockType> b_new(b);
+	if (a_sign) a_new.twoscomplement();
+	if (b_sign) b_new.twoscomplement();
+
+	// initialize the long division
+	blockbinary<2 * nbits, BlockType> decimator = a_new;
+	decimator <<= nbits; // project into 2^(2*nbits) number
+	blockbinary<2 * nbits, BlockType> subtractand = b_new; // prepare the subtractand
+	blockbinary<2 * nbits, BlockType> result;
+
+#if TRACE_DIV
+	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
+#endif
+	int msb_b = subtractand.msb();
+	int msb_a = decimator.msb();
+	int shift = msb_a - msb_b;
+	subtractand <<= shift;
+#if TRACE_DIV
+	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << " shift: " << shift << std::endl;
+#endif
+	// long division
+	for (int i = shift; i >= 0; --i) {
+#if TRACE_DIV
+		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
+#endif
+		if (subtractand <= decimator) {
+			decimator -= subtractand;
+			result.set(i);
+		}
+		else {
+			result.reset(i);
+		}
+		subtractand >>= 1;
+#if TRACE_DIV
+		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << std::endl;
+#endif
+	}
+	if (result_negative) {  // take 2's complement
+		result.twoscomplement();
+	}
+	return result;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // conversions to string representations
 
@@ -655,6 +717,12 @@ std::string to_hex(const blockbinary<nbits, BlockType>& number, bool wordMarker 
 		if (n > 0 && ((n * 4) % bitsInBlock) == 0) ss << '\'';
 	}
 	return ss.str();
+}
+
+// ostream operator
+template<size_t nbits, typename BlockType>
+std::ostream& operator<<(std::ostream& ostr, const blockbinary<nbits, BlockType>& number) {
+	return ostr << to_binary(number);
 }
 
 } // namespace unum

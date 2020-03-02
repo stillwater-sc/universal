@@ -58,14 +58,17 @@ try {
 	 */
 	fixpnt<8, 4> a, b, c;
 	a = 4.0f;
-	b = 1.5f;
-	c = fixpnt_longdivision(a, b);;
-	cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
+	b = 0.0625f;
+	blockbinary<16> raw = urdiv(a.getbb(), b.getbb());
+	cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(c) << endl;
+
+	cout << "msb of result is: " << raw.msb() << endl;
 
 	// generate individual testcases to hand trace/debug
-//	GenerateTestCase<8, 4>(0.5f, 1.0f);
+	GenerateTestCase<8, 4>(0.5f, 1.0f);
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modular,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modular,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modular, uint8_t>("Manual Testing", true), "fixpnt<8,4,Modular,uint8_t>", "division");
 
 
 #if STRESS_TESTING

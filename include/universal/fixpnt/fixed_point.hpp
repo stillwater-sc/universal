@@ -567,7 +567,11 @@ public:
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
 		if (arithmetic == Modular) {
-			bb /= rhs.bb;
+			blockbinary<2 * nbits, BlockType> c = urdiv(this->bb, rhs.bb);
+			bool roundUp = c.roundingMode(rbits);
+			c >>= rbits;
+			if (roundUp) ++c;
+			this->bb = c; // select the lower nbits of the result
 		}
 		else {
 			std::cerr << "saturating divide not implemented yet\n";
@@ -774,67 +778,12 @@ private:
 	friend bool operator< (const fixpnt<nnbits, rrbits, aarithmetic, BBlockType>& lhs, const fixpnt<nnbits, rrbits, aarithmetic, BBlockType>& rhs);
 };
 
-#define TRACE_DIV 0
 
-// divide a by b and return both quotient and remainder
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-fixpnt<nbits, rbits, arithmetic, BlockType> fixpnt_longdivision(const fixpnt<nbits, rbits, arithmetic, BlockType>& _a, const fixpnt<nbits, rbits, arithmetic, BlockType>& _b) {
-	if (_b.iszero()) {
-		// division by zero
-		throw fixpnt_divide_by_zero();
-	}
-	// generate the absolute values to do long division 
-	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
-	bool a_sign = _a.sign();
-	bool b_sign = _b.sign();
-	bool result_negative = (a_sign ^ b_sign);
-	// normalize both arguments to positive in new size
-	blockbinary<2*nbits, BlockType> a(_a.getbb()); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
-	blockbinary<2*nbits, BlockType> b(_b.getbb());
-	blockbinary<nbits, BlockType> result;
-	if (a_sign) a.twoscomplement();
-	if (b_sign) b.twoscomplement();
 
-	// initialize the long division
-	blockbinary<nbits + 1, BlockType> decimator = a;	
-	blockbinary<nbits + 1, BlockType> subtractand = b; // prepare the subtractand
-#if TRACE_DIV
-	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
-#endif
-	int msb_b = b.msb();
-	int msb_a = a.msb();
-	int shift = msb_a - msb_b;
-	subtractand <<= shift;
-#if TRACE_DIV
-	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << " shift: " << shift << std::endl;
-#endif
-	// long division
-	for (int i = shift; i >= 0; --i) {
-#if TRACE_DIV
-		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
-#endif
-		if (subtractand <= decimator) {
-			decimator -= subtractand;
-			result.set(i);
-		}
-		else {
-			result.reset(i);
-		}
-		subtractand >>= 1;
-#if TRACE_DIV
-		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << std::endl;
-#endif
-	}
-	std::cout << to_binary(result) << std::endl;
-	fixpnt<nbits, rbits, arithmetic, BlockType> c; // = result;
-	if (result_negative) {  // take 2's complement
-		c.twoscomplement();
-	}
-	return c;
-}
 
 ////////////////////////    FIXED-POINT functions   /////////////////////////////////
 
+#ifdef LATER
 // findMsb takes an fixpnt<nbits,rbits> reference and returns the position of the most significant bit, -1 if v == 0
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline signed findMsb(const fixpnt<nbits, rbits, arithmetic, BlockType>& v) {
@@ -851,6 +800,7 @@ inline signed findMsb(const fixpnt<nbits, rbits, arithmetic, BlockType>& v) {
 	}
 	return -1; // no significant bit found, all bits are zero
 }
+#endif
 
 ////////////////////////    FIXED-POINT operators   /////////////////////////////////
 
