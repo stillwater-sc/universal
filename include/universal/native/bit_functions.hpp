@@ -51,7 +51,7 @@ inline unsigned int findMostSignificantBit(long long x) {
 	static const unsigned int bval[] =
 	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
 
-	uint64_t tmp = x;
+	uint64_t tmp = uint64_t(x);
 	unsigned int base = 0;
 	if (tmp & 0xFFFFFFFF00000000) { base += 32; tmp >>= 32; }
 	if (tmp & 0x00000000FFFF0000) { base += 16; tmp >>= 16; }
@@ -65,7 +65,7 @@ inline unsigned int findMostSignificantBit(int x) {
 	static const unsigned int bval[] =
 	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
 
-	uint32_t tmp = x;
+	uint32_t tmp = uint32_t(x);
 	unsigned int base = 0;
 	if (tmp & 0xFFFF0000) { base += 16; tmp >>= 16; }
 	if (tmp & 0x0000FF00) { base += 8;  tmp >>= 8; }
@@ -78,7 +78,7 @@ inline unsigned int findMostSignificantBit(short x) {
 	static const unsigned int bval[] =
 	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
 
-	uint16_t tmp = x;
+	uint16_t tmp = uint16_t(x);
 	unsigned int base = 0;
 	if (tmp & 0xFF00) { base += 8;  tmp >>= 8; }
 	if (tmp & 0x00F0) { base += 4;  tmp >>= 4; }
@@ -90,7 +90,7 @@ inline unsigned int findMostSignificantBit(signed char x) {
 	static const unsigned int bval[] =
 	{ 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
 
-	uint8_t tmp = x;
+	uint8_t tmp = uint8_t(x);
 	unsigned int base = 0;
 	if (tmp & 0xF0) { base += 4;  tmp >>= 4; }
 	return base + bval[tmp];

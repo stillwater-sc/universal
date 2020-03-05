@@ -25,6 +25,21 @@ inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double
 	_fr = frexp(fp, &_exponent);
 	_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
 }
+#ifdef CPLUSPLUS_17
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
+	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
+	if constexpr(sizeof(long double) == 8) { // it is just a double
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexp(double(fp), &_exponent);
+		_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+	}
+	else if constexpr(sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexpl(fp, &_exponent);
+		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
+	}
+}
+#else
 inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
 	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
 	if (sizeof(long double) == 8) { // it is just a double
@@ -38,6 +53,7 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
 	}
 }
+#endif
 
 static constexpr unsigned IEEE_FLOAT_FRACTION_BITS = 23;
 static constexpr unsigned IEEE_FLOAT_EXPONENT_BITS = 8;

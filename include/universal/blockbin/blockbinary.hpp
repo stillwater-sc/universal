@@ -104,10 +104,11 @@ public:
 	static_assert(bitsInBlock <= 32, "storage unit for block arithmetic needs to be <= uint32_t");
 
 	static constexpr size_t nrBlocks = 1 + ((nbits - 1) / bitsInBlock);
-	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFF >> (64 - bitsInBlock));
+	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFul >> (64 - bitsInBlock));
 	static constexpr BlockType maxBlockValue = (uint64_t(1) << bitsInBlock) - 1;
 
 	static constexpr size_t MSU = nrBlocks - 1; // MSU == Most Significant Unit
+	// warning C4310 : cast truncates constant value
 	static constexpr size_t MSU_MASK = (BlockType(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr BlockType SIGN_BIT_MASK = BlockType(BlockType(1) << ((nbits - 1) % bitsInBlock));
 
@@ -120,24 +121,10 @@ public:
 	blockbinary& operator=(const blockbinary&) = default;
 	blockbinary& operator=(blockbinary&&) = default;
 
-	/// construct a blockbinary from another
+	/// construct a blockbinary from another: BlockType must be the same
 	template<size_t nnbits>
 	blockbinary(const blockbinary<nnbits, BlockType>& rhs) {
-		clear();
-		// can simply copy the blocks in
-		size_t nrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
-		for (size_t i = 0; i < nrBlocks; ++i) {
-			_block[i] = rhs.block(i);
-		}
-		if (nbits > nnbits) { // check if we need to sign extend
-			if (rhs.sign()) {
-				for (size_t i = nnbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
-					set(i);
-				}
-			}
-		}
-		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		_block[MSU] &= MSU_MASK;
+		this->assign(rhs);
 	}
 
 	// initializer for long long
@@ -385,7 +372,25 @@ public:
 		}
 		throw "block index out of bounds";
 	}
-	
+	template<size_t nnbits>
+	inline blockbinary<nbits, BlockType>& assign(const blockbinary<nnbits, BlockType>& rhs) {
+		clear();
+		// since BlockType is the same, we can simply copy the blocks in
+		size_t nrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
+		for (size_t i = 0; i < nrBlocks; ++i) {
+			_block[i] = rhs.block(i);
+		}
+		if (nbits > nnbits) { // check if we need to sign extend
+			if (rhs.sign()) {
+				for (size_t i = nnbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
+					set(i);
+				}
+			}
+		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block[MSU] &= MSU_MASK;
+		return *this;
+	}
 	// return the position of the most significant bit, -1 if v == 0
 	inline signed msb() const {
 		for (signed i = int(MSU); i >= 0; --i) {
@@ -625,11 +630,10 @@ inline blockbinary<2*nbits, BlockType> urmul(const blockbinary<nbits, BlockType>
 	return result;
 }
 
-#define TRACE_DIV 0
+#define TRACE_DIV 1
 // unrounded division, returns a blockbinary that is of size 2*nbits
-// using brute-force 2's complement normalization (lot's of create/copy/destroy inefficiency)
-template<size_t nbits, typename BlockType>
-inline blockbinary<2 * nbits, BlockType> urdiv(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
+template<size_t nbits, size_t roundingBits, typename BlockType>
+inline blockbinary<2 * nbits + roundingBits, BlockType> urdiv(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b, blockbinary<roundingBits, BlockType>& r) {
 	if (b.iszero()) {
 		// division by zero
 		throw "urdiv divide by zero";
@@ -639,17 +643,18 @@ inline blockbinary<2 * nbits, BlockType> urdiv(const blockbinary<nbits, BlockTyp
 	bool a_sign = a.sign();
 	bool b_sign = b.sign();
 	bool result_negative = (a_sign ^ b_sign);
+
 	// normalize both arguments to positive in new size
-	blockbinary<nbits + 1, BlockType> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
-	blockbinary<nbits + 1, BlockType> b_new(b);
-	if (a_sign) a_new.twoscomplement();
-	if (b_sign) b_new.twoscomplement();
+//	blockbinary<nbits + 1, BlockType> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
+//	blockbinary<nbits + 1, BlockType> b_new(b);
+//	if (a_sign) a_new.twoscomplement();
+//	if (b_sign) b_new.twoscomplement();
 
 	// initialize the long division
-	blockbinary<2 * nbits, BlockType> decimator = a_new;
-	decimator <<= nbits; // project into 2^(2*nbits) number
-	blockbinary<2 * nbits, BlockType> subtractand = b_new; // prepare the subtractand
-	blockbinary<2 * nbits, BlockType> result;
+	blockbinary<2 * nbits + roundingBits, BlockType> decimator(a);
+	decimator <<= nbits + roundingBits; // scale the decimator
+	blockbinary<2 * nbits + roundingBits, BlockType> subtractand(b); // prepare the subtractand
+	blockbinary<2 * nbits + roundingBits, BlockType> result;
 
 #if TRACE_DIV
 	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
@@ -678,9 +683,7 @@ inline blockbinary<2 * nbits, BlockType> urdiv(const blockbinary<nbits, BlockTyp
 		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << std::endl;
 #endif
 	}
-	if (result_negative) {  // take 2's complement
-		result.twoscomplement();
-	}
+	r.assign(result); // copy the lower roundingBits
 	return result;
 }
 

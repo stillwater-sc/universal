@@ -221,6 +221,7 @@ public:
 	static constexpr size_t bitsInBlock = sizeof(BlockType) * bitsInChar;
 	static constexpr size_t nrBlocks = (1 + ((nbits - 1) / bitsInBlock));
 	static constexpr size_t MSU = nrBlocks - 1;
+	// warning C4310: cast truncates constant value
 	static constexpr BlockType MSU_MASK = (BlockType(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
 
 	fixpnt() { setzero(); }
@@ -567,10 +568,15 @@ public:
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
 		if (arithmetic == Modular) {
-			blockbinary<2 * nbits, BlockType> c = urdiv(this->bb, rhs.bb);
-			bool roundUp = c.roundingMode(rbits);
-			c >>= rbits;
+			constexpr size_t roundingDecisionBits = 2 * rbits + 4; // guard, round, and 2 sticky bits
+			blockbinary<roundingDecisionBits, BlockType> roundingBits;
+			blockbinary<2 * nbits, BlockType> c = urdiv(this->bb, rhs.bb, roundingBits);
+			std::cout << to_binary(*this) << " / " << to_binary(rhs) << std::endl;
+			std::cout << to_binary(this->bb) << " / " << to_binary(rhs.bb) << " = " << to_binary(c) << " rounding bits " << to_binary(roundingBits);
+			bool roundUp = c.roundingMode(rbits+4);
+			c >>= rbits+4;
 			if (roundUp) ++c;
+			std::cout << " rounded " << to_binary(c) << std::endl;
 			this->bb = c; // select the lower nbits of the result
 		}
 		else {
@@ -1564,7 +1570,7 @@ namespace impl {
 		void unpad() {
 			int n = (int)size();
 			for (int i = n - 1; i > 0; --i) {
-				if (operator[](i) == 0) {
+				if (operator[](size_t(i)) == 0) {
 					pop_back();
 				}
 				else {
@@ -1723,14 +1729,14 @@ namespace impl {
 		}
 		decimal::iterator lit = lhs.begin();
 		decimal::iterator rit = _rhs.begin();
-		char borrow = 0;
+		uint8_t borrow = 0;
 		for (; lit != lhs.end() || rit != _rhs.end(); ++lit, ++rit) {
 			if (*rit > *lit - borrow) {
-				*lit = 10 + *lit - borrow - *rit;
+				*lit = uint8_t(uint8_t(10) + *lit - borrow - *rit);
 				borrow = 1;
 			}
 			else {
-				*lit = *lit - borrow - *rit;
+				*lit = uint8_t(*lit - borrow - *rit);
 				borrow = 0;
 			}
 		}
@@ -1758,16 +1764,16 @@ namespace impl {
 		size_t r = rhs.size();
 		decimal::const_iterator sit, bit; // sit = smallest iterator, bit = biggest iterator
 		if (l < r) {
-			size_t position = 0;
+			int64_t position = 0;
 			for (sit = lhs.begin(); sit != lhs.end(); ++sit) {
 				decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 				partial_sum.insert(partial_sum.end(), r + position, 0);
 				decimal::iterator pit = partial_sum.begin() + position;
-				char carry = 0;
+				uint8_t carry = 0;
 				for (bit = rhs.begin(); bit != rhs.end() && pit != partial_sum.end(); ++bit, ++pit) {
-					uint8_t digit = *sit * *bit + carry;
-					*pit = digit % 10;
-					carry = digit / 10;
+					uint8_t digit = uint8_t(*sit * *bit + carry);
+					*pit = uint8_t(digit % 10);
+					carry = uint8_t(digit / 10);
 				}
 				if (carry) partial_sum.push_back(carry);
 				add(product, partial_sum);
@@ -1776,16 +1782,16 @@ namespace impl {
 			}
 		}
 		else {
-			size_t position = 0;
+			int64_t position = 0;
 			for (sit = rhs.begin(); sit != rhs.end(); ++sit) {
 				decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 				partial_sum.insert(partial_sum.end(), l + position, 0);
 				decimal::iterator pit = partial_sum.begin() + position;
-				char carry = 0;
+				uint8_t carry = 0;
 				for (bit = lhs.begin(); bit != lhs.end() && pit != partial_sum.end(); ++bit, ++pit) {
-					uint8_t digit = *sit * *bit + carry;
-					*pit = digit % 10;
-					carry = digit / 10;
+					uint8_t digit = uint8_t(*sit * *bit + carry);
+					*pit = uint8_t(digit % 10);
+					carry = uint8_t(digit / 10);
 				}
 				if (carry) partial_sum.push_back(carry);
 				add(product, partial_sum);
@@ -2111,6 +2117,7 @@ inline std::istream& operator>>(std::istream& istr, fixpnt<nbits, rbits, arithme
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic, BlockType>& number) {
 	std::stringstream ss;
+	ss << 'b';
 	for (int i = int(nbits) - 1; i >= int(rbits); --i) {
 		ss << (number.at(i) ? '1' : '0');
 	}
