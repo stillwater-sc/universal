@@ -259,6 +259,7 @@ public:
 	blockbinary& operator>>=(long bitsToShift) {
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
 		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
+		bool signext = sign();
 		size_t blockShift = 0;
 		if (bitsToShift >= long(bitsInBlock)) {
 			blockShift = bitsToShift / bitsInBlock;
@@ -269,13 +270,18 @@ public:
 				}
 			}
 			for (size_t i = 1 + MSU - blockShift; i <= MSU; ++i) {
-				_block[i] = BlockType(0);
+				if (signext) {
+					_block[i] = BlockType(0xFFFFFFFFFFFFFFFFull);
+				}
+				else {
+					_block[i] = BlockType(0);
+				}
 			}
 			// adjust the shift
 			bitsToShift -= (long)(blockShift * bitsInBlock);
 			if (bitsToShift == 0) return *this;
 		}
-		BlockType mask = 0xFFFFFFFFFFFFFFFF >> (64 - bitsInBlock);
+		BlockType mask = 0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock);
 		mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
 		for (unsigned i = 0; i < MSU; ++i) {
 			_block[i] >>= bitsToShift;
@@ -284,6 +290,7 @@ public:
 			_block[i] |= (bits << (bitsInBlock - bitsToShift));
 		}
 		_block[MSU] >>= bitsToShift;
+		if (signext) _block[MSU] |= (mask << (bitsInBlock - bitsToShift));
 		return *this;
 	}
 
@@ -605,14 +612,14 @@ inline blockbinary<2*nbits, BlockType> urmul(const blockbinary<nbits, BlockType>
 	if (a.iszero() || b.iszero()) return result;
 
 	// compute the result
-	blockbinary<2 * nbits, BlockType> signext_a(a);
+	blockbinary<2 * nbits, BlockType> signextended_a(a);
 	blockbinary<2 * nbits, BlockType> multiplicant(b);
 #if TRACE_URMUL
 	std::cout << "    " << to_binary(a) << " * " << to_binary(b) << std::endl;
 	std::cout << std::setw(3) << 0 << ' ' << to_binary(multiplicant) << ' ' << to_binary(result) << std::endl;
 #endif
-	for (size_t i = 0; i < 2 * nbits; ++i) {
-		if (signext_a.at(i)) {
+	for (size_t i = 0; i < nbits; ++i) {
+		if (signextended_a.at(i)) {
 			result += multiplicant;
 		}
 		multiplicant <<= 1;

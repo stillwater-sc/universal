@@ -88,44 +88,60 @@ try {
 
 	ShiftExamples();
 
-	blockbinary<37, uint8_t> a;
-	blockbinary<37, uint16_t> b;
+	{
+		blockbinary<37, uint8_t> a;
+		blockbinary<37, uint16_t> b;
 
+		a.set_raw_bits(0xAAAAAAAAAA);
+		b.set_raw_bits(0x5555555555);
 
-	a.set_raw_bits(0xAAAAAAAAAA);
-	b.set_raw_bits(0x5555555555);
+		a.set_raw_bits(0x1FFFFFFFF);
+		b.set_raw_bits(0x1FFFFFFFF);
 
-	a.set_raw_bits(0x1FFFFFFFF);
-	b.set_raw_bits(0x1FFFFFFFF);
+		cout << to_binary(a, true) << endl;
+		a <<= 9;
+		cout << to_binary(a, true) << endl;
 
-	cout << to_binary(a, true) << endl;
-	a <<= 9;
-	cout << to_binary(a, true) << endl;
+		cout << to_binary(b, true) << endl;
+		b <<= 17;
+		cout << to_binary(b, true) << endl;
 
-	cout << to_binary(b, true) << endl;
-	b <<= 17;
-	cout << to_binary(b, true) << endl;
+		a.set_raw_bits(0xAA00FF00FF);
+		cout << to_binary(a, true) << endl;
+		a <<= 8;
+		cout << to_binary(a, true) << endl;
+		a <<= 16;
+		cout << to_binary(a, true) << endl;
+		a.set_raw_bits(0xAA00FF00FF);
+		cout << to_binary(a, true) << endl;
+		a <<= 16;
+		cout << to_binary(a, true) << endl;
+		a <<= 8;
+		cout << to_binary(a, true) << endl;
+		a.set_raw_bits(0x0000FF00FF);
+		cout << to_binary(a, true) << endl;
+		a <<= 16;
+		cout << to_binary(a, true) << endl;
+		a.set_raw_bits(0x0000FF00FF);
+		cout << to_binary(a, true) << endl;
+		a <<= 8;
+		cout << to_binary(a, true) << endl;
+	}
 
-	a.set_raw_bits(0xAA00FF00FF);
-	cout << to_binary(a, true) << endl;
-	a <<= 8;
-	cout << to_binary(a, true) << endl;
-	a <<= 16;
-	cout << to_binary(a, true) << endl;
-	a.set_raw_bits(0xAA00FF00FF);
-	cout << to_binary(a, true) << endl;
-	a <<= 16;
-	cout << to_binary(a, true) << endl;
-	a <<= 8;
-	cout << to_binary(a, true) << endl;
-	a.set_raw_bits(0x0000FF00FF);
-	cout << to_binary(a, true) << endl;
-	a <<= 16;
-	cout << to_binary(a, true) << endl;
-	a.set_raw_bits(0x0000FF00FF);
-	cout << to_binary(a, true) << endl;
-	a <<= 8;
-	cout << to_binary(a, true) << endl;
+	{
+		// sign-extended right shift as we are a 2's complement representation
+		blockbinary<32> a;
+		for (int i = 0; i < 32; ++i) {
+			a.set_raw_bits(0x80000000ull);
+			a >>= i;
+			cout << to_binary(a, true) << ' ' << (long long)(a) << endl;
+		}
+		for (int i = 0; i < 32; ++i) {
+			a.set_raw_bits(0xFFFFFFFFull);
+			a <<= i;
+			cout << to_binary(a, true) << ' ' << (long long)(a) << endl;
+		}
+	}
 
 
 	//nrOfFailedTestCases += ReportTestResult(VerifyShiftLeft<4>("Manual Testing", true), "array<4,1>", "addition");
