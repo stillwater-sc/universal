@@ -568,13 +568,13 @@ public:
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
 		if (arithmetic == Modular) {
-			constexpr size_t roundingDecisionBits = 2 * rbits + 4; // guard, round, and 2 sticky bits
+			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
 			blockbinary<roundingDecisionBits, BlockType> roundingBits;
 			blockbinary<2 * nbits, BlockType> c = urdiv(this->bb, rhs.bb, roundingBits);
 			std::cout << to_binary(*this) << " / " << to_binary(rhs) << std::endl;
 			std::cout << to_binary(this->bb) << " / " << to_binary(rhs.bb) << " = " << to_binary(c) << " rounding bits " << to_binary(roundingBits);
 			bool roundUp = c.roundingMode(rbits+4);
-			c >>= rbits+4;
+			c >>= nbits + roundingDecisionBits - 1;
 			if (roundUp) ++c;
 			std::cout << " rounded " << to_binary(c) << std::endl;
 			this->bb = c; // select the lower nbits of the result

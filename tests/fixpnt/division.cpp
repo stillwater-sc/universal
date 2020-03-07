@@ -65,7 +65,6 @@ try {
 	c = a / b;
 	*/
 
-	/*
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<4, 1>(1.0f, 1.0f);
 	GenerateTestCase<4, 1>(1.0f, 2.0f);
@@ -76,7 +75,6 @@ try {
 	GenerateTestCase<8, 4>(1.0f, 0.5f);
 	GenerateTestCase<8, 4>(1.0f, 4.0f);
 	GenerateTestCase<8, 4>(1.0f, 0.25f);
-	*/
 
 	/*
 	b0001 / b1000 = b1111'1000 rounding bits b00'1000 rounded b0000'1000

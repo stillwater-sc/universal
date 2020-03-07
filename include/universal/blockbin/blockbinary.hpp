@@ -645,14 +645,14 @@ inline blockbinary<2 * nbits + roundingBits, BlockType> urdiv(const blockbinary<
 	bool result_negative = (a_sign ^ b_sign);
 
 	// normalize both arguments to positive in new size
-//	blockbinary<nbits + 1, BlockType> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
-//	blockbinary<nbits + 1, BlockType> b_new(b);
-//	if (a_sign) a_new.twoscomplement();
-//	if (b_sign) b_new.twoscomplement();
+	blockbinary<nbits + 1, BlockType> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
+	blockbinary<nbits + 1, BlockType> b_new(b);
+	if (a_sign) a_new.twoscomplement();
+	if (b_sign) b_new.twoscomplement();
 
 	// initialize the long division
 	blockbinary<2 * nbits + roundingBits, BlockType> decimator(a);
-	decimator <<= nbits + roundingBits; // scale the decimator
+	decimator <<= nbits + roundingBits - 1; // scale the decimator to the largest possible positive value
 	blockbinary<2 * nbits + roundingBits, BlockType> subtractand(b); // prepare the subtractand
 	blockbinary<2 * nbits + roundingBits, BlockType> result;
 
@@ -683,7 +683,7 @@ inline blockbinary<2 * nbits + roundingBits, BlockType> urdiv(const blockbinary<
 		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << std::endl;
 #endif
 	}
-	r.assign(result); // copy the lower roundingBits
+	r.assign(result); // copy the lowest bits which represent the bits on which we need to apply the rounding test
 	return result;
 }
 
