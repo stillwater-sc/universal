@@ -555,7 +555,8 @@ public:
 	}
 	fixpnt& operator*=(const fixpnt& rhs) {
 		if (arithmetic == Modular) {
-			blockbinary<2 * nbits, BlockType> c = urmul(this->bb, rhs.bb);
+//			blockbinary<2 * nbits, BlockType> c = urmul(this->bb, rhs.bb);
+			blockbinary<2 * nbits, BlockType> c = urmul2(this->bb, rhs.bb);
 			bool roundUp = c.roundingMode(rbits);
 			c >>= rbits;
 			if (roundUp) ++c;

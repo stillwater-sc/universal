@@ -65,6 +65,16 @@ try {
 	c = a / b;
 	*/
 
+	fixpnt<8, 4> a,b, c;
+	a.set_raw_bits(0xCC);
+	cout << float(a) << endl;
+	b.set_raw_bits(0x55);
+	cout << float(b) << endl;
+	c = b * a;
+
+	GenerateTestCase<8, 4>(float(a), float(b)); // -52 / 85 in 8bit 2's complement
+
+	/*
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<4, 1>(1.0f, 1.0f);
 	GenerateTestCase<4, 1>(1.0f, 2.0f);
@@ -76,33 +86,16 @@ try {
 	GenerateTestCase<8, 4>(1.0f, 4.0f);
 	GenerateTestCase<8, 4>(1.0f, 0.25f);
 
-	/*
-	b0001 / b1000 = b1111'1000 rounding bits b00'1000 rounded b0000'1000
-	FAIL                  0.5 / -4.0 != -4.0 golden reference is                  0.0 b100.0 vs b000.0b000.1 / b100.1
-	b0001 / b1001 = b1111'0111 rounding bits b00'1001 rounded b0000'1000
-	FAIL                  0.5 / -3.5 != -4.0 golden reference is                  0.0 b100.0 vs b000.0b000.1 / b101.0
-	b0001 / b1010 = b1111'0110 rounding bits b00'1010 rounded b0000'1000
-	FAIL                  0.5 / -3.0 != -4.0 golden reference is                  0.0 b100.0 vs b000.0b000.1 / b101.1
-	b0001 / b1011 = b1111'0100 rounding bits b00'1100 rounded b0000'1000
-	FAIL                  0.5 / -2.5 != -4.0 golden reference is                  0.0 b100.0 vs b000.0b000.1 / b110.0
-	b0001 / b1100 = b1111'0000 rounding bits b01'0000 rounded b0000'1000
-	FAIL                  0.5 / -2.0 != -4.0 golden reference is                  0.0 b100.0 vs b000.0b000.1 / b110.1
-	b0001 / b1101 = b1110'1011 rounding bits b01'0101 rounded b0000'0111
-	FAIL                  0.5 / -1.5 != 3.5 golden reference is - 0.5 b011.1 vs b111.1b000.1 / b111.0
-	b0001 / b1110 = b1110'0000 rounding bits b10'0000 rounded b0000'0111
-	FAIL                  0.5 / -1.0 != 3.5 golden reference is - 0.5 b011.1 vs b111.1b000.1 / b111.1
-	b0001 / b1111 = b1100'0000 rounding bits b00'0000 rounded b0000'0110
-	FAIL                  0.5 / -0.5 != 3.0 golden reference is - 1.0 b011.0 vs b111.0b001.0 / b000.1
-	*/
-//	GenerateTestCase<4, 1>(0.5f, -4.0f);
+	GenerateTestCase<4, 1>(0.5f, -4.0f);
 	GenerateTestCase<4, 1>(0.5f,  3.5f);
 	GenerateTestCase<4, 1>(0.5f, -3.5f);
-//	GenerateTestCase<4, 1>(0.5f, -3.0f);
-//	GenerateTestCase<4, 1>(0.5f, -2.5f);
-//	GenerateTestCase<4, 1>(0.5f, -2.0f);
-//	GenerateTestCase<4, 1>(0.5f, -1.5f);
-//	GenerateTestCase<4, 1>(0.5f, -1.0f);
-//	GenerateTestCase<4, 1>(0.5f, -0.5f);
+	GenerateTestCase<4, 1>(0.5f, -3.0f);
+	GenerateTestCase<4, 1>(0.5f, -2.5f);
+	GenerateTestCase<4, 1>(0.5f, -2.0f);
+	GenerateTestCase<4, 1>(0.5f, -1.5f);
+	GenerateTestCase<4, 1>(0.5f, -1.0f);
+	GenerateTestCase<4, 1>(0.5f, -0.5f);
+	*/
 
 	return 0;
 

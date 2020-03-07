@@ -605,7 +605,7 @@ inline blockbinary<nbits + 1, BlockType> uradd(const blockbinary<nbits, BlockTyp
 
 #define TRACE_URMUL 0
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
-// using brute-force sign-extending of operands to yield correct sign-extended result.
+// using brute-force sign-extending of operands to yield correct sign-extended result for 2*nbits 2's complement.
 template<size_t nbits, typename BlockType>
 inline blockbinary<2*nbits, BlockType> urmul(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
 	blockbinary<2 * nbits, BlockType> result;
@@ -618,7 +618,7 @@ inline blockbinary<2*nbits, BlockType> urmul(const blockbinary<nbits, BlockType>
 	std::cout << "    " << to_binary(a) << " * " << to_binary(b) << std::endl;
 	std::cout << std::setw(3) << 0 << ' ' << to_binary(multiplicant) << ' ' << to_binary(result) << std::endl;
 #endif
-	for (size_t i = 0; i < nbits; ++i) {
+	for (size_t i = 0; i < 2* nbits; ++i) {
 		if (signextended_a.at(i)) {
 			result += multiplicant;
 		}
@@ -637,7 +637,43 @@ inline blockbinary<2*nbits, BlockType> urmul(const blockbinary<nbits, BlockType>
 	return result;
 }
 
-#define TRACE_DIV 1
+// unrounded multiplication, returns a blockbinary that is of size 2*nbits
+// using nbits modulo arithmetic with final sign
+template<size_t nbits, typename BlockType>
+inline blockbinary<2 * nbits, BlockType> urmul2(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
+	blockbinary<2 * nbits, BlockType> result;
+	if (a.iszero() || b.iszero()) return result;
+
+	// compute the result
+	bool result_sign = a.sign() ^ b.sign();
+	// normalize both arguments to positive in new size
+	blockbinary<nbits + 1, BlockType> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
+	blockbinary<nbits + 1, BlockType> b_new(b);
+	if (a.sign()) a_new.twoscomplement();
+	if (b.sign()) b_new.twoscomplement();
+	blockbinary<2*nbits, BlockType> multiplicant(b_new);
+
+#if TRACE_URMUL
+	std::cout << "    " << a_new << " * " << b_new << std::endl;
+	std::cout << std::setw(3) << 0 << ' ' << multiplicant << ' ' << result << std::endl;
+#endif
+	for (size_t i = 0; i < (nbits+1); ++i) {
+		if (a_new.at(i)) {
+			result += multiplicant;  // if multiplicant is not the same size as result, the assignment will get sign-extended if the MSB is true, this is not correct because we are assuming unsigned binaries in this loop
+		}
+		multiplicant <<= 1;
+#if TRACE_URMUL
+		std::cout << std::setw(3) << i << ' ' << multiplicant << ' ' << result << std::endl;
+#endif
+	}
+	if (result_sign) result.twoscomplement();
+#if TRACE_URMUL
+	std::cout << "fnl " << result << std::endl;
+#endif
+	return result;
+}
+
+#define TRACE_DIV 0
 // unrounded division, returns a blockbinary that is of size 2*nbits
 template<size_t nbits, size_t roundingBits, typename BlockType>
 inline blockbinary<2 * nbits + roundingBits, BlockType> urdiv(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b, blockbinary<roundingBits, BlockType>& r) {

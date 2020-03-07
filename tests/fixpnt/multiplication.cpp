@@ -55,11 +55,21 @@ try {
 
 #if MANUAL_TESTING
 
-	fixpnt<8, 1> a, b, c;
-	a = 0.5f;
-	b = a;
-	c = a * b;
-	cout << c << endl;
+	{
+		blockbinary<8> a, b;
+		a.set_raw_bits(0x02);
+		b.set_raw_bits(0x80);
+		blockbinary<16> c;
+		c = urmul2(a, b);
+		cout << a << " * " << b << " = " << c << " : " << (long long)c << endl;
+		c = urmul2(b, a);
+		cout << b << " * " << a << " = " << c << " : " << (long long)c << endl;
+	}
+
+	float fa = -8.0f;
+	float fb = 0.125f;
+	GenerateTestCase<8, 4>(fa, fb);
+	GenerateTestCase<8, 4>(fb, fa);
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<4, 1>(-0.5f, -3.5f);
@@ -75,8 +85,6 @@ try {
 	GenerateTestCase<8, 1>(-63.5f, -64.0f);
 	GenerateTestCase<8, 1>(-64.0f, -63.0f);
 	GenerateTestCase<8, 1>(-64.0f, -62.5f);
-
-//	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1, Modular, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,1,Modular,uint8_t>", "multiplication");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4, Modular, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Modular,uint8_t>", "multiplication");
