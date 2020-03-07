@@ -466,8 +466,8 @@ private:
 	friend bool operator!=(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs);
 	// the other logic operators are defined in terms of arithmetic terms
 
-	template<size_t nbits, typename BlockType>
-	friend std::ostream& operator<<(std::ostream& ostr, const blockbinary<nbits, BlockType>& v);
+	template<size_t nnbits, typename BBlockType>
+	friend std::ostream& operator<<(std::ostream& ostr, const blockbinary<nnbits, BBlockType>& v);
 };
 
 ///////////////////////////////////////////////////////////////////////////////

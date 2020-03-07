@@ -8,7 +8,7 @@
 #define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 1
 #include <universal/posit/posit>
 
-int main(int argc, char* argv)
+int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
