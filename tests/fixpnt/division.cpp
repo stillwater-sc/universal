@@ -17,6 +17,64 @@
 #include <universal/fixpnt/fixpnt_functions.hpp>
 #include "../utils/fixpnt_test_suite.hpp"
 
+// unrounded division, returns a blockbinary that is of size 2*nbits
+template<size_t nbits, size_t roundingBits, typename BlockType>
+inline sw::unum::blockbinary<2 * nbits + roundingBits, BlockType> unrounded_div(const sw::unum::blockbinary<nbits, BlockType>& a, const sw::unum::blockbinary<nbits, BlockType>& b, sw::unum::blockbinary<roundingBits, BlockType>& r) {
+	using namespace sw::unum;
+
+	if (b.iszero()) {
+		// division by zero
+		throw "urdiv divide by zero";
+	}
+	// generate the absolute values to do long division 
+	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
+	bool a_sign = a.sign();
+	bool b_sign = b.sign();
+	bool result_negative = (a_sign ^ b_sign);
+
+	// normalize both arguments to positive in new size
+	blockbinary<nbits + 1, BlockType> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
+	blockbinary<nbits + 1, BlockType> b_new(b);
+	if (a_sign) a_new.twoscomplement();
+	if (b_sign) b_new.twoscomplement();
+
+	// initialize the long division
+	blockbinary<2 * nbits + roundingBits, BlockType> decimator(a);
+	decimator <<= nbits + roundingBits - 1; // scale the decimator to the largest possible positive value
+	blockbinary<2 * nbits + roundingBits, BlockType> subtractand(b); // prepare the subtractand
+	blockbinary<2 * nbits + roundingBits, BlockType> result;
+
+
+	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
+
+	int msb_b = subtractand.msb();
+	int msb_a = decimator.msb();
+	int shift = msb_a - msb_b;
+	subtractand <<= shift;
+
+	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << " shift: " << shift << std::endl;
+
+	// long division
+	for (int i = shift; i >= 0; --i) {
+
+		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
+
+		if (subtractand <= decimator) {
+			decimator -= subtractand;
+			result.set(i);
+		}
+		else {
+			result.reset(i);
+		}
+		subtractand >>= 1;
+
+		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << std::endl;
+
+	}
+	r.assign(result); // copy the lowest bits which represent the bits on which we need to apply the rounding test
+	return result;
+}
+
 // generate specific test case that you can trace with the trace conditions in fixed_point.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t rbits, typename Ty>
@@ -54,50 +112,39 @@ try {
 	constexpr size_t nbits = 8;
 	constexpr size_t rbits = 4;
 
-	/*
-	fixpnt<nbits, rbits> a, b, c;
-	a = 6.0f;
-	b = 3*0.0625f;
-	for (int i = 0; i < nbits; ++i) {
-		blockbinary<16> raw = urdiv(a.getbb(), b.getbb(), i);
-		cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(raw) << " msb of result is: " << raw.msb() << endl;
+	{
+		constexpr size_t nbits = 8;
+		constexpr size_t rbits = 4;
+
+		fixpnt<nbits,rbits> a, b;
+		a.set_raw_bits(0xCC);
+		b.set_raw_bits(0x55);
+		constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
+		blockbinary<roundingDecisionBits> roundingBits;
+		blockbinary<2 * nbits> c = unrounded_div(a.getbb(), b.getbb(), roundingBits);
+		std::cout << a << " / " << b << std::endl;
+		std::cout << a.getbb() << " / " << b.getbb() << " = " << to_binary(c) << " rounding bits " << to_binary(roundingBits);
+		bool roundUp = c.roundingMode(rbits + 4);
+		c >>= nbits + roundingDecisionBits - 1;
+		if (roundUp) ++c;
+		std::cout << " rounded " << to_binary(c) << std::endl;
+		//this->bb = c; // select the lower nbits of the result
 	}
-	c = a / b;
-	*/
-
-	fixpnt<8, 4> a,b, c;
-	a.set_raw_bits(0xCC);
-	cout << float(a) << endl;
-	b.set_raw_bits(0x55);
-	cout << float(b) << endl;
-	c = b * a;
-
-	GenerateTestCase<8, 4>(float(a), float(b)); // -52 / 85 in 8bit 2's complement
-
-	/*
-	// generate individual testcases to hand trace/debug
-	GenerateTestCase<4, 1>(1.0f, 1.0f);
-	GenerateTestCase<4, 1>(1.0f, 2.0f);
-	GenerateTestCase<4, 1>(2.0f, 3.0f);
-	
-	GenerateTestCase<8, 4>(1.0f, 1.0f);
-	GenerateTestCase<8, 4>(1.0f, 2.0f);
-	GenerateTestCase<8, 4>(1.0f, 0.5f);
-	GenerateTestCase<8, 4>(1.0f, 4.0f);
-	GenerateTestCase<8, 4>(1.0f, 0.25f);
-
-	GenerateTestCase<4, 1>(0.5f, -4.0f);
-	GenerateTestCase<4, 1>(0.5f,  3.5f);
-	GenerateTestCase<4, 1>(0.5f, -3.5f);
-	GenerateTestCase<4, 1>(0.5f, -3.0f);
-	GenerateTestCase<4, 1>(0.5f, -2.5f);
-	GenerateTestCase<4, 1>(0.5f, -2.0f);
-	GenerateTestCase<4, 1>(0.5f, -1.5f);
-	GenerateTestCase<4, 1>(0.5f, -1.0f);
-	GenerateTestCase<4, 1>(0.5f, -0.5f);
-	*/
 
 	return 0;
+
+	// generate individual testcases to hand trace/debug
+//	fixpnt<4, 1> a, b, c;
+	fixpnt<6, 2> a, b, c;
+	a.set_raw_bits(0xCC);
+	cout << a << ' ' << to_binary(a) << ' ' << float(a) << endl;
+	b.set_raw_bits(0x55);
+	cout << b << ' ' << to_binary(b) << ' ' << float(b) << endl;
+	c = a * b;
+	c = b * a;
+
+	GenerateTestCase<4, 1>(float(a), float(b)); // -52 / 85 in 8bit 2's complement
+
 
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modular,uint8_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "division");
