@@ -17,6 +17,41 @@
 #include <universal/fixpnt/fixpnt_functions.hpp>
 #include "../utils/fixpnt_test_suite.hpp"
 
+// unrounded multiplication, returns a blockbinary that is of size 2*nbits
+// using nbits modulo arithmetic with final sign
+template<size_t nbits, typename BlockType>
+inline sw::unum::blockbinary<2 * nbits, BlockType> unrounded_mul(const sw::unum::blockbinary<nbits, BlockType>& a, const sw::unum::blockbinary<nbits, BlockType>& b) {
+	using namespace sw::unum;
+	blockbinary<2 * nbits, BlockType> result;
+	if (a.iszero() || b.iszero()) return result;
+
+	// compute the result
+	bool result_sign = a.sign() ^ b.sign();
+	// normalize both arguments to positive in new size
+	blockbinary<nbits + 1, BlockType> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
+	blockbinary<nbits + 1, BlockType> b_new(b);
+	if (a.sign()) a_new.twoscomplement();
+	if (b.sign()) b_new.twoscomplement();
+	blockbinary<2 * nbits, BlockType> multiplicant(b_new);
+
+	std::cout << "    " << a_new << " * " << b_new << std::endl;
+	std::cout << std::setw(3) << 0 << ' ' << multiplicant << ' ' << result << std::endl;
+
+	for (size_t i = 0; i < (nbits + 1); ++i) {
+		if (a_new.at(i)) {
+			result += multiplicant;  // if multiplicant is not the same size as result, the assignment will get sign-extended if the MSB is true, this is not correct because we are assuming unsigned binaries in this loop
+		}
+		multiplicant <<= 1;
+		std::cout << std::setw(3) << i << ' ' << multiplicant << ' ' << result << std::endl;
+
+	}
+	if (result_sign) result.twoscomplement();
+
+	std::cout << "fnl " << result << std::endl;
+	return result;
+}
+
+
 // unrounded division, returns a blockbinary that is of size 2*nbits
 template<size_t nbits, size_t roundingBits, typename BlockType>
 inline sw::unum::blockbinary<2 * nbits + roundingBits, BlockType> unrounded_div(const sw::unum::blockbinary<nbits, BlockType>& a, const sw::unum::blockbinary<nbits, BlockType>& b, sw::unum::blockbinary<roundingBits, BlockType>& r) {
@@ -43,7 +78,6 @@ inline sw::unum::blockbinary<2 * nbits + roundingBits, BlockType> unrounded_div(
 	decimator <<= nbits + roundingBits - 1; // scale the decimator to the largest possible positive value
 	blockbinary<2 * nbits + roundingBits, BlockType> subtractand(b); // prepare the subtractand
 	blockbinary<2 * nbits + roundingBits, BlockType> result;
-
 
 	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
 
@@ -119,16 +153,43 @@ try {
 		fixpnt<nbits,rbits> a, b;
 		a.set_raw_bits(0xCC);
 		b.set_raw_bits(0x55);
-		constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
-		blockbinary<roundingDecisionBits> roundingBits;
-		blockbinary<2 * nbits> c = unrounded_div(a.getbb(), b.getbb(), roundingBits);
-		std::cout << a << " / " << b << std::endl;
-		std::cout << a.getbb() << " / " << b.getbb() << " = " << to_binary(c) << " rounding bits " << to_binary(roundingBits);
-		bool roundUp = c.roundingMode(rbits + 4);
-		c >>= nbits + roundingDecisionBits - 1;
-		if (roundUp) ++c;
-		std::cout << " rounded " << to_binary(c) << std::endl;
-		//this->bb = c; // select the lower nbits of the result
+
+		float fa = float(a);
+		float fb = float(b);
+
+		cout << "fixpnt: " << a << " * " << b << " = " << a * b << " reference: " << fixpnt<nbits, rbits>(fa * fb) << endl;
+		cout << "float : " << fa << " * " << fb << " = " << fa * fb << endl;
+
+		{
+			cout << "multiplication trace\n";
+
+			blockbinary<2 * nbits> c = unrounded_mul(a.getbb(), b.getbb());
+			bool roundUp = c.roundingMode(rbits);
+			c >>= rbits;
+			if (roundUp) ++c;
+			fixpnt<nbits, rbits> result; result = c; // select the lower nbits of the result
+			cout << "final result: " << result << endl;
+		}
+
+		cout << "fixpnt: " << a << " / " << b << " = " << a / b << " reference: " << fixpnt<nbits, rbits>(fa / fb) << endl;
+		cout << "float : " << fa << " / " << fb << " = " << fa / fb << endl;
+
+		{
+			cout << "division trace\n";
+
+			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
+			blockbinary<roundingDecisionBits> roundingBits;
+			blockbinary<2 * nbits> c = unrounded_div(a.getbb(), b.getbb(), roundingBits);
+			std::cout << a << " / " << b << std::endl;
+			std::cout << a.getbb() << " / " << b.getbb() << " = " << to_binary(c) << " rounding bits " << to_binary(roundingBits);
+			bool roundUp = c.roundingMode(rbits + 4);
+			c >>= nbits + roundingDecisionBits - 1;
+			if (roundUp) ++c;
+			std::cout << " rounded " << to_binary(c) << std::endl;
+			fixpnt<nbits, rbits> result; result = c; // select the lower nbits of the result
+			cout << "final result: " << result << " : " << endl;
+		}
+
 	}
 
 	return 0;

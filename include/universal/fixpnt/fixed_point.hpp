@@ -431,6 +431,10 @@ public:
 		return *this;
 	}
 
+	// assignment operator for blockbinary type
+	template<size_t nnbits, typename BBlockType>
+	fixpnt& operator=(const blockbinary<nnbits, BBlockType>& rhs) {	bb = rhs; }
+
 	// conversion operator between different fixed point formats with the same rbits
 	template<size_t src_bits>
 	fixpnt& operator=(const fixpnt<src_bits, rbits, arithmetic, BlockType>& src) {
