@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <typeinfo>
 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
@@ -13,6 +14,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/fixpnt/fixed_point.hpp>
 // fixed-point type manipulators such as pretty printers
+#include <universal/native/integers.hpp>
 #include <universal/fixpnt/fixpnt_manipulators.hpp>
 #include <universal/fixpnt/fixpnt_functions.hpp>
 #include "../utils/fixpnt_test_suite.hpp"
@@ -74,39 +76,42 @@ inline sw::unum::blockbinary<2 * nbits + roundingBits, BlockType> unrounded_div(
 	if (b_sign) b_new.twoscomplement();
 
 	// initialize the long division
-	blockbinary<2 * nbits + roundingBits, BlockType> decimator(a);
-	decimator <<= nbits + roundingBits - 1; // scale the decimator to the largest possible positive value
-	blockbinary<2 * nbits + roundingBits, BlockType> subtractand(b); // prepare the subtractand
-	blockbinary<2 * nbits + roundingBits, BlockType> result;
+	blockbinary<2 * nbits + roundingBits, BlockType> decimator(a_new);
+	blockbinary<2 * nbits + roundingBits, BlockType> subtractand(b_new); // prepare the subtractand
+	blockbinary<2 * nbits + roundingBits, BlockType> quotient;
 
+	int msp = nbits + roundingBits - 1; // msp = most significant position
+	decimator <<= msp; // scale the decimator to the largest possible positive value
 	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
 
 	int msb_b = subtractand.msb();
 	int msb_a = decimator.msb();
 	int shift = msb_a - msb_b;
+	int scale = shift - msp;   // scale of the quotient
 	subtractand <<= shift;
 
-	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << " shift: " << shift << std::endl;
+	std::cout << "  " << to_binary(decimator) << std::endl;
+	std::cout << "- " << to_binary(subtractand) << " shift: " << shift << " scale: " << scale << " msb_a: " << msb_a << " msb_b: " << msb_b << std::endl;
 
 	// long division
-	for (int i = shift; i >= 0; --i) {
-
-		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
+	for (int i = msb_a; i >= 0; --i) {
 
 		if (subtractand <= decimator) {
 			decimator -= subtractand;
-			result.set(i);
+			quotient.set(i);
 		}
 		else {
-			result.reset(i);
+			quotient.reset(i);
 		}
 		subtractand >>= 1;
 
-		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << std::endl;
+		std::cout << "  " << to_binary(decimator) << ' ' << to_binary(quotient) << std::endl;
+		std::cout << "- " << to_binary(subtractand) << std::endl;
 
 	}
-	r.assign(result); // copy the lowest bits which represent the bits on which we need to apply the rounding test
-	return result;
+	quotient <<= scale;
+	r.assign(quotient); // copy the lowest bits which represent the bits on which we need to apply the rounding test
+	return quotient;
 }
 
 // generate specific test case that you can trace with the trace conditions in fixed_point.hpp
@@ -128,6 +133,21 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
+template<size_t nbits, size_t rbits>
+void GenerateValueTable() {
+	using namespace std;
+	using namespace sw::unum;
+	size_t NR_VALUES = (1 << nbits);
+
+	fixpnt<nbits, rbits> a;
+	cout << "Fixed-point type: " << typeid(a).name() << endl;
+
+	for (size_t i = 0; i < NR_VALUES; ++i) {
+		a.set_raw_bits(i);
+		cout << to_binary(i,nbits) << " : " << to_binary(a) << " = " << setw(10) << a << endl;
+	}
+}
+
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -143,22 +163,25 @@ try {
 
 #if MANUAL_TESTING
 
-	constexpr size_t nbits = 8;
-	constexpr size_t rbits = 4;
+	constexpr size_t nbits = 4;
+	constexpr size_t rbits = 1;
+
+	GenerateValueTable<nbits, rbits>();
 
 	{
-		constexpr size_t nbits = 8;
-		constexpr size_t rbits = 4;
+		//constexpr size_t nbits = 6;
+		//constexpr size_t rbits = 2;
 
-		fixpnt<nbits,rbits> a, b;
-		a.set_raw_bits(0xCC);
-		b.set_raw_bits(0x55);
-
+		fixpnt<nbits,rbits> a, b, c;
+		a.set_raw_bits(0x33);
+		b.set_raw_bits(0x14);
+		c = a * b;
 		float fa = float(a);
 		float fb = float(b);
+		float fc = fa * fb;
 
-		cout << "fixpnt: " << a << " * " << b << " = " << a * b << " reference: " << fixpnt<nbits, rbits>(fa * fb) << endl;
-		cout << "float : " << fa << " * " << fb << " = " << fa * fb << endl;
+		cout << "fixpnt: " << a << " * " << b << " = " << c << " reference: " << fixpnt<nbits, rbits>(fc) << endl;
+		cout << "float : " << fa << " * " << fb << " = " << fc << endl;
 
 		{
 			cout << "multiplication trace\n";
@@ -171,41 +194,48 @@ try {
 			cout << "final result: " << result << endl;
 		}
 
-		cout << "fixpnt: " << a << " / " << b << " = " << a / b << " reference: " << fixpnt<nbits, rbits>(fa / fb) << endl;
-		cout << "float : " << fa << " / " << fb << " = " << fa / fb << endl;
+		cout << "fixpnt: " << c << " / " << a << " = " << c / a << " reference: " << fixpnt<nbits, rbits>(fc / fa) << endl;
+		cout << "fixpnt: " << c << " / " << b << " = " << c / b << " reference: " << fixpnt<nbits, rbits>(fc / fb) << endl;
+		cout << "float : " << fc << " / " << fa << " = " << fc / fa << endl;
+		cout << "float : " << fc << " / " << fb << " = " << fc / fb << endl;
 
 		{
 			cout << "division trace\n";
 
-			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
-			blockbinary<roundingDecisionBits> roundingBits;
-			blockbinary<2 * nbits> c = unrounded_div(a.getbb(), b.getbb(), roundingBits);
-			std::cout << a << " / " << b << std::endl;
-			std::cout << a.getbb() << " / " << b.getbb() << " = " << to_binary(c) << " rounding bits " << to_binary(roundingBits);
-			bool roundUp = c.roundingMode(rbits + 4);
-			c >>= nbits + roundingDecisionBits - 1;
-			if (roundUp) ++c;
-			std::cout << " rounded " << to_binary(c) << std::endl;
-			fixpnt<nbits, rbits> result; result = c; // select the lower nbits of the result
-			cout << "final result: " << result << " : " << endl;
+			{
+				constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
+				blockbinary<roundingDecisionBits> roundingBits;
+				blockbinary<2 * nbits + roundingDecisionBits> a = unrounded_div(c.getbb(), b.getbb(), roundingBits);
+				std::cout << c << " / " << b << std::endl;
+				std::cout << c.getbb() << " / " << b.getbb() << " = " << a << " rounding bits " << roundingBits;
+				bool roundUp = a.roundingMode(rbits + roundingDecisionBits);
+				a >>= rbits + nbits + roundingDecisionBits - 1;
+				if (roundUp) ++a;
+				std::cout << " rounded " << a << std::endl;
+				fixpnt<nbits, rbits> result; result = a; // select the lower nbits of the result
+				cout << "final result: " << to_binary(result) << " : " << result << endl;
+			}
+
+			{
+				constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
+				blockbinary<roundingDecisionBits> roundingBits;
+				blockbinary<2 * nbits + roundingDecisionBits> b = unrounded_div(c.getbb(), a.getbb(), roundingBits);
+				std::cout << c << " / " << a << std::endl;
+				std::cout << c.getbb() << " / " << a.getbb() << " = " << b << " rounding bits " << roundingBits;
+				bool roundUp = b.roundingMode(rbits + roundingDecisionBits);
+				b >>= rbits + nbits + roundingDecisionBits - 1;
+				if (roundUp) ++b;
+				std::cout << " rounded " << b << std::endl;
+				fixpnt<nbits, rbits> result; result = b; // select the lower nbits of the result
+				cout << "final result: " << to_binary(result) << " : " << result << endl;
+			}
+
 		}
 
 	}
 
-	return 0;
-
 	// generate individual testcases to hand trace/debug
-//	fixpnt<4, 1> a, b, c;
-	fixpnt<6, 2> a, b, c;
-	a.set_raw_bits(0xCC);
-	cout << a << ' ' << to_binary(a) << ' ' << float(a) << endl;
-	b.set_raw_bits(0x55);
-	cout << b << ' ' << to_binary(b) << ' ' << float(b) << endl;
-	c = a * b;
-	c = b * a;
-
-	GenerateTestCase<4, 1>(float(a), float(b)); // -52 / 85 in 8bit 2's complement
-
+	GenerateTestCase<4, 1>(3.0f, 1.5f); 
 
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modular,uint8_t>", "division");
 	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "division");

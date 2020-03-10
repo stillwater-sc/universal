@@ -433,7 +433,7 @@ public:
 
 	// assignment operator for blockbinary type
 	template<size_t nnbits, typename BBlockType>
-	fixpnt& operator=(const blockbinary<nnbits, BBlockType>& rhs) {	bb = rhs; }
+	fixpnt& operator=(const blockbinary<nnbits, BBlockType>& rhs) { bb = rhs; return *this; }
 
 	// conversion operator between different fixed point formats with the same rbits
 	template<size_t src_bits>
@@ -575,13 +575,13 @@ public:
 		if (arithmetic == Modular) {
 			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
 			blockbinary<roundingDecisionBits, BlockType> roundingBits;
-			blockbinary<2 * nbits, BlockType> c = urdiv(this->bb, rhs.bb, roundingBits);
+			blockbinary<2 * nbits + roundingDecisionBits, BlockType> c = urdiv(this->bb, rhs.bb, roundingBits);
 			std::cout << to_binary(*this) << " / " << to_binary(rhs) << std::endl;
-			std::cout << to_binary(this->bb) << " / " << to_binary(rhs.bb) << " = " << to_binary(c) << " rounding bits " << to_binary(roundingBits);
-			bool roundUp = c.roundingMode(rbits+4);
-			c >>= nbits + roundingDecisionBits - 1;
+//			std::cout << to_binary(this->bb) << " / " << to_binary(rhs.bb) << " = " << to_binary(c) << " rounding bits " << to_binary(roundingBits);
+			bool roundUp = c.roundingMode(rbits + roundingDecisionBits);
+			c >>= rbits + nbits + roundingDecisionBits - 1;
 			if (roundUp) ++c;
-			std::cout << " rounded " << to_binary(c) << std::endl;
+//			std::cout << " rounded " << to_binary(c) << std::endl;
 			this->bb = c; // select the lower nbits of the result
 		}
 		else {

@@ -694,26 +694,26 @@ inline blockbinary<2 * nbits + roundingBits, BlockType> urdiv(const blockbinary<
 	if (b_sign) b_new.twoscomplement();
 
 	// initialize the long division
-	blockbinary<2 * nbits + roundingBits, BlockType> decimator(a);
-	decimator <<= nbits + roundingBits - 1; // scale the decimator to the largest possible positive value
-	blockbinary<2 * nbits + roundingBits, BlockType> subtractand(b); // prepare the subtractand
+	blockbinary<2 * nbits + roundingBits, BlockType> decimator(a_new);
+	blockbinary<2 * nbits + roundingBits, BlockType> subtractand(b_new); // prepare the subtractand
 	blockbinary<2 * nbits + roundingBits, BlockType> result;
 
-#if TRACE_DIV
-	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
-#endif
+	int msp = nbits + roundingBits - 1; // msp = most significant position
+	decimator <<= msp; // scale the decimator to the largest possible positive value
+
 	int msb_b = subtractand.msb();
 	int msb_a = decimator.msb();
 	int shift = msb_a - msb_b;
+	int scale = shift - msp;   // scale of the result quotient
 	subtractand <<= shift;
+
 #if TRACE_DIV
-	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << " shift: " << shift << std::endl;
+	std::cout << "  " << to_binary(decimator) << std::endl;
+	std::cout << "- " << to_binary(subtractand) << " shift: " << shift << std::endl;
 #endif
 	// long division
-	for (int i = shift; i >= 0; --i) {
-#if TRACE_DIV
-		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
-#endif
+	for (int i = msb_a; i >= 0; --i) {
+
 		if (subtractand <= decimator) {
 			decimator -= subtractand;
 			result.set(i);
@@ -722,10 +722,13 @@ inline blockbinary<2 * nbits + roundingBits, BlockType> urdiv(const blockbinary<
 			result.reset(i);
 		}
 		subtractand >>= 1;
+
 #if TRACE_DIV
-		std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << ' ' << to_binary(result) << std::endl;
+		std::cout << "  " << to_binary(decimator) << ' ' << to_binary(result) << std::endl;
+		std::cout << "- " << to_binary(subtractand) << std::endl;
 #endif
 	}
+	result <<= scale;
 	r.assign(result); // copy the lowest bits which represent the bits on which we need to apply the rounding test
 	return result;
 }
