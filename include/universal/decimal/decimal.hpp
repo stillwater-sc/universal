@@ -464,7 +464,7 @@ public:
 		std::regex decimal_regex("[+-]*[0123456789]+");
 		if (std::regex_match(digits, decimal_regex)) {
 			// found a decimal representation
-			setzero();
+			clear();
 			auto it = digits.begin();
 			if (*it == '-') {
 				setneg();
@@ -620,6 +620,16 @@ void convert_to_decimal(Ty v, decimal& d) {
 ////////////////// DECIMAL operators
 
 /// stream operators
+
+// generate an ASCII decimal string
+inline std::string to_string(const decimal& d) {
+	std::stringstream ss;
+	if (d.isneg()) ss << '-';
+	for (decimal::const_reverse_iterator rit = d.rbegin(); rit != d.rend(); ++rit) {
+		ss << (int)*rit;
+	}
+	return ss.str();
+}
 
 // generate an ASCII decimal format and send to ostream
 inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
