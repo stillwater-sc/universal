@@ -82,7 +82,8 @@ inline sw::unum::blockbinary<2 * nbits + roundingBits, BlockType> unrounded_div(
 
 	int msp = nbits + roundingBits - 1; // msp = most significant position
 	decimator <<= msp; // scale the decimator to the largest possible positive value
-	std::cout << to_binary(subtractand) << ' ' << to_binary(decimator) << std::endl;
+
+	std::cout << "  " << to_binary(decimator) << ' ' << to_binary(subtractand) << std::endl;
 
 	int msb_b = subtractand.msb();
 	int msb_a = decimator.msb();
@@ -148,6 +149,76 @@ void GenerateValueTable() {
 	}
 }
 
+template<size_t nbits, size_t rbits>
+void GenerateComparison(size_t a_bits, size_t b_bits) {
+	using namespace std;
+	using namespace sw::unum;
+
+	fixpnt<nbits, rbits> a, b, c;
+	a.set_raw_bits(a_bits);
+	b.set_raw_bits(b_bits);
+	c = a * b;
+	float fa = float(a);
+	float fb = float(b);
+	float fc = fa * fb;
+
+	cout << "fixpnt: " << a << " * " << b << " = " << c << " reference: " << fixpnt<nbits, rbits>(fc) << endl;
+	cout << "float : " << fa << " * " << fb << " = " << fc << endl;
+
+	{
+		cout << "multiplication trace\n";
+
+		blockbinary<2 * nbits> c = unrounded_mul(a.getbb(), b.getbb());
+		bool roundUp = c.roundingMode(rbits);
+		c >>= rbits;
+		if (roundUp) ++c;
+		fixpnt<nbits, rbits> result; result = c; // select the lower nbits of the result
+		cout << "final result: " << result << endl;
+	}
+
+	cout << "fixpnt: " << c << " / " << a << " = " << c / a << " reference: " << fixpnt<nbits, rbits>(fc / fa) << endl;
+	cout << "fixpnt: " << c << " / " << b << " = " << c / b << " reference: " << fixpnt<nbits, rbits>(fc / fb) << endl;
+	cout << "float : " << fc << " / " << fa << " = " << fc / fa << endl;
+	cout << "float : " << fc << " / " << fb << " = " << fc / fb << endl;
+
+	{
+		cout << "division trace\n";
+
+		{
+			cout << "----------------------------------------------\n";
+			std::cout << c << " / " << b << std::endl;
+
+			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
+			blockbinary<roundingDecisionBits> roundingBits;
+			blockbinary<2 * nbits + roundingDecisionBits> a = unrounded_div(c.getbb(), b.getbb(), roundingBits);
+			std::cout << c.getbb() << " / " << b.getbb() << " = " << a << " rounding bits " << roundingBits;
+			bool roundUp = a.roundingMode(rbits + roundingDecisionBits);
+			a >>= rbits + nbits + roundingDecisionBits - 1;
+			if (roundUp) ++a;
+			std::cout << " rounded " << a << std::endl;
+			fixpnt<nbits, rbits> result; result = a; // select the lower nbits of the result
+			cout << "final result: " << to_binary(result) << " : " << result << endl;
+		}
+
+		{
+			cout << "----------------------------------------------\n";
+			std::cout << c << " / " << a << std::endl;
+
+			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
+			blockbinary<roundingDecisionBits> roundingBits;
+			blockbinary<2 * nbits + roundingDecisionBits> b = unrounded_div(c.getbb(), a.getbb(), roundingBits);
+			std::cout << c.getbb() << " / " << a.getbb() << " = " << b << " rounding bits " << roundingBits;
+			bool roundUp = b.roundingMode(rbits + roundingDecisionBits);
+			b >>= rbits + nbits + roundingDecisionBits - 1;
+			if (roundUp) ++b;
+			std::cout << " rounded " << b << std::endl;
+			fixpnt<nbits, rbits> result; result = b; // select the lower nbits of the result
+			cout << "final result: " << to_binary(result) << " : " << result << endl;
+		}
+
+	}
+
+}
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -168,71 +239,10 @@ try {
 
 	GenerateValueTable<nbits, rbits>();
 
-	{
-		//constexpr size_t nbits = 6;
-		//constexpr size_t rbits = 2;
+	GenerateComparison<nbits, rbits>(0x3, 0x4); // 0110 and 0100 in 4bit formats
+	GenerateComparison<nbits, rbits>(0x4, 0x1); // 010.0 / 000.1 = 2 / 0.5 = 4 = 100.0 = -4
 
-		fixpnt<nbits,rbits> a, b, c;
-		a.set_raw_bits(0x33);
-		b.set_raw_bits(0x14);
-		c = a * b;
-		float fa = float(a);
-		float fb = float(b);
-		float fc = fa * fb;
-
-		cout << "fixpnt: " << a << " * " << b << " = " << c << " reference: " << fixpnt<nbits, rbits>(fc) << endl;
-		cout << "float : " << fa << " * " << fb << " = " << fc << endl;
-
-		{
-			cout << "multiplication trace\n";
-
-			blockbinary<2 * nbits> c = unrounded_mul(a.getbb(), b.getbb());
-			bool roundUp = c.roundingMode(rbits);
-			c >>= rbits;
-			if (roundUp) ++c;
-			fixpnt<nbits, rbits> result; result = c; // select the lower nbits of the result
-			cout << "final result: " << result << endl;
-		}
-
-		cout << "fixpnt: " << c << " / " << a << " = " << c / a << " reference: " << fixpnt<nbits, rbits>(fc / fa) << endl;
-		cout << "fixpnt: " << c << " / " << b << " = " << c / b << " reference: " << fixpnt<nbits, rbits>(fc / fb) << endl;
-		cout << "float : " << fc << " / " << fa << " = " << fc / fa << endl;
-		cout << "float : " << fc << " / " << fb << " = " << fc / fb << endl;
-
-		{
-			cout << "division trace\n";
-
-			{
-				constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
-				blockbinary<roundingDecisionBits> roundingBits;
-				blockbinary<2 * nbits + roundingDecisionBits> a = unrounded_div(c.getbb(), b.getbb(), roundingBits);
-				std::cout << c << " / " << b << std::endl;
-				std::cout << c.getbb() << " / " << b.getbb() << " = " << a << " rounding bits " << roundingBits;
-				bool roundUp = a.roundingMode(rbits + roundingDecisionBits);
-				a >>= rbits + nbits + roundingDecisionBits - 1;
-				if (roundUp) ++a;
-				std::cout << " rounded " << a << std::endl;
-				fixpnt<nbits, rbits> result; result = a; // select the lower nbits of the result
-				cout << "final result: " << to_binary(result) << " : " << result << endl;
-			}
-
-			{
-				constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
-				blockbinary<roundingDecisionBits> roundingBits;
-				blockbinary<2 * nbits + roundingDecisionBits> b = unrounded_div(c.getbb(), a.getbb(), roundingBits);
-				std::cout << c << " / " << a << std::endl;
-				std::cout << c.getbb() << " / " << a.getbb() << " = " << b << " rounding bits " << roundingBits;
-				bool roundUp = b.roundingMode(rbits + roundingDecisionBits);
-				b >>= rbits + nbits + roundingDecisionBits - 1;
-				if (roundUp) ++b;
-				std::cout << " rounded " << b << std::endl;
-				fixpnt<nbits, rbits> result; result = b; // select the lower nbits of the result
-				cout << "final result: " << to_binary(result) << " : " << result << endl;
-			}
-
-		}
-
-	}
+	return 0;
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<4, 1>(3.0f, 1.5f); 
