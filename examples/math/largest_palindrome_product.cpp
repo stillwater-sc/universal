@@ -4,8 +4,10 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
+#include <sstream>
 #include <cmath>
 #include <universal/integer/integer.hpp>
+#include <universal/decimal/decimal.hpp>
 
 /*
  * A palinddrome number reads the same both ways. The largest palindrome made from the product
@@ -151,9 +153,9 @@ bool Largest5DigitPalindromeProduct() {
 						// cout << "sqrt guidance is " << squareRoot << endl;
 						Integer a, b;
 						a = squareRoot;
-						while (a < 10000) {
+						while (a < 100000) {
 							b = palindrome / a;
-							if ((palindrome % a) == 0 && b < 10000) {
+							if ((palindrome % a) == 0 && b < 100000) {
 								cout << "In step " << nrOfSteps << " found largest 5-digit palindrome product: " << a << " * " << b << " = " << palindrome << " check product: " << a * b << endl;
 								return true;
 							}
@@ -179,10 +181,17 @@ try {
 	using Integer = integer<nbits>;
 	using Real = long double;
 
-	Largest2DigitPalindromeProduct<nbits>();
-	Largest3DigitPalindromeProduct<nbits>();
-	Largest4DigitPalindromeProduct<nbits>();
-	Largest5DigitPalindromeProduct<nbits>();
+	Largest2DigitPalindromeProduct<16>();
+	Largest3DigitPalindromeProduct<24>();
+	Largest4DigitPalindromeProduct<32>();
+	Largest5DigitPalindromeProduct<64>();
+
+	/*
+	In step 30 found largest 2-digit palindrome product: 99 * 91 = 9009 check product: 9009
+	In step 2287 found largest 3-digit palindrome product: 993 * 913 = 906609 check product: 906609
+	In step 2556 found largest 4-digit palindrome product: 9999 * 9901 = 99000099 check product: 99000099
+	In step 29072 found largest 5-digit palindrome product: 99979 * 99681 = 9966006699 check product: 9966006699
+	 */
 
 	return EXIT_SUCCESS;
 }
