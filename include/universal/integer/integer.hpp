@@ -670,7 +670,8 @@ protected:
 	template<typename Ty>
 	void float_assign(Ty& rhs) {
 		clear();
-		// TODO
+		long long base = (long long)rhs;
+		*this = base;
 	}
 
 private:
