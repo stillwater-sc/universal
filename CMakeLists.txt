@@ -486,6 +486,7 @@ add_subdirectory("examples/roots")
 add_subdirectory("examples/engineering")
 add_subdirectory("examples/science")
 add_subdirectory("examples/chebyshev")
+add_subdirectory("examples/math")
 endif(BUILD_APPLICATION_EXAMPLES)
 
 if(BUILD_NUMERICAL)
