@@ -448,7 +448,28 @@ public:
 		*this = target;
 		return *this;
 	}
-	
+	integer& operator&=(const integer& rhs) {
+		for (unsigned i = 0; i < nrBytes; ++i) {
+			b[i] &= rhs.nbits[i];
+		}
+		b[MS_BYTE] &= MS_BYTE_MASK;
+		return *this;
+	}
+	integer& operator|=(const integer& rhs) {
+		for (unsigned i = 0; i < nrBytes; ++i) {
+			b[i] |= rhs.nbits[i];
+		}
+		b[MS_BYTE] &= MS_BYTE_MASK;
+		return *this;
+	}
+	integer& operator^=(const integer& rhs) {
+		for (unsigned i = 0; i < nrBytes; ++i) {
+			b[i] ^= rhs.nbits[i];
+		}
+		b[MS_BYTE] &= MS_BYTE_MASK;
+		return *this;
+	}
+
 	// modifiers
 	inline void clear() { std::memset(&b, 0, nrBytes); }
 	inline void setzero() { clear(); }
@@ -1321,6 +1342,27 @@ inline integer<nbits> operator%(const integer<nbits>& lhs, const integer<nbits>&
 	ratio %= rhs;
 	return ratio;
 }
+// BINARY BIT-WISE AND
+template<size_t nbits>
+inline integer<nbits> operator&(const integer<nbits>& lhs, const integer<nbits>& rhs) {
+	integer<nbits> bitwise = lhs;
+	bitwise &= rhs;
+	return bitwise;
+}
+// BINARY BIT-WISE OR
+template<size_t nbits>
+inline integer<nbits> operator|(const integer<nbits>& lhs, const integer<nbits>& rhs) {
+	integer<nbits> bitwise = lhs;
+	bitwise |= rhs;
+	return bitwise;
+}
+// BINARY BIT-WISE XOR
+template<size_t nbits>
+inline integer<nbits> operator^(const integer<nbits>& lhs, const integer<nbits>& rhs) {
+	integer<nbits> bitwise = lhs;
+	bitwise ^= rhs;
+	return bitwise;
+}
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // integer - literal binary arithmetic operators
@@ -1349,7 +1391,21 @@ template<size_t nbits>
 inline integer<nbits> operator%(const integer<nbits>& lhs, const long long rhs) {
 	return operator%(lhs, integer<nbits>(rhs));
 }
-
+// BINARY BIT-WISE AND
+template<size_t nbits>
+inline integer<nbits> operator&(const integer<nbits>& lhs, const long long rhs) {
+	return operator&(lhs, integer<nbits>(rhs));
+}
+// BINARY BIT-WISE OR
+template<size_t nbits>
+inline integer<nbits> operator|(const integer<nbits>& lhs, const long long rhs) {
+	return operator|(lhs, integer<nbits>(rhs));
+}
+// BINARY BIT-WISE XOR
+template<size_t nbits>
+inline integer<nbits> operator^(const integer<nbits>& lhs, const long long rhs) {
+	return operator^(lhs, integer<nbits>(rhs));
+}
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 // literal - integer binary arithmetic operators
 // BINARY ADDITION
@@ -1377,7 +1433,21 @@ template<size_t nbits>
 inline integer<nbits> operator%(const long long lhs, const integer<nbits>& rhs) {
 	return operator%(integer<nbits>(lhs), rhs);
 }
-
+// BINARY BIT-WISE AND
+template<size_t nbits>
+inline integer<nbits> operator&(const long long lhs, const integer<nbits>& rhs) {
+	return operator&(integer<nbits>(lhs), rhs);
+}
+// BINARY BIT-WISE OR
+template<size_t nbits>
+inline integer<nbits> operator|(const long long lhs, const integer<nbits>& rhs) {
+	return operator|(integer<nbits>(lhs), rhs);
+}
+// BINARY BIT-WISE XOR
+template<size_t nbits>
+inline integer<nbits> operator^(const long long lhs, const integer<nbits>& rhs) {
+	return operator^(integer<nbits>(lhs), rhs);
+}
 
 } // namespace unum
 } // namespace sw

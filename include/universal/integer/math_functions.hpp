@@ -4,7 +4,7 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <exception>
+#include <universal/integer/integer_exceptions.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
