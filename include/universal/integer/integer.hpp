@@ -450,21 +450,21 @@ public:
 	}
 	integer& operator&=(const integer& rhs) {
 		for (unsigned i = 0; i < nrBytes; ++i) {
-			b[i] &= rhs.nbits[i];
+			b[i] &= rhs.b[i];
 		}
 		b[MS_BYTE] &= MS_BYTE_MASK;
 		return *this;
 	}
 	integer& operator|=(const integer& rhs) {
 		for (unsigned i = 0; i < nrBytes; ++i) {
-			b[i] |= rhs.nbits[i];
+			b[i] |= rhs.b[i];
 		}
 		b[MS_BYTE] &= MS_BYTE_MASK;
 		return *this;
 	}
 	integer& operator^=(const integer& rhs) {
 		for (unsigned i = 0; i < nrBytes; ++i) {
-			b[i] ^= rhs.nbits[i];
+			b[i] ^= rhs.b[i];
 		}
 		b[MS_BYTE] &= MS_BYTE_MASK;
 		return *this;
