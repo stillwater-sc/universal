@@ -1,4 +1,4 @@
-// math_logarithm.cpp: functional tests for logarithms
+// function_logarithm.cpp: functional tests for the logarithm functions (log2, log10, ln)
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

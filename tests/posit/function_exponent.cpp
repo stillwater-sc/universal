@@ -1,4 +1,4 @@
-// math_exponent.cpp: functional tests for exponent (exp, exp2, exp10) function
+// function_exponent.cpp: functional tests for exponent (exp, exp2, exp10) functions
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

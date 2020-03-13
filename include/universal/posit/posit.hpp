@@ -62,11 +62,10 @@ typedef __128bitdd double_double;
 // calling environment should define behavioral flags
 // typically set in the library aggregation include file <posit>
 // but can be set by individual programs when including posit.hpp
-
-// define to non-zero if you want to enable arithmetic and logic literals
+// For example:
+// - define to non-zero if you want to enable arithmetic and logic literals
 // #define POSIT_ENABLE_LITERALS 1
-
-// define to non-zero if you want to throw exceptions on arithmetic errors
+// - define to non-zero if you want to throw exceptions on arithmetic errors
 // #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -1078,6 +1077,7 @@ public:
 		decode(_raw_bits, s, r, e, f);
 		return f.none();
 	}
+	bool isinteger() const { return true; } // return (floor(*this) == *this) ? true : false; }
 
 	bitblock<nbits>    get() const { return _raw_bits; }
 	unsigned long long encoding() const { return _raw_bits.to_ullong(); }

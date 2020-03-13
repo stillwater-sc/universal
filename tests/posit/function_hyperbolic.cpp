@@ -1,4 +1,4 @@
-// math_hyperbolic.cpp: functional tests for hyperbolic functions (sinh/cosh/tanh/atanh/acosh/asinh)
+// function_hyperbolic.cpp: functional tests for hyperbolic functions (sinh/cosh/tanh/atanh/acosh/asinh)
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

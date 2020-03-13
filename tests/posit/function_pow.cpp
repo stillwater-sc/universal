@@ -1,4 +1,4 @@
-// math_pow.cpp: functional tests for pow function
+// function_pow.cpp: functional tests for pow function
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

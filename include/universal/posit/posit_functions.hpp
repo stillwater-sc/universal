@@ -250,5 +250,26 @@ namespace unum {
 		return _Bits;
 	}
 
+	//////////////////////////////////////////////////////////////////////////
+
+	// calculate the integer power a ^ b
+	// exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
+	template<size_t nbits, size_t es>
+	posit<nbits, es> ipow(const posit<nbits, es>& a, const posit<nbits, es>& b) {
+		// precondition
+		if (!a.isinteger() || !b.isinteger()) return posit<nbits, es>(0);
+
+		uint64_t result(1);
+		uint64_t base = uint64_t(a); 
+		uint64_t exp = uint64_t(b);
+		for (;;) {
+			if (exp & 0x1) result *= base;
+			exp >>= 1;
+			if (exp == 0) break;
+			base *= base;
+		}
+		return posit<nbits,es>(result);
+	}
+
 } // namespace unum
 } // namespace sw

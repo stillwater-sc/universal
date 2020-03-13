@@ -1,4 +1,4 @@
-﻿// math_trigonometry.cpp: functional tests for trigonometric functions (sin/cos/tan/atan/acos/asin)
+﻿// function_trigonometry.cpp: functional tests for trigonometric functions (sin/cos/tan/atan/acos/asin)
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
