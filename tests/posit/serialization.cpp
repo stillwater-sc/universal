@@ -1,4 +1,4 @@
-// function_truncate.cpp: functional tests for truncation functions trunc, round, floor, and ceil
+// serialization.cpp: functional tests for serialization functions of posits
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -8,7 +8,6 @@
 #define POSIT_ENABLE_LITERALS 1
 #include "universal/posit/posit.hpp"
 #include "universal/posit/posit_manipulators.hpp"
-#include "universal/posit/math/truncate.hpp"
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 #include "../utils/posit_math_helpers.hpp"
@@ -16,27 +15,17 @@
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
+
 template<size_t nbits, size_t es>
-int VerifyFloor(bool bReportIndividualTestCases) {
+void VerifyToBinary() {
 	using namespace sw::unum;
 	constexpr size_t NR_VALUES = (1 << nbits);
-	int nrOfFailedTestCases = 0;
 
 	posit<nbits, es> p;
 	for (size_t i = 0; i < NR_VALUES; ++i) {
 		p.set_raw_bits(i);
-		long l1 = long(sw::unum::floor(p));
-		// generate the reference
-		float f = float(p);
-		long l2 = long(std::floor(f));
-		if (l1 != l2) {
-			++nrOfFailedTestCases;
-			if (bReportIndividualTestCases) 
-				ReportOneInputFunctionError("floor", "floor",
-					p, posit<nbits, es>(l1), posit<nbits, es>(l2));
-		}
+		std::cout << hex_format(p) << ' ' << color_print(p) << ' ' << to_binary(p) << ' ' << p << std::endl;
 	}
-	return nrOfFailedTestCases;
 }
 
 int main(int argc, char** argv)
@@ -47,18 +36,20 @@ try {
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "truncation failed: ";
+	std::string tag = "serialization failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 
-	nrOfFailedTestCases = ReportTestResult(VerifyFloor<6, 0>(bReportIndividualTestCases), "floor", "floor<4,0>()");
+	bool csv = false;
+	GeneratePositTable<4, 0>(cout, csv);
+	VerifyToBinary<4, 0>();
 
 	nrOfFailedTestCases = 0; // nullify accumulated test failures in manual testing
 
 #else
 
-	cout << "Posit truncation function validation" << endl;
+	cout << "Posit serialization validation" << endl;
 
 
 #if STRESS_TESTING
