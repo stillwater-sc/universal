@@ -73,7 +73,7 @@ inline void convert_i2p(const Integer& w, Posit& p) {
 	using namespace std;
 	using namespace sw::unum;
 
-	constexpr size_t ibits = w.nbits;
+	constexpr size_t ibits = Posit::nbits;
 
 	bool sign = w < 0;
 	bool isZero = w == 0;

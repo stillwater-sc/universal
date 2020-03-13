@@ -729,6 +729,7 @@ inline blockbinary<2 * nbits + roundingBits, BlockType> urdiv(const blockbinary<
 #endif
 	}
 	result <<= scale;
+	if (result_negative) result.twoscomplement();
 	r.assign(result); // copy the lowest bits which represent the bits on which we need to apply the rounding test
 	return result;
 }

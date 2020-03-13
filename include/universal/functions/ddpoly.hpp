@@ -56,8 +56,8 @@ namespace function {
 // ddpoly evaluate a polynomial of degree N at point x as well as its ND derivatives
 template<typename Vector, typename Scalar>
 void ddpoly(const Scalar& x, const Vector& c, Vector& pd) {
-	int N  = int(size(c))-1;  // c0 + c1*x + c2*x^2, etc., so we have N+1 coefficients for a polynomial of degree N
-	int ND = int(size(pd))-1; // pd[0] is the value of the polynomial at x, and pd[1..ND] are the derivatives at x
+	int N  = int(c.size())-1;  // c0 + c1*x + c2*x^2, etc., so we have N+1 coefficients for a polynomial of degree N
+	int ND = int(pd.size())-1; // pd[0] is the value of the polynomial at x, and pd[1..ND] are the derivatives at x
 
 	for (auto&& v : pd) v = Scalar(0);
 	pd[0] = c[N];
