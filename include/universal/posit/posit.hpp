@@ -1078,6 +1078,7 @@ public:
 		decode(_raw_bits, s, r, e, f);
 		return f.none();
 	}
+	bool isinteger() const { return true; } // return (floor(*this) == *this) ? true : false; }
 
 	bitblock<nbits>    get() const { return _raw_bits; }
 	unsigned long long encoding() const { return _raw_bits.to_ullong(); }
@@ -1315,7 +1316,7 @@ private:
 	template<size_t nnbits, size_t ees>
 	friend bool operator>=(const posit<nnbits, ees>& lhs, const posit<nnbits, ees>& rhs);
 
-#if POSIT_ENABLE_LITERALS
+//#if POSIT_ENABLE_LITERALS
 	// posit - literal logic functions
 
 	// posit - signed char
@@ -1684,7 +1685,7 @@ private:
 	template<size_t nnbits, size_t ees>
 	friend bool operator>=(long double lhs, const posit<nnbits, ees>& rhs);
 
-#endif // POSIT_ENABLE_LITERALS
+//#endif // POSIT_ENABLE_LITERALS
 
 };
 
@@ -1883,7 +1884,7 @@ inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, const posit<nbits
 	return ratio;
 }
 
-#if POSIT_ENABLE_LITERALS
+//#if POSIT_ENABLE_LITERALS
 
 // posit - signed char logic operators
 template<size_t nbits, size_t es>
@@ -2615,7 +2616,7 @@ inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, double rhs) {
 	return ratio;
 }
 
-#endif // POSIT_ENABLE_LITERALS
+//#endif // POSIT_ENABLE_LITERALS
 
 // Magnitude of a posit (equivalent to turning the sign bit off).
 template<size_t nbits, size_t es> 
