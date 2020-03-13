@@ -1,4 +1,4 @@
-// math_classify.cpp: functional tests for float classification specialized for posits
+// function_classify.cpp: functional tests for classification functions of the Reals specialized for posits
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

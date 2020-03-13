@@ -12,6 +12,7 @@
 #include <universal/integer/integer.hpp>
 #include <universal/integer/integer_functions.hpp>
 // posit number system
+#define POSIT_ENABLE_LITERALS 1
 #include <universal/posit/posit.hpp>
 #include <universal/posit/posit_functions.hpp>
 
