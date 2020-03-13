@@ -16,16 +16,16 @@
 template<typename T>
 struct hasSerialize {
 	typedef char yes[1];
-	typedef char no[2];
+	typedef yes no[2];
 
 	// helper to determine if serialize is a function
 	template<typename U, U function>
 	struct reallyHas;
 
-	template<typename S> static yes& test(reallyHas<std::string(S::*)(), &S::serialize>* /*unused*/) {return ' '; }
-	template<typename S> static yes& test(reallyHas<std::string(S::*)() const, &S::serialize>* /*unused*/) {return ' '; }
+	template<typename S> static yes& test(reallyHas<std::string(S::*)(), &S::serialize>* /*unused*/) {}
+	template<typename S> static yes& test(reallyHas<std::string(S::*)() const, &S::serialize>* /*unused*/) {}
 
-	template<typename> static no& test(...) { return ' ';}
+	template<typename> static no& test(...) { }
 
 	// constant used as return value for the test
 	static const bool value = sizeof(test<T>(0)) == sizeof(yes);

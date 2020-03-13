@@ -113,6 +113,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint32_t>("Manual Testing", true), "uint32_t<4>", "subtraction");
 //	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint64_t>("Manual Testing", true), "uint64_t<4>", "subtraction");
 
+	nrOfFailedTestCases = (bReportIndividualTestCases ? 0 : -1);
 
 #if STRESS_TESTING
 
