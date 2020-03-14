@@ -44,6 +44,11 @@ struct integer_divide_by_zero : public std::runtime_error {
 	integer_divide_by_zero() : std::runtime_error("integer division by zero") {}
 };
 
+// overflow exception for integers
+struct integer_overflow : public std::runtime_error {
+	integer_overflow() : std::runtime_error("integer arithmetic overflow") {}
+};
+
 ///////////////////////////////////////////////////////////////
 // internal implementation exceptions
 

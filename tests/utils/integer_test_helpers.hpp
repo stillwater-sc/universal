@@ -19,8 +19,8 @@ namespace unum {
 
 
 #define INTEGER_TABLE_WIDTH 20
-	template<size_t nbits>
-	void ReportBinaryArithmeticError(std::string test_case, std::string op, const integer<nbits>& lhs, const integer<nbits>& rhs, const integer<nbits>& pref, const integer<nbits>& presult) {
+	template<size_t nbits, typename BlockType>
+	void ReportBinaryArithmeticError(std::string test_case, std::string op, const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs, const integer<nbits, BlockType>& pref, const integer<nbits, BlockType>& presult) {
 		auto old_precision = std::cerr.precision(); 
 		std::cerr << test_case << " "
 			<< std::setprecision(20)
@@ -35,8 +35,8 @@ namespace unum {
 			<< std::endl;
 	}
 
-	template<size_t nbits>
-	void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const integer<nbits>& lhs, const integer<nbits>& rhs, const integer<nbits>& pref, const integer<nbits>& presult) {
+	template<size_t nbits, typename BlockType>
+	void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs, const integer<nbits, BlockType>& pref, const integer<nbits, BlockType>& presult) {
 		auto old_precision = std::cerr.precision();
 		std::cerr << test_case << " "
 			<< std::setprecision(20)
@@ -52,12 +52,13 @@ namespace unum {
 	}
 
 	// enumerate all addition cases for an integer<16> configuration compared against native short
+	template<typename BlockType>
 	int VerifyShortAddition(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib, iresult, iref;
+		integer<nbits, BlockType> ia, ib, iresult, iref;
 
 		short i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -72,9 +73,9 @@ namespace unum {
 					iresult = ia + ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
 						// correctly caught the exception
-
+						continue;
 					}
 					else {
 						nrOfFailedTests++;
@@ -99,12 +100,13 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 	// enumerate all subtraction cases for an integer<16> configuration compared against native short
+	template<typename BlockType>
 	int VerifyShortSubtraction(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib, iresult, iref;
+		integer<nbits, BlockType> ia, ib, iresult, iref;
 
 		short i16a, i16b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -119,9 +121,9 @@ namespace unum {
 					iresult = ia - ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
 						// correctly caught the exception
-
+						continue;
 					}
 					else {
 						nrOfFailedTests++;
@@ -146,12 +148,13 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 	// enumerate all multiplication cases for an integer<16> configuration compared against native short
+	template<typename BlockType>
 	int VerifyShortMultiplication(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib, iresult, iref;
+		integer<nbits, BlockType> ia, ib, iresult, iref;
 
 		short i16a, i16b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -166,9 +169,9 @@ namespace unum {
 					iresult = ia * ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
 						// correctly caught the exception
-
+						continue;
 					}
 					else {
 						nrOfFailedTests++;
@@ -193,12 +196,13 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 	// enumerate all division cases for an integer<16> configuration compared against native short
+	template<typename BlockType>
 	int VerifyShortDivision(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib, iresult, iref;
+		integer<nbits, BlockType> ia, ib, iresult, iref;
 
 		short i16a, i16b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -208,22 +212,36 @@ namespace unum {
 				ib.set_raw_bits(j);
 				i16b = short(ib);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
-				try {
-					iresult = ia / ib;
-				}
-				catch (...) {
-					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
-						// correctly caught the exception
+				if (j == 0) {
+					try {
+						iresult = ia / ib;
+					}
+					catch (const integer_divide_by_zero& err) {
+						// correctly caught overflow
 						continue;
 					}
-					else {
+					catch (...) {
+						nrOfFailedTests++;
+					}
+				}
+				iref = i16a / i16b; // protected by the continue above
+				if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
+					try {
+						iresult = ia / ib;
+					}
+					catch (const integer_overflow& err) {
+						// correctly caught overflow
+						continue;
+					}
+					catch (...) {
 						nrOfFailedTests++;
 					}
 				}
 #else
+				if (j == 0) continue;
 				iresult = ia / ib;
 #endif
-				iref = i16a / i16b;
+
 				if (iresult != iref) {
 					nrOfFailedTests++;
 					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iresult);
@@ -239,12 +257,13 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 	// enumerate all remainder cases for an integer<16> configuration compared against native short
+	template<typename BlockType = uint8_t>
 	int VerifyShortRemainder(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib, iresult, iref;
+		integer<nbits, BlockType> ia, ib, iresult, iref;
 
 		short i16a, i16b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -258,7 +277,7 @@ namespace unum {
 					iresult = ia % ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
 						// correctly caught the exception
 						continue;
 					}
@@ -285,12 +304,12 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 
-	// enumerate all addition cases for an integer<nbits> configuration
-	template<size_t nbits>
+	// enumerate all addition cases for an integer<nbits, BlockType> configuration
+	template<size_t nbits, typename BlockType>
 	int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib, iresult, iref;
+		integer<nbits, BlockType> ia, ib, iresult, iref;
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -305,7 +324,7 @@ namespace unum {
 					iresult = ia + ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
 						// correctly caught the exception
 	
 					}
@@ -331,12 +350,12 @@ namespace unum {
 		std::cout << std::endl;
 		return nrOfFailedTests;
 	}
-	// enumerate all subtraction cases for an integer<nbits> configuration
-	template<size_t nbits>
+	// enumerate all subtraction cases for an integer<nbits, BlockType> configuration
+	template<size_t nbits, typename BlockType>
 	int VerifySubtraction(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib, iresult, iref;
+		integer<nbits, BlockType> ia, ib, iresult, iref;
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -351,7 +370,7 @@ namespace unum {
 					iresult = ia - ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
 						// correctly caught the exception
 
 					}
@@ -378,12 +397,12 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 
-	// enumerate all multiplication cases for an integer<nbits> configuration
-	template<size_t nbits>
+	// enumerate all multiplication cases for an integer<nbits, BlockType> configuration
+	template<size_t nbits, typename BlockType>
 	int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib, iresult, iref;
+		integer<nbits, BlockType> ia, ib, iresult, iref;
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -398,7 +417,7 @@ namespace unum {
 					iresult = ia * ib;
 				}
 				catch (...) {
-					if (iref > max_int<nbits>() || iref < min_int<nbits>()) {
+					if (iref > max_int<nbits, BlockType>() || iref < min_int<nbits, BlockType>()) {
 						// correctly caught the exception
 
 					}
@@ -425,12 +444,12 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 
-	// enumerate all division cases for an integer<nbits> configuration
-	template<size_t nbits>
+	// enumerate all division cases for an integer<nbits, BlockType> configuration
+	template<size_t nbits, typename BlockType>
 	int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib, iresult, iref;
+		integer<nbits, BlockType> ia, ib, iresult, iref;
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -444,7 +463,7 @@ namespace unum {
 					iresult = ia / ib;
 				}
 				catch (...) {
-					if (ib == integer<nbits>(0)) {
+					if (ib == integer<nbits, BlockType>(0)) {
 						// correctly caught the exception
 						continue;
 					}
@@ -472,12 +491,12 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 
-	// enumerate all remainder cases for an integer<nbits> configuration
-	template<size_t nbits>
+	// enumerate all remainder cases for an integer<nbits, BlockType> configuration
+	template<size_t nbits, typename BlockType>
 	int VerifyRemainder(std::string tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		integer<nbits> ia, ib, iresult, iref;
+		integer<nbits, BlockType> ia, ib, iresult, iref;
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
@@ -491,7 +510,7 @@ namespace unum {
 					iresult = ia % ib;
 				}
 				catch (...) {
-					if (ib == integer<nbits>(0)) {
+					if (ib == integer<nbits, BlockType>(0)) {
 						// correctly caught the exception
 						continue;
 					}

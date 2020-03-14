@@ -67,20 +67,19 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	// samples of number systems
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<4>(tag, bReportIndividualTestCases), "integer<4>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<6>(tag, bReportIndividualTestCases), "integer<6>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<8>(tag, bReportIndividualTestCases), "integer<8>", "remainder");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10>(tag, bReportIndividualTestCases), "integer<10>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<4, uint8_t>(tag, bReportIndividualTestCases), "integer<4, uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<6, uint8_t>(tag, bReportIndividualTestCases), "integer<6, uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8, uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10, uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12, uint8_t>(tag, bReportIndividualTestCases), "integer<12, uint8_t>", "remainder");
 
 #if STRESS_TESTING
-	type = "integer<16>";
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12>(tag, bReportIndividualTestCases), "integer<12>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<12>(tag, bReportIndividualTestCases), "integer<12>", "remainder");
 
 	// VerifyShortRemainder compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder(tag, bReportIndividualTestCases), "integer<16>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder<uint8_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortRemainder<uint16_t>(tag, bReportIndividualTestCases), "integer<16, uint16_t>", "remainder");
 	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<NBITS>(tag, bReportIndividualTestCases), "integer<16>", "remainder");
+	nrOfFailedTestCases += ReportTestResult(VerifyRemainder<16, uint8_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "remainder");
 
 #endif // STRESS_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

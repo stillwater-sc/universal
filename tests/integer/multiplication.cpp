@@ -37,7 +37,7 @@ void ExamplePattern() {
 	GenerateMulTest<sw::unum::integer<16> >(2, 16, z);
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main()
@@ -49,7 +49,7 @@ try {
 
 #if MANUAL_TESTING
 
-	integer<12> a, b, c;
+	integer<12, uint8_t> a, b, c;
 	a = 0x800; 
 	cout << to_binary(a) << " = " << a << endl;
 	b = 0x800;
@@ -59,7 +59,7 @@ try {
 
 	cout << "done" << endl;
 
-	ReportTestResult(VerifyMultiplication<4>(tag, true), "integer<4>", "multiplication");
+	ReportTestResult(VerifyMultiplication<4, uint8_t>(tag, true), "integer<4, uint8_t>", "multiplication");
 
 
 #else
@@ -68,20 +68,22 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4>(tag, bReportIndividualTestCases), "integer<4>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6>(tag, bReportIndividualTestCases), "integer<6>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8>(tag, bReportIndividualTestCases), "integer<8>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10>(tag, bReportIndividualTestCases), "integer<10>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, uint8_t>(tag, bReportIndividualTestCases), "integer<4, uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, uint8_t>(tag, bReportIndividualTestCases), "integer<6, uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8, uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10, uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint8_t>(tag, bReportIndividualTestCases), "integer<12, uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12, uint16_t>", "multiplication");
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12>(tag, bReportIndividualTestCases), "integer<12>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<14>(tag, bReportIndividualTestCases), "integer<14>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<14, uint8_t>(tag, bReportIndividualTestCases), "integer<14, uint8_t>", "multiplication");
 
 	// VerifyShortMultiplication compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortMultiplication(tag, bReportIndividualTestCases), "integer<16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortMultiplication<uint8_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortMultiplication<uint16_t>(tag, bReportIndividualTestCases), "integer<16, uint16_t>", "multiplication");
 	// this is a 'standard' comparision against a native int64_t which will not have overflow conditions
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<16>(tag, bReportIndividualTestCases), "integer<16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<16, uint8_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "multiplication");
 
 #endif // STRESS_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

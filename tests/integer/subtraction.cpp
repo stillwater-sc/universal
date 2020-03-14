@@ -58,18 +58,20 @@ try {
 	// allocation is the only functionality of integer<N> at this time
 
 	// tests
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4>(tag, bReportIndividualTestCases), "integer<4>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<6>(tag, bReportIndividualTestCases), "integer<6>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8>(tag, bReportIndividualTestCases), "integer<8>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10>(tag, bReportIndividualTestCases), "integer<10>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12>(tag, bReportIndividualTestCases), "integer<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint8_t>(tag, bReportIndividualTestCases), "integer<4, uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<6, uint8_t>(tag, bReportIndividualTestCases), "integer<6, uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8, uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10, uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint8_t>(tag, bReportIndividualTestCases), "integer<12, uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12, uint16_t>", "subtraction");
 
 #if STRESS_TESTING
-	type = "integer<16>";
+
 	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortSubtraction(tag, bReportIndividualTestCases), "integer<16>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortSubtraction<uint8_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortSubtraction<uint16_t>(tag, bReportIndividualTestCases), "integer<16, uint16_t>", "subtraction");
 	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<NBITS>(tag, bReportIndividualTestCases), "integer<16>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<16, uint8_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "subtraction");
 
 #endif // STRESS_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

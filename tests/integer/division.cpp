@@ -223,8 +223,8 @@ try {
 	GenerateDivTest(a, b, c);
 
 //	TestFastdiv();
-	ReportTestResult(VerifyDivision<4>("manual test", true), "integer<4>", "divisio");
-	ReportTestResult(VerifyDivision<11>("manual test", true), "integer<11>", "divisio");
+	ReportTestResult(VerifyDivision<4, uint8_t>("manual test", true), "integer<4, uint8_t>", "divisio");
+	ReportTestResult(VerifyDivision<11, uint8_t>("manual test", true), "integer<11, uint8_t>", "divisio");
 
 	cout << "done" << endl;
 
@@ -236,19 +236,22 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	// samples of number systems
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4>(tag, bReportIndividualTestCases), "integer<4>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6>(tag, bReportIndividualTestCases), "integer<6>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8>(tag, bReportIndividualTestCases), "integer<8>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10>(tag, bReportIndividualTestCases), "integer<10>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, uint8_t>(tag, bReportIndividualTestCases), "integer<4, uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, uint8_t>(tag, bReportIndividualTestCases), "integer<6, uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8, uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10, uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint8_t>(tag, bReportIndividualTestCases), "integer<12, uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12, uint16_t>", "division");
 
 #if STRESS_TESTING
-	type = "integer<16>";
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12>(tag, bReportIndividualTestCases), "integer<12>", "division");
+
+//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<14, uint8_t>(tag, bReportIndividualTestCases), "integer<12, uint8_t>", "division");
 
 	// VerifyShortAddition compares an integer<16> to native short type to make certain it has all the same behavior
-	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision(tag, bReportIndividualTestCases), "integer<16>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint8_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyShortDivision<uint16_t>(tag, bReportIndividualTestCases), "integer<16, uint16_t>", "division");
 	// this is a 'standard' comparision against a native int64_t
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16>(tag, bReportIndividualTestCases), "integer<16>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, uint8_t>(tag, bReportIndividualTestCases), "integer<16, uint8_t>", "division");
 
 #endif // STRESS_TESTING
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
