@@ -48,7 +48,7 @@ inline void convert_p2i(const sw::unum::posit<nbits, es>& p, sw::unum::integer<i
 	else {
 		// gather all the fraction bits
 		// sw::unum::bitblock<p.fhbits> significant = sw::unum::significant<p.nbits, p.es, p.fbits>(p);
-                sw::unum::bitblock<Posit::fhbits> significant = sw::unum::significant<Posit::nbits, Posit::es, Posit::fbits>(p);
+		sw::unum::bitblock<sw::unum::posit<nbits, es>::fhbits> significant = sw::unum::significant<nbits, es, sw::unum::posit<nbits, es>::fbits>(p);
 		// the radix point is at fbits, to make an integer out of this
 		// we shift that radix point fbits to the right.
 		// that is equivalent to a scale of 2^fbits
