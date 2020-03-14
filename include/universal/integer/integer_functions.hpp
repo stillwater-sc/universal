@@ -39,6 +39,71 @@
 namespace sw {
 namespace unum {
 
+	/* from numerics
+		// FUNCTION TEMPLATE gcd
+template<class _Mt,	class _Nt>
+	_NODISCARD constexpr common_type_t<_Mt, _Nt> gcd(const _Mt _Mx, const _Nt _Nx) noexcept // strengthened
+	{	// calculate greatest common divisor
+	static_assert(_Is_nonbool_integral<_Mt>::value && _Is_nonbool_integral<_Nt>::value,
+		"GCD requires nonbool integral types");
+
+	using _Common = common_type_t<_Mt, _Nt>;
+	using _Common_unsigned = make_unsigned_t<_Common>;
+	_Common_unsigned _Mx_magnitude = _Abs_u(_Mx);
+	_Common_unsigned _Nx_magnitude = _Abs_u(_Nx);
+	if (_Mx_magnitude == 0U)
+		{
+		return (static_cast<_Common>(_Nx_magnitude));
+		}
+
+	if (_Nx_magnitude == 0U)
+		{
+		return (static_cast<_Common>(_Mx_magnitude));
+		}
+
+	const auto _Mx_trailing_zeroes = _Stl_bitscan_forward(_Mx_magnitude);
+	const auto _Common_factors_of_2 = _Min_value(_Mx_trailing_zeroes,
+		_Stl_bitscan_forward(_Nx_magnitude));
+	_Nx_magnitude >>= _Common_factors_of_2;
+	_Mx_magnitude >>= _Mx_trailing_zeroes;
+	do
+		{
+		_Nx_magnitude >>= _Stl_bitscan_forward(_Nx_magnitude);
+		if (_Mx_magnitude > _Nx_magnitude)
+			{
+			_Common_unsigned _Temp = _Mx_magnitude;
+			_Mx_magnitude = _Nx_magnitude;
+			_Nx_magnitude = _Temp;
+			}
+
+		_Nx_magnitude -= _Mx_magnitude;
+		}
+	while (_Nx_magnitude != 0U);
+
+	return (static_cast<_Common>(_Mx_magnitude << _Common_factors_of_2));
+	}
+
+	// FUNCTION TEMPLATE lcm
+template<class _Mt,
+	class _Nt>
+	_NODISCARD constexpr common_type_t<_Mt, _Nt> lcm(const _Mt _Mx, const _Nt _Nx) noexcept // strengthened
+	{	// calculate least common multiple
+	static_assert(_Is_nonbool_integral<_Mt>::value && _Is_nonbool_integral<_Nt>::value,
+		"LCM requires nonbool integral types");
+	using _Common = common_type_t<_Mt, _Nt>;
+	using _Common_unsigned = make_unsigned_t<_Common>;
+	const _Common_unsigned _Mx_magnitude = _Abs_u(_Mx);
+	const _Common_unsigned _Nx_magnitude = _Abs_u(_Nx);
+	if (_Mx_magnitude == 0 || _Nx_magnitude == 0)
+		{
+		return (static_cast<_Common>(0));
+		}
+
+	return (static_cast<_Common>((_Mx_magnitude / _STD gcd(_Mx_magnitude, _Nx_magnitude))
+		* _Nx_magnitude));
+	}
+	*/
+
 // calculate the greatest common divisor
 template<size_t nbits, typename BlockType>
 integer<nbits, BlockType> gcd(const integer<nbits, BlockType>& a, const integer<nbits, BlockType>& b) {

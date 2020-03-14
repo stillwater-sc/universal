@@ -24,7 +24,7 @@ template<size_t nbits> class value;
 template<size_t nbits, size_t es> class posit;
 template<size_t nbits, size_t es> int scale(const posit<nbits, es>&);
 template<size_t nbits, size_t es, size_t fbits> bitblock<fbits+1> significant(const posit<nbits, es>&);
-template<size_t nbits> class integer;
+template<size_t nbits, typename BlockType> class integer;
 
 /*
   Why is the convert function not part of the Integer or Posit types?
@@ -34,8 +34,8 @@ template<size_t nbits> class integer;
  */
 
 // convert a Posit to an Integer
-template<typename Integer, typename Posit>
-inline void convert_p2i(const Posit& p, Integer& v) {
+template<size_t nbits, size_t es, size_t ibits, typename BlockType>
+inline void convert_p2i(const sw::unum::posit<nbits, es>& p, sw::unum::integer<ibits, BlockType>& v) {
 	// get the scale of the posit value
 	int scale = sw::unum::scale(p);
 	if (scale < 0) {
@@ -68,27 +68,25 @@ inline void convert_p2i(const Posit& p, Integer& v) {
 
 /////////////////////////////////////////////////////////////////////////
 // convert an Integer to a Posit
-template<typename Integer, typename Posit>
-inline void convert_i2p(const Integer& w, Posit& p) {
+template<size_t ibits, typename BlockType, size_t nbits, size_t es>
+inline void convert_i2p(const sw::unum::integer<ibits, BlockType>& w, sw::unum::posit<nbits, es>& p) {
 	using namespace std;
 	using namespace sw::unum;
-
-	constexpr size_t ibits = Posit::nbits;
 
 	bool sign = w < 0;
 	bool isZero = w == 0;
 	bool isInf = false;
 	bool isNan = false;
 	long _scale = scale(w);
-	Integer w2 = sign ? twos_complement(w) : w;
+	integer<ibits, BlockType> w2 = sign ? twos_complement(w) : w;
 	int msb = findMsb(w2);
-	bitblock<ibits> fraction_without_hidden_bit;
-	int fbit = ibits - 1;
+	bitblock<nbits> fraction_without_hidden_bit;
+	int fbit = nbits - 1;
 	for (int i = msb - 1; i >= 0; --i) {
 		fraction_without_hidden_bit.set(fbit, w2.at(i));
 		--fbit;
 	}
-	value<ibits> v;
+	value<nbits> v;
 	v.set(sign, _scale, fraction_without_hidden_bit, isZero, isInf, isNan);
 	p = v;
 }

@@ -31,7 +31,7 @@ try {
 	c = a * b * 10;
 	cout << greatest_common_divisor(a,c) << " a = " << a << endl;
 
-	cout << gcd(a, c) << " a = " << a << endl;
+	cout << sw::unum::gcd(a, c) << " a = " << a << endl;
 
 	a = 252;
 	b = 105;
