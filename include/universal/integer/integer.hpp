@@ -705,44 +705,14 @@ private:
 	// integer - integer logic comparisons
 	template<size_t nnbits, typename BBlockType>
 	friend bool operator==(const integer<nnbits, BBlockType>& lhs, const integer<nnbits, BBlockType>& rhs);
-/*	template<size_t nnbits>
-	friend bool operator!=(const integer<nnbits>& lhs, const integer<nnbits>& rhs);
-	template<size_t nnbits>
-	friend bool operator< (const integer<nnbits>& lhs, const integer<nnbits>& rhs);
-	template<size_t nnbits>
-	friend bool operator> (const integer<nnbits>& lhs, const integer<nnbits>& rhs);
-	template<size_t nnbits>
-	friend bool operator<=(const integer<nnbits>& lhs, const integer<nnbits>& rhs);
-	template<size_t nnbits>
-	friend bool operator>=(const integer<nnbits>& lhs, const integer<nnbits>& rhs);*/
 
 	// integer - literal logic comparisons
 	template<size_t nnbits, typename BBlockType>
 	friend bool operator==(const integer<nnbits, BBlockType>& lhs, const long long rhs);
-/*	template<size_t nnbits>
-	friend bool operator!=(const integer<nnbits>& lhs, const long long rhs);
-	template<size_t nnbits>
-	friend bool operator< (const integer<nnbits>& lhs, const long long rhs);
-	template<size_t nnbits>
-	friend bool operator> (const integer<nnbits>& lhs, const long long rhs);
-	template<size_t nnbits>
-	friend bool operator<=(const integer<nnbits>& lhs, const long long rhs);
-	template<size_t nnbits>
-	friend bool operator>=(const integer<nnbits>& lhs, const long long rhs);*/
 
 	// literal - integer logic comparisons
 	template<size_t nnbits, typename BBlockType>
 	friend bool operator==(const long long lhs, const integer<nnbits, BBlockType>& rhs);
-/*	template<size_t nnbits>
-	friend bool operator!=(const long long lhs, const integer<nnbits>& rhs);
-	template<size_t nnbits>
-	friend bool operator< (const long long lhs, const integer<nnbits>& rhs);
-	template<size_t nnbits>
-	friend bool operator> (const long long lhs, const integer<nnbits>& rhs);
-	template<size_t nnbits>
-	friend bool operator<=(const long long& lhs, const integer<nnbits>& rhs);
-	template<size_t nnbits>
-	friend bool operator>=(const long long lhs, const integer<nnbits>& rhs);*/
 
 	// find the most significant bit set
 	template<size_t nnbits, typename BBlockType>
@@ -992,7 +962,7 @@ void divide(const integer<nbits, BlockType>& a, const integer<nbits, BlockType>&
 		std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
-	idiv_t<nbits> divresult = idiv<nbits>(a, b);
+	idiv_t<nbits, BlockType> divresult = idiv<nbits, BlockType>(a, b);
 	quotient = divresult.quot;
 }
 
@@ -1006,7 +976,7 @@ void remainder(const integer<nbits, BlockType>& a, const integer<nbits, BlockTyp
 		std::cerr << "integer_divide_by_zero\n";
 #endif // INTEGER_THROW_ARITHMETIC_EXCEPTION
 	}
-	idiv_t<nbits> divresult = idiv<nbits>(a, b);
+	idiv_t<nbits, BlockType> divresult = idiv<nbits, BlockType>(a, b);
 	remainder = divresult.rem;
 }
 

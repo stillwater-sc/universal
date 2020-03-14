@@ -39,19 +39,25 @@
 namespace sw {
 namespace unum {
 
-	// calculate the integer power a ^ b
-	// exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
-	template<size_t nbits>
-	integer<nbits> ipow(const integer<nbits>& a, const integer<nbits>& b) {
-		integer<nbits> result(1), base(a), exp(b);
-		for (;;) {
-			if (exp.isodd()) result *= base;
-			exp >>= 1;
-			if (exp == 0) break;
-			base *= base;
-		}
-		return result;
+// calculate the greatest common divisor
+template<size_t nbits, typename BlockType>
+integer<nbits, BlockType> gcd(const integer<nbits, BlockType>& a, const integer<nbits, BlockType>& b) {
+	return b.iszero() ? a : gcd(b, a % b);
+}
+
+// calculate the integer power a ^ b
+// exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
+template<size_t nbits>
+integer<nbits> ipow(const integer<nbits>& a, const integer<nbits>& b) {
+	integer<nbits> result(1), base(a), exp(b);
+	for (;;) {
+		if (exp.isodd()) result *= base;
+		exp >>= 1;
+		if (exp == 0) break;
+		base *= base;
 	}
+	return result;
+}
 
 } // namespace unum
 } // namespace sw
