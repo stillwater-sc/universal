@@ -117,7 +117,6 @@ void ReproducibilityTestSuite() {
 	}
 }
 
-
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -132,7 +131,7 @@ try {
 
 
 	using int1024 = integer<1024, uint32_t>;
-	int1024 a, b, c;
+	int1024 a, b, c, zero(0);
 
 	a = 1024;
 	b = 2;
@@ -147,6 +146,11 @@ try {
 	cout << "4G  = " <<  4 * c << endl;
 	cout << "8G  = " <<  8 * c << endl;
 	cout << "16G = " << 16 * c << endl;
+
+	cout << endl;
+
+	cout << "a fast zero value: " << zero << endl;
+
 	cout << "done" << endl;
 
 #else // !MANUAL_TESTING
