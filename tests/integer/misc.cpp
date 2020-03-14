@@ -9,6 +9,7 @@
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/integer/integer.hpp>
 #include <universal/integer/numeric_limits.hpp>
+#include <universal/integer/integer_functions.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 // test helpers, such as, ReportTestResults
@@ -20,13 +21,11 @@
    can be used for forward error analysis studies.
 */
 
-namespace sw {
-namespace unum {
-
+/*
 // integer power function, for efficiency
-template<size_t nbits>
-integer<nbits> ipow(integer<nbits> base, integer<nbits> exp) {
-	integer<nbits> result = 1;
+template<size_t nbits, typename BlockType>
+integer<nbits, BlockType> ipow(integer<nbits, BlockType> base, integer<nbits, BlockType> exp) {
+	integer<nbits, BlockType> result = 1;
 	for (;;) {
 		if (exp.isodd()) {    // if (exp & 1)
 			result *= base;
@@ -39,10 +38,7 @@ integer<nbits> ipow(integer<nbits> base, integer<nbits> exp) {
 	}
 
 	return result;
-}
-
-}
-}
+}*/
 
 void TestSizeof() {
 	using namespace std;
@@ -50,10 +46,10 @@ void TestSizeof() {
 
 	cout << endl << "TestSizeof" << endl;
 	bool pass = true;
-	using int8 = integer<8>;
-	using int64 = integer<64>;
-	using int128 = integer<128>;
-	using int1024 = integer<1024>;
+	using int8 = integer<8, uint8_t>;
+	using int64 = integer<64, uint32_t>;
+	using int128 = integer<128, uint32_t>;
+	using int1024 = integer<1024, uint32_t>;
 
 	int8 a;
 	int64 k;
@@ -79,7 +75,7 @@ void TestConversion() {
 
 	cout << endl << "TestConversion" << endl;
 
-	integer<128> i1, i2, i3;
+	integer<128, uint32_t> i1, i2, i3;
 
 	bool pass = true;
 	constexpr int iconst = 123456789;
@@ -100,7 +96,7 @@ void TestFindMsb() {
 
 	cout << endl << "TestFindMsb" << endl;
 	bool pass = true;
-	integer<32> a = 0xD5555555;
+	integer<32, uint32_t> a = 0xD5555555;
 	int golden_ref[] = { 31, 30, 28, 26, 24, 22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 0, -1 };
 	for (int i = 0; i < int(sizeof(golden_ref)/sizeof(int)); ++i) {
 		int msb = findMsb(a);
@@ -130,39 +126,45 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	std::string tag = "Miscellaneous Integer tests failed";
+	std::string tag = "Miscellaneous integer tests failed";
 
 #if MANUAL_TESTING
+
+
+	using int1024 = integer<1024, uint32_t>;
+	int1024 a, b, c;
+
+	a = 1024;
+	b = 2;
+	c = a * a * a;
+	cout << "1K ^ 2 = " << ipow(a, b) << " reference : " << 1024 * 1024 << endl;
+	long long oneK = 1024;
+	long long oneM = oneK * oneK;
+	long long oneG = oneK * oneM;
+	cout << "1G ^ 2 = " << ipow(c, b) << " reference : " << (oneG * oneG) << " diff : " << (ipow(c, b) - (oneG * oneG)) << endl;
+	cout << "1G  = " << c << endl;
+	cout << "2G  = " <<  2 * c << endl;
+	cout << "4G  = " <<  4 * c << endl;
+	cout << "8G  = " <<  8 * c << endl;
+	cout << "16G = " << 16 * c << endl;
+	cout << "done" << endl;
+
+#else // !MANUAL_TESTING
+
+	std::cout << "Miscellaneous integer function verfication" << std::endl;
+
+	bool bReportIndividualTestCases = false;
+	int nrOfFailedTestCases = 0;
 
 	TestSizeof();
 	TestConversion();
 	TestFindMsb();
 	ReproducibilityTestSuite();
 
-	using int1024 = integer<1024>;
-	int1024 a, b;
-
-	a = 1024;
-	b = 2;
-	cout << "1K ^ 2 = " << ipow(a, b) << " reference : " << 1024 * 1024 << endl;
-	a = 1024 * 1024 * 1024 ; // 1G
-	cout << "1G ^ 2 = " << ipow(a, b) << endl;
-	cout << "ref    = " << a * a << endl;
-
-	cout << "done" << endl;
-
-	return EXIT_SUCCESS;
-#else
-	std::cout << "Integer Logic Operator verfication" << std::endl;
-
-	bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
-
-
-
 #if STRESS_TESTING
 
 #endif // STRESS_TESTING
+
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 
 #endif // MANUAL_TESTING

@@ -4,6 +4,7 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <vector>
 #include "./integer_exceptions.hpp"
 
 #if defined(__clang__)
@@ -104,17 +105,74 @@ template<class _Mt,
 	}
 	*/
 
-// calculate the greatest common divisor
+/*
+ given two positive integers a = Product of primes p^a_p, and b = PROD p^b_p,
+   where a_p or b_p is the exponent of the prime p that are contained by a or b
+ greated common divisor gcd(a, b) = PROD p^min(a_p, b_p)
+ least common multiple  lcm(a, b) = PROD p^max(a_p, b_p)
+ */
+
+// calculate the greatest common divisor of two numbers
 template<size_t nbits, typename BlockType>
 integer<nbits, BlockType> gcd(const integer<nbits, BlockType>& a, const integer<nbits, BlockType>& b) {
 	return b.iszero() ? a : gcd(b, a % b);
 }
 
+// calculate the greatest common divisor of N numbers
+template<size_t nbits, typename BlockType>
+integer<nbits, BlockType> gcd(const std::vector< integer<nbits, BlockType> >& v) {
+	if (v.size() == 0) return 0;
+	if (v.size() == 1) return v[0];
+	integer<nbits, BlockType> gcd_n = v[0];
+	for (size_t i = 1; i < v.size(); ++i) {
+		gcd_n = gcd(gcd_n, v[i]);
+	}
+	return gcd_n;
+}
+
+// calculate the least common multiple of two numbers
+template<size_t nbits, typename BlockType>
+integer<nbits, BlockType> lcm(const integer<nbits, BlockType>& a, const integer<nbits, BlockType>& b) {
+	return (a * b) / gcd(a, b);
+}
+
+// calculate the least common multiple of N numbers
+template<size_t nbits, typename BlockType>
+integer<nbits, BlockType> lcm(const std::vector< integer<nbits, BlockType> >& v) {
+	if (v.size() == 0) return 0;
+	if (v.size() == 1) return v[0];
+	integer<nbits, BlockType> lcm = v[0];
+	for (size_t i = 0; i < v.size(); ++i) {
+		lcm = (v[i] * lcm) / gcd(lcm, v[i]);
+	}
+	return lcm;
+}
+
+// check if a number is prime
+template<size_t nbits, typename BlockType>
+bool isPrime(const integer<nbits, BlockType>& a) {
+	if (a.iszero() || a == 1) return false; // smallest prime number is 2
+	for (integer<nbits, BlockType> i = 2; i < a / 2; ++i) if ((a % i) == 0) return false;
+	return true;
+}
+
+template<size_t nbits, typename BlockType>
+bool primeNumbersInRange(const integer<nbits, BlockType>& low, const integer<nbits, BlockType>& high, std::vector< integer<nbits, BlockType> >& primes) {
+	bool bFound = false;
+	for (integer<nbits, BlockType> i = low; i < high; ++i) {
+		if (isPrime(i)) {
+			primes.push_back(i);
+			bFound = true;
+		}
+	}
+	return bFound;
+}
+
 // calculate the integer power a ^ b
 // exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
-template<size_t nbits>
-integer<nbits> ipow(const integer<nbits>& a, const integer<nbits>& b) {
-	integer<nbits> result(1), base(a), exp(b);
+template<size_t nbits, typename BlockType>
+integer<nbits, BlockType> ipow(const integer<nbits, BlockType>& a, const integer<nbits, BlockType>& b) {
+	integer<nbits, BlockType> result(1), base(a), exp(b);
 	for (;;) {
 		if (exp.isodd()) result *= base;
 		exp >>= 1;

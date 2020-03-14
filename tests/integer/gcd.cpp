@@ -25,23 +25,91 @@ try {
 
 #if MANUAL_TESTING
 
-	integer<1024, uint32_t> a, b, c;
+	using Integer = integer<1024, uint32_t>;
+	Integer a, b, c;
 	a = 1234567890500;
 	b = 92875085904958;
 	c = a * b * 10;
 	cout << greatest_common_divisor(a,c) << " a = " << a << endl;
-
 	cout << sw::unum::gcd(a, c) << " a = " << a << endl;
 
 	a = 252;
 	b = 105;
 	c = a * b;
-	cout << gcd(a, b) << " answer should be 21" << endl;
-	cout << gcd(a, c) << " answer should be 252" << endl;
-	cout << gcd(b, c) << " answer should be 105" << endl;
-	cout << gcd(a, gcd(b, c)) << endl;
-	cout << gcd(b, gcd(a, c)) << endl;
-	cout << gcd(c, gcd(a, b)) << endl;
+	cout << "gcd(" << a << "," << b << ") = " << gcd(a, b) << " answer should be 21" << endl;
+	cout << "gcd(" << a << "," << c << ") = " << gcd(a, c) << " answer should be 252" << endl;
+	cout << "gcd(" << b << "," << c << ") = " << gcd(b, c) << " answer should be 105" << endl;
+	cout << "gcd(" << a << "," << gcd(b, c) << ") = " << gcd(a, gcd(b, c)) << endl;
+	cout << "gcd(" << a << "," << gcd(a, c) << ") = " << gcd(b, gcd(a, c)) << endl;
+	cout << "gcd(" << a << "," << gcd(a, b) << ") = " << gcd(c, gcd(a, b)) << endl;
+
+	vector< Integer > v;
+	v.push_back(a);
+	v.push_back(b);
+	v.push_back(c);
+	cout << gcd(v) << endl;
+
+	a = 3;
+	b = 7;
+	c = a * b;
+	cout << "lcm(" << a << "," << b << ") = " << lcm(a, b) << " answer should be 21" << endl;
+	cout << "lcm(" << a << "," << lcm(b, c) << ") = " << lcm(a, lcm(b, c)) << endl;
+	cout << "lcm(" << a << "," << lcm(a, c) << ") = " << lcm(b, lcm(a, c)) << endl;
+	cout << "lcm(" << a << "," << lcm(a, b) << ") = " << lcm(c, lcm(a, b)) << endl;
+
+	v.clear();
+	v.push_back(2);
+	v.push_back(3);
+	v.push_back(4);
+	v.push_back(5);
+	v.push_back(6);
+	v.push_back(7);
+	v.push_back(8);
+	v.push_back(9);
+	v.push_back(10);
+	v.push_back(11);
+	v.push_back(12);
+	v.push_back(13);
+	v.push_back(14);
+	v.push_back(15);
+	cout << "lcm( 2 through 15 ) = " << lcm(v) << endl;
+	v.push_back(16);
+	v.push_back(17);
+	cout << "lcm( 2 through 17 ) = " << lcm(v) << endl;
+	v.push_back(18);
+	v.push_back(19);
+	cout << "lcm( 2 through 19 ) = " << lcm(v) << endl;
+	v.push_back(20);
+	v.push_back(21);
+	cout << "lcm( 2 through 21 ) = " << lcm(v) << endl;
+	v.push_back(22);
+	cout << "lcm( 2 through 22 ) = " << lcm(v) << endl;
+	v.push_back(91);
+	cout << "lcm( 2 through 91 ) = " << lcm(v) << endl;
+
+	Integer leastCM = lcm(v);
+	cout << leastCM / 17 << " " << leastCM % 17 << endl;
+	cout << leastCM / 21 << " " << leastCM % 21 << endl;
+	cout << leastCM / 91 << " " << leastCM % 91 << endl;
+
+	cout << endl;
+
+	v.clear();
+	a = 2; b = 1000;
+	primeNumbersInRange(a, b, v);
+	cout << v.size() << " prime numbers in range [" << a << ", " << b << ")" << endl;
+	/*
+	 this is no longer reasonable
+	a = 1024 * 1024 * 1024; b = a + 1000;
+	primeNumbersInRange(a, b, v);
+	cout << v.size() << " prime numbers in range [" << a << ", " << b << ")" << endl;
+	*/
+	a = 1024 + 1;
+	while (!isPrime(a)) {
+		cout << a << " is not a prime number" << endl;
+		++a;
+	}
+	cout << a << (isPrime(a) ? " is a prime number" : " is not a prime number") << endl;
 
 #else // MANUAL_TESTING
 
