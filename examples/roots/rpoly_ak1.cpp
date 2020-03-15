@@ -48,7 +48,7 @@ void QuadIT_ak1(int N, int* NZ, double uu, double vv, double* szr, double* szi, 
 void RealIT_ak1(int* iFlag, int* NZ, double* sss, int N, double p[MDP1], int NN, double qp[MDP1], double* szr, double* szi, double K[MDP1], double qk[MDP1]);
 void Quad_ak1(double a, double b1, double c, double* sr, double* si, double* lr, double* li);
 
-void rpoly_ak1(double op[MDP1], int* Degree, double zeror[MAXDEGREE], double zeroi[MAXDEGREE]){
+void rpoly_ak1(double op[MDP1], int* Degree, double zeror[MAXDEGREE], double zeroi[MAXDEGREE]) {
 
 int i, j, jj, l, N, NM1, NN, NZ, zerok;
 
@@ -62,7 +62,7 @@ const double lo = FLT_MIN/DBL_EPSILON;
 const double cosr = cos(94.0*RADFAC); // = -0.069756474
 const double sinr = sin(94.0*RADFAC); // = 0.99756405
 
-if ((*Degree) > MAXDEGREE){
+if ((*Degree) > MAXDEGREE) {
     cout << "\nThe entered Degree is greater than MAXDEGREE. Exiting rpoly. No further action taken.\n";
     *Degree = -1;
     return;
@@ -826,67 +826,99 @@ cout << "\n---------------------------------------------------------------------
 cout << "\nAdditional information is posted at the following URL:\n";
 cout << "http://www.akiti.ca/rpoly_ak1_Intro.html\n";
 cout << "--------------------------------------------------------------------------- \n";
-cout << "\nIs everything ready (are you ready to continue?)? If yes, Enter y. \n";
-cout << "Otherwise Enter any other key. \n";
-cin >> rflag;
 
-if (toupper(rflag) == 'Y') {
+bool bInteractive = false;
+if (bInteractive) {
+	cout << "\nIs everything ready (are you ready to continue?)? If yes, Enter y. \n";
+	cout << "Otherwise Enter any other key. \n";
+	cin >> rflag;
+	rflag = 'Y';
+	if (toupper(rflag) == 'Y') {
 
-    int Degree; // The degree of the polynomial to be solved
-    cout << "Appear to be ready. \n";
+		int Degree; // The degree of the polynomial to be solved
+		cout << "Appear to be ready. \n";
 
-    ifstream in("rpoly_ak1dat.txt", ios::in);
+		ifstream in("rpoly_ak1dat.txt", ios::in);
 
-    if (!in) {
-        cout << "Cannot open the input file.\n";
-        return 0;
-    }
+		if (!in) {
+			cout << "Cannot open the input file.\n";
+			return 0;
+		}
 
-    in >> Degree; //Input the polynomial degree from the file
-    if (Degree < 0) {
-        cout << "Invalid polynomial degree entered. Program terminated. \n";
-        in.close(); //Close the input file before terminating
-        return 0;
-    }
+		in >> Degree; //Input the polynomial degree from the file
+		if (Degree < 0) {
+			cout << "Invalid polynomial degree entered. Program terminated. \n";
+			in.close(); //Close the input file before terminating
+			return 0;
+		}
 
-    ofstream out("rpoly_ak1out.txt", ios::out);
-    if (!out) {
-        cout << "Cannot open the output file. Program terminated.\n";
-        in.close(); //Close the input file before terminating
-        return 0;
-    }
+		ofstream out("rpoly_ak1out.txt", ios::out);
+		if (!out) {
+			cout << "Cannot open the output file. Program terminated.\n";
+			in.close(); //Close the input file before terminating
+			return 0;
+		}
 
-    double op[MDP1], zeroi[MAXDEGREE], zeror[MAXDEGREE]; // Coefficient vectors
-    int i; // vector index
+		double op[MDP1], zeroi[MAXDEGREE], zeror[MAXDEGREE]; // Coefficient vectors
+		int i; // vector index
 
-    //Input the polynomial coefficients from the file and put them in the op vector
-    for (i = 0; i < (Degree+1); i++){
-        in >> op[i];
-    }//End for i
+		//Input the polynomial coefficients from the file and put them in the op vector
+		for (i = 0; i < (Degree+1); i++){
+			in >> op[i];
+		}//End for i
 
-    in.close(); //Close the input file
+		in.close(); //Close the input file
 
-    rpoly_ak1(op, &Degree, zeror, zeroi);
+		rpoly_ak1(op, &Degree, zeror, zeroi);
 
-    out << "Degree = " << Degree << ".\n";
-    out << "\n";
+		out << "Degree = " << Degree << ".\n";
+		out << "\n";
 
-    if (Degree <= 0){
-        cout << "\nReturned from rpoly_ak1 and Degree had a value <= 0.\n";
-    } // End if (Degree <= 0)
-    else { // else Degree > 0
-        out.precision(DBL_DIG);
-        out << "The roots follow:\n";
-        out << "\n";
-        for (i = 0; i < Degree; i++){
-            out << zeror[i] << " + " << zeroi[i] << "i" << " \n";
-        }//End for i
-    } // End else Degree > 0
+		if (Degree <= 0){
+			cout << "\nReturned from rpoly_ak1 and Degree had a value <= 0.\n";
+		} // End if (Degree <= 0)
+		else { // else Degree > 0
+			out.precision(DBL_DIG);
+			out << "The roots follow:\n";
+			out << "\n";
+			for (i = 0; i < Degree; i++){
+				out << zeror[i] << " + " << zeroi[i] << "i" << " \n";
+			}//End for i
+		} // End else Degree > 0
 
-    out.close(); // Close the output file
-} //End if rflag = 'Y'
-else cout << "\nNot ready. Try again when ready with information. \n";
-cout << "\nEnter any key to continue. \n";
-cin >> rflag;
+		out.close(); // Close the output file
+	} //End if rflag = 'Y'
+	else cout << "\nNot ready. Try again when ready with information. \n";
+	cout << "\nEnter any key to continue. \n";
+	cin >> rflag;
+}
+else {
+	int Degree = 4;
+	double op[MDP1], zeroi[MAXDEGREE], zeror[MAXDEGREE]; // Coefficient vectors
+	int i; // vector index
+
+	// Input the polynomial coefficients from the file and put them in the op vector
+	for (i = 0; i < (Degree + 1); i++) {
+		op[i] = i + 1;
+	}
+
+	rpoly_ak1(op, &Degree, zeror, zeroi);
+
+	cout << "Degree = " << Degree << ".\n";
+	cout << "\n";
+
+	if (Degree <= 0) {
+		cout << "\nReturned from rpoly_ak1 and Degree had a value <= 0.\n";
+	}
+	else { // else Degree > 0
+		cout.precision(DBL_DIG);
+		cout << "The roots follow:\n";
+		cout << "\n";
+		for (i = 0; i < Degree; i++) {
+			cout << zeror[i] << " + " << zeroi[i] << "i" << " \n";
+		}
+	}
+}
+
 return 0;
 } // End main program.
