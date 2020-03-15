@@ -165,7 +165,7 @@ public:
 	/// Construct a new integer from another, sign extend when necessary, BlockTypes must be the same
 	template<size_t srcbits>
 	integer(const integer<srcbits, BlockType>& a) {
-		static_assert(srcbits > nbits, "Source integer is bigger than target: potential loss of precision"); // TODO: do we want this?
+//		static_assert(srcbits > nbits, "Source integer is bigger than target: potential loss of precision"); // TODO: do we want this?
 		bitcopy(a);
 		if (a.sign()) { // sign extend
 			for (int i = int(srcbits); i < int(nbits); ++i) {
@@ -550,6 +550,17 @@ public:
 		}
 		return true;
 	}
+	inline bool isone() const {
+		for (unsigned i = 0; i < nrBytes; ++i) {
+			if (i == 0) {
+				if (b[0] != 0x01) return false;
+			}
+			else {
+				if (b[i] != 0x00) return false;
+			}
+		}
+		return true;
+	}
 	inline bool isodd() const {
 		return (b[0] & 0x01) ? true : false;
 	}
@@ -899,6 +910,11 @@ void mul(decimal& lhs, const decimal& rhs) {
 } // namespace impl
 
 ////////////////////////    INTEGER functions   /////////////////////////////////
+
+template<size_t nbits, typename BlockType>
+inline integer<nbits, BlockType> abs(const integer<nbits, BlockType>& a) {
+	return (a >= 0 ? a : twos_complement(a));
+}
 
 template<size_t nbits, typename BlockType>
 inline integer<nbits, BlockType> twos_complement(const integer<nbits, BlockType>& value) {

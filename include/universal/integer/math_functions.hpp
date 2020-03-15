@@ -39,6 +39,29 @@
 namespace sw {
 namespace unum {
 
+// square root of an arbitrary integer does a binary search for the floor(sqrt(a))
+template<size_t nbits, typename BlockType>
+integer<nbits, BlockType> sqrt(const integer<nbits, BlockType>& a) {
+	if (a.iszero() || a.isone()) return a;
+	if (a < 0) throw "negative argument to sqrt";
+
+	using Integer = integer<2*nbits, BlockType>;
+
+	integer<nbits, BlockType> root(0);
+	Integer start(1), end(a), v(a);
+	while (start <= end) {
+		Integer midpoint = (start + end) / 2;
+		if (midpoint*midpoint == v) return midpoint;
+		if (midpoint*midpoint < v) {   // this can overflow badly hence the use of a bigger int
+			start = midpoint + 1;
+			root.bitcopy(midpoint); // convert to the smaller integer
+		}
+		else {
+			end = midpoint - 1;
+		}
+	}
+	return root; 
+}
 
 } // namespace unum
 } // namespace sw

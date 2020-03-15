@@ -39,8 +39,8 @@ namespace sw {
 
 		/*
 		- Consider the function argument, x, in floating-point form, with a base
-		(or radix) B, exponent e, and a fraction, f , such that 1/B ? f < 1.
-		Then we have x = �f � Be. The number of bits in the exponent and
+		(or radix) B, exponent e, and a fraction, f , such that 1/B <= f < 1.
+		Then we have x = f Be. The number of bits in the exponent and
 		fraction, and the value of the base, depends on the particular floating 
 		point arithmetic system chosen.
 		

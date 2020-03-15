@@ -51,6 +51,21 @@ namespace unum {
 			<< std::endl;
 	}
 
+	template<size_t nbits, typename BlockType>
+	void ReportUnaryArithmeticError(std::string test_case, std::string op, const integer<nbits, BlockType>& argument, const integer<nbits, BlockType>& ref, const integer<nbits, BlockType>& result) {
+		auto old_precision = std::cerr.precision();
+		std::cerr << test_case << " "
+			<< " " << op << " "
+			<< std::setprecision(20)
+			<< std::setw(INTEGER_TABLE_WIDTH) << argument
+			<< " != "
+			<< std::setw(INTEGER_TABLE_WIDTH) << ref << " instead it yielded "
+			<< std::setw(INTEGER_TABLE_WIDTH) << result
+			<< " " << to_binary(ref) << " vs " << to_binary(result)
+			<< std::setprecision(old_precision)
+			<< std::endl;
+	}
+
 	// enumerate all addition cases for an integer<16> configuration compared against native short
 	template<typename BlockType>
 	int VerifyShortAddition(std::string tag, bool bReportIndividualTestCases) {

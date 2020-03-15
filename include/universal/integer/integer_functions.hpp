@@ -156,6 +156,7 @@ bool isPrime(const integer<nbits, BlockType>& a) {
 	return true;
 }
 
+// generate prime numbers in a range
 template<size_t nbits, typename BlockType>
 bool primeNumbersInRange(const integer<nbits, BlockType>& low, const integer<nbits, BlockType>& high, std::vector< integer<nbits, BlockType> >& primes) {
 	bool bFound = false;
@@ -166,6 +167,31 @@ bool primeNumbersInRange(const integer<nbits, BlockType>& low, const integer<nbi
 		}
 	}
 	return bFound;
+}
+
+// prime factors of an arbitrary integer
+template<size_t nbits, typename BlockType>
+class primefactors : public std::vector< std::pair< integer<nbits, BlockType>, integer<nbits, BlockType> > > { };
+
+// generate prime factors of an arbitrary integer
+template<size_t nbits, typename BlockType>
+void primeFactorization(const integer<nbits, BlockType>& a, primefactors<nbits, BlockType>& factors) {
+	using Integer = integer<nbits, BlockType>;
+	Integer i(a);
+	Integer factor = 2;
+	Integer power = 0;
+	// powers of 2
+	while (i.iseven()) { ++power; i >>= 1; }
+	if (power > 0) factors.push_back(std::pair<Integer, Integer>(factor, power));
+	// powers of odd numbers > 2
+	for (factor = 3; factor <= sqrt(i); factor += 2) {
+		if (isPrime(factor)) {
+			power = 0;
+			while ((i % factor) == 0) { ++power; i /= factor; }
+			if (power > 0) factors.push_back(std::pair<Integer, Integer>(factor, power));
+		}
+	}
+	if (i > 2) factors.push_back(std::pair < Integer, Integer>(i, 1));
 }
 
 // calculate the integer power a ^ b

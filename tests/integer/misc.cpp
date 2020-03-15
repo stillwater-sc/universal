@@ -8,6 +8,7 @@
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/integer/integer.hpp>
+#include <universal/integer/math_functions.hpp>
 #include <universal/integer/numeric_limits.hpp>
 #include <universal/integer/integer_functions.hpp>
 // is representable

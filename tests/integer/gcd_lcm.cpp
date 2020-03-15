@@ -1,4 +1,4 @@
-// gcd.cpp: greatest common divisor algorithm on arbitrary precision integers
+// gcd_lcm.cpp: greatest common divisor and least common multiple tests on arbitrary precision integers
 //
 // Binomial coefficients are useful to generate the inverse of a Hilbert matrix
 //
@@ -93,23 +93,6 @@ try {
 	cout << leastCM / 91 << " " << leastCM % 91 << endl;
 
 	cout << endl;
-
-	v.clear();
-	a = 2; b = 1000;
-	primeNumbersInRange(a, b, v);
-	cout << v.size() << " prime numbers in range [" << a << ", " << b << ")" << endl;
-	/*
-	 this is no longer reasonable
-	a = 1024 * 1024 * 1024; b = a + 1000;
-	primeNumbersInRange(a, b, v);
-	cout << v.size() << " prime numbers in range [" << a << ", " << b << ")" << endl;
-	*/
-	a = 1024 + 1;
-	while (!isPrime(a)) {
-		cout << a << " is not a prime number" << endl;
-		++a;
-	}
-	cout << a << (isPrime(a) ? " is a prime number" : " is not a prime number") << endl;
 
 #else // MANUAL_TESTING
 
