@@ -45,14 +45,12 @@ integer<nbits, BlockType> sqrt(const integer<nbits, BlockType>& a) {
 	if (a.iszero() || a.isone()) return a;
 	if (a < 0) throw "negative argument to sqrt";
 
-	using Integer = integer<2*nbits, BlockType>;
-
-	integer<nbits, BlockType> root(0);
-	Integer start(1), end(a), v(a);
+	using Integer = integer<nbits, BlockType>;
+	Integer start(1), end(a), v(a), root(0);
 	while (start <= end) {
-		Integer midpoint = (start + end) / 2;
-		if (midpoint*midpoint == v) return midpoint;
-		if (midpoint*midpoint < v) {   // this can overflow badly hence the use of a bigger int
+		Integer midpoint = start + (end - start) / 2;
+		if (midpoint == v / midpoint) return midpoint;
+		if (midpoint  < v / midpoint) {   // midpoint * midpoint can overflow badly hence the use of divide to stay in the numerical range of Integer
 			start = midpoint + 1;
 			root.bitcopy(midpoint); // convert to the smaller integer
 		}

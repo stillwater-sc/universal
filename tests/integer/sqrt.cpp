@@ -45,7 +45,7 @@ int VerifyIntegerSqrt(std::string tag, bool bReportIndividualTestCases) {
 	return nrOfTestFailures;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main()
@@ -59,25 +59,46 @@ try {
 
 #if MANUAL_TESTING
 
-	constexpr size_t nbits = 8;
-	using BlockType = uint8_t;
+	constexpr size_t nbits = 1024;
+	using BlockType = uint32_t;
 	using Integer = integer<nbits, BlockType>;
-	Integer a, b, c, zero(0);
+	Integer a;
 
-	a = 23;
+	a = 1024 * 1024;
+	cout << "sqrt of " << a << " = " << sqrt(a) << endl;
+	a *= a;
+	cout << "sqrt of " << a << " = " << sqrt(a) << endl;
+	a *= a;
+	cout << "sqrt of " << a << " = " << sqrt(a) << endl;
+	a *= a;
+	cout << "sqrt of " << a << " = " << sqrt(a) << endl;
+	a *= a;
+	cout << "sqrt of " << a << " = " << sqrt(a) << endl;
+	a *= a;
 	cout << "sqrt of " << a << " = " << sqrt(a) << endl;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerSqrt<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8,uint8_t>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerSqrt<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10,uint8_t>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerSqrt<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12,uint16_t>", "sqrt");
 
+	nrOfFailedTestCases = 0; // nullify in manual testing
 
 #else // !MANUAL_TESTING
 
 	std::cout << "square root integer function verfication" << std::endl;
 
-	bool bReportIndividualTestCases = false;
-	int nrOfFailedTestCases = 0;
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerSqrt<8, uint8_t>(tag, bReportIndividualTestCases), "integer<8,uint8_t>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerSqrt<10, uint8_t>(tag, bReportIndividualTestCases), "integer<10,uint8_t>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerSqrt<12, uint16_t>(tag, bReportIndividualTestCases), "integer<12,uint16_t>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerSqrt<14, uint8_t>(tag, bReportIndividualTestCases), "integer<14,uint8_t>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerSqrt<16, uint16_t>(tag, bReportIndividualTestCases), "integer<16,uint16_t>", "sqrt");
+	// you can use uint64_t as BlockType for types <= 64bits
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerSqrt<16, uint64_t>(tag, bReportIndividualTestCases), "integer<16,uint64_t>", "sqrt");
 
 #if STRESS_TESTING
+
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerSqrt<20, uint8_t>(tag, bReportIndividualTestCases), "integer<20,uint8_t>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerSqrt<20, uint16_t>(tag, bReportIndividualTestCases), "integer<20,uint16_t>", "sqrt");
 
 #endif // STRESS_TESTING
 
