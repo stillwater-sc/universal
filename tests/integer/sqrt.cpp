@@ -10,7 +10,6 @@
 #include <universal/integer/integer.hpp>
 #include <universal/integer/math_functions.hpp>
 #include <universal/integer/numeric_limits.hpp>
-#include <universal/integer/integer_functions.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 // test helpers, such as, ReportTestResults

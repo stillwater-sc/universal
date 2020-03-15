@@ -1,5 +1,5 @@
 #pragma once
-// functions.hpp: definition of helper functions for integer type
+// sieves.hpp: algorithms for special and general number field sieves
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -40,20 +40,6 @@
 namespace sw {
 namespace unum {
 
-	// exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
-
-// calculate the integer power a ^ b using exponentiation by squaring
-template<size_t nbits, typename BlockType>
-integer<nbits, BlockType> ipow(const integer<nbits, BlockType>& a, const integer<nbits, BlockType>& b) {
-	integer<nbits, BlockType> result(1), base(a), exp(b);
-	for (;;) {
-		if (exp.isodd()) result *= base;
-		exp >>= 1;
-		if (exp == 0) break;
-		base *= base;
-	}
-	return result;
-}
 
 } // namespace unum
 } // namespace sw

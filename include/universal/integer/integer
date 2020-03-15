@@ -29,6 +29,8 @@
 #include "integer.hpp"
 #include "numeric_limits.hpp"
 
+#include "primes.hpp"
+#include "sieves.hpp"
 #include "integer_manipulators.hpp"
 #include "integer_functions.hpp"
 
