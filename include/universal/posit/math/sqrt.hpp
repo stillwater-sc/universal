@@ -41,11 +41,11 @@ namespace sw {
 		- Consider the function argument, x, in floating-point form, with a base
 		(or radix) B, exponent e, and a fraction, f , such that 1/B <= f < 1.
 		Then we have x = f Be. The number of bits in the exponent and
-		fraction, and the value of the base, depends on the particular floating 
+		fraction, and the value of the base, depends on the particular floating
 		point arithmetic system chosen.
-		
+
 		- Use properties of the elementary function to range reduce the argument
-		x to a small fixed interval. 
+		x to a small fixed interval.
 
 		- Use a small polynomial approximation to produce an initial estimate,
 		y0, of the function on the small interval. Such an estimate may
@@ -63,7 +63,7 @@ namespace sw {
 		written as straight-line code.
 
 		- Having computed the function value for the range-reduced argument,
-		make whatever adjustments are necessary to produce the function value 
+		make whatever adjustments are necessary to produce the function value
 		for the original argument; this step may involve a sign adjustment,
 		and possibly a single multiplication and/or addition.
 		*/
@@ -120,12 +120,12 @@ namespace sw {
 		}
 
 		// fast sqrt at a given posit configuration.
-		template<size_t nbits, size_t es, size_t fbits> 
+		template<size_t nbits, size_t es, size_t fbits>
 		inline value<fbits> fast_sqrt(value<fbits>& v) {
 			if (_trace_sqrt) std::cout << "---------------------------  SQRT -----------------------" << std::endl;
-//			static_assert(nbits >= 16, "fast_sqrt requires posit configurations nbits >= 16");
+			//			static_assert(nbits >= 16, "fast_sqrt requires posit configurations nbits >= 16");
 			posit<nbits, es> fr = v.fraction_value()*0.5;
-			int e = v.scale()+1;
+			int e = v.scale() + 1;
 			posit<nbits, es> y = posit<nbits, es>(0.41731f) + posit<nbits, es>(0.59016f) * fr;
 			posit<nbits, es> z = y + fr / y;
 			if (_trace_sqrt) {
@@ -169,7 +169,7 @@ namespace sw {
 
 			// for small posits use a more precise posit to do the calculation while keeping the es config the same
 			constexpr size_t anbits = nbits > 33 ? nbits : 33;
-			constexpr size_t fbits = posit<anbits,es>::fbits;
+			constexpr size_t fbits = posit<anbits, es>::fbits;
 			value<fbits> v;
 			a.normalize_to(v);
 			value<fbits> vsqrt = fast_sqrt<anbits, es, fbits>(v);
@@ -186,8 +186,8 @@ namespace sw {
 
 		// reciprocal sqrt
 		template<size_t nbits, size_t es>
-		inline posit<nbits, es> rsqrt(const posit<nbits,es>& a) {
-			posit<nbits,es> v = sqrt(a);
+		inline posit<nbits, es> rsqrt(const posit<nbits, es>& a) {
+			posit<nbits, es> v = sqrt(a);
 			return v.reciprocate();
 		}
 
@@ -380,7 +380,7 @@ namespace sw {
 
 #if POSIT_FAST_POSIT_32_2
 
-		// fast sqrt for posit<16,1>
+		// fast sqrt for posit<32,2>
 		template<>
 		inline posit<32, 2> sqrt(const posit<32, 2>& a) {
 			posit<32, 2> p;
@@ -474,6 +474,38 @@ namespace sw {
 
 #endif // POSIT_FAST_POSIT_32_2
 
-	}  // namespace unum
+#if POSIT_FAST_POSIT_64_3
 
+		// fast sqrt for posit<64,3>
+		template<>
+		inline posit<64, 3> sqrt(const posit<64, 3>& a) {
+			throw "fast sqrt(posit<64,3>) not yet implemented";
+			return 0;
+		}
+
+#endif // POSIT_FAST_POSIT_64_3
+
+#if POSIT_FAST_POSIT_128_4
+
+		// fast sqrt for posit<128,4>
+		template<>
+		inline posit<128, 4> sqrt(const posit<128, 4>& a) {
+			throw "fast sqrt(posit<128,4>) not yet implemented";
+			return 0;
+		}
+
+#endif // POSIT_FAST_POSIT_128_4
+
+#if POSIT_FAST_POSIT_256_5
+
+		// fast sqrt for posit<256,5>
+		template<>
+		inline posit<256, 5> sqrt(const posit<256, 5>& a) {
+			throw "fast sqrt(posit<256,5>) not yet implemented";
+			return 0;
+		}
+
+#endif // POSIT_FAST_POSIT_256_5
+
+	}  // namespace unum
 }  // namespace sw

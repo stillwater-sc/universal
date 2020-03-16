@@ -23,6 +23,21 @@
    can be used for forward error analysis studies.
 */
 
+// straight Babylonian algorithm on floating point type
+inline double babylonian(double v) {
+	std::cout << v << " input value\n";
+	const double eps = 1.0e-7;
+	int iter = 1;
+	double x_n = 0.5 * v; // initial guess
+	std::cout << x_n << " initial guess\n";
+	do {
+		x_n = (x_n + v / x_n) / 2.0;
+		std::cout << x_n << " iteration " << ++iter << std::endl;
+	} while (std::abs(x_n * x_n - v) > eps);
+
+	return x_n;
+}
+
 template<size_t nbits, typename BlockType>
 int VerifyIntegerSqrt(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (1 << (nbits-1));
@@ -58,6 +73,13 @@ try {
 	std::string tag = "square root integer tests failed";
 
 #if MANUAL_TESTING
+
+	{
+		// examples of the Babylonian algorithm for approximating sqrt
+		babylonian(64.0);
+		babylonian(1024.0 * 1024);
+		babylonian(1.234567e50*1.234567e50);
+	}
 
 	constexpr size_t nbits = 1024;
 	using BlockType = uint32_t;
