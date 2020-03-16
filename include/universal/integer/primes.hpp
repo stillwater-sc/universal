@@ -194,5 +194,19 @@ void primeFactorization(const integer<nbits, BlockType>& a, primefactors<nbits, 
 	if (i > 2) factors.push_back(std::pair < Integer, Integer>(i, 1));
 }
 
+// Factorization using Fermat's method
+template<size_t nbits, typename BlockType>
+integer<nbits, BlockType> fermatFactorization(const integer<nbits, BlockType>& number) {
+	using Integer = integer<nbits, BlockType>;
+
+	Integer a = ceil_sqrt(number);
+	Integer b = a * a - number;
+	while (!perfect_square(b)) {
+		++a;
+		b = a * a - number;
+	}
+	return a - sqrt(b);
+}
+
 } // namespace unum
 } // namespace sw

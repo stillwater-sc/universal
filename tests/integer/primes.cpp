@@ -7,6 +7,8 @@
 // This file is part of the universal number project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <universal/integer/integer>
+#include <universal/integer/math_functions.hpp>
+#include <universal/integer/primes.hpp>
 
 // conditional compilation
 #define MANUAL_TESTING 1
@@ -24,6 +26,14 @@ try {
 	using Integer = integer<nbits, BlockType>;
 	Integer a, b, c;
 	vector<Integer> v;
+
+	// test Fermat's method
+	cout << "Fermat's factorization\n";
+	for (Integer i = 75; i < 85; i += 2) {
+		cout << i << " " << fermatFactorization(i) << endl;
+	}
+
+	return 0;
 
 	v.clear();
 	a = 2; b = 100;
@@ -54,6 +64,8 @@ try {
 	for (size_t i = 0; i < factors.size(); ++i) {
 		cout << " factor " << factors[i].first << " exponent " << factors[i].second << endl;
 	}
+
+
 
 #else // MANUAL_TESTING
 
