@@ -7,7 +7,7 @@
 #include <string>
 #include <cmath>
 // configure the integer arithmetic class
-#define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
+#define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/integer/integer.hpp>
 #include <universal/integer/math_functions.hpp>
 #include <universal/integer/numeric_limits.hpp>

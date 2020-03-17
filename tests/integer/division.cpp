@@ -6,6 +6,8 @@
 #include <iostream>
 #include <string>
 // configure the integer arithmetic class
+// we need to enable exceptions to validate divide by zero and overflow conditions
+// however, we also need to make this work with exceptions turned off: TODO
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/integer/integer.hpp>
 #include <universal/integer/numeric_limits.hpp>

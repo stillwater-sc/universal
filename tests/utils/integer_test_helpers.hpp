@@ -477,20 +477,33 @@ namespace unum {
 				try {
 					iresult = ia / ib;
 				}
-				catch (...) {
+				catch (const integer_divide_by_zero& e) {
 					if (ib == integer<nbits, BlockType>(0)) {
 						// correctly caught the exception
 						continue;
 					}
 					else {
+						std::cerr << "unexpected : " << e.what() << std::endl;
 						nrOfFailedTests++;
 					}
 				}
-
+				catch (const integer_overflow& e) {
+					std::cerr << e.what() << std::endl;
+					// TODO: how do you validate the overflow?
+				}
+				catch (...) {
+					std::cerr << "unexpected exception" << std::endl;
+					nrOfFailedTests++;
+				}
 #else
 				iresult = ia / ib;
 #endif
-				iref = i64a / i64b;
+				if (j == 0) {
+					iref = 0; // or maxneg?
+				}
+				else {
+					iref = i64a / i64b;
+				}
 				if (iresult != iref) {
 					nrOfFailedTests++;
 					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", ia, ib, iref, iresult);

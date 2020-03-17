@@ -382,7 +382,9 @@ public:
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		sum.b[MS_BYTE] = MS_BYTE_MASK & sum.b[MS_BYTE];
-		//if (carry) throw "overflow";
+#if INTEGER_THROW_ARITHMETIC_EXCEPTION
+		if (carry) throw integer_overflow();
+#endif
 		*this = sum;
 		return *this;
 	}

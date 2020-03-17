@@ -4,11 +4,13 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
+#include <fstream>
 #include <vector>
 #include <random>
 #include <typeinfo>
 #include <chrono>
-// include the number system we want to use
+// include the number system we want to use, and configure overflow exceptions so we can capture failures
+#define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/integer/integer>
 
 template<size_t nbits, typename BlockType>
@@ -27,22 +29,18 @@ void MeasureLCM(const std::vector<sw::unum::integer<nbits, BlockType>>& v) {
 		<< " to be\n" << least_common_multple << endl;
 }
 
-#define MANUAL_TESTING 0
-#define STRESS_TESTING 0
-
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
 
 	int nrOfFailedTestCases = 0;
-	constexpr size_t nbits = 2048;
-	using Integer = integer<nbits, uint32_t>;
-	Integer factor;
-
-#if MANUAL_TESTING
 	   	
 	{
+		constexpr size_t nbits = 512;
+		using Integer = integer<nbits, uint32_t>;
+		Integer factor;
+
 		// use random_device to generate a seed for Mersenne twister engine
 		random_device rd{};
 		mt19937 engine{ rd() };
@@ -55,11 +53,26 @@ try {
 			// cout << factor << endl;
 			v.push_back(factor);
 		}
-		MeasureLCM(v);
+		try {
+			MeasureLCM(v);
+		}
+		catch (const integer_overflow& e) {
+			cerr << e.what() << endl;
+			cerr << typeid(Integer).name() << " has insufficient dynamic range to capture the least common multiple\n";
+			ofstream out;
+			out.open("lcm_dataset_1.txt");
+			for (size_t i = 0; i < v.size(); ++i) {
+				out << v[i] << endl;
+			}
+			out.close();
+		}
 	}
 
-#else
 	{
+		constexpr size_t nbits = 1024;
+		using Integer = integer<nbits, uint32_t>;
+		Integer factor;
+
 		random_device rd{};
 		mt19937 engine{ rd() };
 		uniform_real_distribution<long double> dist{0.0, 1000000.0 };
@@ -70,11 +83,26 @@ try {
 			if (factor.iseven()) ++factor;
 			v.push_back(factor);
 		}
-		MeasureLCM(v);
+		try {
+			MeasureLCM(v);
+		}
+		catch (const integer_overflow& e) {
+			cerr << e.what() << endl;
+			cerr << typeid(Integer).name() << " has insufficient dynamic range to capture the least common multiple\n";
+			ofstream out;
+			out.open("lcm_dataset_2.txt");
+			for (size_t i = 0; i < v.size(); ++i) {
+				out << v[i] << endl;
+			}
+			out.close();
+		}
 	}
 
-#if STRESS_TESTING
 	{
+		constexpr size_t nbits = 2048;
+		using Integer = integer<nbits, uint32_t>;
+		Integer factor;
+
 		random_device rd{};
 		mt19937 engine{ rd() };
 		uniform_real_distribution<long double> dist{0.0, 1000.0 };
@@ -85,11 +113,20 @@ try {
 			if (factor.iseven()) ++factor;
 			v.push_back(factor);
 		}
-		MeasureLCM(v);
+		try {
+			MeasureLCM(v);
+		}
+		catch (const integer_overflow& e) {
+			cerr << e.what() << endl;
+			cerr << typeid(Integer).name() << " has insufficient dynamic range to capture the least common multiple\n";
+			ofstream out;
+			out.open("lcm_dataset_3.txt");
+			for (size_t i = 0; i < v.size(); ++i) {
+				out << v[i] << endl;
+			}
+			out.close();
+		}
 	}
-#endif // STRESS_TESTING
-
-#endif // MANUAL_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
