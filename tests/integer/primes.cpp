@@ -27,45 +27,44 @@ try {
 	Integer a, b, c;
 	vector<Integer> v;
 
-	// test Fermat's method
-	cout << "Fermat's factorization\n";
-	for (Integer i = 75; i < 85; i += 2) {
-		cout << i << " " << fermatFactorization(i) << endl;
-	}
-
-	return 0;
-
+	cout << "\nFind all prime numbers in a range\n";
 	v.clear();
 	a = 2; b = 100;
 	primeNumbersInRange(a, b, v);
 	cout << v.size() << " prime numbers in range [" << a << ", " << b << ")" << endl;
 
+	cout << "\nCheck primeness of a couple of values around 1k\n";
 	a = 1024 + 1;
-	while (!isPrime(a)) {
-		cout << a << " is not a prime number" << endl;
+	for ( a = 1025; a < 1050; ++a) {
+		cout << a << (isPrime(a) ? " is a prime number" : " is not a prime number") << endl;
 		++a;
 	}
-	cout << a << (isPrime(a) ? " is a prime number" : " is not a prime number") << endl;
 
+	// test Fermat's method
+	cout << "\nFermat's factorization\n";
+	a = 1024;
+	for (Integer i = a + 1; i < a + 25; i += 2) {
+		cout << i << " " << fermatFactorization(i) << endl;
+	}
+
+	cout << "\nFind all prime factors of a number\n";
 	// find all prime factors of a number
-	a = ipow(Integer(2),Integer(5))
-	  * ipow(Integer(3), Integer(4))
-	  * ipow(Integer(5), Integer(3))
-	  * ipow(Integer(7), Integer(2))
-	  * ipow(Integer(11), Integer(1))
-	  * ipow(Integer(13), Integer(1))
-	  * ipow(Integer(17), Integer(1))
-	  * ipow(Integer(23), Integer(1))
-	  * ipow(Integer(29), Integer(1))
-	  * ipow(Integer(31), Integer(1))
-	  * ipow(Integer(37), Integer(1));
+	a = ipow(Integer(2), Integer(5))
+		* ipow(Integer(3), Integer(4))
+		* ipow(Integer(5), Integer(3))
+		* ipow(Integer(7), Integer(2))
+		* ipow(Integer(11), Integer(1))
+		* ipow(Integer(13), Integer(1))
+		* ipow(Integer(17), Integer(1))
+		* ipow(Integer(23), Integer(1))
+		* ipow(Integer(29), Integer(1))
+		* ipow(Integer(31), Integer(1))
+		* ipow(Integer(37), Integer(1));
 	primefactors<nbits, uint32_t> factors;
 	primeFactorization(a, factors);
 	for (size_t i = 0; i < factors.size(); ++i) {
 		cout << " factor " << factors[i].first << " exponent " << factors[i].second << endl;
 	}
-
-
 
 #else // MANUAL_TESTING
 

@@ -194,18 +194,19 @@ void primeFactorization(const integer<nbits, BlockType>& a, primefactors<nbits, 
 	if (i > 2) factors.push_back(std::pair < Integer, Integer>(i, 1));
 }
 
-// Factorization using Fermat's method
+// Factorization using Fermat's method: precondition number must be odd
+// trying various values of a with the goal to find a^2 - number = b^2, a square
 template<size_t nbits, typename BlockType>
 integer<nbits, BlockType> fermatFactorization(const integer<nbits, BlockType>& number) {
 	using Integer = integer<nbits, BlockType>;
-
+	if (number.iseven()) return 0; // number must be odd
 	Integer a = ceil_sqrt(number);
-	Integer b = a * a - number;
-	while (!perfect_square(b)) {
+	Integer bsquare = a * a - number;
+	while (!perfect_square(bsquare)) {
 		++a;
-		b = a * a - number;
+		bsquare = a * a - number;
 	}
-	return a - sqrt(b);
+	return a - sqrt(bsquare);
 }
 
 } // namespace unum
