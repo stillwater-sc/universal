@@ -66,6 +66,27 @@ try {
 		cout << " factor " << factors[i].first << " exponent " << factors[i].second << endl;
 	}
 
+#ifdef NOW
+	// primeFactorization doesn't seem to work for a prime number
+	factors.clear();
+	// find all prime factors of a number
+	a = ipow(Integer(2), Integer(5))
+		* ipow(Integer(3), Integer(4))
+		* ipow(Integer(5), Integer(3))
+		* ipow(Integer(7), Integer(2))
+		* ipow(Integer(11), Integer(1))
+		* ipow(Integer(13), Integer(1))
+		* ipow(Integer(17), Integer(1))
+		* ipow(Integer(23), Integer(1))
+		* ipow(Integer(29), Integer(1))
+		* ipow(Integer(31), Integer(1))
+		* ipow(Integer(37), Integer(1)) + 1;
+	primeFactorization(a, factors);
+	for (size_t i = 0; i < factors.size(); ++i) {
+		cout << " factor " << factors[i].first << " exponent " << factors[i].second << endl;
+	}
+#endif
+
 #else // MANUAL_TESTING
 
 	// GCD of three numbers is
