@@ -431,7 +431,6 @@ endif(BUILD_CI_CHECK)
 
 # Build the tests for the underlying storage classes
 if(BUILD_STORAGE_CLASSES)
-add_subdirectory("tests/bitset")
 add_subdirectory("tests/bitblock")
 add_subdirectory("tests/blockbin")
 add_subdirectory("tests/blocktri")

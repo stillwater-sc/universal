@@ -1,10 +1,12 @@
 //  arithmetic.cpp : test suite for bitset-based arithmetic operators
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "stdafx.h"
+#include <iostream>
+#include <iomanip>
+#include <bitset>
 #include <sstream>
 #include "../../bitset/bitset_helpers.hpp"
 #include "../../bitset/bitset_logic.hpp"
