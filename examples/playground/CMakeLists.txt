@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "playground" "${SOURCES}")
+compile_all("true" "playground" "Playground" "${SOURCES}")

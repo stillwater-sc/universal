@@ -11,14 +11,24 @@
 cmake_minimum_required(VERSION 3.0)
 
 ####
-# Set project variables
-project (universal VERSION 2.0.0 LANGUAGES C CXX)
-
-####
 ## Enable project() command to manage VERSION variables
 if (POLICY CMP0048)
     cmake_policy(SET CMP0048 NEW)
 endif(POLICY CMP0048)
+
+####
+# Set project variables
+if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
+  set(UNIVERSAL_VERSION_MAJOR 2)
+endif()
+if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
+  set(UNIVERSAL_VERSION_MINOR 1)
+endif()
+if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
+  set(UNIVERSAL_VERSION_PATCH 0)
+endif()
+project (universal 
+         VERSION "${UNIVERSAL_VERSION_MAJOR}.${UNIVERSAL_VERSION_MINOR}.${UNIVERSAL_VERSION_PATCH}" LANGUAGES C CXX ASM)
 
 ####
 # Change default build type to Release
@@ -48,19 +58,21 @@ option(USE_AVX2                          "Build code with AVX2 ISA support"     
 # control which projects get enabled
 # Continuous Integration override to build all components
 option(BUILD_CI_CHECK                    "Set to ON to build all components"                   OFF)
+
 # utilities and educational examples
+option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
 option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"             ON)
 option(BUILD_APPLICATION_EXAMPLES        "Set to ON to build epplication examples"             ON)
-option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   ON)
-option(BUILD_NUMERICAL                   "Set to ON to build numerical test programs"          ON)
-option(BUILD_FUNCTIONS                   "Set to ON to build special functions programs"       ON)
-option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
+option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   OFF)
+option(BUILD_NUMERICAL                   "Set to ON to build numerical test programs"          OFF)
+option(BUILD_FUNCTIONS                   "Set to ON to build special functions programs"       OFF)
+
 # C API library and test programs
 option(BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
 option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"               OFF)
 option(C_API_LIB_PIC                     "Set to ON to compile C API library with -fPIC"       OFF)
 # number systems and their verification suites
-option(BUILD_BITBLOCK                    "Set to ON to build bitblock tests"                   OFF)
+option(BUILD_STORAGE_CLASSES             "Set to ON to build storage class tests"              OFF)
 option(BUILD_NATIVE_TYPES                "Set to ON to build native type tests"                OFF)
 option(BUILD_REAL_NUMBERS                "Set to ON to build real value tests"                 OFF)
 option(BUILD_INTEGER_NUMBERS             "Set to ON to build integer tests"                    OFF)
@@ -77,6 +89,11 @@ option(BUILD_CONVERSION_TESTS            "Set to ON to build conversion test sui
 option(BUILD_PERF_TESTS                  "Set to ON to build performance benchmarks"           OFF)
 option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"         OFF)
 option(BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
+
+option(UNIVERSAL_USE_FOLDERS "Enable solution folders in Visual Studio, disable for Express"   ON)
+if (UNIVERSAL_USE_FOLDERS) 
+  set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+endif()
 
 ####
 # Create the library target
@@ -281,7 +298,7 @@ include_directories("./include")
 ####
 # macro to read all cpp files in a directory
 # and create a test target for that cpp file
-macro (compile_all testing prefix)
+macro (compile_all testing prefix folder)
     # cycle through the sources
     # For the according directories, we assume that each cpp file is a separate test
     # so, create a executable target and an associated test target
@@ -291,6 +308,9 @@ macro (compile_all testing prefix)
         set(test_name ${prefix}_${test})
         message(STATUS "Add test ${test_name} from source ${new_source}.")
         add_executable (${test_name} ${new_source})
+
+        #add_custom_target(valid SOURCES ${SOURCES})
+        set_target_properties(${test_name} PROPERTIES FOLDER ${folder})
         if (${testing} STREQUAL "true")
             if (UNIVERSAL_CMAKE_TRACE)
                 message(STATUS "testing: ${test_name} ${RUNTIME_OUTPUT_DIRECTORY}/${test_name}")
@@ -386,7 +406,7 @@ if(BUILD_CI_CHECK)
 	set(BUILD_FUNCTIONS ON)
 	set(BUILD_PLAYGROUND ON)
 	# build the different test/verification suites for each number system
-	set(BUILD_BITBLOCK ON)
+	set(BUILD_STORAGE_CLASSES ON)
 	set(BUILD_NATIVE_TYPES ON)
 	set(BUILD_REAL_NUMBERS ON)
 	set(BUILD_INTEGER_NUMBERS ON)
@@ -409,11 +429,13 @@ if(BUILD_CI_CHECK)
 	#
 endif(BUILD_CI_CHECK)
 
-if(BUILD_BITBLOCK)
+# Build the tests for the underlying storage classes
+if(BUILD_STORAGE_CLASSES)
+add_subdirectory("tests/bitset")
 add_subdirectory("tests/bitblock")
 add_subdirectory("tests/blockbin")
 add_subdirectory("tests/blocktri")
-endif(BUILD_BITBLOCK)
+endif(BUILD_STORAGE_CLASSES)
 
 if(BUILD_NATIVE_TYPES)
 add_subdirectory("tests/native")
@@ -478,6 +500,7 @@ endif(BUILD_CMD_LINE_TOOLS)
 if(BUILD_EDUCATION_EXAMPLES)
 add_subdirectory("education/posit")
 add_subdirectory("education/quire")
+add_subdirectory("education/valid")
 endif(BUILD_EDUCATION_EXAMPLES)
 
 if(BUILD_APPLICATION_EXAMPLES)
@@ -485,6 +508,7 @@ add_subdirectory("examples/stl")
 add_subdirectory("examples/blas")
 add_subdirectory("examples/dsp")
 add_subdirectory("examples/roots")
+add_subdirectory("examples/chaos")
 add_subdirectory("examples/engineering")
 add_subdirectory("examples/science")
 add_subdirectory("examples/chebyshev")

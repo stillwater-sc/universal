@@ -1,6 +1,7 @@
 file (GLOB SOURCES "./*.c")
 
 add_library(posit_c_api_pure STATIC ${SOURCES})
+set_target_properties(posit_c_api_pure PROPERTIES FOLDER "Libraries")
 
 if(C_API_LIB_PIC)
   if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
