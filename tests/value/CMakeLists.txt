@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "value" "Number Systems/Floating Point Linear Generalized" "${SOURCES}")
+compile_all("true" "value" "Number Systems/Floating Point/Linear generalized" "${SOURCES}")
