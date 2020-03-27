@@ -12,48 +12,17 @@
 namespace sw {
 namespace unum {
 
-// floating point component extractions
-inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& _fr, unsigned int& _fraction) {
-	static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
-	_sign = fp < 0.0 ? true : false;
-	_fr = frexpf(fp, &_exponent);
-	_fraction = uint32_t(0x007FFFFFul) & reinterpret_cast<uint32_t&>(_fr);
+////////////////////////////////////////////////////////////////////////
+// numerical helpers
+
+// return the Unit in the Last Position
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline Real ulp(const Real& a) {
+	return std::nextafter(a, a + 1.0f) - a;
 }
-inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double& _fr, unsigned long long& _fraction) {
-	static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
-	_sign = fp < 0.0 ? true : false;
-	_fr = frexp(fp, &_exponent);
-	_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
-}
-#ifdef CPLUSPLUS_17
-inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
-	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
-	if constexpr(sizeof(long double) == 8) { // it is just a double
-		_sign = fp < 0.0 ? true : false;
-		_fr = frexp(double(fp), &_exponent);
-		_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
-	}
-	else if constexpr(sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
-		_sign = fp < 0.0 ? true : false;
-		_fr = frexpl(fp, &_exponent);
-		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
-	}
-}
-#else
-inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
-	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
-	if (sizeof(long double) == 8) { // it is just a double
-		_sign = fp < 0.0 ? true : false;
-		_fr = frexp(double(fp), &_exponent);
-		_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
-	}
-	else if (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
-		_sign = fp < 0.0 ? true : false;
-		_fr = frexpl(fp, &_exponent);
-		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
-	}
-}
-#endif
+
 
 static constexpr unsigned IEEE_FLOAT_FRACTION_BITS = 23;
 static constexpr unsigned IEEE_FLOAT_EXPONENT_BITS = 8;
@@ -378,6 +347,50 @@ inline std::string to_triple(const long double& number) {
 	return ss.str();
 }
 
+
+// floating point component extractions
+inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& _fr, unsigned int& _fraction) {
+	static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
+	_sign = fp < 0.0 ? true : false;
+	_fr = frexpf(fp, &_exponent);
+	_fraction = uint32_t(0x007FFFFFul) & reinterpret_cast<uint32_t&>(_fr);
+}
+inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double& _fr, unsigned long long& _fraction) {
+	static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
+	_sign = fp < 0.0 ? true : false;
+	_fr = frexp(fp, &_exponent);
+	_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+}
+#ifdef CPLUSPLUS_17
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
+	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
+	if constexpr (sizeof(long double) == 8) { // it is just a double
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexp(double(fp), &_exponent);
+		_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+	}
+	else if constexpr (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexpl(fp, &_exponent);
+		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
+	}
+}
+#else
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
+	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
+	if (sizeof(long double) == 8) { // it is just a double
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexp(double(fp), &_exponent);
+		_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+	}
+	else if (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexpl(fp, &_exponent);
+		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
+	}
+}
+#endif
+
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
 /* Intel ICC/ICPC. ------------------------------------------ */
 // generate a binary string for a native long double precision IEEE floating point
@@ -482,39 +495,103 @@ inline std::string to_triple(const long double& number) {
 	return ss.str();
 }
 
+
+// floating point component extractions
+inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& _fr, unsigned int& _fraction) {
+	static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
+	_sign = fp < 0.0 ? true : false;
+	_fr = frexpf(fp, &_exponent);
+	_fraction = uint32_t(0x007FFFFFul) & reinterpret_cast<uint32_t&>(_fr);
+}
+inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double& _fr, unsigned long long& _fraction) {
+	static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
+	_sign = fp < 0.0 ? true : false;
+	_fr = frexp(fp, &_exponent);
+	_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+}
+#ifdef CPLUSPLUS_17
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
+	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
+	if constexpr (sizeof(long double) == 8) { // it is just a double
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexp(double(fp), &_exponent);
+		_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+	}
+	else if constexpr (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexpl(fp, &_exponent);
+		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
+	}
+}
+#else
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, unsigned long long& _fraction) {
+	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
+	if (sizeof(long double) == 8) { // it is just a double
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexp(double(fp), &_exponent);
+		_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+	}
+	else if (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexpl(fp, &_exponent);
+		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
+	}
+}
+#endif
+
 #elif defined(__HP_cc) || defined(__HP_aCC)
 /* Hewlett-Packard C/C++. ---------------------------------- */
 
 // generate a binary string for a native long double precision IEEE floating point
 inline std::string to_hex(const long double& number) {
-	return std::string("not-implemented");
+	return std::string("to_hex() not implemented for HP compiler");
 }
 
-// generate a binary string for a native double precision IEEE floating point
+// generate a binary string for a native long double precision IEEE floating point
 inline std::string to_binary(const long double& number) {
-	return std::string("not-implemented");
+	return std::string("to_binary() not implemented for HP compiler");
 }
 
 // return in triple form (+, scale, fraction)
 inline std::string to_triple(const long double& number) {
-	return std::string("not-implemented");
+	return std::string("to_triple() not implemented for HP compiler");
+}
+
+inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& _fr, uint32_t& _fraction) {
+	std::cerr << "extract_fp_components not implemented for HP compiler");
+}
+inline void extract_fp_components(double fp, bool& _sign, int& _exponent, float& _fr, uint32_t& _fraction) {
+	std::cerr << "extract_fp_components not implemented for HP compiler");
+}
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, float& _fr, uint32_t& _fraction) {
+	std::cerr << "extract_fp_components not implemented for HP compiler");
 }
 
 #elif defined(__IBMC__) || defined(__IBMCPP__)
 /* IBM XL C/C++. -------------------------------------------- */
 // generate a binary string for a native long double precision IEEE floating point
 inline std::string to_hex(const long double& number) {
-	return std::string("not-implemented");
+	return std::string("to_hex() not implemented for IBM compiler");
 }
 
-// generate a binary string for a native double precision IEEE floating point
+// generate a binary string for a native long double precision IEEE floating point
 inline std::string to_binary(const long double& number) {
-	return std::string("not-implemented");
+	return std::string("to_binary() not implemented for IBM compiler");
 }
 
 // return in triple form (+, scale, fraction)
 inline std::string to_triple(const long double& number) {
-	return std::string("not-implemented");
+	return std::string("to_triple() not implemented for IBM compiler");
+}
+
+inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& _fr, uint32_t& _fraction) {
+	std::cerr << "extract_fp_components not implemented for IBM compiler");
+}
+inline void extract_fp_components(double fp, bool& _sign, int& _exponent, float& _fr, uint32_t& _fraction) {
+	std::cerr << "extract_fp_components not implemented for IBM compiler");
+}
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, float& _fr, uint32_t& _fraction) {
+	std::cerr << "extract_fp_components not implemented for IBM compiler");
 }
 
 #elif defined(_MSC_VER)
@@ -546,6 +623,51 @@ inline std::string to_triple(const long double& number) {
 	return to_triple(double(number));
 }
 
+
+// floating point component extractions
+inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& _fr, uint32_t& _fraction) {
+	static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
+	_sign = fp < 0.0 ? true : false;
+	_fr = frexpf(fp, &_exponent);
+	_fraction = uint32_t(0x007FFFFFul) & reinterpret_cast<uint32_t&>(_fr);
+}
+inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double& _fr, uint64_t& _fraction) {
+	static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
+	_sign = fp < 0.0 ? true : false;
+	_fr = frexp(fp, &_exponent);
+	_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+}
+
+#ifdef CPLUSPLUS_17
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, uint64_t& _fraction) {
+	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
+	if constexpr (sizeof(long double) == 8) { // it is just a double
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexp(double(fp), &_exponent);
+		_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+	}
+	else if constexpr (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexpl(fp, &_exponent);
+		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
+	}
+}
+#else
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, uint64_t& _fraction) {
+	static_assert(std::numeric_limits<long double>::digits <= 64, "This function only works when long double significant is <= 64 bit.");
+	if (sizeof(long double) == 8) { // it is just a double
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexp(double(fp), &_exponent);
+		_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+	}
+	else if (sizeof(long double) == 16 && std::numeric_limits<long double>::digits <= 64) {
+		_sign = fp < 0.0 ? true : false;
+		_fr = frexpl(fp, &_exponent);
+		_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr); // 80bit extended format only has 63bits of fraction
+	}
+}
+#endif
+
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
 
@@ -553,7 +675,32 @@ inline std::string to_triple(const long double& number) {
 #elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
 /* Oracle Solaris Studio. ----------------------------------- */
 
+#elif defined(__riscv)
+/* RISC-V G++ tool chain */
+
+// floating point component extractions
+inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& _fr, uint32_t& _fraction) {
+	static_assert(sizeof(float) == 4, "This function only works when float is 32 bits.");
+	_sign = fp < 0.0 ? true : false;
+	_fr = frexpf(fp, &_exponent);
+	_fraction = uint32_t(0x007FFFFFul) & reinterpret_cast<uint32_t&>(_fr);
+}
+inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double& _fr, uint64_t& _fraction) {
+	static_assert(sizeof(double) == 8, "This function only works when double is 64 bits.");
+	_sign = fp < 0.0 ? true : false;
+	_fr = frexp(fp, &_exponent);
+	_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+}
+inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, uint64_t& _fraction) {
+	// RISC-V ABI defines long double as a 128-bit quadprecision floating point
+	static_assert(sizeof(double) == 16, "This function only works when long double is 128 bits.");
+	_sign = fp < 0.0 ? true : false;
+	_fr = frexpl(fp, &_exponent);
+	_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
+}
+
 #endif
+
 
 } // namespace unum
 } // namespace sw

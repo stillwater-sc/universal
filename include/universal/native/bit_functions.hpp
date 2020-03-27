@@ -1,32 +1,15 @@
 #pragma once
-// bit_functions.hpp: definitions of helper functions for bit operations on integers and floats
+// bit_functions.hpp: definitions of helper functions for bit operations on integers
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <sstream>
-#include <iomanip>
-#include <cmath>
-#include <limits>
-#include <bitset>
+#include <cstdint>
 
 // This file contains functions that DO NOT use the posit type.
 // If you have helpers that use the posit type, add them to the file posit_manipulators.hpp
 namespace sw {
 namespace unum {
-////////////////////////////////////////////////////////////////////////
-// numerical helpers
-
-// return the Unit in the Last Position
-template<typename Scalar>
-inline Scalar ulp(const Scalar& a) {
-	return std::nextafter(a, a + 1.0f) - a;
-}
-
-// fast power of 2 for integers
-inline uint64_t two_to_the_power(uint64_t n) {
-	return (uint64_t(1) << n);
-}
 
 ///////////////////////////////////////////////////////////////////////
 // decoders

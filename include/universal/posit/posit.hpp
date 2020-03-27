@@ -73,6 +73,7 @@ typedef __128bitdd double_double;
 #include "./exceptions.hpp"
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
+#include "posit_fwd.hpp"
 #include "../native/bit_functions.hpp"
 #include "../bitblock/bitblock.hpp"
 #include "trace_constants.hpp"
@@ -84,7 +85,6 @@ typedef __128bitdd double_double;
 
 namespace sw {
 namespace unum {
-
 
 // specialized configuration constants
 constexpr size_t NBITS_IS_2   =   2;
@@ -116,13 +116,6 @@ constexpr size_t ES_IS_2 = 2;
 constexpr size_t ES_IS_3 = 3;
 constexpr size_t ES_IS_4 = 4;
 constexpr size_t ES_IS_5 = 5;
-
-// Forward definitions
-template<size_t nbits, size_t es> class posit;
-template<size_t nbits, size_t es> posit<nbits, es> abs(const posit<nbits, es>& p);
-template<size_t nbits, size_t es> posit<nbits, es> sqrt(const posit<nbits, es>& p);
-template<size_t nbits, size_t es> posit<nbits, es> minpos();
-template<size_t nbits, size_t es> posit<nbits, es> maxpos();
 
 // Not A Real is the posit encoding for INFINITY and arithmetic errors that can propagate
 // The symbol NAR can be used to initialize a posit, i.e., posit<nbits,es>(NAR), or posit<nbits,es> p = NAR

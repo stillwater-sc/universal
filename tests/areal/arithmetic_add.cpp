@@ -5,11 +5,11 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/native/bit_functions.hpp"
-#include "universal/posit/exceptions.hpp"
-#include "universal/posit/trace_constants.hpp"
-#include "universal/bitblock/bitblock.hpp"
-#include "universal/areal/areal.hpp"
+#include <universal/native/bit_functions.hpp>
+#include <universal/posit/exceptions.hpp>
+#include <universal/posit/trace_constants.hpp>
+#include <universal/bitblock/bitblock.hpp>
+#include <universal/areal/areal.hpp>
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 #include "areal_test_helpers.hpp"
