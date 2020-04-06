@@ -10,27 +10,74 @@
 #include <universal/posit/posit>
 
 /*
+Traditionally, we define the PI as the ratio of the circumference and its diameter.
+Historically, however, was not always so.
 
-Mathematical 	C++ Symbol	Decimal Representation
-Expression
-pi				M_PI		3.14159265358979323846
-pi/2			M_PI_2		1.57079632679489661923
-pi/4			M_PI_4		0.785398163397448309616
-1/pi			M_1_PI		0.318309886183790671538
-2/pi			M_2_PI		0.636619772367581343076
-2/sqrt(pi)		M_2_SQRTPI	1.12837916709551257390
-sqrt(2)			M_SQRT2		1.41421356237309504880
-1/sqrt(2)		M_SQRT1_2	0.707106781186547524401
-e				M_E			2.71828182845904523536
-log_2(e)		M_LOG2E		1.44269504088896340736
-log_10(e)		M_LOG10E	0.434294481903251827651
-log_e(2)		M_LN2		0.693147180559945309417
-log_e(10)		M_LN10		2.30258509299404568402
+It is known that this irrational number arose on the calculations of geometers
+over time as a proportionality constant for at least 4 relationships, not necessarily in this order:
+
+ - Between the circumference of a circle to its diameter;
+ - Between the area of a circle and the square of its diameter;
+ - Between the area of a sphere and the square of its diameter;
+ - Between the volume of a sphere and the cube of its diameter;
+
+The earliest known written references of the PI come from Babylon around 2000 BC.
+Since then, their approximations have gone through several transformations until
+they reach the billions of digits obtained today with the aid of the computer.
+
+Historically, one of the best approximations of PI and interestingly also one of the oldest,
+was used by the Chinese mathematician Zu Chongzhi (Sec.450 DC), which related the PI
+as "something" between 3.1415926 and 3.1415927.
+
+The calculation of PI has been revolutionized by the development of techniques of
+infinite series, especially by mathematicians from europe in the 16th and 17th centuries.
+An infinite series is the sum (or product) of the terms of an infinite sequence.
+That approach was first discovered in India sometime between 1400 and 1500 AD.
+
+Now let's look at the main discoveries in this area:
+
+Viete's Series
+The first infinite sequence discovered in Europe was an infinite product,
+found by French mathematician François Viète in 1593:
+
+2    sqrt(2)   sqrt(2 + sqrt(2))   sqrt(2 + sqrt(2 + sqrt(2)))
+-  = ------- * ----------------- * --------------------------- * ...
+pi      2             2                         2
+
+Wallis's Series
+The second infinite sequence, found in Europe by John Wallis in 1655, was also an infinite product:
+
+pi   2   2   4   4   6   6   8   8
+-- = - * - * - * - * - * - * - * - * ...
+2    1   3   3   5   5   7   7   9
+
+Leibniz's Series
+Madhava of Sangamagrama, a Indian mathematician, formulated a series that was rediscovered
+by scottish mathematician James Gregory in 1671, and by Leibniz in 1674:
+
+	 4   4   4   4   4   4    4
+pi = - - - + - - - + - - -- + -- ...
+	 1   3   5   7   9   11   13
+
+Nilakantha's Series
+An infinite series for PI published by Nilakantha in the 15th century is:
+
+		   4       4       4       4
+pi = 3 + ----- - ----- + ----- - ------ + ...
+		 2*3*4   4*5*6   6*7*8   8*9*10
 
 */
 
-constexpr double pi = 3.14159265358979323846;  // best practice for C++
+// best practice for C++ is to assign a literal
+// but even this literal gets rounded in a double assignment
+constexpr 
+double pi = 3.14159265358979323846;  
+//    pi  = 3.141592653589793115997963    value of above literal
+//    ref = 3.14159265358979323846264338327950288419716939937510
 
+// first 50 digits of pi
+static std::string pi50 = "3.\
+14159265358979323846264338327950288419716939937510";
 // first 1000 digits of pi
 static std::string pi1000 = "3.\
 14159265358979323846264338327950288419716939937510\
@@ -55,7 +102,7 @@ static std::string pi1000 = "3.\
 18577805321712268066130019278766111959092164201989";
 
 template<typename Real>
-Real MethodOfViete(uint32_t N) {
+Real MethodOfViete(size_t N) {
 	using namespace sw::unum;
 	Real pi = Real(1);
 	for (size_t i = N; i > 1; --i) {
@@ -70,6 +117,39 @@ Real MethodOfViete(uint32_t N) {
 	pi = Real(2) / pi;
 	return pi;
 }
+ template<typename Real>
+ Real MethodOfWallis(size_t N) {
+	 using namespace sw::unum;
+	 Real pi = Real(4);
+	 for (size_t i = 3; i <= (N + 2); i += 2) {
+		 pi = pi * ((i - 1) / Real(i)) * ((i + 1) / Real(i));
+	 }
+	 return pi;
+ }
+
+ template<typename Real>
+ Real MethodOfMadhavaOfSangamagrama(size_t N) {
+	 using namespace sw::unum;
+	 Real pi = Real(0);
+	 Real s = Real(1); // sign for the next iteration
+	 for (size_t i = 1; i <= (2 * N); i += 2) {
+		 pi = pi + s * (Real(4) / Real(i));
+		 s = -s;
+	 }
+	 return pi;
+ }
+
+ template<typename Real>
+ Real MethodOfNilakantha(size_t N) {
+	 using namespace sw::unum;
+	 Real pi = Real(3);
+	 Real s = Real(1); // sign for the next iteration
+	 for (size_t i = 2; i <= (2 * N); i += 2) {
+		 pi = pi + s * (Real(4) / Real(i * (i + 1) * (i + 2)) );
+		 s = -s;
+	 }
+	 return pi;
+ }
 
 int main(int argc, char** argv)
 try {
@@ -81,12 +161,34 @@ try {
 	cout << "Perfect approximations of PI for different number systems" << endl;
 
 	cout << pi1000 << endl;
+	cout << "pi  = " << setprecision(25) << pi << endl;
+	cout << "ref = " << pi50 << endl;
 
 	using Real = double;
-	cout << "Viete Series" << endl; // doesn't really work for floats as rounding error accumulates to quickly
-	cout << "pi  = " << setprecision(20) << MethodOfViete<float>(50) << endl;
-	cout << "pi  = " << setprecision(20) << MethodOfViete<double>(500) << endl;
-	cout << "ref = " << setprecision(20) << pi << endl;
+	size_t N = 100;
+	cout << "Viete Series using " << N << " iteration" << endl; // doesn't really work for floats as rounding error accumulates to quickly
+	cout << "pi  = " << setprecision(20) << MethodOfViete<float>(N) << endl;
+	cout << "pi  = " << setprecision(20) << MethodOfViete<double>(N) << endl;
+	cout << "ref = " << pi50 << endl;
+
+	N = 1000000;
+	cout << "Wallis Series using " << N << " iteration" << endl; // doesn't really work for floats as rounding error accumulates to quickly
+	cout << "pi  = " << setprecision(20) << MethodOfWallis<float>(N) << endl;
+	cout << "pi  = " << setprecision(20) << MethodOfWallis<double>(N) << endl;
+	cout << "ref = " << pi50 << endl;
+
+	N = 10000000;
+	cout << "Madhava of Sangamagrama (or Leibniz) Series using " << N << " iteration" << endl; // doesn't really work for floats as rounding error accumulates to quickly
+	cout << "pi  = " << setprecision(20) << MethodOfMadhavaOfSangamagrama<float>(N) << endl;
+	cout << "pi  = " << setprecision(20) << MethodOfMadhavaOfSangamagrama<double>(N) << endl;
+	cout << "ref = " << pi50 << endl;
+
+	N = 10000;
+	cout << "Nilakantha Series using " << N << " iteration" << endl; // doesn't really work for floats as rounding error accumulates to quickly
+	cout << "pi  = " << setprecision(20) << MethodOfNilakantha<float>(N) << endl;
+	cout << "pi  = " << setprecision(20) << MethodOfNilakantha<double>(N) << endl;
+	cout << "ref = " << pi50 << endl;
+
 
 	// 1000 digits -> 1.e1000 -> 2^3322 -> 1.051103774764883380737596422798e+1000 -> you will need 3322 bits to represent 1000 digits of pi
 
