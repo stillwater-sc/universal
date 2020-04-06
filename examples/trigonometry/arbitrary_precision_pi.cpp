@@ -122,7 +122,7 @@ Real MethodOfViete(size_t N) {
 	 using namespace sw::unum;
 	 Real pi = Real(4);
 	 for (size_t i = 3; i <= (N + 2); i += 2) {
-		 pi = pi * ((i - 1) / Real(i)) * ((i + 1) / Real(i));
+		 pi = pi * (Real(i - 1) / Real(i)) * (Real(i + 1) / Real(i));
 	 }
 	 return pi;
  }
@@ -164,30 +164,34 @@ try {
 	cout << "pi  = " << setprecision(25) << pi << endl;
 	cout << "ref = " << pi50 << endl;
 
-	using Real = double;
+	using Real = posit<64,3>; 
 	size_t N = 100;
 	cout << "Viete Series using " << N << " iteration" << endl; // doesn't really work for floats as rounding error accumulates to quickly
 	cout << "pi  = " << setprecision(20) << MethodOfViete<float>(N) << endl;
 	cout << "pi  = " << setprecision(20) << MethodOfViete<double>(N) << endl;
 	cout << "ref = " << pi50 << endl;
+	cout << "pi  = " << setprecision(20) << MethodOfViete<Real>(N) << endl;
 
-	N = 1000000;
+	N = 1000;
 	cout << "Wallis Series using " << N << " iteration" << endl; // doesn't really work for floats as rounding error accumulates to quickly
 	cout << "pi  = " << setprecision(20) << MethodOfWallis<float>(N) << endl;
 	cout << "pi  = " << setprecision(20) << MethodOfWallis<double>(N) << endl;
 	cout << "ref = " << pi50 << endl;
+	cout << "pi  = " << setprecision(20) << MethodOfWallis<Real>(N) << endl;
 
-	N = 10000000;
+	N = 1000;
 	cout << "Madhava of Sangamagrama (or Leibniz) Series using " << N << " iteration" << endl; // doesn't really work for floats as rounding error accumulates to quickly
 	cout << "pi  = " << setprecision(20) << MethodOfMadhavaOfSangamagrama<float>(N) << endl;
 	cout << "pi  = " << setprecision(20) << MethodOfMadhavaOfSangamagrama<double>(N) << endl;
 	cout << "ref = " << pi50 << endl;
+	cout << "pi  = " << setprecision(20) << MethodOfMadhavaOfSangamagrama<Real>(N) << endl;
 
-	N = 10000;
+	N = 1000;
 	cout << "Nilakantha Series using " << N << " iteration" << endl; // doesn't really work for floats as rounding error accumulates to quickly
 	cout << "pi  = " << setprecision(20) << MethodOfNilakantha<float>(N) << endl;
 	cout << "pi  = " << setprecision(20) << MethodOfNilakantha<double>(N) << endl;
 	cout << "ref = " << pi50 << endl;
+	cout << "pi  = " << setprecision(20) << MethodOfNilakantha<Real>(N) << endl;
 
 
 	// 1000 digits -> 1.e1000 -> 2^3322 -> 1.051103774764883380737596422798e+1000 -> you will need 3322 bits to represent 1000 digits of pi
