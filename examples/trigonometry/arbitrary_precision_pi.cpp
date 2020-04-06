@@ -54,6 +54,23 @@ static std::string pi1000 = "3.\
 59825349042875546873115956286388235378759375195778\
 18577805321712268066130019278766111959092164201989";
 
+template<typename Real>
+Real MethodOfViete(uint32_t N) {
+	using namespace sw::unum;
+	Real pi = Real(1);
+	for (size_t i = N; i > 1; --i) {
+		Real repeatingFactor = Real(2);
+		for (size_t j = 1; j < i; ++j) {
+			repeatingFactor = Real(2) + sqrt(repeatingFactor);
+		}
+		repeatingFactor = sqrt(repeatingFactor);
+		pi = pi * repeatingFactor / Real(2);
+	}
+	pi *= sqrt(Real(2)) / Real(2);
+	pi = Real(2) / pi;
+	return pi;
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -64,6 +81,12 @@ try {
 	cout << "Perfect approximations of PI for different number systems" << endl;
 
 	cout << pi1000 << endl;
+
+	using Real = double;
+	cout << "Viete Series" << endl; // doesn't really work for floats as rounding error accumulates to quickly
+	cout << "pi  = " << setprecision(20) << MethodOfViete<float>(50) << endl;
+	cout << "pi  = " << setprecision(20) << MethodOfViete<double>(500) << endl;
+	cout << "ref = " << setprecision(20) << pi << endl;
 
 	// 1000 digits -> 1.e1000 -> 2^3322 -> 1.051103774764883380737596422798e+1000 -> you will need 3322 bits to represent 1000 digits of pi
 
