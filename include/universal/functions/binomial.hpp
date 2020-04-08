@@ -11,22 +11,15 @@ namespace function {
 // BinomialCoefficient calculates the binomial coefficience recursively
 // (n over k) = (n-1 over k-1) + (n-1 over k)
 template<typename Scalar>
-Scalar BinomialCoefficient(const Scalar& n, const Scalar& k) {
-	//std::cout << "( " << n << " over " << k << ")\n";
+Scalar binomial(const Scalar& n, const Scalar& k) {
 	Scalar coef;
 	if (k == 0 || k == n || n == 0) {
 		coef = Scalar(1);
 	}
 	else {
-		coef = BinomialCoefficient(n - 1, k - 1) + BinomialCoefficient(n - 1, k);
+		coef = binomial(n - 1, k - 1) + binomial(n - 1, k);
 	}
 	return coef;
-}
-
-// function alias
-template<typename Scalar>
-Scalar binomial(const Scalar& n, const Scalar& k) {
-	return BinomialCoefficient(n, k);
 }
 
 /*

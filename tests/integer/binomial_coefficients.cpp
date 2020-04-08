@@ -40,7 +40,7 @@ void PascalsTriangle(Scalar N) {
 	for (n = 1; n <= N; n += 1) {
 		std::cout << "n = " << std::setw(3) << n << spacing(leftMargin);
 		for (k = 0; k <= n; k += 1) {
-			std::cout << std::setw(columnWidth) << std::right << sw::function::BinomialCoefficient(n, k) << ' ';
+			std::cout << std::setw(columnWidth) << std::right << sw::function::binomial(n, k) << ' ';
 		}
 		leftMargin -= columnWidth/2;
 		std::cout << '\n';
