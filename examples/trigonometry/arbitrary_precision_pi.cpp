@@ -69,7 +69,7 @@ pi = 3 + ----- - ----- + ----- - ------ + ...
 */
 
 // best practice for C++ is to assign a literal
-// but even this literal gets rounded in a double assignment
+// but even this literal gets rounded in an assignment to an IEEE double
 constexpr 
 double pi = 3.14159265358979323846;  
 //    pi  = 3.141592653589793115997963    value of above literal
