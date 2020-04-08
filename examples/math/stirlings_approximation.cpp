@@ -10,7 +10,6 @@
 // multi-precision float
 //#include <universal/mpf/mpf.hpp>
 #include <universal/posit/posit>
-#include <universal/integer/integer>
 #include <universal/functions/factorial.hpp>
 
 /*
@@ -58,16 +57,14 @@ try {
 
 	//using Real = mpf;
 	using Real = posit<32,2>;
-	using Integer = integer<128>;
 
-	Real n, e;
+	Real n;
 
-	for (size_t i = 1; i < 20; ++i) {
+	for (Real i = 1; i < 20; i += 1) {
 		cout << setw(2) << i << "! = " 
-			<< setw(20) << StirlingsApproximation(Real(i)) << "  " 
-			<< setw(20) << sw::function::factorial(Integer(i)) << endl;
+			<< setw(20) << StirlingsApproximation(i) << "  " 
+			<< setw(20) << sw::function::factorial(i) << endl;
 	}
-
 
 	return EXIT_SUCCESS;
 }
