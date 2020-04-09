@@ -456,6 +456,7 @@ endif(BUILD_FIXPNT_NUMBERS)
 
 # Arbitrary reals tests
 if(BUILD_REAL_NUMBERS)
+add_subdirectory("tests/mpfloat")
 add_subdirectory("tests/value")
 endif(BUILD_REAL_NUMBERS)
 
