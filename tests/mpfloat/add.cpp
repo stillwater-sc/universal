@@ -3,17 +3,16 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <limits>
 // minimum set of include files to reflect source code dependencies
 #include <universal/mpfloat/mpfloat.hpp>
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 //#include "mpfloat_test_helpers.hpp"
 
-#if 0
 // generate specific test case that you can trace with the trace conditions in areal.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename Ty>
+template<typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
 	sw::unum::mpfloat mpa, mpb, mpref, mpsum;
@@ -21,14 +20,14 @@ void GenerateTestCase(Ty a, Ty b) {
 	mpb = b;
 	ref = a + b;
 	mpref = ref;
-	mpsum = pa + pb;
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << a << " + " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " (reference: " << pref.get() << ")   " ;
-	std::cout << (pref == psum ? "PASS" : "FAIL") << std::endl << std::endl;
+	mpsum = mpa + mpb;
+	constexpr size_t ndigits = std::numeric_limits<Ty>::digits10;
+	std::cout << std::setprecision(ndigits);
+	std::cout << std::setw(ndigits) << a << " + " << std::setw(ndigits) << b << " = " << std::setw(ndigits) << ref << std::endl;
+	std::cout << mpa << " + " << mpb << " = " << mpsum << " (reference: " << mpref << ")   " ;
+	std::cout << (mpref == mpsum ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
 }
-#endif 
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -46,7 +45,7 @@ try {
 //	bool bReportIndividualTestCases = false;
 
 	// generate individual testcases to hand trace/debug
-	//GenerateTestCase<16, 5, double>(INFINITY, INFINITY);
+	GenerateTestCase(INFINITY, INFINITY);
 
 	mpfloat mpa;
 	cout << mpa << endl;

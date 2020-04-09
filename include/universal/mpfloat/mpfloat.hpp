@@ -49,14 +49,8 @@ namespace unum {
 
 // forward references
 class mpfloat;
-
-inline void convert(int64_t v, mpfloat& result) {
-}
-
-inline void convert_unsigned(uint64_t v, mpfloat& result) {
-}
-
-
+inline mpfloat& convert(int64_t v, mpfloat& result);
+inline mpfloat& convert_unsigned(uint64_t v, mpfloat& result);
 bool parse(const std::string& number, mpfloat& v);
 
 // mpfloat is an arbitrary precision and scale linear floating point type
@@ -85,125 +79,20 @@ public:
 	mpfloat(const double initial_value)             { *this = initial_value; }
 	mpfloat(const long double initial_value)        { *this = initial_value; }
 
-	// access operator for bits
-	// this needs a proxy to be able to create l-values
-	// bool operator[](const unsigned int i) const //
-
-	// simpler interface for now, using at(i) and set(i)/reset(i)
-
 	// assignment operators for native types
-	mpfloat& operator=(const signed char rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
-		return *this;
-	}
-	mpfloat& operator=(const short rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
-		return *this;
-	}
-	mpfloat& operator=(const int rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
-		return *this;
-	}
-	mpfloat& operator=(const long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
-		return *this;
-	}
-	mpfloat& operator=(const long long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert(rhs, *this);
-		}
-		return *this;
-	}
-	mpfloat& operator=(const char rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
-		return *this;
-	}
-	mpfloat& operator=(const unsigned short rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
-		return *this;
-	}
-	mpfloat& operator=(const unsigned int rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
-		return *this;
-	}
-	mpfloat& operator=(const unsigned long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
-		return *this;
-	}
-	mpfloat& operator=(const unsigned long long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_unsigned(rhs, *this);
-		}
-		return *this;
-	}
-	mpfloat& operator=(const float rhs) {
-		float_assign(rhs);
-		return *this;
-	}
-	mpfloat& operator=(const double rhs) {
-		float_assign(rhs);
-		return *this;
-	}
-	mpfloat& operator=(const long double rhs) {
-		float_assign(rhs);
-		return *this;
-	}
+	mpfloat& operator=(const signed char rhs)        { return convert(rhs, *this); }
+	mpfloat& operator=(const short rhs)              { return convert(rhs, *this); }
+	mpfloat& operator=(const int rhs)                { return convert(rhs, *this); }
+	mpfloat& operator=(const long rhs)               { return convert(rhs, *this); }
+	mpfloat& operator=(const long long rhs)          { return convert(rhs, *this); }
+	mpfloat& operator=(const char rhs)               { return convert_unsigned(rhs, *this); }
+	mpfloat& operator=(const unsigned short rhs)     { return convert_unsigned(rhs, *this); }
+	mpfloat& operator=(const unsigned int rhs)       { return convert_unsigned(rhs, *this); }
+	mpfloat& operator=(const unsigned long rhs)      { return convert_unsigned(rhs, *this); }
+	mpfloat& operator=(const unsigned long long rhs) { return convert_unsigned(rhs, *this); }
+	mpfloat& operator=(const float rhs)              { return float_assign(rhs); }
+	mpfloat& operator=(const double rhs)             { return float_assign(rhs); }
+	mpfloat& operator=(const long double rhs)        { return float_assign(rhs); }
 
 #ifdef ADAPTER_POSIT_AND_MPFLOAT
 	// POSIT_CONCEPT_GENERALIZATION
@@ -220,31 +109,7 @@ public:
 		mpfloat negated(*this);
 		return negated;
 	}
-	// one's complement
-	mpfloat operator~() const { 
-		mpfloat complement(*this);
-		return complement;
-	}
-	// increment
-	mpfloat operator++(int) {
-		mpfloat tmp(*this);
-		operator++();
-		return tmp;
-	}
-	mpfloat& operator++() {
-		*this += mpfloat(1);
-		return *this;
-	}
-	// decrement
-	mpfloat operator--(int) {
-		mpfloat tmp(*this);
-		operator--();
-		return tmp;
-	}
-	mpfloat& operator--() {
-		*this -= mpfloat(1);
-		return *this;
-	}
+
 	// conversion operators
 	explicit operator float() const { return to_float(); }
 	explicit operator double() const { return to_double(); }
@@ -276,21 +141,18 @@ public:
 	}
 
 	// selectors
-	inline bool iszero() const {
-		return true;
-	}
-	inline bool isone() const {
-		return true;
-	}
-	inline bool isodd() const {
-		return false;
-	}
-	inline bool iseven() const {
-		return !isodd();
-	}
-	inline bool sign() const { return false; }
+	inline bool iszero() const { return !sign && coef.size() == 0; }
+	inline bool isone() const  { return true; }
+	inline bool isodd() const  { return false; }
+	inline bool iseven() const { return !isodd(); }
+	inline bool ispos() const  { return !sign; }
+	inline bool ineg() const   { return sign; }
 
 protected:
+	bool                  sign;  // sign of the number: -1 if true, +1 if false, zero is positive
+	int64_t               exp;   // exponent of the number
+	std::vector<uint32_t> coef;  // coefficients of the polynomial
+
 	// HELPER methods
 
 	float to_float() const { 
@@ -307,10 +169,11 @@ protected:
 	}
 
 	template<typename Ty>
-	void float_assign(Ty& rhs) {
+	mpfloat& float_assign(Ty& rhs) {
 		clear();
 		long long base = (long long)rhs;
 		*this = base;
+		return *this;
 	}
 
 private:
@@ -331,6 +194,26 @@ private:
 	// find the most significant bit set
 	friend signed findMsb(const mpfloat& v);
 };
+
+inline mpfloat& convert(int64_t v, mpfloat& result) {
+	if (0 == v) {
+		result.setzero();
+	}
+	else {
+		// convert 
+	}
+	return result;
+}
+
+inline mpfloat& convert_unsigned(uint64_t v, mpfloat& result) {
+	if (0 == v) {
+		result.setzero();
+	}
+	else {
+		// convert 
+	}
+	return result;
+}
 
 ////////////////////////    MPFLOAT functions   /////////////////////////////////
 
