@@ -3,7 +3,11 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>
+#include <iomanip>
+#include <cmath>
 #include <limits>
+
 // minimum set of include files to reflect source code dependencies
 #include <universal/mpfloat/mpfloat.hpp>
 // test helpers, such as, ReportTestResults
@@ -48,6 +52,7 @@ try {
 	GenerateTestCase(INFINITY, INFINITY);
 
 	mpfloat mpa;
+	mpa = 0;
 	cout << mpa << endl;
 
 #else

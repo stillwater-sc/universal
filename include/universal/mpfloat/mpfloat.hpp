@@ -130,7 +130,7 @@ public:
 	}
 
 	// modifiers
-	inline void clear() {  }
+	inline void clear() { sign = false; exp = 0; coef.clear(); }
 	inline void setzero() { clear(); }
 	// use un-interpreted raw bits to set the bits of the mpfloat
 	inline void set_raw_bits(unsigned long long value) {
