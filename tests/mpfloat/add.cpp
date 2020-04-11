@@ -34,6 +34,40 @@ void GenerateTestCase(Ty a, Ty b) {
 	std::cout << std::setprecision(5);
 }
 
+// progressions
+void Progressions(uint32_t digit) {
+	using namespace std;
+	using BlockType = uint32_t;
+	sw::unum::mpfloat mpa;
+	vector<BlockType> coef;
+
+	constexpr size_t digitsInWord = 9;
+	coef.clear();
+	coef.push_back(digit);
+	for (size_t i = 0; i < digitsInWord; ++i) {
+		mpa.test(false, -1, coef);
+		cout << "(+, exp = -1, coef = " << coef[0] << ") = " << mpa << endl;
+		coef[0] *= 10;
+		coef[0] += digit;
+	}
+	coef.clear();
+	coef.push_back(digit);
+	for (size_t i = 0; i < digitsInWord; ++i) {
+		mpa.test(false, 0, coef);
+		cout << "(+, exp = 0, coef = " << coef[0] << ") = " << mpa << endl;
+		coef[0] *= 10;
+		coef[0] += digit;
+	}
+	coef.clear();
+	coef.push_back(digit);
+	for (size_t i = 0; i < digitsInWord; ++i) {
+		mpa.test(false, 1, coef);
+		cout << "(+, exp = 1, coef = " << coef[0] << ") = " << mpa << endl;
+		coef[0] *= 10;
+		coef[0] += digit;
+	}
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -57,16 +91,31 @@ try {
 	cout << mpa << endl;
 
 	vector<uint32_t> coef;
-	coef.push_back(111);
-	cout << setprecision(34);
-	for (int i = -3; i < 4; ++i) {
-		mpa.test(false, i, coef);
-		cout << "(+, exp = " << i << ", coef = " << coef[0] << ") = " << mpa << endl;
+
+	Progressions(1);
+	Progressions(9);
+
+	coef.clear();
+	coef.push_back(0);
+	mpa.test(false, 0, coef);
+	for (int i = 0; i < 13; ++i) {
+		coef[0] += 1;
+		mpa.test(false, 0, coef);
+		cout << "(+, exp = 0, coef = " << coef[0] << ") = " << mpa << endl;
 	}
-	coef.push_back(222);
-	for (int i = -3; i < 4; ++i) {
-		mpa.test(false, i, coef);
-		cout << "(+, exp = " << i << ", coef = " << coef[0] << ", " << coef[1] << ") = " << mpa << endl;
+	coef[0] = 999999999;
+	mpa.test(false, 0, coef);
+	cout << "(+, exp = 0, coef = " << coef[0] << ") = " << mpa << endl;
+	coef.push_back(0);
+	for (int i = 0; i < 13; ++i) {
+		coef[0] = 0;
+		coef[1] += 1;
+		mpa.test(false, 0, coef);
+		cout << "(+, exp = 0, coef = " << coef[0] << ", " << coef[1] << ") = " << mpa << endl;
+		coef[0] = 999999999;
+		mpa.test(false, 0, coef);
+		cout << "(+, exp = 0, coef = " << coef[0] << ", " << coef[1] << ") = " << mpa << endl;
+
 	}
 
 #else
