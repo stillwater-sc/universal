@@ -5,6 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <iomanip>
+#include <string>
 #include <cmath>
 #include <limits>
 
@@ -54,6 +55,19 @@ try {
 	mpfloat mpa;
 	mpa = 0;
 	cout << mpa << endl;
+
+	vector<uint32_t> coef;
+	coef.push_back(111);
+	cout << setprecision(34);
+	for (int i = -3; i < 4; ++i) {
+		mpa.test(false, i, coef);
+		cout << "(+, exp = " << i << ", coef = " << coef[0] << ") = " << mpa << endl;
+	}
+	coef.push_back(222);
+	for (int i = -3; i < 4; ++i) {
+		mpa.test(false, i, coef);
+		cout << "(+, exp = " << i << ", coef = " << coef[0] << ", " << coef[1] << ") = " << mpa << endl;
+	}
 
 #else
 
