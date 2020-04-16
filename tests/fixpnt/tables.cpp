@@ -102,6 +102,7 @@ try {
 	GenerateFixedPointTable<4, 3>(cout, false);
 	GenerateFixedPointTable<4, 4>(cout, false);
 
+	GenerateFixedPointTable<8, 7>(cout, false);
 
 #if STRESS_TESTING
 
