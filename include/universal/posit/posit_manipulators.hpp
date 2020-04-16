@@ -282,7 +282,7 @@ namespace sw {
 			int nrOfRegimeBitsProcessed = 0;
 			for (int i = nbits - 2; i >= 0; --i) {
 				if (regimeBits > nrOfRegimeBitsProcessed++) {
-					ss << yellow << (r[i] ? "1" : "0");
+					ss << yellow << (_sign ? (r[i] ? '0' : '1') : (r[i] ? '1' : '0'));
 				}
 			}
 
@@ -291,11 +291,12 @@ namespace sw {
 			int nrOfExponentBitsProcessed = 0;
 			for (int i = int(es) - 1; i >= 0; --i) {
 				if (exponentBits > nrOfExponentBitsProcessed++) {
-					ss << cyan << (e[i] ? "1" : "0");
+					ss << cyan << (_sign ? (e[i] ? '0' : '1') : (e[i] ? '1' : '0'));
 				}
 			}
 
 			bitblock<posit<nbits, es>::fbits> f = _fraction.get();
+			f = (_sign ? twos_complement(f) : f);
 			int fractionBits = (int)_fraction.nrBits();
 			int nrOfFractionBitsProcessed = 0;
 			for (int i = int(p.fbits) - 1; i >= 0; --i) {
