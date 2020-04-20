@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <cmath>    // for frexpf/frexp/frexpl  float/double/long double fraction/exponent extraction
 #include <limits>
+#include <tuple>
 
 namespace sw {
 namespace unum {
@@ -345,6 +346,51 @@ inline std::string to_triple(const long double& number) {
 
 	ss << ')';
 	return ss.str();
+}
+
+/// Returns a tuple of sign, exponent, and fraction.
+constexpr inline std::tuple<bool, int32_t, uint32_t> ieee_components(float fp)
+{
+    static_assert(std::numeric_limits<float>::is_iec559, 
+                  "This function only works when float complies IEC 559 (IEEE 754)");
+    static_assert(sizeof(float) == 4, "This function only works when float is 32 bit.");
+    
+    float_decoder fd{fp}; // initializes the first member of the union
+    // Reading inactive union parts is forbidden in constexpr :-(
+    return {static_cast<bool>(fd.parts.sign), static_cast<int32_t>(fd.parts.exponent), 
+            static_cast<uint32_t>(fd.parts.fraction)}; // read the others
+    
+#if 0 // reinterpret_cast forbidden in constexpr :-(
+    uint32_t& as_int= reinterpret_cast<uint32_t&>(fp);
+    uint32_t exp= static_cast<int32_t>(as_int >> 23);
+    if (exp & 0x80)
+        exp|= 0xffffff00l; // turn on leading bits for negativ exponent
+    return {fp < 0.0, exp, as_int & uint32_t{0x007FFFFFul}};
+#endif
+}
+
+/// Returns a tuple of sign, exponent, and fraction.
+constexpr inline std::tuple<bool, int64_t, uint64_t> ieee_components(double fp)
+{
+    static_assert(std::numeric_limits<double>::is_iec559, 
+                  "This function only works when double complies IEC 559 (IEEE 754)");
+    static_assert(sizeof(double) == 8, "This function only works when double is 64 bit.");
+    
+#if 1    
+    double_decoder dd{fp}; // initializes the first member of the union
+    // Reading inactive union parts is forbidden in constexpr :-(
+    return {static_cast<bool>(dd.parts.sign), static_cast<int64_t>(dd.parts.exponent), 
+            static_cast<uint64_t>(dd.parts.fraction)}; // read the others
+#endif
+    
+#if 0 // reinterpret_cast forbidden in constexpr
+    // uint64_t& as_int= reinterpret_cast<uint64_t&>(fp);
+    uint64_t& as_int= (uint64_t&) fp; // forbidden since executed as reinterpret_cast
+    uint64_t exp= static_cast<int64_t>(as_int >> 52);
+    if (exp & 0x400)
+        exp|= 0xfffffffffffff800ll; // turn on leading bits for negativ exponent
+    return {fp < 0.0, exp, as_int & uint64_t{0x000FFFFFFFFFFFFFull}};
+#endif
 }
 
 

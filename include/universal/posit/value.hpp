@@ -8,6 +8,7 @@
 #include <iostream>
 #include <iomanip>
 #include <limits>
+#include <tuple>
 
 #include "../native/ieee-754.hpp"
 #include "../native/bit_functions.hpp"
@@ -25,25 +26,30 @@ template<size_t fbits>
 class value {
 public:
 	static constexpr size_t fhbits = fbits + 1;    // number of fraction bits including the hidden bit
-	value() : _sign(false), _scale(0), _nrOfBits(fbits), _fraction(), _inf(false), _zero(true), _nan(false) {}
-	value(bool sign, int scale, const bitblock<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
+	constexpr value() 
+          : _sign{false}, _scale{0}, _nrOfBits{fbits}, _fraction{}, _inf{false}, 
+            _zero{true}, _nan{false} {}
+	constexpr value(bool sign, int scale, const bitblock<fbits>& fraction_without_hidden_bit, 
+                        bool zero = true, bool inf = false) 
+          : _sign{sign}, _scale{scale}, _nrOfBits{fbits}, _fraction{fraction_without_hidden_bit}, 
+            _inf{inf}, _zero{zero}, _nan{false} {}
 
-	value(const signed char initial_value)        { *this = initial_value; }
-	value(const short initial_value)              { *this = initial_value; }
-	value(const int initial_value)                { *this = initial_value; }
-	value(const long initial_value)               { *this = initial_value; }
-	value(const long long initial_value)          { *this = initial_value; }
-	value(const char initial_value)               { *this = initial_value; }
-	value(const unsigned short initial_value)     { *this = initial_value; }
-	value(const unsigned int initial_value)       { *this = initial_value; }
-	value(const unsigned long initial_value)      { *this = initial_value; }
-	value(const unsigned long long initial_value) { *this = initial_value; }
-	value(const float initial_value)              { *this = initial_value; }
-	value(const double initial_value)             { *this = initial_value; }
-	value(const long double initial_value)        { *this = initial_value; }
-	value(const value& rhs)                       { *this = rhs; }
+	constexpr value(const signed char initial_value)        { *this = initial_value; }
+	constexpr value(const short initial_value)              { *this = initial_value; }
+	constexpr value(const int initial_value)                { *this = initial_value; }
+	constexpr value(const long initial_value)               { *this = initial_value; }
+	constexpr value(const long long initial_value)          { *this = initial_value; }
+	constexpr value(const char initial_value)               { *this = initial_value; }
+	constexpr value(const unsigned short initial_value)     { *this = initial_value; }
+	constexpr value(const unsigned int initial_value)       { *this = initial_value; }
+	constexpr value(const unsigned long initial_value)      { *this = initial_value; }
+	constexpr value(const unsigned long long initial_value) { *this = initial_value; }
+	constexpr value(const float initial_value)              { *this = initial_value; }
+	constexpr value(const double initial_value) : value{}   { *this = initial_value; }
+	constexpr value(const long double initial_value)        { *this = initial_value; }
+	constexpr value(const value& rhs)                       { *this = rhs; }
 
-	value& operator=(const value& rhs) {
+	constexpr value& operator=(const value& rhs) {
 		_sign	  = rhs._sign;
 		_scale	  = rhs._scale;
 		_fraction = rhs._fraction;
@@ -53,23 +59,23 @@ public:
 		_nan      = rhs._nan;
 		return *this;
 	}
-	value<fbits>& operator=(const signed char rhs) {
-		*this = (long long)(rhs);
+	constexpr value<fbits>& operator=(const signed char rhs) {
+		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	value<fbits>& operator=(const short rhs) {
-		*this = (long long)(rhs);
+	constexpr value<fbits>& operator=(const short rhs) {
+		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	value<fbits>& operator=(const int rhs) {
-		*this = (long long)(rhs);
+	constexpr value<fbits>& operator=(const int rhs) {
+		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	value<fbits>& operator=(const long rhs) {
-		*this = (long long)(rhs);
+	constexpr value<fbits>& operator=(const long rhs) {
+		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	value<fbits>& operator=(const long long rhs) {
+	constexpr value<fbits>& operator=(const long long rhs) {
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 		if (rhs == 0) {
 			setzero();
@@ -98,23 +104,23 @@ public:
 		}
 		return *this;
 	}
-	value<fbits>& operator=(const char rhs) {
+	constexpr value<fbits>& operator=(const char rhs) {
 		*this = (unsigned long long)(rhs);
 		return *this;
 	}
-	value<fbits>& operator=(const unsigned short rhs) {
-		*this = (long long)(rhs);
+	constexpr value<fbits>& operator=(const unsigned short rhs) {
+		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	value<fbits>& operator=(const unsigned int rhs) {
-		*this = (long long)(rhs);
+	constexpr value<fbits>& operator=(const unsigned int rhs) {
+		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	value<fbits>& operator=(const unsigned long rhs) {
-		*this = (long long)(rhs);
+	constexpr value<fbits>& operator=(const unsigned long rhs) {
+		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	value<fbits>& operator=(const unsigned long long rhs) {
+	constexpr value<fbits>& operator=(const unsigned long long rhs) {
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 		if (rhs == 0) {
 			setzero();
@@ -129,7 +135,7 @@ public:
 		if (_trace_conversion) std::cout << "uint64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 		return *this;
 	}
-	value<fbits>& operator=(const float rhs) {
+	constexpr value<fbits>& operator=(const float rhs) {
 		reset();
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
@@ -149,9 +155,9 @@ public:
 		case FP_SUBNORMAL:
 		case FP_NORMAL:
 			{
-				float _fr;
-				unsigned int _23b_fraction_without_hidden_bit;
-				int _exponent;
+				float _fr{0};
+				unsigned int _23b_fraction_without_hidden_bit{0};
+				int _exponent{0};
 				extract_fp_components(rhs, _sign, _exponent, _fr, _23b_fraction_without_hidden_bit);
 				_scale = _exponent - 1;
 				_fraction = extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
@@ -162,7 +168,8 @@ public:
 		}
 		return *this;
 	}
-	value<fbits>& operator=(const double rhs) {
+	constexpr value<fbits>& operator=(const double rhs) {
+                using std::get;
 		reset();
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
@@ -182,10 +189,18 @@ public:
 		case FP_SUBNORMAL:
 		case FP_NORMAL:
 			{
-				double _fr;
-				unsigned long long _52b_fraction_without_hidden_bit;
-				int _exponent;
+#if 1
+				double _fr{0};
+				unsigned long long _52b_fraction_without_hidden_bit{0};
+				int _exponent{0};
 				extract_fp_components(rhs, _sign, _exponent, _fr, _52b_fraction_without_hidden_bit);
+#endif
+#if 0
+                                auto components= ieee_components(rhs);
+                                _sign= get<0>(components);
+                                int _exponent= get<1>(components);
+                                unsigned long long _52b_fraction_without_hidden_bit= get<2>(components);
+#endif
 				_scale = _exponent - 1;
 				_fraction = extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
 				_nrOfBits = fbits;
@@ -195,7 +210,7 @@ public:
 		}
 		return *this;
 	}
-	value<fbits>& operator=(const long double rhs) {
+	constexpr value<fbits>& operator=(const long double rhs) {
 		reset();
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
@@ -215,9 +230,9 @@ public:
 		case FP_SUBNORMAL:
 		case FP_NORMAL:
 			{
-				long double _fr;
-				unsigned long long _63b_fraction_without_hidden_bit;
-				int _exponent;
+				long double _fr{0};
+				unsigned long long _63b_fraction_without_hidden_bit{0};
+				int _exponent{0};
 				extract_fp_components(rhs, _sign, _exponent, _fr, _63b_fraction_without_hidden_bit);
 				_scale = _exponent - 1;
 				// how to interpret the fraction bits: TODO: this should be a static compile-time code block
@@ -241,19 +256,20 @@ public:
 	}
 
 	// operators
-	value<fbits> operator-() const {				
+	constexpr value<fbits> operator-() const {				
 		return value<fbits>(!_sign, _scale, _fraction, _zero, _inf);
 	}
 
 	// modifiers
-	void reset() {
+	constexpr void reset() & {
 		_sign  = false;
 		_scale = 0;
 		_nrOfBits = 0;
 		_inf = false;
 		_zero = false;
 		_nan = false;
-		_fraction.reset();
+		_fraction.reset(); // not constexpr
+                // _fraction= bitblock<fbits>{}; // work around
 	}
 	void set(bool sign, int scale, bitblock<fbits> fraction_without_hidden_bit, bool zero, bool inf, bool nan = false) {
 		_sign     = sign;

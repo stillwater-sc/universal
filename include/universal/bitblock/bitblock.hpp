@@ -18,21 +18,26 @@ namespace sw {
 		// bitblock is a template class implementing efficient multi-precision binary arithmetic and logic
 		template<size_t nbits>
 		class bitblock : public std::bitset<nbits> {
+                    using base= std::bitset<nbits>;
 		public:
-			bitblock() { setToZero(); }
+			constexpr bitblock() : base(0ull) {}
 
-			bitblock(const bitblock&) = default;
-			bitblock(bitblock&&) = default;
+			constexpr bitblock(const bitblock&) = default;
+			constexpr bitblock(bitblock&&) = default;
 
-			bitblock& operator=(const bitblock&) = default;
-			bitblock& operator=(bitblock&&) = default;
+			constexpr bitblock& operator=(const bitblock&) = default;
+			constexpr bitblock& operator=(bitblock&&) = default;
 
-			bitblock& operator=(unsigned long long rhs) {
+			constexpr bitblock& operator=(unsigned long long rhs) {
 				return (bitblock&)std::bitset<nbits>::operator=(rhs);
 			}
 
+			constexpr base& reset() { *this= bitblock{}; return *this; }
+			using base::reset; // make unary reset visible
+			
+			
 			void setToZero() { std::bitset<nbits>::reset(); }
-			bool load_bits(const std::string& string_of_bits) {
+			constexpr bool load_bits(const std::string& string_of_bits) {
 				if (string_of_bits.length() != nbits) return false;
 				setToZero();
 				int msb = nbits - 1;

@@ -549,10 +549,11 @@ public:
 	static constexpr size_t mbits   = 2 * fhbits;                 // size of the multiplier output
 	static constexpr size_t divbits = 3 * fhbits + 4;             // size of the divider output
 
-	posit() { setzero();  }
+	// constexpr posit() { setzero();  }
+	constexpr posit() : _raw_bits{} {}
 	
-	posit(const posit&) = default;
-	posit(posit&&) = default;
+	constexpr posit(const posit&) = default;
+	constexpr posit(posit&&) = default;
 	
 	posit& operator=(const posit&) = default;
 	posit& operator=(posit&&) = default;
@@ -564,19 +565,19 @@ public:
 	}
 
 	// initializers for native types
-	posit(const signed char initial_value)        { *this = initial_value; }
-	posit(const short initial_value)              { *this = initial_value; }
-	posit(const int initial_value)                { *this = initial_value; }
-	posit(const long initial_value)               { *this = initial_value; }
-	posit(const long long initial_value)          { *this = initial_value; }
-	posit(const char initial_value)               { *this = initial_value; }
-	posit(const unsigned short initial_value)     { *this = initial_value; }
-	posit(const unsigned int initial_value)       { *this = initial_value; }
-	posit(const unsigned long initial_value)      { *this = initial_value; }
-	posit(const unsigned long long initial_value) { *this = initial_value; }
-	posit(const float initial_value)              { *this = initial_value; }
-	posit(const double initial_value)             { *this = initial_value; }
-	posit(const long double initial_value)        { *this = initial_value; }
+	constexpr posit(const signed char initial_value)        { *this = initial_value; }
+	constexpr posit(const short initial_value)              { *this = initial_value; }
+	constexpr posit(const int initial_value)                { *this = initial_value; }
+	constexpr posit(const long initial_value)               { *this = initial_value; }
+	constexpr posit(const long long initial_value)          { *this = initial_value; }
+	constexpr posit(const char initial_value)               { *this = initial_value; }
+	constexpr posit(const unsigned short initial_value)     { *this = initial_value; }
+	constexpr posit(const unsigned int initial_value)       { *this = initial_value; }
+	constexpr posit(const unsigned long initial_value)      { *this = initial_value; }
+	constexpr posit(const unsigned long long initial_value) { *this = initial_value; }
+	constexpr posit(const float initial_value)              { *this = initial_value; }
+	constexpr posit(const double initial_value)             { *this = initial_value; }
+	constexpr posit(const long double initial_value)        { *this = initial_value; }
 
 	// assignment operators for native types
 	posit& operator=(const signed char rhs) {
@@ -692,8 +693,9 @@ public:
 	posit& operator=(const float rhs) {
 		return float_assign(rhs);
 	}
-	posit& operator=(const double rhs) {
-		return float_assign(rhs);
+	constexpr posit& operator=(const double rhs) & {
+            float_assign(rhs);
+            return *this; 
 	}
 	posit& operator=(const long double rhs) {
        	return float_assign(rhs);
@@ -1269,9 +1271,9 @@ private:
 		return s * r * e * f;
 	}
 	template <typename T>
-	posit<nbits, es>& float_assign(const T& rhs) {
+	constexpr posit<nbits, es>& float_assign(const T& rhs) {
 		constexpr int dfbits = std::numeric_limits<T>::digits - 1;
-		value<dfbits> v((T)rhs);
+		value<dfbits> v(static_cast<T>(rhs));
 
 		// special case processing
 		if (v.iszero()) {
