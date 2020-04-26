@@ -68,8 +68,8 @@ Run-time configuration is used to select modular vs saturation arithmetic.
 namespace sw {
 namespace unum {
 
-constexpr bool Modular    = true;
-constexpr bool Saturating = !Modular;
+constexpr bool Modulo    = true;
+constexpr bool Saturating = !Modulo;
 
 // forward references
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType> class fixpnt;
@@ -211,7 +211,7 @@ inline void convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic, BlockT
 }
 
 // fixpnt is a binary fixed point number of nbits with rbits after the radix point
-template<size_t _nbits, size_t _rbits, bool arithmetic = Modular, typename BlockType = uint8_t>
+template<size_t _nbits, size_t _rbits, bool arithmetic = Modulo, typename BlockType = uint8_t>
 class fixpnt {
 public:
 	static_assert(_nbits >= _rbits, "fixpnt configuration error: nbits must be greater or equal to rbits");
@@ -540,16 +540,28 @@ public:
 
 	// arithmetic operators
 	fixpnt& operator+=(const fixpnt& rhs) {
-		if (arithmetic == Modular) {
+		if (arithmetic == Modulo) {
 			bb += rhs.bb;
 		}
 		else {
-			std::cerr << "saturating add not implemented yet\n";
+			using biggerbb = blockbinary<nbits + 1, BlockType>;
+			biggerbb unrounded = uradd(bb, rhs.bb);
+			biggerbb saturation = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
+			if (unrounded > saturation) {
+				bb = saturation;
+				return *this;
+			}
+			saturation = maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
+			if (unrounded < saturation) {
+				bb = saturation;
+				return *this;
+			}
+			bb = unrounded;
 		}
 		return *this;
 	}
 	fixpnt& operator-=(const fixpnt& rhs) {
-		if (arithmetic == Modular) {
+		if (arithmetic == Modulo) {
 			operator+=(twos_complement(rhs));
 		}
 		else {
@@ -558,7 +570,7 @@ public:
 		return *this;
 	}
 	fixpnt& operator*=(const fixpnt& rhs) {
-		if (arithmetic == Modular) {
+		if (arithmetic == Modulo) {
 //			blockbinary<2 * nbits, BlockType> c = urmul(this->bb, rhs.bb);
 			blockbinary<2 * nbits, BlockType> c = urmul2(this->bb, rhs.bb);
 			bool roundUp = c.roundingMode(rbits);
@@ -572,7 +584,7 @@ public:
 		return *this;
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
-		if (arithmetic == Modular) {
+		if (arithmetic == Modulo) {
 			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
 			blockbinary<roundingDecisionBits, BlockType> roundingBits;
 			blockbinary<2 * nbits + roundingDecisionBits, BlockType> c = urdiv(this->bb, rhs.bb, roundingBits);

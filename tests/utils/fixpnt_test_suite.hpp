@@ -168,7 +168,7 @@ int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) 
 
 	// execute the test
 	int nrOfFailedTests = 0;
-	double minpos = double(minpos_fixpnt<nbits + 1, rbits + 1, sw::unum::Modular, uint32_t>());
+	double minpos = double(minpos_fixpnt<nbits + 1, rbits + 1, sw::unum::Modulo, uint32_t>());
 	double eps;
 	double da, input;
 	fixpnt<nbits, rbits, arithmetic, BlockType> nut; // NUT: number under test
@@ -206,7 +206,7 @@ int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) 
 				// special case of projecting to maxneg
 				input = da - eps;
 				nut = input;
-				double maxneg = double(maxneg_fixpnt<nbits, rbits, sw::unum::Modular, uint32_t>());
+				double maxneg = double(maxneg_fixpnt<nbits, rbits, sw::unum::Modulo, uint32_t>());
 				nrOfFailedTests += Compare(input, nut, maxneg, bReportIndividualTestCases);
 			}
 			else if (i == NR_TEST_CASES - 1) {
@@ -328,7 +328,7 @@ template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 int VerifyComplexAddition(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
-	fixpnt<nbits, rbits, Modular> a, b, result, cref;
+	fixpnt<nbits, rbits, Modulo> a, b, result, cref;
 	double ref;
 
 	double da, db;
