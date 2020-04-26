@@ -603,6 +603,13 @@ inline blockbinary<nbits + 1, BlockType> uradd(const blockbinary<nbits, BlockTyp
 	return result += blockbinary<nbits + 1, BlockType>(b);
 }
 
+// unrounded subtraction, returns a blockbinary that is of size nbits+1
+template<size_t nbits, typename BlockType>
+inline blockbinary<nbits + 1, BlockType> ursub(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
+	blockbinary<nbits + 1, BlockType> result(a);
+	return result -= blockbinary<nbits + 1, BlockType>(b);
+}
+
 #define TRACE_URMUL 0
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 // using brute-force sign-extending of operands to yield correct sign-extended result for 2*nbits 2's complement.

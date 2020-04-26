@@ -565,7 +565,19 @@ public:
 			operator+=(twos_complement(rhs));
 		}
 		else {
-			std::cerr << "saturating subtract not implemented yet\n";
+			using biggerbb = blockbinary<nbits + 1, BlockType>;
+			biggerbb unrounded = ursub(bb, rhs.getbb());
+			biggerbb saturation = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
+			if (unrounded > saturation) {
+				bb = saturation;
+				return *this;
+			}
+			saturation = maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
+			if (unrounded < saturation) {
+				bb = saturation;
+				return *this;
+			}
+			bb = unrounded;
 		}
 		return *this;
 	}
