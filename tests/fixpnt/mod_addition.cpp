@@ -37,7 +37,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -54,7 +54,7 @@ try {
 
 	fixpnt<8, 4> f;
 	f = 3.5f;
-	bitset<8> bs(f.at(0));
+	bitset<8> bs(f.getbb().block(0));
 	cout << bs << endl;
 	cout << f << endl;
 

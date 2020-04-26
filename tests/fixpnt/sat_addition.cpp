@@ -22,7 +22,7 @@
 template<size_t nbits, size_t rbits, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::unum::fixpnt<nbits, rbits> a, b, cref, result;
+	sw::unum::fixpnt<nbits, rbits, sw::unum::Saturating> a, b, cref, result;
 	a = _a;
 	b = _b;
 	result = a + b;
@@ -54,7 +54,7 @@ try {
 
 	fixpnt<8, 4> f;
 	f = 3.5f;
-	bitset<8> bs(f.at(0));
+	bitset<8> bs(f.getbb().block(0));
 	cout << bs << endl;
 	cout << f << endl;
 
@@ -81,16 +81,16 @@ try {
 		cout << a << " + " << b << " = " << c << endl;
 	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Saturating, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "addition");
 
 
 #if STRESS_TESTING
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modular,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,2,Modular,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,3,Modular,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 4, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,4,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0, Saturating, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Saturating, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2, Saturating, uint8_t>("Manual Testing", true), "fixpnt<4,2,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3, Saturating, uint8_t>("Manual Testing", true), "fixpnt<4,3,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 4, Saturating, uint8_t>("Manual Testing", true), "fixpnt<4,4,Modular,uint8_t>", "addition");
 #endif
 
 #else

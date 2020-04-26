@@ -69,7 +69,7 @@ namespace sw {
 namespace unum {
 
 constexpr bool Modular    = true;
-constexpr bool Saturation = !Modular;
+constexpr bool Saturating = !Modular;
 
 // forward references
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType> class fixpnt;
@@ -178,7 +178,7 @@ fixpnt<nbits, rbits, arithmetic, BlockType> minneg_fixpnt() {
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline void convert(int64_t v, fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	if (0 == v) { result.setzero();	return; }
-	if (arithmetic == Saturation) { // check if we are in the representable range
+	if (arithmetic == Saturating) { // check if we are in the representable range
 		result.setmaxpos();	if (v >= (long double)result) return;
 		result.setmaxneg();	if (v <= (long double)result) return;
 	}
@@ -197,7 +197,7 @@ inline void convert(int64_t v, fixpnt<nbits, rbits, arithmetic, BlockType>& resu
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline void convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	if (0 == v) { result.setzero();	return;	}
-	if (arithmetic == Saturation) {	// check if we are in the representable range
+	if (arithmetic == Saturating) {	// check if we are in the representable range
 		result.setmaxpos();	if (v >= (long double)result) return;
 		result.setmaxneg();	if (v <= (long double)result) return;
 	}
@@ -319,7 +319,7 @@ public:
 		if (rhs == 0.0) {
 			return *this;
 		}
-		if (arithmetic == Saturation) {	// check if the value is in the representable range
+		if (arithmetic == Saturating) {	// check if the value is in the representable range
 			fixpnt<nbits, rbits, arithmetic, BlockType> a;
 			a.setmaxpos();
 			if (rhs >= float(a)) { return *this = a; } // set to max pos value
@@ -371,7 +371,7 @@ public:
 		if (rhs == 0.0) {
 			return *this;
 		}
-		if (arithmetic == Saturation) {	// check if the value is in the representable range
+		if (arithmetic == Saturating) {	// check if the value is in the representable range
 			fixpnt<nbits, rbits, arithmetic, BlockType> a;
 			a.setmaxpos();
 			if (rhs >= float(a)) { return *this = a; } // set to max pos value
@@ -752,7 +752,7 @@ protected:
 	template<typename Ty>
 	void float_assign(Ty& rhs) {
 		clear();
-		if (arithmetic == Saturation) {
+		if (arithmetic == Saturating) {
 			// we are implementing saturation for values that are outside of the fixed-point's range
 			// check if we are in the representable range
 			if (rhs >= (Ty)maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>()) {
