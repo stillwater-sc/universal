@@ -1,4 +1,4 @@
-// conversion.cpp: functional tests for fixed-point conversions
+// mod_conversion.cpp: functional tests for fixed-point modulo conversions
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

@@ -1,4 +1,4 @@
-﻿// subnormal_conversion.cpp: functional tests for subnormal IEEE-754 floating-point to fixed-point 
+﻿// sat_subnormal_conversion.cpp: functional tests for subnormal IEEE-754 floating-point to fixed-point 
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

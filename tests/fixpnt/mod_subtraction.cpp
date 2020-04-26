@@ -1,4 +1,4 @@
-// subtraction.cpp: functional tests for arbitrary configuration fixed-point subtraction
+// mod_subtraction.cpp: functional tests for arbitrary configuration fixed-point modulo subtraction
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

@@ -1,4 +1,4 @@
-// addition.cpp: functional tests for arbitrary configuration fixed-point addition
+// mod_addition.cpp: functional tests for arbitrary configuration fixed-point modulo addition
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

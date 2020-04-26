@@ -1,4 +1,4 @@
-// multiplication.cpp: functional tests for arbitrary configuration fixed-point multiplication
+// complex_mod_multiplication.cpp: functional tests for arbitrary configuration fixed-point complex multiplication
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -40,7 +40,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)

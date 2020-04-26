@@ -1,4 +1,4 @@
-// division.cpp: functional tests for arbitrary configuration fixed-point division
+// sat_division.cpp: functional tests for arbitrary configuration fixed-point saturating division
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
