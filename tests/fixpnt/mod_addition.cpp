@@ -1,4 +1,4 @@
-// addition.cpp: functional tests for arbitrary configuration fixed-point addition
+// mod_addition.cpp: functional tests for arbitrary configuration fixed-point modulo addition
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -37,7 +37,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -54,7 +54,7 @@ try {
 
 	fixpnt<8, 4> f;
 	f = 3.5f;
-	bitset<8> bs(f.byte(0));
+	bitset<8> bs(f.at(0));
 	cout << bs << endl;
 	cout << f << endl;
 
@@ -81,16 +81,17 @@ try {
 		cout << a << " + " << b << " = " << c << endl;
 	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "addition");
+	bReportIndividualTestCases = true;
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,1,Modular,uint8_t>", "addition");
 
 
 #if STRESS_TESTING
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modular,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,2,Modular,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,3,Modular,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 4, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,4,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,0,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,1,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,2,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,3,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 4, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,4,Modular,uint8_t>", "addition");
 #endif
 
 #else

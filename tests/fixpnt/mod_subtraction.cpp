@@ -1,4 +1,4 @@
-// subtraction.cpp: functional tests for arbitrary configuration fixed-point subtraction
+// mod_subtraction.cpp: functional tests for arbitrary configuration fixed-point modulo subtraction
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -60,6 +60,9 @@ try {
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 4>(0.5f, 1.0f);
+
+	bReportIndividualTestCases = true;
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,0,Modular,uint8_t>", "subtraction");
 
 #if STRESS_TESTING
 	// manual exhaustive test

@@ -1,4 +1,4 @@
-// division.cpp: functional tests for arbitrary configuration fixed-point division
+// mod_division.cpp: functional tests for arbitrary configuration fixed-point modulo division
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -67,7 +67,7 @@ inline sw::unum::blockbinary<2 * nbits + roundingBits, BlockType> unrounded_div(
 	// 2's complement special case -max requires an signed int that is 1 bit bigger to represent abs()
 	bool a_sign = a.sign();
 	bool b_sign = b.sign();
-	bool result_negative = (a_sign ^ b_sign);
+	//bool result_negative = (a_sign ^ b_sign);
 
 	// normalize both arguments to positive in new size
 	blockbinary<nbits + 1, BlockType> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
