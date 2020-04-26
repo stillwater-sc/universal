@@ -545,18 +545,18 @@ public:
 		}
 		else {
 			using biggerbb = blockbinary<nbits + 1, BlockType>;
-			biggerbb unrounded = uradd(bb, rhs.bb);
+			biggerbb c = uradd(bb, rhs.bb);  // c = a + b
 			biggerbb saturation = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
-			if (unrounded > saturation) {
+			if (c > saturation) {
 				bb = saturation;
 				return *this;
 			}
 			saturation = maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
-			if (unrounded < saturation) {
+			if (c < saturation) {
 				bb = saturation;
 				return *this;
 			}
-			bb = unrounded;
+			bb = c;
 		}
 		return *this;
 	}
@@ -566,7 +566,7 @@ public:
 		}
 		else {
 			using biggerbb = blockbinary<nbits + 1, BlockType>;
-			biggerbb unrounded = ursub(bb, rhs.getbb());
+			biggerbb c = ursub(bb, rhs.getbb());  // c = a - b
 			biggerbb saturation = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
 			if (unrounded > saturation) {
 				bb = saturation;
@@ -591,7 +591,21 @@ public:
 			this->bb = c; // select the lower nbits of the result
 		}
 		else {
-			std::cerr << "saturating multiply not implemented yet\n";
+			blockbinary<2 * nbits, BlockType> c = urmul2(this->bb, rhs.bb);
+			blockbinary<2 * nbits, BlockType> saturation = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
+			bool roundUp = c.roundingMode(rbits);
+			c >>= rbits;
+			if (c > saturation) {
+				bb = saturation;
+				return *this;
+			}
+			saturation = maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
+			if (c < saturation) {
+				bb = saturation;
+				return *this;
+			}
+			if (roundUp) ++c;
+			this->bb = c; // select the lower nbits of the result
 		}
 		return *this;
 	}
