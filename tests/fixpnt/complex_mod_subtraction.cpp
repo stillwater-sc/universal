@@ -72,7 +72,8 @@ try {
 
 #if MANUAL_TESTING
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "addition");
+	bReportIndividualTestCases = true;
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,1,Modular,uint8_t>", "addition");
 
 
 #if STRESS_TESTING

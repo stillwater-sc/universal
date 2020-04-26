@@ -323,7 +323,7 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 	return nrOfFailedTests;
 }
 
-// enumerate all addition cases for an fixpnt<nbits,rbits> configuration
+// enumerate all complex addition cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 int VerifyComplexAddition(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);

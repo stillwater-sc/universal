@@ -79,16 +79,40 @@ try {
 		std::complex<double> z1 = 1i * 1i;     // imaginary unit squared
 		std::cout << "i * i = " << z1 << '\n';
 
+#if defined(__GNUG__)
+		// the pow and exp functions don't match in g++
+		// no idea how to fix the code below to make it compile with g++
+#else
 		std::complex<double> z2 = std::pow(1.0i, 2.0); // imaginary unit squared
 		std::cout << "pow(i, 2) = " << z2 << '\n';
 
 		double PI = std::acos(-1);
 		std::complex<double> z3 = std::exp(1i * PI); // Euler's formula
 		std::cout << "exp(i * pi) = " << z3 << '\n';
+#endif
 
 		std::complex<double> z4 = 1. + 2i, z5 = 1. - 2i; // conjugates
 		std::cout << "(1+2i)*(1-2i) = " << z4 * z5 << '\n';
 	}
+
+#if defined(__GNUG__)
+	// for some reason the g++ doesn't compile this section as it is casting the constants differently
+	// than other compilers.
+			// no idea how to fix the code below to make it compile with g++
+/*
+	error: conversion from '__complex__ int' to non - scalar type 'std::complex<sw::unum::fixpnt<8, 4> >' requested
+		std::complex<Real> z1 = 1i * 1i;     // imaginary unit squared
+		                        ~~~^~~~
+	error : conversion from '__complex__ double' to non - scalar type 'std::complex<sw::unum::fixpnt<8, 4> >' requested
+        std::complex<Real> z4 = 1.0 + 2i, z5 = 1.0 - 2i; // conjugates
+		                        ~~~~^~~~
+	error : conversion from '__complex__ double' to non - scalar type 'std::complex<sw::unum::fixpnt<8, 4> >' requested
+        std::complex<Real> z4 = 1.0 + 2i, z5 = 1.0 - 2i; // conjugates
+		                                       ~~~~^~~~
+*/
+    // furthermore, the pow and exp functions don't match the correct complex<double> arguments in g++
+
+#else
 
 	{
 		// all the literals are marshalled through the std library double native type for complex literals
@@ -101,7 +125,7 @@ try {
 		std::complex<Real> z1 = 1i * 1i;     // imaginary unit squared
 		std::cout << "i * i = " << z1 << '\n';
 
-		std::complex<Real> z2 = pow(1.0i, 2.0); // imaginary unit squared
+		std::complex<double> z2 = std::pow(1.0i, 2.0); // imaginary unit squared
 		std::cout << "pow(i, 2) = " << z2 << '\n';
 
 		double PI = std::acos(-1);
@@ -111,7 +135,7 @@ try {
 		std::complex<Real> z4 = 1.0 + 2i, z5 = 1.0 - 2i; // conjugates
 		std::cout << "(1+2i)*(1-2i) = " << z4 * z5 << '\n';
 	}
-
+#endif
 
 //	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "addition");
 

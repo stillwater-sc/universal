@@ -61,6 +61,9 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<8, 4>(0.5f, 1.0f);
 
+	bReportIndividualTestCases = true;
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,0,Modular,uint8_t>", "subtraction");
+
 #if STRESS_TESTING
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modular,uint8_t>", "subtraction");
