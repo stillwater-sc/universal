@@ -323,6 +323,56 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 	return nrOfFailedTests;
 }
 
+// enumerate all addition cases for an fixpnt<nbits,rbits> configuration
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+int VerifyComplexAddition(std::string tag, bool bReportIndividualTestCases) {
+	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	int nrOfFailedTests = 0;
+	fixpnt<nbits, rbits, Modular> a, b, result, cref;
+	double ref;
+
+	double da, db;
+	for (size_t i = 0; i < NR_VALUES; i++) {
+		a.set_raw_bits(i);
+		da = double(a);
+		for (size_t j = 0; j < NR_VALUES; j++) {
+			b.set_raw_bits(j);
+			db = double(b);
+			ref = da + db;
+#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
+			// catching overflow
+			try {
+				result = a + b;
+			}
+			catch (...) {
+				if (ref > double(maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>()) || ref < double(maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>())) {
+					// correctly caught the overflow exception
+					continue;
+				}
+				else {
+					nrOfFailedTests++;
+				}
+			}
+
+#else
+			result = a + b;
+#endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
+			cref = ref;
+			if (result != cref) {
+				nrOfFailedTests++;
+				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
+			}
+			else {
+				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
+			}
+			if (nrOfFailedTests > 100) return nrOfFailedTests;
+		}
+		if (i % 1024 == 0) std::cout << '.';
+	}
+	std::cout << std::endl;
+	return nrOfFailedTests;
+}
+
 
 // enumerate all subtraction cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
