@@ -72,47 +72,6 @@ try {
 
 #if MANUAL_TESTING
 
-	{
-		using namespace std::complex_literals;
-		std::cout << std::fixed << std::setprecision(1);
-
-		std::complex<double> z1 = 1i * 1i;     // imaginary unit squared
-		std::cout << "i * i = " << z1 << '\n';
-
-		std::complex<double> z2 = std::pow(1i, 2); // imaginary unit squared
-		std::cout << "pow(i, 2) = " << z2 << '\n';
-
-		double PI = std::acos(-1);
-		std::complex<double> z3 = std::exp(1i * PI); // Euler's formula
-		std::cout << "exp(i * pi) = " << z3 << '\n';
-
-		std::complex<double> z4 = 1. + 2i, z5 = 1. - 2i; // conjugates
-		std::cout << "(1+2i)*(1-2i) = " << z4 * z5 << '\n';
-	}
-
-	{
-		// all the literals are marshalled through the std library double native type for complex literals
-		// defining them for fixpnt is syntactically unattractive as the "i" literal is reserved for native types,
-		// so our literal type would need to be non-standard anyway as "_i"
-		using namespace sw::unum::complex_literals;
-		using Real = sw::unum::fixpnt<8, 4>;
-		std::cout << std::fixed << std::setprecision(1);
-
-		std::complex<Real> z1 = 1i * 1i;     // imaginary unit squared
-		std::cout << "i * i = " << z1 << '\n';
-
-		std::complex<Real> z2 = pow(1i, 2); // imaginary unit squared
-		std::cout << "pow(i, 2) = " << z2 << '\n';
-
-		double PI = std::acos(-1);
-		std::complex<Real> z3 = std::exp(1i * PI); // Euler's formula
-		std::cout << "exp(i * pi) = " << z3 << '\n';
-
-		std::complex<Real> z4 = 1.0 + 2i, z5 = 1.0 - 2i; // conjugates
-		std::cout << "(1+2i)*(1-2i) = " << z4 * z5 << '\n';
-	}
-
-
 //	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "addition");
 
 

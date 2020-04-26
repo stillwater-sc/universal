@@ -81,16 +81,17 @@ try {
 		cout << a << " + " << b << " = " << c << endl;
 	}
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "addition");
+	bReportIndividualTestCases = true;
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,1,Modular,uint8_t>", "addition");
 
 
 #if STRESS_TESTING
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modular,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modular,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,2,Modular,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,3,Modular,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 4, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,4,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,0,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,1,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,2,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,3,Modular,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 4, Modular, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,4,Modular,uint8_t>", "addition");
 #endif
 
 #else
