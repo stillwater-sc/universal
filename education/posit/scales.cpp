@@ -5,6 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <universal/posit/posit>
+#include <universal/posit/numeric_limits.hpp>
 
 #ifdef UNIVERSAL_MPRF_ENABLED
 // TODO: this needs to be done with MPRF as these scale factors grow very large

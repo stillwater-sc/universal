@@ -568,16 +568,16 @@ public:
 			using biggerbb = blockbinary<nbits + 1, BlockType>;
 			biggerbb c = ursub(bb, rhs.getbb());  // c = a - b
 			biggerbb saturation = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
-			if (unrounded > saturation) {
+			if (c > saturation) {
 				bb = saturation;
 				return *this;
 			}
 			saturation = maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
-			if (unrounded < saturation) {
+			if (c < saturation) {
 				bb = saturation;
 				return *this;
 			}
-			bb = unrounded;
+			bb = c;
 		}
 		return *this;
 	}
