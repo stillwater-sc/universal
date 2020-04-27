@@ -42,6 +42,51 @@ void printScaleFactors(uint64_t scale_factors[MAX_ES][MAX_K]) {
 }
 #endif
 
+// print scales of different posit configurations
+void ReportStandardPositScales() {
+	using namespace sw::unum;
+
+
+	std::cout << "es = 1" << std::endl;
+	std::cout << posit_range<8, 1>() << std::endl;
+	std::cout << posit_range<16, 1>() << std::endl;
+	std::cout << posit_range<32, 1>() << std::endl;
+	std::cout << posit_range<64, 1>() << std::endl;
+	std::cout << posit_range<128, 1>() << std::endl;
+	std::cout << posit_range<256, 1>() << std::endl;
+
+	std::cout << "es = 2" << std::endl;
+	std::cout << posit_range<8, 2>() << std::endl;
+	std::cout << posit_range<16, 2>() << std::endl;
+	std::cout << posit_range<32, 2>() << std::endl;
+	std::cout << posit_range<64, 2>() << std::endl;
+	std::cout << posit_range<128, 2>() << std::endl;
+	std::cout << posit_range<256, 2>() << std::endl;
+
+	std::cout << "es = 3" << std::endl;
+	std::cout << posit_range<8, 3>() << std::endl;
+	std::cout << posit_range<16, 3>() << std::endl;
+	std::cout << posit_range<32, 3>() << std::endl;
+	std::cout << posit_range<64, 3>() << std::endl;
+	std::cout << posit_range<128, 3>() << std::endl;
+	std::cout << posit_range<256, 3>() << std::endl;
+
+	std::cout << "es = 4" << std::endl;
+	std::cout << posit_range<8, 4>() << std::endl;
+	std::cout << posit_range<16, 4>() << std::endl;
+	std::cout << posit_range<32, 4>() << std::endl;
+	std::cout << posit_range<64, 4>() << std::endl;
+	std::cout << posit_range<128, 4>() << std::endl;
+	std::cout << posit_range<256, 4>() << std::endl;
+
+	std::cout << "es = 5" << std::endl;
+	std::cout << posit_range<8, 5>() << std::endl;
+	std::cout << posit_range<16, 5>() << std::endl;
+	std::cout << posit_range<32, 5>() << std::endl;
+	std::cout << posit_range<64, 5>() << std::endl;
+	std::cout << posit_range<128, 5>() << std::endl;
+	std::cout << posit_range<256, 5>() << std::endl;
+}
 
 // print scales of different posit configurations
 // useed = 2^(2^es) and thus is just a function of the exponent configuration
@@ -308,6 +353,7 @@ try {
 
 #else
 	ReportPositScales();
+	ReportStandardPositScales();
 
 #ifdef STRESS_TEST
 
