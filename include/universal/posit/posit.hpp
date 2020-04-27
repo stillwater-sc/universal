@@ -1268,6 +1268,7 @@ private:
 		long double r = _regime.value();
 		long double e = _exponent.value();
 		long double f = (1.0 + _fraction.value());
+		std::cout << s << ' ' << r << ' ' << e << ' ' << f << std::endl;
 		return s * r * e * f;
 	}
 	template <typename T>
