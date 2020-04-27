@@ -41,18 +41,18 @@ public:
 	inline int regime_run() const {
 		return _run;
 	}
-	double value() const {
-		double scale;
+	long double value() const {
+		long double scale;
 		int e2 = (1 << es) * _k;
 		if (e2 < -63 || e2 > 63) {
 			scale = std::pow(2.0, e2);  // TODO: needs a native posit implementation
 		}
 		else {
 			if (e2 >= 0) {
-				scale = double((uint64_t(1) << e2));
+				scale = (long double)((uint64_t(1) << e2));
 			}
 			else {
-				scale = double(1.0) / double(uint64_t(1) << -e2);
+				scale = 1.0l / (long double)(uint64_t(1) << -e2);
 			}
 		}
 		return scale;

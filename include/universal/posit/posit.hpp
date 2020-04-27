@@ -1264,7 +1264,7 @@ private:
 		exponent<nbits, es>  _exponent;
 		fraction<fbits>      _fraction;
 		decode(_raw_bits, _sign, _regime, _exponent, _fraction);
-		long double s = (_sign ? -1.0 : 1.0);
+		long double s = (_sign ? -1.0l : 1.0l);
 		long double r = _regime.value();
 		long double e = _exponent.value();
 		long double f = (1.0 + _fraction.value());
