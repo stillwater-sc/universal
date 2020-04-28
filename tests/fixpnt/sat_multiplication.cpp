@@ -27,7 +27,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	b = _b;
 	result = a * b;
 	Ty ref = _a * _b;
-	full = (long long)ref;
+	full = ref;
 	cref = ref;
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(nbits - 2);
@@ -68,15 +68,34 @@ try {
 
 	float fa = -8.0f;
 	float fb = 0.125f;
-	GenerateTestCase<9, 4>(fa, fb);
-	GenerateTestCase<9, 4>(fb, fa);
+	GenerateTestCase<8, 4>(fa, fb);
+	GenerateTestCase<8, 4>(fb, fa);
 
 	// generate individual testcases to hand trace/debug
+
+	// fixpnt<4,1>
 	GenerateTestCase<4, 1>( 1.0f,  2.0f);
 	GenerateTestCase<4, 1>(-0.5f, -3.5f);
 	GenerateTestCase<4, 1>(-3.5f, -0.5f);
-
+	GenerateTestCase<4, 1>( 1.5f,  2.5f);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", "multiplication");
+
+	cout << endl;
+
+	// fixpnt<6,2>
+	GenerateTestCase<6, 2>(0.25f, -8.0f);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,2,Saturating,uint8_t>", "multiplication");
+
+	cout << endl;
+
+	// fixpnt<6,5>
+	GenerateTestCase<6, 5>(0.03125f, -1.0f);
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 5, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,5,Saturating,uint8_t>", "multiplication");
+
+	cout << endl;
+
+	// fixpnt<8,4>
+	GenerateTestCase<8, 4>(1.125f, -7.0625f);
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Saturating,uint8_t>", "multiplication");
 
 #if STRESS_TESTING

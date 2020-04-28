@@ -547,12 +547,12 @@ public:
 			using biggerbb = blockbinary<nbits + 1, BlockType>;
 			biggerbb c = uradd(bb, rhs.bb);  // c = a + b
 			biggerbb saturation = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
-			if (c > saturation) {
+			if (c >= saturation) {
 				bb = saturation;
 				return *this;
 			}
 			saturation = maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
-			if (c < saturation) {
+			if (c <= saturation) {
 				bb = saturation;
 				return *this;
 			}
@@ -568,12 +568,12 @@ public:
 			using biggerbb = blockbinary<nbits + 1, BlockType>;
 			biggerbb c = ursub(bb, rhs.getbb());  // c = a - b
 			biggerbb saturation = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
-			if (c > saturation) {
+			if (c >= saturation) {
 				bb = saturation;
 				return *this;
 			}
 			saturation = maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
-			if (c < saturation) {
+			if (c <= saturation) {
 				bb = saturation;
 				return *this;
 			}
@@ -595,7 +595,7 @@ public:
 			blockbinary<2 * nbits, BlockType> saturation = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
 			bool roundUp = c.roundingMode(rbits);
 			c >>= rbits;
-			if (c > saturation) {
+			if (c >= saturation) {
 				bb = saturation;
 				return *this;
 			}
