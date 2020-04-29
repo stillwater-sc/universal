@@ -28,7 +28,7 @@ int VerifyArithmeticRightShift(std::string tag, bool bReportIndividualTestCases)
 	blockbinary<nbits, BlockType> a, result;
 	blockbinary<nbits, BlockType> mostNegative = maxneg<nbits, BlockType>();
 	int64_t shiftRef, resultRef;
-	for (long i = 0; i < nbits+1; i++) {
+	for (size_t i = 0; i < nbits+1; i++) {
 		a = mostNegative;
 		int64_t denominator = (1ll << i);
 		if (i == 63) { // special case for int64_t shift
