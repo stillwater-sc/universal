@@ -285,13 +285,20 @@ public:
 						this->set(i);
 					}
 				}
+				else {
+					// clean up the blocks we have shifted clean
+					bitsToShift += (long)(blockShift * bitsInBlock);
+					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+						this->reset(i);
+					}
+				}
 				return *this;
 			}
 		}
 		//BlockType mask = 0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock);  // is that shift necessary?
 		BlockType mask = BlockType(0xFFFFFFFFFFFFFFFFull);
 		mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
-		for (unsigned i = 0; i < MSU; ++i) {
+		for (unsigned i = 0; i < MSU; ++i) {  // TODO: can this be improved? we should not have to work on the upper blocks in case we block shifted
 			_block[i] >>= bitsToShift;
 			// mix in the bits from the left
 			BlockType bits = (mask & _block[i + 1]);
@@ -305,6 +312,13 @@ public:
 			bitsToShift += (long)(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
 				this->set(i);
+			}
+		}
+		else {
+			// clean up the blocks we have shifted clean
+			bitsToShift += (long)(blockShift * bitsInBlock);
+			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+				this->reset(i);
 			}
 		}
 
