@@ -18,20 +18,22 @@ namespace unum {
 // They should not be used for the core algorithms.
 
 // calculate exponential scale of maxpos
-template<size_t nbits, size_t rbits, bool arithmetic>
+template<size_t nbits, size_t rbits>
 int scale_maxpos_fixpnt() {
 	assert(nbits >= rbits);
 	return (nbits > rbits) ? (nbits - rbits - 1) : 0;
 }
 
 // calculate exponential scale of minpos
-template<size_t nbits, size_t rbits, bool arithmetic>
+template<size_t nbits, size_t rbits>
 int scale_minpos_fixpnt() {
 	return -int(rbits);
 }
 
+/*  these should not be here
+  it is incorrect to calculate these independent of the fixpnt sampling
 // calculate the value of maximum positive number
-template<size_t nbits, size_t rbits, bool arithmetic>
+template<size_t nbits, size_t rbits>
 long double value_maxpos_fixpnt() {
 	// 2's complement maxpos value = 2^(nbits-1) - 1
 	// fixed-point's shift is 2^rbits
@@ -42,7 +44,7 @@ long double value_maxpos_fixpnt() {
 }
 
 // calculate the value of maximum negative number
-template<size_t nbits, size_t rbits, bool arithmetic>
+template<size_t nbits, size_t rbits>
 long double value_maxneg_fixpnt() {
 	// 2's complement maxneg value = 2^(nbits-1)
 	// fixed-point's shift is 2^rbits
@@ -53,29 +55,31 @@ long double value_maxneg_fixpnt() {
 }
 
 // calculate the value of minimum positive number
-template<size_t nbits, size_t rbits, bool arithmetic>
+template<size_t nbits, size_t rbits>
 long double value_minpos_fixpnt() {
 	long double denominator = (long double)(1ul << (rbits));
 	return 1.0l / denominator;
 }
 
 // calculate the value of minimum positive number
-template<size_t nbits, size_t rbits, bool arithmetic>
+template<size_t nbits, size_t rbits>
 long double value_minneg_fixpnt() {
 	long double denominator = (long double)(1ul << (rbits));
 	return -1.0l / denominator;
 }
+*/
 
 // generate the maxneg through maxpos value range of a fixed-point configuration
-template<size_t nbits, size_t rbits, bool arithmetic = Modular>
+// the type of arithmetic, Modulo or Saturating, does not affect the range
+template<size_t nbits, size_t rbits>
 void ReportFixedPointRanges(std::ostream& ostr = std::cout) {
 	using namespace std;
-	ostr << "fixpnt<" << nbits << ", " << rbits << ", " << (arithmetic ? "Modular" : "Saturating") << "> : "
-		<< maxneg_fixpnt<nbits, rbits, arithmetic>() << " "
-		<< minneg_fixpnt<nbits, rbits, arithmetic>() << " "
+	ostr << "fixpnt<" << nbits << ", " << rbits << "> : "
+		<< maxneg_fixpnt<nbits, rbits, sw::unum::Saturating, uint32_t>() << " "
+		<< minneg_fixpnt<nbits, rbits, sw::unum::Saturating, uint32_t>() << " "
 		<< "0 "
-		<< minpos_fixpnt<nbits, rbits, arithmetic>() << " "
-		<< maxpos_fixpnt<nbits, rbits, arithmetic>()
+		<< minpos_fixpnt<nbits, rbits, sw::unum::Saturating, uint32_t>() << " "
+		<< maxpos_fixpnt<nbits, rbits, sw::unum::Saturating, uint32_t>()
 		<< endl;
 }
 

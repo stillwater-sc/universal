@@ -45,4 +45,38 @@ void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const 
 		<< std::endl;
 }
 
+template<size_t nbits, typename Ty = uint8_t>
+void ReportArithmeticShiftError(std::string test_case, std::string op, const sw::unum::blockbinary<nbits, Ty>& a, const long divider, const sw::unum::blockbinary<nbits, Ty>& result, int64_t reference) {
+	using namespace sw::unum;
+	auto old_precision = std::cerr.precision();
+	std::cerr << test_case << " "
+		<< std::setprecision(20)
+		<< std::setw(COLUMN_WIDTH) << (long long)a    // to_hex(a, true)
+		<< " " << op << " "
+		<< std::setw(COLUMN_WIDTH) << divider    // to_hex(b, true)
+		<< " != "
+		<< std::setw(COLUMN_WIDTH) << (long long)result // to_hex(result, true) 
+		<< " golden reference is "
+		<< std::setw(COLUMN_WIDTH) << reference << ' ' << to_binary(reference, nbits)
+		<< " " << to_binary(result, true) << " vs " << to_binary(reference, nbits)
+		<< std::setprecision(old_precision)
+		<< std::endl;
+}
 
+template<size_t nbits, typename Ty = uint8_t>
+void ReportArithmeticShiftSuccess(std::string test_case, std::string op, const sw::unum::blockbinary<nbits, Ty>& a, const long divider, const sw::unum::blockbinary<nbits, Ty>& result, int64_t reference) {
+	using namespace sw::unum;
+	auto old_precision = std::cerr.precision();
+	std::cerr << test_case << " "
+		<< std::setprecision(20)
+		<< std::setw(COLUMN_WIDTH) << (long long)a
+		<< " " << op << " "
+		<< std::setw(COLUMN_WIDTH) << divider    
+		<< " == "
+		<< std::setw(COLUMN_WIDTH) << (long long)result
+		<< " matches reference   "
+		<< std::setw(COLUMN_WIDTH) << reference << ' ' << to_binary(reference, nbits)
+		<< " " << to_binary(result, true) << " vs " << to_binary(reference, nbits)
+		<< std::setprecision(old_precision)
+		<< std::endl;
+}

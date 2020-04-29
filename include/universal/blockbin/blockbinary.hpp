@@ -58,7 +58,7 @@ struct quorem {
 };
 
 // maximum positive 2's complement number: b01111...1111
-template<size_t nbits, typename BlockType>
+template<size_t nbits, typename BlockType = uint8_t>
 blockbinary<nbits, BlockType> maxpos() {
 	blockbinary<nbits, BlockType> mpos;
 	mpos.flip();
@@ -67,7 +67,7 @@ blockbinary<nbits, BlockType> maxpos() {
 }
 
 // maximum negative 2's complement number: b1000...0000
-template<size_t nbits, typename BlockType>
+template<size_t nbits, typename BlockType = uint8_t>
 blockbinary<nbits, BlockType> maxneg() {
 	blockbinary<nbits, BlockType> maximum;
 	maximum.set(nbits - 1);
@@ -109,7 +109,7 @@ public:
 
 	static constexpr size_t MSU = nrBlocks - 1; // MSU == Most Significant Unit
 	// warning C4310 : cast truncates constant value
-	static constexpr size_t MSU_MASK = (BlockType(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr BlockType MSU_MASK = (BlockType(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr BlockType SIGN_BIT_MASK = BlockType(BlockType(1) << ((nbits - 1) % bitsInBlock));
 
 	// constructors
@@ -229,6 +229,7 @@ public:
 	}
 	// shift left operator
 	blockbinary& operator<<=(long bitsToShift) {
+		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
 		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
 		signed blockShift = 0;
@@ -257,8 +258,12 @@ public:
 	}
 	// shift right operator
 	blockbinary& operator>>=(long bitsToShift) {
+		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
-		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
+		if (bitsToShift >= long(nbits)) {
+			setzero();
+			return *this;
+		}
 		bool signext = sign();
 		size_t blockShift = 0;
 		if (bitsToShift >= long(bitsInBlock)) {
@@ -269,28 +274,56 @@ public:
 					_block[i] = _block[i + blockShift];
 				}
 			}
-			for (size_t i = 1 + MSU - blockShift; i <= MSU; ++i) {
-				if (signext) {
-					_block[i] = BlockType(0xFFFFFFFFFFFFFFFFull);
-				}
-				else {
-					_block[i] = BlockType(0);
-				}
-			}
 			// adjust the shift
 			bitsToShift -= (long)(blockShift * bitsInBlock);
-			if (bitsToShift == 0) return *this;
+			if (bitsToShift == 0) {
+				// fix up the leading zeros if we have a negative number
+				if (signext) {
+					// bitsToShift is guaranteed to be less than nbits
+					bitsToShift += (long)(blockShift * bitsInBlock);
+					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+						this->set(i);
+					}
+				}
+				else {
+					// clean up the blocks we have shifted clean
+					bitsToShift += (long)(blockShift * bitsInBlock);
+					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+						this->reset(i);
+					}
+				}
+				return *this;
+			}
 		}
-		BlockType mask = 0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock);
+		//BlockType mask = 0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock);  // is that shift necessary?
+		BlockType mask = BlockType(0xFFFFFFFFFFFFFFFFull);
 		mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
-		for (unsigned i = 0; i < MSU; ++i) {
+		for (unsigned i = 0; i < MSU; ++i) {  // TODO: can this be improved? we should not have to work on the upper blocks in case we block shifted
 			_block[i] >>= bitsToShift;
 			// mix in the bits from the left
 			BlockType bits = (mask & _block[i + 1]);
 			_block[i] |= (bits << (bitsInBlock - bitsToShift));
 		}
 		_block[MSU] >>= bitsToShift;
-		if (signext) _block[MSU] |= (mask << (bitsInBlock - bitsToShift));
+
+		// fix up the leading zeros if we have a negative number
+		if (signext) {
+			// bitsToShift is guaranteed to be less than nbits
+			bitsToShift += (long)(blockShift * bitsInBlock);
+			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+				this->set(i);
+			}
+		}
+		else {
+			// clean up the blocks we have shifted clean
+			bitsToShift += (long)(blockShift * bitsInBlock);
+			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+				this->reset(i);
+			}
+		}
+
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block[MSU] &= MSU_MASK;
 		return *this;
 	}
 
@@ -537,6 +570,16 @@ inline blockbinary<nbits, BlockType> operator%(const blockbinary<nbits, BlockTyp
 	return c %= b;
 }
 
+template<size_t nbits, typename BlockType>
+inline blockbinary<nbits, BlockType> operator<<(const blockbinary<nbits, BlockType>& a, const long b) {
+	blockbinary<nbits, BlockType> c(a);
+	return c <<= b;
+}
+template<size_t nbits, typename BlockType>
+inline blockbinary<nbits, BlockType> operator>>(const blockbinary<nbits, BlockType>& a, const long b) {
+	blockbinary<nbits, BlockType> c(a);
+	return c >>= b;
+}
 
 // divide a by b and return both quotient and remainder
 template<size_t nbits, typename BlockType>
@@ -601,6 +644,13 @@ template<size_t nbits, typename BlockType>
 inline blockbinary<nbits + 1, BlockType> uradd(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
 	blockbinary<nbits + 1, BlockType> result(a);
 	return result += blockbinary<nbits + 1, BlockType>(b);
+}
+
+// unrounded subtraction, returns a blockbinary that is of size nbits+1
+template<size_t nbits, typename BlockType>
+inline blockbinary<nbits + 1, BlockType> ursub(const blockbinary<nbits, BlockType>& a, const blockbinary<nbits, BlockType>& b) {
+	blockbinary<nbits + 1, BlockType> result(a);
+	return result -= blockbinary<nbits + 1, BlockType>(b);
 }
 
 #define TRACE_URMUL 0

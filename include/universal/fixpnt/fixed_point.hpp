@@ -68,8 +68,8 @@ Run-time configuration is used to select modular vs saturation arithmetic.
 namespace sw {
 namespace unum {
 
-constexpr bool Modular    = true;
-constexpr bool Saturation = !Modular;
+constexpr bool Modulo    = true;
+constexpr bool Saturating = !Modulo;
 
 // forward references
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType> class fixpnt;
@@ -178,7 +178,7 @@ fixpnt<nbits, rbits, arithmetic, BlockType> minneg_fixpnt() {
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline void convert(int64_t v, fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	if (0 == v) { result.setzero();	return; }
-	if (arithmetic == Saturation) { // check if we are in the representable range
+	if (arithmetic == Saturating) { // check if we are in the representable range
 		result.setmaxpos();	if (v >= (long double)result) return;
 		result.setmaxneg();	if (v <= (long double)result) return;
 	}
@@ -197,7 +197,7 @@ inline void convert(int64_t v, fixpnt<nbits, rbits, arithmetic, BlockType>& resu
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 inline void convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	if (0 == v) { result.setzero();	return;	}
-	if (arithmetic == Saturation) {	// check if we are in the representable range
+	if (arithmetic == Saturating) {	// check if we are in the representable range
 		result.setmaxpos();	if (v >= (long double)result) return;
 		result.setmaxneg();	if (v <= (long double)result) return;
 	}
@@ -211,7 +211,7 @@ inline void convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic, BlockT
 }
 
 // fixpnt is a binary fixed point number of nbits with rbits after the radix point
-template<size_t _nbits, size_t _rbits, bool arithmetic = Modular, typename BlockType = uint8_t>
+template<size_t _nbits, size_t _rbits, bool arithmetic = Modulo, typename BlockType = uint8_t>
 class fixpnt {
 public:
 	static_assert(_nbits >= _rbits, "fixpnt configuration error: nbits must be greater or equal to rbits");
@@ -319,7 +319,7 @@ public:
 		if (rhs == 0.0) {
 			return *this;
 		}
-		if (arithmetic == Saturation) {	// check if the value is in the representable range
+		if (arithmetic == Saturating) {	// check if the value is in the representable range
 			fixpnt<nbits, rbits, arithmetic, BlockType> a;
 			a.setmaxpos();
 			if (rhs >= float(a)) { return *this = a; } // set to max pos value
@@ -371,7 +371,7 @@ public:
 		if (rhs == 0.0) {
 			return *this;
 		}
-		if (arithmetic == Saturation) {	// check if the value is in the representable range
+		if (arithmetic == Saturating) {	// check if the value is in the representable range
 			fixpnt<nbits, rbits, arithmetic, BlockType> a;
 			a.setmaxpos();
 			if (rhs >= float(a)) { return *this = a; } // set to max pos value
@@ -540,25 +540,49 @@ public:
 
 	// arithmetic operators
 	fixpnt& operator+=(const fixpnt& rhs) {
-		if (arithmetic == Modular) {
+		if (arithmetic == Modulo) {
 			bb += rhs.bb;
 		}
 		else {
-			std::cerr << "saturating add not implemented yet\n";
+			using biggerbb = blockbinary<nbits + 1, BlockType>;
+			biggerbb c = uradd(bb, rhs.bb);  // c = a + b
+			biggerbb saturation = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
+			if (c >= saturation) {
+				bb = saturation;
+				return *this;
+			}
+			saturation = maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
+			if (c <= saturation) {
+				bb = saturation;
+				return *this;
+			}
+			bb = c;
 		}
 		return *this;
 	}
 	fixpnt& operator-=(const fixpnt& rhs) {
-		if (arithmetic == Modular) {
+		if (arithmetic == Modulo) {
 			operator+=(twos_complement(rhs));
 		}
 		else {
-			std::cerr << "saturating subtract not implemented yet\n";
+			using biggerbb = blockbinary<nbits + 1, BlockType>;
+			biggerbb c = ursub(bb, rhs.getbb());  // c = a - b
+			biggerbb saturation = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
+			if (c >= saturation) {
+				bb = saturation;
+				return *this;
+			}
+			saturation = maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
+			if (c <= saturation) {
+				bb = saturation;
+				return *this;
+			}
+			bb = c;
 		}
 		return *this;
 	}
 	fixpnt& operator*=(const fixpnt& rhs) {
-		if (arithmetic == Modular) {
+		if (arithmetic == Modulo) {
 //			blockbinary<2 * nbits, BlockType> c = urmul(this->bb, rhs.bb);
 			blockbinary<2 * nbits, BlockType> c = urmul2(this->bb, rhs.bb);
 			bool roundUp = c.roundingMode(rbits);
@@ -567,12 +591,26 @@ public:
 			this->bb = c; // select the lower nbits of the result
 		}
 		else {
-			std::cerr << "saturating multiply not implemented yet\n";
+			blockbinary<2 * nbits, BlockType> c = urmul2(this->bb, rhs.bb);
+			blockbinary<2 * nbits, BlockType> saturation = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
+			bool roundUp = c.roundingMode(rbits);
+			c >>= rbits;
+			if (c >= saturation) {
+				bb = saturation;
+				return *this;
+			}
+			saturation = maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>().getbb();
+			if (c < saturation) {
+				bb = saturation;
+				return *this;
+			}
+			if (roundUp) ++c;
+			this->bb = c; // select the lower nbits of the result
 		}
 		return *this;
 	}
 	fixpnt& operator/=(const fixpnt& rhs) {
-		if (arithmetic == Modular) {
+		if (arithmetic == Modulo) {
 			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
 			blockbinary<roundingDecisionBits, BlockType> roundingBits;
 			blockbinary<2 * nbits + roundingDecisionBits, BlockType> c = urdiv(this->bb, rhs.bb, roundingBits);
@@ -752,7 +790,7 @@ protected:
 	template<typename Ty>
 	void float_assign(Ty& rhs) {
 		clear();
-		if (arithmetic == Saturation) {
+		if (arithmetic == Saturating) {
 			// we are implementing saturation for values that are outside of the fixed-point's range
 			// check if we are in the representable range
 			if (rhs >= (Ty)maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>()) {

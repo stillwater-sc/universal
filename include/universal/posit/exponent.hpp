@@ -41,8 +41,8 @@ public:
 	int scale() const {
 		return _Bits.to_ulong();
 	}
-	double value() const {
-		return double(uint64_t(1) << scale());
+	long double value() const {
+		return (long double)(uint64_t(1) << scale());
 	}
 	bitblock<es> get() const {
 		return _Bits;

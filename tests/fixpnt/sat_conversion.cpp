@@ -59,111 +59,111 @@ void GenerateFixedPointRangeTable() {
 	using namespace std;
 	using namespace sw::unum;
 	cout << "fixpnt<4,#> ranges\n";
-	ReportFixedPointRanges<4, 0, Modular>(cout);
-	ReportFixedPointRanges<4, 1, Modular>(cout);
-	ReportFixedPointRanges<4, 2, Modular>(cout);
-	ReportFixedPointRanges<4, 3, Modular>(cout);
-	ReportFixedPointRanges<4, 4, Modular>(cout);
+	ReportFixedPointRanges<4, 0, Saturating>(cout);
+	ReportFixedPointRanges<4, 1, Saturating>(cout);
+	ReportFixedPointRanges<4, 2, Saturating>(cout);
+	ReportFixedPointRanges<4, 3, Saturating>(cout);
+	ReportFixedPointRanges<4, 4, Saturating>(cout);
 	cout << "fixpnt<6,#> ranges\n";
-	ReportFixedPointRanges<6, 0, Modular>(cout);
-	ReportFixedPointRanges<6, 1, Modular>(cout);
-	ReportFixedPointRanges<6, 2, Modular>(cout);
-	ReportFixedPointRanges<6, 3, Modular>(cout);
-	ReportFixedPointRanges<6, 4, Modular>(cout);
-	ReportFixedPointRanges<6, 5, Modular>(cout);
-	ReportFixedPointRanges<6, 6, Modular>(cout);
+	ReportFixedPointRanges<6, 0, Saturating>(cout);
+	ReportFixedPointRanges<6, 1, Saturating>(cout);
+	ReportFixedPointRanges<6, 2, Saturating>(cout);
+	ReportFixedPointRanges<6, 3, Saturating>(cout);
+	ReportFixedPointRanges<6, 4, Saturating>(cout);
+	ReportFixedPointRanges<6, 5, Saturating>(cout);
+	ReportFixedPointRanges<6, 6, Saturating>(cout);
 	cout << "fixpnt<8,#> ranges\n";
-	ReportFixedPointRanges<8, 0, Modular>(cout);
-	ReportFixedPointRanges<8, 1, Modular>(cout);
-	ReportFixedPointRanges<8, 2, Modular>(cout);
-	ReportFixedPointRanges<8, 3, Modular>(cout);
-	ReportFixedPointRanges<8, 4, Modular>(cout);
-	ReportFixedPointRanges<8, 5, Modular>(cout);
-	ReportFixedPointRanges<8, 6, Modular>(cout);
-	ReportFixedPointRanges<8, 7, Modular>(cout);
-	ReportFixedPointRanges<8, 8, Modular>(cout);
+	ReportFixedPointRanges<8, 0, Saturating>(cout);
+	ReportFixedPointRanges<8, 1, Saturating>(cout);
+	ReportFixedPointRanges<8, 2, Saturating>(cout);
+	ReportFixedPointRanges<8, 3, Saturating>(cout);
+	ReportFixedPointRanges<8, 4, Saturating>(cout);
+	ReportFixedPointRanges<8, 5, Saturating>(cout);
+	ReportFixedPointRanges<8, 6, Saturating>(cout);
+	ReportFixedPointRanges<8, 7, Saturating>(cout);
+	ReportFixedPointRanges<8, 8, Saturating>(cout);
 	cout << "fixpnt<10,#> ranges\n";
-	ReportFixedPointRanges<10, 0, Modular>(cout);
-	ReportFixedPointRanges<10, 1, Modular>(cout);
-	ReportFixedPointRanges<10, 2, Modular>(cout);
-	ReportFixedPointRanges<10, 3, Modular>(cout);
-	ReportFixedPointRanges<10, 4, Modular>(cout);
-	ReportFixedPointRanges<10, 5, Modular>(cout);
-	ReportFixedPointRanges<10, 6, Modular>(cout);
-	ReportFixedPointRanges<10, 7, Modular>(cout);
-	ReportFixedPointRanges<10, 8, Modular>(cout);
-	ReportFixedPointRanges<10, 9, Modular>(cout);
-	ReportFixedPointRanges<10, 10, Modular>(cout);
+	ReportFixedPointRanges<10, 0, Saturating>(cout);
+	ReportFixedPointRanges<10, 1, Saturating>(cout);
+	ReportFixedPointRanges<10, 2, Saturating>(cout);
+	ReportFixedPointRanges<10, 3, Saturating>(cout);
+	ReportFixedPointRanges<10, 4, Saturating>(cout);
+	ReportFixedPointRanges<10, 5, Saturating>(cout);
+	ReportFixedPointRanges<10, 6, Saturating>(cout);
+	ReportFixedPointRanges<10, 7, Saturating>(cout);
+	ReportFixedPointRanges<10, 8, Saturating>(cout);
+	ReportFixedPointRanges<10, 9, Saturating>(cout);
+	ReportFixedPointRanges<10, 10, Saturating>(cout);
 	cout << "fixpnt<12,#> ranges\n";
-	ReportFixedPointRanges<12, 0, Modular>(cout);
-	ReportFixedPointRanges<12, 1, Modular>(cout);
-	ReportFixedPointRanges<12, 2, Modular>(cout);
-	ReportFixedPointRanges<12, 3, Modular>(cout);
-	ReportFixedPointRanges<12, 4, Modular>(cout);
-	ReportFixedPointRanges<12, 5, Modular>(cout);
-	ReportFixedPointRanges<12, 6, Modular>(cout);
-	ReportFixedPointRanges<12, 7, Modular>(cout);
-	ReportFixedPointRanges<12, 8, Modular>(cout);
-	ReportFixedPointRanges<12, 9, Modular>(cout);
-	ReportFixedPointRanges<12, 10, Modular>(cout);
-	ReportFixedPointRanges<12, 11, Modular>(cout);
-	ReportFixedPointRanges<12, 12, Modular>(cout);
+	ReportFixedPointRanges<12, 0, Saturating>(cout);
+	ReportFixedPointRanges<12, 1, Saturating>(cout);
+	ReportFixedPointRanges<12, 2, Saturating>(cout);
+	ReportFixedPointRanges<12, 3, Saturating>(cout);
+	ReportFixedPointRanges<12, 4, Saturating>(cout);
+	ReportFixedPointRanges<12, 5, Saturating>(cout);
+	ReportFixedPointRanges<12, 6, Saturating>(cout);
+	ReportFixedPointRanges<12, 7, Saturating>(cout);
+	ReportFixedPointRanges<12, 8, Saturating>(cout);
+	ReportFixedPointRanges<12, 9, Saturating>(cout);
+	ReportFixedPointRanges<12, 10, Saturating>(cout);
+	ReportFixedPointRanges<12, 11, Saturating>(cout);
+	ReportFixedPointRanges<12, 12, Saturating>(cout);
 	cout << "fixpnt<14,#> ranges\n";
-	ReportFixedPointRanges<14, 0, Modular>(cout);
-	ReportFixedPointRanges<14, 1, Modular>(cout);
-	ReportFixedPointRanges<14, 2, Modular>(cout);
-	ReportFixedPointRanges<14, 3, Modular>(cout);
-	ReportFixedPointRanges<14, 4, Modular>(cout);
-	ReportFixedPointRanges<14, 5, Modular>(cout);
-	ReportFixedPointRanges<14, 6, Modular>(cout);
-	ReportFixedPointRanges<14, 7, Modular>(cout);
-	ReportFixedPointRanges<14, 8, Modular>(cout);
-	ReportFixedPointRanges<14, 9, Modular>(cout);
-	ReportFixedPointRanges<14, 10, Modular>(cout);
-	ReportFixedPointRanges<14, 11, Modular>(cout);
-	ReportFixedPointRanges<14, 12, Modular>(cout);
-	ReportFixedPointRanges<14, 13, Modular>(cout);
-	ReportFixedPointRanges<14, 14, Modular>(cout);
+	ReportFixedPointRanges<14, 0, Saturating>(cout);
+	ReportFixedPointRanges<14, 1, Saturating>(cout);
+	ReportFixedPointRanges<14, 2, Saturating>(cout);
+	ReportFixedPointRanges<14, 3, Saturating>(cout);
+	ReportFixedPointRanges<14, 4, Saturating>(cout);
+	ReportFixedPointRanges<14, 5, Saturating>(cout);
+	ReportFixedPointRanges<14, 6, Saturating>(cout);
+	ReportFixedPointRanges<14, 7, Saturating>(cout);
+	ReportFixedPointRanges<14, 8, Saturating>(cout);
+	ReportFixedPointRanges<14, 9, Saturating>(cout);
+	ReportFixedPointRanges<14, 10, Saturating>(cout);
+	ReportFixedPointRanges<14, 11, Saturating>(cout);
+	ReportFixedPointRanges<14, 12, Saturating>(cout);
+	ReportFixedPointRanges<14, 13, Saturating>(cout);
+	ReportFixedPointRanges<14, 14, Saturating>(cout);
 	cout << "fixpnt<16,#> ranges\n";
-	ReportFixedPointRanges<16, 0, Modular>(cout);
-	ReportFixedPointRanges<16, 1, Modular>(cout);
-	ReportFixedPointRanges<16, 2, Modular>(cout);
-	ReportFixedPointRanges<16, 3, Modular>(cout);
-	ReportFixedPointRanges<16, 4, Modular>(cout);
-	ReportFixedPointRanges<16, 5, Modular>(cout);
-	ReportFixedPointRanges<16, 6, Modular>(cout);
-	ReportFixedPointRanges<16, 7, Modular>(cout);
-	ReportFixedPointRanges<16, 8, Modular>(cout);
-	ReportFixedPointRanges<16, 9, Modular>(cout);
-	ReportFixedPointRanges<16, 10, Modular>(cout);
-	ReportFixedPointRanges<16, 11, Modular>(cout);
-	ReportFixedPointRanges<16, 12, Modular>(cout);
-	ReportFixedPointRanges<16, 13, Modular>(cout);
-	ReportFixedPointRanges<16, 14, Modular>(cout);
-	ReportFixedPointRanges<16, 15, Modular>(cout);
-	ReportFixedPointRanges<16, 16, Modular>(cout);
+	ReportFixedPointRanges<16, 0, Saturating>(cout);
+	ReportFixedPointRanges<16, 1, Saturating>(cout);
+	ReportFixedPointRanges<16, 2, Saturating>(cout);
+	ReportFixedPointRanges<16, 3, Saturating>(cout);
+	ReportFixedPointRanges<16, 4, Saturating>(cout);
+	ReportFixedPointRanges<16, 5, Saturating>(cout);
+	ReportFixedPointRanges<16, 6, Saturating>(cout);
+	ReportFixedPointRanges<16, 7, Saturating>(cout);
+	ReportFixedPointRanges<16, 8, Saturating>(cout);
+	ReportFixedPointRanges<16, 9, Saturating>(cout);
+	ReportFixedPointRanges<16, 10, Saturating>(cout);
+	ReportFixedPointRanges<16, 11, Saturating>(cout);
+	ReportFixedPointRanges<16, 12, Saturating>(cout);
+	ReportFixedPointRanges<16, 13, Saturating>(cout);
+	ReportFixedPointRanges<16, 14, Saturating>(cout);
+	ReportFixedPointRanges<16, 15, Saturating>(cout);
+	ReportFixedPointRanges<16, 16, Saturating>(cout);
 	cout << "fixpnt<20,#> ranges\n";
-	ReportFixedPointRanges<20, 0, Modular>(cout);
-	ReportFixedPointRanges<20, 1, Modular>(cout);
-	ReportFixedPointRanges<20, 2, Modular>(cout);
-	ReportFixedPointRanges<20, 3, Modular>(cout);
-	ReportFixedPointRanges<20, 4, Modular>(cout);
-	ReportFixedPointRanges<20, 5, Modular>(cout);
-	ReportFixedPointRanges<20, 6, Modular>(cout);
-	ReportFixedPointRanges<20, 7, Modular>(cout);
-	ReportFixedPointRanges<20, 8, Modular>(cout);
-	ReportFixedPointRanges<20, 9, Modular>(cout);
-	ReportFixedPointRanges<20, 10, Modular>(cout);
-	ReportFixedPointRanges<20, 11, Modular>(cout);
-	ReportFixedPointRanges<20, 12, Modular>(cout);
-	ReportFixedPointRanges<20, 13, Modular>(cout);
-	ReportFixedPointRanges<20, 14, Modular>(cout);
-	ReportFixedPointRanges<20, 15, Modular>(cout);
-	ReportFixedPointRanges<20, 16, Modular>(cout);
-	ReportFixedPointRanges<20, 17, Modular>(cout);
-	ReportFixedPointRanges<20, 18, Modular>(cout);
-	ReportFixedPointRanges<20, 19, Modular>(cout);
-	ReportFixedPointRanges<20, 20, Modular>(cout);
+	ReportFixedPointRanges<20, 0, Saturating>(cout);
+	ReportFixedPointRanges<20, 1, Saturating>(cout);
+	ReportFixedPointRanges<20, 2, Saturating>(cout);
+	ReportFixedPointRanges<20, 3, Saturating>(cout);
+	ReportFixedPointRanges<20, 4, Saturating>(cout);
+	ReportFixedPointRanges<20, 5, Saturating>(cout);
+	ReportFixedPointRanges<20, 6, Saturating>(cout);
+	ReportFixedPointRanges<20, 7, Saturating>(cout);
+	ReportFixedPointRanges<20, 8, Saturating>(cout);
+	ReportFixedPointRanges<20, 9, Saturating>(cout);
+	ReportFixedPointRanges<20, 10, Saturating>(cout);
+	ReportFixedPointRanges<20, 11, Saturating>(cout);
+	ReportFixedPointRanges<20, 12, Saturating>(cout);
+	ReportFixedPointRanges<20, 13, Saturating>(cout);
+	ReportFixedPointRanges<20, 14, Saturating>(cout);
+	ReportFixedPointRanges<20, 15, Saturating>(cout);
+	ReportFixedPointRanges<20, 16, Saturating>(cout);
+	ReportFixedPointRanges<20, 17, Saturating>(cout);
+	ReportFixedPointRanges<20, 18, Saturating>(cout);
+	ReportFixedPointRanges<20, 19, Saturating>(cout);
+	ReportFixedPointRanges<20, 20, Saturating>(cout);
 }
 */
 // conditional compile flags
@@ -182,38 +182,19 @@ try {
 
 #if MANUAL_TESTING
 
-	ReportFixedPointRanges<12, 0, Modular>(cout);
+	ReportFixedPointRanges<12, 0>(cout);
 
-	//ReportFixedPointRanges<12, 1, Modular>(cout);
+	//ReportFixedPointRanges<12, 1>(cout);
 	//GenerateFixedPointValues<12, 1>();
-	
-	//GenerateFixedPointRangeTable();
 
 	//cout << "quire<512,240>\n";
-	//ReportFixedPointRanges<512, 240, Modular>(cout);
+	//ReportFixedPointRanges<512, 240>(cout);
 
-	GenerateFixedPointValues<4, 2>();
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,4,Saturating,uint8_t>");
 
-	/*
-	GenerateFixedPointValues<4, 0>();
-	GenerateFixedPointValues<4, 1>();
-	GenerateFixedPointValues<4, 2>();
-	GenerateFixedPointValues<4, 3>();
-	GenerateFixedPointValues<4, 4>();
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 8, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,8,Saturating,uint8_t>");
 
-	GenerateFixedPointValues<5, 4>();
-	GenerateFixedPointValues<5, 5>();
-
-	GenerateFixedPointValues<8, 8>();
-
-	GenerateFixedPointValues<16, 8>();
-    */
-
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 4>(tag, bReportIndividualTestCases), tag, "fixpnt<4,4>");
-
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 8>(tag, bReportIndividualTestCases), tag, "fixpnt<8,8>");
-
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 1>(tag, bReportIndividualTestCases), tag, "fixpnt<12,1>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,1,Saturating,uint8_t>");
 
 #if STRESS_TESTING
 
@@ -225,40 +206,40 @@ try {
 
 	cout << "Fixed-point conversion validation" << endl;
 
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 0, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,0,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 1, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,1,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 2, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,2,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 3, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,3,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 4, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,4,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,0,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,3,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,4,Saturating,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 0, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,0,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 1, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,1,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 2, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,2,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 3, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,3,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 4, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,4,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 5, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,5,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 6, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,6,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 7, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,7,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 8, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,8,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,0,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,3,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,4,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 5, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,5,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 6, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,6,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 7, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,7,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 8, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,8,Saturating,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 0, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,0,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 1, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,1,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 2, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,2,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 3, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,3,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 4, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,4,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 6, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,6,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 8, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,8,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 10, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,10,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 12, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,12,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,0,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,3,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,4,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 6, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,6,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 8, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,8,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 10, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,10,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 12, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,12,Saturating,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 0, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,0,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 1, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,1,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 2, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,2,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 3, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,3,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 4, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,4,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 8, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,8,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 12, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,12,Modular,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 16, Modular, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,16,Modular,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,0,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,3,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,4,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 8, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,8,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 12, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,12,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 16, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,16,Saturating,uint8_t>");
 
 #if STRESS_TESTING
 

@@ -1257,17 +1257,17 @@ private:
 		return s * r * e * f;
 	}
 	long double to_long_double() const {
-		if (iszero())  return 0.0;
+		if (iszero())  return 0.0l;
 		if (isnar())   return NAN;
 		bool		     	 _sign;
 		regime<nbits, es>    _regime;
 		exponent<nbits, es>  _exponent;
 		fraction<fbits>      _fraction;
 		decode(_raw_bits, _sign, _regime, _exponent, _fraction);
-		long double s = (_sign ? -1.0 : 1.0);
+		long double s = (_sign ? -1.0l : 1.0l);
 		long double r = _regime.value();
 		long double e = _exponent.value();
-		long double f = (1.0 + _fraction.value());
+		long double f = (1.0l + _fraction.value());
 		return s * r * e * f;
 	}
 	template <typename T>

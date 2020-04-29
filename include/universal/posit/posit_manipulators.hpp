@@ -69,7 +69,9 @@ namespace sw {
 			ss << " posit<" << std::setw(3) << nbits << "," << es << "> ";
 			ss << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
 			ss << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
-			ss << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>();
+			ss << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>() << "     ";
+			ss << "minimum " << std::setw(12) << (long double)std::numeric_limits<sw::unum::posit<nbits, es>>::min() << "     ";
+			ss << "maximum " << std::setw(12) << (long double)std::numeric_limits<sw::unum::posit<nbits, es>>::max() ;
 			return ss.str();
 		}
 		template<size_t nbits, size_t es>

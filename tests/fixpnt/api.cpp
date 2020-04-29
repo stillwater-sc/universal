@@ -34,7 +34,7 @@ try {
 
 	// construction
 	{
-		// default construction using default arithmetic (Modular) and default BlockType (uint8_t)
+		// default construction using default arithmetic (Modulo) and default BlockType (uint8_t)
 		fixpnt<8, 4> a, b(-8.125f), c(7.875), d(-7.875); // replace with long double init  d(-7.875l);
 		// b initialized to -8.125 in modular arithmetic becomes 7.875: -8.125 = b1000.0010 > maxneg -> becomes b0111.1110
 		if (a != (c + d)) ++nrOfFailedTestCases;
@@ -44,7 +44,7 @@ try {
 
 	{
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
-		fixpnt<8, 4, Modular> a, b(-8.125), c(7.875), d(-7.875);
+		fixpnt<8, 4, Modulo> a, b(-8.125), c(7.875), d(-7.875);
 		// b initialized to -8.125 in modular arithmetic becomes 7.875: -8.125 = b1000.0010 > maxneg -> becomes b0111.1110
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a != (b - c)) ++nrOfFailedTestCases;
@@ -56,7 +56,7 @@ try {
 
 	{
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
-		fixpnt<8, 4, Saturation> a(-8.0), b(-8.125), c(7.875), d(-7.875);
+		fixpnt<8, 4, Saturating> a(-8.0), b(-8.125), c(7.875), d(-7.875);
 		// b initialized to -8.125 in saturating arithmetic becomes -8
 //		if (0 != (c + d)) ++nrOfFailedTestCases; //cout << to_binary(c + d) << endl;
 		if (a != b) ++nrOfFailedTestCases;
@@ -72,7 +72,7 @@ try {
 
 	{
 		// construction with explicit arithmetic type and BlockType
-		fixpnt<16, 4, Modular, uint16_t> a, b(-2048.125f), c(2047.875), d(-2047.875);
+		fixpnt<16, 4, Modulo, uint16_t> a, b(-2048.125f), c(2047.875), d(-2047.875);
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a != (b - c)) ++nrOfFailedTestCases;
 		//		cout << to_binary(a, true) << ' ' << to_binary(b, true) << ' ' << to_binary(c, true) << ' ' << to_binary(d, true) << endl;
@@ -135,7 +135,7 @@ try {
 	{
 		constexpr size_t nbits = 8;
 		constexpr size_t rbits = 4;
-		fixpnt<nbits, rbits, Modular, uint16_t> a, b; // testing poorly selected BlockType
+		fixpnt<nbits, rbits, Modulo, uint16_t> a, b; // testing poorly selected BlockType
 		a.set_raw_bits(0xFF);
 		b = ones_complement(a);
 		if (b != 0) ++nrOfFailedTestCases;
@@ -146,7 +146,7 @@ try {
 	{
 		constexpr size_t nbits = 8;
 		constexpr size_t rbits = 4;
-		fixpnt<nbits, rbits, Modular, uint32_t> a, b; // testing poorly selected BlockType
+		fixpnt<nbits, rbits, Modulo, uint32_t> a, b; // testing poorly selected BlockType
 		a.set_raw_bits(0xFF);
 		b = ones_complement(a);
 		if (b != 0) ++nrOfFailedTestCases;
@@ -161,7 +161,7 @@ try {
 		/* TODO: implement parse
 		constexpr size_t nbits = 128;
 		constexpr size_t rbits = 64;
-		fixpnt<nbits, rbits, Modular, uint32_t> a, b, c, d;
+		fixpnt<nbits, rbits, Modulo, uint32_t> a, b, c, d;
 		a.assign("123456789.987654321");
 		parse("123456789.987654321", b);
 		*/
@@ -172,7 +172,7 @@ try {
 	{
 		constexpr size_t nbits = 16;
 		constexpr size_t rbits = 8;
-		constexpr bool arithmetic = Modular;
+		constexpr bool arithmetic = Modulo;
 		using blocktype = uint32_t;
 		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
 		a = maxpos_fixpnt<nbits, rbits, arithmetic, blocktype>();
@@ -191,7 +191,7 @@ try {
 	{
 		constexpr size_t nbits = 8;
 		constexpr size_t rbits = 4;
-		constexpr bool arithmetic = Modular;
+		constexpr bool arithmetic = Modulo;
 		using blocktype = uint32_t;
 		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
 		a = 1;
@@ -294,7 +294,7 @@ try {
 	{
 		constexpr size_t nbits = 7;
 		constexpr size_t rbits = 4;
-		constexpr bool arithmetic = Modular;
+		constexpr bool arithmetic = Modulo;
 		constexpr size_t NR_VALUES = (1 << nbits);
 		using blocktype = uint32_t;
 
@@ -313,7 +313,7 @@ try {
 	{
 		constexpr size_t nbits = 8;
 		constexpr size_t rbits = 4;
-		constexpr bool arithmetic = Modular;
+		constexpr bool arithmetic = Modulo;
 		using blocktype = uint32_t;
 		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
 

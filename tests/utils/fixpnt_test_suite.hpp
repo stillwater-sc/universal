@@ -158,20 +158,20 @@ int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) 
 	// to test the rounding logic of the conversion.
 	constexpr size_t NR_TEST_CASES = (size_t(1) << (nbits + 1));
 	constexpr size_t HALF = (size_t(1) << nbits);
-	fixpnt<nbits + 1, rbits + 1, sw::unum::Modular> pref, pprev, pnext;
+	fixpnt<nbits + 1, rbits + 1, arithmetic, BlockType> pref, pprev, pnext;
 
 	const unsigned max = nbits > 20 ? 20 : nbits + 1;
 	size_t max_tests = (size_t(1) << max);
 	if (max_tests < NR_TEST_CASES) {
-		std::cout << "ValidateModularConversion<" << nbits << "," << rbits << ">: NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
+		std::cout << "ValidateConversion<" << nbits << "," << rbits << ">: NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
 	}
 
 	// execute the test
 	int nrOfFailedTests = 0;
-	double minpos = value_minpos_fixpnt<nbits + 1, rbits + 1, sw::unum::Modular>();
+	double minpos = double(minpos_fixpnt<nbits + 1, rbits + 1, sw::unum::Modulo, uint32_t>());
 	double eps;
 	double da, input;
-	fixpnt<nbits, rbits, sw::unum::Modular> nut; // NUT: number under test
+	fixpnt<nbits, rbits, arithmetic, BlockType> nut; // NUT: number under test
 	for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
 		pref.set_raw_bits(i);
 		da = double(pref);
@@ -206,7 +206,7 @@ int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) 
 				// special case of projecting to maxneg
 				input = da - eps;
 				nut = input;
-				double maxneg = value_maxneg_fixpnt<nbits, rbits, sw::unum::Modular>();
+				double maxneg = double(maxneg_fixpnt<nbits, rbits, sw::unum::Modulo, uint32_t>());
 				nrOfFailedTests += Compare(input, nut, maxneg, bReportIndividualTestCases);
 			}
 			else if (i == NR_TEST_CASES - 1) {
@@ -278,7 +278,7 @@ template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
-	fixpnt<nbits, rbits, Modular> a, b, result, cref;
+	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
 	double ref;
 
 	double da, db;
@@ -328,7 +328,7 @@ template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 int VerifyComplexAddition(std::string tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
-	fixpnt<nbits, rbits, Modular> a, b, result, cref;
+	fixpnt<nbits, rbits, Modulo> a, b, result, cref;
 	double ref;
 
 	double da, db;
