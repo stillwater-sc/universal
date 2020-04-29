@@ -41,7 +41,7 @@ int VerifyArithmeticRightShift(std::string tag, bool bReportIndividualTestCases)
 			shiftRef = ((long long)a / denominator);
 		}
 
-		result = a >> i;
+		result = a >> long(i);
 		resultRef = (long long)result;
 
 		if (shiftRef != resultRef) {
