@@ -696,8 +696,14 @@ namespace sw {
 				else if (final_fbits > 0) {
 					final_fbits = 0;
 				}
-				if (scale == 14 && exp != 0) bitNPlusOne = true;
-				exp <<= (13 - scale);
+				if (scale == 14 && exp != 0) {
+					bitNPlusOne = true;
+					exp = 0;
+				}
+				else {
+					exp <<= (13 - scale);
+				}
+
 				bits = uint16_t(regime) + uint16_t(exp) + uint16_t(final_fbits);
 				// n+1 frac bit is 1. Need to check if another bit is 1 too if not round to even
 				if (bitNPlusOne) {

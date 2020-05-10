@@ -249,7 +249,9 @@ public:
 		}
 		else {
 			// round down
+			std::cerr << "rounding to smaller fixpnt not implemented yet\n";
 		}
+		return *this;
 	}
 
 	// initializers for native types
@@ -344,8 +346,13 @@ public:
 			bool guard = (mask & raw);
 			mask >>= 1;
 			bool round = (mask & raw);
-			mask = (0xFFFFFFFF << (shiftRight - 2));
-			mask = ~mask;
+			if (shiftRight > 1) {
+				mask = (0xFFFFFFFF << (shiftRight - 2));
+				mask = ~mask;
+			}
+			else {
+				mask = 0;
+			}
 			bool sticky = (mask & raw);
 			
 			raw >>= shiftRight;  // shift out the bits we are rounding away
@@ -392,13 +399,17 @@ public:
 			// this same logic will work for the case where 
 			// we only have a guard bit  and no round and sticky bits
 			// because the mask logic will make round and sticky both 0
-			// so no need to special case it
 			uint64_t mask = (uint64_t(1) << (shiftRight - 1));
 			bool guard = (mask & raw);
 			mask >>= 1;
 			bool round = (mask & raw);
-			mask = (0xFFFFFFFFFFFFFFFF << (shiftRight - 2));
-			mask = ~mask;
+			if (shiftRight > 1) {
+				mask = (0xFFFFFFFFFFFFFFFF << (shiftRight - 2));
+				mask = ~mask;
+			}
+			else {
+				mask = 0;
+			}
 			bool sticky = (mask & raw);
 
 			raw >>= shiftRight;  // shift out the bits we are rounding away

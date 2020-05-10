@@ -29,14 +29,15 @@ int VerifyArithmeticRightShift(const std::string& tag, bool bReportIndividualTes
 	int64_t shiftRef, resultRef;
 	for (size_t i = 0; i < nbits+1; i++) {
 		a = mostNegative;
-		int64_t denominator = (1ll << i);
-		if (i == 63) { // special case for int64_t shift
-			shiftRef = -1;
-		}
-		else if (i == 64) {
+		int64_t denominator = 0;
+		if (i == 64) { 
 			shiftRef = 0;
 		}
-		else {
+		else if (i == 63) { // special case for int64_t shift as it is maxneg
+			shiftRef = -1;
+		}
+		else { // i < 63
+			denominator = (1ll << i);
 			shiftRef = ((long long)a / denominator);
 		}
 

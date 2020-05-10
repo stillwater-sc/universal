@@ -762,7 +762,7 @@ namespace sw {
 			else {
 				//remove carry and rcarry bits and shift to correct position
 				frac64 &= 0x3FFFFFFF;
-				uint32_t fraction = uint32_t(frac64) >> (scale + 2);
+				uint32_t fraction = uint32_t((frac64) >> (scale + 2));
 
 				bool bitNPlusOne = false;
 				uint32_t moreBits = false;
