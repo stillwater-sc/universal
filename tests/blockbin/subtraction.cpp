@@ -16,7 +16,7 @@
 
 // enumerate all addition cases for an blockbinary configuration
 template<size_t nbits, typename StorageBlockType = uint8_t>
-int VerifySubtraction(std::string tag, bool bReportIndividualTestCases) {
+int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace sw::unum;
 

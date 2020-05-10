@@ -17,7 +17,7 @@ namespace unum {
 
 #define INTEGER_TABLE_WIDTH 20
 template<size_t nbits, typename BlockType>
-void ReportBinaryLogicError(std::string test_case, std::string op, const blockbinary<nbits, BlockType>& lhs, const blockbinary<nbits, BlockType>& rhs, bool iref, bool iresult) {
+void ReportBinaryLogicError(const std::string& test_case, const std::string& op, const blockbinary<nbits, BlockType>& lhs, const blockbinary<nbits, BlockType>& rhs, bool iref, bool iresult) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
@@ -33,7 +33,7 @@ void ReportBinaryLogicError(std::string test_case, std::string op, const blockbi
 
 // enumerate all less than cases for an blockbinary<nbits, BlockType> configuration
 template<size_t nbits, typename BlockType>
-int VerifyEqual(std::string tag, bool bReportIndividualTestCases) {
+int VerifyEqual(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
@@ -65,7 +65,7 @@ int VerifyEqual(std::string tag, bool bReportIndividualTestCases) {
 
 // enumerate all less than or equal cases for an blockbinary<nbits, BlockType> configuration
 template<size_t nbits, typename BlockType>
-int VerifyNotEqual(std::string tag, bool bReportIndividualTestCases) {
+int VerifyNotEqual(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
@@ -97,7 +97,7 @@ int VerifyNotEqual(std::string tag, bool bReportIndividualTestCases) {
 
 // enumerate all less than cases for an blockbinary<nbits, BlockType> configuration
 template<size_t nbits, typename BlockType>
-int VerifyLessThan(std::string tag, bool bReportIndividualTestCases) {
+int VerifyLessThan(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
@@ -129,7 +129,7 @@ int VerifyLessThan(std::string tag, bool bReportIndividualTestCases) {
 
 // enumerate all less than or equal cases for an blockbinary<nbits, BlockType> configuration
 template<size_t nbits, typename BlockType>
-int VerifyLessOrEqualThan(std::string tag, bool bReportIndividualTestCases) {
+int VerifyLessOrEqualThan(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
@@ -161,7 +161,7 @@ int VerifyLessOrEqualThan(std::string tag, bool bReportIndividualTestCases) {
 
 // enumerate all greater than cases for an blockbinary<nbits, BlockType> configuration
 template<size_t nbits, typename BlockType>
-int VerifyGreaterThan(std::string tag, bool bReportIndividualTestCases) {
+int VerifyGreaterThan(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
@@ -193,7 +193,7 @@ int VerifyGreaterThan(std::string tag, bool bReportIndividualTestCases) {
 
 // enumerate all greater than or equal cases for an blockbinary<nbits, BlockType> configuration
 template<size_t nbits, typename BlockType>
-int VerifyGreaterOrEqualThan(std::string tag, bool bReportIndividualTestCases) {
+int VerifyGreaterOrEqualThan(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;

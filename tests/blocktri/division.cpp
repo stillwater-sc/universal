@@ -22,7 +22,7 @@ std::string to_binary(const sw::unum::blocktriple<ebits, fbits, BlockType>& a) {
 
 // enumerate all multiplication cases for an blocktriple<ebits,fbits,BlockType> configuration
 template<size_t ebits, size_t fbits, typename BlockType = uint8_t>
-int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
+int VerifyDivision(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << fbits);
 	using namespace std;
 	using namespace sw::unum;

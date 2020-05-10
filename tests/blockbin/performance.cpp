@@ -219,7 +219,6 @@ void TestBlockPerformanceOnDiv() {
 	PerformanceRunner("blockbinary<1024,uint32>  div   ", DivisionWorkload< sw::unum::blockbinary<1024, uint32_t> >, NR_OPS / 16);
 }
 
-
 void TestBlockPerformanceOnRem() {
 	using namespace std;
 	cout << endl << "block size performance" << endl;

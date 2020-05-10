@@ -15,7 +15,7 @@
 
 // enumerate all multiplication cases for an blockbinary<nbits,BlockType> configuration
 template<size_t nbits, typename BlockType = uint8_t>
-int VerifyRemainder(std::string tag, bool bReportIndividualTestCases) {
+int VerifyRemainder(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace std;
 	using namespace sw::unum;

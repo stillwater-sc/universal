@@ -14,7 +14,7 @@
 
 // enumerate all addition cases for an blockbinary<nbits,BlockType> configuration
 template<size_t nbits, typename BlockType = uint8_t>
-int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
+int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace std;
 	using namespace sw::unum;

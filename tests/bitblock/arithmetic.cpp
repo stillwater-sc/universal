@@ -55,8 +55,7 @@ int Conversions() {
 
 
 // ? what is this trying to test TODO
-int IncrementRightAdjustedBitset()
-{
+int IncrementRightAdjustedBitset() {
 	const size_t nbits = 5;
 	int nrOfFailedTestCases = 0;
 

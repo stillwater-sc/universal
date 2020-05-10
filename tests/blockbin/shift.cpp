@@ -14,7 +14,7 @@
 
 // enumerate all addition cases for an blockbinary<nbits,BlockType> configuration
 template<size_t nbits, typename BlockType = uint8_t>
-int VerifyArithmeticRightShift(std::string tag, bool bReportIndividualTestCases) {
+int VerifyArithmeticRightShift(const std::string& tag, bool bReportIndividualTestCases) {
 	using namespace std;
 	using namespace sw::unum;
 
@@ -23,7 +23,6 @@ int VerifyArithmeticRightShift(std::string tag, bool bReportIndividualTestCases)
 	cout << typeid(blockbinary<nbits, BlockType>).name() << endl;
 
 	// take maxneg and shift it right in all possible strides
-	bool bReportOverflowCondition = false;
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> a, result;
 	blockbinary<nbits, BlockType> mostNegative = maxneg<nbits, BlockType>();

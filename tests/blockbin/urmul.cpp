@@ -14,7 +14,7 @@
 
 // enumerate all multiplication cases for an blockbinary<nbits,BlockType> configuration
 template<size_t nbits, typename BlockType = uint8_t>
-int VerifyUnroundedMultiplication(std::string tag, bool bReportIndividualTestCases) {
+int VerifyUnroundedMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace std;
 	using namespace sw::unum;
