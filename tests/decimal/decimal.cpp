@@ -113,6 +113,7 @@ namespace sw {
 				decimal d1 = i;
 				for (long j = -ub; j <= ub; ++j) {
 					decimal d2 = j;
+					long ref;
 					if (j == 0) {
 						try {
 							dref = d1 / d2;
@@ -131,8 +132,8 @@ namespace sw {
 					}
 					else {
 						dref = d1 / d2;
+						ref = i / j;
 					}
-					long ref = i / j;
 					if (dref != ref) {
 						++nrOfFailedTests;
 						if (bReportIndividualTestCases) ReportBinaryDecimalError("FAIL", "div", d1, d2, dref, ref);

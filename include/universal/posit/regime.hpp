@@ -15,7 +15,7 @@ template<size_t nbits, size_t es> int calculate_k(int);
 template<size_t nbits, size_t es>
 class regime {
 public:
-	regime() : _Bits(), _k(0), _RegimeBits(0) {}
+	regime() : _Bits(), _k(0), _run(0), _RegimeBits(0) {}
 	
 	regime(const regime& r) = default;
 	regime(regime&& r) = default;

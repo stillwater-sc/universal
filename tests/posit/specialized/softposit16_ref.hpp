@@ -247,7 +247,7 @@ posit16_t convertDoubleToP16(double f16) {
 			if (sign) uZ = -uZ & 0xFFFF;
 		}
 	}
-	else if (f16 < 1 || f16 > -1) {
+	else if (f16 < 1 && f16 > -1) {
 
 		if (sign) {
 			//Make negative numbers positive for easier computation
