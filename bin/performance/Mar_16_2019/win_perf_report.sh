@@ -1,4 +1,4 @@
-#
+#!/bin/sh
 ./perf_4b_posit.exe
 ./perf_8b_posit.exe
 ./perf_10b_posit.exe

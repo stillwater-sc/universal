@@ -43,17 +43,20 @@ namespace unum {
 struct fixpnt_arithmetic_exception
 	: public std::runtime_error
 {
-	fixpnt_arithmetic_exception(const std::string& error) : std::runtime_error(std::string("fixed-point arithmetic exception: ") + error) {};
+	explicit fixpnt_arithmetic_exception(const std::string& error) 
+		: std::runtime_error(std::string("fixed-point arithmetic exception: ") + error) {};
 };
 
 // divide by zero arithmetic exception for fixed-point
 struct fixpnt_divide_by_zero : public fixpnt_arithmetic_exception {
-	fixpnt_divide_by_zero(const std::string& error = "fixed-point division by zero") : fixpnt_arithmetic_exception(error) {}
+	explicit fixpnt_divide_by_zero(const std::string& error = "fixed-point division by zero") 
+		: fixpnt_arithmetic_exception(error) {}
 };
 
 // overflow exception for fixed-point
 struct fixpnt_overflow : public fixpnt_arithmetic_exception {
-	fixpnt_overflow(const std::string& error = "fixed-point overflow") : fixpnt_arithmetic_exception(error) {}
+	explicit fixpnt_overflow(const std::string& error = "fixed-point overflow") 
+		: fixpnt_arithmetic_exception(error) {}
 };
 
 ///////////////////////////////////////////////////////////////
@@ -63,11 +66,13 @@ struct fixpnt_overflow : public fixpnt_arithmetic_exception {
 struct fixpnt_internal_exception
 	: public std::runtime_error
 {
-	fixpnt_internal_exception(const std::string& error) : std::runtime_error(std::string("fixed-point internal exception: ") + error) {};
+	explicit fixpnt_internal_exception(const std::string& error) 
+		: std::runtime_error(std::string("fixed-point internal exception: ") + error) {};
 };
 
 struct fixpnt_byte_index_out_of_bounds : public fixpnt_internal_exception {
-	fixpnt_byte_index_out_of_bounds(const std::string& error = "byte index out of bounds") : fixpnt_internal_exception(error) {}
+	explicit fixpnt_byte_index_out_of_bounds(const std::string& error = "byte index out of bounds") 
+		: fixpnt_internal_exception(error) {}
 };
 
 } // namespace unum

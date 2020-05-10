@@ -193,16 +193,26 @@ void examples() {
 	cout << "Conversions\n";
 	// signed integers
 	d2 = (char)1;
+	if (d2 != 1) cout << "assignment conversion (char) failed\n";
 	d2 = (short)2;
+	if (d2 != 2) cout << "assignment conversion (short) failed\n";
 	d2 = (int)3;
+	if (d2 != 3) cout << "assignment conversion (int) failed\n";
 	d2 = (long)4;
+	if (d2 != 4) cout << "assignment conversion (long) failed\n";
 	d2 = (long long)5;
+	if (d2 != 5) cout << "assignment conversion (long long) failed\n";
 	// unsigned integers
 	d2 = (unsigned char)6;
+	if (d2 != 6) cout << "assignment conversion (unsigned char) failed\n";
 	d2 = (unsigned short)7;
+	if (d2 != 7) cout << "assignment conversion (unsigned short) failed\n";
 	d2 = (unsigned int)8;
+	if (d2 != 8) cout << "assignment conversion (unsigned int) failed\n";
 	d2 = (unsigned long)9;
+	if (d2 != 9) cout << "assignment conversion (unsigned long) failed\n";
 	d2 = (unsigned long long)10;
+	if (d2 != 10) cout << "assignment conversion (unsigned long long) failed\n";
 
 	cout << "char type: " << numeric_limits<char>::digits << " max value " << (int)numeric_limits<char>::max() << endl;
 	cout << "schar type : " << numeric_limits<signed char>::digits << " max value " << (int)numeric_limits<signed char>::max() << endl;

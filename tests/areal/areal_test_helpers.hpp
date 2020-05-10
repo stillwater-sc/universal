@@ -16,7 +16,7 @@ namespace sw {
 		static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 		template<size_t nbits, size_t es>
-		void ReportConversionError(std::string test_case, std::string op, double input, double reference, const areal<nbits, es>& presult) {
+		void ReportConversionError(std::string test_case, const std::string& op, double input, double reference, const areal<nbits, es>& presult) {
 			static_assert(nbits > 2, "component_to_string requires nbits > 2");
 			constexpr size_t fbits = nbits - 3 - es;
 
@@ -38,7 +38,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const areal<nbits, es>& presult) {
+		void ReportConversionSuccess(std::string test_case, const std::string& op, double input, double reference, const areal<nbits, es>& presult) {
 			static_assert(nbits > 2, "component_to_string requires nbits > 2");
 			constexpr size_t fbits = nbits - 3 - es;
 
@@ -60,7 +60,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportUnaryArithmeticError(std::string test_case, std::string op, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportUnaryArithmeticError(std::string test_case, const std::string& op, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
@@ -71,7 +71,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportUnaryArithmeticSuccess(std::string test_case, std::string op, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportUnaryArithmeticSuccess(std::string test_case, const std::string& op, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
@@ -82,7 +82,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticError(std::string test_case, std::string op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportBinaryArithmeticError(std::string test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case << " " 
 				<< std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
@@ -97,7 +97,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticErrorInBinary(std::string test_case, std::string op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportBinaryArithmeticErrorInBinary(std::string test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setw(nbits) << lhs.get()
 				<< " " << op << " "
@@ -109,7 +109,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportBinaryArithmeticSuccess(std::string test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
@@ -124,7 +124,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticSuccessInBinary(std::string test_case, std::string op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportBinaryArithmeticSuccessInBinary(std::string test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setw(nbits) << lhs.get()
 				<< " " << op << " "
@@ -158,7 +158,7 @@ namespace sw {
 
 		// enumerate all conversion cases for a areal configuration
 		template<size_t nbits, size_t es>
-		int ValidateConversion(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) {
 			// we are going to generate a test set that consists of all areal configs and their midpoints
 			// we do this by enumerating a areal that is 1-bit larger than the test areal configuration
 			// These larger posits will be at the mid-point between the smaller areal sample values
@@ -320,7 +320,7 @@ namespace sw {
 
 		// validate the increment operator++
 		template<size_t nbits, size_t es>
-		int ValidateIncrement(std::string tag, bool bReportIndividualTestCases)
+		int ValidateIncrement(const std::string& tag, bool bReportIndividualTestCases)
 		{
 			std::vector< areal<nbits, es> > set;
 			GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -344,7 +344,7 @@ namespace sw {
 
 		// validate the decrement operator--
 		template<size_t nbits, size_t es>
-		int ValidateDecrement(std::string tag, bool bReportIndividualTestCases)
+		int ValidateDecrement(const std::string& tag, bool bReportIndividualTestCases)
 		{
 			std::vector< areal<nbits, es> > set;
 			GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -368,7 +368,7 @@ namespace sw {
 
 		// validate the postfix operator++
 		template<size_t nbits, size_t es>
-		int ValidatePostfix(std::string tag, bool bReportIndividualTestCases)
+		int ValidatePostfix(const std::string& tag, bool bReportIndividualTestCases)
 		{
 			std::vector< areal<nbits, es> > set;
 			GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -392,7 +392,7 @@ namespace sw {
 
 		// validate the prefix operator++
 		template<size_t nbits, size_t es>
-		int ValidatePrefix(std::string tag, bool bReportIndividualTestCases)
+		int ValidatePrefix(const std::string& tag, bool bReportIndividualTestCases)
 		{
 			std::vector< areal<nbits, es> > set;
 			GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -401,7 +401,7 @@ namespace sw {
 
 			areal<nbits, es> p, ref;
 			// from -maxpos to maxpos through zero
-			for (typename std::vector < areal<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; it++) {
+			for (typename std::vector < areal<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
 				p = *it;
 				++p;
 				ref = *(it + 1);
@@ -416,7 +416,7 @@ namespace sw {
 
 		// enumerate all negation cases for a areal configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
-		int ValidateNegation(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateNegation(const std::string& tag, bool bReportIndividualTestCases) {
 			constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			areal<nbits, es> pa(0), pneg(0), pref(0);
@@ -442,7 +442,7 @@ namespace sw {
 #if SQRT_IMPLEMENTED
 		// enumerate all SQRT cases for a areal configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
-		int ValidateSqrt(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateSqrt(const std::string& tag, bool bReportIndividualTestCases) {
 			constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			areal<nbits, es> pa, psqrt, pref;
@@ -468,7 +468,7 @@ namespace sw {
 
 		// enumerate all addition cases for a areal configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
-		int ValidateAddition(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateAddition(const std::string& tag, bool bReportIndividualTestCases) {
 			const size_t NR_POSITS = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			areal<nbits, es> pa, pb, psum, pref;
@@ -513,7 +513,7 @@ namespace sw {
 
 		// enumerate all subtraction cases for a areal configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
-		int ValidateSubtraction(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 			const size_t NR_POSITS = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			areal<nbits, es> pa, pb, pref, pdif;
@@ -557,7 +557,7 @@ namespace sw {
 
 		// enumerate all multiplication cases for a areal configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
-		int ValidateMultiplication(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
 			const size_t NR_POSITS = (size_t(1) << nbits);
 
@@ -600,7 +600,7 @@ namespace sw {
 
 		// enerate all reciprocation cases for a areal configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
-		int ValidateReciprocation(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateReciprocation(const std::string& tag, bool bReportIndividualTestCases) {
 			const size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			areal<nbits, es> pa, preciprocal, preference;
@@ -631,7 +631,7 @@ namespace sw {
 
 		// enumerate all division cases for a areal configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
-		int ValidateDivision(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateDivision(const std::string& tag, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
 			const size_t NR_POSITS = (size_t(1) << nbits);
 
@@ -979,7 +979,7 @@ namespace sw {
 		// Basic design is that we generate nrOfRandom areal values and store them in an operand array.
 		// We will then execute the binary operator nrOfRandom combinations.
 		template<size_t nbits, size_t es>
-		int ValidateBinaryOperatorThroughRandoms(std::string tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
+		int ValidateBinaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
 			const size_t SIZE_STATE_SPACE = nrOfRandoms;
 			int nrOfFailedTests = 0;
 			areal<nbits, es> pa, pb, presult, preference;

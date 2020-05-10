@@ -67,7 +67,7 @@ void CheckMultiWordBehavior() {
 	cout << hex << "0x" << (0x5555555555555555 & ~((~static_cast<unsigned long long>(0)) << 8)) << endl;
 	cout << hex << "0x" << (0x5555555555555555 & ~((~static_cast<unsigned long long>(0)) << 16)) << endl;
 	cout << hex << "0x" << (0x5555555555555555 & ~((~static_cast<unsigned long long>(0)) << 32)) << endl;
-	cout << hex << "0x" << (0x5555555555555555 & ~((~static_cast<unsigned long long>(0)) << 64)) << endl;
+	//cout << hex << "0x" << (0x5555555555555555 & ~((~static_cast<unsigned long long>(0)) << 64)) << endl;
 	cout << dec;
 
 	bitblock<8> bb008;

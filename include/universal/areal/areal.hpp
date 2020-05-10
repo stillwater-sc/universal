@@ -109,34 +109,19 @@ namespace sw {
 			static constexpr size_t divbits = 3 * fhbits + 4;   // size of the divider output
 
 			areal() : _sign(false), _scale(0), _nrOfBits(fbits), _inf(false), _zero(true), _nan(false) {}
-			areal(bool sign, int scale, const bitblock<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) : _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
-			areal(signed char initial_value) {
-				*this = initial_value;
-			}
-			areal(short initial_value) {
-				*this = initial_value;
-			}
-			areal(int initial_value) {
-				*this = initial_value;
-			}
-			areal(long long initial_value) {
-				*this = initial_value;
-			}
-			areal(unsigned long long initial_value) {
-				*this = initial_value;
-			}
-			areal(float initial_value) {
-				*this = initial_value;
-			}
-			areal(double initial_value) {
-				*this = initial_value;
-			}
-			areal(long double initial_value) {
-				*this = initial_value;
-			}
-			areal(const areal& rhs) {
-				*this = rhs;
-			}
+			areal(bool sign, int scale, const bitblock<fbits>& fraction_without_hidden_bit, bool zero = true, bool inf = false) 
+				: _sign(sign), _scale(scale), _nrOfBits(fbits), _fraction(fraction_without_hidden_bit), _inf(inf), _zero(zero), _nan(false) {}
+
+			explicit areal(signed char initial_value)        { *this = initial_value; }
+			explicit areal(short initial_value)              { *this = initial_value; }
+			explicit areal(int initial_value)                { *this = initial_value; }
+			explicit areal(long long initial_value)          { *this = initial_value; }
+			explicit areal(unsigned long long initial_value) { *this = initial_value; }
+			explicit areal(float initial_value)              { *this = initial_value; }
+			         areal(double initial_value)             { *this = initial_value; }
+			explicit areal(long double initial_value)        { *this = initial_value; }
+			         areal(const areal& rhs)                 { *this = rhs; }
+
 			areal& operator=(const areal& rhs) {
 				_sign	  = rhs._sign;
 				_scale	  = rhs._scale;
@@ -759,28 +744,28 @@ namespace sw {
 		// BINARY ADDITION
 		template<size_t nbits, size_t es>
 		inline areal<nbits, es> operator+(const areal<nbits, es>& lhs, const areal<nbits, es>& rhs) {
-			areal<nbits, es> sum = lhs;
+			areal<nbits, es> sum(lhs);
 			sum += rhs;
 			return sum;
 		}
 		// BINARY SUBTRACTION
 		template<size_t nbits, size_t es>
 		inline areal<nbits, es> operator-(const areal<nbits, es>& lhs, const areal<nbits, es>& rhs) {
-			areal<nbits, es> diff = lhs;
+			areal<nbits, es> diff(lhs);
 			diff -= rhs;
 			return diff;
 		}
 		// BINARY MULTIPLICATION
 		template<size_t nbits, size_t es>
 		inline areal<nbits, es> operator*(const areal<nbits, es>& lhs, const areal<nbits, es>& rhs) {
-			areal<nbits, es> mul = lhs;
+			areal<nbits, es> mul(lhs);
 			mul *= rhs;
 			return mul;
 		}
 		// BINARY DIVISION
 		template<size_t nbits, size_t es>
 		inline areal<nbits, es> operator/(const areal<nbits, es>& lhs, const areal<nbits, es>& rhs) {
-			areal<nbits, es> ratio = lhs;
+			areal<nbits, es> ratio(lhs);
 			ratio /= rhs;
 			return ratio;
 		}

@@ -1,3 +1,5 @@
+#!/bin/sh
+
 ####
 # Set build options
 # MSVC generates SSE/SSE2 code by default. No support for SSE3 as of 7/15/2018

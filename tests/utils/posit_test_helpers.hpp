@@ -17,7 +17,7 @@ namespace sw {
 		static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 		template<size_t nbits, size_t es>
-		void ReportConversionError(std::string test_case, std::string op, double input, double reference, const posit<nbits, es>& presult) {
+		void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const posit<nbits, es>& presult) {
 			constexpr size_t fbits = nbits - 3 - es;
 
 			bool		     	 _sign;
@@ -39,7 +39,7 @@ namespace sw {
 		}
 
 		template<>
-		void ReportConversionError<2,0>(std::string test_case, std::string op, double input, double reference, const posit<2, 0>& presult) {
+		void ReportConversionError<2,0>(const std::string& test_case, const std::string& op, double input, double reference, const posit<2, 0>& presult) {
 			constexpr size_t nbits = 2;
 			//constexpr size_t es = 0;
 			std::cerr << test_case
@@ -54,7 +54,7 @@ namespace sw {
 
 		}
 		template<>
-		void ReportConversionError<3, 1>(std::string test_case, std::string op, double input, double reference, const posit<3, 1>& presult) {
+		void ReportConversionError<3, 1>(const std::string& test_case, const std::string& op, double input, double reference, const posit<3, 1>& presult) {
 			constexpr size_t nbits = 3;
 			//constexpr size_t es = 1; 
 			std::cerr << test_case
@@ -70,7 +70,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const posit<nbits, es>& presult) {
+		void ReportConversionSuccess(const std::string& test_case, const std::string& op, double input, double reference, const posit<nbits, es>& presult) {
 			static_assert(nbits > 1, "component_to_string requires nbits >= 2");
 			if (nbits > 2) {
 				constexpr size_t fbits = nbits - 3 - es;
@@ -108,7 +108,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportUnaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+		void ReportUnaryArithmeticError(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
@@ -119,7 +119,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportUnaryArithmeticSuccess(std::string test_case, std::string op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+		void ReportUnaryArithmeticSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
@@ -130,7 +130,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticError(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+		void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 			std::cerr << test_case << " " 
 				<< std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
@@ -145,7 +145,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticErrorInBinary(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+		void ReportBinaryArithmeticErrorInBinary(const std::string& test_case, const std::string& op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setw(nbits) << lhs.get()
 				<< " " << op << " "
@@ -157,7 +157,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+		void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
@@ -172,7 +172,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticSuccessInBinary(std::string test_case, std::string op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+		void ReportBinaryArithmeticSuccessInBinary(const std::string& test_case, const std::string& op, const posit<nbits, es>& lhs, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setw(nbits) << lhs.get()
 				<< " " << op << " "
@@ -184,7 +184,7 @@ namespace sw {
 		}
 		
 		template<size_t nbits, size_t es>
-		void ReportDecodeError(std::string test_case, const posit<nbits, es>& actual, double golden_value) {
+		void ReportDecodeError(const std::string& test_case, const posit<nbits, es>& actual, double golden_value) {
 			std::cerr << test_case << " actual " << actual << " required " << golden_value << std::endl;
 		}
 

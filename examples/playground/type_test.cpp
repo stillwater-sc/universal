@@ -42,10 +42,15 @@ void test(const std::string& message)
     // Logical operators
     bool b(false);
     b = (p == v); 
+    std::cout << "(p == v) : " << (b ? "true" : "false") << std::endl;
     b = (p != v);
+    std::cout << "(p != v) : " << (b ? "true" : "false") << std::endl;
     b = (p <  v);
+    std::cout << "(p < v) : " << (b ? "true" : "false") << std::endl;
     b = (p >  v);
+    std::cout << "(p > v) : " << (b ? "true" : "false") << std::endl;
     b = (p <= v);
+    std::cout << "(p <= v) : " << (b ? "true" : "false") << std::endl;
     b = (p >= v);
     std::cout << "(p >= v) : " << (b ? "true" : "false") << std::endl;
 

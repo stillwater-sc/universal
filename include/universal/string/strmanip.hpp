@@ -8,6 +8,7 @@
 namespace sw {
 namespace unum {
 
+// remove white space from the left side of the string
 std::string& ltrim(std::string& s)
 {
 	auto it = std::find_if(s.begin(), s.end(),
@@ -18,8 +19,8 @@ std::string& ltrim(std::string& s)
 	return s;
 }
 
-std::string& rtrim(std::string& s)
-{
+// remove white space at the right side of the string
+std::string& rtrim(std::string& s) {
 	auto it = std::find_if(s.rbegin(), s.rend(),
 		[](char c) {
 		return !std::isspace<char>(c, std::locale::classic());
@@ -28,10 +29,8 @@ std::string& rtrim(std::string& s)
 	return s;
 }
 
-std::string& trim(std::string& s)
-{
-	return ltrim(rtrim(s));
-}
+// remove white space on left and right side of the string
+inline std::string& trim(std::string& s) { return ltrim(rtrim(s)); }
 
 } // namespace unum
 } // namespace sw

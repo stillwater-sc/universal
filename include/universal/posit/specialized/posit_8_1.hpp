@@ -34,19 +34,19 @@ namespace sw {
 			posit& operator=(posit&&) = default;
 
 			// initializers for native types
-			posit(const signed char initial_value)         { *this = initial_value; }
-			posit(const short initial_value)               { *this = initial_value; }
-			posit(const int initial_value)                 { *this = initial_value; }
-			posit(const long initial_value)                { *this = initial_value; }
-			posit(const long long initial_value)           { *this = initial_value; }
-			posit(const char initial_value)                { *this = initial_value; }
-			posit(const unsigned short initial_value)      { *this = initial_value; }
-			posit(const unsigned int initial_value)        { *this = initial_value; }
-			posit(const unsigned long initial_value)       { *this = initial_value; }
-			posit(const unsigned long long initial_value)  { *this = initial_value; }
-			posit(const float initial_value)               { *this = initial_value; }
-			posit(const double initial_value)              { *this = initial_value; }
-			posit(const long double initial_value)         { *this = initial_value; }
+			explicit posit(const signed char initial_value)         { *this = initial_value; }
+			explicit posit(const short initial_value)               { *this = initial_value; }
+			explicit posit(const int initial_value)                 { *this = initial_value; }
+			explicit posit(const long initial_value)                { *this = initial_value; }
+			explicit posit(const long long initial_value)           { *this = initial_value; }
+			explicit posit(const char initial_value)                { *this = initial_value; }
+			explicit posit(const unsigned short initial_value)      { *this = initial_value; }
+			explicit posit(const unsigned int initial_value)        { *this = initial_value; }
+			explicit posit(const unsigned long initial_value)       { *this = initial_value; }
+			explicit posit(const unsigned long long initial_value)  { *this = initial_value; }
+			explicit posit(const float initial_value)               { *this = initial_value; }
+			explicit posit(const double initial_value)              { *this = initial_value; }
+			explicit posit(const long double initial_value)         { *this = initial_value; }
 
 			// assignment operators for native types
 			posit& operator=(const signed char rhs)        { return operator=((int)(rhs)); }

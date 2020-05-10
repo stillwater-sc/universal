@@ -32,19 +32,19 @@ namespace sw {
 		posit& operator=(posit&&) = default;
 
 		// initializers for native types
-		posit(const signed char initial_value)        { *this = initial_value; }
-		posit(const short initial_value)              { *this = initial_value; }
-		posit(const int initial_value)                { *this = initial_value; }
-		posit(const long initial_value)               { *this = initial_value; }
-		posit(const long long initial_value)          { *this = initial_value; }
-		posit(const char initial_value)               { *this = initial_value; }
-		posit(const unsigned short initial_value)     { *this = initial_value; }
-		posit(const unsigned int initial_value)       { *this = initial_value; }
-		posit(const unsigned long initial_value)      { *this = initial_value; }
-		posit(const unsigned long long initial_value) { *this = initial_value; }
-		posit(const float initial_value)              { *this = initial_value; }
-		posit(const double initial_value)             { *this = initial_value; }
-		posit(const long double initial_value)        { *this = initial_value; }
+		explicit posit(const signed char initial_value)        { *this = initial_value; }
+		explicit posit(const short initial_value)              { *this = initial_value; }
+		explicit posit(const int initial_value)                { *this = initial_value; }
+		explicit posit(const long initial_value)               { *this = initial_value; }
+		explicit posit(const long long initial_value)          { *this = initial_value; }
+		explicit posit(const char initial_value)               { *this = initial_value; }
+		explicit posit(const unsigned short initial_value)     { *this = initial_value; }
+		explicit posit(const unsigned int initial_value)       { *this = initial_value; }
+		explicit posit(const unsigned long initial_value)      { *this = initial_value; }
+		explicit posit(const unsigned long long initial_value) { *this = initial_value; }
+		explicit posit(const float initial_value)              { *this = initial_value; }
+		explicit posit(const double initial_value)             { *this = initial_value; }
+		explicit posit(const long double initial_value)        { *this = initial_value; }
 
 		// assignment operators for native types
 		posit& operator=(const signed char rhs)       { 
@@ -278,8 +278,8 @@ namespace sw {
 
 			// calculate the sign of the result
 			bool sign = bool(lhs & 0x80) ^ bool(rhs & 0x80);
-			lhs = lhs & 0x80 ? -lhs : lhs;
-			rhs = rhs & 0x80 ? -rhs : rhs;
+			lhs = (lhs & 0x80) ? -lhs : lhs;
+			rhs = (rhs & 0x80) ? -rhs : rhs;
 
 			// decode the regime of lhs
 			int8_t m = 0; // pattern length

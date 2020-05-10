@@ -552,7 +552,7 @@ namespace sw {
 			char str[(nbits >> 2) + 2];   // plenty of room
 			for (size_t i = 0; i < (nbits >> 2) + 2; ++i) str[i] = 0;
 			const char* hexits = "0123456789ABCDEF";
-			unsigned int maxHexDigits = (nbits >> 2) + (nbits % 4 ? 1 : 0);
+			unsigned int maxHexDigits = (nbits >> 2) + ((nbits % 4) ? 1 : 0);
 			for (unsigned int i = 0; i < maxHexDigits; i++) {
 				unsigned int hexit;
 				switch (nbits) {
@@ -609,10 +609,9 @@ namespace sw {
 		template<size_t nbits>
 		bitblock<nbits> twos_complement(const bitblock<nbits> &number) {
 			bitblock<nbits> complement;
-			uint8_t slice = 0;
 			uint8_t carry = 1;
 			for (size_t i = 0; i < nbits; i++) {
-				slice = uint8_t(!number[i]) + carry;
+				uint8_t slice = uint8_t(!number[i]) + carry;
 				carry = slice >> 1;
 				complement[i] = (0x1 & slice);
 			}

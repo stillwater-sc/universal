@@ -13,7 +13,7 @@
 #define FLOAT_TABLE_WIDTH 20
 
 template<size_t nbits, size_t es, typename Ty>
-void ReportAssignmentError(std::string test_case, std::string op, const sw::unum::posit<nbits, es>& pref, const sw::unum::posit<nbits, es>& presult, const Ty& value) {
+void ReportAssignmentError(const std::string& test_case, const std::string& op, const sw::unum::posit<nbits, es>& pref, const sw::unum::posit<nbits, es>& presult, const Ty& value) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FLOAT_TABLE_WIDTH) << value
@@ -24,7 +24,7 @@ void ReportAssignmentError(std::string test_case, std::string op, const sw::unum
 }
 
 template<size_t nbits, size_t es, typename Ty>
-void ReportAssignmentSuccess(std::string test_case, std::string op, const sw::unum::posit<nbits, es>& pref, const sw::unum::posit<nbits, es>& presult, const Ty& value) {
+void ReportAssignmentSuccess(const std::string& test_case, const std::string& op, const sw::unum::posit<nbits, es>& pref, const sw::unum::posit<nbits, es>& presult, const Ty& value) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FLOAT_TABLE_WIDTH) << value

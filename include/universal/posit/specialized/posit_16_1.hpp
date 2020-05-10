@@ -32,19 +32,19 @@ namespace sw {
 		posit& operator=(posit&&) = default;
 
 		// initializers for native types
-		posit(signed char initial_value)        { *this = initial_value; }
-		posit(short initial_value)              { *this = initial_value; }
-		posit(int initial_value)                { *this = initial_value; }
-		posit(long initial_value)               { *this = initial_value; }
-		posit(long long initial_value)          { *this = initial_value; }
-		posit(char initial_value)               { *this = initial_value; }
-		posit(unsigned short initial_value)     { *this = initial_value; }
-		posit(unsigned int initial_value)       { *this = initial_value; }
-		posit(unsigned long initial_value)      { *this = initial_value; }
-		posit(unsigned long long initial_value) { *this = initial_value; }
-		posit(float initial_value)              { *this = initial_value; }
-		posit(double initial_value)             { *this = initial_value; }
-		posit(long double initial_value)        { *this = initial_value; }
+		explicit posit(signed char initial_value)        { *this = initial_value; }
+		explicit posit(short initial_value)              { *this = initial_value; }
+		explicit posit(int initial_value)                { *this = initial_value; }
+		explicit posit(long initial_value)               { *this = initial_value; }
+		explicit posit(long long initial_value)          { *this = initial_value; }
+		explicit posit(char initial_value)               { *this = initial_value; }
+		explicit posit(unsigned short initial_value)     { *this = initial_value; }
+		explicit posit(unsigned int initial_value)       { *this = initial_value; }
+		explicit posit(unsigned long initial_value)      { *this = initial_value; }
+		explicit posit(unsigned long long initial_value) { *this = initial_value; }
+		explicit posit(float initial_value)              { *this = initial_value; }
+		explicit posit(double initial_value)             { *this = initial_value; }
+		explicit posit(long double initial_value)        { *this = initial_value; }
 
 		// assignment operators for native types
 		posit& operator=(signed char rhs)       { return integer_assign((long)rhs); }

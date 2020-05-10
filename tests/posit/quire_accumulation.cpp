@@ -304,7 +304,7 @@ try {
 #if MANUAL_TESTING
 	cout << "Quire load/store and add/subtract" << endl;
 	posit<16, 1> p(1);
-	quire<16, 1> q1 = p;
+	quire<16, 1> q1(p);
 	quire<16, 1> q2 = q1;
 	cout << q2 << endl;
 	q2 += p;

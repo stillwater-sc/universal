@@ -72,19 +72,19 @@ public:
 	decimal& operator=(decimal&&) = default;
 
 	// initializers for native types
-	decimal(const char initial_value) { *this = initial_value; }
-	decimal(const short initial_value) { *this = initial_value; }
-	decimal(const int initial_value) { *this = initial_value; }
-	decimal(const long initial_value) { *this = initial_value; }
-	decimal(const long long initial_value) { *this = initial_value; }
-	decimal(const unsigned char initial_value) { *this = initial_value; }
-	decimal(const unsigned short initial_value) { *this = initial_value; }
-	decimal(const unsigned int initial_value) { *this = initial_value; }
-	decimal(const unsigned long initial_value) { *this = initial_value; }
-	decimal(const unsigned long long initial_value) { *this = initial_value; }
-	decimal(const float initial_value) { *this = initial_value; }
-	decimal(const double initial_value) { *this = initial_value; }
-	decimal(const long double initial_value) { *this = initial_value; }
+	explicit decimal(const char initial_value)               { *this = initial_value; }
+	explicit decimal(const short initial_value)              { *this = initial_value; }
+	explicit decimal(const int initial_value)                { *this = initial_value; }
+	explicit decimal(const long initial_value)               { *this = initial_value; }
+	         decimal(const long long initial_value)          { *this = initial_value; }
+	explicit decimal(const unsigned char initial_value)      { *this = initial_value; }
+	explicit decimal(const unsigned short initial_value)     { *this = initial_value; }
+	explicit decimal(const unsigned int initial_value)       { *this = initial_value; }
+	explicit decimal(const unsigned long initial_value)      { *this = initial_value; }
+	explicit decimal(const unsigned long long initial_value) { *this = initial_value; }
+	explicit decimal(const float initial_value)              { *this = initial_value; }
+	explicit decimal(const double initial_value)             { *this = initial_value; }
+	explicit decimal(const long double initial_value)        { *this = initial_value; }
 
 	// assignment operators for native types
 	decimal& operator=(const std::string& digits) {
@@ -437,7 +437,7 @@ public:
 	inline void setneg() { negative = true; }
 	inline void setpos() { negative = false; }
 	inline void setdigit(uint8_t d, bool sign = false) {
-		assert(d >= 0 && d <= 9); // test argument assumption
+		assert(d <= 9); // test argument assumption
 		clear();
 		push_back(d);
 		negative = sign;
@@ -457,8 +457,9 @@ public:
 	}
 
 	// read a decimal ASCII format and make a decimal type out of it
-	bool parse(std::string digits) {
+	bool parse(const std::string& _digits) {
 		bool bSuccess = false;
+		std::string digits(_digits);
 		trim(digits);
 		// check if the txt is an decimal form:[+-]*[0123456789]+
 		std::regex decimal_regex("[+-]*[0123456789]+");

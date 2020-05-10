@@ -66,19 +66,19 @@ public:
 	mpfloat& operator=(mpfloat&&) = default;
 
 	// initializers for native types
-	mpfloat(const signed char initial_value)        { *this = initial_value; }
-	mpfloat(const short initial_value)              { *this = initial_value; }
-	mpfloat(const int initial_value)                { *this = initial_value; }
-	mpfloat(const long initial_value)               { *this = initial_value; }
-	mpfloat(const long long initial_value)          { *this = initial_value; }
-	mpfloat(const char initial_value)               { *this = initial_value; }
-	mpfloat(const unsigned short initial_value)     { *this = initial_value; }
-	mpfloat(const unsigned int initial_value)       { *this = initial_value; }
-	mpfloat(const unsigned long initial_value)      { *this = initial_value; }
-	mpfloat(const unsigned long long initial_value) { *this = initial_value; }
-	mpfloat(const float initial_value)              { *this = initial_value; }
-	mpfloat(const double initial_value)             { *this = initial_value; }
-	mpfloat(const long double initial_value)        { *this = initial_value; }
+	explicit mpfloat(const signed char initial_value)        { *this = initial_value; }
+	explicit mpfloat(const short initial_value)              { *this = initial_value; }
+	explicit mpfloat(const int initial_value)                { *this = initial_value; }
+	explicit mpfloat(const long initial_value)               { *this = initial_value; }
+	explicit mpfloat(const long long initial_value)          { *this = initial_value; }
+	explicit mpfloat(const char initial_value)               { *this = initial_value; }
+	explicit mpfloat(const unsigned short initial_value)     { *this = initial_value; }
+	explicit mpfloat(const unsigned int initial_value)       { *this = initial_value; }
+	explicit mpfloat(const unsigned long initial_value)      { *this = initial_value; }
+	explicit mpfloat(const unsigned long long initial_value) { *this = initial_value; }
+	explicit mpfloat(const float initial_value)              { *this = initial_value; }
+	explicit mpfloat(const double initial_value)             { *this = initial_value; }
+	explicit mpfloat(const long double initial_value)        { *this = initial_value; }
 
 	// assignment operators for native types
 	mpfloat& operator=(const signed char rhs)        { return convert(rhs, *this); }
