@@ -7,7 +7,10 @@
 FROM gcc:7 as builder
 LABEL Theodore Omtzigt
 # create a cmake build environment
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential apt-utils cmake \
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    apt-utils \
+    cmake \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -29,11 +32,13 @@ CMD ["echo", "Universal Numbers Library Version 2.0.0"]
 
 # RELEASE stage
 #FROM alpine:latest as release    # hitting a segfault during startup of some playground programs
-FROM debian:latest as release
+FROM debian:buster-slim as release
 LABEL Theodore Omtzigt
 
 #RUN apk add --no-cache libc6-compat libstdc++ make cmake bash gawk sed grep bc coreutils
-RUN apt-get update && apt-get install -y --no-install-recommends make cmake
+RUN apt-get update && apt-get install -y \
+    make \
+    cmake
 
 # after building, the test executables are organized in the build directory under root
 # ctest gets its configuration for CTestTestfile.cmake files. There is one at the root of the build tree

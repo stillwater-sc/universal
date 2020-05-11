@@ -51,7 +51,6 @@ void GenerateLinearSamples() {
 	Posit epsilon = numeric_limits<Posit>::epsilon();
 	cout << "epsilon is " << epsilon << " " << color_print(epsilon) << endl;
 
-	constexpr size_t NR_VALUES = (1 << nbits);
 	Posit p = 1;
 	//while (!p.isnar()) {
 	int count = 0;
