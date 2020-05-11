@@ -11,12 +11,12 @@
 #include <limits>
 
 namespace sw {
-	namespace unum {
+namespace unum {
 
 		static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 		template<size_t nbits, size_t es>
-		void ReportConversionError(std::string test_case, const std::string& op, double input, double reference, const areal<nbits, es>& presult) {
+		void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const areal<nbits, es>& presult) {
 			static_assert(nbits > 2, "component_to_string requires nbits > 2");
 			constexpr size_t fbits = nbits - 3 - es;
 
@@ -38,7 +38,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportConversionSuccess(std::string test_case, const std::string& op, double input, double reference, const areal<nbits, es>& presult) {
+		void ReportConversionSuccess(const std::string& test_case, const std::string& op, double input, double reference, const areal<nbits, es>& presult) {
 			static_assert(nbits > 2, "component_to_string requires nbits > 2");
 			constexpr size_t fbits = nbits - 3 - es;
 
@@ -60,7 +60,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportUnaryArithmeticError(std::string test_case, const std::string& op, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportUnaryArithmeticError(const std::string& test_case, const std::string& op, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
@@ -71,7 +71,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportUnaryArithmeticSuccess(std::string test_case, const std::string& op, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportUnaryArithmeticSuccess(const std::string& test_case, const std::string& op, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
@@ -82,7 +82,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticError(std::string test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case << " " 
 				<< std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
@@ -97,7 +97,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticErrorInBinary(std::string test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportBinaryArithmeticErrorInBinary(const std::string& test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setw(nbits) << lhs.get()
 				<< " " << op << " "
@@ -109,7 +109,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticSuccess(std::string test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
@@ -124,7 +124,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticSuccessInBinary(std::string test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportBinaryArithmeticSuccessInBinary(const std::string& test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setw(nbits) << lhs.get()
 				<< " " << op << " "
@@ -136,7 +136,7 @@ namespace sw {
 		}
 		
 		template<size_t nbits, size_t es>
-		void ReportDecodeError(std::string test_case, const areal<nbits, es>& actual, double golden_value) {
+		void ReportDecodeError(const std::string& test_case, const areal<nbits, es>& actual, double golden_value) {
 			std::cerr << test_case << " actual " << actual << " required " << golden_value << std::endl;
 		}
 
@@ -274,7 +274,7 @@ namespace sw {
 
 		// enumerate all conversion cases for integers
 		template<size_t nbits, size_t es>
-		int ValidateIntegerConversion(std::string& tag, bool bReportIndividualTestCases) {
+		int ValidateIntegerConversion(const std::string& tag, bool bReportIndividualTestCases) {
 			// we generate numbers from 1 to NaR to -1 and the special case of 0
 			constexpr size_t NR_OF_TESTS = (size_t(1) << (nbits - 1)) + 1;
 			int nrOfFailedTestCases = 0;
@@ -1062,7 +1062,6 @@ namespace sw {
 		}
 
 
-	} // namespace unum
-
+} // namespace unum
 } // namespace sw
 

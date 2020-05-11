@@ -23,7 +23,7 @@ namespace sw {
 //		static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 		template<size_t nbits, size_t es>
-		void ReportTwoInputFunctionError(std::string test_case, std::string op, const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+		void ReportTwoInputFunctionError(const std::string& test_case, const std::string& op, const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 			std::cerr << test_case << " " << op << "("
 				<< std::setprecision(20) 
 				<< std::setw(FLOAT_TABLE_WIDTH) << a
@@ -38,7 +38,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportTwoInputFunctionSuccess(std::string test_case, std::string op, const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+		void ReportTwoInputFunctionSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& a, const posit<nbits, es>& b, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 			std::cerr << test_case << " " << op << "("
 				<< std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << a
@@ -53,7 +53,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportOneInputFunctionError(std::string test_case, std::string op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+		void ReportOneInputFunctionError(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
@@ -64,7 +64,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportOneInputFunctionSuccess(std::string test_case, std::string op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
+		void ReportOneInputFunctionSuccess(const std::string& test_case, const std::string& op, const posit<nbits, es>& rhs, const posit<nbits, es>& pref, const posit<nbits, es>& presult) {
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
@@ -80,7 +80,7 @@ namespace sw {
 
 		// enumerate all NATURAL LOGARITHM cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateLog(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateLog(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, plog, pref;
@@ -105,7 +105,7 @@ namespace sw {
 
 		// enumerate all BINARY LOGARITHM cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateLog2(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateLog2(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, plog2, pref;
@@ -131,7 +131,7 @@ namespace sw {
 
 		// enumerate all DECIMAL LOGARITHM cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateLog10(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateLog10(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, plog10, pref;
@@ -157,7 +157,7 @@ namespace sw {
 
 		// enumerate all base-e exponent cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateExp(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateExp(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pexp, pref;
@@ -184,7 +184,7 @@ namespace sw {
 
 		// enumerate all base-2 exponent cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateExp2(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateExp2(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pexp2, pref;
@@ -211,7 +211,7 @@ namespace sw {
 
 		// enumerate all power method cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidatePowerFunction(std::string tag, bool bReportIndividualTestCases, unsigned int maxSamples = 10000) {
+		int ValidatePowerFunction(const std::string& tag, bool bReportIndividualTestCases, unsigned int maxSamples = 10000) {
 			const int NR_POSITS = (unsigned(1) << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pb, ppow, pref;
@@ -246,7 +246,7 @@ namespace sw {
 
 		// enumerate all trigonometric sine cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateSine(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateSine(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, psin, pref;
@@ -271,7 +271,7 @@ namespace sw {
 
 		// enumerate all trigonometric cosine cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateCosine(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateCosine(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pcos, pref;
@@ -296,7 +296,7 @@ namespace sw {
 
 		// enumerate all trigonometric tangent cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateTangent(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateTangent(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, ptan, pref;
@@ -321,7 +321,7 @@ namespace sw {
 
 		// enumerate all trigonometric cotangent cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateAtan(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateAtan(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, patan, pref;
@@ -346,7 +346,7 @@ namespace sw {
 
 		// enumerate all trigonometric sec cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateAsin(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateAsin(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pasin, pref;
@@ -371,7 +371,7 @@ namespace sw {
 
 		// enumerate all trigonometric cosec cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateAcos(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateAcos(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pacos, pref;
@@ -396,7 +396,7 @@ namespace sw {
 
 		// enumerate all hyperbolic sine cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateSinh(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateSinh(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, psinh, pref;
@@ -421,7 +421,7 @@ namespace sw {
 
 		// enumerate all hyperbolic cosine cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateCosh(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateCosh(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pcosh, pref;
@@ -446,7 +446,7 @@ namespace sw {
 
 		// enumerate all hyperbolic tangent cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateTanh(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateTanh(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, ptanh, pref;
@@ -471,7 +471,7 @@ namespace sw {
 
 		// enumerate all hyperbolic cotangent cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateAtanh(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateAtanh(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, patanh, pref;
@@ -496,7 +496,7 @@ namespace sw {
 
 		// enumerate all hyperbolic sec cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateAsinh(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateAsinh(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pasinh, pref;
@@ -521,7 +521,7 @@ namespace sw {
 
 		// enumerate all hyperbolic cosec cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateAcosh(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateAcosh(const std::string& tag, bool bReportIndividualTestCases) {
 			const int NR_TEST_CASES = (1 << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pacosh, pref;

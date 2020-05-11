@@ -17,7 +17,8 @@ namespace sw {
 
 		static constexpr unsigned DECIMAL_TABLE_WIDTH = 15;
 
-		void ReportBinaryDecimalError(std::string test_case, std::string op, const decimal& lhs, const decimal& rhs, const decimal& dref, const long& ref) {
+		// report decimal binary operator error
+		void ReportBinaryDecimalError(const std::string& test_case, const std::string& op, const decimal& lhs, const decimal& rhs, const decimal& dref, const long& ref) {
 			std::cerr << test_case << " "
 				<< std::setprecision(20)
 				<< std::setw(DECIMAL_TABLE_WIDTH) << lhs
@@ -29,7 +30,9 @@ namespace sw {
 				<< std::setprecision(5)
 				<< std::endl;
 		}
-		void ReportBinaryDecimalSuccess(std::string test_case, std::string op, const decimal& lhs, const decimal& rhs, const decimal& dref, const long& ref) {
+		
+		// report decimal binary operator success
+		void ReportBinaryDecimalSuccess(const std::string& test_case, const std::string& op, const decimal& lhs, const decimal& rhs, const decimal& dref, const long& ref) {
 			std::cerr << test_case << " "
 				<< std::setprecision(20)
 				<< std::setw(DECIMAL_TABLE_WIDTH) << lhs
@@ -43,7 +46,7 @@ namespace sw {
 		}
 
 		// verification of addition
-		int VerifyAddition(std::string tag, long ub, bool bReportIndividualTestCases) {
+		int VerifyAddition(const std::string& tag, long ub, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
 			for (long i = -ub; i <= ub; ++i) {
 				decimal d1 = i;
@@ -64,7 +67,7 @@ namespace sw {
 		}
 
 		// verification of subtraction
-		int VerifySubtraction(std::string tag, long ub, bool bReportIndividualTestCases) {
+		int VerifySubtraction(const std::string& tag, long ub, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
 			for (long i = -ub; i <= ub; ++i) {
 				decimal d1 = i;
@@ -85,7 +88,7 @@ namespace sw {
 		}
 
 		// verification of multiplication
-		int VerifyMultiplication(std::string tag, long ub, bool bReportIndividualTestCases) {
+		int VerifyMultiplication(const std::string& tag, long ub, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
 			for (long i = -ub; i <= ub; ++i) {
 				decimal d1 = i;
@@ -106,7 +109,7 @@ namespace sw {
 		}
 
 		// verification of division
-		int VerifyDivision(std::string tag, long ub, bool bReportIndividualTestCases) {
+		int VerifyDivision(const std::string& tag, long ub, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
 			decimal dref;
 			for (long i = -ub; i <= ub; ++i) {

@@ -55,11 +55,7 @@
 #define LDBL_TRUE_MIN    DBL_TRUE_MIN            // min positive value
 -+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+*/
 
-using namespace std;
-using namespace sw::unum;
-
-void TestConversionResult(bool bValid, string descriptor)
-{
+void TestConversionResult(bool bValid, const std::string& descriptor) {
 	if (!bValid) {
 		std::cout << descriptor << " conversions FAIL" << std::endl;
 	}
@@ -70,6 +66,9 @@ void TestConversionResult(bool bValid, string descriptor)
 
 template<size_t fbits>
 bool ValidateValue() {
+	using namespace std;
+	using namespace sw::unum;
+
 	const int NR_TEST_CASES = 12;
 	float input[NR_TEST_CASES] = {
 		0, 1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024
@@ -117,15 +116,18 @@ LDBL_TRUE_MIN
  */
 template<size_t fbits>
 bool ValidateSubnormalFloats() {
+	using namespace std;
+	using namespace sw::unum;
+
 	constexpr float flt_min = std::numeric_limits<float>::min();
 	constexpr float flt_max = std::numeric_limits<float>::max();
 	constexpr float flt_true_min = 1.401298464e-45F;
 
 	bool bSuccess = false;
 
-	std::cout << flt_min << " " << flt_max << std::endl;
-	std::cout << flt_true_min << std::endl;
-	std::cout << hexfloat << flt_min << defaultfloat << std::endl;
+	cout << flt_min << " " << flt_max << endl;
+	cout << flt_true_min << endl;
+	cout << hexfloat << flt_min << defaultfloat << endl;
 
 	value<23> v;
 	float flt = flt_min;
@@ -133,23 +135,26 @@ bool ValidateSubnormalFloats() {
 	for (size_t i = 0; i < 24; ++i) {
 		flt /= 2.0;
 		v = flt;
-		std::cout << hexfloat << flt << defaultfloat << " " << flt << " " << components(v) << " " << v << std::endl;
+		cout << hexfloat << flt << defaultfloat << " " << flt << " " << components(v) << " " << v << endl;
 	}
 
 	flt = flt_min + 3*flt_true_min;
 	v = flt;
-	std::cout << hexfloat << flt << defaultfloat << " " << flt << " " << components(v) << " " << v << std::endl;
+	cout << hexfloat << flt << defaultfloat << " " << flt << " " << components(v) << " " << v << endl;
 
 	return bSuccess;
 }
 
 template<size_t fbits>
-void PrintValue(float f, const value<fbits>& v) {
-	cout << "float: " << setw(fbits) << f << components(v) << endl;
+void PrintValue(float f, const sw::unum::value<fbits>& v) {
+	std::cout << "float: " << std::setw(fbits) << f << sw::unum::components(v) << std::endl;
 }
 
 int main()
 try {
+	using namespace std;
+	using namespace sw::unum;
+
 	int nrOfFailedTestCases = 0;
 
 	cout << "Validate subnormal floats" << endl;
@@ -209,10 +214,10 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	cerr << msg << endl;
+	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {
-	cerr << "Caught unknown exception" << endl;
+	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }

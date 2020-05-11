@@ -33,7 +33,7 @@ Regime range example for a posit<6,es>
 	 11111          4
 */
 template<size_t nbits, size_t es>
-int ValidateRegimeOperations(std::string tag, bool bReportIndividualTestCases) {
+int ValidateRegimeOperations(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr int NR_TEST_CASES = int(nbits);
 	int nrOfFailedTestCases = 0;
 
@@ -55,7 +55,7 @@ int ValidateRegimeOperations(std::string tag, bool bReportIndividualTestCases) {
 
 
 template<size_t nbits, size_t es>
-int ValidateInwardProjection(std::string tag, bool bReportIndividualTestCases) {
+int ValidateInwardProjection(const std::string& tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	unsigned useed_scale = unsigned(1) << es;
 
@@ -77,7 +77,7 @@ int ValidateInwardProjection(std::string tag, bool bReportIndividualTestCases) {
 }
 
 template<size_t nbits, size_t es>
-int ValidateRegimeScales(std::string tag, bool bReportIndividualTestCases) {
+int ValidateRegimeScales(const std::string& tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 	int useed_scale = int(1) << es;  // int because we are doing int math with it
 

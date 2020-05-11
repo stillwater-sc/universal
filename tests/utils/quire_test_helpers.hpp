@@ -15,7 +15,7 @@
 namespace sw {
 	namespace unum {
 
-		int TestQuireAccumulationResult(int nrOfFailedTests, std::string descriptor)
+		int TestQuireAccumulationResult(int nrOfFailedTests, const std::string& descriptor)
 		{
 			if (nrOfFailedTests > 0) {
 				std::cout << descriptor << " quire accumulation FAIL" << std::endl;
@@ -29,7 +29,7 @@ namespace sw {
 		static constexpr unsigned QUIRE_TABLE_WIDTH = 15;
 
 		template<size_t nbits, size_t es>
-		void ReportQuireNonZeroError(std::string test_result, std::string op, size_t nrOfElements, const posit<nbits, es>& seed, const posit<nbits, es>& presult) {
+		void ReportQuireNonZeroError(const std::string& test_result, const std::string& op, size_t nrOfElements, const posit<nbits, es>& seed, const posit<nbits, es>& presult) {
 			std::cerr << test_result << " "
 				<< std::setprecision(20)
 				<< " " << op
@@ -44,7 +44,7 @@ namespace sw {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportQuireNonZeroSuccess(std::string test_result, std::string op, size_t nrOfElements, const posit<nbits, es>& seed, const posit<nbits, es>& presult) {
+		void ReportQuireNonZeroSuccess(const std::string& test_result, const std::string& op, size_t nrOfElements, const posit<nbits, es>& seed, const posit<nbits, es>& presult) {
 			std::cerr << test_result
 				<< std::setprecision(20)
 				<< " " << op

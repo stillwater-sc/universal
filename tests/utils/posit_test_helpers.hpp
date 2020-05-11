@@ -351,7 +351,7 @@ namespace sw {
 
 		// enumerate all conversion cases for integers
 		template<size_t nbits, size_t es>
-		int ValidateIntegerConversion(std::string& tag, bool bReportIndividualTestCases) {
+		int ValidateIntegerConversion(const std::string& tag, bool bReportIndividualTestCases) {
 			// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
 			const unsigned max = nbits > 20 ? 20 : nbits;
 			size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;  
@@ -385,7 +385,7 @@ namespace sw {
 /*
 		// specialized template for fast posit<2,0>
 		template<>
-		int ValidateIntegerConversion<NBITS_IS_2, ES_IS_0>(std::string& tag, bool bReportIndividualTestCases) {
+		int ValidateIntegerConversion<NBITS_IS_2, ES_IS_0>(const std::string& tag, bool bReportIndividualTestCases) {
 			std::vector<int> in = { -4, -3, -2, -1, 0, 1, 2, 3, 4 };
 			std::vector<int> ref = { -1, -1, -1, -1, 0, 1, 1, 1, 1 };
 			int nrOfFailedTestCases = 0;
@@ -406,7 +406,7 @@ namespace sw {
 		}
 		// specialized template for fast posit<3,0>
 		template<>
-		int ValidateIntegerConversion<NBITS_IS_3, ES_IS_0>(std::string& tag, bool bReportIndividualTestCases) {
+		int ValidateIntegerConversion<NBITS_IS_3, ES_IS_0>(const std::string& tag, bool bReportIndividualTestCases) {
 			std::vector<int> in = { -4, -3, -2, -1, 0, 1, 2, 3, 4 };
 			std::vector<int> ref = { -2, -2, -2, -1, 0, 1, 2, 2, 2 };
 			int nrOfFailedTestCases = 0;
@@ -496,7 +496,7 @@ namespace sw {
 
 		// validate the increment operator++
 		template<size_t nbits, size_t es>
-		int ValidateIncrement(std::string tag, bool bReportIndividualTestCases)	{
+		int ValidateIncrement(const std::string& tag, bool bReportIndividualTestCases)	{
 			std::vector< posit<nbits, es> > set;
 			GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
@@ -519,7 +519,7 @@ namespace sw {
 
 		// validate the decrement operator--
 		template<size_t nbits, size_t es>
-		int ValidateDecrement(std::string tag, bool bReportIndividualTestCases)
+		int ValidateDecrement(const std::string& tag, bool bReportIndividualTestCases)
 		{
 			std::vector< posit<nbits, es> > set;
 			GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -543,7 +543,7 @@ namespace sw {
 
 		// validate the postfix operator++
 		template<size_t nbits, size_t es>
-		int ValidatePostfix(std::string tag, bool bReportIndividualTestCases)
+		int ValidatePostfix(const std::string& tag, bool bReportIndividualTestCases)
 		{
 			std::vector< posit<nbits, es> > set;
 			GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -567,7 +567,7 @@ namespace sw {
 
 		// validate the prefix operator++
 		template<size_t nbits, size_t es>
-		int ValidatePrefix(std::string tag, bool bReportIndividualTestCases)
+		int ValidatePrefix(const std::string& tag, bool bReportIndividualTestCases)
 		{
 			std::vector< posit<nbits, es> > set;
 			GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -591,7 +591,7 @@ namespace sw {
 
 		// enumerate all negation cases for a posit configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
-		int ValidateNegation(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateNegation(const std::string& tag, bool bReportIndividualTestCases) {
 			constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa(0), pneg(0), pref(0);
@@ -616,7 +616,7 @@ namespace sw {
 
 		// enumerate all SQRT cases for a posit configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
-		int ValidateSqrt(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateSqrt(const std::string& tag, bool bReportIndividualTestCases) {
 			constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, psqrt, pref;
@@ -641,7 +641,7 @@ namespace sw {
 
 		// enumerate all addition cases for a posit configuration
 		template<size_t nbits, size_t es>
-		int ValidateAddition(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateAddition(const std::string& tag, bool bReportIndividualTestCases) {
 			const size_t NR_POSITS = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pb, psum, pref;
@@ -686,7 +686,7 @@ namespace sw {
 
 		// enumerate all subtraction cases for a posit configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
-		int ValidateSubtraction(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 			const size_t NR_POSITS = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pb, pref, pdif;
@@ -730,7 +730,7 @@ namespace sw {
 
 		// enumerate all multiplication cases for a posit configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
-		int ValidateMultiplication(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
 			const size_t NR_POSITS = (size_t(1) << nbits);
 
@@ -773,7 +773,7 @@ namespace sw {
 
 		// enerate all reciprocation cases for a posit configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
-		int ValidateReciprocation(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateReciprocation(const std::string& tag, bool bReportIndividualTestCases) {
 			const size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, preciprocal, preference;
@@ -804,7 +804,7 @@ namespace sw {
 
 		// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
-		int ValidateDivision(std::string tag, bool bReportIndividualTestCases) {
+		int ValidateDivision(const std::string& tag, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
 			const size_t NR_POSITS = (size_t(1) << nbits);
 

@@ -6,7 +6,7 @@
 #include <universal/posit/posit>
 
 // test reporting helper
-int ReportTestResult(int nrOfFailedTests, std::string description, std::string test_operation)
+int ReportTestResult(int nrOfFailedTests, const std::string& description, const std::string& test_operation)
 {
 	if (nrOfFailedTests > 0) {
 		std::cout << description << " " << test_operation << " FAIL " << nrOfFailedTests << " failed test cases" << std::endl;
@@ -18,7 +18,7 @@ int ReportTestResult(int nrOfFailedTests, std::string description, std::string t
 }
 
 template<size_t fbits>
-void ReportError(std::string test_case, std::string op, double input, double reference, const sw::unum::fraction<fbits>& _fraction) {
+void ReportError(const std::string& test_case, const std::string& op, double input, double reference, const sw::unum::fraction<fbits>& _fraction) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(10) << input
@@ -29,7 +29,7 @@ void ReportError(std::string test_case, std::string op, double input, double ref
 }
 
 template<size_t fbits>
-int ValidateFractionValue(std::string tag, bool bReportIndividualTestCases)
+int ValidateFractionValue(const std::string& tag, bool bReportIndividualTestCases)
 {
 	const uint64_t NR_OF_FRACTIONS = (uint64_t(1) << fbits);
 	int nrOfFailedTests = 0;
@@ -52,7 +52,7 @@ int ValidateFractionValue(std::string tag, bool bReportIndividualTestCases)
 }
 
 template<size_t fbits>
-int ValidateFixedPointNumber(std::string tag, bool bReportIndividualTestCases)
+int ValidateFixedPointNumber(const std::string& tag, bool bReportIndividualTestCases)
 {
 	const uint64_t NR_OF_FRACTIONS = (uint64_t(1) << fbits);
 	int nrOfFailedTests = 0;
@@ -77,7 +77,7 @@ int ValidateFixedPointNumber(std::string tag, bool bReportIndividualTestCases)
 }
 
 template<size_t fbits>
-int ValidateRoundingAssessment(std::string tag, bool bReportIndividualTestCases) {
+int ValidateRoundingAssessment(const std::string& tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 
 	sw::unum::fraction<fbits> _fraction;
