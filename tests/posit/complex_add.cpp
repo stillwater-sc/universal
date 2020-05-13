@@ -133,6 +133,11 @@ try {
 		std::cout << "(1+2i)*(1-2i) = " << z4 * z5 << '\n';
 	}
 
+#if defined(__GNUG__)
+	// for some reason the g++ doesn't compile this section as it is 
+	// casting the constants differently
+	// than other compilers.
+#else 
 	{
 		using Real = posit<16,1>;
 		std::complex<Real> z4 = 1. + 2i, z5 = 1. - 2i; // conjugates
@@ -143,12 +148,13 @@ try {
 		auto z1 = std::complex<Real>(1.0, 0.0);
 		cout << z1 << endl;
 	}
+#endif
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<6, 0>("Manual Testing", true), "complex<posit<6,0>>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<6, 1>("Manual Testing", true), "complex<posit<3,1>>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<6, 2>("Manual Testing", true), "complex<posit<3,2>>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<6, 3>("Manual Testing", true), "complex<posit<3,3>>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 0>("Manual Testing", true), "complex<posit<5,0>>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 1>("Manual Testing", true), "complex<posit<5,1>>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 2>("Manual Testing", true), "complex<posit<5,2>>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 3>("Manual Testing", true), "complex<posit<5,3>>", "addition");
 
 //	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, true, OPCODE_ADD, 1000), "posit<16,1>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(tag, true, OPCODE_ADD, 1000), "posit<64,2>", "addition");
