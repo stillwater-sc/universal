@@ -10,7 +10,7 @@ LABEL Theodore Omtzigt
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     apt-utils \
-    cmake \
+    cmake=3.15 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -38,7 +38,8 @@ LABEL Theodore Omtzigt
 #RUN apk add --no-cache libc6-compat libstdc++ make cmake bash gawk sed grep bc coreutils
 RUN apt-get update && apt-get install -y --no-install-recommends \
     make \
-    cmake
+    cmake=3.15 \
+    && apt-get clean
 
 # after building, the test executables are organized in the build directory under root
 # ctest gets its configuration for CTestTestfile.cmake files. There is one at the root of the build tree

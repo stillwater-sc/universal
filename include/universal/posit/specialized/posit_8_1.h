@@ -244,19 +244,20 @@ posit8_1_t  posit8_1_fromf(float f) {
 		if (sign) {		
 			f = -f; // project to positive reals to simplify computation
 		}
-		unsigned k = 1; // because k = m-1; we need to add back 1
+		
 		if (f <= _minpos) {
 			p.v = 0x01;
 		}
-		else {
+		else { // determine the regime
+			unsigned k = 1; // because k = m-1; we need to add back 1
 			while (f >= 2) {
 				f *= 0.5;
 				k++;
 			}
-
-			//rounding off regime bits
-			if (k > 6)
+			// rounding off regime bits
+			if (k > 6) {
 				p.v = 0x7F;
+			}
 			else {
 				int8_t fracLength = 6 - k;
 				uint8_t frac = (uint8_t)posit8_1_convertFraction(f, fracLength, &bitNPlusOne, &bitsMore);
@@ -267,7 +268,7 @@ posit8_1_t  posit8_1_fromf(float f) {
 			p.v = (sign ? -p.v : p.v);
 		}
 	}
-	else if (f > -1 && f < -1) {
+	else if (f > -1 && f < 1) {
 		if (sign) {
 			f = -f;
 		}
