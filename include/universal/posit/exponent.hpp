@@ -1,10 +1,9 @@
 #pragma once
 // exponent.hpp: definition of a posit exponent
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 
 namespace sw {
 namespace unum {
@@ -74,7 +73,7 @@ public:
 	// DEPRECATED
 	void _assign(int scale) {
 		_Bits.reset();
-		unsigned int my_exponent = scale < 0 ? -scale >> es : scale >> es;
+		unsigned int my_exponent = (scale < 0) ? (-scale >> es) : (scale >> es);
 		// convert value into bitset
 		uint32_t mask = uint32_t(1);  // es will be small, so pick a single word sized mask for efficiency
 		for (unsigned i = 0; i < es; i++) {

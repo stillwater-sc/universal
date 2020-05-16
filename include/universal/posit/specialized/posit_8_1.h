@@ -101,7 +101,7 @@ inline uint8_t posit8_1_roundDiv(const int8_t m, uint16_t fraction, bool nonZero
 }
 
 // conversion functions
-inline int  posit8_1_sign_value(posit8_1_t p) { return (p.v & 0x80 ? -1 : 1); }
+inline int  posit8_1_sign_value(posit8_1_t p) { return ((p.v & 0x80) ? -1 : 1); }
 float       posit8_1_fraction_value(uint8_t fraction) {
 	float v = 0.0f;
 	float scale = 1.0f;
@@ -210,7 +210,6 @@ posit8_1_t  posit8_1_fromsi(int rhs) {
 posit8_1_t  posit8_1_fromf(float f) {
 	posit8_1_t p;
 	bool sign;
-	uint8_t k = 0;
 	bool bitNPlusOne = 0, bitsMore = 0;
 	const float _minpos = 0.000244140625f;
 	const float _maxpos = 4096.0f;
@@ -241,11 +240,11 @@ posit8_1_t  posit8_1_fromf(float f) {
 	else if (f >= -_minpos && sign) {
 		p.v = 0xFF;
 	}
-	else if (f>1 || f<-1) {
+	else if (f < -1 || f > 1) {
 		if (sign) {		
 			f = -f; // project to positive reals to simplify computation
 		}
-		k = 1; // because k = m-1; we need to add back 1
+		unsigned k = 1; // because k = m-1; we need to add back 1
 		if (f <= _minpos) {
 			p.v = 0x01;
 		}
@@ -268,11 +267,11 @@ posit8_1_t  posit8_1_fromf(float f) {
 			p.v = (sign ? -p.v : p.v);
 		}
 	}
-	else if (f < 1 || f > -1) {
+	else if (f > -1 && f < -1) {
 		if (sign) {
 			f = -f;
 		}
-		k = 0;
+		unsigned k = 0;
 		while (f<1) {
 			f *= 2;
 			k++;
@@ -304,7 +303,7 @@ float       posit8_1_tof(posit8_1_t p) {
 	if (p.v == 0) return 0.0f;
 	if (p.v == 0x80) return NAN;   //  INFINITY is not semantically correct. NaR is Not a Real and thus is more closely related to a NAN, or Not a Number
 
-	uint8_t bits = (p.v & 0x80 ? -p.v : p.v);  // use 2's complement when negative	
+	uint8_t bits = ((p.v & 0x80) ? -p.v : p.v);  // use 2's complement when negative	
 	uint8_t fraction = 0;
 	int8_t m = posit8_1_decode_regime(bits, &fraction);
 	uint8_t xp = fraction >> 7;
@@ -515,8 +514,8 @@ posit8_1_t posit8_1_divp8(posit8_1_t lhs, posit8_1_t rhs) {
 
 	// calculate the sign of the result
 	bool sign = (bool)(lhs.v & 0x80) ^ (bool)(rhs.v & 0x80);
-	lhs.v = lhs.v & 0x80 ? -lhs.v : lhs.v;
-	rhs.v = rhs.v & 0x80 ? -rhs.v : rhs.v;
+	lhs.v = (lhs.v & 0x80) ? -lhs.v : lhs.v;
+	rhs.v = (rhs.v & 0x80) ? -rhs.v : rhs.v;
 
 	// decode the regimes and extract the fractions of the operands
 	uint8_t remaining = 0;

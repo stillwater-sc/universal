@@ -116,8 +116,8 @@ public:
 	explicit quire(uint64_t initial_value) { *this = initial_value; }
 	explicit quire(float initial_value)    { *this = initial_value; }
 	explicit quire(double initial_value)   { *this = initial_value; }
-	template<size_t fbits> explicit quire(const value<fbits>& rhs) { *this = rhs; }
 	explicit quire(const posit<nbits, es>& rhs) { *this = rhs; }
+	template<size_t fbits> explicit quire(const value<fbits>& rhs) { *this = rhs; }
 
 	// Assignment operators: the class only supports native type values
 	// assigning a posit requires the convertion to a normalized value, i.e. q = posit<nbits,es>().to_value()
@@ -217,14 +217,13 @@ public:
 		}
 		else {
 			// copy the value into the quire
-			unsigned i, c;
 			uint64_t mask = uint64_t(1);
-			for (i = 0; i < msb && i < half_range; i++) {
+			for (unsigned i = 0; i < msb && i < half_range; i++) {
 				_upper[i] = rhs & mask;
 				mask <<= 1;
 			}
 			if (msb >= half_range) {
-				for (i = half_range, c = 0; i < msb && i < half_range + capacity; i++, c++) {
+				for (unsigned i = half_range, c = 0; i < msb && i < half_range + capacity; i++, c++) {
 					_capacity[c] = rhs & mask;
 					mask <<= 1;
 				}

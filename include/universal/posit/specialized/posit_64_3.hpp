@@ -278,8 +278,8 @@ namespace sw {
 
 			// calculate the sign of the result
 			bool sign = bool(lhs & 0x80) ^ bool(rhs & 0x80);
-			lhs = lhs & 0x80 ? -lhs : lhs;
-			rhs = rhs & 0x80 ? -rhs : rhs;
+			lhs = (lhs & 0x80) ? -lhs : lhs;
+			rhs = (rhs & 0x80) ? -rhs : rhs;
 
 			// decode the regime of lhs
 			int8_t m = 0; // pattern length
@@ -732,7 +732,8 @@ namespace sw {
 #endif // POSIT_ENABLE_LITERALS
 
 #else  // POSIT_FAST_POSIT_64_3
-// too verbose #pragma message("Standard posit<64,3>")
+// too verbose during compilation, so disabled
+// #pragma message("Standard posit<64,3>")
 #	define POSIT_FAST_POSIT_64_3 0
 #endif // POSIT_FAST_POSIT_64_3
 

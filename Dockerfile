@@ -7,7 +7,7 @@
 FROM gcc:7 as builder
 LABEL Theodore Omtzigt
 # create a cmake build environment
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     apt-utils \
     cmake \
@@ -36,7 +36,7 @@ FROM debian:buster-slim as release
 LABEL Theodore Omtzigt
 
 #RUN apk add --no-cache libc6-compat libstdc++ make cmake bash gawk sed grep bc coreutils
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     make \
     cmake
 
