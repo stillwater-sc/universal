@@ -8,8 +8,8 @@ FROM gcc:7 as builder
 LABEL Theodore Omtzigt
 # create a cmake build environment
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
     apt-utils \
+    build-essential \
     cmake \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
@@ -24,10 +24,10 @@ RUN mkdir build
 WORKDIR /usr/src/universal/build
 RUN cmake -DBUILD_CI_CHECK=ON .. && make
 
-# actual command 'make test' is run as part of the test pipeline
+# the command 'make test' is run as part of the test pipeline
 
 # add a command that when you run the container without a command, it produces something meaningful
-CMD ["echo", "Universal Numbers Library Version 2.0.0"]
+CMD ["echo", "Universal Numbers Library Builder Version 2.1.0"]
 
 
 # RELEASE stage
