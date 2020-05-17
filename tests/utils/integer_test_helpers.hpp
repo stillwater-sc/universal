@@ -17,10 +17,9 @@
 namespace sw {
 namespace unum {
 
-
 #define INTEGER_TABLE_WIDTH 20
 	template<size_t nbits, typename BlockType>
-	void ReportBinaryArithmeticError(std::string test_case, std::string op, const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs, const integer<nbits, BlockType>& pref, const integer<nbits, BlockType>& presult) {
+	void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs, const integer<nbits, BlockType>& pref, const integer<nbits, BlockType>& presult) {
 		auto old_precision = std::cerr.precision(); 
 		std::cerr << test_case << " "
 			<< std::setprecision(20)
@@ -36,7 +35,7 @@ namespace unum {
 	}
 
 	template<size_t nbits, typename BlockType>
-	void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs, const integer<nbits, BlockType>& pref, const integer<nbits, BlockType>& presult) {
+	void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs, const integer<nbits, BlockType>& pref, const integer<nbits, BlockType>& presult) {
 		auto old_precision = std::cerr.precision();
 		std::cerr << test_case << " "
 			<< std::setprecision(20)
@@ -52,7 +51,7 @@ namespace unum {
 	}
 
 	template<size_t nbits, typename BlockType>
-	void ReportUnaryArithmeticError(std::string test_case, std::string op, const integer<nbits, BlockType>& argument, const integer<nbits, BlockType>& ref, const integer<nbits, BlockType>& result) {
+	void ReportUnaryArithmeticError(const std::string& test_case, const std::string& op, const integer<nbits, BlockType>& argument, const integer<nbits, BlockType>& ref, const integer<nbits, BlockType>& result) {
 		auto old_precision = std::cerr.precision();
 		std::cerr << test_case << " "
 			<< " " << op << " "
@@ -68,7 +67,7 @@ namespace unum {
 
 	// enumerate all addition cases for an integer<16> configuration compared against native short
 	template<typename BlockType>
-	int VerifyShortAddition(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyShortAddition(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
@@ -116,7 +115,7 @@ namespace unum {
 	}
 	// enumerate all subtraction cases for an integer<16> configuration compared against native short
 	template<typename BlockType>
-	int VerifyShortSubtraction(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyShortSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
@@ -164,7 +163,7 @@ namespace unum {
 	}
 	// enumerate all multiplication cases for an integer<16> configuration compared against native short
 	template<typename BlockType>
-	int VerifyShortMultiplication(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyShortMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
@@ -212,7 +211,7 @@ namespace unum {
 	}
 	// enumerate all division cases for an integer<16> configuration compared against native short
 	template<typename BlockType>
-	int VerifyShortDivision(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyShortDivision(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
@@ -273,7 +272,7 @@ namespace unum {
 	}
 	// enumerate all remainder cases for an integer<16> configuration compared against native short
 	template<typename BlockType = uint8_t>
-	int VerifyShortRemainder(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyShortRemainder(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t nbits = 16;
 
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
@@ -321,7 +320,7 @@ namespace unum {
 
 	// enumerate all addition cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits, BlockType> ia, ib, iresult, iref;
@@ -367,7 +366,7 @@ namespace unum {
 	}
 	// enumerate all subtraction cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifySubtraction(std::string tag, bool bReportIndividualTestCases) {
+	int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits, BlockType> ia, ib, iresult, iref;
@@ -414,7 +413,7 @@ namespace unum {
 
 	// enumerate all multiplication cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits, BlockType> ia, ib, iresult, iref;
@@ -461,7 +460,7 @@ namespace unum {
 
 	// enumerate all division cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyDivision(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits, BlockType> ia, ib, iresult, iref;
@@ -521,7 +520,7 @@ namespace unum {
 
 	// enumerate all remainder cases for an integer<nbits, BlockType> configuration
 	template<size_t nbits, typename BlockType>
-	int VerifyRemainder(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyRemainder(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits, BlockType> ia, ib, iresult, iref;

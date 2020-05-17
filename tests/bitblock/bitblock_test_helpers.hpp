@@ -8,7 +8,7 @@ namespace sw {
 namespace unum {
 
 template<size_t nbits, size_t rbits>
-void ReportBinaryArithmeticError(std::string test_case, std::string op, const bitblock<nbits>& lhs, const bitblock<nbits>& rhs, const bitblock<rbits>& ref, const bitblock<rbits>& result) {
+void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const bitblock<nbits>& lhs, const bitblock<nbits>& rhs, const bitblock<rbits>& ref, const bitblock<rbits>& result) {
 	constexpr size_t OPERAND_COLUMN_WIDTH = nbits;
 	constexpr size_t RESULT_COLUMN_WIDTH = rbits;
 	std::cerr << test_case << " "
@@ -22,7 +22,7 @@ void ReportBinaryArithmeticError(std::string test_case, std::string op, const bi
 }
 
 template<size_t nbits, size_t rbits>
-void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const bitblock<nbits>& lhs, const bitblock<nbits>& rhs, const bitblock<rbits>& ref, const bitblock<rbits>& result) {
+void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const bitblock<nbits>& lhs, const bitblock<nbits>& rhs, const bitblock<rbits>& ref, const bitblock<rbits>& result) {
 	constexpr size_t OPERAND_COLUMN_WIDTH = nbits;
 	constexpr size_t RESULT_COLUMN_WIDTH = rbits;
 	std::cerr << test_case << " "

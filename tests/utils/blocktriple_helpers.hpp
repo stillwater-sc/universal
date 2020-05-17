@@ -9,7 +9,7 @@
 
 #define COLUMN_WIDTH 20
 template<size_t ebits, size_t fbits, typename Ty = uint8_t>
-void ReportBinaryArithmeticError(std::string test_case, std::string op, const sw::unum::blocktriple<ebits,fbits,Ty>& a, const sw::unum::blocktriple<ebits,fbits, Ty>& b, const sw::unum::blocktriple<ebits,fbits, Ty>& result, long double reference) {
+void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const sw::unum::blocktriple<ebits,fbits,Ty>& a, const sw::unum::blocktriple<ebits,fbits, Ty>& b, const sw::unum::blocktriple<ebits,fbits, Ty>& result, long double reference) {
 	using namespace sw::unum;
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
@@ -27,7 +27,7 @@ void ReportBinaryArithmeticError(std::string test_case, std::string op, const sw
 }
 
 template<size_t ebits, size_t fbits, typename Ty = uint8_t>
-void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const sw::unum::blocktriple<ebits,fbits, Ty>& a, const sw::unum::blocktriple<ebits,fbits, Ty>& b, const sw::unum::blocktriple<ebits,fbits, Ty>& result, long double reference) {
+void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const sw::unum::blocktriple<ebits,fbits, Ty>& a, const sw::unum::blocktriple<ebits,fbits, Ty>& b, const sw::unum::blocktriple<ebits,fbits, Ty>& result, long double reference) {
 	using namespace sw::unum;
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "

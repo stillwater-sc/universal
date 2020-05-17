@@ -10,7 +10,7 @@
 
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
 template<size_t nbits, size_t es>
-int GenerateAdditionError(std::string tag, bool bReportIndividualTestCases) {
+int GenerateAdditionError(const std::string& tag, bool bReportIndividualTestCases) {
 	using namespace std;
 	const size_t NR_POSITS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;

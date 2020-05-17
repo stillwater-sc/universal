@@ -23,7 +23,7 @@ namespace unum {
 #define FIXPNT_TABLE_WIDTH 20
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-void ReportConversionError(std::string test_case, std::string op, double input, double reference, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
+void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case
 		<< " " << op << " "
@@ -37,7 +37,7 @@ void ReportConversionError(std::string test_case, std::string op, double input, 
 }
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-void ReportConversionSuccess(std::string test_case, std::string op, double input, double reference, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
+void ReportConversionSuccess(const std::string& test_case, const std::string& op, double input, double reference, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << input
@@ -49,7 +49,7 @@ void ReportConversionSuccess(std::string test_case, std::string op, double input
 }
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-void ReportBinaryArithmeticError(std::string test_case, std::string op, const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
+void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
@@ -65,7 +65,7 @@ void ReportBinaryArithmeticError(std::string test_case, std::string op, const fi
 }
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
+void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
@@ -81,7 +81,7 @@ void ReportBinaryArithmeticSuccess(std::string test_case, std::string op, const 
 }
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType, typename Ty>
-void ReportAssignmentError(std::string test_case, std::string op, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt <nbits, rbits, arithmetic, BlockType>& result, const Ty& value) {
+void ReportAssignmentError(const std::string& test_case, const std::string& op, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt <nbits, rbits, arithmetic, BlockType>& result, const Ty& value) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << value
@@ -92,7 +92,7 @@ void ReportAssignmentError(std::string test_case, std::string op, const fixpnt<n
 }
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType, typename Ty>
-void ReportAssignmentSuccess(std::string test_case, std::string op, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt <nbits, rbits, arithmetic, BlockType>& result, const Ty& value) {
+void ReportAssignmentSuccess(const std::string& test_case, const std::string& op, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt <nbits, rbits, arithmetic, BlockType>& result, const Ty& value) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << value
@@ -275,7 +275,7 @@ int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) 
 
 // enumerate all addition cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
+int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
@@ -325,7 +325,7 @@ int VerifyAddition(std::string tag, bool bReportIndividualTestCases) {
 
 // enumerate all complex addition cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifyComplexAddition(std::string tag, bool bReportIndividualTestCases) {
+int VerifyComplexAddition(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, Modulo> a, b, result, cref;
@@ -376,7 +376,7 @@ int VerifyComplexAddition(std::string tag, bool bReportIndividualTestCases) {
 
 // enumerate all subtraction cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifySubtraction(std::string tag, bool bReportIndividualTestCases) {
+int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
@@ -426,7 +426,7 @@ int VerifySubtraction(std::string tag, bool bReportIndividualTestCases) {
 
 // enumerate all multiplication cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
+int VerifyMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
@@ -476,7 +476,7 @@ int VerifyMultiplication(std::string tag, bool bReportIndividualTestCases) {
 
 // enumerate all division cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifyDivision(std::string tag, bool bReportIndividualTestCases) {
+int VerifyDivision(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;

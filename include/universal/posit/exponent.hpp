@@ -19,16 +19,13 @@ static constexpr int ARITHMETIC_ROUNDING    =  5;
 template<size_t nbits, size_t es>
 class exponent {
 public:
-	exponent() {
-		reset();
-	}
+	exponent() : _NrOfBits(0) {}
 	
 	exponent(const exponent& r) = default;
 	exponent(exponent&& r) = default;
 
 	exponent& operator=(const exponent& r) = default;
 	exponent& operator=(exponent&& r) = default;
-	
 	
 	void reset() {
 		_NrOfBits = 0;

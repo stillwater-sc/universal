@@ -19,7 +19,7 @@
 #include "../utils/posit_test_helpers.hpp"
 
 template<size_t nbits, size_t es>
-unsigned ValidateCasting(std::string tag, bool bReportIndividualTestCases) {
+unsigned ValidateCasting(const std::string& tag, bool bReportIndividualTestCases) {
 	unsigned nrOfFailedTestCases = 0;
 
 	return nrOfFailedTestCases;

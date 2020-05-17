@@ -39,7 +39,7 @@ inline double babylonian(double v) {
 }
 
 template<size_t nbits, typename BlockType>
-int VerifyIntegerFloorSqrt(std::string tag, bool bReportIndividualTestCases) {
+int VerifyIntegerFloorSqrt(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (1 << (nbits-1));
 	using Integer = sw::unum::integer<nbits, BlockType>;
 
@@ -61,7 +61,7 @@ int VerifyIntegerFloorSqrt(std::string tag, bool bReportIndividualTestCases) {
 }
 
 template<size_t nbits, typename BlockType>
-int VerifyIntegerCeilSqrt(std::string tag, bool bReportIndividualTestCases) {
+int VerifyIntegerCeilSqrt(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (1 << (nbits - 1));
 	using Integer = sw::unum::integer<nbits, BlockType>;
 

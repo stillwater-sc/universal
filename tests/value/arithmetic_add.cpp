@@ -20,7 +20,7 @@
 
 // (sign, scale, fraction) representation with sbits in scale and fbits in fraction
 template<size_t sbits, size_t fbits>
-int VerifyValueAdd(std::string tag, bool bReportIndividualTestCases) {
+int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 	//constexpr size_t NR_OF_VALUES = (size_t(1) << (1 + scale + fbits));
 	constexpr size_t abits = fbits + 4;
 	int nrOfFailedTestCases = 0;

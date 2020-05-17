@@ -24,7 +24,7 @@ a + b = s + r
 */
 
 template<size_t nbits, size_t es>
-void ReportTwoSumError(std::string test_case, std::string op, const sw::unum::posit<nbits, es>& a, const sw::unum::posit<nbits, es>& b, const sw::unum::posit<nbits, es>& s, const sw::unum::posit<nbits, es>& r) {
+void ReportTwoSumError(const std::string& test_case, const std::string& op, const sw::unum::posit<nbits, es>& a, const sw::unum::posit<nbits, es>& b, const sw::unum::posit<nbits, es>& s, const sw::unum::posit<nbits, es>& r) {
 	std::cerr << test_case << " "
 		<< std::setw(nbits) << a.get()
 		<< " " << op << " "
@@ -69,7 +69,7 @@ bool GenerateTwoSumTestCase(const Scalar& a, const Scalar& b) {
 
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
 template<size_t nbits, size_t es>
-int ValidateTwoSum(std::string tag, bool bReportIndividualTestCases) {
+int ValidateTwoSum(const std::string& tag, bool bReportIndividualTestCases) {
 	using namespace std;
 	const size_t NR_POSITS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;

@@ -15,7 +15,7 @@
 #include "universal/posit/value.hpp"
 #include "universal/float/quire.hpp"
 
-int TestQuireAccumulationResult(int nrOfFailedTests, std::string descriptor)
+int TestQuireAccumulationResult(int nrOfFailedTests, const std::string& descriptor)
 {
 	if (nrOfFailedTests > 0) {
 		std::cout << descriptor << " quire accumulation FAIL" << std::endl;

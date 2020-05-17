@@ -25,7 +25,7 @@ namespace unum {
 
 #define INTEGER_TABLE_WIDTH 20
 	template<size_t nbits>
-	void ReportBinaryLogicError(std::string test_case, std::string op, const integer<nbits>& lhs, const integer<nbits>& rhs, bool iref, bool iresult) {
+	void ReportBinaryLogicError(const std::string& test_case, const std::string& op, const integer<nbits>& lhs, const integer<nbits>& rhs, bool iref, bool iresult) {
 		auto old_precision = std::cerr.precision();
 		std::cerr << test_case << " "
 			<< std::setprecision(20)
@@ -41,7 +41,7 @@ namespace unum {
 
 	// enumerate all less than cases for an integer<nbits> configuration
 	template<size_t nbits>
-	int VerifyEqual(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyEqual(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib;
@@ -73,7 +73,7 @@ namespace unum {
 
 	// enumerate all less than or equal cases for an integer<nbits> configuration
 	template<size_t nbits>
-	int VerifyNotEqual(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyNotEqual(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib;
@@ -105,7 +105,7 @@ namespace unum {
 
 	// enumerate all less than cases for an integer<nbits> configuration
 	template<size_t nbits>
-	int VerifyLessThan(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyLessThan(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib;
@@ -137,7 +137,7 @@ namespace unum {
 
 	// enumerate all less than or equal cases for an integer<nbits> configuration
 	template<size_t nbits>
-	int VerifyLessOrEqualThan(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyLessOrEqualThan(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib;
@@ -169,7 +169,7 @@ namespace unum {
 
 	// enumerate all greater than cases for an integer<nbits> configuration
 	template<size_t nbits>
-	int VerifyGreaterThan(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyGreaterThan(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib;
@@ -201,7 +201,7 @@ namespace unum {
 
 	// enumerate all greater than or equal cases for an integer<nbits> configuration
 	template<size_t nbits>
-	int VerifyGreaterOrEqualThan(std::string tag, bool bReportIndividualTestCases) {
+	int VerifyGreaterOrEqualThan(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		integer<nbits> ia, ib;

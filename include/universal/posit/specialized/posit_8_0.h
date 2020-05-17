@@ -476,8 +476,8 @@ posit8_t posit8_mulp8(posit8_t lhs, posit8_t rhs) {
 
 	// calculate the sign of the result
 	bool sign = (bool)(lhs.v & 0x80) ^ (bool)(rhs.v & 0x80);
-	lhs.v = lhs.v & 0x80 ? -lhs.v : lhs.v;
-	rhs.v = rhs.v & 0x80 ? -rhs.v : rhs.v;
+	lhs.v = (lhs.v & 0x80) ? -lhs.v : lhs.v;
+	rhs.v = (rhs.v & 0x80) ? -rhs.v : rhs.v;
 
 	// decode the regimes and extract the fractions of the operands
 	uint8_t remaining = 0;

@@ -2626,7 +2626,7 @@ posit<nbits, es> fabs(const posit<nbits, es>& p) {
 template<size_t nbits, size_t es>
 posit<nbits, es> minpos() {
 	posit<nbits, es> p;
-	p++;
+	++p;
 	return p;
 }
 

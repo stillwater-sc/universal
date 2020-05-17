@@ -55,7 +55,7 @@ namespace unum {
 	static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 	template<size_t nbits, size_t es>
-	void ReportPerformance(std::ostream& ostr, std::string header, OperatorPerformance &perf) {
+	void ReportPerformance(std::ostream& ostr, const std::string& header, OperatorPerformance &perf) {
 		ostr << "Performance Report: " << header << '\n'
 			<< "Conversion int  : " << to_scientific(perf.intconvert) << "POPS\n"
 			<< "Conversion ieee : " << to_scientific(perf.ieeeconvert) << "POPS\n"
@@ -380,7 +380,7 @@ namespace unum {
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
 	template<size_t nbits, size_t es>
-	int MeasureArithmeticPerformance(std::string tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
+	int MeasureArithmeticPerformance(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
 		const size_t SIZE_STATE_SPACE = nrOfRandoms;
 		int nrOfFailedTests = 0;
 		posit<nbits, es> pa, pb, presult, preference;
@@ -448,7 +448,7 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 
-
+	// run and measure performance tests and generate an operator performance report 
 	template<size_t nbits, size_t es>
 	void GeneratePerformanceReport(OperatorPerformance &report) {
 		using namespace std;

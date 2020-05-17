@@ -329,7 +329,7 @@ namespace unum {
 
 			areal<nbits, es> p, ref;
 			// starting from NaR iterating from -maxpos to maxpos through zero
-			for (typename std::vector < areal<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; it++) {
+			for (typename std::vector < areal<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
 				p = *it;
 				p++;
 				ref = *(it + 1);
@@ -353,7 +353,7 @@ namespace unum {
 
 			areal<nbits, es> p, ref;
 			// starting from maxpos iterating to -maxpos, and finally NaR via zero
-			for (typename std::vector < areal<nbits, es> >::iterator it = set.end() - 1; it != set.begin(); it--) {
+			for (typename std::vector < areal<nbits, es> >::iterator it = set.end() - 1; it != set.begin(); --it) {
 				p = *it;
 				p--;
 				ref = *(it - 1);
@@ -377,7 +377,7 @@ namespace unum {
 
 			areal<nbits, es> p, ref;
 			// from -maxpos to maxpos through zero
-			for (typename std::vector < areal<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; it++) {
+			for (typename std::vector < areal<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
 				p = *it;
 				p++;
 				ref = *(it + 1);
