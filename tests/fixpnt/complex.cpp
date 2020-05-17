@@ -23,13 +23,11 @@
 namespace sw {
 namespace unum {
 namespace complex_literals {
-	template<size_t nbits, size_t rbits>
 	std::complex<sw::unum::fixpnt<8, 4>> operator""_i(long double _Val)
 	{	// return imaginary _Val
 		return (std::complex<sw::unum::fixpnt<8, 4>>(0.0, static_cast<sw::unum::fixpnt<8, 4>>(_Val)));
 	}
 
-	template<size_t nbits, size_t rbits>
 	std::complex<sw::unum::fixpnt<8, 4>> operator""_i(unsigned long long _Val)
 	{	// return imaginary _Val
 		return (std::complex<sw::unum::fixpnt<8, 4>>(0.0, static_cast<sw::unum::fixpnt<8, 4>>(_Val)));
@@ -47,6 +45,8 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
+
+	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
 
@@ -141,6 +141,9 @@ try {
 #else
 
 	cout << "Complex Fixed-point use cases" << endl;
+
+#if STRESS_TESTING
+	// automated stress test
 
 #endif  // STRESS_TESTING
 

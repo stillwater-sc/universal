@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "posit" "Number Systems/Floating Point/Tapered/posit" "${SOURCES}")
+compile_all("true" "posit" "Number Systems/floating-point/tapered/posit" "${SOURCES}")

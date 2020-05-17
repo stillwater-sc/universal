@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "mpfloat" "Number Systems/Floating Point/Linear Multi-precision" "${SOURCES}")
+compile_all("true" "mpfloat" "Number Systems/floating-point/linear-multi-precision" "${SOURCES}")

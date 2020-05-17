@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "integer" "Number Systems/Integer" "${SOURCES}")
+compile_all("true" "integer" "Number Systems/integer" "${SOURCES}")
