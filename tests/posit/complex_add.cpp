@@ -133,22 +133,27 @@ try {
 		std::cout << "(1+2i)*(1-2i) = " << z4 * z5 << '\n';
 	}
 
-#if defined(__GNUG__)
-	// for some reason the g++ doesn't compile this section as it is 
-	// casting the constants differently
-	// than other compilers.
-#else 
 	{
 		using Real = posit<16,1>;
+#if defined(__GNUG__)
+/* TODO: this doesn't compile under g++
+ error: conversion from ‘__complex__ double’ to non-scalar type ‘std::complex<sw::unum::posit<16, 1> >’ requested
+   std::complex<Real> z4 = 1. + 2i, z5 = 1. - 2i; // conjugates
+                           ~~~^~~~
+ error: conversion from ‘__complex__ double’ to non-scalar type ‘std::complex<sw::unum::posit<16, 1> >’ requested
+   std::complex<Real> z4 = 1. + 2i, z5 = 1. - 2i; // conjugates
+                                         ~~~^~~~
+*/
+#else
 		std::complex<Real> z4 = 1. + 2i, z5 = 1. - 2i; // conjugates
 		cout << "(1+2i)*(1-2i) = " << z4 * z5 << '\n';
+#endif
 
 		auto z0 = std::complex<Real>(1.0f, 1.0f);
 		cout << z0 << endl;
 		auto z1 = std::complex<Real>(1.0, 0.0);
 		cout << z1 << endl;
 	}
-#endif
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 0>("Manual Testing", true), "complex<posit<5,0>>", "addition");
