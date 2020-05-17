@@ -576,7 +576,7 @@ public:
 	constexpr posit(const unsigned long initial_value)      { *this = initial_value; }
 	constexpr posit(const unsigned long long initial_value) { *this = initial_value; }
 	constexpr posit(const float initial_value)              { *this = initial_value; }
-	constexpr posit(const double initial_value)             { *this = initial_value; }
+	          posit(const double initial_value)             { *this = initial_value; }
 	constexpr posit(const long double initial_value)        { *this = initial_value; }
 
 	// assignment operators for native types

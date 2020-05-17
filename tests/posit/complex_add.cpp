@@ -48,7 +48,7 @@ void GenerateTestCase(Ty a, Ty b) {
 #define FLOAT_TABLE_WIDTH 10
 
 template<size_t nbits, size_t es>
-void ReportBinaryComplexArithmeticError(const std::string& test_case, const std::string& op, 
+void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, 
 	const std::complex<sw::unum::posit<nbits, es>>& lhs, 
 	const std::complex<sw::unum::posit<nbits, es>>& rhs, 
 	const std::complex<sw::unum::posit<nbits, es>>& ref, 
@@ -73,8 +73,8 @@ int ValidateComplexAddition(const std::string& tag, bool bReportIndividualTestCa
 	using namespace sw::unum;
 	const size_t NR_POSITS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
-	posit<nbits, es> ar, ai, br, bi, sumr, sumi;
-	complex<posit<nbits, es>> a, b, sum, ref;
+	posit<nbits, es> ar, ai, br, bi;
+	complex<posit<nbits, es>> a, b, result, ref;
 
 	complex<double> da, db, dc;
 	for (size_t i = 0; i < NR_POSITS; ++i) {
@@ -92,16 +92,16 @@ int ValidateComplexAddition(const std::string& tag, bool bReportIndividualTestCa
 					b = complex<posit<nbits, es>>(br, bi);
 					db = complex<double>(double(br), double(bi));
 
-					sum = a + b;
+					result = a + b;
 					dc = da + db;
 					ref = complex<posit<nbits, es>>(dc.real(), dc.imag());
 
-					if (sum.real() != posit<nbits,es>(dc.real())) {
+					if (result.real() != ref.real() || result.imag() != ref.imag()) {
 						nrOfFailedTests++;
-						if (bReportIndividualTestCases)	ReportBinaryComplexArithmeticError("FAIL", "+", a, b, ref, sum);
+						if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, ref, result);
 					}
 					else {
-						//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", pa, pb, pref, psum);
+						//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, ref, result);
 					}
 				}
 			}
@@ -122,7 +122,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "Addition failed: ";
+	std::string tag = "posit complex addition failed: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
@@ -157,9 +157,9 @@ try {
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 0>("Manual Testing", true), "complex<posit<5,0>>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 1>("Manual Testing", true), "complex<posit<5,1>>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 2>("Manual Testing", true), "complex<posit<5,2>>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 3>("Manual Testing", true), "complex<posit<5,3>>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 1>("Manual Testing", true), "complex<posit<5,1>>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 2>("Manual Testing", true), "complex<posit<5,2>>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 3>("Manual Testing", true), "complex<posit<5,3>>", "addition");
 
 //	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<16, 1>(tag, true, OPCODE_ADD, 1000), "posit<16,1>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(tag, true, OPCODE_ADD, 1000), "posit<64,2>", "addition");
