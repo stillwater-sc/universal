@@ -6,7 +6,7 @@
 
 
 // test reporting helper
-int ReportTestResult(int nrOfFailedTests, std::string description, std::string test_operation)
+int ReportTestResult(int nrOfFailedTests, const std::string& description, const std::string& test_operation)
 {
 	if (nrOfFailedTests > 0) {
 		std::cout << description << " " << test_operation << " FAIL " << nrOfFailedTests << " failed test cases" << std::endl;
