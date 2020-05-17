@@ -261,8 +261,8 @@ namespace sw {
 			uint32_t rhs = b._bits;
 			// calculate the sign of the result
 			bool sign = bool(lhs & sign_mask) ^ bool(rhs & sign_mask);
-			lhs = lhs & sign_mask ? -int32_t(lhs) : lhs;
-			rhs = rhs & sign_mask ? -int32_t(rhs) : rhs;
+			lhs = (lhs & sign_mask) ? -int32_t(lhs) : lhs;
+			rhs = (rhs & sign_mask) ? -int32_t(rhs) : rhs;
 
 			// decode the regime of lhs
 			int32_t m = 0;
@@ -328,8 +328,8 @@ namespace sw {
 			uint32_t rhs = b._bits;
 			// calculate the sign of the result
 			bool sign = bool(lhs & sign_mask) ^ bool(rhs & sign_mask);
-			lhs = lhs & sign_mask ? -int32_t(lhs) : lhs;
-			rhs = rhs & sign_mask ? -int32_t(rhs) : rhs;
+			lhs = (lhs & sign_mask) ? -int32_t(lhs) : lhs;
+			rhs = (rhs & sign_mask) ? -int32_t(rhs) : rhs;
 
 			// decode the regime of lhs
 			int32_t m = 0;

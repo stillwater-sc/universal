@@ -34,20 +34,22 @@ public:
           : _sign{sign}, _scale{scale}, _nrOfBits{fbits}, _fraction{fraction_without_hidden_bit}, 
             _inf{inf}, _zero{zero}, _nan{false} {}
 
-	constexpr value(const signed char initial_value)        { *this = initial_value; }
-	constexpr value(const short initial_value)              { *this = initial_value; }
-	constexpr value(const int initial_value)                { *this = initial_value; }
-	constexpr value(const long initial_value)               { *this = initial_value; }
-	constexpr value(const long long initial_value)          { *this = initial_value; }
-	constexpr value(const char initial_value)               { *this = initial_value; }
-	constexpr value(const unsigned short initial_value)     { *this = initial_value; }
-	constexpr value(const unsigned int initial_value)       { *this = initial_value; }
-	constexpr value(const unsigned long initial_value)      { *this = initial_value; }
-	constexpr value(const unsigned long long initial_value) { *this = initial_value; }
-	constexpr value(const float initial_value)              { *this = initial_value; }
-	constexpr value(const double initial_value) : value{}   { *this = initial_value; }
-	constexpr value(const long double initial_value)        { *this = initial_value; }
 	constexpr value(const value& rhs)                       { *this = rhs; }
+
+	// decorated constructors
+	explicit constexpr value(const signed char initial_value)        { *this = initial_value; }
+	explicit constexpr value(const short initial_value)              { *this = initial_value; }
+	explicit constexpr value(const int initial_value)                { *this = initial_value; }
+	explicit constexpr value(const long initial_value)               { *this = initial_value; }
+	explicit constexpr value(const long long initial_value)          { *this = initial_value; }
+	explicit constexpr value(const char initial_value)               { *this = initial_value; }
+	explicit constexpr value(const unsigned short initial_value)     { *this = initial_value; }
+	explicit constexpr value(const unsigned int initial_value)       { *this = initial_value; }
+	explicit constexpr value(const unsigned long initial_value)      { *this = initial_value; }
+	explicit constexpr value(const unsigned long long initial_value) { *this = initial_value; }
+	explicit constexpr value(const float initial_value)              { *this = initial_value; }
+	         constexpr value(const double initial_value) : value{}   { *this = initial_value; }
+	explicit constexpr value(const long double initial_value)        { *this = initial_value; }
 
 	constexpr value& operator=(const value& rhs) {
 		_sign	  = rhs._sign;

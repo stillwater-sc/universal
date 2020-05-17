@@ -664,7 +664,7 @@ namespace sw {
 			for (size_t i = 0; i < (nbits >> 2) + 2; ++i) str[i] = 0;
 			//const char* hexits = "0123456789ABCDEF";
 			const char* hexits = "0123456789abcdef";
-			unsigned int maxHexDigits = (nbits >> 2) + (nbits % 4 ? 1 : 0);
+			unsigned int maxHexDigits = (nbits >> 2) + ((nbits % 4) ? 1 : 0);
 			for (unsigned int i = 0; i < maxHexDigits; i++) {
 				unsigned int hexit;
 				switch (nbits) {

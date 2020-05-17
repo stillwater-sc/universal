@@ -409,28 +409,17 @@ namespace unum {
 		std::mt19937_64 eng(rd()); //Use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 								   //Define the distribution, by default it goes from 0 to MAX(unsigned long long)
 		std::uniform_int_distribution<unsigned long long> distr;
-#ifdef POSIT_USE_LONG_DOUBLE
 		std::vector<long double> operand_values(SIZE_STATE_SPACE);
 		for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
 			presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as posit encoding
 			operand_values[i] = (long double)(presult);
 		}
-		long double da, db;
-#else // USE DOUBLE
-		std::vector<double> operand_values(SIZE_STATE_SPACE);
-		for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
-			presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as posit encoding
-			operand_values[i] = double(presult);
-		}
-		double da, db;
-#endif // POSIT_USE_LONG_DOUBLE
-		unsigned ia, ib;  // random indices for picking operands to test
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
-			ia = std::rand() % SIZE_STATE_SPACE;
-			da = operand_values[ia];
+			unsigned ia = std::rand() % SIZE_STATE_SPACE; // random indices for picking operands to test
+			long double da = operand_values[ia];
 			pa = da;
-			ib = std::rand() % SIZE_STATE_SPACE;
-			db = operand_values[ib];
+			unsigned ib = std::rand() % SIZE_STATE_SPACE;
+			long double db = operand_values[ib];
 			pb = db;
 			// in case you have numeric_limits<long double>::digits trouble... this will show that
 			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " pa " << pa << std::endl;

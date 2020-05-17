@@ -22,7 +22,8 @@ int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 	cout << endl;
 	cout << "blockbinary<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
-	bool bReportOverflowCondition = false;
+	constexpr bool bReportOverflowCondition = false;
+
 	int nrOfFailedTests = 0;
 	int nrOfOverflows = 0;   // ref > maxpos
 	int nrOfUnderflows = 0;  // ref < maxneg

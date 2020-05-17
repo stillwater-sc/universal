@@ -35,10 +35,10 @@ public:
 	valid& operator=(const valid&) = default;
 	valid& operator=(valid&&) = default;
 
-	valid(long initial_value) { *this = initial_value; }
-	valid(unsigned long long initial_value) { *this = initial_value; }
-	valid(double initial_value) { *this = initial_value; }
-	valid(long double initial_value) { *this = initial_value; }
+	explicit valid(long initial_value) { *this = initial_value; }
+	explicit valid(unsigned long long initial_value) { *this = initial_value; }
+	         valid(double initial_value) { *this = initial_value; }
+	explicit valid(long double initial_value) { *this = initial_value; }
 
 	valid& operator=(int rhs) { return _assign(rhs); }
 	valid& operator=(unsigned long long rhs) { return _assign(rhs); }
