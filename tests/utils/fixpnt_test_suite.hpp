@@ -9,6 +9,7 @@
 #include <typeinfo>
 #include <random>
 #include <limits>
+#include <complex>
 
 // We want the test suite to be used with different configurations of the fixed-point number system
 // so the calling environment needs to set the configuration
@@ -60,6 +61,27 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " golden reference is "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << ref
 		<< " " << to_binary(result) << " vs " << to_binary(ref)
+		<< std::setprecision(old_precision)
+		<< std::endl;
+}
+
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, 
+	const std::complex<fixpnt<nbits, rbits, arithmetic, BlockType>>& lhs, 
+	const std::complex<fixpnt<nbits, rbits, arithmetic, BlockType>>& rhs, 
+	const std::complex<fixpnt<nbits, rbits, arithmetic, BlockType>>& ref, 
+	const std::complex<fixpnt<nbits, rbits, arithmetic, BlockType>>& result) {
+	auto old_precision = std::cerr.precision();
+	std::cerr << test_case << " "
+		<< std::setprecision(20)
+		<< std::setw(FIXPNT_TABLE_WIDTH) << lhs
+		<< " " << op << " "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
+		<< " != "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " golden reference is "
+		<< std::setw(FIXPNT_TABLE_WIDTH) << ref
+		<< " (" << to_binary(result.real()) << ", " << to_binary(result.imag()) << "i) vs (" 
+		<< to_binary(ref.real()) << ", " << to_binary(ref.imag()) << "i)"
 		<< std::setprecision(old_precision)
 		<< std::endl;
 }
@@ -306,106 +328,6 @@ int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 
 #else
 			result = a + b;
-#endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
-			cref = ref;
-			if (result != cref) {
-				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
-			}
-			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
-			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
-		}
-		if (i % 1024 == 0) std::cout << '.';
-	}
-	std::cout << std::endl;
-	return nrOfFailedTests;
-}
-
-// enumerate all complex addition cases for an fixpnt<nbits,rbits> configuration
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifyComplexAddition(const std::string& tag, bool bReportIndividualTestCases) {
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	int nrOfFailedTests = 0;
-	fixpnt<nbits, rbits, Modulo> a, b, result, cref;
-	double ref;
-
-	double da, db;
-	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
-		da = double(a);
-		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
-			db = double(b);
-			ref = da + db;
-#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
-			// catching overflow
-			try {
-				result = a + b;
-			}
-			catch (...) {
-				if (ref > double(maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>()) || ref < double(maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>())) {
-					// correctly caught the overflow exception
-					continue;
-				}
-				else {
-					nrOfFailedTests++;
-				}
-			}
-
-#else
-			result = a + b;
-#endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
-			cref = ref;
-			if (result != cref) {
-				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
-			}
-			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
-			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
-		}
-		if (i % 1024 == 0) std::cout << '.';
-	}
-	std::cout << std::endl;
-	return nrOfFailedTests;
-}
-
-// enumerate all complex subtraction cases for an fixpnt<nbits,rbits> configuration
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifyComplexSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	int nrOfFailedTests = 0;
-	fixpnt<nbits, rbits, Modulo> a, b, result, cref;
-	double ref;
-
-	double da, db;
-	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
-		da = double(a);
-		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
-			db = double(b);
-			ref = da - db;
-#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
-			// catching overflow
-			try {
-				result = a - b;
-			}
-			catch (...) {
-				if (ref > double(maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>()) || ref < double(maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>())) {
-					// correctly caught the overflow exception
-					continue;
-				}
-				else {
-					nrOfFailedTests++;
-				}
-			}
-
-#else
-			result = a - b;
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
 			cref = ref;
 			if (result != cref) {

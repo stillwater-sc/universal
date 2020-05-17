@@ -4,7 +4,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
-#include <bitset>
 #include <complex>
 
 // Configure the fixpnt template environment
@@ -39,6 +38,76 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
+// enumerate all complex addition cases for an fixpnt<nbits,rbits> configuration
+template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
+int VerifyComplexAddition(const std::string& tag, bool bReportIndividualTestCases) {
+	using namespace std;
+	using namespace sw::unum;
+	using FixedPoint = fixpnt<nbits, rbits, arithmetic, BlockType>;
+	constexpr size_t NR_VALUES = (size_t(1) << nbits);
+	FixedPoint Maxpos, Maxneg;
+	Maxpos = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>();
+	Maxneg = maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>();
+	int nrOfFailedTests = 0;
+	FixedPoint ar, ai, br, bi, resultr, resulti;
+	complex<FixedPoint> a, b, result, ref;
+
+	complex<double> da, db, dc;
+	for (size_t i = 0; i < NR_VALUES; i++) {
+		ar.set_raw_bits(i);
+		for (size_t j = 0; j < NR_VALUES; j++) {
+			ar.set_raw_bits(j);
+			a = complex<FixedPoint>(ar, ai);
+			da = complex<double>(double(ar), double(ai));
+
+			// generate all the right sides
+			for (size_t k = 0; k < NR_VALUES; ++k) {
+				br.set_raw_bits(k);
+				for (size_t l = 0; l < NR_VALUES; ++l) {
+					bi.set_raw_bits(l);
+					b = complex<FixedPoint>(br, bi);
+					db = complex<double>(double(br), double(bi));
+					dc = da + db;
+					ref = complex<FixedPoint>(dc.real(), dc.imag());
+
+#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
+					// catching overflow
+					try {
+						result = a + b;
+					}
+					catch (...) {
+						if (ref.real() > Maxpos || ref.imag() > Maxpos ||
+							ref.real() < Maxneg || ref.imag() < Maxneg) {
+							// correctly caught the overflow exception
+							continue;
+						}
+						else {
+							nrOfFailedTests++;
+						}
+					}
+
+#else
+					result = a + b;
+#endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
+
+
+					if (result.real() != ref.real() || result.imag() != ref.imag()) {
+						nrOfFailedTests++;
+						if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, ref, result);
+					}
+					else {
+						//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, ref, result);
+					}
+					if (nrOfFailedTests > 100) return nrOfFailedTests;
+				}
+			}
+		}
+		if (i % 1024 == 0) std::cout << '.';
+	}
+	std::cout << std::endl;
+	return nrOfFailedTests;
+}
+
 namespace sw {
 namespace unum {
 namespace complex_literals {
@@ -57,7 +126,7 @@ namespace complex_literals {
 
 
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -65,141 +134,81 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	//bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "modular addition failed: ";
 
 #if MANUAL_TESTING
 
-	{
-		using namespace std::complex_literals;
-		std::cout << std::fixed << std::setprecision(1);
-
-		std::complex<double> z1 = 1i * 1i;     // imaginary unit squared
-		std::cout << "i * i = " << z1 << '\n';
-
-#if defined(__GNUG__)
-		// the pow and exp functions don't match in g++
-		// no idea how to fix the code below to make it compile with g++
-#else
-		std::complex<double> z2 = std::pow(1.0i, 2.0); // imaginary unit squared
-		std::cout << "pow(i, 2) = " << z2 << '\n';
-
-		double PI = std::acos(-1);
-		std::complex<double> z3 = std::exp(1i * PI); // Euler's formula
-		std::cout << "exp(i * pi) = " << z3 << '\n';
-#endif
-
-		std::complex<double> z4 = 1. + 2i, z5 = 1. - 2i; // conjugates
-		std::cout << "(1+2i)*(1-2i) = " << z4 * z5 << '\n';
-	}
-
-#if defined(__GNUG__)
-	// for some reason the g++ doesn't compile this section as it is casting the constants differently
-	// than other compilers.
-			// no idea how to fix the code below to make it compile with g++
-/*
-		using namespace sw::unum::complex_literals;
-		using Real = sw::unum::fixpnt<8, 4>;
-		std::cout << std::fixed << std::setprecision(1);
-
-		std::complex<Real> z1 = 1i * 1i;     // imaginary unit squared
-		std::cout << "i * i = " << z1 << '\n';
-
-		std::complex<double> z2 = std::pow(1.0i, 2.0); // imaginary unit squared
-		std::cout << "pow(i, 2) = " << z2 << '\n';
-
-		double PI = std::acos(-1);
-		std::complex<Real> z3 = std::exp(1.0i * PI); // Euler's formula
-		std::cout << "exp(i * pi) = " << z3 << '\n';
-
-		std::complex<Real> z4 = 1.0 + 2i, z5 = 1.0 - 2i; // conjugates
-		std::cout << "(1+2i)*(1-2i) = " << z4 * z5 << '\n';
-
-	error: conversion from '__complex__ int' to non - scalar type 'std::complex<sw::unum::fixpnt<8, 4> >' requested
-		std::complex<Real> z1 = 1i * 1i;     // imaginary unit squared
-		                        ~~~^~~~
-	error : conversion from '__complex__ double' to non - scalar type 'std::complex<sw::unum::fixpnt<8, 4> >' requested
-        std::complex<Real> z4 = 1.0 + 2i, z5 = 1.0 - 2i; // conjugates
-		                        ~~~~^~~~
-	error : conversion from '__complex__ double' to non - scalar type 'std::complex<sw::unum::fixpnt<8, 4> >' requested
-        std::complex<Real> z4 = 1.0 + 2i, z5 = 1.0 - 2i; // conjugates
-		                                       ~~~~^~~~
-*/
-    // furthermore, the pow and exp functions don't match the correct complex<double> arguments in g++
-
-#else
-
-	{
-		// all the literals are marshalled through the std library double native type for complex literals
-		// defining them for fixpnt is syntactically unattractive as the "i" literal is reserved for native types,
-		// so our literal type would need to be non-standard anyway as "_i"
-		using namespace sw::unum::complex_literals;
-		using Real = sw::unum::fixpnt<8, 4>;
-		std::cout << std::fixed << std::setprecision(1);
-
-		std::complex<Real> z1 = 1i * 1i;     // imaginary unit squared
-		std::cout << "i * i = " << z1 << '\n';
-
-		std::complex<double> z2 = std::pow(1.0i, 2.0); // imaginary unit squared
-		std::cout << "pow(i, 2) = " << z2 << '\n';
-
-		double PI = std::acos(-1);
-		std::complex<Real> z3 = std::exp(1.0i * PI); // Euler's formula
-		std::cout << "exp(i * pi) = " << z3 << '\n';
-
-		std::complex<Real> z4 = 1.0 + 2i, z5 = 1.0 - 2i; // conjugates
-		std::cout << "(1+2i)*(1-2i) = " << z4 * z5 << '\n';
-	}
-#endif
-
 	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modulo,uint8_t>", "addition");
 
 
 #if STRESS_TESTING
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,2,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,3,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 4, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,4,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 0, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 2, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,2,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 3, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,3,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 4, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,4,Modulo,uint8_t>", "addition");
 #endif
 
 #else
 
 	cout << "Fixed-point modular addition validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 1, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 2, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<4,3,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<4,4,Modulo,uint8_t>", "addition");
+	// 4-bits: 2^16 arithmetic combinations
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 1, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 2, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<4,3,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<4, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<4,4,Modulo,uint8_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 1, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 2, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,3,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,5,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 6, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,6,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 7, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,7,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, 8, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,8,Modulo,uint8_t>", "addition");
+	// 5-bits: 2^20 arithmetic combinations
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<5, 1, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<10,3,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<10,5,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, 7, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<10,7,Modulo,uint8_t>", "addition");
+	// 6-bits: 2^24 arithmetic combinations
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,0,Modulo,uint8_t>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 1, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,1,Modulo,uint8_t>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 2, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,2,Modulo,uint8_t>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,3,Modulo,uint8_t>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,4,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,4,Modulo,uint8_t>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<6, 6, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<6,4,Modulo,uint8_t>", "addition");
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<11,3,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<11,5,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, 7, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<11,7,Modulo,uint8_t>", "addition");
+	// an 8bit base type in complex arithmetic yields 2^16 possibilities
+	// and 2^32 arithmetic combinations
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,0,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,4,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, 8, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,8,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, 12, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,12,Modulo,uint8_t>", "addition");
+	// the following test scenarios are only feasible with hardware acceleration
+	// 8-bits: 2^32 arithmetic combinations
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 1, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 2, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,3,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,5,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 6, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,6,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 7, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,7,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<8, 8, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,8,Modulo,uint8_t>", "addition");
+
+	// 10-bits: 2^40 arithmetic combinations
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<10, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<10,3,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<10, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<10,5,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<10, 7, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<10,7,Modulo,uint8_t>", "addition");
+
+	// 11-bits: 2^44 arithmetic combinations
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<11, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<11,3,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<11, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<11,5,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<11, 7, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<11,7,Modulo,uint8_t>", "addition");
+
+	// 12-bits: 2^48 arithmetic combinations
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,0,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,4,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 8, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,8,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexAddition<12, 12, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<12,12,Modulo,uint8_t>", "addition");
 
 #endif  // STRESS_TESTING
 

@@ -255,19 +255,19 @@ public:
 	}
 
 	// initializers for native types
-	fixpnt(const signed char initial_value)        { *this = initial_value; }
-	fixpnt(const short initial_value)              { *this = initial_value; }
-	fixpnt(const int initial_value)                { *this = initial_value; }
-	fixpnt(const long initial_value)               { *this = initial_value; }
-	fixpnt(const long long initial_value)          { *this = initial_value; }
-	fixpnt(const char initial_value)               { *this = initial_value; }
-	fixpnt(const unsigned short initial_value)     { *this = initial_value; }
-	fixpnt(const unsigned int initial_value)       { *this = initial_value; }
-	fixpnt(const unsigned long initial_value)      { *this = initial_value; }
-	fixpnt(const unsigned long long initial_value) { *this = initial_value; }
-	fixpnt(const float initial_value)              { *this = initial_value; }
+	explicit fixpnt(const signed char initial_value)        { *this = initial_value; }
+	explicit fixpnt(const short initial_value)              { *this = initial_value; }
+	explicit fixpnt(const int initial_value)                { *this = initial_value; }
+	explicit fixpnt(const long initial_value)               { *this = initial_value; }
+	explicit fixpnt(const long long initial_value)          { *this = initial_value; }
+	explicit fixpnt(const char initial_value)               { *this = initial_value; }
+	explicit fixpnt(const unsigned short initial_value)     { *this = initial_value; }
+	explicit fixpnt(const unsigned int initial_value)       { *this = initial_value; }
+	explicit fixpnt(const unsigned long initial_value)      { *this = initial_value; }
+	explicit fixpnt(const unsigned long long initial_value) { *this = initial_value; }
+	explicit fixpnt(const float initial_value)              { *this = initial_value; }
 	fixpnt(const double initial_value)             { *this = initial_value; }
-	fixpnt(const long double initial_value)        { *this = initial_value; }
+	explicit fixpnt(const long double initial_value)        { *this = initial_value; }
 
 	// access operator for bits
 	// this needs a proxy to be able to create l-values
