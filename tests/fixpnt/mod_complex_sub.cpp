@@ -1,4 +1,4 @@
-// complex_mod_subtraction.cpp: functional tests for arbitrary configuration fixed-point complex subtraction
+// mod_complex_sub.cpp: functional tests for arbitrary configuration fixed-point complex subtraction
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

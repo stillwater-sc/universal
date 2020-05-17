@@ -1,4 +1,4 @@
-// complex_mod_multiplication.cpp: functional tests for arbitrary configuration fixed-point complex multiplication
+// mod_complex_mul.cpp: functional tests for arbitrary configuration fixed-point complex multiplication
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
