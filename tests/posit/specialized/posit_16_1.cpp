@@ -31,7 +31,7 @@ try {
 	constexpr size_t es = 1;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	std::string tag = " posit<16,1>";
 
 #if POSIT_FAST_POSIT_16_1
@@ -44,12 +44,16 @@ try {
 	cout << dynamic_range(p) << endl << endl;
 
 	// special cases
+	cout << "Special case tests " << endl;
+	string test = "Initialize to zero: ";
 	p = 0;
-	if (!p.iszero()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
+	test = "Initialize to NAN";
 	p = NAN;
-	if (!p.isnar()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	test = "Initialize to INFINITY";
 	p = INFINITY;
-	if (!p.isnar()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
 
 	// logic tests
 	cout << "Logic operator tests " << endl;
