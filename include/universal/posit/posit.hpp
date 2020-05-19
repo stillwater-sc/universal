@@ -565,22 +565,22 @@ public:
 	}
 
 	// initializers for native types
-	constexpr posit(const signed char initial_value)        { *this = initial_value; }
-	constexpr posit(const short initial_value)              { *this = initial_value; }
-	constexpr posit(const int initial_value)                { *this = initial_value; }
-	constexpr posit(const long initial_value)               { *this = initial_value; }
-	constexpr posit(const long long initial_value)          { *this = initial_value; }
-	constexpr posit(const char initial_value)               { *this = initial_value; }
-	constexpr posit(const unsigned short initial_value)     { *this = initial_value; }
-	constexpr posit(const unsigned int initial_value)       { *this = initial_value; }
-	constexpr posit(const unsigned long initial_value)      { *this = initial_value; }
-	constexpr posit(const unsigned long long initial_value) { *this = initial_value; }
-	constexpr posit(const float initial_value)              { *this = initial_value; }
-	          posit(const double initial_value)             { *this = initial_value; }
-	constexpr posit(const long double initial_value)        { *this = initial_value; }
+	constexpr explicit posit(const signed char initial_value)        { *this = initial_value; }
+	constexpr explicit posit(const short initial_value)              { *this = initial_value; }
+	constexpr explicit posit(const int initial_value)                { *this = initial_value; }
+	constexpr explicit posit(const long initial_value)               { *this = initial_value; }
+	constexpr explicit posit(const long long initial_value)          { *this = initial_value; }
+	constexpr explicit posit(const char initial_value)               { *this = initial_value; }
+	constexpr explicit posit(const unsigned short initial_value)     { *this = initial_value; }
+	constexpr explicit posit(const unsigned int initial_value)       { *this = initial_value; }
+	constexpr explicit posit(const unsigned long initial_value)      { *this = initial_value; }
+	constexpr explicit posit(const unsigned long long initial_value) { *this = initial_value; }
+	constexpr explicit posit(const float initial_value)              { *this = initial_value; }
+	constexpr          posit(const double initial_value)             { *this = initial_value; }
+	constexpr explicit posit(const long double initial_value)        { *this = initial_value; }
 
 	// assignment operators for native types
-	posit& operator=(const signed char rhs) {
+	posit& operator=(signed char rhs) {
 		value<8*sizeof(signed char)-1> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -591,7 +591,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(const short rhs) {
+	posit& operator=(short rhs) {
 		value<8*sizeof(short)-1> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -602,7 +602,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(const int rhs) {
+	posit& operator=(int rhs) {
 		value<8*sizeof(int)-1> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -613,7 +613,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(const long rhs) {
+	posit& operator=(long rhs) {
 		value<8*sizeof(long)> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -624,7 +624,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(const long long rhs) {
+	posit& operator=(long long rhs) {
 		value<8*sizeof(long long)-1> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -635,7 +635,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(const char rhs) {
+	posit& operator=(char rhs) {
 		value<8*sizeof(char)> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -646,7 +646,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(const unsigned short rhs) {
+	posit& operator=(unsigned short rhs) {
 		value<8*sizeof(unsigned short)> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -657,7 +657,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(const unsigned int rhs) {
+	posit& operator=(unsigned int rhs) {
 		value<8*sizeof(unsigned int)> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -668,7 +668,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(const unsigned long rhs) {
+	posit& operator=(unsigned long rhs) {
 		value<8*sizeof(unsigned long)> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -679,7 +679,7 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(const unsigned long long rhs) {
+	posit& operator=(unsigned long long rhs) {
 		value<8*sizeof(unsigned long long)> v(rhs);
 		if (v.iszero()) {
 			setzero();
@@ -690,14 +690,14 @@ public:
 		}
 		return *this;
 	}
-	posit& operator=(const float rhs) {
+	posit& operator=(float rhs) {
 		return float_assign(rhs);
 	}
-	constexpr posit& operator=(const double rhs) & {
+	constexpr posit& operator=(double rhs) & {
             float_assign(rhs);
             return *this; 
 	}
-	posit& operator=(const long double rhs) {
+	posit& operator=(long double rhs) {
        	return float_assign(rhs);
 	}
 

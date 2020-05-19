@@ -37,19 +37,19 @@ public:
 	constexpr value(const value& rhs)                       { *this = rhs; }
 
 	// decorated constructors
-	explicit constexpr value(const signed char initial_value)        { *this = initial_value; }
-	explicit constexpr value(const short initial_value)              { *this = initial_value; }
-	explicit constexpr value(const int initial_value)                { *this = initial_value; }
-	explicit constexpr value(const long initial_value)               { *this = initial_value; }
-	explicit constexpr value(const long long initial_value)          { *this = initial_value; }
-	explicit constexpr value(const char initial_value)               { *this = initial_value; }
-	explicit constexpr value(const unsigned short initial_value)     { *this = initial_value; }
-	explicit constexpr value(const unsigned int initial_value)       { *this = initial_value; }
-	explicit constexpr value(const unsigned long initial_value)      { *this = initial_value; }
-	explicit constexpr value(const unsigned long long initial_value) { *this = initial_value; }
-	explicit constexpr value(const float initial_value)              { *this = initial_value; }
-	         constexpr value(const double initial_value) : value{}   { *this = initial_value; }
-	explicit constexpr value(const long double initial_value)        { *this = initial_value; }
+	explicit constexpr value(signed char initial_value)        { *this = initial_value; }
+	explicit constexpr value(short initial_value)              { *this = initial_value; }
+	explicit constexpr value(int initial_value)                { *this = initial_value; }
+	explicit constexpr value(long initial_value)               { *this = initial_value; }
+	explicit constexpr value(long long initial_value)          { *this = initial_value; }
+	explicit constexpr value(char initial_value)               { *this = initial_value; }
+	explicit constexpr value(unsigned short initial_value)     { *this = initial_value; }
+	explicit constexpr value(unsigned int initial_value)       { *this = initial_value; }
+	explicit constexpr value(unsigned long initial_value)      { *this = initial_value; }
+	explicit constexpr value(unsigned long long initial_value) { *this = initial_value; }
+	explicit constexpr value(float initial_value)              { *this = initial_value; }
+	         constexpr value(double initial_value) : value{}   { *this = initial_value; }
+	explicit constexpr value(long double initial_value)        { *this = initial_value; }
 
 	constexpr value& operator=(const value& rhs) {
 		_sign	  = rhs._sign;
@@ -61,23 +61,23 @@ public:
 		_nan      = rhs._nan;
 		return *this;
 	}
-	constexpr value<fbits>& operator=(const signed char rhs) {
+	constexpr value<fbits>& operator=(signed char rhs) {
 		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	constexpr value<fbits>& operator=(const short rhs) {
+	constexpr value<fbits>& operator=(short rhs) {
 		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	constexpr value<fbits>& operator=(const int rhs) {
+	constexpr value<fbits>& operator=(int rhs) {
 		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	constexpr value<fbits>& operator=(const long rhs) {
+	constexpr value<fbits>& operator=(long rhs) {
 		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	constexpr value<fbits>& operator=(const long long rhs) {
+	constexpr value<fbits>& operator=(long long rhs) {
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 		if (rhs == 0) {
 			setzero();
@@ -106,23 +106,23 @@ public:
 		}
 		return *this;
 	}
-	constexpr value<fbits>& operator=(const char rhs) {
+	constexpr value<fbits>& operator=(char rhs) {
 		*this = (unsigned long long)(rhs);
 		return *this;
 	}
-	constexpr value<fbits>& operator=(const unsigned short rhs) {
+	constexpr value<fbits>& operator=(unsigned short rhs) {
 		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	constexpr value<fbits>& operator=(const unsigned int rhs) {
+	constexpr value<fbits>& operator=(unsigned int rhs) {
 		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	constexpr value<fbits>& operator=(const unsigned long rhs) {
+	constexpr value<fbits>& operator=(unsigned long rhs) {
 		*this = static_cast<long long>(rhs);
 		return *this;
 	}
-	constexpr value<fbits>& operator=(const unsigned long long rhs) {
+	constexpr value<fbits>& operator=(unsigned long long rhs) {
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 		if (rhs == 0) {
 			setzero();
@@ -137,7 +137,7 @@ public:
 		if (_trace_conversion) std::cout << "uint64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 		return *this;
 	}
-	constexpr value<fbits>& operator=(const float rhs) {
+	constexpr value<fbits>& operator=(float rhs) {
 		reset();
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
@@ -170,7 +170,7 @@ public:
 		}
 		return *this;
 	}
-	constexpr value<fbits>& operator=(const double rhs) {
+	constexpr value<fbits>& operator=(double rhs) {
                 using std::get;
 		reset();
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
@@ -212,7 +212,7 @@ public:
 		}
 		return *this;
 	}
-	constexpr value<fbits>& operator=(const long double rhs) {
+	constexpr value<fbits>& operator=(long double rhs) {
 		reset();
 		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 

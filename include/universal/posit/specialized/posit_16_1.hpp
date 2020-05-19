@@ -25,41 +25,41 @@ namespace sw {
 		static constexpr size_t fhbits = fbits + 1;
 		static constexpr uint16_t sign_mask = 0x8000u;
 
-		posit() { _bits = 0; }
+		constexpr posit() : _bits(0) {}
 		posit(const posit&) = default;
 		posit(posit&&) = default;
 		posit& operator=(const posit&) = default;
 		posit& operator=(posit&&) = default;
 
 		// initializers for native types
-		explicit posit(signed char initial_value)        { *this = initial_value; }
-		explicit posit(short initial_value)              { *this = initial_value; }
-		explicit posit(int initial_value)                { *this = initial_value; }
-		explicit posit(long initial_value)               { *this = initial_value; }
-		explicit posit(long long initial_value)          { *this = initial_value; }
-		explicit posit(char initial_value)               { *this = initial_value; }
-		explicit posit(unsigned short initial_value)     { *this = initial_value; }
-		explicit posit(unsigned int initial_value)       { *this = initial_value; }
-		explicit posit(unsigned long initial_value)      { *this = initial_value; }
-		explicit posit(unsigned long long initial_value) { *this = initial_value; }
-		explicit posit(float initial_value)              { *this = initial_value; }
-		explicit posit(double initial_value)             { *this = initial_value; }
-		explicit posit(long double initial_value)        { *this = initial_value; }
+		constexpr explicit posit(signed char initial_value) : _bits(0)        { *this = initial_value; }
+		constexpr explicit posit(short initial_value) : _bits(0)              { *this = initial_value; }
+		constexpr explicit posit(int initial_value) : _bits(0)                { *this = initial_value; }
+		constexpr explicit posit(long initial_value) : _bits(0)               { *this = initial_value; }
+		constexpr explicit posit(long long initial_value) : _bits(0)          { *this = initial_value; }
+		constexpr explicit posit(char initial_value) : _bits(0)               { *this = initial_value; }
+		constexpr explicit posit(unsigned short initial_value) : _bits(0)     { *this = initial_value; }
+		constexpr explicit posit(unsigned int initial_value) : _bits(0)       { *this = initial_value; }
+		constexpr explicit posit(unsigned long initial_value) : _bits(0)      { *this = initial_value; }
+		constexpr explicit posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
+		constexpr explicit posit(float initial_value) : _bits(0)              { *this = initial_value; }
+		constexpr          posit(double initial_value) : _bits(0)             { *this = initial_value; }
+		constexpr explicit posit(long double initial_value) : _bits(0)        { *this = initial_value; }
 
 		// assignment operators for native types
-		posit& operator=(signed char rhs)       { return integer_assign((long)rhs); }
-		posit& operator=(short rhs)             { return integer_assign((long)rhs); }
-		posit& operator=(int rhs)               { return integer_assign((long)rhs); }
-		posit& operator=(long rhs)              { return integer_assign(rhs); }
-		posit& operator=(long long rhs)         { return integer_assign((long)rhs);	}
-		posit& operator=(char rhs)              { return integer_assign((long)rhs); }
-		posit& operator=(unsigned short rhs)    { return integer_assign((long)rhs); }
-		posit& operator=(unsigned int rhs)      { return integer_assign((long)rhs); }
-		posit& operator=(unsigned long rhs)     { return integer_assign((long)rhs); }
-		posit& operator=(unsigned long long rhs){ return integer_assign((long)rhs); }
-		posit& operator=(float rhs)             { return float_assign(double(rhs)); }
-		posit& operator=(double rhs)            { return float_assign(rhs); }
-		posit& operator=(long double rhs)       { return float_assign(double(rhs)); }
+		constexpr posit& operator=(signed char rhs)       { return integer_assign((long)rhs); }
+		constexpr posit& operator=(short rhs)             { return integer_assign((long)rhs); }
+		constexpr posit& operator=(int rhs)               { return integer_assign((long)rhs); }
+		constexpr posit& operator=(long rhs)              { return integer_assign(rhs); }
+		constexpr posit& operator=(long long rhs)         { return integer_assign((long)rhs);	}
+		constexpr posit& operator=(char rhs)              { return integer_assign((long)rhs); }
+		constexpr posit& operator=(unsigned short rhs)    { return integer_assign((long)rhs); }
+		constexpr posit& operator=(unsigned int rhs)      { return integer_assign((long)rhs); }
+		constexpr posit& operator=(unsigned long rhs)     { return integer_assign((long)rhs); }
+		constexpr posit& operator=(unsigned long long rhs){ return integer_assign((long)rhs); }
+		constexpr posit& operator=(float rhs)             { return float_assign(double(rhs)); }
+		constexpr posit& operator=(double rhs)  { return float_assign(rhs); }
+		constexpr posit& operator=(long double rhs)       { return float_assign(double(rhs)); }
 
 		explicit operator long double() const { return to_long_double(); }
 		explicit operator double() const { return to_double(); }
@@ -354,6 +354,7 @@ namespace sw {
 			posit p = 1.0 / *this;
 			return p;
 		}
+		
 		// SELECTORS
 		inline bool isnar() const      { return (_bits == sign_mask); }
 		inline bool iszero() const     { return (_bits == 0x0); }
@@ -463,7 +464,7 @@ namespace sw {
 
 
 		// helper methods
-		posit& integer_assign(long rhs) {
+		constexpr posit& integer_assign(long rhs) {
 			// special case for speed as this is a common initialization
 			if (rhs == 0) {
 				_bits = 0x0;
@@ -507,17 +508,14 @@ namespace sw {
 		// convert a double precision IEEE floating point to a posit<16,1>. You need to use at least doubles to capture
 		// enough bits to correctly round mul/div and elementary function results. That is, if you use a single precision
 		// float, you will inject errors in the validation suites.
-		posit& float_assign(double rhs) {
-			//posit16_t p = posit16_fromf(rhs);
-			//_bits = p.v;
-			constexpr int dfbits = std::numeric_limits<double>::digits - 1;
-			value<dfbits> v((double)rhs);
-
+		constexpr posit& float_assign(double rhs) {
 			// special case processing
-			if (v.iszero()) {
+			if (0.0 == rhs) {
 				setzero();
 				return *this;
 			}
+			constexpr int dfbits = std::numeric_limits<double>::digits - 1;
+			value<dfbits> v((double)rhs);
 			if (v.isinf() || v.isnan()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
 				setnar();
 				return *this;

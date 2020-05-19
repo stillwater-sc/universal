@@ -31,7 +31,7 @@ try {
 	constexpr size_t es = 1;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	std::string tag = " posit<16,1>";
 
 #if POSIT_FAST_POSIT_16_1
