@@ -36,30 +36,30 @@ public:
 	explicit constexpr posit(short initial_value) : _bits(0)              { *this = initial_value; }
 	explicit constexpr posit(int initial_value) : _bits(0)                { *this = initial_value; }
 	explicit constexpr posit(long initial_value) : _bits(0)               { *this = initial_value; }
-	explicit constexpr posit(long long initial_value) : _bits(0)          { *this = initial_value; }
+	explicit           posit(long long initial_value) : _bits(0)          { *this = initial_value; }
 	explicit constexpr posit(char initial_value) : _bits(0)               { *this = initial_value; }
 	explicit constexpr posit(unsigned short initial_value) : _bits(0)     { *this = initial_value; }
 	explicit constexpr posit(unsigned int initial_value) : _bits(0)       { *this = initial_value; }
-	explicit constexpr posit(unsigned long initial_value) : _bits(0)      { *this = initial_value; }
-	explicit constexpr posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
-	explicit constexpr posit(float initial_value) : _bits(0)              { *this = initial_value; }
-	         constexpr posit(double initial_value) : _bits(0)             { *this = initial_value; }
-	explicit constexpr posit(long double initial_value) : _bits(0)        { *this = initial_value; }
+	explicit           posit(unsigned long initial_value) : _bits(0)      { *this = initial_value; }
+	explicit           posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
+	explicit           posit(float initial_value) : _bits(0)              { *this = initial_value; }
+	explicit           posit(double initial_value) : _bits(0)             { *this = initial_value; }
+	                   posit(long double initial_value) : _bits(0)        { *this = initial_value; }
 
 	// assignment operators for native types
 	constexpr posit& operator=(signed char rhs)       { return integer_assign((long)(rhs)); }
 	constexpr posit& operator=(short rhs)             { return integer_assign((long)(rhs)); }
 	constexpr posit& operator=(int rhs)               { return integer_assign((long)(rhs)); }
 	constexpr posit& operator=(long rhs)              { return integer_assign(rhs); }
-	constexpr posit& operator=(long long rhs)         { return float_assign((long double)(rhs)); }
+	          posit& operator=(long long rhs)         { return float_assign((long double)(rhs)); }
 	constexpr posit& operator=(char rhs)              { return integer_assign((long)(rhs)); }
 	constexpr posit& operator=(unsigned short rhs)    { return integer_assign((long)(rhs)); }
 	constexpr posit& operator=(unsigned int rhs)      { return integer_assign((long)(rhs)); }
-	constexpr posit& operator=(unsigned long rhs)     { return float_assign((long double)(rhs)); }
-	constexpr posit& operator=(unsigned long long rhs){ return float_assign((long double)(rhs)); }
-	constexpr posit& operator=(float rhs)             { return float_assign((long double)rhs); }
-	constexpr posit& operator=(double rhs)            { return float_assign((long double)rhs); }
-	constexpr posit& operator=(long double rhs)       { return float_assign(rhs); }
+	          posit& operator=(unsigned long rhs)     { return float_assign((long double)(rhs)); }
+	          posit& operator=(unsigned long long rhs){ return float_assign((long double)(rhs)); }
+	          posit& operator=(float rhs)             { return float_assign((long double)rhs); }
+	          posit& operator=(double rhs)            { return float_assign((long double)rhs); }
+	          posit& operator=(long double rhs)       { return float_assign(rhs); }
 
 	explicit operator long double() const { return to_long_double(); }
 	explicit operator double() const { return to_double(); }
@@ -553,7 +553,7 @@ private:
 		_bits = sign ? -raw : raw;
 		return *this;
 	}
-	constexpr posit& float_assign(long double rhs) {
+	posit& float_assign(long double rhs) {
 		constexpr int dfbits = std::numeric_limits<long double>::digits - 1;
 		value<dfbits> v(rhs);
 		// special case processing

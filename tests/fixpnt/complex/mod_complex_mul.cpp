@@ -120,7 +120,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "complex modulo multiplication failed: ";
@@ -175,11 +175,11 @@ try {
 
 	cout << "Fixed-point complex modulo multiplication validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 0, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 1, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 2, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,2,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 3, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,3,Modulo,uint8_t>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 4, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,4,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 0, Modulo, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,0,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 1, Modulo, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,1,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 2, Modulo, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,2,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 3, Modulo, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,3,Modulo,uint8_t>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyComplexMultiplication<4, 4, Modulo, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,4,Modulo,uint8_t>", "multiplication");
 
 #if STRESS_TESTING
 

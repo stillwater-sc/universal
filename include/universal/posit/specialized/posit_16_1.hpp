@@ -42,9 +42,9 @@ namespace sw {
 		explicit constexpr posit(unsigned int initial_value) : _bits(0)       { *this = initial_value; }
 		explicit constexpr posit(unsigned long initial_value) : _bits(0)      { *this = initial_value; }
 		explicit constexpr posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
-		explicit constexpr posit(float initial_value) : _bits(0)              { *this = initial_value; }
-		         constexpr posit(double initial_value) : _bits(0)             { *this = initial_value; }
-	    explicit constexpr posit(long double initial_value) : _bits(0)        { *this = initial_value; }
+		explicit           posit(float initial_value) : _bits(0)              { *this = initial_value; }
+		                   posit(double initial_value) : _bits(0)             { *this = initial_value; }
+	        explicit           posit(long double initial_value) : _bits(0)        { *this = initial_value; }
 
 		// assignment operators for native types
 		constexpr posit& operator=(signed char rhs)       { return integer_assign((long)rhs); }
@@ -57,9 +57,9 @@ namespace sw {
 		constexpr posit& operator=(unsigned int rhs)      { return integer_assign((long)rhs); }
 		constexpr posit& operator=(unsigned long rhs)     { return integer_assign((long)rhs); }
 		constexpr posit& operator=(unsigned long long rhs){ return integer_assign((long)rhs); }
-		constexpr posit& operator=(float rhs)             { return float_assign(double(rhs)); }
-		constexpr posit& operator=(double rhs)            { return float_assign(rhs); }
-		constexpr posit& operator=(long double rhs)       { return float_assign(double(rhs)); }
+		          posit& operator=(float rhs)             { return float_assign(double(rhs)); }
+		          posit& operator=(double rhs)            { return float_assign(rhs); }
+		          posit& operator=(long double rhs)       { return float_assign(double(rhs)); }
 
 		explicit operator long double() const { return to_long_double(); }
 		explicit operator double() const { return to_double(); }
@@ -508,7 +508,7 @@ namespace sw {
 		// convert a double precision IEEE floating point to a posit<16,1>. You need to use at least doubles to capture
 		// enough bits to correctly round mul/div and elementary function results. That is, if you use a single precision
 		// float, you will inject errors in the validation suites.
-		constexpr posit& float_assign(double rhs) {
+		posit& float_assign(double rhs) {
 			constexpr int dfbits = std::numeric_limits<double>::digits - 1;
 			value<dfbits> v(rhs);
 			// special case processing

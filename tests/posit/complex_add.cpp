@@ -144,6 +144,8 @@ try {
    std::complex<Real> z4 = 1. + 2i, z5 = 1. - 2i; // conjugates
                                          ~~~^~~~
 */
+		std::complex<Real> z4{1.0, +2.0}, z5{1.0, -2.0}; // conjugates
+		cout << "(1+2i)*(1-2i) = " << z4 * z5 << '\n';
 #else
 		std::complex<Real> z4 = 1. + 2i, z5 = 1. - 2i; // conjugates
 		cout << "(1+2i)*(1-2i) = " << z4 * z5 << '\n';
@@ -155,6 +157,7 @@ try {
 		cout << z1 << endl;
 	}
 
+	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "addition");
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 0>("Manual Testing", true), "complex<posit<5,0>>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateComplexAddition<5, 1>("Manual Testing", true), "complex<posit<5,1>>", "addition");
