@@ -630,7 +630,9 @@ namespace unum {
 			pref = std::sqrt(da);
 			if (psqrt != pref) {
 				nrOfFailedTests++;
+				std::cout << psqrt << " != " << pref << std::endl;
 				if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "sqrt", pa, pref, psqrt);
+				if (nrOfFailedTests > 24) return nrOfFailedTests;
 			}
 			else {
 				//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "sqrt", pa, pref, psqrt);

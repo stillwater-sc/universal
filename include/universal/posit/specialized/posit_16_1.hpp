@@ -58,7 +58,7 @@ namespace sw {
 		constexpr posit& operator=(unsigned long rhs)     { return integer_assign((long)rhs); }
 		constexpr posit& operator=(unsigned long long rhs){ return integer_assign((long)rhs); }
 		constexpr posit& operator=(float rhs)             { return float_assign(double(rhs)); }
-		constexpr posit& operator=(double rhs)  { return float_assign(rhs); }
+		constexpr posit& operator=(double rhs)            { return float_assign(rhs); }
 		constexpr posit& operator=(long double rhs)       { return float_assign(double(rhs)); }
 
 		explicit operator long double() const { return to_long_double(); }
@@ -509,13 +509,13 @@ namespace sw {
 		// enough bits to correctly round mul/div and elementary function results. That is, if you use a single precision
 		// float, you will inject errors in the validation suites.
 		constexpr posit& float_assign(double rhs) {
+			constexpr int dfbits = std::numeric_limits<double>::digits - 1;
+			value<dfbits> v(rhs);
 			// special case processing
-			if (0.0 == rhs) {
+			if (v.iszero()) {
 				setzero();
 				return *this;
 			}
-			constexpr int dfbits = std::numeric_limits<double>::digits - 1;
-			value<dfbits> v((double)rhs);
 			if (v.isinf() || v.isnan()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
 				setnar();
 				return *this;

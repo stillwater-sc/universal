@@ -311,9 +311,9 @@ public:
 	inline void setExponent(int e) { _scale = e; }
 	inline bool isneg() const { return _sign; }
 	inline bool ispos() const { return !_sign; }
-	inline bool iszero() const { return _zero; }
-	inline bool isinf() const { return _inf; }
-	inline bool isnan() const { return _nan; }
+	inline constexpr bool iszero() const { return _zero; }
+	inline constexpr bool isinf() const { return _inf; }
+	inline constexpr bool isnan() const { return _nan; }
 	inline bool sign() const { return _sign; }
 	inline int scale() const { return _scale; }
 	bitblock<fbits> fraction() const { return _fraction; }

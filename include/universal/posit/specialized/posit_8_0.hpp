@@ -252,7 +252,9 @@ namespace unum {
 
 			sign = (rhs < 0.0) ? true : false;
 
-			if (std::isinf(rhs) || std::isnan(rhs)) {
+			constexpr int spfbits = std::numeric_limits<float>::digits - 1;
+			value<spfbits> v(rhs);
+			if (v.isinf() || v.isnan()) {
 				_bits = 0x80;
 			}
 			else if (rhs == 0) {
