@@ -25,7 +25,7 @@ public:
 	static constexpr size_t fhbits = fbits + 1;
 	static constexpr uint32_t sign_mask = 0x80000000ul;  // 0x8000'0000ul;
 
-	posit() : _bits(0) {}
+	constexpr posit() : _bits(0) {}
 	posit(const posit&) = default;
 	posit(posit&&) = default;
 	posit& operator=(const posit&) = default;
@@ -42,9 +42,9 @@ public:
 	explicit constexpr posit(unsigned int initial_value) : _bits(0)       { *this = initial_value; }
 	explicit constexpr posit(unsigned long initial_value) : _bits(0)      { *this = initial_value; }
 	explicit constexpr posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
-	 explicit posit(float initial_value) : _bits(0) { *this = initial_value; }
-	          posit(double initial_value) : _bits(0) { *this = initial_value; }
-	 explicit posit(long double initial_value) : _bits(0) { *this = initial_value; }
+	explicit constexpr posit(float initial_value) : _bits(0)              { *this = initial_value; }
+	         constexpr posit(double initial_value) : _bits(0)             { *this = initial_value; }
+	explicit constexpr posit(long double initial_value) : _bits(0)        { *this = initial_value; }
 
 	// assignment operators for native types
 	constexpr posit& operator=(signed char rhs)       { return integer_assign((long)(rhs)); }
@@ -383,6 +383,7 @@ public:
 		return *this /= posit<nbits, es>(rhs);
 	}
 
+	// prefix/postfix operators
 	posit& operator++() {
 		++_bits;
 		return *this;
@@ -406,28 +407,29 @@ public:
 		return p;
 	}
 	// SELECTORS
-	inline bool isnar() const      { return (_bits == 0x80000000); }
-	inline bool iszero() const     { return (_bits == 0x0); }
-	inline bool isone() const      { return (_bits == 0x40000000); } // pattern 010000...
-	inline bool isminusone() const { return (_bits == 0xC0000000); } // pattern 110000...
-	inline bool isneg() const      { return (_bits & 0x80000000); }
-	inline bool ispos() const      { return !isneg(); }
-	inline bool ispowerof2() const { return !(_bits & 0x1); }
+	inline constexpr bool isnar() const      { return (_bits == 0x80000000); }
+	inline constexpr bool iszero() const     { return (_bits == 0x0); }
+	inline constexpr bool isone() const      { return (_bits == 0x40000000); } // pattern 010000...
+	inline constexpr bool isminusone() const { return (_bits == 0xC0000000); } // pattern 110000...
+	inline constexpr bool isneg() const      { return (_bits & 0x80000000); }
+	inline constexpr bool ispos() const      { return !isneg(); }
+	inline constexpr bool ispowerof2() const { return !(_bits & 0x1); }
 
-	inline int sign_value() const  { return (_bits & 0x8 ? -1 : 1); }
+	inline int sign_value() const  { return (_bits & 0x8) ? -1 : 1; }
 
 	bitblock<NBITS_IS_32> get() const { bitblock<NBITS_IS_32> bb; bb = long(_bits); return bb; }
 	unsigned long long encoding() const { return (unsigned long long)(_bits); }
 
-	inline void clear() { _bits = 0x0; }
-	inline void setzero() { clear(); }
-	inline void setnar() { _bits = 0x80000000; }
+	inline constexpr void clear() { _bits = 0x0; }
+	inline constexpr void setzero() { clear(); }
+	inline constexpr void setnar() { _bits = 0x80000000; }
 	inline posit twosComplement() const {
 		posit<NBITS_IS_32, ES_IS_2> p;
 		int32_t v = -(int32_t)_bits;
 		p.set_raw_bits(v);
 		return p;
 	}
+
 private:
 	uint32_t _bits;
 
@@ -552,13 +554,13 @@ private:
 		return *this;
 	}
 	constexpr posit& float_assign(long double rhs) {
+		constexpr int dfbits = std::numeric_limits<long double>::digits - 1;
+		value<dfbits> v(rhs);
 		// special case processing
-		if (rhs == 0.0l) {
+		if (v.iszero()) {
 			setzero();
 			return *this;
 		}
-		constexpr int dfbits = std::numeric_limits<long double>::digits - 1;
-		value<dfbits> v((long double)rhs);
 		if (v.isinf() || v.isnan()) {  // posit encode for FP_INFINITE and NaN as NaR (Not a Real)
 			setnar();
 			return *this;

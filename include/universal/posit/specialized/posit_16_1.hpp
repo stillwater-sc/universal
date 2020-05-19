@@ -32,19 +32,19 @@ namespace sw {
 		posit& operator=(posit&&) = default;
 
 		// initializers for native types
-		constexpr explicit posit(signed char initial_value) : _bits(0)        { *this = initial_value; }
-		constexpr explicit posit(short initial_value) : _bits(0)              { *this = initial_value; }
-		constexpr explicit posit(int initial_value) : _bits(0)                { *this = initial_value; }
-		constexpr explicit posit(long initial_value) : _bits(0)               { *this = initial_value; }
-		constexpr explicit posit(long long initial_value) : _bits(0)          { *this = initial_value; }
-		constexpr explicit posit(char initial_value) : _bits(0)               { *this = initial_value; }
-		constexpr explicit posit(unsigned short initial_value) : _bits(0)     { *this = initial_value; }
-		constexpr explicit posit(unsigned int initial_value) : _bits(0)       { *this = initial_value; }
-		constexpr explicit posit(unsigned long initial_value) : _bits(0)      { *this = initial_value; }
-		constexpr explicit posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
-		constexpr explicit posit(float initial_value) : _bits(0)              { *this = initial_value; }
-		constexpr          posit(double initial_value) : _bits(0)             { *this = initial_value; }
-		constexpr explicit posit(long double initial_value) : _bits(0)        { *this = initial_value; }
+		explicit constexpr posit(signed char initial_value) : _bits(0)        { *this = initial_value; }
+		explicit constexpr posit(short initial_value) : _bits(0)              { *this = initial_value; }
+		explicit constexpr posit(int initial_value) : _bits(0)                { *this = initial_value; }
+		explicit constexpr posit(long initial_value) : _bits(0)               { *this = initial_value; }
+		explicit constexpr posit(long long initial_value) : _bits(0)          { *this = initial_value; }
+		explicit constexpr posit(char initial_value) : _bits(0)               { *this = initial_value; }
+		explicit constexpr posit(unsigned short initial_value) : _bits(0)     { *this = initial_value; }
+		explicit constexpr posit(unsigned int initial_value) : _bits(0)       { *this = initial_value; }
+		explicit constexpr posit(unsigned long initial_value) : _bits(0)      { *this = initial_value; }
+		explicit constexpr posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
+		explicit constexpr posit(float initial_value) : _bits(0)              { *this = initial_value; }
+		         constexpr posit(double initial_value) : _bits(0)             { *this = initial_value; }
+	    explicit constexpr posit(long double initial_value) : _bits(0)        { *this = initial_value; }
 
 		// assignment operators for native types
 		constexpr posit& operator=(signed char rhs)       { return integer_assign((long)rhs); }
@@ -526,8 +526,6 @@ namespace sw {
 			_bits = uint16_t(ptt.to_ulong());
 			return *this;
 		}
-
-
 
 		// decode_regime takes the raw bits of the posit, and returns the regime run-length, m, and the remaining fraction bits in remainder
 		inline void decode_regime(const uint16_t bits, int8_t& m, uint16_t& remaining) const {

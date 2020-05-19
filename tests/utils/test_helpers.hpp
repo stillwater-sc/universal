@@ -17,3 +17,17 @@ int ReportTestResult(int nrOfFailedTests, const std::string& description, const 
 	return nrOfFailedTests;
 }
 
+// simple checker
+int ReportCheck(const std::string& tag, const std::string& test, bool success) {
+	using namespace std;
+	constexpr int TEST_TAG_WIDTH = 27;
+	int nrOfFailedTestCases = 0;
+	if (success) {
+		cout << tag << " " << left << setw(TEST_TAG_WIDTH) << test << "PASS\n";
+	}
+	else {
+		++nrOfFailedTestCases;
+		cout << tag << " " << left << setw(TEST_TAG_WIDTH) << test << "FAIL\n";
+	}
+	return nrOfFailedTestCases;
+}
