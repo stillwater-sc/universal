@@ -73,6 +73,13 @@ typename Vector::value_type fdp(const Vector& x, const Vector& y) {
 	return sum;
 }
 #else
+template<class _Container>
+constexpr auto size(const _Container& _Cont)
+-> decltype(_Cont.size())
+{	// get size() for container
+	return (_Cont.size());
+}
+
 // Specialized resolved fused dot product that assumes unit stride and a standard vector,
 // with the option to control capacity bits in the quire
 template<typename Vector, size_t capacity = 10>
