@@ -80,7 +80,7 @@ typename Vector::value_type fdp(const Vector& x, const Vector& y) {
 	constexpr size_t nbits = Vector::value_type::nbits;
 	constexpr size_t es = Vector::value_type::es;
 	quire<nbits, es, capacity> q(0);
-	size_t ix, iy, n = x.size();
+	size_t ix, iy, n = size(x);
 	for (ix = 0, iy = 0; ix < n && iy < n; ++ix, ++iy) {
 		q += sw::unum::quire_mul(x[ix], y[iy]);
 	}
