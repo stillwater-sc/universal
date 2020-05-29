@@ -73,11 +73,10 @@ typename Vector::value_type fdp(const Vector& x, const Vector& y) {
 	return sum;
 }
 #else
-template<class _Container>
-constexpr auto size(const _Container& _Cont)
--> decltype(_Cont.size())
-{	// get size() for container
-	return (_Cont.size());
+template<typename Scalar>
+constexpr auto size(const std::vector<Scalar>& v) -> decltype(v.size())
+{
+	return (v.size());
 }
 
 // Specialized resolved fused dot product that assumes unit stride and a standard vector,
