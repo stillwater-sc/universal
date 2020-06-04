@@ -564,20 +564,20 @@ public:
 		*this = a.to_value();
 	}
 
-	// initializers for native types
-	constexpr explicit posit(const signed char initial_value)        { *this = initial_value; }
-	constexpr explicit posit(const short initial_value)              { *this = initial_value; }
-	constexpr explicit posit(const int initial_value)                { *this = initial_value; }
-	constexpr explicit posit(const long initial_value)               { *this = initial_value; }
-	constexpr explicit posit(const long long initial_value)          { *this = initial_value; }
-	constexpr explicit posit(const char initial_value)               { *this = initial_value; }
-	constexpr explicit posit(const unsigned short initial_value)     { *this = initial_value; }
-	constexpr explicit posit(const unsigned int initial_value)       { *this = initial_value; }
-	constexpr explicit posit(const unsigned long initial_value)      { *this = initial_value; }
-	constexpr explicit posit(const unsigned long long initial_value) { *this = initial_value; }
-	constexpr explicit posit(const float initial_value)              { *this = initial_value; }
-	constexpr          posit(const double initial_value)             { *this = initial_value; }
-	constexpr explicit posit(const long double initial_value)        { *this = initial_value; }
+	// initializers for native types, allow for implicit conversion (Peter)
+	constexpr posit(signed char initial_value)        { *this = initial_value; }
+	constexpr posit(short initial_value)              { *this = initial_value; }
+	constexpr posit(int initial_value)                { *this = initial_value; }
+	constexpr posit(long initial_value)               { *this = initial_value; }
+	constexpr posit(long long initial_value)          { *this = initial_value; }
+	constexpr posit(char initial_value)               { *this = initial_value; }
+	constexpr posit(unsigned short initial_value)     { *this = initial_value; }
+	constexpr posit(unsigned int initial_value)       { *this = initial_value; }
+	constexpr posit(unsigned long initial_value)      { *this = initial_value; }
+	constexpr posit(unsigned long long initial_value) { *this = initial_value; }
+	constexpr posit(float initial_value)              { *this = initial_value; }
+	constexpr posit(double initial_value)             { *this = initial_value; }
+	constexpr posit(long double initial_value)        { *this = initial_value; }
 
 	// assignment operators for native types
 	posit& operator=(signed char rhs) {
@@ -2556,6 +2556,13 @@ inline bool operator>=(long double lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
+// TODO: Find an appropriate location for this!
+template <typename T>
+constexpr bool is_intrinsic_numerical= std::is_integral<T>::value || std::is_floating_point<T>::value;
+
+template <typename T, typename U= void>
+using enable_intrinsic_numerical= std::enable_if_t<is_intrinsic_numerical<T>, U>;
+
 // BINARY ADDITION
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, double rhs) {
@@ -2563,6 +2570,15 @@ inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, double rhs) {
 	sum += posit<nbits, es>(rhs);
 	return sum;
 }
+
+// More generic alternative to avoid ambiguities with intrinsic +
+template<size_t nbits, size_t es, typename Value, typename = enable_intrinsic_numerical<Value> >
+inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, Value rhs) {
+	posit<nbits, es> sum = lhs;
+	sum += posit<nbits, es>(rhs);
+	return sum;
+}
+
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator+(double lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> sum(lhs);
@@ -2577,6 +2593,15 @@ inline posit<nbits, es> operator-(double lhs, const posit<nbits, es>& rhs) {
 	diff -= rhs;
 	return diff;
 }
+
+// More generic alternative to avoid ambiguities with intrinsic +
+template<size_t nbits, size_t es, typename Value, typename = enable_intrinsic_numerical<Value> >
+inline posit<nbits, es> operator-(const posit<nbits, es>& lhs, Value rhs) {
+	posit<nbits, es> diff = lhs;
+	diff -= posit<nbits, es>(rhs);
+	return diff;
+}
+
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator-(const posit<nbits, es>& lhs, double rhs) {
 	posit<nbits, es> diff(lhs);
@@ -2590,6 +2615,15 @@ inline posit<nbits, es> operator*(double lhs, const posit<nbits, es>& rhs) {
 	mul *= rhs;
 	return mul;
 }
+
+template<size_t nbits, size_t es, typename Value, typename = enable_intrinsic_numerical<Value> >
+inline posit<nbits, es> operator*(Value lhs, const posit<nbits, es>& rhs) {
+	posit<nbits, es> mul(lhs);
+	mul *= rhs;
+	return mul;
+}
+    
+    
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator*(const posit<nbits, es>& lhs, double rhs) {
 	posit<nbits, es> mul(lhs);
@@ -2603,8 +2637,23 @@ inline posit<nbits, es> operator/(double lhs, const posit<nbits, es>& rhs) {
 	ratio /= rhs;
 	return ratio;
 }
+
+template<size_t nbits, size_t es, typename Value, typename = enable_intrinsic_numerical<Value> >
+inline posit<nbits, es> operator/(Value lhs, const posit<nbits, es>& rhs) {
+	posit<nbits, es> ratio(lhs);
+	ratio /= rhs;
+	return ratio;
+}
+
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, double rhs) {
+	posit<nbits, es> ratio(lhs);
+	ratio /= posit<nbits, es>(rhs);
+	return ratio;
+}
+
+template<size_t nbits, size_t es, typename Value, typename = enable_intrinsic_numerical<Value> >
+inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, Value rhs) {
 	posit<nbits, es> ratio(lhs);
 	ratio /= posit<nbits, es>(rhs);
 	return ratio;
