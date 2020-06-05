@@ -15,7 +15,8 @@
 #include <regex>
 #include <algorithm>
 
-#include "universal/string/strmanip.hpp"
+#include <universal/native/ieee-754.hpp>
+#include <universal/string/strmanip.hpp>
 #include "./decimal_exceptions.hpp"
 
 #if defined(__clang__)
@@ -48,8 +49,7 @@
 
 #endif
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 /////////////////////////////////////////////
 // Forward references
@@ -72,26 +72,26 @@ public:
 	decimal& operator=(decimal&&) = default;
 
 	// initializers for native types
-	explicit decimal(const char initial_value)               { *this = initial_value; }
-	explicit decimal(const short initial_value)              { *this = initial_value; }
-	explicit decimal(const int initial_value)                { *this = initial_value; }
-	explicit decimal(const long initial_value)               { *this = initial_value; }
-	         decimal(const long long initial_value)          { *this = initial_value; }
-	explicit decimal(const unsigned char initial_value)      { *this = initial_value; }
-	explicit decimal(const unsigned short initial_value)     { *this = initial_value; }
-	explicit decimal(const unsigned int initial_value)       { *this = initial_value; }
-	explicit decimal(const unsigned long initial_value)      { *this = initial_value; }
-	explicit decimal(const unsigned long long initial_value) { *this = initial_value; }
-	explicit decimal(const float initial_value)              { *this = initial_value; }
-	explicit decimal(const double initial_value)             { *this = initial_value; }
-	explicit decimal(const long double initial_value)        { *this = initial_value; }
+	decimal(char initial_value) { *this = initial_value; }
+	decimal(short initial_value) { *this = initial_value; }
+	decimal(int initial_value) { *this = initial_value; }
+	decimal(long initial_value) { *this = initial_value; }
+	decimal(long long initial_value) { *this = initial_value; }
+	decimal(unsigned char initial_value) { *this = initial_value; }
+	decimal(unsigned short initial_value) { *this = initial_value; }
+	decimal(unsigned int initial_value) { *this = initial_value; }
+	decimal(unsigned long initial_value) { *this = initial_value; }
+	decimal(unsigned long long initial_value) { *this = initial_value; }
+	decimal(float initial_value) { *this = initial_value; }
+	decimal(double initial_value) { *this = initial_value; }
+	decimal(long double initial_value) { *this = initial_value; }
 
 	// assignment operators for native types
 	decimal& operator=(const std::string& digits) {
 		parse(digits);
 		return *this;
 	}
-	decimal& operator=(const char rhs) {
+	decimal& operator=(char rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -101,7 +101,7 @@ public:
 		}
 		return *this;
 	}
-	decimal& operator=(const short rhs) {
+	decimal& operator=(short rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -111,7 +111,7 @@ public:
 		}
 		return *this;
 	}
-	decimal& operator=(const int rhs) {
+	decimal& operator=(int rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -121,7 +121,7 @@ public:
 		}
 		return *this;
 	}
-	decimal& operator=(const long rhs) {
+	decimal& operator=(long rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -131,7 +131,7 @@ public:
 		}
 		return *this;
 	}
-	decimal& operator=(const long long rhs) {
+	decimal& operator=(long long rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -141,7 +141,7 @@ public:
 		}
 		return *this;
 	}
-	decimal& operator=(const unsigned char rhs) {
+	decimal& operator=(unsigned char rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -151,7 +151,7 @@ public:
 		}
 		return *this;
 	}
-	decimal& operator=(const unsigned short rhs) {
+	decimal& operator=(unsigned short rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -161,7 +161,7 @@ public:
 		}
 		return *this;
 	}
-	decimal& operator=(const unsigned int rhs) {
+	decimal& operator=(unsigned int rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -171,7 +171,7 @@ public:
 		}
 		return *this;
 	}
-	decimal& operator=(const unsigned long rhs) {
+	decimal& operator=(unsigned long rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -181,7 +181,7 @@ public:
 		}
 		return *this;
 	}
-	decimal& operator=(const unsigned long long rhs) {
+	decimal& operator=(unsigned long long rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -191,13 +191,13 @@ public:
 		}
 		return *this;
 	}
-	decimal& operator=(const float rhs) {
+	decimal& operator=(float rhs) {
 		return float_assign(rhs);
 	}
-	decimal& operator=(const double rhs) {
+	constexpr decimal& operator=(double rhs) {
 		return float_assign(rhs);
 	}
-	decimal& operator=(const long double rhs) {
+	decimal& operator=(long double rhs) {
 		return float_assign(rhs);
 	}
 
@@ -313,7 +313,7 @@ public:
 				}
 				if (carry) partial_sum.push_back(carry);
 				product += partial_sum;
-//				std::cout << "partial sum " << partial_sum << " intermediate product " << product << std::endl;
+				//				std::cout << "partial sum " << partial_sum << " intermediate product " << product << std::endl;
 				++position;
 			}
 		}
@@ -331,7 +331,7 @@ public:
 				}
 				if (carry) partial_sum.push_back(carry);
 				product += partial_sum;
-//				std::cout << "partial sum " << partial_sum << " intermediate product " << product << std::endl;
+				//				std::cout << "partial sum " << partial_sum << " intermediate product " << product << std::endl;
 				++position;
 			}
 		}
@@ -348,22 +348,20 @@ public:
 		*this = remainder(*this, rhs);
 		return *this;
 	}
-	decimal& operator<<=(const signed shift) {
+	decimal& operator<<=(int shift) {
 		if (shift == 0) return *this;
 		if (shift < 0) {
-			operator>>=(-shift);
-			return *this;
+			return operator>>=(-shift);
 		}
 		for (int i = 0; i < shift; ++i) {
 			this->insert(this->begin(), 0);
 		}
 		return *this;
 	}
-	decimal& operator>>=(const signed shift) {
+	decimal& operator>>=(int shift) {
 		if (shift == 0) return *this;
 		if (shift < 0) {
-			operator<<=(-shift);
-			return *this;
+			return operator<<=(-shift);
 		}
 		if (signed(size()) <= shift) {
 			this->setzero();
@@ -553,7 +551,27 @@ protected:
 	}
 
 	template<typename Ty>
-	decimal& float_assign(Ty& rhs) {
+	constexpr decimal& float_assign(Ty& rhs) {
+		if (rhs < 0.5 && rhs > -0.5) {
+			return *this = 0;
+		}
+		else {
+			bool sign = false;
+			if (rhs < 0.0) { sign = true; rhs = -rhs; }
+			double_decoder decoder;
+			decoder.d = rhs;
+			int scale = int(decoder.parts.exponent) - 1023;
+			constexpr uint64_t hidden_bit = (uint64_t(1) << 51);
+			uint64_t bits = decoder.parts.fraction | hidden_bit;
+			if (scale < 51) {
+				bits >>= (51 - scale);
+				*this = bits;
+			}
+			else {
+				scale -= 51;
+				*this = bits;
+			}
+		}
 		return *this;
 	}
 
@@ -580,7 +598,7 @@ inline int findMsd(const decimal& v) {
 	int msd = int(v.size()) - 1;
 	if (msd == 0 && v == 0) return -1; // no significant digit found, all digits are zero
 	assert(v.at(msd) != 0); // indicates the decimal wasn't unpadded
-	return msd; 
+	return msd;
 }
 
 // Convert integer types to a decimal representation
@@ -650,7 +668,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const decimal& d) {
 }
 
 // read an ASCII decimal format from an istream
-inline std::istream& operator>> (std::istream& istr, decimal& p) {
+inline std::istream& operator>>(std::istream& istr, decimal& p) {
 	std::string txt;
 	istr >> txt;
 	if (!p.parse(txt)) {
@@ -685,7 +703,16 @@ inline decimal operator/(const decimal& lhs, const decimal& rhs) {
 	ratio /= rhs;
 	return ratio;
 }
-
+// binary left shift
+inline decimal operator<<(const decimal& lhs, int shift) {
+	decimal d(lhs);
+	return d <<= shift;
+}
+// binary right shift
+inline decimal operator>>(const decimal& lhs, int shift) {
+	decimal d(lhs);
+	return d >>= shift;
+}
 /// logic operators
 
 	// decimal - decimal logic operators
@@ -873,5 +900,6 @@ decimal quotient(const decimal& _a, const decimal& _b) {
 decimal remainder(const decimal& _a, const decimal& _b) {
 	return decint_divide(_a, _b).rem;
 }
-} // namespace unum
-} // namespace sw
+
+}} // namespace sw::unum
+
