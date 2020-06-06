@@ -354,21 +354,21 @@ public:
 		}
 		throw "blockbinary<nbits, BlockType>.set(index): bit index out of bounds";
 	}
-	inline void set_raw_bits(uint64_t value) noexcept {
+	inline constexpr void set_raw_bits(uint64_t value) noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = value & storageMask;
 			value >>= bitsInBlock;
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	inline blockbinary& flip() noexcept { // in-place one's complement
+	inline constexpr blockbinary& flip() noexcept { // in-place one's complement
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = ~_block[i];
 		}		
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
-	inline blockbinary& twoscomplement() noexcept { // in-place 2's complement
+	inline constexpr blockbinary& twoscomplement() noexcept { // in-place 2's complement
 		blockbinary<nbits, BlockType> plusOne(1);
 		flip();
 		return *this += plusOne;
