@@ -238,7 +238,7 @@ public:
 		*this = a;
 	}
 	template<size_t src_nbits, size_t src_rbits>
-	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic, BlockType>& a) noexcept {
+	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic, BlockType>& a) {
 		std::cout << typeid(a).name() << " goes into " << typeid(*this).name() << std::endl;
 //		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); // TODO: do we want prohibit this condition? To be consistent with native types we need to round down automatically.
 		if (src_nbits <= nbits) {
@@ -276,47 +276,47 @@ public:
 	// simpler interface for now, using at(i) and set(i)/reset(i)
 
 	// assignment operators for native types
-	fixpnt& operator=(signed char rhs) noexcept {
+	fixpnt& operator=(signed char rhs) {
 		convert(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(short rhs) noexcept {
+	fixpnt& operator=(short rhs) {
 		convert(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(int rhs) noexcept {
+	fixpnt& operator=(int rhs) {
 		convert(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(long rhs) noexcept {
+	fixpnt& operator=(long rhs) {
 		convert(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(long long rhs) noexcept {
+	fixpnt& operator=(long long rhs) {
 		convert(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(char rhs) noexcept {
+	fixpnt& operator=(char rhs) {
 		convert_unsigned(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(unsigned short rhs) noexcept {
+	fixpnt& operator=(unsigned short rhs) {
 		convert_unsigned(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(unsigned int rhs) noexcept {
+	fixpnt& operator=(unsigned int rhs) {
 		convert_unsigned(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(unsigned long rhs) noexcept {
+	fixpnt& operator=(unsigned long rhs) {
 		convert_unsigned(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(unsigned long long rhs) noexcept {
+	fixpnt& operator=(unsigned long long rhs) {
 		convert_unsigned(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(float rhs) noexcept {
+	fixpnt& operator=(float rhs) {
 		clear();
 		if (rhs == 0.0) {
 			return *this;
@@ -373,7 +373,7 @@ public:
 		set_raw_bits(raw);
 		return *this;
 	}
-	fixpnt& operator=(double rhs) noexcept {
+	fixpnt& operator=(double rhs) {
 		clear();
 		if (rhs == 0.0) {
 			return *this;
@@ -386,19 +386,13 @@ public:
 			if (rhs <= double(a)) { return *this = a; } // set to max neg value
 		}
 		bool sign = rhs < 0.0 ? true : false;
-#define TYPE_PUNNING_
+#define TYPE_PUNNING
 #ifdef TYPE_PUNNING
 		double_decoder decoder;
 		decoder.d = rhs;
 		uint64_t raw = (uint64_t(1) << 52) | decoder.parts.fraction;
 		int radixPoint = 52 - (int(decoder.parts.exponent) - 1023);  // move radix point to the right if scale > 0, left if scale < 0
 #else
-		/*
-		uint64_t fraction = 0;
-		uint64_t raw = 0x0010'0000'0000'0000ull | fraction;
-		uint64_t exponent = 0;
-		*/
-
 		uint64_t fraction = *reinterpret_cast<const uint64_t*>(&rhs) & 0x000F'FFFF'FFFF'FFFFull;
 		uint64_t raw = 0x0010'0000'0000'0000ull | fraction;
 		uint64_t exponent = (*reinterpret_cast<uint64_t*>(&rhs) & 0x7FF0'0000'0000'0000ull) >> 52;

@@ -122,7 +122,7 @@ public:
 
 	/// construct a blockbinary from another: BlockType must be the same
 	template<size_t nnbits>
-	blockbinary(const blockbinary<nnbits, BlockType>& rhs) noexcept {
+	blockbinary(const blockbinary<nnbits, BlockType>& rhs) {
 		this->assign(rhs);
 	}
 
@@ -412,7 +412,7 @@ public:
 		throw "block index out of bounds";
 	}
 	template<size_t nnbits>
-	inline blockbinary<nbits, BlockType>& assign(const blockbinary<nnbits, BlockType>& rhs) noexcept {
+	inline blockbinary<nbits, BlockType>& assign(const blockbinary<nnbits, BlockType>& rhs) {
 		clear();
 		// since BlockType is the same, we can simply copy the blocks in
 		size_t nrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -446,7 +446,7 @@ public:
 		return -1; // no significant bit found, all bits are zero
 	}
 	// conversion to native types
-	long long to_long_long() const noexcept {
+	long long to_long_long() const {
 		constexpr unsigned sizeoflonglong = 8 * sizeof(long long);
 		long long ll = 0;
 		long long mask = 1;
@@ -465,7 +465,7 @@ public:
 	}
 
 	// determine the rounding mode: result needs to be rounded up if true
-	bool roundingMode(size_t targetLsb) const noexcept {
+	bool roundingMode(size_t targetLsb) const {
 		bool lsb = at(targetLsb);
 		bool guard = (targetLsb == 0 ? false : at(targetLsb - 1));
 		bool round = (targetLsb > 1 ? at(targetLsb - 2) : false);
@@ -473,7 +473,7 @@ public:
 		bool tie = guard & !round & !sticky;
 		return (lsb & tie) || (guard & !tie);
 	}
-	bool any(size_t msb) const noexcept {
+	bool any(size_t msb) const {
 		size_t topBlock = msb / bitsInBlock;
 		BlockType mask = BlockType(0xFFFFFFFFFFFFFFFFull) >> (bitsInBlock - 1 - (msb % bitsInBlock));
 		for (size_t i = 0; i < topBlock; ++i) {
