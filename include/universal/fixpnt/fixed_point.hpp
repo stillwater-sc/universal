@@ -176,7 +176,7 @@ fixpnt<nbits, rbits, arithmetic, BlockType> minneg_fixpnt() {
 
 // conversion helpers
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-inline void convert(int64_t v, fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
+inline constexpr void convert(int64_t v, fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	if (0 == v) { result.setzero();	return; }
 	if (arithmetic == Saturating) { // check if we are in the representable range
 		result.setmaxpos();	if (v >= (long double)result) return;
@@ -386,16 +386,23 @@ public:
 			if (rhs <= double(a)) { return *this = a; } // set to max neg value
 		}
 		bool sign = rhs < 0.0 ? true : false;
-#define TYPE_PUNNING
+#define TYPE_PUNNING_
 #ifdef TYPE_PUNNING
 		double_decoder decoder;
 		decoder.d = rhs;
 		uint64_t raw = (uint64_t(1) << 52) | decoder.parts.fraction;
 		int radixPoint = 52 - (int(decoder.parts.exponent) - 1023);  // move radix point to the right if scale > 0, left if scale < 0
 #else
+		/*
+		uint64_t fraction = 0;
+		uint64_t raw = 0x0010'0000'0000'0000ull | fraction;
+		uint64_t exponent = 0;
+		*/
+
 		uint64_t fraction = *reinterpret_cast<const uint64_t*>(&rhs) & 0x000F'FFFF'FFFF'FFFFull;
 		uint64_t raw = 0x0010'0000'0000'0000ull | fraction;
 		uint64_t exponent = (*reinterpret_cast<uint64_t*>(&rhs) & 0x7FF0'0000'0000'0000ull) >> 52;
+
 		int radixPoint = 52 - (int(exponent) - 1023);  // move radix point to the right if scale > 0, left if scale < 0
 #endif
 
@@ -663,8 +670,8 @@ public:
 	// modifiers
 	inline constexpr void clear() noexcept { bb.clear(); }
 	inline constexpr void setzero() noexcept { bb.clear(); }
-	inline void setmaxpos() noexcept { bb.clear(); bb.flip(); bb.reset(nbits - 1); } // maxpos = 01111....111
-	inline void setmaxneg() noexcept { bb.clear(); bb.set(nbits - 1, true); } 	    // maxneg = 10000....000
+	inline constexpr void setmaxpos() noexcept { bb.clear(); bb.flip(); bb.reset(nbits - 1); } // maxpos = 01111....111
+	inline constexpr void setmaxneg() noexcept { bb.clear(); bb.set(nbits - 1, true); } 	    // maxneg = 10000....000
 	inline void reset(size_t bitIndex) {
 		if (bitIndex < nbits) {
 			bb.reset(bitIndex);
@@ -680,10 +687,10 @@ public:
 		throw "fixpnt bit index out of bounds";
 	}
 	// in-place 1's complement
-	inline fixpnt& flip() { bb.flip(); return *this; }
+	inline constexpr fixpnt& flip() noexcept { bb.flip(); return *this; }
 	// use un-interpreted raw bits to set the bits of the fixpnt
-	inline void set_raw_bits(size_t value) { bb.set_raw_bits(value); }
-	inline fixpnt& assign(const std::string& txt) {
+	inline constexpr void set_raw_bits(size_t value) noexcept { bb.set_raw_bits(value); }
+	inline fixpnt& assign(const std::string& txt) noexcept {
 		if (!parse(txt, *this)) {
 			std::cerr << "Unable to parse: " << txt << std::endl;
 		}
@@ -692,7 +699,7 @@ public:
 		return *this;
 	}	
 	// in-place 2's complement
-	inline fixpnt& twoscomplement() { // in-place 2's complement
+	inline constexpr fixpnt& twoscomplement() { // in-place 2's complement
 		bb.twoscomplement();
 		return *this;
 	}
