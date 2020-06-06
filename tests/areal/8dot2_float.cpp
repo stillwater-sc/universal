@@ -27,7 +27,7 @@ void GenerateTestCase(Ty a, Ty b) {
 	psum = pa + pb;
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " + " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " (reference: " << pref.get() << ")   ";
+//	std::cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " (reference: " << pref.get() << ")   ";
 	std::cout << (pref == psum ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
 }
