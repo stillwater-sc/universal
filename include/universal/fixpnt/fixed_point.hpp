@@ -386,7 +386,7 @@ public:
 			if (rhs <= double(a)) { return *this = a; } // set to max neg value
 		}
 		bool sign = rhs < 0.0 ? true : false;
-#define TYPE_PUNNING_
+#define TYPE_PUNNING
 #ifdef TYPE_PUNNING
 		double_decoder decoder;
 		decoder.d = rhs;
