@@ -39,8 +39,7 @@
 
 #endif
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 
 // forward references
@@ -113,24 +112,24 @@ public:
 	static constexpr BlockType SIGN_BIT_MASK = BlockType(BlockType(1) << ((nbits - 1) % bitsInBlock));
 
 	// constructors
-	blockbinary() { setzero(); }
+	constexpr blockbinary() noexcept : _block{ 0 } {}
 
-	blockbinary(const blockbinary&) = default;
-	blockbinary(blockbinary&&) = default;
+	blockbinary(const blockbinary&) noexcept = default;
+	blockbinary(blockbinary&&) noexcept = default;
 
-	blockbinary& operator=(const blockbinary&) = default;
-	blockbinary& operator=(blockbinary&&) = default;
+	blockbinary& operator=(const blockbinary&) noexcept = default;
+	blockbinary& operator=(blockbinary&&) noexcept = default;
 
 	/// construct a blockbinary from another: BlockType must be the same
 	template<size_t nnbits>
-	blockbinary(const blockbinary<nnbits, BlockType>& rhs) {
+	blockbinary(const blockbinary<nnbits, BlockType>& rhs) noexcept {
 		this->assign(rhs);
 	}
 
 	// initializer for long long
-	blockbinary(const long long initial_value) { *this = initial_value; }
+	constexpr blockbinary(long long initial_value) noexcept : _block{ 0 } { *this = initial_value; }
 
-	blockbinary& operator=(long long rhs) {
+	constexpr blockbinary& operator=(long long rhs) noexcept {
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			_block[i] = rhs & storageMask;
 			rhs >>= bitsInBlock;
@@ -228,7 +227,7 @@ public:
 		return *this;
 	}
 	// shift left operator
-	blockbinary& operator<<=(long bitsToShift) {
+	blockbinary& operator<<=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
 		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
@@ -257,7 +256,7 @@ public:
 		return *this;
 	}
 	// shift right operator
-	blockbinary& operator>>=(long bitsToShift) {
+	blockbinary& operator>>=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
 		if (bitsToShift >= long(nbits)) {
@@ -329,12 +328,12 @@ public:
 
 	// modifiers
 	 // clear a block binary number
-	inline void clear() {
+	inline constexpr void clear() noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = BlockType(0);
 		}
 	}
-	inline void setzero() { clear(); }
+	inline constexpr void setzero() noexcept { clear(); }
 	inline void reset(size_t i) {
 		if (i < nbits) {
 			BlockType block = _block[i / bitsInBlock];
@@ -355,36 +354,36 @@ public:
 		}
 		throw "blockbinary<nbits, BlockType>.set(index): bit index out of bounds";
 	}
-	inline void set_raw_bits(uint64_t value) {
+	inline void set_raw_bits(uint64_t value) noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = value & storageMask;
 			value >>= bitsInBlock;
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	inline blockbinary& flip() { // in-place one's complement
+	inline blockbinary& flip() noexcept { // in-place one's complement
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = ~_block[i];
 		}		
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
-	inline blockbinary& twoscomplement() { // in-place 2's complement
+	inline blockbinary& twoscomplement() noexcept { // in-place 2's complement
 		blockbinary<nbits, BlockType> plusOne(1);
 		flip();
 		return *this += plusOne;
 	}
 
 	// selectors
-	inline bool sign() const { return _block[MSU] & SIGN_BIT_MASK; }
-	inline bool ispos() const { return !sign(); }
-	inline bool isneg() const { return sign(); }
-	inline bool iszero() const {
+	inline bool sign() const noexcept { return _block[MSU] & SIGN_BIT_MASK; }
+	inline bool ispos() const noexcept { return !sign(); }
+	inline bool isneg() const noexcept { return sign(); }
+	inline bool iszero() const noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) if (_block[i] != 0) return false;
 		return true;
 	}
-	inline bool isodd() const {	return _block[0] & 0x1;	}
-	inline bool iseven() const { return !isodd(); }
+	inline bool isodd() const noexcept {	return _block[0] & 0x1;	}
+	inline bool iseven() const noexcept { return !isodd(); }
 	inline bool test(size_t bitIndex) const {
 		return at(bitIndex);
 	}
@@ -413,7 +412,7 @@ public:
 		throw "block index out of bounds";
 	}
 	template<size_t nnbits>
-	inline blockbinary<nbits, BlockType>& assign(const blockbinary<nnbits, BlockType>& rhs) {
+	inline blockbinary<nbits, BlockType>& assign(const blockbinary<nnbits, BlockType>& rhs) noexcept {
 		clear();
 		// since BlockType is the same, we can simply copy the blocks in
 		size_t nrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
@@ -432,7 +431,7 @@ public:
 		return *this;
 	}
 	// return the position of the most significant bit, -1 if v == 0
-	inline signed msb() const {
+	inline signed msb() const noexcept {
 		for (signed i = int(MSU); i >= 0; --i) {
 			if (_block[i] != 0) {
 				BlockType mask = (BlockType(1) << (bitsInBlock-1));
@@ -447,7 +446,7 @@ public:
 		return -1; // no significant bit found, all bits are zero
 	}
 	// conversion to native types
-	long long to_long_long() const {
+	long long to_long_long() const noexcept {
 		constexpr unsigned sizeoflonglong = 8 * sizeof(long long);
 		long long ll = 0;
 		long long mask = 1;
@@ -466,7 +465,7 @@ public:
 	}
 
 	// determine the rounding mode: result needs to be rounded up if true
-	bool roundingMode(size_t targetLsb) const {
+	bool roundingMode(size_t targetLsb) const noexcept {
 		bool lsb = at(targetLsb);
 		bool guard = (targetLsb == 0 ? false : at(targetLsb - 1));
 		bool round = (targetLsb > 1 ? at(targetLsb - 2) : false);
@@ -474,7 +473,7 @@ public:
 		bool tie = guard & !round & !sticky;
 		return (lsb & tie) || (guard & !tie);
 	}
-	bool any(size_t msb) const {
+	bool any(size_t msb) const noexcept {
 		size_t topBlock = msb / bitsInBlock;
 		BlockType mask = BlockType(0xFFFFFFFFFFFFFFFFull) >> (bitsInBlock - 1 - (msb % bitsInBlock));
 		for (size_t i = 0; i < topBlock; ++i) {
@@ -487,7 +486,6 @@ public:
 
 protected:
 	// HELPER methods
-
 
 private:
 	BlockType _block[nrBlocks];
@@ -825,5 +823,5 @@ std::ostream& operator<<(std::ostream& ostr, const blockbinary<nbits, BlockType>
 	return ostr << to_binary(number);
 }
 
-} // namespace unum
-} // namespace sw
+
+}} // namespace sw::unum

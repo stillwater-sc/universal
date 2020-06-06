@@ -224,21 +224,21 @@ public:
 	// warning C4310: cast truncates constant value
 	static constexpr BlockType MSU_MASK = (BlockType(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
 
-	fixpnt() { setzero(); }
+	constexpr fixpnt() noexcept : bb(0) {}
 
-	fixpnt(const fixpnt&) = default;
-	fixpnt(fixpnt&&) = default;
+	fixpnt(const fixpnt&) noexcept = default;
+	fixpnt(fixpnt&&) noexcept = default;
 
-	fixpnt& operator=(const fixpnt&) = default;
-	fixpnt& operator=(fixpnt&&) = default;
+	fixpnt& operator=(const fixpnt&) noexcept = default;
+	fixpnt& operator=(fixpnt&&) noexcept = default;
 
 	/// Construct a new fixpnt from another, sign extend when necessary: src and tgt fixpnt need to have the same arithmetic and BlockType
 	template<size_t src_nbits, size_t src_rbits>
-	fixpnt(const fixpnt<src_nbits, src_rbits, arithmetic, BlockType>& a) {
+	fixpnt(const fixpnt<src_nbits, src_rbits, arithmetic, BlockType>& a) noexcept {
 		*this = a;
 	}
 	template<size_t src_nbits, size_t src_rbits>
-	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic, BlockType>& a) {
+	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic, BlockType>& a) noexcept {
 		std::cout << typeid(a).name() << " goes into " << typeid(*this).name() << std::endl;
 //		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); // TODO: do we want prohibit this condition? To be consistent with native types we need to round down automatically.
 		if (src_nbits <= nbits) {
@@ -255,19 +255,19 @@ public:
 	}
 
 	// initializers for native types
-	explicit fixpnt(const signed char initial_value)        { *this = initial_value; }
-	explicit fixpnt(const short initial_value)              { *this = initial_value; }
-	explicit fixpnt(const int initial_value)                { *this = initial_value; }
-	explicit fixpnt(const long initial_value)               { *this = initial_value; }
-	explicit fixpnt(const long long initial_value)          { *this = initial_value; }
-	explicit fixpnt(const char initial_value)               { *this = initial_value; }
-	explicit fixpnt(const unsigned short initial_value)     { *this = initial_value; }
-	explicit fixpnt(const unsigned int initial_value)       { *this = initial_value; }
-	explicit fixpnt(const unsigned long initial_value)      { *this = initial_value; }
-	explicit fixpnt(const unsigned long long initial_value) { *this = initial_value; }
-	explicit fixpnt(const float initial_value)              { *this = initial_value; }
-	fixpnt(const double initial_value)             { *this = initial_value; }
-	explicit fixpnt(const long double initial_value)        { *this = initial_value; }
+	fixpnt(signed char initial_value) noexcept { *this = initial_value; }
+	fixpnt(short initial_value) noexcept { *this = initial_value; }
+	fixpnt(int initial_value) noexcept { *this = initial_value; }
+	fixpnt(long initial_value) noexcept { *this = initial_value; }
+	fixpnt(long long initial_value) noexcept { *this = initial_value; }
+	fixpnt(char initial_value) noexcept { *this = initial_value; }
+	fixpnt(unsigned short initial_value) noexcept { *this = initial_value; }
+	fixpnt(unsigned int initial_value) noexcept { *this = initial_value; }
+	fixpnt(unsigned long initial_value)  noexcept { *this = initial_value; }
+	fixpnt(unsigned long long initial_value) noexcept { *this = initial_value; }
+	fixpnt(float initial_value) noexcept { *this = initial_value; }
+	constexpr fixpnt(double initial_value) noexcept { *this = initial_value; }
+	fixpnt(long double initial_value) noexcept { *this = initial_value; }
 
 	// access operator for bits
 	// this needs a proxy to be able to create l-values
@@ -276,47 +276,47 @@ public:
 	// simpler interface for now, using at(i) and set(i)/reset(i)
 
 	// assignment operators for native types
-	fixpnt& operator=(const signed char rhs) {
+	fixpnt& operator=(signed char rhs) noexcept {
 		convert(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(const short rhs) {
+	fixpnt& operator=(short rhs) noexcept {
 		convert(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(const int rhs) {
+	fixpnt& operator=(int rhs) noexcept {
 		convert(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(const long rhs) {
+	fixpnt& operator=(long rhs) noexcept {
 		convert(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(const long long rhs) {
+	fixpnt& operator=(long long rhs) noexcept {
 		convert(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(const char rhs) {
+	fixpnt& operator=(char rhs) noexcept {
 		convert_unsigned(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(const unsigned short rhs) {
+	fixpnt& operator=(unsigned short rhs) noexcept {
 		convert_unsigned(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(const unsigned int rhs) {
+	fixpnt& operator=(unsigned int rhs) noexcept {
 		convert_unsigned(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(const unsigned long rhs) {
+	fixpnt& operator=(unsigned long rhs) noexcept {
 		convert_unsigned(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(const unsigned long long rhs) {
+	fixpnt& operator=(unsigned long long rhs) noexcept {
 		convert_unsigned(rhs, *this);
 		return *this;
 	}
-	fixpnt& operator=(const float rhs) {
+	fixpnt& operator=(float rhs) noexcept {
 		clear();
 		if (rhs == 0.0) {
 			return *this;
@@ -373,7 +373,7 @@ public:
 		set_raw_bits(raw);
 		return *this;
 	}
-	fixpnt& operator=(const double rhs) {
+	fixpnt& operator=(double rhs) noexcept {
 		clear();
 		if (rhs == 0.0) {
 			return *this;
@@ -381,15 +381,24 @@ public:
 		if (arithmetic == Saturating) {	// check if the value is in the representable range
 			fixpnt<nbits, rbits, arithmetic, BlockType> a;
 			a.setmaxpos();
-			if (rhs >= float(a)) { return *this = a; } // set to max pos value
+			if (rhs >= double(a)) { return *this = a; } // set to max pos value
 			a.setmaxneg();
-			if (rhs <= float(a)) { return *this = a; } // set to max neg value
+			if (rhs <= double(a)) { return *this = a; } // set to max neg value
 		}
-
+		bool sign = rhs < 0.0 ? true : false;
+#define TYPE_PUNNING_
+#ifdef TYPE_PUNNING
 		double_decoder decoder;
 		decoder.d = rhs;
 		uint64_t raw = (uint64_t(1) << 52) | decoder.parts.fraction;
 		int radixPoint = 52 - (int(decoder.parts.exponent) - 1023);  // move radix point to the right if scale > 0, left if scale < 0
+#else
+		uint64_t fraction = *reinterpret_cast<const uint64_t*>(&rhs) & 0x000F'FFFF'FFFF'FFFFull;
+		uint64_t raw = 0x0010'0000'0000'0000ull | fraction;
+		uint64_t exponent = (*reinterpret_cast<uint64_t*>(&rhs) & 0x7FF0'0000'0000'0000ull) >> 52;
+		int radixPoint = 52 - (int(exponent) - 1023);  // move radix point to the right if scale > 0, left if scale < 0
+#endif
+
 		// our fixed-point has its radixPoint at rbits
 		int shiftRight = radixPoint - int(rbits);
 		// do we need to round?
@@ -426,11 +435,11 @@ public:
 				if (round || sticky) ++raw;
 			}
 		}
-		raw = (decoder.parts.sign == 0) ? raw : (~raw + 1); // map to two's complement
+		raw = sign ? (~raw + 1) : raw; // take two's complement if negative
 		set_raw_bits(raw);
 		return *this;
 	}
-	fixpnt& operator=(const long double rhs) {
+	fixpnt& operator=(long double rhs) {
 		if (rhs == 0.0l) {
 			setzero();
 			return *this;
@@ -652,10 +661,10 @@ public:
 	}
 	
 	// modifiers
-	inline void clear() { bb.clear(); }
-	inline void setzero() { bb.clear(); }
-	inline void setmaxpos() { bb.clear(); bb.flip(); bb.reset(nbits - 1); } // maxpos = 01111....111
-	inline void setmaxneg() { bb.clear(); bb.set(nbits - 1, true); } 	    // maxneg = 10000....000
+	inline constexpr void clear() noexcept { bb.clear(); }
+	inline constexpr void setzero() noexcept { bb.clear(); }
+	inline void setmaxpos() noexcept { bb.clear(); bb.flip(); bb.reset(nbits - 1); } // maxpos = 01111....111
+	inline void setmaxneg() noexcept { bb.clear(); bb.set(nbits - 1, true); } 	    // maxneg = 10000....000
 	inline void reset(size_t bitIndex) {
 		if (bitIndex < nbits) {
 			bb.reset(bitIndex);
