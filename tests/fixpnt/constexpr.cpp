@@ -80,6 +80,8 @@ fixpnt& operator=(double rhs) noexcept {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
+constexpr double pi = 3.14159265358979323846;
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -89,10 +91,59 @@ try {
 
 	cout << "fixed-point constexpr tests" << endl;
 	
-	fixpnt<8,4> a(4.4);
-	cout << a << endl;
-	stringstream ss;
-	ss << a << endl;
+	{
+		fixpnt<8, 4> a(pi);
+		cout << a << endl;
+	}
+#ifdef CONSTEXPR
+	{
+		// decorated constructors
+		{
+			constexpr fixpnt<8, 4> a(1l);  // signed long
+			cout << a << endl;
+		}
+		{
+			constexpr fixpnt<8, 4> a(1ul);  // unsigned long
+			cout << a << endl;
+		}
+		{
+			constexpr fixpnt<8, 4> a(1.0f);  // float
+			cout << a << endl;
+		}
+		{
+			constexpr fixpnt<8, 4> a(1.0);   // double
+			cout << a << endl;
+		}
+		{
+			constexpr fixpnt<8, 4> a(1.0l);  // long double
+			cout << a << endl;
+		}
+	}
+	{
+		// assignment operators
+		{
+			constexpr fixpnt<8, 4> a = 1l;  // signed long
+			cout << a << endl;
+		}
+		{
+			constexpr fixpnt<8, 4> a = 1ul;  // unsigned long
+			cout << a << endl;
+		}
+		{
+			constexpr fixpnt<8, 4> a = 1.0f;  // float
+			cout << a << endl;
+		}
+		{
+			constexpr fixpnt<8, 4> a = 1.0;   // double
+			cout << a << endl;
+		}
+		{
+			constexpr fixpnt<8, 4> a = 1.0l;  // long double
+			cout << a << endl;
+		}
+	}
+#endif
+
 
 	if (nrOfFailedTestCases > 0) {
 		cout << "FAIL" << endl;
