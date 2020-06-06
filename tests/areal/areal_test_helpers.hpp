@@ -21,10 +21,6 @@ namespace unum {
 			constexpr size_t fbits = nbits - 3 - es;
 
 			bool		     	 _sign;
-			exponent<nbits, es>  _exponent;
-			fraction<fbits>      _fraction;
-			decode(presult.get(), _sign, _exponent, _fraction);
-			int                  _scale =_exponent.scale();
 
 			std::cerr << test_case
 				<< " " << op << " "
@@ -33,7 +29,7 @@ namespace unum {
 				<< std::setw(FLOAT_TABLE_WIDTH) << reference << " instead it yielded "
 				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult)
 				<< "  raw " << std::setw(nbits) << presult.get()
-				<< "   scale= " << std::setw(3) << _scale << "   k= " << "   exp= " << std::setw(3) << _exponent.scale()
+//				<< "   scale= " << std::setw(3) << _scale << "   k= " << "   exp= " << std::setw(3) << _exponent.scale()
 				<< std::endl;
 		}
 
@@ -43,10 +39,6 @@ namespace unum {
 			constexpr size_t fbits = nbits - 3 - es;
 
 			bool		     	 _sign;
-			exponent<nbits, es>  _exponent;
-			fraction<fbits>      _fraction;
-			decode(presult.get(), _sign, _exponent, _fraction);
-			int                  _scale = _exponent.scale();
 
 			std::cerr << test_case
 				<< " " << op << " "
@@ -55,7 +47,7 @@ namespace unum {
 				<< std::setw(FLOAT_TABLE_WIDTH) << double(presult) << " reference value is "
 				<< std::setw(FLOAT_TABLE_WIDTH) << reference
 				<< "  raw " << std::setw(nbits) << presult.get()
-				<< "   scale= " << std::setw(3) << _scale << "   k= " << "   exp= " << std::setw(3) << _exponent.scale()
+//				<< "   scale= " << std::setw(3) << _scale << "   k= " << "   exp= " << std::setw(3) << _exponent.scale()
 				<< std::endl;
 		}
 
@@ -314,7 +306,7 @@ namespace unum {
 				s[i] = p;
 			}
 			// sort the set
-			std::sort(s.begin(), s.end());
+			//std::sort(s.begin(), s.end());
 			set = s;
 		}
 

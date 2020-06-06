@@ -105,7 +105,7 @@ public:
 	// arithmetic operators
 	// prefix operator
 	areal operator-() const {				
-		return areal<nbits,es>(!_sign, _scale, _fraction, _zero, _inf);
+		return *this;
 	}
 
 	areal& operator+=(const areal& rhs) {
@@ -156,81 +156,28 @@ public:
 	void reset() {	}
 
 	// selectors
-	inline bool isneg() const { return _sign; }
-	inline bool iszero() const { return _zero; }
-	inline bool isinf() const { return _inf; }
-	inline bool isnan() const { return _nan; }
-	inline bool sign() const { return _sign; }
-	inline int scale() const { return _scale; }
+	inline bool isneg() const { return false; }
+	inline bool iszero() const { return false; }
+	inline bool isinf() const { return false; }
+	inline bool isnan() const { return false; }
+	inline bool sign() const { return false; }
+	inline int scale() const { return false; }
 
 
 	long double to_long_double() const {
-		return sign_value() * scale_value() * fraction_value<long double>();
+		return 0.0;
 	}
 	double to_double() const {
-		return sign_value() * scale_value() * fraction_value<double>();
+		return 0.0;
 	}
 	float to_float() const {
-		return float(sign_value() * scale_value() * fraction_value<float>());
+		return 0.0f;
 	}
 	// Maybe remove explicit
 	explicit operator long double() const { return to_long_double(); }
 	explicit operator double() const { return to_double(); }
 	explicit operator float() const { return to_float(); }
 
-	// currently, size is tied to fbits size of areal config. Is there a need for a case that captures a user-defined sized fraction?
-	value<fbits> to_value() const {
-		bool		     	 _sign;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(_raw_bits, _sign, _exponent, _fraction);
-		return value<fbits>(_sign, _exponent.scale(), _fraction.get(), iszero(), isnan());
-	}
-	void normalize(value<fbits>& v) const {
-		bool		     	 _sign;
-		exponent<nbits, es>  _exponent;
-		fraction<fbits>      _fraction;
-		decode(_raw_bits, _sign, _exponent, _fraction);
-		v.set(_sign, _exponent.scale(), _fraction.get(), iszero(), isnan());
-	}
-	template<size_t tgt_size>
-	value<tgt_size> round_to() {
-		bitblock<tgt_size> rounded_fraction;
-		if (tgt_size == 0) {
-			bool round_up = false;
-			if (fbits >= 2) {
-				bool blast = _fraction[int(fbits) - 1];
-				bool sb = anyAfter(_fraction, int(fbits) - 2);
-				if (blast && sb) round_up = true;
-			}
-			else if (fbits == 1) {
-				round_up = _fraction[0];
-			}
-			return value<tgt_size>(_sign, (round_up ? _scale + 1 : _scale), rounded_fraction, _zero, _inf);
-		}
-		else {
-			if (!_zero || !_inf) {
-				if (tgt_size < fbits) {
-					int rb = int(tgt_size) - 1;
-					int lb = int(fbits) - int(tgt_size) - 1;
-					for (int i = int(fbits) - 1; i > lb; i--, rb--) {
-						rounded_fraction[rb] = _fraction[i];
-					}
-					bool blast = _fraction[lb];
-					bool sb = false;
-					if (lb > 0) sb = anyAfter(_fraction, lb-1);
-					if (blast || sb) rounded_fraction[0] = true;
-				}
-				else {
-					int rb = int(tgt_size) - 1;
-					for (int i = int(fbits) - 1; i >= 0; i--, rb--) {
-						rounded_fraction[rb] = _fraction[i];
-					}
-				}
-			}
-		}
-		return value<tgt_size>(_sign, _scale, rounded_fraction, _zero, _inf);
-	}
 private:
 
 	// template parameters need names different from class template parameters (for gcc and clang)
