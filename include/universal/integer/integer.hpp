@@ -175,19 +175,19 @@ public:
 	}
 
 	// initializers for native types
-	explicit integer(const signed char initial_value)        { *this = initial_value; }
-	explicit integer(const short initial_value)              { *this = initial_value; }
-	explicit integer(const int initial_value)                { *this = initial_value; }
-	         integer(const long initial_value)               { *this = initial_value; }
-	explicit integer(const long long initial_value)          { *this = initial_value; }
-	explicit integer(const char initial_value)               { *this = initial_value; }
-	explicit integer(const unsigned short initial_value)     { *this = initial_value; }
-	explicit integer(const unsigned int initial_value)       { *this = initial_value; }
-	explicit integer(const unsigned long initial_value)      { *this = initial_value; }
-	explicit integer(const unsigned long long initial_value) { *this = initial_value; }
-	explicit integer(const float initial_value)              { *this = initial_value; }
-	explicit integer(const double initial_value)             { *this = initial_value; }
-	explicit integer(const long double initial_value)        { *this = initial_value; }
+	integer(signed char initial_value)        { *this = initial_value; }
+	integer(short initial_value)              { *this = initial_value; }
+	integer(int initial_value)                { *this = initial_value; }
+	integer(long initial_value)               { *this = initial_value; }
+	integer(long long initial_value)          { *this = initial_value; }
+	integer(char initial_value)               { *this = initial_value; }
+	integer(unsigned short initial_value)     { *this = initial_value; }
+	integer(unsigned int initial_value)       { *this = initial_value; }
+	integer(unsigned long initial_value)      { *this = initial_value; }
+	integer(unsigned long long initial_value) { *this = initial_value; }
+	integer(float initial_value)              { *this = initial_value; }
+	integer(double initial_value)             { *this = initial_value; }
+	integer(long double initial_value)        { *this = initial_value; }
 
 	// access operator for bits
 	// this needs a proxy to be able to create l-values
@@ -196,7 +196,7 @@ public:
 	// simpler interface for now, using at(i) and set(i)/reset(i)
 
 	// assignment operators for native types
-	integer& operator=(const signed char rhs) {
+	integer& operator=(signed char rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -206,7 +206,7 @@ public:
 		}
 		return *this;
 	}
-	integer& operator=(const short rhs) {
+	integer& operator=(short rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -216,7 +216,7 @@ public:
 		}
 		return *this;
 	}
-	integer& operator=(const int rhs) {
+	integer& operator=(int rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -226,7 +226,7 @@ public:
 		}
 		return *this;
 	}
-	integer& operator=(const long rhs) {
+	integer& operator=(long rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -236,7 +236,7 @@ public:
 		}
 		return *this;
 	}
-	integer& operator=(const long long rhs) {
+	integer& operator=(long long rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -246,7 +246,7 @@ public:
 		}
 		return *this;
 	}
-	integer& operator=(const char rhs) {
+	integer& operator=(char rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -256,7 +256,7 @@ public:
 		}
 		return *this;
 	}
-	integer& operator=(const unsigned short rhs) {
+	integer& operator=(unsigned short rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -266,7 +266,7 @@ public:
 		}
 		return *this;
 	}
-	integer& operator=(const unsigned int rhs) {
+	integer& operator=(unsigned int rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -276,7 +276,7 @@ public:
 		}
 		return *this;
 	}
-	integer& operator=(const unsigned long rhs) {
+	integer& operator=(unsigned long rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -286,7 +286,7 @@ public:
 		}
 		return *this;
 	}
-	integer& operator=(const unsigned long long rhs) {
+	integer& operator=(unsigned long long rhs) {
 		if (0 == rhs) {
 			setzero();
 			return *this;
@@ -296,15 +296,15 @@ public:
 		}
 		return *this;
 	}
-	integer& operator=(const float rhs) {
+	integer& operator=(float rhs) {
 		float_assign(rhs);
 		return *this;
 	}
-	integer& operator=(const double rhs) {
+	integer& operator=(double rhs) {
 		float_assign(rhs);
 		return *this;
 	}
-	integer& operator=(const long double rhs) {
+	integer& operator=(long double rhs) {
 		float_assign(rhs);
 		return *this;
 	}
@@ -356,17 +356,17 @@ public:
 	}
 	// conversion operators
 // Maybe remove explicit, MTL compiles, but we have lots of double computation then
-	explicit operator unsigned short() const { return to_ushort(); }
-	explicit operator unsigned int() const { return to_uint(); }
-	explicit operator unsigned long() const { return to_ulong(); }
+	explicit operator unsigned short() const     { return to_ushort(); }
+	explicit operator unsigned int() const       { return to_uint(); }
+	explicit operator unsigned long() const      { return to_ulong(); }
 	explicit operator unsigned long long() const { return to_ulong_long(); }
-	explicit operator short() const { return to_short(); }
-	explicit operator int() const { return to_int(); }
-	explicit operator long() const { return to_long(); }
-	explicit operator long long() const { return to_long_long(); }
-	explicit operator float() const { return to_float(); }
-	explicit operator double() const { return to_double(); }
-	explicit operator long double() const { return to_long_double(); }
+	explicit operator short() const              { return to_short(); }
+	explicit operator int() const                { return to_int(); }
+	explicit operator long() const               { return to_long(); }
+	explicit operator long long() const          { return to_long_long(); }
+	explicit operator float() const              { return to_float(); }
+	explicit operator double() const             { return to_double(); }
+	explicit operator long double() const        { return to_long_double(); }
 
 	// arithmetic operators
 	integer& operator+=(const integer& rhs) {
