@@ -25,45 +25,54 @@ A class that is a literal type is a class (defined with class, struct or union) 
 	TODO: how to make the integer class a literal type so that we can use it as a return type for min/max/lowest etc.
 */
 template <size_t nbits> 
-class numeric_limits< sw::unum::integer<nbits> >
-{
+class numeric_limits< sw::unum::integer<nbits> > {
 public:
+	using Integer = sw::unum::integer<nbits>;
 	static constexpr bool is_specialized = true;
-	static constexpr long min() { return 1; } // return minimum value
-	static constexpr uint64_t max() { return INT64_MAX; } // return maximum value
-	static constexpr int64_t lowest() { return -INT64_MAX; } // return most negative value
-	static constexpr long epsilon() { // return smallest effective increment from 1.0
-		return long(1);
+	static constexpr Integer min() { return 1; } // return minimum value
+	static constexpr Integer max() {             // return maximum value
+		Integer imax(0); // sw::unum::integers are 2's complement encoded numbers
+		imax.set(nbits - 1);
+		imax.flip();
+		return imax;
+	} 
+	static constexpr Integer lowest() { // return most negative value
+		Integer ilowest(0); // 2's complement maxneg is 1000...0000
+		ilowest.set(nbits - 1);
+		return ilowest;
 	}
-	static constexpr long round_error() { // return largest rounding error
-		return long(0.5);
+	static constexpr float epsilon() { // return smallest effective increment from 1.0
+		return 1.0f;
 	}
-	static constexpr long denorm_min() {  // return minimum denormalized value
-		return 1; 
+	static constexpr float round_error() { // return largest rounding error
+		return 0.5f;
 	}
-	static constexpr uint64_t infinity() { // return positive infinity
-		return INT64_MAX; 
+	static constexpr float denorm_min() {  // return minimum denormalized value
+		return 1.0f; 
 	}
-	static constexpr uint64_t quiet_NaN() { // return non-signaling NaN
-		return INT64_MAX; 
+	static constexpr Integer infinity() { // return positive infinity
+		return max(); 
 	}
-	static constexpr uint64_t signaling_NaN() { // return signaling NaN
-		return INT64_MAX;
+	static constexpr Integer quiet_NaN() { // return non-signaling NaN
+		return 0; 
+	}
+	static constexpr Integer signaling_NaN() { // return signaling NaN
+		return 0;
 	}
 
-	static constexpr int digits       = 3333333;
-	static constexpr int digits10     = 1000000;
-	static constexpr int max_digits10 = 1000000;
+	static constexpr int digits       = nbits - 1;
+	static constexpr int digits10     = int((digits) / 3.3);
+	static constexpr int max_digits10 = digits10;
 	static constexpr bool is_signed   = true;
 	static constexpr bool is_integer  = true;
 	static constexpr bool is_exact    = true;
-	static constexpr int radix        = 10;
+	static constexpr int radix        = 2;
 
-	static constexpr int min_exponent = 0;
+	static constexpr int min_exponent   = 0;
 	static constexpr int min_exponent10 = 0;
-	static constexpr int max_exponent = 0;
-	static constexpr int max_exponent10 = 0;
-	static constexpr bool has_infinity = false;
+	static constexpr int max_exponent   = nbits - 1;
+	static constexpr int max_exponent10 = int((max_exponent) / 3.3);;
+	static constexpr bool has_infinity  = false;
 	static constexpr bool has_quiet_NaN = false;
 	static constexpr bool has_signaling_NaN = false;
 	static constexpr float_denorm_style has_denorm = denorm_absent;

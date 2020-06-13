@@ -16,6 +16,23 @@ constexpr long double pi     = 3.14159265358979323846;
 constexpr long double e      = 2.71828182845904523536;
 constexpr long double log_2e = 1.44269504088896340736;
 
+template<typename Real>
+void ReportNumberTraits(std::ostream& ostr) {
+	using namespace std;
+	using namespace sw::unum;
+	ostr << "Real type          : " << typeid(Real).name() << '\n';
+	ostr << "minimum exponent   : " << numeric_limits<Real>::min_exponent << '\n';
+	ostr << "maximum exponent   : " << numeric_limits<Real>::max_exponent << '\n';
+	ostr << "radix              : " << numeric_limits<Real>::radix << '\n';
+	ostr << "radix digits       : " << numeric_limits<Real>::digits << '\n';
+	ostr << "minimum value      : " << numeric_limits<Real>::min() << '\n';
+	ostr << "maximum value      : " << numeric_limits<Real>::max() << '\n';
+	ostr << "epsilon value      : " << numeric_limits<Real>::epsilon() << '\n';
+	ostr << "max rounding error : " << numeric_limits<Real>::round_error() << '\n';
+	ostr << "infinite           : " << numeric_limits<Real>::infinity() << '\n';
+	ostr << "quiet NaN          : " << numeric_limits<Real>::quiet_NaN() << '\n';
+	ostr << "signalling NaN     : " << numeric_limits<Real>::signaling_NaN() << "\n\n";
+}
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -23,15 +40,21 @@ try {
 
 	cout << "numeric_limits for different number systems " << endl;
 
-	using int32   = integer<32>;
-	using posit32 = posit<32,2>;
-	using areal32 = areal<32,8>;
-	using lns32   = lns<32>;
+	using int32    = integer<32>;
+	using fixpnt32 = fixpnt<32,16>;
+	using posit32  = posit<32,2>;
+	using areal32  = areal<32,8>;
+	using lns32    = lns<32>;
 
 	// report on precision and dynamic range of the number system
+	ReportNumberTraits<float>(cout);
+	ReportNumberTraits<int32>(cout);
+	ReportNumberTraits<fixpnt32>(cout);
+	ReportNumberTraits<posit32>(cout);
+	ReportNumberTraits<areal32>(cout);
+	ReportNumberTraits<lns32>(cout);
 
-	cout << numeric_limits<float>::min_exponent << endl;
-	cout << numeric_limits<float>::min_exponent << endl;
+	cout << endl;
 
 	return EXIT_SUCCESS;
 }

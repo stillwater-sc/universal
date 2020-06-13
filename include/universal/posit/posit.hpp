@@ -1733,7 +1733,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 	ff = ostr.flags();
 	ss.flags(ff);
 //	ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
-	ss << std::setw(width) << std::setprecision(prec) << (long double)p;  // TODO: we need a true native serialization function
+	ss << std::setw(width) << std::setprecision(prec) << to_string(p, prec);  // TODO: we need a true native serialization function
 #endif
 	return ostr << ss.str();
 }

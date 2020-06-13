@@ -127,34 +127,34 @@ namespace std {
 #endif
 
 	template <size_t nbits, size_t es> 
-	class numeric_limits< sw::unum::posit<nbits, es> >
-	{
+	class numeric_limits< sw::unum::posit<nbits, es> > {
 	public:
+		using Posit = sw::unum::posit<nbits, es>;
 		static constexpr bool is_specialized = true;
-		static constexpr sw::unum::posit<nbits, es> min() { return sw::unum::minpos<nbits, es>(); } // return minimum value
-		static constexpr sw::unum::posit<nbits, es> max() { return sw::unum::maxpos<nbits, es>(); } // return maximum value
-		static constexpr sw::unum::posit<nbits, es> lowest() { return -(max)(); } // return most negative value
-		static constexpr sw::unum::posit<nbits, es> epsilon() { // return smallest effective increment from 1.0
-			sw::unum::posit<nbits, es> p_one(1), p_one_plus_eps(1);
+		static constexpr Posit min() { return sw::unum::minpos<nbits, es>(); } // return minimum value
+		static constexpr Posit max() { return sw::unum::maxpos<nbits, es>(); } // return maximum value
+		static constexpr Posit lowest() { return -(max)(); } // return most negative value
+		static constexpr Posit epsilon() { // return smallest effective increment from 1.0
+			Posit p_one(1), p_one_plus_eps(1);
 			return ++p_one_plus_eps - p_one;
 		}
-		static constexpr sw::unum::posit<nbits, es> round_error() { // return largest rounding error
-			return sw::unum::posit<nbits, es>(0.5);
+		static constexpr Posit round_error() { // return largest rounding error
+			return Posit(0.5);
 		}
-		static constexpr sw::unum::posit<nbits, es> denorm_min() {  // return minimum denormalized value
-			return sw::unum::minpos<nbits, es>(); 
+		static constexpr Posit denorm_min() {  // return minimum denormalized value
+			return Posit();
 		}
-		static constexpr sw::unum::posit<nbits, es> infinity() { // return positive infinity
-			return sw::unum::posit<nbits, es>(NAR); 
+		static constexpr Posit infinity() { // return positive infinity
+			return Posit(NAR);
 		}
-		static constexpr sw::unum::posit<nbits, es> quiet_NaN() { // return non-signaling NaN
-			return sw::unum::posit<nbits, es>(NAR); 
+		static constexpr Posit quiet_NaN() { // return non-signaling NaN
+			return Posit(NAR);
 		}
-		static constexpr sw::unum::posit<nbits, es> signaling_NaN() { // return signaling NaN
-			return sw::unum::posit<nbits, es>(NAR); 
+		static constexpr Posit signaling_NaN() { // return signaling NaN
+			return Posit(NAR);
 		}
 
-		static constexpr int digits = (es + 2 > nbits ? 0 : nbits - 3 - es);
+		static constexpr int digits = (es + 2 > nbits ? 0 : nbits - 3 - es + 1);
 		static constexpr int digits10 = int((digits) / 3.3);
 		static constexpr int max_digits10 = 0;
 		static constexpr bool is_signed = true;
@@ -177,7 +177,7 @@ namespace std {
 		static constexpr bool is_modulo = false;
 		static constexpr bool traps = false;
 		static constexpr bool tinyness_before = false;
-		static constexpr float_round_style round_style = round_toward_zero;
+		static constexpr float_round_style round_style = round_to_nearest;
 	};
 
 }
