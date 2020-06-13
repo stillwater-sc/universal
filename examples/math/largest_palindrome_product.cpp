@@ -177,10 +177,6 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	constexpr size_t nbits = 32;
-	using Integer = integer<nbits>;
-	using Real = long double;
-
 	Largest2DigitPalindromeProduct<16>();
 	Largest3DigitPalindromeProduct<24>();
 	Largest4DigitPalindromeProduct<32>();

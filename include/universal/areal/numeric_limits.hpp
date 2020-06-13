@@ -12,26 +12,26 @@ class numeric_limits< sw::unum::areal<nbits,es,bt> > {
 public:
 	using AREAL = sw::unum::areal<nbits, es, bt>;
 	static constexpr bool is_specialized = true;
-	static constexpr AREAL min() { return 1; } // return minimum value
-	static constexpr AREAL max() { return INT64_MAX; } // return maximum value
-	static constexpr AREAL lowest() { return -INT64_MAX; } // return most negative value
+	static constexpr AREAL min() { return AREAL(0.1f); } // return minimum value
+	static constexpr AREAL max() { return AREAL(1.0f); } // return maximum value
+	static constexpr AREAL lowest() { return AREAL(-0.1f); } // return most negative value
 	static constexpr AREAL epsilon() { // return smallest effective increment from 1.0
-		return long(1);
+		return AREAL(1.0);
 	}
 	static constexpr AREAL round_error() { // return largest rounding error
-		return long(0.5);
+		return AREAL(0.5f);
 	}
 	static constexpr AREAL denorm_min() {  // return minimum denormalized value
-		return 1; 
+		return AREAL(1.0f); 
 	}
 	static constexpr AREAL infinity() { // return positive infinity
-		return INT64_MAX; 
+		return AREAL(1.0f); 
 	}
 	static constexpr AREAL quiet_NaN() { // return non-signaling NaN
-		return INT64_MAX; 
+		return AREAL(1.0f); 
 	}
 	static constexpr AREAL signaling_NaN() { // return signaling NaN
-		return INT64_MAX;
+		return AREAL(1.0f);
 	}
 
 	static constexpr int digits       = 3333333;

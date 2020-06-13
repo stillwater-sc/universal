@@ -71,7 +71,7 @@ public:
 	static constexpr int min_exponent   = 0;
 	static constexpr int min_exponent10 = 0;
 	static constexpr int max_exponent   = nbits - 1;
-	static constexpr int max_exponent10 = int((max_exponent) / 3.3);;
+	static constexpr int max_exponent10 = int((max_exponent) / 3.3);
 	static constexpr bool has_infinity  = false;
 	static constexpr bool has_quiet_NaN = false;
 	static constexpr bool has_signaling_NaN = false;

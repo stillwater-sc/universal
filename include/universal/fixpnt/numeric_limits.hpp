@@ -50,7 +50,7 @@ public:
 	static constexpr int min_exponent   = -int(rbits);
 	static constexpr int min_exponent10 = -int((rbits) / 3.3);
 	static constexpr int max_exponent   = nbits - 1 - rbits;
-	static constexpr int max_exponent10 = int((nbits - 1 - rbits) / 3.3);;
+	static constexpr int max_exponent10 = int((nbits - 1 - rbits) / 3.3);
 	static constexpr bool has_infinity  = false;
 	static constexpr bool has_quiet_NaN = false;
 	static constexpr bool has_signaling_NaN = false;
