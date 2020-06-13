@@ -521,6 +521,7 @@ add_subdirectory("examples/weather")
 add_subdirectory("examples/engineering")
 add_subdirectory("examples/science")
 add_subdirectory("examples/cryptography")
+add_subdirectory("examples/numeric")
 endif(BUILD_APPLICATION_EXAMPLES)
 
 if(BUILD_NUMERICAL)

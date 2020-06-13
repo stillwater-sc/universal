@@ -1,5 +1,5 @@
 #pragma once
-// math_functions.hpp: definition of fixed-point mathematical functions
+// math_functions.hpp: definition of arbitrary real mathematical functions
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

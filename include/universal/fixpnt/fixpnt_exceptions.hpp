@@ -36,8 +36,7 @@
 
 #endif
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 // base class for fixed-point arithmetic exceptions
 struct fixpnt_arithmetic_exception
@@ -75,5 +74,4 @@ struct fixpnt_byte_index_out_of_bounds : public fixpnt_internal_exception {
 		: fixpnt_internal_exception(error) {}
 };
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::unum

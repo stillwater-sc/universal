@@ -1,0 +1,66 @@
+#pragma once
+// numeric_limits.hpp: definition of numeric_limits for fixed-point types
+//
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include "fixed_point.hpp"
+
+namespace std {
+
+	using namespace sw::unum;
+
+template <size_t nbits, size_t rbits, bool arithmetic, typename bt> 
+class numeric_limits< sw::unum::fixpnt<nbits,rbits,arithmetic,bt> > {
+public:
+	using FIXEDPOINT = sw::unum::fixpnt<nbits, rbits, arithmetic, bt>;
+	static constexpr bool is_specialized = true;
+	static constexpr FIXEDPOINT  min() { return 1; } // return minimum value
+	static constexpr FIXEDPOINT  max() { return INT64_MAX; } // return maximum value
+	static constexpr FIXEDPOINT  lowest() { return -INT64_MAX; } // return most negative value
+	static constexpr FIXEDPOINT  epsilon() { // return smallest effective increment from 1.0
+		return fixpnt<nbits,rbits,arithmetic,bt> (1);
+	}
+	static constexpr FIXEDPOINT  round_error() { // return largest rounding error
+		return fixpnt<nbits,rbits,arithmetic,bt> (0.5);
+	}
+	static constexpr FIXEDPOINT  denorm_min() {  // return minimum denormalized value
+		return 1; 
+	}
+	static constexpr FIXEDPOINT  infinity() { // return positive infinity
+		return INT64_MAX; 
+	}
+	static constexpr FIXEDPOINT  quiet_NaN() { // return non-signaling NaN
+		return INT64_MAX; 
+	}
+	static constexpr FIXEDPOINT  signaling_NaN() { // return signaling NaN
+		return INT64_MAX;
+	}
+
+	static constexpr int digits       = 3333333;
+	static constexpr int digits10     = 1000000;
+	static constexpr int max_digits10 = 1000000;
+	static constexpr bool is_signed   = true;
+	static constexpr bool is_integer  = false;
+	static constexpr bool is_exact    = false;
+	static constexpr int radix        = 2;
+
+	static constexpr int min_exponent = 0;
+	static constexpr int min_exponent10 = 0;
+	static constexpr int max_exponent = 0;
+	static constexpr int max_exponent10 = 0;
+	static constexpr bool has_infinity = false;
+	static constexpr bool has_quiet_NaN = false;
+	static constexpr bool has_signaling_NaN = false;
+	static constexpr float_denorm_style has_denorm = denorm_absent;
+	static constexpr bool has_denorm_loss = false;
+
+	static constexpr bool is_iec559 = false;
+	static constexpr bool is_bounded = true;
+	static constexpr bool is_modulo = arithmetic;
+	static constexpr bool traps = false;
+	static constexpr bool tinyness_before = false;
+	static constexpr float_round_style round_style = round_toward_zero;
+};
+
+}
