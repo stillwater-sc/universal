@@ -74,15 +74,15 @@ option(C_API_LIB_PIC                     "Set to ON to compile C API library wit
 # number systems and their verification suites
 option(BUILD_STORAGE_CLASSES             "Set to ON to build storage class tests"              OFF)
 option(BUILD_NATIVE_TYPES                "Set to ON to build native type tests"                OFF)
-option(BUILD_REAL_NUMBERS                "Set to ON to build real value tests"                 OFF)
-option(BUILD_INTEGER_NUMBERS             "Set to ON to build integer tests"                    OFF)
-option(BUILD_DECIMAL_NUMBERS             "Set to ON to build decimal tests"                    OFF)
-option(BUILD_FIXPNT_NUMBERS              "Set to ON to build fixed-point tests"                OFF)
+option(BUILD_INTEGERS                    "Set to ON to build integer tests"                    OFF)
+option(BUILD_DECIMALS                    "Set to ON to build decimal tests"                    OFF)
+option(BUILD_FIXPNTS                     "Set to ON to build fixed-point tests"                OFF)
+option(BUILD_LNS                         "Set to ON to build LNS tests"                        OFF)
 option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 tests"                OFF)
 option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 tests"                OFF)
-option(BUILD_UNUM_TYPE_3_POSIT           "Set to ON to build UNUM Type 3 posit tests"          OFF)
-option(BUILD_UNUM_TYPE_3_VALID           "Set to ON to build UNUM Type 3 valid tests"          OFF)
-option(BUILD_APF                         "Set to ON to build arbitrary precision float tests"  OFF)
+option(BUILD_POSITS                      "Set to ON to build UNUM Type 3 posit tests"          OFF)
+option(BUILD_VALIDS                      "Set to ON to build UNUM Type 3 valid tests"          OFF)
+option(BUILD_REALS                       "Set to ON to build real tests"                       OFF)
 # conversion test suites
 option(BUILD_CONVERSION_TESTS            "Set to ON to build conversion test suites"           OFF)
 # performance benchmarking
@@ -285,14 +285,17 @@ endif()
 # Set UNIVERSAL include directory that contains all the different number systems
 # universal/native
 # universal/bitblock
+# universal/blockbin
+# universal/integer
+# universal/decimal
+# universal/fixpnt
+# universal/lns
 # universal/unum
 # universal/unum2
 # universal/posit
 # universal/valid
-# universal/integer
-# universal/decimal
-# universal/fixpnt
-# universal/afloat
+# universal/areal
+# universal/mpfloat
 include_directories("./include")
 
 ####
@@ -408,15 +411,16 @@ if(BUILD_CI_CHECK)
 	# build the different test/verification suites for each number system
 	set(BUILD_STORAGE_CLASSES ON)
 	set(BUILD_NATIVE_TYPES ON)
-	set(BUILD_REAL_NUMBERS ON)
-	set(BUILD_INTEGER_NUMBERS ON)
-	set(BUILD_DECIMAL_NUMBERS ON)
-	set(BUILD_FIXPNT_NUMBERS ON)
+	set(BUILD_REALS ON)
+	set(BUILD_INTEGERS ON)
+	set(BUILD_DECIMALS ON)
+	set(BUILD_FIXPNTS ON)
+	set(BUILD_LNS ON)
 	set(BUILD_UNUM_TYPE_1 ON)
 	set(BUILD_UNUM_TYPE_2 ON)
-	set(BUILD_UNUM_TYPE_3_POSIT ON)
-	set(BUILD_UNUM_TYPE_3_VALID ON)
-	set(BUILD_APF ON)
+	set(BUILD_POSITS ON)
+	set(BUILD_VALIDS ON)
+	set(BUILD_AREAL ON)
 	# build the conversion test suites
 	set(BUILD_CONVERSION_TESTS ON)
 	# build the performance suites
@@ -441,24 +445,29 @@ add_subdirectory("tests/native")
 endif(BUILD_NATIVE_TYPES)
 
 # Arbitrary integers tests
-if(BUILD_INTEGER_NUMBERS)
+if(BUILD_INTEGERS)
 add_subdirectory("tests/integer")
-endif(BUILD_INTEGER_NUMBERS)
+endif(BUILD_INTEGERS)
 
-if(BUILD_DECIMAL_NUMBERS)
+if(BUILD_DECIMALS)
 add_subdirectory("tests/decimal")
-endif(BUILD_DECIMAL_NUMBERS)
+endif(BUILD_DECIMALS)
 
 # Arbitrary fixed-point tests
-if(BUILD_FIXPNT_NUMBERS)
+if(BUILD_FIXPNTS)
 add_subdirectory("tests/fixpnt")
-endif(BUILD_FIXPNT_NUMBERS)
+endif(BUILD_FIXPNTS)
 
 # Arbitrary reals tests
-if(BUILD_REAL_NUMBERS)
+if(BUILD_REALS)
+add_subdirectory("tests/areal")
 add_subdirectory("tests/mpfloat")
 add_subdirectory("tests/value")
-endif(BUILD_REAL_NUMBERS)
+endif(BUILD_REALS)
+
+if(BUILD_LNS)
+add_subdirectory("tests/lns")
+endif(BUILD_LNS)
 
 if(BUILD_UNUM_TYPE_1)
 add_subdirectory("tests/unum")
@@ -468,18 +477,14 @@ if(BUILD_UNUM_TYPE_2)
 add_subdirectory("tests/unum2")
 endif(BUILD_UNUM_TYPE_2)
 
-if(BUILD_UNUM_TYPE_3_POSIT)
+if(BUILD_POSITS)
 add_subdirectory("tests/posit")
 add_subdirectory("tests/posit/specialized")
-endif(BUILD_UNUM_TYPE_3_POSIT)
+endif(BUILD_POSITS)
 
-if(BUILD_UNUM_TYPE_3_VALID)
+if(BUILD_VALIDS)
 add_subdirectory("tests/valid")
-endif(BUILD_UNUM_TYPE_3_VALID)
-
-if(BUILD_APF)
-add_subdirectory("tests/areal")
-endif(BUILD_APF)
+endif(BUILD_VALIDS)
 
 # conversion tests suites
 if(BUILD_CONVERSION_TESTS)
