@@ -79,31 +79,6 @@ public:
 		return *this;
 	}
 	constexpr triple& operator=(long long rhs) {
-		if (rhs == 0) {
-			setzero();
-			return *this;
-		}
-		reset();
-		_sign = (0x8000000000000000 & rhs);  // 1 is negative, 0 is positive
-		if (_sign) {
-			// process negative number: process 2's complement of the input
-			_scale = findMostSignificantBit(-rhs) - 1;
-			uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0 : (-rhs << (64 - _scale));
-			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
-			//take_2s_complement();
-			_nrOfBits = fbits;
-			if (_trace_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
-		}
-		else {
-			// process positive number
-			if (rhs != 0) {
-				_scale = findMostSignificantBit(rhs) - 1;
-				uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0 : (rhs << (64 - _scale));
-				_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
-				_nrOfBits = fbits;
-				if (_trace_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
-			}
-		}
 		return *this;
 	}
 	triple& operator=(char rhs) {
@@ -126,7 +101,6 @@ public:
 
 		switch (std::fpclassify(rhs)) {
 		case FP_ZERO:
-			_nrOfBits = fbits;
 			_zero = true;
 			break;
 		case FP_INFINITE:
@@ -140,14 +114,6 @@ public:
 		case FP_SUBNORMAL:
 		case FP_NORMAL:
 			{
-				float _fr{0};
-				unsigned int _23b_fraction_without_hidden_bit{0};
-				int _exponent{0};
-				extract_fp_components(rhs, _sign, _exponent, _fr, _23b_fraction_without_hidden_bit);
-				_scale = _exponent - 1;
-				_fraction = extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
-				_nrOfBits = fbits;
-				if (_trace_conversion) std::cout << "float " << rhs << " sign " << _sign << " scale " << _scale << " 23b fraction 0x" << std::hex << _23b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 			}
 			break;
 		}
@@ -159,7 +125,6 @@ public:
 
 		switch (std::fpclassify(rhs)) {
 		case FP_ZERO:
-			_nrOfBits = fbits;
 			_zero = true;
 			break;
 		case FP_INFINITE:
@@ -173,22 +138,6 @@ public:
 		case FP_SUBNORMAL:
 		case FP_NORMAL:
 			{
-#if 1
-				double _fr{0};
-				unsigned long long _52b_fraction_without_hidden_bit{0};
-				int _exponent{0};
-				extract_fp_components(rhs, _sign, _exponent, _fr, _52b_fraction_without_hidden_bit);
-#endif
-#if 0
-                                auto components= ieee_components(rhs);
-                                _sign= get<0>(components);
-                                int _exponent= get<1>(components);
-                                unsigned long long _52b_fraction_without_hidden_bit= get<2>(components);
-#endif
-				_scale = _exponent - 1;
-				_fraction = extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
-				_nrOfBits = fbits;
-				if (_trace_conversion) std::cout << "double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _52b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 			}
 			break;
 		}
@@ -199,7 +148,6 @@ public:
 
 		switch (std::fpclassify(rhs)) {
 		case FP_ZERO:
-			_nrOfBits = fbits;
 			_zero = true;
 			break;
 		case FP_INFINITE:
@@ -213,25 +161,6 @@ public:
 		case FP_SUBNORMAL:
 		case FP_NORMAL:
 			{
-				long double _fr{0};
-				unsigned long long _63b_fraction_without_hidden_bit{0};
-				int _exponent{0};
-				extract_fp_components(rhs, _sign, _exponent, _fr, _63b_fraction_without_hidden_bit);
-				_scale = _exponent - 1;
-				// how to interpret the fraction bits: TODO: this should be a static compile-time code block
-				if (sizeof(long double) == 8) {
-					// we are just a double and thus only have 52bits of fraction
-					_fraction = extract_52b_fraction<fbits>(_63b_fraction_without_hidden_bit);
-					if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
-
-				}
-				else if (sizeof(long double) == 16) {
-					// how to differentiate between 80bit and 128bit formats?
-					_fraction = extract_63b_fraction<fbits>(_63b_fraction_without_hidden_bit);
-					if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 63b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
-
-				}
-				_nrOfBits = fbits;
 			}
 			break;
 		}
@@ -295,13 +224,13 @@ public:
 	inline int scale() const { return _scale; }
 	blockbinary<fbits,bt> fraction() const { return _fraction; }
 
-	int sign() const { return (_sign ? -1 : 1); }
-	double scale() const {
+	int sign_value() const { return (_sign ? -1 : 1); }
+	double scale_value() const {
 		if (_zero) return (long double)(0.0);
 		return std::pow((long double)2.0, (long double)_scale);
 	}
 	template<typename Ty = double>
-	Ty fraction() const {
+	Ty fraction_value() const {
 		if (_zero) return (long double)0.0;
 		Ty v = 1.0;
 		Ty scale = 0.5;
@@ -313,13 +242,13 @@ public:
 		return v;
 	}
 	long double to_long_double() const {
-		return sign_triple() * scale_triple() * fraction_triple<long double>();
+		return sign_value() * scale_value() * fraction_value<long double>();
 	}
 	double to_double() const {
-		return sign_triple() * scale_triple() * fraction_triple<double>();
+		return sign_value() * scale_value() * fraction_value<double>();
 	}
 	float to_float() const {
-		return float(sign_triple() * scale_triple() * fraction_triple<float>());
+		return float(sign_value() * scale_value() * fraction_value<float>());
 	}
 	// Maybe remove explicit
 	explicit operator long double() const { return to_long_double(); }
@@ -374,7 +303,7 @@ inline std::istream& operator>> (std::istream& istr, const triple<nfbits,nbt>& v
 
 template<size_t nfbits, typename nbt>
 inline bool operator==(const triple<nfbits,nbt>& lhs, const triple<nfbits,nbt>& rhs) { 
-	return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._fraction == rhs._fraction && lhs._nrOfBits == rhs._nrOfBits && lhs._zero == rhs._zero && lhs._inf == rhs._inf; 
+	return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._fraction == rhs._fraction && lhs._zero == rhs._zero && lhs._inf == rhs._inf; 
 }
 template<size_t nfbits, typename nbt>
 inline bool operator!=(const triple<nfbits,nbt>& lhs, const triple<nfbits,nbt>& rhs) { return !operator==(lhs, rhs); }
