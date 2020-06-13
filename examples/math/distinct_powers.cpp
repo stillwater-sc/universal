@@ -87,6 +87,9 @@ try {
 	using namespace sw::unum;
 
 	goto version_double;
+	goto version_integer_vector;
+	goto version_integer_set;
+	goto version_posit_set;
 
 	// use a set of doubles to generate cardinality of unique power values
 version_double:
@@ -133,7 +136,7 @@ version_integer_set:
 		}
 	}
 
-version_posit:
+version_posit_set:
 	{
 		constexpr size_t nbits = 64;
 		constexpr size_t es = 3;

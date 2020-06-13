@@ -30,6 +30,7 @@ static constexpr unsigned IEEE_FLOAT_EXPONENT_BITS = 8;
 static constexpr unsigned IEEE_FLOAT_SIGN_BITS = 1;
 
 union float_decoder {
+  float_decoder() : f{0.0f} {}
   float f;
   struct {
     uint32_t fraction : 23;
@@ -39,6 +40,7 @@ union float_decoder {
 };
 
 union double_decoder {
+  double_decoder() : d{0.0} {}
   double d;
   struct {
     uint64_t fraction : 52;
@@ -266,6 +268,7 @@ inline std::string to_base2_scientific(const double& number) {
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 union long_double_decoder {
+	long_double_decoder() : ld{0.0l} {}
 	long double ld;
 	struct {
 		uint64_t fraction : 63;
