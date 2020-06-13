@@ -1597,7 +1597,7 @@ inline fixpnt<nbits, rbits, arithmetic, BlockType> operator%(double lhs, const f
 /// support detail
 
 // paired down implementation of a decimal type to generate decimal representations for fixpnt<nbits,rbits> types
-namespace impl {
+namespace support {
 
 	// Decimal representation as a set of decimal digits with sign used for creating decimal representations of the fixpnts
 	class decimal : public std::vector<uint8_t> {
@@ -1967,7 +1967,6 @@ namespace impl {
 
 } // namespace impl
 
-
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
 // convert fixpnt to decimal string, i.e. "-1234.5678"
@@ -1985,7 +1984,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, Blo
 		return ss.str();
 	}
 	if (value.sign()) ss << '-';
-	impl::decimal partial, multiplier;
+	support::decimal partial, multiplier;
 	fixpnt<nbits, rbits, arithmetic, BlockType> number;
 	number = value.sign() ? twos_complement(value) : value;
 	if (nbits > rbits) {
@@ -1994,12 +1993,12 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, Blo
 		// convert fixpnt to decimal by adding and doubling multipliers
 		for (unsigned i = rbits; i < nbits; ++i) {
 			if (number.at(i)) {
-				impl::add(partial, multiplier);
+				support::add(partial, multiplier);
 				//std::cout << partial << std::endl;
 			}
-			impl::add(multiplier, multiplier);
+			support::add(multiplier, multiplier);
 		}
-		for (impl::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
+		for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
 			ss << (int)*rit;
 		}
 	}
@@ -2010,14 +2009,14 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, Blo
 	if (rbits > 0) {
 		ss << ".";
 		// and secondly, the fraction part
-		impl::decimal range, discretizationLevels, step;
+		support::decimal range, discretizationLevels, step;
 		// create the decimal range we are discretizing
 		range.setdigit(1);
 		range.shiftLeft(rbits);
 		// calculate the discretization levels of this range
 		discretizationLevels.setdigit(1);
 		for (size_t i = 0; i < rbits; ++i) {
-			impl::add(discretizationLevels, discretizationLevels);
+			support::add(discretizationLevels, discretizationLevels);
 		}
 		step = div(range, discretizationLevels);
 		// now construct the parts of this range the fraction samples
@@ -2026,11 +2025,11 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, Blo
 		// convert the fraction part
 		for (unsigned i = 0; i < rbits; ++i) {
 			if (number.at(i)) {
-				impl::add(partial, multiplier);
+				support::add(partial, multiplier);
 			}
-			impl::add(multiplier, multiplier);
+			support::add(multiplier, multiplier);
 		}
-		impl::mul(partial, step);
+		support::mul(partial, step);
 		// leading 0s will cause the partial to be represented incorrectly
 		// if we simply convert it to digits.
 		// The partial represents the parts in the range, so we can deduce
@@ -2038,7 +2037,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, Blo
 		size_t nrLeadingZeros = range.size() - partial.size() - 1;
 		for (size_t i = 0; i < nrLeadingZeros; ++i) ss << '0';
 		size_t digitsWritten = nrLeadingZeros;
-		for (impl::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
+		for (support::decimal::const_reverse_iterator rit = partial.rbegin(); rit != partial.rend(); ++rit) {
 			ss << (int)*rit;
 			++digitsWritten;
 		}

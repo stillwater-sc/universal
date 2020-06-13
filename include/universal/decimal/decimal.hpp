@@ -556,8 +556,8 @@ protected:
 			return *this = 0;
 		}
 		else {
-			bool sign = false;
-			if (rhs < 0.0) { sign = true; rhs = -rhs; }
+			this->negative = false;
+			if (rhs < 0.0) { this->negative = true; rhs = -rhs; }
 			double_decoder decoder;
 			decoder.d = rhs;
 			int scale = int(decoder.parts.exponent) - 1023;
