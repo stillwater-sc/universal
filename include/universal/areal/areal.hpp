@@ -1,7 +1,7 @@
 #pragma once
-// areal.hpp: definition of a variable float representation that mimics the posit configuration
+// areal.hpp: definition of an arbitrary linear floating-point representation
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -9,7 +9,6 @@
 
 #include <universal/native/ieee-754.hpp>
 #include <universal/blockbin/blockbinary.hpp>
-#include <universal/posit/value.hpp>         // TODO: this should be extracted to its own place
 
 namespace sw {	namespace unum {
 		
@@ -20,35 +19,6 @@ template<size_t nbits, size_t es, typename BlockType> areal<nbits,es,BlockType> 
 template<size_t nbits, size_t es, typename BlockType>
 void extract_fields(const blockbinary<nbits, BlockType>& raw_bits, bool& _sign, blockbinary<es, BlockType>& _exponent, blockbinary<nbits - es - 1, BlockType>& _fraction) {
 
-}
-
-// needed to avoid double rounding situations: TODO: does that mean the condensed version above should be removed?
-template<size_t nbits, size_t es, typename BlockType, size_t fbits>
-inline areal<nbits, es, BlockType>& convert_(bool _sign, int _scale, const blockbinary<fbits, BlockType>& fraction_in, areal<nbits, es, BlockType>& r) {
-	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-	if (_trace_conversion) std::cout << "sign " << (_sign ? "-1 " : " 1 ") << "scale " << std::setw(3) << _scale << " fraction " << fraction_in << std::endl;
-
-	r.reset();
-
-	return r;
-}
-
-// convert a floating point value to a specific areal configuration. Semantically, p = v, return reference to p
-template<size_t nbits, size_t es, typename BlockType>
-inline areal<nbits, es, BlockType>& convert(const value<nbits - es - 1>& v, areal<nbits, es, BlockType>& p) {
-	constexpr size_t fbits = nbits - es - 1;
-	if (_trace_conversion) std::cout << "------------------- CONVERT ------------------" << std::endl;
-	if (_trace_conversion) std::cout << "sign " << (v.sign() ? "-1 " : " 1 ") << "scale " << std::setw(3) << v.scale() << " fraction " << v.fraction() << std::endl;
-
-	if (v.iszero()) {
-		p.setzero();
-		return p;
-	}
-	if (v.isnan() || v.isinf()) {
-		p.setnan();
-		return p;
-	}
-	return convert_<nbits, es, fbits>(v.sign(), v.scale(), v.fraction(), p);
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
@@ -162,10 +132,11 @@ public:
 	inline bool isnan() const { return false; }
 	inline bool sign() const { return false; }
 	inline int scale() const { return false; }
+	inline std::string get() const { return std::string("tbd"); }
 
 
 	long double to_long_double() const {
-		return 0.0;
+		return 0.0l;
 	}
 	double to_double() const {
 		return 0.0;
