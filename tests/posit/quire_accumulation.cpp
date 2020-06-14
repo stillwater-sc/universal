@@ -54,7 +54,8 @@ int ValidateExactDotProduct() {
 	int nrOfFailures = 0;
 	using Scalar = posit<nbits, es>;
 	using Vector = vector<Scalar>;
-	Vector pv = GenerateVectorForZeroValueFDP(nrElements, maxpos<nbits, es>());
+	Scalar p; 
+	Vector pv = GenerateVectorForZeroValueFDP(nrElements, maxpos(p));
 	Vector ones(nrElements);
 
 	{
@@ -111,20 +112,20 @@ int ValidateSignMagnitudeTransitions() {
 	std::cout << "Quire configuration: quire<" << nbits << ", " << es << ", " << capacity << ">" << std::endl;
 
 	// moving through the four quadrants of a sign/magnitue adder/subtractor
-	sw::unum::posit<nbits, es> minpos, min2, min3, min4;
-	minpos = sw::unum::minpos<nbits, es>();       // ...0001
-	min2 = minpos; min2++;                        // ...0010
-	min3 = minpos; min3++; min3++;                // ...0011
-	min4 = minpos; min4++; min4++; min4++;        // ...0100
-	posit<nbits, es> maxpos, max2, max3, max4;
-	maxpos = sw::unum::maxpos_value<nbits, es>(); // 01..111
-	max2 = maxpos; --max2;                        // 01..110
-	max3 = max2; --max3;                          // 01..101
-	max4 = max3; --max4;                          // 01..100
+	sw::unum::posit<nbits, es> minp, min2, min3, min4;
+	minpos(minp);                                   // ...0001
+	min2 = minp; min2++;                        // ...0010
+	min3 = minp; min3++; min3++;                // ...0011
+	min4 = minp; min4++; min4++; min4++;        // ...0100
+	posit<nbits, es> maxp, max2, max3, max4;
+	maxp = sw::unum::maxpos_value<nbits, es>(); // 01..111
+	max2 = maxp; --max2;                        // 01..110
+	max3 = max2; --max3;                        // 01..101
+	max4 = max3; --max4;                        // 01..100
 
 	cout << endl;
 	cout << "Posit range extremes:" << endl;
-	cout << "minpos         " << minpos.get() << " " << minpos << endl;
+	cout << "minpos         " << minp.get() << " " << minp << endl;
 	cout << "min2           " << min2.get() << " " << min2 << endl;
 	cout << "min3           " << min3.get() << " " << min3 << endl;
 	cout << "min4           " << min4.get() << " " << min4 << endl;
@@ -132,7 +133,7 @@ int ValidateSignMagnitudeTransitions() {
 	cout << "max4           " << max4.get() << " " << max4 << endl;
 	cout << "max3           " << max3.get() << " " << max3 << endl;
 	cout << "max2           " << max2.get() << " " << max2 << endl;
-	cout << "maxpos         " << maxpos.get() << " " << maxpos << endl;
+	cout << "maxpos         " << maxp.get() << " " << maxp << endl;
 
 	cout << endl;
 
@@ -143,13 +144,13 @@ int ValidateSignMagnitudeTransitions() {
 	// TODO: how would you print a header to make it easier to interpret the bit positions
 	cout << q << "                                               <-- start at zero" << endl;
 	// start in the positive, SE quadrant with minpos^2
-	q += addend = quire_mul(minpos, minpos);
+	q += addend = quire_mul(minp, minp);
 	cout << q << " q += minpos^2  addend = " << components(addend) << endl;
 	// move to the negative SW quadrant by adding negative value that is bigger
 	q += addend = quire_mul(min2, -min2);
 	cout << q << " q += min2^2    addend = " << components(addend) << endl;
 	// remove minpos^2 from the quire by subtracting it
-	q -= addend = quire_mul(minpos, minpos);
+	q -= addend = quire_mul(minp, minp);
 	cout << q << " q -= minpos^2  addend = " << components(addend) << endl;
 	// move back into posit, SE quadrant by adding the next bigger product
 	q += addend = quire_mul(min3, min3);
@@ -158,7 +159,7 @@ int ValidateSignMagnitudeTransitions() {
 	q -= addend = quire_mul(min2, min2);
 	cout << q << " q -= min2^2    addend = " << components(addend) << endl;
 	// add a -maxpos^2, to flip it again
-	q += addend = quire_mul(maxpos, -maxpos);
+	q += addend = quire_mul(maxp, -maxp);
 	cout << q << " q += -maxpos^2 addend = " << components(addend) << endl;
 	// subtract min3^2 to propagate the carry
 	q -= addend = quire_mul(min3, min3);
@@ -169,13 +170,13 @@ int ValidateSignMagnitudeTransitions() {
 	q += addend = quire_mul(min2, min2);
 	cout << q << " q += min2^2    addend = " << components(addend) << endl;
 	// borrow propagate
-	q += addend = quire_mul(minpos, minpos);
+	q += addend = quire_mul(minp, minp);
 	cout << q << " q += minpos^2  addend = " << components(addend) << endl;
 	// flip the max3 bit
 	q += addend = quire_mul(max3, max3);
 	cout << q << " q += max3^2    addend = " << components(addend) << endl;
 	// add maxpos^2 to be left with max3^2
-	q += addend = quire_mul(maxpos, maxpos);
+	q += addend = quire_mul(maxp, maxp);
 	cout << q << " q += maxpos^2  addend = " << components(addend) << endl;;
 	// subtract max2^2 to flip the sign again
 	q -= addend = quire_mul(max2, max2);
@@ -184,28 +185,28 @@ int ValidateSignMagnitudeTransitions() {
 	q -= addend = quire_mul(max3, max3);
 	cout << q << " q -= max3^2    addend = " << components(addend) << endl;
 	// remove the minpos^2 bits
-	q -= addend = quire_mul(minpos, minpos);
+	q -= addend = quire_mul(minp, minp);
 	cout << q << " q -= minpos^2  addend = " << components(addend) << endl;
 	// add maxpos^2 to be left with max2^2 and flipped back to positive quadrant
-	q += addend = quire_mul(maxpos, maxpos);
+	q += addend = quire_mul(maxp, maxp);
 	cout << q << " q += maxpos^2  addend = " << components(addend) << endl;
 	// add max2^2 to remove its remenants
 	q += addend = quire_mul(max2, max2);
 	cout << q << " q += max2^2    addend = " << components(addend) << endl;
 	// subtract minpos^2 to propagate the borrow across the quire
-	q -= addend = quire_mul(minpos, minpos);
+	q -= addend = quire_mul(minp, minp);
 	cout << q << " q -= minpos^2  addend = " << components(addend) << endl;
 	// subtract maxpos^2 to flip the sign and be left with minpos^2
-	q -= addend = quire_mul(maxpos, maxpos);
+	q -= addend = quire_mul(maxp, maxp);
 	cout << q << " q -= maxpos^2  addend = " << components(addend) << endl;
 	// add minpos^2 to get to zero
-	q += addend = quire_mul(minpos, minpos);
+	q += addend = quire_mul(minp, minp);
 	cout << q << " q += minpos^2  addend = " << components(addend) << endl;
 	// subtract minpos^2 to go negative
-	q += addend = -quire_mul(minpos, minpos);
+	q += addend = -quire_mul(minp, minp);
 	cout << q << " q += -minpos^2 addend = " << components(addend) << endl;
 	// add minpos^2 to get to zero
-	q += addend = quire_mul(minpos, minpos);
+	q += addend = quire_mul(minp, minp);
 	cout << q << " q += minpos^2  addend = " << components(addend) << " <-- back to zero" << endl;
 
 	return nrOfFailedTestCases;
@@ -218,8 +219,8 @@ int ValidateCarryPropagation(bool bReportIndividualTestCases) {
 
 	constexpr size_t mbits = 2 * (nbits - 2 - es);
 	quire<nbits, es, capacity> q;
-	posit<nbits, es> minpos = sw::unum::minpos<nbits, es>();
-	value<mbits> minpos_square = quire_mul(minpos, minpos);
+	posit<nbits, es> mp; minpos(mp);
+	value<mbits> minpos_square = quire_mul(mp, mp);
 	constexpr size_t NR_INCREMENTS_TO_OVERFLOW = (size_t(1) << (q.qbits+1));
 	for (size_t i = 0; i < NR_INCREMENTS_TO_OVERFLOW; ++i) {
 		q += minpos_square;
@@ -237,8 +238,8 @@ int ValidateBorrowPropagation(bool bReportIndividualTestCases) {
 
 	constexpr size_t mbits = 2 * (nbits - 2 - es);
 	quire<nbits, es, capacity> q;
-	posit<nbits, es> minpos = sw::unum::minpos<nbits, es>();
-	value<mbits> minpos_square = quire_mul(minpos, minpos);
+	posit<nbits, es> mp; minpos(mp);
+	value<mbits> minpos_square = quire_mul(mp, mp);
 	q -= minpos_square;
 	std::cout << q << std::endl;
 	constexpr size_t NR_DECREMENTS_TO_OVERFLOW = (size_t(1) << (q.qbits + 1));
@@ -324,7 +325,8 @@ try {
 
 	nrOfFailedTestCases += ValidateSignMagnitudeTransitions<16, 1>();
 	
-	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos<8, 1>());
+	posit<8, 1> p8_1;
+	nrOfFailedTestCases += GenerateQuireAccumulationTestCase<8, 1, 2>(bReportIndividualTestCases, 16, minpos(p8_1));
 	
 	cout << "Carry Propagation\n";
 	nrOfFailedTestCases += ReportTestResult(ValidateCarryPropagation<4, 1>(bReportIndividualTestCases), "carry propagation", "increment");

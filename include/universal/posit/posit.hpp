@@ -1078,20 +1078,20 @@ public:
 	unsigned long long encoding() const { return _raw_bits.to_ullong(); }
 
 	// MODIFIERS
-	inline void clear() { _raw_bits.reset(); }
-	inline void setzero() { clear(); }
-	inline void setnar() {
+	inline constexpr void clear() { _raw_bits.reset(); }
+	inline constexpr void setzero() { clear(); }
+	inline constexpr void setnar() {
 		_raw_bits.reset();
 		_raw_bits.set(nbits - 1, true);
 	}
 			
 	// set the posit bits explicitely
-	posit<nbits, es>& set(const bitblock<nbits>& raw_bits) {
+	constexpr posit<nbits, es>& set(const bitblock<nbits>& raw_bits) {
 		_raw_bits = raw_bits;
 		return *this;
 	}
 	// Set the raw bits of the posit given an unsigned value starting from the lsb. Handy for enumerating a posit state space
-	posit<nbits,es>& set_raw_bits(uint64_t value) {
+	constexpr posit<nbits,es>& set_raw_bits(uint64_t value) {
 		clear();
 		bitblock<nbits> raw_bits;
 		uint64_t mask = 1;
@@ -2671,21 +2671,32 @@ posit<nbits, es> fabs(const posit<nbits, es>& p) {
 	return p.abs();
 }
 
-// generate a posit representing minpos
+// fill a posit with minpos value
 template<size_t nbits, size_t es>
-posit<nbits, es> minpos() {
-	posit<nbits, es> p;
-	++p;
-	return p;
+constexpr posit<nbits, es>& minpos(posit<nbits, es>& p) {
+	p = 0;
+	return ++p;
 }
 
-// generate a posit representing maxpos
+// fill a posit with maxpos value
 template<size_t nbits, size_t es>
-posit<nbits, es> maxpos() {
-	posit<nbits, es> p;
+constexpr posit<nbits, es>& maxpos(posit<nbits, es>& p) {
 	p.setnar();
-	--p;
-	return p;
+	return --p;
+}
+
+// fill a posit with minneg value
+template<size_t nbits, size_t es>
+constexpr posit<nbits, es>& minneg(posit<nbits, es>& p) {
+	p = 0;
+	return --p;
+}
+
+// fill a posit with maxneg value
+template<size_t nbits, size_t es>
+constexpr posit<nbits, es>& maxneg(posit<nbits, es>& p) {
+	p.setnar();
+	return ++p;
 }
 
 // Atomic fused operators

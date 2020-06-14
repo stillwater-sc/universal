@@ -91,6 +91,8 @@ namespace unum {
 	// Execute a unary operator
 	template<size_t nbits, size_t es>
 	void executeUnary(int opcode, double da, const posit<nbits, es>& pa, posit<nbits, es>& preference, posit<nbits, es>& presult) {
+		posit<nbits, es> pminpos;
+		double dminpos = double(minpos<nbits, es>(pminpos));
 		double reference = 0.0;
 		switch (opcode) {
 		case OPCODE_SQRT:
@@ -100,12 +102,12 @@ namespace unum {
 		case OPCODE_EXP:
 			presult = sw::unum::exp(pa);
 			reference = std::exp(da);
-			if (0.0 == reference) reference = double(sw::unum::minpos<nbits, es>());
+			if (0.0 == reference) reference = double();
 			break;
 		case OPCODE_EXP2:
 			presult = sw::unum::exp2(pa);
 			reference = std::exp2(da);
-			if (0.0 == reference) reference = double(sw::unum::minpos<nbits, es>());
+			if (0.0 == reference) reference = dminpos;
 			break;
 		case OPCODE_LOG:
 			presult = sw::unum::log(pa);
