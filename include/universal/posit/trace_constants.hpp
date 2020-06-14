@@ -1,13 +1,11 @@
 #pragma once
 // trace_constants.hpp: definition of constants that direct intermediate result reporting
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 
 # ifndef POSIT_VERBOSE_OUTPUT
@@ -39,6 +37,9 @@ constexpr bool _trace_quire_add   = false;
 #define POSIT_TRACE_DIV
 #define POSIT_TRACE_RECIPROCATE
 #define POSIT_TRACE_SQRT
+
+#define VALUE_TRACE_CONVERSION
+#define VALUE_TRACE_ADD
 #endif
 
 #ifdef QUIRE_TRACE_ALL
@@ -112,7 +113,4 @@ constexpr bool _trace_quire_add = true;
 # endif
 
 
-}  // namespace unum
-
-}  // namespace sw
-
+}}  // namespace sw::unum

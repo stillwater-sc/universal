@@ -70,14 +70,14 @@ typedef __128bitdd double_double;
 
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 // Posits encode error conditions as NaR (Not a Real), propagating the error through arithmetic operations is preferred
-#include "./exceptions.hpp"
+#include "exceptions.hpp"
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
 #include "posit_fwd.hpp"
 #include "../native/bit_functions.hpp"
 #include "../bitblock/bitblock.hpp"
 #include "trace_constants.hpp"
-#include "value.hpp"
+#include "../value/value.hpp"
 #include "fraction.hpp"
 #include "exponent.hpp"
 #include "regime.hpp"

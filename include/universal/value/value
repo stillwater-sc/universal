@@ -7,10 +7,9 @@
 #ifndef _VALUE_
 #define _VALUE_
 
-#include "exceptions.hpp"
+#include "../posit/exceptions.hpp"  // <--- TODO need to remove this dependency
 #include "../native/bit_functions.hpp"
 #include "../bitblock/bitblock.hpp"
-#include "trace_constants.hpp"
 #include "value.hpp"
 
 #endif

@@ -14,7 +14,7 @@
 #define POSIT_TRACE_ADD
 #include "universal/posit/exceptions.hpp"
 #include "universal/bitblock/bitblock.hpp"
-#include "universal/posit/value.hpp"
+#include "universal/value/value.hpp"
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 

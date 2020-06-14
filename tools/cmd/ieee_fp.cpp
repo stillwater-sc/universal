@@ -6,7 +6,7 @@
 #include <iostream>
 #include <string>
 #include <universal/native/ieee-754.hpp>
-#include <universal/posit/value>
+#include <universal/value/value>
 
 std::string version_string(int a, int b, int c) {
 	std::ostringstream ss;

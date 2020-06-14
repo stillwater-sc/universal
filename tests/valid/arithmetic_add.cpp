@@ -15,7 +15,7 @@
 #define VALID_TRACE_SUB
 #include "universal/posit/exceptions.hpp"
 #include "universal/bitblock/bitblock.hpp"
-#include "universal/posit/value.hpp"
+#include "universal/value/value.hpp"
 #include "universal/posit/posit.hpp"
 #include "universal/valid/valid.hpp"
 #include "universal/valid/valid_manipulators.hpp"

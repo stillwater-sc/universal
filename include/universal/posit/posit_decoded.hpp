@@ -57,7 +57,7 @@ typedef __128bitdd double_double;
 #include "../native/bit_functions.hpp"
 #include "../bitblock/bitblock.hpp"
 #include "trace_constants.hpp"
-#include "value.hpp"
+#include "../value/value.hpp"
 #include "fraction.hpp"
 #include "exponent.hpp"
 #include "regime.hpp"

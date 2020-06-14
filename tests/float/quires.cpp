@@ -1,6 +1,6 @@
 //  quires.cpp : test suite for IEEE float quires
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -12,7 +12,7 @@
 #include "universal/native/bit_functions.hpp"
 #include "universal/bitblock/bitblock.hpp"
 #include "universal/float/float_functions.hpp"
-#include "universal/posit/value.hpp"
+#include "universal/value/value.hpp"
 #include "universal/float/quire.hpp"
 
 int TestQuireAccumulationResult(int nrOfFailedTests, const std::string& descriptor)

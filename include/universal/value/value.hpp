@@ -12,14 +12,24 @@
 
 #include "../native/ieee-754.hpp"
 #include "../native/bit_functions.hpp"
-#include "trace_constants.hpp"
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 // Forward definitions
 template<size_t fbits> class value;
 template<size_t fbits> value<fbits> abs(const value<fbits>& v);
+
+#ifdef VALUE_TRACE_CONVERSION
+constexpr bool _trace_value_conversion = true;
+#else
+constexpr bool _trace_value_conversion = false;
+#endif
+
+#ifdef VALUE_TRACE_ADD
+constexpr bool _trace_value_add = true;
+#else
+constexpr bool _trace_value_add = false;
+#endif
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
 template<size_t fbits>
@@ -37,19 +47,19 @@ public:
 	constexpr value(const value& rhs)                       { *this = rhs; }
 
 	// decorated constructors
-	explicit constexpr value(signed char initial_value)        { *this = initial_value; }
-	explicit constexpr value(short initial_value)              { *this = initial_value; }
-	explicit constexpr value(int initial_value)                { *this = initial_value; }
-	explicit constexpr value(long initial_value)               { *this = initial_value; }
-	explicit constexpr value(long long initial_value)          { *this = initial_value; }
-	explicit constexpr value(char initial_value)               { *this = initial_value; }
-	explicit constexpr value(unsigned short initial_value)     { *this = initial_value; }
-	explicit constexpr value(unsigned int initial_value)       { *this = initial_value; }
-	explicit constexpr value(unsigned long initial_value)      { *this = initial_value; }
-	explicit constexpr value(unsigned long long initial_value) { *this = initial_value; }
-	explicit constexpr value(float initial_value)              { *this = initial_value; }
-	         constexpr value(double initial_value) : value{}   { *this = initial_value; }
-	explicit constexpr value(long double initial_value)        { *this = initial_value; }
+	constexpr value(signed char initial_value)        { *this = initial_value; }
+	constexpr value(short initial_value)              { *this = initial_value; }
+	constexpr value(int initial_value)                { *this = initial_value; }
+	constexpr value(long initial_value)               { *this = initial_value; }
+	constexpr value(long long initial_value)          { *this = initial_value; }
+	constexpr value(char initial_value)               { *this = initial_value; }
+	constexpr value(unsigned short initial_value)     { *this = initial_value; }
+	constexpr value(unsigned int initial_value)       { *this = initial_value; }
+	constexpr value(unsigned long initial_value)      { *this = initial_value; }
+	constexpr value(unsigned long long initial_value) { *this = initial_value; }
+	constexpr value(float initial_value)              { *this = initial_value; }
+	constexpr value(double initial_value) : value{}   { *this = initial_value; }
+	constexpr value(long double initial_value)        { *this = initial_value; }
 
 	constexpr value& operator=(const value& rhs) {
 		_sign	  = rhs._sign;
@@ -78,7 +88,7 @@ public:
 		return *this;
 	}
 	constexpr value<fbits>& operator=(long long rhs) {
-		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
+		if (_trace_value_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 		if (rhs == 0) {
 			setzero();
 			return *this;
@@ -92,7 +102,7 @@ public:
 			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 			//take_2s_complement();
 			_nrOfBits = fbits;
-			if (_trace_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
+			if (_trace_value_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 		}
 		else {
 			// process positive number
@@ -101,7 +111,7 @@ public:
 				uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0 : (rhs << (64 - _scale));
 				_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 				_nrOfBits = fbits;
-				if (_trace_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
+				if (_trace_value_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 			}
 		}
 		return *this;
@@ -123,7 +133,7 @@ public:
 		return *this;
 	}
 	constexpr value<fbits>& operator=(unsigned long long rhs) {
-		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
+		if (_trace_value_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 		if (rhs == 0) {
 			setzero();
 		}
@@ -134,12 +144,12 @@ public:
 			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 			_nrOfBits = fbits;
 		}
-		if (_trace_conversion) std::cout << "uint64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
+		if (_trace_value_conversion) std::cout << "uint64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 		return *this;
 	}
 	constexpr value<fbits>& operator=(float rhs) {
 		reset();
-		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
+		if (_trace_value_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
 		switch (std::fpclassify(rhs)) {
 		case FP_ZERO:
@@ -164,7 +174,7 @@ public:
 				_scale = _exponent - 1;
 				_fraction = extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
 				_nrOfBits = fbits;
-				if (_trace_conversion) std::cout << "float " << rhs << " sign " << _sign << " scale " << _scale << " 23b fraction 0x" << std::hex << _23b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
+				if (_trace_value_conversion) std::cout << "float " << rhs << " sign " << _sign << " scale " << _scale << " 23b fraction 0x" << std::hex << _23b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 			}
 			break;
 		}
@@ -173,7 +183,7 @@ public:
 	constexpr value<fbits>& operator=(double rhs) {
                 using std::get;
 		reset();
-		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
+		if (_trace_value_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
 		switch (std::fpclassify(rhs)) {
 		case FP_ZERO:
@@ -206,7 +216,7 @@ public:
 				_scale = _exponent - 1;
 				_fraction = extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
 				_nrOfBits = fbits;
-				if (_trace_conversion) std::cout << "double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _52b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
+				if (_trace_value_conversion) std::cout << "double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _52b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 			}
 			break;
 		}
@@ -214,7 +224,7 @@ public:
 	}
 	constexpr value<fbits>& operator=(long double rhs) {
 		reset();
-		if (_trace_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
+		if (_trace_value_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
 		switch (std::fpclassify(rhs)) {
 		case FP_ZERO:
@@ -241,13 +251,13 @@ public:
 				if (sizeof(long double) == 8) {
 					// we are just a double and thus only have 52bits of fraction
 					_fraction = extract_52b_fraction<fbits>(_63b_fraction_without_hidden_bit);
-					if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
+					if (_trace_value_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 
 				}
 				else if (sizeof(long double) == 16) {
 					// how to differentiate between 80bit and 128bit formats?
 					_fraction = extract_63b_fraction<fbits>(_63b_fraction_without_hidden_bit);
-					if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 63b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
+					if (_trace_value_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 63b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 
 				}
 				_nrOfBits = fbits;
@@ -638,7 +648,7 @@ void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 
 
 	if (signs_are_different) r2 = twos_complement(r2);
 
-	if (_trace_add) {
+	if (_trace_value_add) {
 		std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1       " << r1 << std::endl;
 		if (signs_are_different) {
 			std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2 orig  " << twos_complement(r2) << std::endl;
@@ -649,7 +659,7 @@ void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 
 	bitblock<abits + 1> sum;
 	const bool carry = add_unsigned(r1, r2, sum);
 
-	if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
+	if (_trace_value_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
 
 	long shift = 0;
 	if (carry) {
@@ -674,7 +684,7 @@ void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 
 	scale_of_result -= shift;
 	const int hpos = abits - 1 - shift;         // position of the hidden bit 
 	sum <<= abits - hpos + 1;
-	if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
+	if (_trace_value_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
 	result.set(r1_sign, scale_of_result, sum, false, false, false);
 }
 
@@ -879,6 +889,4 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 	result.set(new_sign, new_scale, result_fraction, false, false, false);
 }
 
-}  // namespace unum
-
-}  // namespace sw
+}}  // namespace sw::unum
