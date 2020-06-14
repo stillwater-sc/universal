@@ -74,12 +74,14 @@ long double value_minneg_fixpnt() {
 template<size_t nbits, size_t rbits>
 void ReportFixedPointRanges(std::ostream& ostr = std::cout) {
 	using namespace std;
+	using FixedPoint = fixpnt<nbits, rbits, sw::unum::Saturating, uint32_t>;
+	FixedPoint fp;
 	ostr << "fixpnt<" << nbits << ", " << rbits << "> : "
-		<< maxneg_fixpnt<nbits, rbits, sw::unum::Saturating, uint32_t>() << " "
-		<< minneg_fixpnt<nbits, rbits, sw::unum::Saturating, uint32_t>() << " "
+		<< maxneg(fp) << " "
+		<< minneg(fp) << " "
 		<< "0 "
-		<< minpos_fixpnt<nbits, rbits, sw::unum::Saturating, uint32_t>() << " "
-		<< maxpos_fixpnt<nbits, rbits, sw::unum::Saturating, uint32_t>()
+		<< minpos(fp) << " "
+		<< maxpos(fp)
 		<< endl;
 }
 

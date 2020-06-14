@@ -23,8 +23,8 @@ try {
 
 	// with dynamic precision, we have the situation where multiplying
 	// extreme numbers creates precision we do not have..
-	Posit max = maxpos<nbits,es>();
-	Posit min = minpos<nbits,es>();
+	Posit max; maxpos<nbits, es>(max);
+	Posit min; minpos<nbits, es>(min);
 	Posit one = min * max;
 	cout << "maxpos : " << info_print(max) << endl;
 	cout << "minpos : " << info_print(min) << endl;

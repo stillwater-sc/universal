@@ -128,16 +128,16 @@ try {
 	constexpr size_t es = 1;
 	using Posit = posit<nbits, es>;
 	Posit a, b;
-
-	a = b = minpos<nbits, es>();
+	minpos<nbits, es>(b);
+	a = b;
 	GenerateTwoSumTestCase(a, b);
 	GenerateTwoSumTestCase(-a, -b);
 	++a;
 	GenerateTwoSumTestCase(a, b);
 	++b;
 	GenerateTwoSumTestCase(a, b);
-	a = minpos<nbits, es>();
-	cout << a.get() << " : " << a << " : sum(a,a) " << a+a << " : " << (a+a).get() << endl;
+	minpos<nbits, es>(a);
+	cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << endl;
 	++a;
 	cout << a.get() << " : " << a << " : sum(a,a) " << a + a << " : " << (a + a).get() << endl;
 	++a;

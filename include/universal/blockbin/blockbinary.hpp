@@ -58,19 +58,19 @@ struct quorem {
 
 // maximum positive 2's complement number: b01111...1111
 template<size_t nbits, typename BlockType = uint8_t>
-blockbinary<nbits, BlockType> maxpos() {
-	blockbinary<nbits, BlockType> mpos;
-	mpos.flip();
-	mpos.reset(nbits - 1);
-	return mpos;
+constexpr blockbinary<nbits, BlockType>& maxpos(blockbinary<nbits, BlockType>& a) {
+	a.clear();
+	a.flip();
+	a.reset(nbits - 1);
+	return a;
 }
 
 // maximum negative 2's complement number: b1000...0000
 template<size_t nbits, typename BlockType = uint8_t>
-blockbinary<nbits, BlockType> maxneg() {
-	blockbinary<nbits, BlockType> maximum;
-	maximum.set(nbits - 1);
-	return maximum;
+constexpr blockbinary<nbits, BlockType>& maxneg(blockbinary<nbits, BlockType>& a) {
+	a.clear();
+	a.set(nbits - 1);
+	return a;
 }
 
 // generate the 2's complement of the block binary number
@@ -334,7 +334,7 @@ public:
 		}
 	}
 	inline constexpr void setzero() noexcept { clear(); }
-	inline void reset(size_t i) {
+	inline constexpr void reset(size_t i) {
 		if (i < nbits) {
 			BlockType block = _block[i / bitsInBlock];
 			BlockType mask = ~(1 << (i % bitsInBlock));
@@ -343,7 +343,7 @@ public:
 		}
 		throw "blockbinary<nbits, BlockType>.reset(index): bit index out of bounds";
 	}
-	inline void set(size_t i, bool v = true) {
+	inline constexpr void set(size_t i, bool v = true) {
 		if (i < nbits) {
 			BlockType block = _block[i / bitsInBlock];
 			BlockType null = ~(1 << (i % bitsInBlock));
@@ -375,19 +375,19 @@ public:
 	}
 
 	// selectors
-	inline bool sign() const noexcept { return _block[MSU] & SIGN_BIT_MASK; }
-	inline bool ispos() const noexcept { return !sign(); }
-	inline bool isneg() const noexcept { return sign(); }
-	inline bool iszero() const noexcept {
+	inline constexpr bool sign() const noexcept { return _block[MSU] & SIGN_BIT_MASK; }
+	inline constexpr bool ispos() const noexcept { return !sign(); }
+	inline constexpr bool isneg() const noexcept { return sign(); }
+	inline constexpr bool iszero() const noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) if (_block[i] != 0) return false;
 		return true;
 	}
-	inline bool isodd() const noexcept {	return _block[0] & 0x1;	}
-	inline bool iseven() const noexcept { return !isodd(); }
-	inline bool test(size_t bitIndex) const {
+	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
+	inline constexpr bool iseven() const noexcept { return !isodd(); }
+	inline constexpr bool test(size_t bitIndex) const {
 		return at(bitIndex);
 	}
-	inline bool at(size_t bitIndex) const {
+	inline constexpr bool at(size_t bitIndex) const {
 		if (bitIndex < nbits) {
 			BlockType word = _block[bitIndex / bitsInBlock];
 			BlockType mask = (BlockType(1) << (bitIndex % bitsInBlock));
@@ -522,7 +522,7 @@ inline bool operator<(const blockbinary<N, B>& lhs, const blockbinary<N, B>& rhs
 	if (lhs.ispos() && rhs.isneg()) return false; // need to filter out possible overflow conditions
 	if (lhs.isneg() && rhs.ispos()) return true;  // need to filter out possible underflow conditions
 	if (lhs == rhs) return false; // so the maxneg logic works
-	blockbinary<N, B> mneg = maxneg<N, B>();
+	blockbinary<N, B> mneg; maxneg<N, B>(mneg);
 	if (rhs == mneg) return false; // special case: nothing is smaller than maximum negative
 	blockbinary<N, B> diff = lhs - rhs;
 	return diff.isneg();

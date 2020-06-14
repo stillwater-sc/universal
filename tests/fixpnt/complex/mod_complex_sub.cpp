@@ -45,9 +45,9 @@ int VerifyComplexSubtraction(const std::string& tag, bool bReportIndividualTestC
 	using namespace sw::unum;
 	using FixedPoint = fixpnt<nbits, rbits, arithmetic, BlockType>;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	FixedPoint Maxpos, Maxneg;
-	Maxpos = maxpos_fixpnt<nbits, rbits, arithmetic, BlockType>();
-	Maxneg = maxneg_fixpnt<nbits, rbits, arithmetic, BlockType>();
+	FixedPoint fpmaxpos, fpmaxneg;
+	maxpos<nbits, rbits, arithmetic, BlockType>(fpmaxpos);
+	maxneg<nbits, rbits, arithmetic, BlockType>(fpmaxneg);
 	int nrOfFailedTests = 0;
 	FixedPoint ar, ai, br, bi, resultr, resulti;
 	complex<FixedPoint> a, b, result, ref;
@@ -76,8 +76,8 @@ int VerifyComplexSubtraction(const std::string& tag, bool bReportIndividualTestC
 						result = a - b;
 					}
 					catch (...) {
-						if (ref.real() > Maxpos || ref.imag() > Maxpos ||
-							ref.real() < Maxneg || ref.imag() < Maxneg) {
+						if (ref.real() > fpmaxpos || ref.imag() > fpmaxpos ||
+							ref.real() < fpmaxneg || ref.imag() < fpmaxneg) {
 							// correctly caught the overflow exception
 							continue;
 						}

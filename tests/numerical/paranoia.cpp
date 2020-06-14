@@ -2315,8 +2315,8 @@ try {
 	auto precision = cout.precision();
 	cout << setprecision(12);
 
-	Posit p = minpos<nbits,es>();
-	cout << "minpos : " << p << endl;
+	Posit p;
+	cout << "minpos : " << minpos<nbits, es>(p) << endl;
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);

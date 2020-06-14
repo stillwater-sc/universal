@@ -29,7 +29,9 @@ a + b = s + r
 template<size_t nbits, size_t es>
 std::pair< posit<nbits, es>, posit<nbits, es> > twoSum(const posit<nbits, es>& a, const posit<nbits, es>& b) {
 #if GEOMETRIC_ROUNDING_CASES
-	if ((minpos<nbits, es>() == a && minpos<nbits, es>() == b) || (maxpos<nbits, es>() == a && maxpos<nbits, es>() == b)) {
+	posit<nbits, es> pminpos, pmaxpos;
+	minpos(pminpos); maxpos(pmaxpos);
+	if ((pminpos == a && pminpos == b) || (pmaxpos == a && pmaxpos == b)) {
 		return std::pair< posit<nbits, es>, posit<nbits, es> >(a, b);
 	}
 #endif

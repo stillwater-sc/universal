@@ -13,16 +13,41 @@
 namespace sw {	namespace unum {
 		
 // Forward definitions
-template<size_t nbits, size_t es, typename BlockType> class areal;
-template<size_t nbits, size_t es, typename BlockType> areal<nbits,es,BlockType> abs(const areal<nbits,es,BlockType>& v);
+template<size_t nbits, size_t es, typename bt> class areal;
+template<size_t nbits, size_t es, typename bt> areal<nbits,es,bt> abs(const areal<nbits,es,bt>& v);
 
-template<size_t nbits, size_t es, typename BlockType>
-void extract_fields(const blockbinary<nbits, BlockType>& raw_bits, bool& _sign, blockbinary<es, BlockType>& _exponent, blockbinary<nbits - es - 1, BlockType>& _fraction) {
+template<size_t nbits, size_t es, typename bt>
+void extract_fields(const blockbinary<nbits, bt>& raw_bits, bool& _sign, blockbinary<es, bt>& _exponent, blockbinary<nbits - es - 1, bt>& _fraction) {
 
 }
 
+// fill an areal object with mininum positive value
+template<size_t nbits, size_t es, typename bt>
+areal<nbits, es, bt>& minpos(areal<nbits, es, bt>& aminpos) {
+
+	return aminpos;
+}
+// fill an areal object with maximum positive value
+template<size_t nbits, size_t es, typename bt>
+areal<nbits, es, bt>& maxpos(areal<nbits, es, bt>& amaxpos) {
+
+	return amaxpos;
+}
+// fill an areal object with mininum negative value
+template<size_t nbits, size_t es, typename bt>
+areal<nbits, es, bt>& minneg(areal<nbits, es, bt>& aminneg) {
+
+	return aminneg;
+}
+// fill an areal object with maximum negative value
+template<size_t nbits, size_t es, typename bt>
+areal<nbits, es, bt>& maxneg(areal<nbits, es, bt>& amaxneg) {
+
+	return amaxneg;
+}
+
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
-template<size_t nbits, size_t es, typename BlockType = uint8_t>
+template<size_t nbits, size_t es, typename bt = uint8_t>
 class areal {
 public:
 	static constexpr size_t fbits  = nbits - 1 - es;    // number of fraction bits excluding the hidden bit
@@ -199,37 +224,37 @@ inline bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,
 
 // posit - posit binary arithmetic operators
 // BINARY ADDITION
-template<size_t nbits, size_t es, typename BlockType>
-inline areal<nbits, es, BlockType> operator+(const areal<nbits, es, BlockType>& lhs, const areal<nbits, es, BlockType>& rhs) {
+template<size_t nbits, size_t es, typename bt>
+inline areal<nbits, es, bt> operator+(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
 	areal<nbits, es> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
-template<size_t nbits, size_t es, typename BlockType>
-inline areal<nbits, es, BlockType> operator-(const areal<nbits, es, BlockType>& lhs, const areal<nbits, es, BlockType>& rhs) {
+template<size_t nbits, size_t es, typename bt>
+inline areal<nbits, es, bt> operator-(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
 	areal<nbits, es> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
-template<size_t nbits, size_t es, typename BlockType>
-inline areal<nbits, es, BlockType> operator*(const areal<nbits, es, BlockType>& lhs, const areal<nbits, es, BlockType>& rhs) {
+template<size_t nbits, size_t es, typename bt>
+inline areal<nbits, es, bt> operator*(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
 	areal<nbits, es> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
-template<size_t nbits, size_t es, typename BlockType>
-inline areal<nbits, es, BlockType> operator/(const areal<nbits, es, BlockType>& lhs, const areal<nbits, es, BlockType>& rhs) {
+template<size_t nbits, size_t es, typename bt>
+inline areal<nbits, es, bt> operator/(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
 	areal<nbits, es> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
 
-template<size_t nbits, size_t es, typename BlockType>
-inline std::string components(const areal<nbits,es,BlockType>& v) {
+template<size_t nbits, size_t es, typename bt>
+inline std::string components(const areal<nbits,es,bt>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
 		s << " zero b" << std::setw(nbits) << v.fraction();
@@ -244,8 +269,8 @@ inline std::string components(const areal<nbits,es,BlockType>& v) {
 }
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
-template<size_t nbits, size_t es, typename BlockType>
-areal<nbits,es> abs(const areal<nbits,es,BlockType>& v) {
+template<size_t nbits, size_t es, typename bt>
+areal<nbits,es> abs(const areal<nbits,es,bt>& v) {
 	return areal<nbits,es>(false, v.scale(), v.fraction(), v.isZero());
 }
 

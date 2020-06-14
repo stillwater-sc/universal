@@ -13,11 +13,22 @@ class numeric_limits< sw::unum::lns<nbits,bt> > {
 public:
 	using LNS = sw::unum::lns<nbits, bt>;
 	static constexpr bool is_specialized = true;
-	static constexpr LNS  min() { return LNS(0); } // return minimum value
-	static constexpr LNS  max() { return LNS(0); } // return maximum value
-	static constexpr LNS  lowest() { return -LNS(0); } // return most negative value
+	static constexpr LNS  min() { // return minimum value
+		LNS lminpos;
+		return minpos<nbits, bt>(lminpos);
+	} 
+	static constexpr LNS  max() { // return maximum value
+		LNS lmaxpos;
+		return maxpos<nbits, bt>(lmaxpos);
+	} 
+	static constexpr LNS  lowest() { // return most negative value
+		LNS lminneg;
+		return minneg<nbits, bt>(lminneg);
+	} 
 	static constexpr LNS  epsilon() { // return smallest effective increment from 1.0
-		return LNS(1.0);
+		LNS one{ 1.0f }, incr{ 1.0f };
+		++incr;
+		return incr - one;
 	}
 	static constexpr LNS  round_error() { // return largest rounding error
 		return LNS(0.5);
@@ -26,13 +37,13 @@ public:
 		return LNS(1.0); 
 	}
 	static constexpr LNS  infinity() { // return positive infinity
-		return LNS(1.0); 
+		return LNS(INFINITY); 
 	}
 	static constexpr LNS  quiet_NaN() { // return non-signaling NaN
-		return LNS(1.0); 
+		return LNS(NAN); 
 	}
 	static constexpr LNS  signaling_NaN() { // return signaling NaN
-		return LNS(1.0);
+		return LNS(NAN);
 	}
 
 	static constexpr int digits       = 3333333;

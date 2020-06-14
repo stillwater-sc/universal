@@ -25,7 +25,7 @@ int VerifyArithmeticRightShift(const std::string& tag, bool bReportIndividualTes
 	// take maxneg and shift it right in all possible strides
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> a, result;
-	blockbinary<nbits, BlockType> mostNegative = maxneg<nbits, BlockType>();
+	blockbinary<nbits, BlockType> mostNegative; maxneg(mostNegative);
 	int64_t shiftRef, resultRef;
 	for (size_t i = 0; i < nbits+1; i++) {
 		a = mostNegative;

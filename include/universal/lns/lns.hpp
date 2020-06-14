@@ -31,6 +31,23 @@ inline lns<nbits, bt>& convert(const triple<nbits,bt>& v, lns<nbits,bt>& p) {
 	return p;
 }
 
+template<size_t nbits, typename bt>
+lns<nbits, bt>& minpos(lns<nbits, bt>& lminpos) {
+	return lminpos;
+}
+template<size_t nbits, typename bt>
+lns<nbits, bt>& maxpos(lns<nbits, bt>& lmaxpos) {
+	return lmaxpos;
+}
+template<size_t nbits, typename bt>
+lns<nbits, bt>& minneg(lns<nbits, bt>& lminneg) {
+	return lminneg;
+}
+template<size_t nbits, typename bt>
+lns<nbits, bt>& maxneg(lns<nbits, bt>& lmaxneg) {
+	return lmaxneg;
+}
+
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
 template<size_t nbits, typename bt = uint8_t>
 class lns {

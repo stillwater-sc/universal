@@ -131,12 +131,21 @@ namespace std {
 	public:
 		using Posit = sw::unum::posit<nbits, es>;
 		static constexpr bool is_specialized = true;
-		static constexpr Posit min() { return sw::unum::minpos<nbits, es>(); } // return minimum value
-		static constexpr Posit max() { return sw::unum::maxpos<nbits, es>(); } // return maximum value
-		static constexpr Posit lowest() { return -(max)(); } // return most negative value
+		static constexpr Posit min() { // return minimum value
+			Posit pminpos;
+			return sw::unum::minpos<nbits, es>(pminpos);
+		} 
+		static constexpr Posit max() { // return maximum value
+			Posit pmaxpos;
+			return sw::unum::maxpos<nbits, es>(pmaxpos);
+		} 
+		static constexpr Posit lowest() { // return most negative value
+			Posit pmaxneg;
+			return sw::unum::maxneg<nbits, es>(pmaxneg);
+		} 
 		static constexpr Posit epsilon() { // return smallest effective increment from 1.0
-			Posit p_one(1), p_one_plus_eps(1);
-			return ++p_one_plus_eps - p_one;
+			Posit one{ 1 }, incr{ 1 };
+			return ++incr - one;
 		}
 		static constexpr Posit round_error() { // return largest rounding error
 			return Posit(0.5);
@@ -154,7 +163,7 @@ namespace std {
 			return Posit(NAR);
 		}
 
-		static constexpr int digits = (es + 2 > nbits ? 0 : nbits - 3 - es + 1);
+		static constexpr int digits = ((es + 2) > nbits) ? 0 : (int(nbits) - 3 - int(es) + 1);
 		static constexpr int digits10 = int((digits) / 3.3);
 		static constexpr int max_digits10 = 0;
 		static constexpr bool is_signed = true;
