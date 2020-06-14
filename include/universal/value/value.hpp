@@ -31,6 +31,24 @@ constexpr bool _trace_value_add = true;
 constexpr bool _trace_value_add = false;
 #endif
 
+#ifdef VALUE_TRACE_SUB
+constexpr bool _trace_value_sub = true;
+#else
+constexpr bool _trace_value_sub = false;
+#endif
+
+#ifdef VALUE_TRACE_MUL
+constexpr bool _trace_value_mul = true;
+#else
+constexpr bool _trace_value_mul = false;
+#endif
+
+#ifdef VALUE_TRACE_DIV
+constexpr bool _trace_value_div = true;
+#else
+constexpr bool _trace_value_div = false;
+#endif
+
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
 template<size_t fbits>
 class value {
@@ -710,7 +728,7 @@ void module_subtract(const value<fbits>& lhs, const value<fbits>& rhs, value<abi
 
 	if (signs_are_different) r2 = twos_complement(r2);
 
-	if (_trace_sub) {
+	if (_trace_value_sub) {
 		std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1       " << r1 << std::endl;
 		std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
 	}
@@ -718,7 +736,7 @@ void module_subtract(const value<fbits>& lhs, const value<fbits>& rhs, value<abi
 	bitblock<abits + 1> sum;
 	const bool carry = add_unsigned(r1, r2, sum);
 
-	if (_trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
+	if (_trace_value_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
 
 	long shift = 0;
 	if (carry) {
@@ -743,7 +761,7 @@ void module_subtract(const value<fbits>& lhs, const value<fbits>& rhs, value<abi
 	scale_of_result -= shift;
 	const int hpos = abits - 1 - shift;         // position of the hidden bit 
 	sum <<= abits - hpos + 1;
-	if (_trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
+	if (_trace_value_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
 	result.set(r1_sign, scale_of_result, sum, false, false, false);
 }
 
@@ -766,7 +784,7 @@ void module_subtract_BROKEN(const value<fbits>& lhs, const value<fbits>& rhs, va
 	if (r1_sign) r1 = twos_complement(r1);
 	if (r1_sign) r2 = twos_complement(r2);
 
-	if (_trace_sub) {
+	if (_trace_value_sub) {
 		std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1       " << r1 << std::endl;
 		std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
 	}
@@ -774,7 +792,7 @@ void module_subtract_BROKEN(const value<fbits>& lhs, const value<fbits>& rhs, va
 	bitblock<abits + 1> difference;
 	const bool borrow = subtract_unsigned(r1, r2, difference);
 
-	if (_trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " borrow" << std::setw(3) << (borrow ? 1 : 0) << " diff    " << difference << std::endl;
+	if (_trace_value_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " borrow" << std::setw(3) << (borrow ? 1 : 0) << " diff    " << difference << std::endl;
 
 	long shift = 0;
 	if (borrow) {   // we have a negative value result
@@ -795,7 +813,7 @@ void module_subtract_BROKEN(const value<fbits>& lhs, const value<fbits>& rhs, va
 	scale_of_result -= shift;
 	const int hpos = abits - 1 - shift;         // position of the hidden bit 
 	difference <<= abits - hpos + 1;
-	if (_trace_sub) std::cout << (borrow ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " result  " << difference << std::endl;
+	if (_trace_value_sub) std::cout << (borrow ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " result  " << difference << std::endl;
 	result.set(borrow, scale_of_result, difference, false, false, false);
 }
 
@@ -803,7 +821,7 @@ void module_subtract_BROKEN(const value<fbits>& lhs, const value<fbits>& rhs, va
 template<size_t fbits, size_t mbits>
 void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbits>& result) {
 	static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
-	if (_trace_mul) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
+	if (_trace_value_mul) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
 
 	if (lhs.isinf() || rhs.isinf()) {
 		result.setinf();
@@ -824,12 +842,12 @@ void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbi
 		bitblock<fhbits> r2 = rhs.get_fixed_point();
 		multiply_unsigned(r1, r2, result_fraction);
 
-		if (_trace_mul) std::cout << "r1  " << r1 << std::endl << "r2  " << r2 << std::endl << "res " << result_fraction << std::endl;
+		if (_trace_value_mul) std::cout << "r1  " << r1 << std::endl << "r2  " << r2 << std::endl << "res " << result_fraction << std::endl;
 		// check if the radix point needs to shift
 		int shift = 2;
 		if (result_fraction.test(mbits - 1)) {
 			shift = 1;
-			if (_trace_mul) std::cout << " shift " << shift << std::endl;
+			if (_trace_value_mul) std::cout << " shift " << shift << std::endl;
 			new_scale += 1;
 		}
 		result_fraction <<= shift;    // shift hidden bit out	
@@ -837,7 +855,7 @@ void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbi
 	else {   // posit<3,0>, <4,1>, <5,2>, <6,3>, <7,4> etc are pure sign and scale
 		// multiply the hidden bits together, i.e. 1*1: we know the answer a priori
 	}
-	if (_trace_mul) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
+	if (_trace_value_mul) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
 
 	result.set(new_sign, new_scale, result_fraction, false, false, false);
 }
@@ -846,7 +864,7 @@ void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbi
 template<size_t fbits, size_t divbits>
 void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbits>& result) {
 	static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
-	if (_trace_div) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
+	if (_trace_value_div) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
 
 	if (lhs.isinf() || rhs.isinf()) {
 		result.setinf();
@@ -866,7 +884,7 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 		bitblock<fhbits> r1 = lhs.get_fixed_point();
 		bitblock<fhbits> r2 = rhs.get_fixed_point();
 		divide_with_fraction(r1, r2, result_fraction);
-		if (_trace_div) std::cout << "r1     " << r1 << std::endl << "r2     " << r2 << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;
+		if (_trace_value_div) std::cout << "r1     " << r1 << std::endl << "r2     " << r2 << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;
 		// check if the radix point needs to shift
 		// radix point is at divbits - fhbits
 		int msb = divbits - fhbits;
@@ -879,12 +897,12 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 		}
 		result_fraction <<= shift;    // shift hidden bit out
 		new_scale -= (shift - fhbits);
-		if (_trace_div) std::cout << "shift  " << shift << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;;
+		if (_trace_value_div) std::cout << "shift  " << shift << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;;
 	}
 	else {   // posit<3,0>, <4,1>, <5,2>, <6,3>, <7,4> etc are pure sign and scale
 			 // no need to multiply the hidden bits together, i.e. 1*1: we know the answer a priori
 	}
-	if (_trace_div) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
+	if (_trace_value_div) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
 
 	result.set(new_sign, new_scale, result_fraction, false, false, false);
 }

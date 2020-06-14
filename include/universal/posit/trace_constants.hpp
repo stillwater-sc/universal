@@ -40,6 +40,9 @@ constexpr bool _trace_quire_add   = false;
 
 #define VALUE_TRACE_CONVERSION
 #define VALUE_TRACE_ADD
+#define VALUE_TRACE_SUB
+#define VALUE_TRACE_MUL
+#define VALUE_TRACE_DIV
 #endif
 
 #ifdef QUIRE_TRACE_ALL
@@ -57,6 +60,7 @@ constexpr bool _trace_decode = true;
 #ifndef POSIT_TRACE_CONVERSION
 constexpr bool _trace_conversion = false;
 #else
+#define VALUE_TRACE_CONVERSION
 constexpr bool _trace_conversion = true;
 #endif
 
@@ -70,24 +74,28 @@ constexpr bool _trace_rounding = true;
 #ifndef POSIT_TRACE_ADD
 constexpr bool _trace_add = false;
 #else
+#define VALUE_TRACE_ADD
 constexpr bool _trace_add = true;
 #endif
 
 #ifndef POSIT_TRACE_SUB
 constexpr bool _trace_sub = false;
 #else
+#define VALUE_TRACE_SUB
 constexpr bool _trace_sub = true;
 #endif
 
 #ifndef POSIT_TRACE_MUL
 constexpr bool _trace_mul = false;
 #else
+#define VALUE_TRACE_MUL
 constexpr bool _trace_mul = true;
 #endif
 
 #ifndef POSIT_TRACE_DIV
 constexpr bool _trace_div = false;
 #else
+#define VALUE_TRACE_DIV
 constexpr bool _trace_div = true;
 #endif
 
