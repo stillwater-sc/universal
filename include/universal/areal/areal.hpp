@@ -23,7 +23,7 @@ void extract_fields(const blockbinary<nbits, bt>& raw_bits, bool& _sign, blockbi
 
 // fill an areal object with mininum positive value
 template<size_t nbits, size_t es, typename bt>
-areal<nbits, es, bt>& minpos(areal<nbits, es, bt> aminpos) {
+areal<nbits, es, bt>& minpos(areal<nbits, es, bt>& aminpos) {
 
 	return aminpos;
 }
