@@ -31,16 +31,16 @@ namespace sw {
 			bitblock& operator=(bitblock&&) = default;
 
 			// assignment operators for native types
-			bitblock& operator=(const signed char rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
-			bitblock& operator=(const short rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
-			bitblock& operator=(const int rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
-			bitblock& operator=(const long rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
-			bitblock& operator=(const long long rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
-			bitblock& operator=(const char rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
-			bitblock& operator=(const unsigned short rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
-			bitblock& operator=(const unsigned int rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
-			bitblock& operator=(const unsigned long rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
-			bitblock& operator=(const unsigned long long rhs) { return (bitblock&)universal_bitset::bitset<nbits>::operator=(rhs); }
+			bitblock& operator=(signed char rhs) { universal_bitset::bitset<nbits>::operator=(rhs); return *this; }
+			bitblock& operator=(short rhs) { universal_bitset::bitset<nbits>::operator=(rhs); return *this;	}
+			bitblock& operator=(int rhs) { universal_bitset::bitset<nbits>::operator=(rhs); return *this; }
+			bitblock& operator=(long rhs) { universal_bitset::bitset<nbits>::operator=(rhs); return *this; }
+			bitblock& operator=(long long rhs) { universal_bitset::bitset<nbits>::operator=(rhs); return *this;	}
+			bitblock& operator=(char rhs) { universal_bitset::bitset<nbits>::operator=(rhs); return *this; }
+			bitblock& operator=(unsigned short rhs) {universal_bitset::bitset<nbits>::operator=(rhs); return *this; }
+			bitblock& operator=(unsigned int rhs) { universal_bitset::bitset<nbits>::operator=(rhs); return *this; }
+			bitblock& operator=(unsigned long rhs) { universal_bitset::bitset<nbits>::operator=(rhs); return *this;	}
+			bitblock& operator=(unsigned long long rhs) { universal_bitset::bitset<nbits>::operator=(rhs); return *this; }
 
 			unsigned long long to_ullong() const {
 				return this->M_do_to_ullong();
