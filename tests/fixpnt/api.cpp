@@ -34,56 +34,69 @@ try {
 
 	// construction
 	{
+		int start = nrOfFailedTestCases;
 		// default construction using default arithmetic (Modulo) and default BlockType (uint8_t)
 		fixpnt<8, 4> a, b(-8.125f), c(7.875), d(-7.875); // replace with long double init  d(-7.875l);
 		// b initialized to -8.125 in modular arithmetic becomes 7.875: -8.125 = b1000.0010 > maxneg -> becomes b0111.1110
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a != (b - c)) ++nrOfFailedTestCases;
-		//cout << a << ' ' << b << ' ' << c << ' ' << d << endl;
+		if (nrOfFailedTestCases - start > 0) {
+			cout << "FAIL : " << a << ' ' << b << ' ' << c << ' ' << d << endl;
+		}
 	}
 
 	{
+		int start = nrOfFailedTestCases;
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
 		fixpnt<8, 4, Modulo> a, b(-8.125), c(7.875), d(-7.875);
 		// b initialized to -8.125 in modular arithmetic becomes 7.875: -8.125 = b1000.0010 > maxneg -> becomes b0111.1110
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a != (b - c)) ++nrOfFailedTestCases;
-		//cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
+		if (nrOfFailedTestCases - start > 0) {
+			cout << "FAIL: " << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
+		}
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// SATURATING fixed-point
 
 	{
+		int start = nrOfFailedTestCases;
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
 		fixpnt<8, 4, Saturating> a(-8.0), b(-8.125), c(7.875), d(-7.875);
 		// b initialized to -8.125 in saturating arithmetic becomes -8
 //		if (0 != (c + d)) ++nrOfFailedTestCases; //cout << to_binary(c + d) << endl;
 		if (a != b) ++nrOfFailedTestCases;
-		// TODO: don't have saturating arithmetic yet
-		//if (a != (d - 1)) ++nrOfFailedTestCases; // saturating to maxneg
-		//if (a != (d - 0.5)) ++nrOfFailedTestCases; // saturating to maxneg
-		//cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
-		//cout << to_binary(d - 1) << ' ' << to_binary(d - 0.5) << endl;
+
+		if (a != (d - 1)) ++nrOfFailedTestCases; // saturating to maxneg
+		if (a != (d - 0.5)) ++nrOfFailedTestCases; // saturating to maxneg
+		if (nrOfFailedTestCases - start > 0) {
+			cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
+			cout << to_binary(d - 1) << ' ' << to_binary(d - 0.5) << endl;
+		}
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	//// improving efficiency for bigger fixed-points through explicit BlockType specification
 
 	{
+		int start = nrOfFailedTestCases;
 		// construction with explicit arithmetic type and BlockType
 		fixpnt<16, 4, Modulo, uint16_t> a, b(-2048.125f), c(2047.875), d(-2047.875);
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a != (b - c)) ++nrOfFailedTestCases;
 		//		cout << to_binary(a, true) << ' ' << to_binary(b, true) << ' ' << to_binary(c, true) << ' ' << to_binary(d, true) << endl;
-		//cout << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
-		//cout << a << ' ' << b << ' ' << c << ' ' << d << endl;
+		if (nrOfFailedTestCases - start > 0) {
+			cout << "FAIL : construction " << to_binary(a) << ' ' << to_binary(b) << ' ' << to_binary(c) << ' ' << to_binary(d) << endl;
+			cout << a << ' ' << b << ' ' << c << ' ' << d << endl;
+		}
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	// selectors
 
 	{
+		int start = nrOfFailedTestCases;
 		constexpr size_t nbits = 8;
 		constexpr size_t rbits = 4;
 		fixpnt<nbits, rbits> a, b;
@@ -91,12 +104,16 @@ try {
 		if (!a.test(4)) ++nrOfFailedTestCases;
 		b.set_raw_bits(1); // set the ULP
 		if (!b.at(0)) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) {
+			cout << "FAIL : selectors\n";
+		}
 	}
 
 	/////////////////////////////////////////////////////////////////////////////////////
 	// modifiers
 
 	{
+		int start = nrOfFailedTestCases;
 		// state/bit management
 		constexpr size_t nbits = 8;
 		constexpr size_t rbits = 4;
@@ -117,11 +134,15 @@ try {
 		if (0 == d) ++nrOfFailedTestCases;
 		d.setzero();
 		if (d != 0) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) {
+			cout << "FAIL : modifiers\n";
+		}
 	}
 
 	/////////////////////////////////////////////////////////////////////////////
 	// complements
 	{
+		int start = nrOfFailedTestCases;
 		constexpr size_t nbits = 8;
 		constexpr size_t rbits = 4;
 		fixpnt<nbits, rbits> a, b;
@@ -131,8 +152,12 @@ try {
 		a = -1;
 		b = twos_complement(a);
 		if (b != 1) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) {
+			cout << "FAIL : complements 1\n";
+		}
 	}
 	{
+		int start = nrOfFailedTestCases;
 		constexpr size_t nbits = 8;
 		constexpr size_t rbits = 4;
 		fixpnt<nbits, rbits, Modulo, uint16_t> a, b; // testing poorly selected BlockType
@@ -142,8 +167,12 @@ try {
 		a = -1;
 		b = twos_complement(a);
 		if (b != 1) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) {
+			cout << "FAIL : complements 2\n";
+		}
 	}
 	{
+		int start = nrOfFailedTestCases;
 		constexpr size_t nbits = 8;
 		constexpr size_t rbits = 4;
 		fixpnt<nbits, rbits, Modulo, uint32_t> a, b; // testing poorly selected BlockType
@@ -153,6 +182,9 @@ try {
 		a = -1;
 		b = twos_complement(a);
 		if (b != 1) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) {
+			cout << "FAIL : complements 3\n";
+		}
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////
@@ -170,25 +202,30 @@ try {
 	///////////////////////////////////////////////////////////////////////////////////
 	// arithmetic
 	{
+		int start = nrOfFailedTestCases;
 		constexpr size_t nbits = 16;
 		constexpr size_t rbits = 8;
 		constexpr bool arithmetic = Modulo;
 		using blocktype = uint32_t;
 		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
-		a = maxpos_fixpnt<nbits, rbits, arithmetic, blocktype>();
-		b = maxneg_fixpnt<nbits, rbits, arithmetic, blocktype>();
-		c = minpos_fixpnt<nbits, rbits, arithmetic, blocktype>();
-		d = minneg_fixpnt<nbits, rbits, arithmetic, blocktype>();
+		maxpos<nbits, rbits, arithmetic, blocktype>(a);
+		maxneg<nbits, rbits, arithmetic, blocktype>(b);
+		minpos<nbits, rbits, arithmetic, blocktype>(c);
+		minneg<nbits, rbits, arithmetic, blocktype>(d);
 		if ((c + d) != 0) ++nrOfFailedTestCases;
-		//cout << to_binary(c + d) << " vs " << to_binary(0,nbits) << endl;
 
 		if ((a + c) != b) ++nrOfFailedTestCases;
-		//cout << to_binary(a + c) << " vs " << to_binary(b) << endl;
+		if (nrOfFailedTestCases - start > 0) {
+			cout << "FAIL: min/max\n";
+			cout << to_binary(c + d) << " vs " << to_binary(0, nbits) << endl;
+			cout << to_binary(a + c) << " vs " << to_binary(b) << endl;
+		}
 	}
 
 	///////////////////////////////////////////////////////////////////////////////////
 	// logic, in particular, all the literal constant combinations
 	{
+		int start = nrOfFailedTestCases;
 		constexpr size_t nbits = 8;
 		constexpr size_t rbits = 4;
 		constexpr bool arithmetic = Modulo;
@@ -288,6 +325,9 @@ try {
 		if (1 >= d) ++nrOfFailedTestCases;
 		if (2l >= d) ++nrOfFailedTestCases;
 		if (3ll >= d) ++nrOfFailedTestCases;
+		if (nrOfFailedTestCases - start > 0) {
+			cout << "FAIL: logic operators\n";
+		}
 	}
 
 #ifdef SHOW_STATE_SPACE

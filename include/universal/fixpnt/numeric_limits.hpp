@@ -15,9 +15,18 @@ class numeric_limits< sw::unum::fixpnt<nbits,rbits,arithmetic,bt> > {
 public:
 	using FixedPoint = sw::unum::fixpnt<nbits, rbits, arithmetic, bt>;
 	static constexpr bool is_specialized = true;
-	static constexpr FixedPoint  min() { return minpos_fixpnt<nbits, rbits, arithmetic, bt>(); } // return minimum value
-	static constexpr FixedPoint  max() { return maxpos_fixpnt<nbits, rbits, arithmetic, bt>(); } // return maximum value
-	static constexpr FixedPoint  lowest() { return maxneg_fixpnt<nbits, rbits, arithmetic, bt>(); } // return most negative value
+	static constexpr FixedPoint  min() {  // return minimum value
+		FixedPoint fpminpos;
+		return minpos(fpminpos);
+	}
+	static constexpr FixedPoint  max() {  // return maximum value
+		FixedPoint fpmaxpos;
+		return maxpos(fpmaxpos);
+	}
+	static constexpr FixedPoint  lowest() { // return most negative value
+		FixedPoint fpmaxneg;
+		return maxpos(fpmaxneg);
+	} 
 	static constexpr FixedPoint  epsilon() { // return smallest effective increment from 1.0
 		FixedPoint eps(0);
 		return ++eps;
