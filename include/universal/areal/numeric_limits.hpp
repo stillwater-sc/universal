@@ -26,8 +26,7 @@ public:
 	} 
 	static constexpr AREAL epsilon() { // return smallest effective increment from 1.0
 		AREAL one{ 1.0f }, incr{ 1.0f };
-		++incr;
-		return incr - one;
+		return ++incr - one;
 	}
 	static constexpr AREAL round_error() { // return largest rounding error
 		return AREAL(0.5f);
