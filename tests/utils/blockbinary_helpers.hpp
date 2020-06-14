@@ -9,8 +9,8 @@
 #include <universal/blockbin/blockbinary.hpp>
 
 #define COLUMN_WIDTH 20
-template<size_t nbits, typename Ty = uint8_t>
-void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const sw::unum::blockbinary<nbits, Ty>& a, const sw::unum::blockbinary<nbits, Ty>& b, const sw::unum::blockbinary<nbits, Ty>& result, int64_t reference) {
+template<size_t nbits, typename bt = uint8_t>
+void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const sw::unum::blockbinary<nbits, bt>& a, const sw::unum::blockbinary<nbits, bt>& b, const sw::unum::blockbinary<nbits, bt>& result, int64_t reference) {
 	using namespace sw::unum;
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
@@ -27,8 +27,8 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 		<< std::endl;
 }
 
-template<size_t nbits, typename Ty = uint8_t>
-void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const sw::unum::blockbinary<nbits, Ty>& a, const sw::unum::blockbinary<nbits, Ty>& b, const sw::unum::blockbinary<nbits, Ty>& result, int64_t reference) {
+template<size_t nbits, typename bt = uint8_t>
+void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const sw::unum::blockbinary<nbits, bt>& a, const sw::unum::blockbinary<nbits, bt>& b, const sw::unum::blockbinary<nbits, bt>& result, int64_t reference) {
 	using namespace sw::unum;
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
@@ -45,8 +45,8 @@ void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::stri
 		<< std::endl;
 }
 
-template<size_t nbits, typename Ty = uint8_t>
-void ReportArithmeticShiftError(const std::string& test_case, const std::string& op, const sw::unum::blockbinary<nbits, Ty>& a, const size_t divider, const sw::unum::blockbinary<nbits, Ty>& result, int64_t reference) {
+template<size_t nbits, typename bt = uint8_t>
+void ReportArithmeticShiftError(const std::string& test_case, const std::string& op, const sw::unum::blockbinary<nbits, bt>& a, const size_t divider, const sw::unum::blockbinary<nbits, bt>& result, int64_t reference) {
 	using namespace sw::unum;
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
@@ -63,8 +63,8 @@ void ReportArithmeticShiftError(const std::string& test_case, const std::string&
 		<< std::endl;
 }
 
-template<size_t nbits, typename Ty = uint8_t>
-void ReportArithmeticShiftSuccess(const std::string& test_case, const std::string& op, const sw::unum::blockbinary<nbits, Ty>& a, const size_t divider, const sw::unum::blockbinary<nbits, Ty>& result, int64_t reference) {
+template<size_t nbits, typename bt = uint8_t>
+void ReportArithmeticShiftSuccess(const std::string& test_case, const std::string& op, const sw::unum::blockbinary<nbits, bt>& a, const size_t divider, const sw::unum::blockbinary<nbits, bt>& result, int64_t reference) {
 	using namespace sw::unum;
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
