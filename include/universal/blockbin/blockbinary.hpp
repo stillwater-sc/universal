@@ -395,7 +395,7 @@ public:
 		}
 		throw "bit index out of bounds";
 	}
-	inline uint8_t nibble(size_t n) const {
+	inline constexpr uint8_t nibble(size_t n) const {
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
 			int nibbleIndexInWord = n % (bitsInBlock >> 2);
@@ -405,12 +405,13 @@ public:
 		}
 		throw "nibble index out of bounds";
 	}
-	inline bt block(size_t b) const {
+	inline constexpr bt block(size_t b) const {
 		if (b < nrBlocks) {
 			return _block[b];
 		}
 		throw "block index out of bounds";
 	}
+
 	template<size_t nnbits>
 	inline blockbinary<nbits, bt>& assign(const blockbinary<nnbits, bt>& rhs) {
 		clear();
