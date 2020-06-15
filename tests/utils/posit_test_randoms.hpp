@@ -102,7 +102,7 @@ namespace unum {
 		case OPCODE_EXP:
 			presult = sw::unum::exp(pa);
 			reference = std::exp(da);
-			if (0.0 == reference) reference = double();
+			if (0.0 == reference) reference = dminpos;
 			break;
 		case OPCODE_EXP2:
 			presult = sw::unum::exp2(pa);
