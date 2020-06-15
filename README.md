@@ -10,21 +10,21 @@ The motivation to replace IEEE floating-point had been brewing in the HPC commun
 The Universal library is a ready-to-use header-only library that provides plug-in replacement for native types, and provides a low-friction environment to start exploring alternatives of IEEE in your own algorithms. The basic usage pattern is as simple as:
 ```
 #include <universal/posit/posit>
-...
+
 template<typename Real>
 Real MyKernel(const Real& a, const Real& b) {
     return a * b;  // replace this with your kernel computation
 }
-...
+
 constexpr double pi = 3.14159265358979323846;
-...
+
 int main() {
     using Real = sw::unum::posit<32,2>;  
-    ...
+
     Real a = sqrt(2);
     Real b = pi;
     std::cout << "Result: " << MyKernel(a, b) << std::endl;
-    ...   
+  
 }
 ```
 
