@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
 #include <limits>
+#include <strstream>
 
 #include <universal/native/ieee-754.hpp>
 #include <universal/blockbin/blockbinary.hpp>
@@ -21,12 +22,10 @@ template<size_t nbits, typename bt> lns<nbits,bt> abs(const lns<nbits,bt>& v);
 template<size_t nbits, typename bt>
 inline lns<nbits, bt>& convert(const triple<nbits,bt>& v, lns<nbits,bt>& p) {
 	if (v.iszero()) {
-		p.setzero();
-		return p;
+		return p.setnan();
 	}
 	if (v.isnan() || v.isinf()) {
-		p.setnan();
-		return p;
+		return p.setnan();
 	}
 	return p;
 }
@@ -75,9 +74,9 @@ public:
 	lns& operator=(int rhs) { return *this = (long long)(rhs); }
 	lns& operator=(long long rhs) { return *this; }
 	lns& operator=(unsigned long long rhs) { return *this; }
-	lns& operator=(float rhs) { return *this; } 
-	lns& operator=(double rhs) { return *this; }
-	lns& operator=(long double rhs) { return *this; }
+	constexpr lns& operator=(float rhs) { _bits = (long long)std::log(rhs); return *this; }
+	constexpr lns& operator=(double rhs) { _bits = (long long) std::log(rhs); return *this; }
+	lns& operator=(long double rhs) { _bits = (long long)std::log(rhs); return *this; }
 
 	// arithmetic operators
 	// prefix operator
@@ -90,7 +89,10 @@ public:
 	lns& operator+=(double rhs) { return *this += lns(rhs); }
 	lns& operator-=(const lns& rhs) { return *this; }
 	lns& operator-=(double rhs) { return *this -= lns<nbits>(rhs); }
-	lns& operator*=(const lns& rhs) { return *this; }
+	lns& operator*=(const lns& rhs) {
+		this->_bits += rhs._bits;
+		return *this; 
+	}
 	lns& operator*=(double rhs) { return *this *= lns<nbits>(rhs); }
 	lns& operator/=(const lns& rhs) { return *this; }
 	lns& operator/=(double rhs) { return *this /= lns<nbits>(rhs); }
@@ -117,23 +119,27 @@ public:
 	void reset() {	}
 
 	// selectors
-	inline bool isneg() const { return false; }
-	inline bool iszero() const { return false; }
-	inline bool isinf() const { return false; }
-	inline bool isnan() const { return false; }
-	inline bool sign() const { return false; }
-	inline int scale() const { return false; }
-	inline std::string get() const { return std::string("tbd"); }
+	inline constexpr bool isneg() const { return false; }
+	inline constexpr bool iszero() const { return false; }
+	inline constexpr bool isinf() const { return false; }
+	inline constexpr bool isnan() const { return false; }
+	inline constexpr bool sign() const { return false; }
+	inline constexpr int scale() const { return false; }
+	inline std::string get() const { 
+		std::stringstream s;
+		s << std::exp(double(_bits.to_long_long()));
+		return s.str(); 
+	}
 
 
 	long double to_long_double() const {
-		return 0.0l;
+		return std::exp((long_double)(_bits.to_long_long()));
 	}
 	double to_double() const {
-		return 0.0;
+		return std::exp(double(_bits.to_long_long()));
 	}
 	float to_float() const {
-		return 0.0f;
+		return std::exp(float(_bits.to_long_long()));
 	}
 	// Maybe remove explicit
 	explicit operator long double() const { return to_long_double(); }
@@ -141,6 +147,7 @@ public:
 	explicit operator float() const { return to_float(); }
 
 private:
+	blockbinary<nbits,bt>  _bits;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, typename nbt>
@@ -165,7 +172,7 @@ private:
 ////////////////////// operators
 template<size_t nnbits, typename nbt>
 inline std::ostream& operator<<(std::ostream& ostr, const lns<nnbits,nbt>& v) {
-
+	ostr << v.to_double();
 	return ostr;
 }
 

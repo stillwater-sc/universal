@@ -21,8 +21,8 @@ void GenerateTestCase(Ty a, Ty b) {
 	pref = ref;
 	psum = pa + pb;
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << a << " + " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " (reference: " << pref.get() << ")   " ;
+	std::cout << std::setw(nbits) << a << " * " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
+	std::cout << pa.get() << " * " << pb.get() << " = " << psum.get() << " (reference: " << pref.get() << ")   " ;
 	std::cout << (pref == psum ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
 }
@@ -49,6 +49,13 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<16, double>(INFINITY, INFINITY);
 	GenerateTestCase<8, float>(0.5f, -0.5f);
+
+	constexpr double e = 2.71828182845904523536;
+	lns<16> a, b, c;
+	a = 0.5; cout << a << endl;
+	a = e; cout << a << endl;
+	b = 1.0 / e;
+	c = a * b;
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>("Manual Testing", true), "lns<8>", "multiplication");
