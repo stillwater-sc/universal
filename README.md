@@ -1,7 +1,9 @@
-# Universal: a C++ template library for universal number arithmetic
+# Universal: a header-only C++ template library for universal number arithmetic
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/25452f0319d34bc2a553cd1857d7dfae)](https://app.codacy.com/gh/stillwater-sc/universal?utm_source=github.com&utm_medium=referral&utm_content=stillwater-sc/universal&utm_campaign=Badge_Grade_Dashboard)
 [![Awesome Cpp](https://awesome.re/mentioned-badge.svg)](https://github.com/fffaraz/awesome-cpp#math)
+[ ![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master)](https://app.codeship.com/projects/286490)
+[![Coverage Status](https://coveralls.io/repos/github/stillwater-sc/universal/badge.svg?branch=master)](https://coveralls.io/github/stillwater-sc/universal?branch=master)
 
 The goal of Universal Numbers, or unums, is to replace IEEE floating-point with a number system that is more efficient and mathematically consistent in concurrent execution environments.
 
@@ -30,12 +32,9 @@ int main() {
 
 The library contains integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and several multi-precision integers and floats. There are example skeletons if you desire to add your own.
 
-# How to build
+## Quick start
 
-[ ![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master)](https://app.codeship.com/projects/286490)
-[![Coverage Status](https://coveralls.io/repos/github/stillwater-sc/universal/badge.svg?branch=master)](https://coveralls.io/github/stillwater-sc/universal?branch=master)
-
-If just want to experiment with the number system tools and test suites, and don't want to bother cloning and building the source code, there is a Docker container at your service:
+If you just want to experiment with the number system tools and test suites, and don't want to bother cloning and building the source code, there is a Docker container to get started:
 
 ```
 > docker pull stillwater/universal
@@ -60,10 +59,12 @@ Standard posit<8,0> configuration tests
  posit<8,0> negate      PASS
  posit<8,0> reciprocate PASS
 
-These two educational examples are pretty informative when you are just starting out learning about posits:
+The following two educational examples are pretty informative when you are just starting out learning about posits:
 bash-4.3# education/posit/edu_scales
 bash-4.3# education/posit/edu_tables
 ```
+
+## How to build
 
 If you do want to work with the code, the universal numbers software library is built using cmake. 
 Install the latest cmake [cmake](https://cmake.org/download).
@@ -76,11 +77,11 @@ Simply clone the github repo, and you are ready to build the universal library. 
 > git clone https://github.com/stillwater-sc/universal
 > cd universal/build
 > cmake ..
-> make
+> make -j 16
 > make test
 ```
 
-The default build configuration will build the educational examples and utilities. If you want to build the full regression suite, use the following cmake command:
+The default build configuration will build the educational and application examples, as well as the command line utilities. If you want to build the full regression suite across all the number systems, use the following cmake command:
 ```
 cmake -DBUILD_CI_CHECK=ON ..
 ```
@@ -147,7 +148,7 @@ The field values are followed by a quadrant descriptor and a value representatio
 The positive regime for a posit shows a very specific structure, as can be seen in the image blow:
 ![regime structure](background/img/positive_regimes.png)
 
-# Motivation
+## Motivation
 
 Modern AI applications have demonstrated the inefficiencies of the IEEE floating point format. Both Google and Microsoft have jettisonned IEEE floating point for their AI cloud services to gain two orders of magnitude better performance. Similarly, AI applications for mobile and embedded applications are shifting away from IEEE floating point. But, AI applications are hardly the only applications that expose the limitations of floating point. Cloud scale, IoT, embedded, control, and HPC applications are also limited by the inefficiencies of the IEEE floating point format. A simple change to a new number system can improve scale and cost of these appliations by orders of magnitude.
 
@@ -181,7 +182,7 @@ All other bit patterns are valid distinct non-zero real numbers. ± inf serves a
 4. **Parameterized precision and dynamic range** -- posits are defined by a size, _nbits_, and the number of exponent bits, _es_. This enables system designers the freedom to pick the right precision and dynamic range required for the application. For example, for AI applications we may pick 5 or 6 bit posits without any exponent bits to improve performance. For embedded DSP applications, such as 5G base stations, we may select a 16 bit posit with 1 exponent bit to improve performance per Watt.
 5. **Simpler Circuitry** - There are only two special cases, Not a Real and Zero. No denormalized numbers, overflow, or underflow. 
 
-# Goals of the library
+## Goals of the library
 
 This library is a bit-level arithmetic reference implementation of the evolving unum III (posit and valid) standard.
 The goal is to provide a faithful posit arithmetic layer for any C/C++/Python environment.
@@ -191,14 +192,14 @@ of utilities to become familiar with the internal workings of posits and valids.
 
 We want to provide a complete unum library, and we are looking for contributors to finish the Type I and II unum implementations.
 
-# Contributing to universal
+## Contributing to universal
 
 We are happy to accept pull requests via GitHub. The only requirement that we would like PR's to adhere to
 is that all the test cases pass, so that we know the new code isn't breaking any functionality.
 
 [![Stargazers over time](https://starchart.cc/stillwater-sc/universal.svg)](https://starchart.cc/stillwater-sc/universal)
 
-# Verification Suite
+## Verification Suite
 
 Normally, the verification suite is run as part of the _make test_ command in the build directory. However, it is possible to run specific components of the test suite, for example, to validate algorithmic changes to more complex arithmetic functions, such as square root, exponent, logarithm, and trigonometric functions.
 
@@ -220,20 +221,26 @@ Arithmetic tests 200000 randoms each
  posit<32,2> division       PASS
 ```
 
-# Structure of the tree
+## Structure of the tree
 
-The universal library contains a set of functionality groups to deal with different number systems. In the examples shown above, we have seen the ".../universal/posit" group and its test suite, ".../universal/tests/posit". Here is a complete list:
+The universal library contains a set of functional groups to deal with different number systems. In the examples shown above, we have seen the ".../universal/include/universal/posit" group and its test suite, ".../universal/tests/posit". Here is a complete list:
 
-- *universal/posit* - contains the implementation of the posit number system
-- *universal/valid* - contains the implementation of the valid number system
-- *universal/unum* - contains the implementation of the unum Type I number system (TBD)
-- *universal/unum2* - contains the implementation of the unum Type II number system (TBD)
+- *universal/integer* - arbitrary configuration integers
+- *universal/decimal* - multi-precision decimal
+- *universal/mpfloat* - multi-precision linear floating-point
+- *universal/rational* - multi-precision rational number system
+- *universal/fixpnt* - fixed-point
+- *universal/areal* - arbitrary precision linear floating-point
+- *universal/posit* - the posit number system
+- *universal/valid* - the valid number system
+- *universal/unum* - unum Type I number system (TBD)
+- *universal/unum2* - unum Type II number system (TBD)
 - *universal/float* - contains the implementation of the IEEE floating point augmentations for reproducible computation
-- *universal/bitset* - contains the implementation of an abitrary integer number system
+- *universal/lns* - logarithmic number system
 
 And each of these functionality groups have an associated test suite located in ".../universal/tests/..."
 
-# Background information
+## Background information
 
 Universal numbers, unums for short, are for expressing real numbers, and ranges of real numbers. 
 There are two modes of operation, selectable by the programmer, _posit_ mode, and _valid_ mode.
@@ -251,7 +258,7 @@ of the two numbers if the expanding bit is a fraction bit, and it is the geometr
 if the expanding bit is a regime or exponent bit. 
 This [page](PositRefinementViz.md) shows a visualization of the expansion of _posit<2,0>_ to _posit<7,1>_:
 
-# Public Domain and community resources
+## Public Domain and community resources
 
 The unum format is a public domain specification, and there are a collection of web resources that
 manage information and discussions around the use of unums.
@@ -260,7 +267,7 @@ manage information and discussions around the use of unums.
 
 [Unum-computing Google Group](https://groups.google.com/forum/#!forum/unum-computing)
 
-# Projects that leverage posits
+## Projects that leverage posits
 
 [Matrix Template Library](http://simunova.com/#en-mtl4-index-html)
 
