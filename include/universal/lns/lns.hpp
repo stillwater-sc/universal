@@ -51,7 +51,10 @@ lns<nbits, bt>& maxneg(lns<nbits, bt>& lmaxneg) {
 template<size_t nbits, typename bt = uint8_t>
 class lns {
 public:
-	lns() {}
+	static constexpr size_t rbits = nbits / 2;
+	static constexpr double scaling = double(1 << rbits);
+
+	lns() : _bits{ 0 } {}
 
 	lns(const lns&) = default;
 	lns(lns&&) = default;
@@ -74,9 +77,9 @@ public:
 	lns& operator=(int rhs) { return *this = (long long)(rhs); }
 	lns& operator=(long long rhs) { return *this; }
 	lns& operator=(unsigned long long rhs) { return *this; }
-	constexpr lns& operator=(float rhs) { _bits = (long long)std::log(rhs); return *this; }
-	constexpr lns& operator=(double rhs) { _bits = (long long) std::log(rhs); return *this; }
-	lns& operator=(long double rhs) { _bits = (long long)std::log(rhs); return *this; }
+	constexpr lns& operator=(float rhs) { _bits = (long long)(std::log(rhs) * scaling); return *this; }
+	constexpr lns& operator=(double rhs) { _bits = (long long)(std::log(rhs) * scaling); return *this; }
+	lns& operator=(long double rhs) { _bits = (long long)(std::log(rhs) * scaling); return *this; }
 
 	// arithmetic operators
 	// prefix operator
@@ -94,7 +97,10 @@ public:
 		return *this; 
 	}
 	lns& operator*=(double rhs) { return *this *= lns<nbits>(rhs); }
-	lns& operator/=(const lns& rhs) { return *this; }
+	lns& operator/=(const lns& rhs) {
+		this->_bits -= rhs._bits;
+		return *this;
+	}
 	lns& operator/=(double rhs) { return *this /= lns<nbits>(rhs); }
 
 	// prefix/postfix operators
@@ -131,15 +137,14 @@ public:
 		return s.str(); 
 	}
 
-
 	long double to_long_double() const {
-		return std::exp((long_double)(_bits.to_long_long()));
+		return std::exp((long double)(_bits.to_long_long()))/scaling;
 	}
 	double to_double() const {
-		return std::exp(double(_bits.to_long_long()));
+		return std::exp(double(_bits.to_long_long()))/scaling;
 	}
 	float to_float() const {
-		return std::exp(float(_bits.to_long_long()));
+		return std::exp(float(_bits.to_long_long()))/scaling;
 	}
 	// Maybe remove explicit
 	explicit operator long double() const { return to_long_double(); }

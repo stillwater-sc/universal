@@ -56,6 +56,7 @@ try {
 	a = e; cout << a << endl;
 	b = 1.0 / e;
 	c = a * b;
+	cout << c.to_long_double() << endl;
 
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication<8>("Manual Testing", true), "lns<8>", "multiplication");
