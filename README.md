@@ -2,8 +2,34 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/25452f0319d34bc2a553cd1857d7dfae)](https://app.codacy.com/gh/stillwater-sc/universal?utm_source=github.com&utm_medium=referral&utm_content=stillwater-sc/universal&utm_campaign=Badge_Grade_Dashboard)
 [![Awesome Cpp](https://awesome.re/mentioned-badge.svg)](https://github.com/fffaraz/awesome-cpp#math)
+[![Stargazers over time](https://starchart.cc/stillwater-sc/universal.svg)](https://starchart.cc/stillwater-sc/universal)
 
-Universal Numbers, or unums, are a collection of number systems to replace floating point with more efficient and mathematically correct arithmetic properties.
+The goal of Universal Numbers, or unums, is to replace IEEE floating-point with a number system that is more efficient and mathematically consistent in concurrent execution environments.
+
+The motivation to replace IEEE floating-point had been brewing in the HPC community since the late 90's as most algorithms became memory bound. The inefficiency of IEEE floating-point has been measured and agreed upon, but it was the AI Deep Learning community that moved first and replaced IEEE with number systems that are tailored to the application to yield speed-ups of two to three orders of magnitude.
+
+The Universal library is a ready-to-use header-only library that provides plug-in replacement for native types, and provides a low-friction environment to start exploring alternatives of IEEE in your own algorithms. The basic usage pattern is as simple as:
+```
+#include <universal/posit/posit>
+...
+template<typename Real>
+Real MyKernel(const Real& a, const Real& b) {
+    return a * b;  // replace this with your kernel computation
+}
+...
+constexpr double pi = 3.14159265358979323846;
+...
+int main() {
+    using Real = sw::unum::posit<32,2>;  
+    ...
+    Real a = sqrt(2);
+    Real b = pi;
+    std::cout << "Result: " << MyKernel(a, b) << std::endl;
+    ...   
+}
+```
+
+The library contains integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and several multi-precision integers and floats. There are example skeletons if you desire to add your own.
 
 # How to build
 
