@@ -2,7 +2,6 @@
 
 [![Codacy Badge](https://api.codacy.com/project/badge/Grade/25452f0319d34bc2a553cd1857d7dfae)](https://app.codacy.com/gh/stillwater-sc/universal?utm_source=github.com&utm_medium=referral&utm_content=stillwater-sc/universal&utm_campaign=Badge_Grade_Dashboard)
 [![Awesome Cpp](https://awesome.re/mentioned-badge.svg)](https://github.com/fffaraz/awesome-cpp#math)
-[![Stargazers over time](https://starchart.cc/stillwater-sc/universal.svg)](https://starchart.cc/stillwater-sc/universal)
 
 The goal of Universal Numbers, or unums, is to replace IEEE floating-point with a number system that is more efficient and mathematically consistent in concurrent execution environments.
 
@@ -195,7 +194,9 @@ We want to provide a complete unum library, and we are looking for contributors 
 # Contributing to universal
 
 We are happy to accept pull requests via GitHub. The only requirement that we would like PR's to adhere to
-is that all the test cases pass, so that we know the new code isn't breaking any functionality. 
+is that all the test cases pass, so that we know the new code isn't breaking any functionality.
+
+[![Stargazers over time](https://starchart.cc/stillwater-sc/universal.svg)](https://starchart.cc/stillwater-sc/universal)
 
 # Verification Suite
 
