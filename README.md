@@ -223,18 +223,19 @@ Arithmetic tests 200000 randoms each
 
 ## Structure of the tree
 
-The universal library contains a set of functional groups to deal with different number systems. In the examples shown above, we have seen the ".../universal/include/universal/posit" group and its test suite, ".../universal/tests/posit". Here is a complete list:
+The universal library contains a set of functional groups to deal with different number systems. In the examples shown above, we have seen the ".../universal/include/universal/posit" group and its test suite, ".../universal/tests/posit". 
 
+Here is a complete list:
+
+- *universal/unum* - flexible configuration unum number system
 - *universal/integer* - arbitrary configuration integers
+- *universal/fixpnt* - arbitrary configuration fixed-point number systems
+- *universal/areal* - arbitrary configuration linear floating-point number systems
+- *universal/posit* - arbitrary configuration posit number systems
+- *universal/valid* - arbitrary configuration valid number systems
 - *universal/decimal* - multi-precision decimal
 - *universal/mpfloat* - multi-precision linear floating-point
 - *universal/rational* - multi-precision rational number system
-- *universal/fixpnt* - fixed-point
-- *universal/areal* - arbitrary precision linear floating-point
-- *universal/posit* - the posit number system
-- *universal/valid* - the valid number system
-- *universal/unum* - unum Type I number system (TBD)
-- *universal/unum2* - unum Type II number system (TBD)
 - *universal/float* - contains the implementation of the IEEE floating point augmentations for reproducible computation
 - *universal/lns* - logarithmic number system
 
