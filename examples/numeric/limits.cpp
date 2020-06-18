@@ -33,6 +33,7 @@ void ReportNumberTraits(std::ostream& ostr) {
 	ostr << "quiet NaN          : " << numeric_limits<Real>::quiet_NaN() << '\n';
 	ostr << "signalling NaN     : " << numeric_limits<Real>::signaling_NaN() << "\n\n";
 }
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
