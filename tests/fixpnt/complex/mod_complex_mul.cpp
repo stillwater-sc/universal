@@ -52,7 +52,7 @@ int VerifyComplexMultiplication(const std::string& tag, bool bReportIndividualTe
 	maxpos<nbits, rbits, arithmetic, BlockType>(fpmaxpos);
 	maxneg<nbits, rbits, arithmetic, BlockType>(fpmaxneg);
 	int nrOfFailedTests = 0;
-	FixedPoint ar, ai, br, bi, resultr, resulti;
+	FixedPoint ar, ai, br, bi;
 	complex<FixedPoint> a, b, result, ref;
 
 	complex<double> da, db, dc;

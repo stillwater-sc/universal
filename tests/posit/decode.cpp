@@ -47,9 +47,6 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t nbits = 8;
-	const size_t es = 1;
-	posit<nbits, es> myPosit;
 	int nrOfFailedTestCases = 0;
 
 	nrOfFailedTestCases += ReportTestResult(ValidateDecode<4, 0>(), "b2p", "decode");

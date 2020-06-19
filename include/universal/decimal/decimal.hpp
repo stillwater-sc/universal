@@ -194,7 +194,7 @@ public:
 	decimal& operator=(float rhs) {
 		return float_assign(rhs);
 	}
-	constexpr decimal& operator=(double rhs) {
+	decimal& operator=(double rhs) {
 		return float_assign(rhs);
 	}
 	decimal& operator=(long double rhs) {
@@ -551,7 +551,7 @@ protected:
 	}
 
 	template<typename Ty>
-	constexpr decimal& float_assign(Ty& rhs) {
+	decimal& float_assign(Ty& rhs) {
 		if (rhs < 0.5 && rhs > -0.5) {
 			return *this = 0;
 		}

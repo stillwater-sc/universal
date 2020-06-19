@@ -111,5 +111,21 @@ inline bitblock<rbits> extract_fraction(const fixpnt<nbits, rbits, arithmetic>& 
 	return fraction;
 }
 
+// clang <complex> implementation is calling these functions so we need implementations for fixpnt
+
+template<size_t nbits, size_t rbits, bool arithmetic>
+inline bool isnan(const fixpnt<nbits, rbits, arithmetic>& p) { return false; }
+
+template<size_t nbits, size_t rbits, bool arithmetic>
+inline bool isinf(const fixpnt<nbits, rbits, arithmetic>& p) { return false; }
+
+// copysign returns a value with the magnitude of a, and the sign of b
+template<size_t nbits, size_t rbits, bool arithmetic>
+inline fixpnt<nbits, rbits, arithmetic> copysign(const fixpnt<nbits, rbits, arithmetic>& a, const fixpnt<nbits, rbits, arithmetic>& b) { 
+    fixpnt<nbits, rbits, arithmetic> c(a);
+    if (a.sign() == b.sign()) return c;
+    return -c; 
+}
+
 } // namespace unum
 } // namespace sw
