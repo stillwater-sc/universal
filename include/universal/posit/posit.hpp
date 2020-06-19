@@ -1038,33 +1038,28 @@ public:
 	explicit operator long double() const { return to_long_double(); }
 
 	// SELECTORS
-	bool isnar() const {
+	inline bool sign() const { return _raw_bits[nbits - 1]; }
+	inline bool isnar() const {
 		if (_raw_bits[nbits - 1] == false) return false;
 		bitblock<nbits> tmp(_raw_bits);			
 		tmp.reset(nbits - 1);
 		return tmp.none() ? true : false;
 	}
-	bool iszero() const {
-		return _raw_bits.none() ? true : false;
-	}
-	bool isone() const { // pattern 010000....
+	inline bool iszero() const { return _raw_bits.none() ? true : false; }
+	inline bool isone() const { // pattern 010000....
 		bitblock<nbits> tmp(_raw_bits);
 		tmp.set(nbits - 2, false);
 		return _raw_bits[nbits - 2] & tmp.none();
 	}
-	bool isminusone() const { // pattern 110000...
+	inline bool isminusone() const { // pattern 110000...
 		bitblock<nbits> tmp(_raw_bits);
 		tmp.set(nbits - 1, false);
 		tmp.set(nbits - 2, false);
 		return _raw_bits[nbits - 1] & _raw_bits[nbits - 2] & tmp.none();
 	}
-	bool isneg() const {
-		return _raw_bits[nbits - 1];;
-	}
-	bool ispos() const {
-		return !_raw_bits[nbits - 1];
-	}
-	bool ispowerof2() const {
+	inline bool isneg() const { return _raw_bits[nbits - 1]; }
+	inline bool ispos() const { return !_raw_bits[nbits - 1]; }
+	inline bool ispowerof2() const {
 		bool s;
 		regime<nbits, es> r;
 		exponent<nbits, es> e;
@@ -1072,7 +1067,7 @@ public:
 		decode(_raw_bits, s, r, e, f);
 		return f.none();
 	}
-	bool isinteger() const { return true; } // return (floor(*this) == *this) ? true : false; }
+	inline bool isinteger() const { return true; } // return (floor(*this) == *this) ? true : false; }
 
 	bitblock<nbits>    get() const { return _raw_bits; }
 	unsigned long long encoding() const { return _raw_bits.to_ullong(); }

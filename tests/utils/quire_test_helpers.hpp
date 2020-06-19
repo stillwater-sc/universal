@@ -250,7 +250,7 @@ namespace sw {
 				//std::cout << "posit pattern: " << pattern << std::endl;
 
 				ponemme = 1.0f; ponemme--;
-				//ponepme = 1.0f; ponepme++;
+				ponepme = 1.0f; ponepme++;
 				pb = ponemme;
 				pmul = pa * pb;
 

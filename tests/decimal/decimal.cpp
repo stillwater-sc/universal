@@ -115,7 +115,7 @@ int VerifyDivision(const std::string& tag, long ub, bool bReportIndividualTestCa
 		decimal d1 = i;
 		for (long j = -ub; j <= ub; ++j) {
 			decimal d2 = j;
-			long ref;
+			long ref = 0; // clang insists on initializing this to silence a warning
 			if (j == 0) {
 				try {
 					dref = d1 / d2;

@@ -551,7 +551,7 @@ protected:
 	}
 
 	template<typename Ty>
-	constexpr decimal& float_assign(Ty& rhs) {
+	decimal& float_assign(Ty& rhs) {
 		if (rhs < 0.5 && rhs > -0.5) {
 			return *this = 0;
 		}

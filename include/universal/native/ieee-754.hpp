@@ -31,6 +31,7 @@ static constexpr unsigned IEEE_FLOAT_SIGN_BITS = 1;
 
 union float_decoder {
   float_decoder() : f{0.0f} {}
+  float_decoder(float _f) : f{_f} {}
   float f;
   struct {
     uint32_t fraction : 23;
@@ -41,6 +42,7 @@ union float_decoder {
 
 union double_decoder {
   double_decoder() : d{0.0} {}
+  double_decoder(double _d) : d{_d} {}
   double d;
   struct {
     uint64_t fraction : 52;
@@ -269,6 +271,7 @@ inline std::string to_base2_scientific(const double& number) {
 /* Clang/LLVM. ---------------------------------------------- */
 union long_double_decoder {
 	long_double_decoder() : ld{0.0l} {}
+	long_double_decoder(long double _ld) : ld{_ld} {}
 	long double ld;
 	struct {
 		uint64_t fraction : 63;
@@ -352,7 +355,7 @@ inline std::string to_triple(const long double& number) {
 }
 
 /// Returns a tuple of sign, exponent, and fraction.
-constexpr inline std::tuple<bool, int32_t, uint32_t> ieee_components(float fp)
+inline std::tuple<bool, int32_t, uint32_t> ieee_components(float fp)
 {
     static_assert(std::numeric_limits<float>::is_iec559, 
                   "This function only works when float complies IEC 559 (IEEE 754)");
@@ -373,7 +376,7 @@ constexpr inline std::tuple<bool, int32_t, uint32_t> ieee_components(float fp)
 }
 
 /// Returns a tuple of sign, exponent, and fraction.
-constexpr inline std::tuple<bool, int64_t, uint64_t> ieee_components(double fp)
+inline std::tuple<bool, int64_t, uint64_t> ieee_components(double fp)
 {
     static_assert(std::numeric_limits<double>::is_iec559, 
                   "This function only works when double complies IEC 559 (IEEE 754)");
