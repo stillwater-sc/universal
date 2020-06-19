@@ -194,7 +194,7 @@ public:
 	decimal& operator=(float rhs) {
 		return float_assign(rhs);
 	}
-	constexpr decimal& operator=(double rhs) {
+	decimal& operator=(double rhs) {
 		return float_assign(rhs);
 	}
 	decimal& operator=(long double rhs) {
