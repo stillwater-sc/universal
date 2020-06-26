@@ -25,27 +25,79 @@ Keywords: deterministic chaos, float precision
  */
 
 template<typename Real>
-class matrix : public std::vector<Real> {
+class matrix {
 public:
-	matrix() {}
-	matrix(unsigned _n, unsigned _m) : n{ _n }, m{ _m }, std::vector<Real>(n*m, Real(0.0)) { }
+	typedef Real                              value_type;
+	typedef const value_type&                 const_reference;
+	typedef value_type&                       reference;
+	typedef const value_type*                 const_pointer_type;
 
-	Real operator()(int i, int j) { return this->operator[](i*m + j); }
-	unsigned rows() { return n; }
-	unsigned cols() { return m; }
+	matrix() {}
+	matrix(unsigned _n, unsigned _m) : n{ _n }, m{ _m }, data(n*m, Real(0.0)) { }
+
+	Real operator()(int i, int j) const { return data[i*m + j]; }
+	Real& operator()(int i, int j) { return data[i*m + j]; }
+
+	unsigned rows() const { return n; }
+	unsigned cols() const { return m; }
 
 private:
 	unsigned n, m;
+	std::vector<Real> data;
 };
 
-template<typename Matrix>
-void BakersMap(const Matrix& previous, Matrix& next) {
-	for (unsigned i = 0; i < previous.rows(); ++i) {
-		for (unsigned j = 0; m < previous.cols(); ++j) {
+template<typename Real>
+std::ostream& operator<<(std::ostream& ostr, const matrix<Real>& A) {
+	unsigned n = A.rows();
+	unsigned m = A.cols();
+	for (unsigned i = 0; i < n; ++i) {
+		for (unsigned j = 0; j < n; ++j) {
+			ostr << A(i, j) << " ";
+		}
+		ostr << '\n';
+	}
+	return ostr;
+}
 
+template<typename Matrix>
+void BakersMap(Matrix& S) {
+	using Real = typename Matrix::value_type;
+	unsigned n = S.rows();
+	unsigned m = S.cols();
+	assert(n == m);
+	for (unsigned i = 0; i < n; ++i) {
+		for (unsigned j = 0; j < n; ++j) {
+			S(i, j) = Real(rand()) / Real(RAND_MAX);
 		}
 	}
 }
+
+/*
+  Folded baker's map acts on the unit square as
+
+  S_baker-folded(x, y) = { (2x, y/2)         for 0.0 <= x < 0.5
+                         { (2 - 2x, 1 - y/2) for 0.5 <= x < 1.0
+ */
+template<typename Matrix>
+void KneadAndFold(const Matrix& S, Matrix& Snext) {
+	using Real = typename Matrix::value_type;
+	unsigned n = S.rows();
+	unsigned m = S.cols();
+	assert(n == m);
+	for (unsigned i = 0; i < n; ++i) {
+		Real x = i / n;
+		for (unsigned j = 0; j < n; ++j) {
+			Real y = j / n;
+			if (x < Real(0.5)) {
+				Snext(i, j) = S(2 * i, j / 2);
+			}
+			else {
+				Snext(i, j) = S(2 - 2 * i, 1 - j / 2);
+			}
+		}
+	}
+}
+
 int main()
 try {
 	using namespace std;
@@ -53,10 +105,12 @@ try {
 	cout << "Baker's Map\n";
 
 	matrix<float> square(5, 5);
-	cout << "line 58\n";
 	float v = square(1, 1);
 	cout << v << endl;
-	cout << "line 61\n";
+
+	matrix<float> S(5, 5);
+	BakersMap(S);
+	cout << S << endl;
 
 	return EXIT_SUCCESS;
 }
