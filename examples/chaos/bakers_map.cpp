@@ -210,7 +210,7 @@ try {
 		x *= sw::unum::useed<32, 2>() * sw::unum::useed<32,2>();
 		std::cout << "minpos<32,2> * useed^2 : " << x << '\n';
 		Real y = 0.75;
-		TraceBakersMap(x, y, 25);
+		TraceBakersMap(x, y, 125);
 	}
 
 	return EXIT_SUCCESS;
