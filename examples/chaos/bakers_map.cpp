@@ -108,7 +108,7 @@ void KneadAndFold(const Matrix& S, Matrix& Snext) {
 template<typename Real>
 void Knead(int nrOfFolds) {
 	constexpr int N = 100;
-	matrix<Real> S1(N, N), S2(N, N);
+	sw::unum::blas::matrix<Real> S1(N, N), S2(N, N);
 	InitializeTwoBands(S1);
 	//cout << S1 << endl;
 
