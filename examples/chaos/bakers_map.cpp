@@ -59,15 +59,38 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Real>& A) {
 	return ostr;
 }
 
+/*
+  Folded baker's map acts on the unit square as
+
+  S_baker-folded(x, y) = { (2x, y/2)         for 0.0 <= x < 0.5
+						 { (2 - 2x, 1 - y/2) for 0.5 <= x < 1.0
+ */
+template<typename Real>
+std::pair<Real, Real> BakersMap(const std::pair<Real, Real>& xy) {
+	std::pair<Real, Real> map;
+	if (xy.first < Real(0.5)) {
+		map.first = 2 * xy.first;
+		map.second = xy.second / 2;
+	}
+	else {
+		map.first = 2 - 2 * xy.first;
+		map.second = 1 - xy.second / 2;
+	}
+	return map;
+}
+
 template<typename Matrix>
-void BakersMap(Matrix& S) {
+void InitializeTwoBands(Matrix& S) {
 	using Real = typename Matrix::value_type;
 	unsigned n = S.rows();
 	unsigned m = S.cols();
 	assert(n == m);
 	for (unsigned i = 0; i < n; ++i) {
-		for (unsigned j = 0; j < n; ++j) {
-			S(i, j) = Real(rand()) / Real(RAND_MAX);
+		for (unsigned j = 0; j < m / 2; ++j) {
+			S(i, j) = Real(0.25);
+		}
+		for (unsigned j = m / 2; j < m; ++j) {
+			S(i, j) = Real(0.75);
 		}
 	}
 }
@@ -84,19 +107,73 @@ void KneadAndFold(const Matrix& S, Matrix& Snext) {
 	unsigned n = S.rows();
 	unsigned m = S.cols();
 	assert(n == m);
+	auto oldprecision = std::cout.precision();
+	std::cout << std::setprecision(15);
 	for (unsigned i = 0; i < n; ++i) {
-		Real x = i / n;
-		for (unsigned j = 0; j < n; ++j) {
-			Real y = j / n;
-			if (x < Real(0.5)) {
-				Snext(i, j) = S(2 * i, j / 2);
+		Real x = Real(i) / n;
+		for (unsigned j = 0; j < m; ++j) {
+			Real y = Real(j) / m;
+			Real xnext, ynext;
+			if (x <= Real(0.5)) {
+				xnext = 2 * x;
+				ynext = y / 2;
+				Snext(i, j) = S(unsigned(xnext * n), unsigned(ynext * m));
 			}
 			else {
-				Snext(i, j) = S(2 - 2 * i, 1 - j / 2);
+				xnext = 2 - 2 * x;
+				ynext = 1 - y / 2;
+				Snext(i, j) = S(unsigned(xnext * n), unsigned(ynext * m));
 			}
+			// trace the accuracy of (x,y) of a point
+			if (i == (n - 1) && j == (m - 1)) {
+				std::cout << '(' << std::setw(15) << sw::unum::to_binary(xnext * n) << ',';
+				std::cout << std::setw(15) << sw::unum::to_binary(ynext * m) << ")\n";
+				std::cout << '(' << x << ',' << y << ") maps to ";
+				std::cout << '(' << xnext << ',' << ynext << ") truncates to ";
+				std::cout << '(' << unsigned(xnext * n) << ',' << unsigned(ynext * m) << ")\n";
+			}
+			//std::cout << Snext << std::endl;
+		}
+	}
+	std::cout << std::setprecision(oldprecision);
+}
+
+template<typename Real>
+void Knead(int nrOfFolds) {
+	constexpr int N = 100;
+	matrix<Real> S1(N, N), S2(N, N);
+	InitializeTwoBands(S1);
+	//cout << S1 << endl;
+
+	for (unsigned nrOfFolds = 0; nrOfFolds < 10; ++nrOfFolds) {
+		if (nrOfFolds % 2) {
+			KneadAndFold(S2, S1); // fold back
+			//cout << S1 << endl;
+		}
+		else {
+			KneadAndFold(S1, S2); // fold forward
+			//cout << S2 << endl;
 		}
 	}
 }
+
+template<typename Real>
+std::ostream& operator<<(std::ostream& ostr, std::pair<Real, Real>& xy) {
+	return ostr << '(' << sw::unum::color_print(xy.first) << ", " << sw::unum::color_print(xy.second) << ") : (" << xy.first << ", " << xy.second << ')';
+}
+
+template<typename Real>
+void TraceBakersMap(const Real& x, const Real& y, unsigned nrIterations) {
+	std::cout << typeid(Real).name() << '\n';
+	std::pair<Real, Real> xy;
+	xy.first = x;
+	xy.second = y;
+	for (unsigned i = 0; i < nrIterations; ++i) {
+		xy = BakersMap(xy);
+		std::cout << std::setw(5) << i << " : " << xy << std::endl;
+	}
+}
+
 
 int main()
 try {
@@ -104,13 +181,35 @@ try {
 
 	cout << "Baker's Map\n";
 
-	matrix<float> square(5, 5);
-	float v = square(1, 1);
-	cout << v << endl;
+	{
+		using Real = float;
+		Real x = 0.125 * 0.125 * 0.125 * 0.125 * 0.125 * 0.125;
+		Real y = 0.75;
+		TraceBakersMap(x, y, 25);
+	}
 
-	matrix<float> S(5, 5);
-	BakersMap(S);
-	cout << S << endl;
+	{
+		using Real = sw::unum::posit<32,2>;
+		Real x = 0.125 * 0.125 * 0.125 * 0.125 * 0.125 * 0.125;
+		Real y = 0.75;
+		TraceBakersMap(x, y, 25);
+	}
+
+	cout << "Baker's Map\n";
+	double random_value = double(rand()) / double(RAND_MAX);
+	{
+		using Real = float;
+		Real x = Real(random_value);
+		Real y = 0.75;
+		TraceBakersMap(x, y, 25);
+	}
+	{
+		using Real = sw::unum::posit<32, 2>;
+		Real x = random_value;
+		Real y = 0.75;
+		TraceBakersMap(x, y, 25);
+	}
+
 
 	return EXIT_SUCCESS;
 }

@@ -1,6 +1,6 @@
 // reverse_view.hpp: wrapper function to reverse a container iteration for range based loops
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -8,8 +8,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 #if NO_XVALUE_CONTAINER_REQUIRED
 
@@ -91,5 +90,4 @@ namespace unum {
 
 #endif // NO_XVALUE_CONTAINER_REQUIRED
 
-} // unum
-} // sw
+}} // namespace sw::unum
