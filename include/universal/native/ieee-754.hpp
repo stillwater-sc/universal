@@ -10,8 +10,9 @@
 #include <limits>
 #include <tuple>
 
-namespace sw {
-namespace unum {
+#include <universal/utility/color_print.hpp>
+
+namespace sw { namespace unum {
 
 ////////////////////////////////////////////////////////////////////////
 // numerical helpers
@@ -151,6 +152,45 @@ inline std::string to_base2_scientific(const float& number) {
 	extract_fp_components(number, s, base2Exp, _fr, mantissa);
 	ss << (s ? "-" : "+") << "1." << std::bitset<23>(mantissa) << "e2^" << std::showpos << base2Exp - 1;
 */
+	return ss.str();
+}
+
+// generate a color coded binary string for a native single precision IEEE floating point
+inline std::string color_print(const float& number) {
+	std::stringstream ss;
+	float_decoder decoder;
+	decoder.f = number;
+
+	Color red(ColorCode::FG_RED);
+	Color yellow(ColorCode::FG_YELLOW);
+	Color blue(ColorCode::FG_BLUE);
+	Color magenta(ColorCode::FG_MAGENTA);
+	Color cyan(ColorCode::FG_CYAN);
+	Color white(ColorCode::FG_WHITE);
+	Color def(ColorCode::FG_DEFAULT);
+
+	// print sign bit
+	ss << red << (decoder.parts.sign ? '1' : '0') << '.';
+
+	// print exponent bits
+	{
+		uint8_t mask = 0x80;
+		for (int i = 7; i >= 0; --i) {
+			ss << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
+			mask >>= 1;
+		}
+	}
+
+	ss << '.';
+
+	// print fraction bits
+	uint32_t mask = (uint32_t(1) << 22);
+	for (int i = 22; i >= 0; --i) {
+		ss << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
+		mask >>= 1;
+	}
+	
+	ss << def;
 	return ss.str();
 }
 

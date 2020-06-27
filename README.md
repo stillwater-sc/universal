@@ -9,7 +9,9 @@ The goal of Universal Numbers, or unums, is to replace IEEE floating-point with 
 
 The motivation to replace IEEE floating-point had been brewing in the HPC community since the late 90's as most algorithms became memory bound. The inefficiency of IEEE floating-point has been measured and agreed upon, but it was the AI Deep Learning community that moved first and replaced IEEE with number systems that are tailored to the application to yield speed-ups of two to three orders of magnitude.
 
-The Universal library is a ready-to-use header-only library that provides plug-in replacement for native types, and provides a low-friction environment to start exploring alternatives of IEEE in your own algorithms. The basic usage pattern is as simple as:
+The Universal library is a ready-to-use header-only library that provides plug-in replacement for native types, and provides a low-friction environment to start exploring alternatives to IEEE floating-point in your own algorithms. 
+
+The basic use pattern is as simple as:
 ```
 #include <universal/posit/posit>
 
@@ -30,7 +32,7 @@ int main() {
 }
 ```
 
-The library contains integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and several multi-precision integers and floats. There are example skeletons if you desire to add your own.
+The library contains integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and several multi-precision integers and floats. There are example skeletons to get you started quickly if you desire to add your own number system, which is highly encouraged.
 
 ## Quick start
 
@@ -71,7 +73,7 @@ Install the latest cmake [cmake](https://cmake.org/download).
 
 The library is a pure template library without any further dependencies.
 
-Simply clone the github repo, and you are ready to build the universal library. What you are building are tools to work with floats and posits, educational programs that highlight the use of the posit library, and the posit verification suite. Issue the command _make test_ (or better yet _ctest -j 16_ (or how many cores you have)) to run the complete posit verification suite, which can be used as a regression capability when you are modifying the source code. This will take several minutes but will touch all the corners of the posit functionality.
+Simply clone the github repo, and you are ready to build the educational examples, application examples, and the test suites that come with the Universal library. What you are building are tools to work with floats and posits, educational programs that highlight the use of the posit library, and the posit verification suite. Issue the command _make test_ (or better yet _ctest -j 16_ (or how many cores you have)) to run the complete posit verification suite, which can be used as a regression capability when you are modifying the source code. This will take several minutes but will touch all the corners of the posit functionality.
 
 ```
 > git clone https://github.com/stillwater-sc/universal

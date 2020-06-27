@@ -1,16 +1,16 @@
 //  quire_accumulations.cpp : computational path experiments with quires
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/blas/blas.hpp>
 // set to 1 if you want to generate hw test vectors
 #define HARDWARE_QA_OUTPUT 0
 
 // type definitions for the important types, posit<> and quire<>
-#include "universal/posit/posit.hpp"
-#include "universal/posit/quire.hpp"
-#include "universal/posit/fdp.hpp"
+#include <universal/posit/posit.hpp>
+#include <universal/posit/quire.hpp>
+#include <universal/posit/fdp.hpp>
 
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
@@ -77,7 +77,7 @@ int ValidateExactDotProduct() {
 		for_each(begin(pv), end(pv), [&fones](const Scalar& p) {
 			fones.push_back(float(p));
 		});
-		float result = dot(nrElements, fones, 1, fv, 1);
+		float result = sw::unum::blas::dot(nrElements, fones, 1, fv, 1);
 		cout << "regular DOT test yields = " << result << endl << endl;
 	}
 

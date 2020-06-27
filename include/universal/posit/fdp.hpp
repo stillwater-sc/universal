@@ -4,25 +4,10 @@
 // Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <iostream>
 #include <vector>
 
-namespace sw {
-	namespace unum {
-
-// dot product: the operator vector::x[index] is limited to uint32_t, so the arguments are limited to uint32_t as well
-// since we do not support arbitrary posit configuration conversions, the element type of the vectors x and y are declared to be the same.
-// TODO: investigate if the vector<> index is always a 32bit entity?
-template<typename Ty>
-Ty dot(size_t n, const std::vector<Ty>& x, size_t incx, const std::vector<Ty>& y, size_t incy) {
-	Ty sum_of_products = 0;
-	size_t cnt, ix, iy;
-	for (cnt = 0, ix = 0, iy = 0; cnt < n && ix < x.size() && iy < y.size(); ++cnt, ix += incx, iy += incy) {
-		Ty product = x[ix] * y[iy];
-		sum_of_products += product;
-	}
-	return sum_of_products;
-}
+namespace sw { namespace unum {
 
 /// //////////////////////////////////////////////////////////////////
 /// fused dot product operators
@@ -96,6 +81,5 @@ typename Vector::value_type fdp(const Vector& x, const Vector& y) {
 }
 #endif
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::unum
 

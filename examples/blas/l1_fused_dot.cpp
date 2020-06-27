@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/blas/blas.hpp>
 
 // enable the following define to show the intermediate steps in the fused-dot product
 // #define POSIT_VERBOSE_OUTPUT
@@ -13,23 +14,12 @@
 #include <universal/posit/posit>
 
 template<typename Ty>
-Ty minValue(const std::vector<Ty>& samples) {
-	typename std::vector<Ty>::const_iterator it = min_element(samples.begin(), samples.end());
-	return *it;
-}
-template<typename Ty>
-Ty maxValue(const std::vector<Ty>& samples) {
-	typename std::vector<Ty>::const_iterator it = max_element(samples.begin(), samples.end());
-	return *it;
-}
-
-template<typename Ty>
-void PrintVector(std::ostream& ostr, const std::string& name, const std::vector<Ty>& v) {
+void PrintVector_(std::ostream& ostr, const std::string& name, const std::vector<Ty>& v) {
 	size_t d = v.size();
 	ostr << "Vector: " << name << " is of size " << d << " elements" << std::endl;
 	std::streamsize prec = ostr.precision();
 	ostr << std::setprecision(17);
-	for (size_t j = 0; j<d; ++j) std::cout << std::setw(20) << v[j] << " ";
+	for (size_t j = 0; j<d; ++j) ostr << std::setw(20) << v[j] << " ";
 	ostr << std::setprecision(prec) << std::endl;
 }
 
@@ -71,24 +61,26 @@ try {
 	
 	{
 		using IEEEType = float;
+		using vector = sw::unum::blas::vector<IEEEType>;
 		IEEEType a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
 		IEEEType b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
-		vector<IEEEType> xieee = { a1, a2, a3, a4 };
-		vector<IEEEType> yieee = { b1, b2, b3, b4 };
+		vector xieee = { a1, a2, a3, a4 };
+		vector yieee = { b1, b2, b3, b4 };
 
-		PrintVector(cout, "a: ", xieee);
-		PrintVector(cout, "b: ", yieee);
+		cout << "a: " << xieee << '\n';
+		cout << "b: " << yieee << '\n';
 
-		cout << endl << endl;
+		cout << "\n\n";
 		cout << "IEEE float   BLAS dot(x,y)  : " << dot(xieee.size(), xieee, 1, yieee, 1) << "           <----- correct answer is 2" << endl;
 	}
 
 	{
 		using IEEEType = double;
+		using vector = sw::unum::blas::vector<IEEEType>;
 		IEEEType a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
 		IEEEType b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
-		vector<IEEEType> xieee = { a1, a2, a3, a4 };
-		vector<IEEEType> yieee = { b1, b2, b3, b4 };
+		vector xieee = { a1, a2, a3, a4 };
+		vector yieee = { b1, b2, b3, b4 };
 
 		cout << "IEEE double  BLAS dot(x,y)  : " << dot(xieee.size(), xieee, 1, yieee, 1) << "           <----- correct answer is 2" << endl;
 	}
