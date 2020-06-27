@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
+#include <universal/blas/blas.hpp>
 #include <universal/posit/posit>
 
 /*
@@ -24,40 +25,6 @@ of the transfer operator can be explicitly determined.
 Keywords: deterministic chaos, float precision
  */
 
-template<typename Real>
-class matrix {
-public:
-	typedef Real                              value_type;
-	typedef const value_type&                 const_reference;
-	typedef value_type&                       reference;
-	typedef const value_type*                 const_pointer_type;
-
-	matrix() {}
-	matrix(unsigned _n, unsigned _m) : n{ _n }, m{ _m }, data(n*m, Real(0.0)) { }
-
-	Real operator()(int i, int j) const { return data[i*m + j]; }
-	Real& operator()(int i, int j) { return data[i*m + j]; }
-
-	unsigned rows() const { return n; }
-	unsigned cols() const { return m; }
-
-private:
-	unsigned n, m;
-	std::vector<Real> data;
-};
-
-template<typename Real>
-std::ostream& operator<<(std::ostream& ostr, const matrix<Real>& A) {
-	unsigned n = A.rows();
-	unsigned m = A.cols();
-	for (unsigned i = 0; i < n; ++i) {
-		for (unsigned j = 0; j < n; ++j) {
-			ostr << A(i, j) << " ";
-		}
-		ostr << '\n';
-	}
-	return ostr;
-}
 
 /*
   Folded baker's map acts on the unit square as
@@ -178,6 +145,7 @@ void TraceBakersMap(const Real& x, const Real& y, unsigned nrIterations) {
 int main()
 try {
 	using namespace std;
+	using namespace sw::unum::blas;
 
 	cout << "Baker's Map\n";
 
