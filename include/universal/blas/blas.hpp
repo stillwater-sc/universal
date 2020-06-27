@@ -8,7 +8,11 @@
 #include "vector.hpp"
 #include "matrix.hpp"
 
-// L1
+#include "blas_l1.hpp"
+#include "blas_l2.hpp"
+#include "blas_l3.hpp"
+
+
 
 // L2
 
