@@ -4,6 +4,7 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/posit/posit>
 #include "vector.hpp"
 
 namespace sw { namespace unum { namespace blas { 
@@ -33,7 +34,6 @@ typename Vector::value_type sum(size_t n, const Vector& x, size_t incx = 1) {
 // a time x plus y
 template<typename Scalar, typename Vector>
 void axpy(size_t n, Scalar a, const Vector& x, size_t incx, Vector& y, size_t incy) {
-	using namespace mtl;
 	size_t cnt, ix, iy;
 	for (cnt = 0, ix = 0, iy = 0; cnt < n && ix < size(x) && iy < size(y); ++cnt, ix += incx, iy += incy) {
 		y[iy] += a * x[ix];
@@ -43,7 +43,6 @@ void axpy(size_t n, Scalar a, const Vector& x, size_t incx, Vector& y, size_t in
 // vector copy
 template<typename Vector>
 void copy(size_t n, const Vector& x, size_t incx, Vector& y, size_t incy) {
-	using namespace mtl;
 	size_t cnt, ix, iy;
 	for (cnt = 0, ix = 0, iy = 0; cnt < n && ix < size(x) && iy < size(y); ++cnt, ix += incx, iy += incy) {
 		y[iy] = x[ix];
