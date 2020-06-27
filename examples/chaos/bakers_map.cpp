@@ -46,6 +46,26 @@ std::pair<Real, Real> BakersMap(const std::pair<Real, Real>& xy) {
 	return map;
 }
 
+
+template<typename Real>
+std::ostream& operator<<(std::ostream& ostr, std::pair<Real, Real>& xy) {
+	return ostr << '(' << sw::unum::color_print(xy.first) << ", " << sw::unum::color_print(xy.second) << ") : (" << xy.first << ", " << xy.second << ')';
+}
+
+// iterate a set of (x,y) values through the Baker's map
+template<typename Real>
+void TraceBakersMap(const Real& x, const Real& y, unsigned nrIterations) {
+	std::cout << typeid(Real).name() << '\n';
+	std::pair<Real, Real> xy(x, y);
+//	xy.first = x;
+//	xy.second = y;
+	std::cout << std::setw(5) << 0 << " : " << xy << std::endl;
+	for (unsigned i = 1; i < nrIterations; ++i) {
+		xy = BakersMap(xy);
+		std::cout << std::setw(5) << i << " : " << xy << std::endl;
+	}
+}
+
 template<typename Matrix>
 void InitializeTwoBands(Matrix& S) {
 	using Real = typename Matrix::value_type;
@@ -115,32 +135,12 @@ void Knead(int nrOfFolds) {
 	for (unsigned nrOfFolds = 0; nrOfFolds < 10; ++nrOfFolds) {
 		if (nrOfFolds % 2) {
 			KneadAndFold(S2, S1); // fold back
-			//cout << S1 << endl;
 		}
 		else {
 			KneadAndFold(S1, S2); // fold forward
-			//cout << S2 << endl;
 		}
 	}
 }
-
-template<typename Real>
-std::ostream& operator<<(std::ostream& ostr, std::pair<Real, Real>& xy) {
-	return ostr << '(' << sw::unum::color_print(xy.first) << ", " << sw::unum::color_print(xy.second) << ") : (" << xy.first << ", " << xy.second << ')';
-}
-
-template<typename Real>
-void TraceBakersMap(const Real& x, const Real& y, unsigned nrIterations) {
-	std::cout << typeid(Real).name() << '\n';
-	std::pair<Real, Real> xy;
-	xy.first = x;
-	xy.second = y;
-	for (unsigned i = 0; i < nrIterations; ++i) {
-		xy = BakersMap(xy);
-		std::cout << std::setw(5) << i << " : " << xy << std::endl;
-	}
-}
-
 
 int main()
 try {
@@ -178,6 +178,40 @@ try {
 		TraceBakersMap(x, y, 25);
 	}
 
+	// setting x to minpos fails as 2 * minpos still rounds to minpos
+
+	cout << "Baker's Map: minpos fail:\n";
+	{
+		using Real = sw::unum::posit<32, 2>;
+		std::cout << std::setprecision(17);
+		Real x;
+		sw::unum::minpos(x);
+		std::cout << "minpos<32,2> : " << x << '\n';
+		Real y = 0.75;
+		TraceBakersMap(x, y, 5);
+	}
+	cout << "Baker's Map: region k-1:\n";
+	{
+		using Real = sw::unum::posit<32, 2>;
+		std::cout << std::setprecision(17);
+		Real x;
+		sw::unum::minpos(x);
+		x *= sw::unum::useed<32, 2>();
+		std::cout << "minpos<32,2> * useed : " << x << '\n';
+		Real y = 0.75;
+		TraceBakersMap(x, y, 5);
+	}
+	cout << "Baker's Map: region k-2:\n";
+	{
+		using Real = sw::unum::posit<32, 2>;
+		std::cout << std::setprecision(17);
+		Real x;
+		sw::unum::minpos(x);
+		x *= sw::unum::useed<32, 2>() * sw::unum::useed<32,2>();
+		std::cout << "minpos<32,2> * useed^2 : " << x << '\n';
+		Real y = 0.75;
+		TraceBakersMap(x, y, 25);
+	}
 
 	return EXIT_SUCCESS;
 }
