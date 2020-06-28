@@ -24,6 +24,15 @@ public:
 	vector(size_t N, const Scalar& val) : data(N, val) {}
 	vector(std::initializer_list<Scalar> iList) : data(iList) {}
 
+	vector& operator=(const Scalar& val) {
+		for (auto& v : data) v = val;
+		return *this;
+	}
+	vector& assign(const Scalar& val) {
+		for (auto& v : data) v = val;
+		return *this;
+	}
+
 	size_t size() const { return data.size(); }
 
 	value_type operator[](size_t index) const { return data[index]; }

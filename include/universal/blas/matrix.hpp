@@ -18,31 +18,53 @@ public:
 	typedef const value_type*                 const_pointer_type;
 
 	matrix() {}
-	matrix(unsigned _n, unsigned _m) : n{ _n }, m{ _m }, data(n*m, Scalar(0.0)) { }
+	matrix(size_t _m, size_t _n) : m{ _m }, n{ _n }, data(m*n, Scalar(0.0)) { }
 
-	Scalar operator()(int i, int j) const { return data[i*m + j]; }
-	Scalar& operator()(int i, int j) { return data[i*m + j]; }
+	Scalar operator()(size_t i, size_t j) const { return data[i*n + j]; }
+	Scalar& operator()(size_t i, size_t j) { return data[i*n + j]; }
 
-	unsigned rows() const { return n; }
-	unsigned cols() const { return m; }
+	void setzero() {
+		for (auto& elem : data) {
+			elem = Scalar(0);
+		}
+	}
+	size_t rows() const { return m; }
+	size_t cols() const { return n; }
 
 private:
-	unsigned n, m;
+	size_t m, n; // m rows and n columns
 	std::vector<Scalar> data;
 };
 
 // ostream operator: no need to declare as friend as it only uses public interfaces
 template<typename Scalar>
 std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
-	unsigned n = A.rows();
-	unsigned m = A.cols();
-	for (unsigned i = 0; i < n; ++i) {
-		for (unsigned j = 0; j < n; ++j) {
+	size_t m = A.rows();
+	size_t n = A.cols();
+	for (size_t i = 0; i < m; ++i) {
+		for (size_t j = 0; j < n; ++j) {
 			ostr << A(i, j) << " ";
 		}
 		ostr << '\n';
 	}
 	return ostr;
+}
+
+template<typename Scalar>
+void laplacian_setup(matrix<Scalar>& A, size_t m, size_t n) {
+	A.setzero();
+	assert(A.rows() == m * n);
+	for (size_t i = 0; i < m; ++i) {
+		for (size_t j = 0; j < n; ++j) {
+			Scalar four(4.0), minus_one(-1.0);
+			size_t row = i * n + j;
+			A(row, row) = four;
+			if (j < n - 1) A(row, row + 1) = minus_one;
+			if (i < m - 1) A(row, row + n) = minus_one;
+			if (j > 0) A(row, row - 1) = minus_one;
+			if (i > 0) A(row, row - n) = minus_one;
+		}
+	}
 }
 
 }}} // namespace sw::unum::blas

@@ -3,7 +3,6 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/blas/blas.hpp>
 
 // enable the following define to show the intermediate steps in the fused-dot product
 // #define POSIT_VERBOSE_OUTPUT
@@ -12,6 +11,7 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
+#include <universal/blas/blas.hpp>
 
 template<typename Ty>
 void PrintVector_(std::ostream& ostr, const std::string& name, const std::vector<Ty>& v) {

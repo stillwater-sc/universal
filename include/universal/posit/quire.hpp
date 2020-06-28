@@ -109,15 +109,15 @@ public:
 	// Constructors
 	quire() : _sign(false) { _capacity.reset(); _upper.reset(); _lower.reset(); }
 
-	explicit quire(int8_t initial_value)   { *this = initial_value; }
-	explicit quire(int16_t initial_value)  { *this = initial_value; }
-	explicit quire(int32_t initial_value)  { *this = initial_value; }
-	explicit quire(int64_t initial_value)  { *this = initial_value; }
-	explicit quire(uint64_t initial_value) { *this = initial_value; }
-	explicit quire(float initial_value)    { *this = initial_value; }
-	explicit quire(double initial_value)   { *this = initial_value; }
-	explicit quire(const posit<nbits, es>& rhs) { *this = rhs; }
-	template<size_t fbits> explicit quire(const value<fbits>& rhs) { *this = rhs; }
+	quire(int8_t initial_value)   { *this = initial_value; }
+	quire(int16_t initial_value)  { *this = initial_value; }
+	quire(int32_t initial_value)  { *this = initial_value; }
+	quire(int64_t initial_value)  { *this = initial_value; }
+	quire(uint64_t initial_value) { *this = initial_value; }
+	quire(float initial_value)    { *this = initial_value; }
+	quire(double initial_value)   { *this = initial_value; }
+	quire(const posit<nbits, es>& rhs) { *this = rhs; }
+	template<size_t fbits> quire(const value<fbits>& rhs) { *this = rhs; }
 
 	// Assignment operators: the class only supports native type values
 	// assigning a posit requires the convertion to a normalized value, i.e. q = posit<nbits,es>().to_value()
