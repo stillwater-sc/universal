@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <vector>
 #include <initializer_list>
+#include <cmath>  // for std::sqrt
 
 namespace sw { namespace unum { namespace blas {
 
@@ -70,6 +71,7 @@ public:
 		return sum;
 	}
 	Scalar norm() const {  // default is 2-norm
+		using std::sqrt;
 		Scalar twoNorm = 0;
 		for (auto v : data) twoNorm += v * v;
 		return sqrt(twoNorm);

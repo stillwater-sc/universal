@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
-// Author: Allan Leal   https://geg.ethz.ch/allan-leal/
+// Author: Allan Leal       : https://geg.ethz.ch/allan-leal/
 //         Theodore Omtzigt : port to Universal
 //
 // stdlib includes
@@ -13,7 +13,9 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <cmath>
 // universal BLAS
+#include <universal/posit/posit>
 #include <universal/blas/vector.hpp>
 #include <universal/blas/matrix.hpp>
 #include <universal/blas/lu.hpp>
