@@ -35,9 +35,8 @@ namespace sw {
 			constexpr base& reset() { *this= bitblock{}; return *this; }
 			using base::reset; // make unary reset visible
 			
-			
 			void setToZero() { std::bitset<nbits>::reset(); }
-			constexpr bool load_bits(const std::string& string_of_bits) {
+			bool load_bits(const std::string& string_of_bits) {
 				if (string_of_bits.length() != nbits) return false;
 				setToZero();
 				int msb = nbits - 1;
