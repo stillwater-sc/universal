@@ -100,9 +100,10 @@ vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
 // overload for posits uses fused dot products
 template<size_t nbits, size_t es>
 vector< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const vector< posit<nbits, es> >& x) {
+	constexpr size_t capacity = 20; // FDP for vectors < 1,048,576 elements
 	vector< posit<nbits, es> > b(A.rows());
 	for (size_t i = 0; i < A.rows(); ++i) {
-		quire<nbits, es> q;
+		quire<nbits, es, capacity> q;
 		for (size_t j = 0; j < A.cols(); ++j) {
 			q += quire_mul(A(i, j), x[j]);
 		}
