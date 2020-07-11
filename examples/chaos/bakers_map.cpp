@@ -4,8 +4,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
+#define POSIT_ENABLE_LITERALS 1
+#include <universal/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
-#include <universal/posit/posit>
 
 /*
 In dynamical systems theory, the baker's map is a chaotic map from the unit square into itself.
@@ -36,8 +37,8 @@ template<typename Real>
 std::pair<Real, Real> BakersMap(const std::pair<Real, Real>& xy) {
 	std::pair<Real, Real> map;
 	if (xy.first < Real(0.5)) {
-		map.first = 2 * xy.first;
-		map.second = xy.second / 2;
+		map.first = 2 * xy.first;  // <- this requires POSIT_ENABLE_LITERALS if you want to use posits for Real
+		map.second = xy.second / 2;// <- this line too of course
 	}
 	else {
 		map.first = 2 - 2 * xy.first;

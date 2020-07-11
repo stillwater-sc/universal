@@ -7,6 +7,7 @@
 #include <iostream>
 #include <vector>
 #include <initializer_list>
+#include <universal/posit/posit_fwd.hpp>
 
 namespace sw { namespace unum { namespace blas { 
 
