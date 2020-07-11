@@ -22,20 +22,36 @@ try {
 	using Scalar = sw::unum::posit<16, 1>;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
 	using Vector = sw::unum::blas::vector<Scalar>;
-	size_t m = 5;
-	size_t n = 4;
-	size_t N = m * n;
-	Matrix A(N, N);
-	laplacian_setup(A,m,n);
-	cout << A << endl;
-	Vector x(N), b(N);
-	// x = 1; // why does this call a copy constructor?
-	x.assign(1);
-	cout << "Matrix A:\n" << A << endl;
-	cout << "Input vector :\n" << x << endl;
-	matvec(b, A, x);
-	cout << "Scaled vector:\n" << b << endl;
+#if 0
+	{
+		size_t m = 5;
+		size_t n = 4;
+		size_t N = m * n;
+		Matrix A(N, N);
+		laplacian_setup(A,m,n);
+		cout << A << endl;
+		Vector x(N), b(N);
+		// x = 1; // why does this call a copy constructor?
+		x.assign(1);
+		cout << "Matrix A:\n" << A << endl;
+		cout << "Input vector :\n" << x << endl;
+		matvec(b, A, x);
+		cout << "Scaled vector:\n" << b << endl;
+	}
+#endif
 
+	{
+		Matrix A = { 
+			{ 1, 2 }, 
+		    { 3, 4 } 
+		};
+		cout << A << endl;
+		Vector x = { 1, 1 };
+		cout << x << endl;
+		Vector b(2);
+		b = A * x;
+		cout << b << endl;
+	}
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {

@@ -20,8 +20,21 @@ public:
 
 	matrix() {}
 	matrix(size_t _m, size_t _n) : m{ _m }, n{ _n }, data(m*n, Scalar(0.0)) { }
-	matrix(std::initializer_list<Scalar> iList) {
-
+	matrix(std::initializer_list< std::initializer_list<Scalar> > values) {
+		size_t nrows = values.size();
+		size_t ncols = values.begin()->size();
+		data.resize(nrows * ncols);
+		size_t r = 0;
+		for (auto l : values) {
+			if (l.size() == ncols) {
+				size_t c = 0;
+				for (auto v : l) {
+					data[r*ncols + c] = v;
+					++c;
+				}
+				++r;
+			}
+		}
 	}
 	matrix(const matrix& A) : m{ A.m }, n{ A.n }, data(A.data) {}
 
