@@ -14,44 +14,44 @@
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <universal/blas/blas.hpp>
 
+template<typename Scalar>
+void catastrophicFailure() {
+	using namespace std;
+	cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Vector = sw::unum::blas::vector<Scalar>;
+
+	Scalar a1 = 3.2e8;
+	Scalar a2 = 1;
+	Scalar a3 = -1;
+	Scalar a4 = 8e7;
+	Matrix A = { 
+		{ a1, a2, a3, a4 }, 
+		{ a1, a2, a3, a4 } 
+	};
+	cout << std::setprecision(10);
+	cout << "matrix A: \n" << A << endl;
+	Vector x = { 4.0e7, 1, -1, -1.6e8 };
+	cout << "vector x: \n" << x << endl;
+	Vector b(2);
+	b = A * x;
+	cout << "vector b: \n" << b << endl;
+	if (b[0] == 2 && b[1] == 2) {
+		cout << "PASS\n";
+	}
+	else {
+		cout << "FAIL\n";
+	}
+}
 
 int main(int argc, char** argv)
 try {
 	using namespace std;
 
-	using Scalar = sw::unum::posit<16, 1>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
-	using Vector = sw::unum::blas::vector<Scalar>;
-#if 0
-	{
-		size_t m = 5;
-		size_t n = 4;
-		size_t N = m * n;
-		Matrix A(N, N);
-		laplacian_setup(A,m,n);
-		cout << A << endl;
-		Vector x(N), b(N);
-		// x = 1; // why does this call a copy constructor?
-		x.assign(1);
-		cout << "Matrix A:\n" << A << endl;
-		cout << "Input vector :\n" << x << endl;
-		matvec(b, A, x);
-		cout << "Scaled vector:\n" << b << endl;
-	}
-#endif
+	catastrophicFailure<float>();
+	catastrophicFailure<double>();
+	catastrophicFailure< sw::unum::posit<32,2> >();
 
-	{
-		Matrix A = { 
-			{ 1, 2 }, 
-		    { 3, 4 } 
-		};
-		cout << A << endl;
-		Vector x = { 1, 1 };
-		cout << x << endl;
-		Vector b(2);
-		b = A * x;
-		cout << b << endl;
-	}
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {

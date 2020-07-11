@@ -35,13 +35,14 @@ public:
 				++r;
 			}
 		}
+		m = nrows;
+		n = ncols;
 	}
 	matrix(const matrix& A) : m{ A.m }, n{ A.n }, data(A.data) {}
 
 	// operators
 	Scalar operator()(size_t i, size_t j) const { return data[i*n + j]; }
 	Scalar& operator()(size_t i, size_t j) { return data[i*n + j]; }
-
 
 	// modifiers
 	void setzero() { for (auto& elem : data) elem = Scalar(0); }
@@ -71,11 +72,12 @@ private:
 // ostream operator: no need to declare as friend as it only uses public interfaces
 template<typename Scalar>
 std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
+	auto width = ostr.precision() + 2;
 	size_t m = A.rows();
 	size_t n = A.cols();
 	for (size_t i = 0; i < m; ++i) {
 		for (size_t j = 0; j < n; ++j) {
-			ostr << A(i, j) << " ";
+			ostr << std::setw(width) << A(i, j) << " ";
 		}
 		ostr << '\n';
 	}
@@ -84,12 +86,26 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 
 template<typename Scalar>
 vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
-	vector<Scalar> b(x.size());
+	vector<Scalar> b(A.rows());
 	for (size_t i = 0; i < A.rows(); ++i) {
 		b[i] = Scalar(0);
 		for (size_t j = 0; j < A.cols(); ++j) {
 			b[i] += A(i, j) * x[j];
 		}
+	}
+	return b;
+}
+
+// overload for posits uses fused dot products
+template<size_t nbits, size_t es>
+vector< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const vector< posit<nbits, es> >& x) {
+	vector< posit<nbits, es> > b(A.rows());
+	for (size_t i = 0; i < A.rows(); ++i) {
+		quire<nbits, es> q;
+		for (size_t j = 0; j < A.cols(); ++j) {
+			q += quire_mul(A(i, j), x[j]);
+		}
+		convert(q.to_value(), b[i]); // one and only rounding step of the fused-dot product
 	}
 	return b;
 }
