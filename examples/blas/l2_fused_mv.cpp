@@ -15,7 +15,7 @@
 #include <universal/blas/blas.hpp>
 
 template<typename Scalar>
-void catastrophicFailure() {
+void catastrophicCancellationTest() {
 	using namespace std;
 	cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
 	using Matrix = sw::unum::blas::matrix<Scalar>;
@@ -48,9 +48,9 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 
-	catastrophicFailure<float>();
-	catastrophicFailure<double>();
-	catastrophicFailure< sw::unum::posit<32,2> >();
+	catastrophicCancellationTest<float>();
+	catastrophicCancellationTest<double>();
+	catastrophicCancellationTest< sw::unum::posit<32,2> >();
 
 	return EXIT_SUCCESS;
 }
