@@ -61,7 +61,7 @@ public:
 	Scalar operator()(size_t i, size_t j) const { return data[i*n + j]; }
 	Scalar& operator()(size_t i, size_t j) { return data[i*n + j]; }
 	RowProxy<Scalar> operator[](size_t i) { 
-		std::vector<Scalar>::iterator it = data.begin() + i * n;
+		typename std::vector<Scalar>::iterator it = data.begin() + i * n;
 		RowProxy<Scalar> proxy(it);
 		return proxy; 
 	}
