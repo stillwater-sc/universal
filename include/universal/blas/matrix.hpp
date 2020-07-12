@@ -1,5 +1,5 @@
 #pragma once
-// matrix.hpp: super-simple dense matrix implementation
+// matrix.hpp: super-simple dense matrix class implementation
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -10,6 +10,19 @@
 #include <universal/posit/posit_fwd.hpp>
 
 namespace sw { namespace unum { namespace blas { 
+
+template<typename Scalar> class matrix;
+template<typename Scalar>
+class RowProxy {
+public:
+	RowProxy() : _iter(0) {}
+	RowProxy(typename std::vector<Scalar>::iterator iter) : _iter(iter) {}
+	Scalar operator[](size_t col) {
+		return *(_iter+col);
+	}
+private:
+	typename std::vector<Scalar>::iterator _iter;
+};
 
 template<typename Scalar>
 class matrix {
@@ -42,8 +55,16 @@ public:
 	matrix(const matrix& A) : m{ A.m }, n{ A.n }, data(A.data) {}
 
 	// operators
+	matrix& operator=(const matrix& M) = default;
+	matrix& operator=(matrix&& M) = default;
+
 	Scalar operator()(size_t i, size_t j) const { return data[i*n + j]; }
 	Scalar& operator()(size_t i, size_t j) { return data[i*n + j]; }
+	RowProxy<Scalar> operator[](size_t i) { 
+		std::vector<Scalar>::iterator it = data.begin() + i * n;
+		RowProxy<Scalar> proxy(it);
+		return proxy; 
+	}
 
 	// modifiers
 	void setzero() { for (auto& elem : data) elem = Scalar(0); }
@@ -69,6 +90,8 @@ private:
 	size_t m, n; // m rows and n columns
 	std::vector<Scalar> data;
 };
+
+
 
 // ostream operator: no need to declare as friend as it only uses public interfaces
 template<typename Scalar>
@@ -110,6 +133,38 @@ vector< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const 
 		convert(q.to_value(), b[i]); // one and only rounding step of the fused-dot product
 	}
 	return b;
+}
+
+template<typename Scalar>
+matrix<Scalar> operator*(const matrix<Scalar>& A, const matrix<Scalar>& B) {
+	matrix<Scalar> C(A.rows(), B.cols());
+	for (size_t i = 0; i < A.rows(); ++i) {
+		for (size_t j = 0; j < A.cols(); ++j) {
+			Scalar e = Scalar(0);
+			for (size_t k = 0; k < A.cols(); ++k) {
+				e += A(i, k) * B(k, i);
+			}
+			C(i, j) = e;
+		}
+	}
+	return C;
+}
+
+// overload for posits uses fused dot products
+template<size_t nbits, size_t es>
+matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const matrix< posit<nbits, es> >& B) {
+	constexpr size_t capacity = 20; // FDP for vectors < 1,048,576 elements
+	matrix< posit<nbits, es> > C(A.rows(), B.cols());
+	for (size_t i = 0; i < A.rows(); ++i) {
+		for (size_t j = 0; j < A.cols(); ++j) {
+			quire<nbits, es, capacity> q;
+			for (size_t k = 0; k < A.cols(); ++k) {
+				q += quire_mul(A(i, k), B(k, i));
+			}
+			convert(q.to_value(), C(i, j)); // one and only rounding step of the fused-dot product
+		}
+	}
+	return C;
 }
 
 // create a 2D difference equation matrix of a Laplacian stencil
