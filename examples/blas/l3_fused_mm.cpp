@@ -57,7 +57,6 @@ void check_precision() {
 	cout << "dot(a,b_flipped) " << sw::unum::blas::dot(a, b_v2) << endl;
 	cout << "fdp(a,b)         " << conditional_fdp(a, b_v1) << endl;
 	cout << "fdp(a,b_flipped) " << conditional_fdp(a, b_v2) << endl;
-
 }
 
 template<typename Scalar>
@@ -109,8 +108,20 @@ try {
 	catastrophicCancellationTest< sw::unum::posit<32,2> >(); // PASSES due to FDP
 	catastrophicCancellationTest< sw::unum::posit<64, 3> >(); // PASSES due to FDP
 
-	check_precision<float>();
-	check_precision< sw::unum::posit<32, 2> >();
+//	check_precision<float>();
+//	check_precision< sw::unum::posit<32, 2> >();
+
+	{
+		sw::unum::blas::matrix< sw::unum::posit<32, 2> > A(4, 4);
+		A[0][0] = 1;
+		cout << A << endl;
+	}
+
+	{
+		sw::unum::blas::matrix< sw::unum::posit<32, 2> > A(SIZE_1K, SIZE_1K);
+		A[0][0] = 1;
+		cout << "A(0,0) = " << A[0][0] << " A(SIZE_1K-1, SIZE_1K-1) = " << A[SIZE_1K - 1][SIZE_1K - 1] << endl;
+	}
 
 	try {
 		sw::unum::blas::matrix<float> A(2, 3), B(2, 3);

@@ -16,9 +16,10 @@ template<typename Scalar> class matrix;
 template<typename Scalar>
 class RowProxy {
 public:
-//	RowProxy() : _iter(0) {}
 	RowProxy(typename std::vector<Scalar>::iterator iter) : _iter(iter) {}
-	Scalar operator[](size_t col) {	return *(_iter+col); }
+	Scalar operator[](size_t col) const { return *(_iter+col); }
+	Scalar& operator[](size_t col) { return *(_iter + col); }
+
 private:
 	typename std::vector<Scalar>::iterator _iter;
 };
