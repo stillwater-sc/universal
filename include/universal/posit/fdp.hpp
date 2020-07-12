@@ -44,7 +44,9 @@ typename Vector::value_type fdp_stride(size_t n, const Vector& x, size_t incx, c
 /* Microsoft Visual Studio. --------------------------------- */
 // Specialized resolved fused dot product that assumes unit stride and a standard vector,
 // with the option to control capacity bits in the quire
-template<typename Vector, size_t capacity = 10>
+template<typename Vector, 
+//	     std::enable_if_t<is_posit< Vector::value_type >, Vector::value_type>,
+	     size_t capacity = 10>
 typename Vector::value_type fdp(const Vector& x, const Vector& y) {
 	constexpr size_t nbits = Vector::value_type::nbits;
 	constexpr size_t es = Vector::value_type::es;

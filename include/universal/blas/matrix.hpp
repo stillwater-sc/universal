@@ -7,6 +7,7 @@
 #include <iostream>
 #include <vector>
 #include <initializer_list>
+#include <universal/blas/exceptions.hpp>
 #include <universal/posit/posit_fwd.hpp>
 
 namespace sw { namespace unum { namespace blas { 
@@ -15,11 +16,9 @@ template<typename Scalar> class matrix;
 template<typename Scalar>
 class RowProxy {
 public:
-	RowProxy() : _iter(0) {}
+//	RowProxy() : _iter(0) {}
 	RowProxy(typename std::vector<Scalar>::iterator iter) : _iter(iter) {}
-	Scalar operator[](size_t col) {
-		return *(_iter+col);
-	}
+	Scalar operator[](size_t col) {	return *(_iter+col); }
 private:
 	typename std::vector<Scalar>::iterator _iter;
 };
@@ -60,18 +59,18 @@ public:
 
 	Scalar operator()(size_t i, size_t j) const { return data[i*n + j]; }
 	Scalar& operator()(size_t i, size_t j) { return data[i*n + j]; }
-	RowProxy<Scalar> operator[](size_t i) { 
+	RowProxy<Scalar> operator[](size_t i) {
 		typename std::vector<Scalar>::iterator it = data.begin() + i * n;
 		RowProxy<Scalar> proxy(it);
-		return proxy; 
+		return proxy;
 	}
 
 	// modifiers
-	void setzero() { for (auto& elem : data) elem = Scalar(0); }
+	inline void setzero() { for (auto& elem : data) elem = Scalar(0); }
 
 	// selectors
-	size_t rows() const { return m; }
-	size_t cols() const { return n; }
+	inline size_t rows() const { return m; }
+	inline size_t cols() const { return n; }
 
 	// Eigen operators I need to reverse engineer
 	matrix Zero(size_t m, size_t n) {
@@ -137,12 +136,16 @@ vector< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const 
 
 template<typename Scalar>
 matrix<Scalar> operator*(const matrix<Scalar>& A, const matrix<Scalar>& B) {
-	matrix<Scalar> C(A.rows(), B.cols());
-	for (size_t i = 0; i < A.rows(); ++i) {
-		for (size_t j = 0; j < A.cols(); ++j) {
+	if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
+	size_t rows = A.rows();
+	size_t cols = B.cols();
+	size_t dots = A.cols();
+	matrix<Scalar> C(rows, cols);
+	for (size_t i = 0; i < rows; ++i) {
+		for (size_t j = 0; j < cols; ++j) {
 			Scalar e = Scalar(0);
-			for (size_t k = 0; k < A.cols(); ++k) {
-				e += A(i, k) * B(k, i);
+			for (size_t k = 0; k < dots; ++k) {
+				e += A(i, k) * B(k, j);
 			}
 			C(i, j) = e;
 		}
@@ -154,12 +157,16 @@ matrix<Scalar> operator*(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 template<size_t nbits, size_t es>
 matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const matrix< posit<nbits, es> >& B) {
 	constexpr size_t capacity = 20; // FDP for vectors < 1,048,576 elements
-	matrix< posit<nbits, es> > C(A.rows(), B.cols());
-	for (size_t i = 0; i < A.rows(); ++i) {
-		for (size_t j = 0; j < A.cols(); ++j) {
+	if (A.cols() != B.rows()) throw matmul_incompatible_matrices(incompatible_matrices(A.rows(), A.cols(), B.rows(), B.cols(), "*").what());
+	size_t rows = A.rows();
+	size_t cols = B.cols();
+	size_t dots = A.cols();
+	matrix< posit<nbits, es> > C(rows, cols);
+	for (size_t i = 0; i < rows; ++i) {
+		for (size_t j = 0; j < cols; ++j) {
 			quire<nbits, es, capacity> q;
-			for (size_t k = 0; k < A.cols(); ++k) {
-				q += quire_mul(A(i, k), B(k, i));
+			for (size_t k = 0; k < dots; ++k) {
+				q += quire_mul(A(i, k), B(k, j));
 			}
 			convert(q.to_value(), C(i, j)); // one and only rounding step of the fused-dot product
 		}
