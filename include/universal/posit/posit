@@ -43,6 +43,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
 #include "posit.hpp"
+#include <universal/traits/posit_traits.hpp>
 #include "numeric_limits.hpp"
 
 // fast specializations for special posit configurations

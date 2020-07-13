@@ -6,6 +6,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <vector>
+#include <universal/traits/posit_traits.hpp>
 
 namespace sw { namespace unum {
 
@@ -42,14 +43,13 @@ typename Vector::value_type fdp_stride(size_t n, const Vector& x, size_t incx, c
 
 #if defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
-// Specialized resolved fused dot product that assumes unit stride and a standard vector,
-// with the option to control capacity bits in the quire
-template<typename Vector, 
-//	     std::enable_if_t<is_posit< Vector::value_type >, Vector::value_type>,
-	     size_t capacity = 10>
-typename Vector::value_type fdp(const Vector& x, const Vector& y) {
+// Specialized resolved fused dot product that assumes unit stride and a standard vector
+template<typename Vector>
+enable_if_posit<value_type<Vector>, value_type<Vector> > // as return type
+fdp(const Vector& x, const Vector& y) {
 	constexpr size_t nbits = Vector::value_type::nbits;
 	constexpr size_t es = Vector::value_type::es;
+	constexpr size_t capacity = 20; // support vectors up to 1M elements
 	quire<nbits, es, capacity> q(0);
 	size_t ix, iy, n = size(x);
 	for (ix = 0, iy = 0; ix < n && iy < n; ++ix, ++iy) {
@@ -66,12 +66,13 @@ constexpr auto size(const std::vector<Scalar>& v) -> decltype(v.size())
 	return (v.size());
 }
 
-// Specialized resolved fused dot product that assumes unit stride and a standard vector,
-// with the option to control capacity bits in the quire
-template<typename Vector, size_t capacity = 10>
-typename Vector::value_type fdp(const Vector& x, const Vector& y) {
+// Specialized resolved fused dot product that assumes unit stride and a standard vector
+template<typename Vector>
+enable_if_posit<value_type<Vector>, value_type<Vector> > // as return type
+fdp(const Vector& x, const Vector& y) {
 	constexpr size_t nbits = Vector::value_type::nbits;
 	constexpr size_t es = Vector::value_type::es;
+	constexpr size_t capacity = 20; // support vectors up to 1M elements
 	quire<nbits, es, capacity> q(0);
 	size_t ix, iy, n = size(x);
 	for (ix = 0, iy = 0; ix < n && iy < n; ++ix, ++iy) {

@@ -123,6 +123,13 @@ try {
 		cout << "A(0,0) = " << A[0][0] << " A(SIZE_1K-1, SIZE_1K-1) = " << A[SIZE_1K - 1][SIZE_1K - 1] << endl;
 	}
 
+	{
+		using Real = sw::unum::posit<32,2>;
+		sw::unum::blas::vector<Real> a = { 1, 2 };
+		sw::unum::blas::vector<Real> b = { 2, 1 };
+		cout << "fdp = " << sw::unum::fdp(a, b) << endl;
+	}
+
 	try {
 		sw::unum::blas::matrix<float> A(2, 3), B(2, 3);
 		auto C = A * B;

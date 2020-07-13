@@ -26,8 +26,8 @@ try {
 	static_assert( !is_arithmetic< sw::unum::posit<nbits, es> >(), "a posit<nbits,es> is not an arithmetic type");
 	static_assert( !is_arithmetic< Scalar >(), "This Scalar is not an arithmetic type");
 
-	static_assert( is_posit< sw::unum::posit<nbits, es> >(), "a posit<nbits,es> is a posit type");
-	static_assert( is_posit< Scalar >(), "This Scalar is a posit type");
+	static_assert( is_posit_trait< sw::unum::posit<nbits, es> >(), "a posit<nbits,es> is a posit type");
+	static_assert( is_posit_trait< Scalar >(), "This Scalar is a posit type");
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);
