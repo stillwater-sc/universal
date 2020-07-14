@@ -4,6 +4,8 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
+// pull in the posit number system
+#include <universal/posit/posit>
 
 template<typename Scalar>
 Scalar NaiveSumOfIntegers(long lowerbound = 0, long upperbound = 10000) {

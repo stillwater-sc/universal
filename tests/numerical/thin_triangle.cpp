@@ -4,6 +4,8 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
+// pull in the posit number system
+#include <universal/posit/posit>
 
 /* 
 * Based on the discussion of rounding error of Golberg's thin triangle

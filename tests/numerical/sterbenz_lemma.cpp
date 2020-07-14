@@ -4,6 +4,8 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
+// pull in the posit number system
+#include <universal/posit/posit>
 
 /*
 Sterbenz Lemma: For any two numbers of the same format, but excluding NaR,

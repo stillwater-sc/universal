@@ -4,6 +4,8 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
+// pull in the posit number system
+#include <universal/posit/posit>
 // test helpers, such as, ReportTestResults
 #include "../tests/utils/test_helpers.hpp"
 #include "../tests/utils/posit_test_helpers.hpp"
