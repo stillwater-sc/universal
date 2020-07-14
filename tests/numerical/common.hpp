@@ -15,10 +15,4 @@
 #include <algorithm>
 #include <utility>
 
-// pull in the native tools
-#include <universal/native/native>
-// pull in the posit number system
-#include <universal/posit/posit>
-// pull in the arbitrary integer number system
-#include <universal/integer/integer>
 

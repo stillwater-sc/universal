@@ -25,4 +25,13 @@ namespace sw { namespace unum {
 	using true_type = bool_constant<true>;
 	using false_type = bool_constant<false>;
 
+	template<typename _Ty>
+	struct value_type_trait
+	{
+		using type = typename _Ty::value_type;
+	};
+	// with template alias we don't need the typename upfront anymore
+	template<typename _Ty>
+	using value_type = typename value_type_trait<_Ty>::type;
+
 }} // namespace sw::unum

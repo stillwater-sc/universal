@@ -1,5 +1,5 @@
 #pragma once
-//  posit_traits.hpp : traits for posits
+//  fixpnt_traits.hpp : traits for fixed-point number systems
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -8,22 +8,22 @@
 
 namespace sw { namespace unum {
 
-	// define a trait for posit types
+	// define a trait for fixed-point types
 	template<typename _Ty>
-	struct is_posit_trait
+	struct is_fixpnt_trait
 		: false_type
 	{
 	};
-	template<size_t nbits, size_t es>
-	struct is_posit_trait< sw::unum::posit<nbits, es> >
+	template<size_t nbits, size_t rbits>
+	struct is_fixpnt_trait< sw::unum::fixpnt<nbits, rbits> >
 		: true_type
 	{
 	};
 
 	template<typename _Ty>
-	constexpr bool is_posit = is_posit_trait<_Ty>::value;
+	constexpr bool is_fixpnt = is_fixpnt_trait<_Ty>::value;
 
 	template<typename _Ty, typename Type = void>
-	using enable_if_posit = std::enable_if_t<is_posit<_Ty>, Type>;
+	using enable_if_fixpnt = std::enable_if_t<is_fixpnt<_Ty>, Type>;
 
 }} // namespace sw::unum

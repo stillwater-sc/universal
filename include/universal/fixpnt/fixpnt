@@ -29,6 +29,7 @@
 #include "fixed_point.hpp"
 #include "numeric_limits.hpp"
 #include "fixpnt_exceptions.hpp"
+#include <universal/traits/fixpnt_traits.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
