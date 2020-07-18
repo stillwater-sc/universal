@@ -14,10 +14,18 @@ namespace sw { namespace unum { namespace blas {
 
 template<typename Scalar> class matrix;
 template<typename Scalar>
+class ConstRowProxy {
+public:
+	ConstRowProxy(typename std::vector<Scalar>::const_iterator iter) : _iter(iter) {}
+	Scalar operator[](size_t col) const { return *(_iter+col); }
+
+private:
+	typename std::vector<Scalar>::const_iterator _iter;
+};
+template<typename Scalar>
 class RowProxy {
 public:
 	RowProxy(typename std::vector<Scalar>::iterator iter) : _iter(iter) {}
-	Scalar operator[](size_t col) const { return *(_iter+col); }
 	Scalar& operator[](size_t col) { return *(_iter + col); }
 
 private:
@@ -58,11 +66,24 @@ public:
 	matrix& operator=(const matrix& M) = default;
 	matrix& operator=(matrix&& M) = default;
 
+	// Identity matrix operator
+	matrix& operator=(const Scalar& one) {
+		setzero();
+		size_t smallestDimension = (m < n ? m : n);
+		for (size_t i = 0; i < smallestDimension; ++i) data[i*n + i] = one;
+		return *this;
+	}
+
 	Scalar operator()(size_t i, size_t j) const { return data[i*n + j]; }
 	Scalar& operator()(size_t i, size_t j) { return data[i*n + j]; }
 	RowProxy<Scalar> operator[](size_t i) {
 		typename std::vector<Scalar>::iterator it = data.begin() + i * n;
 		RowProxy<Scalar> proxy(it);
+		return proxy;
+	}
+	ConstRowProxy<Scalar> operator[](size_t i) const {
+		typename std::vector<Scalar>::const_iterator it = data.begin() + i * n;
+		ConstRowProxy<Scalar> proxy(it);
 		return proxy;
 	}
 
@@ -91,7 +112,10 @@ private:
 	std::vector<Scalar> data;
 };
 
-
+template<typename Scalar>
+size_t num_rows(const matrix<Scalar>& A) { return A.rows(); }
+template<typename Scalar>
+size_t num_cols(const matrix<Scalar>& A) { return A.cols(); }
 
 // ostream operator: no need to declare as friend as it only uses public interfaces
 template<typename Scalar>
