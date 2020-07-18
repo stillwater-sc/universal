@@ -1,6 +1,6 @@
 // posit_8b.cpp: performance characterization of standard posit<8,0> configuration
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -19,7 +19,6 @@ try {
 
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 0;
-	//constexpr size_t capacity = 6;   // 2^6 accumulations of maxpos^2
 
 	OperatorPerformance perfReport;
 	GeneratePerformanceReport<nbits, es>(perfReport);
