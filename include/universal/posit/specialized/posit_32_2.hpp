@@ -32,34 +32,34 @@ public:
 	posit& operator=(posit&&) = default;
 
 	// initializers for native types
-	explicit constexpr posit(signed char initial_value) : _bits(0)        { *this = initial_value; }
-	explicit constexpr posit(short initial_value) : _bits(0)              { *this = initial_value; }
-	explicit constexpr posit(int initial_value) : _bits(0)                { *this = initial_value; }
-	explicit constexpr posit(long initial_value) : _bits(0)               { *this = initial_value; }
-	explicit           posit(long long initial_value) : _bits(0)          { *this = initial_value; }
-	explicit constexpr posit(char initial_value) : _bits(0)               { *this = initial_value; }
-	explicit constexpr posit(unsigned short initial_value) : _bits(0)     { *this = initial_value; }
-	explicit constexpr posit(unsigned int initial_value) : _bits(0)       { *this = initial_value; }
-	explicit           posit(unsigned long initial_value) : _bits(0)      { *this = initial_value; }
+	explicit constexpr posit(signed char initial_value) : _bits(0) { *this = initial_value; }
+	explicit constexpr posit(short initial_value) : _bits(0) { *this = initial_value; }
+	explicit constexpr posit(int initial_value) : _bits(0) { *this = initial_value; }
+	explicit constexpr posit(long initial_value) : _bits(0) { *this = initial_value; }
+	explicit           posit(long long initial_value) : _bits(0) { *this = initial_value; }
+	explicit constexpr posit(char initial_value) : _bits(0) { *this = initial_value; }
+	explicit constexpr posit(unsigned short initial_value) : _bits(0) { *this = initial_value; }
+	explicit constexpr posit(unsigned int initial_value) : _bits(0) { *this = initial_value; }
+	explicit           posit(unsigned long initial_value) : _bits(0) { *this = initial_value; }
 	explicit           posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
-	explicit           posit(float initial_value) : _bits(0)              { *this = initial_value; }
-	explicit           posit(double initial_value) : _bits(0)             { *this = initial_value; }
-	                   posit(long double initial_value) : _bits(0)        { *this = initial_value; }
+	explicit           posit(float initial_value) : _bits(0) { *this = initial_value; }
+	explicit           posit(double initial_value) : _bits(0) { *this = initial_value; }
+	                   posit(long double initial_value) : _bits(0) { *this = initial_value; }
 
 	// assignment operators for native types
-	constexpr posit& operator=(signed char rhs)       { return integer_assign((long)(rhs)); }
-	constexpr posit& operator=(short rhs)             { return integer_assign((long)(rhs)); }
-	constexpr posit& operator=(int rhs)               { return integer_assign((long)(rhs)); }
-	constexpr posit& operator=(long rhs)              { return integer_assign(rhs); }
-	          posit& operator=(long long rhs)         { return float_assign((long double)(rhs)); }
-	constexpr posit& operator=(char rhs)              { return integer_assign((long)(rhs)); }
-	constexpr posit& operator=(unsigned short rhs)    { return integer_assign((long)(rhs)); }
-	constexpr posit& operator=(unsigned int rhs)      { return integer_assign((long)(rhs)); }
-	          posit& operator=(unsigned long rhs)     { return float_assign((long double)(rhs)); }
-	          posit& operator=(unsigned long long rhs){ return float_assign((long double)(rhs)); }
-	          posit& operator=(float rhs)             { return float_assign((long double)rhs); }
-	          posit& operator=(double rhs)            { return float_assign((long double)rhs); }
-	          posit& operator=(long double rhs)       { return float_assign(rhs); }
+	constexpr posit& operator=(signed char rhs) { return integer_assign((long)(rhs)); }
+	constexpr posit& operator=(short rhs) { return integer_assign((long)(rhs)); }
+	constexpr posit& operator=(int rhs) { return integer_assign((long)(rhs)); }
+	constexpr posit& operator=(long rhs) { return integer_assign(rhs); }
+	posit& operator=(long long rhs) { return float_assign((long double)(rhs)); }
+	constexpr posit& operator=(char rhs) { return integer_assign((long)(rhs)); }
+	constexpr posit& operator=(unsigned short rhs) { return integer_assign((long)(rhs)); }
+	constexpr posit& operator=(unsigned int rhs) { return integer_assign((long)(rhs)); }
+	          posit& operator=(unsigned long rhs) { return float_assign((long double)(rhs)); }
+	          posit& operator=(unsigned long long rhs) { return float_assign((long double)(rhs)); }
+	          posit& operator=(float rhs) { return float_assign((long double)rhs); }
+	          posit& operator=(double rhs) { return float_assign((long double)rhs); }
+	          posit& operator=(long double rhs) { return float_assign(rhs); }
 
 	explicit operator long double() const { return to_long_double(); }
 	explicit operator double() const { return to_double(); }
@@ -113,7 +113,7 @@ public:
 			rhs = -int32_t(rhs) & 0xFFFFFFFF;
 		}
 		if (lhs < rhs) std::swap(lhs, rhs);
-			
+
 		// decode the regime of lhs
 		int32_t m = 0; // pattern length
 		uint32_t remaining = 0;
@@ -133,7 +133,7 @@ public:
 		shiftRight = (shiftRight << 2) + exp - (remaining >> 29);
 
 		// Work-around CLANG (LLVM) compiler when shifting right more than number of bits
-		frac64B = (shiftRight > 63) ? 0 : (frac64B >> shiftRight); 
+		frac64B = (shiftRight > 63) ? 0 : (frac64B >> shiftRight);
 
 		frac64A += frac64B; // add the now aligned fractions
 
@@ -218,7 +218,7 @@ public:
 			--m;
 			frac64A <<= 4;
 		}
-		bool ecarry = bool (0x4000000000000000 & frac64A);
+		bool ecarry = bool(0x4000000000000000 & frac64A);
 		//bool ecarry = bool(0x4000'0000'0000'0000 & frac64A);
 		while (!ecarry) {
 			if (exp == 0) {
@@ -406,6 +406,12 @@ public:
 		posit p = 1.0 / *this;
 		return p;
 	}
+
+	// MODIFIERS
+	inline constexpr void clear() { _bits = 0x0; }
+	inline constexpr void setzero() { clear(); }
+	inline constexpr void setnar() { _bits = 0x80000000; }
+
 	// SELECTORS
 	inline constexpr bool isnar() const      { return (_bits == 0x80000000); }
 	inline constexpr bool iszero() const     { return (_bits == 0x0); }
@@ -415,20 +421,49 @@ public:
 	inline constexpr bool ispos() const      { return !isneg(); }
 	inline constexpr bool ispowerof2() const { return !(_bits & 0x1); }
 
-	inline int sign_value() const  { return (_bits & 0x8) ? -1 : 1; }
+	inline int sign_value() const { return (_bits & 0x8) ? -1 : 1; }
 
 	bitblock<NBITS_IS_32> get() const { bitblock<NBITS_IS_32> bb; bb = long(_bits); return bb; }
 	unsigned long long encoding() const { return (unsigned long long)(_bits); }
-
-	inline constexpr void clear() { _bits = 0x0; }
-	inline constexpr void setzero() { clear(); }
-	inline constexpr void setnar() { _bits = 0x80000000; }
 	inline posit twosComplement() const {
 		posit<NBITS_IS_32, ES_IS_2> p;
 		int32_t v = -(int32_t)_bits;
 		p.set_raw_bits(v);
 		return p;
 	}
+
+#if NEW_TO_VALUT
+	int rscale() const { // scale of the regime
+		return 1;
+	}
+	int escale() const { // scale of the exponent
+		return 1;
+	}
+	bitblock<fbits> frac() const {
+		bitblock<fbits> f;
+		return f;
+	}
+	value<fbits> to_value() const {
+		bool _sign = isneg();
+		return value<fbits>(_sign, rscale() + escale(), frac(), iszero(), isnar());
+	}
+#else
+	value<fbits> to_value() const {
+		bool		     	 _sign;
+		regime<nbits, es>    _regime;
+		exponent<nbits, es>  _exponent;
+		fraction<fbits>      _fraction;
+		bitblock<nbits>		 _raw_bits;
+		_raw_bits.reset();
+		uint64_t mask = 1;
+		for (size_t i = 0; i < nbits; i++) {
+			_raw_bits.set(i, (_bits & mask));
+			mask <<= 1;
+		}
+		decode(_raw_bits, _sign, _regime, _exponent, _fraction);
+		return value<fbits>(_sign, _regime.scale() + _exponent.scale(), _fraction.get(), iszero(), isnar());
+	}
+#endif
 
 private:
 	uint32_t _bits;
