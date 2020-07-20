@@ -17,12 +17,26 @@
 #include <universal/posit/posit>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <universal/blas/blas.hpp>
+#include <universal/blas/generators.hpp>
 
-template<typename Matrix>
-void generateIdentity() {
-	Matrix A(4, 4);
+template<typename Scalar>
+void generateMatrices() {
+	using namespace std;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+
+	Matrix A(5, 5);
+	// create an Identity matrix
 	A = 1;
 	std::cout << A << std::endl;
+
+	// create a 2D Laplacian
+	laplace2D(A, 10, 10);
+	cout << A << endl;
+
+	// create a uniform random matrix
+	Matrix B(10, 10);
+	uniform_rand(B, 0.0, 1.0);
+	cout << setprecision(5) << setw(10) << B << endl;
 }
 
 int main(int argc, char** argv)
@@ -30,17 +44,11 @@ try {
 	using namespace std;
 	using namespace sw::unum::blas;
 
-	using p8_0  = sw::unum::posit< 8,0>;
-	using p16_1 = sw::unum::posit<16,1>;
-	using p32_2 = sw::unum::posit<32,2>;
+	using Scalar = sw::unum::posit<16,1>;
 
-	using MatrixP08 = sw::unum::blas::matrix<p8_0>;
-	using MatrixP16 = sw::unum::blas::matrix<p16_1>;
-	using MatrixP32 = sw::unum::blas::matrix<p32_2>;
-
-	generateIdentity<MatrixP08>();
-	generateIdentity<MatrixP16>();
-	generateIdentity<MatrixP32>();
+	generateMatrices< sw::unum::posit< 8, 0> >();
+	generateMatrices< sw::unum::posit<16, 1> >();
+	generateMatrices< sw::unum::posit<32, 2> >();
 
 	return EXIT_SUCCESS;
 }

@@ -35,13 +35,14 @@ private:
 template<typename Scalar>
 class matrix {
 public:
-	typedef Scalar                            value_type;
-	typedef const value_type&                 const_reference;
-	typedef value_type&                       reference;
-	typedef const value_type*                 const_pointer_type;
+	typedef Scalar									value_type;
+	typedef const value_type&						const_reference;
+	typedef value_type&								reference;
+	typedef const value_type*						const_pointer_type;
+	typedef typename std::vector<Scalar>::size_type size_type;
 
-	matrix() {}
-	matrix(size_t _m, size_t _n) : m{ _m }, n{ _n }, data(m*n, Scalar(0.0)) { }
+	matrix() : _m{ 0 }, _n{ 0 }, data(0) {}
+	matrix(size_t m, size_t n) : _m{ m }, _n{ n }, data(m*n, Scalar(0.0)) { }
 	matrix(std::initializer_list< std::initializer_list<Scalar> > values) {
 		size_t nrows = values.size();
 		size_t ncols = values.begin()->size();
@@ -57,10 +58,10 @@ public:
 				++r;
 			}
 		}
-		m = nrows;
-		n = ncols;
+		_m = nrows;
+		_n = ncols;
 	}
-	matrix(const matrix& A) : m{ A.m }, n{ A.n }, data(A.data) {}
+	matrix(const matrix& A) : _m{ A._m }, _n{ A._n }, data(A.data) {}
 
 	// operators
 	matrix& operator=(const matrix& M) = default;
@@ -69,30 +70,30 @@ public:
 	// Identity matrix operator
 	matrix& operator=(const Scalar& one) {
 		setzero();
-		size_t smallestDimension = (m < n ? m : n);
-		for (size_t i = 0; i < smallestDimension; ++i) data[i*n + i] = one;
+		size_t smallestDimension = (_m < _n ? _m : _n);
+		for (size_t i = 0; i < smallestDimension; ++i) data[i*_n + i] = one;
 		return *this;
 	}
 
-	Scalar operator()(size_t i, size_t j) const { return data[i*n + j]; }
-	Scalar& operator()(size_t i, size_t j) { return data[i*n + j]; }
+	Scalar operator()(size_t i, size_t j) const { return data[i*_n + j]; }
+	Scalar& operator()(size_t i, size_t j) { return data[i*_n + j]; }
 	RowProxy<Scalar> operator[](size_t i) {
-		typename std::vector<Scalar>::iterator it = data.begin() + i * n;
+		typename std::vector<Scalar>::iterator it = data.begin() + i * _n;
 		RowProxy<Scalar> proxy(it);
 		return proxy;
 	}
 	ConstRowProxy<Scalar> operator[](size_t i) const {
-		typename std::vector<Scalar>::const_iterator it = data.begin() + i * n;
+		typename std::vector<Scalar>::const_iterator it = data.begin() + i * _n;
 		ConstRowProxy<Scalar> proxy(it);
 		return proxy;
 	}
 
 	// modifiers
 	inline void setzero() { for (auto& elem : data) elem = Scalar(0); }
-
+	inline void resize(size_t m, size_t n) { _m = m; _n = n; data.resize(m * n * m * n); }
 	// selectors
-	inline size_t rows() const { return m; }
-	inline size_t cols() const { return n; }
+	inline size_t rows() const { return _m; }
+	inline size_t cols() const { return _n; }
 
 	// Eigen operators I need to reverse engineer
 	matrix Zero(size_t m, size_t n) {
@@ -108,7 +109,7 @@ public:
 	}
 
 private:
-	size_t m, n; // m rows and n columns
+	size_t _m, _n; // m rows and n columns
 	std::vector<Scalar> data;
 };
 
@@ -120,12 +121,12 @@ size_t num_cols(const matrix<Scalar>& A) { return A.cols(); }
 // ostream operator: no need to declare as friend as it only uses public interfaces
 template<typename Scalar>
 std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
-	auto width = ostr.precision() + 2;
+	auto width = ostr.width();
 	size_t m = A.rows();
 	size_t n = A.cols();
 	for (size_t i = 0; i < m; ++i) {
 		for (size_t j = 0; j < n; ++j) {
-			ostr << std::setw(width) << A(i, j) << " ";
+			ostr << std::fixed << std::setw(width) << A(i, j) << " ";
 		}
 		ostr << '\n';
 	}
@@ -197,24 +198,6 @@ matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const 
 		}
 	}
 	return C;
-}
-
-// create a 2D difference equation matrix of a Laplacian stencil
-template<typename Scalar>
-void laplacian_setup(matrix<Scalar>& A, size_t m, size_t n) {
-	A.setzero();
-	assert(A.rows() == m * n);
-	for (size_t i = 0; i < m; ++i) {
-		for (size_t j = 0; j < n; ++j) {
-			Scalar four(4.0), minus_one(-1.0);
-			size_t row = i * n + j;
-			A(row, row) = four;
-			if (j < n - 1) A(row, row + 1) = minus_one;
-			if (i < m - 1) A(row, row + n) = minus_one;
-			if (j > 0) A(row, row - 1) = minus_one;
-			if (i > 0) A(row, row - n) = minus_one;
-		}
-	}
 }
 
 }}} // namespace sw::unum::blas
