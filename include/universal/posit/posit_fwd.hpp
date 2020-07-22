@@ -4,7 +4,7 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <cstddef>  // for size_t
 namespace sw { namespace unum {
 
 	// generalized floating point type

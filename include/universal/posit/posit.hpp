@@ -479,55 +479,6 @@ posit<nbits, es>& construct(bool s, const regime<nbits, es>& r, const exponent<n
 	return p;
 }
 
-// read a posit ASCII format and make a memory posit out of it
-template<size_t nbits, size_t es>
-bool parse(std::string& txt, posit<nbits, es>& p) {
-	bool bSuccess = false;
-	// check if the txt is of the native posit form: nbits.esXhexvalue
-	std::regex posit_regex("[\\d]+\\.[0123456789][xX][\\w]+[p]*");
-	if (std::regex_match(txt, posit_regex)) {
-		// found a posit representation
-		std::string nbitsStr, esStr, bitStr;
-		auto it = txt.begin();
-		for (; it != txt.end(); it++) {
-			if (*it == '.') break;
-			nbitsStr.append(1, *it);
-		}
-		for (it++; it != txt.end(); it++) {
-			if (*it == 'x' || *it == 'X') break;
-			esStr.append(1, *it);
-		}
-		for (it++; it != txt.end(); it++) {
-			if (*it == 'p') break;
-			bitStr.append(1, *it);
-		}
-		size_t nbits_in = nbits;
-		{
-			std::istringstream ss(nbitsStr);
-			ss >> nbits_in;
-		}
-		unsigned long long raw;
-		std::istringstream ss(bitStr);
-		ss >> std::hex >> raw;
-		//std::cout << "[" << nbitsStr << "] [" << esStr << "] [" << bitStr << "] = " << raw << std::endl;
-		// if not aligned, set_raw_bits takes the least significant nbits, so we need to shift to pick up the most significant nbits
-		if (nbits < nbits_in) {
-			raw >>= (nbits_in - nbits);
-		}
-		p.set_raw_bits(raw);  
-		bSuccess = true;
-	}
-	else {
-		// assume it is a float/double/long double representation
-		std::istringstream ss(txt);
-		double d;
-		ss >> d;
-		p = d;
-		bSuccess = true;
-	}
-	return bSuccess;
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // class posit represents posit numbers of arbitrary configuration and their basic arithmetic operations (add/sub, mul/div)
 template<size_t _nbits, size_t _es>
@@ -1848,29 +1799,25 @@ inline bool operator>=(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs)
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> sum = lhs;
-	sum += rhs;
-	return sum;
+	return sum += rhs;
 }
 // BINARY SUBTRACTION
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator-(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> diff = lhs;
-	diff -= rhs;
-	return diff;
+	return diff -= rhs;
 }
 // BINARY MULTIPLICATION
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator*(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> mul = lhs;
-	mul *= rhs;
-	return mul;
+	return mul *= rhs;
 }
 // BINARY DIVISION
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
 	posit<nbits, es> ratio = lhs;
-	ratio /= rhs;
-	return ratio;
+	return ratio /= rhs;
 }
 
 #if POSIT_ENABLE_LITERALS

@@ -5,6 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // minimum set of include files to reflect source code dependencies
+#define POSIT_FAST_POSIT_32_2 1
 #define POSIT_ENABLE_LITERALS 1
 #include "universal/posit/posit.hpp"
 #include "universal/posit/posit_manipulators.hpp"
@@ -14,7 +15,6 @@
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
-
 
 template<size_t nbits, size_t es>
 void VerifyToBinary() {

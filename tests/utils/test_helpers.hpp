@@ -22,7 +22,7 @@ int ReportTestResult(int nrOfFailedTests, const std::string& description, const 
 // simple checker
 int ReportCheck(const std::string& tag, const std::string& test, bool success) {
 	using namespace std;
-	constexpr int TEST_TAG_WIDTH = 27;
+	constexpr int TEST_TAG_WIDTH = 26;
 	int nrOfFailedTestCases = 0;
 	if (success) {
 		cout << tag << " " << left << setw(TEST_TAG_WIDTH) << test << "PASS\n";

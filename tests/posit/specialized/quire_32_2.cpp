@@ -29,7 +29,7 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	constexpr size_t RND_TEST_CASES = 1000000;
+	constexpr size_t RND_TEST_CASES = 500000;
 
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;

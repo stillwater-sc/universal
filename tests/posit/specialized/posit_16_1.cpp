@@ -16,9 +16,10 @@
 #include "../../utils/posit_test_randoms.hpp"
 #include "../../utils/posit_math_helpers.hpp"
 
-/*
-Standard posit with nbits = 16 have es = 1 exponent bit.
-*/
+// Standard posit with nbits = 16 have es = 1 exponent bit.
+
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
@@ -40,6 +41,31 @@ try {
 	cout << "Standard posit<16,1> configuration tests" << endl;
 #endif
 
+#if MANUAL_TESTING
+	float fa, fb;
+	posit<nbits, es> a, b, c;
+	fa = 2;	fb = 1;
+	a = fa; b = fb; c = a; c += b;
+	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << endl;
+	fa = 2;	fb = -1;
+	a = fa; b = fb; c = a; c += b;
+	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << endl;
+	fa = -2;	fb = 1;
+	a = fa; b = fb; c = a; c += b;
+	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << endl;
+	fa = -2;	fb = -1;
+	a = fa; b = fb; c = a; c += b;
+	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << endl;
+
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPA, 1000000), tag, "+=             (native)  ");
+//	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPS, 1000000), tag, "-=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPM, 1000000), tag, "*=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPD, 1000000), tag, "/=             (native)  ");
+
+	cout << nrOfFailedTestCases << " number of failures\n";
+
+	nrOfFailedTestCases = 0;  // ignore failures in manual testing
+#else
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
 
@@ -73,9 +99,13 @@ try {
 	// State space is too large for exhaustive testing, so we use randoms to try to catch any silly regressions
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
 	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPA, RND_TEST_CASES), tag, "+=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction    (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPS, RND_TEST_CASES), tag, "-=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPM, RND_TEST_CASES), tag, "*=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPD, RND_TEST_CASES), tag, "/=             (native)  ");
 
 	// elementary function tests
 	cout << "Elementary function tests " << endl;
@@ -99,7 +129,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult( ValidateAtanh                       <nbits, es>(tag, bReportIndividualTestCases), tag, "atanh                    ");
 
 	nrOfFailedTestCases += ReportTestResult( ValidatePowerFunction               <nbits, es>(tag, bReportIndividualTestCases), tag, "pow                      ");
-
+#endif
 	cout << flush;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

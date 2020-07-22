@@ -42,6 +42,8 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
+#include "posit_fwd.hpp"
+#include "posit_parse.hpp"
 #include "posit.hpp"
 #include <universal/traits/posit_traits.hpp>
 #include "numeric_limits.hpp"

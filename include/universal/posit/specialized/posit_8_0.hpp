@@ -416,7 +416,6 @@ namespace unum {
 	inline posit<NBITS_IS_8, ES_IS_0> operator-(const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
 		posit<NBITS_IS_8, ES_IS_0> result = lhs;
 		return result -= rhs;
-
 	}
 			
 	// binary operator*() is provided by generic class

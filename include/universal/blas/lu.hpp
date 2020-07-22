@@ -67,7 +67,7 @@ void Crout(const Matrix& S, Matrix& D) {
 		}
 		for (size_t j = k + 1; j < N; ++j) {
 			value_type sum = 0.;
-			for (int p = 0; p < k; ++p) sum += D[k][p] * D[p][j];
+			for (size_t p = 0; p < k; ++p) sum += D[k][p] * D[p][j];
 			D[k][j] = (S[k][j] - sum) / D[k][k];
 		}
 	}
@@ -80,15 +80,15 @@ void SolveCrout(const Matrix& LU, const Vector& b, Vector& x) {
 	size_t N = size(b);
 	using value_type = typename Matrix::value_type;
 	sw::unum::blas::vector<value_type> y(N);
-	for (int i = 0; i < N; ++i) {
+	for (size_t i = 0; i < N; ++i) {
 		value_type sum = 0.0;
-		for (int k = 0; k < i; ++k) sum += LU[i][k] * y[k];
+		for (size_t k = 0; k < size_t(i); ++k) sum += LU[i][k] * y[k];
 		y[i] = (b[i] - sum) / LU[i][i];
 
 	}
 	for (long i = long(N) - 1; i >= 0; --i) {
 		value_type sum = 0.0;
-		for (int k = i + 1; k < N; ++k) {
+		for (size_t k = i + 1; k < N; ++k) {
 			//cout << "lu[] = " << LU[i][k] << " x[" << k << "] = " << x[k] << endl;
 			sum += LU[i][k] * x[k];
 		}
@@ -106,12 +106,12 @@ void CroutFDP(sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& S, sw::unum:
 	size_t d = num_rows(S);
 	assert(size(S) == size(D));
 	using namespace sw::unum;
-	for (int k = 0; k < d; ++k) {
-		for (int i = k; i < d; ++i) {
+	for (size_t k = 0; k < d; ++k) {
+		for (size_t i = k; i < d; ++i) {
 			quire<nbits, es, capacity> q;
 			q.reset();
 			//for (int p = 0; p < k; ++p) q += D[i][p] * D[p][k];   if we had expression templates for the quire
-			for (int p = 0; p < k; ++p) q += quire_mul(D[i][p], D[p][k]);
+			for (size_t p = 0; p < k; ++p) q += quire_mul(D[i][p], D[p][k]);
 			posit<nbits, es> sum;
 			convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 			// TODO: can we add the difference to the quire operation?
@@ -127,10 +127,10 @@ void CroutFDP(sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& S, sw::unum:
 			}
 #endif
 		}
-		for (int j = k + 1; j < d; ++j) {
+		for (size_t j = k + 1; j < d; ++j) {
 			quire<nbits, es, capacity> q;
 			q.reset();
-			//for (int p = 0; p < k; ++p) q += D[k][p] * D[p][j];   if we had expression templates for the quire
+			//for (size_t p = 0; p < k; ++p) q += D[k][p] * D[p][j];   if we had expression templates for the quire
 			for (int p = 0; p < k; ++p) q += quire_mul(D[k][p], D[p][j]);
 			posit<nbits, es> sum;
 			convert(q.to_value(), sum);   // one and only rounding step of the fused-dot product
@@ -158,18 +158,18 @@ void SolveCroutFDP(const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& L
 
 	size_t d = size(b);
 	std::vector< posit<nbits, es> > y(d);
-	for (long i = 0; i < d; ++i) {
+	for (size_t i = 0; i < d; ++i) {
 		quire<nbits, es, capacity> q;
 		// for (int k = 0; k < i; ++k) q += LU[i][k] * y[k];   if we had expression templates for the quire
-		for (int k = 0; k < i; ++k) q += quire_mul(LU[i][k], y[k]);
+		for (size_t k = 0; k < i; ++k) q += quire_mul(LU[i][k], y[k]);
 		posit<nbits, es> sum;
 		convert(q.to_value(), sum);   // one and only rounding step of the fused-dot product
 		y[i] = (b[i] - sum) / LU[i][i];
 	}
 	for (long i = long(d) - 1; i >= 0; --i) {
 		quire<nbits, es, capacity> q;
-		// for (int k = i + 1; k < d; ++k) q += LU[i][k] * x[k];   if we had expression templates for the quire
-		for (int k = i + 1; k < d; ++k) {
+		// for (size_t k = i + 1; k < d; ++k) q += LU[i][k] * x[k];   if we had expression templates for the quire
+		for (size_t k = i + 1; k < d; ++k) {
 			//cout << "lu[] = " << LU[i][k] << " x[" << k << "] = " << x[k] << endl;
 			q += quire_mul(LU[i][k], x[k]);
 		}

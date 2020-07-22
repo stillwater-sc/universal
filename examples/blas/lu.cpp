@@ -94,13 +94,11 @@ try {
 	using namespace sw::unum;
 	using namespace sw::unum::blas;
 
-	using IEEEType = float;
 	float eps = std::numeric_limits<float>::epsilon();
 	float epsminus = 1.0f - eps;
 	float epsplus  = 1.0f + eps;
 
 	// We want to solve the system Ax=b
-	int N = 5;
 	GaussianEliminationTest<32, 2>(1);
 
 #if 1

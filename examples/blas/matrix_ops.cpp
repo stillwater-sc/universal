@@ -44,8 +44,6 @@ try {
 	using namespace std;
 	using namespace sw::unum::blas;
 
-	using Scalar = sw::unum::posit<16,1>;
-
 	generateMatrices< sw::unum::posit< 8, 0> >();
 	generateMatrices< sw::unum::posit<16, 1> >();
 	generateMatrices< sw::unum::posit<32, 2> >();

@@ -11,6 +11,7 @@
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
+#include <universal/posit/posit_parse.hpp>
 // test helpers, such as, ReportTestResults
 #include "../../utils/test_helpers.hpp"
 #include "../../utils/posit_test_randoms.hpp"
@@ -53,6 +54,9 @@ void CheckAddition() {
 	}
 }
 
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 0
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -62,19 +66,80 @@ try {
 
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
+#if POSIT_FAST_POSIT_32_2
+	cout << "Fast specialization posit<32,2> configuration tests" << endl;
+#else
+	cout << "Standard posit<32,2> configuration tests" << endl;
+
+#endif
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = false;
 	std::string tag = " posit<32,2>";
 
-#if POSIT_FAST_POSIT_32_2
-	cout << "Fast specialization posit<32,2> configuration tests" << endl;
-#else
-	cout << "Standard posit<32,2> configuration tests" << endl;
-#endif
-
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
+
+#if MANUAL_TESTING
+
+	posit<nbits, es> a, b, c;
+	a.set_raw_bits(0x0aa99eea);
+	b.set_raw_bits(0xf97fcf40);
+	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << endl;
+	c = a + b;
+	cout << a << " + " << b << " = " << c << endl;
+	cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << endl;
+	c = a;
+	c += b;
+	cout << a << " + " << b << " = " << c << endl;
+	cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << endl;
+
+#if 1
+	std::string testVector[] = {
+		"32.2x0a2f641dp",
+		"32.2x06e8eb35p",
+		"32.2xf97fcf40p",
+		"32.2x03812f3fp",
+		"32.2xf57e2aa8p",
+		"32.2xf88b7e2fp",
+		"32.2x04cd9168p",
+		"32.2xfa843f6bp",
+		"32.2x05a36e2ep",
+		"32.2xf4e89c21p",
+		"32.2x05080d4cp",
+		"32.2x05a36e2ep"
+	};
+
+	std::string golden[] = {
+		"32.2x0a2f641dp",
+		"32.2x0aa99eeap",
+		"32.2x0a4992bap",
+		"32.2x0a51a5aep",
+		"32.2xfa7e82b0p",
+		"32.2xf82b1edbp",
+		"32.2xf864d108p",
+		"32.2xf805e0e3p",
+		"32.2xf86ebc6ep",
+		"32.2xf41ffa58p",
+		"32.2xf440fc02p",
+		"32.2xf47569c8p"
+	};
+
+	posit<nbits, es> accu1(0), accu2(0);
+	int i = 0;
+	for (auto v : testVector) {
+		if (!parse(v, p)) {
+			std::cerr << "unable to parse -" << v << "- into a posit value\n";
+		}
+		else {
+			cout << hex_format(accu1) << " + " << hex_format(p) << endl;
+			accu1 = accu1 + p;
+			accu2 += p;
+			cout << hex_format(accu1) << " vs " << golden[i++] << " " << accu2 << endl;
+		}
+	}
+#endif
+#else
 
 	// special cases
 	cout << "Special case tests " << endl;
@@ -107,10 +172,14 @@ try {
 
 	// arithmetic tests
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
-	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES),  tag, "addition        (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES),  tag, "subtraction     (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES),  tag, "multiplication  (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES),  tag, "division        (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition        (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction     (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication  (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division        (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "+=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "-=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "*=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "/=              (native)  ");
 
 	// elementary function tests
 	cout << "Elementary function tests " << endl;
@@ -134,6 +203,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult( ValidateUnaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ATANH, RND_TEST_CASES), tag, "atanh                     ");
 	// elementary functions with two operands
 	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_POW, RND_TEST_CASES),   tag, "pow                       ");
+#endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

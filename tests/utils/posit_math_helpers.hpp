@@ -224,7 +224,21 @@ namespace sw {
 				for (int j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
 					db = double(pb);
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+					try {
+						ppow = pow(pa, pb);
+					}
+					catch (const posit_arithmetic_exception& err) {
+						if (pa.isnar()) {
+							if (bReportIndividualTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+						}
+						else {
+							throw err;
+						}
+					}
+#else
 					ppow = pow(pa, pb);
+#endif
 					pref = std::pow(da, db);
 					if (ppow != pref) {
 						nrOfFailedTests++;
