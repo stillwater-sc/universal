@@ -80,12 +80,6 @@ namespace sw {
 			return *this;
 		}
 		posit operator-() const {
-			if (iszero()) {
-				return *this;
-			}
-			if (isnar()) {
-				return *this;
-			}
 			posit p;
 			return p.set_raw_bits((~_bits) + 1);
 		}
@@ -101,13 +95,12 @@ namespace sw {
 				return *this;
 			}
 #endif
-			if (isneg() != b.isneg()) return *this -= b;
+			if (b.iszero()) return *this;
+			if (iszero()) {	_bits = b._bits; return *this; }
+			if (isneg() != b.isneg()) return *this -= b.twosComplement();
+
 			uint16_t lhs = _bits;
 			uint16_t rhs = b._bits;
-			if (iszero() || b.iszero()) { // zero
-				_bits = lhs | rhs;
-				return *this;
-			}
 			bool sign = bool(_bits & sign_mask);
 			if (sign) {
 				lhs = -lhs & 0xFFFF;
@@ -168,16 +161,13 @@ namespace sw {
 				return *this;
 			}
 #endif
+			if (b.iszero()) return *this;
+			if (iszero()) { _bits = b._bits; return *this; }
 			posit bComplement = b.twosComplement();
 			if (isneg() != b.isneg()) return *this += bComplement;
 
 			uint16_t lhs = _bits;
 			uint16_t rhs = bComplement._bits;
-			if (iszero() || b.iszero()) {
-				_bits = lhs | rhs;
-				return *this;
-			}
-
 			// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
 			bool sign = bool(lhs & sign_mask);
 			(sign) ? (lhs = (-lhs & 0xFFFF)) : (rhs = (-rhs & 0xFFFF));
@@ -408,10 +398,8 @@ namespace sw {
 		inline void setzero() { clear(); }
 		inline void setnar() { _bits = sign_mask; }
 		inline posit twosComplement() const {
-			posit<NBITS_IS_16, ES_IS_1> p;
-			int16_t v = -*(int16_t*)&_bits;
-			p.set_raw_bits(v);
-			return p;
+			posit p;
+			return p.set_raw_bits(~_bits + 1);
 		}
 
 	private:

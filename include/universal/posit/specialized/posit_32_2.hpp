@@ -80,12 +80,6 @@ public:
 		return *this;
 	}
 	posit operator-() const {
-		if (iszero()) {
-			return *this;
-		}
-		if (isnar()) {
-			return *this;
-		}
 		posit p;
 		return p.set_raw_bits((~_bits) + 1);
 	}
@@ -101,12 +95,12 @@ public:
 			return *this;
 		}
 #endif
+		if (b.iszero()) return *this;
+		if (iszero()) { _bits = b._bits; return *this; }
+		if (isneg() != b.isneg()) return *this -= b.twosComplement();
+
 		uint32_t lhs = _bits;
 		uint32_t rhs = b._bits;
-		if (iszero() || b.iszero()) { // zero
-			_bits = lhs | rhs;
-			return *this;
-		}
 		bool sign = bool(_bits & sign_mask);
 		if (sign) {
 			lhs = -int32_t(lhs) & 0xFFFFFFFF;
@@ -166,15 +160,13 @@ public:
 			return *this;
 		}
 #endif
+		if (b.iszero()) return *this;
+		if (iszero()) { _bits = b._bits; return *this; }
 		posit bComplement = b.twosComplement();
 		if (isneg() != b.isneg()) return *this += bComplement;
 
 		uint32_t lhs = _bits;
 		uint32_t rhs = bComplement._bits;
-		if (iszero() || b.iszero()) {
-			_bits = lhs | rhs;
-			return *this;
-		}
 		// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
 		bool sign = bool(lhs & sign_mask);
 		(sign) ? (lhs = (-int32_t(lhs) & 0xFFFFFFFF)) : (rhs = (-int32_t(rhs) & 0xFFFFFFFF));
@@ -429,13 +421,11 @@ public:
 	bitblock<NBITS_IS_32> get() const { bitblock<NBITS_IS_32> bb; bb = long(_bits); return bb; }
 	unsigned long long encoding() const { return (unsigned long long)(_bits); }
 	inline posit twosComplement() const {
-		posit<NBITS_IS_32, ES_IS_2> p;
-		int32_t v = -(int32_t)_bits;
-		p.set_raw_bits(v);
-		return p;
+		posit p;
+		return p.set_raw_bits((~_bits) + 1);
 	}
 
-#if NEW_TO_VALUT
+#if NEW_TO_VALUE
 	int rscale() const { // scale of the regime
 		return 1;
 	}

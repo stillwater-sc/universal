@@ -18,7 +18,7 @@
 
 // Standard posit with nbits = 16 have es = 1 exponent bit.
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -32,7 +32,7 @@ try {
 	constexpr size_t es = 1;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	std::string tag = " posit<16,1>";
 
 #if POSIT_FAST_POSIT_16_1
@@ -42,23 +42,27 @@ try {
 #endif
 
 #if MANUAL_TESTING
+	float fa, fb;
 	posit<nbits, es> a, b, c;
-	a.set_raw_bits(0x0aa9);
-	b.set_raw_bits(0xf97f);
-	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << endl;
-	c = a + b;
-	cout << a << " + " << b << " = " << c << endl;
-	cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << endl;
-	c = a;
-	c += b;
-	cout << a << " + " << b << " = " << c << endl;
-	cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << endl;
+	fa = 2;	fb = 1;
+	a = fa; b = fb; c = a; c += b;
+	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << endl;
+	fa = 2;	fb = -1;
+	a = fa; b = fb; c = a; c += b;
+	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << endl;
+	fa = -2;	fb = 1;
+	a = fa; b = fb; c = a; c += b;
+	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << endl;
+	fa = -2;	fb = -1;
+	a = fa; b = fb; c = a; c += b;
+	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << endl;
 
-	return 0;
 	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPA, 1000000), tag, "+=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPS, 1000000), tag, "-=             (native)  ");
+//	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPS, 1000000), tag, "-=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPM, 1000000), tag, "*=             (native)  ");
 	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPD, 1000000), tag, "/=             (native)  ");
+
+	cout << nrOfFailedTestCases << " number of failures\n";
 
 	nrOfFailedTestCases = 0;  // ignore failures in manual testing
 #else

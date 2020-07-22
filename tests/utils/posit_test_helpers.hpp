@@ -808,7 +808,7 @@ namespace unum {
 				}
 #else
 				pdif = pa;
-				pdef -= pb;
+				pdif -= pb;
 #endif
 				if (pdif != pref) {
 					nrOfFailedTests++;

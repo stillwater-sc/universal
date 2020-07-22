@@ -54,7 +54,7 @@ void CheckAddition() {
 	}
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -81,37 +81,6 @@ try {
 	cout << dynamic_range(p) << endl << endl;
 
 #if MANUAL_TESTING
-	/*
-bad:
- sum 32.2x0a2f641dp : 32.2x151eb852p * 32.2x1ed418d9p = 32.2x0a2f641dp
- sum 32.2x0aa99eeap : 32.2x151eb852p * 32.2x15f7df06p = 32.2x06e8eb35p
- sum 32.2x797fcf41p : 32.2x151eb852p * 32.2xeb4f67a8p = 32.2xf97fcf40p
- sum 32.2x797fcf41p : 32.2x151eb852p * 32.2x0b27674bp = 32.2x03812f3fp
- sum 32.2x757e2aa8p : 32.2x151eb852p * 32.2xe02a454dp = 32.2xf57e2aa8p
- sum 32.2x78fb4384p : 32.2x151eb852p * 32.2xe773ea53p = 32.2xf88b7e2fp
- sum 32.2x78fb4384p : 32.2x151eb852p * 32.2x0ed13332p = 32.2x04cd9168p
- sum 32.2x7b018826p : 32.2x151eb852p * 32.2xef5d462ep = 32.2xfa843f6bp
- sum 32.2x7b018826p : 32.2x151eb852p * 32.2x111eb851p = 32.2x05a36e2ep
- sum 32.2x74e89c21p : 32.2x151eb852p * 32.2xde56e7e6p = 32.2xf4e89c21p
- sum 32.2x74e89c22p : 32.2x151eb852p * 32.2x0f39298cp = 32.2x05080d4cp
- sum 32.2x74e89c24p : 32.2x151eb852p * 32.2x111eb851p = 32.2x05a36e2ep
-
-
-good:
- sum 32.2x0a2f641dp : 32.2x151eb852p * 32.2x1ed418d9p = 32.2x0a2f641dp
- sum 32.2x0aa99eeap : 32.2x151eb852p * 32.2x15f7df06p = 32.2x06e8eb35p
- sum 32.2x0a4992bap : 32.2x151eb852p * 32.2xeb4f67a8p = 32.2xf97fcf40p
- sum 32.2x0a51a5aep : 32.2x151eb852p * 32.2x0b27674bp = 32.2x03812f3fp
- sum 32.2xfa7e82b0p : 32.2x151eb852p * 32.2xe02a454dp = 32.2xf57e2aa8p
- sum 32.2xf82b1edbp : 32.2x151eb852p * 32.2xe773ea53p = 32.2xf88b7e2fp
- sum 32.2xf864d108p : 32.2x151eb852p * 32.2x0ed13332p = 32.2x04cd9168p
- sum 32.2xf805e0e3p : 32.2x151eb852p * 32.2xef5d462ep = 32.2xfa843f6bp
- sum 32.2xf86ebc6ep : 32.2x151eb852p * 32.2x111eb851p = 32.2x05a36e2ep
- sum 32.2xf41ffa58p : 32.2x151eb852p * 32.2xde56e7e6p = 32.2xf4e89c21p
- sum 32.2xf440fc02p : 32.2x151eb852p * 32.2x0f39298cp = 32.2x05080d4cp
- sum 32.2xf47569c8p : 32.2x151eb852p * 32.2x111eb851p = 32.2x05a36e2ep
- sum 32.2xf3fc1cf0p : 32.2x151eb852p * 32.2xe9e3291fp = 32.2xf90b405cp
-*/
 
 	posit<nbits, es> a, b, c;
 	a.set_raw_bits(0x0aa99eea);
@@ -125,7 +94,7 @@ good:
 	cout << a << " + " << b << " = " << c << endl;
 	cout << color_print(a) << " + " << color_print(b) << " = " << color_print(c) << endl;
 
-#if 0
+#if 1
 	std::string testVector[] = {
 		"32.2x0a2f641dp",
 		"32.2x06e8eb35p",
