@@ -212,8 +212,8 @@ namespace unum {
 		// These larger posits will be at the mid-point between the smaller posit sample values
 		// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
 		// to test the rounding logic of the conversion.
-		const size_t NR_TEST_CASES = (size_t(1) << (nbits + 1));
-		const size_t HALF = (size_t(1) << nbits);
+		constexpr size_t NR_TEST_CASES = (nbits < 64) ? (size_t(1) << (nbits + 1)) : (size_t(1) << (nbits-1));
+		constexpr size_t HALF = (nbits < 64) ? (size_t(1) << nbits) : (size_t(1) << (nbits-2));
 		posit<nbits + 1, es> pref, pprev, pnext;
 
 		const unsigned max = nbits > 20 ? 20 : nbits + 1;

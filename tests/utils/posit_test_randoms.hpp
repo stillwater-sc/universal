@@ -293,7 +293,6 @@ namespace unum {
 	// We will then execute the binary operator nrOfRandom combinations.
 	template<size_t nbits, size_t es>
 	int ValidateUnaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
-		const size_t SIZE_STATE_SPACE = nrOfRandoms;
 		int nrOfFailedTests = 0;
 
 		std::string operation_string;

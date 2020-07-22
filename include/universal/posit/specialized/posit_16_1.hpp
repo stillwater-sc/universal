@@ -134,7 +134,7 @@ namespace sw {
 				lhs_fraction >>= 1;
 			}
 			else {
-				rhs_fraction = (shiftRight>31) ? 0 : (rhs_fraction >>= shiftRight); // frac32B >>= shiftRight
+				(shiftRight>31) ? (rhs_fraction = 0) : (rhs_fraction >>= shiftRight); // frac32B >>= shiftRight
 				lhs_fraction += rhs_fraction;
 
 				bool rcarry = 0x80000000 & lhs_fraction; // first left bit

@@ -64,7 +64,6 @@ void catastrophicCancellationTest() {
 	using namespace std;
 	cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
 	using Matrix = sw::unum::blas::matrix<Scalar>;
-	using Vector = sw::unum::blas::vector<Scalar>;
 
 	Scalar a1 = 3.2e8;
 	Scalar a2 = 1;
