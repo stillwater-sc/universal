@@ -89,7 +89,7 @@ public:
 		posit p;
 		return p.set_raw_bits((~_bits) + 1);
 	}
-	posit& operator+=(const posit& b) { // derived from SoftPosit
+	posit& operator+=(const posit& b) {
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || b.isnar()) {
@@ -154,7 +154,7 @@ public:
 	posit& operator+=(double rhs) {
 		return *this += posit<nbits, es>(rhs);
 	}
-	posit& operator-=(const posit& b) {  // derived from SoftPosit
+	posit& operator-=(const posit& b) {
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 		if (isnar() || b.isnar()) {
@@ -166,8 +166,11 @@ public:
 			return *this;
 		}
 #endif
+		posit bComplement = b.twosComplement();
+		if (isneg() != b.isneg()) return *this += bComplement;
+
 		uint32_t lhs = _bits;
-		uint32_t rhs = b._bits;
+		uint32_t rhs = bComplement._bits;
 		if (iszero() || b.iszero()) {
 			_bits = lhs | rhs;
 			return *this;
@@ -913,29 +916,10 @@ inline bool operator>=(const posit<NBITS_IS_32, ES_IS_2>& lhs, const posit<NBITS
 	return !operator< (lhs, rhs);
 }
 
-inline posit<NBITS_IS_32, ES_IS_2> operator+(const posit<NBITS_IS_32, ES_IS_2>& lhs, const posit<NBITS_IS_32, ES_IS_2>& rhs) {
-	posit<NBITS_IS_32, ES_IS_2> result = lhs;
-	if (lhs.isneg() == rhs.isneg()) {  // are the posits the same sign?
-		result += rhs;
-	} 
-	else {
-		result -= rhs;
-	}
-	return result;
-}
-inline posit<NBITS_IS_32, ES_IS_2> operator-(const posit<NBITS_IS_32, ES_IS_2>& lhs, const posit<NBITS_IS_32, ES_IS_2>& rhs) {
-	posit<NBITS_IS_32, ES_IS_2> result = lhs;
-	if (lhs.isneg() == rhs.isneg()) {  // are the posits the same sign?
-		result -= rhs.twosComplement();
-	}
-	else {
-		result += rhs.twosComplement();
-	}
-	return result;
-
-}
-// binary operator*() is provided by generic class
-// binary operator/() is provided by generic class
+// binary operator+() is provided by generic function
+// binary operator-() is provided by generic function
+// binary operator*() is provided by generic function
+// binary operator/() is provided by generic function
 
 #if POSIT_ENABLE_LITERALS
 // posit - literal logic functions

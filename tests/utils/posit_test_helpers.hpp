@@ -686,6 +686,53 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 
+	// enumerate all addition cases for a posit configuration
+	template<size_t nbits, size_t es>
+	int ValidateInPlaceAddition(const std::string& tag, bool bReportIndividualTestCases) {
+		const size_t NR_POSITS = (size_t(1) << nbits);
+		int nrOfFailedTests = 0;
+		posit<nbits, es> pa, pb, psum, pref;
+
+		double da, db;
+		for (size_t i = 0; i < NR_POSITS; i++) {
+			pa.set_raw_bits(i);
+			da = double(pa);
+			for (size_t j = 0; j < NR_POSITS; j++) {
+				pb.set_raw_bits(j);
+				db = double(pb);
+				pref = da + db;
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+				try {
+					psum = pa;
+					psum += pb;
+				}
+				catch (const operand_is_nar& err) {
+					if (pa.isnar() || pb.isnar()) {
+						// correctly caught the exception
+						psum.setnar();
+					}
+					else {
+						throw err;
+					}
+				}
+
+#else
+				psum = pa;
+				psum += pb;
+#endif
+				if (psum != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+=", pa, pb, pref, psum);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+=", pa, pb, pref, psum);
+				}
+			}
+		}
+
+		return nrOfFailedTests;
+	}
+
 	// enumerate all subtraction cases for a posit configuration: is within 10sec till about nbits = 14
 	template<size_t nbits, size_t es>
 	int ValidateSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
@@ -730,6 +777,52 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 
+	// enumerate all subtraction cases for a posit configuration: is within 10sec till about nbits = 14
+	template<size_t nbits, size_t es>
+	int ValidateInPlaceSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
+		const size_t NR_POSITS = (size_t(1) << nbits);
+		int nrOfFailedTests = 0;
+		posit<nbits, es> pa, pb, pref, pdif;
+
+		double da, db;
+		for (size_t i = 0; i < NR_POSITS; i++) {
+			pa.set_raw_bits(i);
+			da = double(pa);
+			for (size_t j = 0; j < NR_POSITS; j++) {
+				pb.set_raw_bits(j);
+				db = double(pb);
+				pref = da - db;
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+				try {
+					pdif = pa;
+					pdif -= pb;
+				}
+				catch (const operand_is_nar& err) {
+					if (pa.isnar() || pb.isnar()) {
+						// correctly caught the exception
+						pdif.setnar();
+					}
+					else {
+						throw err;
+					}
+				}
+#else
+				pdif = pa;
+				pdef -= pb;
+#endif
+				if (pdif != pref) {
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-=", pa, pb, pref, pdif);
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "-=", pa, pb, pref, pdif);
+				}
+			}
+		}
+
+		return nrOfFailedTests;
+	}
+
 	// enumerate all multiplication cases for a posit configuration: is within 10sec till about nbits = 14
 	template<size_t nbits, size_t es>
 	int ValidateMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
@@ -767,6 +860,51 @@ namespace unum {
 				}
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", pa, pb, pref, pmul);
+				}
+			}
+		}
+		return nrOfFailedTests;
+	}
+
+	// enumerate all multiplication cases for a posit configuration: is within 10sec till about nbits = 14
+	template<size_t nbits, size_t es>
+	int ValidateInPlaceMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
+		int nrOfFailedTests = 0;
+		const size_t NR_POSITS = (size_t(1) << nbits);
+
+		posit<nbits, es> pa, pb, pmul, pref;
+		double da, db;
+		for (size_t i = 0; i < NR_POSITS; i++) {
+			pa.set_raw_bits(i);
+			da = double(pa);
+			for (size_t j = 0; j < NR_POSITS; j++) {
+				pb.set_raw_bits(j);
+				db = double(pb);
+				pref = da * db;
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+				try {
+					pmul = pa;
+					pmul *= pb;
+				}
+				catch (const operand_is_nar& err) {
+					if (pa.isnar() || pb.isnar()) {
+						// correctly caught the exception
+						pmul.setnar();
+					}
+					else {
+						throw err;
+					}
+				}
+#else
+				pmul = pa;
+				pmul *= pb;
+#endif
+				if (pmul != pref) {
+					if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "*=", pa, pb, pref, pmul);
+					nrOfFailedTests++;
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*=", pa, pb, pref, pmul);
 				}
 			}
 		}
@@ -871,6 +1009,82 @@ namespace unum {
 				}
 				else {
 					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/", pa, pb, pref, pdiv);
+				}
+
+			}
+		}
+		return nrOfFailedTests;
+	}
+
+	// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
+	template<size_t nbits, size_t es>
+	int ValidateInPlaceDivision(const std::string& tag, bool bReportIndividualTestCases) {
+		int nrOfFailedTests = 0;
+		const size_t NR_POSITS = (size_t(1) << nbits);
+
+		posit<nbits, es> pa, pb, pdiv, pref;
+		double da, db;
+		for (size_t i = 0; i < NR_POSITS; i++) {
+			pa.set_raw_bits(i);
+			da = double(pa);
+			for (size_t j = 0; j < NR_POSITS; j++) {
+				pb.set_raw_bits(j);
+				db = double(pb);
+				if (pb.isnar()) {
+					pref.setnar();
+				}
+				else {
+					pref = da / db;
+				}
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+				try {
+					pdiv = pa;
+					pdiv /= pb;
+				}
+				catch (const divide_by_zero& err) {
+					if (pb.iszero()) {
+						// correctly caught the divide by zero condition
+						continue;
+						//pdiv.setnar();
+					}
+					else {
+						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+						throw err; // rethrow
+					}
+				}
+				catch (const divide_by_nar& err) {
+					if (pb.isnar()) {
+						// correctly caught the divide by nar condition
+						continue;
+						//pdiv = 0.0f;
+					}
+					else {
+						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
+						throw err; // rethrow
+					}
+				}
+				catch (const numerator_is_nar& err) {
+					if (pa.isnar()) {
+						// correctly caught the numerator is nar condition
+						continue;
+						//pdiv.setnar();
+					}
+					else {
+						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/=", pa, pb, pref, pdiv);
+						throw err; // rethrow
+					}
+				}
+#else
+				pdiv = pa;
+				pdiv /= pb;
+#endif
+				// check against the IEEE reference
+				if (pdiv != pref) {
+					if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/=", pa, pb, pref, pdiv);
+					nrOfFailedTests++;
+				}
+				else {
+					//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "/=", pa, pb, pref, pdiv);
 				}
 
 			}

@@ -32,28 +32,32 @@ namespace unum {
 	const int OPCODE_SUB   =  2;
 	const int OPCODE_MUL   =  3;
 	const int OPCODE_DIV   =  4;
+	const int OPCODE_IPA   =  5;         // in-place addition
+	const int OPCODE_IPS   =  6;
+	const int OPCODE_IPM   =  7;
+	const int OPCODE_IPD   =  8;
 	// elementary functions with one operand
-	const int OPCODE_SQRT  =  5;
-	const int OPCODE_EXP   =  6;
-	const int OPCODE_EXP2  =  7;
-	const int OPCODE_LOG   =  8;
-	const int OPCODE_LOG2  =  9;
-	const int OPCODE_LOG10 = 10;
-	const int OPCODE_SIN   = 11;
-	const int OPCODE_COS   = 12;
-	const int OPCODE_TAN   = 13;
-	const int OPCODE_ASIN  = 14;
-	const int OPCODE_ACOS  = 15;
-	const int OPCODE_ATAN  = 16;
-	const int OPCODE_SINH  = 17;
-	const int OPCODE_COSH  = 18;
-	const int OPCODE_TANH  = 19;
-	const int OPCODE_ASINH = 20;
-	const int OPCODE_ACOSH = 21;
-	const int OPCODE_ATANH = 22;
+	const int OPCODE_SQRT  = 20;
+	const int OPCODE_EXP   = 21;
+	const int OPCODE_EXP2  = 22;
+	const int OPCODE_LOG   = 23;
+	const int OPCODE_LOG2  = 24;
+	const int OPCODE_LOG10 = 25;
+	const int OPCODE_SIN   = 26;
+	const int OPCODE_COS   = 27;
+	const int OPCODE_TAN   = 28;
+	const int OPCODE_ASIN  = 29;
+	const int OPCODE_ACOS  = 30;
+	const int OPCODE_ATAN  = 31;
+	const int OPCODE_SINH  = 32;
+	const int OPCODE_COSH  = 33;
+	const int OPCODE_TANH  = 34;
+	const int OPCODE_ASINH = 35;
+	const int OPCODE_ACOSH = 36;
+	const int OPCODE_ATANH = 37;
 	// elementary functions with two operands
-	const int OPCODE_POW   = 30;
-	const int OPCODE_RAN   = 40;
+	const int OPCODE_POW   = 50;
+	const int OPCODE_RAN   = 60;
 
 	// Execute a binary operator
 	template<size_t nbits, size_t es>
@@ -74,6 +78,26 @@ namespace unum {
 			break;
 		case OPCODE_DIV:
 			presult = pa / pb;
+			reference = da / db;
+			break;
+		case OPCODE_IPA:
+			presult = pa;
+			presult += pb;
+			reference = da + db;
+			break;
+		case OPCODE_IPS:
+			presult = pa;
+			presult -= pb;
+			reference = da - db;
+			break;
+		case OPCODE_IPM:
+			presult = pa;
+			presult *= pb;
+			reference = da * db;
+			break;
+		case OPCODE_IPD:
+			presult = pa;
+			presult /= pb;
 			reference = da / db;
 			break;
 		case OPCODE_POW:
@@ -182,9 +206,7 @@ namespace unum {
 	// We will then execute the binary operator nrOfRandom combinations.
 	template<size_t nbits, size_t es>
 	int ValidateBinaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
-		const size_t SIZE_STATE_SPACE = nrOfRandoms;
 		int nrOfFailedTests = 0;
-		posit<nbits, es> pa, pb, presult, preference;
 
 		std::string operation_string;
 		switch (opcode) {
@@ -200,52 +222,50 @@ namespace unum {
 		case OPCODE_DIV:
 			operation_string = "/";
 			break;
+		case OPCODE_IPA:
+			operation_string = "+=";
+			break;
+		case OPCODE_IPS:
+			operation_string = "-=";
+			break;
+		case OPCODE_IPM:
+			operation_string = "*=";
+			break;
+		case OPCODE_IPD:
+			operation_string = "/=";
+			break;
 		case OPCODE_POW:
 			operation_string = "pow";
 			break;
 		case OPCODE_NOP:
 		default:
 			std::cerr << "Unsupported unary operator, test cancelled\n";
-			break;
+			return 1;
 		}
 		// generate the full state space set of valid posit values
-		std::random_device rd;     //Get a random seed from the OS entropy device, or whatever
-		std::mt19937_64 eng(rd()); //Use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
-									//Define the distribution, by default it goes from 0 to MAX(unsigned long long)
+		std::random_device rd;     // get a random seed from the OS entropy device, or whatever
+		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
+		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
 		std::uniform_int_distribution<unsigned long long> distr;
-#ifdef POSIT_USE_LONG_DOUBLE
-		std::vector<long double> operand_values(SIZE_STATE_SPACE);
-		for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
-			presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as posit encoding
-			operand_values[i] = (long double)(presult);
-		}
-		long double da, db;
-#else // USE DOUBLE
-		std::vector<double> operand_values(SIZE_STATE_SPACE);
-		for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
-			presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as posit encoding
-			operand_values[i] = double(presult);
-		}
+		posit<nbits, es> pa, pb, presult, preference;
 		double da, db;
-#endif // POSIT_USE_LONG_DOUBLE
-		unsigned ia, ib;  // random indices for picking operands to test
+
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
-			ia = std::rand() % SIZE_STATE_SPACE;
-			da = operand_values[ia];
-			pa = da;
-			ib = std::rand() % SIZE_STATE_SPACE;
-			db = operand_values[ib];
-			pb = db;
+			pa.set_raw_bits(distr(eng));
+			da = double(pa);
+			pb.set_raw_bits(distr(eng));
+			db = double(pb);
 			// in case you have numeric_limits<long double>::digits trouble... this will show that
 			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " pa " << pa << std::endl;
 			//std::cout << "sizeof db: " << sizeof(db) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value db " << db << " at index " << ia << " pa " << pb << std::endl;
+
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 			try {
 				executeBinary(opcode, da, db, pa, pb, preference, presult);
 			}
 			catch (const posit_arithmetic_exception& err) {
-				if (pa.isnar() || pb.isnar() || (opcode == OPCODE_DIV && pb.iszero())) {
-					std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+				if (pa.isnar() || pb.isnar() || ((opcode == OPCODE_DIV || opcode == OPCODE_IPD) && pb.iszero())) {
+					if (bReportIndividualTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 				}
 				else {
 					throw err;
@@ -254,6 +274,8 @@ namespace unum {
 #else
 			executeBinary(opcode, da, db, pa, pb, preference, presult);
 #endif
+
+			presult = preference;
 			if (presult != preference) {
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", operation_string, pa, pb, preference, presult);
@@ -273,7 +295,6 @@ namespace unum {
 	int ValidateUnaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
 		const size_t SIZE_STATE_SPACE = nrOfRandoms;
 		int nrOfFailedTests = 0;
-		posit<nbits, es> pa, pb, presult, preference;
 
 		std::string operation_string;
 		bool sqrtOperator = false;  // we need to filter negative values from the randoms
@@ -281,13 +302,17 @@ namespace unum {
 		default:
 		case OPCODE_NOP:
 			operation_string = "nop";
-			break;
+			return 0;
 		case OPCODE_ADD:
 		case OPCODE_SUB:
 		case OPCODE_MUL:
 		case OPCODE_DIV:
+		case OPCODE_IPA:
+		case OPCODE_IPS:
+		case OPCODE_IPM:
+		case OPCODE_IPD:
 			std::cerr << "Unsupported binary operator, test cancelled\n";
-			break;
+			return 1;
 		case OPCODE_SQRT:
 			operation_string = "sqrt";
 			sqrtOperator = true;
@@ -328,33 +353,16 @@ namespace unum {
 			break;
 		}
 		// generate the full state space set of valid posit values
-		std::random_device rd;     //Get a random seed from the OS entropy device, or whatever
-		std::mt19937_64 eng(rd()); //Use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
-									//Define the distribution, by default it goes from 0 to MAX(unsigned long long)
+		std::random_device rd;     // get a random seed from the OS entropy device, or whatever
+		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
+		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
 		std::uniform_int_distribution<unsigned long long> distr;
-#ifdef POSIT_USE_LONG_DOUBLE
-		std::vector<long double> operand_values(SIZE_STATE_SPACE);
-		for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
-			presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as posit encoding
-			operand_values[i] = (long double)(presult);
-		}
-		long double da, db;
-#else // USE DOUBLE
-		std::vector<double> operand_values(SIZE_STATE_SPACE);
-		for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
-			presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as posit encoding
-			if (sqrtOperator && presult.isneg()) {
-				presult = -presult;
-			}
-			operand_values[i] = double(presult);
-		}
+		posit<nbits, es> pa, presult, preference;
 		double da;
-#endif // POSIT_USE_LONG_DOUBLE
-		unsigned ia;  // random indices for picking operands to test
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
-			ia = std::rand() % SIZE_STATE_SPACE;
-			da = operand_values[ia];
-			pa = da;
+			pa.set_raw_bits(distr(eng));
+			if (sqrtOperator && pa < 0) pa = -pa;
+			da = double(pa);
 			// in case you have numeric_limits<long double>::digits trouble... this will show that
 			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " pa " << pa << std::endl;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -362,8 +370,8 @@ namespace unum {
 				executeUnary(opcode, da, pa, preference, presult);
 			}
 			catch (const posit_arithmetic_exception& err) {
-				if (pa.isnar() || pb.isnar() || (opcode == OPCODE_DIV && pb.iszero())) {
-					std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+				if (pa.isnar()) {
+					if (bReportIndividualTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 				}
 				else {
 					throw err;

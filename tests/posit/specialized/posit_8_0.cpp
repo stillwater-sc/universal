@@ -66,12 +66,16 @@ try {
 
 	// arithmetic tests
 	cout << "Arithmetic tests " << endl;
-	nrOfFailedTestCases += ReportTestResult( ValidateAddition         <nbits, es>(tag, bReportIndividualTestCases), tag, "add            (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateSubtraction      <nbits, es>(tag, bReportIndividualTestCases), tag, "subtract       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateMultiplication   <nbits, es>(tag, bReportIndividualTestCases), tag, "multiply       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateDivision         <nbits, es>(tag, bReportIndividualTestCases), tag, "divide         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateNegation         <nbits, es>(tag, bReportIndividualTestCases), tag, "negate         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateReciprocation    <nbits, es>(tag, bReportIndividualTestCases), tag, "reciprocate    (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateAddition           <nbits, es>(tag, bReportIndividualTestCases), tag,    "add            (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateInPlaceAddition    <nbits, es>(tag, bReportIndividualTestCases), tag,    "+=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateSubtraction        <nbits, es>(tag, bReportIndividualTestCases), tag,    "subtract       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateInPlaceSubtraction <nbits, es>(tag, bReportIndividualTestCases), tag,    "-=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateMultiplication     <nbits, es>(tag, bReportIndividualTestCases), tag,    "multiply       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateInPlaceMultiplication <nbits, es>(tag, bReportIndividualTestCases), tag, "*=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateDivision           <nbits, es>(tag, bReportIndividualTestCases), tag,    "divide         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateInPlaceDivision    <nbits, es>(tag, bReportIndividualTestCases), tag,    "/=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateNegation           <nbits, es>(tag, bReportIndividualTestCases), tag,    "negate         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateReciprocation      <nbits, es>(tag, bReportIndividualTestCases), tag,    "reciprocate    (native)  ");
 
 	// elementary function tests
 	cout << "Elementary function tests " << endl;

@@ -89,14 +89,21 @@ namespace sw {
 			posit p;
 			return p.set_raw_bits((~_bits) + 1);
 		}
-		posit& operator+=(const posit& b) { // derived from SoftPosit
-			uint16_t lhs = _bits;
-			uint16_t rhs = b._bits;
+		posit& operator+=(const posit& b) {
 			// process special cases
-			if (isnar() || b.isnar()) {  // NaR
-				_bits = 0x8000;
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+			if (isnar() || b.isnar()) {
+				throw operand_is_nar{};
+			}
+#else
+			if (isnar() || b.isnar()) {
+				setnar();
 				return *this;
 			}
+#endif
+			if (isneg() != b.isneg()) return *this -= b;
+			uint16_t lhs = _bits;
+			uint16_t rhs = b._bits;
 			if (iszero() || b.iszero()) { // zero
 				_bits = lhs | rhs;
 				return *this;
@@ -124,7 +131,7 @@ namespace sw {
 			extractAddand(rhs, shiftRight, remaining);
 			uint32_t rhs_fraction = (0x4000 | remaining) << 16;
 
-			//This is 2kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
+			// this is 2kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
 			shiftRight = (shiftRight << 1) + exp - (remaining >> 14);
 
 			if (shiftRight == 0) {
@@ -134,8 +141,7 @@ namespace sw {
 				lhs_fraction >>= 1;
 			}
 			else {
-				//Manage CLANG (LLVM) compiler when shifting right more than number of bits
-				(shiftRight>31) ? (rhs_fraction = 0) : (rhs_fraction >>= shiftRight); //frac32B >>= shiftRight
+				rhs_fraction = (shiftRight>31) ? 0 : (rhs_fraction >>= shiftRight); // frac32B >>= shiftRight
 				lhs_fraction += rhs_fraction;
 
 				bool rcarry = 0x80000000 & lhs_fraction; // first left bit
@@ -150,18 +156,28 @@ namespace sw {
 			if (sign) _bits = -_bits & 0xFFFF;
 			return *this;
 		}
-		posit& operator-=(const posit& b) {  // derived from SoftPosit
-			uint16_t lhs = _bits;
-			uint16_t rhs = b._bits;
+		posit& operator-=(const posit& b) {
 			// process special cases
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
 			if (isnar() || b.isnar()) {
-				_bits = 0x8000;
+				throw operand_is_nar{};
+			}
+#else
+			if (isnar() || b.isnar()) {
+				setnar();
 				return *this;
 			}
+#endif
+			posit bComplement = b.twosComplement();
+			if (isneg() != b.isneg()) return *this += bComplement;
+
+			uint16_t lhs = _bits;
+			uint16_t rhs = bComplement._bits;
 			if (iszero() || b.iszero()) {
 				_bits = lhs | rhs;
 				return *this;
 			}
+
 			// Both operands are actually the same sign if rhs inherits sign of sub: Make both positive
 			bool sign = bool(lhs & sign_mask);
 			(sign) ? (lhs = (-lhs & 0xFFFF)) : (rhs = (-rhs & 0xFFFF));
@@ -223,18 +239,23 @@ namespace sw {
 			return *this;
 		}
 		posit& operator*=(const posit& b) {
-			uint16_t lhs = _bits;
-			uint16_t rhs = b._bits;
 			// process special cases
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
 			if (isnar() || b.isnar()) {
-				_bits = 0x8000;
+				throw operand_is_nar{};
+			}
+#else
+			if (isnar() || b.isnar()) {
+				setnar();
 				return *this;
 			}
+#endif
 			if (iszero() || b.iszero()) {
 				_bits = 0x0000;
 				return *this;
 			}
-
+			uint16_t lhs = _bits;
+			uint16_t rhs = b._bits;
 			// calculate the sign of the result
 			bool sign = bool(lhs & sign_mask) ^ bool(rhs & sign_mask);
 			lhs = lhs & sign_mask ? -lhs : lhs;
@@ -274,13 +295,27 @@ namespace sw {
 			return *this;
 		}
 		posit& operator/=(const posit& b) {
-			uint16_t lhs = _bits;
-			uint16_t rhs = b._bits;
 			// process special cases
+		// since we are encoding error conditions as NaR (Not a Real), we need to process that condition first
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+			if (b.iszero()) {
+				throw divide_by_zero{};    // not throwing is a quiet signalling NaR
+			}
+			if (b.isnar()) {
+				throw divide_by_nar{};
+			}
+			if (isnar()) {
+				throw numerator_is_nar{};
+			}
+#else
 			if (isnar() || b.isnar() || b.iszero()) {
-				_bits = 0x8000;
+				setnar();
 				return *this;
 			}
+#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
+
+			uint16_t lhs = _bits;
+			uint16_t rhs = b._bits; 
 			if (iszero()) {
 				_bits = 0x0000;
 				return *this;
@@ -792,29 +827,10 @@ namespace sw {
 		return !operator< (lhs, rhs);
 	}
 
-	inline posit<NBITS_IS_16, ES_IS_1> operator+(const posit<NBITS_IS_16, ES_IS_1>& lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs) {
-		posit<NBITS_IS_16, ES_IS_1> result = lhs;
-		if (lhs.isneg() == rhs.isneg()) {  // are the posits the same sign?
-			result += rhs;
-		} 
-		else {
-			result -= rhs;
-		}
-		return result;
-	}
-	inline posit<NBITS_IS_16, ES_IS_1> operator-(const posit<NBITS_IS_16, ES_IS_1>& lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs) {
-		posit<NBITS_IS_16, ES_IS_1> result = lhs;
-		if (lhs.isneg() == rhs.isneg()) {  // are the posits the same sign?
-			result -= rhs.twosComplement();
-		}
-		else {
-			result += rhs.twosComplement();
-		}
-		return result;
-
-	}
-	// binary operator*() is provided by generic class
-	// binary operator/() is provided by generic class
+	// binary operator+() is provided by generic function
+	// binary operator-() is provided by generic function
+	// binary operator*() is provided by generic function
+	// binary operator/() is provided by generic function
 
 #if POSIT_ENABLE_LITERALS
 	// posit - literal logic functions
