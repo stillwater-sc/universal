@@ -16,9 +16,7 @@
 #include "../../utils/test_helpers.hpp"
 #include "../../utils/posit_test_randoms.hpp"
 
-/*
-Standard posit with nbits = 32 have es = 2 exponent bits.
-*/
+// Standard posit with nbits = 32 have es = 2 exponent bits.
 
 template<size_t nbits, size_t es>
 void CheckAddition() {

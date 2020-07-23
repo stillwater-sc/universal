@@ -204,6 +204,19 @@ namespace unum {
 		return fail;
 	}
 
+	// logic operator consistency check
+	template<size_t nbits, size_t es>
+	void testLogicOperators(const sw::unum::posit<nbits, es>& a, const sw::unum::posit<nbits, es>& b) {
+		using namespace std;
+		cout << a << " vs " << b << endl;
+		if (a == b) cout << "a == b\n"; else cout << "a != b\n";
+		if (a != b) cout << "a != b\n"; else cout << "a == b\n";
+		if (a < b)  cout << "a <  b\n"; else cout << "a >= b\n";
+		if (a <= b) cout << "a <= b\n"; else cout << "a >  b\n";
+		if (a > b)  cout << "a >  b\n"; else cout << "a <= b\n";
+		if (a >= b) cout << "a >= b\n"; else cout << "a <  b\n";
+	}
+
 	// enumerate all conversion cases for a posit configuration
 	template<size_t nbits, size_t es>
 	int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) {

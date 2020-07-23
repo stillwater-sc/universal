@@ -32,7 +32,7 @@ try {
 	constexpr size_t es = 1;
 
 	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = true;
+	bool bReportIndividualTestCases = false;
 	std::string tag = " posit<16,1>";
 
 #if POSIT_FAST_POSIT_16_1
@@ -57,10 +57,34 @@ try {
 	a = fa; b = fb; c = a; c += b;
 	cout << hex_format(a) << " + " << hex_format(b) << " = " << hex_format(a + b) << "(" << (fa + fb) << ") " << hex_format(c) << "(" << c << ")" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPA, 1000000), tag, "+=             (native)  ");
-//	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPS, 1000000), tag, "-=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPM, 1000000), tag, "*=             (native)  ");
-	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPD, 1000000), tag, "/=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPA, 100), tag, "+=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPS, 100), tag, "-=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPM, 100), tag, "*=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_IPD, 100), tag, "/=             (native)  ");
+
+
+	a.setnar(); b.setnar();
+	testLogicOperators(a, b);
+	a = +1; b = +1; --b;
+	testLogicOperators(a, b);
+	a = +1; b = +1; ++b;
+	testLogicOperators(a, b);
+	a = -1; b = -1; --b;
+	testLogicOperators(a, b);
+	a = -1; b = -1; ++b;
+	testLogicOperators(a, b);
+
+	a.set_raw_bits(0xfffd); b.set_raw_bits(0xfffe);
+	testLogicOperators(a, b);
+
+	uint16_t v1 = 0x7fff;
+	uint16_t v2 = 0x8001;
+	cout << v1 << " vs " << int16_t(v1) << endl;
+	cout << v2 << " vs " << int16_t(v2) << endl;
+	a.set_raw_bits(v1); b.set_raw_bits(v2);
+	testLogicOperators(a, b);
+	testLogicOperators(b, a);
+
 
 	cout << nrOfFailedTestCases << " number of failures\n";
 
