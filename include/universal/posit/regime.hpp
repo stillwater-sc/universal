@@ -1,7 +1,7 @@
 #pragma once
 // regime.hpp: definition of a posit regime
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,7 +9,7 @@ namespace sw {
 namespace unum {
 
 // Forward definitions
-template<size_t nbits, size_t es> int calculate_k(int);
+template<size_t nbits, size_t es> constexpr int calculate_k(int);
 
 // template class representing the regime using <nbits,es> of the containing posit
 template<size_t nbits, size_t es>

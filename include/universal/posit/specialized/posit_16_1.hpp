@@ -71,15 +71,15 @@ namespace sw {
 		explicit operator unsigned long() const { return to_long(); }
 		explicit operator unsigned int() const { return to_int(); }
 
-		posit& set(sw::unum::bitblock<NBITS_IS_16>& raw) {
+		posit& set(const sw::unum::bitblock<NBITS_IS_16>& raw) {
 			_bits = uint16_t(raw.to_ulong());
 			return *this;
 		}
-		posit& set_raw_bits(uint64_t value) {
+		constexpr posit& set_raw_bits(uint64_t value) {
 			_bits = uint16_t(value & 0xffff);
 			return *this;
 		}
-		posit operator-() const {
+		constexpr posit operator-() const {
 			posit p;
 			return p.set_raw_bits((~_bits) + 1);
 		}

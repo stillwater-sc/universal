@@ -12,25 +12,25 @@ namespace sw { namespace unum {
 
 // calculate exponential scale of useed
 template<size_t nbits, size_t es>
-int useed_scale() {
+constexpr int useed_scale() {
 	return (uint32_t(1) << es);
 }
 
 // calculate exponential scale of maxpos
 template<size_t nbits, size_t es>
-int maxpos_scale() {
+constexpr int maxpos_scale() {
 	return (nbits - 2) * (1 << es);
 }
 
 // calculate exponential scale of minpos
 template<size_t nbits, size_t es>
-int minpos_scale() {
+constexpr int minpos_scale() {
 	return static_cast<int>(2 - int(nbits)) * (1 << es);
 }
 
 // calculate the constrained k value
 template<size_t nbits, size_t es>
-int calculate_k(int scale) {
+constexpr int calculate_k(int scale) {
 	// constrain the scale to range [minpos, maxpos]
 	if (scale < 0) {
 		scale = scale > minpos_scale<nbits, es>() ? scale : minpos_scale<nbits, es>();
@@ -52,7 +52,7 @@ int calculate_k(int scale) {
 
 // calculate the unconstrained k value
 template<size_t nbits, size_t es>
-int calculate_unconstrained_k(int scale) {
+constexpr int calculate_unconstrained_k(int scale) {
 	// the scale of a posit is  2 ^ scale = useed ^ k * 2 ^ exp
 	// -> (scale >> es) = (k*2^es + exp) >> es
 	// -> (scale >> es) = k + (exp >> es) 
@@ -67,31 +67,31 @@ int calculate_unconstrained_k(int scale) {
 
 // double value representation of the useed value of a posit<nbits, es>
 template<size_t nbits, size_t es>
-double useed() {
+constexpr double useed() {
 	return std::pow(2.0, std::pow(2.0, es));
 }
 
 // calculate the value of useed
 template<size_t nbits, size_t es>
-double useed_value() {
+constexpr double useed_value() {
 	return double(uint64_t(1) << useed_scale<nbits, es>());
 }
 
 // calculate the value of maxpos
 template<size_t nbits, size_t es>
-long double maxpos_value() {
+constexpr long double maxpos_value() {
 	return std::pow((long double)(useed_value<nbits, es>()), (long double)(nbits - 2));
 }
 
 // calculate the value of minpos
 template<size_t nbits, size_t es>
-long double minpos_value() {
+constexpr long double minpos_value() {
 	return std::pow((long double)(useed_value<nbits, es>()), (long double)(static_cast<int>(2 - int(nbits))));
 }
 
 // generate the minpos bit pattern for the sign requested (true is negative half, false is positive half)
 template<size_t nbits, size_t es>
-bitblock<nbits> minpos_pattern(bool sign = false) {
+constexpr bitblock<nbits> minpos_pattern(bool sign = false) {
 	bitblock<nbits> _bits;
 	_bits.reset();
 	_bits.set(0, true);
@@ -100,7 +100,7 @@ bitblock<nbits> minpos_pattern(bool sign = false) {
 
 // generate the maxpos bit pattern for the sign requested (true is negative half, false is positive half)
 template<size_t nbits, size_t es>
-bitblock<nbits> maxpos_pattern(bool sign = false) {
+constexpr bitblock<nbits> maxpos_pattern(bool sign = false) {
 	bitblock<nbits> _bits;
 	_bits.reset();
 	_bits.flip();
@@ -112,7 +112,7 @@ bitblock<nbits> maxpos_pattern(bool sign = false) {
 template<size_t nbits, size_t es> class posit;
 
 template<size_t nbits, size_t es>
-inline int sign_value(const posit<nbits, es>& p) {
+constexpr inline int sign_value(const posit<nbits, es>& p) {
 	bitblock<nbits> _bits = p.get();
 	return (_bits[nbits - 1] ? -1 : 1);
 }
@@ -150,7 +150,7 @@ inline long double fraction_value(const posit<nbits, es>& p) {
 
 // get the sign of the posit
 template<size_t nbits, size_t es>
-inline bool sign(const posit<nbits, es>& p) {
+constexpr inline bool sign(const posit<nbits, es>& p) {
 	return p.isneg();
 }
 

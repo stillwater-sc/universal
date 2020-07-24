@@ -12,6 +12,7 @@
 #define POSIT_FAST_POSIT_8_0 1
 #define POSIT_FAST_POSIT_16_1 1
 #define POSIT_FAST_POSIT_32_2 1
+#define POSIT_FAST_POSIT_64_3 0  // TODO
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
@@ -99,11 +100,32 @@ try {
 		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
 
 		{
+			using Scalar = posit<8, 0>;
+			vector<Scalar> x = { a1, a2, a3, a4 };
+			vector<Scalar> y = { b1, b2, b3, b4 };
+
+			reportOnCatastrophicCancellation("posit< 8,0> fused dot(x,y)  : ", fdp(x, y), 2);
+		}
+		{
+			using Scalar = posit<8, 2>;
+			vector<Scalar> x = { a1, a2, a3, a4 };
+			vector<Scalar> y = { b1, b2, b3, b4 };
+
+			reportOnCatastrophicCancellation("posit< 8,2> fused dot(x,y)  : ", fdp(x, y), 2);
+		}
+		{
 			using Scalar = posit<8, 3>;
 			vector<Scalar> x = { a1, a2, a3, a4 };
 			vector<Scalar> y = { b1, b2, b3, b4 };
 
 			reportOnCatastrophicCancellation("posit< 8,3> fused dot(x,y)  : ", fdp(x, y), 2);
+		}
+		{
+			using Scalar = posit<16, 1>;
+			vector<Scalar> x = { a1, a2, a3, a4 };
+			vector<Scalar> y = { b1, b2, b3, b4 };
+
+			reportOnCatastrophicCancellation("posit<16,1> fused dot(x,y)  : " , fdp(x, y), 2);
 		}
 		{
 			using Scalar = posit<16, 2>;
@@ -135,13 +157,6 @@ try {
 			reportOnCatastrophicCancellation("posit<64,0> fused dot(x,y)  : ", fdp(x, y), 2);
 		}
 
-		{
-			using Scalar = posit<16, 1>;
-			vector<Scalar> x = { a1, a2, a3, a4 };
-			vector<Scalar> y = { b1, b2, b3, b4 };
-
-			reportOnCatastrophicCancellation("posit<16,1> fused dot(x,y)  : " , fdp(x, y), 2);
-		}
 		{
 			using Scalar = posit<32, 1>;
 			vector<Scalar> x = { a1, a2, a3, a4 };

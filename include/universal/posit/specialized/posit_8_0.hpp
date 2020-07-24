@@ -73,18 +73,17 @@ namespace unum {
 		explicit operator unsigned long() const { return to_long(); }
 		explicit operator unsigned int() const { return to_int(); }
 
-		posit& set(sw::unum::bitblock<NBITS_IS_8>& raw) {
+		posit& set(const sw::unum::bitblock<NBITS_IS_8>& raw) {
 			_bits = uint8_t(raw.to_ulong());
 			return *this;
 		}
-		posit& set_raw_bits(uint64_t value) {
+		constexpr posit& set_raw_bits(uint64_t value) {
 			_bits = uint8_t(value & 0xff);
 			return *this;
 		}
-		posit operator-() const {
-			posit negated;
-			posit8_t b = { { _bits } };
-			return negated.set_raw_bits(posit8_negate(b).v);
+		constexpr posit operator-() const {
+			posit p;
+			return p.set_raw_bits((~_bits) + 1);
 		}
 		posit& operator+=(const posit& b) {
 			posit8_t lhs = { { _bits } };
