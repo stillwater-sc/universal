@@ -16,6 +16,8 @@ namespace sw { namespace unum {
 	template<size_t nbits, size_t es> posit<nbits, es> sqrt(const posit<nbits, es>& p);
 	template<size_t nbits, size_t es> constexpr posit<nbits, es>& minpos(posit<nbits, es>& p);
 	template<size_t nbits, size_t es> constexpr posit<nbits, es>& maxpos(posit<nbits, es>& p);
+	template<size_t nbits, size_t es> constexpr posit<nbits, es>  minpos();
+	template<size_t nbits, size_t es> constexpr posit<nbits, es>  maxpos();
 	template<size_t nbits, size_t es, size_t fbits> posit<nbits, es>& convert(const value<fbits>&, posit<nbits, es>&);
 
 	// quire types

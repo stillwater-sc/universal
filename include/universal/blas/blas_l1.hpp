@@ -71,9 +71,9 @@ template<typename Vector>
 typename Vector::value_type dot(const Vector& x, const Vector& y) {
 	using value_type = typename Vector::value_type;
 	value_type sum_of_products = value_type(0);
-	size_t i, nx = size(x);
+	size_t nx = size(x);
 	if (nx <= size(y)) {
-		for (i = 0; i < nx; ++i) {
+		for (size_t i = 0; i < nx; ++i) {
 			sum_of_products += x[i] * y[i];
 		}
 	}

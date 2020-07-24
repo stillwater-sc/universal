@@ -70,8 +70,10 @@ namespace sw {
 		template<size_t nbits, size_t es> class posit;
 		template<size_t nbits, size_t es> posit<nbits, es> abs(const posit<nbits, es>& p);
 		template<size_t nbits, size_t es> posit<nbits, es> sqrt(const posit<nbits, es>& p);
-		template<size_t nbits, size_t es> posit<nbits, es> minpos();
-		template<size_t nbits, size_t es> posit<nbits, es> maxpos();
+		template<size_t nbits, size_t es> constexpr posit<nbits, es>& minpos(posit<nbits, es>& p);
+		template<size_t nbits, size_t es> constexpr posit<nbits, es>& maxpos(posit<nbits, es>& p);
+		template<size_t nbits, size_t es> constexpr posit<nbits, es> minpos();
+		template<size_t nbits, size_t es> constexpr posit<nbits, es> maxpos();
 
 		// class posit represents posit numbers of arbitrary configuration and their basic arithmetic operations (add/sub, mul/div)
 		template<size_t _nbits, size_t _es>
