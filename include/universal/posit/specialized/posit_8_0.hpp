@@ -363,7 +363,7 @@ namespace unum {
 		std::ios_base::fmtflags ff;
 		ff = ostr.flags();
 		ss.flags(ff);
-		ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
+		ss << std::setw(width) << std::setprecision(prec) << to_string(p, prec);  // TODO: we need a true native serialization function
 #endif
 		return ostr << ss.str();
 	}
@@ -396,7 +396,7 @@ namespace unum {
 		return !operator==(lhs, rhs);
 	}
 	inline bool operator< (const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
-		return (signed char)(lhs._bits) < (signed char)(rhs._bits);
+		return int8_t(lhs._bits) < int8_t(rhs._bits);
 	}
 	inline bool operator> (const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
 		return operator< (rhs, lhs);

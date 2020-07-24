@@ -894,7 +894,7 @@ inline bool operator!=(const posit<NBITS_IS_32, ES_IS_2>& lhs, const posit<NBITS
 	return !operator==(lhs, rhs);
 }
 inline bool operator< (const posit<NBITS_IS_32, ES_IS_2>& lhs, const posit<NBITS_IS_32, ES_IS_2>& rhs) {
-	return long(lhs._bits) < long(rhs._bits);
+	return int32_t(lhs._bits) < int32_t(rhs._bits);
 }
 inline bool operator> (const posit<NBITS_IS_32, ES_IS_2>& lhs, const posit<NBITS_IS_32, ES_IS_2>& rhs) {
 	return operator< (rhs, lhs);

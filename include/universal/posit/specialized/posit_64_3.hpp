@@ -618,7 +618,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<NBITS_IS_64, ES_
 	std::ios_base::fmtflags ff;
 	ff = ostr.flags();
 	ss.flags(ff);
-	ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
+	ss << std::setw(width) << std::setprecision(prec) << to_string(p, prec);  // TODO: we need a true native serialization function
 #endif
 	return ostr << ss.str();
 }
@@ -651,7 +651,7 @@ inline bool operator!=(const posit<NBITS_IS_64, ES_IS_3>& lhs, const posit<NBITS
 	return !operator==(lhs, rhs);
 }
 inline bool operator< (const posit<NBITS_IS_64, ES_IS_3>& lhs, const posit<NBITS_IS_64, ES_IS_3>& rhs) {
-	return *(signed char*)(&lhs._bits) < *(signed char*)(&rhs._bits);
+	return int64_t(lhs._bits) < int64_t(rhs._bits);
 }
 inline bool operator> (const posit<NBITS_IS_64, ES_IS_3>& lhs, const posit<NBITS_IS_64, ES_IS_3>& rhs) {
 	return operator< (rhs, lhs);

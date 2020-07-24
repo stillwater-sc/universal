@@ -225,14 +225,14 @@ namespace unum {
 		// These larger posits will be at the mid-point between the smaller posit sample values
 		// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
 		// to test the rounding logic of the conversion.
-		constexpr size_t NR_TEST_CASES = (nbits < 64) ? (size_t(1) << (nbits + 1)) : (size_t(1) << (nbits-1));
-		constexpr size_t HALF = (nbits < 64) ? (size_t(1) << nbits) : (size_t(1) << (nbits-2));
+		constexpr unsigned max = nbits > 20 ? 20 : nbits;
+		size_t NR_TEST_CASES = (size_t(1) << (max + 1));
+		size_t HALF = (size_t(1) << max);
 		posit<nbits + 1, es> pref, pprev, pnext;
 
-		const unsigned max = nbits > 20 ? 20 : nbits + 1;
-		size_t max_tests = (size_t(1) << max);
-		if (max_tests < NR_TEST_CASES) {
-			std::cout << "ValidateConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
+
+		if (nbits > 20) {
+			std::cout << "ValidateConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 20" << std::endl;
 		}
 
 		// execute the test
@@ -241,7 +241,7 @@ namespace unum {
 		double eps;
 		double da, input;
 		posit<nbits, es> pa;
-		for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; i++) {
+		for (size_t i = 0; i < NR_TEST_CASES; i++) {
 			pref.set_raw_bits(i);
 			da = double(pref);
 			if (i == 0) {
@@ -366,7 +366,7 @@ namespace unum {
 	template<size_t nbits, size_t es>
 	int ValidateIntegerConversion(const std::string& tag, bool bReportIndividualTestCases) {
 		// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
-		const unsigned max = nbits > 20 ? 20 : nbits;
+		constexpr unsigned max = nbits > 20 ? 20 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;  
 		int nrOfFailedTestCases = 0;
 
@@ -444,7 +444,7 @@ namespace unum {
 	template<size_t nbits, size_t es>
 	int ValidateUintConversion(std::string& tag, bool bReportIndividualTestCases) {
 		// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
-		const unsigned max = nbits > 20 ? 20 : nbits;
+		constexpr unsigned max = nbits > 20 ? 20 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;
 		int nrOfFailedTestCases = 0;
 

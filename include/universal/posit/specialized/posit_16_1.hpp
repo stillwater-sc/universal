@@ -770,7 +770,7 @@ namespace sw {
 		std::ios_base::fmtflags ff;
 		ff = ostr.flags();
 		ss.flags(ff);
-		ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
+		ss << std::setw(width) << std::setprecision(prec) << to_string(p, prec);  // TODO: we need a true native serialization function
 #endif
 		return ostr << ss.str();
 	}
@@ -803,7 +803,7 @@ namespace sw {
 		return !operator==(lhs, rhs);
 	}
 	inline bool operator< (const posit<NBITS_IS_16, ES_IS_1>& lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs) {
-		return (signed short)(lhs._bits) < (signed short)(rhs._bits);
+		return int16_t(lhs._bits) < int16_t(rhs._bits);
 	}
 	inline bool operator> (const posit<NBITS_IS_16, ES_IS_1>& lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs) {
 		return operator< (rhs, lhs);
