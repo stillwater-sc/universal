@@ -861,7 +861,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<NBITS_IS_32, ES_
 	std::ios_base::fmtflags ff;
 	ff = ostr.flags();
 	ss.flags(ff);
-	ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
+	ss << std::setw(width) << std::setprecision(prec) << to_string(p, prec);  // TODO: we need a true native serialization function
 #endif
 	return ostr << ss.str();
 }

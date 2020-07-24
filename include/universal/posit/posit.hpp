@@ -2627,6 +2627,13 @@ constexpr posit<nbits, es>& maxpos(posit<nbits, es>& p) {
 	return --p;
 }
 
+// create a posit with maxpos value
+template<size_t nbits, size_t es>
+constexpr posit<nbits, es> maxpos() {
+	posit<nbits, es> p;
+	return maxpos(p);
+}
+
 // fill a posit with minneg value
 template<size_t nbits, size_t es>
 constexpr posit<nbits, es>& minneg(posit<nbits, es>& p) {

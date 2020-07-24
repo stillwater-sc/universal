@@ -8,20 +8,14 @@
 // #define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_MUL
 #define QUIRE_TRACE_ADD
+// configure posit environment using fast posits
+#define POSIT_FAST_POSIT_8_0 1
+#define POSIT_FAST_POSIT_16_1 1
+#define POSIT_FAST_POSIT_32_2 1
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
 #include <universal/blas/blas.hpp>
-
-template<typename Ty>
-void PrintVector_(std::ostream& ostr, const std::string& name, const std::vector<Ty>& v) {
-	size_t d = v.size();
-	ostr << "Vector: " << name << " is of size " << d << " elements" << std::endl;
-	std::streamsize prec = ostr.precision();
-	ostr << std::setprecision(17);
-	for (size_t j = 0; j<d; ++j) ostr << std::setw(20) << v[j] << " ";
-	ostr << std::setprecision(prec) << std::endl;
-}
 
 template<typename Vector>
 void PrintProducts(const Vector& a, const Vector& b) {
@@ -35,6 +29,14 @@ void PrintProducts(const Vector& a, const Vector& b) {
 	typename Vector::value_type sum;
 	sw::unum::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 	std::cout << "fdp result " << sum << std::endl;
+}
+
+template<typename ResultScalar, typename RefScalar>
+void reportOnCatastrophicCancellation(const std::string& type, const ResultScalar& v, const RefScalar& ref) {
+	using namespace std;
+
+	constexpr size_t COLUMN_WIDTH = 15;
+	cout << type << setw(COLUMN_WIDTH) << v << (v == ref ? " <----- PASS" : " <-----      FAIL") << endl;
 }
 
 int main(int argc, char** argv)
@@ -60,29 +62,29 @@ try {
 	cout << setprecision(17);
 	
 	{
-		using IEEEType = float;
-		using vector = sw::unum::blas::vector<IEEEType>;
-		IEEEType a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
-		IEEEType b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
-		vector xieee = { a1, a2, a3, a4 };
-		vector yieee = { b1, b2, b3, b4 };
+		using Scalar = float;
+		using Vector = sw::unum::blas::vector<Scalar>;
+		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
+		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
+		Vector a = { a1, a2, a3, a4 };
+		Vector b = { b1, b2, b3, b4 };
 
-		cout << "a: " << xieee << '\n';
-		cout << "b: " << yieee << '\n';
+		cout << "a: " << a << '\n';
+		cout << "b: " << b << '\n';
 
 		cout << "\n\n";
-		cout << "IEEE float   BLAS dot(x,y)  : " << dot(xieee.size(), xieee, 1, yieee, 1) << "           <----- correct answer is 2" << endl;
+		reportOnCatastrophicCancellation("IEEE float   BLAS dot(x,y)  : ", dot(a,b), 2);
 	}
 
 	{
-		using IEEEType = double;
-		using vector = sw::unum::blas::vector<IEEEType>;
-		IEEEType a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
-		IEEEType b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
-		vector xieee = { a1, a2, a3, a4 };
-		vector yieee = { b1, b2, b3, b4 };
+		using Scalar = double;
+		using Vector = sw::unum::blas::vector<Scalar>;
+		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
+		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
+		Vector a = { a1, a2, a3, a4 };
+		Vector b = { b1, b2, b3, b4 };
 
-		cout << "IEEE double  BLAS dot(x,y)  : " << dot(xieee.size(), xieee, 1, yieee, 1) << "           <----- correct answer is 2" << endl;
+		reportOnCatastrophicCancellation("IEEE double  BLAS dot(x,y)  : ", dot(a, b), 2);
 	}
 
 	{
@@ -92,60 +94,60 @@ try {
 		// and not some input precision shenanigans. The magic is all in the quire
 		// accumulating UNROUNDED multiplies: that gives you in affect double the 
 		// fraction bits.
-		using IEEEType = float;
-		IEEEType a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
-		IEEEType b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
+		using Scalar = float;
+		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
+		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
 
 		{
-			using PositType = posit<8, 3>;
-			vector<PositType> x = { a1, a2, a3, a4 };
-			vector<PositType> y = { b1, b2, b3, b4 };
+			using Scalar = posit<8, 3>;
+			vector<Scalar> x = { a1, a2, a3, a4 };
+			vector<Scalar> y = { b1, b2, b3, b4 };
 
-			cout << "posit< 8,3> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
+			reportOnCatastrophicCancellation("posit< 8,3> fused dot(x,y)  : ", fdp(x, y), 2);
 		}
 		{
-			using PositType = posit<16, 2>;
-			vector<PositType> x = { a1, a2, a3, a4 };
-			vector<PositType> y = { b1, b2, b3, b4 };
+			using Scalar = posit<16, 2>;
+			vector<Scalar> x = { a1, a2, a3, a4 };
+			vector<Scalar> y = { b1, b2, b3, b4 };
 
-			cout << "posit<16,2> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
+			reportOnCatastrophicCancellation("posit<16,2> fused dot(x,y)  : ", fdp(x, y), 2);
 		}
 		{
-			using PositType = posit<32, 2>;
-			vector<PositType> x = { a1, a2, a3, a4 };
-			vector<PositType> y = { b1, b2, b3, b4 };
+			using Scalar = posit<32, 2>;
+			vector<Scalar> x = { a1, a2, a3, a4 };
+			vector<Scalar> y = { b1, b2, b3, b4 };
 
-			cout << "posit<32,2> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
+			reportOnCatastrophicCancellation("posit<32,2> fused dot(x,y)  : ", fdp(x, y), 2);
 			//PrintProducts(x, y);
 		}
 		{
-			using PositType = posit<64, 1>;
-			vector<PositType> x = { a1, a2, a3, a4 };
-			vector<PositType> y = { b1, b2, b3, b4 };
+			using Scalar = posit<64, 1>;
+			vector<Scalar> x = { a1, a2, a3, a4 };
+			vector<Scalar> y = { b1, b2, b3, b4 };
 
-			cout << "posit<64,1> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
+			reportOnCatastrophicCancellation("posit<64,1> fused dot(x,y)  : ", fdp(x, y), 2);
 		}
 		{
-			using PositType = posit<64, 0>;
-			vector<PositType> x = { a1, a2, a3, a4 };
-			vector<PositType> y = { b1, b2, b3, b4 };
+			using Scalar = posit<64, 0>;
+			vector<Scalar> x = { a1, a2, a3, a4 };
+			vector<Scalar> y = { b1, b2, b3, b4 };
 
-			cout << "posit<64,0> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
+			reportOnCatastrophicCancellation("posit<64,0> fused dot(x,y)  : ", fdp(x, y), 2);
 		}
 
 		{
-			using PositType = posit<16, 1>;
-			vector<PositType> x = { a1, a2, a3, a4 };
-			vector<PositType> y = { b1, b2, b3, b4 };
+			using Scalar = posit<16, 1>;
+			vector<Scalar> x = { a1, a2, a3, a4 };
+			vector<Scalar> y = { b1, b2, b3, b4 };
 
-			cout << "posit<16,1> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
+			reportOnCatastrophicCancellation("posit<16,1> fused dot(x,y)  : " , fdp(x, y), 2);
 		}
 		{
-			using PositType = posit<32, 1>;
-			vector<PositType> x = { a1, a2, a3, a4 };
-			vector<PositType> y = { b1, b2, b3, b4 };
+			using Scalar = posit<32, 1>;
+			vector<Scalar> x = { a1, a2, a3, a4 };
+			vector<Scalar> y = { b1, b2, b3, b4 };
 
-			cout << "posit<32,1> fused dot(x,y)  : " << fdp(x, y) << "           <----- correct answer is 2" << endl;
+			reportOnCatastrophicCancellation("posit<32,1> fused dot(x,y)  : ", fdp(x, y), 2);
 
 			cout << "Reason why posit<32,1> fails\n";
 			PrintProducts(x, y);

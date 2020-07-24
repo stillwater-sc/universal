@@ -26,10 +26,12 @@ void fdp_qc(Qy& sum_of_products, size_t n, const Vector& x, size_t incx, const V
 }
 
 // Resolved fused dot product, with the option to control capacity bits in the quire
-template<typename Vector, size_t capacity = 10>
-typename Vector::value_type fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy) {
+template<typename Vector>
+enable_if_posit<value_type<Vector>, value_type<Vector> > // as return type
+fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy) {
 	constexpr size_t nbits = Vector::value_type::nbits;
 	constexpr size_t es = Vector::value_type::es;
+	constexpr size_t capacity = 20; // support vectors up to 1M elements
 	quire<nbits, es, capacity> q = 0;
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {

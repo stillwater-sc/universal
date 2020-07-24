@@ -58,63 +58,26 @@ template<typename Scalar> auto size(const std::vector<Scalar>& v) { return v.siz
 // TODO: investigate if the vector<> index is always a 32bit entity?
 template<typename Vector>
 typename Vector::value_type dot(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy) {
-	typename Vector::value_type product = 0;
+	using value_type = typename Vector::value_type;
+	value_type sum_of_products = value_type(0);
 	size_t cnt, ix, iy;
 	for (cnt = 0, ix = 0, iy = 0; cnt < n && ix < size(x) && iy < size(y); ++cnt, ix += incx, iy += incy) {
-		product += x[ix] * y[iy];
+		sum_of_products += x[ix] * y[iy];
 	}
-	return product;
+	return sum_of_products;
 }
 // specialized dot product assuming constant stride
 template<typename Vector>
 typename Vector::value_type dot(const Vector& x, const Vector& y) {
-	typename Vector::value_type product = 0;
-	size_t cnt, ix, iy;
-	for (cnt = 0, ix = 0, iy = 0; cnt < size(x); ++cnt, ++ix, ++iy) {
-		product += x[ix] * y[iy];
+	using value_type = typename Vector::value_type;
+	value_type sum_of_products = value_type(0);
+	size_t i, nx = size(x);
+	if (nx <= size(y)) {
+		for (i = 0; i < nx; ++i) {
+			sum_of_products += x[i] * y[i];
+		}
 	}
-	return product;
-}
-///
-/// fused dot product operators
-
-// Fused dot product with quire continuation
-template<typename Quire, typename Vector>
-void fdp_qr(Quire& sum_of_products, size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy) {
-	size_t ix, iy;
-	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
-		sum_of_products += sw::unum::quire_mul(x[ix], y[iy]);
-	}
-}
-// Resolved fused dot product, with the option to control capacity bits in the quire
-template<typename Vector, size_t capacity = 10>
-typename Vector::value_type fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy) {
-	constexpr size_t nbits = Vector::value_type::nbits;
-	constexpr size_t es = Vector::value_type::es;
-	sw::unum::quire<nbits, es, capacity> q(0);
-	size_t ix, iy;
-	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
-		q += sw::unum::quire_mul(x[ix], y[iy]);
-		if (sw::unum::_trace_quire_add) std::cout << q << '\n';
-	}
-	typename Vector::value_type sum;
-	sw::unum::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
-	return sum;
-}
-// Specialized resolved fused dot product that assumes unit stride and a standard vector,
-// with the option to control capacity bits in the quire
-template<typename Vector, size_t capacity = 10>
-typename Vector::value_type fdp(const Vector& x, const Vector& y) {
-	constexpr size_t nbits = Vector::value_type::nbits;
-	constexpr size_t es = Vector::value_type::es;
-	sw::unum::quire<nbits, es, capacity> q(0);
-	size_t ix, iy, n = size(x);
-	for (ix = 0, iy = 0; ix < n && iy < n; ++ix, ++iy) {
-		q += sw::unum::quire_mul(x[ix], y[iy]);
-	}
-	typename Vector::value_type sum;
-	sw::unum::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
-	return sum;
+	return sum_of_products;
 }
 
 // rotation of points in the plane
