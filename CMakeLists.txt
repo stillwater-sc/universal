@@ -527,7 +527,8 @@ add_subdirectory("examples/numeric")
 endif(BUILD_APPLICATION_EXAMPLES)
 
 if(BUILD_NUMERICAL)
-add_subdirectory("tests/numerical")
+add_subdirectory("tests/numerical/properties")
+add_subdirectory("tests/numerical/fpbench")
 endif(BUILD_NUMERICAL)
 
 if(BUILD_FUNCTIONS)
