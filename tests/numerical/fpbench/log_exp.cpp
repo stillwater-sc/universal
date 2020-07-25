@@ -9,7 +9,7 @@
 #include <vector>
 
 // select your number system
-#include <universal/areal/areal>
+//#include <universal/areal/areal>
 #include <universal/posit/posit>
 #include <universal/valid/valid>
 
@@ -25,7 +25,7 @@ Scalar ln_of_exp_x(const Scalar& x) {
 template<typename Scalar>
 Scalar ln_of_one_plus_exp_x(const Scalar& x) {
 	Scalar one_plus_exponent(Scalar(1) + exp(x));
-	Scalar result = log(exponent);
+	Scalar result = log(one_plus_exponent);
 	return result;
 }
 
@@ -60,9 +60,11 @@ void SampleFunctionEvaluation(size_t nrSamples) {
 		diffs[i] = samples[i] - results[i];
 	}
 
-	for_each(begin(diffs), end(diffs), [](Scalar n) {
+	Scalar eps = numeric_limits<Scalar>::epsilon();
+	for_each(begin(diffs), end(diffs), [=](Scalar n) {
 		if (n != 0) {
-			cout << "FAIL: " << hex_format(n) << " " << n << endl;
+			Scalar nrEps = n / eps;
+			cout << "FAIL: " << hex_format(n) << " " << n << " nr of epsilons of error: " << nrEps << endl;
 		}
 		else {
 			// cout << "PASS: " << hex_format(n) << endl;
