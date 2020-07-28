@@ -2,6 +2,13 @@ IEEE float configurations from numeric_limits<Ty>
             float                   minexp scale       -125     maxexp scale        128     minimum  1.17549e-38     maximum  3.40282e+38
             double                  minexp scale      -1021     maxexp scale       1024     minimum 2.22507e-308     maximum 1.79769e+308
        long double                  minexp scale     -16381     maxexp scale      16384     minimum 3.3621e-4932     maximum 1.18973e+4932
+es = 0
+ posit<  8,0> useed scale     1     minpos scale         -6     maxpos scale          6     minimum     0.015625     maximum           64
+ posit< 16,0> useed scale     1     minpos scale        -14     maxpos scale         14     minimum  6.10352e-05     maximum        16384
+ posit< 32,0> useed scale     1     minpos scale        -30     maxpos scale         30     minimum  9.31323e-10     maximum  1.07374e+09
+ posit< 64,0> useed scale     1     minpos scale        -62     maxpos scale         62     minimum   2.1684e-19     maximum  4.61169e+18
+ posit<128,0> useed scale     1     minpos scale       -126     maxpos scale        126     minimum  1.17549e-38     maximum  8.50706e+37
+ posit<256,0> useed scale     1     minpos scale       -254     maxpos scale        254     minimum  3.45447e-77     maximum   2.8948e+76
 es = 1
  posit<  8,1> useed scale     2     minpos scale        -12     maxpos scale         12     minimum  0.000244141     maximum         4096
  posit< 16,1> useed scale     2     minpos scale        -28     maxpos scale         28     minimum  3.72529e-09     maximum  2.68435e+08

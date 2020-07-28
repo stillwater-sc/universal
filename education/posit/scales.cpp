@@ -44,10 +44,47 @@ void printScaleFactors(uint64_t scale_factors[MAX_ES][MAX_K]) {
 }
 #endif
 
+// print scales for small posit configurations
+void ReportSmallPositScales() {
+	using namespace sw::unum;
+
+	std::cout << std::endl;
+	std::cout << "Scales are represented as the binary scale of the number: i.e. 2^scale" << std::endl << std::endl;
+	std::cout << "Small, specialized posit configurations" << std::endl;
+
+	std::cout << "nbits = 2" << std::endl;
+	std::cout << posit_range<2, 0>() << std::endl;
+	std::cout << posit_range<2, 1>() << std::endl;
+	std::cout << posit_range<2, 2>() << std::endl;
+	std::cout << posit_range<2, 3>() << std::endl;
+	std::cout << "nbits = 3" << std::endl;
+	std::cout << posit_range<3, 0>() << std::endl;
+	std::cout << posit_range<3, 1>() << std::endl;
+	std::cout << posit_range<3, 2>() << std::endl;
+	std::cout << posit_range<3, 3>() << std::endl;
+	std::cout << "nbits = 4" << std::endl;
+	std::cout << posit_range<4, 0>() << std::endl;
+	std::cout << posit_range<4, 1>() << std::endl;
+	std::cout << posit_range<4, 2>() << std::endl;
+	std::cout << posit_range<4, 3>() << std::endl;
+	std::cout << "nbits = 5" << std::endl;
+	std::cout << posit_range<5, 0>() << std::endl;
+	std::cout << posit_range<5, 1>() << std::endl;
+	std::cout << posit_range<5, 2>() << std::endl;
+	std::cout << posit_range<5, 3>() << std::endl;
+}
+
 // print scales of different posit configurations
 void ReportStandardPositScales() {
 	using namespace sw::unum;
 
+	std::cout << "es = 0" << std::endl;
+	std::cout << posit_range<8, 0>() << std::endl;
+	std::cout << posit_range<16, 0>() << std::endl;
+	std::cout << posit_range<32, 0>() << std::endl;
+	std::cout << posit_range<64, 0>() << std::endl;
+	std::cout << posit_range<128, 0>() << std::endl;
+	std::cout << posit_range<256, 0>() << std::endl;
 
 	std::cout << "es = 1" << std::endl;
 	std::cout << posit_range<8, 1>() << std::endl;
@@ -356,6 +393,7 @@ try {
 #else
 	ReportPositScales();
 	ReportStandardPositScales();
+	ReportSmallPositScales();
 
 #ifdef STRESS_TEST
 
