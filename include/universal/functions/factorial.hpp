@@ -15,7 +15,7 @@ namespace function {
 // as left-to-right evaluation starts with the smallest values first.
 template<typename Scalar>
 Scalar factorial(const Scalar& n) {
-	assert(n < Scalar(0));
+	assert(n >= Scalar(0));
 	Scalar n_minus_one = n - Scalar(1);// the boost types don't accept factorial(n - 1), so this is the work-around
 	return (n == Scalar(0) || n == Scalar(1)) ? Scalar(1) : factorial(n_minus_one) * n;
 }
