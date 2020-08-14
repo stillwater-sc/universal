@@ -22,12 +22,14 @@ RUN ls -la /usr/src/universal && cmake -version
 # set up the cmake/make environment to issue the build commands
 RUN mkdir build 
 WORKDIR /usr/src/universal/build
+# test RUN statement to speed-up CI testing
+#RUN cmake -DBUILD_CMD_LINE_TOOLS=ON -DBUILD_EDUCATION_EXAMPLES=OFF -DBUILD_APPLICATION_EXAMPLES=OFF -DBUILD_PLAYGROUND=OFF .. && make
 RUN cmake -DBUILD_CI_CHECK=ON .. && make
 
 # the command 'make test' is run as part of the test pipeline
 
 # add a command that when you run the container without a command, it produces something meaningful
-CMD ["echo", "Universal Numbers Library Builder Version 2.1.0"]
+CMD ["echo", "Universal Numbers Library Builder Version 4.0.0"]
 
 
 # RELEASE stage
@@ -41,55 +43,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     cmake \
     && apt-get clean
 
+RUN useradd -ms /bin/bash stillwater
+USER stillwater
+
 # after building, the test executables are organized in the build directory under root
 # ctest gets its configuration for CTestTestfile.cmake files. There is one at the root of the build tree
 # and one for each directory that contains test executables.
-COPY --from=builder /usr/src/universal/build/tools/cmd/cmd_*             	              /usr/src/universal/build/tools/cmd/
-COPY --from=builder /usr/src/universal/build/tools/cmd/*.cmake           	              /usr/src/universal/build/tools/cmd/
-COPY --from=builder /usr/src/universal/build/tests/bitblock/bitblock_*         	              /usr/src/universal/build/tests/bitblock/
-COPY --from=builder /usr/src/universal/build/tests/bitblock/*.cmake         	              /usr/src/universal/build/tests/bitblock/
-COPY --from=builder /usr/src/universal/build/tests/blockbin/blockbinary_*      	              /usr/src/universal/build/tests/blockbin/
-COPY --from=builder /usr/src/universal/build/tests/blockbin/*.cmake         	              /usr/src/universal/build/tests/blockbin/
-COPY --from=builder /usr/src/universal/build/tests/integer/integer_*         	              /usr/src/universal/build/tests/integer/
-COPY --from=builder /usr/src/universal/build/tests/integer/*.cmake         	              /usr/src/universal/build/tests/integer/
-COPY --from=builder /usr/src/universal/build/tests/decimal/decimal_*         	              /usr/src/universal/build/tests/decimal/
-COPY --from=builder /usr/src/universal/build/tests/decimal/*.cmake         	              /usr/src/universal/build/tests/decimal/
-COPY --from=builder /usr/src/universal/build/tests/fixpnt/fixpnt_*         	              /usr/src/universal/build/tests/fixpnt/
-COPY --from=builder /usr/src/universal/build/tests/fixpnt/*.cmake         	              /usr/src/universal/build/tests/fixpnt/
-COPY --from=builder /usr/src/universal/build/tests/posit/posit_*         	              /usr/src/universal/build/tests/posit/
-COPY --from=builder /usr/src/universal/build/tests/posit/*.cmake         	              /usr/src/universal/build/tests/posit/
-COPY --from=builder /usr/src/universal/build/tests/valid/valid_*         	              /usr/src/universal/build/tests/valid/
-COPY --from=builder /usr/src/universal/build/tests/valid/*.cmake         	              /usr/src/universal/build/tests/valid/
-COPY --from=builder /usr/src/universal/build/perf/perf_*                 	              /usr/src/universal/build/perf/
-COPY --from=builder /usr/src/universal/build/perf/*.cmake                	              /usr/src/universal/build/perf/
-COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_exact_test      /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_exact_test
-COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_experiment      /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_experiment
-COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit4          /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit4
-COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit8          /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit8
-COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit16         /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit16
-COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit32         /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit32
-COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit64         /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit64
-COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit128        /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit128
-COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit256        /usr/src/universal/build/c_api/shim/test/posit/c_api_shim_posit256
-COPY --from=builder /usr/src/universal/build/c_api/shim/test/posit/*.cmake    	              /usr/src/universal/build/c_api/shim/test/posit/
-COPY --from=builder /usr/src/universal/build/c_api/pure_c/test/posit/c_api_pure_posit8        /usr/src/universal/build/c_api/pure_c/test/posit/c_api_pure_posit8
-COPY --from=builder /usr/src/universal/build/c_api/pure_c/test/posit/c_api_pure_playground    /usr/src/universal/build/c_api/pure_c/test/posit/c_api_pure_playground
-COPY --from=builder /usr/src/universal/build/c_api/pure_c/test/posit/*.cmake                  /usr/src/universal/build/c_api/pure_c/test/posit/
-COPY --from=builder /usr/src/universal/build/examples/blas/blas_*        	              /usr/src/universal/build/examples/blas/
-COPY --from=builder /usr/src/universal/build/examples/blas/*.cmake       	              /usr/src/universal/build/examples/blas/
-COPY --from=builder /usr/src/universal/build/examples/dsp/dsp_*          	              /usr/src/universal/build/examples/dsp/
-COPY --from=builder /usr/src/universal/build/examples/dsp/*.cmake        	              /usr/src/universal/build/examples/dsp/
-COPY --from=builder /usr/src/universal/build/education/posit/edu_*       	              /usr/src/universal/build/education/posit/
-COPY --from=builder /usr/src/universal/build/education/posit/*.cmake     	              /usr/src/universal/build/education/posit/
-COPY --from=builder /usr/src/universal/build/examples/playground/playgr* 	              /usr/src/universal/build/examples/playground/
-COPY --from=builder /usr/src/universal/build/examples/playground/*.cmake 	              /usr/src/universal/build/examples/playground/
-# the ctest configuration root and Makefile so we can execute _make test_ in the test stage of the CI/CD pipeline
-COPY --from=builder /usr/src/universal/build/Makefile              		              /usr/src/universal/build/
-COPY --from=builder /usr/src/universal/build/CTestTestfile.cmake   		              /usr/src/universal/build/
+# This way we can execute _make test_ in the test stage of the CI/CD pipeline
+COPY --from=builder /usr/src/universal/build /home/stillwater/universal/build
 
-WORKDIR /usr/src/universal/build
+# copy the CLI tools to /usr/local/bin so they are immediately usable
+COPY --from=builder /usr/src/universal/build/tools/cmd/cmd_* /usr/local/bin/
+
 # double check we have all the executables of interest
-RUN find .
+#RUN find /home/stillwater/universal/build
 
-#CMD ["/usr/src/universal/tools/cmd/cmd_numeric_limits"]
-CMD ["echo", "Universal Numbers Library Version 3.1.10"]
+# until we can figure out how to direct CodeShip to use this dir in the steps.yml file
+WORKDIR /home/stillwater/universal/build 
+
+CMD ["echo", "Universal Numbers Library Version 4.0.0"]
