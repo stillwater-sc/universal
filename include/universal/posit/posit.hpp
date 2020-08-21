@@ -1144,51 +1144,19 @@ private:
 		return (unsigned long long)(to_long_double());
 	}
 #else
-	short to_short() const {
-		if (iszero()) return 0;
-		if (isnar()) return int(INFINITY);
-		return short(to_float());
-	}
-	int to_int() const {
-		if (iszero()) return 0;
-		if (isnar()) return int(INFINITY);
-		return int(to_double());
-	}
-	long to_long() const {
-		if (iszero()) return 0;
-		if (isnar()) return long(INFINITY);
-		return long(to_long_double());
-	}
-	long long to_long_long() const {
-		if (iszero()) return 0;
-		if (isnar()) return (long long)(INFINITY);
-		return (long long)(to_long_double());
-	}
-	unsigned short to_ushort() const {
-		if (iszero()) return 0;
-		if (isnar()) return int(INFINITY);
-		return (unsigned short)(to_float());
-	}
-	unsigned int to_uint() const {
-		if (iszero()) return 0;
-		if (isnar()) return int(INFINITY);
-		return (unsigned int)(to_double());
-	}
-	unsigned long to_ulong() const {
-		if (iszero()) return 0;
-		if (isnar()) return long(INFINITY);
-		return (unsigned long)(to_long_double());
-	}
-	unsigned long long to_ulong_long() const {
-		if (iszero()) return 0;
-		if (isnar()) return (long long)(INFINITY);
-		return (unsigned long long)(to_long_double());
-	}
+	short to_short() const                   { return short(to_float()); }
+	int to_int() const                       { return int(to_double()); }
+	long to_long() const                     { return long(to_long_double()); }
+	long long to_long_long() const           { return (long long)(to_long_double()); }
+	unsigned short to_ushort() const         { return (unsigned short)(to_float()); }
+	unsigned int to_uint() const             { return (unsigned int)(to_double()); }
+	unsigned long to_ulong() const           { return (unsigned long)(to_long_double()); }
+	unsigned long long to_ulong_long() const { return (unsigned long long)(to_long_double()); }
 #endif
-	float       to_float() const {
+	float to_float() const {
 		return (float)to_double();
 	}
-	double      to_double() const {
+	double to_double() const {
 		if (iszero())	return 0.0;
 		if (isnar())	return NAN;
 		bool		     	 _sign;
