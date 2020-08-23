@@ -794,6 +794,5 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 
 #endif
 
+}} // namespace sw::unum
 
-} // namespace unum
-} // namespace sw
