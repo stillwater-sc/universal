@@ -9,6 +9,7 @@
 #include <iomanip>
 #include <limits>
 #include <tuple>
+#include <algorithm> // std::max
 
 #include "../native/ieee-754.hpp"
 #include "../native/bit_functions.hpp"
@@ -199,7 +200,7 @@ public:
 		return *this;
 	}
 	constexpr value<fbits>& operator=(double rhs) {
-                using std::get;
+		using std::get;
 		reset();
 		if (_trace_value_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 

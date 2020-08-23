@@ -6,10 +6,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 
-// This file contains functions that DO NOT use the posit type.
-// If you have helpers that use the posit type, add them to the file posit_manipulators.hpp
-namespace sw {
-namespace unum {
+// This file contains bit manipulation functions for native integer types.
+namespace sw { namespace unum {
 
 ///////////////////////////////////////////////////////////////////////
 // decoders
@@ -79,5 +77,4 @@ inline unsigned int findMostSignificantBit(signed char x) {
 	return base + bval[tmp];
 }
 
-}  // namespace unum
-}  // namespace sw
+}}  // namespace sw::unum
