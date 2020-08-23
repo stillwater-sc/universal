@@ -403,8 +403,8 @@ inline std::tuple<bool, int32_t, uint32_t> ieee_components(float fp)
     
     float_decoder fd{fp}; // initializes the first member of the union
     // Reading inactive union parts is forbidden in constexpr :-(
-    return {static_cast<bool>(fd.parts.sign), static_cast<int32_t>(fd.parts.exponent), 
-            static_cast<uint32_t>(fd.parts.fraction)}; // read the others
+    return std::make_tuple(static_cast<bool>(fd.parts.sign), static_cast<int32_t>(fd.parts.exponent), 
+            static_cast<uint32_t>(fd.parts.fraction)); // read the others
     
 #if 0 // reinterpret_cast forbidden in constexpr :-(
     uint32_t& as_int= reinterpret_cast<uint32_t&>(fp);
@@ -425,8 +425,8 @@ inline std::tuple<bool, int64_t, uint64_t> ieee_components(double fp)
 #if 1    
     double_decoder dd{fp}; // initializes the first member of the union
     // Reading inactive union parts is forbidden in constexpr :-(
-    return {static_cast<bool>(dd.parts.sign), static_cast<int64_t>(dd.parts.exponent), 
-            static_cast<uint64_t>(dd.parts.fraction)}; // read the others
+    return std::make_tuple(static_cast<bool>(dd.parts.sign), static_cast<int64_t>(dd.parts.exponent), 
+            static_cast<uint64_t>(dd.parts.fraction)); // read the others
 #endif
     
 #if 0 // reinterpret_cast forbidden in constexpr
