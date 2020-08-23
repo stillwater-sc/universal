@@ -180,7 +180,7 @@ namespace sw {
 #else
 		template<size_t nbits, size_t es>
 		inline posit<nbits, es> sqrt(const posit<nbits, es>& a) {
-			return posit<nbits, es>(std::sqrt((long double)a));
+			return posit<nbits, es>(std::sqrt((double)a));
 		}
 #endif
 
