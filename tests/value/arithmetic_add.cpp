@@ -34,15 +34,22 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 							bfraction = sw::unum::convert_to_bitblock<fbits>(bfrac);
 							b.set(sign == 1, scale, bfraction, false, false);
 							sw::unum::module_add<fbits, abits>(a, b, sum);
+							// std::cout << components(a) << " + " << components(b) << " = " << components(sum) << std::endl;
+
+#if 0
+							// we can't use regular algebra as reference because it rounds the result
 							double da = a.to_double();
 							double db = b.to_double();
-							double dsum = sum.to_double();
+							double dsum = da + db;
 							ref = dsum;
 							if (sum != ref) {
 								++nrOfFailedTestCases;
-								if (bReportIndividualTestCases)
-									std::cout << components(a) << " + " << components(b) << " = " << components(sum) << std::endl;
+								if (bReportIndividualTestCases)	std::cout << components(sum) << " != " << components(ref) << std::endl;
+								if (nrOfFailedTestCases > 25) return nrOfFailedTestCases;
+								std::cout << a << " + " << b << " = " << sum << " vs " << ref << std::endl;
 							}
+#endif
+
 						}
 					}
 				}
