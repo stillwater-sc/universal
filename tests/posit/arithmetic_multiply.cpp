@@ -77,7 +77,7 @@ b61e2f1f fffffffe 00000002 00000003
 fffffffe b61e2f1f 00000002 00000003
 */
 void DifficultRoundingCases() {
-	sw::unum::posit<32, 2> a, b, bad, pref;
+	sw::unum::posit<32, 2> a, b, pref;
 	std::vector<uint32_t> cases = {
 		0x00000002, 0x93ff6977, 0xfffffffa, 0xfffffff9,
 		0x00000002, 0xb61e2f1f, 0xfffffffe, 0xfffffffd,
