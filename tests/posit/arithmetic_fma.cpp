@@ -57,9 +57,9 @@ try {
 
 #if MANUAL_TESTING
 
-	//ReportSizeof();
-	//ReportFmaResults();
-	//ReportErrors():
+	ReportSizeof();
+	ReportFmaResults();
+	ReportErrors();
 
 	{
 		double da(0.25), db(0.0), dc(0.0);
@@ -151,7 +151,7 @@ void ReportSizeof()
 	posit<64, 3> p64_3;
 	value<64> v64;
 
-	cout << "sizeof(posit< 8,0>)    = " << sizeof(p8_0) << " bytes" << endl;
+	cout << "sizeof(posit< 8,0>)    = " << sizeof(p8_0)  << " bytes" << endl;
 	cout << "sizeof(posit<16,1>)    = " << sizeof(p16_1) << " bytes" << endl;
 	cout << "sizeof(posit<32,2>)    = " << sizeof(p32_2) << " bytes" << endl;
 	cout << "sizeof(posit<64,3>)    = " << sizeof(p64_3) << " bytes" << endl;
@@ -164,10 +164,10 @@ void ReportSizeof()
 	cout << "sizeof(exponent<32,2>) = " << sizeof(e32_2) << " bytes" << endl;
 	cout << "sizeof(fraction<32,2>) = " << sizeof(f32_2) << " bytes" << endl;
 
-	cout << "sizeof(value<8 >)      = " << sizeof(value<8>) << " bytes" << endl;
-	cout << "sizeof(value<16>)      = " << sizeof(value<16>) << " bytes" << endl;
-	cout << "sizeof(value<32>)      = " << sizeof(value<32>) << " bytes" << endl;
-	cout << "sizeof(value<64>)      = " << sizeof(value<64>) << " bytes" << endl;
+	cout << "sizeof(value<8 >)      = " << sizeof(v8)  << " bytes" << endl;
+	cout << "sizeof(value<16>)      = " << sizeof(v16) << " bytes" << endl;
+	cout << "sizeof(value<32>)      = " << sizeof(v32) << " bytes" << endl;
+	cout << "sizeof(value<64>)      = " << sizeof(v64) << " bytes" << endl;
 
 //	cout << "sizeof(bitset<8 >)     = " << sizeof(std::bitset<8>) << " bytes" << endl;
 //	cout << "sizeof(bitset<16>)     = " << sizeof(std::bitset<16>) << " bytes" << endl;
