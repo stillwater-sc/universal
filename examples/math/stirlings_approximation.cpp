@@ -58,8 +58,6 @@ try {
 	//using Real = mpf;
 	using Real = posit<32,2>;
 
-	Real n;
-
 	for (Real i = 1; i < 20; i += 1) {
 		cout << setw(2) << i << "! = " 
 			<< setw(20) << StirlingsApproximation(i) << "  " 

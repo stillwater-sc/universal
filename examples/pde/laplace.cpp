@@ -101,6 +101,8 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
+	cout << "PI = " << pi << endl;
+
 	Matrix A;
 	laplace2D(A, 10, 10);
 	cout << A << endl;

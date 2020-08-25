@@ -37,7 +37,9 @@ try {
 	using namespace sw::unum;
 
 	int nrOfFailedTestCases = 0;
-	
+
+	// TBD
+	cout << "PI = " << pi << endl;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

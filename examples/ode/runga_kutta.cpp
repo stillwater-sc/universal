@@ -41,8 +41,8 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	posit<nbits, es> p;
-
+	// TBD
+	cout << "PI = " << pi << endl;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
