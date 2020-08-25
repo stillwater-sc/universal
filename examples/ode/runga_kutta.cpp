@@ -36,13 +36,13 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	const size_t nbits = 16;
-	const size_t es = 1;
+	constexpr size_t nbits = 16;
+	constexpr size_t es = 1;
 
 	int nrOfFailedTestCases = 0;
 
-	// TBD
-	cout << "PI = " << pi << endl;
+	posit<nbits, es> p(pi);
+	cout << "PI = " << p << " " << hex_format(p) << endl;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

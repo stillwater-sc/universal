@@ -93,15 +93,16 @@ try {
 	using namespace sw::unum;
 	using namespace sw::unum::blas;
 
-	const size_t nbits = 16;
-	const size_t es = 1;
+	constexpr size_t nbits = 16;
+	constexpr size_t es = 1;
 	using Scalar = posit<nbits, es>;
 //	using Scalar = float;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "PI = " << pi << endl;
+	Scalar p(pi);
+	cout << "PI = " << p << " " << hex_format(p) << endl;
 
 	Matrix A;
 	laplace2D(A, 10, 10);

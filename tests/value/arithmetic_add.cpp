@@ -36,6 +36,14 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 							sw::unum::module_add<fbits, abits>(a, b, sum);
 							// std::cout << components(a) << " + " << components(b) << " = " << components(sum) << std::endl;
 
+							double dsum = sum.to_double();
+							ref = dsum;
+							if (sum != ref) {
+								++nrOfFailedTestCases;
+								if (bReportIndividualTestCases)	std::cout << components(sum) << " != " << components(ref) << std::endl;
+								if (nrOfFailedTestCases > 25) return nrOfFailedTestCases;
+								std::cout << a << " + " << b << " = " << sum << " vs " << ref << std::endl;
+							}
 #if 0
 							// we can't use regular algebra as reference because it rounds the result
 							double da = a.to_double();
