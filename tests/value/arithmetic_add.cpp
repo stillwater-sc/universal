@@ -15,7 +15,7 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t abits = fbits + 4;
 	int nrOfFailedTestCases = 0;
 	sw::unum::value<fbits> a, b;
-	sw::unum::value<abits+1> sum;
+	sw::unum::value<abits+1> sum, ref;
 
 	// assume scale is a 2's complement representation and thus ranges from -2^(sbits-1) to 2^(sbits-1) - 1
 	int scale_lb = -(int(1) << (sbits - 1));
@@ -34,7 +34,15 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 							bfraction = sw::unum::convert_to_bitblock<fbits>(bfrac);
 							b.set(sign == 1, scale, bfraction, false, false);
 							sw::unum::module_add<fbits, abits>(a, b, sum);
-							std::cout << components(a) << " + " << components(b) << " = " << components(sum) << std::endl;
+							double da = a.to_double();
+							double db = b.to_double();
+							double dsum = sum.to_double();
+							ref = dsum;
+							if (sum != ref) {
+								++nrOfFailedTestCases;
+								if (bReportIndividualTestCases)
+									std::cout << components(a) << " + " << components(b) << " = " << components(sum) << std::endl;
+							}
 						}
 					}
 				}
@@ -45,7 +53,7 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 	return nrOfFailedTestCases;
 }
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -79,7 +87,8 @@ try {
 
 #else
 
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<5, 5>("FAIL", bReportIndividualTestCases), "value<5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 5>("FAIL", bReportIndividualTestCases), "value<5>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 8>("FAIL", bReportIndividualTestCases), "value<8>", "addition");
 
 #endif // MANUAL_TESTING
 

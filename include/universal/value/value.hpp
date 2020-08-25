@@ -63,9 +63,9 @@ public:
           : _sign{sign}, _scale{scale}, _nrOfBits{fbits}, _fraction{fraction_without_hidden_bit}, 
             _inf{inf}, _zero{zero}, _nan{false} {}
 
-	constexpr value(const value& rhs)                       { *this = rhs; }
 
 	// decorated constructors
+	constexpr value(const value& initial_value)       { *this = initial_value; }
 	constexpr value(signed char initial_value)        { *this = initial_value; }
 	constexpr value(short initial_value)              { *this = initial_value; }
 	constexpr value(int initial_value)                { *this = initial_value; }
@@ -80,6 +80,7 @@ public:
 	constexpr value(double initial_value) : value{}   { *this = initial_value; }
 	constexpr value(long double initial_value)        { *this = initial_value; }
 
+	// assignment operators
 	constexpr value& operator=(const value& rhs) {
 		_sign	  = rhs._sign;
 		_scale	  = rhs._scale;
