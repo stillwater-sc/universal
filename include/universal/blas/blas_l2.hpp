@@ -93,7 +93,7 @@ sw::unum::blas::vector< sw::unum::posit<nbits, es> > fmv(const sw::unum::blas::m
 	}
 #if BLAS_TRACE_ROUNDING_EVENTS
 	if (errors) {
-		std::cout << "UNUM-BLAS: tracing found " << errors << " rounding errors in matvec operation\n";
+		std::cout << "Universal-BLAS: tracing found " << errors << " rounding errors in matvec operation\n";
 	}
 #endif
 	return b;

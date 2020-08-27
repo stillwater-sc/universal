@@ -27,8 +27,15 @@ endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 0)
 endif()
-project (universal 
-         VERSION "${UNIVERSAL_VERSION_MAJOR}.${UNIVERSAL_VERSION_MINOR}.${UNIVERSAL_VERSION_PATCH}" LANGUAGES C CXX ASM)
+project(universal 
+	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
+	VERSION "${UNIVERSAL_VERSION_MAJOR}.${UNIVERSAL_VERSION_MINOR}.${UNIVERSAL_VERSION_PATCH}" 
+	LANGUAGES C CXX ASM)
+# with 3.18
+#	HOMEPAGE_URL "https://github.com/stillwater-sc/universal")
+
+# universal is a header-only library
+add_library(${PROJECT_NAME} INTERFACE)
 
 ####
 # Change default build type to Release
@@ -61,8 +68,8 @@ option(BUILD_CI_CHECK                    "Set to ON to build all components"    
 
 # utilities and educational examples
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
-option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"             ON)
-option(BUILD_APPLICATION_EXAMPLES        "Set to ON to build epplication examples"             ON)
+option(BUILD_EXAMPLES_EDUCATION          "Set to ON to build educational examples"             ON)
+option(BUILD_EXAMPLES_APPLICATIONS       "Set to ON to build epplication examples"             ON)
 option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   OFF)
 option(BUILD_NUMERICAL                   "Set to ON to build numerical test programs"          OFF)
 option(BUILD_FUNCTIONS                   "Set to ON to build special functions programs"       OFF)
@@ -70,7 +77,7 @@ option(BUILD_FUNCTIONS                   "Set to ON to build special functions p
 # C API library and test programs
 option(BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
 option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"               OFF)
-option(C_API_LIB_PIC                     "Set to ON to compile C API library with -fPIC"       OFF)
+option(BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       OFF)
 # number systems and their verification suites
 option(BUILD_STORAGE_CLASSES             "Set to ON to build storage class tests"              OFF)
 option(BUILD_NATIVE_TYPES                "Set to ON to build native type tests"                OFF)
@@ -98,7 +105,7 @@ endif()
 ####
 # Create the library target
 set(project_library_target_name ${PROJECT_NAME})
-set(PACKAGE_NAME Universal)
+set(PACKAGE_NAME ${PROJECT_NAME})
 
 ####
 # Set environmental options for tracing, testing, and verbosity
@@ -351,10 +358,9 @@ else()
 endif()
 
 # configure the library target
-#target_include_directories(
-#    ${project_library_target_name} INTERFACE
-#    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-#    $<INSTALL_INTERFACE:${include_install_dir_full}>)
+target_include_directories(${project_library_target_name} 
+    INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    	      $<INSTALL_INTERFACE:${include_install_dir_full}>)
 
 # uninstall target
 configure_file(
@@ -378,9 +384,9 @@ write_basic_package_version_file(
     COMPATIBILITY SameMajorVersion)
 
 # Create *-targets.cmake file for build directory
-#install(TARGETS ${project_library_target_name}
-#        EXPORT  ${targets_export_name}
-#        INCLUDES DESTINATION ${include_install_dir})
+install(TARGETS ${project_library_target_name}
+        EXPORT  ${targets_export_name}
+        INCLUDES DESTINATION ${include_install_dir})
 
 #export(EXPORT ${targets_export_name}
 #       FILE   ${CMAKE_CURRENT_BINARY_DIR}/${cmake_targets_file})
@@ -402,8 +408,8 @@ install(DIRECTORY   ${PROJECT_SOURCE_DIR}/${project_library_target_name}
 
 if(BUILD_CI_CHECK)
 	# core example applications that use the library
-	set(BUILD_EDUCATION_EXAMPLES ON)
-	set(BUILD_APPLICATION_EXAMPLES ON)
+	set(BUILD_EXAMPLES_EDUCATION ON)
+	set(BUILD_EXAMPLES_APPLICATIONS ON)
 	set(BUILD_CMD_LINE_TOOLS ON)
 	set(BUILD_NUMERICAL ON)
 	set(BUILD_FUNCTIONS ON)
@@ -502,13 +508,13 @@ add_subdirectory("tools/cmd")
 add_subdirectory("tools/utils")
 endif(BUILD_CMD_LINE_TOOLS)
 
-if(BUILD_EDUCATION_EXAMPLES)
+if(BUILD_EXAMPLES_EDUCATION)
 add_subdirectory("education/posit")
 add_subdirectory("education/quire")
 add_subdirectory("education/valid")
 endif(BUILD_EDUCATION_EXAMPLES)
 
-if(BUILD_APPLICATION_EXAMPLES)
+if(BUILD_EXAMPLES_APPLICATIONS)
 add_subdirectory("examples/stl")
 add_subdirectory("examples/math")
 add_subdirectory("examples/ode")
@@ -524,7 +530,7 @@ add_subdirectory("examples/engineering")
 add_subdirectory("examples/science")
 add_subdirectory("examples/cryptography")
 add_subdirectory("examples/numeric")
-endif(BUILD_APPLICATION_EXAMPLES)
+endif(BUILD_EXAMPLES_APPLICATIONS)
 
 if(BUILD_NUMERICAL)
 add_subdirectory("tests/numerical/properties")

@@ -1,65 +1,65 @@
-# FindUNUM
+# FindUNIVERSAL
 # -----------
 #
-# Find UNUM include dirs and libraries
+# Find UNIVERSAL include dirs and libraries
 #
 # Use this module by invoking find_package with the form:
 #
-#   find_package(UNUM
-#     [version] [EXACT]      # Minimum or EXACT version e.g. 0.1.0
-#     [REQUIRED]             # Fail with error if UNUM is not found
+#   find_package(UNIVERSAL
+#     [version] [EXACT]      # Minimum or EXACT version e.g. 2.1.7
+#     [REQUIRED]             # Fail with error if UNIVERSAL is not found
 #     ) 
 #
 # This module finds headers and requested component libraries OR a CMake
-# package configuration file provided by a "UNUM CMake" build. For the
-# latter case skip to the "UNUM CMake" section below. For the former
+# package configuration file provided by a "UNIVERSAL CMake" build. For the
+# latter case skip to the "UNIVERSAL CMake" section below. For the former
 # case results are reported in variables::
 #
-#   UNUM_FOUND            - True if headers and requested libraries were found
-#   UNUM_INCLUDE_DIRS     - UNUM include directories
-#   UNUM_LIBRARY_DIRS     - Link directories for UNUM libraries
-#   UNUM_LIBRARIES        - UNUM third-party libraries to be linked
-#   UNUM_VERSION          - Version string appended to library filenames
-#   UNUM_MAJOR_VERSION    - UNUM major version number (X in X.y.z)
-#   UNUM_MINOR_VERSION    - UNUM minor version number (Y in x.Y.z)
-#   UNUM_SUBMINOR_VERSION - UNUM subminor version number (Z in x.y.Z)
+#   UNIVERSAL_FOUND            - True if headers and requested libraries were found
+#   UNIVERSAL_INCLUDE_DIRS     - UNIVERSAL include directories
+#   UNIVERSAL_LIBRARY_DIRS     - Link directories for UNIVERSAL libraries
+#   UNIVERSAL_LIBRARIES        - UNIVERSAL third-party libraries to be linked
+#   UNIVERSAL_VERSION          - Version string appended to library filenames
+#   UNIVERSAL_MAJOR_VERSION    - UNIVERSAL major version number (X in X.y.z)
+#   UNIVERSAL_MINOR_VERSION    - UNIVERSAL minor version number (Y in x.Y.z)
+#   UNIVERSAL_SUBMINOR_VERSION - UNIVERSAL subminor version number (Z in x.y.Z)
 #
 # The following :prop_tgt:`IMPORTED` targets are also defined::
 #
-#   UNUM::universal       - Target for header-only dependencies
-#                              (UNUM include directory)
+#   UNIVERSAL::universal       - Target for header-only dependencies
+#                              (UNIVERSAL include directory)
 #
-# UNUM comes in many variants encoded in their file name.
+# UNIVERSAL comes in many variants encoded in their file name.
 # Users or projects may tell this module which variant to find by
 # setting variables::
 #
-#   UNUM_USE_TBB    - Set to ON to use the Intel Threading Building 
+#   UNIVERSAL_USE_TBB    - Set to ON to use the Intel Threading Building 
 #                        Blocks (TBB) libraries. Default is OFF.
-#   UNUM_USE_OMP    - Set to ON to use of the Open Multi-Processing
+#   UNIVERSAL_USE_OMP    - Set to ON to use of the Open Multi-Processing
 #                        (OpenMP) libraries. Default is OFF.
-#   UNUM_USE_SSE    - Set to OFF to use the Streaming SIMD Extension
+#   UNIVERSAL_USE_SSE    - Set to OFF to use the Streaming SIMD Extension
 #                        (SSE) instructions libraries. Default is ON.
-#   UNUM_USE_AVX    - Set to OFF to use the Advanced Vector Extensions
+#   UNIVERSAL_USE_AVX    - Set to OFF to use the Advanced Vector Extensions
 #                        (AVX) libraries). Default is ON.
-#   UNUM_USE_AVX2   - Set to ON to use the Advanced Vector Extensions 2
+#   UNIVERSAL_USE_AVX2   - Set to ON to use the Advanced Vector Extensions 2
 #                        (AVX2) libraries). Default is OFF.
-#   UNUM_USE_SERIALIZER - Set to ON to build with serialization support.
+#   UNIVERSAL_USE_SERIALIZER - Set to ON to build with serialization support.
 #
-# Example to find UNUM headers only::
+# Example to find UNIVERSAL headers only::
 #
-#   find_package(UNUM 0.1.0)
-#   if(UNUM_FOUND)
+#   find_package(UNIVERSAL 2.1.7)
+#   if(UNIVERSAL_FOUND)
 #     add_executable(foo foo.cc)
 #   endif()
 #
-# Example to find UNUM headers and some *static* libraries::
+# Example to find UNIVERSAL headers and some *static* libraries::
 #
-#   set(UNUM_USE_TBB              ON) # only find static libs
-#   set(UNUM_USE_AVX2             ON)
-#   find_package(UNUM 0.1.0)
-#   if(UNUM_FOUND)
+#   set(UNIVERSAL_USE_TBB              ON) # only find static libs
+#   set(UNIVERSAL_USE_AVX2             ON)
+#   find_package(UNIVERSAL 0.1.0)
+#   if(UNIVERSAL_FOUND)
 #     add_executable(foo foo.cc)
-#     target_link_libraries(foo ${UNUM_LIBRARIES})
+#     target_link_libraries(foo ${UNIVERSAL_LIBRARIES})
 #   endif()
 #
 ##################################################################
@@ -86,9 +86,6 @@ set(@PACKAGE_NAME@_LIBRARY_DIRS "@PACKAGE_LIB_INSTALL_DIR@")
 set(@PACKAGE_NAME@_LDFLAGS      "-L@PACKAGE_LIB_INSTALL_DIR@")
 
 # set c++ standard to c++14.
-# Note: not working on CMake 2.8. We assume that user has
-#       a compiler with C++11 support.
-
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "C++14 support has been enabled by default.")
