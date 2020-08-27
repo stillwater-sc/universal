@@ -16,23 +16,6 @@ constexpr long double pi     = 3.14159265358979323846;
 constexpr long double e      = 2.71828182845904523536;
 constexpr long double log_2e = 1.44269504088896340736;
 
-template<typename Real>
-void ReportNumberTraits(std::ostream& ostr) {
-	using namespace std;
-	using namespace sw::unum;
-	ostr << "Real type          : " << typeid(Real).name() << '\n';
-	ostr << "minimum exponent   : " << numeric_limits<Real>::min_exponent << '\n';
-	ostr << "maximum exponent   : " << numeric_limits<Real>::max_exponent << '\n';
-	ostr << "radix              : " << numeric_limits<Real>::radix << '\n';
-	ostr << "radix digits       : " << numeric_limits<Real>::digits << '\n';
-	ostr << "minimum value      : " << numeric_limits<Real>::min() << '\n';
-	ostr << "maximum value      : " << numeric_limits<Real>::max() << '\n';
-	ostr << "epsilon value      : " << numeric_limits<Real>::epsilon() << '\n';
-	ostr << "max rounding error : " << numeric_limits<Real>::round_error() << '\n';
-	ostr << "infinite           : " << numeric_limits<Real>::infinity() << '\n';
-	ostr << "quiet NaN          : " << numeric_limits<Real>::quiet_NaN() << '\n';
-	ostr << "signalling NaN     : " << numeric_limits<Real>::signaling_NaN() << "\n\n";
-}
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -47,15 +30,36 @@ try {
 	using lns32    = lns<32>;
 
 	// report on precision and dynamic range of the number system
-	ReportNumberTraits<float>(cout);
-	ReportNumberTraits<int32>(cout);
-	ReportNumberTraits<fixpnt32>(cout);
-	ReportNumberTraits<posit32>(cout);
-	ReportNumberTraits<areal32>(cout);
-	ReportNumberTraits<lns32>(cout);
 
+	streamsize precision = cout.precision();
+
+	constexpr size_t columnWidth = 30;
+	numberTraits<int32, columnWidth>(cout);
+	numberTraits<fixpnt32, columnWidth>(cout);
+	numberTraits<float, columnWidth>(cout);
+	numberTraits<areal32, columnWidth>(cout);
+	numberTraits<posit32, columnWidth>(cout);
+	numberTraits<lns32, columnWidth>(cout);
+
+	cout << minmax_range<float>() << endl;
+	cout << minmax_range<posit32>() << endl;
+	cout << minmax_range<lns32>() << endl;
+
+	cout << dynamic_range<float>() << endl;
+	cout << dynamic_range<posit32>() << endl;
+	cout << dynamic_range<lns32>() << endl;
+
+	cout << symmetry<float>() << endl;
+	cout << symmetry<posit32>() << endl;
+	cout << symmetry<lns32>() << endl;
+
+	compareNumberTraits<float, areal32>(cout);
+	compareNumberTraits<float, posit32>(cout);
+	compareNumberTraits<float, lns32>(cout);
+
+	cout << setprecision(precision);
 	cout << endl;
-
+	
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {

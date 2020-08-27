@@ -19,9 +19,9 @@ try {
 
 	streamsize precision = cout.precision();
 
-	numeric_limits_table<int16_t>(cout);
-	numeric_limits_table<float>(cout);
-	numeric_limits_table<posit<32, 2>>(cout);
+	numberTraits<int16_t>(cout);
+	numberTraits<float>(cout);
+	numberTraits<posit<32, 2>>(cout);
 
 	cout << minmax_range<float>() << endl;
 	cout << minmax_range<posit<32, 2>>() << endl;
@@ -34,7 +34,7 @@ try {
 
 	using Float = float;
 	using Posit = sw::unum::posit<32, 2>;
-	compare_numeric_limits<Float, Posit>(cout);
+	compareNumberTraits<Float, Posit>(cout);
 
 	cout << endl;
 	cout << "std::numeric_limits<T>::min():\n"
