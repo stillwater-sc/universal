@@ -1,7 +1,7 @@
 #pragma once
 // numeric_limits.hpp: definition of numeric_limits for posit types
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -151,7 +151,8 @@ namespace std {
 			return Posit(0.5);
 		}
 		static constexpr Posit denorm_min() {  // return minimum denormalized value
-			return Posit();
+			Posit pminpos;
+			return sw::unum::minpos<nbits, es>(pminpos);
 		}
 		static constexpr Posit infinity() { // return positive infinity
 			return Posit(NAR);

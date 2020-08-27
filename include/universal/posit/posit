@@ -47,6 +47,7 @@
 #include "posit.hpp"
 #include <universal/traits/posit_traits.hpp>
 #include "numeric_limits.hpp"
+#include <universal/common/numeric_limits_utility.hpp>
 
 // fast specializations for special posit configurations
 // enable fast implementations of the standard posits

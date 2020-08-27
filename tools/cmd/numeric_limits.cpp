@@ -1,6 +1,6 @@
 // numeric_limits.cpp: cli to show the numeric limits of the compiler environment
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/posit/posit>
@@ -169,6 +169,10 @@ try {
 	cout << endl;
 
 	// WhyWeRemovedDecodedPosits();
+
+	cout << "Min-Max range for floats and posit<32,2> comparison\n";
+	cout << minmax_range<float>() << endl;
+	cout << minmax_range<posit<32, 2>>() << endl;
 
 	return EXIT_SUCCESS;
 }

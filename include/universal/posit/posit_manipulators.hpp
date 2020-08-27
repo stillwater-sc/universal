@@ -26,17 +26,35 @@ template<typename Ty>
 std::string minmax_range() {
 	std::stringstream ss;
 	Ty v(0);
-	ss << std::setw(30) << typeid(v).name() << " ";
+	ss << std::setw(30) << typeid(v).name() << ' ';
 	ss << "min " << std::setw(13) << std::numeric_limits<Ty>::min() << "     ";
 	ss << "max " << std::setw(13) << std::numeric_limits<Ty>::max() << "     ";
+	return ss.str();
+}
+
+// print the negative bounds, zero, and positive bounds of the number system
+template<typename Ty>
+std::string symmetry() {
+	std::stringstream ss;
+	Ty v(0);
+	constexpr unsigned WIDTH = 20;
+	ss << std::setw(30) << typeid(v).name() << ' ';
+	ss << "[ " 
+	   << std::setw(WIDTH) << std::numeric_limits<Ty>::lowest() 
+	    << ", "
+	   << std::setw(WIDTH) << -std::numeric_limits<Ty>::denorm_min()
+	    << "] 0 [ " 
+	   << std::setw(WIDTH) << std::numeric_limits<Ty>::denorm_min()
+		<< ", "
+	   << std::setw(WIDTH) << std::numeric_limits<Ty>::max() << ']';
 	return ss.str();
 }
 
 template<typename Ty>
 std::string dynamic_range(Ty v) {
 	std::stringstream ss;
-	ss << std::setw(13) << typeid(v).name();
-	ss << "                       ";
+	ss << std::setw(30) << typeid(v).name();
+	ss << ' ';
 	ss << "minexp scale " << std::setw(10) << std::numeric_limits<Ty>::min_exponent << "     ";
 	ss << "maxexp scale " << std::setw(10) << std::numeric_limits<Ty>::max_exponent << "     ";
 	ss << "minimum " << std::setw(12) << std::numeric_limits<Ty>::min() << "     ";
@@ -47,8 +65,8 @@ template<typename Ty>
 std::string dynamic_range() {
 	std::stringstream ss;
 	Ty v(0);
-	ss << std::setw(13) << typeid(v).name();
-	ss << "                       ";
+	ss << std::setw(30) << typeid(v).name();
+	ss << ' ';
 	ss << "minexp scale " << std::setw(10) << std::numeric_limits<Ty>::min_exponent << "     ";
 	ss << "maxexp scale " << std::setw(10) << std::numeric_limits<Ty>::max_exponent << "     ";
 	ss << "minimum " << std::setw(12) << std::numeric_limits<Ty>::min() << "     ";
