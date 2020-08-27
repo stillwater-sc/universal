@@ -140,8 +140,8 @@ namespace std {
 			return sw::unum::maxpos<nbits, es>(pmaxpos);
 		} 
 		static constexpr Posit lowest() { // return most negative value
-			Posit pminneg;
-			return sw::unum::minneg<nbits, es>(pminneg);
+			Posit pmaxneg;
+			return sw::unum::maxneg<nbits, es>(pmaxneg);
 		} 
 		static constexpr Posit epsilon() { // return smallest effective increment from 1.0
 			Posit one{ 1 }, incr{ 1 };
