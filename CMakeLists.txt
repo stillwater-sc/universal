@@ -332,13 +332,13 @@ endmacro (compile_all)
 
 ####
 # Setup the cmake config files
-string(REGEX REPLACE "_" "" PROJECT_NAME_JOINED ${PROJECT_NAME})
-message(STATUS "${PROJECT_NAME} -> ${PROJECT_NAME_JOINED}")
-set(cmake_conf_file         "${PROJECT_NAME_JOINED}-config.cmake")
-set(cmake_conf_version_file "${PROJECT_NAME_JOINED}-config-version.cmake")
-set(cmake_targets_file      "${PROJECT_NAME_JOINED}-targets.cmake")
+string(REGEX REPLACE "_" "" PROJECT_NAME_NOSPACES ${PROJECT_NAME})
+message(STATUS "${PROJECT_NAME} -> ${PROJECT_NAME_NOSPACES}")
+set(cmake_conf_file         "${PROJECT_NAME_NOSPACES}-config.cmake")
+set(cmake_conf_version_file "${PROJECT_NAME_NOSPACES}-config-version.cmake")
+set(cmake_targets_file      "${PROJECT_NAME_NOSPACES}-targets.cmake")
 
-set(targets_export_name "${PROJECT_NAME_JOINED}-targets")
+set(targets_export_name "${PROJECT_NAME_NOSPACES}-targets")
 set(namespace "${PACKAGE_NAME}::")
 
 # Set up install directories. INCLUDE_INSTALL_DIR and
@@ -356,6 +356,15 @@ elseif(UNIX)
 else()
     message(FATAL_ERROR "Not supported system type. Options: UNIX or WIN32.")
 endif()
+
+message(STATUS "include_install_dir         = ${include_install_dir}")
+message(STATUS "include_install_dir_full    = ${include_install_dir_full}")
+message(STATUS "config_install_dir          = ${config_install_dir}")
+message(STATUS "include_install_dir_postfix = ${include_install_dir_postfix}")
+message(STATUS "PROJECT_SOURCE_DIR          = ${PROJECT_SOURCE_DIR}")
+message(STATUS "PROJECT_VERSION             = ${PROJECT_VERSION}")
+message(STATUS "CMAKE_CURRENT_SOURCE_DIR    = ${CMAKE_CURRENT_SOURCE_DIR}")
+message(STATUS "CMAKE_CURRENT_BIN_DIR       = ${CMAKE_CURRENT_BIN_DIR}")
 
 # configure the library target
 target_include_directories(${project_library_target_name} 
@@ -388,13 +397,13 @@ install(TARGETS ${project_library_target_name}
         EXPORT  ${targets_export_name}
         INCLUDES DESTINATION ${include_install_dir})
 
-#export(EXPORT ${targets_export_name}
-#       FILE   ${CMAKE_CURRENT_BINARY_DIR}/${cmake_targets_file})
+export(EXPORT ${targets_export_name}
+       FILE   ${CMAKE_CURRENT_BINARY_DIR}/${cmake_targets_file})
 
 # Install *-targets.cmake file
-#install(EXPORT      ${targets_export_name}
-#        NAMESPACE   ${namespace}
-#        DESTINATION ${config_install_dir})
+install(EXPORT      ${targets_export_name}
+        NAMESPACE   ${namespace}
+        DESTINATION ${config_install_dir})
 
 # Install config files
 install(FILES
@@ -403,7 +412,7 @@ install(FILES
     DESTINATION ${config_install_dir} COMPONENT cmake)
 
 # Install headers
-install(DIRECTORY   ${PROJECT_SOURCE_DIR}/${project_library_target_name}
+install(DIRECTORY   ${PROJECT_SOURCE_DIR}/include/${project_library_target_name}
         DESTINATION ${include_install_dir})
 
 if(BUILD_CI_CHECK)
@@ -512,7 +521,7 @@ if(BUILD_EXAMPLES_EDUCATION)
 add_subdirectory("education/posit")
 add_subdirectory("education/quire")
 add_subdirectory("education/valid")
-endif(BUILD_EDUCATION_EXAMPLES)
+endif(BUILD_EXAMPLES_EDUCATION)
 
 if(BUILD_EXAMPLES_APPLICATIONS)
 add_subdirectory("examples/stl")
