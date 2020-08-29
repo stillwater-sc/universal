@@ -242,14 +242,15 @@ The library builds a set of useful command utilities to inspect native IEEE floa
 the custom number systems provided by Universal. Assuming you have build and installed the library, the commands are
 
 ```
+    compieee       -- show the components (sign, scale, fraction) of the full set of IEEE floating point values
     compsi         -- show the components (sign, scale, fraction) of a signed integer value
-    compui         -- show the components (sign, scale, fraction) of a signed integer value
+    compui         -- show the components (sign, scale, fraction) of an unsigned integer value
     compf          -- show the components (sign, scale, fraction) of a float value
     compd          -- show the components (sign, scale, fraction) of a double value
     compld         -- show the components (sign, scale, fraction) of a long double value
     compfp         -- show the components (sign, scale, fraction) of a fixed-point value
     compp          -- show the components (sign, scale, fraction) of a posit value
-    complns        -- show the components (sign, scale, fraction) of an lns value
+    complns        -- show the components (sign, scale, fraction) of a logarithmic number system value
 
     convert        -- show the conversion process of a Real value to a posit
 
@@ -258,7 +259,7 @@ the custom number systems provided by Universal. Assuming you have build and ins
 ```
 For example:
 ```
->$ compfp 1.234567890123456789012
+>$ compieee 1.234567890123456789012
 compiler              : 7.5.0
 float precision       : 23 bits
 double precision      : 52 bits
@@ -293,11 +294,11 @@ input value:             1.23456789012
 long double:    1.23456789011999999999    triple: (+,0,001111000000110010100100001010001100000111010010101101110011010)
       exact: TBD
 ```
-This _compfp_ command is very handy to quickly determine how your development environment represents (truncates) a specific value. 
+This _compieee_ command is very handy to quickly determine how your development environment represents (truncates) a specific value. 
 
 The specific commands _compf_, _compd_, and _compld_ focus on float, double, and long double representations respectively.
 
-There is also a command _compp_ to help you visualize and compare the posit component fields for a given value:
+There is also a command _compp_ to help you visualize and compare the posit component fields for a given value, for example:
 ```
 >$ compp 1.234567890123456789012
 posit< 8,0> = s0 r10 e f01000 qNE v1.25

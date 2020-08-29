@@ -25,10 +25,15 @@ inline Real ulp(const Real& a) {
 	return std::nextafter(a, a + 1.0f) - a;
 }
 
-
+// IEEE double precision constants
 static constexpr unsigned IEEE_FLOAT_FRACTION_BITS = 23;
 static constexpr unsigned IEEE_FLOAT_EXPONENT_BITS = 8;
 static constexpr unsigned IEEE_FLOAT_SIGN_BITS = 1;
+// IEEE double precision constants
+static constexpr unsigned IEEE_DOUBLE_FRACTION_BITS = 52;
+static constexpr unsigned IEEE_DOUBLE_EXPONENT_BITS = 11;
+static constexpr unsigned IEEE_DOUBLE_SIGN_BITS = 1;
+// IEEE long double precision constants are compiler dependent
 
 union float_decoder {
   float_decoder() : f{0.0f} {}
@@ -96,7 +101,7 @@ inline std::string to_binary(const float& number) {
 	return ss.str();
 }
 
-// return in triple form (+, scale, fraction)
+// return in triple form (sign, scale, fraction)
 inline std::string to_triple(const float& number) {
 	std::stringstream ss;
 	float_decoder decoder;
@@ -129,7 +134,6 @@ inline std::string to_triple(const float& number) {
 	ss << ')';
 	return ss.str();
 }
-
 
 // specialization for IEEE single precision floats
 inline std::string to_base2_scientific(const float& number) {
@@ -293,7 +297,7 @@ inline std::tuple<bool, int32_t, uint32_t> ieee_components(float fp)
 
 	float_decoder fd{ fp }; // initializes the first member of the union
 	// Reading inactive union parts is forbidden in constexpr :-(
-	return std::make_tuple(
+	return std::make_tuple<bool, int32_t, uint32_t>(
 		static_cast<bool>(fd.parts.sign), 
 		static_cast<int32_t>(fd.parts.exponent),
 		static_cast<uint32_t>(fd.parts.fraction) 
@@ -317,7 +321,7 @@ inline std::tuple<bool, int64_t, uint64_t> ieee_components(double fp)
 
 	double_decoder dd{ fp }; // initializes the first member of the union
 	// Reading inactive union parts is forbidden in constexpr :-(
-	return std::make_tuple(
+	return std::make_tuple<bool, int64_t, uint64_t>(
 		static_cast<bool>(dd.parts.sign), 
 		static_cast<int64_t>(dd.parts.exponent),
 		static_cast<uint64_t>(dd.parts.fraction) 
