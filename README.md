@@ -69,7 +69,7 @@ bash-4.3# education/posit/edu_tables
 ## How to build
 
 If you do want to work with the code, the universal numbers software library is built using cmake version v3.18. 
-Install the latest cmake [cmake](https://cmake.org/download).
+Install the latest [cmake](https://cmake.org/download).
 There are interactive installers for MacOS and Windows. 
 For Linux, a portable approach downloads the shell archive and installs it at /usr/local:
 ```
@@ -84,7 +84,99 @@ For Ubuntu, snap will install the latest cmake, and would be the preferred metho
 The Universal library is a pure C++ template library without any further dependencies, even for the regression test suites,
 to enable hassle-free installation and use.
 
-Simply clone the github repo, and you are ready to build the educational examples, application examples, and the test suites that come with the Universal library. What you are building are tools to work with floats and posits, educational programs that highlight the use of the posit library, and the posit verification suite. Issue the command _make test_ (or better yet _ctest -j 16_ (or how many cores you have)) to run the complete posit verification suite, which can be used as a regression capability when you are modifying the source code. This will take several minutes but will touch all the corners of the posit functionality.
+Simply clone the github repo, and you are ready to build the different components of the Universal library. 
+The library contains tools to work with integers, decimals, fixed-points, floats, posits, valids, and logarithmic
+number systems. It contains educational programs that showcase simple use cases to familiarize yourself with
+different number systems, and application examples to highlight the use of different number systems to gain performance
+or numerical accuracy. Finally, each number system offers its own verification suite. 
+
+The easiest way to become familiar with all the options in the build process is to fire up the CMake GUI 
+(or ccmake if you are on a headless server). The cmake output will summarize which options have been set. 
+The output will looks something like this:
+
+```
+$ cmake ..
+-- C++14 support has been enabled by default
+-- universal -> universal
+-- include_install_dir         = include
+-- include_install_dir_full    = include/universal
+-- config_install_dir          = share/universal
+-- include_install_dir_postfix = universal
+-- PROJECT_SOURCE_DIR          = /home/stillwater/dev/clones/universal
+-- PROJECT_VERSION             = 2.1.0
+-- CMAKE_CURRENT_SOURCE_DIR    = /home/stillwater/dev/clones/universal
+-- CMAKE_CURRENT_BINARY_DIR    = /home/stillwater/dev/clones/universal/build
+...
+--
+-- ******************* Universal Arithmetic Library Configuration Summary *******************
+-- General:
+--   Version                      :   2.1.0
+--   System                       :   Linux
+--   C compiler                   :   /usr/bin/cc
+--   Release C flags              :   -O3 -DNDEBUG -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   Debug C flags                :   -g -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   C++ compiler                 :   /usr/bin/c++
+--   Release CXX flags            :   -O3 -DNDEBUG -std=c++14  -Wall -Wpedantic -Wno-narrowing -Wno-deprecated -std=c++14  -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   Debug CXX flags              :   -g -std=c++14  -Wall -Wpedantic -Wno-narrowing -Wno-deprecated -std=c++14  -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   Build type                   :   Release
+--
+--   BUILD_CI_CHECK               :   OFF
+--
+--   BUILD_STORAGE_CLASSES        :   OFF
+--   BUILD_NATIVE_TYPES           :   OFF
+--   BUILD_INTEGERS               :   OFF
+--   BUILD_DECIMALS               :   OFF
+--   BUILD_FIXPNTS                :   OFF
+--   BUILD_LNS                    :   OFF
+--   BUILD_UNUM_TYPE_1            :   OFF
+--   BUILD_UNUM_TYPE_2            :   OFF
+--   BUILD_POSITS                 :   OFF
+--   BUILD_VALIDS                 :   OFF
+--   BUILD_REALS                  :   OFF
+--
+--   BUILD_C_API_PURE_LIB         :   OFF
+--   BUILD_C_API_SHIM_LIB         :   OFF
+--   BUILD_C_API_LIB_PIC          :   OFF
+--
+--   BUILD_CMD_LINE_TOOLS         :   ON
+--   BUILD_EXAMPLES_EDUCATION     :   ON
+--   BUILD_EXAMPLES_APPLICATIONS  :   ON
+--   BUILD_NUMERICAL              :   OFF
+--   BUILD_FUNCTIONS              :   OFF
+--   BUILD_PLAYGROUND             :   ON
+--
+--   BUILD_CONVERSION_TESTS       :   OFF
+--
+--   BUILD_PERF_TESTS             :   OFF
+--
+--   BUILD_IEEE_FLOAT_QUIRES      :   OFF
+--
+--   BUILD_DOCS                   :   OFF
+--
+-- Dependencies:
+--   SSE3                         :   NO
+--   AVX                          :   NO
+--   AVX2                         :   NO
+--   Pthread                      :   NO
+--   TBB                          :   NO
+--   OMP                          :   NO
+--
+-- Utilities:
+--   Serializer                   :   NO
+--
+-- Install:
+--   Install path                 :   /usr/local
+--
+-- Configuring done
+-- Generating done
+```
+The build options are enabled/disabled as follows:
+```
+> cmake -DBUILD_EXAMPLES_EDUCATION=OFF -DBUILD_POSITS=ON ..
+```
+After building, issue the command _make test_ to run the complete test suite of all the enabled components, 
+as a regression capability when you are modifying the source code. This will take several minutes but will touch 
+all the corners of the code.
 
 ```
 > git clone https://github.com/stillwater-sc/universal
@@ -92,21 +184,29 @@ Simply clone the github repo, and you are ready to build the educational example
 > mkdir build
 > cd build
 > cmake ..
-> make -j 16
+> make -j $(nproc)
 > make test
 ```
+For Windows and Visual Studio, there are `CMakePredefinedTargets` that accomplish the same tasks:
+
+    - ALL_BUILD will compile all the projects
+    - INSTALL   will install the Universal library
+    - RUN_TESTS will run all tests
+    
+![visual-studio-project](background/img/visual-studio-project.png)
 
 # Installation and usage
 
 After cloning the library, building and testing it in your environment, you can install it via:
 ```
+> cd universal/build
 > cmake .. -DCMAKE_INSTALL_PREFIX:PATH=/your/installation/path
 > cmake --build . --config Release --target install -- -j $(nproc)
 ```
 
 or manually via the Makefile target in the build directory:
 ```
-> make install
+> make -j ${nproc) install
 ```
 
 The default install directory is `/usr/local` under Linux.  There is also an uninstall
@@ -114,7 +214,8 @@ The default install directory is `/usr/local` under Linux.  There is also an uni
 > make uninstall
 ```
 
-If you want to use the number systems provided by Universal in your own project, you can use the following CMakeLists.txt sttructure:
+If you want to use the number systems provided by Universal in your own project, 
+you can use the following CMakeLists.txt structure:
 ```
 project("my-numerical-experiment")
 
@@ -141,18 +242,20 @@ The library builds a set of useful command utilities to inspect native IEEE floa
 the custom number systems provided by Universal. Assuming you have build and installed the library, the commands are
 
 ```
+    compsi         -- show the components (sign, scale, fraction) of a signed integer value
+    compui         -- show the components (sign, scale, fraction) of a signed integer value
     compf          -- show the components (sign, scale, fraction) of a float value
     compd          -- show the components (sign, scale, fraction) of a double value
     compld         -- show the components (sign, scale, fraction) of a long double value
+    compfp         -- show the components (sign, scale, fraction) of a fixed-point value
     compp          -- show the components (sign, scale, fraction) of a posit value
+    complns        -- show the components (sign, scale, fraction) of an lns value
 
     convert        -- show the conversion process of a Real value to a posit
 
     propenv        -- show the properties of the execution (==compiler) environment that built the library
     propp          -- show numerical properties of a posit environment including the associated quire
-
 ```
-
 For example:
 ```
 >$ compfp 1.234567890123456789012
@@ -190,12 +293,11 @@ input value:             1.23456789012
 long double:    1.23456789011999999999    triple: (+,0,001111000000110010100100001010001100000111010010101101110011010)
       exact: TBD
 ```
-
 This _compfp_ command is very handy to quickly determine how your development environment represents (truncates) a specific value. 
 
-The specific commands _compf, _compd, and _compld focus on float, double, and long double representations respectively.
+The specific commands _compf_, _compd_, and _compld_ focus on float, double, and long double representations respectively.
 
-There is also a command _compp to help you visualize and compare the posit component fields for a given value:
+There is also a command _compp_ to help you visualize and compare the posit component fields for a given value:
 ```
 >$ compp 1.234567890123456789012
 posit< 8,0> = s0 r10 e f01000 qNE v1.25
@@ -214,9 +316,7 @@ posit<48,3> = s0 r10 e000 f001111000000110010100100001010001100010110 qNE v1.234
 posit<64,1> = s0 r10 e0 f001111000000110010100100001010001100010110011111101100000000 qNE v1.2345678901234567
 posit<64,2> = s0 r10 e00 f00111100000011001010010000101000110001011001111110110000000 qNE v1.2345678901234567
 posit<64,3> = s0 r10 e000 f0011110000001100101001000010100011000101100111111011000000 qNE v1.2345678901234567
-
 ```
-
 The fields are prefixed by their first characters, for example, "posit<16,2> = s0 r10 e00 f00111100000 qNE v1.234375"
 - sign     field = s0, indicating a positive number
 - regime   field = r10, indicates the first positive regime, named regime 0
