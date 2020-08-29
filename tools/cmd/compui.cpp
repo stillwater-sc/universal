@@ -1,4 +1,4 @@
-// compsi.cpp: components of a signed integer: cli to show the sign/scale/fraction components of a signed integer  
+// compui.cpp: components of an unsigned integer: cli to show the sign/scale/fraction components of an unsigned integer  
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -15,11 +15,11 @@ try {
 	using namespace sw::unum;
 
 	if (argc != 2) {
-		cerr << "compsi : components of a signed integer\n";
-		cerr << "Show the sign/scale/fraction components of a signed integer.\n";
-		cerr << "Usage: compsi integer_value\n";
-		cerr << "Example: compsi 1234567890123456789012345\n";
-		cerr << "class sw::unum::integer<128,unsigned int>         : 1234567890123456789012345 (+,80,00000101011011100000111100110110101001100100010000111101111000101101111101111001)";
+		cerr << "compui : components of an unsigned integer\n";
+		cerr << "Show the sign/scale/fraction components of an unsigned integer.\n";
+		cerr << "Usage: compui integer_value\n";
+		cerr << "Example: compui 123456789012345670\n";
+		cerr << "TBD: ";
 		cerr << endl;
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
@@ -37,7 +37,7 @@ try {
 
 	// TODO: need to honor format manipulator
 	constexpr size_t columnWidth = 50;
-	value >= 0 ? parse("0x7F", ref) : parse("-128", ref);
+	parse("0x7F", ref);
 	if (value < ref) {
 		integer<8, uint8_t> int8;
 		parse(arg, int8);
