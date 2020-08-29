@@ -44,8 +44,7 @@
 
 #endif
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 // forward references
 template<size_t nbits, typename BlockType> class integer;
@@ -1101,11 +1100,12 @@ bool parse(const std::string& number, integer<nbits, BlockType>& value) {
 	else if (std::regex_match(number, hex_regex)) {
 		//std::cout << "found a hexadecimal representation\n";
 		// each char is a nibble
-		int byte;
+		int maxByteIndex = nbits / 8;
+		int byte = 0;
 		int byteIndex = 0;
 		bool odd = false;
 		for (std::string::const_reverse_iterator r = number.rbegin();
-			r != number.rend();
+			r != number.rend() && byteIndex < maxByteIndex;
 			++r) {
 			if (*r == '\'') {
 				// ignore
@@ -1117,6 +1117,7 @@ bool parse(const std::string& number, integer<nbits, BlockType>& value) {
 					value.setbyte(byteIndex, byte);
 				}
 				bSuccess = true;
+				break;
 			}
 			else {
 				if (odd) {

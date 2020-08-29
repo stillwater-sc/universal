@@ -1,4 +1,4 @@
-// compfp.cpp: cli to show the sign/scale/fraction components of a 32b/64/128b IEEE floats
+// compieee.cpp: cli to show the sign/scale/fraction components of a 32b/64/128b IEEE floats
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -6,6 +6,7 @@
 #include <iostream>
 #include <string>
 #include <universal/native/ieee-754.hpp>
+#include <universal/functions/isrepresentable.hpp>
 #include <universal/value/value>
 
 std::string version_string(int a, int b, int c) {
@@ -69,8 +70,8 @@ try {
 
 	if (argc != 2) {
 		cerr << "Show the truncated value and (sign/scale/fraction) components of different floating point types." << endl;
-		cerr << "Usage: ieee_fp float_value" << endl;
-		cerr << "Example: ieee_fp 0.03124999" << endl;
+		cerr << "Usage: compieee floating_point_value" << endl;
+		cerr << "Example: compieee 0.03124999" << endl;
                 cerr << "input value:                0.03124999" << endl;
                 cerr << "      float:              0.0312499907 (+,-6,11111111111111111111011)" << endl;
                 cerr << "     double:      0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)" << endl;
@@ -86,56 +87,58 @@ try {
 	double d      = double(q);
 	float f       = float(d);
 
-	cout << "compiler              : " << report_compiler_version() << endl;
+	cout << "compiler              : " << report_compiler_version() << '\n';
 	cout << "float precision       : " << f_fbits << " bits\n";
 	cout << "double precision      : " << d_fbits << " bits\n";
 	cout << "long double precision : " << q_fbits << " bits\n";
 
 	cout << endl;
 
+	cout << "Representable?        : " << (isRepresentableInBinary(argv[1]) ? "maybe" : "no") << "\n\n";
+
 	cout << "Decimal representations\n";
-	cout << "input value: " << setprecision(f_prec) << setw(width) << argv[1] << endl;
-	cout << "      float: " << setprecision(f_prec) << setw(width) << f << endl;
-	cout << "     double: " << setprecision(d_prec) << setw(width) << d << endl;
-	cout << "long double: " << setprecision(q_prec) << setw(width) << q << endl;
+	cout << "input value: " << setprecision(f_prec) << setw(width) << argv[1] << '\n';
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << '\n';
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << '\n';
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << '\n';
 
 	cout << endl;
 
 	cout << "Hex representations\n";
-	cout << "input value: " << setprecision(f_prec) << setw(width) << argv[1] << endl;
-	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    hex: " << to_hex(f) << endl;
-	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    hex: " << to_hex(d) << endl;
-	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    hex: " << to_hex(q) << endl;
+	cout << "input value: " << setprecision(f_prec) << setw(width) << argv[1] << '\n';
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    hex: " << to_hex(f) << '\n';
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    hex: " << to_hex(d) << '\n';
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    hex: " << to_hex(q) << '\n';
 
 	cout << endl;
 
 	cout << "Binary representations:\n";
-	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    bin: " << to_binary(f) << endl;
-	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    bin: " << to_binary(d) << endl;
-	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    bin: " << to_binary(q) << endl;
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    bin: " << to_binary(f) << '\n';
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    bin: " << to_binary(d) << '\n';
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    bin: " << to_binary(q) << '\n';
 
 	cout << endl;
 
 	cout << "Native triple representations (sign, scale, fraction):\n";
-	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    triple: " << to_triple(f) << endl;
-	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    triple: " << to_triple(d) << endl;
-	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    triple: " << to_triple(q) << endl;
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    triple: " << to_triple(f) << '\n';
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    triple: " << to_triple(d) << '\n';
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    triple: " << to_triple(q) << '\n';
 
-	cout << endl;
+	cout << '\n';
 
 	value<f_fbits> vf(f);
 	value<d_fbits> vd(d);
 	value<q_fbits> vq(q);
 
-	cout << "Universal triple representation (sign, scale, fraction):\n";
-	cout << "input value: " << setprecision(f_prec) << setw(width) << argv[1] << endl;
-	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    triple: " << components(vf) << endl;
-	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    triple: " << components(vd) << endl;
-	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    triple: " << components(vq) << endl;
+	cout << "Scientific triple representation (sign, scale, fraction):\n";
+	cout << "input value: " << setprecision(f_prec) << setw(width) << argv[1] << '\n';
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    triple: " << components(vf) << '\n';
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    triple: " << components(vd) << '\n';
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    triple: " << components(vq) << '\n';
 	// TODO: implement a parse for that value to represent exactly
-	cout << "      exact: " << "TBD" << endl;
+	cout << "      exact: " << "TBD" << '\n';
 
-	cout << setprecision(old_precision);
+	cout << setprecision(old_precision) << endl;
 
 	return EXIT_SUCCESS;
 }
