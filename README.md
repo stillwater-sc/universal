@@ -68,10 +68,21 @@ bash-4.3# education/posit/edu_tables
 
 ## How to build
 
-If you do want to work with the code, the universal numbers software library is built using cmake. 
+If you do want to work with the code, the universal numbers software library is built using cmake version v3.18. 
 Install the latest cmake [cmake](https://cmake.org/download).
+There are interactive installers for MacOS and Windows. 
+For Linux, a portable approach downloads the shell archive and installs it at /usr/local:
+```
+> wget https://github.com/Kitware/CMake/releases/download/v3.18.2/cmake-3.18.2-Linux-x86_64.sh 
+> sudo sh cmake-3.18.2-Linux-x86_64.sh --prefix=/usr/local --exclude-subdir
+```
+For Ubuntu, snap will install the latest cmake, and would be the preferred method:
+```
+> sudo snap install cmake --classic
+```
 
-The library is a pure template library without any further dependencies.
+The Universal library is a pure C++ template library without any further dependencies, even for the regression test suites,
+to enable hassle-free installation and use.
 
 Simply clone the github repo, and you are ready to build the educational examples, application examples, and the test suites that come with the Universal library. What you are building are tools to work with floats and posits, educational programs that highlight the use of the posit library, and the posit verification suite. Issue the command _make test_ (or better yet _ctest -j 16_ (or how many cores you have)) to run the complete posit verification suite, which can be used as a regression capability when you are modifying the source code. This will take several minutes but will touch all the corners of the posit functionality.
 

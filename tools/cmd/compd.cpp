@@ -1,4 +1,4 @@
-// dc.cpp: double components: cli to show the sign/scale/fraction components of a double
+// compd.cpp: components of a double: cli to show the sign/scale/fraction components of a double
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

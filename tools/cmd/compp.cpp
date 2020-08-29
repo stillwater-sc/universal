@@ -1,4 +1,4 @@
-// pc.cpp: posit components: cli to show the sign/scale/regime/exponent/fraction components of standard posit configurations
+// compp.cpp: components of a posit: cli to show the sign/scale/regime/exponent/fraction components of standard posit configurations
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

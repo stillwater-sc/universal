@@ -1,4 +1,4 @@
-// ldc.cpp: long double components: cli to show the sign/scale/fraction components of a long double native IEEE float
+// compld.cpp: components of a long double: cli to show the sign/scale/fraction components of a long double native IEEE float
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

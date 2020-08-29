@@ -1,4 +1,4 @@
-// numeric_limits.cpp: cli to show the numeric limits of the compiler environment
+// propenv.cpp: cli to show the type properties of the compiler environment
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -9,6 +9,8 @@
 #ifdef POSIT_DECODED_CLASS
 #include "posit_decoded.hpp"
 
+// the decoded posits structure is caching decoded regime, exponent, and fraction ballooning the size 
+// of the class and making it unusable for real computational work.
 void WhyWeRemovedDecodedPosits() {
 	using namespace std;
 	using namespace sw::unum;

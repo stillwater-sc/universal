@@ -1,4 +1,4 @@
-// fc.cpp: float components: cli to show the sign/scale/fraction components of a float 
+// compf.cpp: components of a float: cli to show the sign/scale/fraction components of a float 
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
