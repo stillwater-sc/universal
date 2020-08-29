@@ -53,7 +53,9 @@ USER stillwater
 COPY --from=builder /usr/src/universal/build /home/stillwater/universal/build
 
 # copy the CLI tools to /usr/local/bin so they are immediately usable
-COPY --from=builder /usr/src/universal/build/tools/cmd/cmd_* /usr/local/bin/
+COPY --from=builder /usr/src/universal/build/tools/cmd/prop* /usr/local/bin/
+COPY --from=builder /usr/src/universal/build/tools/cmd/comp* /usr/local/bin/
+COPY --from=builder /usr/src/universal/build/tools/cmd/convert /usr/local/bin/
 
 # double check we have all the executables of interest
 #RUN find /home/stillwater/universal/build

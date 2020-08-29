@@ -68,22 +68,167 @@ bash-4.3# education/posit/edu_tables
 
 ## How to build
 
-If you do want to work with the code, the universal numbers software library is built using cmake. 
-Install the latest cmake [cmake](https://cmake.org/download).
+If you do want to work with the code, the universal numbers software library is built using cmake version v3.18. 
+Install the latest [cmake](https://cmake.org/download).
+There are interactive installers for MacOS and Windows. 
+For Linux, a portable approach downloads the shell archive and installs it at /usr/local:
+```
+> wget https://github.com/Kitware/CMake/releases/download/v3.18.2/cmake-3.18.2-Linux-x86_64.sh 
+> sudo sh cmake-3.18.2-Linux-x86_64.sh --prefix=/usr/local --exclude-subdir
+```
+For Ubuntu, snap will install the latest cmake, and would be the preferred method:
+```
+> sudo snap install cmake --classic
+```
 
-The library is a pure template library without any further dependencies.
+The Universal library is a pure C++ template library without any further dependencies, even for the regression test suites,
+to enable hassle-free installation and use.
 
-Simply clone the github repo, and you are ready to build the educational examples, application examples, and the test suites that come with the Universal library. What you are building are tools to work with floats and posits, educational programs that highlight the use of the posit library, and the posit verification suite. Issue the command _make test_ (or better yet _ctest -j 16_ (or how many cores you have)) to run the complete posit verification suite, which can be used as a regression capability when you are modifying the source code. This will take several minutes but will touch all the corners of the posit functionality.
+Simply clone the github repo, and you are ready to build the different components of the Universal library. 
+The library contains tools to work with integers, decimals, fixed-points, floats, posits, valids, and logarithmic
+number systems. It contains educational programs that showcase simple use cases to familiarize yourself with
+different number systems, and application examples to highlight the use of different number systems to gain performance
+or numerical accuracy. Finally, each number system offers its own verification suite. 
+
+The easiest way to become familiar with all the options in the build process is to fire up the CMake GUI 
+(or ccmake if you are on a headless server). The cmake output will summarize which options have been set. 
+The output will looks something like this:
+
+```
+$ cmake ..
+-- C++14 support has been enabled by default
+-- universal -> universal
+-- include_install_dir         = include
+-- include_install_dir_full    = include/universal
+-- config_install_dir          = share/universal
+-- include_install_dir_postfix = universal
+-- PROJECT_SOURCE_DIR          = /home/stillwater/dev/clones/universal
+-- PROJECT_VERSION             = 2.1.0
+-- CMAKE_CURRENT_SOURCE_DIR    = /home/stillwater/dev/clones/universal
+-- CMAKE_CURRENT_BINARY_DIR    = /home/stillwater/dev/clones/universal/build
+...
+--
+-- ******************* Universal Arithmetic Library Configuration Summary *******************
+-- General:
+--   Version                      :   2.1.0
+--   System                       :   Linux
+--   C compiler                   :   /usr/bin/cc
+--   Release C flags              :   -O3 -DNDEBUG -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   Debug C flags                :   -g -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   C++ compiler                 :   /usr/bin/c++
+--   Release CXX flags            :   -O3 -DNDEBUG -std=c++14  -Wall -Wpedantic -Wno-narrowing -Wno-deprecated -std=c++14  -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   Debug CXX flags              :   -g -std=c++14  -Wall -Wpedantic -Wno-narrowing -Wno-deprecated -std=c++14  -Wall -Wpedantic -Wno-narrowing -Wno-deprecated
+--   Build type                   :   Release
+--
+--   BUILD_CI_CHECK               :   OFF
+--
+--   BUILD_STORAGE_CLASSES        :   OFF
+--   BUILD_NATIVE_TYPES           :   OFF
+--   BUILD_INTEGERS               :   OFF
+--   BUILD_DECIMALS               :   OFF
+--   BUILD_FIXPNTS                :   OFF
+--   BUILD_LNS                    :   OFF
+--   BUILD_UNUM_TYPE_1            :   OFF
+--   BUILD_UNUM_TYPE_2            :   OFF
+--   BUILD_POSITS                 :   OFF
+--   BUILD_VALIDS                 :   OFF
+--   BUILD_REALS                  :   OFF
+--
+--   BUILD_C_API_PURE_LIB         :   OFF
+--   BUILD_C_API_SHIM_LIB         :   OFF
+--   BUILD_C_API_LIB_PIC          :   OFF
+--
+--   BUILD_CMD_LINE_TOOLS         :   ON
+--   BUILD_EXAMPLES_EDUCATION     :   ON
+--   BUILD_EXAMPLES_APPLICATIONS  :   ON
+--   BUILD_NUMERICAL              :   OFF
+--   BUILD_FUNCTIONS              :   OFF
+--   BUILD_PLAYGROUND             :   ON
+--
+--   BUILD_CONVERSION_TESTS       :   OFF
+--
+--   BUILD_PERF_TESTS             :   OFF
+--
+--   BUILD_IEEE_FLOAT_QUIRES      :   OFF
+--
+--   BUILD_DOCS                   :   OFF
+--
+-- Dependencies:
+--   SSE3                         :   NO
+--   AVX                          :   NO
+--   AVX2                         :   NO
+--   Pthread                      :   NO
+--   TBB                          :   NO
+--   OMP                          :   NO
+--
+-- Utilities:
+--   Serializer                   :   NO
+--
+-- Install:
+--   Install path                 :   /usr/local
+--
+-- Configuring done
+-- Generating done
+```
+The build options are enabled/disabled as follows:
+```
+> cmake -DBUILD_EXAMPLES_EDUCATION=OFF -DBUILD_POSITS=ON ..
+```
+After building, issue the command _make test_ to run the complete test suite of all the enabled components, 
+as a regression capability when you are modifying the source code. This will take several minutes but will touch 
+all the corners of the code.
 
 ```
 > git clone https://github.com/stillwater-sc/universal
-> cd universal/build
+> cd universal
+> mkdir build
+> cd build
 > cmake ..
-> make -j 16
+> make -j $(nproc)
 > make test
 ```
+For Windows and Visual Studio, there are `CMakePredefinedTargets` that accomplish the same tasks:
 
-The default build configuration will build the educational and application examples, as well as the command line utilities. If you want to build the full regression suite across all the number systems, use the following cmake command:
+    - ALL_BUILD will compile all the projects
+    - INSTALL   will install the Universal library
+    - RUN_TESTS will run all tests
+    
+![visual-studio-project](background/img/visual-studio-project.png)
+
+# Installation and usage
+
+After cloning the library, building and testing it in your environment, you can install it via:
+```
+> cd universal/build
+> cmake .. -DCMAKE_INSTALL_PREFIX:PATH=/your/installation/path
+> cmake --build . --config Release --target install -- -j $(nproc)
+```
+
+or manually via the Makefile target in the build directory:
+```
+> make -j ${nproc) install
+```
+
+The default install directory is `/usr/local` under Linux.  There is also an uninstall
+```
+> make uninstall
+```
+
+If you want to use the number systems provided by Universal in your own project, 
+you can use the following CMakeLists.txt structure:
+```
+project("my-numerical-experiment")
+
+find_package(UNIVERSAL CONFIG REQUIRED)
+
+add_executable(${PROJECT_NAME} src/mymain.cpp)
+target_link_libraries(${PROJECT_NAME} UNIVERSAL::UNIVERSAL)
+```
+
+## Controlling the build to include different components
+
+The default build configuration will build the command line tools, a playground, educational and application examples.
+If you want to build the full regression suite across all the number systems, use the following cmake command:
 ```
 cmake -DBUILD_CI_CHECK=ON ..
 ```
@@ -93,30 +238,68 @@ For performance, the build configuration can enable specific x86 instruction set
 cmake -DBUILD_CI_CHECK=on -DUSE_AVX2=ON ..
 ```
 
-The library builds a set of useful command utilities, which can be found in the directory ".../build/tools/cmd".
+The library builds a set of useful command utilities to inspect native IEEE float/double/long double numbers as well as
+the custom number systems provided by Universal. Assuming you have build and installed the library, the commands are
 
 ```
->:~/dev/universal/build$ make cmd_ieee_fp
-Scanning dependencies of target cmd_ieee_fp
-[ 50%] Building CXX object tools/cmd/CMakeFiles/cmd_ieee_fp.dir/ieee_fp.cpp.o
-[100%] Linking CXX executable cmd_ieee_fp
-[100%] Built target cmd_ieee_fp
->:~/dev/universal/build$ tools/cmd/cmd_ieee_fp 1.234567890123456789012
-input value:   1.234567890123456789012
-      float:                1.23456788 (+,0,00111100000011001010010)
-     double:        1.2345678901234567 (+,0,0011110000001100101001000010100011000101100111111011)
-long double:    1.23456789012345669043 (+,0,000000000000001111000000110010100100001010001100010110011111101)
-```
-The command _cmd_ieee_fp_ is very handy to quickly determine how your development environment represents (truncates) a specific value. There are also the specific commands _cmd_fc_, _cmd_dc_, and _cmd_ldc_, which focus on float, double, and long double representations respectively.
+    compsi         -- show the components (sign, scale, fraction) of a signed integer value
+    compui         -- show the components (sign, scale, fraction) of a signed integer value
+    compf          -- show the components (sign, scale, fraction) of a float value
+    compd          -- show the components (sign, scale, fraction) of a double value
+    compld         -- show the components (sign, scale, fraction) of a long double value
+    compfp         -- show the components (sign, scale, fraction) of a fixed-point value
+    compp          -- show the components (sign, scale, fraction) of a posit value
+    complns        -- show the components (sign, scale, fraction) of an lns value
 
-There is also a command _cmd_pc_ to help you visualize and compare the posit component fields for a given value:
+    convert        -- show the conversion process of a Real value to a posit
+
+    propenv        -- show the properties of the execution (==compiler) environment that built the library
+    propp          -- show numerical properties of a posit environment including the associated quire
 ```
->:~/dev/universal/build$ make cmd_pc
-Scanning dependencies of target cmd_pc
-[100%] Building CXX object tools/cmd/CMakeFiles/cmd_pc.dir/pc.cpp.o
-[100%] Linking CXX executable cmd_pc
-[100%] Built target cmd_pc
->:~/dev/universal/build$ tools/cmd/cmd_pc 1.234567890123456789012
+For example:
+```
+>$ compfp 1.234567890123456789012
+compiler              : 7.5.0
+float precision       : 23 bits
+double precision      : 52 bits
+long double precision : 63 bits
+
+Decimal representations
+input value:             1.23456789012
+      float:                1.23456788
+     double:        1.2345678901199999
+long double:    1.23456789011999999999
+
+Hex representations
+input value:             1.23456789012
+      float:                1.23456788    hex: 0.7f.1e0652
+     double:        1.2345678901199999    hex: 0.3ff.3c0ca428c1d2b
+long double:    1.23456789011999999999    hex: 0.3fff.1e06521460e95b9a
+
+Binary representations:
+      float:                1.23456788    bin: 0.01111111.00111100000011001010010
+     double:        1.2345678901199999    bin: 0.01111111111.0011110000001100101001000010100011000001110100101011
+long double:    1.23456789011999999999    bin: 0.011111111111111.001111000000110010100100001010001100000111010010101101110011010
+
+Native triple representations (sign, scale, fraction):
+      float:                1.23456788    triple: (+,0,00111100000011001010010)
+     double:        1.2345678901199999    triple: (+,0,0011110000001100101001000010100011000001110100101011)
+long double:    1.23456789011999999999    triple: (+,0,001111000000110010100100001010001100000111010010101101110011010)
+
+Universal triple representation (sign, scale, fraction):
+input value:             1.23456789012
+      float:                1.23456788    triple: (+,0,00111100000011001010010)
+     double:        1.2345678901199999    triple: (+,0,0011110000001100101001000010100011000001110100101011)
+long double:    1.23456789011999999999    triple: (+,0,001111000000110010100100001010001100000111010010101101110011010)
+      exact: TBD
+```
+This _compfp_ command is very handy to quickly determine how your development environment represents (truncates) a specific value. 
+
+The specific commands _compf_, _compd_, and _compld_ focus on float, double, and long double representations respectively.
+
+There is also a command _compp_ to help you visualize and compare the posit component fields for a given value:
+```
+>$ compp 1.234567890123456789012
 posit< 8,0> = s0 r10 e f01000 qNE v1.25
 posit< 8,1> = s0 r10 e0 f0100 qNE v1.25
 posit< 8,2> = s0 r10 e00 f010 qNE v1.25
@@ -133,9 +316,7 @@ posit<48,3> = s0 r10 e000 f001111000000110010100100001010001100010110 qNE v1.234
 posit<64,1> = s0 r10 e0 f001111000000110010100100001010001100010110011111101100000000 qNE v1.2345678901234567
 posit<64,2> = s0 r10 e00 f00111100000011001010010000101000110001011001111110110000000 qNE v1.2345678901234567
 posit<64,3> = s0 r10 e000 f0011110000001100101001000010100011000101100111111011000000 qNE v1.2345678901234567
-posit<64,4> = s0 r10 e0000 f001111000000110010100100001010001100010110011111101100000 qNE v1.2345678901234567
 ```
-
 The fields are prefixed by their first characters, for example, "posit<16,2> = s0 r10 e00 f00111100000 qNE v1.234375"
 - sign     field = s0, indicating a positive number
 - regime   field = r10, indicates the first positive regime, named regime 0

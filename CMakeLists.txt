@@ -27,8 +27,15 @@ endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 0)
 endif()
-project (universal 
-         VERSION "${UNIVERSAL_VERSION_MAJOR}.${UNIVERSAL_VERSION_MINOR}.${UNIVERSAL_VERSION_PATCH}" LANGUAGES C CXX ASM)
+project(universal 
+	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
+	VERSION "${UNIVERSAL_VERSION_MAJOR}.${UNIVERSAL_VERSION_MINOR}.${UNIVERSAL_VERSION_PATCH}" 
+	LANGUAGES C CXX ASM)
+# with 3.18
+#	HOMEPAGE_URL "https://github.com/stillwater-sc/universal")
+
+# universal is a header-only library
+add_library(${PROJECT_NAME} INTERFACE)
 
 ####
 # Change default build type to Release
@@ -60,17 +67,17 @@ option(USE_AVX2                          "Build code with AVX2 ISA support"     
 option(BUILD_CI_CHECK                    "Set to ON to build all components"                   OFF)
 
 # utilities and educational examples
+option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   ON)
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
-option(BUILD_EDUCATION_EXAMPLES          "Set to ON to build educational examples"             ON)
-option(BUILD_APPLICATION_EXAMPLES        "Set to ON to build epplication examples"             ON)
-option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   OFF)
+option(BUILD_EXAMPLES_EDUCATION          "Set to ON to build educational examples"             ON)
+option(BUILD_EXAMPLES_APPLICATIONS       "Set to ON to build epplication examples"             ON)
 option(BUILD_NUMERICAL                   "Set to ON to build numerical test programs"          OFF)
 option(BUILD_FUNCTIONS                   "Set to ON to build special functions programs"       OFF)
 
 # C API library and test programs
 option(BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
 option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"               OFF)
-option(C_API_LIB_PIC                     "Set to ON to compile C API library with -fPIC"       OFF)
+option(BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       OFF)
 # number systems and their verification suites
 option(BUILD_STORAGE_CLASSES             "Set to ON to build storage class tests"              OFF)
 option(BUILD_NATIVE_TYPES                "Set to ON to build native type tests"                OFF)
@@ -98,7 +105,7 @@ endif()
 ####
 # Create the library target
 set(project_library_target_name ${PROJECT_NAME})
-set(PACKAGE_NAME Universal)
+set(PACKAGE_NAME ${PROJECT_NAME})
 
 ####
 # Set environmental options for tracing, testing, and verbosity
@@ -325,13 +332,13 @@ endmacro (compile_all)
 
 ####
 # Setup the cmake config files
-string(REGEX REPLACE "_" "" PROJECT_NAME_JOINED ${PROJECT_NAME})
-message(STATUS "${PROJECT_NAME} -> ${PROJECT_NAME_JOINED}")
-set(cmake_conf_file         "${PROJECT_NAME_JOINED}-config.cmake")
-set(cmake_conf_version_file "${PROJECT_NAME_JOINED}-config-version.cmake")
-set(cmake_targets_file      "${PROJECT_NAME_JOINED}-targets.cmake")
+string(REGEX REPLACE "_" "" PROJECT_NAME_NOSPACES ${PROJECT_NAME})
+message(STATUS "${PROJECT_NAME} -> ${PROJECT_NAME_NOSPACES}")
+set(cmake_conf_file         "${PROJECT_NAME_NOSPACES}-config.cmake")
+set(cmake_conf_version_file "${PROJECT_NAME_NOSPACES}-config-version.cmake")
+set(cmake_targets_file      "${PROJECT_NAME_NOSPACES}-targets.cmake")
 
-set(targets_export_name "${PROJECT_NAME_JOINED}-targets")
+set(targets_export_name "${PROJECT_NAME_NOSPACES}-targets")
 set(namespace "${PACKAGE_NAME}::")
 
 # Set up install directories. INCLUDE_INSTALL_DIR and
@@ -350,11 +357,19 @@ else()
     message(FATAL_ERROR "Not supported system type. Options: UNIX or WIN32.")
 endif()
 
+message(STATUS "include_install_dir         = ${include_install_dir}")
+message(STATUS "include_install_dir_full    = ${include_install_dir_full}")
+message(STATUS "config_install_dir          = ${config_install_dir}")
+message(STATUS "include_install_dir_postfix = ${include_install_dir_postfix}")
+message(STATUS "PROJECT_SOURCE_DIR          = ${PROJECT_SOURCE_DIR}")
+message(STATUS "PROJECT_VERSION             = ${PROJECT_VERSION}")
+message(STATUS "CMAKE_CURRENT_SOURCE_DIR    = ${CMAKE_CURRENT_SOURCE_DIR}")
+message(STATUS "CMAKE_CURRENT_BINARY_DIR    = ${CMAKE_CURRENT_BINARY_DIR}")
+
 # configure the library target
-#target_include_directories(
-#    ${project_library_target_name} INTERFACE
-#    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
-#    $<INSTALL_INTERFACE:${include_install_dir_full}>)
+target_include_directories(${project_library_target_name} 
+    INTERFACE $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}>
+    	      $<INSTALL_INTERFACE:${include_install_dir_full}>)
 
 # uninstall target
 configure_file(
@@ -378,17 +393,17 @@ write_basic_package_version_file(
     COMPATIBILITY SameMajorVersion)
 
 # Create *-targets.cmake file for build directory
-#install(TARGETS ${project_library_target_name}
-#        EXPORT  ${targets_export_name}
-#        INCLUDES DESTINATION ${include_install_dir})
+install(TARGETS ${project_library_target_name}
+        EXPORT  ${targets_export_name}
+        INCLUDES DESTINATION ${include_install_dir})
 
-#export(EXPORT ${targets_export_name}
-#       FILE   ${CMAKE_CURRENT_BINARY_DIR}/${cmake_targets_file})
+export(EXPORT ${targets_export_name}
+       FILE   ${CMAKE_CURRENT_BINARY_DIR}/${cmake_targets_file})
 
 # Install *-targets.cmake file
-#install(EXPORT      ${targets_export_name}
-#        NAMESPACE   ${namespace}
-#        DESTINATION ${config_install_dir})
+install(EXPORT      ${targets_export_name}
+        NAMESPACE   ${namespace}
+        DESTINATION ${config_install_dir})
 
 # Install config files
 install(FILES
@@ -397,13 +412,13 @@ install(FILES
     DESTINATION ${config_install_dir} COMPONENT cmake)
 
 # Install headers
-install(DIRECTORY   ${PROJECT_SOURCE_DIR}/${project_library_target_name}
+install(DIRECTORY   ${PROJECT_SOURCE_DIR}/include/${project_library_target_name}
         DESTINATION ${include_install_dir})
 
 if(BUILD_CI_CHECK)
 	# core example applications that use the library
-	set(BUILD_EDUCATION_EXAMPLES ON)
-	set(BUILD_APPLICATION_EXAMPLES ON)
+	set(BUILD_EXAMPLES_EDUCATION ON)
+	set(BUILD_EXAMPLES_APPLICATIONS ON)
 	set(BUILD_CMD_LINE_TOOLS ON)
 	set(BUILD_NUMERICAL ON)
 	set(BUILD_FUNCTIONS ON)
@@ -502,13 +517,13 @@ add_subdirectory("tools/cmd")
 add_subdirectory("tools/utils")
 endif(BUILD_CMD_LINE_TOOLS)
 
-if(BUILD_EDUCATION_EXAMPLES)
+if(BUILD_EXAMPLES_EDUCATION)
 add_subdirectory("education/posit")
 add_subdirectory("education/quire")
 add_subdirectory("education/valid")
-endif(BUILD_EDUCATION_EXAMPLES)
+endif(BUILD_EXAMPLES_EDUCATION)
 
-if(BUILD_APPLICATION_EXAMPLES)
+if(BUILD_EXAMPLES_APPLICATIONS)
 add_subdirectory("examples/stl")
 add_subdirectory("examples/math")
 add_subdirectory("examples/ode")
@@ -524,7 +539,7 @@ add_subdirectory("examples/engineering")
 add_subdirectory("examples/science")
 add_subdirectory("examples/cryptography")
 add_subdirectory("examples/numeric")
-endif(BUILD_APPLICATION_EXAMPLES)
+endif(BUILD_EXAMPLES_APPLICATIONS)
 
 if(BUILD_NUMERICAL)
 add_subdirectory("tests/numerical/properties")

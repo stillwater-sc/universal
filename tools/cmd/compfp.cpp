@@ -1,4 +1,4 @@
-// ieee_fp.cpp: cli to show the sign/scale/fraction components of a 32b/64/128b IEEE floats
+// compfp.cpp: cli to show the sign/scale/fraction components of a 32b/64/128b IEEE floats
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

@@ -1,4 +1,4 @@
-// posit_properties.cpp: cli to show the arithmetic properties of posit configurations
+// propp.cpp: cli to show the arithmetic properties of posit configurations
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
