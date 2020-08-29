@@ -364,7 +364,7 @@ message(STATUS "include_install_dir_postfix = ${include_install_dir_postfix}")
 message(STATUS "PROJECT_SOURCE_DIR          = ${PROJECT_SOURCE_DIR}")
 message(STATUS "PROJECT_VERSION             = ${PROJECT_VERSION}")
 message(STATUS "CMAKE_CURRENT_SOURCE_DIR    = ${CMAKE_CURRENT_SOURCE_DIR}")
-message(STATUS "CMAKE_CURRENT_BIN_DIR       = ${CMAKE_CURRENT_BIN_DIR}")
+message(STATUS "CMAKE_CURRENT_BINARY_DIR    = ${CMAKE_CURRENT_BINARY_DIR}")
 
 # configure the library target
 target_include_directories(${project_library_target_name} 
