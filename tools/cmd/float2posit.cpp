@@ -1,4 +1,4 @@
-// convert.cpp: posit components: show the sign/scale/regime/exponent/fraction components of standard posit configurations
+// float2posit.cpp: convert a floating-point value to a posit
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -146,7 +146,7 @@ sw::unum::posit<nbits, es> convert_to_posit(Ty rhs) {
 }
 
 typedef std::numeric_limits< double > dbl;
-const char* msg = "$ ./convert.exe 1.234567890 32\n\
+const char* msg = "$ ./float2posit.exe 1.234567890 32\n\
 1.23456789   input value\n\
 Test for ZERO\n\
 (+, 0, 0011110000001100101001000010100000111101111000011011) input value is NOT zero\n\
@@ -179,7 +179,7 @@ try {
 
 	if (argc != 3) {
 		cerr << "Show the conversion of a float to a posit step-by-step." << endl;
-	    cerr << "Usage: convert floating_point_value standard_posit_size(8/16/32/64/128/256)" << endl;
+		cerr << "Usage: float2posit floating_point_value posit_size_in_bits[one of 8|16|32|48|64|80|96|128|256]" << endl;
 		cerr << "Example: convert -1.123456789e17 32" << endl;
 		cerr <<  msg << endl;
 		return EXIT_SUCCESS;  // signal successful completion for ctest
@@ -238,7 +238,6 @@ try {
 		p32_2 = convert_to_posit<32, 2, double>(d);
 		cout << color_print(p32_2);
 		break;
-
 	}
 
 	return EXIT_SUCCESS;
