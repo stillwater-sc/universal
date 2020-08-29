@@ -67,10 +67,10 @@ option(USE_AVX2                          "Build code with AVX2 ISA support"     
 option(BUILD_CI_CHECK                    "Set to ON to build all components"                   OFF)
 
 # utilities and educational examples
+option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   ON)
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
 option(BUILD_EXAMPLES_EDUCATION          "Set to ON to build educational examples"             ON)
 option(BUILD_EXAMPLES_APPLICATIONS       "Set to ON to build epplication examples"             ON)
-option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   OFF)
 option(BUILD_NUMERICAL                   "Set to ON to build numerical test programs"          OFF)
 option(BUILD_FUNCTIONS                   "Set to ON to build special functions programs"       OFF)
 

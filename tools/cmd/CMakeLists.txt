@@ -4,6 +4,9 @@ foreach (source ${SOURCES})
     get_filename_component (cmd ${source} NAME_WE)
     string(REPLACE " " ";" new_source ${source})
     add_executable (${cmd} ${new_source})
+    install(TARGETS ${cmd} DESTINATION bin)
+
+    # visual organization for VS
     set_target_properties(${cmd} PROPERTIES FOLDER "Command Line Utilities")
 
     if (UNIVERSAL_CMAKE_TRACE)
