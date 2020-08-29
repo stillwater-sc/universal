@@ -105,7 +105,7 @@ try {
 	cout << "PI = " << p << " " << hex_format(p) << endl;
 
 	Matrix A;
-	laplace2D(A, 10, 10);
+	laplace2D(A, 5, 5);
 	cout << A << endl;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

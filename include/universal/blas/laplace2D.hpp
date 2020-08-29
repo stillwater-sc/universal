@@ -12,7 +12,7 @@ namespace sw { namespace unum { namespace blas {
 // generate a 2D square domain Laplacian difference equation matrix
 template<typename Scalar>
 void laplace2D(matrix<Scalar>& A, size_t m, size_t n) {
-	A.resize(m,n);
+	A.resize(m*n, m*n);
 	A.setzero();
 	assert(A.rows() == m * n);
 	for (size_t i = 0; i < m; ++i) {

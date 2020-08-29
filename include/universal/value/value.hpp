@@ -365,7 +365,7 @@ public:
 		}
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTIONS
 
-		const long hpos = fbits + shift;       // position of hidden bit
+		const long hpos = long(fbits) + shift;       // position of hidden bit
 												  
 		if (hpos <= 0) {   // If hidden bit is LSB or beyond just set uncertainty bit and call it a day
 			number[0] = true;

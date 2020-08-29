@@ -90,7 +90,7 @@ public:
 
 	// modifiers
 	inline void setzero() { for (auto& elem : data) elem = Scalar(0); }
-	inline void resize(size_t m, size_t n) { _m = m; _n = n; data.resize(m * n * m * n); }
+	inline void resize(size_t m, size_t n) { _m = m; _n = n; data.resize(m * n); }
 	// selectors
 	inline size_t rows() const { return _m; }
 	inline size_t cols() const { return _n; }

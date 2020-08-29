@@ -73,15 +73,15 @@ typedef __128bitdd double_double;
 #include "exceptions.hpp"
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
-#include "posit_fwd.hpp"
-#include "../native/bit_functions.hpp"
-#include "../bitblock/bitblock.hpp"
-#include "trace_constants.hpp"
-#include "../value/value.hpp"
-#include "fraction.hpp"
-#include "exponent.hpp"
-#include "regime.hpp"
-#include "posit_functions.hpp"
+#include <universal/posit/posit_fwd.hpp>
+#include <universal/native/bit_functions.hpp>
+#include <universal/bitblock/bitblock.hpp>
+#include <universal/posit/trace_constants.hpp>
+#include <universal/value/value.hpp>
+#include <universal/posit/fraction.hpp>
+#include <universal/posit/exponent.hpp>
+#include <universal/posit/regime.hpp>
+#include <universal/posit/posit_functions.hpp>
 
 namespace sw {
 namespace unum {

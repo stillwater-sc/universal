@@ -30,7 +30,7 @@ void generateMatrices() {
 	std::cout << A << std::endl;
 
 	// create a 2D Laplacian
-	laplace2D(A, 10, 10);
+	laplace2D(A, 5, 5);
 	cout << A << endl;
 
 	// create a uniform random matrix
