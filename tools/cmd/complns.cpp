@@ -35,9 +35,8 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	// float attributes
+	// lns attributes
 	constexpr int max_digits10 = std::numeric_limits<double>::max_digits10;
-	constexpr int fbits = std::numeric_limits<float>::digits - 1;
 
 	if (argc != 2) {
 		cerr << "complns : components of a logarithmic number" << endl;
