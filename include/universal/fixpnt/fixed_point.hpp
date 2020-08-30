@@ -686,8 +686,8 @@ public:
 	}
 	// in-place 1's complement
 	inline constexpr fixpnt& flip() noexcept { bb.flip(); return *this; }
-	// use un-interpreted raw bits to set the bits of the fixpnt
-	inline constexpr void set_raw_bits(size_t value) noexcept { bb.set_raw_bits(value); }
+	// use un-interpreted raw bits to set the bits of the fixpnt: TODO: expand the API to support fixed-points > 64 bits
+	inline constexpr void set_raw_bits(uint64_t value) noexcept { bb.set_raw_bits(value); }
 	inline fixpnt& assign(const std::string& txt) noexcept {
 		if (!parse(txt, *this)) {
 			std::cerr << "Unable to parse: " << txt << std::endl;
@@ -1833,7 +1833,7 @@ namespace support {
 		size_t r = rhs.size();
 		decimal::const_iterator sit, bit; // sit = smallest iterator, bit = biggest iterator
 		if (l < r) {
-			int64_t position = 0;
+			size_t position = 0;
 			for (sit = lhs.begin(); sit != lhs.end(); ++sit) {
 				decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 				partial_sum.insert(partial_sum.end(), r + position, 0);
@@ -1851,7 +1851,7 @@ namespace support {
 			}
 		}
 		else {
-			int64_t position = 0;
+			size_t position = 0;
 			for (sit = rhs.begin(); sit != rhs.end(); ++sit) {
 				decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 				partial_sum.insert(partial_sum.end(), l + position, 0);

@@ -16,7 +16,7 @@
 
 // workload for testing shift operations on integer types
 template<typename IntegerType>
-void ShiftPerformanceWorkload(size_t NR_OPS) {
+void ShiftPerformanceWorkload(uint64_t NR_OPS) {
 	IntegerType a = 0xFFFFFFFFFFFFFFFF;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
 		a >>= 13;
@@ -77,7 +77,7 @@ void TestBlockPerformanceOnShift() {
 }
 
 template<typename IntegerType>
-void AdditionSubtractionWorkload(size_t NR_OPS) {
+void AdditionSubtractionWorkload(uint64_t NR_OPS) {
 	IntegerType a, b, c, d;
 	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
@@ -87,7 +87,7 @@ void AdditionSubtractionWorkload(size_t NR_OPS) {
 }
 
 template<typename IntegerType>
-void MultiplicationWorkload(size_t NR_OPS) {
+void MultiplicationWorkload(uint64_t NR_OPS) {
 	IntegerType a, b, c, d;
 	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
@@ -98,7 +98,7 @@ void MultiplicationWorkload(size_t NR_OPS) {
 }
 
 template<typename IntegerType>
-void DivisionWorkload(size_t NR_OPS) {
+void DivisionWorkload(uint64_t NR_OPS) {
 	IntegerType a, b, c, d;
 	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
@@ -109,7 +109,7 @@ void DivisionWorkload(size_t NR_OPS) {
 }
 
 template<typename IntegerType>
-void RemainderWorkload(size_t NR_OPS) {
+void RemainderWorkload(uint64_t NR_OPS) {
 	IntegerType a, b, c, d;
 	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
