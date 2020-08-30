@@ -529,7 +529,7 @@ private:
 		// so scale  =  0 is the hidden bit at location 0, scale 1 = bit 1, etc.
 		// and scale = -1 is the first bit of the fraction
 		// we manage scale >= 0 in the _upper accumulator, and scale < 0 in the _lower accumulator
-		int lsb = v.scale() - int(fbits);
+		int lsb = v.scale() - static_cast<int>(fbits);
 		bool carry = false;
 		bitblock<fbits + 1> fraction = v.get_fixed_point();
 		int i, f;  // bit pointers, i pointing to the quire bits, f pointing to the fraction bits of rhs
@@ -538,16 +538,16 @@ private:
 			int lsb = int(half_range) + v.scale() - int(fbits);
 			int qlsb = lsb > 0 ? lsb : 0;
 			int flsb = lsb >= 0 ? 0 : -lsb;
-			for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
-				bool _a = _lower[i];
-				bool _b = fraction[f];
+			for (i = qlsb, f = flsb; i < int(half_range) && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _lower[size_t(i)];
+				bool _b = fraction[size_t(f)];
 				_lower[i] = _a ^ _b ^ carry;
 				carry = (_a & _b) | (carry & (_a ^ _b));
 			}
 			// propagate any carries to the end of the lower accumulator
 			while (carry && i < int(half_range)) {
-				bool _a = _lower[i];
-				_lower[i] = _a ^ carry;
+				bool _a = _lower[size_t(i)];
+				_lower[size_t(i)] = _a ^ carry;
 				carry = carry & _a;
 				i++;
 			}
@@ -555,8 +555,8 @@ private:
 						  // need to increment the _upper
 				i = 0;
 				while (carry && i < int(upper_range)) {
-					bool _a = _upper[i];
-					_upper[i] = _a ^ carry;
+					bool _a = _upper[size_t(i)];
+					_upper[size_t(i)] = _a ^ carry;
 					carry = carry & _a;
 					i++;
 				}
@@ -564,8 +564,8 @@ private:
 					// next add the bits to the capacity segment
 					i = 0;
 					while (carry && i < int(capacity)) {
-						bool _a = _capacity[i];
-						_capacity[i] = _a ^ carry;
+						bool _a = _capacity[size_t(i)];
+						_capacity[size_t(i)] = _a ^ carry;
 						carry = carry & _a;
 						i++;
 					}
@@ -574,15 +574,15 @@ private:
 		}
 		else if (lsb >= 0) {	// all upper accumulator
 			int upper_bound = v.scale();
-			for (i = lsb, f = 0; i <= upper_bound && f <= int(fbits); i++, f++) {
-				bool _a = _upper[i];
-				bool _b = fraction[f];
-				_upper[i] = _a ^ _b ^ carry;
+			for (i = lsb, f = 0; i <= upper_bound && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _upper[size_t(i)];
+				bool _b = fraction[size_t(f)];
+				_upper[size_t(i)] = _a ^ _b ^ carry;
 				carry = (_a & _b) | (carry & (_a ^ _b));
 			}
 			while (carry && i < int(upper_range)) {
-				bool _a = _upper[i];
-				_upper[i] = _a ^ carry;
+				bool _a = _upper[size_t(i)];
+				_upper[size_t(i)] = _a ^ carry;
 				carry = carry & _a;
 				i++;
 			}
@@ -590,8 +590,8 @@ private:
 				// next add the bits to the capacity segment
 				i = 0;
 				while (carry && i < int(capacity)) {
-					bool _a = _capacity[i];
-					_capacity[i] = _a ^ carry;
+					bool _a = _capacity[size_t(i)];
+					_capacity[size_t(i)] = _a ^ carry;
 					carry = carry & _a;
 					i++;
 				}
@@ -603,23 +603,23 @@ private:
 			lsb = int(half_range) + lsb; // remember lsb is negative in this block
 			int qlsb = lsb > 0 ? lsb : 0;
 			int flsb = lsb >= 0 ? 0 : -lsb;
-			for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
-				bool _a = _lower[i];
-				bool _b = fraction[f];
-				_lower[i] = _a ^ _b ^ carry;
+			for (i = qlsb, f = flsb; i < int(half_range) && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _lower[size_t(i)];
+				bool _b = fraction[size_t(f)];
+				_lower[size_t(i)] = _a ^ _b ^ carry;
 				carry = (_a & _b) | (carry & (_a ^ _b));
 			}
 			// next add the bits in the upper accumulator
-			for (i = 0; i <= v.scale() && f <= int(fbits); i++, f++) {
-				bool _a = _upper[i];
-				bool _b = fraction[f];
-				_upper[i] = _a ^ _b ^ carry;
+			for (i = 0; i <= v.scale() && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _upper[size_t(i)];
+				bool _b = fraction[size_t(f)];
+				_upper[size_t(i)] = _a ^ _b ^ carry;
 				carry = (_a & _b) | (carry & (_a ^ _b));
 			}
 			// propagate any carries to the end of the upper accumulator
 			while (carry && i < int(upper_range)) {
-				bool _a = _upper[i];
-				_upper[i] = _a ^ carry;
+				bool _a = _upper[size_t(i)];
+				_upper[size_t(i)] = _a ^ carry;
 				carry = carry & _a;
 				i++;
 			}
@@ -627,8 +627,8 @@ private:
 			if (carry) {
 				i = 0;
 				while (carry && i < int(capacity)) {
-					bool _a = _capacity[i];
-					_capacity[i] = _a ^ carry;
+					bool _a = _capacity[size_t(i)];
+					_capacity[size_t(i)] = _a ^ carry;
 					carry = carry & _a;
 					i++;
 				}
@@ -640,25 +640,25 @@ private:
 	void subtract_value(const value<fbits>& v) {
 		if (v.iszero()) return;
 		// lsb in the quire of the lowest bit of the explicit fixed point value including the hidden bit of the fraction
-		int lsb = v.scale() - int(fbits);
+		int lsb = v.scale() - static_cast<int>(fbits);
 		bool borrow = false;
 		bitblock<fbits + 1> fraction = v.get_fixed_point();
 		int i, f;  // bit pointers, i pointing to the quire bits, f pointing to the fraction bits of rhs
 		// divide bits between upper and lower accumulator
 		if (v.scale() < 0) {		// all lower accumulator
-			int lsb = int(half_range) + v.scale() - int(fbits);
+			int lsb = int(half_range) + v.scale() - static_cast<int>(fbits);
 			int qlsb = lsb > 0 ? lsb : 0;
 			int flsb = lsb >= 0 ? 0 : -lsb;
-			for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
-				bool _a = _lower[i];
-				bool _b = fraction[f];
-				_lower[i] = _a ^ _b ^ borrow;
+			for (i = qlsb, f = flsb; i < int(half_range) && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _lower[size_t(i)];
+				bool _b = fraction[size_t(f)];
+				_lower[size_t(i)] = _a ^ _b ^ borrow;
 				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
 			}
 			// propagate any borrows to the end of the lower accumulator
 			while (borrow && i < int(half_range)) {
-				bool _a = _lower[i];
-				_lower[i] = _a ^ borrow;
+				bool _a = _lower[size_t(i)];
+				_lower[size_t(i)] = _a ^ borrow;
 				borrow = borrow & !_a;
 				i++;
 			}
@@ -666,8 +666,8 @@ private:
 						  // need to decrement the _upper
 				i = 0;
 				while (borrow && i < int(upper_range)) {
-					bool _a = _upper[i];
-					_upper[i] = _a ^ borrow;
+					bool _a = _upper[size_t(i)];
+					_upper[size_t(i)] = _a ^ borrow;
 					borrow = borrow & !_a;
 					i++;
 				}
@@ -675,8 +675,8 @@ private:
 					// propagate the borrow into the capacity segment
 					i = 0;
 					while (borrow && i < int(capacity)) {
-						bool _a = _capacity[i];
-						_capacity[i] = _a ^ borrow;
+						bool _a = _capacity[size_t(i)];
+						_capacity[size_t(i)] = _a ^ borrow;
 						borrow = borrow & !_a;
 						i++;
 					}
@@ -685,16 +685,16 @@ private:
 		}
 		else if (lsb >= 0) {	// all upper accumulator
 			int upper_bound = v.scale();
-			for (i = lsb, f = 0; i <= upper_bound && f <= int(fbits); i++, f++) {
-				bool _a = _upper[i];
-				bool _b = fraction[f];
-				_upper[i] = _a ^ _b ^ borrow;
+			for (i = lsb, f = 0; i <= upper_bound && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _upper[size_t(i)];
+				bool _b = fraction[size_t(f)];
+				_upper[size_t(i)] = _a ^ _b ^ borrow;
 				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
 			}
 			// propagate any borrows to the end of the upper accumulator
 			while (borrow && i < int(upper_range)) {
-				bool _a = _upper[i];
-				_upper[i] = _a ^ borrow;
+				bool _a = _upper[size_t(i)];
+				_upper[size_t(i)] = _a ^ borrow;
 				borrow = borrow & !_a;
 				i++;
 			}
@@ -702,8 +702,8 @@ private:
 				// propagate the borrow into the capacity segment
 				i = 0;
 				while (borrow && i < int(capacity)) {
-					bool _a = _capacity[i];
-					_capacity[i] = _a ^ borrow;
+					bool _a = _capacity[size_t(i)];
+					_capacity[size_t(i)] = _a ^ borrow;
 					borrow = borrow & !_a;
 					i++;
 				}
@@ -715,23 +715,23 @@ private:
 			lsb = int(half_range) + lsb; // remember lsb is negative in this block
 			int qlsb = lsb > 0 ? lsb : 0;
 			int flsb = lsb >= 0 ? 0 : -lsb;
-			for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
-				bool _a = _lower[i];
-				bool _b = fraction[f];
-				_lower[i] = _a ^ _b ^ borrow;
+			for (i = qlsb, f = flsb; i < int(half_range) && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _lower[size_t(i)];
+				bool _b = fraction[size_t(f)];
+				_lower[size_t(i)] = _a ^ _b ^ borrow;
 				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
 			}
 			// next add the bits in the upper accumulator
-			for (i = 0; i <= v.scale() && f <= int(fbits); i++, f++) {
-				bool _a = _upper[i];
-				bool _b = fraction[f];
-				_upper[i] = _a ^ _b ^ borrow;
+			for (i = 0; i <= v.scale() && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _upper[size_t(i)];
+				bool _b = fraction[size_t(f)];
+				_upper[size_t(i)] = _a ^ _b ^ borrow;
 				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
 			}
 			// propagate any borrows to the end of the upper accumulator
 			while (borrow && i < int(upper_range)) {
-				bool _a = _upper[i];
-				_upper[i] = _a ^ borrow;
+				bool _a = _upper[size_t(i)];
+				_upper[size_t(i)] = _a ^ borrow;
 				borrow = borrow & !_a;
 				i++;
 			}
@@ -739,8 +739,8 @@ private:
 				// propagate the borrow into the capacity segment
 				i = 0;
 				while (borrow && i < int(capacity)) {
-					bool _a = _capacity[i];
-					_capacity[i] = _a ^ borrow;
+					bool _a = _capacity[size_t(i)];
+					_capacity[size_t(i)] = _a ^ borrow;
 					borrow = borrow & !_a;
 					i++;
 				}
