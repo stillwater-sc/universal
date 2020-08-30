@@ -31,9 +31,6 @@
 #include <chrono>
 #include <numeric>
 #include <random>
-// extensions
-#include <universal/posit/posit>
-
 
 #ifdef WINDOWS
 // Including SDKDDKVer.h defines the highest available Windows platform.

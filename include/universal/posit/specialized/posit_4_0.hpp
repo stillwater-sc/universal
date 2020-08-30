@@ -1,11 +1,20 @@
-// posit_4_0.cpp: specialized 4-bit posit using lookup table arithmetic
+#pragma once
+// posit_4_0.hpp: specialized 4-bit posit using lookup table arithmetic
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Designed: 2019
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {
-	namespace unum {
+// DO NOT USE DIRECTLY!
+// the compile guards in this file are only valid in the context of the specialization logic
+// configured in the main <universal/posit/posit>
+
+#ifndef POSIT_FAST_POSIT_4_0
+#define POSIT_FAST_POSIT_4_0 0
+#endif
+
+namespace sw { namespace unum {
 
 		// set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_4_0
@@ -458,10 +467,7 @@ namespace sw {
 				sum += rhs;
 				return sum;
 			}
-#else  // POSIT_FAST_POSIT_4_0
-// too verbose #pragma message("Standard posit<4,0>")
-#	define POSIT_FAST_POSIT_4_0 0
+
 #endif // POSIT_FAST_POSIT_4_0
 
-	}
-}
+}} // namespace sw::unum

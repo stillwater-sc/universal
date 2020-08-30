@@ -1,11 +1,18 @@
-// posit_3_0.cpp: specialized 3-bit posit using lookup table arithmetic
+// posit_3_0.hpp: specialized 3-bit posit using lookup table arithmetic
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {
-	namespace unum {
+// DO NOT USE DIRECTLY!
+// the compile guards in this file are only valid in the context of the specialization logic
+// configured in the main <universal/posit/posit>
+
+#ifndef POSIT_FAST_POSIT_3_0
+#define POSIT_FAST_POSIT_3_0 0
+#endif
+
+namespace sw {	namespace unum {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_3_0
@@ -508,9 +515,7 @@ namespace sw {
 			div /= rhs;
 			return div;
 		}
-#else  // POSIT_FAST_POSIT_3_0
-// too verbose #pragma message("Standard posit<3,0>")
-#	define POSIT_FAST_POSIT_3_0 0
+
 #endif // POSIT_FAST_POSIT_3_0
-	}
-}
+	
+}} // namespace sw::unum

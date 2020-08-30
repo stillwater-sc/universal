@@ -65,8 +65,8 @@ bool twosComplementLessThan(const bitblock<nbits>& lhs, const bitblock<nbits>& r
 	// sign is equal, compare the remaining bits
 	if (nbits > 1) {
 		for (int i = static_cast<int>(nbits) - 2; i >= 0; --i) {
-			if (lhs[i] == 0 && rhs[i] == 1)	return true;
-			if (lhs[i] == 1 && rhs[i] == 0) return false;
+			if (lhs[size_t(i)] == 0 && rhs[size_t(i)] == 1)	return true;
+			if (lhs[size_t(i)] == 1 && rhs[size_t(i)] == 0) return false;
 		}
 	}
 	// numbers are equal
@@ -78,7 +78,7 @@ template<size_t nbits>
 bool operator==(const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	// compare remaining bits
 	for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-		if (lhs[i] != rhs[i]) return false;
+		if (lhs[size_t(i)] != rhs[size_t(i)]) return false;
 	}
 	// numbers are equal
 	return true;
@@ -89,8 +89,8 @@ template<size_t nbits>
 bool operator< (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	// compare remaining bits
 	for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-		if (lhs[i] == 0 && rhs[i] == 1)	return true;
-		if (lhs[i] == 1 && rhs[i] == 0) return false;
+		if (lhs[size_t(i)] == 0 && rhs[size_t(i)] == 1)	return true;
+		if (lhs[size_t(i)] == 1 && rhs[size_t(i)] == 0) return false;
 	}
 	// numbers are equal
 	return false;
@@ -101,8 +101,8 @@ template<size_t nbits>
 bool operator<= (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	// compare remaining bits
 	for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-		if (lhs[i] == 0 && rhs[i] == 1)	return true;
-		if (lhs[i] == 1 && rhs[i] == 0) return false;
+		if (lhs[size_t(i)] == 0 && rhs[size_t(i)] == 1)	return true;
+		if (lhs[size_t(i)] == 1 && rhs[size_t(i)] == 0) return false;
 	}
 	// numbers are equal
 	return true;
@@ -113,8 +113,8 @@ template<size_t nbits>
 bool operator> (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	// compare remaining bits
 	for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-		if (lhs[i] == 0 && rhs[i] == 1)	return false;
-		if (lhs[i] == 1 && rhs[i] == 0) return true;
+		if (lhs[size_t(i)] == 0 && rhs[size_t(i)] == 1)	return false;
+		if (lhs[size_t(i)] == 1 && rhs[size_t(i)] == 0) return true;
 	}
 	// numbers are equal
 	return false;
@@ -125,8 +125,8 @@ template<size_t nbits>
 bool operator>= (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	// compare remaining bits
 	for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-		if (lhs[i] == 0 && rhs[i] == 1)	return false;
-		if (lhs[i] == 1 && rhs[i] == 0) return true;
+		if (lhs[size_t(i)] == 0 && rhs[size_t(i)] == 1)	return false;
+		if (lhs[size_t(i)] == 1 && rhs[size_t(i)] == 0) return true;
 	}
 	// numbers are equal
 	return true;
@@ -625,8 +625,10 @@ bitblock<nbits> twos_complement(bitblock<nbits> number) {
 	uint8_t _slice = 0;
 	uint8_t carry = 1;
 	for (size_t i = 0; i < nbits; i++) {
-		_slice = uint8_t(!number[i]) + carry;
-		carry = _slice >> 1;
+		uint8_t not_bit_at_i = number[i] ? uint8_t(0) : uint8_t(1);
+		_slice = uint8_t(not_bit_at_i + carry);
+//		_slice = uint8_t(!number[i]) + carry;
+		carry = uint8_t(_slice >> 1);
 		complement[i] = (0x1 & _slice);
 	}
 	return complement;
@@ -638,7 +640,7 @@ template<size_t nbits, class Type>
 bitblock<nbits> convert_to_bitblock(Type number) {
 	bitblock<nbits> _Bits;
 	uint64_t mask = uint64_t(1);
-	for (std::size_t i = 0; i < nbits; i++) {
+	for (size_t i = 0; i < nbits; i++) {
 		_Bits[i] = mask & number;
 		mask <<= 1;
 	}
@@ -711,7 +713,7 @@ bool anyAfter(const bitblock<nbits>& bits, int msb) {
 	if (msb < 0) return false;	// bad input
 	bool running = false;
 	for (int i = msb; i >= 0; i--) {
-		running |= bits.test(i);
+		running |= bits.test(size_t(i));
 	}
 	return running;
 }

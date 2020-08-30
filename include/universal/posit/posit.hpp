@@ -150,7 +150,7 @@ int decode_regime(const bitblock<nbits>& raw_bits) {
 		m = 1;   // if a run of 1's k = m - 1
 		int start = (nbits == 2 ? nbits - 2 : nbits - 3);
 		for (int i = start; i >= 0; --i) {
-			if (raw_bits[i] == 1) {
+			if (raw_bits[size_t(i)] == 1) {
 				m++;
 			}
 			else {
@@ -163,7 +163,7 @@ int decode_regime(const bitblock<nbits>& raw_bits) {
 		m = 1;  // if a run of 0's k = -m
 		int start = (nbits == 2 ? nbits - 2 : nbits - 3);
 		for (int i = start; i >= 0; --i) {
-			if (raw_bits[i] == 0) {
+			if (raw_bits[size_t(i)] == 0) {
 				m++;
 			}
 			else {
@@ -191,8 +191,8 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 		bitblock<es> _exp;
 		if (msb >= 0 && es > 0) {
 			nrExponentBits = (msb >= static_cast<int>(es) - 1 ? es : msb + 1);
-			for (size_t i = 0; i < nrExponentBits; i++) {
-				_exp[es - 1 - i] = tmp[msb - i];
+			for (size_t i = 0; i < nrExponentBits; ++i) {
+				_exp[size_t(static_cast<int>(es) - 1 - i)] = tmp[size_t(msb - i)];
 			}
 		}
 		_exponent.set(_exp, nrExponentBits);
@@ -206,10 +206,10 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 	// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
 	bitblock<fbits> _frac;
 	msb = msb - int(nrExponentBits);
-	size_t nrFractionBits = (msb < 0 ? 0 : msb + 1);
+	size_t nrFractionBits = size_t(msb < 0 ? 0 : msb + 1);
 	if (msb >= 0) {
 		for (int i = msb; i >= 0; --i) {
-			_frac[fbits - 1 - (msb - i)] = tmp[i];
+			_frac[size_t(static_cast<int>(fbits) - 1 - (msb - i))] = tmp[size_t(i)];
 		}
 	}
 	_fraction.set(_frac, nrFractionBits);
@@ -345,7 +345,7 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		if (_trace_rounding) std::cout << "projection  rounding ";
 	}
 	else {
-		const size_t pt_len = nbits + 3 + es;
+		constexpr size_t pt_len = nbits + 3 + es;
 		bitblock<pt_len> pt_bits;
 		bitblock<pt_len> regime;
 		bitblock<pt_len> exponent;
@@ -356,20 +356,23 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		int e  = _scale;
 		bool r = (e >= 0);
 
-		unsigned run = (r ? 1 + (e >> es) : -(e >> es));
+		size_t run = size_t(r ? 1 + (e >> es) : -(e >> es));
 		regime.set(0, 1 ^ r);
-		for (unsigned i = 1; i <= run; i++) regime.set(i, r);
+		for (size_t i = 1; i <= run; i++) regime.set(i, r);
 
-		unsigned esval = e % (uint32_t(1) << es);
+		size_t esval = e % (uint32_t(1) << es);
 		exponent = convert_to_bitblock<pt_len>(esval);
-		unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
+		int nbits_plus_one = static_cast<int>(nbits) + 1;
+		int sign_regime_es = 2 + int(run) + static_cast<int>(es);
+		size_t nf = (size_t)std::max<int>(0, (nbits_plus_one - sign_regime_es));
+		//size_t nf = (size_t)std::max<int>(0, (static_cast<int>(nbits + 1) - (2 + run + static_cast<int>(es))));
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
 		// copy the most significant nf fraction bits into fraction
-		unsigned lsb = nf <= fbits ? 0 : nf - fbits;
-		for (unsigned i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
+		size_t lsb = nf <= fbits ? 0 : nf - fbits;
+		for (size_t i = lsb; i < nf; ++i) fraction[i] = fraction_in[fbits - nf + i];
 
-		bool sb = anyAfter(fraction_in, fbits - 1 - nf);
+		bool sb = anyAfter(fraction_in, static_cast<int>(fbits) - 1 - int(nf));
 
 		// construct the untruncated posit
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
@@ -383,10 +386,10 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		pt_bits |= fraction;
 		pt_bits |= sticky_bit;
 
-		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
+		size_t len = 1 + std::max<size_t>((nbits + 1), (2 + run + es));
 		bool blast = pt_bits.test(len - nbits);
 		bool bafter = pt_bits.test(len - nbits - 1);
-		bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
+		bool bsticky = anyAfter(pt_bits, int(len) - static_cast<int>(nbits) - 1 - 1);
 
 		bool rb = (blast & bafter) | (bafter & bsticky);
 
