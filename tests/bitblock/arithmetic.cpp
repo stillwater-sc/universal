@@ -13,7 +13,7 @@ int Conversions() {
 	using namespace sw::unum;
 	const size_t nbits = 33;
 	int nrOfFailedTestCases = 0;
-	bitblock<nbits> a, b, ref, sum;
+	bitblock<nbits> a, b, ref;
 
 	std::cout << "Binary conversions" << std::endl;
 
@@ -59,7 +59,7 @@ int IncrementRightAdjustedBitset() {
 	const size_t nbits = 5;
 	int nrOfFailedTestCases = 0;
 
-	sw::unum::bitblock<nbits> r1, ref;
+	sw::unum::bitblock<nbits> r1;
 	bool carry;
 
 	std::cout << "Increments" << std::endl;

@@ -35,9 +35,8 @@ try {
 
 	cout << "\nCheck primeness of a couple of values around 1k\n";
 	a = 1024 + 1;
-	for ( a = 1025; a < 1050; ++a) {
+	for ( a = 1025; a < 1050; a += 2) { // skip the even numbers
 		cout << a << (isPrime(a) ? " is a prime number" : " is not a prime number") << endl;
-		++a;
 	}
 
 	// test Fermat's method

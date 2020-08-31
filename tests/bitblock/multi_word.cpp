@@ -99,7 +99,7 @@ int Conversions() {
 	using namespace sw::unum;
 	const size_t nbits = 33;
 	int nrOfFailedTestCases = 0;
-	bitblock<nbits> a, b, ref, sum;
+	bitblock<nbits> a, b, ref;
 
 	std::cout << "Binary conversions" << std::endl;
 

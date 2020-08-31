@@ -1,5 +1,7 @@
 #pragma once
+#ifdef _MSC_VER
 #pragma warning(disable : 4127) // warning C4127: conditional expression is constant
+#endif
 // ieee-754.hpp: manipulation functions for ieee-754 native type
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
