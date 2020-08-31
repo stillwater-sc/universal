@@ -17,7 +17,7 @@ template<typename Scalar>
 class ConstRowProxy {
 public:
 	ConstRowProxy(typename std::vector<Scalar>::const_iterator iter) : _iter(iter) {}
-	Scalar operator[](size_t col) const { return *(_iter+col); }
+	Scalar operator[](size_t col) const { return *(_iter + int64_t(col)); }
 
 private:
 	typename std::vector<Scalar>::const_iterator _iter;
@@ -26,7 +26,7 @@ template<typename Scalar>
 class RowProxy {
 public:
 	RowProxy(typename std::vector<Scalar>::iterator iter) : _iter(iter) {}
-	Scalar& operator[](size_t col) { return *(_iter + col); }
+	Scalar& operator[](size_t col) { return *(_iter + int64_t(col)); }
 
 private:
 	typename std::vector<Scalar>::iterator _iter;
@@ -78,7 +78,7 @@ public:
 	Scalar operator()(size_t i, size_t j) const { return data[i*_n + j]; }
 	Scalar& operator()(size_t i, size_t j) { return data[i*_n + j]; }
 	RowProxy<Scalar> operator[](size_t i) {
-		typename std::vector<Scalar>::iterator it = data.begin() + i * _n;
+		typename std::vector<Scalar>::iterator it = data.begin() + int64_t(i) * int64_t(_n);
 		RowProxy<Scalar> proxy(it);
 		return proxy;
 	}

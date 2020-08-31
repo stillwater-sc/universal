@@ -284,20 +284,20 @@ inline bitblock<nbits>& convert_to_bb(bool _sign, int _scale, const bitblock<fbi
 		int e = _scale;
 		bool r = (e >= 0);
 
-		unsigned run = (r ? 1 + (e >> es) : -(e >> es));
+		size_t run = (r ? 1 + (e >> es) : -(e >> es));
 		regime.set(0, 1 ^ r);
-		for (unsigned i = 1; i <= run; i++) regime.set(i, r);
+		for (size_t i = 1; i <= run; i++) regime.set(i, r);
 
-		unsigned esval = e % (uint32_t(1) << es);
+		size_t esval = e % (size_t(1) << static_cast<int>(es));
 		exponent = convert_to_bitblock<pt_len>(esval);
-		unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
+		size_t nf = size_t(std::max<int>(0, (static_cast<int>(nbits) + 1) - (2 + int(run) + static_cast<int>(es))));
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
 		// copy the most significant nf fraction bits into fraction
-		unsigned lsb = nf <= fbits ? 0 : nf - fbits;
-		for (unsigned i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
+		size_t lsb = nf <= fbits ? 0 : nf - fbits;
+		for (size_t i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
 
-		bool sb = anyAfter(fraction_in, fbits - 1 - nf);
+		bool sb = anyAfter(fraction_in, static_cast<int>(fbits) - 1 - int(nf));
 
 		// construct the untruncated posit
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
@@ -311,13 +311,12 @@ inline bitblock<nbits>& convert_to_bb(bool _sign, int _scale, const bitblock<fbi
 		pt_bits |= fraction;
 		pt_bits |= sticky_bit;
 
-		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
+		size_t len = 1 + std::max<size_t>((nbits + 1), (2 + run + es));
 		bool blast = pt_bits.test(len - nbits);
 		bool bafter = pt_bits.test(len - nbits - 1);
-		bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
+		bool bsticky = anyAfter(pt_bits, int(len) - static_cast<int>(nbits) - 1 - 1);
 
 		bool rb = (blast & bafter) | (bafter & bsticky);
-
 
 		pt_bits <<= pt_len - len;
 		truncate(pt_bits, ptt);

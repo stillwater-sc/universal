@@ -3,6 +3,11 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#pragma warning(disable : 4514 4571)
+#pragma warning(disable : 4625 4626) // 4625: copy constructor was implicitly defined as deleted, 4626: assignment operator was implicitely defined as deleted
+#pragma warning(disable : 5025 5026 5027)
+#pragma warning(disable : 4710 4774)
+#pragma warning(disable : 4820)
 
 // enable the following define to show the intermediate steps in the fused-dot product
 // #define POSIT_VERBOSE_OUTPUT
@@ -39,7 +44,8 @@ void generateMatrices() {
 	cout << setprecision(5) << setw(10) << B << endl;
 }
 
-int main(int argc, char** argv)
+#pragma warning(disable : 4100) // argc/argv unreferenced formal parameter
+int main(int argc, char* argv[])
 try {
 	using namespace std;
 	using namespace sw::unum::blas;

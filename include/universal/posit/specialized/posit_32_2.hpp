@@ -432,7 +432,7 @@ public:
 		return p.set_raw_bits((~_bits) + 1);
 	}
 
-#if NEW_TO_VALUE
+#ifdef NEW_TO_VALUE
 	int rscale() const { // scale of the regime
 		return 1;
 	}
