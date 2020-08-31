@@ -10,17 +10,14 @@
 #include <random>
 #include <limits>
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 		static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 		template<size_t nbits, size_t es>
 		void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const areal<nbits, es>& presult) {
 			static_assert(nbits > 2, "component_to_string requires nbits > 2");
-			constexpr size_t fbits = nbits - 3 - es;
-
-			bool		     	 _sign;
+			//constexpr size_t fbits = nbits - 3 - es;
 
 			std::cerr << test_case
 				<< " " << op << " "
@@ -36,9 +33,7 @@ namespace unum {
 		template<size_t nbits, size_t es>
 		void ReportConversionSuccess(const std::string& test_case, const std::string& op, double input, double reference, const areal<nbits, es>& presult) {
 			static_assert(nbits > 2, "component_to_string requires nbits > 2");
-			constexpr size_t fbits = nbits - 3 - es;
-
-			bool		     	 _sign;
+			//constexpr size_t fbits = nbits - 3 - es;
 
 			std::cerr << test_case
 				<< " " << op << " "

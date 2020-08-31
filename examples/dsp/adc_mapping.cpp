@@ -29,14 +29,14 @@ log_e(10)		M_LN10		2.30258509299404568402
 
 */
 
-constexpr double pi = 3.14159265358979323846;  // best practice for C++
+// constexpr double pi = 3.14159265358979323846;  // best practice for C++
 
 template<size_t nbits, size_t es>
 void GenerateSample() {
 	using namespace std;
 	using namespace sw::unum;
 
-	posit<nbits, es> a, b, p;
+	posit<nbits, es> a, b;
 
 	// posit<16,1> can represent 14-bits worth of equal spaced samples
 	// -1, -8191/8192, ... -1/8192, 0, 1/8192, ... , 8191/8192, 1
@@ -44,6 +44,7 @@ void GenerateSample() {
 	a = 8191; // 2^13 - 1
 	cout << a << " / " << b << " = " << a / b << endl;
 }
+
 int main(int argc, char** argv)
 try {
 	using namespace std;

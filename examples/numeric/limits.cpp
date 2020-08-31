@@ -12,9 +12,9 @@
 #include <universal/posit/posit>
 #include <universal/lns/lns>
 
-constexpr long double pi     = 3.14159265358979323846;
-constexpr long double e      = 2.71828182845904523536;
-constexpr long double log_2e = 1.44269504088896340736;
+//constexpr long double pi     = 3.14159265358979323846;
+//constexpr long double e      = 2.71828182845904523536;
+//constexpr long double log_2e = 1.44269504088896340736;
 
 int main(int argc, char** argv)
 try {

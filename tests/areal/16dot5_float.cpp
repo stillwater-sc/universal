@@ -14,9 +14,7 @@
 #include "../utils/test_helpers.hpp"
 #include "areal_test_helpers.hpp"
 
-/*
-Standard posit with nbits = 16 have es = 1 exponent bit.
-*/
+// Standard posit with nbits = 16 have es = 1 exponent bit.
 
 int main(int argc, char** argv)
 try {

@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifdef _MSC_VER
+#pragma warning(disable : 4100) // argc/argv unreferenced formal parameter
 #pragma warning(disable : 4514 4571)
 #pragma warning(disable : 4625 4626) // 4625: copy constructor was implicitly defined as deleted, 4626: assignment operator was implicitely defined as deleted
 #pragma warning(disable : 5025 5026 5027)
@@ -45,7 +46,6 @@ void generateMatrices() {
 	cout << setprecision(5) << setw(10) << B << endl;
 }
 
-#pragma warning(disable : 4100) // argc/argv unreferenced formal parameter
 int main(int argc, char* argv[])
 try {
 	using namespace std;

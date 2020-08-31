@@ -37,17 +37,15 @@ try {
 	auto precision = cout.precision();
 	cout << setprecision(12);
 
-	Posit a, b, c;
-
 	// set an a
-	a = 1.0f;
+	Posit a = 1.0f;
 	// how many samples are there in the range [a/2, 2a]?
 	// a/2 = 0011000000000000 
 	// a   = 0100000000000000 
 	// 2*a = 0101000000000000
 	cout << "[ " << color_print(a / 2) << " " << color_print(a) << " " << color_print(2 * a) << " ]" << endl;
 
-	c = a - (a / 2);
+	Posit c = a - (a / 2);
 	cout << color_print(c) << endl;
 
 	int nrOfFailures = 0;

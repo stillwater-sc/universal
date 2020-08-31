@@ -26,7 +26,6 @@ try {
 
 	// fixed-point attributes
 	constexpr int max_digits10 = std::numeric_limits<FixedPoint>::max_digits10;
-	constexpr int fbits = std::numeric_limits<FixedPoint>::digits - 1;
 
 	cout << typeid(FixedPoint).name() << ": "  << setprecision(max_digits10) << v << " " << to_binary(v) << endl;
 

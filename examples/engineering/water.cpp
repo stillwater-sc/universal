@@ -49,7 +49,7 @@ const auto R = 8.314;
 const auto T = 298.15;
 
 // The pressure in the calculation (in Pa)
-const auto P = 1e5; // = 1bar
+//const auto P = 1e5; // = 1bar
 
 #if 1
 const auto A = Mat(3, 5);

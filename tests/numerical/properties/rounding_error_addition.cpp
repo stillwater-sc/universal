@@ -18,7 +18,7 @@ int GenerateAdditionError(const std::string& tag, bool bReportIndividualTestCase
 	int nrOfFailedTests = 0;
 	using Posit = sw::unum::posit<nbits, es>;
 	Posit pa, pb, psum, pref;
-	pair<Posit, Posit> s_and_r;
+	//pair<Posit, Posit> s_and_r;
 	double da, db;
 	for (size_t i = 0; i < NR_POSITS; i++) {
 		pa.set_raw_bits(i);

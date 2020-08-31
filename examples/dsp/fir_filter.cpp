@@ -41,11 +41,11 @@ try {
 	const size_t vecSize = 32;
 	int nrOfFailedTestCases = 0;
 
-	posit<nbits, es> p;
+	posit<nbits, es> two_pi = 2.0 * pi;
 	vector< posit<nbits, es> > sinusoid(vecSize), weights(vecSize);
 
 	for (size_t i = 0; i < vecSize; i++) {
-		sinusoid[i] = sin((float(i) / float(vecSize)) *2.0 * pi);
+		sinusoid[i] = sin((float(i) / float(vecSize)) * two_pi);
 
 		weights[i] = 0.5f;
 	}
