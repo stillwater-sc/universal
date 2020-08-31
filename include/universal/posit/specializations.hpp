@@ -34,17 +34,17 @@
 #endif
 
 // fast specializations for special posit configurations
-#include "specialized/posit_2_0.hpp"
-#include "specialized/posit_3_0.hpp"
-#include "specialized/posit_3_1.hpp"
-#include "specialized/posit_4_0.hpp"
-#include "specialized/posit_8_0.hpp"
-#include "specialized/posit_8_1.hpp"
-#include "specialized/posit_16_1.hpp"
-#include "specialized/posit_32_2.hpp"
-#include "specialized/posit_64_3.hpp"
-#include "specialized/posit_128_4.hpp"
-#include "specialized/posit_256_5.hpp"
+#include <universal/posit/specialized/posit_2_0.hpp>
+#include <universal/posit/specialized/posit_3_0.hpp>
+#include <universal/posit/specialized/posit_3_1.hpp>
+#include <universal/posit/specialized/posit_4_0.hpp>
+#include <universal/posit/specialized/posit_8_0.hpp>
+#include <universal/posit/specialized/posit_8_1.hpp>
+#include <universal/posit/specialized/posit_16_1.hpp>
+#include <universal/posit/specialized/posit_32_2.hpp>
+#include <universal/posit/specialized/posit_64_3.hpp>
+#include <universal/posit/specialized/posit_128_4.hpp>
+#include <universal/posit/specialized/posit_256_5.hpp>
 
 #ifdef _MSC_VER
 #pragma warning( pop )

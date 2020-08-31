@@ -17,7 +17,11 @@ namespace sw { namespace unum {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_8_1
+#ifdef _MSC_VER
 #pragma message("Fast specialization of posit<8,1>")
+#else
+	#warning("Fast specialization of posit<8,1>")
+#endif
 
 // injecting the C API into namespace sw::unum
 #include "posit_8_1.h"

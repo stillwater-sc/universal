@@ -16,7 +16,11 @@ namespace sw {	namespace unum {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_3_0
+#ifdef _MSC_VER
 #pragma message("Fast specialization of posit<3,0>")
+#else
+	#warning("Fast specialization of posit<3,0>")
+#endif
 
 		/*  values of a posit<3,0>
 		000 +0

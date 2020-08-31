@@ -18,7 +18,11 @@ namespace sw { namespace unum {
 
 		// set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_4_0
+#ifdef _MSC_VER
 #pragma message("Fast specialization of posit<4,0>")
+#else
+	#warning("Fast specialization of posit<4,0>")
+#endif
 
 			constexpr uint8_t posit_4_0_addition_lookup[256] = {
 				0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,
