@@ -14,10 +14,10 @@ try {
 	using namespace sw::unum;
 
 	if (argc != 2) {
-		cerr << "compfp : components of a fixed-point value" << endl;
-		cerr << "Show the sign/scale/fraction components of a fixed-point value." << endl;
-	    cerr << "Usage: compfp float_value" << endl;
-		cerr << "Example: compfp 1.0625" << endl;
+		cerr << "compfp : components of a fixed-point value\n";
+		cerr << "Show the sign/scale/fraction components of a fixed-point value.\n";
+	    cerr << "Usage: compfp float_value\n";
+		cerr << "Example: compfp 1.0625\n";
 		cerr << "class sw::unum::fixpnt<32,16,1,unsigned char>: 1.0625000000000000 b0000000000000001.0001000000000000" << endl;
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}

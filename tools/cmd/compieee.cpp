@@ -70,11 +70,11 @@ try {
 
 	if (argc != 2) {
 		cerr << "Show the truncated value and (sign/scale/fraction) components of different floating point types." << endl;
-		cerr << "Usage: compieee floating_point_value" << endl;
-		cerr << "Example: compieee 0.03124999" << endl;
-                cerr << "input value:                0.03124999" << endl;
-                cerr << "      float:              0.0312499907 (+,-6,11111111111111111111011)" << endl;
-                cerr << "     double:      0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)" << endl;
+		cerr << "Usage: compieee floating_point_value\n";
+		cerr << "Example: compieee 0.03124999\n";
+                cerr << "input value:                0.03124999\n";
+                cerr << "      float:              0.0312499907 (+,-6,11111111111111111111011)\n";
+                cerr << "     double:      0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)\n";
                 cerr << "long double:  0.0312499899999999983247 (+,-6,111111111111111111101001011110100011111111111110001111111001111)" << endl;
 
 		return EXIT_SUCCESS;   // signal successful completion for ctest

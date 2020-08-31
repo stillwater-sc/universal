@@ -16,10 +16,10 @@ try {
 	constexpr int fbits = std::numeric_limits<double>::digits - 1;
 
 	if (argc != 2) {
-		cerr << "dc : IEEE double components" << endl;
-		cerr << "Show the sign/scale/fraction components of a double." << endl;
-		cerr << "Usage: dc double_value" << endl;
-		cerr << "Example: dc 0.03124999" << endl;
+		cerr << "compd : components of an IEEE double-precision float\n";
+		cerr << "Show the sign/scale/fraction components of an IEEE double.\n";
+		cerr << "Usage: compf double_value\n";
+		cerr << "Example: compd 0.03124999\n";
 		cerr << "double: 0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)" << endl;
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}

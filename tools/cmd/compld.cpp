@@ -16,9 +16,10 @@ try {
 	constexpr int fbits = std::numeric_limits<long double>::digits - 1;
 
 	if (argc != 2) {
-		cerr << "Show the sign/scale/fraction components of a double." << endl;
-		cerr << "Usage: ldc double_value" << endl;
-		cerr << "Example: ldc 0.03124999" << endl;
+		cerr << "compld: components of an IEEE long-double (compiler dependent, 80-bit extended precision on x86 and ARM, 128-bit on RISC-V\n";
+		cerr << "Show the sign/scale/fraction components of an IEEE long double.\n";
+		cerr << "Usage: compld long_double_value\n";
+		cerr << "Example: compld 0.03124999\n";
 		cerr << "long double: 0.0312499899999999983247 (+,-6,000000000000000000000000000000000011111111111110000000000000000)" << endl;
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}

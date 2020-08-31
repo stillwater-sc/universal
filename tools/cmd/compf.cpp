@@ -16,10 +16,10 @@ try {
 	constexpr int fbits = std::numeric_limits<float>::digits - 1;
 
 	if (argc != 2) {
-		cerr << "fc : IEEE float components" << endl;
-		cerr << "Show the sign/scale/fraction components of a float." << endl;
-	    cerr << "Usage: fc float_value" << endl;
-		cerr << "Example: fc 0.03124999" << endl;
+		cerr << "compf : components of an IEEE single-precision float\n";
+		cerr << "Show the sign/scale/fraction components of an IEEE float.\n";
+	    cerr << "Usage: compf float_value\n";
+		cerr << "Example: compf 0.03124999\n";
 		cerr << "float: 0.031249990686774254 (+,-6,11111111111111111111011)" << endl;
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
