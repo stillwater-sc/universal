@@ -26,11 +26,14 @@
 #define POSIT_FAST_POSIT_256_5 0
 #endif
 
-// fast specializations for special posit configurations
+#ifdef _MSC_VER
 #pragma warning( push )
 #pragma warning( disable : 4242 ) // warning C4242: 'argument': conversion from 'int32_t' to 'const int8_t', possible loss of data
 #pragma warning( disable : 4244 ) // warning C4244: '=': conversion from 'uint32_t' to 'uint16_t', possible loss of data
 #pragma warning( disable : 4365 ) // warning C4365: 'initializing': conversion from 'long' to 'uint32_t', signed/unsigned mismatch
+#endif
+
+// fast specializations for special posit configurations
 #include "specialized/posit_2_0.hpp"
 #include "specialized/posit_3_0.hpp"
 #include "specialized/posit_3_1.hpp"
@@ -42,4 +45,7 @@
 #include "specialized/posit_64_3.hpp"
 #include "specialized/posit_128_4.hpp"
 #include "specialized/posit_256_5.hpp"
+
+#ifdef _MSC_VER
 #pragma warning( pop )
+#endif

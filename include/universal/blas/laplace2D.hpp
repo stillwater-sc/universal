@@ -5,7 +5,6 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/blas/blas.hpp>
-//#include <universal/posit/posit_fwd.hpp>
 
 namespace sw { namespace unum { namespace blas { 
 

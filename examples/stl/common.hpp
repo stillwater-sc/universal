@@ -1,6 +1,6 @@
 // common.hpp : include file for standard system include files
 #pragma once
-#ifndef NDEBUG
+#ifdef _MSC_VER
 #pragma warning(disable : 4514) // warning C4514: 'std::complex<float>::complex': unreferenced inline function has been removed
 #pragma warning(disable : 4571) // warning C4571: Informational: catch(...) semantics changed since Visual C++ 7.1; structured exceptions (SEH) are no longer caught
 #pragma warning(disable : 4625) // warning C4625: 'std::moneypunct<char,true>': copy constructor was implicitly defined as deleted
@@ -11,6 +11,7 @@
 #pragma warning(disable : 5026) // warning C5026 : 'std::_Generic_error_category' : move constructor was implicitly defined as deleted
 #pragma warning(disable : 5027) // warning C5027 : 'std::_Generic_error_category' : move assignment operator was implicitly defined as deleted
 #endif 
+
 // enable the mathematical constants in cmath
 #define USE_MATH_DEFINES
 
@@ -32,14 +33,14 @@
 #include <numeric>
 #include <random>
 
-#ifdef WINDOWS
+#ifdef _WINDOWS
 // Including SDKDDKVer.h defines the highest available Windows platform.
 
 // If you wish to build your application for a previous Windows platform, include WinSDKVer.h and
 // set the _WIN32_WINNT macro to the platform you wish to support before including SDKDDKVer.h.
 
 #include <SDKDDKVer.h>
-#endif // WINDOWS
+#endif // _WINDOWS
 
 #if defined(__GNUC__)
 #if __GNUC__ < 5
