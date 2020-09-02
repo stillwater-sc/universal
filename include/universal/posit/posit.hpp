@@ -4,13 +4,17 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 #include <cmath>
 #include <cassert>
 #include <iostream>
 #include <limits>
 #include <regex>
 #include <type_traits>
+
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+// propagate this behavior down to constituent classes
+#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 1
+#endif
 
 // to yield a fast regression environment for productive development
 // we want to leverage the IEEE floating point hardware available on x86 and ARM.

@@ -1,9 +1,11 @@
-//  multi_word.cpp :  test suite for bitblock-based multi-word operators
+// multi_word.cpp :  test suite for bitblock-based multi-word operators
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include "universal/posit/exceptions.hpp"	// TODO: remove namespace polution
+#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 1
+#undef BITBLOCK_ROUND_TIES_AWAY_FROM_ZERO
+#undef BITBLOCK_ROUND_TIES_TO_ZERO
 #include "universal/bitblock/bitblock.hpp"
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
@@ -245,7 +247,7 @@ try {
 	try {
 		integer_divide_unsigned(a, b, c); // divide by zero
 	}
-	catch (const integer_divide_by_zero& e) {
+	catch (const bitblock_divide_by_zero& e) {
 		cout << "Properly caught exception: " << e.what() << endl;
 	}
 	catch (...) {

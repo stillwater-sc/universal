@@ -4,13 +4,14 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 #include <sstream>
 #include <iostream>
 #include <iomanip>
 // this should be removed when we have made the transition away from std::bitset to sw::unum::bitblock
 #include <cassert>
 #include <bitset>
+// bitblock exception definitions
+#include <universal/bitblock/exceptions.hpp>
 
 namespace sw { namespace unum {
 
@@ -28,7 +29,7 @@ public:
 	constexpr bitblock& operator=(bitblock&&) = default;
 
 	constexpr bitblock& operator=(unsigned long long rhs) {
-		return (bitblock&)std::bitset<nbits>::operator=(rhs);
+		return *this = (bitblock&)base::operator=(rhs);
 	}
 
 	constexpr base& reset() { *this= bitblock{}; return *this; }
@@ -338,7 +339,8 @@ void copy_into(const bitblock<src_size>& src, size_t shift, bitblock<tgt_size>& 
 		tgt.set(i + shift, src[i]);
 }
 
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
+// TODO: is this guard named correctly?
+#if BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 // copy a slice of a bitset into a bigger bitset starting at position indicated by the shift value
 template<size_t src_size, size_t tgt_size>
 void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, size_t begin = 0, size_t end = src_size, size_t shift = 0) {
@@ -358,7 +360,7 @@ void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, size_t be
 	for (size_t i = begin; i < end; i++)
 		tgt.set(i + shift, src[i]);
 }
-#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
+#endif // BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 
 template<size_t from, size_t to, size_t src_size>
 bitblock<to - from> fixed_subset(const bitblock<src_size>& src) {
@@ -431,11 +433,11 @@ void integer_divide_unsigned(const bitblock<operand_size>& a, const bitblock<ope
 	accumulator = a;
 	int msb = findMostSignificantBit(b);
 	if (msb < 0) {
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
-		throw integer_divide_by_zero{};
+#if BITBLOCK_THROW_ARITHMETIC_EXCEPTION
+		throw bitblock_divide_by_zero{};
 #else
-		std::cerr << "integer_divide_by_zero\n";
-#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
+		std::cerr << "bitblock_divide_by_zero\n";
+#endif // BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 	}
 	else {
 		int shift = operand_size - msb - 1;
@@ -470,11 +472,11 @@ void divide_with_fraction(const bitblock<operand_size>& a, const bitblock<operan
 	copy_into<operand_size, result_size>(a, result_size - operand_size, accumulator);
 	int msb = findMostSignificantBit(b);
 	if (msb < 0) {
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
-		throw integer_divide_by_zero{};
+#if BITBLOCK_THROW_ARITHMETIC_EXCEPTION
+		throw bitblock_divide_by_zero{};
 #else
-		std::cerr << "integer_divide_by_zero\n";
-#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
+		std::cerr << "bitblock_divide_by_zero\n";
+#endif // BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 	}
 	else {
 		int shift = operand_size - msb - 1;
@@ -520,23 +522,19 @@ struct round_t
 	static bitblock<tgt_size> eval(const bitblock<src_size>& src, size_t n)
 	{
 		static_assert(src_size > 0 && tgt_size > 0, "We don't bother with empty sets.");
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
+#if BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 		if (n >= src_size)
 			throw round_off_all{};
+		// look for cut-off leading bits
+		for (size_t leading = tgt_size + n; leading < src_size; ++leading)
+			if (src[leading])
+				throw cut_off_leading_bit{};
 #else
 		if (n >= src_size) {
 			bitblock<tgt_size> result;
 			result.reset();
 			return result;
 		}
-#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
-
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
-		// look for cut-off leading bits
-		for (size_t leading = tgt_size + n; leading < src_size; ++leading)
-			if (src[leading])
-				throw cut_off_leading_bit{};
-#else
 		for (size_t leading = tgt_size + n; leading < src_size; ++leading) {
 			if (src[leading]) {
 				std::cerr << "cut_off_leading_bit\n";
@@ -545,28 +543,28 @@ struct round_t
 				return result;
 			}
 		}
-#endif // POSIT_THROW_ARITHMETIC_EXCEPTION
+#endif // BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 
 		bitblock<tgt_size> result((src >> n).to_ullong()); // convert to size_t to deal with different sizes
 
-		if (n > 0 && src[n - 1]) {                                // round up potentially if first cut-off bit is true
-#         ifdef POSIT_ROUND_TIES_AWAY_FROM_ZERO             // TODO: Evil hack to be consistent with assign_fraction, for testing only
+		if (n > 0 && src[n - 1]) {                         // round up potentially if first cut-off bit is true
+#ifdef BITBLOCK_ROUND_TIES_AWAY_FROM_ZERO					   // TODO: Evil hack to be consistent with assign_fraction, for testing only
 			result = result.to_ullong() + 1;
-#         else            
+#else            
 
 			bool more_bits = false;
 			for (long i = 0; i + 1 < n && !more_bits; ++i)
 				more_bits |= src[i];
 			if (more_bits) {
-				result = result.to_ullong() + 1;                // increment_unsigned is ambiguous 
+				result = result.to_ullong() + 1;           // increment_unsigned is ambiguous 
 			}
-			else {                                            // tie: round up odd number
-#             ifndef POSIT_ROUND_TIES_TO_ZERO               // TODO: evil hack to be removed later
+			else {                                         // tie: round up odd number
+#ifndef BITBLOCK_ROUND_TIES_TO_ZERO                        // TODO: evil hack to be removed later
 				if (result[0])
 					result = result.to_ullong() + 1;
-#             endif
+#endif
 			}
-#         endif
+#endif
 		}
 		return result;
 	}
