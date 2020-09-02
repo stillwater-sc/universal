@@ -118,14 +118,14 @@ public:
 		}
 		else {
 			// copy the value into the quire
-			unsigned i, c;
 			uint64_t mask = uint64_t(1);
-			for (i = 0; i < msb && i < half_range; i++) {
+			for (size_t i = 0; i < msb && i < half_range; i++) {
 				_upper[i] = magnitude & mask;
 				mask <<= 1;
 			}
 			if (msb >= half_range) {
-				for (i = half_range, c = 0; i < msb && i < half_range + capacity; i++, c++) {
+				size_t c = 0;
+				for (size_t i = half_range; i < msb && i < half_range + capacity; i++, c++) {
 					_capacity[c] = magnitude & mask;
 					mask <<= 1;
 				}
@@ -141,14 +141,14 @@ public:
 		}
 		else {
 			// copy the value into the quire
-			unsigned i, c;
 			uint64_t mask = uint64_t(1);
-			for (i = 0; i < msb && i < half_range; i++) {
+			for (size_t i = 0; i < msb && i < half_range; i++) {
 				_upper[i] = rhs & mask;
 				mask <<= 1;
 			}
 			if (msb >= half_range) {
-				for (i = half_range, c = 0; i < msb && i < half_range + capacity; i++, c++) {
+				size_t c = 0;
+				for (size_t i = half_range; i < msb && i < half_range + capacity; i++, c++) {
 					_capacity[c] = rhs & mask;
 					mask <<= 1;
 				}
@@ -196,7 +196,7 @@ public:
 					bool _a = _lower[i];
 					bool _b = fraction[f];
 					_lower[i] = _a ^ _b ^ borrow;
-					borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+					borrow = (!_a & _b) | ((!(!_a ^ !_b)) & borrow);
 				}
 				// propagate any borrows to the end of the lower accumulator
 				while (borrow && i < int(half_range)) {
