@@ -472,7 +472,7 @@ public:
 		bool round = (targetLsb > 1 ? at(targetLsb - 2) : false);
 		bool sticky =(targetLsb < 3 ? false : any(targetLsb - 3));
 		bool tie = guard & !round & !sticky;
-		return (lsb & tie) || (guard & !tie);
+		return (lsb & tie) | (guard & !tie);
 	}
 	bool any(size_t msb) const {
 		size_t topBlock = msb / bitsInBlock;
