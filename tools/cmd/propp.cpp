@@ -320,9 +320,9 @@ try {
 		return EXIT_SUCCESS;
 	}
 	else if (argc != 4) {
-		cerr << "Show the arithmetic properties of a posit." << endl;
-	    cerr << "Usage: posit_properties [nbits es capacity]" << endl;
-		cerr << "Example: posit_properties 16 1 8" << endl;
+		cerr << "Show the arithmetic properties of a posit.\n";
+	    cerr << "Usage: propp [nbits es capacity]\n";
+		cerr << "Example: propp 16 1 8\n";
 		cerr <<  msg << endl;
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
