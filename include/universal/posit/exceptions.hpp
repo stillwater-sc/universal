@@ -102,25 +102,6 @@ struct rbits_too_large
 	rbits_too_large(const std::string& error = "number of remaining bits too large for this fraction") :posit_internal_exception(error) {}
 };
 
-struct cut_off_leading_bit
-	: posit_internal_exception
-{
-	cut_off_leading_bit(const std::string& error = "leading significant bit is cut off") : posit_internal_exception(error) {}
-};
-
-struct iteration_bound_too_large
-	: posit_internal_exception
-{
-	iteration_bound_too_large(const std::string& error = "iteration bound is too large") : posit_internal_exception(error) {}
-};
-
-struct round_off_all
-	: posit_internal_exception
-{
-	round_off_all(const std::string& error = "cannot round off all bits") : posit_internal_exception(error) {}
-};
-
-
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// QUIRE ARITHMETIC EXCEPTIONS
 

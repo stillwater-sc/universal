@@ -30,4 +30,34 @@ struct bitblock_divide_by_zero
 	bitblock_divide_by_zero(const std::string& error = "bitblock divide by zero") : bitblock_arithmetic_exception(error) {}
 };
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
+/// BITBLOCK INTERNAL EXCEPTIONS
+
+// base class for bitblock internal exceptions
+struct bitblock_internal_exception
+	: public std::runtime_error
+{
+	bitblock_internal_exception(const std::string& error) : std::runtime_error(std::string("bitblock internal exception: ") + error) {};
+};
+
+struct iteration_bound_too_large
+	: bitblock_internal_exception
+{
+	iteration_bound_too_large(const std::string& error = "iteration bound is too large") : bitblock_internal_exception(error) {}
+};
+
+struct round_off_all
+	: bitblock_internal_exception
+{
+	round_off_all(const std::string& error = "cannot round off all bits") : bitblock_internal_exception(error) {}
+};
+
+struct cut_off_leading_bit
+	: bitblock_internal_exception
+{
+	cut_off_leading_bit(const std::string& error = "leading significant bit is cut off") : bitblock_internal_exception(error) {}
+};
+
+///////////////////////////////////////////////////////////////////////////////////////////////////
+
 }} // namespace sw::unum
