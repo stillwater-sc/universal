@@ -1,12 +1,14 @@
-// numbers.cpp: example program to use C++20 <numbers> high precision constants
+// midpoint.cpp: example program to use C++20 <cmath> lerp and midpoint functions
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
+#include <cmath>   // lerp and midpoint
 #if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
 #include <numbers>    // high-precision numbers
 #endif
+
 
 // select the number systems we would like to compare
 #include <universal/integer/integer>
@@ -19,99 +21,6 @@
 #include <stdexcept>
 #include <cstring>
 #include <ostream>
-
-#ifndef _MSC_VER
-#  if __cplusplus < 201103
-#    define CONSTEXPR11_TN
-#    define CONSTEXPR14_TN
-#    define CONSTEXPR17_TN
-#    define NOEXCEPT_TN
-#  elif __cplusplus < 201402
-#    define CONSTEXPR11_TN constexpr
-#    define CONSTEXPR14_TN
-#    define CONSTEXPR17_TN
-#    define NOEXCEPT_TN noexcept
-#  else
-#    define CONSTEXPR11_TN constexpr
-#    define CONSTEXPR14_TN constexpr
-#    define CONSTEXPR17_TN constexpr
-#    define NOEXCEPT_TN noexcept
-#  endif
-#else  // _MSC_VER
-#  if _MSC_VER < 1900
-#    define CONSTEXPR11_TN
-#    define CONSTEXPR14_TN
-#    define NOEXCEPT_TN
-#  elif _MSC_VER < 2000
-#    define CONSTEXPR11_TN constexpr
-#    define CONSTEXPR14_TN
-#    define NOEXCEPT_TN noexcept
-#  else
-#    define CONSTEXPR11_TN constexpr
-#    define CONSTEXPR14_TN constexpr
-#    define NOEXCEPT_TN noexcept
-#  endif
-#endif  // _MSC_VER
-
-class static_string
-{
-	const char* const p_;
-	const std::size_t sz_;
-
-public:
-	typedef const char* const_iterator;
-
-	template <std::size_t N>
-	CONSTEXPR11_TN static_string(const char(&a)[N]) NOEXCEPT_TN
-		: p_(a)
-		, sz_(N - 1)
-	{}
-
-	CONSTEXPR11_TN static_string(const char* p, std::size_t N) NOEXCEPT_TN
-		: p_(p)
-		, sz_(N)
-	{}
-
-	CONSTEXPR11_TN const char* data() const NOEXCEPT_TN { return p_; }
-	CONSTEXPR11_TN std::size_t size() const NOEXCEPT_TN { return sz_; }
-
-	CONSTEXPR11_TN const_iterator begin() const NOEXCEPT_TN { return p_; }
-	CONSTEXPR11_TN const_iterator end()   const NOEXCEPT_TN { return p_ + sz_; }
-
-	CONSTEXPR11_TN char operator[](std::size_t n) const
-	{
-		return n < sz_ ? p_[n] : throw std::out_of_range("static_string");
-	}
-};
-
-inline
-std::ostream&
-operator<<(std::ostream& os, static_string const& s)
-{
-	return os.write(s.data(), s.size());
-}
-
-template <class T>
-CONSTEXPR14_TN
-static_string
-type_name()
-{
-#ifdef __clang__
-	static_string p = __PRETTY_FUNCTION__;
-	return static_string(p.data() + 31, p.size() - 31 - 1);
-#elif defined(__GNUC__)
-	static_string p = __PRETTY_FUNCTION__;
-#  if __cplusplus < 201402
-	return static_string(p.data() + 36, p.size() - 36 - 1);
-#  else
-	return static_string(p.data() + 46, p.size() - 46 - 1);
-#  endif
-#elif defined(_MSC_VER)
-	static_string p = __FUNCSIG__;
-	return static_string(p.data() + 38, p.size() - 38 - 7);
-#endif
-}
-
 
 int main(int argc, char** argv)
 try {
@@ -195,47 +104,22 @@ try {
 	using areal32  = areal<32,8>;
 	using lns32    = lns<32>;
 
-	// report on precision and dynamic range of the number system
+	// check difficult midpoint and lerp operations on different number systems
 
 	streamsize precision = cout.precision();
 
-	constexpr size_t columnWidth = 30;
-	numberTraits<int32, columnWidth>(cout);
-	numberTraits<fixpnt32, columnWidth>(cout);
-	numberTraits<float, columnWidth>(cout);
-	numberTraits<areal32, columnWidth>(cout);
-	numberTraits<posit32, columnWidth>(cout);
-	numberTraits<lns32, columnWidth>(cout);
-
-	cout << "a better type name: " << type_name<const posit32>() << endl;
-
-	cout << minmax_range<float>() << endl;
-	cout << minmax_range<posit32>() << endl;
-	cout << minmax_range<lns32>() << endl;
-
-	cout << dynamic_range<float>() << endl;
-	cout << dynamic_range<posit32>() << endl;
-	cout << dynamic_range<lns32>() << endl;
-
-	cout << symmetry<float>() << endl;
-	cout << symmetry<posit32>() << endl;
-	cout << symmetry<lns32>() << endl;
-
-	compareNumberTraits<float, areal32>(cout);
-	compareNumberTraits<float, posit32>(cout);
-	compareNumberTraits<float, lns32>(cout);
-
 #if (__cplusplus == 202003L) || (_MSVC_LANG == 202003L)
-	constexpr long double pi     = 3.14159265358979323846;
-	//constexpr long double e      = 2.71828182845904523536;
-	//constexpr long double log_2e = 1.44269504088896340736;
 
 	cout << std::setprecision(50);
-	cout << "my pi             " << pi << endl;
-	cout << "numbers::pi       " << std::numbers::pi << endl;   // a double constexpr
-	cout << "pi_v<float>       " << std::numbers::pi_v<float> << endl;
-	cout << "pi_v<double>      " << std::numbers::pi_v<double> << endl;
-	cout << "pi_v<long double> " << std::numbers::pi_v<long double> << endl;
+	cout << "midpoint          " << std::midpoint(5,7) << endl;
+	cout << "lerp              " << std::lerp(5,7,0.5f) << endl;
+
+	float a=10.0f, b=20.0f;
+ 
+   	 std::cout << "a=" << a << '\n'
+              	   << "b=" << b << '\n'
+                   << "mid point=" << std::lerp(a,b,0.5f) << '\n'
+                   << std::boolalpha << (a == std::lerp(a,b,0.0f)) << '\n';
 #endif
 
 	cout << setprecision(precision);
