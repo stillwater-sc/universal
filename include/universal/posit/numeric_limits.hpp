@@ -166,7 +166,7 @@ namespace std {
 
 		static constexpr int digits = ((es + 2) > nbits) ? 0 : (int(nbits) - 3 - int(es) + 1);
 		static constexpr int digits10 = int((digits) / 3.3);
-		static constexpr int max_digits10 = 0;
+		static constexpr int max_digits10 = int((digits) / 3.3) + 1;
 		static constexpr bool is_signed = true;
 		static constexpr bool is_integer = false;
 		static constexpr bool is_exact = false;

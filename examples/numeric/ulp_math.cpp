@@ -14,6 +14,8 @@
 #include <universal/posit/posit>
 #include <universal/lns/lns>
 
+#include <universal/posit/numeric_limits.hpp>
+
 template<typename Scalar>
 void ULP(std::ostream& ostr, const Scalar& s) {
 	using namespace sw::unum;
@@ -23,11 +25,34 @@ void ULP(std::ostream& ostr, const Scalar& s) {
 	Scalar zero     = 0;
 	Scalar infinity = std::numeric_limits<Scalar>::infinity();
 	auto precision = ostr.precision();
-	ostr << std::setprecision(maxDigits) << std::hexfloat;    // <--- need to overload hexfloat for posit hex_format
+	ostr << std::setprecision(maxDigits);    // <--- need to overload hexfloat for posit hex_format
 	ostr << "prior  : " << nextafter(s, zero) << '\n'
-		 << "value  : " << s << '\n'
+		 << "value  : " << s << "                 " << std::hexfloat << s << std::dec << '\n'
 		 << "post   : " << nextafter(s, infinity) << '\n';
+	ostr << std::setprecision(precision);
+}
+
+template<size_t nbits, size_t es>
+void ULP(std::ostream& ostr, const sw::unum::posit<nbits,es>& s) {
+	using namespace sw::unum;
+	using Scalar = sw::unum::posit<nbits, es>;
+	int maxDigits = std::numeric_limits<Scalar>::max_digits10;
+	ostr << "scalar type: " << std::setw(50) << typeid(s).name() << " max digits: " << std::setw(5) << maxDigits << '\n';
+	// needs C++20 to become constexpr for generic universal types
+	Scalar zero = 0;
+	Scalar infinity = std::numeric_limits<Scalar>::infinity();
+	auto precision = ostr.precision();
+	ostr << std::setprecision(maxDigits);
+	ostr << "prior  : " << nextafter(s, zero) << '\n'
+		<< "value  : " << s << "                 " << hex_format(s) << '\n'
+		<< "post   : " << nextafter(s, infinity) << '\n';
 	ostr << std::setprecision(precision) << std::dec;
+}
+
+template<typename Scalar>
+void smallest_value(std::ostream& ostr) {
+	ostr << "first representable value greater than zero: " << nexttoward(Scalar(0.0), 1.0L) << '\n';
+	ostr << "first representable value less than zero   : " << nexttoward(Scalar(0.0), -1.0L) << '\n';
 }
 
 int main(int argc, char** argv)
@@ -41,13 +66,20 @@ try {
 
 	streamsize precision = cout.precision();
 
-	ULP(cout, 0.125e-10f);
-	ULP(cout, 0.125e-10);
-	ULP(cout, 0.125e-10l);
+	ULP(cout, 1.25e-10f);
+	ULP(cout, 1.25e-20);
+	ULP(cout, 1.25e-40l);
 
-	ULP(cout, posit< 32, 2>(0.125e-10f));
-	ULP(cout, posit< 64, 3>(0.125e-10));
-	ULP(cout, posit<128, 4>(0.125e-10l));
+	ULP(cout, posit< 32, 2>(1.25e-10f));
+	ULP(cout, posit< 64, 3>(1.25e-20));
+	ULP(cout, posit<128, 4>(1.25e-40l));
+
+	smallest_value<float>(cout);
+	smallest_value<double>(cout);
+	smallest_value<long double>(cout);
+	smallest_value< posit< 32, 2> >(cout);
+	smallest_value< posit< 64, 3> >(cout);
+	smallest_value< posit<128, 4> >(cout);
 
 	cout << setprecision(precision);
 	cout << endl;
