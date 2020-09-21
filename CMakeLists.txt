@@ -135,9 +135,15 @@ endif()
 
 ####
 # Configure the compiler options
+if(MSVC)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 message(STATUS "C++20 support has been enabled by default")
+else()
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+message(STATUS "C++17 support has been enabled by default")
+endif()
 
 # Compiler specific environments
 if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
