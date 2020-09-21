@@ -6,7 +6,6 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
 #include <limits>
-#include <strstream>
 
 #include <universal/native/ieee-754.hpp>
 #include <universal/blockbin/blockbinary.hpp>

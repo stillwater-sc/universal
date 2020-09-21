@@ -26,16 +26,16 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include "integer.hpp"
-#include "numeric_limits.hpp"
+#include <universal/integer/integer.hpp>
+#include <universal/integer/numeric_limits.hpp>
 
-#include "primes.hpp"
-#include "sieves.hpp"
-#include "integer_manipulators.hpp"
-#include "integer_functions.hpp"
+#include <universal/integer/primes.hpp>
+#include <universal/integer/sieves.hpp>
+#include <universal/integer/integer_manipulators.hpp>
+#include <universal/integer/integer_functions.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include "math_functions.hpp"
+#include <universal/integer/math_functions.hpp>
 
 #endif

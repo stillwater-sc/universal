@@ -25,9 +25,9 @@ void ULP(std::ostream& ostr, const Scalar& s) {
 	Scalar zero     = 0;
 	Scalar infinity = std::numeric_limits<Scalar>::infinity();
 	auto precision = ostr.precision();
-	ostr << std::setprecision(maxDigits);    // <--- need to overload hexfloat for posit hex_format
+	ostr << std::setprecision(maxDigits);    
 	ostr << "prior  : " << nextafter(s, zero) << '\n'
-		 << "value  : " << s << "                 " << std::hexfloat << s << std::dec << '\n'
+		 << "value  : " << s << "                 " << std::hexfloat << s << std::dec << '\n'   // <--- need to overload hexfloat for posit hex_format
 		 << "post   : " << nextafter(s, infinity) << '\n';
 	ostr << std::setprecision(precision);
 }
@@ -44,8 +44,8 @@ void ULP(std::ostream& ostr, const sw::unum::posit<nbits,es>& s) {
 	auto precision = ostr.precision();
 	ostr << std::setprecision(maxDigits);
 	ostr << "prior  : " << nextafter(s, zero) << '\n'
-		<< "value  : " << s << "                 " << hex_format(s) << '\n'
-		<< "post   : " << nextafter(s, infinity) << '\n';
+		 << "value  : " << s << "                 " << hex_format(s) << '\n'
+		 << "post   : " << nextafter(s, infinity) << '\n';
 	ostr << std::setprecision(precision) << std::dec;
 }
 

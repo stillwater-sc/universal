@@ -11,6 +11,7 @@
 #include <universal/areal/areal>
 #include <universal/posit/posit>
 #include <universal/lns/lns>
+#include <universal/valid/valid>
 
 //constexpr long double pi     = 3.14159265358979323846;
 //constexpr long double e      = 2.71828182845904523536;

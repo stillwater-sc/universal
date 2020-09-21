@@ -1,4 +1,4 @@
-// arbitrary real arithmetic type standard header
+// <universal/areal/areal>: arbitrary real arithmetic type standard header
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -26,12 +26,12 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include "areal.hpp"
-#include "numeric_limits.hpp"
-#include "exceptions.hpp"
+#include <universal/areal/areal.hpp>
+#include <universal/areal/numeric_limits.hpp>
+#include <universal/areal/exceptions.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include "math_functions.hpp"
+#include <universal/areal/math_functions.hpp>
 
 #endif
