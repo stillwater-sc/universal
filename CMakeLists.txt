@@ -135,9 +135,9 @@ endif()
 
 ####
 # Configure the compiler options
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-message(STATUS "C++14 support has been enabled by default")
+message(STATUS "C++20 support has been enabled by default")
 
 # Compiler specific environments
 if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
