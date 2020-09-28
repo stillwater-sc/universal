@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/posit/posit>
-#include "vector.hpp"
+#include <universal/blas/vector.hpp>
 
 namespace sw { namespace unum { namespace blas { 
 

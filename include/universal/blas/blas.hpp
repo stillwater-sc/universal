@@ -5,12 +5,12 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "vector.hpp"
-#include "matrix.hpp"
+#include <universal/blas/vector.hpp>
+#include <universal/blas/matrix.hpp>
 
-#include "blas_l1.hpp"
-#include "blas_l2.hpp"
-#include "blas_l3.hpp"
+#include <universal/blas/blas_l1.hpp>
+#include <universal/blas/blas_l2.hpp>
+#include <universal/blas/blas_l3.hpp>
 
 constexpr uint64_t SIZE_1K   = 1024;
 constexpr uint64_t SIZE_2K   = 2 * SIZE_1K;
@@ -47,5 +47,5 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 // L2
 
 // L3
-#include "lu.hpp"
-#include "lsq.hpp"
+#include <universal/blas/lu.hpp>
+#include <universal/blas/lsq.hpp>

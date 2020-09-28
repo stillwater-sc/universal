@@ -51,14 +51,14 @@ public:
 		}
 		return *this;
 	}
-	vector& operator+=(const Scalar& shift) {
+	vector& operator-=(const Scalar& rhs) {
 		for (size_t i = 0; i < size(); ++i) {
-			data[i] += shift;
+			data[i] -= shift;
 		}
 		return *this;
 	}
-	vector& operator*=(const Scalar& scale) {
-		for (auto& e : data) e *= scale;
+	vector& operator*=(const Scalar& scaler) {
+		for (auto& e : data) e *= scaler;
 		return *this;
 	}
 	vector& operator/=(const Scalar& normalizer) {
@@ -114,22 +114,19 @@ std::ostream& operator<<(std::ostream& ostr, const vector<Scalar>& v) {
 template<typename Scalar>
 vector<Scalar> operator+(const vector<Scalar>& lhs, const vector<Scalar>& rhs) {
 	vector<Scalar> sum(lhs);
-	sum += rhs;
-	return sum;
+	return sum += rhs;
 }
 
 template<typename Scalar>
 vector<Scalar> operator*(double scalar, const vector<Scalar>& v) {
 	vector<Scalar> scaledVector(v);
-	scaledVector *= scalar;
-	return v;
+	return scaledVector *= scalar;
 }
 
 template<typename Scalar>
 vector<Scalar> operator/(const vector<Scalar>& v, double normalizer) {
 	vector<Scalar> normalizedVector(v);
-	normalizedVector /= normalizer;
-	return v;
+	return normalizedVector /= normalizer;
 }
 
 template<typename Scalar> auto size(const vector<Scalar>& v) { return v.size(); }

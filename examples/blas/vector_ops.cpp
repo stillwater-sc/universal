@@ -46,9 +46,10 @@ try {
 
 	constexpr size_t vectorSize = SIZE_32K + 2;
 	Vector a(vectorSize), b(vectorSize);
+	Scalar epsilon = numeric_limits<Scalar>::epsilon();
 	for (size_t i = 1; i < vectorSize-1; ++i) {
 		a[i] = 1;
-		b[i] = numeric_limits<Scalar>::epsilon();
+		b[i] = epsilon;
 	}
 	a[0] = a[vectorSize - 1] = maxpos<nbits, es>();
 	b[0] = -1;  b[vectorSize - 1] = 1;
@@ -61,10 +62,54 @@ try {
 	// accumulation of 32K epsilons for a posit<32,2> yields
 	// dot: 0
 	// fdp: 0.000244141
-
+	cout << "\naccumulation of 32k epsilons (" << hex_format(epsilon) << " = " << epsilon << ") for a " << typeid(Scalar).name() << " yields:\n";
 	cout << "dot: " << dot(a, b) << endl;
-	cout << "fdp: " << fdp(a, b) << endl;
+	cout << "fdp: " << fdp(a, b) << " : " << hex_format(fdp(a,b)) << endl;
 
+	// scale a vector
+	cout << "\nscaling a vector\n";
+	for (size_t i = 0; i < vectorSize; ++i) {
+		a[i] = 1;
+		b[i] = epsilon;
+	}
+	a *= epsilon; // a * epsilon -> b
+	bool success = true;
+	for (size_t i = 0; i < size(a); ++i) {
+		if (a[i] != b[i]) {
+			cout << a[i] << " != " << b[i] << '\n';
+			success = false;
+			break;
+		}
+	}
+	if (success) {
+		cout << "PASS: scaling vector a by epsilon yielded vector b\n";
+	}
+	else {
+		cout << "FAIL: scaling vector a by epsilon failed to yield vector b\n";
+	}
+
+	// normalize a vector
+	cout << "\nnormalizing a vector\n";
+	for (size_t i = 0; i < vectorSize; ++i) {
+		a[i] = 1;
+	}
+	b /= epsilon; // b / epsilon -> a
+	success = true;
+	for (size_t i = 0; i < size(a); ++i) {
+		if (a[i] != b[i]) {
+			cout << a[i] << " != " << b[i] << '\n';
+			success = false;
+			break;
+		}
+	}
+	if (success) {
+		cout << "PASS: normalizing vector b by epsilon yielded vector a\n";
+	}
+	else {
+		cout << "FAIL: scaling vector b by epsilon failed to yield vector a\n";
+	}
+
+	cout << endl;
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
