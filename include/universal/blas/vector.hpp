@@ -45,31 +45,65 @@ public:
 		return n;
 	}
 
-	vector& operator+=(const vector<Scalar>& rhs) {
-		for (size_t i = 0; i < size(); ++i) {
-			data[i] += rhs[i];
-		}
+	/// vector-wide operators
+	//
+	// vector-wide add
+	vector& operator+=(const Scalar& offset) {
+		for (auto& e : data) e += offset;
 		return *this;
 	}
-	vector& operator-=(const Scalar& rhs) {
-		for (size_t i = 0; i < size(); ++i) {
-			data[i] -= shift;
-		}
+	// vector-wide subtract
+	vector& operator-=(const Scalar& offset) {
+		for (auto& e : data) e -= offset;
 		return *this;
 	}
+	// vector-wide multiply
 	vector& operator*=(const Scalar& scaler) {
 		for (auto& e : data) e *= scaler;
 		return *this;
 	}
+	// vector-wide divide
 	vector& operator/=(const Scalar& normalizer) {
 		for (auto& e : data) e /= normalizer;
 		return *this;
 	}
+
+	// element-wise add
+	vector& operator+=(const vector<Scalar>& offset) {
+		for (size_t i = 0; i < size(); ++i) {
+			data[i] += offset[i];
+		}
+		return *this;
+	}
+	// element-wise subtract
+	vector& operator-=(const vector<Scalar>& offset) {
+		for (size_t i = 0; i < size(); ++i) {
+			data[i] += offset[i];
+		}
+		return *this;
+	}
+	// element-wise multiply
+	vector& operator*=(const vector<Scalar>& scaler) {
+		for (size_t i = 0; i < size(); ++i) {
+			data[i] += scaler[i];
+		}
+		return *this;
+	}
+	// element-wise divide
+	vector& operator/=(const vector<Scalar>& normalizer) {
+		for (size_t i = 0; i < size(); ++i) {
+			data[i] += normalizer[i];
+		}
+		return *this;
+	}
+
+	// non-reproducible sum
 	Scalar sum() const {
 		Scalar sum(0);  // should we do this with a quire?
 		for (auto v : data) sum += v;
 		return sum;
 	}
+	// two-norm of a vector
 	Scalar norm() const {  // default is 2-norm
 		using std::sqrt;
 		Scalar twoNorm = 0;
