@@ -6,7 +6,7 @@
 # BUILDER stage
 FROM gcc:7 as builder
 LABEL Theodore Omtzigt
-# create a cmake build environment
+# create a build environment
 RUN apt-get update && apt-get install -y --no-install-recommends \
     apt-utils \
     build-essential \
@@ -62,15 +62,17 @@ CMD ["echo", "Universal Numbers Library Builder Version 2.1.41"]
 FROM debian:buster-slim as release
 LABEL Theodore Omtzigt
 
-#RUN apk add --no-cache libc6-compat libstdc++ make cmake bash gawk sed grep bc coreutils
+#RUN apk add --no-cache libc6-compat libstdc++ cmake make bash gawk sed grep bc coreutils
 RUN apt-get update && apt-get install -y --no-install-recommends \
     make \
-    cmake \
     && apt-get clean
 # create and use user stillwater
 RUN useradd -ms /bin/bash stillwater
 USER stillwater
 
+# copy cmake enviroment needed for testing
+COPY --from=builder /usr/local/bin/cmake /usr/local/bin/
+COPY --from=builder /usr/local/bin/ctest /usr/local/bin/
 # copy information material
 COPY --from=builder /home/stillwater/universal/*.md /home/stillwater/universal/
 # copy the docs
