@@ -23,7 +23,7 @@ init:
 - if "%arch%"=="Win64" ( set arch= Win64)
 - echo %arch%
 - echo %APPVEYOR_BUILD_WORKER_IMAGE%
-- if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2017" ( set generator="Visual Studio 15 2017%arch%" )
+- if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019%arch%" )
 - echo %generator%
 
 before_build:
@@ -36,19 +36,3 @@ build:
   project: c:\projects\cmake-init\build\universal.sln
   verbosity: minimal
   parallel: true
-only_commits:
-  files:
-    - CMakeLists.txt
-    - appveyor.yml
-    - bitblock/
-    - education/
-    - examples/
-    - float/
-    - perf/
-    - tests/
-    - tools/
-    - unum/
-    - unum2/
-    - valid/
-    - vloat/
-    - tools/cmake/
