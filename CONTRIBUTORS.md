@@ -34,7 +34,8 @@ Universal Number Library Contributors
 
 * **[James Quinlan](https://github.com/jamesquinlan)**
 
-  * Chebyshev Polynomial for approximation
+  * Chebyshev Polynomials for approximation
+  * MATPAK Matrix Utilities
 
 * Universal integration into TVM for Bring-Your-Own-Type
   * **[Gus Smith](https://github.com/gussmith23)**
@@ -46,7 +47,7 @@ Universal Number Library Contributors
   * **[Scott Pakin]( https://github.com/spakin)**
   * **[Simon Barton](https://github.com/mrpnk)**
   * **[David Summers](https://github.com/davidsummers)**
-  
+  * **[Goncalo Raposo](https://github.com/gonced8)** 
   
 * **[John Gustafson](https://en.wikipedia.org/wiki/John_Gustafson_(scientist))**
 
