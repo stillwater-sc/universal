@@ -25,7 +25,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
   set(UNIVERSAL_VERSION_MINOR 1)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
-  set(UNIVERSAL_VERSION_PATCH 0)
+  set(UNIVERSAL_VERSION_PATCH 41)
 endif()
 project(universal 
 	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
@@ -69,8 +69,8 @@ option(BUILD_CI_CHECK                    "Set to ON to build all components"    
 # utilities and educational examples
 option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   ON)
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
-option(BUILD_EXAMPLES_EDUCATION          "Set to ON to build educational examples"             ON)
-option(BUILD_EXAMPLES_APPLICATIONS       "Set to ON to build epplication examples"             ON)
+option(BUILD_EDUCATION                   "Set to ON to build educational examples"             ON)
+option(BUILD_APPLICATIONS                "Set to ON to build epplication examples"             ON)
 option(BUILD_NUMERICAL                   "Set to ON to build numerical test programs"          OFF)
 option(BUILD_FUNCTIONS                   "Set to ON to build special functions programs"       OFF)
 
@@ -93,7 +93,7 @@ option(BUILD_REALS                       "Set to ON to build real tests"        
 # conversion test suites
 option(BUILD_CONVERSION_TESTS            "Set to ON to build conversion test suites"           OFF)
 # performance benchmarking
-option(BUILD_PERF_TESTS                  "Set to ON to build performance benchmarks"           OFF)
+option(BUILD_PERFORMANCE_TESTS           "Set to ON to build performance benchmarks"           OFF)
 option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"         OFF)
 option(BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
 
@@ -423,8 +423,8 @@ install(DIRECTORY   ${PROJECT_SOURCE_DIR}/include/${project_library_target_name}
 
 if(BUILD_CI_CHECK)
 	# core example applications that use the library
-	set(BUILD_EXAMPLES_EDUCATION ON)
-	set(BUILD_EXAMPLES_APPLICATIONS ON)
+	set(BUILD_EDUCATION ON)
+	set(BUILD_APPLICATIONS ON)
 	set(BUILD_CMD_LINE_TOOLS ON)
 	set(BUILD_NUMERICAL ON)
 	set(BUILD_FUNCTIONS ON)
@@ -445,7 +445,7 @@ if(BUILD_CI_CHECK)
 	# build the conversion test suites
 	set(BUILD_CONVERSION_TESTS ON)
 	# build the performance suites
-	set(BUILD_PERF_TESTS ON)
+	set(BUILD_PERFORMANCE_TESTS ON)
 	# build the C API library
 	set(BUILD_C_API_PURE_LIB ON)
 	set(BUILD_C_API_SHIM_LIB ON)
@@ -513,39 +513,39 @@ add_subdirectory("tests/conversions")
 endif(BUILD_CONVERSION_TESTS)
 
 # performance benchmarks
-if(BUILD_PERF_TESTS)
-add_subdirectory("perf")
-endif(BUILD_PERF_TESTS)
+if(BUILD_PERFORMANCE_TESTS)
+add_subdirectory("tests/performance")
+endif(BUILD_PERFORMANCE_TESTS)
 
-# utilities, educational examples and example programs
+# command line tools and utilities 
 if(BUILD_CMD_LINE_TOOLS)
 add_subdirectory("tools/cmd")
 add_subdirectory("tools/utils")
 endif(BUILD_CMD_LINE_TOOLS)
 
-if(BUILD_EXAMPLES_EDUCATION)
+if(BUILD_EDUCATION)
 add_subdirectory("education/posit")
 add_subdirectory("education/quire")
 add_subdirectory("education/valid")
-endif(BUILD_EXAMPLES_EDUCATION)
+endif(BUILD_EDUCATION)
 
-if(BUILD_EXAMPLES_APPLICATIONS)
-add_subdirectory("examples/stl")
-add_subdirectory("examples/math")
-add_subdirectory("examples/ode")
-add_subdirectory("examples/pde")
-add_subdirectory("examples/trigonometry")
-add_subdirectory("examples/chebyshev")
-add_subdirectory("examples/blas")
-add_subdirectory("examples/dsp")
-add_subdirectory("examples/roots")
-add_subdirectory("examples/chaos")
-add_subdirectory("examples/weather")
-add_subdirectory("examples/engineering")
-add_subdirectory("examples/science")
-add_subdirectory("examples/cryptography")
-add_subdirectory("examples/numeric")
-endif(BUILD_EXAMPLES_APPLICATIONS)
+if(BUILD_APPLICATIONS)
+add_subdirectory("applications/stl")
+add_subdirectory("applications/math")
+add_subdirectory("applications/ode")
+add_subdirectory("applications/pde")
+add_subdirectory("applications/trigonometry")
+add_subdirectory("applications/chebyshev")
+add_subdirectory("applications/blas")
+add_subdirectory("applications/dsp")
+add_subdirectory("applications/roots")
+add_subdirectory("applications/chaos")
+add_subdirectory("applications/weather")
+add_subdirectory("applications/engineering")
+add_subdirectory("applications/science")
+add_subdirectory("applications/cryptography")
+add_subdirectory("applications/numeric")
+endif(BUILD_APPLICATIONS)
 
 if(BUILD_NUMERICAL)
 add_subdirectory("tests/numerical/properties")
@@ -557,7 +557,7 @@ add_subdirectory("tests/functions")
 endif(BUILD_FUNCTIONS)
 
 if(BUILD_PLAYGROUND)
-add_subdirectory("examples/playground")
+add_subdirectory("playground")
 endif(BUILD_PLAYGROUND)
 
 # C API library and their tests
