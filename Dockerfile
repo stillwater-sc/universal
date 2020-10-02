@@ -29,7 +29,7 @@ RUN cmake -DBUILD_CI_CHECK=ON .. && make
 # the command 'make test' is run as part of the test pipeline
 
 # add a command that when you run the container without a command, it produces something meaningful
-CMD ["echo", "Universal Numbers Library Builder Version 4.0.0"]
+CMD ["echo", "Universal Numbers Library Builder Version 2.1.41"]
 
 
 # RELEASE stage
@@ -63,4 +63,4 @@ COPY --from=builder /usr/src/universal/build/tools/cmd/float2posit /usr/local/bi
 # until we can figure out how to direct CodeShip to use this dir in the steps.yml file
 WORKDIR /home/stillwater/universal/build 
 
-CMD ["echo", "Universal Numbers Library Version 4.0.0"]
+CMD ["echo", "Universal Numbers Library Version 2.1.41"]
