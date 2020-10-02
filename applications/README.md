@@ -1,7 +1,7 @@
-# Examples of the benefit of using posit arithmetic over IEEE floating point
+# Examples of the benefit of using custom number systems
 
 This directory contains computational science examples that demonstrate and quantify the benefits
-of using posit arithmetic.
+of using custom arithmetic types, such as fixed-point and posits, to solve computational problems.
 
 ## Accuracy
 

@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "dsp" "Examples/Digital Signal Processing" "${SOURCES}")
+compile_all("true" "dsp" "Applications/Digital Signal Processing" "${SOURCES}")

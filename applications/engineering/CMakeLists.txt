@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "engineering" "Examples/Computational Engineering" "${SOURCES}")
+compile_all("true" "engineering" "Applications/Computational Engineering" "${SOURCES}")

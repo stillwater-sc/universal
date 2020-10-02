@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "numeric" "Examples/Numeric" "${SOURCES}")
+compile_all("true" "numeric" "Applications/Numeric" "${SOURCES}")
