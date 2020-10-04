@@ -31,10 +31,14 @@ log_e(10)		M_LN10		2.30258509299404568402
 
 // constexpr double pi = 3.14159265358979323846;  // best practice for C++
 
+// our test function
 template<typename Scalar>
 Scalar fnctn(const Scalar& a) {
 	return a*a*a - 2*a*a + 3;
 }
+
+// in general, the quire can be used to improve polynomial function evaluation
+// but factorization is likely a better return on investment
 
 template<typename Scalar>
 Scalar bisection(Scalar& a, Scalar& b, Scalar (*f)(const Scalar&), const Scalar& precision) {
@@ -42,7 +46,7 @@ Scalar bisection(Scalar& a, Scalar& b, Scalar (*f)(const Scalar&), const Scalar&
 
 	std::cout << "precision = " << precision << '\n';
 
-	// when C++20 use constexpr
+	// use constexpr when C++20 arrives
 	const Scalar half = Scalar(0.5f);
 	Scalar c = a;
 	while ((b - a) >= precision) {
