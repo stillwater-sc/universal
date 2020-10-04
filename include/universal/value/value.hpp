@@ -743,28 +743,28 @@ void module_subtract(const value<fbits>& lhs, const value<fbits>& rhs, value<abi
 
 	if (_trace_value_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
 
-	long shift = 0;
+	int shift = 0;
 	if (carry) {
 		if (r1_sign == r2_sign) {  // the carry && signs== implies that we have a number bigger than r1
 			shift = -1;
 		}
 		else {
 			// the carry && signs!= implies r2 is complement, result < r1, must find hidden bit (in the complement)
-			for (int i = abits - 1; i >= 0 && !sum[i]; i--) {
+			for (int i = static_cast<int>(abits) - 1; i >= 0 && !sum[static_cast<size_t>(i)]; --i) {
 				shift++;
 			}
 		}
 	}
 	assert(shift >= -1);
 
-	if (shift >= long(abits)) {            // we have actual 0                            
+	if (shift >= static_cast<int>(abits)) {            // we have actual 0                            
 		sum.reset();
 		result.set(false, 0, sum, true, false, false);
 		return;
 	}
 
 	scale_of_result -= shift;
-	const int hpos = abits - 1 - shift;         // position of the hidden bit 
+	const int hpos = static_cast<int>(abits) - 1 - shift;         // position of the hidden bit 
 	sum <<= abits - hpos + 1;
 	if (_trace_value_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
 	result.set(r1_sign, scale_of_result, sum, false, false, false);
@@ -855,7 +855,7 @@ void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbi
 			if (_trace_value_mul) std::cout << " shift " << shift << std::endl;
 			new_scale += 1;
 		}
-		result_fraction <<= shift;    // shift hidden bit out	
+		result_fraction <<= static_cast<size_t>(shift);    // shift hidden bit out	
 	}
 	else {   // posit<3,0>, <4,1>, <5,2>, <6,3>, <7,4> etc are pure sign and scale
 		// multiply the hidden bits together, i.e. 1*1: we know the answer a priori
@@ -892,16 +892,16 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 		if (_trace_value_div) std::cout << "r1     " << r1 << std::endl << "r2     " << r2 << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;
 		// check if the radix point needs to shift
 		// radix point is at divbits - fhbits
-		int msb = divbits - fhbits;
+		int msb = static_cast<int>(divbits - fhbits);
 		int shift = fhbits;
-		if (!result_fraction.test(msb)) {
+		if (!result_fraction.test(static_cast<size_t>(msb))) {
 			msb--; shift++;
-			while (!result_fraction.test(msb)) { // search for the first 1
+			while (!result_fraction.test(static_cast<size_t>(msb))) { // search for the first 1
 				msb--; shift++;
 			}
 		}
-		result_fraction <<= shift;    // shift hidden bit out
-		new_scale -= (shift - fhbits);
+		result_fraction <<= static_cast<size_t>(shift);    // shift hidden bit out
+		new_scale -= (shift - static_cast<int>(fhbits));
 		if (_trace_value_div) std::cout << "shift  " << shift << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;;
 	}
 	else {   // posit<3,0>, <4,1>, <5,2>, <6,3>, <7,4> etc are pure sign and scale

@@ -479,11 +479,11 @@ void divide_with_fraction(const bitblock<operand_size>& a, const bitblock<operan
 #endif // BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 	}
 	else {
-		int shift = operand_size - msb - 1;
+		int shift = static_cast<int>(operand_size) - msb - 1;  // TODO: why is this signed?
 		// prepare the subtractand
 		copy_into<operand_size, result_size>(b, result_size - operand_size, subtractand);
-		subtractand <<= shift;
-		for (int i = result_size - msb - 1; i >= 0; --i) {
+		subtractand <<= static_cast<size_t>(shift);
+		for (int i = static_cast<int>(result_size) - msb - 1; i >= 0; --i) {
 			//std::cout << "accumulator " << accumulator << std::endl;
 			//std::cout << "subtractand " << subtractand << std::endl;
 			if (subtractand <= accumulator) {
@@ -493,13 +493,13 @@ void divide_with_fraction(const bitblock<operand_size>& a, const bitblock<operan
 #else
 				subtract(accumulator, subtractand);
 #endif
-				result.set(i);
+				result.set(static_cast<size_t>(i));
 			}
 			else {
-				result.reset(i);
+				result.reset(static_cast<size_t>(i));
 			}
 			//std::cout << "result      " << result << std::endl;
-			subtractand >>= 1;
+			subtractand >>= 1u;
 		}
 	}
 }
@@ -598,7 +598,7 @@ template<size_t nbits>
 int findMostSignificantBit(const bitblock<nbits>& bits) {
 	int msb = -1; // indicative of no bits set
 	for (int i = nbits - 1; i >= 0; i--) {
-		if (bits.test(i)) {
+		if (bits.test(static_cast<size_t>(i))) {
 			msb = i;
 			break;
 		}
@@ -670,13 +670,13 @@ std::string to_hex(bitblock<nbits> bits) {
 			hexit = bits[0];
 			break;
 		case 2:
-			hexit = (bits[1] << 1) + bits[0];
+			hexit = static_cast<unsigned int>((bits[1] << 1u) + bits[0]);
 			break;
 		case 3:
-			hexit = (bits[2] << 2) + (bits[1] << 1) + bits[0];
+			hexit = static_cast<unsigned int>((bits[2] << 2u) + (bits[1] << 1u) + bits[0]);
 			break;
 		default:
-			hexit = (bits[3] << 3) + (bits[2] << 2) + (bits[1] << 1) + bits[0];
+			hexit = static_cast<unsigned int>((bits[3] << 3u) + (bits[2] << 2u) + (bits[1] << 1u) + bits[0]);
 			break;
 		}
 		str[maxHexDigits - 1 - i] = hexits[hexit];

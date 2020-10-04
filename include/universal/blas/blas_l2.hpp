@@ -11,6 +11,9 @@
 // compilation flags
 // BLAS_TRACE_ROUNDING_EVENTS
 // when set traces the quire operations
+#ifndef BLAS_TRACE_ROUNDING_EVENTS
+#define BLAS_TRACE_ROUNDING_EVENTS 0
+#endif
 
 // Matrix-vector product: b = A * x
 template<typename Matrix, typename Vector>

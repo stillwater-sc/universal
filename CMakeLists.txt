@@ -258,6 +258,16 @@ elseif(MSVC)
 	# /LTCG specified but no code generation required; remove /LTCG from the link command line to improve linker performance
 	# set(CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} /LTCG")
 	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Wall /bigobj")
+
+	# include Spectre mitigation flags
+	# https://docs.microsoft.com/en-us/cpp/build/reference/qspectre
+	# Microsoft Visual C++ libraries are also available in versions with Spectre mitigation. 
+	# The Spectre-mitigated libraries for Visual Studio 2017 and later can be downloaded 
+	# in the Visual Studio Installer. They're found in the Individual Components tab under 
+	# Compilers, build tools, and runtimes, and have "Libs for Spectre" in the name.
+	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Qspectre")
+	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Qspectre")
+
 endif()
 
 ####

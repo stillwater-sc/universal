@@ -4,6 +4,7 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cmath>
 #include <universal/posit/posit>
 #include <universal/blas/vector.hpp>
 
@@ -163,7 +164,31 @@ void strided_print(std::ostream& ostr, size_t n, Vector& x, size_t incx = 1) {
 	ostr << "]";
 }
 
+
 } } } // namespace sw::unum::blas
+
+// free function norms
+
+
+// 1-norm of a vector
+template<typename Scalar>
+Scalar norm1(const sw::unum::blas::vector<Scalar>& v) {
+	Scalar oneNorm = 0;
+	for (auto e : v) {
+		oneNorm += abs(e);
+	}
+	return oneNorm;
+}
+
+// 2-norm of a vector
+template<typename Scalar>
+Scalar norm2(const sw::unum::blas::vector<Scalar>& v) {
+	Scalar twoNorm = 0;
+	for (auto e : v) {
+		twoNorm += e * e;
+	}
+	return sqrt(twoNorm);
+}
 
 // specializations for STL vectors
 

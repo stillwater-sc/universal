@@ -19,6 +19,11 @@ public:
 	typedef const value_type&                 const_reference;
 	typedef value_type&                       reference;
 	typedef const value_type*                 const_pointer_type;
+	typedef typename std::vector<Scalar>::iterator     iterator;
+	typedef typename std::vector<Scalar>::const_iterator const_iterator;
+	typedef typename std::vector<Scalar>::reverse_iterator reverse_iterator;
+	typedef typename std::vector<Scalar>::const_reverse_iterator const_reverse_iterator;
+
 
 	vector() : data(0) {}
 	vector(size_t N) : data(N) {}
@@ -37,6 +42,8 @@ public:
 	}
 	value_type operator[](size_t index) const { return data[index]; }
 	value_type& operator[](size_t index) { return data[index]; }
+	value_type operator()(size_t index) const { return data[index]; }
+	value_type& operator()(size_t index) { return data[index]; }
 
 	// prefix operator
 	vector operator-() {
@@ -78,21 +85,21 @@ public:
 	// element-wise subtract
 	vector& operator-=(const vector<Scalar>& offset) {
 		for (size_t i = 0; i < size(); ++i) {
-			data[i] += offset[i];
+			data[i] -= offset[i];
 		}
 		return *this;
 	}
 	// element-wise multiply
 	vector& operator*=(const vector<Scalar>& scaler) {
 		for (size_t i = 0; i < size(); ++i) {
-			data[i] += scaler[i];
+			data[i] *= scaler[i];
 		}
 		return *this;
 	}
 	// element-wise divide
 	vector& operator/=(const vector<Scalar>& normalizer) {
 		for (size_t i = 0; i < size(); ++i) {
-			data[i] += normalizer[i];
+			data[i] /= normalizer[i];
 		}
 		return *this;
 	}
@@ -134,6 +141,38 @@ public:
 		return *this;
 	}
 
+// iterators
+	_NODISCARD iterator begin() noexcept {
+		return data.begin();
+	}
+
+	_NODISCARD const_iterator begin() const noexcept {
+		return data.begin();
+	}
+
+	_NODISCARD iterator end() noexcept {
+		return data.end();
+	}
+
+	_NODISCARD const_iterator end() const noexcept {
+		return data.end();
+	}
+
+	_NODISCARD reverse_iterator rbegin() noexcept {
+		return reverse_iterator(end());
+	}
+
+	_NODISCARD const_reverse_iterator rbegin() const noexcept {
+		return const_reverse_iterator(end());
+	}
+
+	_NODISCARD reverse_iterator rend() noexcept {
+		return reverse_iterator(begin());
+	}
+
+	_NODISCARD const_reverse_iterator rend() const noexcept {
+		return const_reverse_iterator(begin());
+	}
 private:
 	std::vector<Scalar> data;
 };
@@ -149,6 +188,12 @@ template<typename Scalar>
 vector<Scalar> operator+(const vector<Scalar>& lhs, const vector<Scalar>& rhs) {
 	vector<Scalar> sum(lhs);
 	return sum += rhs;
+}
+
+template<typename Scalar>
+vector<Scalar> operator-(const vector<Scalar>& lhs, const vector<Scalar>& rhs) {
+	vector<Scalar> difference(lhs);
+	return difference -= rhs;
 }
 
 template<typename Scalar>

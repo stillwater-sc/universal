@@ -1171,9 +1171,9 @@ private:
 		fraction<fbits>      _fraction;
 		decode(_raw_bits, _sign, _regime, _exponent, _fraction);
 		double s = (_sign ? -1.0 : 1.0);
-		double r = _regime.value();
-		double e = _exponent.value();
-		double f = (1.0 + _fraction.value());
+		double r = double(_regime.value());
+		double e = double(_exponent.value());
+		double f = (1.0 + double(_fraction.value()));
 		return s * r * e * f;
 	}
 	long double to_long_double() const {
