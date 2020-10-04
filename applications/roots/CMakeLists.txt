@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "prf" "Applications/Root Finding" "${SOURCES}")
+compile_all("true" "roots" "Applications/Root Finding" "${SOURCES}")
