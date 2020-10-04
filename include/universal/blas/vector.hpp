@@ -10,6 +10,46 @@
 #include <initializer_list>
 #include <cmath>  // for std::sqrt
 
+#if defined(__clang__)
+/* Clang/LLVM. ---------------------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+/* Intel ICC/ICPC. ------------------------------------------ */
+#define _HAS_NODISCARD 1
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+/* GNU GCC/G++. --------------------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+/* Hewlett-Packard C/aC++. ---------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+/* IBM XL C/C++. -------------------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(_MSC_VER)
+/* Microsoft Visual Studio. --------------------------------- */
+// already defineds _NODISCARD
+
+#elif defined(__PGI)
+/* Portland Group PGCC/PGCPP. ------------------------------- */
+#define _HAS_NODISCARD 1
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+/* Oracle Solaris Studio. ----------------------------------- */
+#define _HAS_NODISCARD 1
+
+#endif
+
+#if _HAS_NODISCARD
+#define _NODISCARD [[nodiscard]]
+#else // ^^^ CAN HAZ [[nodiscard]] / NO CAN HAZ [[nodiscard]] vvv
+#define _NODISCARD
+#endif // _HAS_NODISCARD
+
 namespace sw { namespace unum { namespace blas {
 
 template<typename Scalar>
