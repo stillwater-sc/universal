@@ -14,8 +14,7 @@
 // include the base test helpers
 #include "posit_test_helpers.hpp"
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 	//////////////////////////////////// RANDOMIZED TEST SUITE FOR LARGE POSITS ////////////////////////
 
@@ -206,8 +205,6 @@ namespace unum {
 	// We will then execute the binary operator nrOfRandom combinations.
 	template<size_t nbits, size_t es>
 	int ValidateBinaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
-		int nrOfFailedTests = 0;
-
 		std::string operation_string;
 		switch (opcode) {
 		case OPCODE_ADD:
@@ -247,14 +244,13 @@ namespace unum {
 		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
 		std::uniform_int_distribution<unsigned long long> distr;
-		posit<nbits, es> pa, pb, presult, preference;
-		double da, db;
-
+		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
+			posit<nbits, es> pa, pb, presult, preference;
 			pa.set_raw_bits(distr(eng));
-			da = double(pa);
 			pb.set_raw_bits(distr(eng));
-			db = double(pb);
+			double da = double(pa);
+			double db = double(pb);
 			// in case you have numeric_limits<long double>::digits trouble... this will show that
 			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " pa " << pa << std::endl;
 			//std::cout << "sizeof db: " << sizeof(db) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value db " << db << " at index " << ia << " pa " << pb << std::endl;
@@ -268,7 +264,7 @@ namespace unum {
 					if (bReportIndividualTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 				}
 				else {
-					throw err;
+					throw; // rethrow
 				}
 			}
 #else
@@ -284,7 +280,6 @@ namespace unum {
 				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, pa, pb, preference, presult);
 			}
 		}
-
 		return nrOfFailedTests;
 	}
 
@@ -293,14 +288,11 @@ namespace unum {
 	// We will then execute the binary operator nrOfRandom combinations.
 	template<size_t nbits, size_t es>
 	int ValidateUnaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
-		int nrOfFailedTests = 0;
-
 		std::string operation_string;
 		bool sqrtOperator = false;  // we need to filter negative values from the randoms
 		switch (opcode) {
 		default:
 		case OPCODE_NOP:
-			operation_string = "nop";
 			return 0;
 		case OPCODE_ADD:
 		case OPCODE_SUB:
@@ -356,12 +348,12 @@ namespace unum {
 		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
 		std::uniform_int_distribution<unsigned long long> distr;
-		posit<nbits, es> pa, presult, preference;
-		double da;
+		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
+			posit<nbits, es> pa, presult, preference;
 			pa.set_raw_bits(distr(eng));
 			if (sqrtOperator && pa < 0) pa = -pa;
-			da = double(pa);
+			double da = double(pa);
 			// in case you have numeric_limits<long double>::digits trouble... this will show that
 			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " pa " << pa << std::endl;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -373,7 +365,7 @@ namespace unum {
 					if (bReportIndividualTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 				}
 				else {
-					throw err;
+					throw;  // rethrow
 				}
 			}
 #else
@@ -428,14 +420,12 @@ namespace unum {
 
 		// execute the test
 		int nrOfFailedTests = 0;
-		//long double minpos = minpos_value<nbits + 1, es>();
-		long double da, input;
-		posit<nbits, es> presult, ptarget;
 		for (uint32_t i = 0; i < nrOfRandoms; ++i) {
+			posit<nbits, es> presult, ptarget;
 			// generate random value
 			unsigned long long value = distr(eng);
 			pref.set_raw_bits(value);   // assign to a posit<nbits+1,es> to generate the reference we know how to perturb
-			da = (long double)(pref);
+			long double da = (long double)(pref);
 
 			//std::cout << std::hex << "0x" << value << std::endl;
 			//std::cout << std::dec << da << std::endl;
@@ -490,6 +480,4 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 
-} // namespace unum
-} // namespace sw
-
+}} // namespace sw::unum
