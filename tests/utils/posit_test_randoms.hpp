@@ -443,6 +443,7 @@ namespace sw { namespace unum {
 			--pprev;
 			++pnext;
 			bitblock<nbits> raw_target;
+			long double input;
 			if (value % 2) {
 				// for odd values, we are between posit values, so we create the round-up and round-down cases
 
