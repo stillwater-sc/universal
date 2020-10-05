@@ -225,11 +225,9 @@ namespace unum {
 		// These larger posits will be at the mid-point between the smaller posit sample values
 		// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
 		// to test the rounding logic of the conversion.
-		constexpr unsigned max = nbits > 20 ? 20 : nbits;
+		constexpr size_t max = nbits > 20 ? 20 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << (max + 1));
 		size_t HALF = (size_t(1) << max);
-		posit<nbits + 1, es> pref, pprev, pnext;
-
 
 		if (nbits > 20) {
 			std::cout << "ValidateConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 20" << std::endl;
@@ -237,19 +235,14 @@ namespace unum {
 
 		// execute the test
 		int nrOfFailedTests = 0;
-		double minpos = minpos_value<nbits+1, es>();
-		double eps;
-		double da, input;
-		posit<nbits, es> pa;
 		for (size_t i = 0; i < NR_TEST_CASES; i++) {
+			posit<nbits + 1, es> pref, pprev, pnext;
+
 			pref.set_raw_bits(i);
-			da = double(pref);
-			if (i == 0) {
-				eps = minpos / 2.0;
-			}
-			else {
-				eps = da > 0 ? da * 1.0e-6 : da * -1.0e-6;
-			}
+			double da = double(pref);
+			double eps = (i == 0) ? minpos_value<nbits + 1, es>() / 2.0 : (da > 0 ? da * 1.0e-6 : da * -1.0e-6);
+			double input;
+			posit<nbits, es> pa;
 			if (i % 2) {
 				if (i == 1) {
 					// special case of projecting to +minpos
@@ -261,7 +254,6 @@ namespace unum {
 					input = da + eps;
 					pa = input;
 					nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
-
 				}
 				else if (i == HALF - 1) {
 					// special case of projecting to +maxpos
@@ -339,16 +331,14 @@ namespace unum {
 	template<>
 	int ValidateConversion<NBITS_IS_2, ES_IS_0>(const std::string& tag, bool bReportIndividualTestCases) {
 		int nrOfFailedTestCases = 0;
-		posit<NBITS_IS_2, ES_IS_0> p;
 		// special case
-		p = -INFINITY;
+		posit<NBITS_IS_2, ES_IS_0> p = -INFINITY;
 		if (!isnar(p)) nrOfFailedTestCases++;
 		// test vector
 		std::vector<double> in  = { -4.0, -2.0, -1.0, -0.5, -0.25, 0.0, 0.25, 0.5, 1.0, 2.0, 4.0 };
 		std::vector<double> ref = { -1.0, -1.0, -1.0, -1.0, -1.00, 0.0, 1.00, 1.0, 1.0, 1.0, 1.0 };
 		size_t ref_index = 0;
 		for (auto v : in) {
-
 			p = v;
 			double refv = ref[ref_index++];
 			if (double(p) != refv) {
@@ -368,17 +358,15 @@ namespace unum {
 		// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
 		constexpr unsigned max = nbits > 20 ? 20 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;  
-		int nrOfFailedTestCases = 0;
-
-		posit<nbits, es> p, presult;
+		int nrOfFailedTestCases = 0;		
 		// special cases in case we are clipped by the nbits > 20
 		long ref = 0x80000000;  // -2147483648
-		presult = ref;
+		posit<nbits, es> presult(ref);
 		if (ref != presult) {
 			std::cout << tag << " FAIL long(" << ref << ") != long(" << presult << ") : reference = -2147483648" << std::endl;
 			nrOfFailedTestCases++;
 		}
-		p = 1;
+		posit<nbits, es> p(1);
 		for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 			if (!p.isnar()) {
 				long ref = (long)p; // obtain the integer cast of this posit
@@ -632,14 +620,13 @@ namespace unum {
 	int ValidateSqrt(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		posit<nbits, es> pa, psqrt, pref;
 
-		double da;
 		for (size_t i = 1; i < NR_TEST_CASES; i++) {
+			posit<nbits, es> pa, psqrt, pref;
 			pa.set_raw_bits(i);
 			psqrt = sw::unum::sqrt(pa);
 			// generate reference
-			da = double(pa);
+			double da = double(pa);
 			pref = std::sqrt(da);
 			if (psqrt != pref) {
 				nrOfFailedTests++;
@@ -704,15 +691,14 @@ namespace unum {
 	int ValidateInPlaceAddition(const std::string& tag, bool bReportIndividualTestCases) {
 		const size_t NR_POSITS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		posit<nbits, es> pa, pb, psum, pref;
-
-		double da, db;
 		for (size_t i = 0; i < NR_POSITS; i++) {
+			posit<nbits, es> pa;
 			pa.set_raw_bits(i);
-			da = double(pa);
+			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
+				posit<nbits, es> pb, psum, pref;
 				pb.set_raw_bits(j);
-				db = double(pb);
+				double db = double(pb);
 				pref = da + db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 				try {
@@ -725,7 +711,7 @@ namespace unum {
 						psum.setnar();
 					}
 					else {
-						throw err;
+						throw; // rethrow
 					}
 				}
 
@@ -751,27 +737,27 @@ namespace unum {
 	int ValidateSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 		const size_t NR_POSITS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		posit<nbits, es> pa, pb, pref, pdif;
-
-		double da, db;
 		for (size_t i = 0; i < NR_POSITS; i++) {
+			posit<nbits, es> pa;
 			pa.set_raw_bits(i);
-			da = double(pa);
+			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
+				posit<nbits, es> pb, pref, pdif;
+
 				pb.set_raw_bits(j);
-				db = double(pb);
+				double db = double(pb);
 				pref = da - db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 				try {
 					pdif = pa - pb;
 				}
-				catch (const operand_is_nar& err) {
+				catch (const operand_is_nar&) {
 					if (pa.isnar() || pb.isnar()) {
 						// correctly caught the exception
 						pdif.setnar();
 					}
 					else {
-						throw err;
+						throw; // rethrow
 					}
 				}
 #else
@@ -795,15 +781,14 @@ namespace unum {
 	int ValidateInPlaceSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 		const size_t NR_POSITS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		posit<nbits, es> pa, pb, pref, pdif;
-
-		double da, db;
 		for (size_t i = 0; i < NR_POSITS; i++) {
+			posit<nbits, es> pa;
 			pa.set_raw_bits(i);
-			da = double(pa);
+			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
+				posit<nbits, es> pb, pref, pdif;
 				pb.set_raw_bits(j);
-				db = double(pb);
+				double db = double(pb);
 				pref = da - db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 				try {
@@ -816,7 +801,7 @@ namespace unum {
 						pdif.setnar();
 					}
 					else {
-						throw err;
+						throw;  // rethrow
 					}
 				}
 #else
@@ -841,27 +826,26 @@ namespace unum {
 	int ValidateMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
 		int nrOfFailedTests = 0;
 		const size_t NR_POSITS = (size_t(1) << nbits);
-
-		posit<nbits, es> pa, pb, pmul, pref;
-		double da, db;
 		for (size_t i = 0; i < NR_POSITS; i++) {
+			posit<nbits, es> pa;
 			pa.set_raw_bits(i);
-			da = double(pa);
+			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
+				posit<nbits, es> pb, pmul, pref;
 				pb.set_raw_bits(j);
-				db = double(pb);
+				double db = double(pb);
 				pref = da * db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 				try {
 					pmul = pa * pb;
 				}
-				catch (const operand_is_nar& err) {
+				catch (const operand_is_nar&) {
 					if (pa.isnar() || pb.isnar()) {
 						// correctly caught the exception
 						pmul.setnar();
 					}
 					else {
-						throw err;
+						throw;  // rethrow
 					}
 				}
 #else
@@ -884,15 +868,14 @@ namespace unum {
 	int ValidateInPlaceMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
 		int nrOfFailedTests = 0;
 		const size_t NR_POSITS = (size_t(1) << nbits);
-
-		posit<nbits, es> pa, pb, pmul, pref;
-		double da, db;
 		for (size_t i = 0; i < NR_POSITS; i++) {
+			posit<nbits, es> pa;
 			pa.set_raw_bits(i);
-			da = double(pa);
+			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
+				posit<nbits, es> pb, pmul, pref;
 				pb.set_raw_bits(j);
-				db = double(pb);
+				double db = double(pb);
 				pref = da * db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 				try {
@@ -929,12 +912,11 @@ namespace unum {
 	int ValidateReciprocation(const std::string& tag, bool bReportIndividualTestCases) {
 		const size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		posit<nbits, es> pa, preciprocal, preference;
-
-		double da;
 		for (size_t i = 0; i < NR_TEST_CASES; i++) {
+			posit<nbits, es> pa, preciprocal, preference;
 			pa.set_raw_bits(i);
 			// generate reference
+			double da;
 			if (pa.isnar()) {
 				preference.setnar();
 			}
@@ -958,17 +940,16 @@ namespace unum {
 	// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
 	template<size_t nbits, size_t es>
 	int ValidateDivision(const std::string& tag, bool bReportIndividualTestCases) {
+		constexpr size_t NR_POSITS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		const size_t NR_POSITS = (size_t(1) << nbits);
-
-		posit<nbits, es> pa, pb, pdiv, pref;
-		double da, db;
 		for (size_t i = 0; i < NR_POSITS; i++) {
+			posit<nbits, es> pa;
 			pa.set_raw_bits(i);
-			da = double(pa);
+			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
+				posit<nbits, es> pb, pdiv, pref;
 				pb.set_raw_bits(j);
-				db = double(pb);
+				double db = double(pb);
 				if (pb.isnar()) {
 					pref.setnar();
 				}
@@ -979,7 +960,7 @@ namespace unum {
 				try {
 					pdiv = pa / pb;
 				}
-				catch (const divide_by_zero& err) {
+				catch (const divide_by_zero&) {
 					if (pb.iszero()) {
 						// correctly caught the divide by zero condition
 						continue;
@@ -987,10 +968,10 @@ namespace unum {
 					}
 					else {
 						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
-						throw err; // rethrow
+						throw; // rethrow
 					}
 				}
-				catch (const divide_by_nar& err) {
+				catch (const divide_by_nar&) {
 					if (pb.isnar()) {
 						// correctly caught the divide by nar condition
 						continue;
@@ -998,10 +979,10 @@ namespace unum {
 					}
 					else {
 						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
-						throw err; // rethrow
+						throw; // rethrow
 					}
 				}
-				catch (const numerator_is_nar& err) {
+				catch (const numerator_is_nar&) {
 					if (pa.isnar()) {
 						// correctly caught the numerator is nar condition
 						continue;
@@ -1009,7 +990,7 @@ namespace unum {
 					}
 					else {
 						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
-						throw err; // rethrow
+						throw; // rethrow
 					}
 				}
 #else
@@ -1032,17 +1013,16 @@ namespace unum {
 	// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
 	template<size_t nbits, size_t es>
 	int ValidateInPlaceDivision(const std::string& tag, bool bReportIndividualTestCases) {
+		constexpr size_t NR_POSITS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
-		const size_t NR_POSITS = (size_t(1) << nbits);
-
-		posit<nbits, es> pa, pb, pdiv, pref;
-		double da, db;
 		for (size_t i = 0; i < NR_POSITS; i++) {
+			posit<nbits, es> pa;
 			pa.set_raw_bits(i);
-			da = double(pa);
+			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
+				posit<nbits, es> pb, pdiv, pref;
 				pb.set_raw_bits(j);
-				db = double(pb);
+				double db = double(pb);
 				if (pb.isnar()) {
 					pref.setnar();
 				}
@@ -1073,7 +1053,7 @@ namespace unum {
 					}
 					else {
 						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/", pa, pb, pref, pdiv);
-						throw err; // rethrow
+						throw; // rethrow
 					}
 				}
 				catch (const numerator_is_nar& err) {
@@ -1084,7 +1064,7 @@ namespace unum {
 					}
 					else {
 						if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", "/=", pa, pb, pref, pdiv);
-						throw err; // rethrow
+						throw; // rethrow
 					}
 				}
 #else
@@ -1109,17 +1089,17 @@ namespace unum {
 	// Posit NaR can be checked for equality/inequality
 	template<size_t nbits, size_t es>
 	int ValidatePositLogicEqual() {
-		const unsigned max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (unsigned(1) << max);
+		constexpr size_t max = nbits > 10 ? 10 : nbits;
+		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
-		sw::unum::posit<nbits, es> a, b;
-		bool ref, presult;
-
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+			posit<nbits, es> a;
 			a.set_raw_bits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+				posit<nbits, es> b;
 				b.set_raw_bits(j);
 				// set the golden reference
+				bool ref;
 				if (a.isnar() && b.isnar()) {
 					// special case of posit equality
 					ref = true;
@@ -1140,7 +1120,7 @@ namespace unum {
 					ref = (i == j ? true : false);
 				}
 
-				presult = a == b;
+				bool presult = (a == b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
 					std::cout << a << " == " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
@@ -1154,18 +1134,18 @@ namespace unum {
 	// Posit NaR can be checked for equality/inequality
 	template<size_t nbits, size_t es>
 	int ValidatePositLogicNotEqual() {
-		const unsigned max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (unsigned(1) << max);
+		constexpr size_t max = nbits > 10 ? 10 : nbits;
+		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
-		sw::unum::posit<nbits, es> a, b;
-		bool ref, presult;
-
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+			posit<nbits, es> a;
 			a.set_raw_bits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+				posit<nbits, es> b;
 				b.set_raw_bits(j);
 
 				// set the golden reference
+				bool ref;
 				if (a.isnar() && b.isnar()) {
 					// special case of posit equality
 					ref = false;
@@ -1186,8 +1166,7 @@ namespace unum {
 					ref = (i != j ? true : false);
 				}
 
-				presult = a != b;
-
+				bool presult = (a != b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
 					std::cout << a << " != " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
@@ -1201,18 +1180,18 @@ namespace unum {
 	// Posit NaR is smaller than any other value
 	template<size_t nbits, size_t es>
 	int ValidatePositLogicLessThan() {
-		const unsigned max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (unsigned(1) << max);
+		constexpr size_t max = nbits > 10 ? 10 : nbits;
+		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
-		sw::unum::posit<nbits, es> a, b;
-		bool ref, presult;
-
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+			posit<nbits, es> a;
 			a.set_raw_bits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+				posit<nbits, es> b;
 				b.set_raw_bits(j);
 
 				// generate the golden reference
+				bool ref;
 				if (a.isnar() && !b.isnar()) {
 					// special case of posit NaR
 					ref = true;
@@ -1222,10 +1201,9 @@ namespace unum {
 				}
 				else {
 					// same behavior as IEEE floats
-					ref = double(a) < double(b);
+					ref = (double(a) < double(b));
 				}
-
-				presult = a < b;
+				bool presult = (a < b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
 					std::cout << a << " < " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
@@ -1239,28 +1217,22 @@ namespace unum {
 	// Any number is greater-than posit NaR
 	template<size_t nbits, size_t es>
 	int ValidatePositLogicGreaterThan() {
-		const unsigned max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (unsigned(1) << max);
+		constexpr size_t max = nbits > 10 ? 10 : nbits;
+		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
-		sw::unum::posit<nbits, es> a, b;
-		bool ref, presult;
-
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+			posit<nbits, es> a;
 			a.set_raw_bits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+				posit<nbits, es> b;
 				b.set_raw_bits(j);
 
 				// generate the golden reference
-				if (!a.isnar() && b.isnar()) {
-					// special case of posit NaR
-					ref = true;
+				bool ref = (double(a) > double(b)); // same behavior as IEEE floats 
+				if (!a.isnar() && b.isnar()) {					
+					ref = true; // special case of posit NaR
 				}
-				else {
-					// same behavior as IEEE floats
-					ref = double(a) > double(b);
-				}
-
-				presult = a > b;
+				bool presult = (a > b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
 					std::cout << a << " > " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
@@ -1274,29 +1246,23 @@ namespace unum {
 	// Posit NaR is smaller or equal than any other value
 	template<size_t nbits, size_t es>
 	int ValidatePositLogicLessOrEqualThan() {
-		const unsigned max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (unsigned(1) << max);
+		constexpr size_t max = nbits > 10 ? 10 : nbits;
+		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
-		sw::unum::posit<nbits, es> a, b;
-		bool ref, presult;
-
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+			posit<nbits, es> a;
 			a.set_raw_bits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+				posit<nbits, es> b;
 				b.set_raw_bits(j);
 
-				// set the golden reference
+				// set the golden reference			
+				bool ref = (double(a) <= double(b));// same behavior as IEEE floats
 				if (a.isnar()) {
 					// special case of posit <= for NaR
 					ref = true;
 				}
-				else {
-					// same behavior as IEEE floats
-					ref = double(a) <= double(b);
-				}
-
-				presult = a <= b;
-
+				bool presult = (a <= b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
 					std::cout << a << " <= " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
@@ -1310,29 +1276,23 @@ namespace unum {
 	// Any number is greater-or-equal-than posit NaR
 	template<size_t nbits, size_t es>
 	int ValidatePositLogicGreaterOrEqualThan() {
-		const unsigned max = nbits > 10 ? 10 : nbits;
-		size_t NR_TEST_CASES = (unsigned(1) << max);
+		constexpr size_t max = nbits > 10 ? 10 : nbits;
+		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
-		sw::unum::posit<nbits, es> a, b;
-		bool ref, presult;
-
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+			posit<nbits, es> a;
 			a.set_raw_bits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+				posit<nbits, es> b;
 				b.set_raw_bits(j);
 
-				// set the golden reference
+				// set the golden reference			
+				bool ref = (double(a) >= double(b));// same behavior as IEEE floats
 				if (b.isnar()) {
 					// special case of posit >= for NaR
 					ref = true;
 				}
-				else {
-					// same behavior as IEEE floats
-					ref = double(a) >= double(b);
-				}
-
-				presult = a >= b;
-
+				bool presult = (a >= b);
 				if (ref != presult) {
 					nrOfFailedTestCases++;
 					std::cout << a << " >= " << b << " fails: reference is " << ref << " actual is " << presult << std::endl;
