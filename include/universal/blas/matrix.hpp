@@ -108,7 +108,6 @@ public:
 		return *this;
 	}
 
-	template<typename Scalar>
 	matrix& operator*=(const Scalar& a) {
 		using size_type = typename matrix<Scalar>::size_type;
 		for (size_type e = 0; e < _m*_n; ++e) {
