@@ -88,6 +88,35 @@ public:
 		return proxy;
 	}
 
+	// matrix element-wise sum
+	matrix& operator+=(const matrix& rhs) {
+		// check if the matrices are compatible
+		if (_m != rhs._m || _n != rhs._n) return matrix{};
+		for (size_type e = 0; e < _m * _n; ++e) {
+			data[e] += rhs.data[e];
+		}
+		return *this;
+	}
+
+	// matrix element-wise difference
+	matrix& operator-=(const matrix& rhs) {
+		// check if the matrices are compatible
+		if (_m != rhs._m || _n != rhs._n) return matrix{};
+		for (size_type e = 0; e < _m*_n; ++e) {
+			data[e] -= rhs.data[e];
+		}
+		return *this;
+	}
+
+	template<typename Scalar>
+	matrix& operator*=(const Scalar& a) {
+		using size_type = typename matrix<Scalar>::size_type;
+		for (size_type e = 0; e < _m*_n; ++e) {
+			data[e] *= a;
+		}
+		return *this;
+	}
+
 	// modifiers
 	inline void setzero() { for (auto& elem : data) elem = Scalar(0); }
 	inline void resize(size_t m, size_t n) { _m = m; _n = n; data.resize(m * n); }
@@ -103,9 +132,6 @@ public:
 	matrix transpose() const {
 		matrix M(*this);
 		return M;
-	}
-	matrix& diagonal() {
-
 	}
 
 private:
@@ -133,6 +159,28 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 	return ostr;
 }
 
+// matrix element-wise sum
+template<typename Scalar>
+matrix<Scalar> operator+(const matrix<Scalar>& A, const matrix<Scalar>& B) {
+	matrix<Scalar> Sum(A);
+	return Sum += B;
+}
+
+// matrix element-wise difference
+template<typename Scalar>
+matrix<Scalar> operator-(const matrix<Scalar>& A, const matrix<Scalar>& B) {
+	matrix<Scalar> Diff(A);
+	return Diff -= B;
+}
+
+// matrix scaling
+template<typename Scalar>
+matrix<Scalar> operator*(const Scalar& a, const matrix<Scalar>& B) {
+	matrix<Scalar> A(B);
+	return A *= a;
+}
+
+// matrix-vector multiply
 template<typename Scalar>
 vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
 	vector<Scalar> b(A.rows());

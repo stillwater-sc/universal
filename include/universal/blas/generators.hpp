@@ -10,4 +10,5 @@
 
 // matrix generators
 #include "uniform_random.hpp"
+#include "ftcs_fd1D.hpp"
 #include "laplace2D.hpp"

@@ -49,3 +49,6 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 // L3
 #include <universal/blas/lu.hpp>
 #include <universal/blas/lsq.hpp>
+
+// Matrix operators
+#include <universal/blas/operators.hpp>
