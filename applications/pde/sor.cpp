@@ -60,10 +60,10 @@ try {
 	using namespace sw::unum;
 	using namespace sw::unum::blas;
 
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
-//	using Scalar = posit<nbits, es>;
-	using Scalar = float;
+	constexpr size_t nbits = 32;
+	constexpr size_t es = 2;
+	using Scalar = posit<nbits, es>;
+//	using Scalar = float;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
 	using Vector = sw::unum::blas::vector<Scalar>;
 
@@ -88,6 +88,11 @@ try {
 	itr = sor(A, b, 1.25f);
 	itr = sor(A, b, 1.125f);
 	itr = sor(A, b, 1.0625f);
+
+	Matrix B(3, 3);
+	// return an error
+	A += B;
+	A -= B;
 	/*
 	   in matrix form
 	ftcs_fd1D(A, 5, 5);

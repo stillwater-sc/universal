@@ -91,7 +91,11 @@ public:
 	// matrix element-wise sum
 	matrix& operator+=(const matrix& rhs) {
 		// check if the matrices are compatible
-		if (_m != rhs._m || _n != rhs._n) return matrix{};
+		if (_m != rhs._m || _n != rhs._n) {
+			std::cerr << "Element-wise matrix sum received incompatible matrices ("
+				<< _m << ", " << _n << ") += (" << rhs._m << ", " << rhs._n << ")\n";
+			return *this; // return without changing
+		}
 		for (size_type e = 0; e < _m * _n; ++e) {
 			data[e] += rhs.data[e];
 		}
@@ -101,13 +105,18 @@ public:
 	// matrix element-wise difference
 	matrix& operator-=(const matrix& rhs) {
 		// check if the matrices are compatible
-		if (_m != rhs._m || _n != rhs._n) return matrix{};
+		if (_m != rhs._m || _n != rhs._n) {
+			std::cerr << "Element-wise matrix difference received incompatible matrices ("
+				<< _m << ", " << _n << ") -= (" << rhs._m << ", " << rhs._n << ")\n";
+			return *this; // return without changing
+		}
 		for (size_type e = 0; e < _m*_n; ++e) {
 			data[e] -= rhs.data[e];
 		}
 		return *this;
 	}
 
+	// scale all matrix elements
 	matrix& operator*=(const Scalar& a) {
 		using size_type = typename matrix<Scalar>::size_type;
 		for (size_type e = 0; e < _m*_n; ++e) {
