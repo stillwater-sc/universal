@@ -41,7 +41,7 @@ void ComparePositDecompositions(sw::unum::blas::matrix< sw::unum::posit<nbits, e
 }
 
 template<size_t nbits, size_t es>
-void GaussianEliminationTest(size_t N) {
+void GaussianEliminationTest() {
 	using namespace std;
 	using namespace sw::unum;
 	using namespace sw::unum::blas;
@@ -66,8 +66,7 @@ void GaussianEliminationTest(size_t N) {
 		{ 4.0, 3.0, 2.0, 1.0, 0.0 },
 		{ 5.0, 4.0, 3.0, 2.0, 1.0 },
 	};
-	Matrix A(N, N);
-	A = L * U;   // construct the A matrix to solve
+	auto A = L * U;   // construct the A matrix to solve
 	cout << "L\n" << L << endl;
 	cout << "U\n" << U << endl;
 	cout << "A\n" << A << endl;
@@ -80,8 +79,7 @@ void GaussianEliminationTest(size_t N) {
 		epsplus,
 		epsplus
 	};
-	Vector b(N);
-	b = fmv(A, x);   // construct the right hand side
+	auto b = fmv(A, x);   // construct the right hand side
 	cout << "b" << b << endl;
 	cout << endl << ">>>>>>>>>>>>>>>>" << endl;
 	cout << "LinearSolve fused-dot product" << endl;
@@ -94,23 +92,50 @@ try {
 	using namespace sw::unum;
 	using namespace sw::unum::blas;
 
-	float eps = std::numeric_limits<float>::epsilon();
-	float epsminus = 1.0f - eps;
-	float epsplus  = 1.0f + eps;
-
 	// We want to solve the system Ax=b
-	GaussianEliminationTest<32, 2>(1);
+	GaussianEliminationTest<32, 2>();
 
-#if 1
-	cout << "posit<25,1>\n";
-	cout << "1.0 - FLT_EPSILON = " << setprecision(17) << epsminus << " converts to " << posit<25, 1>(epsminus) << endl;
-	cout << "1.0 + FLT_EPSILON = " << setprecision(17) << epsplus << " converts to " << posit<25, 1>(epsplus) << endl;
-	cout << "posit<26,1>\n";
-	cout << "1.0 - FLT_EPSILON = " << setprecision(17) << epsminus << " converts to " << posit<26, 1>(epsminus) << endl;
-	cout << "1.0 + FLT_EPSILON = " << setprecision(17) << epsplus << " converts to " << posit<26, 1>(epsplus) << endl;
-	cout << "posit<27,1>\n";
-	cout << "1.0 - FLT_EPSILON = " << setprecision(17) << epsminus << " converts to " << posit<27, 1>(epsminus) << endl;
-	cout << "1.0 + FLT_EPSILON = " << setprecision(17) << epsplus << " converts to " << posit<27, 1>(epsplus) << endl;
+#if 0
+	constexpr float eps = std::numeric_limits<float>::epsilon();
+	constexpr float epsminus = 1.0f - eps;
+	constexpr float epsplus = 1.0f + eps;
+
+	cout << setprecision(std::numeric_limits<float>::max_digits10);
+	cout << "posit<25,2>\n";
+	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<25, 2>(epsminus) << endl;
+	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<25, 2>(epsplus) << endl;
+	cout << "posit<26,2>\n";
+	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<26, 2>(epsminus) << endl;
+	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<26, 2>(epsplus) << endl;
+	cout << "posit<27,2>\n";
+	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<27, 2>(epsminus) << endl;
+	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<27, 2>(epsplus) << endl;
+	cout << "posit<28,2>\n";
+	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<28, 2>(epsminus) << endl;
+	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<28, 2>(epsplus) << endl;
+	cout << "posit<29,2>\n";
+	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<29, 2>(epsminus) << endl;
+	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<29, 2>(epsplus) << endl;
+	cout << "posit<30,2>\n";
+	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<30, 2>(epsminus) << endl;
+	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<30, 2>(epsplus) << endl;
+	cout << "posit<31,2>\n";
+	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<31, 2>(epsminus) << endl;
+	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<31, 2>(epsplus) << endl;
+	cout << "posit<32,2>\n";
+	cout << "1.0 - FLT_EPSILON = " << epsminus << " converts to posit value " << posit<32, 2>(epsminus) << endl;
+	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << posit<32, 2>(epsplus) << endl;
+
+	cout << endl << endl;
+	// is there a representational difference between 1+FLT_EPSILON in float versus posit<32,2>?
+	double depsplus = epsplus;
+	double pepsplus = double(posit<32, 2>(epsplus));
+	cout << "1.0 + FLT_EPSILON = " << depsplus << " converts to posit value " << epsplus << endl;
+	cout << "1.0 + FLT_EPSILON = " << depsplus << " converts to posit value " << pepsplus << endl;
+
+	cout << "1.0 + FLT_EPSILON = " << epsplus << " converts to posit value " << hex_format(posit<32, 2>(epsplus)) << endl;
+	cout << "1.0 + FLT_EPSILON = " << depsplus << " converts to posit value " << hex_format(posit<32, 2>(pepsplus)) << endl;
+
 #endif
 
 	return EXIT_SUCCESS;
