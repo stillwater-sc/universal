@@ -8,16 +8,20 @@
 //
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+// enable fast posit<32,2>
+#define POSIT_FAST_POSIT_32_2 1
+#include <universal/posit/posit>
 #include <universal/blas/blas.hpp>
+#include <universal/blas/generators.hpp>
 #include <universal/functions/isrepresentable.hpp>
 
-template<size_t nbits, size_t es, size_t capacity = 10>
-void ComparePositDecompositions(sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A, sw::unum::blas::vector< sw::unum::posit<nbits, es> >& x, sw::unum::blas::vector< sw::unum::posit<nbits, es> >& b) {
+template<typename Matrix, typename Vector>
+void BenchmarkGaussJordan(const Matrix& A, Vector& x, const Vector& b) {
 	using namespace std;
 	using namespace sw::unum;
 	using namespace sw::unum::blas;
 	assert(num_rows(A) == num_cols(A));
-
+	size_t N = num_cols(A);
 	{
 		using namespace std::chrono;
 		steady_clock::time_point t1 = steady_clock::now();
@@ -26,7 +30,7 @@ void ComparePositDecompositions(sw::unum::blas::matrix< sw::unum::posit<nbits, e
 		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 		double elapsed = time_span.count();
 		std::cout << "Gauss-Jordan took " << elapsed << " seconds." << std::endl;
-		std::cout << "Performance " << (uint32_t)(N*N*N / (1000 * elapsed)) << " KOPS/s" << std::endl;
+		std::cout << "Performance " << (uint32_t)(N*N*N / (1000000.0 * elapsed)) << " MOPS/s" << std::endl;
 
 		x = Ainv * b;
 		cout << "Inverse\n" << Ainv << endl;
@@ -37,54 +41,7 @@ void ComparePositDecompositions(sw::unum::blas::matrix< sw::unum::posit<nbits, e
 	std::cout << std::endl;
 }
 
-template<size_t nbits, size_t es>
-void GaussianEliminationTest() {
-	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
-	using Scalar = sw::unum::posit<nbits, es>;
-	using Vector = sw::unum::blas::vector<Scalar>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
-	cout << "Using " << dynamic_range<nbits, es>() << endl;
-
-	// repeat set up for posits
-	cout << "Posit inputs\n";
-	Matrix U = {     // define the upper triangular matrix
-		{ 1.0, 2.0, 3.0, 4.0, 5.0 },
-		{ 0.0, 1.0, 2.0, 3.0, 4.0 },
-		{ 0.0, 0.0, 1.0, 2.0, 3.0 },
-		{ 0.0, 0.0, 0.0, 1.0, 2.0 },
-		{ 0.0, 0.0, 0.0, 0.0, 1.0 },
-	};
-	Matrix L = {     // define the lower triangular matrix
-		{ 1.0, 0.0, 0.0, 0.0, 0.0 },
-		{ 2.0, 1.0, 0.0, 0.0, 0.0 },
-		{ 3.0, 2.0, 1.0, 0.0, 0.0 },
-		{ 4.0, 3.0, 2.0, 1.0, 0.0 },
-		{ 5.0, 4.0, 3.0, 2.0, 1.0 },
-	};
-	auto A = L * U;   // construct the A matrix to solve
-	cout << "L\n" << L << endl;
-	cout << "U\n" << U << endl;
-	cout << "A\n" << A << endl;
-	// define a difficult solution
-	Scalar epsplus = Scalar(1) + numeric_limits<Scalar>::epsilon();
-	Vector x = {
-		epsplus,
-		epsplus,
-		epsplus,
-		epsplus,
-		epsplus
-	};
-	auto b = fmv(A, x);   // construct the right hand side
-	cout << "b" << b << endl;
-	cout << endl << ">>>>>>>>>>>>>>>>" << endl;
-	cout << "LinearSolve fused-dot product" << endl;
-	ComparePositDecompositions(A, x, b);
-}
-
-int main(int argc, char** argv)
-try {
+void Test1() {
 	using namespace std;
 	using namespace sw::unum;
 	using namespace sw::unum::blas;
@@ -115,6 +72,58 @@ try {
 	auto Linv = inv(L);
 	cout << Linv << endl;
 	cout << Linv * L << endl << L * Linv << endl;
+}
+
+int main(int argc, char** argv)
+try {
+	using namespace std;
+	using namespace sw::unum;
+	using namespace sw::unum::blas;
+
+	{
+		using Scalar = float;
+		using Matrix = sw::unum::blas::matrix<Scalar>;
+		using Vector = sw::unum::blas::vector<Scalar>;
+
+		constexpr size_t N = 5;
+		Matrix A;
+		ftcs_fd1D(A, N, N);
+		cout << "Finite Difference Matrix\n" << A << endl;
+
+		Vector x(N);
+		x = Scalar(1);
+		auto b = A * x;
+
+		BenchmarkGaussJordan(A, x, b);
+
+		// visual feedback
+		auto Ainv = inv(A);
+		cout << Ainv << endl;
+		cout << Ainv * A << endl;
+	}
+
+	{
+		using Scalar = sw::unum::posit<32,2>;
+		using Matrix = sw::unum::blas::matrix<Scalar>;
+		using Vector = sw::unum::blas::vector<Scalar>;
+
+		constexpr size_t N = 5;
+		Matrix A;
+		ftcs_fd1D(A, N, N);
+		cout << "Finite Difference Matrix\n" << A << endl;
+
+		Vector x(N);
+		x = Scalar(1);
+		auto b = A * x;
+
+		BenchmarkGaussJordan(A, x, b);
+
+		// visual feedback
+		auto Ainv = inv(A);
+		cout << Ainv << endl;
+		cout << Ainv * A << endl;
+	}
+
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
