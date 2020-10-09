@@ -91,7 +91,7 @@ try {
 
 
 	//  in matrix form
-	ftcs_fd1D(A, 5, 5);
+	tridiag(A, 5);
 	cout << A << endl;
 	auto diagonal = diag(A);
 	cout << "\nDiagonal vector\n" << diagonal << endl;

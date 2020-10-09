@@ -87,7 +87,7 @@ void FiniteDifferenceTest(size_t N) {
 	using Vector = sw::unum::blas::vector<Scalar>;
 
 	Matrix A;
-	ftcs_fd1D(A, N, N);
+	tridiag(A, N, Scalar(-1), Scalar(2), Scalar(-1));
 
 	Vector x(N);
 	x = Scalar(1);
