@@ -9,6 +9,21 @@
 
 namespace sw { namespace unum { namespace blas { 
 
+// generate identity matrix
+template<typename Scalar>
+matrix<Scalar> eye(size_t N) {
+	matrix<Scalar> I(N, N);
+	I = Scalar(1.0f);
+	return I;
+}
+
+// generate transposed matrix
+template<typename Scalar>
+matrix<Scalar> transpose(const matrix<Scalar>& A) {
+	matrix<Scalar> B(A);
+	return B.transpose();
+}
+
 // return the diagonal of the matrix
 template<typename Scalar>
 vector<Scalar> diag(const matrix<Scalar>& A) {

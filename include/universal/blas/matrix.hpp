@@ -7,6 +7,7 @@
 #include <iostream>
 #include <vector>
 #include <initializer_list>
+#include <map>
 #include <universal/blas/exceptions.hpp>
 #include <universal/posit/posit_fwd.hpp>
 
@@ -137,9 +138,31 @@ public:
 		matrix z(m, n);
 		return z;
 	}
-	matrix transpose() const {
-		matrix M(*this);
-		return M;
+	// in-place transpose
+	matrix& transpose() {
+		size_t size = _m * _n - 1;
+		Scalar e; // holds value of element to be swapped
+		size_t next; // index of e
+		size_t cycleStart; // holds start of cycle
+		size_t index;
+		std::map<size_t, bool> b; // mark visits
+		b[0] = true; // A(0,0) stays put
+		b[size] = true; // A(m-1,n-1) stays put
+		index = 1;
+		while (index < size) {
+			cycleStart = index;
+			e = data[index];
+			do {
+				next = (index * _m) % size;
+				std::swap(data[next], e);
+				b[index] = true;
+				index = next;
+			} while (index != cycleStart);
+			// get the next cycle starting point
+			for (index = 1; index < size && b[index]; ++index) {}
+		}
+		std::swap(_m, _n);
+		return *this;
 	}
 
 private:
@@ -254,6 +277,29 @@ matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const 
 		}
 	}
 	return C;
+}
+
+// matrix equivalence tests
+template<typename Matrix>
+bool operator==(const Matrix& A, const Matrix& B) {
+	if (num_rows(A) != num_rows(B) ||
+		num_cols(A) != num_cols(B)) return false;
+	bool equal = true;
+	for (size_t i = 0; i < num_rows(A); ++i) {
+		for (size_t j = 0; j < num_cols(A); ++j) {
+			if (A(i, j) != B(i, j)) {
+				equal = false;
+				break;
+			}
+		}
+		if (!equal) break;
+	}
+	return equal;
+}
+
+template<typename Matrix>
+bool operator!=(const Matrix& A, const Matrix& B) {
+	return !(A == B);
 }
 
 }}} // namespace sw::unum::blas
