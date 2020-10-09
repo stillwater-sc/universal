@@ -34,9 +34,11 @@ void BenchmarkGaussJordan(const Matrix& A, Vector& x, const Vector& b) {
 		std::cout << "Performance " << (uint32_t)(N*N*N / (1000000.0 * elapsed)) << " MOPS/s" << std::endl;
 
 		x = Ainv * b;
-		cout << "Inverse\n" << Ainv << endl;
-		cout << "Solution\n" << x << endl;
-		cout << "RHS\n" << b << endl;
+		if (N < 10) {
+			cout << "Inverse\n" << Ainv << endl;
+			cout << "Solution\n" << x << endl;
+			cout << "RHS\n" << b << endl;
+		}
 	}
 
 	std::cout << std::endl;
@@ -75,27 +77,26 @@ void Test1() {
 	cout << Linv * L << endl << L * Linv << endl;
 }
 
-int main(int argc, char** argv)
-try {
+template<typename Scalar>
+void FiniteDifferenceTest(size_t N) {
 	using namespace std;
 	using namespace sw::unum;
 	using namespace sw::unum::blas;
 
-	{
-		using Scalar = float;
-		using Matrix = sw::unum::blas::matrix<Scalar>;
-		using Vector = sw::unum::blas::vector<Scalar>;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Vector = sw::unum::blas::vector<Scalar>;
 
-		constexpr size_t N = 5;
-		Matrix A;
-		ftcs_fd1D(A, N, N);
+	Matrix A;
+	ftcs_fd1D(A, N, N);
+
+	Vector x(N);
+	x = Scalar(1);
+	auto b = A * x;
+
+	BenchmarkGaussJordan(A, x, b);
+
+	if (N < 10) {
 		cout << "Finite Difference Matrix\n" << A << endl;
-
-		Vector x(N);
-		x = Scalar(1);
-		auto b = A * x;
-
-		BenchmarkGaussJordan(A, x, b);
 
 		// visual feedback
 		auto Ainv = inv(A);
@@ -104,30 +105,17 @@ try {
 		auto L = tril(A);
 		cout << inv(L) << endl;
 	}
-	cout << "----------------------------------------------------------------------\n";
-	{
-		using Scalar = sw::unum::posit<32,2>;
-		using Matrix = sw::unum::blas::matrix<Scalar>;
-		using Vector = sw::unum::blas::vector<Scalar>;
+}
+int main(int argc, char** argv)
+try {
+	using namespace std;
 
-		constexpr size_t N = 5;
-		Matrix A;
-		ftcs_fd1D(A, N, N);
-		cout << "Finite Difference Matrix\n" << A << endl;
+	FiniteDifferenceTest<float>(5);
+	FiniteDifferenceTest<sw::unum::posit<32, 2>>(5);
 
-		Vector x(N);
-		x = Scalar(1);
-		auto b = A * x;
-
-		BenchmarkGaussJordan(A, x, b);
-
-		// visual feedback
-		auto Ainv = inv(A);
-		cout << Ainv << endl;
-		cout << Ainv * A << endl;
-		auto L = tril(A);
-		cout << inv(L) << endl;
-	}
+	constexpr size_t N = 100;
+	FiniteDifferenceTest<float>(N);
+	FiniteDifferenceTest < sw::unum::posit<32, 2> >(N);
 
 	return EXIT_SUCCESS;
 }

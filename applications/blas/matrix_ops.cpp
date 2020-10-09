@@ -40,6 +40,14 @@ void generateMatrices() {
 	laplace2D(A, 5, 5);
 	cout << A << endl;
 
+	// create a row order index matrix
+	row_order_index(A);
+	cout << A << endl;
+
+	// create a column order index matrix
+	column_order_index(A);
+	cout << A << endl;
+
 	// create a uniform random matrix
 	Matrix B(10, 10);
 	uniform_rand(B, 0.0, 1.0);
@@ -54,6 +62,21 @@ try {
 	generateMatrices< sw::unum::posit< 8, 0> >();
 	generateMatrices< sw::unum::posit<16, 1> >();
 	generateMatrices< sw::unum::posit<32, 2> >();
+
+	{
+		using Scalar = float;
+		using Matrix = sw::unum::blas::matrix<Scalar>;
+		Matrix A(23, 57);
+		row_order_index(A);
+		Matrix B(A);
+		A.transpose().transpose();
+		if (A != B) {
+			cout << "transpose FAIL\n";
+		}
+		else {
+			cout << "transpose PASS\n";
+		}
+	}
 
 	return EXIT_SUCCESS;
 }

@@ -12,7 +12,7 @@
 #include <universal/functions/isrepresentable.hpp>
 
 template<size_t nbits, size_t es, size_t capacity = 10>
-void ComparePositDecompositions(sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A, sw::unum::blas::vector< sw::unum::posit<nbits, es> >& x, sw::unum::blas::vector< sw::unum::posit<nbits, es> >& b) {
+void BenchmarkLUDecomposition(sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A, sw::unum::blas::vector< sw::unum::posit<nbits, es> >& x, sw::unum::blas::vector< sw::unum::posit<nbits, es> >& b) {
 	using namespace std;
 	using namespace sw::unum;
 	using namespace sw::unum::blas;
@@ -37,6 +37,22 @@ void ComparePositDecompositions(sw::unum::blas::matrix< sw::unum::posit<nbits, e
 		cout << "RHS\n" << b << endl;
 	}
 
+	{
+		using namespace std::chrono;
+		steady_clock::time_point t1 = steady_clock::now();
+		CroutFDP(A, LU);
+		steady_clock::time_point t2 = steady_clock::now();
+		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+		double elapsed = time_span.count();
+		std::cout << "CroutFDP took " << elapsed << " seconds." << std::endl;
+		std::cout << "Performance " << (uint32_t)(N * N * N / (1000 * elapsed)) << " KOPS/s" << std::endl;
+
+		SolveCroutFDP(LU, b, x);
+		cout << "CroutFDP LU\n" << LU << endl;
+		cout << "Solution\n" << x << endl;
+		cout << "RHS\n" << b << endl;
+	}
+
 	std::cout << std::endl;
 }
 
@@ -53,37 +69,32 @@ void GaussianEliminationTest() {
 	// repeat set up for posits
 	cout << "Posit inputs\n";
 	Matrix U = {     // define the upper triangular matrix
-		{ 1.0, 2.0, 3.0, 4.0, 5.0 },
-		{ 0.0, 1.0, 2.0, 3.0, 4.0 },
-		{ 0.0, 0.0, 1.0, 2.0, 3.0 },
-		{ 0.0, 0.0, 0.0, 1.0, 2.0 },
-		{ 0.0, 0.0, 0.0, 0.0, 1.0 },
+		{ 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0 },
+		{ 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0 },
+		{ 0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0 },
+		{ 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0 },
+		{ 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0 },
+		{ 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0, 4.0 },
+		{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0, 3.0 },
+		{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.0 },
+		{ 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0 },
 	};
-	Matrix L = {     // define the lower triangular matrix
-		{ 1.0, 0.0, 0.0, 0.0, 0.0 },
-		{ 2.0, 1.0, 0.0, 0.0, 0.0 },
-		{ 3.0, 2.0, 1.0, 0.0, 0.0 },
-		{ 4.0, 3.0, 2.0, 1.0, 0.0 },
-		{ 5.0, 4.0, 3.0, 2.0, 1.0 },
-	};
+	Matrix L = transpose(U);
+
 	auto A = L * U;   // construct the A matrix to solve
 	cout << "L\n" << L << endl;
 	cout << "U\n" << U << endl;
 	cout << "A\n" << A << endl;
+	size_t N = num_cols(A);
 	// define a difficult solution
 	Scalar epsplus = Scalar(1) + numeric_limits<Scalar>::epsilon();
-	Vector x = {
-		epsplus,
-		epsplus,
-		epsplus,
-		epsplus,
-		epsplus
-	};
+	Vector x(N);
+	x = epsplus;
 	auto b = fmv(A, x);   // construct the right hand side
 	cout << "b" << b << endl;
 	cout << endl << ">>>>>>>>>>>>>>>>" << endl;
-	cout << "LinearSolve fused-dot product" << endl;
-	ComparePositDecompositions(A, x, b);
+
+	BenchmarkLUDecomposition(A, x, b);
 }
 
 int main(int argc, char** argv)

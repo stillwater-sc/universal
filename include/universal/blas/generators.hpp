@@ -9,6 +9,7 @@
 #include "matrix.hpp"
 
 // matrix generators
+#include "index_matrix.hpp"
 #include "uniform_random.hpp"
 #include "ftcs_fd1D.hpp"
 #include "laplace2D.hpp"
