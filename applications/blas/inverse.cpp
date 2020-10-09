@@ -8,7 +8,8 @@
 //
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-// enable fast posit<32,2>
+// enable fast posit<16,1> and posit<32,2>
+#define POSIT_FAST_POSIT_16_1 1
 #define POSIT_FAST_POSIT_32_2 1
 #include <universal/posit/posit>
 #include <universal/blas/blas.hpp>
@@ -100,8 +101,10 @@ try {
 		auto Ainv = inv(A);
 		cout << Ainv << endl;
 		cout << Ainv * A << endl;
+		auto L = tril(A);
+		cout << inv(L) << endl;
 	}
-
+	cout << "----------------------------------------------------------------------\n";
 	{
 		using Scalar = sw::unum::posit<32,2>;
 		using Matrix = sw::unum::blas::matrix<Scalar>;
@@ -122,6 +125,8 @@ try {
 		auto Ainv = inv(A);
 		cout << Ainv << endl;
 		cout << Ainv * A << endl;
+		auto L = tril(A);
+		cout << inv(L) << endl;
 	}
 
 	return EXIT_SUCCESS;

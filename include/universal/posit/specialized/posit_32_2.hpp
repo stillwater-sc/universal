@@ -172,7 +172,7 @@ public:
 		}
 #endif
 		if (b.iszero()) return *this;
-		if (iszero()) { _bits = b._bits; return *this; }
+		if (iszero()) { _bits = -int32_t(b._bits) & 0xFFFFFFFF; return *this; }
 		posit bComplement = b.twosComplement();
 		if (isneg() != b.isneg()) return *this += bComplement;
 

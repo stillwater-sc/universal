@@ -69,7 +69,7 @@ matrix<Scalar> inv(const matrix<Scalar>& A) {
 			}
 			else {
 				auto c = B(i, j) / B(j, j);
-				//std::cout << "pivot (" << i << ", " << j << "): " << B(i,j) << " / " << B(j,j) << " = " << c << std::endl;
+//				std::cout << "pivot (" << i << ", " << j << "): " << B(i,j) << " / " << B(j,j) << " = " << c << std::endl;
 				for (size_t k = 0; k < N; ++k) {
 					B[i][k] = B[i][k] - c * B[j][k];
 					Ainv[i][k] = Ainv[i][k] - c * Ainv[j][k];

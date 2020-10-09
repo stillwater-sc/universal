@@ -89,12 +89,8 @@ try {
 	itr = sor(A, b, 1.125f);
 	itr = sor(A, b, 1.0625f);
 
-	Matrix B(3, 3);
-	// return an error
-	A += B;
-	A -= B;
-	/*
-	   in matrix form
+
+	//  in matrix form
 	ftcs_fd1D(A, 5, 5);
 	cout << A << endl;
 	auto diagonal = diag(A);
@@ -105,14 +101,15 @@ try {
 	auto B = (D + w * L);
 
 	// check for convergence of the system
-	auto e = 1.5; //  max(eig(inv(D + w * L) * (D * (1 - w) - w * U)));
+	auto e = 0.95; //  max(eig(inv(D + w * L) * (D * (1 - w) - w * U)));
 	if (abs(e) >= 1) {
 		cerr << "Not convergent: modulus of the largest eigen value is >= 1\n";
 		return EXIT_FAILURE;
 	}
 
-	I need eig() and inv() operators
-	*/
+	cout << "Inverse of (D + w*L)\n" << inv(B) << endl;
+
+	// TODO eig() operator
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
