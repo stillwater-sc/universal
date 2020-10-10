@@ -3,6 +3,12 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the HPRBLAS project, which is released under an MIT Open Source license.
+#ifdef _MSC_VER
+#pragma warning(disable : 4514)   // unreferenced inline function has been removed
+#pragma warning(disable : 4710)   // 'int sprintf_s(char *const ,const size_t,const char *const ,...)': function not inlined
+#pragma warning(disable : 4820)   // 'sw::unum::value<23>': '3' bytes padding added after data member 'sw::unum::value<23>::_sign'
+#pragma warning(disable : 5045)   // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#endif
 
 #include <chrono>
 //
@@ -104,7 +110,28 @@ try {
 	using namespace sw::unum::blas;
 
 	// We want to solve the system Ax=b
-	GaussianEliminationTest<32, 2>();
+	// GaussianEliminationTest<32, 2>();
+
+	using Scalar = float;
+	using Vector = sw::unum::blas::vector<Scalar>;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+
+	if (argc == 1) cout << argv[0] << '\n';
+	int nrOfFailedTestCases = 0;
+
+	Matrix A = {
+		{ 1, 2, 3 },
+		{ 4, 5, 6 },
+		{ 7, 8, 9 }
+	};
+	auto LU = lu(A);
+	cout << "\n---------------- result ------------------\n";
+	cout << "Combined matrix\n" << LU << endl;
+	auto D = diag(diag(LU));
+	auto L = tril(LU) - D + eye<Scalar>(num_cols(A));
+	auto U = triu(LU);
+	cout << "Lower Triangular matrix\n" << L << endl;
+	cout << "Upper Triangular matrix\n" << U << endl;
 
 #if 0
 	constexpr float eps = std::numeric_limits<float>::epsilon();
@@ -149,7 +176,7 @@ try {
 
 #endif
 
-	return EXIT_SUCCESS;
+	return (nrOfFailedTestCases == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;
