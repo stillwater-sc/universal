@@ -310,23 +310,23 @@ namespace sw { namespace unum {
 			scale = -1;
 			while (raw & 0x4000) {
 				++scale;
-				raw = (raw << 1) & 0xFFFF;
+				raw = static_cast<uint16_t>((raw << 1) & 0xFFFF);
 			}
 		}
 		else {
 			scale = 0;
 			while (!(raw & 0x4000)) {
 				--scale;
-				raw = (raw << 1) & 0xFFFF;
+				raw = static_cast<uint16_t>((raw << 1) & 0xFFFF);
 			}
 
 		}
 		raw &= 0x3FFF;
-		uint16_t exp = 1 - (raw >> 13);
-		uint16_t rhs_fraction = (raw | 0x2000) >> 1;
+		uint16_t exp = static_cast<uint16_t>(1 - (raw >> 13));
+		uint16_t rhs_fraction = static_cast<uint16_t>((raw | 0x2000) >> 1);
 
 		// Use table look-up of first four bits for piecewise linear approximation of 1/sqrt:
-		uint16_t index = ((rhs_fraction >> 8) & 0x000E) + exp;
+		uint16_t index = static_cast<uint16_t>(((rhs_fraction >> 8) & 0x000E) + exp);
 
 		uint32_t r0 = approxRecipSqrt0[index] - ((uint32_t(approxRecipSqrt1[index])	* (rhs_fraction & 0x01FF)) >> 13);
 		// Use Newton-Raphson refinement to get more accuracy for 1/sqrt:
@@ -343,12 +343,12 @@ namespace sw { namespace unum {
 		// Figure out the regime and the resulting right shift of the fraction
 		uint16_t shift;
 		if (scale < 0) {
-			shift = (-1 - scale) >> 1;
-			raw = 0x2000 >> shift;   // build up the raw bits of the result posit
+			shift = static_cast<uint16_t>((-1 - scale) >> 1);
+			raw = static_cast<uint16_t>(0x2000 >> shift);   // build up the raw bits of the result posit
 		}
 		else {
-			shift = scale >> 1;
-			raw = 0x7FFF - (0x7FFF >> (shift + 1));
+			shift = static_cast<uint16_t>(scale >> 1);
+			raw = static_cast<uint16_t>(0x7FFF - (0x7FFF >> (shift + 1)));
 		}
 		// Set the exponent bit in the answer, if it is nonzero:
 		if (scale & 1) raw |= (0x1000 >> shift);
@@ -424,7 +424,7 @@ namespace sw { namespace unum {
 
 		// Use table look-up of first 4 bits for piecewise linear approx. of 1/sqrt:
 		uint32_t index = ((rhs_fraction >> 24) & 0x000E) + exp;
-		int32_t eps = ((rhs_fraction >> 9) & 0xFFFF);
+		int32_t eps = static_cast<int32_t>(((rhs_fraction >> 9) & 0xFFFF));
 		uint32_t r0 = approxRecipSqrt0[index] - ((uint64_t(approxRecipSqrt1[index]) * eps) >> 20);
 
 		// Use Newton-Raphson refinement to get 33 bits of accuracy for 1/sqrt:
@@ -441,15 +441,15 @@ namespace sw { namespace unum {
 		if (exp) result_fraction = (result_fraction >> 1);
 
 		// Find the exponent of Z and encode the regime bits
-		uint32_t result_exp = scale & 0x3;
+		uint32_t result_exp = static_cast<uint32_t>(scale & 0x3);
 		uint32_t shift;
 		if (scale < 0) {
-			shift = (-1 - scale) >> 2;
-			raw = 0x20000000 >> shift;     // build up the raw bits of the result posit
+			shift = static_cast<uint32_t>((-1 - scale) >> 2);
+			raw = static_cast<uint32_t>(0x20000000 >> shift);     // build up the raw bits of the result posit
 		}
 		else {
-			shift = scale >> 2;
-			raw = 0x7FFFFFFF - (0x3FFFFFFF >> shift);
+			shift = static_cast<uint32_t>(scale >> 2);
+			raw = static_cast<uint32_t>(0x7FFFFFFF - (0x3FFFFFFF >> shift));
 		}
 
 		// Trick for eliminating off-by-one cases that only uses one multiply:
@@ -466,7 +466,7 @@ namespace sw { namespace unum {
 		}
 		// Strip off the hidden bit and round-to-nearest using last shift+5 bits.
 		result_fraction &= 0xFFFFFFFF;
-		uint32_t mask = (1 << (4 + shift));
+		uint32_t mask = static_cast<uint32_t>((1 << (4 + shift)));
 		if (mask & result_fraction) {
 			if (((mask - 1) & result_fraction) | ((mask << 1) & result_fraction)) result_fraction += (mask << 1);
 		}

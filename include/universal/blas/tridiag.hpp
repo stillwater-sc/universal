@@ -8,6 +8,14 @@
 
 namespace sw { namespace unum { namespace blas { 
 
+// return a new tridiagonal matrix
+template<typename Scalar>
+matrix<Scalar> tridiag(size_t N, Scalar subdiag = Scalar(-1.0), Scalar diagonal = Scalar(2.0), Scalar superdiag = Scalar(-1.0)) {
+	matrix<Scalar> A;
+	tridiag(A, N, subdiag, diagonal, superdiag);
+	return A;
+}
+
 // generate a finite difference equation matrix for 1D problems
 template<typename Scalar>
 void tridiag(matrix<Scalar>& A, size_t N, Scalar subdiag = Scalar(-1.0), Scalar diagonal = Scalar(2.0), Scalar superdiag = Scalar(-1.0)) {

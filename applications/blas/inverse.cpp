@@ -3,6 +3,12 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the HPRBLAS project, which is released under an MIT Open Source license.
+#ifdef _MSC_VER
+#pragma warning(disable : 4514)   // unreferenced inline function has been removed
+#pragma warning(disable : 4710)   // 'int sprintf_s(char *const ,const size_t,const char *const ,...)': function not inlined
+#pragma warning(disable : 4820)   // 'sw::unum::value<23>': '3' bytes padding added after data member 'sw::unum::value<23>::_sign'
+#pragma warning(disable : 5045)   // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#endif
 
 #include <chrono>
 //
@@ -11,7 +17,7 @@
 // enable fast posit<16,1> and posit<32,2>
 #define POSIT_FAST_POSIT_16_1 1
 #define POSIT_FAST_POSIT_32_2 1
-#include <universal/posit/posit>
+//#include <universal/posit/posit>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 #include <universal/functions/isrepresentable.hpp>
@@ -31,7 +37,7 @@ void BenchmarkGaussJordan(const Matrix& A, Vector& x, const Vector& b) {
 		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 		double elapsed = time_span.count();
 		std::cout << "Gauss-Jordan took " << elapsed << " seconds." << std::endl;
-		std::cout << "Performance " << (uint32_t)(N*N*N / (1000000.0 * elapsed)) << " MOPS/s" << std::endl;
+		std::cout << "Performance " << (uint32_t)(double(N*N*N) / (1000000.0 * elapsed)) << " MOPS/s" << std::endl;
 
 		x = Ainv * b;
 		if (N < 10) {
@@ -109,14 +115,69 @@ void FiniteDifferenceTest(size_t N) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
+	using namespace sw::unum;
+	using namespace sw::unum::blas;
 
+	using Scalar = float;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Vector = sw::unum::blas::vector<Scalar>;
+
+	if (argc == 1) cout << argv[0] << '\n';
+	int nrOfFailedTestCases = 0;
+
+	{
+		// define a singular matrix
+		Matrix A = {
+			{ 1, 2, 3 },
+			{ 4, 5, 6 },
+			{ 7, 8, 9 }
+		};
+
+		Matrix B = inv(A);
+		// should report an error
+	}
+
+	{
+		using Scalar = double;
+		using Matrix = sw::unum::blas::matrix<Scalar>;
+		using Vector = sw::unum::blas::vector<Scalar>;
+
+		// define a singular matrix
+		Matrix A = {
+			{ 1, 2, 3 },
+			{ 4, 5, 6 },
+			{ 7, 8, 9 }
+		};
+		// define an eps entry
+		Matrix Aeps = {
+			{ 0, 0, 0 },
+			{ 0, 0, 0 },
+			{ 0, 0, std::numeric_limits<Scalar>::epsilon() }
+		};
+		cout << "eps: " << Aeps(2, 2) << endl;
+		Scalar m = 8;
+		Matrix B = inv(A + m * Aeps);
+		cout << "Difficult matrix\n" << (A + m * Aeps) << endl;
+		cout << "Inverse\n" << B << endl;
+		cout << "Validation to Identity matrix\n" << B * (A + m * Aeps) << endl;
+	}
+
+	{
+		// generate the inverse of a tridiag matrix, which can be solved without pivoting
+		Matrix A = tridiag<Scalar>(5);
+		cout << "inverse\n" << inv(A) << endl;
+		cout << "fast inverse\n" << invfast(A) << endl;
+	}
+
+	return (nrOfFailedTestCases == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+/*
 	FiniteDifferenceTest<float>(5);
 	FiniteDifferenceTest<sw::unum::posit<32, 2>>(5);
 
 	constexpr size_t N = 100;
 	FiniteDifferenceTest<float>(N);
 	FiniteDifferenceTest < sw::unum::posit<32, 2> >(N);
-
+*/
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {

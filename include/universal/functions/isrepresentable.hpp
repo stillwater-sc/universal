@@ -5,8 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 /*
 A number can be exactly represented in base 10 if the prime factorization of the denominator consists of only 2's and 5's.
@@ -28,9 +27,11 @@ void reportRepresentability(IntegerType a, IntegerType b) {
 	std::cout << a << "/" << b << (isRepresentable(a, b) ? " is    " : " is not") << " representable " << ((long double)a / (long double)(b)) << std::endl;
 }
 
+/* disable for the moment to remove warning
 bool isRepresentableInBinary(const std::string& scientificDecimalNumber) {
+
 	return true;
 }
+*/
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::unum

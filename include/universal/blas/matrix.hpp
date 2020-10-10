@@ -84,7 +84,7 @@ public:
 		return proxy;
 	}
 	ConstRowProxy<Scalar> operator[](size_t i) const {
-		typename std::vector<Scalar>::const_iterator it = data.begin() + i * _n;
+		typename std::vector<Scalar>::const_iterator it = data.begin() + static_cast<int64_t>(i * _n);
 		ConstRowProxy<Scalar> proxy(it);
 		return proxy;
 	}
@@ -132,6 +132,7 @@ public:
 	// selectors
 	inline size_t rows() const { return _m; }
 	inline size_t cols() const { return _n; }
+	inline std::pair<size_t, size_t> size() const { return std::make_pair(_m, _n); }
 
 	// Eigen operators I need to reverse engineer
 	matrix Zero(size_t m, size_t n) {
@@ -171,9 +172,11 @@ private:
 };
 
 template<typename Scalar>
-size_t num_rows(const matrix<Scalar>& A) { return A.rows(); }
+inline size_t num_rows(const matrix<Scalar>& A) { return A.rows(); }
 template<typename Scalar>
-size_t num_cols(const matrix<Scalar>& A) { return A.cols(); }
+inline size_t num_cols(const matrix<Scalar>& A) { return A.cols(); }
+template<typename Scalar>
+inline std::pair<size_t, size_t> size(const matrix<Scalar>& A) { return A.size(); }
 
 // ostream operator: no need to declare as friend as it only uses public interfaces
 template<typename Scalar>
@@ -188,6 +191,11 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 		ostr << '\n';
 	}
 	return ostr;
+}
+
+template<typename Scalar>
+std::ostream& operator<<(std::ostream& ostr, const std::pair<Scalar, Scalar>& p) {
+	return ostr << '(' << p.first << " by " << p.second << ')';
 }
 
 // matrix element-wise sum

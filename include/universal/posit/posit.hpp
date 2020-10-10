@@ -2586,6 +2586,10 @@ template<size_t nbits, size_t es>
 posit<nbits, es> fabs(const posit<nbits, es>& p) {
 	return p.abs();
 }
+template<typename Scalar>
+Scalar fabs(Scalar s) {
+	return std::fabs(s);
+}
 
 // fill a posit with minpos value
 template<size_t nbits, size_t es>
