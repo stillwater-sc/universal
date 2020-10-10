@@ -54,8 +54,8 @@ public:
 	explicit           posit(unsigned long initial_value) : _bits(0) { *this = initial_value; }
 	explicit           posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
 	explicit           posit(float initial_value) : _bits(0) { *this = initial_value; }
-	explicit           posit(double initial_value) : _bits(0) { *this = initial_value; }
-	                   posit(long double initial_value) : _bits(0) { *this = initial_value; }
+	                   posit(double initial_value) : _bits(0) { *this = initial_value; }
+	explicit           posit(long double initial_value) : _bits(0) { *this = initial_value; }
 
 	// assignment operators for native types
 	constexpr posit& operator=(signed char rhs) { return integer_assign((long)(rhs)); }
@@ -94,6 +94,7 @@ public:
 		posit p;
 		return p.set_raw_bits((~_bits) + 1);
 	}
+	// arithmetic assignment operators
 	posit& operator+=(const posit& b) {
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -411,6 +412,12 @@ public:
 	posit reciprocate() const {
 		posit p = 1.0 / *this;
 		return p;
+	}
+	posit abs() const {
+		if (isneg()) {
+			return posit(-*this);
+		}
+		return *this;
 	}
 
 	// MODIFIERS

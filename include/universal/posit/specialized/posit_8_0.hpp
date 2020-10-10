@@ -96,6 +96,7 @@ namespace sw { namespace unum {
 			posit p;
 			return p.set_raw_bits((~_bits) + 1);
 		}
+		// arithmetic assignment operators
 		posit& operator+=(const posit& b) {
 			posit8_t lhs = { { _bits } };
 			posit8_t rhs = { { b._bits} };
@@ -124,6 +125,8 @@ namespace sw { namespace unum {
 			_bits = div.v;
 			return *this;
 		}
+				
+		// prefix/postfix operators
 		posit& operator++() {
 			++_bits;
 			return *this;
@@ -142,10 +145,18 @@ namespace sw { namespace unum {
 			operator--();
 			return tmp;
 		}
+		
 		posit reciprocate() const {
 			posit p = 1.0 / *this;
 			return p;
 		}
+		posit abs() const {
+			if (isneg()) {
+				return posit(-*this);
+			}
+			return *this;
+		}
+		
 		// SELECTORS
 		inline bool isnar() const      { return (_bits == sign_mask); }
 		inline bool iszero() const     { return (_bits == 0x00); }

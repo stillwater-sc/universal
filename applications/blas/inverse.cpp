@@ -14,10 +14,9 @@
 //
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-// enable fast posit<16,1> and posit<32,2>
-#define POSIT_FAST_POSIT_16_1 1
-#define POSIT_FAST_POSIT_32_2 1
-//#include <universal/posit/posit>
+// enable fast posits
+#define POSIT_FAST_SPECIALIZATION
+#include <universal/posit/posit>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 #include <universal/functions/isrepresentable.hpp>
@@ -37,7 +36,8 @@ void BenchmarkGaussJordan(const Matrix& A, Vector& x, const Vector& b) {
 		duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
 		double elapsed = time_span.count();
 		std::cout << "Gauss-Jordan took " << elapsed << " seconds." << std::endl;
-		std::cout << "Performance " << (uint32_t)(double(N*N*N) / (1000000.0 * elapsed)) << " MOPS/s" << std::endl;
+		double nrOps = double(N) * double(N) * double(N);
+		std::cout << "Performance " << (uint32_t)(nrOps / (1000000.0 * elapsed)) << " MOPS/s" << std::endl;
 
 		x = Ainv * b;
 		if (N < 10) {
@@ -111,7 +111,65 @@ void FiniteDifferenceTest(size_t N) {
 		auto L = tril(A);
 		cout << inv(L) << endl;
 	}
+	cout << "--------------------------------\n\n";
 }
+
+template<typename Scalar>
+void TestSingularMatrix() {
+	using namespace std;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+
+	cout << "Test Singular matrix\n";
+
+	// define a singular matrix
+	Matrix A = {
+		{ 1, 2, 3 },
+		{ 4, 5, 6 },
+		{ 7, 8, 9 }
+	};
+	cout << A << endl;
+	Matrix B = inv(A);
+	// should report an error
+	cout << "--------------------------------\n\n";
+}
+
+template<typename Scalar>
+void TestNearSingular() {
+	using namespace std;
+	cout << "Test Near Singular matrix\n" << endl;
+
+	cout << "Gauss-Jordan inverse test with near-singular matrix\n";
+	cout << "Scalar type: " << typeid(Scalar).name() << '\n';
+
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Vector = sw::unum::blas::vector<Scalar>;
+
+	// define a singular matrix
+	Matrix A = {
+		{ 1, 2, 3 },
+		{ 4, 5, 6 },
+		{ 7, 8, 9 }
+	};
+	// define an eps entry
+	Matrix Aeps = {
+		{ 0, 0, 0 },
+		{ 0, 0, 0 },
+		{ 0, 0, std::numeric_limits<Scalar>::epsilon() }
+	};
+	cout << "eps: " << Aeps(2, 2) << endl;
+	Scalar m = 8;
+	Matrix B = sw::unum::blas::inv(A + m * Aeps);
+	cout << "Test matrix with poor condition number\n" << (A + m * Aeps) << endl;
+	if (num_cols(B) == 0) {
+		cout << "singular matrix\n";
+	}
+	else {
+		cout << "Inverse\n" << B << endl;
+		cout << "Validation to Identity matrix\n" << B * (A + m * Aeps) << endl;
+	}
+	cout << "--------------------------------\n\n";
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -125,60 +183,29 @@ try {
 	if (argc == 1) cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
 
-	{
-		// define a singular matrix
-		Matrix A = {
-			{ 1, 2, 3 },
-			{ 4, 5, 6 },
-			{ 7, 8, 9 }
-		};
+	TestSingularMatrix<float>();
 
-		Matrix B = inv(A);
-		// should report an error
-	}
-
-	{
-		using Scalar = double;
-		using Matrix = sw::unum::blas::matrix<Scalar>;
-		using Vector = sw::unum::blas::vector<Scalar>;
-
-		// define a singular matrix
-		Matrix A = {
-			{ 1, 2, 3 },
-			{ 4, 5, 6 },
-			{ 7, 8, 9 }
-		};
-		// define an eps entry
-		Matrix Aeps = {
-			{ 0, 0, 0 },
-			{ 0, 0, 0 },
-			{ 0, 0, std::numeric_limits<Scalar>::epsilon() }
-		};
-		cout << "eps: " << Aeps(2, 2) << endl;
-		Scalar m = 8;
-		Matrix B = inv(A + m * Aeps);
-		cout << "Difficult matrix\n" << (A + m * Aeps) << endl;
-		cout << "Inverse\n" << B << endl;
-		cout << "Validation to Identity matrix\n" << B * (A + m * Aeps) << endl;
-	}
+	TestNearSingular<float>();
+	TestNearSingular<posit<8, 0> >();
+	TestNearSingular<posit<16, 1> >();
+	TestNearSingular<posit<32, 2> >();
+	TestNearSingular<posit<64, 3> >();
+	TestNearSingular<posit<128, 4> >();
 
 	{
 		// generate the inverse of a tridiag matrix, which can be solved without pivoting
 		Matrix A = tridiag<Scalar>(5);
-		cout << "inverse\n" << inv(A) << endl;
-		cout << "fast inverse\n" << invfast(A) << endl;
+		cout << "tridiagonal matrix\n" << A << endl;
+		cout << "inverse full-pivoting Gauss-Jordan\n" << inv(A) << endl;
+		cout << "fast inverse no-pivoting Gauss-Jordan\n" << invfast(A) << endl;
 	}
 
-	return (nrOfFailedTestCases == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
-/*
-	FiniteDifferenceTest<float>(5);
-	FiniteDifferenceTest<sw::unum::posit<32, 2>>(5);
 
 	constexpr size_t N = 100;
 	FiniteDifferenceTest<float>(N);
 	FiniteDifferenceTest < sw::unum::posit<32, 2> >(N);
-*/
-	return EXIT_SUCCESS;
+
+	return (nrOfFailedTestCases == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

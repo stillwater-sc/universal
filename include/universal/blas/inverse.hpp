@@ -32,7 +32,6 @@ template<typename Scalar>
 matrix<Scalar> inv(const matrix<Scalar>& A) {
 	using namespace std;
 	const size_t N = num_rows(A);
-	const size_t c = num_cols(A);
 	if (N != num_cols(A)) {
 		std::cerr << "inv matrix argument is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
 		return matrix<Scalar>{};
@@ -50,19 +49,23 @@ matrix<Scalar> inv(const matrix<Scalar>& A) {
 //					std::cout << "iteration (" << j << "," << k << ")\n";
 					if (indxp[k] == 0) {
 						Scalar e = fabs(B(j,k));
-						if (e >= pivot) {  // emphesize upper left
+						if (e > pivot) {  // > emphasizes upper left, >= emphasizes lower right
 							pivot = e;
 							irow = j;
 							icol = k;
 						}
 					}
 					else if (indxp[k] > 1) {
-//						std::cerr << "inv matrix argument is singular\n";
+						std::cerr << "inv matrix argument is singular at machine precision\n";
 						return matrix<Scalar>{};
 					}
 //					std::cout << "[" << irow << ", " << icol << "] = " << pivot << std::endl;
 				}
 			}
+		}
+		if (indxp[icol] == 1) {
+			std::cerr << "inv matrix argument is singular at machine precision\n";
+			return matrix<Scalar>{};
 		}
 		++(indxp[icol]);
 

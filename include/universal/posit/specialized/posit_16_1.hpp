@@ -54,8 +54,8 @@ public:
 	explicit constexpr posit(unsigned long initial_value) : _bits(0)      { *this = initial_value; }
 	explicit constexpr posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
 	explicit           posit(float initial_value) : _bits(0)              { *this = initial_value; }
-		                posit(double initial_value) : _bits(0)             { *this = initial_value; }
-	    explicit           posit(long double initial_value) : _bits(0)        { *this = initial_value; }
+		               posit(double initial_value) : _bits(0)             { *this = initial_value; }
+	explicit           posit(long double initial_value) : _bits(0)        { *this = initial_value; }
 
 	// assignment operators for native types
 	constexpr posit& operator=(signed char rhs)       { return integer_assign((long)rhs); }
@@ -68,9 +68,9 @@ public:
 	constexpr posit& operator=(unsigned int rhs)      { return integer_assign((long)rhs); }
 	constexpr posit& operator=(unsigned long rhs)     { return integer_assign((long)rhs); }
 	constexpr posit& operator=(unsigned long long rhs){ return integer_assign((long)rhs); }
-		        posit& operator=(float rhs)             { return float_assign(double(rhs)); }
-		        posit& operator=(double rhs)            { return float_assign(rhs); }
-		        posit& operator=(long double rhs)       { return float_assign(double(rhs)); }
+		      posit& operator=(float rhs)             { return float_assign(double(rhs)); }
+		      posit& operator=(double rhs)            { return float_assign(rhs); }
+		      posit& operator=(long double rhs)       { return float_assign(double(rhs)); }
 
 	explicit operator long double() const { return to_long_double(); }
 	explicit operator double() const { return to_double(); }
@@ -90,6 +90,8 @@ public:
 		_bits = uint16_t(value & 0xffff);
 		return *this;
 	}
+	
+	// arithmetic assignment operators
 	constexpr posit operator-() const {
 		posit p;
 		return p.set_raw_bits((~_bits) + 1);
@@ -368,6 +370,7 @@ public:
 
 		return *this;
 	}
+	// prefix/postfix operators
 	posit& operator++() {
 		++_bits;
 		return *this;
@@ -386,11 +389,18 @@ public:
 		operator--();
 		return tmp;
 	}
+	
 	posit reciprocate() const {
 		posit p = 1.0 / *this;
 		return p;
 	}
-		
+	posit abs() const {
+		if (isneg()) {
+			return posit(-*this);
+		}
+		return *this;
+	}
+
 	// SELECTORS
 	inline bool isnar() const      { return (_bits == sign_mask); }
 	inline bool iszero() const     { return (_bits == 0x0); }
