@@ -27,11 +27,10 @@ void reportRepresentability(IntegerType a, IntegerType b) {
 	std::cout << a << "/" << b << (isRepresentable(a, b) ? " is    " : " is not") << " representable " << ((long double)a / (long double)(b)) << std::endl;
 }
 
-/* disable for the moment to remove warning
+// given a string representation of a scientific number, report if it can be represented
 bool isRepresentableInBinary(const std::string& scientificDecimalNumber) {
 
 	return true;
 }
-*/
 
 }} // namespace sw::unum
