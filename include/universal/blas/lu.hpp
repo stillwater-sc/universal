@@ -184,4 +184,84 @@ void SolveCroutFDP(const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& L
 	}
 }
 
+// in-place LU decomposition using partial pivoting with implicit pivoting applied
+template<typename Matrix>
+int ludcmp(Matrix& A) {
+	using namespace std;
+	using Scalar = typename Matrix::value_type;
+	const size_t N = num_rows(A);
+	if (N != num_cols(A)) {
+		std::cerr << "inv matrix argument is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
+		return 1;
+	}
+
+	// implicit pivoting pre-calculation
+	vector<Scalar> implicitScale(N);
+	vector<size_t> indx(N);
+	for (size_t i = 0; i < N; ++i) { // for each row
+		Scalar pivot = 0;
+		for (size_t j = 0; j < N; ++j) { // scan the columns for the biggest abs value
+			Scalar e = fabs(A(i, j));
+			if (e > pivot) pivot = e;
+		}
+		if (pivot == 0) {
+			std::cerr << "LU argument matrix is singular\n";
+			return 2;
+		}
+		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
+	}
+	int nrOfRowExchanges = 0;
+	size_t imax = 0;
+	for (size_t j = 0; j < N; ++j) { // loop over columns of Crout's method
+		Scalar sum = 0;
+		for (size_t i = 0; i < j; ++i) {
+			sum = A(i, j);
+			for (size_t k = 0; k < i; ++k) sum -= A(i, k) * A(k, j);
+			A(i, j) = sum;
+		}
+		Scalar pivot = 0; // initialize for search for largest pivot element
+		for (size_t i = j; i < N; ++i) {
+			sum = A(i, j);
+			for (size_t k = 0; k < j; ++k) sum -= A(i, k) * A(k, j);
+			A(i, j) = sum;
+			Scalar dum = implicitScale[i] * fabs(sum);
+			if (dum >= pivot) { // is figure of merit better than the best so far?
+				pivot = dum;
+				imax = i;
+			}
+		}
+		if (j != imax) {
+			for (size_t k = 0; k < N; ++k) std::swap(A(imax, k), A(j, k));
+			++nrOfRowExchanges;
+			implicitScale[imax] = implicitScale[j]; // interchange scaling factor???
+		}
+
+		indx[j] = imax;
+		if (A(j, j) == 0) A(j, j) = std::numeric_limits<Scalar>::epsilon();
+		if (j != N) {
+			Scalar dum = Scalar(1) / A(j, j);
+			for (size_t i = j + 1; i < N; ++i) A(i, j) *= dum;
+		}
+	}
+	cout << "index array\n" << indx << endl;
+	return 0; // success
+}
+
+// LU decomposition using partial pivoting with implicit pivoting applied
+template<typename Scalar>
+matrix<Scalar> lu(const matrix<Scalar>& A) {
+	using namespace std;
+	const size_t N = num_rows(A);
+	if (N != num_cols(A)) {
+		std::cerr << "inv matrix argument is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
+		return matrix<Scalar>{};
+	}
+	matrix<Scalar> B(A);
+	if (ludcmp(B) == 1) {
+		std::cerr << "LU decomposition failed\n";
+		return matrix<Scalar>{};
+	}
+	return B;
+}
+
 } } }  // namespace sw::unum::blas

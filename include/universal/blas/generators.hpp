@@ -10,6 +10,7 @@
 
 // matrix generators
 #include "index_matrix.hpp"
+#include "hilbert_matrix.hpp"
 #include "uniform_random.hpp"
 #include "tridiag.hpp"
 #include "laplace2D.hpp"

@@ -157,7 +157,7 @@ void TestNearSingular() {
 		{ 0, 0, std::numeric_limits<Scalar>::epsilon() }
 	};
 	cout << "eps: " << Aeps(2, 2) << endl;
-	Scalar m = 8;
+	Scalar m = 1024;
 	Matrix B = sw::unum::blas::inv(A + m * Aeps);
 	cout << "Test matrix with poor condition number\n" << (A + m * Aeps) << endl;
 	if (num_cols(B) == 0) {
