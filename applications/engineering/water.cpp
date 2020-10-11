@@ -18,7 +18,7 @@
 #include <universal/posit/posit>
 #include <universal/blas/vector.hpp>
 #include <universal/blas/matrix.hpp>
-#include <universal/blas/lu.hpp>
+#include <universal/blas/solvers/lu.hpp>
 
 using std::string;
 using std::vector;

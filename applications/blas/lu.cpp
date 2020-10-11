@@ -15,6 +15,7 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/blas/blas.hpp>
+#include <universal/blas/generators.hpp>
 #include <universal/functions/isrepresentable.hpp>
 
 template<size_t nbits, size_t es, size_t capacity = 10>
@@ -120,10 +121,13 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	Matrix A = {
-		{ 1, 2, 3 },
-		{ 4, 5, 6 },
-		{ 7, 8, 9 }
+		{ 5, 4, 3, 2, 1 },
+		{ 4, 4, 3, 2, 1 },
+		{ 0, 3, 3, 2, 1 },
+		{ 0, 0, 2, 2, 1 },
+		{ 0, 0, 0, 1, 1 }
 	};
+
 	auto LU = lu(A);
 	cout << "\n---------------- result ------------------\n";
 	cout << "Combined matrix\n" << LU << endl;
