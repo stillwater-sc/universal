@@ -233,9 +233,10 @@ int ludcmp(Matrix& A) {
 		if (j != imax) {
 			for (size_t k = 0; k < N; ++k) std::swap(A(imax, k), A(j, k));
 			++nrOfRowExchanges;
-			implicitScale[imax] = implicitScale[j]; // interchange scaling factor???
+			//implicitScale[imax] = implicitScale[j]; // interchange scaling factor???
+			std::swap(implicitScale[imax], implicitScale[j]); // interchange scaling factors
 		}
-
+		std::cout << "scaling\n" << implicitScale << std::endl;
 		indx[j] = imax;
 		if (A(j, j) == 0) A(j, j) = std::numeric_limits<Scalar>::epsilon();
 		if (j != N) {
@@ -245,6 +246,11 @@ int ludcmp(Matrix& A) {
 	}
 	cout << "index array\n" << indx << endl;
 	return 0; // success
+}
+
+template<typename Scalar>
+void lubksb(const matrix<Scalar>& LU, const vector<Scalar>& b, vector<Scalar>& x) {
+
 }
 
 // LU decomposition using partial pivoting with implicit pivoting applied

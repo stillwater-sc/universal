@@ -5,12 +5,14 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "vector.hpp"
-#include "matrix.hpp"
+#include <universal/blas/vector.hpp>
+#include <universal/blas/matrix.hpp>
 
 // matrix generators
-#include "index_matrix.hpp"
-#include "hilbert_matrix.hpp"
-#include "uniform_random.hpp"
-#include "tridiag.hpp"
-#include "laplace2D.hpp"
+#include <universal/blas/generators/index.hpp>
+#include <universal/blas/generators/magic.hpp>
+#include <universal/blas/generators/hilbert.hpp>
+#include <universal/blas/generators/uniform_random.hpp>
+
+#include <universal/blas/generators/tridiag.hpp>
+#include <universal/blas/generators/laplace2D.hpp>

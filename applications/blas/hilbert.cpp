@@ -43,7 +43,7 @@ void HilbertMatrixTest(size_t N = 5) {
 	cout << "Hilbert inverse\n" << Hinv << endl;
 	cout << "Validation: Hinv * H => I\n" << Hinv * H << endl;
 
-	Scalar lcm = GenerateHilbertMatrix<Scalar>(Hscale, true); // scale the Hilbert matrix entries to be binary representable
+	Scalar lcm = (Scalar)GenerateHilbertMatrix<Scalar>(Hscale, true); // scale the Hilbert matrix entries to be binary representable
 	GenerateHilbertMatrixInverse(Hscaleinv, lcm); // <-- scale the inverse
 	cout << "Scaled Hilbert matrix: lcm = " << lcm << "\n" << Hscale << endl;
 	cout << "Scaled Hilbert inverse\n" << Hscaleinv << endl;
