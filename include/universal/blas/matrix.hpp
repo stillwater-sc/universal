@@ -117,11 +117,20 @@ public:
 		return *this;
 	}
 
-	// scale all matrix elements
+	// multiply all matrix elements
 	matrix& operator*=(const Scalar& a) {
 		using size_type = typename matrix<Scalar>::size_type;
 		for (size_type e = 0; e < _m*_n; ++e) {
 			data[e] *= a;
+		}
+		return *this;
+	}
+
+	// divide all matrix elements
+	matrix& operator/=(const Scalar& a) {
+		using size_type = typename matrix<Scalar>::size_type;
+		for (size_type e = 0; e < _m * _n; ++e) {
+			data[e] /= a;
 		}
 		return *this;
 	}
@@ -212,11 +221,18 @@ matrix<Scalar> operator-(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	return Diff -= B;
 }
 
-// matrix scaling
+// matrix scaling through Scalar multiply
 template<typename Scalar>
 matrix<Scalar> operator*(const Scalar& a, const matrix<Scalar>& B) {
 	matrix<Scalar> A(B);
 	return A *= a;
+}
+
+// matrix scaling through Scalar divide
+template<typename Scalar>
+matrix<Scalar> operator/(const matrix<Scalar>& A, const Scalar& b) {
+	matrix<Scalar> B(A);
+	return B /= b;
 }
 
 // matrix-vector multiply
@@ -232,7 +248,7 @@ vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
 	return b;
 }
 
-// overload for posits uses fused dot products
+// overload for posits to use fused dot products
 template<size_t nbits, size_t es>
 vector< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const vector< posit<nbits, es> >& x) {
 	constexpr size_t capacity = 20; // FDP for vectors < 1,048,576 elements
