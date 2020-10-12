@@ -104,6 +104,60 @@ void GaussianEliminationTest() {
 	BenchmarkLUDecomposition(A, x, b);
 }
 
+template<typename Scalar>
+void FrankMatrixTest() {
+	using namespace std;
+	using Vector = sw::unum::blas::vector<Scalar>;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+
+	Matrix A = {
+	{ 5, 4, 3, 2, 1 },
+	{ 4, 4, 3, 2, 1 },
+	{ 0, 3, 3, 2, 1 },
+	{ 0, 0, 2, 2, 1 },
+	{ 0, 0, 0, 1, 1 }
+	};
+
+	auto LU = lu(A);
+	cout << "\n---------------- result ------------------\n";
+	cout << "Combined matrix\n" << LU << endl;
+	auto D = diag(diag(LU));
+	auto L = tril(LU) - D + sw::unum::blas::eye<Scalar>(num_cols(A));
+	auto U = triu(LU);
+	cout << "Lower Triangular matrix\n" << L << endl;
+	cout << "Upper Triangular matrix\n" << U << endl;
+}
+
+template<typename Scalar>
+void MagicSquareTest(size_t N) {
+	using namespace std;
+	using namespace sw::unum::blas;
+	using Vector = sw::unum::blas::vector<Scalar>;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+
+	Matrix A = magic<Scalar>(N);
+	Scalar magicSum = sum(diag(A));
+	Vector b(N); 
+	b = magicSum;
+
+	A = tridiag<float>(5);
+	Vector x(N);
+	x = 1;
+	b = A * x;
+	cout << "A\n" << A << endl;
+	cout << "b\n" << b << endl;
+//	auto x = A\b;
+	x = solve(A, b);
+	cout << "x\n" << x << endl;
+
+
+//	Matrix L, U, P;
+//	auto error = lu(A, L, U, P);
+//	auto y = L\(P*b);
+//	auto x = U\y;
+
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -120,22 +174,10 @@ try {
 	if (argc == 1) cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
 
-	Matrix A = {
-		{ 5, 4, 3, 2, 1 },
-		{ 4, 4, 3, 2, 1 },
-		{ 0, 3, 3, 2, 1 },
-		{ 0, 0, 2, 2, 1 },
-		{ 0, 0, 0, 1, 1 }
-	};
+	//FrankMatrixTest<float>();
+	MagicSquareTest<Scalar>(5);
 
-	auto LU = lu(A);
-	cout << "\n---------------- result ------------------\n";
-	cout << "Combined matrix\n" << LU << endl;
-	auto D = diag(diag(LU));
-	auto L = tril(LU) - D + eye<Scalar>(num_cols(A));
-	auto U = triu(LU);
-	cout << "Lower Triangular matrix\n" << L << endl;
-	cout << "Upper Triangular matrix\n" << U << endl;
+	//
 
 #if 0
 	constexpr float eps = std::numeric_limits<float>::epsilon();

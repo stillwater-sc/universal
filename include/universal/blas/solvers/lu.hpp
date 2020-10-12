@@ -179,7 +179,7 @@ void SolveCroutFDP(const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& L
 		}
 		posit<nbits, es> sum;
 		convert(q.to_value(), sum);  // one and only rounding step of the fused-dot product
-									 //cout << "sum " << sum << endl;
+		// cout << "sum " << sum << endl;
 		x[i] = (y[i] - sum); // not dividing by diagonals
 	}
 }
@@ -248,9 +248,40 @@ int ludcmp(Matrix& A) {
 	return 0; // success
 }
 
+// Solve the system LU . x = b
 template<typename Scalar>
-void lubksb(const matrix<Scalar>& LU, const vector<Scalar>& b, vector<Scalar>& x) {
+void lubksb(const matrix<Scalar>& LU, const vector<Scalar>& _b, vector<Scalar>& x) {
+	using namespace std;
+	const size_t N = num_rows(LU);
+	if (N != size(_b)) {
+		std::cerr << "LU decomposition size is not congruent with size of right hand side\n";
+		return;
+	}
+	using Vector = vector<Scalar>;
+	Vector b(_b);
+	Scalar sum = 0;
+	size_t ii = 0;
+	for (size_t i = 0; i < N, ++i) {
+		ip = LU.permutation(i);
+		sum = b(ip);
+		b(ip) = b(i);
+		if (ii) {
+			for (size_t j = ii; j <= i; ++j) {
+				sum -= LU(i, j) * b(j);
+			}
+		}
+		else {
+			if (sum) ii = i;
+		}
+	}
 
+	for (size_t i = N; i >= 1; --i) {
+		sum = b(i);
+		for (size_t j = i + 1; j <= N; ++j) {
+			sum -= LU(i, j) = b(j);
+		}
+		b(i) = sum / LU(i, i);
+	}
 }
 
 // LU decomposition using partial pivoting with implicit pivoting applied
@@ -268,6 +299,105 @@ matrix<Scalar> lu(const matrix<Scalar>& A) {
 		return matrix<Scalar>{};
 	}
 	return B;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// solve the system of equations A x = b using partial pivoting LU
+template<typename Scalar>
+vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
+	using namespace std;
+	const size_t N = num_rows(_A);
+	if (N != num_cols(_A)) {
+		std::cerr << "matrix is not square: (" << num_rows(_A) << " x " << num_cols(_A) << ")\n";
+		return 1;
+	}
+	if (N != size(_b)) {
+		std::cerr << "matrix shape (" << num_rows(_A) << " x " << num_cols(_A) << ") is not congruous with vector size (" << size(_b) << ")\n";
+		return 1;
+	}
+	matrix<Scalar> A(_A);
+	// implicit pivoting pre-calculation
+	vector<Scalar> implicitScale(N);
+	vector<size_t> indx(N);
+	for (size_t i = 0; i < N; ++i) { // for each row
+		Scalar pivot = 0;
+		for (size_t j = 0; j < N; ++j) { // scan the columns for the biggest abs value
+			Scalar e = fabs(A(i, j));
+			if (e > pivot) pivot = e;
+		}
+		if (pivot == 0) {
+			std::cerr << "LU argument matrix is singular\n";
+			return 2;
+		}
+		implicitScale[i] = Scalar(1.0) / pivot; // save the scaling factor for that row
+	}
+	int nrOfRowExchanges = 0;
+	size_t imax = 0;
+	for (size_t j = 0; j < N; ++j) { // loop over columns of Crout's method
+		Scalar sum = 0;
+		for (size_t i = 0; i < j; ++i) {
+			sum = A(i, j);
+			for (size_t k = 0; k < i; ++k) sum -= A(i, k) * A(k, j);
+			A(i, j) = sum;
+		}
+		Scalar pivot = 0; // initialize for search for largest pivot element
+		for (size_t i = j; i < N; ++i) {
+			sum = A(i, j);
+			for (size_t k = 0; k < j; ++k) sum -= A(i, k) * A(k, j);
+			A(i, j) = sum;
+			Scalar dum = implicitScale[i] * fabs(sum);
+			if (dum >= pivot) { // is figure of merit better than the best so far?
+				pivot = dum;
+				imax = i;
+			}
+		}
+		if (j != imax) {
+			for (size_t k = 0; k < N; ++k) std::swap(A(imax, k), A(j, k));
+			++nrOfRowExchanges;
+			implicitScale[imax] = implicitScale[j]; // interchange scaling factor???
+			//std::swap(implicitScale[imax], implicitScale[j]); // interchange scaling factors
+		}
+		cout << "indx: " << indx << endl;
+		indx[j] = imax;
+		cout << "      " << indx << endl;
+		if (A(j, j) == 0) {
+			std::cerr << "injecting tiny value to replace 0" << std::endl;
+			A(j, j) = std::numeric_limits<Scalar>::epsilon();
+		}
+		if (j != N) {
+			Scalar dum = Scalar(1) / A(j, j);
+			for (size_t i = j + 1; i < N; ++i) A(i, j) *= dum;
+		}
+	}
+	cout << "index array\n" << indx << endl;
+	cout << "A\n" << A << endl;
+
+	vector<Scalar> x(_b);
+	Scalar sum = 0;
+	// forward substitution
+	for (size_t i = 0; i < N; ++i) {
+		size_t ip = indx(i);
+		sum = x(ip);
+		x(ip) = x(i);
+
+		for (size_t j = 0; j < i; ++j) {
+			sum -= A(i, j) * x(j);
+		}
+
+		x(i) = sum;
+	}
+	cout << "y\n" << x << endl;
+	// backsubstitution
+	for (size_t i = N; i >= 1; --i) {
+		sum = x(i-1);
+		for (size_t j = i; j < N; ++j) {
+			sum -= A(i-1, j) * x(j);
+		}
+		x(i-1) = sum / A(i-1, i-1);
+	}
+	return x;
 }
 
 } } }  // namespace sw::unum::blas

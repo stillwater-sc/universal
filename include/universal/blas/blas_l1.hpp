@@ -23,10 +23,10 @@ typename Vector::value_type asum(size_t n, const Vector& x, size_t incx = 1) {
 
 // sum of the vector elements, default increment stride is 1
 template<typename Vector>
-typename Vector::value_type sum(size_t n, const Vector& x, size_t incx = 1) {
+typename Vector::value_type sum(const Vector& x) {
 	typename Vector::value_type sum = 0;
 	size_t ix;
-	for (ix = 0; ix < n; ix += incx) {
+	for (ix = 0; ix < size(x); ++ix) {
 		sum += x[ix];
 	}
 	return sum;
