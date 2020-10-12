@@ -30,8 +30,8 @@ matrix<Scalar> magic(size_t N) {
 	int j = static_cast<int>(N) - 1;
 
 	// generate the indices
-	for (int e = 1; e <= N * N; /* increment in body */) {
-		if (i == -1 && j == N) {
+	for (int e = 1; e <= static_cast<int>(N * N); /* increment in body */) {
+		if (i == -1 && j == static_cast<int>(N)) {
 			i = 0;
 			j = static_cast<int>(N) - 2;
 		}
@@ -39,14 +39,14 @@ matrix<Scalar> magic(size_t N) {
 			// first condition helper if next row index wraps around
 			if (i < 0) i = static_cast<int>(N) - 1;;
 			// first condition helper if next column index wraps around
-			if (j == N) j = 0;
+			if (j == static_cast<int>(N)) j = 0;
 		}
-		if (A(i,j) > 0) { // second condition
+		if (A(static_cast<size_t>(i), static_cast<size_t>(j)) > Scalar(0)) { // second condition
 			++i; j -= 2;
 			continue;
 		}
 		else {
-			A(i, j) = Scalar(e++);
+			A(static_cast<size_t>(i), static_cast<size_t>(j)) = Scalar(e++);
 		}
 		// first condition
 		--i;

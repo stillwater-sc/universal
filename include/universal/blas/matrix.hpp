@@ -143,11 +143,6 @@ public:
 	inline size_t cols() const { return _n; }
 	inline std::pair<size_t, size_t> size() const { return std::make_pair(_m, _n); }
 
-	// Eigen operators I need to reverse engineer
-	matrix Zero(size_t m, size_t n) {
-		matrix z(m, n);
-		return z;
-	}
 	// in-place transpose
 	matrix& transpose() {
 		size_t size = _m * _n - 1;
@@ -175,9 +170,16 @@ public:
 		return *this;
 	}
 
+	// Eigen operators I need to reverse engineer
+	matrix Zero(size_t m, size_t n) {
+		matrix z(m, n);
+		return z;
+	}
+
 private:
 	size_t _m, _n; // m rows and n columns
 	std::vector<Scalar> data;
+
 };
 
 template<typename Scalar>
