@@ -11,9 +11,10 @@
 #endif
 
 #include <chrono>
-//
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+// enable fast posits
+#define POSIT_FAST_SPECIALIZATION
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 #include <universal/functions/isrepresentable.hpp>
@@ -137,25 +138,20 @@ void MagicSquareTest(size_t N) {
 
 	Matrix A = magic<Scalar>(N);
 	Scalar magicSum = sum(diag(A));
-	Vector b(N); 
+	Vector b(N), x(N); 
 	b = magicSum;
-
-	A = tridiag<float>(5);
-	Vector x(N);
-	x = 1;
-	b = A * x;
-	cout << "A\n" << A << endl;
-	cout << "b\n" << b << endl;
-//	auto x = A\b;
 	x = solve(A, b);
-	cout << "x\n" << x << endl;
-
-
-//	Matrix L, U, P;
-//	auto error = lu(A, L, U, P);
-//	auto y = L\(P*b);
-//	auto x = U\y;
-
+//	cout << "solution x\n" << x << endl;
+	bool bFail = false;
+	for (auto v : x) {
+		if (fabs(v - 1) > 0.00001) {
+			cout << v << " outside of range 1.0+-0.00001\n";
+			bFail = true;
+			break;
+		}
+	}
+	if (bFail) cout << "FAIL for " << typeid(Scalar).name() << " when N = " << N << endl;
+	else cout << "PASS for N = " << typeid(Scalar).name() << " when N = " << N << endl;
 }
 
 int main(int argc, char** argv)
@@ -176,8 +172,15 @@ try {
 
 	//FrankMatrixTest<float>();
 	MagicSquareTest<Scalar>(5);
+	MagicSquareTest<Scalar>(51);
+	MagicSquareTest<float>(501);
+	MagicSquareTest<posit<32,2> >(501);
+	MagicSquareTest<double>(501);
 
-	//
+	//	Matrix L, U, P;
+	//	auto error = lu(A, L, U, P);
+	//	auto y = L\(P*b);
+	//	auto x = U\y;
 
 #if 0
 	constexpr float eps = std::numeric_limits<float>::epsilon();

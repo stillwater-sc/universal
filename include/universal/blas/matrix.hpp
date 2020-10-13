@@ -306,8 +306,8 @@ matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const 
 }
 
 // matrix equivalence tests
-template<typename Matrix>
-bool operator==(const Matrix& A, const Matrix& B) {
+template<typename Scalar>
+bool operator==(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	if (num_rows(A) != num_rows(B) ||
 		num_cols(A) != num_cols(B)) return false;
 	bool equal = true;
@@ -323,8 +323,8 @@ bool operator==(const Matrix& A, const Matrix& B) {
 	return equal;
 }
 
-template<typename Matrix>
-bool operator!=(const Matrix& A, const Matrix& B) {
+template<typename Scalar>
+bool operator!=(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	return !(A == B);
 }
 

@@ -250,7 +250,7 @@ int ludcmp(Matrix& A) {
 
 // Solve the system LU . x = b
 template<typename Scalar>
-void lubksb(const matrix<Scalar>& LU, const vector<Scalar>& _b, vector<Scalar>& x) {
+void lubksb(const matrix<Scalar>& LU, const vector<int>& permutation, const vector<Scalar>& _b, vector<Scalar>& x) {
 	using namespace std;
 	const size_t N = num_rows(LU);
 	if (N != size(_b)) {
@@ -261,8 +261,8 @@ void lubksb(const matrix<Scalar>& LU, const vector<Scalar>& _b, vector<Scalar>& 
 	Vector b(_b);
 	Scalar sum = 0;
 	size_t ii = 0;
-	for (size_t i = 0; i < N, ++i) {
-		ip = LU.permutation(i);
+	for (size_t i = 0; i < N; ++i) {
+		ip = permutation(i);
 		sum = b(ip);
 		b(ip) = b(i);
 		if (ii) {
@@ -359,9 +359,9 @@ vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 			implicitScale[imax] = implicitScale[j]; // interchange scaling factor???
 			//std::swap(implicitScale[imax], implicitScale[j]); // interchange scaling factors
 		}
-		cout << "indx: " << indx << endl;
+//		cout << "indx: " << indx << endl;
 		indx[j] = imax;
-		cout << "      " << indx << endl;
+//		cout << "      " << indx << endl;
 		if (A(j, j) == 0) {
 			std::cerr << "injecting tiny value to replace 0" << std::endl;
 			A(j, j) = std::numeric_limits<Scalar>::epsilon();
@@ -371,8 +371,8 @@ vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 			for (size_t i = j + 1; i < N; ++i) A(i, j) *= dum;
 		}
 	}
-	cout << "index array\n" << indx << endl;
-	cout << "A\n" << A << endl;
+//	cout << "index array\n" << indx << endl;
+//	cout << "A\n" << A << endl;
 
 	vector<Scalar> x(_b);
 	Scalar sum = 0;
@@ -388,7 +388,7 @@ vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 
 		x(i) = sum;
 	}
-	cout << "y\n" << x << endl;
+//	cout << "y\n" << x << endl;
 	// backsubstitution
 	for (size_t i = N; i >= 1; --i) {
 		sum = x(i-1);

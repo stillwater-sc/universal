@@ -12,11 +12,15 @@ namespace sw { namespace unum { namespace blas {
 
 // fill a dense (N, N) matrix with linear index values in row order
 template <typename Scalar>
-matrix<Scalar> magic(size_t N) {
+matrix<Scalar> magic(int N) {
 	using Matrix = matrix<Scalar>;
 	typedef typename Matrix::size_type     size_type;
-
-	if (N == 0) return matrix<Scalar>{};
+	// precondition tests
+	if (N <= 0) return matrix<Scalar>{};
+	if (N % 2 == 0) {
+		std::cerr << "matrix size N is even, must be odd" << std::endl;
+		return matrix<Scalar>{};
+	}
 
 	Matrix A(N, N);
 
@@ -26,27 +30,27 @@ matrix<Scalar> magic(size_t N) {
 	// 2- if number exists at new position, redo calculation as rowIndex+2, colIndex-2
 	// 3- if row is 1 and column is N, new position is (0, n-2)
 	//
-	int i = static_cast<int>(N) / 2;
-	int j = static_cast<int>(N) - 1;
+	int i = N / 2;
+	int j = N - 1;
 
 	// generate the indices
-	for (int e = 1; e <= static_cast<int>(N * N); /* increment in body */) {
-		if (i == -1 && j == static_cast<int>(N)) {
+	for (int e = 1; e <= N * N; /* increment in body */) {
+		if (i == -1 && j == N) {
 			i = 0;
-			j = static_cast<int>(N) - 2;
+			j = N - 2;
 		}
 		else {
 			// first condition helper if next row index wraps around
-			if (i < 0) i = static_cast<int>(N) - 1;;
+			if (i < 0) i = N - 1;;
 			// first condition helper if next column index wraps around
-			if (j == static_cast<int>(N)) j = 0;
+			if (j == N) j = 0;
 		}
-		if (A(static_cast<size_t>(i), static_cast<size_t>(j)) > Scalar(0)) { // second condition
+		if (A(i, j) > Scalar(0)) { // second condition
 			++i; j -= 2;
 			continue;
 		}
 		else {
-			A(static_cast<size_t>(i), static_cast<size_t>(j)) = Scalar(e++);
+			A(i, j) = Scalar(e++);
 		}
 		// first condition
 		--i;
