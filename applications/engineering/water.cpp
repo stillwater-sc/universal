@@ -51,9 +51,6 @@ const auto T = 298.15;
 // The pressure in the calculation (in Pa)
 //const auto P = 1e5; // = 1bar
 
-#if 1
-const auto A = Mat(3, 5);
-#else
 // The formula matrix of the species (Aij is the number of atoms of element j in species i)
 const auto A = Mat{{
    // H2O H+  OH- O2  H2
@@ -61,11 +58,10 @@ const auto A = Mat{{
     { 1,  0,  1,  2,  0 }, // O
     { 0,  1, -1,  0,  0 }, // Z (electric charge as element)
 }};
-#endif
 
 // The vector with the amounts of each chemical element
-const auto b = Vec{{ 110.0, 55.0, 0.0 }};           // <-- This converges!
-// const auto b = Vec{{ 111.0, 55.5, 0.0 }};           // <-- This does not converge because of round-off errors!
+const auto b = Vec{ 110.0, 55.0, 0.0 };           // <-- This converges!
+// const auto b = Vec{ 111.0, 55.5, 0.0 };           // <-- This does not converge because of round-off errors!
 
 auto computeF(const Vec& n, const Vec& y)
 { 
@@ -108,8 +104,6 @@ auto computeJ(const Vec& n, const Vec& y)
 
 auto equilibrate(Vec& n, Vec& y)
 {
-   sw::unum::blas::LU<Mat, sw::unum::blas::partial_pivoting> lu;
-    
     cout << std::left  << setw(15) << "i";
     cout << std::right << setw(15) << "n[H2O]";
     cout << std::right << setw(15) << "n[H+ ]";
@@ -131,10 +125,12 @@ auto equilibrate(Vec& n, Vec& y)
         
         auto J = computeJ(n, y);
         
-        lu.compute(J);
-                
-        Vec dydn = lu.solve(-F);
+//        lu.compute(J);
+//               
+//        Vec dydn = lu.solve(-F);
         
+        Vec dydn = solve(J, -F);
+
         const auto dy = dydn.head(E);
         const auto dn = dydn.tail(N);
         
@@ -161,10 +157,10 @@ auto equilibrate(Vec& n, Vec& y)
 int main(int argc, char const *argv[])
 {
     // The initial guess for the amounts of H2O, H+, OH-, O2, H2
-    auto n = Vec{{ 55.0, 1e-6, 1e-6, 1e-20, 1e-20 }}; 
+    auto n = Vec{ 55.0, 1e-6, 1e-6, 1e-20, 1e-20 }; 
     
     // The initial guess for Lagrange multipliers of H, O, Z
-    auto y = Vec{{ 0.0, 0.0, 0.0 }}; 
+    auto y = Vec{ 0.0, 0.0, 0.0 }; 
     
     equilibrate(n, y);
     

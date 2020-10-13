@@ -130,7 +130,7 @@ void FrankMatrixTest() {
 }
 
 template<typename Scalar>
-void MagicSquareTest(size_t N) {
+void MagicSquareTest(int N) {
 	using namespace std;
 	using namespace sw::unum::blas;
 	using Vector = sw::unum::blas::vector<Scalar>;
@@ -140,7 +140,10 @@ void MagicSquareTest(size_t N) {
 	Scalar magicSum = sum(diag(A));
 	Vector b(N), x(N); 
 	b = magicSum;
+	using namespace std::chrono;
+	steady_clock::time_point t1 = steady_clock::now();
 	x = solve(A, b);
+	steady_clock::time_point t2 = steady_clock::now();
 //	cout << "solution x\n" << x << endl;
 	bool bFail = false;
 	for (auto v : x) {
@@ -152,6 +155,18 @@ void MagicSquareTest(size_t N) {
 	}
 	if (bFail) cout << "FAIL for " << typeid(Scalar).name() << " when N = " << N << endl;
 	else cout << "PASS for N = " << typeid(Scalar).name() << " when N = " << N << endl;
+	duration<double> time_span = duration_cast<duration<double>>(t2 - t1);
+	double elapsed = time_span.count();
+	cout << "solve took " << elapsed << " seconds: ";
+	double nrOps = double(N) * double(N) * double(N) / (3.0 * elapsed);
+	cout << "performance ";
+	if (nrOps > 1000000.0) {
+		cout << (uint32_t)(nrOps * 1e-6) << " MOPS/s" << endl;
+	}
+	else {
+		cout << (uint32_t)(nrOps * 1e-3) << " KOPS/s" << endl;
+	}
+
 }
 
 int main(int argc, char** argv)
@@ -171,16 +186,19 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	//FrankMatrixTest<float>();
-	MagicSquareTest<Scalar>(5);
-	MagicSquareTest<Scalar>(51);
+	MagicSquareTest<float>(5);
+	MagicSquareTest<float>(51);
+	MagicSquareTest<float>(251);
 	MagicSquareTest<float>(501);
-	MagicSquareTest<posit<32,2> >(501);
 	MagicSquareTest<double>(501);
 
-	//	Matrix L, U, P;
-	//	auto error = lu(A, L, U, P);
-	//	auto y = L\(P*b);
-	//	auto x = U\y;
+	MagicSquareTest<posit<32, 2> >(51);
+//	MagicSquareTest<posit<32, 2> >(251);
+
+	// basic structure from MATLAB
+	//	[L U P] = lu(A);
+	//	y = L\(P*b);
+	//	x = U\y;
 
 #if 0
 	constexpr float eps = std::numeric_limits<float>::epsilon();

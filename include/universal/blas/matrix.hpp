@@ -102,7 +102,6 @@ public:
 		}
 		return *this;
 	}
-
 	// matrix element-wise difference
 	matrix& operator-=(const matrix& rhs) {
 		// check if the matrices are compatible
@@ -125,7 +124,6 @@ public:
 		}
 		return *this;
 	}
-
 	// divide all matrix elements
 	matrix& operator/=(const Scalar& a) {
 		using size_type = typename matrix<Scalar>::size_type;
