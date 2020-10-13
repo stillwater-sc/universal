@@ -269,11 +269,11 @@ public:
 		uint8_t borrow = 0;
 		for (; lit != end() || rit != _rhs.end(); ++lit, ++rit) {
 			if (*rit > *lit - borrow) {
-				*lit = 10 + *lit - borrow - *rit;
+				*lit = static_cast<uint8_t>(10 + *lit - borrow - *rit);
 				borrow = 1;
 			}
 			else {
-				*lit = *lit - borrow - *rit;
+				*lit = static_cast<uint8_t>(*lit - borrow - *rit);
 				borrow = 0;
 			}
 		}
@@ -300,16 +300,16 @@ public:
 		size_t r = rhs.size();
 		decimal::const_iterator sit, bit; // sit = smallest iterator, bit = biggest iterator
 		if (l < r) {
-			size_t position = 0;
+			int64_t position = 0;
 			for (sit = begin(); sit != end(); ++sit) {
 				decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 				partial_sum.insert(partial_sum.end(), r + position, 0);
 				decimal::iterator pit = partial_sum.begin() + position;
 				uint8_t carry = 0;
 				for (bit = rhs.begin(); bit != rhs.end() && pit != partial_sum.end(); ++bit, ++pit) {
-					uint8_t digit = *sit * *bit + carry;
-					*pit = digit % 10;
-					carry = digit / 10;
+					uint8_t digit = static_cast<uint8_t>(*sit * *bit + carry);
+					*pit = static_cast<uint8_t>(digit % 10);
+					carry = static_cast<uint8_t>(digit / 10);
 				}
 				if (carry) partial_sum.push_back(carry);
 				product += partial_sum;
@@ -318,16 +318,16 @@ public:
 			}
 		}
 		else {
-			size_t position = 0;
+			int64_t position = 0;
 			for (sit = rhs.begin(); sit != rhs.end(); ++sit) {
 				decimal partial_sum; partial_sum.clear(); // TODO: this is silly, create and immediately destruct to make the insert work
 				partial_sum.insert(partial_sum.end(), l + position, 0);
 				decimal::iterator pit = partial_sum.begin() + position;
 				uint8_t carry = 0;
 				for (bit = begin(); bit != end() && pit != partial_sum.end(); ++bit, ++pit) {
-					uint8_t digit = *sit * *bit + carry;
-					*pit = digit % 10;
-					carry = digit / 10;
+					uint8_t digit = static_cast<uint8_t>(*sit * *bit + carry);
+					*pit = static_cast<uint8_t>(digit % 10);
+					carry = static_cast<uint8_t>(digit / 10);
 				}
 				if (carry) partial_sum.push_back(carry);
 				product += partial_sum;
@@ -380,30 +380,30 @@ public:
 		tmp.setsign(!tmp.sign());
 		return tmp;
 	}
-	decimal operator++() {
+	decimal operator++(int) { // postfix
 		decimal tmp(*this);
-		decimal plusOne;
-		plusOne.setdigit(1);
-		*this += plusOne;
+		decimal one;
+		one.setdigit(1);
+		*this += one;
 		return tmp;
 	}
-	decimal& operator++(int d) {
-		decimal plusOne;
-		plusOne.setdigit(1);
-		*this += plusOne;
+	decimal& operator++() { // prefix
+		decimal one;
+		one.setdigit(1);
+		*this += one;
 		return *this;
 	}
-	decimal operator--() {
+	decimal operator--(int) { // postfix
 		decimal tmp(*this);
-		decimal plusOne;
-		plusOne.setdigit(1);
-		*this -= plusOne;
+		decimal one;
+		one.setdigit(1);
+		*this -= one;
 		return tmp;
 	}
-	decimal& operator--(int d) {
-		decimal plusOne;
-		plusOne.setdigit(1);
-		*this -= plusOne;
+	decimal& operator--() { // prefix
+		decimal one;
+		one.setdigit(1);
+		*this -= one;
 		return *this;
 	}
 
@@ -445,7 +445,7 @@ public:
 	void unpad() {
 		int n = (int)size();
 		for (int i = n - 1; i > 0; --i) {
-			if (operator[](i) == 0) {
+			if (operator[](static_cast<size_t>(i)) == 0) {
 				pop_back();
 			}
 			else {
@@ -534,11 +534,11 @@ protected:
 		}
 		return v;
 	}
-	inline unsigned short to_ushort() const { return short(to_ulong_long()); }
-	inline unsigned int to_uint() const { return short(to_ulong_long()); }
-	inline unsigned long to_ulong() const { return short(to_ulong_long()); }
+	inline unsigned short to_ushort() const { return static_cast<unsigned short>(to_ulong_long()); }
+	inline unsigned int to_uint() const { return static_cast<unsigned int>(to_ulong_long()); }
+	inline unsigned long to_ulong() const { return static_cast<unsigned long>(to_ulong_long()); }
 	inline unsigned long long to_ulong_long() const {
-		return (unsigned long long)to_long_long();
+		return static_cast<unsigned long long>(to_long_long());
 	}
 	inline float to_float() const {
 		return 0.0f;
@@ -597,7 +597,7 @@ private:
 inline int findMsd(const decimal& v) {
 	int msd = int(v.size()) - 1;
 	if (msd == 0 && v == 0) return -1; // no significant digit found, all digits are zero
-	assert(v.at(msd) != 0); // indicates the decimal wasn't unpadded
+	assert(v.at(static_cast<size_t>(msd)) != 0); // indicates the decimal wasn't unpadded
 	return msd;
 }
 
@@ -614,7 +614,7 @@ void convert_to_decimal(Ty v, decimal& d) {
 		if (v < 0) {
 			sign = true; // negative number
 			// transform to sign-magnitude on positive side
-			v *= -1;
+			v *= Ty(-1);
 		}
 	}
 	uint64_t mask = 0x1;
@@ -790,7 +790,7 @@ inline bool operator!=(long lhs, const decimal& rhs) {
 	return !operator==(decimal(lhs), rhs);
 }
 inline bool operator< (long lhs, const decimal& rhs) {
-	return false;
+	return operator<(decimal(lhs), rhs);
 }
 inline bool operator> (long lhs, const decimal& rhs) {
 	return operator< (decimal(lhs), rhs);
@@ -869,7 +869,7 @@ decintdiv decint_divide(const decimal& _a, const decimal& _b) {
 		if (subtractand <= accumulator) {
 			decimal multiple = findLargestMultiple(accumulator, subtractand);
 			accumulator -= multiple * subtractand;
-			uint8_t multiplier = int(multiple);
+			uint8_t multiplier = static_cast<uint8_t>(int(multiple)); // TODO: fix the ugly
 			divresult.quot.insert(divresult.quot.begin(), multiplier);
 		}
 		else {

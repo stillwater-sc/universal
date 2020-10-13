@@ -8,7 +8,7 @@
 #include <cmath>
 #include <algorithm>
 // decimal number system
-#include <universal/decimal/decimal.hpp>
+#include <universal/decimal/decimal>
 
 /*
  * A palindrome number reads the same both ways. The largest palindrome made from the product
