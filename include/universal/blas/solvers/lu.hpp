@@ -248,6 +248,7 @@ int ludcmp(Matrix& A) {
 	return 0; // success
 }
 
+/*
 // Solve the system LU . x = b
 template<typename Scalar>
 void lubksb(const matrix<Scalar>& LU, const vector<int>& permutation, const vector<Scalar>& _b, vector<Scalar>& x) {
@@ -262,7 +263,7 @@ void lubksb(const matrix<Scalar>& LU, const vector<int>& permutation, const vect
 	Scalar sum = 0;
 	size_t ii = 0;
 	for (size_t i = 0; i < N; ++i) {
-		ip = permutation(i);
+		ip = indx(i);
 		sum = b(ip);
 		b(ip) = b(i);
 		if (ii) {
@@ -283,6 +284,7 @@ void lubksb(const matrix<Scalar>& LU, const vector<int>& permutation, const vect
 		b(i) = sum / LU(i, i);
 	}
 }
+*/
 
 // LU decomposition using partial pivoting with implicit pivoting applied
 template<typename Scalar>
