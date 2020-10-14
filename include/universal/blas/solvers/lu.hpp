@@ -184,17 +184,17 @@ void SolveCroutFDP(const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& L
 
 // in-place LU decomposition using partial pivoting with implicit pivoting applied
 template<typename Scalar>
-int ludcmp(matrix<Scalar>& A) {
+int ludcmp(matrix<Scalar>& A, vector<size_t>& indx) {
 	using namespace std;
 	const size_t N = num_rows(A);
 	if (N != num_cols(A)) {
-		std::cerr << "inv matrix argument is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
+		std::cerr << "matrix argument to ludcmp is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
 		return 1;
 	}
-
+	indx.resize(N);
+	indx = 0;
 	// implicit pivoting pre-calculation
-	vector<Scalar> implicitScale(N);
-	vector<size_t> indx(N);
+	vector<Scalar> implicitScale(N);	
 	for (size_t i = 0; i < N; ++i) { // for each row
 		Scalar pivot = 0;
 		for (size_t j = 0; j < N; ++j) { // scan the columns for the biggest abs value
@@ -230,10 +230,9 @@ int ludcmp(matrix<Scalar>& A) {
 		if (j != imax) {
 			for (size_t k = 0; k < N; ++k) std::swap(A(imax, k), A(j, k));
 			++nrOfRowExchanges;
-			//implicitScale[imax] = implicitScale[j]; // interchange scaling factor???
-			std::swap(implicitScale[imax], implicitScale[j]); // interchange scaling factors
+			implicitScale[imax] = implicitScale[j]; // interchange scaling factor
 		}
-		std::cout << "scaling\n" << implicitScale << std::endl;
+//		std::cout << "scaling\n" << implicitScale << std::endl;
 		indx[j] = imax;
 		if (A(j, j) == 0) A(j, j) = std::numeric_limits<Scalar>::epsilon();
 		if (j != N) {
@@ -241,7 +240,7 @@ int ludcmp(matrix<Scalar>& A) {
 			for (size_t i = j + 1; i < N; ++i) A(i, j) *= dum;
 		}
 	}
-	cout << "index array\n" << indx << endl;
+//	cout << "index array\n" << indx << endl;
 	return 0; // success
 }
 
@@ -285,19 +284,19 @@ void lubksb(const matrix<Scalar>& LU, const vector<int>& permutation, const vect
 
 // in-place LU decomposition using partial pivoting with implicit pivoting applied
 template<size_t nbits, size_t es, size_t capacity = 10>
-int ludcmp(matrix< posit<nbits, es> >& A) {
+int ludcmp(matrix< posit<nbits, es> >& A, vector<size_t>& indx) {
 	using namespace std;
 	using namespace sw::unum;
 	const size_t N = num_rows(A);
 	if (N != num_cols(A)) {
-		std::cerr << "inv matrix argument is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
+		std::cerr << "matrix argument to ludcmp is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
 		return 1;
 	}
-
+	indx.resize(N);
+	indx = 0;
 	using Scalar = posit<nbits, es>;
 	// implicit pivoting pre-calculation
 	vector<Scalar> implicitScale(N);
-	vector<size_t> indx(N);
 	for (size_t i = 0; i < N; ++i) { // for each row
 		Scalar pivot = 0;
 		for (size_t j = 0; j < N; ++j) { // scan the columns for the biggest abs value
@@ -337,8 +336,7 @@ int ludcmp(matrix< posit<nbits, es> >& A) {
 		if (j != imax) {
 			for (size_t k = 0; k < N; ++k) std::swap(A(imax, k), A(j, k));
 			++nrOfRowExchanges;
-			//implicitScale[imax] = implicitScale[j]; // interchange scaling factor???
-			std::swap(implicitScale[imax], implicitScale[j]); // interchange scaling factors
+			implicitScale[imax] = implicitScale[j]; // interchange scaling factor
 		}
 		indx[j] = imax;
 		if (A(j, j) == 0) A(j, j) = std::numeric_limits<Scalar>::epsilon();
@@ -356,17 +354,102 @@ matrix<Scalar> lu(const matrix<Scalar>& A) {
 	using namespace std;
 	const size_t N = num_rows(A);
 	if (N != num_cols(A)) {
-		std::cerr << "inv matrix argument is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
+		std::cerr << "matrix argument is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
 		return matrix<Scalar>{};
 	}
-	matrix<Scalar> B(A);
-	if (ludcmp(B) == 1) {
+	matrix<Scalar> B(A); 
+	vector<size_t> p;
+	if (ludcmp(B, p) == 1) {
 		std::cerr << "LU decomposition failed\n";
 		return matrix<Scalar>{};
 	}
 	return B;
 }
 
+// backsubstitution of an LU decomposition: Matrix A is in (L + U) form
+template<typename Scalar>
+vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const vector<Scalar>& b) {
+	const size_t N = num_rows(A);
+	if (N != num_cols(A)) {
+		std::cerr << "matrix argument to lubksb is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
+		return vector<Scalar>{};
+	}
+	if (N != size(indx)) {
+		std::cerr << "permutation vector does not match size of LU decomposition: (" << N << " x " << N << ") !-> " << size(indx) << std::endl;
+		return vector<Scalar>{};
+	}
+	if (N != size(b)) {
+		std::cerr << "rhs vector does not match size of LU decomposition" << std::endl;
+		return vector<Scalar>{};
+	}
+
+	vector<Scalar> x(b);
+	Scalar sum = 0;
+	// forward substitution
+	for (size_t i = 0; i < N; ++i) {
+		size_t ip = indx(i);
+		sum = x(ip);
+		x(ip) = x(i);
+
+		for (size_t j = 0; j < i; ++j) {
+			sum -= A(i, j) * x(j);
+		}
+
+		x(i) = sum;
+	}
+	// backsubstitution
+	for (size_t i = N; i >= 1; --i) {
+		sum = x(i - 1);
+		for (size_t j = i; j < N; ++j) {
+			sum -= A(i - 1, j) * x(j);
+		}
+		x(i - 1) = sum / A(i - 1, i - 1);
+	}
+	return x;
+}
+
+// backsubstitution of an LU decomposition: Matrix A is in (L + U) form
+template<size_t nbits, size_t es, size_t capacity = 10>
+vector< sw::unum::posit<nbits, es> > lubksb(const matrix< sw::unum::posit<nbits, es> >& A, const vector<size_t>& indx, const vector<sw::unum::posit<nbits, es> >& b) {
+	using Scalar = sw::unum::posit<nbits, es>;
+	const size_t N = num_rows(A);
+	if (N != num_cols(A)) {
+		std::cerr << "matrix argument to lubksb is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
+		return vector<Scalar>{};
+	}
+	if (N != size(indx)) {
+		std::cerr << "permutation vector does not match size of LU decomposition: (" << N << " x " << N << ") !-> " << size(indx) << std::endl;
+		return vector<Scalar>{};
+	}
+	if (N != size(b)) {
+		std::cerr << "rhs vector does not match size of LU decomposition" << std::endl;
+		return vector<Scalar>{};
+	}
+
+	vector<Scalar> x(b);
+	Scalar sum = 0;
+	// forward substitution
+	for (size_t i = 0; i < N; ++i) {
+		size_t ip = indx(i);
+		sum = x(ip);
+		x(ip) = x(i);
+
+		for (size_t j = 0; j < i; ++j) {
+			sum -= A(i, j) * x(j);
+		}
+
+		x(i) = sum;
+	}
+	// backsubstitution
+	for (size_t i = N; i >= 1; --i) {
+		sum = x(i - 1);
+		for (size_t j = i; j < N; ++j) {
+			sum -= A(i - 1, j) * x(j);
+		}
+		x(i - 1) = sum / A(i - 1, i - 1);
+	}
+	return x;
+}
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -422,8 +505,7 @@ vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 		if (j != imax) {
 			for (size_t k = 0; k < N; ++k) std::swap(A(imax, k), A(j, k));
 			++nrOfRowExchanges;
-			implicitScale[imax] = implicitScale[j]; // interchange scaling factor???
-			//std::swap(implicitScale[imax], implicitScale[j]); // interchange scaling factors
+			implicitScale[imax] = implicitScale[j]; // interchange scaling factor
 		}
 //		cout << "indx: " << indx << endl;
 		indx[j] = imax;
@@ -524,8 +606,7 @@ vector<sw::unum::posit<nbits, es> > solve(const matrix<sw::unum::posit<nbits, es
 		if (j != imax) {
 			for (size_t k = 0; k < N; ++k) std::swap(A(imax, k), A(j, k));
 			++nrOfRowExchanges;
-			implicitScale[imax] = implicitScale[j]; // interchange scaling factor???
-			//std::swap(implicitScale[imax], implicitScale[j]); // interchange scaling factors
+			implicitScale[imax] = implicitScale[j]; // interchange scaling factor
 		}
 		//		cout << "indx: " << indx << endl;
 		indx[j] = imax;

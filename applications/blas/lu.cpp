@@ -106,7 +106,7 @@ void GaussianEliminationTest() {
 }
 
 template<typename Scalar>
-void FrankMatrixTest() {
+void LUTest() {
 	using namespace std;
 	using Vector = sw::unum::blas::vector<Scalar>;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
@@ -127,6 +127,31 @@ void FrankMatrixTest() {
 	auto U = triu(LU);
 	cout << "Lower Triangular matrix\n" << L << endl;
 	cout << "Upper Triangular matrix\n" << U << endl;
+}
+
+template<typename Scalar>
+void FrankMatrixTest() {
+	using namespace std;
+	using Vector = sw::unum::blas::vector<Scalar>;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+
+	Matrix A = {
+	{ 5, 4, 3, 2, 1 },
+	{ 4, 4, 3, 2, 1 },
+	{ 0, 3, 3, 2, 1 },
+	{ 0, 0, 2, 2, 1 },
+	{ 0, 0, 0, 1, 1 }
+	};
+
+	Vector x(5);
+	x = Scalar(1);  // vector of 1's
+	Vector b(5);
+	b = A * x;
+	// now solve for b should yield a vector of 1's
+	sw::unum::blas::vector<size_t> p;
+	ludcmp(A, p);
+	auto xx = lubksb(A, p, b);
+	cout << "\nSolution vector is\n" << xx << endl;
 }
 
 template<typename Scalar>
@@ -185,7 +210,13 @@ try {
 	if (argc == 1) cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
 
-	//FrankMatrixTest<float>();
+	FrankMatrixTest<float>();
+	FrankMatrixTest<double>();
+	FrankMatrixTest<long double>();
+	FrankMatrixTest< posit<16, 1> >();
+	FrankMatrixTest< posit<32, 2> >();
+	FrankMatrixTest< posit<64, 3> >();
+	/*
 	MagicSquareTest<float>(5);
 	MagicSquareTest<float>(51);
 	MagicSquareTest<float>(251);
@@ -193,7 +224,8 @@ try {
 	MagicSquareTest<double>(501);
 
 	MagicSquareTest<posit<32, 2> >(51);
-//	MagicSquareTest<posit<32, 2> >(251);
+	MagicSquareTest<posit<32, 2> >(251);
+	*/
 
 	// basic structure from MATLAB
 	//	[L U P] = lu(A);
