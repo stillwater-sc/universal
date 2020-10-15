@@ -1,4 +1,4 @@
-// matrix_ops.cpp: matrix API for sw::unum::blas
+// hilbert.cpp: Hilbert matrix
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -26,24 +26,47 @@
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 
+template<typename Scalar>
+void HilbertMatrixTest(size_t N = 5) {
+	using namespace std;
+	using namespace sw::unum::blas;
+//	using Vector = sw::unum::blas::vector<Scalar>;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+	Matrix H(N, N), Hscale(N, N), Hinv(N, N), Hscaleinv(N, N);
+
+	cout << "HilbertMatrixTest for type: " << typeid(Scalar).name() << endl;
+	// first a non-scaled Hilbert matrix that suffers from representational error
+	// as 1/3, 1/6, 1/7, etc cannot be represented in binary arithmetic
+	GenerateHilbertMatrix<Scalar>(H, false);
+	GenerateHilbertMatrixInverse<Scalar>(Hinv);
+	cout << "Hilbert matrix\n" << H << endl;
+	cout << "Hilbert inverse\n" << Hinv << endl;
+	cout << "Validation: Hinv * H => I\n" << Hinv * H << endl;
+
+	Scalar lcm = (Scalar)GenerateHilbertMatrix<Scalar>(Hscale, true); // scale the Hilbert matrix entries to be binary representable
+	GenerateHilbertMatrixInverse(Hscaleinv, lcm); // <-- scale the inverse
+	cout << "Scaled Hilbert matrix: lcm = " << lcm << "\n" << Hscale << endl;
+	cout << "Scaled Hilbert inverse\n" << Hscaleinv << endl;
+	cout << "Validation: Hinv * H => I\n" << Hscaleinv * Hscale << endl;
+	cout << "Rescaled with lcm = " << lcm << '\n' << (Hscaleinv * Hscale) / lcm << endl;
+
+	cout << "Computing a Hilbert matrix inverse through Gauss-Jordan\n";
+	auto Hinvcomputed = inv(H);
+	cout << "Hilbert inverse computed with Gauss-Jordan\n" << Hinvcomputed << endl;
+	cout << "Validation: Hinv * H => I\n" << Hinvcomputed * H << endl;
+	cout << "------------------------------------------------------\n";
+}
+
 int main(int argc, char* argv[])
 try {
 	using namespace std;
-	using namespace sw::unum::blas;
+	using namespace sw::unum;
 
-	{
-		using Scalar = float;
-		using Matrix = sw::unum::blas::matrix<Scalar>;
-		Matrix A = row_order_index<Scalar>(23, 57);
-		Matrix B(A);
-		A.transpose().transpose();
-		if (A != B) {
-			cout << "transpose FAIL\n";
-		}
-		else {
-			cout << "transpose PASS\n";
-		}
-	}
+	if (argc == 1) cout << argv[0] << endl;
+
+	HilbertMatrixTest<float>();
+	HilbertMatrixTest< posit<32, 2> >();
+	HilbertMatrixTest< posit<256, 5> >();
 
 	return EXIT_SUCCESS;
 }

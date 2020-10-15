@@ -5,8 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {
-namespace function {
+namespace sw { namespace function {
 
 	// these factorials can take a Real type and thus could have a very funky behavior
 	// TODO: do we ceil that incoming argument or test on integer properties?

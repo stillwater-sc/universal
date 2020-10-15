@@ -166,6 +166,10 @@ public:
 	value_type& head(size_t index) { return data[index]; }
 	value_type  tail(size_t index) const { return data[index]; }
 	value_type& tail(size_t index) { return data[index]; }
+	void push_back(const value_type& e) { data.push_back(e); }
+	void resize(size_t N) {
+		data.resize(N);
+	}
 
 // selectors
 	size_t size() const { return data.size(); }

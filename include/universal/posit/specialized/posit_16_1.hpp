@@ -423,6 +423,22 @@ public:
 		return p.set_raw_bits(~_bits + 1);
 	}
 
+	value<fbits> to_value() const {
+		bool		     	 _sign;
+		regime<nbits, es>    _regime;
+		exponent<nbits, es>  _exponent;
+		fraction<fbits>      _fraction;
+		bitblock<nbits>		 _raw_bits;
+		_raw_bits.reset();
+		uint64_t mask = 1;
+		for (size_t i = 0; i < nbits; i++) {
+			_raw_bits.set(i, (_bits & mask));
+			mask <<= 1;
+		}
+		decode(_raw_bits, _sign, _regime, _exponent, _fraction);
+		return value<fbits>(_sign, _regime.scale() + _exponent.scale(), _fraction.get(), iszero(), isnar());
+	}
+
 private:
 	uint16_t _bits;
 

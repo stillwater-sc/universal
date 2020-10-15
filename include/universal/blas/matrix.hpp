@@ -102,7 +102,6 @@ public:
 		}
 		return *this;
 	}
-
 	// matrix element-wise difference
 	matrix& operator-=(const matrix& rhs) {
 		// check if the matrices are compatible
@@ -117,11 +116,19 @@ public:
 		return *this;
 	}
 
-	// scale all matrix elements
+	// multiply all matrix elements
 	matrix& operator*=(const Scalar& a) {
 		using size_type = typename matrix<Scalar>::size_type;
 		for (size_type e = 0; e < _m*_n; ++e) {
 			data[e] *= a;
+		}
+		return *this;
+	}
+	// divide all matrix elements
+	matrix& operator/=(const Scalar& a) {
+		using size_type = typename matrix<Scalar>::size_type;
+		for (size_type e = 0; e < _m * _n; ++e) {
+			data[e] /= a;
 		}
 		return *this;
 	}
@@ -134,11 +141,6 @@ public:
 	inline size_t cols() const { return _n; }
 	inline std::pair<size_t, size_t> size() const { return std::make_pair(_m, _n); }
 
-	// Eigen operators I need to reverse engineer
-	matrix Zero(size_t m, size_t n) {
-		matrix z(m, n);
-		return z;
-	}
 	// in-place transpose
 	matrix& transpose() {
 		size_t size = _m * _n - 1;
@@ -166,9 +168,16 @@ public:
 		return *this;
 	}
 
+	// Eigen operators I need to reverse engineer
+	matrix Zero(size_t m, size_t n) {
+		matrix z(m, n);
+		return z;
+	}
+
 private:
 	size_t _m, _n; // m rows and n columns
 	std::vector<Scalar> data;
+
 };
 
 template<typename Scalar>
@@ -212,11 +221,18 @@ matrix<Scalar> operator-(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	return Diff -= B;
 }
 
-// matrix scaling
+// matrix scaling through Scalar multiply
 template<typename Scalar>
 matrix<Scalar> operator*(const Scalar& a, const matrix<Scalar>& B) {
 	matrix<Scalar> A(B);
 	return A *= a;
+}
+
+// matrix scaling through Scalar divide
+template<typename Scalar>
+matrix<Scalar> operator/(const matrix<Scalar>& A, const Scalar& b) {
+	matrix<Scalar> B(A);
+	return B /= b;
 }
 
 // matrix-vector multiply
@@ -232,7 +248,7 @@ vector<Scalar> operator*(const matrix<Scalar>& A, const vector<Scalar>& x) {
 	return b;
 }
 
-// overload for posits uses fused dot products
+// overload for posits to use fused dot products
 template<size_t nbits, size_t es>
 vector< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const vector< posit<nbits, es> >& x) {
 	constexpr size_t capacity = 20; // FDP for vectors < 1,048,576 elements
@@ -288,8 +304,8 @@ matrix< posit<nbits, es> > operator*(const matrix< posit<nbits, es> >& A, const 
 }
 
 // matrix equivalence tests
-template<typename Matrix>
-bool operator==(const Matrix& A, const Matrix& B) {
+template<typename Scalar>
+bool operator==(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	if (num_rows(A) != num_rows(B) ||
 		num_cols(A) != num_cols(B)) return false;
 	bool equal = true;
@@ -305,8 +321,8 @@ bool operator==(const Matrix& A, const Matrix& B) {
 	return equal;
 }
 
-template<typename Matrix>
-bool operator!=(const Matrix& A, const Matrix& B) {
+template<typename Scalar>
+bool operator!=(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	return !(A == B);
 }
 
