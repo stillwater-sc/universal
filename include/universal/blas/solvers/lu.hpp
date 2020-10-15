@@ -382,7 +382,6 @@ vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const
 		std::cerr << "rhs vector does not match size of LU decomposition" << std::endl;
 		return vector<Scalar>{};
 	}
-
 	vector<Scalar> x(b);
 	Scalar sum = 0;
 	// forward substitution
@@ -390,11 +389,9 @@ vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const
 		size_t ip = indx(i);
 		sum = x(ip);
 		x(ip) = x(i);
-
 		for (size_t j = 0; j < i; ++j) {
 			sum -= A(i, j) * x(j);
-		}
-
+		}		
 		x(i) = sum;
 	}
 	// backsubstitution
@@ -425,27 +422,28 @@ vector< sw::unum::posit<nbits, es> > lubksb(const matrix< sw::unum::posit<nbits,
 		std::cerr << "rhs vector does not match size of LU decomposition" << std::endl;
 		return vector<Scalar>{};
 	}
-
 	vector<Scalar> x(b);
 	Scalar sum = 0;
 	// forward substitution
 	for (size_t i = 0; i < N; ++i) {
 		size_t ip = indx(i);
-		sum = x(ip);
+		quire<nbits, es, capacity> q(x(ip));
 		x(ip) = x(i);
-
 		for (size_t j = 0; j < i; ++j) {
-			sum -= A(i, j) * x(j);
+			q -= quire_mul(A(i, j), x(j));
 		}
-
+		posit<nbits, es> sum;
+		convert(q.to_value(), sum);
 		x(i) = sum;
 	}
 	// backsubstitution
 	for (size_t i = N; i >= 1; --i) {
-		sum = x(i - 1);
+		quire<nbits, es, capacity> q(x(i - 1));
 		for (size_t j = i; j < N; ++j) {
-			sum -= A(i - 1, j) * x(j);
+			q -= quire_mul(A(i - 1, j), x(j));
 		}
+		posit<nbits, es> sum;
+		convert(q.to_value(), sum);
 		x(i - 1) = sum / A(i - 1, i - 1);
 	}
 	return x;
@@ -628,8 +626,8 @@ vector<sw::unum::posit<nbits, es> > solve(const matrix<sw::unum::posit<nbits, es
 	// forward substitution
 	for (size_t i = 0; i < N; ++i) {
 		size_t ip = indx(i);
-		quire<nbits, es, capacity> q(x(ip));
 		x(ip) = x(i);
+		quire<nbits, es, capacity> q(x(ip));
 		for (size_t j = 0; j < i; ++j) q -= quire_mul(A(i, j), x(j));
 		posit<nbits, es> sum;
 		convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product

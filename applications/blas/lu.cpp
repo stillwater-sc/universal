@@ -151,7 +151,29 @@ void FrankMatrixTest() {
 	sw::unum::blas::vector<size_t> p;
 	ludcmp(A, p);
 	auto xx = lubksb(A, p, b);
-	cout << "\nSolution vector is\n" << xx << endl;
+	auto e = xx - x;
+	Scalar infnorm = -1;
+	for (auto v : e) {
+		if (fabs(v) > infnorm) {
+			infnorm = fabs(v);
+		}
+	}
+	cout << "\nSolution vector for type " << setw(30) << typeid(Scalar).name() << " is [" << xx << "]" << " infinity norm of error " << infnorm << endl;
+
+}
+
+void FrankMatrix() {
+	using namespace sw::unum;
+	std::cout << "Frank matrix solver\n";
+	FrankMatrixTest<float>();
+	FrankMatrixTest<double>();
+	FrankMatrixTest<long double>();
+	FrankMatrixTest< posit<16, 1> >();
+	FrankMatrixTest< posit<20, 1> >();
+	FrankMatrixTest< posit<28, 1> >();
+	FrankMatrixTest< posit<28, 2> >();    // <---- this has the same number of fraction bits at 1 as IEEE single precision
+	FrankMatrixTest< posit<32, 2> >();
+	FrankMatrixTest< posit<64, 3> >();
 }
 
 template<typename Scalar>
@@ -210,12 +232,8 @@ try {
 	if (argc == 1) cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
 
-	FrankMatrixTest<float>();
-	FrankMatrixTest<double>();
-	FrankMatrixTest<long double>();
-	FrankMatrixTest< posit<16, 1> >();
-	FrankMatrixTest< posit<32, 2> >();
-	FrankMatrixTest< posit<64, 3> >();
+	FrankMatrix();
+
 	/*
 	MagicSquareTest<float>(5);
 	MagicSquareTest<float>(51);
