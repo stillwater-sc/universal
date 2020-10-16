@@ -18,7 +18,7 @@
 #include <universal/blas/generators/frank.hpp>
 
 template<typename Scalar>
-void FrankMatrixTest(size_t N) {
+void FrankMatrixTest(int N) {
 	using namespace std;
 	using Vector = sw::unum::blas::vector<Scalar>;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
@@ -43,7 +43,7 @@ try {
 
 	streamsize precision = cout.precision();
 
-	vector<size_t> sizes = { 5, 15, 45, 95 };
+	vector<int> sizes = { 5, 15, 45, 95 };
 	for (auto N : sizes) {
 		FrankMatrixTest<float>(N);
 		FrankMatrixTest<posit<32, 2>>(N);

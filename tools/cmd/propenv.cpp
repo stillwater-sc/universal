@@ -3,6 +3,9 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+
+// configure the posit environment
+#define POSIT_FAST_SPECIALIZATION 1
 #include <universal/posit/posit>
 
 //#define POSIT_DECODED_CLASS
@@ -125,17 +128,37 @@ try {
 	posit<4, 0> p4_0;
 	posit<8, 0> p8_0;
 	posit<16, 1> p16_1;
+	posit<20, 1> p20_1;
+	posit<24, 1> p24_1;
+	posit<28, 1> p28_1;
 	posit<32, 2> p32_2;
+	posit<40, 2> p40_2;
+	posit<48, 2> p48_2;
+	posit<56, 2> p56_2;
 	posit<64, 3> p64_3;
+	posit<80, 3> p80_3;
+	posit<96, 3> p96_3;
+	posit<112, 3> p112_3;
 	posit<128, 4> p128_4;
+	posit<256, 5> p256_5;
 	constexpr int columnWidth = 21;
 	cout << "Bit sizes for standard posit configurations\n";
 	cout << left << setw(columnWidth) << "posit<4,0>" << setw(4) << right << sizeof(p4_0) * 8 << " bits" << endl;
 	cout << left << setw(columnWidth) << "posit<8,0>" << setw(4) << right << sizeof(p8_0) * 8 << " bits" << endl;
 	cout << left << setw(columnWidth) << "posit<16,1>" << setw(4) << right << sizeof(p16_1) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<20,1>" << setw(4) << right << sizeof(p20_1) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<24,1>" << setw(4) << right << sizeof(p24_1) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<28,1>" << setw(4) << right << sizeof(p28_1) * 8 << " bits" << endl;
 	cout << left << setw(columnWidth) << "posit<32,2>" << setw(4) << right << sizeof(p32_2) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<40,2>" << setw(4) << right << sizeof(p40_2) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<48,2>" << setw(4) << right << sizeof(p48_2) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<56,2>" << setw(4) << right << sizeof(p56_2) * 8 << " bits" << endl;
 	cout << left << setw(columnWidth) << "posit<64,3>" << setw(4) << right << sizeof(p64_3) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<80,3>" << setw(4) << right << sizeof(p80_3) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<96,3>" << setw(4) << right << sizeof(p96_3) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<112,3>" << setw(4) << right << sizeof(p112_3) * 8 << " bits" << endl;
 	cout << left << setw(columnWidth) << "posit<128,4>" << setw(4) << right << sizeof(p128_4) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<256,5>" << setw(4) << right << sizeof(p256_5) * 8 << " bits" << endl;
 
 	// numeric_limits of standard posits
 	ReportNumericLimitsOfPosit<8, 0>();
