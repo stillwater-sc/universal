@@ -11,6 +11,7 @@
 // matrix generators
 #include <universal/blas/generators/index.hpp>
 #include <universal/blas/generators/magic.hpp>
+#include <universal/blas/generators/frank.hpp>
 #include <universal/blas/generators/hilbert.hpp>
 #include <universal/blas/generators/uniform_random.hpp>
 

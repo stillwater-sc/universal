@@ -1,0 +1,10 @@
+#ifndef SW_UNUM_BLAS
+#define SW_UNUM_BLAS
+// blas: top level include for the universal blas library
+//
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/blas/blas.hpp>
+#include <universal/blas/generators.hpp>
+#endif

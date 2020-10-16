@@ -527,11 +527,9 @@ vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 		size_t ip = indx(i);
 		sum = x(ip);
 		x(ip) = x(i);
-
 		for (size_t j = 0; j < i; ++j) {
 			sum -= A(i, j) * x(j);
 		}
-
 		x(i) = sum;
 	}
 //	cout << "y\n" << x << endl;
@@ -626,8 +624,8 @@ vector<sw::unum::posit<nbits, es> > solve(const matrix<sw::unum::posit<nbits, es
 	// forward substitution
 	for (size_t i = 0; i < N; ++i) {
 		size_t ip = indx(i);
-		x(ip) = x(i);
 		quire<nbits, es, capacity> q(x(ip));
+		x(ip) = x(i);
 		for (size_t j = 0; j < i; ++j) q -= quire_mul(A(i, j), x(j));
 		posit<nbits, es> sum;
 		convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product

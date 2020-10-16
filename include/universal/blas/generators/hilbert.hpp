@@ -1,5 +1,5 @@
 #pragma once
-// hilbert_matrix.hpp: generate a Hilbert matrix and its exact inverse
+// hilbert.hpp: generate a Hilbert matrix and its exact inverse
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
