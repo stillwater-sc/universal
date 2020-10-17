@@ -251,54 +251,89 @@ void ReportArithmeticProperties(size_t nbits, size_t es) {
 			}
 		}
 		break;
+	case 128:
+	{
+		constexpr size_t nbits = 128;
+		switch (es) {
+		case 0:
+			arithmetic_properties<nbits, 0, capacity>(cout);
+			break;
+		case 1:
+			arithmetic_properties<nbits, 1, capacity>(cout);
+			break;
+		case 2:
+			arithmetic_properties<nbits, 2, capacity>(cout);
+			break;
+		case 3:
+			arithmetic_properties<nbits, 3, capacity>(cout);
+			break;
+		case 4:
+			arithmetic_properties<nbits, 4, capacity>(cout);
+			break;
+		case 5:
+			arithmetic_properties<nbits, 5, capacity>(cout);
+			break;
+		case 6:
+			arithmetic_properties<nbits, 6, capacity>(cout);
+			break;
+		case 7:
+			arithmetic_properties<nbits, 7, capacity>(cout);
+			break;
+		case 8:
+			arithmetic_properties<nbits, 8, capacity>(cout);
+			break;
+		case 9:
+			arithmetic_properties<nbits, 9, capacity>(cout);
+			break;
+		default:
+			cerr << "es = " << es << " reporting is not supported by this program" << endl;
+		}
+	}
+		break;
+	case 256:
+	{
+		constexpr size_t nbits = 256;
+		switch (es) {
+		case 0:
+			arithmetic_properties<nbits, 0, capacity>(cout);
+			break;
+		case 1:
+			arithmetic_properties<nbits, 1, capacity>(cout);
+			break;
+		case 2:
+			arithmetic_properties<nbits, 2, capacity>(cout);
+			break;
+		case 3:
+			arithmetic_properties<nbits, 3, capacity>(cout);
+			break;
+		case 4:
+			arithmetic_properties<nbits, 4, capacity>(cout);
+			break;
+		case 5:
+			arithmetic_properties<nbits, 5, capacity>(cout);
+			break;
+		case 6:
+			arithmetic_properties<nbits, 6, capacity>(cout);
+			break;
+		case 7:
+			arithmetic_properties<nbits, 7, capacity>(cout);
+			break;
+		case 8:
+			arithmetic_properties<nbits, 8, capacity>(cout);
+			break;
+		case 9:
+			arithmetic_properties<nbits, 9, capacity>(cout);
+			break;
+		default:
+			cerr << "es = " << es << " reporting is not supported by this program" << endl;
+		}
+	}
+	break;
 	default:
 		cerr << "nbits = " << nbits << " reporting is not supported by this program" << endl;
 	}
 }
 
-template<size_t nbits, size_t capacity = 10>
-void QuireSizeTableRow(std::ostream& ostr, unsigned first_column, unsigned size_column) {
-	using namespace std;
-	using namespace sw::unum;
-	ostr << setw(first_column) << nbits;
-	ostr << setw(size_column) << quire_size<nbits, 0, capacity>();
-	ostr << setw(size_column) << quire_size<nbits, 1, capacity>();
-	ostr << setw(size_column) << quire_size<nbits, 2, capacity>();
-	ostr << setw(size_column) << quire_size<nbits, 3, capacity>();
-	ostr << setw(size_column) << quire_size<nbits, 4, capacity>();
-	ostr << setw(size_column) << quire_size<nbits, 5, capacity>();
-	ostr << setw(size_column) << quire_size<nbits, 6, capacity>();
-	ostr << setw(size_column) << quire_size<nbits, 7, capacity>();
-	ostr << setw(size_column) << quire_size<nbits, 8, capacity>();
-	ostr << setw(size_column) << quire_size<nbits, 9, capacity>();
-	ostr << endl;
-}
-
-template<size_t nbits, size_t capacity = 10>
-void QuireSizeTable(std::ostream& ostr) {
-	using namespace std;
-	using namespace sw::unum;
-
-	ostr << "Quire size table as a function of <nbits, es, capacity = " << capacity << ">" << endl;
-	ostr << "Capacity is 2^" << capacity << " accumulations of max_pos^2" << endl;
-	unsigned first_column = 8;
-	unsigned size_column = 8;
-	ostr << setw(first_column) << "nbits" << setw(size_column * 5) << "es value" << endl;
-	ostr << setw(first_column) << "   +";
-	for (int i = 0; i < 10; ++i) {
-		ostr << setw(size_column) << i;
-	}
-	ostr << endl;
-	QuireSizeTableRow<nbits + 0, capacity>(ostr, first_column, size_column);
-	QuireSizeTableRow<nbits + 1, capacity>(ostr, first_column, size_column);
-	QuireSizeTableRow<nbits + 2, capacity>(ostr, first_column, size_column);
-	QuireSizeTableRow<nbits + 3, capacity>(ostr, first_column, size_column);
-	QuireSizeTableRow<nbits + 4, capacity>(ostr, first_column, size_column);
-	QuireSizeTableRow<nbits + 5, capacity>(ostr, first_column, size_column);
-	QuireSizeTableRow<nbits + 6, capacity>(ostr, first_column, size_column);
-	QuireSizeTableRow<nbits + 7, capacity>(ostr, first_column, size_column);
-	QuireSizeTableRow<nbits + 8, capacity>(ostr, first_column, size_column);
-}
 
 // receive a float and print its components
 int main(int argc, char** argv)
@@ -306,20 +341,8 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	if (argc == 1) {
-		// print a standard quire size table
-		QuireSizeTable<4>(cout); cout << endl;
-		QuireSizeTable<8>(cout); cout << endl;
-		QuireSizeTable<16>(cout); cout << endl;
-		QuireSizeTable<24>(cout); cout << endl;
-		QuireSizeTable<32>(cout); cout << endl;
-		QuireSizeTable<40>(cout); cout << endl;
-		QuireSizeTable<48>(cout); cout << endl;
-		QuireSizeTable<56>(cout); cout << endl;
-		QuireSizeTable<64>(cout); cout << endl;
-		return EXIT_SUCCESS;
-	}
-	else if (argc != 4) {
+	if (argc == 4) cout << argv[0] << ": posit properties\n";
+	if (argc != 4) {
 		cerr << "Show the arithmetic properties of a posit.\n";
 	    cerr << "Usage: propp [nbits es capacity]\n";
 		cerr << "Example: propp 16 1 8\n";

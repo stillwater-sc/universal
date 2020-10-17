@@ -47,46 +47,6 @@ void WhyWeRemovedDecodedPosits() {
 }
 #endif
 
-template<size_t nbits, size_t es>
-void ReportNumericLimitsOfPosit() {
-	using namespace std;
-	using namespace sw::unum;
-
-	stringstream ss;
-	ss << "numeric_limits< sw::unum::posit<" << nbits << ", " << es << "> >::";
-	string posit_tag = ss.str();
-
-	cout << "Numeric limits for posit< " << nbits << ", " << es << ">\n";
-	cout << posit_tag << "min()             : " << numeric_limits< posit<nbits, es> >::min() << '\n';
-	cout << posit_tag << "max()             : " << numeric_limits< posit<nbits, es> >::max() << '\n';
-	cout << posit_tag << "lowest()          : " << numeric_limits< posit<nbits, es> >::lowest() << '\n';
-	cout << posit_tag << "epsilon()         : " << numeric_limits< posit<nbits, es> >::epsilon() << '\n';
-
-	cout << posit_tag << "digits            : " << numeric_limits< posit<nbits, es> >::digits << '\n';
-	cout << posit_tag << "digits10          : " << numeric_limits< posit<nbits, es> >::digits10 << '\n';
-	cout << posit_tag << "max_digits10      : " << numeric_limits< posit<nbits, es> >::max_digits10 << '\n';
-	cout << posit_tag << "is_signed         : " << numeric_limits< posit<nbits, es> >::is_signed << '\n';
-	cout << posit_tag << "is_integer        : " << numeric_limits< posit<nbits, es> >::is_integer << '\n';
-	cout << posit_tag << "is_exact          : " << numeric_limits< posit<nbits, es> >::is_exact << '\n';
-
-	cout << posit_tag << "min_exponent      : " << numeric_limits< posit<nbits, es> >::min_exponent << '\n';
-	cout << posit_tag << "min_exponent10    : " << numeric_limits< posit<nbits, es> >::min_exponent10 << '\n';
-	cout << posit_tag << "max_exponent      : " << numeric_limits< posit<nbits, es> >::max_exponent << '\n';
-	cout << posit_tag << "max_exponent10    : " << numeric_limits< posit<nbits, es> >::max_exponent10 << '\n';
-	cout << posit_tag << "has_infinity      : " << numeric_limits< posit<nbits, es> >::has_infinity << '\n';
-	cout << posit_tag << "has_quiet_NaN     : " << numeric_limits< posit<nbits, es> >::has_quiet_NaN << '\n';
-	cout << posit_tag << "has_signaling_NaN : " << numeric_limits< posit<nbits, es> >::has_signaling_NaN << '\n';
-	cout << posit_tag << "has_denorm        : " << numeric_limits< posit<nbits, es> >::has_denorm << '\n';
-	cout << posit_tag << "has_denorm_loss   : " << numeric_limits< posit<nbits, es> >::has_denorm_loss << '\n';
-
-	cout << posit_tag << "is_iec559         : " << numeric_limits< posit<nbits, es> >::is_iec559 << '\n';
-	cout << posit_tag << "is_bounded        : " << numeric_limits< posit<nbits, es> >::is_bounded << '\n';
-	cout << posit_tag << "is_modulo         : " << numeric_limits< posit<nbits, es> >::is_modulo << '\n';
-	cout << posit_tag << "traps             : " << numeric_limits< posit<nbits, es> >::traps << '\n';
-	cout << posit_tag << "tinyness_before   : " << numeric_limits< posit<nbits, es> >::tinyness_before << '\n';
-	cout << posit_tag << "round_style       : " << numeric_limits< posit<nbits, es> >::round_style << '\n';
-}
-
 
 // Report on size and numeric limits details of different data types
 int main(int argc, char** argv)
@@ -123,6 +83,13 @@ try {
 	cout << "         float       " << setw(4) << f_fbits     << " bits" << endl;
 	cout << "         double      " << setw(4) << d_fbits     << " bits" << endl;
 	cout << "         long double " << setw(4) << q_fbits     << " bits" << endl;
+	cout << endl;
+
+
+	cout << "Min-Max range for floats and posit<32,2> comparison\n";
+	cout << minmax_range<float>() << endl;
+	cout << minmax_range<posit<32, 2>>() << endl;
+	cout << endl;
 
 	// report on the size of different posit components and implementations
 	posit<4, 0> p4_0;
@@ -143,6 +110,16 @@ try {
 	posit<256, 5> p256_5;
 	constexpr int columnWidth = 21;
 	cout << "Bit sizes for standard posit configurations\n";
+	cout << left << setw(columnWidth) << "posit<8,0>" << setw(4) << right << sizeof(p8_0) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<16,1>" << setw(4) << right << sizeof(p16_1) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<32,2>" << setw(4) << right << sizeof(p32_2) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<64,3>" << setw(4) << right << sizeof(p64_3) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<128,4>" << setw(4) << right << sizeof(p128_4) * 8 << " bits" << endl;
+	cout << left << setw(columnWidth) << "posit<256,5>" << setw(4) << right << sizeof(p256_5) * 8 << " bits" << endl;
+	cout << endl;
+
+	cout << endl;
+	cout << "Bit sizes for extended posit configurations\n";
 	cout << left << setw(columnWidth) << "posit<4,0>" << setw(4) << right << sizeof(p4_0) * 8 << " bits" << endl;
 	cout << left << setw(columnWidth) << "posit<8,0>" << setw(4) << right << sizeof(p8_0) * 8 << " bits" << endl;
 	cout << left << setw(columnWidth) << "posit<16,1>" << setw(4) << right << sizeof(p16_1) * 8 << " bits" << endl;
@@ -159,15 +136,9 @@ try {
 	cout << left << setw(columnWidth) << "posit<112,3>" << setw(4) << right << sizeof(p112_3) * 8 << " bits" << endl;
 	cout << left << setw(columnWidth) << "posit<128,4>" << setw(4) << right << sizeof(p128_4) * 8 << " bits" << endl;
 	cout << left << setw(columnWidth) << "posit<256,5>" << setw(4) << right << sizeof(p256_5) * 8 << " bits" << endl;
+	cout << endl;
 
-	// numeric_limits of standard posits
-	ReportNumericLimitsOfPosit<8, 0>();
-	ReportNumericLimitsOfPosit<16, 1>();
-	ReportNumericLimitsOfPosit<32, 2>();
-	ReportNumericLimitsOfPosit<64, 3>();
-	ReportNumericLimitsOfPosit<128, 4>();
-//	ReportNumericLimitsOfPosit<256, 5>();
-
+	cout << "Long double properties" << endl;
 	union {
 		long double da;
 		char        bytes[16];
@@ -194,10 +165,6 @@ try {
 	cout << endl;
 
 	// WhyWeRemovedDecodedPosits();
-
-	cout << "Min-Max range for floats and posit<32,2> comparison\n";
-	cout << minmax_range<float>() << endl;
-	cout << minmax_range<posit<32, 2>>() << endl;
 
 	return EXIT_SUCCESS;
 }
