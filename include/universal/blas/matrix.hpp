@@ -202,10 +202,28 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 	return ostr;
 }
 
+// generate a posit format ASCII format nbits.esxNN...NNp
+template<size_t nbits, size_t es>
+inline std::string hex_format(const matrix< sw::unum::posit<nbits, es> >& A) {
+	// we need to transform the posit into a string
+	std::stringstream ostr;
+	size_t m = A.rows();
+	size_t n = A.cols();
+	for (size_t i = 0; i < m; ++i) {
+		for (size_t j = 0; j < n; ++j) {
+			ostr << hex_format(A(i,j)) << " ";
+		}
+		ostr << '\n';
+	}
+	return ostr.str();
+}
+
 template<typename Scalar>
 std::ostream& operator<<(std::ostream& ostr, const std::pair<Scalar, Scalar>& p) {
 	return ostr << '(' << p.first << " by " << p.second << ')';
 }
+
+
 
 // matrix element-wise sum
 template<typename Scalar>

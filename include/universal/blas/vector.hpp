@@ -9,6 +9,8 @@
 #include <vector>
 #include <initializer_list>
 #include <cmath>  // for std::sqrt
+// special number system definitions
+#include <universal/posit/posit_fwd.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -223,9 +225,18 @@ private:
 
 template<typename Scalar>
 std::ostream& operator<<(std::ostream& ostr, const vector<Scalar>& v) {
-	auto width = ostr.precision() + 2;
+	auto width = ostr.width();
 	for (size_t j = 0; j < size(v); ++j) ostr << std::setw(width) << v[j] << " ";
 	return ostr;
+}
+
+// generate a posit format ASCII format nbits.esxNN...NNp
+template<size_t nbits, size_t es>
+inline std::string hex_format(const vector< sw::unum::posit<nbits, es> >& v) {
+	// we need to transform the posit into a string
+	std::stringstream ss;
+	for (size_t j = 0; j < size(v); ++j) ss << hex_format(v[j]) << " ";
+	return ss.str();
 }
 
 template<typename Scalar>

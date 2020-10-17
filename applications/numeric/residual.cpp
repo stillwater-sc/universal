@@ -3,7 +3,8 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <ostream>
+#include <iostream>
+#include <iomanip>
 #include <limits>
 #include <numeric>   // nextafter
 
@@ -98,23 +99,28 @@ try {
 	Matrix A = sw::unum::blas::frank<Scalar>(N);
 	Matrix LU(A);
 	cout << "Frank matrix order " << N << endl;
+	cout << A << endl;
+	cout << hex_format(A) << endl;
 	Vector b(N), x(N);
 	x = Scalar(1);
 	b = A * x;
-	cout << "right hand side [" << b << "]\n";
 	sw::unum::blas::vector<size_t> indx(N);
 	auto error = ludcmp(LU, indx);
+	cout << "Frank matrix LU decomposition\n";
+	cout << hex_format(LU) << endl;
 	x = lubksb(LU, indx, b);
-	cout << "solution vector [" << x << "]\n";
+	cout << "right hand side        : [ " << hex_format(b) << "]\n";
+	cout << "solution vector x      : [ " << hex_format(x) << "]\n";
 	Vector e = A * x - b;
 	Vector r = residual(A, x, b);
-	cout << "Residual (non-quire) : " << e << endl;
-	cout << "Residual (quire)     : " << r << endl;
+	cout << "Residual (non-quire)   : [ " << hex_format(e) << "]\n";
+	cout << "Residual (quire)       : [ " << hex_format(r) << "]\n";
+	cout << "Residual (quire) value : [ " << setw(14) << r << "]\n";
 	Vector minposRef(N);
 	Scalar mp;
 	minpos<32, 2>(mp);
 	minposRef = mp;
-	cout << "Minpos reference     : " << minposRef << endl;
+	cout << "Minpos reference       : [ " << hex_format(minposRef) << "]\n";
 
 
 	cout << setprecision(precision);

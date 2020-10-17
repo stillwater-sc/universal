@@ -7,6 +7,7 @@
 #include <cmath>
 #include <cassert>
 #include <iostream>
+#include <iomanip>
 #include <limits>
 #include <regex>
 #include <type_traits>
@@ -1653,7 +1654,10 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 	ff = ostr.flags();
 	ss.flags(ff);
 //	ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
-	ss << std::setw(width) << std::setprecision(prec) << to_string(p, prec);  // TODO: we need a true native serialization function
+	// TODO: how do you react to fmtflags being set, such as hexfloat or showpos?
+	// it appears that the fmtflags are opaque and not a user-visible feature
+	ss << std::setw(width) << std::setprecision(prec);
+	ss << to_string(p, prec);  // TODO: we need a true native serialization function
 #endif
 	return ostr << ss.str();
 }
