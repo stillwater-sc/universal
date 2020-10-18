@@ -17,6 +17,7 @@
 
 #include <universal/blas/blas>
 #include <universal/blas/generators/frank.hpp>
+#include <universal/blas/generators/hilbert.hpp>
 
 /*
 template<typename Scalar>
@@ -74,6 +75,68 @@ void FrankMatrixTest(int N) {
 	cout << "1-norm of error vector: " << norm1(e) << endl;
 }
 
+template<size_t nbits, size_t es>
+void ResidualTest(const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A) {
+	using namespace std;
+	using namespace sw::unum;
+	using namespace sw::unum::blas;
+
+	using Scalar = posit<nbits, es>;
+	using Vector = sw::unum::blas::vector<Scalar>;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+
+	size_t M = num_rows(A);
+	size_t N = num_cols(A);
+	if (M != N) {
+		cerr << "Matrix should be square, but is (" << M << " by " << N << ")\n";
+		return;
+	}
+	cout << "Matrix order " << N << endl;
+	cout << setw(14) << A << endl;
+	cout << hex_format(A) << endl;
+	Vector b(N), ones(N), x(N);
+	ones = Scalar(1);
+	b = A * ones; // <-- posit specialized FDP matrix-vector multiply
+	sw::unum::blas::vector<size_t> indx(N);
+	Matrix LU(A); // the LU decomposition is in place, so create a copy first
+	auto error = ludcmp(LU, indx);
+	cout << "LU decomposition\n";
+	cout << hex_format(LU) << endl;
+	x = lubksb(LU, indx, b);
+	cout << "right hand side        : [ " << hex_format(b) << "]\n";
+	cout << "solution vector x      : [ " << hex_format(x) << "]\n";
+	Vector e = A * x - b;
+	Vector r = residual(A, x, b);
+	cout << "Residual (non-quire)   : [ " << hex_format(e) << "]\n";
+	cout << "Residual (quire)       : [ " << hex_format(r) << "]\n";
+	cout << "Residual (quire) value : [ " << setw(14) << r << "]\n";
+	cout << '\n';
+
+	Vector minposRef(N);
+	Scalar mp;
+	minpos<32, 2>(mp);
+	minposRef = mp;
+	cout << "Minpos reference       : [ " << hex_format(minposRef) << "]\n\n";
+
+	// solve for the residual
+	Vector c = lubksb(LU, indx, r);
+	cout << "right hand side        : [ " << hex_format(r) << "]\n";
+	cout << "solution vector c      : [ " << hex_format(c) << "]\n";
+	e = A * c - r;
+	r = residual(A, c, r);
+	cout << "Residual (non-quire)   : [ " << hex_format(e) << "]\n";
+	cout << "Residual (quire)       : [ " << hex_format(r) << "]\n";
+	cout << "Residual (quire) value : [ " << setw(14) << r << "]\n";
+	cout << '\n';
+
+	cout << "Result x' = x - c\n";
+	cout << "Solution vector x'     : [ " << hex_format(x - c) << "]\n";
+	cout << "Exact solution vector  : [ " << hex_format(ones) << "]\n";
+	cout << '\n';
+
+	cout << "1-norm x' - ones       :   " << norm1(x - c - ones) << '\n';
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -91,36 +154,36 @@ try {
 		FrankMatrixTest<posit<32, 2>>(N);
 	}
 	*/
-
-	using Scalar = posit<32, 2>;
+	constexpr size_t nbits = 32;
+	constexpr size_t es = 2;
+	using Scalar = posit<nbits, es>;
 	using Vector = sw::unum::blas::vector<Scalar>;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
-	constexpr int N = 5;
+	constexpr size_t N = 5;
 	Matrix A = sw::unum::blas::frank<Scalar>(N);
-	Matrix LU(A);
-	cout << "Frank matrix order " << N << endl;
-	cout << A << endl;
-	cout << hex_format(A) << endl;
-	Vector b(N), x(N);
-	x = Scalar(1);
-	b = A * x;
-	sw::unum::blas::vector<size_t> indx(N);
-	auto error = ludcmp(LU, indx);
-	cout << "Frank matrix LU decomposition\n";
-	cout << hex_format(LU) << endl;
-	x = lubksb(LU, indx, b);
-	cout << "right hand side        : [ " << hex_format(b) << "]\n";
-	cout << "solution vector x      : [ " << hex_format(x) << "]\n";
-	Vector e = A * x - b;
-	Vector r = residual(A, x, b);
-	cout << "Residual (non-quire)   : [ " << hex_format(e) << "]\n";
-	cout << "Residual (quire)       : [ " << hex_format(r) << "]\n";
-	cout << "Residual (quire) value : [ " << setw(14) << r << "]\n";
-	Vector minposRef(N);
-	Scalar mp;
-	minpos<32, 2>(mp);
-	minposRef = mp;
-	cout << "Minpos reference       : [ " << hex_format(minposRef) << "]\n";
+
+	cout << "Frank matrix\n";
+	ResidualTest(A);
+	cout << '\n';
+
+	cout << "Hilbert matrix\n";
+	A = sw::unum::blas::hilbert<Scalar>(N);
+	ResidualTest(A);
+
+	{
+		// reference float version
+		using Scalar = float;
+		using Vector = sw::unum::blas::vector<Scalar>;
+		using Matrix = sw::unum::blas::matrix<Scalar>;
+
+		Vector ones(N);
+		ones = Scalar(1);
+		Vector b(N);
+		Matrix A = sw::unum::blas::hilbert<Scalar>(N);
+		b = A * ones;
+		Vector x = solve(A, b);
+		cout << "1-norm of float ref    :   " << norm1(x - ones) << endl;
+	}
 
 
 	cout << setprecision(precision);
