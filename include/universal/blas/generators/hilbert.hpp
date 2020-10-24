@@ -62,10 +62,10 @@ void GenerateHilbertMatrixInverse(matrix<Scalar>& M, Scalar scale = Scalar(1.0))
 
 // generate a standard hilbert matrix of size N
 template<typename Scalar>
-matrix<Scalar> hilbert(size_t N) {
+matrix<Scalar> hilbert(size_t N, bool bScale = true) {
 	using Matrix = matrix<Scalar>;
 	Matrix H(N, N);
-	GenerateHilbertMatrix(H, false);
+	GenerateHilbertMatrix(H, bScale);
 	return H;
 }
 

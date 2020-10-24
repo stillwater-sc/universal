@@ -75,6 +75,14 @@ void FrankMatrixTest(int N) {
 	cout << "1-norm of error vector: " << norm1(e) << endl;
 }
 
+void Experiment1() {
+	sw::unum::blas::vector<int> sizes = { 5, 15, 45, 95 };
+	for (auto N : sizes) {
+		FrankMatrixTest<float>(N);
+		FrankMatrixTest<sw::unum::posit<32, 2>>(N);
+	}
+}
+
 template<size_t nbits, size_t es>
 void ResidualTest(const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A) {
 	using namespace std;
@@ -104,10 +112,13 @@ void ResidualTest(const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A)
 	cout << hex_format(LU) << endl;
 	x = lubksb(LU, indx, b);
 	cout << "right hand side        : [ " << hex_format(b) << "]\n";
+	cout << "right hand side        : [ " << (b) << "]\n";
 	cout << "solution vector x      : [ " << hex_format(x) << "]\n";
+	cout << "solution vector x      : [ " << (x) << "]\n";
 	Vector e = A * x - b;
 	Vector r = residual(A, x, b);
 	cout << "Residual (non-quire)   : [ " << hex_format(e) << "]\n";
+	cout << "Residual (non-quire)   : [ " << (e) << "]\n";
 	cout << "Residual (quire)       : [ " << hex_format(r) << "]\n";
 	cout << "Residual (quire) value : [ " << setw(14) << r << "]\n";
 	cout << '\n';
@@ -121,42 +132,31 @@ void ResidualTest(const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A)
 	// solve for the residual
 	Vector c = lubksb(LU, indx, r);
 	cout << "right hand side        : [ " << hex_format(r) << "]\n";
+	cout << "right hand side        : [ " << (r) << "]\n";
 	cout << "solution vector c      : [ " << hex_format(c) << "]\n";
 	e = A * c - r;
 	r = residual(A, c, r);
 	cout << "Residual (non-quire)   : [ " << hex_format(e) << "]\n";
+	cout << "Residual (non-quire)   : [ " << (e) << "]\n";
 	cout << "Residual (quire)       : [ " << hex_format(r) << "]\n";
 	cout << "Residual (quire) value : [ " << setw(14) << r << "]\n";
 	cout << '\n';
 
 	cout << "Result x' = x - c\n";
 	cout << "Solution vector x'     : [ " << hex_format(x - c) << "]\n";
+	cout << "Solution vector x'     : [ " << (x - c) << "]\n";
 	cout << "Exact solution vector  : [ " << hex_format(ones) << "]\n";
 	cout << '\n';
 
 	cout << "1-norm x' - ones       :   " << norm1(x - c - ones) << '\n';
 }
 
-int main(int argc, char** argv)
-try {
+void Experiment2() {
 	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
 
-	cout << "Residual calculations\n";
-
-	streamsize precision = cout.precision();
-
-	/*
-	sw::unum::blas::vector<int> sizes = { 5, 15, 45, 95 };
-	for (auto N : sizes) {
-		FrankMatrixTest<float>(N);
-		FrankMatrixTest<posit<32, 2>>(N);
-	}
-	*/
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
-	using Scalar = posit<nbits, es>;
+	using Scalar = sw::unum::posit<nbits, es>;
 	using Vector = sw::unum::blas::vector<Scalar>;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
 	constexpr size_t N = 5;
@@ -183,8 +183,135 @@ try {
 		b = A * ones;
 		Vector x = solve(A, b);
 		cout << "1-norm of float ref    :   " << norm1(x - ones) << endl;
+
 	}
 
+	{
+		// reference float version
+		using Scalar = double;
+		using Vector = sw::unum::blas::vector<Scalar>;
+		using Matrix = sw::unum::blas::matrix<Scalar>;
+
+		Vector ones(N);
+		ones = Scalar(1);
+		Vector b(N);
+		Matrix A = sw::unum::blas::hilbert<Scalar>(N);
+		b = A * ones;
+		Vector x = solve(A, b);
+		cout << "1-norm of double ref   :   " << norm1(x - ones) << endl;
+
+	}
+
+	{
+		using Scalar = sw::unum::posit<nbits, es>;
+		using Vector = sw::unum::blas::vector<Scalar>;
+		using Matrix = sw::unum::blas::matrix<Scalar>;
+		cout << "Hilbert matrix\n";
+		A = sw::unum::blas::hilbert<Scalar>(9);
+
+		ResidualTest(A);
+	}
+}
+
+
+template<size_t nbits, size_t es>
+void QuireCompensation(const sw::unum::blas::matrix<sw::unum::posit<nbits, es>>& A, const sw::unum::posit<nbits, es>& tolerance = 1.0e-15, size_t MAX_ITERATIONS = 100) {
+	using Scalar = sw::unum::posit<nbits, es>;
+	using Vector = sw::unum::blas::vector<Scalar>;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+
+	const size_t M = num_rows(A);
+	const size_t N = num_cols(A);
+	if (M != N) {
+		std::cerr << "matrix is not square: (" << M << " by " << N << ")\n";
+		return;
+	}
+
+	// visual feedback control
+	constexpr size_t MAX_COLUMNS = 8;
+
+	Matrix LU(A);
+	sw::unum::blas::vector<size_t> indx(N);
+	if (ludcmp(LU, indx)) return; // LU decomposition failed, simply bail
+
+	Vector b(M), x(M), r(M), c(M);
+	x = Scalar(1);
+	b = A * x;  // FDP-enabled matvec multiply
+
+	// Residual compensation iteration
+	size_t iterations = 0;
+	x = lubksb(LU, indx, b);
+	r = residual(A, x, b);
+	Scalar error = norm1(r);
+	constexpr size_t columnWidth = 14;
+	if (M < MAX_COLUMNS) std::cout << "solution vector: " << std::setw(columnWidth) << x << "\n";
+	std::cout << "error: " << error << "\n";
+	Scalar eps = std::numeric_limits<Scalar>::epsilon();
+//	std::cout << "epsilon for " << typeid(Scalar).name() << " = " << eps << '\n';
+	while (error > tolerance && iterations < MAX_ITERATIONS) {
+		c = lubksb(LU, indx, r);
+		if (M < MAX_COLUMNS) std::cout << "compensation vector: " << std::setw(columnWidth) << c << "\n";
+		x = x - c; // compensated solution vector
+		if (M < MAX_COLUMNS) std::cout << "solution     vector: " << std::setw(columnWidth) << x << "\n";
+		if (M < MAX_COLUMNS) std::cout << "solution     vector: " << hex_format(x) << "\n";
+		r = residual(A, c, r);
+		error = norm1(r);
+		std::cout << "error: " << error << "\n";
+		++iterations;
+		if (error < eps) break;
+	}
+	if (error < eps) {
+		std::cout << "Reduced error to machine precision: error = " << error << " epsilon = " << eps << '\n';
+	}
+	if (iterations >= MAX_ITERATIONS) {
+		std::cout << "Reached max iteration limit\n";
+	}
+	if (error < tolerance) {
+		std::cout << "Reduced error to below requested tolerance of " << tolerance << '\n';
+	}
+}
+
+template<typename Scalar>
+void IeeeReference(size_t MATRIX_ROWS) {
+	std::cout << "\n\ncalculate " << typeid(Scalar).name() << " reference\n";
+	using Vector = sw::unum::blas::vector<Scalar>;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+	Matrix A = sw::unum::blas::hilbert<Scalar>(MATRIX_ROWS);
+	const size_t MATRIX_COLS = MATRIX_ROWS; // we are a square matrix
+	Vector ones(MATRIX_COLS);
+	ones = 1.0;
+	Vector b = A * ones;
+	Vector x = solve(A, b);
+	Vector r = A * x - b;
+	Scalar error = norm1(r);
+	std::cout << "error : " << error << "\n";
+}
+
+int main(int argc, char** argv)
+try {
+	using namespace std;
+	using namespace sw::unum;
+	using namespace sw::unum::blas;
+
+	cout << "Kulisch iterator\n";
+
+	streamsize precision = cout.precision();
+
+	constexpr size_t nbits = 32;
+	constexpr size_t es = 2;
+	using Scalar = sw::unum::posit<nbits, es>;
+	using Vector = sw::unum::blas::vector<Scalar>;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+
+	cout << "epsilon for " << typeid(Scalar).name() << " = " << numeric_limits<Scalar>::epsilon() << '\n';
+	cout << "Hilbert matrix\n";
+	constexpr size_t MATRIX_ROWS = 10;
+	Matrix A = sw::unum::blas::hilbert<Scalar>(MATRIX_ROWS); // default is a scaled Hilbert matrix with exact representation
+	QuireCompensation(A);
+
+	IeeeReference<float>(MATRIX_ROWS);
+	IeeeReference<double>(MATRIX_ROWS);
+	IeeeReference<long double>(MATRIX_ROWS);
 
 	cout << setprecision(precision);
 	cout << endl;
