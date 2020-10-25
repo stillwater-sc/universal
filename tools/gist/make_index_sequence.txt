@@ -1,0 +1,45 @@
+#include <iostream>
+#include <array>
+#include <utility>
+
+template<size_t n>
+struct Fib {
+  static const size_t val = Fib<n-1>::val + Fib<n-2>::val;
+};
+
+template<>
+struct Fib<0> {
+  static const size_t val = 0;
+};
+
+template<>
+struct Fib<1> {
+  static const size_t val = 1;
+};
+
+// create a compile time table using a variadic template
+template<size_t ... N>
+size_t fib_impl(std::index_sequence<N...>, const size_t n) {
+  std::array<size_t, sizeof...(N)> a = Fib<N>::val... );
+  return a[n];
+}
+
+const int fib(const size_t n) {
+  return fib_impl(std::make_index_sequence<47>(), n);
+}
+
+int main(int argc, const char* argv[]) {
+  std::cout << Fib<45>::val << '\n';
+  return EXIT_SUCCESS;
+}
+
+// but there is a closed solution to the Fibonacci sequence with the Binet formula
+
+constexpr size_t fib(const size_t n) {
+   constexpr size_t sqrt_5 = std::sqrt(5);
+
+   if (n == 0) return 0;
+   if (n == 1) return 1;
+
+   return static_cast<size_t>(1 + sqrt_5, n) - std::pow(1 - sqrt_5, n)) / (std::pow(2, n) * sqrt_5));
+}
