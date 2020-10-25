@@ -62,16 +62,21 @@ size_t fib2(const size_t n) {
 }
 */
 
-#if NEXT
+#define VARIADIC_EPSILON 0
+#if VARIADIC_EPSILON
+
+// operator=() of posit can't be constexpr due to bitset<> so this doesn't work until C++20
+
 // variadic template to generate a range of nbits
-template<size_t ... nbits, size_t es>
-void eps_impl(std::index_sequence<nbits...>, const size_t index) }
-    std::array<size_t, sizeof...(nbits)> eps = std::numeric_limits<sw::unum::posit<nbits,es>>::epsilon();
+template<size_t ... nbits>
+long double eps_impl(std::index_sequence<nbits...>, size_t index) 
+{
+	constexpr std::array<size_t, sizeof...(nbits)> eps = { (long double)std::numeric_limits<sw::unum::posit<nbits+2,2>>::epsilon()... } ;
     return eps[index];
 }
 
 template<size_t es = 2>
-const long double eps(const size_t nbits) {
+const long double eps(size_t nbits) {
 	return eps_impl(std::make_index_sequence<64>(), nbits);
 }
 #endif
@@ -88,6 +93,35 @@ try {
 	streamsize precision = cout.precision();
 
 	std::cout << "Fibonacci(45) = " << fibonacci(45) << '\n';
+//	std::cout << "posit<16,2>::epsilon() = " << eps(16) << '\n';
+
+	// operator=() of posit can't be constexpr due to bitset<>
+	// constexpr long double posit_16_2_eps = (long double)std::numeric_limits<sw::unum::posit<6, 2>>::epsilon();
+	// std::cout << "constexpr " << posit_16_2_eps << std::endl;
+
+	std::cout << "posit<6,2>::epsilon()  = " << std::numeric_limits<sw::unum::posit<6, 2>>::epsilon() << std::endl;
+	std::cout << "posit<8,2>::epsilon()  = " << std::numeric_limits<sw::unum::posit<8, 2>>::epsilon() << std::endl;
+	std::cout << "posit<10,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<10, 2>>::epsilon() << std::endl;
+	std::cout << "posit<12,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<12, 2>>::epsilon() << std::endl;
+	std::cout << "posit<14,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<14, 2>>::epsilon() << std::endl;
+	std::cout << "posit<16,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<16, 2>>::epsilon() << std::endl;
+	std::cout << "posit<18,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<18, 2>>::epsilon() << std::endl;
+	std::cout << "posit<20,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<20, 2>>::epsilon() << std::endl;
+	std::cout << "posit<24,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<24, 2>>::epsilon() << std::endl;
+	std::cout << "posit<28,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<28, 2>>::epsilon() << std::endl;
+	std::cout << "posit<32,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<32, 2>>::epsilon() << std::endl;
+	std::cout << "posit<36,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<36, 2>>::epsilon() << std::endl;
+	std::cout << "posit<40,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<40, 2>>::epsilon() << std::endl;
+	std::cout << "posit<44,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<44, 2>>::epsilon() << std::endl;
+	std::cout << "posit<48,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<48, 2>>::epsilon() << std::endl;
+	std::cout << "posit<52,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<52, 2>>::epsilon() << std::endl;
+	std::cout << "posit<56,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<56, 2>>::epsilon() << std::endl;
+	std::cout << "posit<60,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<60, 2>>::epsilon() << std::endl;
+	std::cout << "posit<64,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<64, 2>>::epsilon() << std::endl;
+	std::cout << "posit<80,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<80, 2>>::epsilon() << std::endl;
+	std::cout << "posit<96,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<96, 2>>::epsilon() << std::endl;
+	std::cout << "posit<112,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<112, 2>>::epsilon() << std::endl;
+	std::cout << "posit<128,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<128, 2>>::epsilon() << std::endl;
 
 	cout << setprecision(precision);
 	cout << endl;
