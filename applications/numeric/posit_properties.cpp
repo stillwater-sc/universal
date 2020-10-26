@@ -81,47 +81,92 @@ const long double eps(size_t nbits) {
 }
 #endif
 
+template<size_t nbits, size_t es>
+std::string properties(const std::string& label) {
+	using Scalar = sw::unum::posit<nbits, es>;
+	Scalar minp, maxp;
+	sw::unum::minpos<nbits, es>(minp);
+	sw::unum::maxpos<nbits, es>(maxp);
+	Scalar eps  = std::numeric_limits<Scalar>::epsilon();
+	std::stringstream ostr;
+	ostr << nbits
+		<< '\t'
+		<< label
+		<< '\t'
+		<< minp
+		<< '\t'
+		<< eps
+		<< '\t'
+		<< maxp
+		<< '\t'
+		<< eps / minp
+		<< '\t'
+		<< maxp / eps
+		<< '\n';
+	return ostr.str();
+}
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::unum;
 
-	cout << "epsilon/minpos for different number systems " << endl;
+	cout << "minpos/epsilon/maxpos for different number systems " << endl;
 
 	// report on smallest number, precision and dynamic range of the number system
 
 	streamsize precision = cout.precision();
 
-	std::cout << "Fibonacci(45) = " << fibonacci(45) << '\n';
-//	std::cout << "posit<16,2>::epsilon() = " << eps(16) << '\n';
+//	std::cout << "Fibonacci(45) = " << fibonacci(45) << '\n';
+//	std::cout << "posit<16,2> | 16 |  " << eps(16) << '\n';
 
 	// operator=() of posit can't be constexpr due to bitset<>
 	// constexpr long double posit_16_2_eps = (long double)std::numeric_limits<sw::unum::posit<6, 2>>::epsilon();
-	// std::cout << "constexpr " << posit_16_2_eps << std::endl;
+	// std::cout << "constexpr " << posit_16_2_eps;
 
-	std::cout << "posit<6,2>::epsilon()  = " << std::numeric_limits<sw::unum::posit<6, 2>>::epsilon() << std::endl;
-	std::cout << "posit<8,2>::epsilon()  = " << std::numeric_limits<sw::unum::posit<8, 2>>::epsilon() << std::endl;
-	std::cout << "posit<10,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<10, 2>>::epsilon() << std::endl;
-	std::cout << "posit<12,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<12, 2>>::epsilon() << std::endl;
-	std::cout << "posit<14,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<14, 2>>::epsilon() << std::endl;
-	std::cout << "posit<16,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<16, 2>>::epsilon() << std::endl;
-	std::cout << "posit<18,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<18, 2>>::epsilon() << std::endl;
-	std::cout << "posit<20,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<20, 2>>::epsilon() << std::endl;
-	std::cout << "posit<24,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<24, 2>>::epsilon() << std::endl;
-	std::cout << "posit<28,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<28, 2>>::epsilon() << std::endl;
-	std::cout << "posit<32,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<32, 2>>::epsilon() << std::endl;
-	std::cout << "posit<36,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<36, 2>>::epsilon() << std::endl;
-	std::cout << "posit<40,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<40, 2>>::epsilon() << std::endl;
-	std::cout << "posit<44,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<44, 2>>::epsilon() << std::endl;
-	std::cout << "posit<48,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<48, 2>>::epsilon() << std::endl;
-	std::cout << "posit<52,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<52, 2>>::epsilon() << std::endl;
-	std::cout << "posit<56,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<56, 2>>::epsilon() << std::endl;
-	std::cout << "posit<60,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<60, 2>>::epsilon() << std::endl;
-	std::cout << "posit<64,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<64, 2>>::epsilon() << std::endl;
-	std::cout << "posit<80,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<80, 2>>::epsilon() << std::endl;
-	std::cout << "posit<96,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<96, 2>>::epsilon() << std::endl;
-	std::cout << "posit<112,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<112, 2>>::epsilon() << std::endl;
-	std::cout << "posit<128,2>::epsilon() = " << std::numeric_limits<sw::unum::posit<128, 2>>::epsilon() << std::endl;
+	std::cout << "nbits\tposit\tminpos\tepsilon\tmaxpos\teps/minpos\tmaxpos/eps\n";
+	std::cout << properties<8,0>("posit<8,0>");
+	std::cout << properties<16, 1>("posit<16,1>");
+	std::cout << properties<32, 2>("posit<32,2>");
+	std::cout << properties<64, 3>("posit<64,3>");
+	std::cout << properties<128, 4>("posit<128,4>");
+	std::cout << properties<256, 5>("posit<256,5>");
+	std::cout << "\n";
+
+	std::cout << properties<6, 2>("posit<6,2> ");
+	std::cout << properties<8, 2>("posit<8,2> ");
+	std::cout << properties<10, 2>("posit<10,2>");
+	std::cout << properties<12, 2>("posit<12,2>");
+	std::cout << properties<14, 2>("posit<14,2>");
+	std::cout << properties<16, 2>("posit<16,2>");
+	std::cout << properties<18, 2>("posit<18,2>");
+	std::cout << properties<20, 2>("posit<20,2>");
+	std::cout << properties<24, 2>("posit<24,2>");
+	std::cout << properties<28, 2>("posit<28,2>");
+	std::cout << properties<32, 2>("posit<32,2>");
+	std::cout << properties<36, 2>("posit<36,2>");
+	std::cout << properties<40, 2>("posit<40,2>");
+	std::cout << properties<44, 2>("posit<44,2>");
+	std::cout << properties<48, 2>("posit<48,2>");
+	std::cout << properties<52, 2>("posit<52,2>");
+	std::cout << properties<56, 2>("posit<56,2>");
+	std::cout << properties<60, 2>("posit<60,2>");
+	std::cout << properties<64, 2>("posit<64,2>");
+	std::cout << properties<72, 2>("posit<72,2>");
+	std::cout << properties<80, 2>("posit<80,2>");
+	std::cout << properties<88, 2>("posit<88,2>");
+	std::cout << properties<96, 2>("posit<96,2>");
+	std::cout << properties<104, 2>("posit<104,2>");
+	std::cout << properties<112, 2>("posit<112,2>");
+	std::cout << properties<120, 2>("posit<120,2>");
+	std::cout << properties<128, 2>("posit<128,2>");
+	std::cout << properties<144, 2>("posit<144,2>");
+	std::cout << properties<160, 2>("posit<160,2>");
+	std::cout << properties<176, 2>("posit<176,2>");
+	std::cout << properties<192, 2>("posit<192,2>");
+	std::cout << properties<208, 2>("posit<208,2>");
+	std::cout << properties<224, 2>("posit<224,2>");
+	std::cout << properties<240, 2>("posit<240,2>");
+	std::cout << properties<256, 2>("posit<256,2>");
 
 	cout << setprecision(precision);
 	cout << endl;
@@ -129,14 +174,14 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << msg;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
+	std::cerr << "Uncaught runtime exception: " << err.what();
 	return EXIT_FAILURE;
 }
 catch (...) {
-	std::cerr << "Caught unknown exception" << std::endl;
+	std::cerr << "Caught unknown exception";
 	return EXIT_FAILURE;
 }
