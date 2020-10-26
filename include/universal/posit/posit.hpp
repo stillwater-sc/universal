@@ -1794,7 +1794,7 @@ inline posit<nbits, es> operator*(const posit<nbits, es>& lhs, const posit<nbits
 // BINARY DIVISION
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
-	posit<nbits, es> ratio = lhs;
+	posit<nbits, es> ratio(lhs);
 	return ratio /= rhs;
 }
 
