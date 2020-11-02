@@ -60,6 +60,21 @@ union double_decoder {
   } parts;
 };
 
+#if defined(_MSC_VER)
+/* Microsoft Visual Studio. --------------------------------- */
+// Visual C++ compiler is 15.00.20706.01, the _MSC_FULL_VER will be 15002070601
+
+// Visual C++ does not support long double, it is just an alias for double
+union long_double_decoder {
+	long double ld;
+	struct {
+		uint64_t fraction : 52;
+		uint64_t exponent : 11;
+		uint64_t  sign : 1;
+	} parts;
+};
+#endif
+
 ////////////////// string operators
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -196,6 +211,84 @@ inline std::string color_print(const float& number) {
 		mask >>= 1;
 	}
 	
+	ss << def;
+	return ss.str();
+}
+
+// generate a color coded binary string for a native double precision IEEE floating point
+inline std::string color_print(const double& number) {
+	std::stringstream ss;
+	double_decoder decoder;
+	decoder.d = number;
+
+	Color red(ColorCode::FG_RED);
+	Color yellow(ColorCode::FG_YELLOW);
+	Color blue(ColorCode::FG_BLUE);
+	Color magenta(ColorCode::FG_MAGENTA);
+	Color cyan(ColorCode::FG_CYAN);
+	Color white(ColorCode::FG_WHITE);
+	Color def(ColorCode::FG_DEFAULT);
+
+	// print sign bit
+	ss << red << (decoder.parts.sign ? '1' : '0') << '.';
+
+	// print exponent bits
+	{
+		uint64_t mask = 0x800;
+		for (int i = 11; i >= 0; --i) {
+			ss << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
+			mask >>= 1;
+		}
+	}
+
+	ss << '.';
+
+	// print fraction bits
+	uint64_t mask = (uint64_t(1) << 52);
+	for (int i = 52; i >= 0; --i) {
+		ss << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
+		mask >>= 1;
+	}
+
+	ss << def;
+	return ss.str();
+}
+
+// generate a color coded binary string for a native double precision IEEE floating point
+inline std::string color_print(const long double& number) {
+	std::stringstream ss;
+	long_double_decoder decoder;
+	decoder.ld = number;
+
+	Color red(ColorCode::FG_RED);
+	Color yellow(ColorCode::FG_YELLOW);
+	Color blue(ColorCode::FG_BLUE);
+	Color magenta(ColorCode::FG_MAGENTA);
+	Color cyan(ColorCode::FG_CYAN);
+	Color white(ColorCode::FG_WHITE);
+	Color def(ColorCode::FG_DEFAULT);
+
+	// print sign bit
+	ss << red << (decoder.parts.sign ? '1' : '0') << '.';
+
+	// print exponent bits
+	{
+		uint8_t mask = 0x80;
+		for (int i = 13; i >= 0; --i) {
+			ss << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
+			mask >>= 1;
+		}
+	}
+
+	ss << '.';
+
+	// print fraction bits
+	uint64_t mask = (uint64_t(1) << 22);
+	for (int i = 22; i >= 0; --i) {
+		ss << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
+		mask >>= 1;
+	}
+
 	ss << def;
 	return ss.str();
 }
@@ -698,16 +791,6 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, f
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
 // Visual C++ compiler is 15.00.20706.01, the _MSC_FULL_VER will be 15002070601
-
-// Visual C++ does not support long double, it is just an alias for double
-union long_double_decoder {
-	long double ld;
-	struct {
-		uint64_t fraction : 52;
-		uint64_t exponent : 11;
-		uint64_t  sign : 1;
-	} parts;
-};
 
 // generate a binary string for a native long double precision IEEE floating point
 inline std::string to_hex(const long double& number) {
