@@ -6,9 +6,8 @@
 #include "common.hpp"
 // pull in the posit number system
 #include <universal/posit/posit>
-// test helpers, such as, ReportTestResults
-#include "../tests/utils/test_helpers.hpp"
-#include "../tests/utils/posit_test_helpers.hpp"
+
+constexpr size_t COLUMN_WIDTH = 25;
 
 /*
 floating point arithmetic:
@@ -30,27 +29,58 @@ generate a rounded sum s and a remainder r, such that
 
 
 template<typename Vector>
-typename Vector::value_type KahanSummation(const Vector& data) {
+std::pair<typename Vector::value_type, typename Vector::value_type> KahanSummation(const Vector& data) {
 	using Scalar = typename Vector::value_type;
-	Scalar sum{ 0 };
-	Scalar c{ 0 };
-	for (auto v : data) {
-		Scalar y = v - c;
-		Scalar t = sum + y;
-		c = (t - sum) - y;
-		sum = t;
+	Scalar a{ 0 };
+	Scalar r{ 0 };
+	for (auto b : data) {
+		Scalar y = b - r;
+//		std::cout << "y : " << y << std::endl;
+		Scalar t = a + y;
+//		std::cout << "t : " << t << std::endl;
+		r = (t - a) - y;  // (sum + y - sum) - y
+//		std::cout << "r : " << r << std::endl;
+		a = t;
+//		std::cout << "a : " << a << std::endl;
 	}
-	return sum;
+	return std::make_pair(a, r);
 }
 
 template<typename Vector>
-void GenerateData(Vector& data, const typename Vector::value_type& nrElements) {
+typename Vector::value_type GenerateData(Vector& data, size_t nrElements) {
 	using Scalar = typename Vector::value_type;
-	Scalar v = 1.0 / nrElements;
+	Scalar v = Scalar(1.0) / Scalar(nrElements);
 	data.clear();
-	for (size_t i = 0; i < 10; ++i) {
+	Scalar naiveSum{ 0 };
+	for (size_t i = 0; i < nrElements; ++i) {
 		data.push_back(v);
+		naiveSum += v;
 	}
+	return naiveSum;
+}
+
+template<typename Scalar>
+void GenerateTest(std::ostream& ostr, size_t N) {
+	using namespace std;
+	std::vector<Scalar> data;
+	auto naiveSum = GenerateData(data, N);
+	auto p = KahanSummation(data);
+	auto oldprecision = ostr.precision();
+	auto target = std::numeric_limits<Scalar>::max_digits10;
+	ostr << setprecision(target)
+		<< setw(COLUMN_WIDTH+15)
+		<< typeid(Scalar).name()
+		<< ", "
+		<< setw(COLUMN_WIDTH)
+		<< naiveSum
+		<< ", "
+		<< setw(COLUMN_WIDTH)
+		<< p.first
+		<< ", "
+		<< setw(COLUMN_WIDTH)
+		<< p.second 
+		<< setw(oldprecision)
+		<< endl;
 }
 
 #define MANUAL_TEST 1
@@ -66,27 +96,47 @@ try {
 // 	int nrOfFailedTestCases = 0;
 
 	// preserve the existing ostream precision
-	auto precision = cout.precision();
-	cout << setprecision(12);
+	auto precision = std::cout.precision();
+	std::cout << setprecision(12);
 
-	cout << "Kahan summation comparison" << endl;
+	std::cout << "Kahan summation comparison" << endl;
 
 #if MANUAL_TEST
 
+/*
+Kahan summation comparison
+									type,                 Naive Sum,                 Kahan Sum,            Residual Error
+								   float,               0.999999344,                         1,            2.23517418e-08
+								  double,        1.0000000000000007,                         1,   -2.0816681711721685e-17
+			 class sw::unum::posit<32,2>,                1.00000007,                         1,           -9.31322575e-10
+			 class sw::unum::posit<64,3>,                         1,                         1,   8.67361737988403547e-19
+>>>> a floating point value that is perfectly representable
+								   float,                         1,                         1,                         0
+								  double,                         1,                         1,                         0
+			 class sw::unum::posit<32,2>,                         1,                         1,                         0
+			 class sw::unum::posit<64,3>,                         1,                         1,                         0
+*/
+
+	cout << setw(COLUMN_WIDTH+15) << "type" << ", " 
+		<< setw(COLUMN_WIDTH) << "Naive Sum" << ", " 
+		<< setw(COLUMN_WIDTH) << "Kahan Sum" << ", " 
+		<< setw(COLUMN_WIDTH) << "Residual Error" << std::endl;
+
 	{
-	   std::vector<float> data;
-	   GenerateData(data, 10);
-	   cout << setprecision(8) << KahanSummation(data) << endl;
+		constexpr size_t N = 100;
+		GenerateTest<float>(cout, N);
+		GenerateTest<double>(cout, N);
+		GenerateTest<sw::unum::posit<32, 2>>(cout, N);
+		GenerateTest<sw::unum::posit<64, 3>>(cout, N);
 	}
+
+	cout << ">>>> a floating point value that is perfectly representable\n";
 	{
-	   std::vector<double> data;
-	   GenerateData(data, 10);
-	   cout << setprecision(15) << KahanSummation(data) << endl;
-	}
-	{
-	   std::vector<sw::unum::posit<32,2> > data;
-	   GenerateData(data, 10);
-	   cout << setprecision(15) << KahanSummation(data) << endl;
+		constexpr size_t N = 65536;
+		GenerateTest<float>(cout, N);
+		GenerateTest<double>(cout, N);
+		GenerateTest<sw::unum::posit<32, 2>>(cout, N);
+		GenerateTest<sw::unum::posit<64, 3>>(cout, N);
 	}
 
 #else
