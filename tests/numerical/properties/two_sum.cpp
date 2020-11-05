@@ -11,17 +11,32 @@
 #include "../tests/utils/posit_test_helpers.hpp"
 
 /*
-floating point arithmetic:
+important properties of linear floating point arithmetic:
  - integers are represented exactly
- - float(x - y) = x - y when x/2 <= y <= 2x: difference is represented exactly when two numbers are less than 2x of each other
+ - float(x - y) = x - y when x/2 <= y <= 2x: 
+        difference is represented exactly when two numbers are less than 2x of each other
  - float(2x)    = 2x barring overflow
  - float(x/2)   = x/2 barring underflow
 
-TwoSum denotes an algorithm introduced by Knuth in "The Art of Computer Programming", vol 2, Seminumerical Algorithms.
+These properties derive from multiply and divide by 2 are
+equivalent to shifting left and right, respectively. 
+Left shift introduces an extra 0 bit and thus is guaranteed
+to be represented in the encoding.
+Right shift removes a bit and is also guaranteed to be
+representable. 
+The difference with the conditions stated, also guarantees
+that bits are only removed from the representation and
+the result can be faithfully reproduced.
 
-Given two floating point values a and b, generate a rounded sum s and a remainder r, such that
-s = RoundToNearest(a + b), and
-a + b = s + r
+TwoSum denotes an algorithm introduced by Knuth 
+in "The Art of Computer Programming", vol 2, Seminumerical Algorithms.
+that takes advantage of this property to capture any
+rounding error.
+
+Given two floating point values a and b, 
+generate a rounded sum s and a remainder r, such that
+    s = RoundToNearest(a + b), and
+    a + b = s + r
 
 */
 
@@ -103,6 +118,7 @@ int ValidateTwoSum(const std::string& tag, bool bReportIndividualTestCases) {
 
 	return nrOfFailedTests;
 }
+
 
 #define MANUAL_TEST 0
 
