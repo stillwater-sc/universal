@@ -31,7 +31,7 @@ generate a rounded sum s and a remainder r, such that
 
 template<typename Vector>
 typename Vector::value_type KahanSummation(const Vector& data) {
-	using Scalar = Vector::value_type;
+	using Scalar = typename Vector::value_type;
 	Scalar sum{ 0 };
 	Scalar c{ 0 };
 	for (auto v : data) {
@@ -63,9 +63,7 @@ try {
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;
 
-	int nrOfFailedTestCases = 0;
-	bool bReportIndividualTestCases = true;
-	std::string tag = "TwoSum failed: ";
+// 	int nrOfFailedTestCases = 0;
 
 	// preserve the existing ostream precision
 	auto precision = cout.precision();
@@ -75,9 +73,21 @@ try {
 
 #if MANUAL_TEST
 
-	std::vector<float> data;
-	GenerateData(data, 10);
-	cout << KahanSummation(data) << endl;
+	{
+	   std::vector<float> data;
+	   GenerateData(data, 10);
+	   cout << setprecision(8) << KahanSummation(data) << endl;
+	}
+	{
+	   std::vector<double> data;
+	   GenerateData(data, 10);
+	   cout << setprecision(15) << KahanSummation(data) << endl;
+	}
+	{
+	   std::vector<sw::unum::posit<32,2> > data;
+	   GenerateData(data, 10);
+	   cout << setprecision(15) << KahanSummation(data) << endl;
+	}
 
 #else
 	// nrOfFailedTestCases += ReportTestResult(ValidateTwoSum<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "twoSum");
