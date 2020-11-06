@@ -483,6 +483,7 @@ inline std::string to_triple(const long double& number) {
 	ss << scale << ',';
 
 	// print fraction bits
+	ss << (decoder.parts.bit63 ? '1' : '0');
 	uint64_t mask = (uint64_t(1) << 62);
 	for (int i = 62; i >= 0; --i) {
 		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
@@ -490,6 +491,48 @@ inline std::string to_triple(const long double& number) {
 	}
 
 	ss << ')';
+	return ss.str();
+}
+
+// generate a color coded binary string for a native double precision IEEE floating point
+inline std::string color_print(const long double& number) {
+	std::stringstream ss;
+	long_double_decoder decoder;
+	decoder.ld = number;
+
+	Color red(ColorCode::FG_RED);
+	Color yellow(ColorCode::FG_YELLOW);
+	Color blue(ColorCode::FG_BLUE);
+	Color magenta(ColorCode::FG_MAGENTA);
+	Color cyan(ColorCode::FG_CYAN);
+	Color white(ColorCode::FG_WHITE);
+	Color def(ColorCode::FG_DEFAULT);
+
+	// print sign bit
+	ss << red << (decoder.parts.sign ? '1' : '0') << '.';
+
+	// print exponent bits
+	{
+		uint64_t mask = 0x8000;
+		for (int i = 15; i >= 0; --i) {
+			ss << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (i > 0 && i % 4 == 0) ss << cyan << '\'';
+			mask >>= 1;
+		}
+	}
+
+	ss << '.';
+
+	// print fraction bits
+	ss << magenta << (decoder.parts.bit63 ? '1' : '0');
+	uint64_t mask = (uint64_t(1) << 62);
+	for (int i = 62; i >= 0; --i) {
+		ss << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (i > 0 && i % 4 == 0) ss << magenta << '\'';
+		mask >>= 1;
+	}
+
+	ss << def;
 	return ss.str();
 }
 
@@ -635,8 +678,8 @@ inline std::string to_triple(const long double& number) {
 	ss << scale << ',';
 
 	// print fraction bits
-	uint64_t mask = (uint64_t(1) << 62);
 	ss << (decoder.parts.bit63 ? '1' : '0');
+	uint64_t mask = (uint64_t(1) << 62);
 	for (int i = 62; i >= 0; --i) {
 		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
@@ -676,8 +719,8 @@ inline std::string color_print(const long double& number) {
 	ss << '.';
 
 	// print fraction bits
-	uint64_t mask = 0x8000'0000'0000'0000;
 	ss << magenta << (decoder.parts.bit63 ? '1' : '0');
+	uint64_t mask = (uint64_t(1) << 62);
 	for (int i = 62; i >= 0; --i) {
 		ss << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
 		if (i > 0 && i % 4 == 0) ss << magenta << '\'';
