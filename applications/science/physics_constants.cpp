@@ -104,13 +104,17 @@ std::string report_compiler_version() {
 }
 
 template<typename Scalar>
-void Represent(std::ostream& ostr, Scalar s, std::streamsize precision = 17) {
+void Represent(std::ostream& ostr, Scalar s, std::streamsize precision = 17, bool hexFormat = false) {
 	using namespace std;
 	// preserve the existing ostream precision
 	auto old_precision = cout.precision();
 	ostr << setprecision(precision);
 
-	ostr << s << endl;
+	ostr << setw(15) << s;
+	if (hexFormat) {
+		ostr << " : " << setw(70) << color_print(s) << " : " << hex_format(s);
+	}
+	ostr << endl;
 
 	// restore the previous ostream precision
 	ostr << setprecision(old_precision);
@@ -121,11 +125,12 @@ void Sample(std::ostream& ostr, long double constant) {
 	Represent(ostr << minmax_range< long double  >() << " : ", constant, 23);
 	Represent(ostr << minmax_range< double       >() << " : ", double(constant), 15);
 	Represent(ostr << minmax_range< float        >() << " : ", float(constant), 6);
-	Represent(ostr << minmax_range< posit<32, 2> >() << " : ", posit<32, 2>(constant));
-	Represent(ostr << minmax_range< posit<32, 3> >() << " : ", posit<32, 3>(constant));
-	Represent(ostr << minmax_range< posit<40, 3> >() << " : ", posit<40, 3>(constant));
-	Represent(ostr << minmax_range< posit<48, 3> >() << " : ", posit<48, 3>(constant));
-	Represent(ostr << minmax_range< posit<64, 3> >() << " : ", posit<64, 3>(constant));
+	Represent(ostr << minmax_range< posit<32, 2> >() << " : ", posit<32, 2>(constant), 4, true);
+	Represent(ostr << minmax_range< posit<32, 3> >() << " : ", posit<32, 3>(constant), 6, true);
+	Represent(ostr << minmax_range< posit<40, 3> >() << " : ", posit<40, 3>(constant), 8, true);
+	Represent(ostr << minmax_range< posit<48, 3> >() << " : ", posit<48, 3>(constant), 10, true);
+	Represent(ostr << minmax_range< posit<56, 3> >() << " : ", posit<56, 3>(constant), 12, true);
+	Represent(ostr << minmax_range< posit<64, 3> >() << " : ", posit<64, 3>(constant), 15, true);
 }
 
 void CompareIEEEValues(std::ostream& ostr, long double constant) {

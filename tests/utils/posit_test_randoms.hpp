@@ -425,11 +425,11 @@ namespace sw { namespace unum {
 			// generate random value
 			unsigned long long value = distr(eng);
 			pref.set_raw_bits(value);   // assign to a posit<nbits+1,es> to generate the reference we know how to perturb
-			long double da = (long double)(pref);
 
-			//std::cout << std::hex << "0x" << value << std::endl;
-			//std::cout << std::dec << da << std::endl;
 /*
+			long double da = (long double)(pref);
+			std::cout << std::hex << "0x" << value << std::endl;
+			std::cout << std::dec << da << std::endl;
 			long double eps;
 			if (value == 0) {
 				eps = minpos / 2.0;
@@ -437,7 +437,7 @@ namespace sw { namespace unum {
 			else {
 				eps = da > 0 ? da * 1.0e-6 : da * -1.0e-6;
 			}
-			*/
+*/
 
 			pprev = pnext = pref;
 			--pprev;

@@ -183,6 +183,7 @@ inline std::string color_print(const float& number) {
 		uint8_t mask = 0x80;
 		for (int i = 7; i >= 0; --i) {
 			ss << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (i > 0 && i % 4 == 0) ss << cyan << '\'';
 			mask >>= 1;
 		}
 	}
@@ -193,9 +194,51 @@ inline std::string color_print(const float& number) {
 	uint32_t mask = (uint32_t(1) << 22);
 	for (int i = 22; i >= 0; --i) {
 		ss << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (i > 0 && i % 4 == 0) ss << magenta << '\'';
 		mask >>= 1;
 	}
 	
+	ss << def;
+	return ss.str();
+}
+
+// generate a color coded binary string for a native double precision IEEE floating point
+inline std::string color_print(const double& number) {
+	std::stringstream ss;
+	double_decoder decoder;
+	decoder.d = number;
+
+	Color red(ColorCode::FG_RED);
+	Color yellow(ColorCode::FG_YELLOW);
+	Color blue(ColorCode::FG_BLUE);
+	Color magenta(ColorCode::FG_MAGENTA);
+	Color cyan(ColorCode::FG_CYAN);
+	Color white(ColorCode::FG_WHITE);
+	Color def(ColorCode::FG_DEFAULT);
+
+	// print sign bit
+	ss << red << (decoder.parts.sign ? '1' : '0') << '.';
+
+	// print exponent bits
+	{
+		uint64_t mask = 0x800;
+		for (int i = 11; i >= 0; --i) {
+			ss << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (i > 0 && i % 4 == 0) ss << cyan << '\'';
+			mask >>= 1;
+		}
+	}
+
+	ss << '.';
+
+	// print fraction bits
+	uint64_t mask = (uint64_t(1) << 52);
+	for (int i = 52; i >= 0; --i) {
+		ss << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (i > 0 && i % 4 == 0) ss << magenta << '\'';
+		mask >>= 1;
+	}
+
 	ss << def;
 	return ss.str();
 }
@@ -355,7 +398,7 @@ inline std::tuple<bool, int64_t, uint64_t> ieee_components(double fp)
 	a floating-point unit(FPU).This 80 - bit format uses one bit for
 	the sign of the significand, 15 bits for the exponent field
 	(i.e. the same range as the 128 - bit quadruple precision IEEE 754 format)
-	and 64 bits for the significand.The exponent field is biased by 16383,
+	and 64 bits for the significand. The exponent field is biased by 16383,
 	meaning that 16383 has to be subtracted from the value in the
 	exponent field to compute the actual power of 2.
 	An exponent field value of 32767 (all fifteen bits 1) is reserved
@@ -373,7 +416,7 @@ union long_double_decoder {
 		uint64_t fraction : 63;
 		uint64_t bit63 : 1;
 		uint64_t exponent : 15;
-		uint64_t  sign : 1;
+		uint64_t sign : 1;
 	} parts;
 };
 
@@ -440,6 +483,7 @@ inline std::string to_triple(const long double& number) {
 	ss << scale << ',';
 
 	// print fraction bits
+	ss << (decoder.parts.bit63 ? '1' : '0');
 	uint64_t mask = (uint64_t(1) << 62);
 	for (int i = 62; i >= 0; --i) {
 		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
@@ -447,6 +491,48 @@ inline std::string to_triple(const long double& number) {
 	}
 
 	ss << ')';
+	return ss.str();
+}
+
+// generate a color coded binary string for a native double precision IEEE floating point
+inline std::string color_print(const long double& number) {
+	std::stringstream ss;
+	long_double_decoder decoder;
+	decoder.ld = number;
+
+	Color red(ColorCode::FG_RED);
+	Color yellow(ColorCode::FG_YELLOW);
+	Color blue(ColorCode::FG_BLUE);
+	Color magenta(ColorCode::FG_MAGENTA);
+	Color cyan(ColorCode::FG_CYAN);
+	Color white(ColorCode::FG_WHITE);
+	Color def(ColorCode::FG_DEFAULT);
+
+	// print sign bit
+	ss << red << (decoder.parts.sign ? '1' : '0') << '.';
+
+	// print exponent bits
+	{
+		uint64_t mask = 0x8000;
+		for (int i = 15; i >= 0; --i) {
+			ss << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (i > 0 && i % 4 == 0) ss << cyan << '\'';
+			mask >>= 1;
+		}
+	}
+
+	ss << '.';
+
+	// print fraction bits
+	ss << magenta << (decoder.parts.bit63 ? '1' : '0');
+	uint64_t mask = (uint64_t(1) << 62);
+	for (int i = 62; i >= 0; --i) {
+		ss << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (i > 0 && i % 4 == 0) ss << magenta << '\'';
+		mask >>= 1;
+	}
+
+	ss << def;
 	return ss.str();
 }
 
@@ -513,6 +599,10 @@ inline std::string to_triple(const long double& number) {
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
 
+/*
+ * In contrast to the single and double-precision formats, this format does not utilize an implicit/hidden bit. Rather, bit 63 contains the integer part of the significand and bits 62-0 hold the fractional part. Bit 63 will be 1 on all normalized numbers.
+ */
+
 // long double decoder
 union long_double_decoder {
 	long double ld;
@@ -520,7 +610,7 @@ union long_double_decoder {
 		uint64_t fraction : 63;
 		uint64_t bit63 : 1;
 		uint64_t exponent : 15;
-		uint64_t  sign : 1;
+		uint64_t sign : 1;
 	} parts;
 };
 
@@ -555,6 +645,7 @@ inline std::string to_binary(const long double& number) {
 
 	// print fraction bits
 	uint64_t mask = (uint64_t(1) << 62);
+	ss << (decoder.parts.bit63 ? '1' : '0');
 	for (int i = 62; i >= 0; --i) {
 		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
@@ -587,6 +678,7 @@ inline std::string to_triple(const long double& number) {
 	ss << scale << ',';
 
 	// print fraction bits
+	ss << (decoder.parts.bit63 ? '1' : '0');
 	uint64_t mask = (uint64_t(1) << 62);
 	for (int i = 62; i >= 0; --i) {
 		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
@@ -594,6 +686,48 @@ inline std::string to_triple(const long double& number) {
 	}
 
 	ss << ')';
+	return ss.str();
+}
+
+// generate a color coded binary string for a native double precision IEEE floating point
+inline std::string color_print(const long double& number) {
+	std::stringstream ss;
+	long_double_decoder decoder;
+	decoder.ld = number;
+
+	Color red(ColorCode::FG_RED);
+	Color yellow(ColorCode::FG_YELLOW);
+	Color blue(ColorCode::FG_BLUE);
+	Color magenta(ColorCode::FG_MAGENTA);
+	Color cyan(ColorCode::FG_CYAN);
+	Color white(ColorCode::FG_WHITE);
+	Color def(ColorCode::FG_DEFAULT);
+
+	// print sign bit
+	ss << red << (decoder.parts.sign ? '1' : '0') << '.';
+
+	// print exponent bits
+	{
+		uint64_t mask = 0x8000;
+		for (int i = 15; i >= 0; --i) {
+			ss << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (i > 0 && i % 4 == 0) ss << cyan << '\'';
+			mask >>= 1;
+		}
+	}
+
+	ss << '.';
+
+	// print fraction bits
+	ss << magenta << (decoder.parts.bit63 ? '1' : '0');
+	uint64_t mask = (uint64_t(1) << 62);
+	for (int i = 62; i >= 0; --i) {
+		ss << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (i > 0 && i % 4 == 0) ss << magenta << '\'';
+		mask >>= 1;
+	}
+
+	ss << def;
 	return ss.str();
 }
 
@@ -700,6 +834,7 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, f
 // Visual C++ compiler is 15.00.20706.01, the _MSC_FULL_VER will be 15002070601
 
 // Visual C++ does not support long double, it is just an alias for double
+/*
 union long_double_decoder {
 	long double ld;
 	struct {
@@ -708,13 +843,14 @@ union long_double_decoder {
 		uint64_t  sign : 1;
 	} parts;
 };
+*/
 
 // generate a binary string for a native long double precision IEEE floating point
 inline std::string to_hex(const long double& number) {
 	return to_hex(double(number));
 }
 
-// generate a binary string for a native double precision IEEE floating point
+// generate a binary string for a native long double precision IEEE floating point
 inline std::string to_binary(const long double& number) {
 	return to_binary(double(number));
 }
@@ -722,6 +858,11 @@ inline std::string to_binary(const long double& number) {
 // return in triple form (+, scale, fraction)
 inline std::string to_triple(const long double& number) {
 	return to_triple(double(number));
+}
+
+// generate a color coded binary string for a native double precision IEEE floating point
+inline std::string color_print(const long double& number) {
+	return color_print(double(number));
 }
 
 // floating point component extractions
