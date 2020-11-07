@@ -253,15 +253,28 @@ vector<Scalar> operator-(const vector<Scalar>& lhs, const vector<Scalar>& rhs) {
 }
 
 template<typename Scalar>
-vector<Scalar> operator*(double scalar, const vector<Scalar>& v) {
-	vector<Scalar> scaledVector(v);
-	return scaledVector *= scalar;
+vector<Scalar> operator*(double alpha, const vector<Scalar>& v) {
+	vector<Scalar> scaled(v);
+	return scaled *= alpha;
+}
+
+// scale a vector through operator* overload
+template<typename Scalar>
+vector<Scalar> operator*(const Scalar& alpha, const vector<Scalar>& x) {
+	vector<Scalar> scaled(x);
+	return scaled *= alpha;
 }
 
 template<typename Scalar>
 vector<Scalar> operator/(const vector<Scalar>& v, double normalizer) {
-	vector<Scalar> normalizedVector(v);
-	return normalizedVector /= normalizer;
+	vector<Scalar> normalized(v);
+	return normalized /= normalizer;
+}
+
+template<typename Scalar>
+vector<Scalar> operator/(const vector<Scalar>& v, Scalar normalizer) {
+	vector<Scalar> normalized(v);
+	return normalized /= normalizer;
 }
 
 template<typename Scalar> auto size(const vector<Scalar>& v) { return v.size(); }
