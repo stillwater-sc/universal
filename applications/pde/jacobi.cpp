@@ -54,8 +54,8 @@ try {
 	using namespace sw::unum;
 	using namespace sw::unum::blas;
 
-	constexpr size_t nbits = 16;
-	constexpr size_t es = 1;
+//	constexpr size_t nbits = 16;
+//	constexpr size_t es = 1;
 //	using Scalar = posit<nbits, es>;
 	using Scalar = float;
 	using Matrix = sw::unum::blas::matrix<Scalar>;

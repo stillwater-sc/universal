@@ -19,8 +19,8 @@ namespace sw { namespace unum {
 #if POSIT_FAST_POSIT_8_1
 #ifdef _MSC_VER
 #pragma message("Fast specialization of posit<8,1>")
-#else
-	#warning("Fast specialization of posit<8,1>")
+//#else
+//#warning("Fast specialization of posit<8,1>")
 #endif
 
 // injecting the C API into namespace sw::unum

@@ -14,7 +14,6 @@ namespace sw { namespace unum { namespace blas {
 template <typename Scalar>
 matrix<Scalar> magic(int N) {
 	using Matrix = matrix<Scalar>;
-	typedef typename Matrix::size_type     size_type;
 	// precondition tests
 	if (N <= 0) return matrix<Scalar>{};
 	if (N % 2 == 0) {

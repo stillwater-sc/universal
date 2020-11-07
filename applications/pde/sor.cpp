@@ -83,12 +83,10 @@ try {
 	cout << A << endl;
 	cout << b << endl;
 	cout << w << endl;
-	size_t itr;
-	itr = sor(A, b, 1.5f);
-	itr = sor(A, b, 1.25f);
-	itr = sor(A, b, 1.125f);
-	itr = sor(A, b, 1.0625f);
-
+	sor(A, b, 1.5f);
+	sor(A, b, 1.25f);
+	sor(A, b, 1.125f);
+	sor(A, b, 1.0625f);
 
 	//  in matrix form
 	tridiag(A, 5);

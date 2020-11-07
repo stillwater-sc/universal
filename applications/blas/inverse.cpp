@@ -57,7 +57,6 @@ void Test1() {
 
 	using Scalar = float;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
-	using Vector = sw::unum::blas::vector<Scalar>;
 
 	Matrix A = {
 		{  2, -1,  0,  0,  0 },
@@ -142,7 +141,6 @@ void TestNearSingular() {
 	cout << "Scalar type: " << typeid(Scalar).name() << '\n';
 
 	using Matrix = sw::unum::blas::matrix<Scalar>;
-	using Vector = sw::unum::blas::vector<Scalar>;
 
 	// define a singular matrix
 	Matrix A = {
@@ -178,7 +176,6 @@ try {
 
 	using Scalar = float;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
-	using Vector = sw::unum::blas::vector<Scalar>;
 
 	if (argc == 1) cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;

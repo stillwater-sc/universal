@@ -108,6 +108,9 @@ void ResidualTest(const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A)
 	sw::unum::blas::vector<size_t> indx(N);
 	Matrix LU(A); // the LU decomposition is in place, so create a copy first
 	auto error = ludcmp(LU, indx);
+	if (error != 0) {
+		cerr << "LU decomposition failed\n";
+	}
 	cout << "LU decomposition\n";
 	cout << hex_format(LU) << endl;
 	x = lubksb(LU, indx, b);
@@ -157,7 +160,6 @@ void Experiment2() {
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
 	using Scalar = sw::unum::posit<nbits, es>;
-	using Vector = sw::unum::blas::vector<Scalar>;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
 	constexpr size_t N = 5;
 	Matrix A = sw::unum::blas::frank<Scalar>(N);
@@ -187,7 +189,7 @@ void Experiment2() {
 	}
 
 	{
-		// reference float version
+		// reference double version
 		using Scalar = double;
 		using Vector = sw::unum::blas::vector<Scalar>;
 		using Matrix = sw::unum::blas::matrix<Scalar>;
@@ -202,15 +204,6 @@ void Experiment2() {
 
 	}
 
-	{
-		using Scalar = sw::unum::posit<nbits, es>;
-		using Vector = sw::unum::blas::vector<Scalar>;
-		using Matrix = sw::unum::blas::matrix<Scalar>;
-		cout << "Hilbert matrix\n";
-		A = sw::unum::blas::hilbert<Scalar>(9);
-
-		ResidualTest(A);
-	}
 }
 
 
@@ -300,7 +293,6 @@ try {
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
 	using Scalar = sw::unum::posit<nbits, es>;
-	using Vector = sw::unum::blas::vector<Scalar>;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
 
 	cout << "epsilon for " << typeid(Scalar).name() << " = " << numeric_limits<Scalar>::epsilon() << '\n';
