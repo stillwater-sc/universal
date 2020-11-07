@@ -63,7 +63,7 @@ size_t cg(const Matrix& M, const Matrix& A, Vector& b, typename Matrix::value_ty
 		rho = rho - alpha * q;
 		// check for convergence of the system
 		residual = norm1(x_1 - x);
-		std::cout << '[' << itr << "] " << x << " residual " << residual << std::endl;
+		std::cout << '[' << itr << "] " << std::setw(12) << x << " residual " << residual << std::endl;
 		++itr;
 	}
 	std::cout << "solution in " << itr << " iterations\n";
@@ -110,6 +110,13 @@ try {
 		++nrOfFailedTestCases;
 	}
 
+	M = sw::unum::blas::inv(A);
+	itr = cg<Matrix, Vector, MAX_ITERATIONS>(M, A, b);
+
+	if (itr == MAX_ITERATIONS) {
+		std::cerr << "Solution failed to converge\n";
+		++nrOfFailedTestCases;
+	}
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
