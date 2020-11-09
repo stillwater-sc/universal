@@ -187,7 +187,7 @@ public:
 		// transform to sign-magnitude
 		_sign = rhs & 0x8000000000000000;
 		unsigned long long magnitude;
-		magnitude = _sign ? -rhs : rhs;
+		magnitude = static_cast<unsigned long long>(_sign ? -rhs : rhs);
 		unsigned msb = findMostSignificantBit(magnitude);
 		if (msb > half_range + capacity) {
 			throw operand_too_large_for_quire{};

@@ -1,4 +1,5 @@
-// cg.cpp: multi-precision, preconditioned Conjugate Gradient iterative solver
+// cg_mvdot_cmpdot.cpp: multi-precision, preconditioned Conjugate Gradient iterative solver
+// using matrix-vector dot product operator and compensation dot product operator
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 // Authors: Theodore Omtzigt
@@ -41,7 +42,7 @@ std::ostream& operator<<(std::ostream& ostr, const std::vector<Scalar>& vec) {
 // Output:
 //   number of iterations to reach required accuracy
 template<typename Matrix, typename Vector, size_t MAX_ITERATIONS = 10>
-size_t cg(const Matrix& M, const Matrix& A, Vector& b, typename Matrix::value_type tolerance = typename Matrix::value_type(0.00001)) {
+size_t cg_dot_dot(const Matrix& M, const Matrix& A, Vector& b, typename Matrix::value_type tolerance = typename Matrix::value_type(0.00001)) {
 	using Scalar = typename Matrix::value_type;
 	Scalar residual = Scalar(std::numeric_limits<Scalar>::max());
 	std::vector<Scalar> residuals; // store the residual trajectory
@@ -68,7 +69,7 @@ size_t cg(const Matrix& M, const Matrix& A, Vector& b, typename Matrix::value_ty
 			beta = sigma_1 / sigma_2;
 			p = zeta + beta * p;
 		}
-		q = A * p;
+		matvec(q, A, p);  // regular matrix-vector without quire
 		alpha = sigma_1 / dot(p, q);
 		Vector x_1(x);
 		x = x + alpha * p;
@@ -88,7 +89,7 @@ size_t cg(const Matrix& M, const Matrix& A, Vector& b, typename Matrix::value_ty
 //	std::cout << "solution is " << x << '\n';
 //	std::cout << "final residual is " << residual << '\n';
 //	std::cout << "validation\n" << A * x << " = " << b << '\n';
-	std::cout << "residuals " << residuals << std::endl;
+	std::cout << typeid(Scalar).name() << " " << residuals << std::endl;
 	return itr;
 }
 
@@ -107,12 +108,12 @@ size_t Experiment(size_t DoF) {
 	b = A * x;
 
 	M = sw::unum::blas::inv(A);
-	return cg<Matrix, Vector, MAX_ITERATIONS>(M, A, b);
+	return cg_dot_dot<Matrix, Vector, MAX_ITERATIONS>(M, A, b);
 	
 }
 
-#define MANUAL 1
-#define STRESS 0
+#define MANUAL 0
+#define STRESS 1
 
 int main(int argc, char** argv)
 try {
@@ -155,7 +156,7 @@ try {
 	* and thus we expect the converge in sqrt(128) (h = 1/DoF -> h^-1 is Dof)
 	*/
 	constexpr size_t MAX_ITERATIONS = 100;
-	size_t itr = cg<Matrix, Vector, MAX_ITERATIONS>(M, A, b);
+	size_t itr = cg_dot_dot<Matrix, Vector, MAX_ITERATIONS>(M, A, b);
 
 	if (itr == MAX_ITERATIONS) {
 		std::cerr << "Solution failed to converge\n";
