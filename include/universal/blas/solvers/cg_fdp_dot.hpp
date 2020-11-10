@@ -36,7 +36,7 @@ size_t cg_fdp_dot(const Matrix& M, const Matrix& A, const Vector& b, Vector& x, 
 	size_t itr = 0;
 	bool firstIteration = true;
 	while (residual > tolerance && itr < MAX_ITERATIONS) {
-		zeta = sw::unum::blas::solve(M, rho);
+		zeta = M * rho;
 		sigma_2 = sigma_1;
 		sigma_1 = dot(zeta, rho); // dot product, fused dot product if Scalar is a posit type
 		if (firstIteration) {

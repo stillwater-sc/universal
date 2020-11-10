@@ -31,23 +31,21 @@ template<typename Scalar, size_t MAX_ITERATIONS>
 size_t Experiment(size_t DoF) {
 	using Matrix = sw::unum::blas::matrix<Scalar>;
 	using Vector = sw::unum::blas::vector<Scalar>;
+
 	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
-
-	Matrix A;
-	tridiag(A, DoF);  // this does a resize of A
-	Matrix M = sw::unum::blas::eye<Scalar>(DoF);
+	Matrix A = sw::unum::blas::tridiag<Scalar>(DoF);
 	Vector b(DoF);
+	Vector ones(DoF);
+	ones = Scalar(1);
+	b = A * ones;     // generate a known solution
+	Matrix M = sw::unum::blas::inv(A);
 	Vector x(DoF);
-	x = Scalar(1);
-	b = A * x;
-
 	Vector residuals;
-	M = sw::unum::blas::inv(A);
 	size_t itr = sw::unum::blas::cg_dot_dot<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
 	//	std::cout << "solution is " << x << '\n';
 	//	std::cout << "final residual is " << residual << '\n';
 	//	std::cout << "validation\n" << A * x << " = " << b << '\n';
-	std::cout << typeid(Scalar).name() << " " << residuals << std::endl;
+	std::cout << '\"' << typeid(Scalar).name() << "\" " << residuals << std::endl;
 
 	return itr;
 }
@@ -58,23 +56,21 @@ size_t Experiment(size_t DoF) {
 	using Scalar = sw::unum::posit<nbits, es>;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
 	using Vector = sw::unum::blas::vector<Scalar>;
+
 	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
-
-	Matrix A;
-	tridiag(A, DoF);  // this does a resize of A
-	Matrix M = sw::unum::blas::eye<Scalar>(DoF);
+	Matrix A = sw::unum::blas::tridiag<Scalar>(DoF);
 	Vector b(DoF);
+	Vector ones(DoF);
+	ones = Scalar(1);
+	b = A * ones;     // generate a known solution
+	Matrix M = sw::unum::blas::inv(A);
 	Vector x(DoF);
-	x = Scalar(1);
-	b = A * x;
-
 	Vector residuals;
-	M = sw::unum::blas::inv(A);
 	size_t itr = sw::unum::blas::cg_dot_fdp<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
 	//	std::cout << "solution is " << x << '\n';
 	//	std::cout << "final residual is " << residual << '\n';
 	//	std::cout << "validation\n" << A * x << " = " << b << '\n';
-	std::cout << typeid(Scalar).name() << " " << residuals << std::endl;
+	std::cout << '\"' << typeid(Scalar).name() << "\" " << residuals << std::endl;
 
 	return itr;
 }
@@ -95,7 +91,6 @@ try {
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
 	using Scalar = posit<nbits, es>;
-//	using Scalar = float;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
 	using Vector = sw::unum::blas::vector<Scalar>;
 
@@ -103,17 +98,19 @@ try {
 	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
 	constexpr size_t DoF = 8;
 	Matrix A;
-	tridiag(A, DoF);  // this does a resize of A
-	Matrix M = eye<Scalar>(DoF);
+	sw::unum::blas::tridiag(A, DoF);  // this does a resize of A
+	// Matrix M = eye<Scalar>(DoF); // M = I, unpreconditioned
+	Matrix M = inv(diag(diag(A)));  // Jacobi preconditioner for positive-definite, diagonally dominant systems
 	Vector b(DoF);
 	Vector x(DoF);
 	x = Scalar(1);
 	b = A * x;
 
 	if (DoF < 10) {
-		cout << A << endl;
-		cout << M << endl;
-		cout << b << endl;
+		cout << "M^-1:\n" << M << endl;
+		cout << "A:\n" << A << endl;
+		cout << "x:\n" << x << endl;
+		cout << "b:\n" << b << endl;
 	}
 	/*
 	* for second order elliptical PDEs, the resulting coefficient matrix exhibits
@@ -124,8 +121,12 @@ try {
 	*/
 	Vector residuals;
 	constexpr size_t MAX_ITERATIONS = 100;
-	size_t itr = cg_dot_dot<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
-
+	x = Scalar(0); // reset the solution vector
+	size_t itr = cg_dot_fdp<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
+	std::cout << "solution is " << x << '\n';
+	std::cout << "final residual is " << residuals[size(residuals)-1] << '\n';
+	std::cout << "validation\n" << A * x << " = " << b << '\n';
+	std::cout << typeid(Scalar).name() << " " << residuals << std::endl;
 	if (itr == MAX_ITERATIONS) {
 		std::cerr << "Solution failed to converge\n";
 		++nrOfFailedTestCases;
@@ -139,7 +140,7 @@ try {
 	Experiment<posit<32,2>, 200>(64);
 	Experiment<posit<64, 3>, 100>(64);
 	Experiment<posit<128, 4>, 100>(64);
-	Experiment<posit<256, 5>, 100>(64);
+//	Experiment<posit<256, 5>, 100>(64);
 #endif // STRESS
 
 #endif // MANUAL
