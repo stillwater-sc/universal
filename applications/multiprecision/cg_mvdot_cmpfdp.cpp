@@ -43,7 +43,7 @@ size_t Experiment(size_t DoF) {
 
 	Vector residuals;
 	M = sw::unum::blas::inv(A);
-	size_t itr = cg_dot_dot<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
+	size_t itr = sw::unum::blas::cg_dot_dot<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
 	//	std::cout << "solution is " << x << '\n';
 	//	std::cout << "final residual is " << residual << '\n';
 	//	std::cout << "validation\n" << A * x << " = " << b << '\n';
@@ -70,7 +70,7 @@ size_t Experiment(size_t DoF) {
 
 	Vector residuals;
 	M = sw::unum::blas::inv(A);
-	size_t itr = cg_dot_fdp<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
+	size_t itr = sw::unum::blas::cg_dot_fdp<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
 	//	std::cout << "solution is " << x << '\n';
 	//	std::cout << "final residual is " << residual << '\n';
 	//	std::cout << "validation\n" << A * x << " = " << b << '\n';
