@@ -1,5 +1,5 @@
 #pragma once
-// lu.hpp: super-simple dense matrix implementation
+// lu.hpp: dense matrix LU decomposition and backsubstitution to solve systems of equations
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

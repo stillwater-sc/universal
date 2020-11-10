@@ -1,5 +1,5 @@
-// cg_mvdot_cmpdot.cpp: multi-precision, preconditioned Conjugate Gradient iterative solver
-// using matrix-vector dot product operator and compensation dot product operator
+// cg_mvdot_cmpfdp.cpp: multi-precision, preconditioned Conjugate Gradient iterative solver
+// using matrix-vector dot product operator and compensation fused-dot product operator
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 // Authors: Theodore Omtzigt
@@ -23,7 +23,8 @@
 #include <universal/posit/posit>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
-#include <universal/blas/solvers/cg_dot_dot.hpp>
+#include <universal/blas/solvers/cg_dot_dot.hpp> // for native IEEE types
+#include <universal/blas/solvers/cg_dot_fdp.hpp>
 
 // CG residual trajectory experiment for tridiag(-1, 2, -1)
 template<typename Scalar, size_t MAX_ITERATIONS>
@@ -43,6 +44,33 @@ size_t Experiment(size_t DoF) {
 	Vector residuals;
 	M = sw::unum::blas::inv(A);
 	size_t itr = cg_dot_dot<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
+	//	std::cout << "solution is " << x << '\n';
+	//	std::cout << "final residual is " << residual << '\n';
+	//	std::cout << "validation\n" << A * x << " = " << b << '\n';
+	std::cout << typeid(Scalar).name() << " " << residuals << std::endl;
+
+	return itr;
+}
+
+// CG residual trajectory experiment for tridiag(-1, 2, -1)
+template<size_t nbits, size_t es, size_t MAX_ITERATIONS>
+size_t Experiment(size_t DoF) {
+	using Scalar = sw::unum::posit<nbits, es>;
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Vector = sw::unum::blas::vector<Scalar>;
+	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
+
+	Matrix A;
+	tridiag(A, DoF);  // this does a resize of A
+	Matrix M = sw::unum::blas::eye<Scalar>(DoF);
+	Vector b(DoF);
+	Vector x(DoF);
+	x = Scalar(1);
+	b = A * x;
+
+	Vector residuals;
+	M = sw::unum::blas::inv(A);
+	size_t itr = cg_dot_fdp<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
 	//	std::cout << "solution is " << x << '\n';
 	//	std::cout << "final residual is " << residual << '\n';
 	//	std::cout << "validation\n" << A * x << " = " << b << '\n';

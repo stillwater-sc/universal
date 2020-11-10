@@ -19,34 +19,9 @@
 #include <universal/posit/posit>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
+#include <universal/blas/solvers/jacobi.hpp>
 
-// Jacobi: Solution of x in Ax=b using Jacobi Method
-template<typename Matrix, typename Vector, size_t MAX_ITERATIONS = 100>
-size_t Jacobi(const Matrix& A, Vector& b, typename Matrix::value_type tolerance = typename Matrix::value_type(0.00001)) {
-	using Scalar = typename Matrix::value_type;
-	Scalar residual = Scalar(std::numeric_limits<Scalar>::max());
-	size_t m = num_rows(A);
-	size_t n = num_cols(A);
-	Vector x(size(b));
-	size_t itr = 0;
-	while (residual > tolerance && itr < MAX_ITERATIONS) {
-		Vector x_old = x;
-		for (size_t i = 0; i < m; ++i) {
-			Scalar sigma = 0;
-			for (size_t j = 0; j < n; ++j) {
-				if (i != j) sigma += A(i, j) * x(j);
-			}
-			x(i) = (b(i) - sigma) / A(i, i);
-		}
-		residual = norm1(x_old - x);
-		std::cout << '[' << itr << "] " << x << " residual " << residual << std::endl;
-		++itr;
-	}
 
-	std::cout << "solution is " << x << '\n';
-	std::cout << A * x << " = " << b << std::endl;
-	return itr;
-}
 
 int main(int argc, char** argv)
 try {
@@ -75,8 +50,10 @@ try {
 
 	cout << A << endl;
 	cout << b << endl;
-	size_t iterations = Jacobi(A, b);
+	size_t iterations = Jacobi(A, b, x);
 	cout << "solution in " << iterations << " iterations" << endl;
+	cout << "solution is " << x << '\n';
+	cout << A * x << " = " << b << endl;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
