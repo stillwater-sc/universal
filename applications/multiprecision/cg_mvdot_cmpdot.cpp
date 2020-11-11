@@ -23,6 +23,7 @@
 #include <universal/posit/posit>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
+#include <universal/blas/generators/fvm64x64.hpp>
 #include <universal/blas/solvers/cg_dot_dot.hpp>
 
 // CG residual trajectory experiment for tridiag(-1, 2, -1)
@@ -49,7 +50,30 @@ size_t Experiment(size_t DoF) {
 	return itr;
 }
 
-#define MANUAL 0
+template<typename Scalar, size_t MAX_ITERATIONS>
+size_t fvmTestMatrix() {
+	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Vector = sw::unum::blas::vector<Scalar>;
+
+	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
+	Matrix A = sw::unum::blas::fvm64x64<Scalar>();
+	Vector b(DoF);
+	Vector ones(DoF);
+	ones = Scalar(1);
+	b = A * ones;     // generate a known solution
+	Matrix M = sw::unum::blas::inv(diag(diag(A)));
+	Vector x(DoF);
+	Vector residuals;
+	size_t itr = sw::unum::blas::cg_dot_dot<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
+	std::cout << "solution is " << x << '\n';
+	std::cout << "final residual is " << residual << '\n';
+	std::cout << "validation\n" << A * x << " = " << b << '\n';
+	std::cout << '\"' << typeid(Scalar).name() << "\" " << residuals << std::endl;
+
+	return itr;
+}
+
+#define MANUAL 1
 #define STRESS 1
 
 int main(int argc, char** argv)
@@ -70,9 +94,9 @@ try {
 
 
 	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
-	constexpr size_t DoF = 8;
-	Matrix A;
-	tridiag(A, DoF);  // this does a resize of A
+	constexpr size_t DoF = 64;
+	// Matrix A = tridiag(DoF);
+	Matrix A = fvm64x64<Scalar>();
 	// Matrix M = eye<Scalar>(DoF); // M = I, unpreconditioned
 	Matrix M = inv(diag(diag(A)));  // Jacobi preconditioner for positive-definite, diagonally dominant systems
 	Vector b(DoF);
