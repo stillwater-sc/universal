@@ -67,7 +67,6 @@ public:
 	typedef typename std::vector<Scalar>::reverse_iterator reverse_iterator;
 	typedef typename std::vector<Scalar>::const_reverse_iterator const_reverse_iterator;
 
-
 	vector() : data(0) {}
 	vector(size_t N) : data(N) {}
 	vector(size_t N, const Scalar& val) : data(N, val) {}
@@ -96,7 +95,6 @@ public:
 	}
 
 	/// vector-wide operators
-	//
 	// vector-wide add
 	vector& operator+=(const Scalar& offset) {
 		for (auto& e : data) e += offset;
@@ -267,5 +265,43 @@ vector<Scalar> operator/(const vector<Scalar>& v, const Scalar& normalizer) {
 }
 
 template<typename Scalar> auto size(const vector<Scalar>& v) { return v.size(); }
+
+// regular dot product for non-posits
+template<typename Scalar,
+         typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
+Scalar operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+	std::cout << "dot product for " << typeid(Scalar).name() << std::endl;
+	size_t N = size(a);
+	if (size(a) != size(b)) {
+		std::cerr << "vector sizes are different: " << N << " vs " << size(b) << '\n';
+		return Scalar{ 0 };
+	}
+	Scalar sum{ 0 };
+	for (size_t i = 0; i < N; ++i) {
+		sum += a(i) * b(i);
+	}
+	return sum;
+}
+
+// fused dot product for posits
+template<typename Scalar,
+	typename = typename sw::unum::enable_if_posit<Scalar> >
+Scalar operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+	std::cout << "fused dot product for " << typeid(Scalar).name() << std::endl;
+	size_t N = size(a);
+	if (size(a) != size(b)) {
+		std::cerr << "vector sizes are different: " << N << " vs " << size(b) << '\n';
+		return Scalar{ 0 };
+	}
+	constexpr size_t nbits = Scalar::nbits;
+	constexpr size_t es = Scalar::es;
+	sw::unum::quire<nbits, es> sum{ 0 };
+	for (size_t i = 0; i < N; ++i) {
+		sum += sw::unum::quire_mul(a(i), b(i));
+	}
+	Scalar p;
+	convert(sum.to_value(), p);
+	return p;
+}
 
 }}}  // namespace sw::unum::blas
