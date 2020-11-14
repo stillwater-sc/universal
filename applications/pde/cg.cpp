@@ -37,7 +37,7 @@ size_t Experiment(size_t DoF) {
 	Vector ones(DoF);
 	ones = Scalar(1);
 	b = A * ones;     // generate a known solution
-	Matrix M = sw::unum::blas::inv(A);
+	Matrix M = sw::unum::blas::inv(diag(diag(A)));
 	Vector x(DoF);
 	Vector residuals;
 	size_t itr = sw::unum::blas::cg<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
@@ -94,9 +94,6 @@ try {
 	Vector residuals;
 	constexpr size_t MAX_ITERATIONS = 100;
 	Vector x(DoF);
-//	using V = sw::unum::blas::vector<sw::unum::posit<32,2>>;
-//	V a(2), c(2);
-//	Scalar d = a * c;
 	size_t itr = cg<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
 	std::cout << "solution is " << x << '\n';
 	std::cout << "final residual is " << residuals[size(residuals) - 1] << '\n';
@@ -108,16 +105,52 @@ try {
 	}
 
 #else
-	// with a preconditioner M = A^-1
+	// with a preconditioner M = Jacobian^-1
 	Experiment<float>(64);
 	Experiment<double>(64);
 	Experiment<long double>(64);
-#if STRESS
+
 	Experiment<posit<16,1>>(64);
+	Experiment<posit<20, 1>>(64);
+	Experiment<posit<24, 1>>(64);
+	Experiment<posit<28, 1>>(64);
 	Experiment<posit<32,2>>(64);
 	Experiment<posit<64,3>>(64);
 	Experiment<posit<128,4>>(64);
 	Experiment<posit<256,5>>(64);
+
+/* results
+* Native IEEE floating point
+solution in 34 iterations
+"float" 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0.999999 1 0.999999 1 0.999999 33 3.83854e-05 1.43051e-06
+solution in 33 iterations
+"double" 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 33 3.4972e-14
+solution in 33 iterations
+"long double" 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 33 3.4972e-14
+
+Different posit configurations
+solution in 79 iterations
+"class sw::unum::posit<16,1>" 1 0.999878 1 0.999878 1 1.00049 0.99939 1 1.00098 1.00171 1.00244 1.00098 0.998657 0.997803 0.999512 1.00244 1.00269 1.00488 1.00537 1.00781 1.00928 1.01123 1.01025 1.0105 1.01416 1.01416 1.01611 1.02197 1.02661 1.02441 1.01709 28.3594 4.89062 0.0266113 0.0319824 0.0200195 0.0117188 0.00585938 0.00488281 0.00585938 0.00292969 0.00341797 0.00341797 0.00244141 0.00244141 0.00341797 0.00537109 0.00732422 0.0180664 0.00927734 0.0209961 0.0195312 0.0102539 0.000976562 0.00146484 0.00292969 0.00341797 0.0117188 0.00976562 0.00390625 0.00439453 0.0117188 0.0166016 0.0185547 0.0180664 0.0151367 0.0131836 0.0078125 0.0136719 0.0161133 0.0175781 0.0175781 0.0151367 0.0112305 0.00830078 0.00830078 0.0078125 0.000488281 0
+solution in 57 iterations
+"class sw::unum::posit<20,1>" 1 0.999992 0.999985 1.00002 1.00003 1 0.999939 0.999954 0.999916 1 1 0.999855 0.999832 0.999924 0.999939 1.00006 1.00006 1.00018 1.00046 1.00058 1.00035 1.00034 1.0004 1.00037 1.00034 1.00012 1.00003 0.999939 0.999863 0.999496 0.999321 32.9648 0.0302734 0.00144958 0.00132751 0.000656128 0.000457764 0.000839233 0.000473022 0.000732422 0.000686646 0.000564575 0.000411987 0.000732422 0.000762939 0.00109863 0.00164795 0.0010376 0.00038147 0.000350952 0.000335693 0.000320435 0.000289917 0.000137329 0.000198364 1.52588e-05 0
+solution in 40 iterations
+"class sw::unum::posit<24,1>" 1 1 1 1 1 1 1 1 1 1 1.00001 1.00002 1.00002 1.00002 1.00002 1 1 0.999993 0.999993 1 0.99999 0.999987 0.999988 0.999995 0.999999 1 1.00001 1.00003 1.00003 1.00002 1.00003 33.0026 0.0011673 8.01086e-05 5.91278e-05 3.62396e-05 3.24249e-05 2.47955e-05 2.67029e-05 5.72205e-06
+solution in 34 iterations
+"class sw::unum::posit<28,1>" 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0.999999 0.999999 1 1 1 1 1 1 1 1 1 0.999999 1 1 0.999999 0.999999 1 33 9.94205e-05 5.48363e-06
+solution in 33 iterations
+"class sw::unum::posit<32,2>" 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 33 1.8999e-06
+solution in 33 iterations
+"class sw::unum::posit<64,3>" 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 33 3.85109e-16
+solution in 33 iterations
+"class sw::unum::posit<128,4>" 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 33 1.44445e-34
+solution in 33 iterations
+"class sw::unum::posit<256,5>" 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 33 4.02376e-73
+
+The posit with nbits = 28 is a functional replacement for IEEE single precision floats
+*/
+
+#if STRESS
+
 #endif // STRESS
 
 #endif // MANUAL

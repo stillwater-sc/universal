@@ -12,6 +12,7 @@
 #include <cmath>  // for std::sqrt
 // special number system definitions
 #include <universal/posit/posit_fwd.hpp>
+#include <universal/traits/posit_traits.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -266,11 +267,29 @@ vector<Scalar> operator/(const vector<Scalar>& v, const Scalar& normalizer) {
 
 template<typename Scalar> auto size(const vector<Scalar>& v) { return v.size(); }
 
+// this design does not work well for universal as we would need to create
+// enable_if() configurations for all possible type combinations
+
 // regular dot product for non-posits
-template<typename Scalar,
-         typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
-Scalar operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
-	std::cout << "dot product for " << typeid(Scalar).name() << std::endl;
+template<typename Scalar>
+typename std::enable_if<std::is_floating_point<Scalar>::value,Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+//	std::cout << "dot product for " << typeid(Scalar).name() << std::endl;
+	size_t N = size(a);
+	if (size(a) != size(b)) {
+		std::cerr << "vector sizes are different: " << N << " vs " << size(b) << '\n';
+		return Scalar{ 0 };
+	}
+	Scalar sum{ 0 };
+	for (size_t i = 0; i < N; ++i) {
+		sum += a(i) * b(i);
+	}
+	return sum;
+}
+
+// regular dot product for integers
+template<typename Scalar>
+typename std::enable_if<std::is_integral<Scalar>::value, Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+//	std::cout << "dot product for " << typeid(Scalar).name() << std::endl;
 	size_t N = size(a);
 	if (size(a) != size(b)) {
 		std::cerr << "vector sizes are different: " << N << " vs " << size(b) << '\n';
@@ -284,10 +303,9 @@ Scalar operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
 }
 
 // fused dot product for posits
-template<typename Scalar,
-	typename = typename sw::unum::enable_if_posit<Scalar> >
-Scalar operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
-	std::cout << "fused dot product for " << typeid(Scalar).name() << std::endl;
+template<typename Scalar>
+typename std::enable_if<sw::unum::is_posit<Scalar>,Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+//	std::cout << "fused dot product for " << typeid(Scalar).name() << std::endl;
 	size_t N = size(a);
 	if (size(a) != size(b)) {
 		std::cerr << "vector sizes are different: " << N << " vs " << size(b) << '\n';
