@@ -313,7 +313,8 @@ typename std::enable_if<sw::unum::is_posit<Scalar>,Scalar>::type operator*(const
 	}
 	constexpr size_t nbits = Scalar::nbits;
 	constexpr size_t es = Scalar::es;
-	sw::unum::quire<nbits, es> sum{ 0 };
+	constexpr size_t capacity = 20;
+	sw::unum::quire<nbits, es, capacity> sum{ 0 };
 	for (size_t i = 0; i < N; ++i) {
 		sum += sw::unum::quire_mul(a(i), b(i));
 	}
