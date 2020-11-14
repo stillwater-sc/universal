@@ -26,25 +26,30 @@
 #include <universal/blas/solvers/cg_dot_dot.hpp> // for native IEEE types
 #include <universal/blas/solvers/cg_dot_fdp.hpp>
 
+#define SOLUTION_FEEDBACK 0
+
 // CG residual trajectory experiment for tridiag(-1, 2, -1)
 template<typename Scalar, size_t MAX_ITERATIONS>
-size_t Experiment(size_t DoF) {
-	using Matrix = sw::unum::blas::matrix<Scalar>;
-	using Vector = sw::unum::blas::vector<Scalar>;
+size_t fdTest(size_t DoF) {
+	using namespace sw::unum::blas;
+	using Matrix = matrix<Scalar>;
+	using Vector = vector<Scalar>;
 
 	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
-	Matrix A = sw::unum::blas::tridiag<Scalar>(DoF);
+	Matrix A = tridiag<Scalar>(DoF);
 	Vector b(DoF);
 	Vector ones(DoF);
 	ones = Scalar(1);
 	b = A * ones;     // generate a known solution
-	Matrix M = sw::unum::blas::inv(A);
+	Matrix M = inv(diag(diag(A)));
 	Vector x(DoF);
 	Vector residuals;
-	size_t itr = sw::unum::blas::cg_dot_dot<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
-	//	std::cout << "solution is " << x << '\n';
-	//	std::cout << "final residual is " << residual << '\n';
-	//	std::cout << "validation\n" << A * x << " = " << b << '\n';
+	size_t itr = cg_dot_dot<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
+#if SOLUTION_FEEDBACK
+	std::cout << "solution is " << x << '\n';
+	std::cout << "final residual is " << residuals[size(residuals) - 1] << '\n';
+	std::cout << "validation\n" << A * x << " = " << b << '\n';
+#endif
 	std::cout << '\"' << typeid(Scalar).name() << "\" " << residuals << std::endl;
 
 	return itr;
@@ -52,24 +57,27 @@ size_t Experiment(size_t DoF) {
 
 // CG residual trajectory experiment for tridiag(-1, 2, -1)
 template<size_t nbits, size_t es, size_t MAX_ITERATIONS>
-size_t Experiment(size_t DoF) {
-	using Scalar = sw::unum::posit<nbits, es>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
-	using Vector = sw::unum::blas::vector<Scalar>;
+size_t fdTest(size_t DoF) {
+	using namespace sw::unum::blas;
+	using Scalar = posit<nbits, es>;
+	using Matrix = matrix<Scalar>;
+	using Vector = vector<Scalar>;
 
 	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
-	Matrix A = sw::unum::blas::tridiag<Scalar>(DoF);
+	Matrix A = tridiag<Scalar>(DoF);
 	Vector b(DoF);
 	Vector ones(DoF);
 	ones = Scalar(1);
 	b = A * ones;     // generate a known solution
-	Matrix M = sw::unum::blas::inv(A);
+	Matrix M = inv(diag(diag(A)));
 	Vector x(DoF);
 	Vector residuals;
-	size_t itr = sw::unum::blas::cg_dot_fdp<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
-	//	std::cout << "solution is " << x << '\n';
-	//	std::cout << "final residual is " << residual << '\n';
-	//	std::cout << "validation\n" << A * x << " = " << b << '\n';
+	size_t itr = cg_dot_fdp<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
+#if SOLUTION_FEEDBACK
+	std::cout << "solution is " << x << '\n';
+	std::cout << "final residual is " << residuals[size(residuals) - 1] << '\n';
+	std::cout << "validation\n" << A * x << " = " << b << '\n';
+#endif
 	std::cout << '\"' << typeid(Scalar).name() << "\" " << residuals << std::endl;
 
 	return itr;
@@ -97,8 +105,7 @@ try {
 
 	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
 	constexpr size_t DoF = 8;
-	Matrix A;
-	sw::unum::blas::tridiag(A, DoF);  // this does a resize of A
+	Matrix A = tridiag<Scalar>(DoF);  // this does a resize of A
 	// Matrix M = eye<Scalar>(DoF); // M = I, unpreconditioned
 	Matrix M = inv(diag(diag(A)));  // Jacobi preconditioner for positive-definite, diagonally dominant systems
 	Vector b(DoF);
@@ -133,14 +140,19 @@ try {
 	}
 
 #else
-	// with a preconditioner M = A^-1
-	Experiment<float,200>(64);
-	Experiment<double, 100>(64);
+	// with a preconditioner M = Jacobian(A)^-1
+	constexpr size_t MAX_ITERATIONS = 100;
+	fdTest<float, MAX_ITERATIONS>(64);
+	fdTest<double, MAX_ITERATIONS>(64);
+	fdTest<long double, MAX_ITERATIONS>(64);
+
+	fdTest<posit<16, 1>, MAX_ITERATIONS>(64);
+	fdTest<posit<32, 2>, MAX_ITERATIONS>(64);
+	fdTest<posit<64, 3>, MAX_ITERATIONS>(64);
+	fdTest<posit<128, 4>, MAX_ITERATIONS>(64);
+	fdTest<posit<256, 5>, MAX_ITERATIONS>(64);
+
 #if STRESS
-	Experiment<posit<32,2>, 200>(64);
-	Experiment<posit<64, 3>, 100>(64);
-	Experiment<posit<128, 4>, 100>(64);
-//	Experiment<posit<256, 5>, 100>(64);
 #endif // STRESS
 
 #endif // MANUAL

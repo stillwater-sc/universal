@@ -1,5 +1,5 @@
-// cg_mvdot_cmpdot.cpp: multi-precision, preconditioned Conjugate Gradient iterative solver
-// using matrix-vector dot product operator and compensation dot product operator
+// cg_mvfdp_cmpfdp.cpp: multi-precision, preconditioned Conjugate Gradient iterative solver using Fused Dot Products
+// using matrix-vector fused dot product operator, and compensation fused dot product operators
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 // Authors: Theodore Omtzigt
@@ -23,60 +23,28 @@
 #include <universal/posit/posit>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
-#include <universal/blas/generators/fvm64x64.hpp>
-#include <universal/blas/solvers/cg_dot_dot.hpp>
+#include <universal/blas/solvers/cg.hpp> // adaptive CG, regular dot for IEEE, fused-dot for posits
 
-#define SOLUTION_FEEDBACK 0
-
-// Finite Difference test: CG residual trajectory experiment for tridiag(-1, 2, -1)
+// CG residual trajectory experiment for tridiag(-1, 2, -1)
 template<typename Scalar, size_t MAX_ITERATIONS>
-size_t fdTest(size_t DoF = 64) {
-	using namespace sw::unum::blas;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
-	using Vector = sw::unum::blas::vector<Scalar>;
+size_t fdTest(size_t DoF) {
+	using namespace sw::unum;
+	using Matrix = blas::matrix<Scalar>;
+	using Vector = blas::vector<Scalar>;
 
 	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
-	Matrix A = sw::unum::blas::tridiag<Scalar>(DoF);
+	Matrix A = blas::tridiag<Scalar>(DoF);
 	Vector b(DoF);
 	Vector ones(DoF);
 	ones = Scalar(1);
 	b = A * ones;     // generate a known solution
-	Matrix M = sw::unum::blas::inv(diag(diag(A)));
+	Matrix M = blas::inv(blas::diag(blas::diag(A)));
 	Vector x(DoF);
 	Vector residuals;
-	size_t itr = sw::unum::blas::cg_dot_dot<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
-#if SOLUTION_FEEDBACK
-	std::cout << "solution is " << x << '\n';
-	std::cout << "final residual is " << residuals[size(residuals)-1] << '\n';
-	std::cout << "validation\n" << A * x << " = " << b << '\n';
-#endif
-	std::cout << '\"' << typeid(Scalar).name() << "\" " << residuals << std::endl;
-
-	return itr;
-}
-
-// Finite Volume test: CG residual trajectory experiment for a FVM test matrix
-template<typename Scalar, size_t MAX_ITERATIONS>
-size_t fvmTest() {
-	using Matrix = sw::unum::blas::matrix<Scalar>;
-	using Vector = sw::unum::blas::vector<Scalar>;
-
-	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
-	constexpr size_t DoF = 64;
-	Matrix A = sw::unum::blas::fvm64x64<Scalar>();
-	Vector b(DoF);
-	Vector ones(DoF);
-	ones = Scalar(1);
-	b = A * ones;     // generate a known solution
-	Matrix M = sw::unum::blas::inv(diag(diag(A)));
-	Vector x(DoF);
-	Vector residuals;
-	size_t itr = sw::unum::blas::cg_dot_dot<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
-#if SOLUTION_FEEDBACK
-	std::cout << "solution is " << x << '\n';
-	std::cout << "final residual is " << residuals[size(residuals) - 1] << '\n';
-	std::cout << "validation\n" << A * x << " = " << b << '\n';
-#endif
+	size_t itr = sw::unum::blas::cg<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
+	//	std::cout << "solution is " << x << '\n';
+	//	std::cout << "final residual is " << residual << '\n';
+	//	std::cout << "validation\n" << A * x << " = " << b << '\n';
 	std::cout << '\"' << typeid(Scalar).name() << "\" " << residuals << std::endl;
 
 	return itr;
@@ -98,12 +66,26 @@ try {
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
 	using Scalar = posit<nbits, es>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Matrix = matrix<Scalar>;
 	using Vector = sw::unum::blas::vector<Scalar>;
 
 	// Initialize 'A', preconditioner 'M', 'b' & intial guess 'x' * _
-	constexpr size_t DoF = 64;
+	constexpr size_t DoF = 8;
+	Matrix A;
+	tridiag(A, DoF);  // this does a resize of A
+	// Matrix M = eye<Scalar>(DoF); // M = I, unpreconditioned
+	Matrix M = inv(diag(diag(A)));  // Jacobi preconditioner for positive-definite, diagonally dominant systems
+	Vector b(DoF);
+	Vector x(DoF);
+	x = Scalar(1);
+	b = A * x;
 
+	if (DoF < 10) {
+		cout << "M^-1:\n" << M << endl;  // it is customary to talk about the preconditioner M while understanding that it really is the inverse M^-1
+		cout << "A:\n" << A << endl;
+		cout << "x:\n" << x << endl;
+		cout << "b:\n" << b << endl;
+	}
 	/*
 	* for second order elliptical PDEs, the resulting coefficient matrix exhibits
 	* a condition number k_2(A) = O(h^-2). Convergence rate of CG is sqrt(k_2)
@@ -111,13 +93,14 @@ try {
 	* The selected tridiagonal matrix has a discretization step given by DoF
 	* and thus we expect the converge in sqrt(128) (h = 1/DoF -> h^-1 is Dof)
 	*/
+	Vector residuals;
 	constexpr size_t MAX_ITERATIONS = 100;
-	size_t itr = fdTest<Scalar, MAX_ITERATIONS>(DoF);
-	if (itr == MAX_ITERATIONS) {
-		std::cerr << "Solution failed to converge\n";
-		++nrOfFailedTestCases;
-	}
-	itr = fvmTest<Scalar, MAX_ITERATIONS>();
+	x = Scalar(0); // reset the solution vector
+	size_t itr = cg<Matrix, Vector, MAX_ITERATIONS>(M, A, b, x, residuals);
+	std::cout << "solution is " << x << '\n';
+	std::cout << "final residual is " << residuals[size(residuals) - 1] << '\n';
+	std::cout << "validation\n" << A * x << " = " << b << '\n';
+	std::cout << typeid(Scalar).name() << " " << residuals << std::endl;
 	if (itr == MAX_ITERATIONS) {
 		std::cerr << "Solution failed to converge\n";
 		++nrOfFailedTestCases;
@@ -137,6 +120,7 @@ try {
 	fdTest<posit<256, 5>, MAX_ITERATIONS>(64);
 
 #if STRESS
+
 #endif // STRESS
 
 #endif // MANUAL
