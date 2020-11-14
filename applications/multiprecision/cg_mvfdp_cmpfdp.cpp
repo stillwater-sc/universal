@@ -59,7 +59,7 @@ size_t fdTest(size_t DoF) {
 template<size_t nbits, size_t es, size_t MAX_ITERATIONS>
 size_t fdTest(size_t DoF) {
 	using namespace sw::unum::blas;
-	using Scalar = posit<nbits, es>;
+	using Scalar = sw::unum::posit<nbits, es>;
 	using Matrix = matrix<Scalar>;
 	using Vector = vector<Scalar>;
 
