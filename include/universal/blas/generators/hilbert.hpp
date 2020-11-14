@@ -16,8 +16,8 @@ namespace sw { namespace unum { namespace blas {
 template<typename IntegerType>
 IntegerType HilbertScalingFactor(IntegerType N) {
 	vector<IntegerType> coef;
-	for (IntegerType i = 2; i <= N; ++i) coef.push_back(i);
-	for (IntegerType j = 2; j <= N; ++j) coef.push_back(N + j - IntegerType(1));
+	for (IntegerType i = 2; i <= IntegerType(N); ++i) coef.push_back(i);
+	for (IntegerType j = 2; j <= IntegerType(N); ++j) coef.push_back(N + j - IntegerType(1));
 	return sw::function::findlcm(coef);
 }
 
@@ -28,8 +28,8 @@ size_t GenerateHilbertMatrix(matrix<Scalar>& M, bool bScale = true) {
 	size_t N = num_rows(M);
 	size_t lcm = HilbertScalingFactor(N); // always calculate the Least Common Multiplier
 	Scalar scale = bScale ? Scalar(lcm) : Scalar(1);
-	for (int i = 1; i <= N; ++i) {
-		for (int j = 1; j <= N; ++j) {
+	for (int i = 1; i <= int(N); ++i) {
+		for (int j = 1; j <= int(N); ++j) {
 			M[i - 1][j - 1] = scale / Scalar(i + j - 1);
 		}
 	}
@@ -40,8 +40,8 @@ template<typename Scalar>
 void GenerateHilbertMatrixInverse(matrix<Scalar>& M, Scalar scale = Scalar(1.0)) {
 	assert(num_rows(M) == num_cols(M)); // needs to be square
 	size_t N = num_rows(M);
-	for (int i = 1; i <= N; ++i) {
-		for (int j = 1; j <= N; ++j) {
+	for (int i = 1; i <= int(N); ++i) {
+		for (int j = 1; j <= int(N); ++j) {
 			Scalar sign = ((i + j) % 2) ? Scalar(-1) : Scalar(1);
 			Scalar factor1 = Scalar(i + j - 1);
 			Scalar factor2 = Scalar(sw::function::binomial<uint64_t>(N + i - 1, N - j));

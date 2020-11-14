@@ -12,6 +12,7 @@
 #include <cmath>  // for std::sqrt
 // special number system definitions
 #include <universal/posit/posit_fwd.hpp>
+#include <universal/traits/posit_traits.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -67,7 +68,6 @@ public:
 	typedef typename std::vector<Scalar>::reverse_iterator reverse_iterator;
 	typedef typename std::vector<Scalar>::const_reverse_iterator const_reverse_iterator;
 
-
 	vector() : data(0) {}
 	vector(size_t N) : data(N) {}
 	vector(size_t N, const Scalar& val) : data(N, val) {}
@@ -77,6 +77,13 @@ public:
 
 	vector& operator=(const vector& v) = default;
 	vector& operator=(vector&& v) = default;
+	template<typename tgtScalar>
+	vector& operator=(const vector<tgtScalar>& v) {
+		for (size_t i = 0; i < size(); ++i) {
+			data[i] = v[i]; // conversion must be handled by number system
+		}
+		return *this;
+	}
 
 // operators
 	vector& operator=(const Scalar& val) {
@@ -96,7 +103,6 @@ public:
 	}
 
 	/// vector-wide operators
-	//
 	// vector-wide add
 	vector& operator+=(const Scalar& offset) {
 		for (auto& e : data) e += offset;
@@ -170,12 +176,10 @@ public:
 	value_type  tail(size_t index) const { return data[index]; }
 	value_type& tail(size_t index) { return data[index]; }
 	void push_back(const value_type& e) { data.push_back(e); }
-	void resize(size_t N) {
-		data.resize(N);
-	}
+	void resize(size_t N) {	data.resize(N); }
 
 // selectors
-	size_t size() const { return data.size(); }
+	inline size_t size() const { return data.size(); }
 
 	// Eigen operators I need to reverse engineer
 	vector& array() {
@@ -252,18 +256,76 @@ vector<Scalar> operator-(const vector<Scalar>& lhs, const vector<Scalar>& rhs) {
 	return difference -= rhs;
 }
 
+// scale a vector through operator* overload
 template<typename Scalar>
-vector<Scalar> operator*(double scalar, const vector<Scalar>& v) {
-	vector<Scalar> scaledVector(v);
-	return scaledVector *= scalar;
+vector<Scalar> operator*(const Scalar& alpha, const vector<Scalar>& x) {
+	vector<Scalar> scaled(x);
+	return scaled *= alpha;
 }
 
+// scale a vector through operator/ overload
 template<typename Scalar>
-vector<Scalar> operator/(const vector<Scalar>& v, double normalizer) {
-	vector<Scalar> normalizedVector(v);
-	return normalizedVector /= normalizer;
+vector<Scalar> operator/(const vector<Scalar>& v, const Scalar& normalizer) {
+	vector<Scalar> normalized(v);
+	return normalized /= normalizer;
 }
 
 template<typename Scalar> auto size(const vector<Scalar>& v) { return v.size(); }
+
+// this design does not work well for universal as we would need to create
+// enable_if() configurations for all possible type combinations
+
+// regular dot product for non-posits
+template<typename Scalar>
+typename std::enable_if<std::is_floating_point<Scalar>::value,Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+//	std::cout << "dot product for " << typeid(Scalar).name() << std::endl;
+	size_t N = size(a);
+	if (size(a) != size(b)) {
+		std::cerr << "vector sizes are different: " << N << " vs " << size(b) << '\n';
+		return Scalar{ 0 };
+	}
+	Scalar sum{ 0 };
+	for (size_t i = 0; i < N; ++i) {
+		sum += a(i) * b(i);
+	}
+	return sum;
+}
+
+// regular dot product for integers
+template<typename Scalar>
+typename std::enable_if<std::is_integral<Scalar>::value, Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+//	std::cout << "dot product for " << typeid(Scalar).name() << std::endl;
+	size_t N = size(a);
+	if (size(a) != size(b)) {
+		std::cerr << "vector sizes are different: " << N << " vs " << size(b) << '\n';
+		return Scalar{ 0 };
+	}
+	Scalar sum{ 0 };
+	for (size_t i = 0; i < N; ++i) {
+		sum += a(i) * b(i);
+	}
+	return sum;
+}
+
+// fused dot product for posits
+template<typename Scalar>
+typename std::enable_if<sw::unum::is_posit<Scalar>,Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+//	std::cout << "fused dot product for " << typeid(Scalar).name() << std::endl;
+	size_t N = size(a);
+	if (size(a) != size(b)) {
+		std::cerr << "vector sizes are different: " << N << " vs " << size(b) << '\n';
+		return Scalar{ 0 };
+	}
+	constexpr size_t nbits = Scalar::nbits;
+	constexpr size_t es = Scalar::es;
+	constexpr size_t capacity = 20;
+	sw::unum::quire<nbits, es, capacity> sum{ 0 };
+	for (size_t i = 0; i < N; ++i) {
+		sum += sw::unum::quire_mul(a(i), b(i));
+	}
+	Scalar p;
+	convert(sum.to_value(), p);
+	return p;
+}
 
 }}}  // namespace sw::unum::blas

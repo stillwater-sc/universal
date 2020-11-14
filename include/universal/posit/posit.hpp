@@ -2476,13 +2476,6 @@ inline bool operator>=(long double lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
-// TODO: Find an appropriate location for this!
-template <typename T>
-constexpr bool is_intrinsic_numerical= std::is_integral<T>::value || std::is_floating_point<T>::value;
-
-template <typename T, typename U= void>
-using enable_intrinsic_numerical= std::enable_if_t<is_intrinsic_numerical<T>, U>;
-
 // BINARY ADDITION
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, double rhs) {
@@ -2490,6 +2483,14 @@ inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, double rhs) {
 	sum += posit<nbits, es>(rhs);
 	return sum;
 }
+
+// TODO: need to find a place in traits
+// non-posit: native integer and floating point types
+template <typename T>
+constexpr bool is_intrinsic_numerical = std::is_integral<T>::value || std::is_floating_point<T>::value;
+
+template <typename T, typename U = void>
+using enable_intrinsic_numerical = std::enable_if_t<is_intrinsic_numerical<T>, U>;
 
 // More generic alternative to avoid ambiguities with intrinsic +
 template<size_t nbits, size_t es, typename Value, typename = enable_intrinsic_numerical<Value> >
@@ -2543,13 +2544,13 @@ inline posit<nbits, es> operator*(Value lhs, const posit<nbits, es>& rhs) {
 	return mul;
 }
     
-    
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator*(const posit<nbits, es>& lhs, double rhs) {
 	posit<nbits, es> mul(lhs);
 	mul *= posit<nbits, es>(rhs);
 	return mul;
 }
+
 // BINARY DIVISION
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator/(double lhs, const posit<nbits, es>& rhs) {

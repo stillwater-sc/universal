@@ -18,38 +18,8 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
 #include <universal/blas/blas.hpp>
-#include <universal/blas/generators.hpp>
-
-// Gauss-Seidel: Solution of x in Ax=b using Gauss-Seidel Method
-template<typename Matrix, typename Vector, size_t MAX_ITERATIONS = 100>
-size_t GaussSeidel(const Matrix& A, Vector& b, typename Matrix::value_type tolerance = typename Matrix::value_type(0.00001)) {
-	using Scalar = typename Matrix::value_type;
-	Scalar residual = Scalar(std::numeric_limits<Scalar>::max());
-	size_t m = num_rows(A);
-	size_t n = num_cols(A);
-	Vector x(m);
-	size_t itr = 0;
-	while (residual > tolerance && itr < MAX_ITERATIONS) {
-		Vector x_old = x;
-		for (size_t i = 1; i <= m; ++i) {
-			Scalar sigma = 0;
-			for (size_t j = 1; j <= i-1; ++j) {
-				sigma += A(i-1, j-1) * x(j-1);
-			}
-			for (size_t j = i + 1; j <= n; ++j) {
-				sigma += A(i-1, j-1) * x_old(j-1);
-			}
-			x(i-1) = (b(i-1) - sigma) / A(i-1, i-1);
-		}
-		residual = norm1(x_old - x);
-		std::cout << '[' << itr << "] " << x << " residual " << residual << std::endl;
-		++itr;
-	}
-
-	std::cout << "solution is " << x << '\n';
-	std::cout << A * x << " = " << b << std::endl;
-	return itr;
-}
+//#include <universal/blas/generators.hpp>
+#include <universal/blas/solvers/gauss_seidel.hpp>
 
 int main(int argc, char** argv)
 try {
@@ -78,9 +48,10 @@ try {
 
 	cout << A << endl;
 	cout << b << endl;
-	size_t iterations = GaussSeidel(A, b);
+	size_t iterations = GaussSeidel(A, b, x);
 	cout << "solution in " << iterations << " iterations" << endl;
-
+	cout << "solution is " << x << '\n';
+	cout << A * x << " = " << b << endl;
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {

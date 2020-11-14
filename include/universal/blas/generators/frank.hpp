@@ -14,7 +14,6 @@ namespace sw { namespace unum { namespace blas {
 template <typename Scalar>
 matrix<Scalar> frank(int N) {
 	using Matrix = matrix<Scalar>;
-	typedef typename Matrix::size_type     size_type;
 	// precondition tests
 	if (N <= 0) return matrix<Scalar>{};
 	if (N % 2 == 0) {
@@ -45,16 +44,16 @@ matrix<Scalar> frank(int N) {
  *                ....
  *  [ 0   0   0   .... 1  1 ]
 */
-	for (size_t i = 0; i < N; ++i) {
-		for (size_t j = 0; j < N; ++j) {
+	for (size_t i = 0; i < size_t(N); ++i) {
+		for (size_t j = 0; j < size_t(N); ++j) {
 			if (j + 2 <= i) {
 				A(i, j) = Scalar(0);
 			}
 			else if (j + 1 == i) {
-				A(i, j) = Scalar(N - i);
+				A(i, j) = Scalar(N - int(i));
 			}
 			else if (j >= i) {
-				A(i, j) = Scalar(N - j);
+				A(i, j) = Scalar(N - int(j));
 			}
 			else {
 				std::cerr << "unassigned condition " << i << " , " << j << std::endl;
