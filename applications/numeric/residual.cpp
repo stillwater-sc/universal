@@ -83,15 +83,16 @@ void Experiment1() {
 	}
 }
 
-template<size_t nbits, size_t es>
-void ResidualTest(const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A) {
+template<typename Matrix>
+void ResidualTest(const Matrix& A) {
+	/*
 	using namespace std;
 	using namespace sw::unum;
 	using namespace sw::unum::blas;
 
 	using Scalar = posit<nbits, es>;
 	using Vector = sw::unum::blas::vector<Scalar>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Matrix = matrix<Scalar>;
 
 	size_t M = num_rows(A);
 	size_t N = num_cols(A);
@@ -152,6 +153,7 @@ void ResidualTest(const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A)
 	cout << '\n';
 
 	cout << "1-norm x' - ones       :   " << norm1(x - c - ones) << '\n';
+	*/
 }
 
 void Experiment2() {

@@ -77,6 +77,13 @@ public:
 
 	vector& operator=(const vector& v) = default;
 	vector& operator=(vector&& v) = default;
+	template<typename tgtScalar>
+	vector& operator=(const vector<tgtScalar>& v) {
+		for (size_t i = 0; i < size(); ++i) {
+			data[i] = v[i]; // conversion must be handled by number system
+		}
+		return *this;
+	}
 
 // operators
 	vector& operator=(const Scalar& val) {
@@ -169,12 +176,10 @@ public:
 	value_type  tail(size_t index) const { return data[index]; }
 	value_type& tail(size_t index) { return data[index]; }
 	void push_back(const value_type& e) { data.push_back(e); }
-	void resize(size_t N) {
-		data.resize(N);
-	}
+	void resize(size_t N) {	data.resize(N); }
 
 // selectors
-	size_t size() const { return data.size(); }
+	inline size_t size() const { return data.size(); }
 
 	// Eigen operators I need to reverse engineer
 	vector& array() {
