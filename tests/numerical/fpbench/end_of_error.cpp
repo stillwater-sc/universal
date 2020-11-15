@@ -1,4 +1,4 @@
-// log_exp.cpp: numerical test programs for fpbench tests for functions constructed with log and exp 
+// end_of_error.cpp: numerical problems mentioned in John Gustafson's End Of Error
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -13,19 +13,19 @@
 #include <universal/posit/posit>
 #include <universal/valid/valid>
 
-// ln(e^x) -> should always yield x
+// test function is y = sqrt(x+1) - sqrt(x)
 template<typename Scalar>
-Scalar ln_of_exp_x(const Scalar& x) {
-	Scalar exponent(exp(x));
-	Scalar result = log(exponent);
-	return result;
-}
-
-// ln(1 + e^x)
-template<typename Scalar>
-Scalar ln_of_one_plus_exp_x(const Scalar& x) {
-	Scalar one_plus_exponent(Scalar(1) + exp(x));
-	Scalar result = log(one_plus_exponent);
+Scalar testFunction(const Scalar& _x) {
+	Scalar x = (_x < 0) ? -_x : _x;
+	Scalar sqrt_xsquared_plus_one(sqrt(x*x + Scalar(1)));
+	Scalar term_a = fabs(x - sqrt_xsquared_plus_one);
+	Scalar term_b = Scalar(1) / (x + sqrt_xsquared_plus_one);
+	Scalar q = term_a - term_b;
+	Scalar y = q * q;
+	Scalar result{1};
+	if ( y != Scalar(0) ) {
+		result = (exp(y) - Scalar(1)) / x;
+	}
 	return result;
 }
 
@@ -34,31 +34,35 @@ void SampleFunctionEvaluation(const std::vector<double>& samples) {
 	using namespace std;
 	using namespace sw::unum;
 
+	using Oracle = sw::unum::posit<256,5>;
+
 	size_t nrSamples = size(samples);
 	vector<Scalar> results(nrSamples);
+	vector<Oracle> oracle(nrSamples);
 	for (size_t i = 0; i < nrSamples; ++i) {
-		results[i] = ln_of_exp_x(Scalar(samples[i]));
+		results[i] = testFunction(Scalar(samples[i]));
+		oracle[i]  = testFunction(Oracle(samples[i]));
 	}
 
 	vector<Scalar> diffs(nrSamples);
 	for (size_t i = 0; i < nrSamples; ++i) {
-		diffs[i] = Scalar(samples[i]) - results[i];
+		diffs[i] = Scalar(oracle[i]) - results[i];
 	}
 
 	Scalar eps = numeric_limits<Scalar>::epsilon();
-	cout << setw(50) << typeid(Scalar).name() << ": epsilon() = " << eps << endl;
+	cout << setw(40) << typeid(Scalar).name() << ": epsilon() = " << eps << endl;
 	int i = 0;
-	for_each(begin(diffs), end(diffs), [&](Scalar n) {
-		if (n != 0) {
-			Scalar nrEps = n / eps;
-			cout << "FAIL: " << hex_format(n) << " " << n << " nr of epsilons of error: " << nrEps << endl;
-			cout << color_print(n) << endl;
-			cout << color_print(Scalar(samples[i])) << endl;
-			cout << color_print(results[i]) << endl;
+	for_each(begin(diffs), end(diffs), [&](Scalar diff) {
+		if (diff != 0) {
+			Scalar nrEps = diff / eps;
+			cout << "FAIL: " << hex_format(diff) << " " << diff << " nr of epsilons of error: " << nrEps << endl;
+			cout << color_print(diff) << endl;
+			cout << color_print(Scalar(oracle[i])) << " : " << oracle[i] << "  <--- oracle\n";
+			cout << color_print(results[i]) << " : " << results[i] << endl;
 			++i;
 		}
 		else {
-			// cout << "PASS: " << hex_format(n) << endl;
+			// cout << "PASS: " << hex_format(diff) << endl;
 		}
 	});
 }
@@ -72,7 +76,7 @@ try {
 	auto precision = cout.precision();
 	cout << setprecision(12);
 
-	constexpr size_t NR_SAMPLES = 16;
+	constexpr size_t NR_SAMPLES = 8;
 	// Use random_device to generate a seed for Mersenne twister engine.
 	random_device rd{};
 	// Use Mersenne twister engine to generate pseudo-random numbers.
@@ -81,14 +85,14 @@ try {
 	// **uniformly distributed** on the closed interval [lowerbound, upperbound].
 	// (Note that the range is [inclusive, inclusive].)
 	double lowerbound = 1;
-	double upperbound = 2;
+	double upperbound = 4;
 	uniform_real_distribution<double> dist{ lowerbound, upperbound };
 	// Pattern to generate pseudo-random number.
 	// double rnd_value = dist(engine);
 
 	vector<double> samples(NR_SAMPLES);
 	for_each(begin(samples), end(samples), [&](double& n) {	n = dist(engine); });
-
+	for_each(begin(samples), end(samples), [&](double n) { std::cout << n << std::endl; });
 	SampleFunctionEvaluation < float >(samples);
 	SampleFunctionEvaluation < double >(samples);
 	SampleFunctionEvaluation < posit< 8, 0> >(samples);
