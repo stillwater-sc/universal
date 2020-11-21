@@ -7,4 +7,6 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
+#include <universal/blas/linspace.hpp>
+#
 #endif
