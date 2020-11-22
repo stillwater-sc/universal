@@ -13,15 +13,19 @@
 constexpr double PI = 3.14159265358979323846;  // best practice for C++
 
 template<typename Scalar>
-void TestCosineVmath() {
+void TestTriangleVmath(size_t N = 12) {
 	using namespace std;
 	using namespace sw::unum::blas;
 	using std::pow;
 	using Vector = sw::unum::blas::vector<Scalar>;
-	Vector v = linspace<Scalar>(0, 2*PI, 12);
-	cout << "radians = " << v << endl;
-	auto cosines = cos(v);
-	cout << "cosines = " << cosines << endl;
+	Vector v = linspace<Scalar>(0, 2*PI, N);
+	cout << "radians  = " << v << endl;
+	auto cosines = sw::unum::blas::cos(v);
+	cout << "cosines  = " << cosines << endl;
+	auto sines = sin(v);
+	cout << "sines    = " << sines << endl;
+	auto tangents = tan(v);
+	cout << "tangents = " << tangents << endl;
 }
 
 int main(int argc, char** argv)
@@ -31,8 +35,8 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	TestCosineVmath<sw::unum::posit<32,2>>();
-	TestCosineVmath<float>();
+	TestTriangleVmath<sw::unum::posit<32,2>>();
+	TestTriangleVmath<float>();
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
