@@ -1,4 +1,4 @@
-// nodes.cpp: Does a posit configuration exist to produce chebyshev nodes
+// trigonometry.cpp: test suite for vectorized trigonometry math functions
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -10,7 +10,24 @@
 #include <universal/posit/posit>
 #include <universal/blas/blas>
 
-// skeleton environment to experiment with Chebyshev polynomials and approximations
+constexpr double PI = 3.14159265358979323846;  // best practice for C++
+
+template<typename Scalar>
+void TestTriangleVmath(size_t N = 12) {
+	using namespace std;
+	using namespace sw::unum::blas;
+	using std::pow;
+	using Vector = sw::unum::blas::vector<Scalar>;
+	Vector v = linspace<Scalar>(0, 2*PI, N);
+	cout << "radians  = " << v << endl;
+	auto cosines = sw::unum::blas::cos(v);
+	cout << "cosines  = " << cosines << endl;
+	auto sines = sin(v);
+	cout << "sines    = " << sines << endl;
+	auto tangents = tan(v);
+	cout << "tangents = " << tangents << endl;
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -18,13 +35,8 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "Chebyshev polynomial test skeleton" << endl;
-
-	using Scalar = float;
-	Scalar PI{ 3.14159265358979323846 };  // best practice for C++
-	auto k = arange<Scalar>(0, 12);
-	auto cosines = -cos(k * PI / 6);
-	cout << "cosines = " << cosines << endl;
+	TestTriangleVmath<sw::unum::posit<32,2>>();
+	TestTriangleVmath<float>();
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

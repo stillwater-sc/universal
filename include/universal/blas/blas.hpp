@@ -40,7 +40,6 @@ constexpr uint64_t SIZE_256G = 256 * SIZE_1G;
 constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 
 // L1 operators
-
 #include <universal/blas/blas_l1.hpp>
 
 // L2
