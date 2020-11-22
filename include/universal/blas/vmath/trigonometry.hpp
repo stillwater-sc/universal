@@ -1,5 +1,5 @@
 #pragma once
-// power.hpp: vectorized power function, takes a base and a vector of exponents, and returns vector of exponentiations
+// trigonometry.hpp: vectorized trigonometry functions
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -10,13 +10,13 @@
 namespace sw { namespace unum { namespace blas {
 
 // vector power function
-template<typename Scalar1, typename Scalar2>
-vector<Scalar1> power(const Scalar1& x, const vector<Scalar2>& y) {
-	using std::pow;
+template<typename Scalar>
+vector<Scalar> cos(const vector<Scalar> radians) {
+	using std::cos;
 	using namespace sw::unum;
-	vector<Scalar1> v(y.size());
-	for (size_t i = 0; i < y.size(); ++i) {
-		v[i] = pow(x, Scalar1(y[i]));
+	vector<Scalar> v(radians.size());
+	for (size_t i = 0; i < radians.size(); ++i) {
+		v[i] = cos(radians[i]);
 	}
 	return v;
 }

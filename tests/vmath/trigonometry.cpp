@@ -1,4 +1,4 @@
-// nodes.cpp: Does a posit configuration exist to produce chebyshev nodes
+// trigonometry.cpp: test suite for vectorized trigonometry math functions
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -10,8 +10,19 @@
 #include <universal/posit/posit>
 #include <universal/blas/blas>
 
-//constexpr double pi = 3.14159265358979323846;  // best practice for C++
+constexpr double PI = 3.14159265358979323846;  // best practice for C++
 
+template<typename Scalar>
+void TestCosineVmath() {
+	using namespace std;
+	using namespace sw::unum::blas;
+	using std::pow;
+	using Vector = sw::unum::blas::vector<Scalar>;
+	Vector v = linspace<Scalar>(0, 2*PI, 12);
+	cout << "radians = " << v << endl;
+	auto cosines = cos(v);
+	cout << "cosines = " << cosines << endl;
+}
 
 int main(int argc, char** argv)
 try {
@@ -20,7 +31,8 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "Chebyshev polynomial test skeleton" << endl;
+	TestCosineVmath<sw::unum::posit<32,2>>();
+	TestCosineVmath<float>();
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

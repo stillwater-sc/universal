@@ -1,3 +1,4 @@
+#pragma once
 // linspace.hpp: linspace/logspace/geomspace implementations
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
