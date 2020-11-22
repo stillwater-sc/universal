@@ -10,9 +10,7 @@
 #include <universal/posit/posit>
 #include <universal/blas/blas>
 
-//constexpr double pi = 3.14159265358979323846;  // best practice for C++
-
-
+// skeleton environment to experiment with Chebyshev polynomials and approximations
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -21,6 +19,12 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	cout << "Chebyshev polynomial test skeleton" << endl;
+
+	using Scalar = float;
+	Scalar PI{ 3.14159265358979323846 };  // best practice for C++
+	auto k = arange<Scalar>(0, 12);
+	auto cosines = -cos(k * PI / 6);
+	cout << "cosines = " << cosines << endl;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

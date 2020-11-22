@@ -19,7 +19,7 @@ sw::unum::blas::vector<Scalar> arange(int64_t start, int64_t stop, int64_t step 
 	sw::unum::blas::vector<Scalar> v;
 	int64_t sample = start;
 	while (sample <= stop) {
-		v.push_back(sample);
+		v.push_back(Scalar(sample));
 		sample += step;
 	}
 	return v;

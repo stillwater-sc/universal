@@ -263,11 +263,27 @@ vector<Scalar> operator*(const Scalar& alpha, const vector<Scalar>& x) {
 	return scaled *= alpha;
 }
 
+// scale a vector through operator* overload
+template<typename Scalar>
+vector<Scalar> operator*(const vector<Scalar>& x, const Scalar& alpha) {
+	vector<Scalar> scaled(x);
+	return scaled *= alpha;
+}
+
 // scale a vector through operator/ overload
 template<typename Scalar>
 vector<Scalar> operator/(const vector<Scalar>& v, const Scalar& normalizer) {
 	vector<Scalar> normalized(v);
 	return normalized /= normalizer;
+}
+
+// TODO: this next overload will create an ambiguous overload if Scalar is an int as it will be the same as the function above
+
+// scale a vector through operator/ overload
+template<typename Scalar>
+vector<Scalar> operator/(const vector<Scalar>& v, const int normalizer) {
+	vector<Scalar> normalized(v);
+	return normalized /= Scalar(normalizer);
 }
 
 template<typename Scalar> auto size(const vector<Scalar>& v) { return v.size(); }
