@@ -1,30 +1,17 @@
-// linspace.cpp: linspace/logspace/geomspace implementations
+// linspace.hpp: linspace/logspace/geomspace implementations
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <cmath>
-// Configure the posit library with arithmetic exceptions
-// enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-//#include <universal/posit/posit>
-#include <universal/blas/blas>
+#include <universal/blas/vector.hpp>
+#include <universal/blas/vmath/power.hpp>
 
 namespace sw { namespace unum { namespace blas {
 
-// vector power function
-template<typename Scalar1, typename Scalar2>
-vector<Scalar1> power(const Scalar1& x, const vector<Scalar2>& y) {
-	using std::pow;
-	using namespace sw::unum;
-	vector<Scalar1> v(y.size());
-	for (size_t i = 0; i < y.size(); ++i) {
-		v[i] = pow(x, Scalar1(y[i]));
-	}
-	return v;
-}
-
-
+/*
+ * arange generates an integer sequence between start and stop with stride
+ * Use template argument to project the sequence into a target data type
+ */
 template<typename Scalar>
 sw::unum::blas::vector<Scalar> arange(int64_t start, int64_t stop, int64_t step = 1) {
 	if (start > stop) return sw::unum::blas::vector<Scalar>(0);
@@ -38,12 +25,11 @@ sw::unum::blas::vector<Scalar> arange(int64_t start, int64_t stop, int64_t step 
 }
 
 /*
-	linspace: return evenly spaced samples over a specified interval.
-
-	Returns `steps` evenly spaced samples, calculated over the
-	interval [`start`, `stop`].
-
-	The endpoint of the interval can optionally be excluded.
+ * linspace: generate evenly spaced samples over a specified interval.
+ * 
+ * Returns `steps` evenly spaced samples, calculated over the interval [`start`, `stop`].
+ * 
+ * The endpoint of the interval can optionally be excluded.
 */
 template<typename Scalar>
 sw::unum::blas::vector<Scalar> linspace(const Scalar& start, const Scalar& stop, size_t steps, bool endpoint = true) {
@@ -63,12 +49,11 @@ sw::unum::blas::vector<Scalar> linspace(const Scalar& start, const Scalar& stop,
 
 
 /*
-	logspace: return evenly spaced samples over a log scale interval.
-
-	Returns `steps` evenly spaced samples, calculated over the
-	interval [`base ^ start`, `base ^ stop`].
-
-	The endpoint of the interval can optionally be excluded.
+ * logspace: return evenly spaced samples over a log scale interval.
+ * 
+ * Returns `steps` evenly spaced samples, calculated over the interval [`base ^ start`, `base ^ stop`].
+ * 
+ * The endpoint of the interval can optionally be excluded.
 */
 template<typename Scalar>
 sw::unum::blas::vector<Scalar> logspace(const Scalar& start, const Scalar& stop, size_t steps, bool endpoint = true, const Scalar& base = Scalar(10.0)) {
@@ -80,13 +65,23 @@ sw::unum::blas::vector<Scalar> logspace(const Scalar& start, const Scalar& stop,
 }
 
 /*
-	geomspace: return evenly spaced samples over a geometric progression.
+ * TODO: geomspace: return evenly spaced samples over a geometric progression.
+ * 
+ * Returns `steps` evenly spaced samples, calculated over the interval [`base ^ start`, `base ^ stop`].
+ * 
+ * The endpoint of the interval can optionally be excluded.
+*/
+template<typename Scalar>
+sw::unum::blas::vector<Scalar> geomspace(const Scalar& start, const Scalar& stop, size_t steps, bool endpoint = true, const Scalar& base = Scalar(10.0)) {
+	using std::pow;
+	if (steps == 0) return sw::unum::blas::vector<Scalar>(0);
+	if (steps == 1) return sw::unum::blas::vector<Scalar>(1) = pow(base, start);
+	auto samples = logspace(start, stop, steps, endpoint);
+	return samples;
+}
 
-	Returns `steps` evenly spaced samples, calculated over the
-	interval [`base ^ start`, `base ^ stop`].
-
-	The endpoint of the interval can optionally be excluded.
-		Examples
+/*
+geomspace examples
 --------
 >>> np.geomspace(1, 1000, num=4)
 array([    1.,    10.,   100.,  1000.])
@@ -117,13 +112,5 @@ array([-1.00000000e+00+1.22464680e-16j, -7.07106781e-01+7.07106781e-01j,
 6.12323400e-17+1.00000000e+00j,  7.07106781e-01+7.07106781e-01j,
 1.00000000e+00+0.00000000e+00j])
 */
-template<typename Scalar>
-sw::unum::blas::vector<Scalar> geomspace(const Scalar& start, const Scalar& stop, size_t steps, bool endpoint = true, const Scalar& base = Scalar(10.0)) {
-	using std::pow;
-	if (steps == 0) return sw::unum::blas::vector<Scalar>(0);
-	if (steps == 1) return sw::unum::blas::vector<Scalar>(1) = pow(base, start);
-	auto samples = logspace(start, stop, steps, endpoint);
-	return samples;
-}
 
 } } }  // namespace sw::unum::blas

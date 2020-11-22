@@ -7,22 +7,17 @@
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-//#include <universal/posit/posit>
+#include <universal/posit/posit>
 #include <universal/blas/blas>
 
 //constexpr double pi = 3.14159265358979323846;  // best practice for C++
 
-int main(int argc, char** argv)
-try {
+template<typename Scalar>
+void TestRangeGeneration() {
 	using namespace std;
 	using namespace sw::unum::blas;
-
-	int nrOfFailedTestCases = 0;
-
-//	using Scalar = sw::unum::posit<32,2>;
-	using Scalar = float;
+	using std::pow;
 	using Vector = sw::unum::blas::vector<Scalar>;
-
 	Vector v = linspace<Scalar>(0, 10, 5);
 	cout << "linspace = " << v << endl;
 	v = linspace<Scalar>(0, 10, 5, false);
@@ -40,6 +35,17 @@ try {
 	cout << "geomspace = " << v << endl;
 	v = geomspace<Scalar>(0, 10, 5, false);
 	cout << "geomspace = " << v << endl;
+}
+
+int main(int argc, char** argv)
+try {
+	using namespace std;
+	using namespace sw::unum::blas;
+
+	int nrOfFailedTestCases = 0;
+
+    TestRangeGeneration<sw::unum::posit<32,2>>();
+	TestRangeGeneration<float>();
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
