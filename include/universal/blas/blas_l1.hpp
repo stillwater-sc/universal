@@ -103,10 +103,10 @@ void rotg(T& a, T& b, T& c, T&s) {
 
 // scale a vector
 template<typename Scalar, typename Vector>
-void scale(size_t n, Scalar a, Vector& x, size_t incx) {
+void scale(size_t n, Scalar alpha, Vector& x, size_t incx) {
 	size_t cnt, ix;
 	for (cnt = 0, ix = 0; cnt < n && ix < size(x); ix += incx) {
-		x[ix] *= a;
+		x[ix] *= alpha;
 	}
 }
 

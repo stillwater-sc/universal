@@ -19,8 +19,8 @@ namespace sw { namespace unum {
 #if POSIT_FAST_POSIT_64_3
 #ifdef _MSC_VER
 #pragma message("Fast specialization of posit<64,3>")
-#else
-	#warning("Fast specialization of posit<64,3>")
+//#else
+//#warning("Fast specialization of posit<64,3>")
 #endif
 
 // fast specialized posit<64,3>

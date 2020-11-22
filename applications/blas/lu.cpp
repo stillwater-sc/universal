@@ -108,7 +108,6 @@ void GaussianEliminationTest() {
 template<typename Scalar>
 void LUTest() {
 	using namespace std;
-	using Vector = sw::unum::blas::vector<Scalar>;
 	using Matrix = sw::unum::blas::matrix<Scalar>;
 
 	Matrix A = {
@@ -224,10 +223,6 @@ try {
 
 	// We want to solve the system Ax=b
 	// GaussianEliminationTest<32, 2>();
-
-	using Scalar = float;
-	using Vector = sw::unum::blas::vector<Scalar>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
 
 	if (argc == 1) cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;

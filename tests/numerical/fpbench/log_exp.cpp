@@ -30,41 +30,32 @@ Scalar ln_of_one_plus_exp_x(const Scalar& x) {
 }
 
 template<typename Scalar>
-void SampleFunctionEvaluation(size_t nrSamples) {
+void SampleFunctionEvaluation(const std::vector<double>& samples) {
 	using namespace std;
 	using namespace sw::unum;
 
-	// Use random_device to generate a seed for Mersenne twister engine.
-	random_device rd{};
-	// Use Mersenne twister engine to generate pseudo-random numbers.
-	mt19937 engine{ rd() };
-	// "Filter" MT engine's output to generate pseudo-random double values,
-	// **uniformly distributed** on the closed interval [lowerbound, upperbound].
-	// (Note that the range is [inclusive, inclusive].)
-	double lowerbound = -5;
-	double upperbound = 5;
-	uniform_real_distribution<double> dist{ lowerbound, upperbound };
-	// Pattern to generate pseudo-random number.
-	// double rnd_value = dist(engine);
-
-	vector<Scalar> samples(nrSamples);
-	for_each(begin(samples), end(samples), [&](Scalar &n) {	n = Scalar(dist(engine)); });
-
+	size_t nrSamples = size(samples);
 	vector<Scalar> results(nrSamples);
 	for (size_t i = 0; i < nrSamples; ++i) {
-		results[i] = ln_of_exp_x(samples[i]);
+		results[i] = ln_of_exp_x(Scalar(samples[i]));
 	}
 
 	vector<Scalar> diffs(nrSamples);
 	for (size_t i = 0; i < nrSamples; ++i) {
-		diffs[i] = samples[i] - results[i];
+		diffs[i] = Scalar(samples[i]) - results[i];
 	}
 
 	Scalar eps = numeric_limits<Scalar>::epsilon();
-	for_each(begin(diffs), end(diffs), [=](Scalar n) {
+	cout << setw(50) << typeid(Scalar).name() << ": epsilon() = " << eps << endl;
+	int i = 0;
+	for_each(begin(diffs), end(diffs), [&](Scalar n) {
 		if (n != 0) {
 			Scalar nrEps = n / eps;
 			cout << "FAIL: " << hex_format(n) << " " << n << " nr of epsilons of error: " << nrEps << endl;
+			cout << color_print(n) << endl;
+			cout << color_print(Scalar(samples[i])) << endl;
+			cout << color_print(results[i]) << endl;
+			++i;
 		}
 		else {
 			// cout << "PASS: " << hex_format(n) << endl;
@@ -81,12 +72,31 @@ try {
 	auto precision = cout.precision();
 	cout << setprecision(12);
 
-	const size_t NR_SAMPLES = 64;
-	SampleFunctionEvaluation < float >(NR_SAMPLES);
-	SampleFunctionEvaluation < posit< 8, 0> >(NR_SAMPLES);
-	SampleFunctionEvaluation < posit<16, 1> >(NR_SAMPLES);
-	SampleFunctionEvaluation < posit<32, 2> >(NR_SAMPLES);
-	SampleFunctionEvaluation < posit<64, 3> >(NR_SAMPLES);
+	constexpr size_t NR_SAMPLES = 16;
+	// Use random_device to generate a seed for Mersenne twister engine.
+	random_device rd{};
+	// Use Mersenne twister engine to generate pseudo-random numbers.
+	mt19937 engine{ rd() };
+	// "Filter" MT engine's output to generate pseudo-random double values,
+	// **uniformly distributed** on the closed interval [lowerbound, upperbound].
+	// (Note that the range is [inclusive, inclusive].)
+	double lowerbound = 1;
+	double upperbound = 2;
+	uniform_real_distribution<double> dist{ lowerbound, upperbound };
+	// Pattern to generate pseudo-random number.
+	// double rnd_value = dist(engine);
+
+	vector<double> samples(NR_SAMPLES);
+	for_each(begin(samples), end(samples), [&](double& n) {	n = dist(engine); });
+
+	SampleFunctionEvaluation < float >(samples);
+	SampleFunctionEvaluation < double >(samples);
+	SampleFunctionEvaluation < posit< 8, 0> >(samples);
+	SampleFunctionEvaluation < posit<16, 1> >(samples);
+	SampleFunctionEvaluation < posit<32, 2> >(samples);
+	SampleFunctionEvaluation < posit<64, 3> >(samples);
+	SampleFunctionEvaluation < posit<128, 4> >(samples);
+	SampleFunctionEvaluation < posit<256, 5> >(samples);
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);

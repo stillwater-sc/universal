@@ -1,5 +1,5 @@
 #pragma once
-// lu.hpp: super-simple dense matrix implementation
+// lu.hpp: dense matrix LU decomposition and backsubstitution to solve systems of equations
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -316,7 +316,6 @@ int ludcmp(matrix< posit<nbits, es> >& A, vector<size_t>& indx) {
 		for (size_t i = 0; i < j; ++i) {
 			quire<nbits, es, capacity> q(A(i,j));
 			for (size_t k = 0; k < i; ++k) q -= quire_mul(A(i, k), A(k, j));
-			posit<nbits, es> sum;
 			convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 			A(i, j) = sum;
 		}
@@ -324,7 +323,6 @@ int ludcmp(matrix< posit<nbits, es> >& A, vector<size_t>& indx) {
 		for (size_t i = j; i < N; ++i) {
 			quire<nbits, es, capacity> q(A(i, j));
 			for (size_t k = 0; k < j; ++k) q -= quire_mul(A(i, k), A(k, j));
-			posit<nbits, es> sum;
 			convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 			A(i, j) = sum;
 			Scalar dum = implicitScale[i] * fabs(sum);
@@ -432,7 +430,6 @@ vector< sw::unum::posit<nbits, es> > lubksb(const matrix< sw::unum::posit<nbits,
 		for (size_t j = 0; j < i; ++j) {
 			q -= quire_mul(A(i, j), x(j));
 		}
-		posit<nbits, es> sum;
 		convert(q.to_value(), sum);
 		x(i) = sum;
 	}
@@ -442,7 +439,6 @@ vector< sw::unum::posit<nbits, es> > lubksb(const matrix< sw::unum::posit<nbits,
 		for (size_t j = i; j < N; ++j) {
 			q -= quire_mul(A(i - 1, j), x(j));
 		}
-		posit<nbits, es> sum;
 		convert(q.to_value(), sum);
 		x(i - 1) = sum / A(i - 1, i - 1);
 	}
@@ -558,7 +554,7 @@ vector<sw::unum::posit<nbits, es> > solve(const matrix<sw::unum::posit<nbits, es
 		return 1;
 	}
 	using Scalar = sw::unum::posit<nbits, es>;
-	cerr << typeid(Scalar).name() << " specialization of LU decomposition solver with fused-dot-product operators" << endl;
+	//cerr << typeid(Scalar).name() << " specialization of LU decomposition solver with fused-dot-product operators" << endl;
 	matrix<Scalar> A(_A);
 	// implicit pivoting pre-calculation
 	vector<Scalar> implicitScale(N);
@@ -582,7 +578,6 @@ vector<sw::unum::posit<nbits, es> > solve(const matrix<sw::unum::posit<nbits, es
 		for (size_t i = 0; i < j; ++i) {
 			quire<nbits, es, capacity> q(A(i, j));
 			for (size_t k = 0; k < i; ++k) q -= quire_mul(A(i, k), A(k, j));
-			posit<nbits, es> sum;
 			convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 			A(i, j) = sum;
 		}
@@ -590,7 +585,6 @@ vector<sw::unum::posit<nbits, es> > solve(const matrix<sw::unum::posit<nbits, es
 		for (size_t i = j; i < N; ++i) {
 			quire<nbits, es, capacity> q(A(i, j));
 			for (size_t k = 0; k < j; ++k) q -= quire_mul(A(i, k), A(k, j));
-			posit<nbits, es> sum;
 			convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 			A(i, j) = sum;
 			Scalar dum = implicitScale[i] * fabs(sum);
@@ -627,16 +621,14 @@ vector<sw::unum::posit<nbits, es> > solve(const matrix<sw::unum::posit<nbits, es
 		quire<nbits, es, capacity> q(x(ip));
 		x(ip) = x(i);
 		for (size_t j = 0; j < i; ++j) q -= quire_mul(A(i, j), x(j));
-		posit<nbits, es> sum;
 		convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 		x(i) = sum;
 	}
 	//	cout << "y\n" << x << endl;
-		// backsubstitution
+	// backsubstitution
 	for (size_t i = N; i >= 1; --i) {
 		quire<nbits, es, capacity> q(x(i - 1));
 		for (size_t j = i; j < N; ++j) q -= quire_mul(A(i - 1, j), x(j));
-		posit<nbits, es> sum;
 		convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 		x(i - 1) = sum / A(i - 1, i - 1);
 	}

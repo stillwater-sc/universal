@@ -70,7 +70,7 @@ option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"    
 option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
 option(BUILD_EDUCATION                   "Set to ON to build educational examples"             ON)
 option(BUILD_APPLICATIONS                "Set to ON to build epplication examples"             ON)
-option(BUILD_NUMERICAL                   "Set to ON to build numerical test programs"          OFF)
+option(BUILD_NUMERICAL_TESTS             "Set to ON to build numerical test programs"          OFF)
 option(BUILD_FUNCTIONS                   "Set to ON to build special functions programs"       OFF)
 
 # C API library and test programs
@@ -89,11 +89,14 @@ option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 tests" 
 option(BUILD_POSITS                      "Set to ON to build UNUM Type 3 posit tests"          OFF)
 option(BUILD_VALIDS                      "Set to ON to build UNUM Type 3 valid tests"          OFF)
 option(BUILD_REALS                       "Set to ON to build real tests"                       OFF)
+# Basic Linear Algebra 
+option(BUILD_BLAS                        "Set to ON to build the BLAS tests"                   OFF)
 # conversion test suites
 option(BUILD_CONVERSION_TESTS            "Set to ON to build conversion test suites"           OFF)
 # performance benchmarking
 option(BUILD_PERFORMANCE_TESTS           "Set to ON to build performance benchmarks"           OFF)
 option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"         OFF)
+# documentation
 option(BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
 
 option(UNIVERSAL_USE_FOLDERS "Enable solution folders in Visual Studio, disable for Express"   ON)
@@ -435,7 +438,7 @@ if(BUILD_CI_CHECK)
 	set(BUILD_EDUCATION ON)
 	set(BUILD_APPLICATIONS ON)
 	set(BUILD_CMD_LINE_TOOLS ON)
-	set(BUILD_NUMERICAL ON)
+	set(BUILD_NUMERICAL_TESTS ON)
 	set(BUILD_FUNCTIONS ON)
 	set(BUILD_PLAYGROUND ON)
 	# build the different test/verification suites for each number system
@@ -451,6 +454,9 @@ if(BUILD_CI_CHECK)
 	set(BUILD_POSITS ON)
 	set(BUILD_VALIDS ON)
 	set(BUILD_AREAL ON)
+	# build the BLAS test/verification suites
+	set(BUILD_BLAS ON)
+	set(BUILD_VMATH ON)
 	# build the conversion test suites
 	set(BUILD_CONVERSION_TESTS ON)
 	# build the performance suites
@@ -516,6 +522,12 @@ if(BUILD_VALIDS)
 add_subdirectory("tests/valid")
 endif(BUILD_VALIDS)
 
+# Basic Linear Algebra library
+if(BUILD_BLAS)
+add_subdirectory("tests/blas")
+add_subdirectory("tests/vmath")
+endif(BUILD_BLAS)
+
 # conversion tests suites
 if(BUILD_CONVERSION_TESTS)
 add_subdirectory("tests/conversions")
@@ -554,12 +566,13 @@ add_subdirectory("applications/engineering")
 add_subdirectory("applications/science")
 add_subdirectory("applications/cryptography")
 add_subdirectory("applications/numeric")
+add_subdirectory("applications/multiprecision")
 endif(BUILD_APPLICATIONS)
 
-if(BUILD_NUMERICAL)
+if(BUILD_NUMERICAL_TESTS)
 add_subdirectory("tests/numerical/properties")
 add_subdirectory("tests/numerical/fpbench")
-endif(BUILD_NUMERICAL)
+endif(BUILD_NUMERICAL_TESTS)
 
 if(BUILD_FUNCTIONS)
 add_subdirectory("tests/functions")

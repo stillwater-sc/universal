@@ -19,39 +19,15 @@
 #include <universal/posit/posit>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
+#include <universal/blas/solvers/sor.hpp>
 
-// sor: Solution of x in Ax=b using Successive Over-Relaxation
-template<typename Matrix, typename Vector, size_t MAX_ITERATIONS = 100>
-size_t sor(const Matrix& A, Vector& b, typename Matrix::value_type w, typename Matrix::value_type tolerance = typename Matrix::value_type(0.00001)) {
-	using Scalar = typename Matrix::value_type;
-	Scalar residual = Scalar(std::numeric_limits<Scalar>::max());
-	size_t m = num_rows(A);
-	size_t n = num_cols(A);
-	Vector x(size(b));
-	size_t itr = 0;
-	while (residual > tolerance && itr < MAX_ITERATIONS) {
-		Vector x_old = x;
-		// Gauss-Seidel step
-		for (size_t i = 1; i <= m; ++i) {
-			Scalar sigma = 0;
-			for (size_t j = 1; j <= i - 1; ++j) {
-				sigma += A(i - 1, j - 1) * x(j - 1);
-			}
-			for (size_t j = i + 1; j <= n; ++j) {
-				sigma += A(i - 1, j - 1) * x_old(j - 1);
-			}
-			x(i - 1) = (1 - w) * x_old(i - 1) + w * (b(i - 1) - sigma) / A(i - 1, i - 1);
-		}
-		residual = norm1(x_old - x);
-		// std::cout << '[' << itr << "] " << x << " residual " << residual << std::endl;
-		++itr;
-	}
-	std::cout << "over-relaxation factor w is " << w << '\n';
-	std::cout << "solution in " << itr << " iterations\n";
-	std::cout << "solution is " << x << '\n';
-	std::cout << "final residual is " << residual << '\n';
-	std::cout << "validation\n" << A * x << " = " << b << std::endl;
-	return itr;
+template<typename Matrix, typename Vector>
+void report(const Matrix& A, const Vector& b, const Vector& x, size_t itr, typename Vector::value_type& w) {
+	using namespace std;
+	cout << "solution in " << itr << " iterations\n";
+	cout << "solution is " << x << '\n';
+
+	cout << "validation\n" << A * x << " = " << b << endl;
 }
 
 int main(int argc, char** argv)
@@ -78,17 +54,25 @@ try {
 		{ 4,  3, -5,  7} };
 	Vector b = { -1, 2, 3, 0.5 };
 	Vector x = {  0, 0, 0, 0 };
-	Scalar w = 1.25;
+	Scalar w = 1.5f;
+	size_t itr = 0;
 
 	cout << A << endl;
 	cout << b << endl;
-	cout << w << endl;
-	size_t itr;
-	itr = sor(A, b, 1.5f);
-	itr = sor(A, b, 1.25f);
-	itr = sor(A, b, 1.125f);
-	itr = sor(A, b, 1.0625f);
 
+	itr = sor(A, b, x, w); 
+	report(A, b, x, itr, w);
+	w = 1.25f;
+	itr = sor(A, b, x, w); 
+	report(A, b, x, itr, w);
+
+	w = 1.125f;
+	itr = sor(A, b, x, w); 
+	report(A, b, x, itr, w);
+
+	w = 1.0625f;
+	itr = sor(A, b, x, w); 
+	report(A, b, x, itr, w);
 
 	//  in matrix form
 	tridiag(A, 5);
