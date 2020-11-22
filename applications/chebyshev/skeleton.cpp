@@ -8,6 +8,7 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
+#include <universal/fixpnt/fixpnt>
 #include <universal/blas/blas>
 
 // skeleton environment to experiment with Chebyshev polynomials and approximations
@@ -20,10 +21,13 @@ try {
 
 	cout << "Chebyshev polynomial test skeleton" << endl;
 
-	using Scalar = float;
+//	using Scalar = sw::unum::fixpnt<32,16, Modulo, uint32_t>;
+	using Scalar = sw::unum::posit<32, 2>;
 	Scalar PI{ 3.14159265358979323846 };  // best practice for C++
-	auto k = arange<Scalar>(0, 12);
-	auto cosines = -cos(k * PI / 6);
+	constexpr int N = 12;
+	auto k = arange<Scalar>(0, N);
+	cout << "k       = " << k << endl;
+	auto cosines = -cos(k * PI / N);
 	cout << "cosines = " << cosines << endl;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

@@ -11,7 +11,7 @@ namespace sw { namespace unum { namespace blas {
 
 // vector sine function
 template<typename Scalar>
-vector<Scalar> sin(const vector<Scalar> radians) {
+vector<Scalar> sin(const vector<Scalar>& radians) {
 	using std::sin;
 	using namespace sw::unum;
 	vector<Scalar> v(radians.size());
@@ -23,7 +23,7 @@ vector<Scalar> sin(const vector<Scalar> radians) {
 
 // vector cosine function
 template<typename Scalar>
-vector<Scalar> cos(const vector<Scalar> radians) {
+vector<Scalar> cos(const vector<Scalar>& radians) {
 	using std::cos;
 	using namespace sw::unum;
 	vector<Scalar> v(radians.size());
@@ -34,7 +34,7 @@ vector<Scalar> cos(const vector<Scalar> radians) {
 }
 // vector tangent function
 template<typename Scalar>
-vector<Scalar> tan(const vector<Scalar> radians) {
+vector<Scalar> tan(const vector<Scalar>& radians) {
 	using std::tan;
 	using namespace sw::unum;
 	vector<Scalar> v(radians.size());
