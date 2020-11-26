@@ -11,30 +11,30 @@ In _valid_ mode, a unum represents a range of real numbers and can be used to ri
 much like interval arithmetic does.
 
 The positive regime for a posit shows a very specific structure, as can be seen in the image blow:
-![regime structure](background/img/positive_regimes.png)
+![regime structure](img/positive_regimes.png)
 
 Posit configurations have a very specific relationship to one another. When expanding a posit, the new value falls 'between' the old values of the smaller posit. The new value is the arithmetic mean of the two numbers if the expanding bit is a fraction bit, and it is the geometric mean of the two numbers if the expanding bit is a regime or exponent bit. Here is the starting progression from _posit<2,0>_ to _posit<7,1>_:
 
 The _seed_ posit:
 
-![seed posit](background/img/posit_2_0.png)
+![seed posit](img/posit_2_0.png)
 
 _posit<3,0>_:
 
-![posit<3,0>](background/img/posit_3_0.png)
+![posit<3,0>](img/posit_3_0.png)
 
 _posit<4,1>_:
 
-![posit<4,1>](background/img/posit_4_1.png)
+![posit<4,1>](img/posit_4_1.png)
 
 _posit<5,1>_:
-![posit<5,1>](background/img/posit_5_1.png)
+![posit<5,1>](img/posit_5_1.png)
 
 _posit<6,1>_:
-![posit<6,1>](background/img/posit_6_1.png)
+![posit<6,1>](img/posit_6_1.png)
 
 _posit<7,1>_:
-![posit<7,1>](background/img/posit_7_1.png)
+![posit<7,1>](img/posit_7_1.png)
 
 The program ".../tests/posit/posit_tables" will generate the posit encodings for reference. 
 These tables are a great aid in understanding posit arithmetic and rounding.

@@ -396,7 +396,7 @@ For Windows and Visual Studio, there are `CMakePredefinedTargets` that accomplis
     - RUN_TESTS will run all tests
 ```
 
-![visual-studio-project](background/img/visual-studio-project.png)
+![visual-studio-project](docs/img/visual-studio-project.png)
 
 # Installation and usage
 
@@ -546,7 +546,7 @@ The field values are followed by a quadrant descriptor and a value representatio
 
 
 The positive regime for a posit shows a very specific structure, as can be seen in the image blow:
-![regime structure](background/img/positive_regimes.png)
+![regime structure](docs/img/positive_regimes.png)
 
 ## Motivation
 
