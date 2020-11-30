@@ -17,6 +17,7 @@ cmake-build-debug
 
 # VSCode IDE config caches
 .vscode
+.DS_store
 
 # KDE IDE config caches
 .kdev4
