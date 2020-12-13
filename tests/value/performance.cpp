@@ -3,10 +3,9 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include "universal/bitblock/bitblock.hpp"
-#include "universal/value/value.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
+#include <universal/bitblock/bitblock.hpp>
+#include <universal/value/value.hpp>
+#include <universal/performance/number_system.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -24,9 +23,15 @@ try {
 	cout << (bReportIndividualTestCases ? " " : "not ") << "reporting individual testcases" << endl;
 
 #if MANUAL_TESTING
-//	OperatorPerformance perfReport;
-//	GeneratePerformanceReport<fbits>(perfReport);
-//	ReportPerformance<nbits, es>(cout, "posit<8,0>", perfReport);
+	{
+		constexpr size_t fbits = 22;
+		value<fbits> number{ 1 };
+//		OperatorPerformance perfReport;
+//		GeneratePerformanceReport(number, perfReport);
+//		auto report = ReportPerformance(number, perfReport);
+//		cout << report << endl;
+	}
+
 
 #else
 

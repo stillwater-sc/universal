@@ -25,11 +25,11 @@ try {
 #else
 	cout << "Reference posit<4,0> configuration performance tests" << endl;
 #endif
-
+	posit<nbits, es> number;
 	OperatorPerformance perfReport;
-	GeneratePerformanceReport<nbits, es>(perfReport);
-	ReportPerformance<nbits, es>(cout, "posit<4,0>", perfReport);
-
+	GeneratePerformanceReport(number, perfReport);
+	cout << ReportPerformance(number, perfReport);
+	cout << endl;
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
