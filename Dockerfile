@@ -8,7 +8,7 @@ FROM gcc:7 as builder
 LABEL Theodore Omtzigt
 # create a build environment
 RUN apt-get update && apt-get install -y --no-install-recommends -V \
-    apt-utils=1.8.2.1 \
+    apt-utils=1.8.2.2 \
     build-essential \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
