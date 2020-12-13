@@ -110,6 +110,7 @@ try {
 		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
 		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
 
+#ifdef LATER
 		{
 			using Scalar = posit<8, 0>;
 			vector<Scalar> x = { a1, a2, a3, a4 };
@@ -131,6 +132,7 @@ try {
 
 			reportOnCatastrophicCancellation("posit< 8,3> fused dot(x,y)  : ", fdp(x, y), 2);
 		}
+#endif
 		{
 			using Scalar = posit<16, 1>;
 			vector<Scalar> x = { a1, a2, a3, a4 };

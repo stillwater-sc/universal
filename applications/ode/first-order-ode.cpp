@@ -1,4 +1,4 @@
-// rungekutta.cpp: program to solve odes with classic Runge-Kutta method
+// first-order-ode.cpp: program to compare different numerical solvers
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -12,22 +12,62 @@
 
 /*
 
-Mathematical 	C++ Symbol	Decimal Representation
-Expression
-pi              M_PI        3.14159265358979323846
-pi/2			M_PI_2		1.57079632679489661923
-pi/4			M_PI_4		0.785398163397448309616
-1/pi			M_1_PI		0.318309886183790671538
-2/pi			M_2_PI		0.636619772367581343076
-2/sqrt(pi)		M_2_SQRTPI	1.12837916709551257390
-sqrt(2)			M_SQRT2		1.41421356237309504880
-1/sqrt(2)		M_SQRT1_2	0.707106781186547524401
-e               M_E         2.71828182845904523536
-log_2(e)		M_LOG2E		1.44269504088896340736
-log_10(e)		M_LOG10E	0.434294481903251827651
-log_e(2)		M_LN2		0.693147180559945309417
-log_e(10)		M_LN10		2.30258509299404568402
+A first-order differential equation is defined by an equation: 
+         dy/dx = f(x,y) 
+of two variables x and y with its function f(x,y) defined on a 
+region in the xy-plane. It has only the first derivative dy/dx 
+so that the equation is of the first order and no higher-order 
+derivatives exist. The differential equation in first-order can 
+also be written as;
 
+               y’ = f(x,y)   or
+        (d/dx) y  = f(x,y)
+
+The differential equation is generally used to express a relation 
+between the function and its derivatives. In Physics and chemistry, 
+it is used as a technique for determining the functions over its 
+domain if we know the functions and some of the derivatives.
+
+First Order Linear Differential Equation
+
+If the function f is a linear expression in y, then the first-order 
+differential equation y’ = f(x, y) is a linear equation. That is, 
+the equation is linear and the function f takes the form
+
+          f(x,y) = p(x)y + q(x)
+
+Since the linear equation is y = mx+b
+
+where p and q are continuous functions on some interval I. 
+Differential equations that are not linear are called 
+nonlinear equations.
+
+Consider the first-order differential equation 
+               y’ = f(x,y),  
+is a linear equation and it can be written in the form
+               y’ + a(x)y = f(x)
+where a(x) and f(x) are continuous functions of x
+
+The alternate method to represent the first-order linear equation 
+in a reduced form is
+
+            (dy/dx) + P(x)y = Q (x)
+
+Where P(x) and Q(x) are the functions of x which are the 
+continuous functions. If P(x) or Q(x) is equal to zero, 
+the differential equation is reduced to the variable 
+separable form and can be solved analytically
+
+There are basically five types of differential equations in 
+the first order. They are:
+  1. Linear Differential Equations
+  2. Homogeneous Equations
+  3. Exact Equations
+  4. Separable Equations
+  5. Integrating Factor
+
+The goal of this example is to juxtapose the different numerical methods
+and measure their error
 */
 
 // constexpr double pi = 3.14159265358979323846;  // best practice for C++
