@@ -1,6 +1,7 @@
 // rungekutta.cpp: program to solve odes with classic Runge-Kutta method
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Author: Jacob Todd  jtodd1@une.edu
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #define _USE_MATH_DEFINES
@@ -43,11 +44,11 @@ Scalar myFunc(const Scalar& x, const Scalar& y) {
 // number of intervals across which to approximate y(x), and stepsize between intervals
 
 template<typename Scalar>
-void rk4(Scalar (*f)(const Scalar&, const Scalar&), int n, Scalar& h, Scalar& x, Scalar& y) {
+void rk4(Scalar (*f)(const Scalar&, const Scalar&), size_t n, const Scalar& h, const Scalar& x0, const Scalar& y0) {
 	using namespace std;
-	const Scalar x0 = x;
-	for (unsigned int i = 0; i < n + 1; i++) {
-		x = x0 + i*h;
+	Scalar y = y0;
+	for (size_t i = 0; i <= n; i++) {
+		Scalar x = x0 + i*h;
 		auto f1 = h*f(x, y);
 		auto f2 = h*f(x + h/2, y + f1/2);
 		auto f3 = h*f(x + h/2, y + f2/2);

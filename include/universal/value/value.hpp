@@ -927,28 +927,44 @@ value<fbits> operator+(const value<fbits>& lhs, const value<fbits>& rhs) {
 	constexpr size_t abits = fbits + 5;
 	value<abits+1> result;
 	module_add<fbits,abits>(lhs, rhs, result);
+#if defined(__GNUC__) || defined(__GNUG__)
+	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+#else
 	return result.round_to<fbits>();
+#endif
 }
 template<size_t fbits>
 value<fbits> operator-(const value<fbits>& lhs, const value<fbits>& rhs) {
 	constexpr size_t abits = fbits + 5;
 	value<abits+1> result;
 	module_subtract<fbits,abits>(lhs, rhs, result);
+#if defined(__GNUC__) || defined(__GNUG__)
+	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+#else
 	return result.round_to<fbits>();
+#endif
 }
 template<size_t fbits>
 value<fbits> operator*(const value<fbits>& lhs, const value<fbits>& rhs) {
 	constexpr size_t mbits = 2*fbits + 2;
 	value<mbits> result;
 	module_multiply(lhs, rhs, result);
+#if defined(__GNUC__) || defined(__GNUG__)
+	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+#else
 	return result.round_to<fbits>();
+#endif
 }
 template<size_t fbits>
 value<fbits> operator/(const value<fbits>& lhs, const value<fbits>& rhs) {
 	constexpr size_t divbits = 2 * fbits + 5;
 	value<divbits> result;
 	module_divide(lhs, rhs, result);
+#if defined(__GNUC__) || defined(__GNUG__)
+	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+#else
 	return result.round_to<fbits>();
+#endif
 }
 template<size_t fbits>
 value<fbits> sqrt(const value<fbits>& a) {

@@ -78,11 +78,11 @@ typedef __128bitdd double_double;
 #include "exceptions.hpp"
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
+#include <universal/bitblock/bitblock.hpp>
+#include <universal/value/value.hpp>
 #include <universal/posit/posit_fwd.hpp>
 #include <universal/native/bit_functions.hpp>
-#include <universal/bitblock/bitblock.hpp>
 #include <universal/posit/trace_constants.hpp>
-#include <universal/value/value.hpp>
 #include <universal/posit/fraction.hpp>
 #include <universal/posit/exponent.hpp>
 #include <universal/posit/regime.hpp>
