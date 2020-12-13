@@ -78,7 +78,7 @@ namespace unum {
 		positives = 0, negatives = 0;
 		for (int i = -(NR_TEST_CASES >> 1); i < (NR_TEST_CASES >> 1); ++i) {
 			a = i;
-			a >= 0 ? positives++ : negatives++;
+			a >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
@@ -90,7 +90,7 @@ namespace unum {
 		positives = 0, negatives = 0;
 		for (int i = 1; i < NR_TEST_CASES; i++) {
 			a = double(i);
-			a >= 0 ? positives++ : negatives++;
+			a >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
@@ -103,7 +103,7 @@ namespace unum {
 		positives = 0; negatives = 0;
 		for (int i = 1; i < NR_TEST_CASES; i++) {
 			a++;
-			a >= 0 ? positives++ : negatives++;
+			a >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
@@ -116,7 +116,7 @@ namespace unum {
 		positives = 0; negatives = 0;
 		for (int i = 1; i < NR_TEST_CASES; i++) {
 			++a;
-			a >= 0 ? positives++ : negatives++;
+			a >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
@@ -129,7 +129,7 @@ namespace unum {
 		positives = 0; negatives = 0;
 		for (int i = 1; i < NR_TEST_CASES; i++) {
 			a = -a;
-			a >= 0 ? positives++ : negatives++;
+			a >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
@@ -143,7 +143,7 @@ namespace unum {
 		for (int i = 0; i < NR_TEST_CASES; i++) {
 			a = i;
 			Scalar root = sqrt(a);
-			root >= 0 ? positives++ : negatives++;
+			root >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
@@ -156,7 +156,7 @@ namespace unum {
 		for (int i = 0; i < NR_TEST_CASES; i++) {
 			Scalar b{ i };
 			Scalar sum = a + b;
-			sum >= 0 ? positives++ : negatives++;
+			sum >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
@@ -169,7 +169,7 @@ namespace unum {
 		for (int i = 0; i < NR_TEST_CASES; i++) {
 			Scalar b{ i };
 			Scalar diff = a - b;
-			diff >= 0 ? positives++ : negatives++;
+			diff >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
@@ -182,7 +182,7 @@ namespace unum {
 		for (int i = 0; i < NR_TEST_CASES; i++) {
 			Scalar b{ i };
 			Scalar mul = a * b;
-			mul >= 0 ? positives++ : negatives++;
+			mul >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
@@ -194,7 +194,7 @@ namespace unum {
 		for (size_t i = 1; i < NR_TEST_CASES; i++) {
 			a.set_raw_bits(i);
 			a = a.reciprocate();
-			a >= 0 ? positives++ : negatives++;
+			a >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
@@ -207,7 +207,7 @@ namespace unum {
 		for (int i = 0; i < NR_TEST_CASES; i++) {
 			Scalar b{ i };
 			Scalar div = a / b;
-			div >= 0 ? positives++ : negatives++;
+			div >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
