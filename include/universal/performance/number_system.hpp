@@ -154,7 +154,7 @@ namespace unum {
 		a = 1;
 		positives = 0; negatives = 0;
 		for (int i = 0; i < NR_TEST_CASES; i++) {
-			Scalar b{ i };
+			Scalar b( i );
 			Scalar sum = a + b;
 			sum >= Scalar(0) ? positives++ : negatives++;
 		}
@@ -167,7 +167,7 @@ namespace unum {
 		a = 1;
 		positives = 0; negatives = 0;
 		for (int i = 0; i < NR_TEST_CASES; i++) {
-			Scalar b{ i };
+			Scalar b( i );
 			Scalar diff = a - b;
 			diff >= Scalar(0) ? positives++ : negatives++;
 		}
@@ -180,7 +180,7 @@ namespace unum {
 		a = 1;
 		positives = 0; negatives = 0;
 		for (int i = 0; i < NR_TEST_CASES; i++) {
-			Scalar b{ i };
+			Scalar b( i );
 			Scalar mul = a * b;
 			mul >= Scalar(0) ? positives++ : negatives++;
 		}
@@ -205,7 +205,7 @@ namespace unum {
 		a = 1;
 		positives = 0; negatives = 0;
 		for (int i = 0; i < NR_TEST_CASES; i++) {
-			Scalar b{ i };
+			Scalar b( i );
 			Scalar div = a / b;
 			div >= Scalar(0) ? positives++ : negatives++;
 		}
