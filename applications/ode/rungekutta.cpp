@@ -64,38 +64,35 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
+	size_t N = 10; // number of intervals
+	double h = M_PI_4; // step size between intervals
+
 	{	using Scalar = posit<16, 2>;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		Scalar h = Scalar(M_PI_4); // step size between intervals
-		int n = 4;  // number of intervals
 		std::cout << "\nThe ode is: dy/dx = (5*x*x - y)/exp(x + y)\n" << std::endl;
 		std::cout << "Using posit<16, 1>" << std::endl;
-		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + n*h << std::endl;
+		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + N*h << std::endl;
 		std::cout << "step size = " << h << std::endl;
-		rk4 (&myFunc, n, h, x0, y0);
+		rk4 (&myFunc, N, Scalar(h), x0, y0);
 	}
 	{
 		using Scalar = posit<32, 2>;
 		std::cout << "\nUsing posit<32, 1>" << std::endl;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		Scalar h = Scalar(M_PI_4); // step size between intervals
-		int n = 4;  // number of intervals
-		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + n*h << std::endl;
+		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + N*h << std::endl;
 		std::cout << "step size = " << h << std::endl;
-		rk4 (&myFunc, n, h, x0, y0);
+		rk4 (&myFunc, N, Scalar(h), x0, y0);
 	}
 	{
 		using Scalar = posit<64, 2>;
 		std::cout << "\nUsing posit<64, 1>" << std::endl;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
-		Scalar h = Scalar(M_PI_4); // step size between intervals
-		int n = 4;  // number of intervals
-		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + n*h << std::endl;
+		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + N*h << std::endl;
 		std::cout << "step size = " << h << std::endl;
-		rk4 (&myFunc, n, h, x0, y0);
+		rk4 (&myFunc, N, Scalar(h), x0, y0);
 	}
 
 	return EXIT_SUCCESS;
