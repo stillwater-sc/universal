@@ -151,14 +151,13 @@ public:
 		while (index < size) {
 			size_t cycleStart = index; // holds start of cycle
 			Scalar e = data[index]; // holds value of the element to be swapped
-			size_t next; // index of e
 			do {
-				next = (index * _m) % size;
+				size_t next = (index * _m) % size; // index of e
 				std::swap(data[next], e);
 				b[index] = true;
 				index = next;
 			} while (index != cycleStart);
-			// get the next cycle starting point
+			// get the starting point of the next cycle
 			for (index = 1; index < size && b[index]; ++index) {}
 		}
 		std::swap(_m, _n);

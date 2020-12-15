@@ -11,18 +11,10 @@
 #pragma warning(disable : 4710 4774)
 #pragma warning(disable : 4820)
 #endif
-// enable the following define to show the intermediate steps in the fused-dot product
-// #define POSIT_VERBOSE_OUTPUT
-#define POSIT_TRACE_MUL
-#define QUIRE_TRACE_ADD
-// configure posit environment
-#define POSIT_FAST_POSIT_8_0 1
-#define POSIT_FAST_POSIT_16_1 1
-#define POSIT_FAST_POSIT_32_2 1
-// enable posit arithmetic exceptions
-#define POSIT_THROW_ARITHMETIC_EXCEPTION 1
+// pull in the number systems you would like to use
 #include <universal/posit/posit>
-#define BLAS_TRACE_ROUNDING_EVENTS 1
+#include <universal/integer/integer>
+#include <universal/decimal/decimal>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 
@@ -35,6 +27,34 @@ try {
 		using Scalar = float;
 		using Matrix = sw::unum::blas::matrix<Scalar>;
 		Matrix A = row_order_index<Scalar>(23, 57);
+		Matrix B(A);
+		A.transpose().transpose();
+		if (A != B) {
+			cout << "transpose FAIL\n";
+		}
+		else {
+			cout << "transpose PASS\n";
+		}
+	}
+
+	{
+		using Scalar = sw::unum::posit<256,5>;
+		using Matrix = sw::unum::blas::matrix<Scalar>;
+		Matrix A = row_order_index<Scalar>(117, 253);
+		Matrix B(A);
+		A.transpose().transpose();
+		if (A != B) {
+			cout << "transpose FAIL\n";
+		}
+		else {
+			cout << "transpose PASS\n";
+		}
+	}
+
+	{
+		using Scalar = sw::unum::integer<8192>;
+		using Matrix = sw::unum::blas::matrix<Scalar>;
+		Matrix A = row_order_index<Scalar>(253, 771);
 		Matrix B(A);
 		A.transpose().transpose();
 		if (A != B) {
