@@ -381,11 +381,10 @@ vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const
 		return vector<Scalar>{};
 	}
 	vector<Scalar> x(b);
-	Scalar sum = 0;
 	// forward substitution
 	for (size_t i = 0; i < N; ++i) {
 		size_t ip = indx(i);
-		sum = x(ip);
+		Scalar sum = x(ip);
 		x(ip) = x(i);
 		for (size_t j = 0; j < i; ++j) {
 			sum -= A(i, j) * x(j);
@@ -394,7 +393,7 @@ vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const
 	}
 	// backsubstitution
 	for (size_t i = N; i >= 1; --i) {
-		sum = x(i - 1);
+		Scalar sum = x(i - 1);
 		for (size_t j = i; j < N; ++j) {
 			sum -= A(i - 1, j) * x(j);
 		}

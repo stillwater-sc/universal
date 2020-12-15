@@ -53,8 +53,8 @@ public:
 		_Bits.reset();
 		// start of exponent is nbits - (sign_bit + regime_bits)
 		int msb = int(static_cast<int>(nbits) - 1 - (1 + nrRegimeBits));
-		size_t nrExponentBits = 0;
 		if (es > 0) {
+			size_t nrExponentBits = 0;
 			bitblock<es> _exp;
 			if (msb >= 0 && es > 0) {
 				nrExponentBits = (msb >= static_cast<int>(es) - 1 ? es : msb + 1);

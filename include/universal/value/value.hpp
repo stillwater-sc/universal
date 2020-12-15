@@ -130,13 +130,11 @@ public:
 		}
 		else {
 			// process positive number
-			if (rhs != 0) {
-				_scale = int(findMostSignificantBit(rhs)) - 1;
-				uint64_t _fraction_without_hidden_bit = uint64_t(_scale == 0 ? 0 : (rhs << (64 - _scale)));
-				_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
-				_nrOfBits = fbits;
-				if (_trace_value_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
-			}
+			_scale = int(findMostSignificantBit(rhs)) - 1;
+			uint64_t _fraction_without_hidden_bit = uint64_t(_scale == 0 ? 0 : (rhs << (64 - _scale)));
+			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
+			_nrOfBits = fbits;
+			if (_trace_value_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 		}
 		return *this;
 	}
