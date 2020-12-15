@@ -1,1 +1,9 @@
-# examples/dspDigital Signal Processing examples# How to buildThe examples are automatically build by cmake.# FIR filterThis is a Finite Impulse Response filter using posits that are custom fitted to an AD converter acquisition pipeline. It is a demonstration of the benefits of custom posit configurations and the simples example of error-free execution.
+# Playground
+
+Skeleton programs to experiment with different aspects of the number systems, their APIs, and their use cases.
+
+# How to build
+
+The playground is automatically build by cmake. If you simply add a .cpp file in the playground directory and
+rerun cmake, your cpp will become a new playground program.
+
