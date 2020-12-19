@@ -11,7 +11,6 @@
 #define POSIT_ENABLE_LITERALS 1
 // minimum set of include files to reflect source code dependencies
 #include "universal/posit/posit.hpp"
-#include "universal/posit/posit_decoded.hpp"
 #include "universal/posit/posit_functions.hpp"
 #include "universal/posit/posit_manipulators.hpp"
 // test helpers, such as, ReportTestResults
