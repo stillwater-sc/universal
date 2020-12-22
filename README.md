@@ -558,31 +558,38 @@ When performance and/or power efficiency are differentiating attributes for the 
 
 The core limitations of IEEE floating point are caused by two key problems of the format: 
 
-- inefficient representation of the reals
-- irreproducibility in the context of concurrency
+-   inefficient representation of the reals
+-   irreproducibility in the context of concurrency
 
 The complete list of issues that are holding back IEEE floating point formats:
 
-1.   **Wasted Bit Patterns** - 32-bit IEEE floating point has around eight million ways to represent NaN (Not-A-Number), while 64-bit floating point has two quadrillion, that is approximately 2.251x10^15 to be more exact. A NaN is an exception value to represent undefined or invalid results, such as the result of a division by zero.
-2.   **Mathematically Incorrect** - The format specifies two zeroes - a negative and positive zero - which have different behaviors. - Loss of associative and distributive law due to rounding after each operation. This loss of associative and distributive arithmetic behavior creates irreproducible result of concurrent programs that use IEEE floating point. This is particularly problematic for embedded and control applications.
-3.   **Overflows to ± inf and underflows to 0** - Overflowing to ± inf increases the relative error by an infinite factor, while underflowing to 0 loses sign information.
-4.   **Unused dynamic range** - The dynamic range of double precision floats is a whopping 2^2047, whereas most numerical software is architected to operate around 1.0.
-5.   **Complicated Circuitry** - Denormalized floating point numbers have a hidden bit of 0 instead of 1. This creates
+1.   **Wasted Bit Patterns** 
+    -   32-bit IEEE floating point has around eight million ways to represent NaN (Not-A-Number), while 64-bit floating point has two quadrillion, that is approximately 2.251x10^15 to be more exact. A NaN is an exception value to represent undefined or invalid results, such as the result of a division by zero.
+2.   **Mathematically Incorrect** 
+    -   The format specifies two zeroes, a negative and positive zero, which have different behaviors. 
+    -   Loss of associative and distributive law due to rounding after each operation. This loss of associative and distributive arithmetic behavior creates irreproducible result of concurrent programs that use IEEE floating point. This is particularly problematic for embedded and control applications.
+3.   **Overflows to ± inf and underflows to 0** 
+    -   Overflowing to ± inf increases the relative error by an infinite factor, while underflowing to 0 loses sign information.
+4.   **Unused dynamic range** 
+    -   The dynamic range of double precision floats is a whopping 2^2047, whereas most numerical software is architected to operate around 1.0.
+5.   **Complicated Circuitry** 
+    -   Denormalized floating point numbers have a hidden bit of 0 instead of 1. This creates
 a host of special handling requirements that complicate compliant hardware implementations.
-6.   **No Gradual Overflow and Fixed Accuracy** - If accuracy is defined as the number of significand bits, IEEE
-floating point have fixed accuracy for all numbers except denormalized numbers because the number of signficand
-digits is fixed. Denormalized numbers are characterized by a decreased number of significand digits when the value approaches zero as a result of having a zero hidden bit. Denormalized numbers fill the underflow gap (i.e.
-the gap between zero and the least non-zero values). The counterpart for gradual underflow is gradual overflow
-which does not exist in IEEE floating points.
+6.   **No Gradual Overflow and Fixed Accuracy** 
+    -   If accuracy is defined as the number of significand bits, IEEE floating point have fixed accuracy for all numbers except denormalized numbers because the number of signficand digits is fixed. Denormalized numbers are characterized by a decreased number of significand digits when the value approaches zero as a result of having a zero hidden bit. Denormalized numbers fill the underflow gap (i.e.  the gap between zero and the least non-zero values). The counterpart for gradual underflow is gradual overflow which does not exist in IEEE floating points.
 
 In contrast, the _posit_ number system is designed to be efficient, symmetric, and mathematically correct in any concurrency environment.
 
-1.   **Economical** - No bit patterns are redundant. There is one representation for infinity denoted as ± inf and zero.
-All other bit patterns are valid distinct non-zero real numbers. ± inf serves as a replacement for NaN.
-2.   **Mathematical Elegant** - There is only one representation for zero, and the encoding is symmetric around 1.0. Associative and distributive laws are supported through deferred rounding via the quire, enabling reproducible linear algebra algorithms in any concurrency environment.
-3.   **Tapered Accuracy** - Tapered accuracy is when values with small exponent have more digits of accuracy and values with large exponents have fewer digits of accuracy. This concept was first introduced by Morris (1971) in his paper ”Tapered Floating Point: A New Floating-Point Representation”.
-4.   **Parameterized precision and dynamic range** -- posits are defined by a size, _nbits_, and the number of exponent bits, _es_. This enables system designers the freedom to pick the right precision and dynamic range required for the application. For example, for AI applications we may pick 5 or 6 bit posits without any exponent bits to improve performance. For embedded DSP applications, such as 5G base stations, we may select a 16 bit posit with 1 exponent bit to improve performance per Watt.
-5.   **Simpler Circuitry** - There are only two special cases, Not a Real and Zero. No denormalized numbers, overflow, or underflow. 
+1.   **Economical** 
+    -   No bit patterns are redundant. There is one representation for infinity denoted as ± inf and zero.  All other bit patterns are valid distinct non-zero real numbers. ± inf serves as a replacement for NaN.
+2.   **Mathematical Elegant** 
+    -   There is only one representation for zero, and the encoding is symmetric around 1.0. Associative and distributive laws are supported through deferred rounding via the quire, enabling reproducible linear algebra algorithms in any concurrency environment.
+3.   **Tapered Accuracy** 
+    -   Tapered accuracy is when values with small exponent have more digits of accuracy and values with large exponents have fewer digits of accuracy. This concept was first introduced by Morris (1971) in his paper ”Tapered Floating Point: A New Floating-Point Representation”.
+4.   **Parameterized precision and dynamic range** 
+    -   posits are defined by a size, _nbits_, and the number of exponent bits, _es_. This enables system designers the freedom to pick the right precision and dynamic range required for the application. For example, for AI applications we may pick 5 or 6 bit posits without any exponent bits to improve performance. For embedded DSP applications, such as 5G base stations, we may select a 16 bit posit with 1 exponent bit to improve performance per Watt.
+5.   **Simpler Circuitry** 
+    -   There are only two special cases, Not a Real and Zero. No denormalized numbers, overflow, or underflow. 
 
 ## Goals of the library
 
