@@ -194,13 +194,14 @@ public:
 		}
 		else {
 			// copy the value into the quire
-			unsigned i, c;
+			uint32_t i;
 			uint64_t mask = uint64_t(1);
 			for (i = 0; i < msb && i < half_range; i++) {
 				_upper[i] = magnitude & mask;
 				mask <<= 1;
 			}
 			if (msb >= half_range) {
+				uint32_t c;
 				for (i = half_range, c = 0; i < msb && i < half_range + capacity; i++, c++) {
 					_capacity[c] = magnitude & mask;
 					mask <<= 1;
@@ -545,13 +546,13 @@ private:
 				bool _a = _lower[static_cast<size_t>(i)];
 				bool _b = fraction[static_cast<size_t>(f)];
 				_lower[static_cast<size_t>(i)] = _a ^ _b ^ carry;
-				carry = (_a & _b) | (carry & (_a ^ _b));
+				carry = (_a && _b) || (carry && (_a ^ _b));
 			}
 			// propagate any carries to the end of the lower accumulator
 			while (carry && i < int(half_range)) {
 				bool _a = _lower[static_cast<size_t>(i)];
 				_lower[static_cast<size_t>(i)] = _a ^ carry;
-				carry = carry & _a;
+				carry = carry && _a;
 				i++;
 			}
 			if (carry) {  // carry propagate to the _upper accumulator
@@ -560,7 +561,7 @@ private:
 				while (carry && i < int(upper_range)) {
 					bool _a = _upper[static_cast<size_t>(i)];
 					_upper[static_cast<size_t>(i)] = _a ^ carry;
-					carry = carry & _a;
+					carry = carry && _a;
 					i++;
 				}
 				if (carry) {
@@ -569,7 +570,7 @@ private:
 					while (carry && i < int(capacity)) {
 						bool _a = _capacity[static_cast<size_t>(i)];
 						_capacity[static_cast<size_t>(i)] = _a ^ carry;
-						carry = carry & _a;
+						carry = carry && _a;
 						i++;
 					}
 				}
@@ -581,12 +582,12 @@ private:
 				bool _a = _upper[static_cast<size_t>(i)];
 				bool _b = fraction[static_cast<size_t>(f)];
 				_upper[static_cast<size_t>(i)] = _a ^ _b ^ carry;
-				carry = (_a & _b) | (carry & (_a ^ _b));
+				carry = (_a && _b) || (carry && (_a ^ _b));
 			}
 			while (carry && i < int(upper_range)) {
 				bool _a = _upper[static_cast<size_t>(i)];
 				_upper[static_cast<size_t>(i)] = _a ^ carry;
-				carry = carry & _a;
+				carry = carry && _a;
 				i++;
 			}
 			if (carry) {
@@ -595,7 +596,7 @@ private:
 				while (carry && i < int(capacity)) {
 					bool _a = _capacity[static_cast<size_t>(i)];
 					_capacity[static_cast<size_t>(i)] = _a ^ carry;
-					carry = carry & _a;
+					carry = carry && _a;
 					i++;
 				}
 			}
@@ -610,20 +611,20 @@ private:
 				bool _a = _lower[static_cast<size_t>(i)];
 				bool _b = fraction[static_cast<size_t>(f)];
 				_lower[static_cast<size_t>(i)] = _a ^ _b ^ carry;
-				carry = (_a & _b) | (carry & (_a ^ _b));
+				carry = (_a && _b) || (carry && (_a ^ _b));
 			}
 			// next add the bits in the upper accumulator
 			for (i = 0; i <= v.scale() && f <= static_cast<int>(fbits); i++, f++) {
 				bool _a = _upper[static_cast<size_t>(i)];
 				bool _b = fraction[static_cast<size_t>(f)];
 				_upper[static_cast<size_t>(i)] = _a ^ _b ^ carry;
-				carry = (_a & _b) | (carry & (_a ^ _b));
+				carry = (_a && _b) || (carry && (_a ^ _b));
 			}
 			// propagate any carries to the end of the upper accumulator
 			while (carry && i < int(upper_range)) {
 				bool _a = _upper[static_cast<size_t>(i)];
 				_upper[static_cast<size_t>(i)] = _a ^ carry;
-				carry = carry & _a;
+				carry = carry && _a;
 				i++;
 			}
 			// next add the bits to the capacity segment
@@ -632,7 +633,7 @@ private:
 				while (carry && i < int(capacity)) {
 					bool _a = _capacity[static_cast<size_t>(i)];
 					_capacity[static_cast<size_t>(i)] = _a ^ carry;
-					carry = carry & _a;
+					carry = carry && _a;
 					i++;
 				}
 			}
@@ -657,13 +658,13 @@ private:
 				bool _a = _lower[size_t(i)];
 				bool _b = fraction[size_t(f)];
 				_lower[size_t(i)] = _a ^ _b ^ borrow;
-				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+				borrow = (!_a && _b) | (!(!_a ^ !_b) && borrow);
 			}
 			// propagate any borrows to the end of the lower accumulator
 			while (borrow && i < int(half_range)) {
 				bool _a = _lower[size_t(i)];
 				_lower[size_t(i)] = _a ^ borrow;
-				borrow = borrow & !_a;
+				borrow = borrow && !_a;
 				i++;
 			}
 			if (borrow) { // borrow propagate to the _upper accumulator
@@ -672,7 +673,7 @@ private:
 				while (borrow && i < int(upper_range)) {
 					bool _a = _upper[size_t(i)];
 					_upper[size_t(i)] = _a ^ borrow;
-					borrow = borrow & !_a;
+					borrow = borrow && !_a;
 					i++;
 				}
 				if (borrow) {
@@ -681,7 +682,7 @@ private:
 					while (borrow && i < int(capacity)) {
 						bool _a = _capacity[size_t(i)];
 						_capacity[size_t(i)] = _a ^ borrow;
-						borrow = borrow & !_a;
+						borrow = borrow && !_a;
 						i++;
 					}
 				}
@@ -693,13 +694,13 @@ private:
 				bool _a = _upper[size_t(i)];
 				bool _b = fraction[size_t(f)];
 				_upper[size_t(i)] = _a ^ _b ^ borrow;
-				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+				borrow = (!_a && _b) || (!(!_a ^ !_b) && borrow);
 			}
 			// propagate any borrows to the end of the upper accumulator
 			while (borrow && i < int(upper_range)) {
 				bool _a = _upper[size_t(i)];
 				_upper[size_t(i)] = _a ^ borrow;
-				borrow = borrow & !_a;
+				borrow = borrow && !_a;
 				i++;
 			}
 			if (borrow) {
@@ -708,7 +709,7 @@ private:
 				while (borrow && i < int(capacity)) {
 					bool _a = _capacity[size_t(i)];
 					_capacity[size_t(i)] = _a ^ borrow;
-					borrow = borrow & !_a;
+					borrow = borrow && !_a;
 					i++;
 				}
 			}
@@ -723,20 +724,20 @@ private:
 				bool _a = _lower[size_t(i)];
 				bool _b = fraction[size_t(f)];
 				_lower[size_t(i)] = _a ^ _b ^ borrow;
-				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+				borrow = (!_a && _b) || (!(!_a ^ !_b) && borrow);
 			}
 			// next add the bits in the upper accumulator
 			for (i = 0; i <= v.scale() && f <= static_cast<int>(fbits); i++, f++) {
 				bool _a = _upper[size_t(i)];
 				bool _b = fraction[size_t(f)];
 				_upper[size_t(i)] = _a ^ _b ^ borrow;
-				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+				borrow = (!_a && _b) || (!(!_a ^ !_b) && borrow);
 			}
 			// propagate any borrows to the end of the upper accumulator
 			while (borrow && i < int(upper_range)) {
 				bool _a = _upper[size_t(i)];
 				_upper[size_t(i)] = _a ^ borrow;
-				borrow = borrow & !_a;
+				borrow = borrow && !_a;
 				i++;
 			}
 			if (borrow) {
@@ -745,7 +746,7 @@ private:
 				while (borrow && i < int(capacity)) {
 					bool _a = _capacity[size_t(i)];
 					_capacity[size_t(i)] = _a ^ borrow;
-					borrow = borrow & !_a;
+					borrow = borrow && !_a;
 					i++;
 				}
 			}
