@@ -658,7 +658,7 @@ private:
 				bool _a = _lower[size_t(i)];
 				bool _b = fraction[size_t(f)];
 				_lower[size_t(i)] = _a ^ _b ^ borrow;
-				borrow = (!_a && _b) | (!(!_a ^ !_b) && borrow);
+				borrow = (!_a && _b) || (!(!_a ^ !_b) && borrow);
 			}
 			// propagate any borrows to the end of the lower accumulator
 			while (borrow && i < int(half_range)) {
