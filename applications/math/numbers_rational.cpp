@@ -18,7 +18,6 @@ Ty PhiThroughFibonacciSequence(unsigned terms) {
 	return fib.second / fib.first;
 }
 
-
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -27,16 +26,6 @@ try {
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-
-	auto v = sw::sequences::Fibonacci<uint64_t>(10);
-	for (auto e : v) {
-		cout << e << ' ';
-	}
-	cout << endl;
-	for (unsigned t = 2; t < 10; ++t) {
-		auto p = sw::sequences::GoldenRatio<uint64_t>(t);
-		cout << p.first << " " << p.second << endl;
-	}
 
 	using int256 = sw::unum::integer<256>;
 	streamsize precision = cout.precision();
