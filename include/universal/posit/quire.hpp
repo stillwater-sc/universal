@@ -1,12 +1,12 @@
 #pragma once
 // quire.hpp: definition of a parameterized quire configurations
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/native/boolean_logic_operators.hpp>
 
-namespace sw {
-	namespace unum {
+namespace sw { namespace unum {
 
 // Forward definitions
 template<size_t nbits, size_t es, size_t capacity> class quire;
@@ -658,7 +658,7 @@ private:
 				bool _a = _lower[size_t(i)];
 				bool _b = fraction[size_t(f)];
 				_lower[size_t(i)] = _a ^ _b ^ borrow;
-				borrow = (!_a && _b) || (!(!_a ^ !_b) && borrow);
+				borrow = (!_a && _b) || (bxnor(!_a, !_b) && borrow);
 			}
 			// propagate any borrows to the end of the lower accumulator
 			while (borrow && i < int(half_range)) {
@@ -694,7 +694,7 @@ private:
 				bool _a = _upper[size_t(i)];
 				bool _b = fraction[size_t(f)];
 				_upper[size_t(i)] = _a ^ _b ^ borrow;
-				borrow = (!_a && _b) || (!(!_a ^ !_b) && borrow);
+				borrow = (!_a && _b) || (bxnor(!_a, !_b) && borrow);
 			}
 			// propagate any borrows to the end of the upper accumulator
 			while (borrow && i < int(upper_range)) {
@@ -724,14 +724,14 @@ private:
 				bool _a = _lower[size_t(i)];
 				bool _b = fraction[size_t(f)];
 				_lower[size_t(i)] = _a ^ _b ^ borrow;
-				borrow = (!_a && _b) || (!(!_a ^ !_b) && borrow);
+				borrow = (!_a && _b) || (bxnor(!_a, !_b) && borrow);
 			}
 			// next add the bits in the upper accumulator
 			for (i = 0; i <= v.scale() && f <= static_cast<int>(fbits); i++, f++) {
 				bool _a = _upper[size_t(i)];
 				bool _b = fraction[size_t(f)];
 				_upper[size_t(i)] = _a ^ _b ^ borrow;
-				borrow = (!_a && _b) || (!(!_a ^ !_b) && borrow);
+				borrow = (!_a && _b) || (bxnor(!_a, !_b) && borrow);
 			}
 			// propagate any borrows to the end of the upper accumulator
 			while (borrow && i < int(upper_range)) {
@@ -985,6 +985,4 @@ value<2 * (nbits - 2 - es)> quire_mul(const posit<nbits, es>& lhs, const posit<n
 	return product;
 }
 
-}  // namespace unum
-
-}  // namespace sw
+}}  // namespace sw::unum

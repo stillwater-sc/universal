@@ -10,16 +10,12 @@
 // this should be removed when we have made the transition away from std::bitset to sw::unum::bitblock
 #include <cassert>
 #include <bitset>
+// boolean operators
+#include <universal/native/boolean_logic_operators.hpp>
 // bitblock exception definitions
 #include <universal/bitblock/exceptions.hpp>
 
 namespace sw { namespace unum {
-
-// boolean operators to unify the lack of a bit xor operator in C++
-inline bool bnot(bool a) { return !a; }
-inline bool band(bool a, bool b) { return (a && b); }
-inline bool bor(bool a, bool b) { return (a || b); }
-inline bool bxor(bool a, bool b) { return (a || b) && !(a && b); }
 
 // bitblock is a template class implementing efficient multi-precision binary arithmetic and logic
 template<size_t nbits>

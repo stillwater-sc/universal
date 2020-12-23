@@ -1,12 +1,12 @@
 #pragma once
 // quire.hpp: definition of a parameterized quire configurations for IEEE float/double/long double
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/native/boolean_logic_operators.hpp>
 
-namespace sw {
-	namespace ieee {
+namespace sw { namespace ieee {
 
 // template class representing a quire associated with an ieee float configuration
 // capacity indicates the power of 2 number of accumulations the quire can support
@@ -195,13 +195,13 @@ public:
 				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
 					bool _a = _lower[i];
 					bool _b = fraction[f];
-					_lower[i] = _a ^ _b ^ borrow;
-					borrow = ((!_a) && _b) || ((!((!_a) ^ (!_b))) && borrow);
+					_lower[i] = sw::unum::bxor(_a, _b, borrow);
+					borrow = (!_a && _b) || (sw::unum::bxnor(!_a, !_b) && borrow);
 				}
 				// propagate any borrows to the end of the lower accumulator
 				while (borrow && i < int(half_range)) {
 					bool _a = _lower[i];
-					_lower[i] = _a ^ borrow;
+					_lower[i] = sw::unum::bxor(_a, borrow);
 					borrow = borrow && !_a;
 					i++;
 				}
@@ -210,7 +210,7 @@ public:
 					i = 0;
 					while (borrow && i < int(upper_range)) {
 						bool _a = _upper[i];
-						_upper[i] = _a ^ borrow;
+						_upper[i] = sw::unum::bxor(_a, borrow);
 						borrow = borrow && !_a;
 						i++;
 					}
@@ -219,7 +219,7 @@ public:
 						i = 0;
 						while (borrow && i < int(capacity)) {
 							bool _a = _capacity[i];
-							_capacity[i] = _a ^ borrow;
+							_capacity[i] = sw::unum::bxor(_a, borrow);
 							borrow = borrow && !_a;
 							i++;
 						}
@@ -230,13 +230,13 @@ public:
 				for (i = lsb, f = 0; i <= scale && f <= int(fbits); i++, f++) {
 					bool _a = _upper[i];
 					bool _b = fraction[f];
-					_upper[i] = _a ^ _b ^ borrow;
-					borrow = (!_a && _b) || (!((!_a) ^ (!_b)) && borrow);
+					_upper[i] = sw::unum::bxor(_a, _b, borrow);
+					borrow = (!_a && _b) || (sw::unum::bxnor(!_a, !_b) && borrow);
 				}
 				// propagate any borrows to the end of the upper accumulator
 				while (borrow && i < int(upper_range)) {
 					bool _a = _upper[i];
-					_upper[i] = _a ^ borrow;
+					_upper[i] = sw::unum::bxor(_a, borrow);
 					borrow = borrow && !_a;
 					i++;
 				}
@@ -245,7 +245,7 @@ public:
 					i = 0;
 					while (borrow && i < int(capacity)) {
 						bool _a = _capacity[i];
-						_capacity[i] = _a ^ borrow;
+						_capacity[i] = sw::unum::bxor(_a, borrow);
 						borrow = borrow && !_a;
 						i++;
 					}
@@ -260,15 +260,15 @@ public:
 				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
 					bool _a = _lower[i];
 					bool _b = fraction[f];
-					_lower[i] = _a ^ _b ^ borrow;
-					borrow = (!_a && _b) || (!(!_a ^ !_b) && borrow);
+					_lower[i] = sw::unum::bxor(_a, _b, borrow);
+					borrow = (!_a && _b) || (sw::unum::bxnor(!_a, !_b) && borrow);
 				}
 				// next add the bits in the upper accumulator
 				for (i = 0; i <= scale && f <= int(fbits); i++, f++) {
 					bool _a = _upper[i];
 					bool _b = fraction[f];
-					_upper[i] = _a ^ _b ^ borrow;
-					borrow = (!_a && _b) || (!(!_a ^ !_b) && borrow);
+					_upper[i] = sw::unum::bxor(_a, _b, borrow);
+					borrow = (!_a && _b) || (sw::unum::bxnor(!_a, !_b) && borrow);
 				}
 				// propagate any borrows to the end of the upper accumulator
 				while (borrow && i < int(upper_range)) {
@@ -305,8 +305,8 @@ public:
 				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
 					bool _a = _lower[i];
 					bool _b = fraction[f];
-					_lower[i] = _a ^ _b ^ carry;
-					carry = (_a && _b) || (carry && (_a ^ _b));
+					_lower[i] = sw::unum::bxor(_a, _b, carry);
+					carry = (_a && _b) || (carry && sw::unum::bxor(_a, _b));
 				}
 				// propagate any carries to the end of the lower accumulator
 				while (carry && i < int(half_range)) {
@@ -340,8 +340,8 @@ public:
 				for (i = lsb, f = 0; i <= scale && f <= int(fbits); i++, f++) {
 					bool _a = _upper[i];
 					bool _b = fraction[f];
-					_upper[i] = _a ^ _b ^ carry;
-					carry = (_a && _b) || (carry && (_a ^ _b));
+					_upper[i] = sw::unum::bxor(_a, _b, carry);
+					carry = (_a && _b) || (carry && sw::unum::bxor(_a, _b));
 				}
 				while (carry && i < int(upper_range)) {
 					bool _a = _upper[i];
@@ -369,15 +369,15 @@ public:
 				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
 					bool _a = _lower[i];
 					bool _b = fraction[f];
-					_lower[i] = _a ^ _b ^ carry;
-					carry = (_a && _b) || (carry && (_a ^ _b));
+					_lower[i] = sw::unum::bxor(_a, _b, carry);
+					carry = (_a && _b) || (carry && sw::unum::bxor(_a, _b));
 				}
 				// next add the bits in the upper accumulator
 				for (i = 0; i <= scale && f <= int(fbits); i++, f++) {
 					bool _a = _upper[i];
 					bool _b = fraction[f];
-					_upper[i] = _a ^ _b ^ carry;
-					carry = (_a && _b) || (carry && (_a ^ _b));
+					_upper[i] = sw::unum::bxor(_a, _b, carry);
+					carry = (_a && _b) || (carry && sw::unum::bxor(_a, _b));
 				}
 				// propagate any carries to the end of the upper accumulator
 				while (carry && i < int(upper_range)) {
@@ -604,17 +604,17 @@ inline bool operator< (const quire<nbits, es, capacity>& lhs, const quire<nbits,
 		bSmaller = true;
 	}
 	else if (lhs._sign == rhs._sign) {
-		if (lhs._capacity < rhs._capacity) {
-		bSmaller = true;
-	}
-	else if (lhs._capacity == rhs._capacity && lhs._upper < rhs._upper) {
-		bSmaller = true;
-	}
-	else if (lhs._capacity == rhs._capacity && lhs._upper == rhs._upper && lhs._lower < rhs._lower) {
-		bSmaller = true;
-	}
-}
-return bSmaller;
+	    if (lhs._capacity < rhs._capacity) {
+		 bSmaller = true;
+	    }
+	    else if (lhs._capacity == rhs._capacity && lhs._upper < rhs._upper) {
+		 bSmaller = true;
+	    }
+	    else if (lhs._capacity == rhs._capacity && lhs._upper == rhs._upper && lhs._lower < rhs._lower) {
+		 bSmaller = true;
+	    }
+        }
+        return bSmaller;
 }
 template<size_t nbits, size_t es, size_t capacity>
 inline bool operator> (const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return  operator< (rhs, lhs); }
@@ -624,6 +624,4 @@ template<size_t nbits, size_t es, size_t capacity>
 inline bool operator>=(const quire<nbits, es, capacity>& lhs, const quire<nbits, es, capacity>& rhs) { return !operator< (lhs, rhs) || lhs == rhs; }
 #endif
 
-}  // namespace ieee
-
-}  // namespace sw
+}}  // namespace sw::ieee
