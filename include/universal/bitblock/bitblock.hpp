@@ -15,6 +15,12 @@
 
 namespace sw { namespace unum {
 
+// boolean operators to unify the lack of a bit xor operator in C++
+inline bool bnot(bool a) { return !a; }
+inline bool band(bool a, bool b) { return (a && b); }
+inline bool bor(bool a, bool b) { return (a || b); }
+inline bool bxor(bool a, bool b) { return (a || b) && !(a && b); }
+
 // bitblock is a template class implementing efficient multi-precision binary arithmetic and logic
 template<size_t nbits>
 class bitblock : public std::bitset<nbits> {
@@ -145,8 +151,8 @@ bool increment_bitset(bitblock<nbits>& number) {
 	bool carry = true;  // ripple carry
 	for (size_t i = 0; i < nbits; i++) {
 		bool _a = number[i];
-		number[i] = _a ^ carry;
-		carry = carry & (_a ^ false);
+		number[i] = bxor(_a, carry);
+		carry = carry && bxor(_a, false);
 	}
 	return carry;
 }
@@ -164,8 +170,8 @@ bool increment_unsigned(bitblock<nbits>& number, size_t nrBits = nbits - 1) {
 	size_t lsb = nbits - nrBits;
 	for (size_t i = lsb; i < nbits; i++) {
 		bool _a = number[i];
-		number[i] = _a ^ carry;
-		carry = (_a & false) | (carry & (_a ^ false));
+		number[i] = bxor(_a, carry);
+		carry = (_a && false) || (carry && bxor(_a, false));
 	}
 	return carry;
 }
@@ -176,8 +182,8 @@ bool decrement_bitset(bitblock<nbits>& number) {
 	bool borrow = true;
 	for (size_t i = 0; i < nbits; i++) {
 		bool _a = number[i];
-		number[i] = _a ^ borrow;
-		borrow = (!(!_a ^ true) & borrow);
+		number[i] = bxor(_a, borrow);
+		borrow = (!bxor(!_a, true) && borrow);
 	}
 	return borrow;
 }
@@ -192,8 +198,8 @@ bool add_unsigned(bitblock<nbits> a, bitblock<nbits> b, bitblock<nbits + 1>& sum
 	for (size_t i = 0; i < nbits; i++) {
 		bool _a = a[i];
 		bool _b = b[i];
-		sum[i] = _a ^ _b ^ carry;
-		carry = (_a & _b) | (carry & (_a ^ _b));
+		sum[i] = bxor(_a, bxor(_b, carry));
+		carry = (_a && _b) || (carry && bxor(_a, _b));
 	}
 	sum.set(nbits, carry);
 	return carry;
@@ -206,8 +212,8 @@ bool subtract_unsigned(bitblock<nbits> a, bitblock<nbits> b, bitblock<nbits + 1>
 	for (size_t i = 0; i < nbits; i++) {
 		bool _a = a[i];
 		bool _b = b[i];
-		dif[i] = _a ^ _b ^ borrow;
-		borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+		dif[i] = bxor(bxor(_a, _b), borrow);
+		borrow = (!_a && _b) || (!bxor(!_a, !_b) && borrow);
 	}
 	dif.set(nbits, borrow);
 	return borrow;
@@ -231,8 +237,8 @@ bool add_signed_magnitude(bitblock<nbits> a, bitblock<nbits> b, bitblock<nbits>&
 		for (size_t i = 0; i < nbits - 2; i++) {
 			bool _a = a[i];
 			bool _b = b[i];
-			sum[i] = _a ^ _b ^ carry;
-			carry = (_a & _b) | (carry & (_a ^ _b));
+			sum[i] = bxor(bxor(_a, _b), carry);
+			carry = (_a && _b) || (carry && bxor(_a, _b));
 		}
 	}
 	return carry;
@@ -383,8 +389,8 @@ bool accumulate(const bitblock<src_size>& addend, bitblock<tgt_size>& accumulato
 	for (size_t i = 0; i < src_size; i++) {
 		bool _a = addend[i];
 		bool _b = accumulator[i];
-		accumulator[i] = _a ^ _b ^ carry;
-		carry = (_a & _b) | (carry & (_a ^ _b));
+		accumulator[i] = bxor(bxor(_a, _b), carry);
+		carry = (_a && _b) || (carry && bxor(_a, _b));
 	}
 	return carry;
 }
@@ -411,7 +417,6 @@ void multiply_unsigned(const bitblock<operand_size>& a, const bitblock<operand_s
 	}
 }
 
-
 // subtract a subtractand from a running accumulator
 template<size_t src_size, size_t tgt_size>
 bool subtract(bitblock<tgt_size>& accumulator, const bitblock<src_size>& subtractand) {
@@ -419,8 +424,8 @@ bool subtract(bitblock<tgt_size>& accumulator, const bitblock<src_size>& subtrac
 	for (size_t i = 0; i < src_size; i++) {
 		bool _a = accumulator[i];
 		bool _b = subtractand[i];
-		accumulator[i] = _a ^ _b ^ borrow;
-		borrow = ((!_a) & _b) | (!((!_a) ^ (!_b)) & borrow);
+		accumulator[i] = bxor(bxor(_a, _b), borrow);
+		borrow = (!_a && _b) || (!bxor(!_a, !_b) && borrow);
 	}
 	return borrow;
 }
