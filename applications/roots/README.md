@@ -48,7 +48,6 @@ Given a polynomial pn(x) of degree n with zeros zn < zn − 1 < ... < z1 make so
 Now follow the steps outline below.
 
 1.   Using Newton's method find the largest zero, z1 of pn(x) using the guess x0.
-
 2.   Use the Horner scheme to divide out (x − z1) to obtain pn − 1. Return to step 1 but use the polynomial pn − 1 and the initial guess z1.
 
 These two steps are repeated until all real zeros are found for the polynomial. If the approximated zeros are not precise enough, the obtained values can be used as initial guesses for Newton's method but using the full polynomial rather than the reduced polynomials.

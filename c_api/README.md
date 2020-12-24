@@ -246,7 +246,5 @@ Ths library supports the following functions which require only a single argumen
 
 ## Bugs and cautions
 
-*   Conversions between posits is currently done by converting to a double and back, see:
-        https://github.com/stillwater-sc/universal/issues/90
-*   `positN_sqrt()` `positN_log()` and `positN_exp()` use math.h implementations with double
-        type, see https://github.com/stillwater-sc/universal/issues/9 for more information.
+*   Conversions between posits is currently done by converting to a double and back, see: https://github.com/stillwater-sc/universal/issues/90
+*   `positN_sqrt()` `positN_log()` and `positN_exp()` use math.h implementations with double type, see https://github.com/stillwater-sc/universal/issues/9 for more information.

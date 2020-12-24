@@ -39,7 +39,7 @@ _posit<7,1>_:
 The program ".../tests/posit/posit_tables" will generate the posit encodings for reference. 
 These tables are a great aid in understanding posit arithmetic and rounding.
 
-```
+```text
 >:~/dev/universal/build$ tests/posit/posit_tables
 Generate posit configurations
 -128         100101         111011 Sign : -1 Regime :   1 Exponent :     8 Fraction :        1 Value :             -128 11
@@ -192,5 +192,3 @@ Generate Posit Lookup table for a POSIT<5,2>
   30:            11110           10010      -2      -1      -8               001-               0-               ~                   -0.00390625
   31:            11111           10001      -3      -1     -12               0001               --               ~               -0.000244140625
 ```
-
-
