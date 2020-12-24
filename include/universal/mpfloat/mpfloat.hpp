@@ -341,7 +341,6 @@ bool parse(const std::string& number, mpfloat& value) {
 }
 
 // generate an mpfloat format ASCII format
-
 inline std::ostream& operator<<(std::ostream& ostr, const mpfloat& i) {
 	// to make certain that setw and left/right operators work properly
 	// we need to transform the mpfloat into a string
@@ -352,7 +351,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const mpfloat& i) {
 	std::ios_base::fmtflags ff;
 	ff = ostr.flags();
 	ss.flags(ff);
-	ss << std::setw(width) << std::setprecision(prec) << i.str(prec);
+	ss << std::setw(width) << std::setprecision(prec) << i.str(size_t(prec));
 
 	return ostr << ss.str();
 }

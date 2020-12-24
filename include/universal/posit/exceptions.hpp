@@ -1,7 +1,7 @@
 #pragma once
 // exceptions.hpp: exceptions for problems in posit calculations
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -11,26 +11,6 @@
 // TODO: why can't I namespace exceptions?
 //namespace sw {
 //	namespace unum {
-
-///////////////////////////////////////////////////////////////////////////////////////////////////
-/// POSIT ARITHMETIC EXCEPTIONS
-
-// base class for bitblock arithmetic exceptions
-struct bitblock_arithmetic_exception
-	: public std::runtime_error
-{
-	bitblock_arithmetic_exception(const std::string& error) : std::runtime_error(std::string("bitblock arithmetic exception: ") + error) {};
-};
-
-//////////////////////////////////////////////////////////////////////////////////////////////////
-/// specialized exceptions to aid application level exception handling
-
-// is thrown when denominator is 0 in a division operator
-struct integer_divide_by_zero
-	: public bitblock_arithmetic_exception
-{
-	integer_divide_by_zero(const std::string& error = "integer divide by zero") : bitblock_arithmetic_exception(error) {}
-};
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// POSIT ARITHMETIC EXCEPTIONS
@@ -121,25 +101,6 @@ struct rbits_too_large
 {
 	rbits_too_large(const std::string& error = "number of remaining bits too large for this fraction") :posit_internal_exception(error) {}
 };
-
-struct cut_off_leading_bit
-	: posit_internal_exception
-{
-	cut_off_leading_bit(const std::string& error = "leading significant bit is cut off") : posit_internal_exception(error) {}
-};
-
-struct iteration_bound_too_large
-	: posit_internal_exception
-{
-	iteration_bound_too_large(const std::string& error = "iteration bound is too large") : posit_internal_exception(error) {}
-};
-
-struct round_off_all
-	: posit_internal_exception
-{
-	round_off_all(const std::string& error = "cannot round off all bits") : posit_internal_exception(error) {}
-};
-
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// QUIRE ARITHMETIC EXCEPTIONS

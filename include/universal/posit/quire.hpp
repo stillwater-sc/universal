@@ -1,12 +1,12 @@
 #pragma once
 // quire.hpp: definition of a parameterized quire configurations
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/native/boolean_logic_operators.hpp>
 
-namespace sw {
-	namespace unum {
+namespace sw { namespace unum {
 
 // Forward definitions
 template<size_t nbits, size_t es, size_t capacity> class quire;
@@ -109,15 +109,15 @@ public:
 	// Constructors
 	quire() : _sign(false) { _capacity.reset(); _upper.reset(); _lower.reset(); }
 
-	explicit quire(int8_t initial_value)   { *this = initial_value; }
-	explicit quire(int16_t initial_value)  { *this = initial_value; }
-	explicit quire(int32_t initial_value)  { *this = initial_value; }
-	explicit quire(int64_t initial_value)  { *this = initial_value; }
-	explicit quire(uint64_t initial_value) { *this = initial_value; }
-	explicit quire(float initial_value)    { *this = initial_value; }
-	explicit quire(double initial_value)   { *this = initial_value; }
-	explicit quire(const posit<nbits, es>& rhs) { *this = rhs; }
-	template<size_t fbits> explicit quire(const value<fbits>& rhs) { *this = rhs; }
+	quire(int8_t initial_value)   { *this = initial_value; }
+	quire(int16_t initial_value)  { *this = initial_value; }
+	quire(int32_t initial_value)  { *this = initial_value; }
+	quire(int64_t initial_value)  { *this = initial_value; }
+	quire(uint64_t initial_value) { *this = initial_value; }
+	quire(float initial_value)    { *this = initial_value; }
+	quire(double initial_value)   { *this = initial_value; }
+	quire(const posit<nbits, es>& rhs) { *this = rhs; }
+	template<size_t fbits> quire(const value<fbits>& rhs) { *this = rhs; }
 
 	// Assignment operators: the class only supports native type values
 	// assigning a posit requires the convertion to a normalized value, i.e. q = posit<nbits,es>().to_value()
@@ -144,24 +144,24 @@ public:
 		if (scale - int(fbits) >= 0) {
 			// all upper accumulator
 			for (i = scale, f = int(fbits); i >= 0 && f >= 0; i--, f--) {
-				_upper[i] = fraction[f];
+				_upper[static_cast<size_t>(i)] = fraction[static_cast<size_t>(f)];
 			}
 		}
 		else if (scale < 0) {
 			// all lower accumulator
-			for (i = half_range + scale, f = int(fbits); i >= 0 && f >= 0; i--, f--) {
-				_lower[i] = fraction[f];
+			for (i = int(half_range) + scale, f = int(fbits); i >= 0 && f >= 0; i--, f--) {
+				_lower[static_cast<size_t>(i)] = fraction[static_cast<size_t>(f)];
 			}
 		}
 		else {
 			// part upper, and part lower accumulator
 			// first assign the bits in the upper accumulator
 			for (i = scale, f = int(fbits); i >= 0 && f >= 0; i--, f--) {
-				_upper[i] = fraction[f];
+				_upper[static_cast<size_t>(i)] = fraction[static_cast<size_t>(f)];
 			}
 			// next assign the bits in the lower accumulator
-			for (i = half_range - 1; i >= 0 && f >= 0; i--, f--) {
-				_lower[i] = fraction[f];
+			for (i = int(half_range) - 1; i >= 0 && f >= 0; i--, f--) {
+				_lower[static_cast<size_t>(i)] = fraction[static_cast<size_t>(f)];
 			}
 		}
 		return *this;
@@ -187,20 +187,21 @@ public:
 		// transform to sign-magnitude
 		_sign = rhs & 0x8000000000000000;
 		unsigned long long magnitude;
-		magnitude = _sign ? -rhs : rhs;
+		magnitude = static_cast<unsigned long long>(_sign ? -rhs : rhs);
 		unsigned msb = findMostSignificantBit(magnitude);
 		if (msb > half_range + capacity) {
 			throw operand_too_large_for_quire{};
 		}
 		else {
 			// copy the value into the quire
-			unsigned i, c;
+			uint32_t i;
 			uint64_t mask = uint64_t(1);
 			for (i = 0; i < msb && i < half_range; i++) {
 				_upper[i] = magnitude & mask;
 				mask <<= 1;
 			}
 			if (msb >= half_range) {
+				uint32_t c;
 				for (i = half_range, c = 0; i < msb && i < half_range + capacity; i++, c++) {
 					_capacity[c] = magnitude & mask;
 					mask <<= 1;
@@ -318,9 +319,9 @@ public:
 	
 	// bit addressing operator
 	bool operator[](int index) const {
-		if (index < int(radix_point)) return _lower[index];
-		if (index < int(radix_point) + int(upper_range)) return _upper[index - int(radix_point)];
-		if (index < int(radix_point) + int(upper_range) + int(capacity)) return _capacity[index - int(radix_point) - int(upper_range)];
+		if (index < int(radix_point)) return _lower[static_cast<size_t>(index)];
+		if (index < int(radix_point) + int(upper_range)) return _upper[static_cast<size_t>(index - int(radix_point))];
+		if (index < int(radix_point) + int(upper_range) + int(capacity)) return _capacity[static_cast<size_t>(index - int(radix_point) - int(upper_range))];
 		throw "index out of range";
 	}
 
@@ -435,15 +436,15 @@ public:
 	int scale() const {
 		int msb = int(capacity)-1; // indicative of no bits set
 		for (; msb >= 0; msb--) {
-			if (_capacity.test(msb)) break;
+			if (_capacity.test(static_cast<size_t>(msb))) break;
 		}
-		if (msb >= 0) return msb + upper_range;
+		if (msb >= 0) return msb + int(upper_range);
 		for (msb = int(upper_range) - 1; msb >= 0; msb--) {
-			if (_upper.test(msb)) break;
+			if (_upper.test(static_cast<size_t>(msb))) break;
 		}
 		if (msb >= 0) return msb;
 		for (int i = int(half_range) - 1; i >= 0; i--, msb--) {
-			if (_lower.test(i)) break;
+			if (_lower.test(static_cast<size_t>(i))) break;
 		}
 		return msb;
 	}
@@ -479,26 +480,29 @@ public:
 		int scale = qbits;
 		for (i = int(capacity) - 1; i >= 0; i--, qbit--) {
 			if (scale == qbits) {
-				if (_capacity.test(i)) scale = qbit - int(half_range);
+				if (_capacity.test(static_cast<size_t>(i))) scale = qbit - int(half_range);
 			}
 			else {
-				fraction[fbit--] = _capacity[i];
+				fraction[static_cast<size_t>(fbit)] = _capacity[static_cast<size_t>(i)];
+				--fbit;
 			}
 		}
 		for (i = int(upper_range) - 1; i >= 0; i--, qbit--) {
 			if (scale == qbits) {
-				if (_upper.test(i)) scale = qbit - int(half_range);
+				if (_upper.test(static_cast<size_t>(i))) scale = qbit - int(half_range);
 			}
 			else {
-				fraction[fbit--] = _upper[i];
+				fraction[static_cast<size_t>(fbit)] = _upper[static_cast<size_t>(i)];
+				--fbit;
 			}
 		}
 		for (i = int(half_range) - 1; i >= 0; i--, qbit--) {
 			if (scale == qbits) {
-				if (_lower.test(i)) scale = qbit - int(half_range);
+				if (_lower.test(static_cast<size_t>(i))) scale = qbit - int(half_range);
 			}
 			else {
-				fraction[fbit--] = _lower[i];
+				fraction[static_cast<size_t>(fbit)] = _lower[static_cast<size_t>(i)];
+				--fbit;
 			}
 		}
 		if (scale == qbits) {
@@ -529,44 +533,44 @@ private:
 		// so scale  =  0 is the hidden bit at location 0, scale 1 = bit 1, etc.
 		// and scale = -1 is the first bit of the fraction
 		// we manage scale >= 0 in the _upper accumulator, and scale < 0 in the _lower accumulator
-		int lsb = v.scale() - int(fbits);
+		int lsb = v.scale() - static_cast<int>(fbits);
 		bool carry = false;
 		bitblock<fbits + 1> fraction = v.get_fixed_point();
 		int i, f;  // bit pointers, i pointing to the quire bits, f pointing to the fraction bits of rhs
 		// divide bits between upper and lower accumulator
 		if (v.scale() < 0) {		// all lower accumulator
-			int lsb = int(half_range) + v.scale() - int(fbits);
+			lsb = int(half_range) + v.scale() - int(fbits); /// TODO: double check this fix works
 			int qlsb = lsb > 0 ? lsb : 0;
 			int flsb = lsb >= 0 ? 0 : -lsb;
-			for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
-				bool _a = _lower[i];
-				bool _b = fraction[f];
-				_lower[i] = _a ^ _b ^ carry;
-				carry = (_a & _b) | (carry & (_a ^ _b));
+			for (i = qlsb, f = flsb; i < int(half_range) && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _lower[static_cast<size_t>(i)];
+				bool _b = fraction[static_cast<size_t>(f)];
+				_lower[static_cast<size_t>(i)] = _a ^ _b ^ carry;
+				carry = (_a && _b) || (carry && (_a ^ _b));
 			}
 			// propagate any carries to the end of the lower accumulator
 			while (carry && i < int(half_range)) {
-				bool _a = _lower[i];
-				_lower[i] = _a ^ carry;
-				carry = carry & _a;
+				bool _a = _lower[static_cast<size_t>(i)];
+				_lower[static_cast<size_t>(i)] = _a ^ carry;
+				carry = carry && _a;
 				i++;
 			}
 			if (carry) {  // carry propagate to the _upper accumulator
 						  // need to increment the _upper
 				i = 0;
 				while (carry && i < int(upper_range)) {
-					bool _a = _upper[i];
-					_upper[i] = _a ^ carry;
-					carry = carry & _a;
+					bool _a = _upper[static_cast<size_t>(i)];
+					_upper[static_cast<size_t>(i)] = _a ^ carry;
+					carry = carry && _a;
 					i++;
 				}
 				if (carry) {
 					// next add the bits to the capacity segment
 					i = 0;
 					while (carry && i < int(capacity)) {
-						bool _a = _capacity[i];
-						_capacity[i] = _a ^ carry;
-						carry = carry & _a;
+						bool _a = _capacity[static_cast<size_t>(i)];
+						_capacity[static_cast<size_t>(i)] = _a ^ carry;
+						carry = carry && _a;
 						i++;
 					}
 				}
@@ -574,25 +578,25 @@ private:
 		}
 		else if (lsb >= 0) {	// all upper accumulator
 			int upper_bound = v.scale();
-			for (i = lsb, f = 0; i <= upper_bound && f <= int(fbits); i++, f++) {
-				bool _a = _upper[i];
-				bool _b = fraction[f];
-				_upper[i] = _a ^ _b ^ carry;
-				carry = (_a & _b) | (carry & (_a ^ _b));
+			for (i = lsb, f = 0; i <= upper_bound && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _upper[static_cast<size_t>(i)];
+				bool _b = fraction[static_cast<size_t>(f)];
+				_upper[static_cast<size_t>(i)] = _a ^ _b ^ carry;
+				carry = (_a && _b) || (carry && (_a ^ _b));
 			}
 			while (carry && i < int(upper_range)) {
-				bool _a = _upper[i];
-				_upper[i] = _a ^ carry;
-				carry = carry & _a;
+				bool _a = _upper[static_cast<size_t>(i)];
+				_upper[static_cast<size_t>(i)] = _a ^ carry;
+				carry = carry && _a;
 				i++;
 			}
 			if (carry) {
 				// next add the bits to the capacity segment
 				i = 0;
 				while (carry && i < int(capacity)) {
-					bool _a = _capacity[i];
-					_capacity[i] = _a ^ carry;
-					carry = carry & _a;
+					bool _a = _capacity[static_cast<size_t>(i)];
+					_capacity[static_cast<size_t>(i)] = _a ^ carry;
+					carry = carry && _a;
 					i++;
 				}
 			}
@@ -603,81 +607,82 @@ private:
 			lsb = int(half_range) + lsb; // remember lsb is negative in this block
 			int qlsb = lsb > 0 ? lsb : 0;
 			int flsb = lsb >= 0 ? 0 : -lsb;
-			for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
-				bool _a = _lower[i];
-				bool _b = fraction[f];
-				_lower[i] = _a ^ _b ^ carry;
-				carry = (_a & _b) | (carry & (_a ^ _b));
+			for (i = qlsb, f = flsb; i < int(half_range) && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _lower[static_cast<size_t>(i)];
+				bool _b = fraction[static_cast<size_t>(f)];
+				_lower[static_cast<size_t>(i)] = _a ^ _b ^ carry;
+				carry = (_a && _b) || (carry && (_a ^ _b));
 			}
 			// next add the bits in the upper accumulator
-			for (i = 0; i <= v.scale() && f <= int(fbits); i++, f++) {
-				bool _a = _upper[i];
-				bool _b = fraction[f];
-				_upper[i] = _a ^ _b ^ carry;
-				carry = (_a & _b) | (carry & (_a ^ _b));
+			for (i = 0; i <= v.scale() && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _upper[static_cast<size_t>(i)];
+				bool _b = fraction[static_cast<size_t>(f)];
+				_upper[static_cast<size_t>(i)] = _a ^ _b ^ carry;
+				carry = (_a && _b) || (carry && (_a ^ _b));
 			}
 			// propagate any carries to the end of the upper accumulator
 			while (carry && i < int(upper_range)) {
-				bool _a = _upper[i];
-				_upper[i] = _a ^ carry;
-				carry = carry & _a;
+				bool _a = _upper[static_cast<size_t>(i)];
+				_upper[static_cast<size_t>(i)] = _a ^ carry;
+				carry = carry && _a;
 				i++;
 			}
 			// next add the bits to the capacity segment
 			if (carry) {
 				i = 0;
 				while (carry && i < int(capacity)) {
-					bool _a = _capacity[i];
-					_capacity[i] = _a ^ carry;
-					carry = carry & _a;
+					bool _a = _capacity[static_cast<size_t>(i)];
+					_capacity[static_cast<size_t>(i)] = _a ^ carry;
+					carry = carry && _a;
 					i++;
 				}
 			}
 		}
 	}
+
 	// subtract a value from the quire
 	template<size_t fbits>
 	void subtract_value(const value<fbits>& v) {
 		if (v.iszero()) return;
 		// lsb in the quire of the lowest bit of the explicit fixed point value including the hidden bit of the fraction
-		int lsb = v.scale() - int(fbits);
+		int lsb = v.scale() - static_cast<int>(fbits);
 		bool borrow = false;
 		bitblock<fbits + 1> fraction = v.get_fixed_point();
 		int i, f;  // bit pointers, i pointing to the quire bits, f pointing to the fraction bits of rhs
 		// divide bits between upper and lower accumulator
 		if (v.scale() < 0) {		// all lower accumulator
-			int lsb = int(half_range) + v.scale() - int(fbits);
+			lsb = int(half_range) + v.scale() - static_cast<int>(fbits);
 			int qlsb = lsb > 0 ? lsb : 0;
 			int flsb = lsb >= 0 ? 0 : -lsb;
-			for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
-				bool _a = _lower[i];
-				bool _b = fraction[f];
-				_lower[i] = _a ^ _b ^ borrow;
-				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+			for (i = qlsb, f = flsb; i < int(half_range) && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _lower[size_t(i)];
+				bool _b = fraction[size_t(f)];
+				_lower[size_t(i)] = _a ^ _b ^ borrow;
+				borrow = (!_a && _b) || (bxnor(!_a, !_b) && borrow);
 			}
 			// propagate any borrows to the end of the lower accumulator
 			while (borrow && i < int(half_range)) {
-				bool _a = _lower[i];
-				_lower[i] = _a ^ borrow;
-				borrow = borrow & !_a;
+				bool _a = _lower[size_t(i)];
+				_lower[size_t(i)] = _a ^ borrow;
+				borrow = borrow && !_a;
 				i++;
 			}
 			if (borrow) { // borrow propagate to the _upper accumulator
 						  // need to decrement the _upper
 				i = 0;
 				while (borrow && i < int(upper_range)) {
-					bool _a = _upper[i];
-					_upper[i] = _a ^ borrow;
-					borrow = borrow & !_a;
+					bool _a = _upper[size_t(i)];
+					_upper[size_t(i)] = _a ^ borrow;
+					borrow = borrow && !_a;
 					i++;
 				}
 				if (borrow) {
 					// propagate the borrow into the capacity segment
 					i = 0;
 					while (borrow && i < int(capacity)) {
-						bool _a = _capacity[i];
-						_capacity[i] = _a ^ borrow;
-						borrow = borrow & !_a;
+						bool _a = _capacity[size_t(i)];
+						_capacity[size_t(i)] = _a ^ borrow;
+						borrow = borrow && !_a;
 						i++;
 					}
 				}
@@ -685,26 +690,26 @@ private:
 		}
 		else if (lsb >= 0) {	// all upper accumulator
 			int upper_bound = v.scale();
-			for (i = lsb, f = 0; i <= upper_bound && f <= int(fbits); i++, f++) {
-				bool _a = _upper[i];
-				bool _b = fraction[f];
-				_upper[i] = _a ^ _b ^ borrow;
-				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+			for (i = lsb, f = 0; i <= upper_bound && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _upper[size_t(i)];
+				bool _b = fraction[size_t(f)];
+				_upper[size_t(i)] = _a ^ _b ^ borrow;
+				borrow = (!_a && _b) || (bxnor(!_a, !_b) && borrow);
 			}
 			// propagate any borrows to the end of the upper accumulator
 			while (borrow && i < int(upper_range)) {
-				bool _a = _upper[i];
-				_upper[i] = _a ^ borrow;
-				borrow = borrow & !_a;
+				bool _a = _upper[size_t(i)];
+				_upper[size_t(i)] = _a ^ borrow;
+				borrow = borrow && !_a;
 				i++;
 			}
 			if (borrow) {
 				// propagate the borrow into the capacity segment
 				i = 0;
 				while (borrow && i < int(capacity)) {
-					bool _a = _capacity[i];
-					_capacity[i] = _a ^ borrow;
-					borrow = borrow & !_a;
+					bool _a = _capacity[size_t(i)];
+					_capacity[size_t(i)] = _a ^ borrow;
+					borrow = borrow && !_a;
 					i++;
 				}
 			}
@@ -715,33 +720,33 @@ private:
 			lsb = int(half_range) + lsb; // remember lsb is negative in this block
 			int qlsb = lsb > 0 ? lsb : 0;
 			int flsb = lsb >= 0 ? 0 : -lsb;
-			for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
-				bool _a = _lower[i];
-				bool _b = fraction[f];
-				_lower[i] = _a ^ _b ^ borrow;
-				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+			for (i = qlsb, f = flsb; i < int(half_range) && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _lower[size_t(i)];
+				bool _b = fraction[size_t(f)];
+				_lower[size_t(i)] = _a ^ _b ^ borrow;
+				borrow = (!_a && _b) || (bxnor(!_a, !_b) && borrow);
 			}
 			// next add the bits in the upper accumulator
-			for (i = 0; i <= v.scale() && f <= int(fbits); i++, f++) {
-				bool _a = _upper[i];
-				bool _b = fraction[f];
-				_upper[i] = _a ^ _b ^ borrow;
-				borrow = (!_a & _b) | (!(!_a ^ !_b) & borrow);
+			for (i = 0; i <= v.scale() && f <= static_cast<int>(fbits); i++, f++) {
+				bool _a = _upper[size_t(i)];
+				bool _b = fraction[size_t(f)];
+				_upper[size_t(i)] = _a ^ _b ^ borrow;
+				borrow = (!_a && _b) || (bxnor(!_a, !_b) && borrow);
 			}
 			// propagate any borrows to the end of the upper accumulator
 			while (borrow && i < int(upper_range)) {
-				bool _a = _upper[i];
-				_upper[i] = _a ^ borrow;
-				borrow = borrow & !_a;
+				bool _a = _upper[size_t(i)];
+				_upper[size_t(i)] = _a ^ borrow;
+				borrow = borrow && !_a;
 				i++;
 			}
 			if (borrow) {
 				// propagate the borrow into the capacity segment
 				i = 0;
 				while (borrow && i < int(capacity)) {
-					bool _a = _capacity[i];
-					_capacity[i] = _a ^ borrow;
-					borrow = borrow & !_a;
+					bool _a = _capacity[size_t(i)];
+					_capacity[size_t(i)] = _a ^ borrow;
+					borrow = borrow && !_a;
 					i++;
 				}
 			}
@@ -870,13 +875,13 @@ inline bool operator< (const quire<nbits, es, capacity>& q, const value<fbits>& 
 			bitblock<fbits + 1> fixed = v.get_fixed_point();
 			int i, f;  // bit pointers, i for the quire, f for the fraction in v
 			bool undecided = true;
-			for (i = quire<nbits, es, capacity>::radix_point + qscale, f = int(fbits); i >= 0 && f >= 0; --i, --f) {
-				if (!q[i] && fixed[f]) {
+			for (i = int(quire<nbits, es, capacity>::radix_point) + qscale, f = int(fbits); i >= 0 && f >= 0; --i, --f) {
+				if (!q[i] && fixed[static_cast<size_t>(f)]) {
 					bSmaller = true;
 					undecided = false;
 					break;
 				}
-				else if (q[i] && !fixed[f]) {
+				else if (q[i] && !fixed[static_cast<size_t>(f)]) {
 					bSmaller = false;
 					undecided = false;
 					break;
@@ -910,8 +915,8 @@ inline bool operator> (const quire<nbits, es, capacity>& q, const value<fbits>& 
 			bitblock<fbits + 1> fixed_point = v.get_fixed_point();
 			int i, f;  // bit pointers, i for the quire, f for the fraction in v
 			bool undecided = true;
-			for (i = quire<nbits, es, capacity>::radix_point + qscale, f = int(fbits); i >= 0 && f >= 0; --i, --f) {
-				if (q[i] && !fixed_point[f]) {
+			for (i = int(quire<nbits, es, capacity>::radix_point) + qscale, f = int(fbits); i >= 0 && f >= 0; --i, --f) {
+				if (q[i] && !fixed_point[static_cast<size_t>(f)]) {
 					bBigger = true;
 					undecided = false;
 					break;
@@ -980,6 +985,4 @@ value<2 * (nbits - 2 - es)> quire_mul(const posit<nbits, es>& lhs, const posit<n
 	return product;
 }
 
-}  // namespace unum
-
-}  // namespace sw
+}}  // namespace sw::unum

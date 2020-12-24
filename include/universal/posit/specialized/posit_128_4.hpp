@@ -5,12 +5,23 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {
-namespace unum {
+// DO NOT USE DIRECTLY!
+// the compile guards in this file are only valid in the context of the specialization logic
+// configured in the main <universal/posit/posit>
+
+#ifndef POSIT_FAST_POSIT_128_4
+#define POSIT_FAST_POSIT_128_4 0
+#endif
+
+namespace sw { namespace unum {
 
 	// set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_128_4
+#ifdef _MSC_VER
 #pragma message("Fast specialization of posit<128,4>")
+//#else
+//#warning("Fast specialization of posit<128,4>")
+#endif
 
 // fast specialized posit<128,4>
 template<>
@@ -731,10 +742,6 @@ inline bool operator>=(int lhs, const posit<NBITS_IS_128, ES_IS_4>& rhs) {
 
 #endif // POSIT_ENABLE_LITERALS
 
-#else  // POSIT_FAST_POSIT_128_4
-// too verbose #pragma message("Standard posit<128,4>")
-#	define POSIT_FAST_POSIT_128_4 0
 #endif // POSIT_FAST_POSIT_128_4
 
-}
-}
+}} // namespace sw::unum

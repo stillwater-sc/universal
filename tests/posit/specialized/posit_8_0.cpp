@@ -15,9 +15,10 @@
 #include "../../utils/posit_test_helpers.hpp"
 #include "../../utils/posit_math_helpers.hpp"
 
-/*
-Standard posits with nbits = 8 have no exponent bits, i.e. es = 0.
-*/
+// Standard posits with nbits = 8 have no exponent bits, i.e. es = 0.
+
+#define MANUAL_TESTING 0
+#define STRESS_TESTING 0
 
 int main(int argc, char** argv)
 try {
@@ -38,10 +39,28 @@ try {
 #else
 	cout << "Standard posit<8,0> configuration tests" << endl;
 #endif
-
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl;
 
+#if MANUAL_TESTING
+
+	posit<nbits, es> a, b;
+	a.setnar(); b.setnar();
+	testLogicOperators(a, b);
+	a = +1; b = +1; --b;
+	testLogicOperators(a, b);
+	a = +1; b = +1; ++b;
+	testLogicOperators(a, b);
+	a = -1; b = -1; --b;
+	testLogicOperators(a, b);
+	a = -1; b = -1; ++b;
+	testLogicOperators(a, b);
+
+	cout << nrOfFailedTestCases << " number of failures\n";
+
+	nrOfFailedTestCases = 0;  // ignore failures in manual testing
+
+#else
 	// special cases
 	p = 0;
 	if (!p.iszero()) ++nrOfFailedTestCases;
@@ -66,12 +85,16 @@ try {
 
 	// arithmetic tests
 	cout << "Arithmetic tests " << endl;
-	nrOfFailedTestCases += ReportTestResult( ValidateAddition         <nbits, es>(tag, bReportIndividualTestCases), tag, "add            (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateSubtraction      <nbits, es>(tag, bReportIndividualTestCases), tag, "subtract       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateMultiplication   <nbits, es>(tag, bReportIndividualTestCases), tag, "multiply       (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateDivision         <nbits, es>(tag, bReportIndividualTestCases), tag, "divide         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateNegation         <nbits, es>(tag, bReportIndividualTestCases), tag, "negate         (native)  ");
-	nrOfFailedTestCases += ReportTestResult( ValidateReciprocation    <nbits, es>(tag, bReportIndividualTestCases), tag, "reciprocate    (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateAddition           <nbits, es>(tag, bReportIndividualTestCases), tag,    "add            (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateInPlaceAddition    <nbits, es>(tag, bReportIndividualTestCases), tag,    "+=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateSubtraction        <nbits, es>(tag, bReportIndividualTestCases), tag,    "subtract       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateInPlaceSubtraction <nbits, es>(tag, bReportIndividualTestCases), tag,    "-=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateMultiplication     <nbits, es>(tag, bReportIndividualTestCases), tag,    "multiply       (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateInPlaceMultiplication <nbits, es>(tag, bReportIndividualTestCases), tag, "*=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateDivision           <nbits, es>(tag, bReportIndividualTestCases), tag,    "divide         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateInPlaceDivision    <nbits, es>(tag, bReportIndividualTestCases), tag,    "/=             (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateNegation           <nbits, es>(tag, bReportIndividualTestCases), tag,    "negate         (native)  ");
+	nrOfFailedTestCases += ReportTestResult( ValidateReciprocation      <nbits, es>(tag, bReportIndividualTestCases), tag,    "reciprocate    (native)  ");
 
 	// elementary function tests
 	cout << "Elementary function tests " << endl;
@@ -95,6 +118,8 @@ try {
 	nrOfFailedTestCases += ReportTestResult( ValidateAsinh            <nbits, es>(tag, bReportIndividualTestCases), tag, "asinh                    ");
 
 	nrOfFailedTestCases += ReportTestResult( ValidatePowerFunction    <nbits, es>(tag, bReportIndividualTestCases), tag, "pow                      ");
+
+#endif
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

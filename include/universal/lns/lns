@@ -26,12 +26,12 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include "lns.hpp"
-#include "numeric_limits.hpp"
-#include "exceptions.hpp"
+#include <universal/lns/lns.hpp>
+#include <universal/lns/numeric_limits.hpp>
+#include <universal/lns/exceptions.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include "math_functions.hpp"
+#include <universal/lns/math_functions.hpp>
 
 #endif

@@ -36,9 +36,32 @@
 
 #endif
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
+// return in triple form (sign, scale, fraction)
+template<size_t nbits, typename bt>
+inline std::string to_triple(const integer<nbits, bt>& number) {
+	std::stringstream ss;
 
-} // namespace unum
-} // namespace sw
+	// print sign bit
+	ss << '(' << (number < 0 ? '-' : '+') << ',';
+
+	// scale
+	ss << scale(number) << ',';
+
+	// print fraction bits
+	long msb = findMsb(number);
+	if (msb < 0) {
+		ss << '-';
+	}
+	else {
+		for (int i = msb-1; i >= 0; --i) {
+			ss << (number.at(i) ? '1' : '0');
+		}
+	}
+
+	ss << ')';
+	return ss.str();
+}
+
+}} // namespace sw::unum

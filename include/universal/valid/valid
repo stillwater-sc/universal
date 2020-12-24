@@ -1,11 +1,11 @@
 #pragma once
-// valid standard header
+// <universal/valid/valid>: arbitrary configuration valid standard header
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#ifndef _VALID_
-#define _VALID_
+#ifndef _UNIVERSAL_VALID_
+#define _UNIVERSAL_VALID_
 
 #include <universal/posit/posit>
 #include <universal/valid/valid.hpp>

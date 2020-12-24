@@ -85,12 +85,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, plog, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				plog = sw::unum::log(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::log(da);
 				if (plog != pref) {
 					nrOfFailedTests++;
@@ -110,12 +109,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, plog2, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				plog2 = sw::unum::log2(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::log2(da);
 				if (plog2 != pref) {
 					nrOfFailedTests++;
@@ -136,12 +134,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, plog10, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				plog10 = sw::unum::log10(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::log10(da);
 				if (plog10 != pref) {
 					nrOfFailedTests++;
@@ -162,12 +159,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pexp, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				pexp = sw::unum::exp(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::exp(da);
 				if (pexp != pref) {
 					if (std::exp(da) != 0.0) { // exclude special posit rounding rule that projects to minpos
@@ -189,12 +185,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pexp2, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				pexp2 = sw::unum::exp2(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::exp2(da);
 				if (pexp2 != pref) {
 					if (std::exp(da) != 0.0) { // exclude special posit rounding rule that projects to minpos
@@ -217,14 +212,27 @@ namespace sw {
 			posit<nbits, es> pa, pb, ppow, pref;
 
 			uint32_t testNr = 0;
-			double da, db;
 			for (int i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
-				da = double(pa);
+				double da = double(pa);
 				for (int j = 0; j < NR_POSITS; j++) {
 					pb.set_raw_bits(j);
-					db = double(pb);
+					double db = double(pb);
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+					try {
+						ppow = pow(pa, pb);
+					}
+					catch (const posit_arithmetic_exception& err) {
+						if (pa.isnar()) {
+							if (bReportIndividualTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
+						}
+						else {
+							throw err;
+						}
+					}
+#else
 					ppow = pow(pa, pb);
+#endif
 					pref = std::pow(da, db);
 					if (ppow != pref) {
 						nrOfFailedTests++;
@@ -251,12 +259,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, psin, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				psin = sw::unum::sin(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::sin(da);
 				if (psin != pref) {
 					nrOfFailedTests++;
@@ -276,12 +283,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pcos, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				pcos = sw::unum::cos(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::cos(da);
 				if (pcos != pref) {
 					nrOfFailedTests++;
@@ -301,12 +307,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, ptan, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				ptan = sw::unum::tan(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::tan(da);
 				if (ptan != pref) {
 					nrOfFailedTests++;
@@ -326,12 +331,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, patan, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				patan = sw::unum::atan(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::atan(da);
 				if (patan != pref) {
 					nrOfFailedTests++;
@@ -351,12 +355,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pasin, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				pasin = sw::unum::asin(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::asin(da);
 				if (pasin != pref) {
 					nrOfFailedTests++;
@@ -376,12 +379,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pacos, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				pacos = sw::unum::acos(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::acos(da);
 				if (pacos != pref) {
 					nrOfFailedTests++;
@@ -401,12 +403,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, psinh, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				psinh = sw::unum::sinh(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::sinh(da);
 				if (psinh != pref) {
 					nrOfFailedTests++;
@@ -426,12 +427,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pcosh, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				pcosh = sw::unum::cosh(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::cosh(da);
 				if (pcosh != pref) {
 					nrOfFailedTests++;
@@ -451,12 +451,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, ptanh, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				ptanh = sw::unum::tanh(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::tanh(da);
 				if (ptanh != pref) {
 					nrOfFailedTests++;
@@ -476,12 +475,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, patanh, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				patanh = sw::unum::atanh(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::atanh(da);
 				if (patanh != pref) {
 					nrOfFailedTests++;
@@ -501,12 +499,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pasinh, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				pasinh = sw::unum::asinh(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::asinh(da);
 				if (pasinh != pref) {
 					nrOfFailedTests++;
@@ -526,12 +523,11 @@ namespace sw {
 			int nrOfFailedTests = 0;
 			posit<nbits, es> pa, pacosh, pref;
 
-			double da;
 			for (int i = 1; i < NR_TEST_CASES; i++) {
 				pa.set_raw_bits(i);
 				pacosh = sw::unum::acosh(pa);
 				// generate reference
-				da = double(pa);
+				double da = double(pa);
 				pref = std::acosh(da);
 				if (pacosh != pref) {
 					nrOfFailedTests++;

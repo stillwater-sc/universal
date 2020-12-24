@@ -5,8 +5,24 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {
-namespace function {
+namespace sw { namespace function {
+
+// Greatest Common Divisor of two numbers, a and b
+template<typename IntegerType>
+IntegerType gcd(IntegerType a, IntegerType b) {
+	if (b == IntegerType(0))	return a;
+	return gcd(b, a % b);
+}
+
+// Least Common Multiple of n integer-type numbers
+template<typename Vector>
+typename Vector::value_type findlcm(const Vector& v) {
+	typename Vector::value_type lcm = v[0];
+	for (size_t i = 1; i < v.size(); i++) {
+		lcm = (v[i] * lcm) / gcd(v[i], lcm);
+	}
+	return lcm;
+}
 
 // BinomialCoefficient calculates the binomial coefficience recursively
 // (n over k) = (n-1 over k-1) + (n-1 over k)

@@ -9,25 +9,25 @@ is an additional set of generic functions which will be turned on as well.
 
 In general, all functions are available for the following types:
 
-* `posit4_t` - a 4 bit posit with 0 exponent bits (storage size is 1 byte)
-* `posit8_t` - an 8 bit posit with 0 exponent bits
-* `posit16_t` - a 16 bit posit with 1 exponent bit
-* `posit32_t` - a 32 bit posit with 2 exponent bits
-* `posit64_t` - a 64 bit posit with 3 exponent bits
-* `posit128_t` - a 128 bit posit with 4 exponent bits
-* `posit256_t` - a 256 bit posit with 5 exponent bits
+*   `posit4_t` - a 4 bit posit with 0 exponent bits (storage size is 1 byte)
+*   `posit8_t` - an 8 bit posit with 0 exponent bits
+*   `posit16_t` - a 16 bit posit with 1 exponent bit
+*   `posit32_t` - a 32 bit posit with 2 exponent bits
+*   `posit64_t` - a 64 bit posit with 3 exponent bits
+*   `posit128_t` - a 128 bit posit with 4 exponent bits
+*   `posit256_t` - a 256 bit posit with 5 exponent bits
 
 Additionally, the following types exist which can be converted to and from posits:
 
-* `long double`: **ld**
-* `double`: **d**
-* `float`: **f**
-* `long long`: **sll**
-* `long`: **sl**
-* `int`: **si**
-* `unsigned long long`: **ull**
-* `unsigned long`: **ul**
-* `unsigned int`: **ui**
+*   `long double`: **ld**
+*   `double`: **d**
+*   `float`: **f**
+*   `long long`: **sll**
+*   `long`: **sl**
+*   `int`: **si**
+*   `unsigned long long`: **ull**
+*   `unsigned long`: **ul**
+*   `unsigned int`: **ui**
 
 In this document, you will see descriptions of functions accepting non-posit type arguments
 which will be named according to the type of argument they accept. For example, when you see
@@ -240,14 +240,11 @@ if (posit32_p8cmp(p8max, two_hundred) < 0) {
 
 Ths library supports the following functions which require only a single argument:
 
-* `positN_sqrt()` Return the square root of a posit, as the same size posit
-* `positN_log()` Return the natural logarithm as a posit of the same size (same as math.h `log()`)
-* `positN_exp()` Returns the base-e exponential function of x (same as math.h `exp()`)
-
+*   `positN_sqrt()` Return the square root of a posit, as the same size posit
+*   `positN_log()` Return the natural logarithm as a posit of the same size (same as math.h `log()`)
+*   `positN_exp()` Returns the base-e exponential function of x (same as math.h `exp()`)
 
 ## Bugs and cautions
 
-* Conversions between posits is currently done by converting to a double and back, see:
-https://github.com/stillwater-sc/universal/issues/90
-* `positN_sqrt()` `positN_log()` and `positN_exp()` use math.h implementations with double
-type, see https://github.com/stillwater-sc/universal/issues/9 for more information.
+*   Conversions between posits is currently done by converting to a double and back, see: https://github.com/stillwater-sc/universal/issues/90
+*   `positN_sqrt()` `positN_log()` and `positN_exp()` use math.h implementations with double type, see https://github.com/stillwater-sc/universal/issues/9 for more information.

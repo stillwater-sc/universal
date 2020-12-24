@@ -35,7 +35,7 @@ public:
 		return _NrOfBits;
 	}
 	int scale() const {
-		return _Bits.to_ulong();
+		return int(_Bits.to_ulong());
 	}
 	long double value() const {
 		return (long double)(uint64_t(1) << scale());
@@ -53,8 +53,8 @@ public:
 		_Bits.reset();
 		// start of exponent is nbits - (sign_bit + regime_bits)
 		int msb = int(static_cast<int>(nbits) - 1 - (1 + nrRegimeBits));
-		size_t nrExponentBits = 0;
 		if (es > 0) {
+			size_t nrExponentBits = 0;
 			bitblock<es> _exp;
 			if (msb >= 0 && es > 0) {
 				nrExponentBits = (msb >= static_cast<int>(es) - 1 ? es : msb + 1);
@@ -168,10 +168,10 @@ inline int scale(const exponent<nbits, es>& e) { return e.scale(); }
 /////////////////// EXPONENT operators
 template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e) {
-	unsigned int nrOfExponentBitsProcessed = 0;
+	size_t nrOfExponentBitsProcessed = 0;
 	for (int i = int(es) - 1; i >= 0; --i) {
 		if (e._NrOfBits > nrOfExponentBitsProcessed++) {
-			ostr << (e._Bits[i] ? "1" : "0");
+			ostr << (e._Bits[size_t(i)] ? "1" : "0");
 		}
 		else {
 			ostr << "-";
@@ -191,10 +191,10 @@ template<size_t nbits, size_t es>
 inline std::string to_string(const exponent<nbits, es>& e, bool dashExtent = true) {
 	std::stringstream ss;
 	bitblock<es> bb = e.get();
-	unsigned int nrOfExponentBitsProcessed = 0;
+	size_t nrOfExponentBitsProcessed = 0;
 	for (int i = int(es) - 1; i >= 0; --i) {
 		if (e.nrBits() > nrOfExponentBitsProcessed++) {
-			ss << (bb[i] ? "1" : "0");
+			ss << (bb[size_t(i)] ? "1" : "0");
 		}
 		else {
 			ss << (dashExtent ? "-" : "");

@@ -4,8 +4,9 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cmath>
 #include <universal/posit/posit>
-#include "vector.hpp"
+#include <universal/blas/vector.hpp>
 
 namespace sw { namespace unum { namespace blas { 
 
@@ -22,10 +23,10 @@ typename Vector::value_type asum(size_t n, const Vector& x, size_t incx = 1) {
 
 // sum of the vector elements, default increment stride is 1
 template<typename Vector>
-typename Vector::value_type sum(size_t n, const Vector& x, size_t incx = 1) {
+typename Vector::value_type sum(const Vector& x) {
 	typename Vector::value_type sum = 0;
 	size_t ix;
-	for (ix = 0; ix < n; ix += incx) {
+	for (ix = 0; ix < size(x); ++ix) {
 		sum += x[ix];
 	}
 	return sum;
@@ -58,63 +59,26 @@ template<typename Scalar> auto size(const std::vector<Scalar>& v) { return v.siz
 // TODO: investigate if the vector<> index is always a 32bit entity?
 template<typename Vector>
 typename Vector::value_type dot(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy) {
-	typename Vector::value_type product = 0;
+	using value_type = typename Vector::value_type;
+	value_type sum_of_products = value_type(0);
 	size_t cnt, ix, iy;
 	for (cnt = 0, ix = 0, iy = 0; cnt < n && ix < size(x) && iy < size(y); ++cnt, ix += incx, iy += incy) {
-		product += x[ix] * y[iy];
+		sum_of_products += x[ix] * y[iy];
 	}
-	return product;
+	return sum_of_products;
 }
 // specialized dot product assuming constant stride
 template<typename Vector>
 typename Vector::value_type dot(const Vector& x, const Vector& y) {
-	typename Vector::value_type product = 0;
-	size_t cnt, ix, iy;
-	for (cnt = 0, ix = 0, iy = 0; cnt < size(x); ++cnt, ++ix, ++iy) {
-		product += x[ix] * y[iy];
+	using value_type = typename Vector::value_type;
+	value_type sum_of_products = value_type(0);
+	size_t nx = size(x);
+	if (nx <= size(y)) {
+		for (size_t i = 0; i < nx; ++i) {
+			sum_of_products += x[i] * y[i];
+		}
 	}
-	return product;
-}
-///
-/// fused dot product operators
-
-// Fused dot product with quire continuation
-template<typename Quire, typename Vector>
-void fdp_qr(Quire& sum_of_products, size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy) {
-	size_t ix, iy;
-	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
-		sum_of_products += sw::unum::quire_mul(x[ix], y[iy]);
-	}
-}
-// Resolved fused dot product, with the option to control capacity bits in the quire
-template<typename Vector, size_t capacity = 10>
-typename Vector::value_type fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy) {
-	constexpr size_t nbits = Vector::value_type::nbits;
-	constexpr size_t es = Vector::value_type::es;
-	sw::unum::quire<nbits, es, capacity> q(0);
-	size_t ix, iy;
-	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
-		q += sw::unum::quire_mul(x[ix], y[iy]);
-		if (sw::unum::_trace_quire_add) std::cout << q << '\n';
-	}
-	typename Vector::value_type sum;
-	sw::unum::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
-	return sum;
-}
-// Specialized resolved fused dot product that assumes unit stride and a standard vector,
-// with the option to control capacity bits in the quire
-template<typename Vector, size_t capacity = 10>
-typename Vector::value_type fdp(const Vector& x, const Vector& y) {
-	constexpr size_t nbits = Vector::value_type::nbits;
-	constexpr size_t es = Vector::value_type::es;
-	sw::unum::quire<nbits, es, capacity> q(0);
-	size_t ix, iy, n = size(x);
-	for (ix = 0, iy = 0; ix < n && iy < n; ++ix, ++iy) {
-		q += sw::unum::quire_mul(x[ix], y[iy]);
-	}
-	typename Vector::value_type sum;
-	sw::unum::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
-	return sum;
+	return sum_of_products;
 }
 
 // rotation of points in the plane
@@ -139,10 +103,10 @@ void rotg(T& a, T& b, T& c, T&s) {
 
 // scale a vector
 template<typename Scalar, typename Vector>
-void scale(size_t n, Scalar a, Vector& x, size_t incx) {
+void scale(size_t n, Scalar alpha, Vector& x, size_t incx) {
 	size_t cnt, ix;
 	for (cnt = 0, ix = 0; cnt < n && ix < size(x); ix += incx) {
-		x[ix] *= a;
+		x[ix] *= alpha;
 	}
 }
 
@@ -200,7 +164,31 @@ void strided_print(std::ostream& ostr, size_t n, Vector& x, size_t incx = 1) {
 	ostr << "]";
 }
 
+
 } } } // namespace sw::unum::blas
+
+// free function norms
+
+
+// 1-norm of a vector
+template<typename Scalar>
+Scalar norm1(const sw::unum::blas::vector<Scalar>& v) {
+	Scalar oneNorm = 0;
+	for (auto e : v) {
+		oneNorm += abs(e);
+	}
+	return oneNorm;
+}
+
+// 2-norm of a vector
+template<typename Scalar>
+Scalar norm2(const sw::unum::blas::vector<Scalar>& v) {
+	Scalar twoNorm = 0;
+	for (auto e : v) {
+		twoNorm += e * e;
+	}
+	return sqrt(twoNorm);
+}
 
 // specializations for STL vectors
 

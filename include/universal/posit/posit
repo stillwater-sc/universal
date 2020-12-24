@@ -1,4 +1,4 @@
-// posit standard header
+// <universal/posit/posit>: arbitrary configuration posit standard header
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -29,6 +29,10 @@
 #if !defined(POSIT_THROW_ARITHMETIC_EXCEPTION)
 // default is to use NaR as a signalling error
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
+#define VALUE_THROW_ARITHMETIC_EXCEPTION 0
+#else
+// for the value<> class assume the same behavior as requested for posits
+#define VALUE_THROW_ARITHMETIC_EXCEPTION POSIT_THROW_ARITHMETIC_EXCEPTION
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -42,8 +46,12 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include "posit.hpp"
-#include "numeric_limits.hpp"
+#include <universal/posit/posit_fwd.hpp>
+#include <universal/posit/posit_parse.hpp>
+#include <universal/posit/posit.hpp>
+#include <universal/traits/posit_traits.hpp>
+#include <universal/posit/numeric_limits.hpp>
+#include <universal/common/numeric_limits_utility.hpp>
 
 // fast specializations for special posit configurations
 // enable fast implementations of the standard posits
@@ -53,26 +61,26 @@
 // For example, POSIT_FAST_POSIT_8_0, when set to 1, will enable the fast implementation of posit<8,0>.
 // The individual POSIT_FAST_### macros enable fine grain control over which configurations
 // use fast code.
-#include "specializations.hpp"
+#include <universal/posit/specializations.hpp>
 
-#include "posit_manipulators.hpp"
-#include "posit_functions.hpp"
+#include <universal/posit/posit_manipulators.hpp>
+#include <universal/posit/posit_functions.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// the quire that enables user-controlled rounding
-#include "quire.hpp"
+#include <universal/posit/quire.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// the posit exact dot product
-#include "fdp.hpp"
+#include <universal/posit/fdp.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include "math_functions.hpp"
+#include <universal/posit/math_functions.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// numerical functions
-#include "twoSum.hpp"
+#include <universal/posit/twoSum.hpp>
 
 
 #endif

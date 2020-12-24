@@ -15,15 +15,15 @@ public:
 	static constexpr bool is_specialized = true;
 	static constexpr LNS  min() { // return minimum value
 		LNS lminpos;
-		return minpos<nbits, bt>(lminpos);
+		return sw::unum::minpos<nbits, bt>(lminpos);
 	} 
 	static constexpr LNS  max() { // return maximum value
 		LNS lmaxpos;
-		return maxpos<nbits, bt>(lmaxpos);
+		return sw::unum::maxpos<nbits, bt>(lmaxpos);
 	} 
 	static constexpr LNS  lowest() { // return most negative value
-		LNS lminneg;
-		return minneg<nbits, bt>(lminneg);
+		LNS lmaxneg;
+		return sw::unum::maxneg<nbits, bt>(lmaxneg);
 	} 
 	static constexpr LNS  epsilon() { // return smallest effective increment from 1.0
 		LNS one{ 1.0f }, incr{ 1.0f };

@@ -18,8 +18,7 @@
 // test helpers, such as, ReportTestResults
 #include "test_helpers.hpp"
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 #define FIXPNT_TABLE_WIDTH 20
 
@@ -310,8 +309,6 @@ int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 	fixpnt<nbits, rbits, arithmetic, BlockType> fpmaxpos{ 0 }, fpmaxneg{ 0 };
 	maxpos<nbits, rbits, arithmetic, BlockType>(fpmaxpos);
 	maxneg<nbits, rbits, arithmetic, BlockType>(fpmaxneg);
-	double dmaxpos = double(fpmaxpos);
-	double dmaxneg = double(fpmaxneg);
 
 	double da, db;
 	for (size_t i = 0; i < NR_VALUES; i++) {
@@ -327,7 +324,7 @@ int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 				result = a + b;
 			}
 			catch (...) {
-				if (ref < dmaxneg || ref > dmaxpos) {
+				if (ref < double(fpmaxneg) || ref > double(fpmaxpos)) {
 					// correctly caught the overflow exception
 					continue;
 				}
@@ -367,8 +364,6 @@ int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 	fixpnt<nbits, rbits, arithmetic, BlockType> fpmaxpos, fpmaxneg;
 	maxpos<nbits, rbits, arithmetic, BlockType>(fpmaxpos);
 	maxneg<nbits, rbits, arithmetic, BlockType>(fpmaxneg);
-	double dmaxpos = double(fpmaxpos);
-	double dmaxneg = double(fpmaxneg);
 
 	double da, db;
 	for (size_t i = 0; i < NR_VALUES; i++) {
@@ -384,7 +379,7 @@ int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 				result = a - b;
 			}
 			catch (...) {
-				if (ref < dmaxneg || ref > dmaxpos) {
+				if (ref < double(fpmaxneg) || ref > double(fpmaxpos)) {
 					// correctly caught the overflow exception
 					continue;
 				}
@@ -424,8 +419,6 @@ int VerifyMultiplication(const std::string& tag, bool bReportIndividualTestCases
 	fixpnt<nbits, rbits, arithmetic, BlockType> fpmaxpos, fpmaxneg;
 	maxpos<nbits, rbits, arithmetic, BlockType>(fpmaxpos);
 	maxneg<nbits, rbits, arithmetic, BlockType>(fpmaxneg);
-	double dmaxpos = double(fpmaxpos);
-	double dmaxneg = double(fpmaxneg);
 
 	double da, db;
 	for (size_t i = 0; i < NR_VALUES; i++) {
@@ -441,7 +434,7 @@ int VerifyMultiplication(const std::string& tag, bool bReportIndividualTestCases
 				result = a * b;
 			}
 			catch (...) {
-				if (ref < dmaxneg || ref > dmaxpos) {
+				if (ref < double(fpmaxneg) || ref > double(fpmaxpos)) {
 					// correctly caught the overflow exception
 					continue;
 				}
@@ -481,8 +474,6 @@ int VerifyDivision(const std::string& tag, bool bReportIndividualTestCases) {
 	fixpnt<nbits, rbits, arithmetic, BlockType> fpmaxpos, fpmaxneg;
 	maxpos<nbits, rbits, arithmetic, BlockType>(fpmaxpos);
 	maxneg<nbits, rbits, arithmetic, BlockType>(fpmaxneg);
-	double dmaxpos = double(fpmaxpos);
-	double dmaxneg = double(fpmaxneg);
 
 	double da, db;
 	for (size_t i = 0; i < NR_VALUES; i++) {
@@ -502,7 +493,7 @@ int VerifyDivision(const std::string& tag, bool bReportIndividualTestCases) {
 				result = a / b;
 			}
 			catch (...) {
-				if (ref < dmaxneg || b == 0 || ref > dmaxpos) {
+				if (ref < double(fpmaxneg) || b == 0 || ref > double(fpmaxpos)) {
 					// correctly caught the overflow and divide by zero exception
 					continue;
 				}
@@ -546,6 +537,4 @@ void GenerateFixedPointValues(std::ostream& ostr = std::cout) {
 	}
 }
 
-} // namespace unum
-} // namespace sw
-
+}} // namespace sw::unum

@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <strstream>
+#include <iostream>
 
 //#include <universal/integer/integer.hpp>
 #include <universal/blockbin/blockbinary.hpp>
@@ -21,9 +21,7 @@ try {
 		constexpr blockbinary<8, uint16_t> b8_2b(0x5555);
 		constexpr blockbinary<8, uint32_t> b8_4b(0x5555);
 
-		stringstream ss;
-		ss << b8 << '\n' << b8_1b << '\n' << b8_2b << '\n' << b8_4b << endl;
-		cout << ss.str() << endl;
+		cout << b8 << '\n' << b8_1b << '\n' << b8_2b << '\n' << b8_4b << endl;
 	}
 
 	{
@@ -32,9 +30,7 @@ try {
 		constexpr blockbinary<16, uint16_t> b16_1(0x5555);
 		constexpr blockbinary<16, uint32_t> b16_4b(0x5555);
 
-		stringstream ss;
-		ss << b16 << '\n' << b16_1 << '\n' << b16_2 << '\n' << b16_4b << endl;
-		cout << ss.str() << endl;
+		cout << b16 << '\n' << b16_1 << '\n' << b16_2 << '\n' << b16_4b << endl;
 	}
 
 }

@@ -9,9 +9,14 @@
 #include <iomanip>
 #include <limits>
 #include <tuple>
+#include <algorithm> // std::max
 
-#include "../native/ieee-754.hpp"
-#include "../native/bit_functions.hpp"
+#include <universal/native/ieee-754.hpp>
+#include <universal/native/bit_functions.hpp>
+
+#ifndef VALUE_THROW_ARITHMETIC_EXCEPTION
+#define VALUE_THROW_ARITHMETIC_EXCEPTION 0
+#endif
 
 namespace sw { namespace unum {
 
@@ -62,9 +67,9 @@ public:
           : _sign{sign}, _scale{scale}, _nrOfBits{fbits}, _fraction{fraction_without_hidden_bit}, 
             _inf{inf}, _zero{zero}, _nan{false} {}
 
-	constexpr value(const value& rhs)                       { *this = rhs; }
 
 	// decorated constructors
+	constexpr value(const value& initial_value)       { *this = initial_value; }
 	constexpr value(signed char initial_value)        { *this = initial_value; }
 	constexpr value(short initial_value)              { *this = initial_value; }
 	constexpr value(int initial_value)                { *this = initial_value; }
@@ -79,6 +84,7 @@ public:
 	constexpr value(double initial_value) : value{}   { *this = initial_value; }
 	constexpr value(long double initial_value)        { *this = initial_value; }
 
+	// assignment operators
 	constexpr value& operator=(const value& rhs) {
 		_sign	  = rhs._sign;
 		_scale	  = rhs._scale;
@@ -115,8 +121,8 @@ public:
 		_sign = (0x8000000000000000 & rhs);  // 1 is negative, 0 is positive
 		if (_sign) {
 			// process negative number: process 2's complement of the input
-			_scale = findMostSignificantBit(-rhs) - 1;
-			uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0 : (-rhs << (64 - _scale));
+			_scale = int(findMostSignificantBit(-rhs)) - 1;
+			uint64_t _fraction_without_hidden_bit = uint64_t(_scale == 0 ? 0 : (-rhs << (64 - _scale)));
 			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 			//take_2s_complement();
 			_nrOfBits = fbits;
@@ -124,13 +130,11 @@ public:
 		}
 		else {
 			// process positive number
-			if (rhs != 0) {
-				_scale = findMostSignificantBit(rhs) - 1;
-				uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0 : (rhs << (64 - _scale));
-				_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
-				_nrOfBits = fbits;
-				if (_trace_value_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
-			}
+			_scale = int(findMostSignificantBit(rhs)) - 1;
+			uint64_t _fraction_without_hidden_bit = uint64_t(_scale == 0 ? 0 : (rhs << (64 - _scale)));
+			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
+			_nrOfBits = fbits;
+			if (_trace_value_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 		}
 		return *this;
 	}
@@ -199,7 +203,7 @@ public:
 		return *this;
 	}
 	constexpr value<fbits>& operator=(double rhs) {
-                using std::get;
+		using std::get;
 		reset();
 		if (_trace_value_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
@@ -290,6 +294,16 @@ public:
 		return value<fbits>(!_sign, _scale, _fraction, _zero, _inf);
 	}
 
+	value<fbits>& operator++() {
+		*this = *this + value<fbits>(1);
+		return *this;
+	}
+	value<fbits> operator++(int) {
+		value<fbits> tmp{ *this };
+		operator++();
+		return tmp;
+	}
+
 	// modifiers
 	constexpr void reset() & {
 		_sign  = false;
@@ -347,38 +361,37 @@ public:
 	bitblock<fbits> fraction() const { return _fraction; }
 	/// Normalized shift (e.g., for addition).
 	template <size_t Size>
-	bitblock<Size> nshift(long shift) const {
+	bitblock<Size> nshift(int shift) const {
 		bitblock<Size> number;
 
-#if POSIT_THROW_ARITHMETIC_EXCEPTIONS
+#if VALUE_THROW_ARITHMETIC_EXCEPTION
 		// Check range
-		if (long(fbits) + shift >= long(Size))
+		if (int(fbits) + shift >= int(Size))
 			throw shift_too_large{};
 #else
 		// Check range
-		if (long(fbits) + shift >= long(Size)) {
+		if (int(fbits) + shift >= int(Size)) {
 			std::cerr << "nshift: shift is too large\n";
 			number.reset();
 			return number;
 		}
-#endif // POSIT_THROW_ARITHMETIC_EXCEPTIONS
+#endif // VALUE_THROW_ARITHMETIC_EXCEPTIONS
 
-		const long hpos = fbits + shift;       // position of hidden bit
-												  
+		int hpos = int(fbits) + shift;       // position of hidden bit
 		if (hpos <= 0) {   // If hidden bit is LSB or beyond just set uncertainty bit and call it a day
 			number[0] = true;
 			return number;
 		}
-		number[hpos] = true;                   // hidden bit now safely set
+		number[size_t(hpos)] = true;                   // hidden bit now safely set
 
 											   // Copy fraction bits into certain part
-		for (long npos = hpos - 1, fpos = long(fbits) - 1; npos > 0 && fpos >= 0; --npos, --fpos)
-			number[npos] = _fraction[fpos];
+		for (int npos = hpos - 1, fpos = int(fbits) - 1; npos > 0 && fpos >= 0; --npos, --fpos)
+			number[size_t(npos)] = _fraction[size_t(fpos)];
 
 		// Set uncertainty bit
 		bool uncertainty = false;
-		for (long fpos = std::min(long(fbits) - 1, -shift); fpos >= 0 && !uncertainty; --fpos)
-			uncertainty |= _fraction[fpos];
+		for (int fpos = std::min(int(fbits) - 1, -shift); fpos >= 0 && !uncertainty; --fpos)
+			uncertainty |= _fraction[size_t(fpos)];
 		number[0] = uncertainty;
 		return number;
 	}
@@ -386,7 +399,7 @@ public:
 	bitblock<fhbits> get_fixed_point() const {
 		bitblock<fbits + 1> fixed_point_number;
 		fixed_point_number.set(fbits, true); // make hidden bit explicit
-		for (unsigned int i = 0; i < fbits; i++) {
+		for (size_t i = 0; i < fbits; i++) {
 			fixed_point_number[i] = _fraction[i];
 		}
 		return fixed_point_number;
@@ -398,14 +411,14 @@ public:
 		Ty v = 1.0;
 		Ty scale = 0.5;
 		for (int i = int(fbits) - 1; i >= 0; i--) {
-			if (_fraction.test(i)) v += scale;
+			if (_fraction.test(size_t(i))) v += scale;
 			scale *= 0.5;
 			if (scale == 0.0) break;
 		}
 		return v;
 	}
 	int sign_value() const { return (_sign ? -1 : 1); }
-	double scale_value() const {
+	long double scale_value() const {
 		if (_zero) return (long double)(0.0);
 		return std::pow((long double)2.0, (long double)_scale);
 	}
@@ -415,7 +428,7 @@ public:
 		Ty v = 1.0;
 		Ty scale = 0.5;
 		for (int i = int(fbits) - 1; i >= 0; i--) {
-			if (_fraction.test(i)) v += scale;
+			if (_fraction.test(size_t(i))) v += scale;
 			scale *= 0.5;
 			if (scale == 0.0) break;
 		}
@@ -605,7 +618,7 @@ inline bool operator< (const value<nfbits>& lhs, const value<nfbits>& rhs) {
 			}
 		}
 	}
-	return false;
+//	return false; // all paths are taken care of
 }
 template<size_t nfbits>
 inline bool operator> (const value<nfbits>& lhs, const value<nfbits>& rhs) { return  operator< (rhs, lhs); }
@@ -679,15 +692,15 @@ void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 
 
 	if (_trace_value_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
 
-	long shift = 0;
+	int shift = 0;
 	if (carry) {
 		if (r1_sign == r2_sign) {  // the carry && signs== implies that we have a number bigger than r1
 			shift = -1;
 		} 
 		else {
 			// the carry && signs!= implies ||result|| < ||r1||, must find MSB (in the complement)
-			for (int i = abits - 1; i >= 0 && !sum[i]; i--) {
-				shift++;
+			for (int i = int(abits) - 1; i >= 0 && !sum[size_t(i)]; --i) {
+				++shift;
 			}
 		}
 	}
@@ -700,7 +713,7 @@ void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 
 	}
 
 	scale_of_result -= shift;
-	const int hpos = abits - 1 - shift;         // position of the hidden bit 
+	const int hpos = int(abits) - 1 - shift;         // position of the hidden bit 
 	sum <<= abits - hpos + 1;
 	if (_trace_value_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
 	result.set(r1_sign, scale_of_result, sum, false, false, false);
@@ -738,28 +751,28 @@ void module_subtract(const value<fbits>& lhs, const value<fbits>& rhs, value<abi
 
 	if (_trace_value_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
 
-	long shift = 0;
+	int shift = 0;
 	if (carry) {
 		if (r1_sign == r2_sign) {  // the carry && signs== implies that we have a number bigger than r1
 			shift = -1;
 		}
 		else {
 			// the carry && signs!= implies r2 is complement, result < r1, must find hidden bit (in the complement)
-			for (int i = abits - 1; i >= 0 && !sum[i]; i--) {
+			for (int i = static_cast<int>(abits) - 1; i >= 0 && !sum[static_cast<size_t>(i)]; --i) {
 				shift++;
 			}
 		}
 	}
 	assert(shift >= -1);
 
-	if (shift >= long(abits)) {            // we have actual 0                            
+	if (shift >= static_cast<int>(abits)) {            // we have actual 0                            
 		sum.reset();
 		result.set(false, 0, sum, true, false, false);
 		return;
 	}
 
 	scale_of_result -= shift;
-	const int hpos = abits - 1 - shift;         // position of the hidden bit 
+	const int hpos = static_cast<int>(abits) - 1 - shift;         // position of the hidden bit 
 	sum <<= abits - hpos + 1;
 	if (_trace_value_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
 	result.set(r1_sign, scale_of_result, sum, false, false, false);
@@ -850,7 +863,7 @@ void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbi
 			if (_trace_value_mul) std::cout << " shift " << shift << std::endl;
 			new_scale += 1;
 		}
-		result_fraction <<= shift;    // shift hidden bit out	
+		result_fraction <<= static_cast<size_t>(shift);    // shift hidden bit out	
 	}
 	else {   // posit<3,0>, <4,1>, <5,2>, <6,3>, <7,4> etc are pure sign and scale
 		// multiply the hidden bits together, i.e. 1*1: we know the answer a priori
@@ -887,16 +900,16 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 		if (_trace_value_div) std::cout << "r1     " << r1 << std::endl << "r2     " << r2 << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;
 		// check if the radix point needs to shift
 		// radix point is at divbits - fhbits
-		int msb = divbits - fhbits;
+		int msb = static_cast<int>(divbits - fhbits);
 		int shift = fhbits;
-		if (!result_fraction.test(msb)) {
+		if (!result_fraction.test(static_cast<size_t>(msb))) {
 			msb--; shift++;
-			while (!result_fraction.test(msb)) { // search for the first 1
+			while (!result_fraction.test(static_cast<size_t>(msb))) { // search for the first 1
 				msb--; shift++;
 			}
 		}
-		result_fraction <<= shift;    // shift hidden bit out
-		new_scale -= (shift - fhbits);
+		result_fraction <<= static_cast<size_t>(shift);    // shift hidden bit out
+		new_scale -= (shift - static_cast<int>(fhbits));
 		if (_trace_value_div) std::cout << "shift  " << shift << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;;
 	}
 	else {   // posit<3,0>, <4,1>, <5,2>, <6,3>, <7,4> etc are pure sign and scale
@@ -905,6 +918,55 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 	if (_trace_value_div) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
 
 	result.set(new_sign, new_scale, result_fraction, false, false, false);
+}
+
+template<size_t fbits>
+value<fbits> operator+(const value<fbits>& lhs, const value<fbits>& rhs) {
+	constexpr size_t abits = fbits + 5;
+	value<abits+1> result;
+	module_add<fbits,abits>(lhs, rhs, result);
+#if defined(__GNUC__) || defined(__GNUG__)
+	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+#else
+	return result.round_to<fbits>();
+#endif
+}
+template<size_t fbits>
+value<fbits> operator-(const value<fbits>& lhs, const value<fbits>& rhs) {
+	constexpr size_t abits = fbits + 5;
+	value<abits+1> result;
+	module_subtract<fbits,abits>(lhs, rhs, result);
+#if defined(__GNUC__) || defined(__GNUG__)
+	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+#else
+	return result.round_to<fbits>();
+#endif
+}
+template<size_t fbits>
+value<fbits> operator*(const value<fbits>& lhs, const value<fbits>& rhs) {
+	constexpr size_t mbits = 2*fbits + 2;
+	value<mbits> result;
+	module_multiply(lhs, rhs, result);
+#if defined(__GNUC__) || defined(__GNUG__)
+	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+#else
+	return result.round_to<fbits>();
+#endif
+}
+template<size_t fbits>
+value<fbits> operator/(const value<fbits>& lhs, const value<fbits>& rhs) {
+	constexpr size_t divbits = 2 * fbits + 5;
+	value<divbits> result;
+	module_divide(lhs, rhs, result);
+#if defined(__GNUC__) || defined(__GNUG__)
+	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+#else
+	return result.round_to<fbits>();
+#endif
+}
+template<size_t fbits>
+value<fbits> sqrt(const value<fbits>& a) {
+	return std::sqrt(double(a));
 }
 
 }}  // namespace sw::unum

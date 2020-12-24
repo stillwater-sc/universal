@@ -95,7 +95,7 @@ void GenerateLookupTable(BINARY_LOGIC_OPERATOR op) {
 template<size_t nbits, size_t es>
 void GenerateLookupTable(UNARY_ARITHMETIC_OPERATOR op) {
 	constexpr size_t nr_of_posits = (1 << nbits);
-	sw::unum::posit<nbits, es> pa, pb, presult;
+	sw::unum::posit<nbits, es> pa, presult;
 
 	std::cout << std::hex;
 	for (size_t i = 0; i < nr_of_posits; i += 8) {

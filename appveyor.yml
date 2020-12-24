@@ -36,19 +36,3 @@ build:
   project: c:\projects\cmake-init\build\universal.sln
   verbosity: minimal
   parallel: true
-only_commits:
-  files:
-    - CMakeLists.txt
-    - appveyor.yml
-    - bitblock/
-    - education/
-    - examples/
-    - float/
-    - perf/
-    - tests/
-    - tools/
-    - unum/
-    - unum2/
-    - valid/
-    - vloat/
-    - tools/cmake/

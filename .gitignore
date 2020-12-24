@@ -24,3 +24,6 @@ cmake-build-debug
 
 # Log files
 *.log
+
+# MacOS Desktop Services Store files
+.DS_Store

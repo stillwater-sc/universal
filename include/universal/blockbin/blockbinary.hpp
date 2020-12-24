@@ -231,9 +231,8 @@ public:
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
 		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
-		signed blockShift = 0;
 		if (bitsToShift >= long(bitsInBlock)) {
-			blockShift = bitsToShift / bitsInBlock;
+			int blockShift = bitsToShift / bitsInBlock;
 			for (signed i = signed(MSU); i >= blockShift; --i) {
 				_block[i] = _block[i - blockShift];
 			}
@@ -471,8 +470,8 @@ public:
 		bool guard = (targetLsb == 0 ? false : at(targetLsb - 1));
 		bool round = (targetLsb > 1 ? at(targetLsb - 2) : false);
 		bool sticky =(targetLsb < 3 ? false : any(targetLsb - 3));
-		bool tie = guard & !round & !sticky;
-		return (lsb & tie) || (guard & !tie);
+		bool tie = guard && !round && !sticky;
+		return (lsb && tie) || (guard && !tie);
 	}
 	bool any(size_t msb) const {
 		size_t topBlock = msb / bitsInBlock;

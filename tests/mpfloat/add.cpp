@@ -15,7 +15,7 @@
 #include "../utils/test_helpers.hpp"
 //#include "mpfloat_test_helpers.hpp"
 
-// generate specific test case that you can trace with the trace conditions in areal.hpp
+// generate specific test case that you can trace with the trace conditions in mpreal.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
