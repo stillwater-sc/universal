@@ -14,7 +14,6 @@
 // posit number system
 #define POSIT_ENABLE_LITERALS 1
 #include <universal/posit/posit.hpp>
-#include <universal/posit/posit_functions.hpp>
 
 /*
  * Consider all integer combinations of a^b for lowerbound <= a <= upperbound, lowerbound <= b <= upperbound

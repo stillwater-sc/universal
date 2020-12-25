@@ -40,7 +40,6 @@ try {
 	using namespace std;
 	using namespace sw::unum;
 
-	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	using int128 = sw::unum::integer<128>;
