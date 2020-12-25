@@ -1,6 +1,6 @@
 // complex_add.cpp: functional tests for posit complex addition
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -19,7 +19,7 @@
 #include "universal/posit/numeric_limits.hpp"
 #include "universal/posit/specializations.hpp"
 // posit type manipulators such as pretty printers
-#include "universal/posit/posit_manipulators.hpp"
+#include "universal/posit/manipulators.hpp"
 #include "universal/posit/math_functions.hpp"
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"

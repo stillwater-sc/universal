@@ -1,5 +1,5 @@
 #pragma once
-// posit_functions.hpp: simple math functions
+// attributes.hpp: functions to query number system attributes
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //

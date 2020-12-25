@@ -1,6 +1,6 @@
 // function_hyperbolic.cpp: functional tests for hyperbolic functions (sinh/cosh/tanh/atanh/acosh/asinh)
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -10,7 +10,7 @@
 
 // minimum set of include files to reflect source code dependencies
 #include "universal/posit/posit.hpp"
-#include "universal/posit/posit_manipulators.hpp"
+#include "universal/posit/manipulators.hpp"
 #include "universal/posit/math/hyperbolic.hpp"
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"

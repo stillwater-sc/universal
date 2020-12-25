@@ -63,8 +63,9 @@
 // use fast code.
 #include <universal/posit/specializations.hpp>
 
-#include <universal/posit/posit_manipulators.hpp>
-#include <universal/posit/posit_functions.hpp>
+// useful functions to work with posits
+#include <universal/posit/manipulators.hpp>
+#include <universal/posit/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// the quire that enables user-controlled rounding
