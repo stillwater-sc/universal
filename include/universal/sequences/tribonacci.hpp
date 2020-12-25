@@ -19,6 +19,21 @@
  * use is in the Origin of species by Charles R. Darwin. In the example of illustrating the 
  * growth of elephant population, he relied on the calculations made by his son, George H. Darwin. 
  * The term tribonacci was suggested by Feinberg in 1963.
+ * 
+ * The tribonacci constant, the only real solution to the equation x^3 - x^2 - x - 1 = 0, 
+ * which is related to tribonacci sequences (in which U_n = U_n-1 + U_n-2 + U_n-3) as 
+ * the Golden Ratio is related to the Fibonacci sequence and its generalizations. 
+ * This ratio also appears when a snub cube is inscribed in an octahedron or a cube, 
+ * by analogy once again with the appearance of the Golden Ratio when an icosahedron 
+ * is inscribed in an octahedron. [John Sharp, 1997]"
+ *
+ * The tribonacci constant corresponds to the Golden Section in a 
+ *          tripartite division 1 = u_1 + u_2 + u_3 of a unit line segment; 
+ * i.e., if 1/u_1 = u_1/u_2 = u_2/u_3 = c, c is the tribonacci constant. - Seppo Mustonen, Apr 19 2005
+ *
+ * The other two polynomial roots are the complex-conjugated pair 
+ * -0.4196433776070805662759262... +- i* 0.60629072920719936925934... - R. J. Mathar, Oct 25 2008
+
  */
 
 namespace sw { namespace sequences {
