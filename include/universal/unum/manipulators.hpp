@@ -25,9 +25,8 @@ template<size_t essize, size_t fsize>
 std::string unum_range() {
 	std::stringstream ss;
 	ss << " unum<" << std::setw(3) << essize << "," << fsize << "> ";
-	ss << "useed scale  " << std::setw(4) << useed_scale<essize, fsize>() << "     ";
-	ss << "minpos scale " << std::setw(10) << minpos_scale<essize, fsize>() << "     ";
-	ss << "maxpos scale " << std::setw(10) << maxpos_scale<essize, fsize>() << "     ";
+	//ss << "minpos scale " << std::setw(10) << minpos_scale<essize, fsize>() << "     ";
+	//ss << "maxpos scale " << std::setw(10) << maxpos_scale<essize, fsize>() << "     ";
 	ss << "minimum " << std::setw(12) << std::numeric_limits<sw::unum::unum<essize, fsize>>::min() << "     ";
 	ss << "maximum " << std::setw(12) << std::numeric_limits<sw::unum::unum<essize, fsize>>::max() ;
 	return ss.str();
