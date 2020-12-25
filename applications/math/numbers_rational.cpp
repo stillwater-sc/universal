@@ -1,11 +1,11 @@
 // numbers_rational.cpp: experiments with rational numbers and their approximations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/integer/integer>
 #include <universal/posit/posit>
-#include <universal/sequences/sequences.hpp>
+#include <universal/sequences/fibonacci.hpp>
 
 /*
 phi at 156 digits

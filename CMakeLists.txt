@@ -566,6 +566,7 @@ add_subdirectory("applications/engineering")
 add_subdirectory("applications/science")
 add_subdirectory("applications/cryptography")
 add_subdirectory("applications/numeric")
+add_subdirectory("applications/sequences")
 add_subdirectory("applications/multiprecision")
 endif(BUILD_APPLICATIONS)
 

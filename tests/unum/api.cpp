@@ -17,7 +17,7 @@
 #include <universal/unum/math_functions.hpp>
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -28,28 +28,29 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	cout << "unum class interface tests" << endl;
-#undef LATER
-#ifdef LATER
+
 	/////////////////////////////////////////////////////////////////////////////////////
-	//// MODULAR fixed-point (the default)
+	//// MODULAR unum Type 1 (the default)
 
 	// construction
 	{
 		int start = nrOfFailedTestCases;
-		// default construction using default arithmetic (Modulo) and default BlockType (uint8_t)
+		// default construction using default BlockType (uint8_t)
 		unum<8, 4> a, b(-8.125f), c(7.875), d(-7.875); // replace with long double init  d(-7.875l);
 		// b initialized to -8.125 in modular arithmetic becomes 7.875: -8.125 = b1000.0010 > maxneg -> becomes b0111.1110
-		if (a != (c + d)) ++nrOfFailedTestCases;
-		if (a != (b - c)) ++nrOfFailedTestCases;
+//		if (a != (c + d)) ++nrOfFailedTestCases;
+//		if (a != (b - c)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
 			cout << "FAIL : " << a << ' ' << b << ' ' << c << ' ' << d << endl;
 		}
 	}
 
+#undef LATER
+#ifdef LATER
 	{
 		int start = nrOfFailedTestCases;
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
-		unum<8, 4, Modulo> a, b(-8.125), c(7.875), d(-7.875);
+		unum<8, 4> a, b(-8.125), c(7.875), d(-7.875);
 		// b initialized to -8.125 in modular arithmetic becomes 7.875: -8.125 = b1000.0010 > maxneg -> becomes b0111.1110
 		if (a != (c + d)) ++nrOfFailedTestCases;
 		if (a != (b - c)) ++nrOfFailedTestCases;
@@ -58,13 +59,14 @@ try {
 		}
 	}
 
+
 	/////////////////////////////////////////////////////////////////////////////////////
-	//// SATURATING fixed-point
+	//// SATURATING unums
 
 	{
 		int start = nrOfFailedTestCases;
 		// construction with explicit arithmetic type and default BlockType (uint8_t)
-		unum<8, 4, Saturating> a(-8.0), b(-8.125), c(7.875), d(-7.875);
+		unum<8, 4> a(-8.0), b(-8.125), c(7.875), d(-7.875);
 		// b initialized to -8.125 in saturating arithmetic becomes -8
 //		if (0 != (c + d)) ++nrOfFailedTestCases; //cout << to_binary(c + d) << endl;
 		if (a != b) ++nrOfFailedTestCases;
@@ -77,8 +79,9 @@ try {
 		}
 	}
 
+
 	/////////////////////////////////////////////////////////////////////////////////////
-	//// improving efficiency for bigger fixed-points through explicit BlockType specification
+	//// improving efficiency for bigger unum Type 1s through explicit BlockType specification
 
 	{
 		int start = nrOfFailedTestCases;

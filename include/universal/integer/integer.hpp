@@ -1188,6 +1188,11 @@ bool parse(const std::string& number, integer<nbits, BlockType>& value) {
 	return bSuccess;
 }
 
+template<size_t nbits, typename BlockType>
+std::string to_string(const integer<nbits, BlockType>& n) {
+	return convert_to_decimal_string(n);
+}
+
 // generate an integer format ASCII format
 template<size_t nbits, typename BlockType>
 inline std::ostream& operator<<(std::ostream& ostr, const integer<nbits, BlockType>& i) {

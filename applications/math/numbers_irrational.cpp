@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/integer/integer>
 #include <universal/posit/posit>
-#include <universal/sequences/sequences.hpp>
+#include <universal/sequences/fibonacci.hpp>
 
 /*
 The most 'irrational' number of all is the golden ration, phi: phi = 1 + 1/phi
