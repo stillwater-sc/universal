@@ -14,7 +14,7 @@
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
-	sw::universal::real<nbits, es> a, b, rref, rsum;
+	sw::universal::areal<nbits, es> a, b, rref, rsum;
 	a = a;
 	b = b;
 	rsum = a + b;
@@ -75,7 +75,7 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::real_divide_by_zero& err) {
+catch (const sw::universal::areal_divide_by_zero& err) {
 	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

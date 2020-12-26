@@ -8,9 +8,9 @@
 namespace std {
 
 template <size_t nbits, size_t es, typename bt> 
-class numeric_limits< sw::universal::real<nbits,es,bt> > {
+class numeric_limits< sw::universal::areal<nbits,es,bt> > {
 public:
-	using AREAL = sw::universal::real<nbits, es, bt>;
+	using AREAL = sw::universal::areal<nbits, es, bt>;
 	static constexpr bool is_specialized = true;
 	static constexpr AREAL min() { // return minimum value
 		AREAL aminpos;

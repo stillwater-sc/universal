@@ -30,7 +30,7 @@ void matvec(Vector& b, const Matrix& A, const Vector& x) {
 #ifdef QUIRE_ENABLED_MATVEC
 // Matrix-vector product: b = A * x, posit specialized
 template<size_t nbits, size_t es>
-void matvec(sw::unum::blas::vector< sw::unum::posit<nbits, es> >& b, const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A, const sw::unum::blas::vector< sw::unum::posit<nbits, es> >& x) {
+void matvec(sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b, const sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& A, const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x) {
 	// preconditions
 	assert(A.cols() == size(x));
 	assert(size(b) == size(x));
@@ -41,21 +41,21 @@ void matvec(sw::unum::blas::vector< sw::unum::posit<nbits, es> >& b, const sw::u
 	size_t nr = size(b);
 	size_t nc = size(x);
 	for (size_t i = 0; i < nr; ++i) {
-		sw::unum::quire<nbits, es> q(0);
+		sw::universal::quire<nbits, es> q(0);
 		for (size_t j = 0; j < nc; ++j) {
-			q += sw::unum::quire_mul(A(i,j), x[j]);
+			q += sw::universal::quire_mul(A(i,j), x[j]);
 		}
-		sw::unum::convert(q.to_value(), b[i]);     // one and only rounding step of the fused-dot product
+		sw::universal::convert(q.to_value(), b[i]);     // one and only rounding step of the fused-dot product
 #if BLAS_TRACE_ROUNDING_EVENTS
-		sw::unum::quire<nbits, es> qdiff = q;
-		sw::unum::quire<nbits, es> qsum = b[i];
+		sw::universal::quire<nbits, es> qdiff = q;
+		sw::universal::quire<nbits, es> qsum = b[i];
 		qdiff -= qsum;
 		if (!qdiff.iszero()) {
 			++errors;
 			std::cout << "q    : " << q << std::endl;
 			std::cout << "qsum : " << qsum << std::endl;
 			std::cout << "qdiff: " << qdiff << std::endl;
-			sw::unum::posit<nbits, es> roundingError;
+			sw::universal::posit<nbits, es> roundingError;
 			convert(qdiff.to_value(), roundingError);
 			std::cout << "matvec b[" << i << "] = " << hex_format(b[i]) << " rounding error: " << hex_format(roundingError) << " " << roundingError << std::endl;
 		}
@@ -71,10 +71,10 @@ void matvec(sw::unum::blas::vector< sw::unum::posit<nbits, es> >& b, const sw::u
 
 // A times x = b fused matrix-vector product
 template<size_t nbits, size_t es>
-sw::unum::blas::vector< sw::unum::posit<nbits, es> > fmv(const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A, const sw::unum::blas::vector< sw::unum::posit<nbits, es> >& x) {
+sw::universal::blas::vector< sw::universal::posit<nbits, es> > fmv(const sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& A, const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x) {
 	// preconditions
 	assert(A.cols() == size(x));
-	sw::unum::blas::vector< sw::unum::posit<nbits, es> > b(size(x));
+	sw::universal::blas::vector< sw::universal::posit<nbits, es> > b(size(x));
 
 #if BLAS_TRACE_ROUNDING_EVENTS
 	unsigned errors = 0;
@@ -82,21 +82,21 @@ sw::unum::blas::vector< sw::unum::posit<nbits, es> > fmv(const sw::unum::blas::m
 	size_t nr = size(b);
 	size_t nc = size(x);
 	for (size_t i = 0; i < nr; ++i) {
-		sw::unum::quire<nbits, es> q(0);
+		sw::universal::quire<nbits, es> q(0);
 		for (size_t j = 0; j < nc; ++j) {
-			q += sw::unum::quire_mul(A(i,j), x[j]);
+			q += sw::universal::quire_mul(A(i,j), x[j]);
 		}
-		sw::unum::convert(q.to_value(), b[i]);     // one and only rounding step of the fused-dot product
+		sw::universal::convert(q.to_value(), b[i]);     // one and only rounding step of the fused-dot product
 #if BLAS_TRACE_ROUNDING_EVENTS
-		sw::unum::quire<nbits, es> qdiff = q;
-		sw::unum::quire<nbits, es> qsum = b[i];
+		sw::universal::quire<nbits, es> qdiff = q;
+		sw::universal::quire<nbits, es> qsum = b[i];
 		qdiff -= qsum;
 		if (!qdiff.iszero()) {
 			++errors;
 			std::cout << "q    : " << q << std::endl;
 			std::cout << "qsum : " << qsum << std::endl;
 			std::cout << "qdiff: " << qdiff << std::endl;
-			sw::unum::posit<nbits, es> roundingError;
+			sw::universal::posit<nbits, es> roundingError;
 			convert(qdiff.to_value(), roundingError);
 			std::cout << "matvec b[" << i << "] = " << hex_format(b[i]) << " rounding error: " << hex_format(roundingError) << " " << roundingError << std::endl;
 		}

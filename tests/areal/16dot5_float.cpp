@@ -27,7 +27,7 @@ try {
 
 	cout << "Standard areal<16,5> configuration tests" << endl;
 
-	real<nbits, es> r;
+	areal<nbits, es> r;
 	r = 1.2345;
 	cout << r << endl;
 
@@ -47,11 +47,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::real_arithmetic_exception& err) {
+catch (const sw::universal::areal_arithmetic_exception& err) {
 	std::cerr << "Uncaught real arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::real_internal_exception& err) {
+catch (const sw::universal::areal_internal_exception& err) {
 	std::cerr << "Uncaught real internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

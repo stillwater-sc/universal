@@ -1,6 +1,6 @@
 //  integer_test_helpers.hpp : arithmetic test suite for abitrary precision integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -14,8 +14,7 @@
    can be used for forward error analysis studies.
 */
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 #define INTEGER_TABLE_WIDTH 20
 	template<size_t nbits, typename BlockType>
@@ -565,5 +564,4 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal

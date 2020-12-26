@@ -1,13 +1,13 @@
 #pragma once
 // jacobi.hpp: Jacobi iterative method to solve Ax = b
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/posit/posit_fwd.hpp>
 #include <universal/blas/matrix.hpp>
 
-namespace sw { namespace unum { namespace blas {
+namespace sw { namespace universal { namespace blas {
 
 // Jacobi: Solution of x in Ax=b using Jacobi Method
 template<typename Matrix, typename Vector, size_t MAX_ITERATIONS = 100>
@@ -34,4 +34,4 @@ size_t Jacobi(const Matrix& A, const Vector& b, Vector& x, typename Matrix::valu
 	return itr;
 }
 
-}}} // namespace sw::unum::blas
+}}} // namespace sw::universal::blas

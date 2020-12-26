@@ -8,12 +8,12 @@
 #define TEMPLATIZED_TYPE 0
 // enable/disable quire exceptions
 #define QUIRE_THROW_EXCEPTION 0
-#include "universal/posit/exceptions.hpp"
-#include "universal/native/bit_functions.hpp"
-#include "universal/bitblock/bitblock.hpp"
-#include "universal/float/float_functions.hpp"
-#include "universal/value/value.hpp"
-#include "universal/float/quire.hpp"
+#include <universal/posit/exceptions.hpp>
+#include <universal/native/bit_functions.hpp>
+#include <universal/bitblock/bitblock.hpp>
+#include <universal/float/float_functions.hpp>
+#include <universal/value/value.hpp>
+#include <universal/float/quire.hpp>
 
 int TestQuireAccumulationResult(int nrOfFailedTests, const std::string& descriptor)
 {
@@ -189,7 +189,7 @@ catch (char const* msg) {
 	std::cerr << msg << '\n';
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

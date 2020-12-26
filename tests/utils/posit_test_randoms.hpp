@@ -2,7 +2,7 @@
 //  posit_test_randoms.hpp : posit verification functions based on random operand generation testing
 // Needs to be included after posit type is declared.
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -14,7 +14,7 @@
 // include the base test helpers
 #include "posit_test_helpers.hpp"
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 	//////////////////////////////////// RANDOMIZED TEST SUITE FOR LARGE POSITS ////////////////////////
 
@@ -100,7 +100,7 @@ namespace sw { namespace unum {
 			reference = da / db;
 			break;
 		case OPCODE_POW:
-			presult = sw::unum::pow(pa, pb);
+			presult = sw::universal::pow(pa, pb);
 			reference = std::pow(da, db);
 			break;
 		case OPCODE_NOP:
@@ -119,77 +119,77 @@ namespace sw { namespace unum {
 		double reference = 0.0;
 		switch (opcode) {
 		case OPCODE_SQRT:
-			presult = sw::unum::sqrt(pa);
+			presult = sw::universal::sqrt(pa);
 			reference = std::sqrt(da);
 			break;
 		case OPCODE_EXP:
-			presult = sw::unum::exp(pa);
+			presult = sw::universal::exp(pa);
 			reference = std::exp(da);
 			if (0.0 == reference) reference = dminpos;
 			break;
 		case OPCODE_EXP2:
-			presult = sw::unum::exp2(pa);
+			presult = sw::universal::exp2(pa);
 			reference = std::exp2(da);
 			if (0.0 == reference) reference = dminpos;
 			break;
 		case OPCODE_LOG:
-			presult = sw::unum::log(pa);
+			presult = sw::universal::log(pa);
 			reference = std::log(da);
 			break;
 		case OPCODE_LOG2:
-			presult = sw::unum::log2(pa);
+			presult = sw::universal::log2(pa);
 			reference = std::log2(da);
 			break;
 		case OPCODE_LOG10:
-			presult = sw::unum::log10(pa);
+			presult = sw::universal::log10(pa);
 			reference = std::log10(da);
 			break;
 		case OPCODE_SIN:
-			presult = sw::unum::sin(pa);
+			presult = sw::universal::sin(pa);
 			reference = std::sin(da);
 			break;
 		case OPCODE_COS:
-			presult = sw::unum::cos(pa);
+			presult = sw::universal::cos(pa);
 			reference = std::cos(da);
 			break;
 		case OPCODE_TAN:
-			presult = sw::unum::tan(pa);
+			presult = sw::universal::tan(pa);
 			reference = std::tan(da);
 			break;
 		case OPCODE_ASIN:
-			presult = sw::unum::asin(pa);
+			presult = sw::universal::asin(pa);
 			reference = std::asin(da);
 			break;
 		case OPCODE_ACOS:
-			presult = sw::unum::acos(pa);
+			presult = sw::universal::acos(pa);
 			reference = std::acos(da);
 			break;
 		case OPCODE_ATAN:
-			presult = sw::unum::atan(pa);
+			presult = sw::universal::atan(pa);
 			reference = std::atan(da);
 			break;
 		case OPCODE_SINH:
-			presult = sw::unum::sinh(pa);
+			presult = sw::universal::sinh(pa);
 			reference = std::sinh(da);
 			break;
 		case OPCODE_COSH:
-			presult = sw::unum::cosh(pa);
+			presult = sw::universal::cosh(pa);
 			reference = std::cosh(da);
 			break;
 		case OPCODE_TANH:
-			presult = sw::unum::tanh(pa);
+			presult = sw::universal::tanh(pa);
 			reference = std::tanh(da);
 			break;
 		case OPCODE_ASINH:
-			presult = sw::unum::asinh(pa);
+			presult = sw::universal::asinh(pa);
 			reference = std::asinh(da);
 			break;
 		case OPCODE_ACOSH:
-			presult = sw::unum::acosh(pa);
+			presult = sw::universal::acosh(pa);
 			reference = std::acosh(da);
 			break;
 		case OPCODE_ATANH:
-			presult = sw::unum::atanh(pa);
+			presult = sw::universal::atanh(pa);
 			reference = std::atanh(da);
 			break;
 		case OPCODE_NOP:
@@ -481,4 +481,4 @@ namespace sw { namespace unum {
 		return nrOfFailedTests;
 	}
 
-}} // namespace sw::unum
+}} // namespace sw::universal

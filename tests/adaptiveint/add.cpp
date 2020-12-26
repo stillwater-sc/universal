@@ -23,7 +23,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	a = _a;
 	b = _b;
 	asum = a + b;
-	ref = a + b;
+	ref = _a + _b;
 	aref = ref;
 	constexpr size_t ndigits = 30;
 	std::cout << std::setw(ndigits) << _a << " + " << std::setw(ndigits) << _b << " = " << std::setw(ndigits) << ref << std::endl;

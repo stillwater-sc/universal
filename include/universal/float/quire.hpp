@@ -28,36 +28,23 @@ public:
 	static constexpr size_t qbits = range + capacity;         // size of the quire minus the sign bit: we are managing the sign explicitly
 	
 	quire() : _sign(false) { _capacity.reset(); _upper.reset(); _lower.reset(); }
-	quire(int8_t initial_value) {
-		*this = initial_value;
-	}
-	quire(int16_t initial_value) {
-		*this = initial_value;
-	}
-	quire(int32_t initial_value) {
-		*this = initial_value;
-	}
-	quire(int64_t initial_value) {
-		*this = initial_value;
-	}
-	quire(uint64_t initial_value) {
-		*this = initial_value;
-	}
-	quire(float initial_value) {
-		*this = initial_value;
-	}
-	quire(double initial_value) {
-		*this = initial_value;
-	}
+	quire(int8_t initial_value) {		*this = initial_value;	}
+	quire(int16_t initial_value) {		*this = initial_value;	}
+	quire(int32_t initial_value) {		*this = initial_value;	}
+	quire(int64_t initial_value) {		*this = initial_value;	}
+	quire(uint64_t initial_value) {		*this = initial_value;	}
+	quire(float initial_value) {		*this = initial_value;	}
+	quire(double initial_value) {		*this = initial_value;	}
 	template<size_t fbits>
-	quire(const sw::unum::value<fbits>& rhs) {
+	quire(const sw::universal::value<fbits>& rhs) {
 		*this = rhs;
 	}
 	// TODO: we are clamping the values of the RHS to be withing the dynamic range of the float
 	// TODO: however, on the upper side we also have the capacity bits, which gives us the opportunity to accept larger scale values than the dynamic range of the float.
 	// TODO: is that a good idea?
 	template<size_t fbits>
-	quire& operator=(const sw::unum::value<fbits>& rhs) {
+	quire& operator=(const sw::universal::value<fbits>& rhs) {
+		using namespace sw::universal;
 		reset();
 		_sign = rhs.sign();
 		int i,f, scale = rhs.scale();
@@ -67,7 +54,7 @@ public:
 		if (scale < -int(half_range)) {
 			throw operand_too_small_for_quire{};
 		}
-		sw::unum::bitblock<fbits+1> fraction = rhs.get_fixed_point();
+		sw::universal::bitblock<fbits+1> fraction = rhs.get_fixed_point();
 		// divide bits between upper and lower accumulator
 		if (scale - int(fbits) >= 0) {
 			// all upper accumulator
@@ -107,12 +94,13 @@ public:
 		return *this;
 	}
 	quire& operator=(long long rhs) {
+		using namespace sw::universal;
 		clear();
 		// transform to sign-magnitude
 		_sign = rhs & 0x8000000000000000;
 		unsigned long long magnitude;
 		magnitude = _sign ? -rhs : rhs;
-		unsigned msb = sw::unum::findMostSignificantBit(magnitude);
+		unsigned msb = sw::universal::findMostSignificantBit(magnitude);
 		if (msb > half_range + capacity) {
 			throw operand_too_large_for_quire{};
 		}
@@ -134,8 +122,9 @@ public:
 		return *this;
 	}
 	quire& operator=(long long unsigned rhs) {
+		using namespace sw::universal;
 		reset();
-		unsigned msb = sw::unum::findMostSignificantBit(rhs);
+		unsigned msb = sw::universal::findMostSignificantBit(rhs);
 		if (msb > half_range + capacity) {
 			throw operand_too_large_for_quire{};
 		}
@@ -158,22 +147,23 @@ public:
 	}
 	quire& operator=(float rhs) {
 		constexpr int bits = std::numeric_limits<float>::digits - 1;
-		*this = sw::unum::value<bits>(rhs);
+		*this = sw::universal::value<bits>(rhs);
 		return *this;
 	}
 	quire& operator=(double rhs) {
 		constexpr int bits = std::numeric_limits<double>::digits - 1;
-		*this = sw::unum::value<bits>(rhs);
+		*this = sw::universal::value<bits>(rhs);
 		return *this;
 	}
 	quire& operator=(long double rhs) {
 		constexpr int bits = std::numeric_limits<long double>::digits - 1;	
-		*this = sw::unum::value<bits>(rhs);
+		*this = sw::universal::value<bits>(rhs);
 		return *this;
 	}
 	
 	template<size_t fbits>
-	quire& operator+=(const sw::unum::value<fbits>& rhs) {
+	quire& operator+=(const sw::universal::value<fbits>& rhs) {
+		using namespace sw::universal;
 		if (rhs.iszero()) return *this;
 		int i, f, scale = rhs.scale();
 		if (scale >  int(half_range)) {
@@ -186,7 +176,7 @@ public:
 			// lsb in the quire of the lowest bit of the explicit fixed point value including the hidden bit of the fraction
 			int lsb = scale - int(fbits);  
 			bool borrow = false;
-			sw::unum::bitblock<fbits + 1> fraction = rhs.get_fixed_point();
+			sw::universal::bitblock<fbits + 1> fraction = rhs.get_fixed_point();
 			// divide bits between upper and lower accumulator
 			if (scale < 0) {		// all lower accumulator
 				int lsb = int(half_range) + scale - int(fbits);
@@ -195,13 +185,13 @@ public:
 				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
 					bool _a = _lower[i];
 					bool _b = fraction[f];
-					_lower[i] = sw::unum::bxor(_a, _b, borrow);
-					borrow = (!_a && _b) || (sw::unum::bxnor(!_a, !_b) && borrow);
+					_lower[i] = sw::universal::bxor(_a, _b, borrow);
+					borrow = (!_a && _b) || (sw::universal::bxnor(!_a, !_b) && borrow);
 				}
 				// propagate any borrows to the end of the lower accumulator
 				while (borrow && i < int(half_range)) {
 					bool _a = _lower[i];
-					_lower[i] = sw::unum::bxor(_a, borrow);
+					_lower[i] = sw::universal::bxor(_a, borrow);
 					borrow = borrow && !_a;
 					i++;
 				}
@@ -210,7 +200,7 @@ public:
 					i = 0;
 					while (borrow && i < int(upper_range)) {
 						bool _a = _upper[i];
-						_upper[i] = sw::unum::bxor(_a, borrow);
+						_upper[i] = sw::universal::bxor(_a, borrow);
 						borrow = borrow && !_a;
 						i++;
 					}
@@ -219,7 +209,7 @@ public:
 						i = 0;
 						while (borrow && i < int(capacity)) {
 							bool _a = _capacity[i];
-							_capacity[i] = sw::unum::bxor(_a, borrow);
+							_capacity[i] = sw::universal::bxor(_a, borrow);
 							borrow = borrow && !_a;
 							i++;
 						}
@@ -230,13 +220,13 @@ public:
 				for (i = lsb, f = 0; i <= scale && f <= int(fbits); i++, f++) {
 					bool _a = _upper[i];
 					bool _b = fraction[f];
-					_upper[i] = sw::unum::bxor(_a, _b, borrow);
-					borrow = (!_a && _b) || (sw::unum::bxnor(!_a, !_b) && borrow);
+					_upper[i] = sw::universal::bxor(_a, _b, borrow);
+					borrow = (!_a && _b) || (sw::universal::bxnor(!_a, !_b) && borrow);
 				}
 				// propagate any borrows to the end of the upper accumulator
 				while (borrow && i < int(upper_range)) {
 					bool _a = _upper[i];
-					_upper[i] = sw::unum::bxor(_a, borrow);
+					_upper[i] = sw::universal::bxor(_a, borrow);
 					borrow = borrow && !_a;
 					i++;
 				}
@@ -245,7 +235,7 @@ public:
 					i = 0;
 					while (borrow && i < int(capacity)) {
 						bool _a = _capacity[i];
-						_capacity[i] = sw::unum::bxor(_a, borrow);
+						_capacity[i] = sw::universal::bxor(_a, borrow);
 						borrow = borrow && !_a;
 						i++;
 					}
@@ -260,15 +250,15 @@ public:
 				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
 					bool _a = _lower[i];
 					bool _b = fraction[f];
-					_lower[i] = sw::unum::bxor(_a, _b, borrow);
-					borrow = (!_a && _b) || (sw::unum::bxnor(!_a, !_b) && borrow);
+					_lower[i] = sw::universal::bxor(_a, _b, borrow);
+					borrow = (!_a && _b) || (sw::universal::bxnor(!_a, !_b) && borrow);
 				}
 				// next add the bits in the upper accumulator
 				for (i = 0; i <= scale && f <= int(fbits); i++, f++) {
 					bool _a = _upper[i];
 					bool _b = fraction[f];
-					_upper[i] = sw::unum::bxor(_a, _b, borrow);
-					borrow = (!_a && _b) || (sw::unum::bxnor(!_a, !_b) && borrow);
+					_upper[i] = sw::universal::bxor(_a, _b, borrow);
+					borrow = (!_a && _b) || (sw::universal::bxnor(!_a, !_b) && borrow);
 				}
 				// propagate any borrows to the end of the upper accumulator
 				while (borrow && i < int(upper_range)) {
@@ -296,7 +286,7 @@ public:
 			// we manage scale >= 0 in the _upper accumulator, and scale < 0 in the _lower accumulator
 			int lsb = scale - int(fbits);
 			bool carry = false;
-			sw::unum::bitblock<fbits + 1> fraction = rhs.get_fixed_point();
+			sw::universal::bitblock<fbits + 1> fraction = rhs.get_fixed_point();
 			// divide bits between upper and lower accumulator
 			if (scale < 0) {		// all lower accumulator
 				int lsb = int(half_range) + scale - int(fbits);
@@ -305,8 +295,8 @@ public:
 				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
 					bool _a = _lower[i];
 					bool _b = fraction[f];
-					_lower[i] = sw::unum::bxor(_a, _b, carry);
-					carry = (_a && _b) || (carry && sw::unum::bxor(_a, _b));
+					_lower[i] = sw::universal::bxor(_a, _b, carry);
+					carry = (_a && _b) || (carry && sw::universal::bxor(_a, _b));
 				}
 				// propagate any carries to the end of the lower accumulator
 				while (carry && i < int(half_range)) {
@@ -340,8 +330,8 @@ public:
 				for (i = lsb, f = 0; i <= scale && f <= int(fbits); i++, f++) {
 					bool _a = _upper[i];
 					bool _b = fraction[f];
-					_upper[i] = sw::unum::bxor(_a, _b, carry);
-					carry = (_a && _b) || (carry && sw::unum::bxor(_a, _b));
+					_upper[i] = sw::universal::bxor(_a, _b, carry);
+					carry = (_a && _b) || (carry && sw::universal::bxor(_a, _b));
 				}
 				while (carry && i < int(upper_range)) {
 					bool _a = _upper[i];
@@ -369,15 +359,15 @@ public:
 				for (i = qlsb, f = flsb; i < int(half_range) && f <= int(fbits); i++, f++) {
 					bool _a = _lower[i];
 					bool _b = fraction[f];
-					_lower[i] = sw::unum::bxor(_a, _b, carry);
-					carry = (_a && _b) || (carry && sw::unum::bxor(_a, _b));
+					_lower[i] = sw::universal::bxor(_a, _b, carry);
+					carry = (_a && _b) || (carry && sw::universal::bxor(_a, _b));
 				}
 				// next add the bits in the upper accumulator
 				for (i = 0; i <= scale && f <= int(fbits); i++, f++) {
 					bool _a = _upper[i];
 					bool _b = fraction[f];
-					_upper[i] = sw::unum::bxor(_a, _b, carry);
-					carry = (_a && _b) || (carry && sw::unum::bxor(_a, _b));
+					_upper[i] = sw::universal::bxor(_a, _b, carry);
+					carry = (_a && _b) || (carry && sw::universal::bxor(_a, _b));
 				}
 				// propagate any carries to the end of the upper accumulator
 				while (carry && i < int(upper_range)) {
@@ -421,9 +411,9 @@ public:
 	// Return value of the sign bit: true indicates a negative number, false a positive number or zero
 	bool get_sign() const { return _sign; }
 	float sign_value() const {	return (_sign ? -1.0 : 1.0); }
-	sw::unum::value<qbits> to_value() const {
+	sw::universal::value<qbits> to_value() const {
 		// find the MSB and build the fraction
-		sw::unum::bitblock<qbits> fraction;
+		sw::universal::bitblock<qbits> fraction;
 		bool isZero = false;
 		bool isNaR = false;   // TODO
 		int i;
@@ -458,16 +448,16 @@ public:
 			isZero = true;
 			scale = 0;
 		}
-		return sw::unum::value<qbits>(_sign, scale, fraction, isZero, isNaR);
+		return sw::universal::value<qbits>(_sign, scale, fraction, isZero, isNaR);
 	}
 
 private:
 	bool				   _sign;
 	// segmented accumulator to demonstrate potential hw concurrency for high performance quires
 	// TODO: don't pull a type from sw::unum
-	sw::unum::bitblock<half_range>   _lower;
-	sw::unum::bitblock<upper_range>  _upper;
-	sw::unum::bitblock<capacity>     _capacity;
+	sw::universal::bitblock<half_range>   _lower;
+	sw::universal::bitblock<upper_range>  _upper;
+	sw::universal::bitblock<capacity>     _capacity;
 
 #if TEMPLATIZED_TYPE
 	//  when we figure out how to templatize the extraction of exponent bits from type

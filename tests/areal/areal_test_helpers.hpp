@@ -15,7 +15,7 @@ namespace sw { namespace universal {
 		static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 		template<size_t nbits, size_t es>
-		void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const real<nbits, es>& presult) {
+		void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const areal<nbits, es>& presult) {
 			static_assert(nbits > 2, "component_to_string requires nbits > 2");
 			//constexpr size_t fbits = nbits - 3 - es;
 
@@ -31,7 +31,7 @@ namespace sw { namespace universal {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportConversionSuccess(const std::string& test_case, const std::string& op, double input, double reference, const real<nbits, es>& presult) {
+		void ReportConversionSuccess(const std::string& test_case, const std::string& op, double input, double reference, const areal<nbits, es>& presult) {
 			static_assert(nbits > 2, "component_to_string requires nbits > 2");
 			//constexpr size_t fbits = nbits - 3 - es;
 
@@ -47,7 +47,7 @@ namespace sw { namespace universal {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportUnaryArithmeticError(const std::string& test_case, const std::string& op, const real<nbits, es>& rhs, const real<nbits, es>& pref, const real<nbits, es>& presult) {
+		void ReportUnaryArithmeticError(const std::string& test_case, const std::string& op, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
@@ -58,7 +58,7 @@ namespace sw { namespace universal {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportUnaryArithmeticSuccess(const std::string& test_case, const std::string& op, const real<nbits, es>& rhs, const real<nbits, es>& pref, const real<nbits, es>& presult) {
+		void ReportUnaryArithmeticSuccess(const std::string& test_case, const std::string& op, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
@@ -69,7 +69,7 @@ namespace sw { namespace universal {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const real<nbits, es>& lhs, const real<nbits, es>& rhs, const real<nbits, es>& pref, const real<nbits, es>& presult) {
+		void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case << " " 
 				<< std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
@@ -84,7 +84,7 @@ namespace sw { namespace universal {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticErrorInBinary(const std::string& test_case, const std::string& op, const real<nbits, es>& lhs, const real<nbits, es>& rhs, const real<nbits, es>& pref, const real<nbits, es>& presult) {
+		void ReportBinaryArithmeticErrorInBinary(const std::string& test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setw(nbits) << lhs.get()
 				<< " " << op << " "
@@ -96,7 +96,7 @@ namespace sw { namespace universal {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const real<nbits, es>& lhs, const real<nbits, es>& rhs, const real<nbits, es>& pref, const real<nbits, es>& presult) {
+		void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
@@ -111,7 +111,7 @@ namespace sw { namespace universal {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticSuccessInBinary(const std::string& test_case, const std::string& op, const real<nbits, es>& lhs, const real<nbits, es>& rhs, const real<nbits, es>& pref, const real<nbits, es>& presult) {
+		void ReportBinaryArithmeticSuccessInBinary(const std::string& test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setw(nbits) << lhs.get()
 				<< " " << op << " "
@@ -123,14 +123,14 @@ namespace sw { namespace universal {
 		}
 		
 		template<size_t nbits, size_t es>
-		void ReportDecodeError(const std::string& test_case, const real<nbits, es>& actual, double golden_value) {
+		void ReportDecodeError(const std::string& test_case, const areal<nbits, es>& actual, double golden_value) {
 			std::cerr << test_case << " actual " << actual << " required " << golden_value << std::endl;
 		}
 
 		/////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
 		template<size_t nbits, size_t es>
-		int Compare(double input, const real<nbits, es>& presult, double reference, bool bReportIndividualTestCases) {
+		int Compare(double input, const areal<nbits, es>& presult, double reference, bool bReportIndividualTestCases) {
 			int fail = 0;
 			double result = double(presult);
 			if (std::fabs(result - reference) > 0.000000001) {
@@ -153,16 +153,16 @@ namespace sw { namespace universal {
 			// to test the rounding logic of the conversion.
 			const int NR_TEST_CASES = (1 << (nbits + 1));
 			const int HALF = (1 << nbits);
-			real<nbits + 1, es> pref, pprev, pnext;
+			areal<nbits + 1, es> pref, pprev, pnext;
 
 			// execute the test
 			int nrOfFailedTests = 0;
-			real<nbits+1, es> real_minpos(0);
+			areal<nbits+1, es> real_minpos(0);
 			real_minpos++;
 			double minpos = double(real_minpos);
 			double eps;
 			double da, input;
-			real<nbits, es> pa;
+			areal<nbits, es> pa;
 			for (int i = 0; i < NR_TEST_CASES; i++) {
 				pref.set_raw_bits(i);
 				da = double(pref);
@@ -266,7 +266,7 @@ namespace sw { namespace universal {
 			constexpr size_t NR_OF_TESTS = (size_t(1) << (nbits - 1)) + 1;
 			int nrOfFailedTestCases = 0;
 
-			real<nbits, es> p(0);
+			areal<nbits, es> p(0);
 			if (!p.iszero()) nrOfFailedTestCases++;
 			p.setnar();  p = 0;
 			if (!p.iszero()) nrOfFailedTestCases++;
@@ -276,7 +276,7 @@ namespace sw { namespace universal {
 			for (size_t i = 0; i < NR_OF_TESTS; ++i) {
 				if (!p.isnar()) {
 					long long ref = (long long)p;
-					real<nbits,es> presult = ref;
+					areal<nbits,es> presult = ref;
 					if (presult != ref) {
 						if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
 					}
@@ -291,10 +291,10 @@ namespace sw { namespace universal {
 
 		// Generate ordered set in ascending order from [-NaR, -maxpos, ..., +maxpos] for a particular real config <nbits, es>
 		template<size_t nbits, size_t es>
-		void GenerateOrderedPositSet(std::vector<real<nbits, es>>& set) {
+		void GenerateOrderedPositSet(std::vector<areal<nbits, es>>& set) {
 			const size_t NR_OF_REALS = (unsigned(1) << nbits);		// don't do this for state spaces larger than 4G
-			std::vector< real<nbits, es> > s(NR_OF_REALS);
-			real<nbits, es> p;
+			std::vector< areal<nbits, es> > s(NR_OF_REALS);
+			areal<nbits, es> p;
 			// generate raw set, which will sort later
 			for (size_t i = 0; i < NR_OF_REALS; i++) {
 				p.set_raw_bits(i);
@@ -309,12 +309,12 @@ namespace sw { namespace universal {
 		template<size_t nbits, size_t es>
 		int ValidateIncrement(const std::string& tag, bool bReportIndividualTestCases)
 		{
-			std::vector< real<nbits, es> > set;
+			std::vector< areal<nbits, es> > set;
 			GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
 			int nrOfFailedTestCases = 0;
 
-			real<nbits, es> p, ref;
+			areal<nbits, es> p, ref;
 			// starting from NaR iterating from -maxpos to maxpos through zero
 			for (typename std::vector < real<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
 				p = *it;
@@ -333,12 +333,12 @@ namespace sw { namespace universal {
 		template<size_t nbits, size_t es>
 		int ValidateDecrement(const std::string& tag, bool bReportIndividualTestCases)
 		{
-			std::vector< real<nbits, es> > set;
+			std::vector< areal<nbits, es> > set;
 			GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
 			int nrOfFailedTestCases = 0;
 
-			real<nbits, es> p, ref;
+			areal<nbits, es> p, ref;
 			// starting from maxpos iterating to -maxpos, and finally NaR via zero
 			for (typename std::vector < real<nbits, es> >::iterator it = set.end() - 1; it != set.begin(); --it) {
 				p = *it;
@@ -357,12 +357,12 @@ namespace sw { namespace universal {
 		template<size_t nbits, size_t es>
 		int ValidatePostfix(const std::string& tag, bool bReportIndividualTestCases)
 		{
-			std::vector< real<nbits, es> > set;
+			std::vector< areal<nbits, es> > set;
 			GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
 			int nrOfFailedTestCases = 0;
 
-			real<nbits, es> p, ref;
+			areal<nbits, es> p, ref;
 			// from -maxpos to maxpos through zero
 			for (typename std::vector < real<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
 				p = *it;
@@ -381,12 +381,12 @@ namespace sw { namespace universal {
 		template<size_t nbits, size_t es>
 		int ValidatePrefix(const std::string& tag, bool bReportIndividualTestCases)
 		{
-			std::vector< real<nbits, es> > set;
+			std::vector< areal<nbits, es> > set;
 			GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
 			int nrOfFailedTestCases = 0;
 
-			real<nbits, es> p, ref;
+			areal<nbits, es> p, ref;
 			// from -maxpos to maxpos through zero
 			for (typename std::vector < real<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
 				p = *it;
@@ -406,7 +406,7 @@ namespace sw { namespace universal {
 		int ValidateNegation(const std::string& tag, bool bReportIndividualTestCases) {
 			constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
-			real<nbits, es> pa(0), pneg(0), pref(0);
+			areal<nbits, es> pa(0), pneg(0), pref(0);
 
 			double da;
 			for (size_t i = 1; i < NR_TEST_CASES; i++) {
@@ -432,7 +432,7 @@ namespace sw { namespace universal {
 		int ValidateSqrt(const std::string& tag, bool bReportIndividualTestCases) {
 			constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
-			real<nbits, es> pa, psqrt, pref;
+			areal<nbits, es> pa, psqrt, pref;
 
 			double da;
 			for (size_t i = 1; i < NR_TEST_CASES; i++) {
@@ -458,7 +458,7 @@ namespace sw { namespace universal {
 		int ValidateAddition(const std::string& tag, bool bReportIndividualTestCases) {
 			const size_t NR_POSITS = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
-			real<nbits, es> pa, pb, psum, pref;
+			areal<nbits, es> pa, pb, psum, pref;
 
 			double da, db;
 			for (size_t i = 0; i < NR_POSITS; i++) {
@@ -503,7 +503,7 @@ namespace sw { namespace universal {
 		int ValidateSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 			const size_t NR_POSITS = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
-			real<nbits, es> pa, pb, pref, pdif;
+			areal<nbits, es> pa, pb, pref, pdif;
 
 			double da, db;
 			for (size_t i = 0; i < NR_POSITS; i++) {
@@ -548,7 +548,7 @@ namespace sw { namespace universal {
 			int nrOfFailedTests = 0;
 			const size_t NR_POSITS = (size_t(1) << nbits);
 
-			real<nbits, es> pa, pb, pmul, pref;
+			areal<nbits, es> pa, pb, pmul, pref;
 			double da, db;
 			for (size_t i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
@@ -590,7 +590,7 @@ namespace sw { namespace universal {
 		int ValidateReciprocation(const std::string& tag, bool bReportIndividualTestCases) {
 			const size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
-			real<nbits, es> pa, preciprocal, preference;
+			areal<nbits, es> pa, preciprocal, preference;
 
 			double da;
 			for (size_t i = 0; i < NR_TEST_CASES; i++) {
@@ -622,7 +622,7 @@ namespace sw { namespace universal {
 			int nrOfFailedTests = 0;
 			const size_t NR_POSITS = (size_t(1) << nbits);
 
-			real<nbits, es> pa, pb, pdiv, pref;
+			areal<nbits, es> pa, pb, pdiv, pref;
 			double da, db;
 			for (size_t i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
@@ -696,7 +696,7 @@ namespace sw { namespace universal {
 		int ValidatePositLogicEqual() {
 			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 			int nrOfFailedTestCases = 0;
-			sw::universal::real<nbits, es> a, b;
+			areal<nbits, es> a, b;
 			bool ref, presult;
 
 			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -740,7 +740,7 @@ namespace sw { namespace universal {
 		int ValidatePositLogicNotEqual() {
 			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 			int nrOfFailedTestCases = 0;
-			sw::universal::real<nbits, es> a, b;
+			areal<nbits, es> a, b;
 			bool ref, presult;
 
 			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -786,7 +786,7 @@ namespace sw { namespace universal {
 		int ValidatePositLogicLessThan() {
 			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 			int nrOfFailedTestCases = 0;
-			sw::universal::real<nbits, es> a, b;
+			areal<nbits, es> a, b;
 			bool ref, presult;
 
 			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -820,7 +820,7 @@ namespace sw { namespace universal {
 		int ValidatePositLogicGreaterThan() {
 			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 			int nrOfFailedTestCases = 0;
-			sw::universal::real<nbits, es> a, b;
+			areal<nbits, es> a, b;
 			bool ref, presult;
 
 			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -854,7 +854,7 @@ namespace sw { namespace universal {
 		int ValidatePositLogicLessOrEqualThan() {
 			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 			int nrOfFailedTestCases = 0;
-			sw::universal::real<nbits, es> a, b;
+			areal<nbits, es> a, b;
 			bool ref, presult;
 
 			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -889,7 +889,7 @@ namespace sw { namespace universal {
 		int ValidatePositLogicGreaterOrEqualThan() {
 			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 			int nrOfFailedTestCases = 0;
-			sw::universal::real<nbits, es> a, b;
+			areal<nbits, es> a, b;
 			bool ref, presult;
 
 			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -934,7 +934,7 @@ namespace sw { namespace universal {
 		const int OPCODE_RAN = 5;
 
 		template<size_t nbits, size_t es>
-		void execute(int opcode, double da, double db, const real<nbits, es>& pa, const real<nbits, es>& pb, real<nbits, es>& preference, real<nbits, es>& presult) {
+		void execute(int opcode, double da, double db, const areal<nbits, es>& pa, const areal<nbits, es>& pb, areal<nbits, es>& preference, areal<nbits, es>& presult) {
 			double reference = 0.0;
 			switch (opcode) {
 			default:
@@ -969,7 +969,7 @@ namespace sw { namespace universal {
 		int ValidateBinaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
 			const size_t SIZE_STATE_SPACE = nrOfRandoms;
 			int nrOfFailedTests = 0;
-			real<nbits, es> pa, pb, presult, preference;
+			areal<nbits, es> pa, pb, presult, preference;
 
 			std::string operation_string;
 			switch (opcode) {

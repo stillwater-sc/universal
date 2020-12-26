@@ -1,7 +1,7 @@
 #pragma once
 // lu.hpp: dense matrix LU decomposition and backsubstitution to solve systems of equations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -15,7 +15,7 @@
 #define BLAS_TRACE_ROUNDING_EVENTS 0
 #endif
 
-namespace sw { namespace unum { namespace blas {
+namespace sw { namespace universal { namespace blas {
 
 /*
 template<typename Scalar>
@@ -84,7 +84,7 @@ void SolveCrout(const Matrix& LU, const Vector& b, Vector& x) {
 	assert(num_cols(LU) == size(b));
 	size_t N = size(b);
 	using value_type = typename Matrix::value_type;
-	sw::unum::blas::vector<value_type> y(N);
+	sw::universal::blas::vector<value_type> y(N);
 	for (size_t i = 0; i < N; ++i) {
 		value_type sum = 0.0;
 		for (size_t k = 0; k < size_t(i); ++k) sum += LU[i][k] * y[k];
@@ -104,10 +104,10 @@ void SolveCrout(const Matrix& LU, const Vector& b, Vector& x) {
 
 
 ///////////////////////////////////////////////////////////////////////////////////
-/// CroutFDP with sw::unum::blas data structures
+/// CroutFDP with sw::universal::blas data structures
 
 template<size_t nbits, size_t es, size_t capacity = 10>
-void CroutFDP(sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& S, sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& D) {
+void CroutFDP(sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& S, sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& D) {
 	assert(num_rows(S) == num_rows(D));
 	assert(num_cols(S) == num_cols(D));
 	size_t N = num_rows(S);
@@ -126,7 +126,7 @@ void CroutFDP(sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& S, sw::unum:
 			quire<nbits, es, capacity> qsum(sum);
 			q -= qsum;
 			if (!q.iszero()) {
-				sw::unum::posit<nbits, es> roundingError;
+				sw::universal::posit<nbits, es> roundingError;
 				convert(q.to_value(), roundingError);
 				std::cout << "D[" << i << "," << k << "] rounding error: " << roundingError << std::endl;
 			}
@@ -145,7 +145,7 @@ void CroutFDP(sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& S, sw::unum:
 			quire<nbits, es, capacity> qsum(sum);
 			q -= qsum;
 			if (!q.iszero()) {
-				sw::unum::posit<nbits, es> roundingError;
+				sw::universal::posit<nbits, es> roundingError;
 				convert(q.to_value(), roundingError);
 				std::cout << "D[" << k << "," << j << "] rounding error: " << roundingError << std::endl;
 			}
@@ -157,7 +157,7 @@ void CroutFDP(sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& S, sw::unum:
 
 // SolveCrout takes an LU decomposition, LU, and a right hand side vector, b, and produces a result, x.
 template<size_t nbits, size_t es, size_t capacity = 10>
-void SolveCroutFDP(const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& LU, const sw::unum::blas::vector< sw::unum::posit<nbits, es> >& b, sw::unum::blas::vector< sw::unum::posit<nbits, es> >& x) {
+void SolveCroutFDP(const sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& LU, const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x) {
 	size_t N = size(b);
 	std::vector< posit<nbits, es> > y(N);
 	for (size_t i = 0; i < N; ++i) {
@@ -286,7 +286,7 @@ void lubksb(const matrix<Scalar>& LU, const vector<int>& permutation, const vect
 template<size_t nbits, size_t es, size_t capacity = 10>
 int ludcmp(matrix< posit<nbits, es> >& A, vector<size_t>& indx) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	const size_t N = num_rows(A);
 	if (N != num_cols(A)) {
 		std::cerr << "matrix argument to ludcmp is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
@@ -404,8 +404,8 @@ vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const
 
 // backsubstitution of an LU decomposition: Matrix A is in (L + U) form
 template<size_t nbits, size_t es, size_t capacity = 10>
-vector< sw::unum::posit<nbits, es> > lubksb(const matrix< sw::unum::posit<nbits, es> >& A, const vector<size_t>& indx, const vector<sw::unum::posit<nbits, es> >& b) {
-	using Scalar = sw::unum::posit<nbits, es>;
+vector< sw::universal::posit<nbits, es> > lubksb(const matrix< sw::universal::posit<nbits, es> >& A, const vector<size_t>& indx, const vector<sw::universal::posit<nbits, es> >& b) {
+	using Scalar = sw::universal::posit<nbits, es>;
 	const size_t N = num_rows(A);
 	if (N != num_cols(A)) {
 		std::cerr << "matrix argument to lubksb is not square: (" << num_rows(A) << " x " << num_cols(A) << ")\n";
@@ -540,7 +540,7 @@ vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 
 // solve the system of equations A x = b using partial pivoting LU
 template<size_t nbits, size_t es, size_t capacity = 10>
-vector<sw::unum::posit<nbits, es> > solve(const matrix<sw::unum::posit<nbits, es> >& _A, const vector<sw::unum::posit<nbits, es>>& _b) {
+vector<sw::universal::posit<nbits, es> > solve(const matrix<sw::universal::posit<nbits, es> >& _A, const vector<sw::universal::posit<nbits, es>>& _b) {
 	using namespace std;
 	const size_t N = num_rows(_A);
 	if (N != num_cols(_A)) {
@@ -551,7 +551,7 @@ vector<sw::unum::posit<nbits, es> > solve(const matrix<sw::unum::posit<nbits, es
 		cerr << "matrix shape (" << num_rows(_A) << " x " << num_cols(_A) << ") is not congruous with vector size (" << size(_b) << ")\n";
 		return 1;
 	}
-	using Scalar = sw::unum::posit<nbits, es>;
+	using Scalar = sw::universal::posit<nbits, es>;
 	//cerr << typeid(Scalar).name() << " specialization of LU decomposition solver with fused-dot-product operators" << endl;
 	matrix<Scalar> A(_A);
 	// implicit pivoting pre-calculation
@@ -634,4 +634,4 @@ vector<sw::unum::posit<nbits, es> > solve(const matrix<sw::unum::posit<nbits, es
 	return x;
 }
 
-} } }  // namespace sw::unum::blas
+} } }  // namespace sw::universal::blas

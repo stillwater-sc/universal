@@ -1,5 +1,5 @@
 #pragma once
-// adaptivefloat.hpp: definition of an adaptive precision linear floating-point
+// adaptiveint.hpp: definition of an adaptive precision binary integer
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -12,7 +12,7 @@
 #include <vector>
 #include <map>
 
-#include <universal/adaptivefloat/exceptions.hpp>
+#include <universal/adaptiveint/exceptions.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -47,66 +47,66 @@
 namespace sw { namespace universal {
 
 // forward references
-class adaptivefloat;
-inline adaptivefloat& convert(int64_t v, adaptivefloat& result);
-inline adaptivefloat& convert_unsigned(uint64_t v, adaptivefloat& result);
-bool parse(const std::string& number, adaptivefloat& v);
+class adaptiveint;
+inline adaptiveint& convert(int64_t v, adaptiveint& result);
+inline adaptiveint& convert_unsigned(uint64_t v, adaptiveint& result);
+bool parse(const std::string& number, adaptiveint& v);
 
-// adaptivefloat is an adaptive precision linear floating-point type
-class adaptivefloat {
+// adaptiveint is an adaptive precision linear floating-point type
+class adaptiveint {
 	using BlockType = uint32_t;
 public:
-	adaptivefloat() : sign(false), exp(0) { }
+	adaptiveint() : sign(false), exp(0) { }
 
-	adaptivefloat(const adaptivefloat&) = default;
-	adaptivefloat(adaptivefloat&&) = default;
+	adaptiveint(const adaptiveint&) = default;
+	adaptiveint(adaptiveint&&) = default;
 
-	adaptivefloat& operator=(const adaptivefloat&) = default;
-	adaptivefloat& operator=(adaptivefloat&&) = default;
+	adaptiveint& operator=(const adaptiveint&) = default;
+	adaptiveint& operator=(adaptiveint&&) = default;
 
 	// initializers for native types
-	explicit adaptivefloat(const signed char initial_value)        { *this = initial_value; }
-	explicit adaptivefloat(const short initial_value)              { *this = initial_value; }
-	explicit adaptivefloat(const int initial_value)                { *this = initial_value; }
-	explicit adaptivefloat(const long initial_value)               { *this = initial_value; }
-	explicit adaptivefloat(const long long initial_value)          { *this = initial_value; }
-	explicit adaptivefloat(const char initial_value)               { *this = initial_value; }
-	explicit adaptivefloat(const unsigned short initial_value)     { *this = initial_value; }
-	explicit adaptivefloat(const unsigned int initial_value)       { *this = initial_value; }
-	explicit adaptivefloat(const unsigned long initial_value)      { *this = initial_value; }
-	explicit adaptivefloat(const unsigned long long initial_value) { *this = initial_value; }
-	explicit adaptivefloat(const float initial_value)              { *this = initial_value; }
-	explicit adaptivefloat(const double initial_value)             { *this = initial_value; }
-	explicit adaptivefloat(const long double initial_value)        { *this = initial_value; }
+	explicit adaptiveint(const signed char initial_value)        { *this = initial_value; }
+	explicit adaptiveint(const short initial_value)              { *this = initial_value; }
+	explicit adaptiveint(const int initial_value)                { *this = initial_value; }
+	explicit adaptiveint(const long initial_value)               { *this = initial_value; }
+	explicit adaptiveint(const long long initial_value)          { *this = initial_value; }
+	explicit adaptiveint(const char initial_value)               { *this = initial_value; }
+	explicit adaptiveint(const unsigned short initial_value)     { *this = initial_value; }
+	explicit adaptiveint(const unsigned int initial_value)       { *this = initial_value; }
+	explicit adaptiveint(const unsigned long initial_value)      { *this = initial_value; }
+	explicit adaptiveint(const unsigned long long initial_value) { *this = initial_value; }
+	explicit adaptiveint(const float initial_value)              { *this = initial_value; }
+	explicit adaptiveint(const double initial_value)             { *this = initial_value; }
+	explicit adaptiveint(const long double initial_value)        { *this = initial_value; }
 
 	// assignment operators for native types
-	adaptivefloat& operator=(const signed char rhs)        { return convert(rhs, *this); }
-	adaptivefloat& operator=(const short rhs)              { return convert(rhs, *this); }
-	adaptivefloat& operator=(const int rhs)                { return convert(rhs, *this); }
-	adaptivefloat& operator=(const long rhs)               { return convert(rhs, *this); }
-	adaptivefloat& operator=(const long long rhs)          { return convert(rhs, *this); }
-	adaptivefloat& operator=(const char rhs)               { return convert_unsigned(rhs, *this); }
-	adaptivefloat& operator=(const unsigned short rhs)     { return convert_unsigned(rhs, *this); }
-	adaptivefloat& operator=(const unsigned int rhs)       { return convert_unsigned(rhs, *this); }
-	adaptivefloat& operator=(const unsigned long rhs)      { return convert_unsigned(rhs, *this); }
-	adaptivefloat& operator=(const unsigned long long rhs) { return convert_unsigned(rhs, *this); }
-	adaptivefloat& operator=(const float rhs)              { return float_assign(rhs); }
-	adaptivefloat& operator=(const double rhs)             { return float_assign(rhs); }
-	adaptivefloat& operator=(const long double rhs)        { return float_assign(rhs); }
+	adaptiveint& operator=(const signed char rhs)        { return convert(rhs, *this); }
+	adaptiveint& operator=(const short rhs)              { return convert(rhs, *this); }
+	adaptiveint& operator=(const int rhs)                { return convert(rhs, *this); }
+	adaptiveint& operator=(const long rhs)               { return convert(rhs, *this); }
+	adaptiveint& operator=(const long long rhs)          { return convert(rhs, *this); }
+	adaptiveint& operator=(const char rhs)               { return convert_unsigned(rhs, *this); }
+	adaptiveint& operator=(const unsigned short rhs)     { return convert_unsigned(rhs, *this); }
+	adaptiveint& operator=(const unsigned int rhs)       { return convert_unsigned(rhs, *this); }
+	adaptiveint& operator=(const unsigned long rhs)      { return convert_unsigned(rhs, *this); }
+	adaptiveint& operator=(const unsigned long long rhs) { return convert_unsigned(rhs, *this); }
+	adaptiveint& operator=(const float rhs)              { return float_assign(rhs); }
+	adaptiveint& operator=(const double rhs)             { return float_assign(rhs); }
+	adaptiveint& operator=(const long double rhs)        { return float_assign(rhs); }
 
-#ifdef ADAPTER_POSIT_AND_ADAPTIVEFLOAT
+#ifdef ADAPTER_POSIT_AND_ADAPTIVEINT
 	// POSIT_CONCEPT_GENERALIZATION
 	// TODO: SFINAE to assure we only match a posit<nbits,es> concept
 	template<typename PositType>
-	adaptivefloat& operator=(const PositType& rhs) {
+	adaptiveint& operator=(const PositType& rhs) {
 		convert_p2i(rhs, *this);
 		return *this;
 	}
-#endif // ADAPTER_POSIT_AND_ADAPTIVEFLOAT
+#endif // ADAPTER_POSIT_AND_ADAPTIVEINT
 
 	// prefix operators
-	adaptivefloat operator-() const {
-		adaptivefloat negated(*this);
+	adaptiveint operator-() const {
+		adaptiveint negated(*this);
 		return negated;
 	}
 
@@ -116,27 +116,27 @@ public:
 	explicit operator long double() const { return toNativeFloatingPoint(); }
 
 	// arithmetic operators
-	adaptivefloat& operator+=(const adaptivefloat& rhs) {
+	adaptiveint& operator+=(const adaptiveint& rhs) {
 		return *this;
 	}
-	adaptivefloat& operator-=(const adaptivefloat& rhs) {
+	adaptiveint& operator-=(const adaptiveint& rhs) {
 		return *this;
 	}
-	adaptivefloat& operator*=(const adaptivefloat& rhs) {
+	adaptiveint& operator*=(const adaptiveint& rhs) {
 		return *this;
 	}
-	adaptivefloat& operator/=(const adaptivefloat& rhs) {
+	adaptiveint& operator/=(const adaptiveint& rhs) {
 		return *this;
 	}
 
 	// modifiers
 	inline void clear() { sign = false; exp = 0; coef.clear(); }
 	inline void setzero() { clear(); }
-	// use un-interpreted raw bits to set the bits of the adaptivefloat
+	// use un-interpreted raw bits to set the bits of the adaptiveint
 	inline void set_raw_bits(unsigned long long value) {
 		clear();
 	}
-	inline adaptivefloat& assign(const std::string& txt) {
+	inline adaptiveint& assign(const std::string& txt) {
 		return *this;
 	}
 
@@ -207,7 +207,7 @@ protected:
 	}
 
 	template<typename Ty>
-	adaptivefloat& float_assign(Ty& rhs) {
+	adaptiveint& float_assign(Ty& rhs) {
 		clear();
 		long long base = (long long)rhs;
 		*this = base;
@@ -275,20 +275,20 @@ protected:
 
 private:
 
-	// adaptivefloat - adaptivefloat logic comparisons
-	friend bool operator==(const adaptivefloat& lhs, const adaptivefloat& rhs);
+	// adaptiveint - adaptiveint logic comparisons
+	friend bool operator==(const adaptiveint& lhs, const adaptiveint& rhs);
 
-	// adaptivefloat - literal logic comparisons
-	friend bool operator==(const adaptivefloat& lhs, const long long rhs);
+	// adaptiveint - literal logic comparisons
+	friend bool operator==(const adaptiveint& lhs, const long long rhs);
 
-	// literal - adaptivefloat logic comparisons
-	friend bool operator==(const long long lhs, const adaptivefloat& rhs);
+	// literal - adaptiveint logic comparisons
+	friend bool operator==(const long long lhs, const adaptiveint& rhs);
 
 	// find the most significant bit set
-	friend signed findMsb(const adaptivefloat& v);
+	friend signed findMsb(const adaptiveint& v);
 };
 
-inline adaptivefloat& convert(int64_t v, adaptivefloat& result) {
+inline adaptiveint& convert(int64_t v, adaptiveint& result) {
 	if (0 == v) {
 		result.setzero();
 	}
@@ -298,7 +298,7 @@ inline adaptivefloat& convert(int64_t v, adaptivefloat& result) {
 	return result;
 }
 
-inline adaptivefloat& convert_unsigned(uint64_t v, adaptivefloat& result) {
+inline adaptiveint& convert_unsigned(uint64_t v, adaptiveint& result) {
 	if (0 == v) {
 		result.setzero();
 	}
@@ -311,38 +311,38 @@ inline adaptivefloat& convert_unsigned(uint64_t v, adaptivefloat& result) {
 ////////////////////////    MPFLOAT functions   /////////////////////////////////
 
 
-inline adaptivefloat abs(const adaptivefloat& a) {
+inline adaptiveint abs(const adaptiveint& a) {
 	return a; // (a < 0 ? -a : a);
 }
 
 
-// findMsb takes an adaptivefloat reference and returns the position of the most significant bit, -1 if v == 0
+// findMsb takes an adaptiveint reference and returns the position of the most significant bit, -1 if v == 0
 
-inline signed findMsb(const adaptivefloat& v) {
+inline signed findMsb(const adaptiveint& v) {
 	return -1; // no significant bit found, all bits are zero
 }
 
 ////////////////////////    INTEGER operators   /////////////////////////////////
 
-// divide adaptivefloat a and b and return result argument
+// divide adaptiveint a and b and return result argument
 
-void divide(const adaptivefloat& a, const adaptivefloat& b, adaptivefloat& quotient) {
+void divide(const adaptiveint& a, const adaptiveint& b, adaptiveint& quotient) {
 }
 
 /// stream operators
 
-// read a adaptivefloat ASCII format and make a binary adaptivefloat out of it
+// read a adaptiveint ASCII format and make a binary adaptiveint out of it
 
-bool parse(const std::string& number, adaptivefloat& value) {
+bool parse(const std::string& number, adaptiveint& value) {
 	bool bSuccess = false;
 
 	return bSuccess;
 }
 
-// generate an adaptivefloat format ASCII format
-inline std::ostream& operator<<(std::ostream& ostr, const adaptivefloat& i) {
+// generate an adaptiveint format ASCII format
+inline std::ostream& operator<<(std::ostream& ostr, const adaptiveint& i) {
 	// to make certain that setw and left/right operators work properly
-	// we need to transform the adaptivefloat into a string
+	// we need to transform the adaptiveint into a string
 	std::stringstream ss;
 
 	std::streamsize prec = ostr.precision();
@@ -355,9 +355,9 @@ inline std::ostream& operator<<(std::ostream& ostr, const adaptivefloat& i) {
 	return ostr << ss.str();
 }
 
-// read an ASCII adaptivefloat format
+// read an ASCII adaptiveint format
 
-inline std::istream& operator>>(std::istream& istr, adaptivefloat& p) {
+inline std::istream& operator>>(std::istream& istr, adaptiveint& p) {
 	std::string txt;
 	istr >> txt;
 	if (!parse(txt, p)) {
@@ -370,168 +370,168 @@ inline std::istream& operator>>(std::istream& istr, adaptivefloat& p) {
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// adaptivefloat - adaptivefloat binary logic operators
+// adaptiveint - adaptiveint binary logic operators
 
 // equal: precondition is that the storage is properly nulled in all arithmetic paths
 
-inline bool operator==(const adaptivefloat& lhs, const adaptivefloat& rhs) {
+inline bool operator==(const adaptiveint& lhs, const adaptiveint& rhs) {
 	return true;
 }
 
-inline bool operator!=(const adaptivefloat& lhs, const adaptivefloat& rhs) {
+inline bool operator!=(const adaptiveint& lhs, const adaptiveint& rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (const adaptivefloat& lhs, const adaptivefloat& rhs) {
+inline bool operator< (const adaptiveint& lhs, const adaptiveint& rhs) {
 	return false; // lhs and rhs are the same
 }
 
-inline bool operator> (const adaptivefloat& lhs, const adaptivefloat& rhs) {
+inline bool operator> (const adaptiveint& lhs, const adaptiveint& rhs) {
 	return operator< (rhs, lhs);
 }
 
-inline bool operator<=(const adaptivefloat& lhs, const adaptivefloat& rhs) {
+inline bool operator<=(const adaptiveint& lhs, const adaptiveint& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(const adaptivefloat& lhs, const adaptivefloat& rhs) {
+inline bool operator>=(const adaptiveint& lhs, const adaptiveint& rhs) {
 	return !operator< (lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// adaptivefloat - literal binary logic operators
+// adaptiveint - literal binary logic operators
 // equal: precondition is that the byte-storage is properly nulled in all arithmetic paths
 
-inline bool operator==(const adaptivefloat& lhs, const long long rhs) {
-	return operator==(lhs, adaptivefloat(rhs));
+inline bool operator==(const adaptiveint& lhs, const long long rhs) {
+	return operator==(lhs, adaptiveint(rhs));
 }
 
-inline bool operator!=(const adaptivefloat& lhs, const long long rhs) {
+inline bool operator!=(const adaptiveint& lhs, const long long rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (const adaptivefloat& lhs, const long long rhs) {
-	return operator<(lhs, adaptivefloat(rhs));
+inline bool operator< (const adaptiveint& lhs, const long long rhs) {
+	return operator<(lhs, adaptiveint(rhs));
 }
 
-inline bool operator> (const adaptivefloat& lhs, const long long rhs) {
-	return operator< (adaptivefloat(rhs), lhs);
+inline bool operator> (const adaptiveint& lhs, const long long rhs) {
+	return operator< (adaptiveint(rhs), lhs);
 }
 
-inline bool operator<=(const adaptivefloat& lhs, const long long rhs) {
+inline bool operator<=(const adaptiveint& lhs, const long long rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(const adaptivefloat& lhs, const long long rhs) {
+inline bool operator>=(const adaptiveint& lhs, const long long rhs) {
 	return !operator< (lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// literal - adaptivefloat binary logic operators
+// literal - adaptiveint binary logic operators
 // precondition is that the byte-storage is properly nulled in all arithmetic paths
 
 
-inline bool operator==(const long long lhs, const adaptivefloat& rhs) {
-	return operator==(adaptivefloat(lhs), rhs);
+inline bool operator==(const long long lhs, const adaptiveint& rhs) {
+	return operator==(adaptiveint(lhs), rhs);
 }
 
-inline bool operator!=(const long long lhs, const adaptivefloat& rhs) {
+inline bool operator!=(const long long lhs, const adaptiveint& rhs) {
 	return !operator==(lhs, rhs);
 }
 
-inline bool operator< (const long long lhs, const adaptivefloat& rhs) {
-	return operator<(adaptivefloat(lhs), rhs);
+inline bool operator< (const long long lhs, const adaptiveint& rhs) {
+	return operator<(adaptiveint(lhs), rhs);
 }
 
-inline bool operator> (const long long lhs, const adaptivefloat& rhs) {
+inline bool operator> (const long long lhs, const adaptiveint& rhs) {
 	return operator< (rhs, lhs);
 }
 
-inline bool operator<=(const long long lhs, const adaptivefloat& rhs) {
+inline bool operator<=(const long long lhs, const adaptiveint& rhs) {
 	return operator< (lhs, rhs) || operator==(lhs, rhs);
 }
 
-inline bool operator>=(const long long lhs, const adaptivefloat& rhs) {
+inline bool operator>=(const long long lhs, const adaptiveint& rhs) {
 	return !operator< (lhs, rhs);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// adaptivefloat - adaptivefloat binary arithmetic operators
+// adaptiveint - adaptiveint binary arithmetic operators
 // BINARY ADDITION
 
-inline adaptivefloat operator+(const adaptivefloat& lhs, const adaptivefloat& rhs) {
-	adaptivefloat sum = lhs;
+inline adaptiveint operator+(const adaptiveint& lhs, const adaptiveint& rhs) {
+	adaptiveint sum = lhs;
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
 
-inline adaptivefloat operator-(const adaptivefloat& lhs, const adaptivefloat& rhs) {
-	adaptivefloat diff = lhs;
+inline adaptiveint operator-(const adaptiveint& lhs, const adaptiveint& rhs) {
+	adaptiveint diff = lhs;
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
 
-inline adaptivefloat operator*(const adaptivefloat& lhs, const adaptivefloat& rhs) {
-	adaptivefloat mul = lhs;
+inline adaptiveint operator*(const adaptiveint& lhs, const adaptiveint& rhs) {
+	adaptiveint mul = lhs;
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
 
-inline adaptivefloat operator/(const adaptivefloat& lhs, const adaptivefloat& rhs) {
-	adaptivefloat ratio = lhs;
+inline adaptiveint operator/(const adaptiveint& lhs, const adaptiveint& rhs) {
+	adaptiveint ratio = lhs;
 	ratio /= rhs;
 	return ratio;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// adaptivefloat - literal binary arithmetic operators
+// adaptiveint - literal binary arithmetic operators
 // BINARY ADDITION
 
-inline adaptivefloat operator+(const adaptivefloat& lhs, const long long rhs) {
-	return operator+(lhs, adaptivefloat(rhs));
+inline adaptiveint operator+(const adaptiveint& lhs, const long long rhs) {
+	return operator+(lhs, adaptiveint(rhs));
 }
 // BINARY SUBTRACTION
 
-inline adaptivefloat operator-(const adaptivefloat& lhs, const long long rhs) {
-	return operator-(lhs, adaptivefloat(rhs));
+inline adaptiveint operator-(const adaptiveint& lhs, const long long rhs) {
+	return operator-(lhs, adaptiveint(rhs));
 }
 // BINARY MULTIPLICATION
 
-inline adaptivefloat operator*(const adaptivefloat& lhs, const long long rhs) {
-	return operator*(lhs, adaptivefloat(rhs));
+inline adaptiveint operator*(const adaptiveint& lhs, const long long rhs) {
+	return operator*(lhs, adaptiveint(rhs));
 }
 // BINARY DIVISION
 
-inline adaptivefloat operator/(const adaptivefloat& lhs, const long long rhs) {
-	return operator/(lhs, adaptivefloat(rhs));
+inline adaptiveint operator/(const adaptiveint& lhs, const long long rhs) {
+	return operator/(lhs, adaptiveint(rhs));
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////
-// literal - adaptivefloat binary arithmetic operators
+// literal - adaptiveint binary arithmetic operators
 // BINARY ADDITION
 
-inline adaptivefloat operator+(const long long lhs, const adaptivefloat& rhs) {
-	return operator+(adaptivefloat(lhs), rhs);
+inline adaptiveint operator+(const long long lhs, const adaptiveint& rhs) {
+	return operator+(adaptiveint(lhs), rhs);
 }
 // BINARY SUBTRACTION
 
-inline adaptivefloat operator-(const long long lhs, const adaptivefloat& rhs) {
-	return operator-(adaptivefloat(lhs), rhs);
+inline adaptiveint operator-(const long long lhs, const adaptiveint& rhs) {
+	return operator-(adaptiveint(lhs), rhs);
 }
 // BINARY MULTIPLICATION
 
-inline adaptivefloat operator*(const long long lhs, const adaptivefloat& rhs) {
-	return operator*(adaptivefloat(lhs), rhs);
+inline adaptiveint operator*(const long long lhs, const adaptiveint& rhs) {
+	return operator*(adaptiveint(lhs), rhs);
 }
 // BINARY DIVISION
 
-inline adaptivefloat operator/(const long long lhs, const adaptivefloat& rhs) {
-	return operator/(adaptivefloat(lhs), rhs);
+inline adaptiveint operator/(const long long lhs, const adaptiveint& rhs) {
+	return operator/(adaptiveint(lhs), rhs);
 }
 
 }} // namespace sw::universal

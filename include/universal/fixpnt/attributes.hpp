@@ -102,8 +102,8 @@ inline bool sign(const fixpnt<nbits, rbits, arithmetic>& p) {
 
 // get the fraction bits of a posit
 template<size_t nbits, size_t rbits, bool arithmetic>
-inline sw::unum::bitblock<rbits> extract_fraction(const fixpnt<nbits, rbits, arithmetic>& p) {
-	sw::unum::bitblock<rbits> fraction;
+inline bitblock<rbits> extract_fraction(const fixpnt<nbits, rbits, arithmetic>& p) {
+	bitblock<rbits> fraction;
 	for (int i = 0; i < rbits; ++i) {
 	fraction[i] = p[i];
 	}

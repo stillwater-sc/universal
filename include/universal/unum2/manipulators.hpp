@@ -4,7 +4,6 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 #include <iostream>
 #include <iomanip>
 #include <cmath>  // for frexp/frexpf
@@ -27,8 +26,8 @@ std::string unum2_range() {
 	ss << " unum2<" << std::setw(3) << essize << "," << fsize << "> ";
 	//ss << "minpos scale " << std::setw(10) << minpos_scale<essize, fsize>() << "     ";
 	//ss << "maxpos scale " << std::setw(10) << maxpos_scale<essize, fsize>() << "     ";
-	ss << "minimum " << std::setw(12) << std::numeric_limits<sw::unum::unum2<essize, fsize>>::min() << "     ";
-	ss << "maximum " << std::setw(12) << std::numeric_limits<sw::unum::unum2<essize, fsize>>::max() ;
+	ss << "minimum " << std::setw(12) << std::numeric_limits<sw::universal::unum2<essize, fsize>>::min() << "     ";
+	ss << "maximum " << std::setw(12) << std::numeric_limits<sw::universal::unum2<essize, fsize>>::max() ;
 	return ss.str();
 }
 
@@ -66,5 +65,5 @@ std::string color_print(const unum2<essize, fsize>& p) {
 	return ss.str();
 }
 
-}}  // namfsizepace sw::universal
+}}  // namespace sw::universal
 

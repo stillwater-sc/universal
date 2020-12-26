@@ -18,7 +18,7 @@
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
-	sw::universal::real<nbits, es> a, b, rref, rsum;
+	sw::universal::areal<nbits, es> a, b, rref, rsum;
 	a = a;
 	b = b;
 	rsum = a + b;
@@ -49,7 +49,7 @@ try {
 
 	cout << "Standard areal<8,2> configuration tests" << endl;
 
-	real<nbits, es> r;
+	areal<nbits, es> r;
 	r = 0.0;
 	cout << r << endl;
 
