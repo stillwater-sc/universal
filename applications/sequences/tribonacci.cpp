@@ -134,7 +134,7 @@ the n'th term of the series expansion of 1/(1-x-x**2) is
 		for (unsigned i = MaxT-10; i < MaxT; ++i) {
 			double Tn = double(v[i]);
 			double Tn1 = double(v[i - 1]);
-			//cout << Tn << endl;
+			cout << Tn << " : double(" << v[i] << ")\n";
 			//cout << Tn1 << endl;
 			double phi = Tn / Tn1;
 			cout << setw(6) << i << " : " << setw(30) << phi << endl;
