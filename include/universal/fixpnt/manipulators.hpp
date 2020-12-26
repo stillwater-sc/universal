@@ -1,7 +1,7 @@
 #pragma once
-// integer_exceptions.hpp: definition of integer exceptions
+// manipulators.hpp: definition of manipulation functions for fixed-point types
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <exception>
@@ -36,23 +36,7 @@
 
 #endif
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
-// divide by zero arithmetic exception for integers
-struct integer_divide_by_zero : public std::runtime_error {
-	integer_divide_by_zero() : std::runtime_error("integer division by zero") {}
-};
 
-// overflow exception for integers
-struct integer_overflow : public std::runtime_error {
-	integer_overflow() : std::runtime_error("integer arithmetic overflow") {}
-};
-
-///////////////////////////////////////////////////////////////
-// internal implementation exceptions
-
-struct integer_byte_index_out_of_bounds : public std::runtime_error {
-	integer_byte_index_out_of_bounds() : std::runtime_error("byte index out of bounds") {}
-};
-
-}} // namespace sw::unum
+}} // namespace sw::universal

@@ -13,7 +13,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/fixpnt/fixed_point.hpp>
 // fixed-point type manipulators such as pretty printers
-#include <universal/fixpnt/fixpnt_manipulators.hpp>
+#include <universal/fixpnt/manipulators.hpp>
 #include <universal/fixpnt/math_functions.hpp>
 
 // conditional compile flags
@@ -23,7 +23,7 @@
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
@@ -217,7 +217,7 @@ try {
 		if ((a + c) != b) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
 			cout << "FAIL: min/max\n";
-			cout << to_binary(c + d) << " vs " << to_binary(0, nbits) << endl;
+			cout << to_binary(c + d) << " vs " << to_binary(fixpnt<nbits, rbits, arithmetic, blocktype>(0)) << endl;
 			cout << to_binary(a + c) << " vs " << to_binary(b) << endl;
 		}
 	}
@@ -376,11 +376,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_arithmetic_exception& err) {
+catch (const sw::universal::fixpnt_arithmetic_exception& err) {
 	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_internal_exception& err) {
+catch (const sw::universal::fixpnt_internal_exception& err) {
 	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

@@ -1,5 +1,5 @@
 #include <universal/blas/matrix.hpp>
-namespace sw { namespace unum { namespace blas {
+namespace sw { namespace universal { namespace blas {
 
 // fixed 64x64 FVM test matrix
 template<typename Scalar>
@@ -73,4 +73,4 @@ matrix<Scalar> fvm64x64() {
 	return A;
 }
 
-}}}  // namespace sw::unum::blas
+}}}  // namespace sw::universal::blas

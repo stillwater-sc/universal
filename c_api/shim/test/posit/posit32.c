@@ -1,6 +1,6 @@
 // posit32.c: example test of the posit API for C programs using 32-bit posits
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #if defined(_MSC_VER)

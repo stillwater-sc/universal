@@ -1,6 +1,6 @@
 //  fractions.cpp : examples of working with posit fractions
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/posit/posit>
@@ -18,7 +18,7 @@ int ReportTestResult(int nrOfFailedTests, const std::string& description, const 
 }
 
 template<size_t fbits>
-void ReportError(const std::string& test_case, const std::string& op, double input, double reference, const sw::unum::fraction<fbits>& _fraction) {
+void ReportError(const std::string& test_case, const std::string& op, double input, double reference, const sw::universal::fraction<fbits>& _fraction) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(10) << input
@@ -34,10 +34,10 @@ int ValidateFractionValue(const std::string& tag, bool bReportIndividualTestCase
 	const uint64_t NR_OF_FRACTIONS = (uint64_t(1) << fbits);
 	int nrOfFailedTests = 0;
 
-	sw::unum::fraction<fbits> _fraction;
+	sw::universal::fraction<fbits> _fraction;
 	double divisor = uint64_t(1) << fbits;
 	for (uint64_t i = 0; i < NR_OF_FRACTIONS; i++) {
-		sw::unum::bitblock<fbits> bits = sw::unum::convert_to_bitblock<fbits, uint64_t>(i);
+		sw::universal::bitblock<fbits> bits = sw::universal::convert_to_bitblock<fbits, uint64_t>(i);
 		_fraction.set(bits);  // use default nr of fraction bits to be full size
 		// fraction value is the 'fraction' of the operand: (fraction to ull)/2^fbits
 		double v = _fraction.value();
@@ -58,10 +58,10 @@ int ValidateFixedPointNumber(const std::string& tag, bool bReportIndividualTestC
 	int nrOfFailedTests = 0;
 
 	double divisor = uint64_t(1) << fbits;
-	sw::unum::fraction<fbits> _fraction;
-	sw::unum::bitblock<fbits + 1> _fixed_point;
+	sw::universal::fraction<fbits> _fraction;
+	sw::universal::bitblock<fbits + 1> _fixed_point;
 	for (uint64_t i = 0; i < NR_OF_FRACTIONS; i++) {
-		sw::unum::bitblock<fbits> bits = sw::unum::convert_to_bitblock<fbits, uint64_t>(i);
+		sw::universal::bitblock<fbits> bits = sw::universal::convert_to_bitblock<fbits, uint64_t>(i);
 		_fraction.set(bits);  // use default nr of fraction bits to be full size
 							  // fraction value is the 'fraction' of the operand: (fraction to ull)/2^fbits
 		double v = 1.0 + _fraction.value();
@@ -80,8 +80,8 @@ template<size_t fbits>
 int ValidateRoundingAssessment(const std::string& tag, bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 
-	sw::unum::fraction<fbits> _fraction;
-	sw::unum::bitblock<fbits> bits = sw::unum::convert_to_bitblock<fbits, uint32_t>(0x50);
+	sw::universal::fraction<fbits> _fraction;
+	sw::universal::bitblock<fbits> bits = sw::universal::convert_to_bitblock<fbits, uint32_t>(0x50);
 	for (unsigned i = 0; i < fbits; i++) {
 		bool rb = _fraction.assign2(i, bits);
 		std::cout << "#fbits = " << i << " " << bits << " fraction " << _fraction << " " << (rb ? "up" : "dn") << '\n';
@@ -94,7 +94,7 @@ int ValidateRoundingAssessment(const std::string& tag, bool bReportIndividualTes
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// generate individual testcases to hand trace/debug
 	ValidateFixedPointNumber<4>("Hello", true);

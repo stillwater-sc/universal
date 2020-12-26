@@ -1,6 +1,6 @@
 // compp.cpp: components of a posit: cli to show the sign/scale/regime/exponent/fraction components of standard posit configurations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/posit/posit>
@@ -28,7 +28,7 @@ posit<64, 4> = s1 r11110 e1000 f100011110010000111001100101110101110001001110101
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	if (argc != 2) {
 		cerr << "pc : posit components" << endl;

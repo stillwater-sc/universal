@@ -1,15 +1,11 @@
 // 16dot5_float.cpp: Functionality tests for half precision floats
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // minimum set of include files to reflect source code dependencies
-// TODO: the dependencies on posit exceptions and trace_constants needs to be removed
-#include "universal/posit/exceptions.hpp"
-#include "universal/posit/trace_constants.hpp"
-#include "universal/bitblock/bitblock.hpp"
-#include "universal/areal/areal.hpp"
+#include <universal/areal/areal.hpp>
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 #include "areal_test_helpers.hpp"
@@ -19,7 +15,7 @@
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//const size_t RND_TEST_CASES = 500000;
 
@@ -27,11 +23,11 @@ try {
 	const size_t es = 5;
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = " areal<16,5>";
+	std::string tag = " real<16,5>";
 
 	cout << "Standard areal<16,5> configuration tests" << endl;
 
-	areal<nbits, es> r;
+	real<nbits, es> r;
 	r = 1.2345;
 	cout << r << endl;
 
@@ -51,16 +47,12 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
-	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::real_arithmetic_exception& err) {
+	std::cerr << "Uncaught real arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const posit_internal_exception& err) {
-	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
+catch (const sw::universal::real_internal_exception& err) {
+	std::cerr << "Uncaught real internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

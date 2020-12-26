@@ -1,6 +1,6 @@
 // complex.cpp: api to use fixpnt type in complex arithmetic operations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -16,24 +16,24 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/fixpnt/fixed_point.hpp>
 // fixed-point type manipulators such as pretty printers
-#include <universal/fixpnt/fixpnt_manipulators.hpp>
+#include <universal/fixpnt/manipulators.hpp>
 #include <universal/fixpnt/math_functions.hpp>
 #include "../utils/fixpnt_test_suite.hpp"
 
-namespace sw {
-namespace unum {
-namespace complex_literals {
-	std::complex<sw::unum::fixpnt<8, 4>> operator""_i(long double _Val)
+namespace sw { namespace universal { namespace complex_literals {
+
+	std::complex<fixpnt<8, 4>> operator""_i(long double _Val)
 	{	// return imaginary _Val
-		return (std::complex<sw::unum::fixpnt<8, 4>>(0.0, static_cast<sw::unum::fixpnt<8, 4>>(_Val)));
+		return (std::complex<fixpnt<8, 4>>(0.0, static_cast<fixpnt<8, 4>>(_Val)));
 	}
 
-	std::complex<sw::unum::fixpnt<8, 4>> operator""_i(unsigned long long _Val)
+	std::complex<fixpnt<8, 4>> operator""_i(unsigned long long _Val)
 	{	// return imaginary _Val
-		return (std::complex<sw::unum::fixpnt<8, 4>>(0.0, static_cast<sw::unum::fixpnt<8, 4>>(_Val)));
+		return (std::complex<fixpnt<8, 4>>(0.0, static_cast<fixpnt<8, 4>>(_Val)));
 	}
+
 } // namespace complex_literals
-} // namespace unum
+} // namespace universal
 } // namespace sw
 
 
@@ -44,7 +44,7 @@ namespace complex_literals {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
@@ -76,8 +76,8 @@ try {
 	// than other compilers.
 	// no idea how to fix the code below to make it compile with g++
 	{
-		using namespace sw::unum::complex_literals;
-		using Real = sw::unum::fixpnt<8, 4>;
+		using namespace sw::universal::complex_literals;
+		using Real = sw::universal::fixpnt<8, 4>;
 		std::cout << std::fixed << std::setprecision(1);
 
 		std::complex<Real> z1 = 1i * 1i;     // imaginary unit squared
@@ -95,13 +95,13 @@ try {
 	}
 #endif // GPP_FIX
 /*
-	error: conversion from '__complex__ int' to non - scalar type 'std::complex<sw::unum::fixpnt<8, 4> >' requested
+	error: conversion from '__complex__ int' to non - scalar type 'std::complex<sw::universal::fixpnt<8, 4> >' requested
 		std::complex<Real> z1 = 1i * 1i;     // imaginary unit squared
 		                        ~~~^~~~
-	error : conversion from '__complex__ double' to non - scalar type 'std::complex<sw::unum::fixpnt<8, 4> >' requested
+	error : conversion from '__complex__ double' to non - scalar type 'std::complex<sw::universal::fixpnt<8, 4> >' requested
         std::complex<Real> z4 = 1.0 + 2i, z5 = 1.0 - 2i; // conjugates
 		                        ~~~~^~~~
-	error : conversion from '__complex__ double' to non - scalar type 'std::complex<sw::unum::fixpnt<8, 4> >' requested
+	error : conversion from '__complex__ double' to non - scalar type 'std::complex<sw::universal::fixpnt<8, 4> >' requested
         std::complex<Real> z4 = 1.0 + 2i, z5 = 1.0 - 2i; // conjugates
 		                                       ~~~~^~~~
 */
@@ -134,8 +134,8 @@ try {
 		// all the literals are marshalled through the std library double native type for complex literals
 		// defining them for fixpnt is syntactically unattractive as the "i" literal is reserved for native types,
 		// so our literal type would need to be non-standard anyway as "_i"
-		using namespace sw::unum::complex_literals;
-		using Real = sw::unum::fixpnt<8, 4>;
+		using namespace sw::universal::complex_literals;
+		using Real = sw::universal::fixpnt<8, 4>;
 		std::cout << std::fixed << std::setprecision(1);
 
 		std::complex<Real> z1 = 1i * 1i;     // imaginary unit squared
@@ -175,11 +175,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_arithmetic_exception& err) {
+catch (const sw::universal::fixpnt_arithmetic_exception& err) {
 	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_internal_exception& err) {
+catch (const sw::universal::fixpnt_internal_exception& err) {
 	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

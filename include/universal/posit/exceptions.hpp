@@ -1,16 +1,14 @@
 #pragma once
 // exceptions.hpp: exceptions for problems in posit calculations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <stdexcept>
 #include <string>
 
-// TODO: why can't I namespace exceptions?
-//namespace sw {
-//	namespace unum {
+namespace sw { namespace universal {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// POSIT ARITHMETIC EXCEPTIONS
@@ -124,3 +122,4 @@ struct operand_too_small_for_quire
 	operand_too_small_for_quire(const std::string& error = "operand value too small for quire") : quire_exception(error) {}
 };
 
+}}   // namespace sw::universal

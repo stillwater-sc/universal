@@ -41,11 +41,11 @@ void GenerateEulersNumber() {
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pref, pexp;
+	sw::universal::posit<nbits, es> pa, pref, pexp;
 	pa = a;
 	ref = std::exp(a);
 	pref = ref;
-	pexp = sw::unum::exp(pa);
+	pexp = sw::universal::exp(pa);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> exp(" << a << ") = " << std::setw(nbits) << ref << std::endl;
 	std::cout << pa.get() << " -> exp( " << pa << ") = " << pexp.get() << " (reference: " << pref.get() << ")   ";
@@ -60,7 +60,7 @@ void GenerateTestCase(Ty a) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	GenerateEulersNumber();
 

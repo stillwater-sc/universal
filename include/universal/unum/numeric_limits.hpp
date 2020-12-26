@@ -1,7 +1,7 @@
 #pragma once
 // numeric_limits.hpp: definition of numeric_limits for flexible configuration unum typfsizesize
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "unum.hpp"
@@ -9,21 +9,21 @@
 namespace std {
 
 template <size_t esizesize, size_t fsizesize, typename bt> 
-class numeric_limits< sw::unum::unum<esizesize,fsizesize,bt> > {
+class numeric_limits< sw::universal::unum<esizesize,fsizesize,bt> > {
 public:
-	using UNUM = sw::unum::unum<esizesize, fsizesize, bt>;
+	using UNUM = sw::universal::unum<esizesize, fsizesize, bt>;
 	static constexpr bool is_specialized = true;
 	static constexpr UNUM min() { // return minimum value
 		UNUM minposu;
-		return sw::unum::minpos<esizesize,fsizesize,bt>(minposu);
+		return sw::universal::minpos<esizesize,fsizesize,bt>(minposu);
 	} 
 	static constexpr UNUM max() { // return maximum value
 		UNUM maxposu;
-		return sw::unum::maxpos<esizesize, fsizesize, bt>(maxposu);
+		return sw::universal::maxpos<esizesize, fsizesize, bt>(maxposu);
 	} 
 	static constexpr UNUM lowfsizesizet() { // return most negative value
 		UNUM maxnegu;
-		return sw::unum::maxneg<esizesize, fsizesize, bt>(maxnegu);
+		return sw::universal::maxneg<esizesize, fsizesize, bt>(maxnegu);
 	} 
 	static constexpr UNUM epsilon() { // return smallest effective increment from 1.0
 		UNUM one{ 1.0f }, incr{ 1.0f };
@@ -37,15 +37,15 @@ public:
 	}
 	static constexpr UNUM infinity() { // return positive infinity
 		UNUM posinfu;
-		return sw::unum::posinf<esizesize, fsizesize, bt>(posinfu);
+		return sw::universal::posinf<esizesize, fsizesize, bt>(posinfu);
 	}
 	static constexpr UNUM quiet_NaN() { // return non-signaling NaN
 		UNUM qnanu;
-		return sw::unum::qnan<esizesize, fsizesize, bt>(qnanu);
+		return sw::universal::qnan<esizesize, fsizesize, bt>(qnanu);
 	}
 	static constexpr UNUM signaling_NaN() { // return signaling NaN
 		UNUM snanu;
-		return sw::unum::snan<esizesize, fsizesize, bt>(snanu);
+		return sw::universal::snan<esizesize, fsizesize, bt>(snanu);
 	}
 
 	static constexpr int digits       = (1 + int(1 << fsizesize));

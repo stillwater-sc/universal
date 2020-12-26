@@ -1,6 +1,6 @@
 // rounding.cpp: functional tests for rounding using blockbinary numbers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -26,7 +26,7 @@ std::string roundingDecision(int roundingDirection) {
 
 int ValidateAny(bool bReportIndividualTestCases) {
 	int nrFailures = 0;
-	sw::unum::blockbinary<18> a;
+	sw::universal::blockbinary<18> a;
 
 	a.set_raw_bits(0x32000); // 11'0010'0000'0000'0000
 	if (a.any(8)) { ++nrFailures; std::cout << "fail\n"; }
@@ -51,7 +51,7 @@ int ValidateAny(bool bReportIndividualTestCases) {
 
 int ValidateSpecialRoundingCases(bool bReportIndividualTestCases) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	blockbinary<8> a, b, roundedResult;
 	blockbinary<16> c;
@@ -274,7 +274,7 @@ int ValidateRounding(bool bReportIndividualTestCases) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

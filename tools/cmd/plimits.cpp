@@ -1,6 +1,6 @@
 // plimits.cpp: cli to show the numeric_limits<> of the standard posits
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/posit/posit>
@@ -8,10 +8,10 @@
 template<size_t nbits, size_t es>
 void ReportNumericLimitsOfPosit() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	stringstream ss;
-	ss << "numeric_limits< sw::unum::posit<" << nbits << ", " << es << "> >::";
+	ss << "numeric_limits< sw::universal::posit<" << nbits << ", " << es << "> >::";
 	string posit_tag = ss.str();
 
 	cout << "Numeric limits for posit< " << nbits << ", " << es << ">\n";
@@ -48,7 +48,7 @@ void ReportNumericLimitsOfPosit() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	if (argc == 1) cout << argv[0] << ": numeric_limits<> of standard posits\n";
 	// numeric_limits of standard posits

@@ -26,7 +26,7 @@ unsigned ValidateCasting(const std::string& tag, bool bReportIndividualTestCases
 // generate specific test case that you can trace with the trace conditions in posit.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es>
-void GenerateTestCase(float input, float reference, const sw::unum::posit<nbits, es>& presult) {
+void GenerateTestCase(float input, float reference, const sw::universal::posit<nbits, es>& presult) {
 	if (fabs(double(presult) - reference) > 0.000000001) 
 		ReportConversionError("test_case", "=", input, reference, presult);
 	else
@@ -35,7 +35,7 @@ void GenerateTestCase(float input, float reference, const sw::unum::posit<nbits,
 }
 
 template<size_t nbits, size_t es>
-void GenerateTestCase(double input, double reference, const sw::unum::posit<nbits, es>& presult) {
+void GenerateTestCase(double input, double reference, const sw::universal::posit<nbits, es>& presult) {
 	if (fabs(double(presult) - reference) > 0.000000001)
 		ReportConversionError("test_case", "=", input, reference, presult);
 	else
@@ -49,7 +49,7 @@ void GenerateTestCase(double input, double reference, const sw::unum::posit<nbit
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 
 	std::string tag = "Conversion test";

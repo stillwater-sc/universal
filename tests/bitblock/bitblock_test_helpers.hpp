@@ -1,11 +1,11 @@
-//  bitblock_test_helpers.cpp : bitblock-based arithmetic test helpers
+#pragma once
+//  bitblock_test_helpers.hpp : bitblock-based arithmetic test helpers
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 template<size_t nbits, size_t rbits>
 void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const bitblock<nbits>& lhs, const bitblock<nbits>& rhs, const bitblock<rbits>& ref, const bitblock<rbits>& result) {
@@ -158,6 +158,4 @@ int VerifyBitsetDivision(bool bReportIndividualTestCases = false) {
 	return nrOfFailedTestCases;
 }
 
-} // namespace unum
-
-} // namespace sw
+}} // namespace sw::universal

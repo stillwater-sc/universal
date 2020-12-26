@@ -1,6 +1,6 @@
 //  misc.cpp : miscellaneous tests for abitrary precision integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -43,7 +43,7 @@ integer<nbits, BlockType> ipow(integer<nbits, BlockType> base, integer<nbits, Bl
 
 void TestSizeof() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << endl << "TestSizeof" << endl;
 	bool pass = true;
@@ -72,7 +72,7 @@ void TestSizeof() {
 
 void TestConversion() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << endl << "TestConversion" << endl;
 
@@ -93,7 +93,7 @@ void TestConversion() {
 
 void TestFindMsb() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << endl << "TestFindMsb" << endl;
 	bool pass = true;
@@ -113,7 +113,7 @@ void TestFindMsb() {
 void ReproducibilityTestSuite() {
 	for (int i = 0; i < 30; i += 3) {
 		for (int j = 0; j < 70; j += 7) {
-			sw::unum::reportRepresentability(i, j);
+			sw::universal::reportRepresentability(i, j);
 		}
 	}
 }
@@ -124,7 +124,7 @@ void ReproducibilityTestSuite() {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "Miscellaneous integer tests failed";
 

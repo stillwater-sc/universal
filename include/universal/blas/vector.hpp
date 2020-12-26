@@ -1,7 +1,7 @@
 #pragma once
 // vector.hpp: super-simple vector class
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -54,7 +54,7 @@
 #define _NODISCARD
 #endif // _HAS_NODISCARD
 
-namespace sw { namespace unum { namespace blas {
+namespace sw { namespace universal { namespace blas {
 
 template<typename Scalar>
 class vector {
@@ -237,7 +237,7 @@ std::ostream& operator<<(std::ostream& ostr, const vector<Scalar>& v) {
 
 // generate a posit format ASCII format nbits.esxNN...NNp
 template<size_t nbits, size_t es>
-inline std::string hex_format(const vector< sw::unum::posit<nbits, es> >& v) {
+inline std::string hex_format(const vector< sw::universal::posit<nbits, es> >& v) {
 	// we need to transform the posit into a string
 	std::stringstream ss;
 	for (size_t j = 0; j < size(v); ++j) ss << hex_format(v[j]) << " ";
@@ -325,7 +325,7 @@ typename std::enable_if<std::is_integral<Scalar>::value, Scalar>::type operator*
 
 // fused dot product for posits
 template<typename Scalar>
-typename std::enable_if<sw::unum::is_posit<Scalar>,Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
+typename std::enable_if<sw::universal::is_posit<Scalar>,Scalar>::type operator*(const vector<Scalar>& a, const vector<Scalar>& b) {
 //	std::cout << "fused dot product for " << typeid(Scalar).name() << std::endl;
 	size_t N = size(a);
 	if (size(a) != size(b)) {
@@ -335,13 +335,13 @@ typename std::enable_if<sw::unum::is_posit<Scalar>,Scalar>::type operator*(const
 	constexpr size_t nbits = Scalar::nbits;
 	constexpr size_t es = Scalar::es;
 	constexpr size_t capacity = 20;
-	sw::unum::quire<nbits, es, capacity> sum{ 0 };
+	sw::universal::quire<nbits, es, capacity> sum{ 0 };
 	for (size_t i = 0; i < N; ++i) {
-		sum += sw::unum::quire_mul(a(i), b(i));
+		sum += sw::universal::quire_mul(a(i), b(i));
 	}
 	Scalar p;
 	convert(sum.to_value(), p);
 	return p;
 }
 
-}}}  // namespace sw::unum::blas
+}}}  // namespace sw::universal::blas

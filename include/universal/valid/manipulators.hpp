@@ -1,7 +1,7 @@
 #pragma once
-// valid_manipulators.hpp: definitions of helper functions for valid type manipulation
+// manipulators.hpp: definitions of helper functions for valid type manipulation
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,9 +9,7 @@
 // If you have helper functions that the valid type could use, but does not depend on 
 // the valid type, you can add them to the file valid_helpers.hpp.
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal

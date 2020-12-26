@@ -1,6 +1,6 @@
 // l1_fused_dot.cpp: example program showing a fused-dot product for error free linear algebra
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifdef _MSC_VER
@@ -33,13 +33,13 @@ template<typename Vector>
 void PrintProducts(const Vector& a, const Vector& b) {
 	constexpr size_t nbits = Vector::value_type::nbits;
 	constexpr size_t es = Vector::value_type::es;
-	sw::unum::quire<nbits, es> q(0);
+	sw::universal::quire<nbits, es> q(0);
 	for (size_t i = 0; i < a.size(); ++i) {
-		q += sw::unum::quire_mul(a[i], b[i]);
+		q += sw::universal::quire_mul(a[i], b[i]);
 		std::cout << a[i] << " * " << b[i] << " = " << a[i] * b[i] << std::endl << "quire " << q << std::endl;
 	}
 	typename Vector::value_type sum;
-	sw::unum::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
+	sw::universal::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 	std::cout << "fdp result " << sum << std::endl;
 }
 
@@ -54,7 +54,7 @@ void reportOnCatastrophicCancellation(const std::string& type, const ResultScala
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//constexpr size_t nbits = 16;
 	//constexpr size_t es = 1;
@@ -75,7 +75,7 @@ try {
 	
 	{
 		using Scalar = float;
-		using Vector = sw::unum::blas::vector<Scalar>;
+		using Vector = sw::universal::blas::vector<Scalar>;
 		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
 		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
 		Vector a = { a1, a2, a3, a4 };
@@ -90,7 +90,7 @@ try {
 
 	{
 		using Scalar = double;
-		using Vector = sw::unum::blas::vector<Scalar>;
+		using Vector = sw::universal::blas::vector<Scalar>;
 		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
 		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
 		Vector a = { a1, a2, a3, a4 };

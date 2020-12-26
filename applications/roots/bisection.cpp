@@ -1,6 +1,6 @@
 // bisection.cpp: example program to a root of a polynomial through bisection, a linear method
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -75,7 +75,7 @@ Scalar bisection(Scalar& a, Scalar& b, Scalar (*f)(const Scalar&), const Scalar&
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	{
 		using Scalar = posit<16, 1>;

@@ -1,6 +1,6 @@
 // subtraction.cpp: functional tests for block binary subtraction
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -18,7 +18,7 @@
 template<size_t nbits, typename StorageBlockType = uint8_t>
 int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, StorageBlockType> a, b, result, refResult;
@@ -53,7 +53,7 @@ int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, typename StorageBlockType = uint8_t>
 void GenerateTestCase(int64_t lhs, int64_t rhs) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	blockbinary<nbits, StorageBlockType> a, b, result, reference;
 
 	a.set_raw_bits(uint64_t(lhs));
@@ -91,7 +91,7 @@ void GenerateMaxValues() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

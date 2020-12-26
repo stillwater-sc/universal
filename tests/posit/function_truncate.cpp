@@ -18,14 +18,14 @@
 
 template<size_t nbits, size_t es>
 int VerifyFloor(bool bReportIndividualTestCases) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	constexpr size_t NR_VALUES = (1 << nbits);
 	int nrOfFailedTestCases = 0;
 
 	posit<nbits, es> p;
 	for (size_t i = 0; i < NR_VALUES; ++i) {
 		p.set_raw_bits(i);
-		long l1 = long(sw::unum::floor(p));
+		long l1 = long(sw::universal::floor(p));
 		// generate the reference
 		float f = float(p);
 		long l2 = long(std::floor(f));
@@ -42,7 +42,7 @@ int VerifyFloor(bool bReportIndividualTestCases) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;

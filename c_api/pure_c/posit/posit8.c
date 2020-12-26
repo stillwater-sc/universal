@@ -1,6 +1,6 @@
 // posit8.c: example program showing the use of the posit8_t type of the C API of the posit library
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 

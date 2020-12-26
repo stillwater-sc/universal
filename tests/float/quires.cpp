@@ -1,6 +1,6 @@
 //  quires.cpp : test suite for IEEE float quires
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -52,11 +52,11 @@ void GenerateValueAssignments() {
 
 	// cover the scales with one order outside of the dynamic range of the quire configuration (minpos^2 and maxpos^2)
 	for (int scale = max_scale + 1; scale >= min_scale - 1; scale--) {  // extend by 1 max and min scale to test edge of the quire
-		sw::unum::value<fbits> v = pow(2.0, scale);
+		sw::universal::value<fbits> v = pow(2.0, scale);
 		try {
 			q = v;
 			std::cout << std::setw(10) << v << q << std::endl;
-			sw::unum::value<q.qbits> r = q.to_value();
+			sw::universal::value<q.qbits> r = q.to_value();
 			double in = (double)v;
 			double out = (double)r;
 			if (std::abs(in - out) > 0.0000001) { 
@@ -113,20 +113,20 @@ try {
 	std::cout << std::endl;
 	// quire for float nbits= 32 es = 8
 	quire<32, 8, capacity> q;
-	sw::unum::value<54> maxpos, maxpos_squared, minpos, minpos_squared;
+	sw::universal::value<54> maxpos, maxpos_squared, minpos, minpos_squared;
 	double dmax = std::numeric_limits<float>::max();
 	maxpos = dmax;
 	maxpos_squared = dmax*dmax;
-	std::cout << "maxpos * maxpos = " << sw::unum::components(maxpos_squared) << std::endl;
+	std::cout << "maxpos * maxpos = " << sw::universal::components(maxpos_squared) << std::endl;
 	double dmin = std::numeric_limits<float>::min();
 	minpos = dmin;
 	minpos_squared = dmin*dmin;
-	std::cout << "minpos * minpos = " << sw::unum::components(minpos_squared) << std::endl;
-	sw::unum::value<54> c(maxpos_squared);
+	std::cout << "minpos * minpos = " << sw::universal::components(minpos_squared) << std::endl;
+	sw::universal::value<54> c(maxpos_squared);
 
 	std::cout << "Add/Subtract propagating carry/borrows to and from capacity segment" << std::endl;
 	q.clear();
-	sw::unum::value<54> v = maxpos;
+	sw::universal::value<54> v = maxpos;
 	q += v;		std::cout << q << std::endl;
 	q += v;		std::cout << q << std::endl;
 	q += v;		std::cout << q << std::endl;

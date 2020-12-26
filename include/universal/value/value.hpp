@@ -1,7 +1,7 @@
 #pragma once
 // value.hpp: definition of a (sign, scale, significant) representation of an approximation to a real value
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -12,13 +12,14 @@
 #include <algorithm> // std::max
 
 #include <universal/native/ieee-754.hpp>
+#include <universal/bitblock/bitblock.hpp>
 #include <universal/native/bit_functions.hpp>
 
 #ifndef VALUE_THROW_ARITHMETIC_EXCEPTION
 #define VALUE_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 // Forward definitions
 template<size_t fbits> class value;
@@ -672,7 +673,7 @@ void module_add(const value<fbits>& lhs, const value<fbits>& rhs, value<abits + 
 	bool r1_sign = lhs.sign(), r2_sign = rhs.sign();
 	bool signs_are_different = r1_sign != r2_sign;
 
-	if (signs_are_different && sw::unum::abs(lhs) < sw::unum::abs(rhs)) {
+	if (signs_are_different && sw::universal::abs(lhs) < sw::universal::abs(rhs)) {
 		std::swap(r1, r2);
 		std::swap(r1_sign, r2_sign);
 	}
@@ -734,7 +735,7 @@ void module_subtract(const value<fbits>& lhs, const value<fbits>& rhs, value<abi
 	bool r1_sign = lhs.sign(), r2_sign = !rhs.sign();
 	bool signs_are_different = r1_sign != r2_sign;
 
-	if (sw::unum::abs(lhs) < sw::unum::abs(rhs)) {
+	if (sw::universal::abs(lhs) < sw::universal::abs(rhs)) {
 		std::swap(r1, r2);
 		std::swap(r1_sign, r2_sign);
 	}
@@ -969,4 +970,4 @@ value<fbits> sqrt(const value<fbits>& a) {
 	return std::sqrt(double(a));
 }
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal

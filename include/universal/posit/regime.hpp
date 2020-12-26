@@ -1,12 +1,11 @@
 #pragma once
 // regime.hpp: definition of a posit regime
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 // Forward definitions
 template<size_t nbits, size_t es> constexpr int calculate_k(int);
@@ -209,6 +208,5 @@ inline bool operator<=(const regime<nbits, es>& lhs, const regime<nbits, es>& rh
 template<size_t nbits, size_t es>
 inline bool operator>=(const regime<nbits, es>& lhs, const regime<nbits, es>& rhs) { return !operator< (lhs, rhs); }
 
-}  // namespace unum
-}  // namespace sw
+}}  // namespace sw::universal
 

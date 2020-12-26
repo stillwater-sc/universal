@@ -174,11 +174,11 @@ double haversine(double lat1, double lon1, double lat2, double lon2, double radi
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pref, psin;
+	sw::universal::posit<nbits, es> pa, pref, psin;
 	pa = a;
 	ref = std::sin(a);
 	pref = ref;
-	psin = sw::unum::sin(pa);
+	psin = sw::universal::sin(pa);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> sin(" << a << ") = " << std::setw(nbits) << ref << std::endl;
 	std::cout << pa.get() << " -> sin( " << pa << ") = " << psin.get() << " (reference: " << pref.get() << ")   " ;
@@ -193,7 +193,7 @@ void GenerateTestCase(Ty a) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;

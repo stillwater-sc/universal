@@ -1,6 +1,6 @@
 // posit_128_4.cpp: Functionality tests for specialized 128-bit posit<128,4>
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 // Configure the posit template environment
@@ -23,7 +23,7 @@ Standard posits with nbits = 128 have 4 exponent bits.
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	const size_t RND_TEST_CASES = 10000;
 

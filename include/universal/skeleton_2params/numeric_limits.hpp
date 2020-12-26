@@ -1,16 +1,16 @@
 #pragma once
 // numeric_limits.hpp: definition of numeric_limits for arbitrary real types
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 namespace std {
 
 template <size_t nbits, size_t es, typename bt> 
-class numeric_limits< sw::unum::areal<nbits,es,bt> > {
+class numeric_limits< sw::universal::areal<nbits,es,bt> > {
 public:
-	using AREAL = sw::unum::areal<nbits, es, bt>;
+	using AREAL = sw::universal::areal<nbits, es, bt>;
 	static constexpr bool is_specialized = true;
 	static constexpr AREAL min() { // return minimum value
 		AREAL aminpos;

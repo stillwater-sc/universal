@@ -1,7 +1,7 @@
 #pragma once
 // posit_parse.hpp: parsing a posit in posit format
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -9,7 +9,7 @@
 #include <sstream>
 #include <universal/posit/posit_fwd.hpp>
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 // read a posit ASCII format and make a memory posit out of it
 template<size_t nbits, size_t es>
@@ -61,6 +61,4 @@ bool parse(std::string& txt, posit<nbits, es>& p) {
 }
 
 
-}}  // namespace sw::unum
-
-
+}}  // namespace sw::universal

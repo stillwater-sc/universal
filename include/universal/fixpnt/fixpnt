@@ -28,7 +28,7 @@
 /// INCLUDE FILES that make up the library
 #include <universal/fixpnt/fixed_point.hpp>
 #include <universal/fixpnt/numeric_limits.hpp>
-#include <universal/fixpnt/fixpnt_exceptions.hpp>
+#include <universal/fixpnt/exceptions.hpp>
 #include <universal/traits/fixpnt_traits.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////

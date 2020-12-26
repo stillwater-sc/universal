@@ -1,7 +1,7 @@
 #pragma once
-// fixed_point.hpp: definition of an arbitrary binary fixed-point number
+// fixed_point.hpp: definition of an arbitrary configuration binary fixed-point number parameterized in total bits and radix bits
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
@@ -27,13 +27,13 @@ operators will be much faster than saturation.
 Compile-time configuration flags are used to select the exception mode.
 Run-time configuration is used to select modular vs saturation arithmetic.
 */
-#include "./fixpnt_exceptions.hpp"  // you need the exception types defined, but you may not throw them
+#include <universal/fixpnt/exceptions.hpp>  // you need the exception types defined, but you may not throw them
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
-#include "universal/native/ieee-754.hpp"   // IEEE-754 decoders
-#include "universal/native/integers.hpp"   // manipulators for native integer types
-#include "universal/blockbin/blockbinary.hpp"
+#include <universal/native/ieee-754.hpp>   // IEEE-754 decoders
+#include <universal/native/integers.hpp>   // manipulators for native integer types
+#include <universal/blockbin/blockbinary.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -65,8 +65,7 @@ Run-time configuration is used to select modular vs saturation arithmetic.
 
 #endif
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 constexpr bool Modulo    = true;
 constexpr bool Saturating = !Modulo;
@@ -2209,5 +2208,4 @@ inline std::string to_triple(const fixpnt<nbits, rbits, arithmetic, bt>& number)
 	return ss.str();
 }
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal

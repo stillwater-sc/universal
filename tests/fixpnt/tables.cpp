@@ -1,6 +1,6 @@
 // tables.cpp: generates tables of fixed-point configurations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -25,7 +25,7 @@
 template<size_t nbits, size_t rbits>
 void GenerateFixedPointTable(std::ostream& ostr, bool csvFormat = false) {
 	const size_t size = (1 << nbits);
-	sw::unum::fixpnt<nbits, rbits>	p;
+	sw::universal::fixpnt<nbits, rbits>	p;
 	if (csvFormat) {
 		ostr << "\"Generate Fixed-Point Lookup table for a FIXPNT<" << nbits << "," << rbits << "> in CSV format\"" << std::endl;
 		ostr << "#, Binary, sign, scale, value\n";
@@ -72,7 +72,7 @@ void GenerateFixedPointTable(std::ostream& ostr, bool csvFormat = false) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
@@ -116,11 +116,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_arithmetic_exception& err) {
+catch (const sw::universal::fixpnt_arithmetic_exception& err) {
 	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_internal_exception& err) {
+catch (const sw::universal::fixpnt_internal_exception& err) {
 	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

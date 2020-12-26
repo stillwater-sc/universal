@@ -1,19 +1,19 @@
 #pragma once
 // numeric_limits.hpp: definition of numeric_limits for fixed-point types
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "fixed_point.hpp"
 
 namespace std {
 
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 template <size_t nbits, size_t rbits, bool arithmetic, typename bt> 
-class numeric_limits< sw::unum::fixpnt<nbits,rbits,arithmetic,bt> > {
+class numeric_limits< sw::universal::fixpnt<nbits,rbits,arithmetic,bt> > {
 public:
-	using FixedPoint = sw::unum::fixpnt<nbits, rbits, arithmetic, bt>;
+	using FixedPoint = sw::universal::fixpnt<nbits, rbits, arithmetic, bt>;
 	static constexpr bool is_specialized = true;
 	static constexpr FixedPoint  min() {  // return minimum value
 		FixedPoint fpminpos;

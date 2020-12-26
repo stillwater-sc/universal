@@ -1,10 +1,10 @@
 #pragma once
 // math_functions.hpp: definition of integer mathematical functions
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/integer/integer_exceptions.hpp>
+#include <universal/integer/exceptions.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -36,8 +36,7 @@
 
 #endif
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 // square root of an arbitrary integer
 template<size_t nbits, typename BlockType>
@@ -106,5 +105,4 @@ bool perfect_square(const integer<nbits, BlockType>& a) {
 	return (a == square * square) ? true : false;
 }
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal

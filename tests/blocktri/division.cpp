@@ -1,6 +1,6 @@
 // division.cpp: functional tests for block triple number division
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -15,7 +15,7 @@
 #include "../utils/blocktriple_helpers.hpp"
 
 template<size_t ebits, size_t fbits, typename BlockType = uint8_t>
-std::string to_binary(const sw::unum::blocktriple<ebits, fbits, BlockType>& a) {
+std::string to_binary(const sw::universal::blocktriple<ebits, fbits, BlockType>& a) {
 	std::stringstream ss;
 	return ss.str();
 }
@@ -25,7 +25,7 @@ template<size_t ebits, size_t fbits, typename BlockType = uint8_t>
 int VerifyDivision(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << fbits);
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << endl;
 	cout << "blocktriple<" << ebits << ',' << fbits << ',' << typeid(BlockType).name() << '>' << endl;
@@ -67,7 +67,7 @@ int VerifyDivision(const std::string& tag, bool bReportIndividualTestCases) {
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t ebits, size_t fbits, typename BlockType = uint8_t>
 void GenerateTestCase(int64_t lhs, int64_t rhs) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	blocktriple<ebits,fbits, BlockType> a, b, result, reference;
 
 	a.set_raw_bits(uint64_t(lhs));
@@ -96,7 +96,7 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;

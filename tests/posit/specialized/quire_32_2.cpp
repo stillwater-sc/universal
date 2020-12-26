@@ -1,6 +1,6 @@
 // quire_32_2.cpp: dot product and fused dot product unctionality tests for fast specialized posit<32,2>
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -27,7 +27,7 @@ int Validate() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	constexpr size_t RND_TEST_CASES = 500000;
 

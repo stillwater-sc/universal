@@ -1,6 +1,6 @@
 //  decimal.cpp : test suite for abitrary precision decimal integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -12,7 +12,7 @@
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 static constexpr unsigned DECIMAL_TABLE_WIDTH = 15;
 
@@ -153,12 +153,12 @@ bool less(const decimal& lhs, const decimal& rhs) {
 }
 
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal
 
 
 void examples() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	decimal d1, d2, d3;
 	
 //	d1.parse("0000"); cout << "bad parse: " << d1 << endl;
@@ -267,12 +267,12 @@ void reportType(Ty v) {
 }
 
 void findLargestMultipleTest() {
-	sw::unum::decimal d;
+	sw::universal::decimal d;
 	int fails = 0;
 	int numerator = 9;
 	d = numerator;
 	for (int i = 0; i < 100; ++i) {
-		sw::unum::decimal multiple = sw::unum::findLargestMultiple(i, d);
+		sw::universal::decimal multiple = sw::universal::findLargestMultiple(i, d);
 		if (multiple != (i / 9)) {
 			std::cout << d << " into " << i << " yields multiplier " << multiple << " but should have been " << (i/numerator) << std::endl;
 			++fails;
@@ -288,7 +288,7 @@ void findLargestMultipleTest() {
 
 int BigNumberComputation() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "big number computation\n";
 	int nrOfFailedTestCases = 0;
@@ -312,7 +312,7 @@ int BigNumberComputation() {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

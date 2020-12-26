@@ -1,12 +1,11 @@
 #pragma once
 // twoSum.hpp :  TwoSum specialization for posit number systems
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 // Default is to return a and b in exponential range of posits
 #ifndef GEOMETRIC_ROUNDING_CASES
@@ -75,6 +74,5 @@ std::pair< posit<nbits, es>, posit<nbits, es> > twoSum(const posit<nbits, es>& a
 	}
 	*/
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal
 

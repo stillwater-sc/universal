@@ -1,6 +1,6 @@
 // posit_48_2.cpp: Functionality tests for specialized extended standard 48-bit posit<48,2>
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -24,7 +24,7 @@ Extended Standard posit with nbits = 48 have es = 2 exponent bits.
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	constexpr size_t RND_TEST_CASES = 150000;
 

@@ -1,12 +1,12 @@
 #pragma once
 // tridiag.hpp: generate tridiagonal matrix finite difference forward-time-centered-space(FTCS) in 1D
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/blas/blas.hpp>
 
-namespace sw { namespace unum { namespace blas { 
+namespace sw { namespace universal { namespace blas { 
 
 // return a new tridiagonal matrix
 template<typename Scalar>
@@ -38,4 +38,4 @@ void tridiag(matrix<Scalar>& A, size_t N, Scalar subdiag = Scalar(-1.0), Scalar 
 	}
 }
 
-}}} // namespace sw::unum::blas
+}}} // namespace sw::universal::blas

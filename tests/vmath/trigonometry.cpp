@@ -1,6 +1,6 @@
 // trigonometry.cpp: test suite for vectorized trigonometry math functions
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
@@ -15,12 +15,12 @@ constexpr double PI = 3.14159265358979323846;  // best practice for C++
 template<typename Scalar>
 void TestTriangleVmath(size_t N = 12) {
 	using namespace std;
-	using namespace sw::unum::blas;
+	using namespace sw::universal::blas;
 	using std::pow;
-	using Vector = sw::unum::blas::vector<Scalar>;
+	using Vector = sw::universal::blas::vector<Scalar>;
 	Vector v = linspace<Scalar>(0, 2*PI, N);
 	cout << "radians  = " << v << endl;
-	auto cosines = sw::unum::blas::cos(v);
+	auto cosines = sw::universal::blas::cos(v);
 	cout << "cosines  = " << cosines << endl;
 	auto sines = sin(v);
 	cout << "sines    = " << sines << endl;
@@ -31,11 +31,11 @@ void TestTriangleVmath(size_t N = 12) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum::blas;
+	using namespace sw::universal::blas;
 
 	int nrOfFailedTestCases = 0;
 
-	TestTriangleVmath<sw::unum::posit<32,2>>();
+	TestTriangleVmath<sw::universal::posit<32,2>>();
 	TestTriangleVmath<float>();
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

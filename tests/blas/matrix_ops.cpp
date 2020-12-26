@@ -1,6 +1,6 @@
-// matrix_ops.cpp: matrix API for sw::unum::blas
+// matrix_ops.cpp: matrix API for sw::universal::blas
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifdef _MSC_VER
@@ -21,11 +21,11 @@
 int main(int argc, char* argv[])
 try {
 	using namespace std;
-	using namespace sw::unum::blas;
+	using namespace sw::universal::blas;
 
 	{
 		using Scalar = float;
-		using Matrix = sw::unum::blas::matrix<Scalar>;
+		using Matrix = sw::universal::blas::matrix<Scalar>;
 		Matrix A = row_order_index<Scalar>(23, 57);
 		Matrix B(A);
 		A.transpose().transpose();
@@ -38,8 +38,8 @@ try {
 	}
 
 	{
-		using Scalar = sw::unum::posit<256,5>;
-		using Matrix = sw::unum::blas::matrix<Scalar>;
+		using Scalar = sw::universal::posit<256,5>;
+		using Matrix = sw::universal::blas::matrix<Scalar>;
 		Matrix A = row_order_index<Scalar>(117, 253);
 		Matrix B(A);
 		A.transpose().transpose();
@@ -52,8 +52,8 @@ try {
 	}
 
 	{
-		using Scalar = sw::unum::integer<8192>;
-		using Matrix = sw::unum::blas::matrix<Scalar>;
+		using Scalar = sw::universal::integer<8192>;
+		using Matrix = sw::universal::blas::matrix<Scalar>;
 		Matrix A = row_order_index<Scalar>(253, 771);
 		Matrix B(A);
 		A.transpose().transpose();

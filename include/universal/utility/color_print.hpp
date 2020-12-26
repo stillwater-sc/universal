@@ -1,7 +1,7 @@
 #pragma once
 // color_print.hpp: base classes to print color to a shell
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -14,7 +14,7 @@
 // If you have helper functions that the posit type could use, but does not depend on 
 // the posit type, you can add them to the file posit_helpers.hpp.
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 enum ColorCode {
 	FG_DEFAULT = 39,
@@ -64,5 +64,5 @@ public:
 	}
 };
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal
 

@@ -1,11 +1,11 @@
 #pragma once
 // sieves.hpp: algorithms for special and general number field sieves
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
-#include "./integer_exceptions.hpp"
+#include <universal/integer/exceptions.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -37,9 +37,7 @@
 
 #endif
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal

@@ -1,7 +1,7 @@
 #pragma once
 // numeric_limits.hpp: definition of numeric_limits for logarithmic types
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,21 +9,21 @@
 namespace std {
 
 template <size_t nbits, typename bt> 
-class numeric_limits< sw::unum::lns<nbits,bt> > {
+class numeric_limits< sw::universal::lns<nbits,bt> > {
 public:
-	using LNS = sw::unum::lns<nbits, bt>;
+	using LNS = sw::universal::lns<nbits, bt>;
 	static constexpr bool is_specialized = true;
 	static constexpr LNS  min() { // return minimum value
 		LNS lminpos;
-		return sw::unum::minpos<nbits, bt>(lminpos);
+		return sw::universal::minpos<nbits, bt>(lminpos);
 	} 
 	static constexpr LNS  max() { // return maximum value
 		LNS lmaxpos;
-		return sw::unum::maxpos<nbits, bt>(lmaxpos);
+		return sw::universal::maxpos<nbits, bt>(lmaxpos);
 	} 
 	static constexpr LNS  lowest() { // return most negative value
 		LNS lmaxneg;
-		return sw::unum::maxneg<nbits, bt>(lmaxneg);
+		return sw::universal::maxneg<nbits, bt>(lmaxneg);
 	} 
 	static constexpr LNS  epsilon() { // return smallest effective increment from 1.0
 		LNS one{ 1.0f }, incr{ 1.0f };

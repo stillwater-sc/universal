@@ -1,12 +1,12 @@
 #pragma once
 //  fixpnt_traits.hpp : traits for fixed-point number systems
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/traits/integral_constant.hpp>
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 	// define a trait for fixed-point types
 	template<typename _Ty>
@@ -15,7 +15,7 @@ namespace sw { namespace unum {
 	{
 	};
 	template<size_t nbits, size_t rbits>
-	struct is_fixpnt_trait< sw::unum::fixpnt<nbits, rbits> >
+	struct is_fixpnt_trait< sw::universal::fixpnt<nbits, rbits> >
 		: true_type
 	{
 	};
@@ -26,4 +26,4 @@ namespace sw { namespace unum {
 	template<typename _Ty, typename Type = void>
 	using enable_if_fixpnt = std::enable_if_t<is_fixpnt<_Ty>, Type>;
 
-}} // namespace sw::unum
+}} // namespace sw::universal

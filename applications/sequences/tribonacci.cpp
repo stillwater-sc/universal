@@ -9,13 +9,13 @@
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	using namespace sw::sequences;
 
 	int nrOfFailedTestCases = 0;
 
 	{
-		using Scalar = sw::unum::integer<64>;
+		using Scalar = sw::universal::integer<64>;
 		constexpr unsigned N = 10;
 		auto v = Tribonacci<Scalar>(N);
 		cout << "Tribonacci Sequence: " << v.size() << endl;
@@ -29,7 +29,7 @@ try {
 	// enumerate till we exhaust the number system
 	{
 		constexpr size_t N = 256;
-		using Scalar = sw::unum::integer<N,uint32_t>;
+		using Scalar = sw::universal::integer<N,uint32_t>;
 
 		unsigned next = 20;
 		Scalar tri_n_minus_1 = TribonacciNumber<Scalar>(next++);
@@ -124,7 +124,7 @@ the n'th term of the series expansion of 1/(1-x-x**2) is
 
 */
 		constexpr size_t N = 256;
-		using Scalar = sw::unum::integer<N, uint32_t>;
+		using Scalar = sw::universal::integer<N, uint32_t>;
 		constexpr unsigned MaxT = 80;
 		auto v = Tribonacci<Scalar>(MaxT);  // T(294) is biggest Tribonacci number for int256
 		for (const Scalar& e : v) { cout << e << '\n'; }

@@ -1,6 +1,6 @@
 // 8dot2_float.cpp: Functionality tests for 8bit precision floats
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -17,25 +17,27 @@
 // generate specific test case that you can trace with the trace conditions in areal.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
-void GenerateTestCase(Ty a, Ty b) {
-	Ty ref;
-	sw::unum::areal<nbits, es> pa, pb, pref, psum;
-	pa = a;
-	pb = b;
-	ref = a + b;
-	pref = ref;
-	psum = pa + pb;
+void GenerateTestCase(Ty _a, Ty _b) {
+	sw::universal::real<nbits, es> a, b, rref, rsum;
+	a = a;
+	b = b;
+	rsum = a + b;
+	// generate the reference
+	Ty ref = _a + _b;
+	rref = ref;
+
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << a << " + " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
-//	std::cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " (reference: " << pref.get() << ")   ";
-	std::cout << (pref == psum ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
+	std::cout << a << " + " << b << " = " << rsum << " (reference: " << rref << ")   ";
+//	std::cout << a.get() << " + " << b.get() << " = " << rsum.get() << " (reference: " << rref.get() << ")   ";
+	std::cout << (rref == rsum ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
 }
 
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// const size_t RND_TEST_CASES = 0;  // no randoms, 8-bit posits can be done exhaustively
 
@@ -47,7 +49,7 @@ try {
 
 	cout << "Standard areal<8,2> configuration tests" << endl;
 
-	areal<nbits, es> r;
+	real<nbits, es> r;
 	r = 0.0;
 	cout << r << endl;
 

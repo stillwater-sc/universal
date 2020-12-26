@@ -1,7 +1,7 @@
 #pragma once
-// areal.hpp: definition of an arbitrary linear floating-point representation
+// real.hpp: definition of an arbitrary configuration linear floating-point representation
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -9,46 +9,47 @@
 
 #include <universal/native/ieee-754.hpp>
 #include <universal/blockbin/blockbinary.hpp>
+#include <universal/areal/exceptions.hpp>
 
-namespace sw {	namespace unum {
+namespace sw {	namespace universal {
 		
 // Forward definitions
-template<size_t nbits, size_t es, typename bt> class areal;
-template<size_t nbits, size_t es, typename bt> areal<nbits,es,bt> abs(const areal<nbits,es,bt>& v);
+template<size_t nbits, size_t es, typename bt> class real;
+template<size_t nbits, size_t es, typename bt> real<nbits,es,bt> abs(const real<nbits,es,bt>& v);
 
 template<size_t nbits, size_t es, typename bt>
 void extract_fields(const blockbinary<nbits, bt>& raw_bits, bool& _sign, blockbinary<es, bt>& _exponent, blockbinary<nbits - es - 1, bt>& _fraction) {
 
 }
 
-// fill an areal object with mininum positive value
+// fill an real object with mininum positive value
 template<size_t nbits, size_t es, typename bt>
-areal<nbits, es, bt>& minpos(areal<nbits, es, bt>& aminpos) {
+real<nbits, es, bt>& minpos(real<nbits, es, bt>& aminpos) {
 
 	return aminpos;
 }
-// fill an areal object with maximum positive value
+// fill an real object with maximum positive value
 template<size_t nbits, size_t es, typename bt>
-areal<nbits, es, bt>& maxpos(areal<nbits, es, bt>& amaxpos) {
+real<nbits, es, bt>& maxpos(real<nbits, es, bt>& amaxpos) {
 
 	return amaxpos;
 }
-// fill an areal object with mininum negative value
+// fill an real object with mininum negative value
 template<size_t nbits, size_t es, typename bt>
-areal<nbits, es, bt>& minneg(areal<nbits, es, bt>& aminneg) {
+real<nbits, es, bt>& minneg(real<nbits, es, bt>& aminneg) {
 
 	return aminneg;
 }
-// fill an areal object with maximum negative value
+// fill an real object with maximum negative value
 template<size_t nbits, size_t es, typename bt>
-areal<nbits, es, bt>& maxneg(areal<nbits, es, bt>& amaxneg) {
+real<nbits, es, bt>& maxneg(real<nbits, es, bt>& amaxneg) {
 
 	return amaxneg;
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
 template<size_t nbits, size_t es, typename bt = uint8_t>
-class areal {
+class real {
 public:
 	static constexpr size_t fbits  = nbits - 1 - es;    // number of fraction bits excluding the hidden bit
 	static constexpr size_t fhbits = fbits + 1;         // number of fraction bits including the hidden bit
@@ -56,93 +57,93 @@ public:
 	static constexpr size_t mbits = 2 * fhbits;         // size of the multiplier output
 	static constexpr size_t divbits = 3 * fhbits + 4;   // size of the divider output
 
-	areal() {}
+	real() {}
 
-	areal(signed char initial_value)        { *this = initial_value; }
-	areal(short initial_value)              { *this = initial_value; }
-	areal(int initial_value)                { *this = initial_value; }
-	areal(long long initial_value)          { *this = initial_value; }
-	areal(unsigned long long initial_value) { *this = initial_value; }
-	areal(float initial_value)              { *this = initial_value; }
-	areal(double initial_value)             { *this = initial_value; }
-	areal(long double initial_value)        { *this = initial_value; }
-	areal(const areal& rhs)                 { *this = rhs; }
+	real(signed char initial_value)        { *this = initial_value; }
+	real(short initial_value)              { *this = initial_value; }
+	real(int initial_value)                { *this = initial_value; }
+	real(long long initial_value)          { *this = initial_value; }
+	real(unsigned long long initial_value) { *this = initial_value; }
+	real(float initial_value)              { *this = initial_value; }
+	real(double initial_value)             { *this = initial_value; }
+	real(long double initial_value)        { *this = initial_value; }
+	real(const real& rhs)                 { *this = rhs; }
 
 	// assignment operators
-	areal& operator=(signed char rhs) {
+	real& operator=(signed char rhs) {
 		return *this = (long long)(rhs);
 	}
-	areal& operator=(short rhs) {
+	real& operator=(short rhs) {
 		return *this = (long long)(rhs);
 	}
-	areal& operator=(int rhs) {
+	real& operator=(int rhs) {
 		return *this = (long long)(rhs);
 	}
-	areal& operator=(long long rhs) {
+	real& operator=(long long rhs) {
 		return *this;
 	}
-	areal& operator=(unsigned long long rhs) {
+	real& operator=(unsigned long long rhs) {
 		return *this;
 	}
-	areal& operator=(float rhs) {
+	real& operator=(float rhs) {
 
 		return *this;
 	}
-	areal& operator=(double rhs) {
+	real& operator=(double rhs) {
 
 		return *this;
 	}
-	areal& operator=(long double rhs) {
+	real& operator=(long double rhs) {
 
 		return *this;
 	}
 
 	// arithmetic operators
 	// prefix operator
-	areal operator-() const {				
+	real operator-() const {				
 		return *this;
 	}
 
-	areal& operator+=(const areal& rhs) {
+	real& operator+=(const real& rhs) {
 		return *this;
 	}
-	areal& operator+=(double rhs) {
-		return *this += areal(rhs);
+	real& operator+=(double rhs) {
+		return *this += real(rhs);
 	}
-	areal& operator-=(const areal& rhs) {
+	real& operator-=(const real& rhs) {
 
 		return *this;
 	}
-	areal& operator-=(double rhs) {
-		return *this -= areal<nbits, es>(rhs);
+	real& operator-=(double rhs) {
+		return *this -= real<nbits, es>(rhs);
 	}
-	areal& operator*=(const areal& rhs) {
+	real& operator*=(const real& rhs) {
 
 		return *this;
 	}
-	areal& operator*=(double rhs) {
-		return *this *= areal<nbits, es>(rhs);
+	real& operator*=(double rhs) {
+		return *this *= real<nbits, es>(rhs);
 	}
-	areal& operator/=(const areal& rhs) {
+	real& operator/=(const real& rhs) {
 
 		return *this;
 	}
-	areal& operator/=(double rhs) {
-		return *this /= areal<nbits, es>(rhs);
+	real& operator/=(double rhs) {
+		return *this /= real<nbits, es>(rhs);
 	}
-	areal& operator++() {
+	real& operator++() {
 		return *this;
 	}
-	areal operator++(int) {
-		areal tmp(*this);
+	real operator++(int) {
+		real tmp(*this);
 		operator++();
 		return tmp;
 	}
-	areal& operator--() {
+	real& operator--() {
 		return *this;
 	}
-	areal operator--(int) {
-		areal tmp(*this);
+	real operator--(int) {
+		real tmp(*this);
 		operator--();
 		return tmp;
 	}
@@ -178,83 +179,83 @@ private:
 
 	// template parameters need names different from class template parameters (for gcc and clang)
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend std::ostream& operator<< (std::ostream& ostr, const areal<nnbits,nes,nbt>& r);
+	friend std::ostream& operator<< (std::ostream& ostr, const real<nnbits,nes,nbt>& r);
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend std::istream& operator>> (std::istream& istr, areal<nnbits,nes,nbt>& r);
+	friend std::istream& operator>> (std::istream& istr, real<nnbits,nes,nbt>& r);
 
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
+	friend bool operator==(const real<nnbits,nes,nbt>& lhs, const real<nnbits,nes,nbt>& rhs);
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator!=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
+	friend bool operator!=(const real<nnbits,nes,nbt>& lhs, const real<nnbits,nes,nbt>& rhs);
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator< (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
+	friend bool operator< (const real<nnbits,nes,nbt>& lhs, const real<nnbits,nes,nbt>& rhs);
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator> (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
+	friend bool operator> (const real<nnbits,nes,nbt>& lhs, const real<nnbits,nes,nbt>& rhs);
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator<=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
+	friend bool operator<=(const real<nnbits,nes,nbt>& lhs, const real<nnbits,nes,nbt>& rhs);
 	template<size_t nnbits, size_t nes, typename nbt>
-	friend bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs);
+	friend bool operator>=(const real<nnbits,nes,nbt>& lhs, const real<nnbits,nes,nbt>& rhs);
 };
 
 ////////////////////// operators
 template<size_t nnbits, size_t nes, typename nbt>
-inline std::ostream& operator<<(std::ostream& ostr, const areal<nnbits,nes,nbt>& v) {
+inline std::ostream& operator<<(std::ostream& ostr, const real<nnbits,nes,nbt>& v) {
 
 	return ostr;
 }
 
 template<size_t nnbits, size_t nes, typename nbt>
-inline std::istream& operator>>(std::istream& istr, const areal<nnbits,nes,nbt>& v) {
+inline std::istream& operator>>(std::istream& istr, const real<nnbits,nes,nbt>& v) {
 	istr >> v._fraction;
 	return istr;
 }
 
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return false; }
+inline bool operator==(const real<nnbits,nes,nbt>& lhs, const real<nnbits,nes,nbt>& rhs) { return false; }
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator!=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator==(lhs, rhs); }
+inline bool operator!=(const real<nnbits,nes,nbt>& lhs, const real<nnbits,nes,nbt>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator< (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return false; }
+inline bool operator< (const real<nnbits,nes,nbt>& lhs, const real<nnbits,nes,nbt>& rhs) { return false; }
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator> (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return  operator< (rhs, lhs); }
+inline bool operator> (const real<nnbits,nes,nbt>& lhs, const real<nnbits,nes,nbt>& rhs) { return  operator< (rhs, lhs); }
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator<=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator> (lhs, rhs); }
+inline bool operator<=(const real<nnbits,nes,nbt>& lhs, const real<nnbits,nes,nbt>& rhs) { return !operator> (lhs, rhs); }
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator< (lhs, rhs); }
+inline bool operator>=(const real<nnbits,nes,nbt>& lhs, const real<nnbits,nes,nbt>& rhs) { return !operator< (lhs, rhs); }
 
 // posit - posit binary arithmetic operators
 // BINARY ADDITION
 template<size_t nbits, size_t es, typename bt>
-inline areal<nbits, es, bt> operator+(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
-	areal<nbits, es> sum(lhs);
+inline real<nbits, es, bt> operator+(const real<nbits, es, bt>& lhs, const real<nbits, es, bt>& rhs) {
+	real<nbits, es> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
 template<size_t nbits, size_t es, typename bt>
-inline areal<nbits, es, bt> operator-(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
-	areal<nbits, es> diff(lhs);
+inline real<nbits, es, bt> operator-(const real<nbits, es, bt>& lhs, const real<nbits, es, bt>& rhs) {
+	real<nbits, es> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
 template<size_t nbits, size_t es, typename bt>
-inline areal<nbits, es, bt> operator*(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
-	areal<nbits, es> mul(lhs);
+inline real<nbits, es, bt> operator*(const real<nbits, es, bt>& lhs, const real<nbits, es, bt>& rhs) {
+	real<nbits, es> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
 template<size_t nbits, size_t es, typename bt>
-inline areal<nbits, es, bt> operator/(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
-	areal<nbits, es> ratio(lhs);
+inline real<nbits, es, bt> operator/(const real<nbits, es, bt>& lhs, const real<nbits, es, bt>& rhs) {
+	real<nbits, es> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
 
 
 template<size_t nbits, size_t es, typename bt>
-inline std::string components(const areal<nbits,es,bt>& v) {
+inline std::string components(const real<nbits,es,bt>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
 		s << " zero b" << std::setw(nbits) << v.fraction();
@@ -270,9 +271,9 @@ inline std::string components(const areal<nbits,es,bt>& v) {
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
 template<size_t nbits, size_t es, typename bt>
-areal<nbits,es> abs(const areal<nbits,es,bt>& v) {
-	return areal<nbits,es>(false, v.scale(), v.fraction(), v.isZero());
+real<nbits,es> abs(const real<nbits,es,bt>& v) {
+	return real<nbits,es>(false, v.scale(), v.fraction(), v.isZero());
 }
 
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal

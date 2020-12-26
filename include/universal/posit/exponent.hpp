@@ -1,12 +1,11 @@
 #pragma once
 // exponent.hpp: definition of a posit exponent
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 static constexpr int GEOMETRIC_ROUND_DOWN   = -2;
 static constexpr int ARITHMETIC_ROUND_DOWN  = -1;
@@ -217,7 +216,5 @@ inline bool operator<=(const exponent<nbits, es>& lhs, const exponent<nbits, es>
 template<size_t nbits, size_t es>
 inline bool operator>=(const exponent<nbits, es>& lhs, const exponent<nbits, es>& rhs) { return !operator< (lhs, rhs); }
 
-}  // namespace unum
-
-}  // namespace sw
+}}  // namespace sw::universal
 

@@ -1,12 +1,12 @@
 #pragma once
 // exponent.hpp: exponent functions for posits
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 
-namespace sw {	namespace unum {
+namespace sw {	namespace universal {
 
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
@@ -54,4 +54,4 @@ posit<nbits,es> expm1(posit<nbits,es> x) {
 }
 
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal

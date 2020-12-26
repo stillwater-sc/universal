@@ -32,7 +32,7 @@ template<size_t nbits, size_t es>
 int ValidateAdditionWithLiteral(const std::string& tag, bool bReportIndividualTestCases) {
 	const int NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
-	sw::unum::posit<nbits, es> pa, pb, psum1, psum2, pref;
+	sw::universal::posit<nbits, es> pa, pb, psum1, psum2, pref;
 
 	double da, db;
 	for (int i = 0; i < NR_POSITS; i++) {
@@ -62,7 +62,7 @@ template<size_t nbits, size_t es>
 int ValidateSubtractionWithLiteral(const std::string& tag, bool bReportIndividualTestCases) {
 	const int NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
-	sw::unum::posit<nbits, es> pa, pb, pdiff1, pdiff2, pref;
+	sw::universal::posit<nbits, es> pa, pb, pdiff1, pdiff2, pref;
 
 	double da, db;
 	for (int i = 0; i < NR_POSITS; i++) {
@@ -92,7 +92,7 @@ template<size_t nbits, size_t es>
 int ValidateMultiplicationWithLiteral(const std::string& tag, bool bReportIndividualTestCases) {
 	const int NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
-	sw::unum::posit<nbits, es> pa, pb, pmul1, pmul2, pref;
+	sw::universal::posit<nbits, es> pa, pb, pmul1, pmul2, pref;
 
 	double da, db;
 	for (int i = 0; i < NR_POSITS; i++) {
@@ -122,7 +122,7 @@ template<size_t nbits, size_t es>
 int ValidateDivisionWithLiteral(const std::string& tag, bool bReportIndividualTestCases) {
 	const int NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
-	sw::unum::posit<nbits, es> pa, pb, pdiv1, pdiv2, pref;
+	sw::universal::posit<nbits, es> pa, pb, pdiv1, pdiv2, pref;
 
 	double da, db;
 	for (int i = 0; i < NR_POSITS; i++) {
@@ -152,7 +152,7 @@ int ValidateDivisionWithLiteral(const std::string& tag, bool bReportIndividualTe
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pb, pref, psum;
+	sw::universal::posit<nbits, es> pa, pb, pref, psum;
 	pa = a;
 	pb = b;
 	ref = a + b;
@@ -171,7 +171,7 @@ void GenerateTestCase(Ty a, Ty b) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

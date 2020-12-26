@@ -1,6 +1,6 @@
 // mod_conversion.cpp: functional tests for fixed-point modulo conversions
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -13,7 +13,7 @@
 // minimum set of include files to reflect source code dependencies
 #include "universal/fixpnt/fixed_point.hpp"
 // fixed-point type manipulators such as pretty printers
-#include "universal/fixpnt/fixpnt_manipulators.hpp"
+#include "universal/fixpnt/manipulators.hpp"
 #include "universal/fixpnt/math_functions.hpp"
 #include "../utils/fixpnt_test_suite.hpp"
 
@@ -22,7 +22,7 @@
 template<size_t nbits, size_t rbits, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::unum::fixpnt<nbits, rbits> a, b, cref, result;
+	sw::universal::fixpnt<nbits, rbits> a, b, cref, result;
 	a = _a;
 	b = _b;
 	result = a + b;
@@ -40,7 +40,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 template<size_t nbits, size_t rbits>
 void GenerateFixedPointComparisonTable(std::string& tag) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	fixpnt<nbits, rbits> fp;
 	fixpnt<nbits+1, rbits+1> fpnext;
@@ -57,7 +57,7 @@ void GenerateFixedPointComparisonTable(std::string& tag) {
 /*
 void GenerateFixedPointRangeTable() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	cout << "fixpnt<4,#> ranges\n";
 	ReportFixedPointRanges<4, 0, Modulo>(cout);
 	ReportFixedPointRanges<4, 1, Modulo>(cout);
@@ -173,7 +173,7 @@ void GenerateFixedPointRangeTable() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
@@ -272,11 +272,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_arithmetic_exception& err) {
+catch (const sw::universal::fixpnt_arithmetic_exception& err) {
 	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_internal_exception& err) {
+catch (const sw::universal::fixpnt_internal_exception& err) {
 	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

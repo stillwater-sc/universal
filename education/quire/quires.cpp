@@ -1,6 +1,6 @@
 //  quires.cpp : test suite for quires
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -17,7 +17,7 @@
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -48,8 +48,8 @@ try {
 		cout << "Compare value and quire content\n";
 
 		float v = 2.6226e-05f;
-		sw::unum::quire<16, 1, 2> q;
-		sw::unum::posit<16, 1> p1, p2, argA, argB;
+		sw::universal::quire<16, 1, 2> q;
+		sw::universal::posit<16, 1> p1, p2, argA, argB;
 
 		p1 = v;
 		q = p1.to_value();
@@ -117,11 +117,11 @@ try {
 		// [ 0  0    0  0  0  0  0  0  0  0    0  0  0  0  0  0  0  0 ]
 		quire<nbits, es, capacity> q;
 		value<5> maxpos, maxpos_squared, minpos, minpos_squared;
-		long double dmax = sw::unum::maxpos_value<nbits, es>();
+		long double dmax = sw::universal::maxpos_value<nbits, es>();
 		maxpos = dmax;
 		maxpos_squared = dmax*dmax;
 		std::cout << "maxpos * maxpos = " << components(maxpos_squared) << std::endl;
-		long double dmin = sw::unum::minpos_value<nbits, es>();
+		long double dmin = sw::universal::minpos_value<nbits, es>();
 		minpos = dmin;
 		minpos_squared = dmin*dmin;
 		std::cout << "minpos * minpos = " << components(minpos_squared) << std::endl;

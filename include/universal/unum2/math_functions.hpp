@@ -35,7 +35,7 @@
 
 #endif
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 
-}} // namespace sw::unum
+}} // namespace sw::universal

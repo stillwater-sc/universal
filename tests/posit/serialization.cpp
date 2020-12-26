@@ -18,7 +18,7 @@
 
 template<size_t nbits, size_t es>
 void VerifyToBinary() {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	constexpr size_t NR_VALUES = (1 << nbits);
 
 	posit<nbits, es> p;
@@ -34,7 +34,7 @@ void VerifyToBinary() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;

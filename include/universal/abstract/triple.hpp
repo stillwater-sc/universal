@@ -1,7 +1,7 @@
 #pragma once
 // triple.hpp: definition of an abstract (sign, scale, significant) representation of an approximation to a real triple
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -10,11 +10,10 @@
 #include <limits>
 #include <tuple>
 
-#include "../native/ieee-754.hpp"
-#include "../blockbin/blockbinary.hpp"
+#include <universal/native/ieee-754.hpp>
+#include <universal/blockbin/blockbinary.hpp>
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 // Forward definitions
 template<size_t fbits, typename bt> class triple;
@@ -404,4 +403,4 @@ triple<nfbits,BlockType> abs(const triple<nfbits,BlockType>& v) {
 }
 
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal

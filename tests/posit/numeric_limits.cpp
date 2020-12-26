@@ -1,6 +1,6 @@
 // numeric_limits.cpp: tests of the numeric_limits specialization for posits
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -12,7 +12,7 @@
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -33,7 +33,7 @@ try {
 	cout << symmetry<posit<32, 2>>() << endl;
 
 	using Float = float;
-	using Posit = sw::unum::posit<32, 2>;
+	using Posit = sw::universal::posit<32, 2>;
 	compareNumberTraits<Float, Posit>(cout);
 
 	cout << endl;

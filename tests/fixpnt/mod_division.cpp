@@ -1,6 +1,6 @@
 // mod_division.cpp: functional tests for arbitrary configuration fixed-point modulo division
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <typeinfo>
@@ -15,15 +15,15 @@
 #include <universal/fixpnt/fixed_point.hpp>
 // fixed-point type manipulators such as pretty printers
 #include <universal/native/integers.hpp>
-#include <universal/fixpnt/fixpnt_manipulators.hpp>
-#include <universal/fixpnt/fixpnt_functions.hpp>
+#include <universal/fixpnt/manipulators.hpp>
+#include <universal/fixpnt/attributes.hpp>
 #include "../utils/fixpnt_test_suite.hpp"
 
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 // using nbits modulo arithmetic with final sign
 template<size_t nbits, typename BlockType>
-inline sw::unum::blockbinary<2 * nbits, BlockType> unrounded_mul(const sw::unum::blockbinary<nbits, BlockType>& a, const sw::unum::blockbinary<nbits, BlockType>& b) {
-	using namespace sw::unum;
+inline sw::universal::blockbinary<2 * nbits, BlockType> unrounded_mul(const sw::universal::blockbinary<nbits, BlockType>& a, const sw::universal::blockbinary<nbits, BlockType>& b) {
+	using namespace sw::universal;
 	blockbinary<2 * nbits, BlockType> result;
 	if (a.iszero() || b.iszero()) return result;
 
@@ -56,8 +56,8 @@ inline sw::unum::blockbinary<2 * nbits, BlockType> unrounded_mul(const sw::unum:
 
 // unrounded division, returns a blockbinary that is of size 2*nbits
 template<size_t nbits, size_t roundingBits, typename BlockType>
-inline sw::unum::blockbinary<2 * nbits + roundingBits, BlockType> unrounded_div(const sw::unum::blockbinary<nbits, BlockType>& a, const sw::unum::blockbinary<nbits, BlockType>& b, sw::unum::blockbinary<roundingBits, BlockType>& r) {
-	using namespace sw::unum;
+inline sw::universal::blockbinary<2 * nbits + roundingBits, BlockType> unrounded_div(const sw::universal::blockbinary<nbits, BlockType>& a, const sw::universal::blockbinary<nbits, BlockType>& b, sw::universal::blockbinary<roundingBits, BlockType>& r) {
+	using namespace sw::universal;
 
 	if (b.iszero()) {
 		// division by zero
@@ -120,7 +120,7 @@ inline sw::unum::blockbinary<2 * nbits + roundingBits, BlockType> unrounded_div(
 template<size_t nbits, size_t rbits, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::unum::fixpnt<nbits, rbits> a, b, cref, result;
+	sw::universal::fixpnt<nbits, rbits> a, b, cref, result;
 	a = _a;
 	b = _b;
 	result = a / b;
@@ -137,7 +137,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 template<size_t nbits, size_t rbits>
 void GenerateValueTable() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	size_t NR_VALUES = (1 << nbits);
 
 	fixpnt<nbits, rbits> a;
@@ -152,7 +152,7 @@ void GenerateValueTable() {
 template<size_t nbits, size_t rbits>
 void GenerateComparison(size_t a_bits, size_t b_bits) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	fixpnt<nbits, rbits> a, b, c;
 	a.set_raw_bits(a_bits);
@@ -226,7 +226,7 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
@@ -291,11 +291,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_arithmetic_exception& err) {
+catch (const sw::universal::fixpnt_arithmetic_exception& err) {
 	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_internal_exception& err) {
+catch (const sw::universal::fixpnt_internal_exception& err) {
 	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

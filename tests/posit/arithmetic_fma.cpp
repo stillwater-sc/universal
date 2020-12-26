@@ -22,13 +22,13 @@
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b, Ty c) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pb, pc, pref, pfma;
+	sw::universal::posit<nbits, es> pa, pb, pc, pref, pfma;
 	pa = a;
 	pb = b;
     pc = c;
 	ref = std::fma(a,b,c);
 	pref = ref;
-	pfma = sw::unum::fma(pa,pb,pc);
+	pfma = sw::universal::fma(pa,pb,pc);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " * " << std::setw(nbits) << b << " + " << std::setw(nbits) << c << " = " << std::setw(nbits) << ref << std::endl;
 	std::cout << std::setw(nbits) << pa << " * " << std::setw(nbits) << pb << " + " << std::setw(nbits) << pc << " = " << std::setw(nbits) << pref << std::endl;
@@ -48,7 +48,7 @@ void ReportErrors();
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -67,7 +67,7 @@ try {
 		pa = da;
 		pb = db;
 		pc = dc;
-		pfma = sw::unum::fma(pa, pb, pc);
+		pfma = sw::universal::fma(pa, pb, pc);
 		if (da*db + dc != 0.0)  cout << "Incorrect:  ";
 		cout << pfma << " : " << (long double)(pfma) << endl;
 	}
@@ -78,7 +78,7 @@ try {
 		pa = da;
 		pb = db;
 		pc = dc;
-		pfma = sw::unum::fma(pa, pb, pc);
+		pfma = sw::universal::fma(pa, pb, pc);
 		if (da*db + dc != 1.0)  cout << "Incorrect:  ";
 		cout << pfma << " : " << (long double)(pfma) << endl;
 	}
@@ -134,7 +134,7 @@ catch (...) {
 void ReportSizeof() 
 {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	posit< 8, 0> p8_0;
 	regime<8, 0> r8_0;

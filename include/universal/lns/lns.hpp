@@ -1,7 +1,7 @@
 #pragma once
 // lns.hpp: definition of an arbitrary logarithmic number system configuration
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -11,7 +11,7 @@
 #include <universal/blockbin/blockbinary.hpp>
 #include <universal/abstract/triple.hpp>
 
-namespace sw {	namespace unum {
+namespace sw {	namespace universal {
 		
 // Forward definitions
 template<size_t nbits, typename bt> class lns;
@@ -252,4 +252,4 @@ lns<nbits> abs(const lns<nbits,bt>& v) {
 }
 
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal

@@ -17,7 +17,7 @@
 // If you have helper functions that the unum type could use, but dofsize not depend on 
 // the unum type, you can add them to the file unum_helpers.hpp.
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 // DEBUG/REPORTING HELPERS
 
@@ -27,8 +27,8 @@ std::string unum_range() {
 	ss << " unum<" << std::setw(3) << essize << "," << fsize << "> ";
 	//ss << "minpos scale " << std::setw(10) << minpos_scale<essize, fsize>() << "     ";
 	//ss << "maxpos scale " << std::setw(10) << maxpos_scale<essize, fsize>() << "     ";
-	ss << "minimum " << std::setw(12) << std::numeric_limits<sw::unum::unum<essize, fsize>>::min() << "     ";
-	ss << "maximum " << std::setw(12) << std::numeric_limits<sw::unum::unum<essize, fsize>>::max() ;
+	ss << "minimum " << std::setw(12) << std::numeric_limits<sw::universal::unum<essize, fsize>>::min() << "     ";
+	ss << "maximum " << std::setw(12) << std::numeric_limits<sw::universal::unum<essize, fsize>>::max() ;
 	return ss.str();
 }
 
@@ -67,5 +67,5 @@ std::string color_print(const unum<essize, fsize>& p) {
 	return ss.str();
 }
 
-}}  // namfsizepace sw::unum
+}}  // namfsizepace sw::universal
 

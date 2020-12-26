@@ -1,7 +1,7 @@
 #pragma once
 // decimal.hpp: definition of arbitrary decimal integer configurations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -17,7 +17,7 @@
 
 #include <universal/native/ieee-754.hpp>
 #include <universal/string/strmanip.hpp>
-#include "./decimal_exceptions.hpp"
+#include <universal/decimal/exceptions.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -49,7 +49,7 @@
 
 #endif
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 /////////////////////////////////////////////
 // Forward references
@@ -901,5 +901,5 @@ decimal remainder(const decimal& _a, const decimal& _b) {
 	return decint_divide(_a, _b).rem;
 }
 
-}} // namespace sw::unum
+}} // namespace sw::universal
 

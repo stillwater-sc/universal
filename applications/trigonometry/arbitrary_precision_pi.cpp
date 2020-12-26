@@ -1,6 +1,6 @@
 // arbitrary_precision_pi.cpp: generating a 'perfect' approximation of pi for a given number system
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -103,7 +103,7 @@ static std::string pi1000 = "3.\
 
 template<typename Real>
 Real MethodOfViete(size_t N) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	Real pi = Real(1);
 	for (size_t i = N; i > 1; --i) {
 		Real repeatingFactor = Real(2);
@@ -119,7 +119,7 @@ Real MethodOfViete(size_t N) {
 }
  template<typename Real>
  Real MethodOfWallis(size_t N) {
-	 using namespace sw::unum;
+	 using namespace sw::universal;
 	 Real pi = Real(4);
 	 for (size_t i = 3; i <= (N + 2); i += 2) {
 		 pi = pi * (Real(i - 1) / Real(i)) * (Real(i + 1) / Real(i));
@@ -129,7 +129,7 @@ Real MethodOfViete(size_t N) {
 
  template<typename Real>
  Real MethodOfMadhavaOfSangamagrama(size_t N) {
-	 using namespace sw::unum;
+	 using namespace sw::universal;
 	 Real pi = Real(0);
 	 Real s = Real(1); // sign for the next iteration
 	 for (size_t i = 1; i <= (2 * N); i += 2) {
@@ -141,7 +141,7 @@ Real MethodOfViete(size_t N) {
 
  template<typename Real>
  Real MethodOfNilakantha(size_t N) {
-	 using namespace sw::unum;
+	 using namespace sw::universal;
 	 Real pi = Real(3);
 	 Real s = Real(1); // sign for the next iteration
 	 for (size_t i = 2; i <= (2 * N); i += 2) {
@@ -154,7 +154,7 @@ Real MethodOfViete(size_t N) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 

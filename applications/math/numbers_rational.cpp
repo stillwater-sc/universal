@@ -21,13 +21,13 @@ Ty PhiThroughFibonacciSequence(unsigned terms) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	using namespace sw::sequences;
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	using int256 = sw::unum::integer<256>;
+	using int256 = sw::universal::integer<256>;
 	streamsize precision = cout.precision();
 	for (unsigned i = 40; i < 50; i++) {
 		auto p = sw::sequences::GoldenRatio<int256>(i);

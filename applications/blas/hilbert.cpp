@@ -1,6 +1,6 @@
 // hilbert.cpp: Hilbert matrix
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifdef _MSC_VER
@@ -29,9 +29,9 @@
 template<typename Scalar>
 void HilbertMatrixTest(size_t N = 5) {
 	using namespace std;
-	using namespace sw::unum::blas;
-//	using Vector = sw::unum::blas::vector<Scalar>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using namespace sw::universal::blas;
+//	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 	Matrix H(N, N), Hscale(N, N), Hinv(N, N), Hscaleinv(N, N);
 
 	cout << "HilbertMatrixTest for type: " << typeid(Scalar).name() << endl;
@@ -60,7 +60,7 @@ void HilbertMatrixTest(size_t N = 5) {
 int main(int argc, char* argv[])
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	if (argc == 1) cout << argv[0] << endl;
 

@@ -21,11 +21,11 @@
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCaseSinh(Ty a) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pref, psinh;
+	sw::universal::posit<nbits, es> pa, pref, psinh;
 	pa = a;
 	ref = std::sinh(a);
 	pref = ref;
-	psinh = sw::unum::sinh(pa);
+	psinh = sw::universal::sinh(pa);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> sinh(" << a << ") = " << std::setw(nbits) << ref << std::endl;
 	std::cout << pa.get() << " -> sinh( " << pa << ") = " << psinh.get() << " (reference: " << pref.get() << ")   " ;
@@ -36,11 +36,11 @@ void GenerateTestCaseSinh(Ty a) {
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCaseCosh(Ty a) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pref, pcosh;
+	sw::universal::posit<nbits, es> pa, pref, pcosh;
 	pa = a;
 	ref = std::cosh(a);
 	pref = ref;
-	pcosh = sw::unum::cosh(pa);
+	pcosh = sw::universal::cosh(pa);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> cosh(" << a << ") = " << std::setw(nbits) << ref << std::endl;
 	std::cout << pa.get() << " -> cosh( " << pa << ") = " << pcosh.get() << " (reference: " << pref.get() << ")   ";
@@ -51,11 +51,11 @@ void GenerateTestCaseCosh(Ty a) {
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCaseTanh(Ty a) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pref, ptanh;
+	sw::universal::posit<nbits, es> pa, pref, ptanh;
 	pa = a;
 	ref = std::tanh(a);
 	pref = ref;
-	ptanh = sw::unum::tanh(pa);
+	ptanh = sw::universal::tanh(pa);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> tanh(" << a << ") = " << std::setw(nbits) << ref << std::endl;
 	std::cout << pa.get() << " -> tanh( " << pa << ") = " << ptanh.get() << " (reference: " << pref.get() << ")   ";
@@ -66,11 +66,11 @@ void GenerateTestCaseTanh(Ty a) {
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCaseAsinh(Ty a) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pref, pasinh;
+	sw::universal::posit<nbits, es> pa, pref, pasinh;
 	pa = a;
 	ref = std::asinh(a);
 	pref = ref;
-	pasinh = sw::unum::asinh(pa);
+	pasinh = sw::universal::asinh(pa);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> asinh(" << a << ") = " << std::setw(nbits) << ref << std::endl;
 	std::cout << pa.get() << " -> asinh( " << pa << ") = " << pasinh.get() << " (reference: " << pref.get() << ")   ";
@@ -81,11 +81,11 @@ void GenerateTestCaseAsinh(Ty a) {
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCaseAcosh(Ty a) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pref, pacosh;
+	sw::universal::posit<nbits, es> pa, pref, pacosh;
 	pa = a;
 	ref = std::acosh(a);
 	pref = ref;
-	pacosh = sw::unum::acosh(pa);
+	pacosh = sw::universal::acosh(pa);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> acosh(" << a << ") = " << std::setw(nbits) << ref << std::endl;
 	std::cout << pa.get() << " -> acosh( " << pa << ") = " << pacosh.get() << " (reference: " << pref.get() << ")   ";
@@ -96,11 +96,11 @@ void GenerateTestCaseAcosh(Ty a) {
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCaseAtanh(Ty a) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pref, patanh;
+	sw::universal::posit<nbits, es> pa, pref, patanh;
 	pa = a;
 	ref = std::atanh(a);
 	pref = ref;
-	patanh = sw::unum::atanh(pa);
+	patanh = sw::universal::atanh(pa);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> atanh(" << a << ") = " << std::setw(nbits) << ref << std::endl;
 	std::cout << pa.get() << " -> atanh( " << pa << ") = " << patanh.get() << " (reference: " << pref.get() << ")   ";
@@ -117,7 +117,7 @@ const double pi = 3.14159265358979323846;
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;

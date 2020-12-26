@@ -1,7 +1,7 @@
 #pragma once
 // areal.hpp: definition of an arbitrary linear floating-point representation
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -10,7 +10,7 @@
 #include <universal/native/ieee-754.hpp>
 #include <universal/blockbin/blockbinary.hpp>
 
-namespace sw {	namespace unum {
+namespace sw {	namespace universal {
 		
 // Forward definitions
 template<size_t nbits, size_t es, typename bt> class areal;
@@ -275,4 +275,4 @@ areal<nbits,es> abs(const areal<nbits,es,bt>& v) {
 }
 
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal

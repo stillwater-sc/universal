@@ -1,6 +1,6 @@
 //  divide.cpp : arithmetic division test suite for abitrary precision integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -26,7 +26,7 @@
 #include <typeinfo>
 template<typename Scalar>
 void GenerateDivTest(const Scalar& x, const Scalar& y, Scalar& z) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	z = x / y;
 	std::cout << typeid(Scalar).name() << ": " << x << " / " << y << " = " << z << std::endl;
 }
@@ -179,7 +179,7 @@ int check() {
 
 void TestFastdiv() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << endl << "TestFastdiv" << endl;
 	// fast integer division by transformation to multiply with magic constant followed by a shift
@@ -203,8 +203,8 @@ void TestFastdiv() {
 void ExamplePattern() {
 	short s = 0;
 	GenerateDivTest<short>(2, 16, s);
-	sw::unum::integer<16> z = 0;
-	GenerateDivTest<sw::unum::integer<16> >(2, 16, z);
+	sw::universal::integer<16> z = 0;
+	GenerateDivTest<sw::universal::integer<16> >(2, 16, z);
 }
 
 #define MANUAL_TESTING 0
@@ -213,7 +213,7 @@ void ExamplePattern() {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "Integer Arithmetic tests failed";
 

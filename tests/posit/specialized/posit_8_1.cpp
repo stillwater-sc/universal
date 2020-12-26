@@ -1,6 +1,6 @@
 // posit_8_1.cpp: Functionality tests for fast specialized posit<8,1>
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -22,7 +22,7 @@ specialized small 8-bit posit with es = 1 to increase dynamic range over standar
 
 void GenerateValues() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	constexpr unsigned int NR_POSITS = 256;
 
 	posit<8, 1> a;
@@ -35,7 +35,7 @@ void GenerateValues() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// no randoms, 8-bit posits can be done exhaustively
 

@@ -1,6 +1,6 @@
 // laplace.cpp: successive over-relaxation with adaptive unum/posit precision
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifdef _MSC_VER
@@ -92,14 +92,14 @@ but ran out of time. My manuscript was six months late as it was!
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
 
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
 	using Scalar = posit<nbits, es>;
 //	using Scalar = float;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	int nrOfFailedTestCases = 0;
 

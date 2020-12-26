@@ -1,6 +1,6 @@
 //  multiplication.cpp : arithmetic test suite for multiplication of abitrary precision integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -24,7 +24,7 @@
 #include <typeinfo>
 template<typename Scalar>
 void GenerateMulTest(const Scalar& x, const Scalar& y, Scalar& z) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	z = x * y;
 	std::cout << typeid(Scalar).name() << ": " << x << " * " << y << " = " << z << std::endl;
 }
@@ -33,8 +33,8 @@ void GenerateMulTest(const Scalar& x, const Scalar& y, Scalar& z) {
 void ExamplePattern() {
 	short s = 0;
 	GenerateMulTest<short>(2, 16, s);
-	sw::unum::integer<16> z = 0;
-	GenerateMulTest<sw::unum::integer<16> >(2, 16, z);
+	sw::universal::integer<16> z = 0;
+	GenerateMulTest<sw::universal::integer<16> >(2, 16, z);
 }
 
 #define MANUAL_TESTING 0
@@ -43,7 +43,7 @@ void ExamplePattern() {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "Integer Arithmetic tests failed";
 

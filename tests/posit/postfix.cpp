@@ -13,7 +13,7 @@
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -54,7 +54,7 @@ catch (...) {
 // just because you can, doesn't mean you should
 void DoNotDoStuffLikeThis() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// order of function evaluation is not defined, so there is no
 	// mechanism for these methods to evaluate left to right

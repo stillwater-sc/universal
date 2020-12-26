@@ -1,6 +1,6 @@
 // numbers_irrational.cpp: experiments with irrational numbers and their approximations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/integer/integer>
@@ -38,11 +38,11 @@ void GoldenRatioTerms(unsigned terms) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	using int128 = sw::unum::integer<128>;
+	using int128 = sw::universal::integer<128>;
 	auto v = sw::sequences::Fibonacci<int128>(10);
 	for (auto e : v) {
 		cout << e << ' ';
@@ -60,10 +60,10 @@ try {
 	cout << "posit<128,4>     golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< posit<128, 4> >(100) << endl;
 	cout << "posit<256,5>     golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< posit<256, 5> >(100) << endl;
 	
-	GoldenRatioTerms<sw::unum::integer<256>>(100);
-	GoldenRatioTerms<sw::unum::posit<128,4>>(100);
-	GoldenRatioTerms<sw::unum::posit<256,5>>(100);
-	GoldenRatioTerms<sw::unum::posit<512,6>>(100);
+	GoldenRatioTerms<sw::universal::integer<256>>(100);
+	GoldenRatioTerms<sw::universal::posit<128,4>>(100);
+	GoldenRatioTerms<sw::universal::posit<256,5>>(100);
+	GoldenRatioTerms<sw::universal::posit<512,6>>(100);
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

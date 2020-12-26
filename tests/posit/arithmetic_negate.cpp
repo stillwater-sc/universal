@@ -28,7 +28,7 @@
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty fa) {
-	sw::unum::posit<nbits, es> pa, pref, pneg;
+	sw::universal::posit<nbits, es> pa, pref, pneg;
 	pa = fa;
 	pref = -fa;
 	pneg = -pa;
@@ -41,7 +41,7 @@ void GenerateTestCase(Ty fa) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

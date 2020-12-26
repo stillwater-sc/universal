@@ -1,6 +1,6 @@
 //  subtraction.cpp : arithmetic test suite for subracting abitrary precision integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -24,7 +24,7 @@
 
 template<typename Scalar>
 void GenerateSubTest(const Scalar& x, const Scalar& y, Scalar& z) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	z = x - y;
 	std::cout << typeid(Scalar).name() << ": " << x << " - " << y << " = " << z << std::endl;
 }
@@ -35,7 +35,7 @@ void GenerateSubTest(const Scalar& x, const Scalar& y, Scalar& z) {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "integer subtraction";
 

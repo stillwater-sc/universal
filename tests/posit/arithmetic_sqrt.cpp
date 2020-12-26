@@ -31,11 +31,11 @@
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pref, psqrt;
+	sw::universal::posit<nbits, es> pa, pref, psqrt;
 	pa = a;
 	ref = std::sqrt(a);
 	pref = ref;
-	psqrt = sw::unum::sqrt(pa);
+	psqrt = sw::universal::sqrt(pa);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " -> sqrt(" << a << ") = " << std::setw(nbits) << ref << std::endl;
 	std::cout << pa.get() << " -> sqrt( " << pa << ") = " << psqrt.get() << " (reference: " << pref.get() << ")   " ;
@@ -50,7 +50,7 @@ void GenerateTestCase(Ty a) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
@@ -87,11 +87,11 @@ try {
 	float base = 0.5f;
 	for (int i = 0; i < 32; i++) {
 		float square = base*base;
-		float root = sw::unum::my_test_sqrt(square);
+		float root = sw::universal::my_test_sqrt(square);
 		cout << "base " << base << " root " << root << endl;
 		base *= 2.0f;
 	}
-	cout << "sqrt(2.0) " << sw::unum::my_test_sqrt(2.0f) << endl;
+	cout << "sqrt(2.0) " << sw::universal::my_test_sqrt(2.0f) << endl;
 
 #endif
 

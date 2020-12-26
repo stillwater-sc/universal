@@ -1,7 +1,7 @@
 #pragma once
 // posit_16_1.hpp: specialized 16-bit posit using fast compute specialized for posit<16,1>
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -13,7 +13,7 @@
 #define POSIT_FAST_POSIT_16_1 0
 #endif
 
-namespace sw {  namespace unum {
+namespace sw {  namespace universal {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_16_1
@@ -82,7 +82,7 @@ public:
 	explicit operator unsigned long() const { return to_long(); }
 	explicit operator unsigned int() const { return to_int(); }
 
-	posit& set(const sw::unum::bitblock<NBITS_IS_16>& raw) {
+	posit& set(const bitblock<NBITS_IS_16>& raw) {
 		_bits = uint16_t(raw.to_ulong());
 		return *this;
 	}
@@ -904,4 +904,4 @@ inline bool operator>=(int lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs) {
 
 #endif // POSIT_FAST_POSIT_16_1
 
-}} // namespace sw::unum
+}} // namespace sw::universal

@@ -1,14 +1,13 @@
 #pragma once
-// fixpnt_functions.hpp: information functions for fixed-point types and values
+// attributes.hpp: information functions for fixed-point type and value attributes
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath> // for std:pow()
 #include <universal/bitblock/bitblock.hpp>
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 // functions to provide details about
 // the properties of a fixed-point configuration
@@ -74,7 +73,7 @@ long double value_minneg_fixpnt() {
 template<size_t nbits, size_t rbits>
 void ReportFixedPointRanges(std::ostream& ostr = std::cout) {
 	using namespace std;
-	using FixedPoint = fixpnt<nbits, rbits, sw::unum::Saturating, uint32_t>;
+	using FixedPoint = fixpnt<nbits, rbits, sw::universal::Saturating, uint32_t>;
 	FixedPoint fp;
 	ostr << "fixpnt<" << nbits << ", " << rbits << "> : "
 		<< maxneg(fp) << " "
@@ -103,8 +102,8 @@ inline bool sign(const fixpnt<nbits, rbits, arithmetic>& p) {
 
 // get the fraction bits of a posit
 template<size_t nbits, size_t rbits, bool arithmetic>
-inline bitblock<rbits> extract_fraction(const fixpnt<nbits, rbits, arithmetic>& p) {
-	bitblock<rbits> fraction;
+inline sw::unum::bitblock<rbits> extract_fraction(const fixpnt<nbits, rbits, arithmetic>& p) {
+	sw::unum::bitblock<rbits> fraction;
 	for (int i = 0; i < rbits; ++i) {
 	fraction[i] = p[i];
 	}
@@ -127,5 +126,4 @@ inline fixpnt<nbits, rbits, arithmetic> copysign(const fixpnt<nbits, rbits, arit
     return -c; 
 }
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal

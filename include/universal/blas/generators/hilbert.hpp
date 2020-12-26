@@ -1,7 +1,7 @@
 #pragma once
 // hilbert.hpp: generate a Hilbert matrix and its exact inverse
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <universal/functions/binomial.hpp>
 
-namespace sw { namespace unum { namespace blas {
+namespace sw { namespace universal { namespace blas {
 
 // Generate the scaling factor of a Hilbert matrix so that its elements are representable
 // that is, no infinite expensions of rationals, such as 1/3, 1/10, etc.
@@ -69,4 +69,4 @@ matrix<Scalar> hilbert(size_t N, bool bScale = true) {
 	return H;
 }
 
-}}} // namespace sw::unum::blas
+}}} // namespace sw::universal::blas

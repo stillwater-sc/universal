@@ -1,6 +1,6 @@
 // compui.cpp: components of an unsigned integer: cli to show the sign/scale/fraction components of an unsigned integer  
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -12,7 +12,7 @@
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	if (argc != 2) {
 		cerr << "compui : components of an unsigned integer\n";

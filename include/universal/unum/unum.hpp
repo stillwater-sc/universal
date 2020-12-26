@@ -9,7 +9,7 @@
 
 #include <universal/native/ieee-754.hpp>
 
-namespace sw {	namespace unum {
+namespace sw {	namespace universal {
 		
 // Forward definitions
 template<size_t esizesize, size_t fsizesize, typename bt> class unum;
@@ -299,4 +299,4 @@ unum<esizesize,fsizesize> abs(const unum<esizesize,fsizesize,bt>& v) {
 }
 
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal

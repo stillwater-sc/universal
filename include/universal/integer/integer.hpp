@@ -1,7 +1,7 @@
 #pragma once
 // integer.hpp: definition of a fixed-size arbitrary integer precision number
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
@@ -12,7 +12,7 @@
 #include <vector>
 #include <map>
 
-#include "./integer_exceptions.hpp"
+#include <universal/integer/exceptions.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -44,7 +44,7 @@
 
 #endif
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 // forward references
 template<size_t nbits, typename BlockType> class integer;
@@ -1483,5 +1483,4 @@ inline integer<nbits, BlockType> operator^(const long long lhs, const integer<nb
 	return operator^(integer<nbits, BlockType>(lhs), rhs);
 }
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal

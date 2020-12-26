@@ -31,7 +31,7 @@
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pb, pref, psum;
+	sw::universal::posit<nbits, es> pa, pb, pref, psum;
 	pa = a;
 	pb = b;
 	ref = a + b;
@@ -51,7 +51,7 @@ void GenerateTestCase(Ty a, Ty b) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

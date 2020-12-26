@@ -23,7 +23,7 @@
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
@@ -383,11 +383,11 @@ catch (char const* msg) {
 	return EXIT_FAILURE;
 }
 /*
-catch (const sw::unum::unum_arithmetic_exception& err) {
+catch (const sw::universal::unum_arithmetic_exception& err) {
 	std::cerr << "Uncaught unum arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::unum_internal_exception& err) {
+catch (const sw::universal::unum_internal_exception& err) {
 	std::cerr << "Uncaught unum internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

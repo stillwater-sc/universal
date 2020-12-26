@@ -1,7 +1,7 @@
 #pragma once
 //  fixpnt_test_suite.hpp : arithmetic/logic test suite for arbitrary fixed point number systems
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -14,11 +14,11 @@
 // We want the test suite to be used with different configurations of the fixed-point number system
 // so the calling environment needs to set the configuration
 #include <universal/fixpnt/fixed_point.hpp>
-#include "universal/fixpnt/fixpnt_functions.hpp"
+#include "universal/fixpnt/attributes.hpp"
 // test helpers, such as, ReportTestResults
 #include "test_helpers.hpp"
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 #define FIXPNT_TABLE_WIDTH 20
 
@@ -528,7 +528,7 @@ int VerifyDivision(const std::string& tag, bool bReportIndividualTestCases) {
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 void GenerateFixedPointValues(std::ostream& ostr = std::cout) {
 	constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
-	sw::unum::fixpnt<nbits, rbits, arithmetic, BlockType> a;
+	fixpnt<nbits, rbits, arithmetic, BlockType> a;
 	ostr << "  fixpnt<" << nbits << "," << rbits << ">\n";
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 		a.set_raw_bits(i);
@@ -537,4 +537,4 @@ void GenerateFixedPointValues(std::ostream& ostr = std::cout) {
 	}
 }
 
-}} // namespace sw::unum
+}} // namespace sw::universal

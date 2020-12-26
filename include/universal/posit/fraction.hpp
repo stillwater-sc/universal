@@ -1,16 +1,13 @@
 #pragma once
 // fraction.hpp: definition of a posit fractions
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 #include <algorithm>
+#include <universal/posit/exceptions.hpp>
 
-#include "exceptions.hpp"
-
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 // fraction is spec'ed with the size of the posit it belongs to.
 // However, the size of the fraction segment is nbits-3, but we maintain an extra guard bit, so the size of the actual fraction we manage is nbits-2
@@ -294,7 +291,5 @@ inline bool operator<=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs)
 template<size_t nfbits>
 inline bool operator>=(const fraction<nfbits>& lhs, const fraction<nfbits>& rhs) { return !operator< (lhs, rhs); }
 
-}  // namespace unum
-
-}  // namespace sw
+}}  // namespace sw::universal
 

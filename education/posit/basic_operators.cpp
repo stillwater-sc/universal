@@ -1,13 +1,13 @@
 //  basic_operators.cpp : examples of the basic arithmetic operators using posits
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/posit/posit>
 
 // quick helper to report on a posit's specialness
 template<size_t nbits, size_t es>
-void checkSpecialCases(sw::unum::posit<nbits, es> p) {
+void checkSpecialCases(sw::universal::posit<nbits, es> p) {
 	std::cout << "posit is " << (p.iszero() ? "zero " : "non-zero ") << (p.ispos() ? "positive " : "negative ") << (p.isnar() ? "Not a Real" : "Its a Real") << std::endl;
 }
 
@@ -15,14 +15,14 @@ void checkSpecialCases(sw::unum::posit<nbits, es> p) {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;	// standard namespace for posits
+	using namespace sw::universal;	// standard namespace for posits
 
 	const size_t nbits = 16;
 	const size_t es = 1;
 	posit<nbits, es> p1, p2, p3, p4, p5, p6;
 
-	double minpos = minpos_value<nbits, es>();
-	double maxpos = maxpos_value<nbits, es>();
+	/* constexpr */ double minpos = minpos_value<nbits, es>();
+	/* constexpr */ double maxpos = maxpos_value<nbits, es>();
 
 	// the two special cases of a posit configuration: 0 and NaR
 	p1 = 0;        checkSpecialCases(p1);

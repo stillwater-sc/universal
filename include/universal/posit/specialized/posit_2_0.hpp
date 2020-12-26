@@ -1,8 +1,8 @@
 #pragma once
 // posit_2_0.hpp: specialized 2-bit posit using lookup table arithmetic
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
-// Designed: 2018
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+// First implementation: 2018
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -14,7 +14,7 @@
 #define POSIT_FAST_POSIT_2_0 0
 #endif
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_2_0
@@ -141,7 +141,7 @@ namespace sw { namespace unum {
 				explicit operator unsigned long() const { return to_long(); }
 				explicit operator unsigned int() const { return to_int(); }
 
-				posit& set(sw::unum::bitblock<NBITS_IS_2>& raw) {
+				posit& set(sw::universal::bitblock<NBITS_IS_2>& raw) {
 					_bits = uint8_t(raw.to_ulong() & bit_mask);
 					return *this;
 				}
@@ -461,4 +461,4 @@ namespace sw { namespace unum {
 #	define POSIT_FAST_POSIT_2_0 0
 #endif // POSIT_FAST_POSIT_2_0
 	
-}} // namespace sw::unum
+}} // namespace sw::universal

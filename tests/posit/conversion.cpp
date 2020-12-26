@@ -17,11 +17,11 @@
 #include "../utils/posit_test_helpers.hpp"
 
 template<size_t nbits, size_t es>
-void GenerateLogicPattern(double input, const sw::unum::posit<nbits, es>& presult, const sw::unum::posit<nbits+1, es>& pnext) {
+void GenerateLogicPattern(double input, const sw::universal::posit<nbits, es>& presult, const sw::universal::posit<nbits+1, es>& pnext) {
 	const int VALUE_WIDTH = 15;
 	// conceptually: 	bool fail = presult != pnext;
-	sw::unum::bitblock<nbits> bbresult = presult.get();
-	sw::unum::bitblock<nbits + 1> bbnext = pnext.get();
+	sw::universal::bitblock<nbits> bbresult = presult.get();
+	sw::universal::bitblock<nbits + 1> bbnext = pnext.get();
 	bool fail = bbnext[0] == true; // if the last bit of bbnext is set, we fail
 	for (size_t i = 0; i < nbits; ++i) {
 		if (bbresult[i] != bbnext[i + 1]) {
@@ -29,11 +29,11 @@ void GenerateLogicPattern(double input, const sw::unum::posit<nbits, es>& presul
 			break;
 		}
 	}
-	sw::unum::value<52> v(input);
+	sw::universal::value<52> v(input);
 	std::cout << std::setw(VALUE_WIDTH) << input << " "
 		<< " result " << std::setw(VALUE_WIDTH) << presult 
-		<< "  scale= " << std::setw(3) << sw::unum::scale(presult) 
-		<< "  k= " << std::setw(3) << sw::unum::calculate_k<nbits, es>(v.scale())
+		<< "  scale= " << std::setw(3) << sw::universal::scale(presult) 
+		<< "  k= " << std::setw(3) << sw::universal::calculate_k<nbits, es>(v.scale())
 		<< "  exp= " << std::setw(3) << presult.get_exponent() << "  "
 		<< presult.get() << " " 
 		<< pnext.get() << " "
@@ -48,14 +48,14 @@ void GenerateLogicPatternsForDebug() {
 	// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 	const int NR_TEST_CASES = (1 << (nbits + 1));
 	const int HALF = (1 << nbits);
-	sw::unum::posit<nbits + 1, es> pref, pprev, pnext;
+	sw::universal::posit<nbits + 1, es> pref, pprev, pnext;
 
 	// execute the test
-	double minpos = sw::unum::minpos_value<nbits+1, es>();
+	double minpos = sw::universal::minpos_value<nbits+1, es>();
 	double eps = 1.0e-10;
 	double da, input;
-	sw::unum::posit<nbits, es> pa;
-	std::cout << sw::unum::dynamic_range(pa) << std::endl;
+	sw::universal::posit<nbits, es> pa;
+	std::cout << sw::universal::dynamic_range(pa) << std::endl;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
 		pref.set_raw_bits(i);
 		da = double(pref);
@@ -160,7 +160,7 @@ void GenerateLogicPatternsForDebug() {
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es>
-void GenerateTestCase(float input, float reference, const sw::unum::posit<nbits, es>& presult) {
+void GenerateTestCase(float input, float reference, const sw::universal::posit<nbits, es>& presult) {
 	if (fabs(double(presult) - reference) > 0.000000001) 
 		ReportConversionError("test_case", "=", input, reference, presult);
 	else
@@ -169,7 +169,7 @@ void GenerateTestCase(float input, float reference, const sw::unum::posit<nbits,
 }
 
 template<size_t nbits, size_t es>
-void GenerateTestCase(double input, double reference, const sw::unum::posit<nbits, es>& presult) {
+void GenerateTestCase(double input, double reference, const sw::universal::posit<nbits, es>& presult) {
 	if (fabs(double(presult) - reference) > 0.000000001)
 		ReportConversionError("test_case", "=", input, reference, presult);
 	else
@@ -183,7 +183,7 @@ void GenerateTestCase(double input, double reference, const sw::unum::posit<nbit
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

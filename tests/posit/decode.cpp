@@ -1,6 +1,6 @@
 // decode.cpp: functional tests of the posit decode method
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -31,7 +31,7 @@ int ValidateDecode() {
 	};
 
 	int nrOfFailedTestCases = 0;
-	sw::unum::posit<4, 0> pa;
+	sw::universal::posit<4, 0> pa;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
 		pa.set_raw_bits(uint64_t(i));
 		if (fabs(double(pa) - golden_values[i]) > 0.0001) {
@@ -45,7 +45,7 @@ int ValidateDecode() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 

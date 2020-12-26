@@ -1,7 +1,7 @@
 #pragma once
 // numeric_limits.hpp: definition of numeric_limits for integer types
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,7 +9,7 @@
 // For big integers, the return types will not yield standard types
 namespace std {
 
-	using namespace sw::unum;
+	using namespace sw::universal;
 /*
 	Trait class that identifies whether T is a literal type.
 
@@ -25,13 +25,13 @@ A class that is a literal type is a class (defined with class, struct or union) 
 	TODO: how to make the integer class a literal type so that we can use it as a return type for min/max/lowest etc.
 */
 template <size_t nbits> 
-class numeric_limits< sw::unum::integer<nbits> > {
+class numeric_limits< sw::universal::integer<nbits> > {
 public:
-	using Integer = sw::unum::integer<nbits>;
+	using Integer = sw::universal::integer<nbits>;
 	static constexpr bool is_specialized = true;
 	static constexpr Integer min() { return 1; } // return minimum value
 	static constexpr Integer max() {             // return maximum value
-		Integer imax(0); // sw::unum::integers are 2's complement encoded numbers
+		Integer imax(0); // sw::universal::integers are 2's complement encoded numbers
 		imax.set(nbits - 1);
 		imax.flip();
 		return imax;

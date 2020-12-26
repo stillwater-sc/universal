@@ -1,6 +1,6 @@
 // generators.cpp: matrix generator examples
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifdef _MSC_VER
@@ -29,7 +29,7 @@
 template<typename Scalar>
 void generateMatrices() {
 	using namespace std;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	Matrix A(5, 5);
 	// create an Identity matrix
@@ -37,37 +37,37 @@ void generateMatrices() {
 	std::cout << A << std::endl;
 
 	// create a 2D Laplacian
-	sw::unum::blas::laplace2D(A, 5, 5);
+	sw::universal::blas::laplace2D(A, 5, 5);
 	cout << A << endl;
 
 	// create a row order index matrix
-	Matrix roi = sw::unum::blas::row_order_index<Scalar>(5, 6);
+	Matrix roi = sw::universal::blas::row_order_index<Scalar>(5, 6);
 	cout << roi << endl;
 
 	// create a column order index matrix
-	Matrix coi = sw::unum::blas::column_order_index<Scalar>(6,5);
+	Matrix coi = sw::universal::blas::column_order_index<Scalar>(6,5);
 	cout << coi << endl;
 
 	// create a magic square matrix
-	Matrix ms = sw::unum::blas::magic<Scalar>(5);
+	Matrix ms = sw::universal::blas::magic<Scalar>(5);
 	cout << ms << endl;
 
 	// create a uniform random matrix
 	Matrix B(10, 10);
-	sw::unum::blas::uniform_rand(B, -1.0, 1.0);
+	sw::universal::blas::uniform_rand(B, -1.0, 1.0);
 	cout << setprecision(5) << setw(10) << B << endl;
 }
 
 int main(int argc, char* argv[])
 try {
 	using namespace std;
-	using namespace sw::unum::blas;
+	using namespace sw::universal::blas;
 
 	if (argc > 0) cout << argv[0] << endl;
 
-	generateMatrices< sw::unum::posit< 8, 0> >();
-	generateMatrices< sw::unum::posit<16, 1> >();
-	generateMatrices< sw::unum::posit<32, 2> >();
+	generateMatrices< sw::universal::posit< 8, 0> >();
+	generateMatrices< sw::universal::posit<16, 1> >();
+	generateMatrices< sw::universal::posit<32, 2> >();
 
 	return EXIT_SUCCESS;
 }

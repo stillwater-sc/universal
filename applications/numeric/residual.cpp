@@ -1,6 +1,6 @@
 // residual.cpp: example program to show exact residual calucation using the quire
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -21,10 +21,10 @@
 
 /*
 template<typename Scalar>
-sw::unum::blas::vector<Scalar> residual(const sw::unum::blas::matrix<Scalar>& A, const sw::unum::blas::vector<Scalar>& x, const sw::unum::blas::vector<Scalar>& b) {
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
-	using Vector = sw::unum::blas::vector<Scalar>;
+sw::universal::blas::vector<Scalar> residual(const sw::universal::blas::matrix<Scalar>& A, const sw::universal::blas::vector<Scalar>& x, const sw::universal::blas::vector<Scalar>& b) {
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
+	using Vector = sw::universal::blas::vector<Scalar>;
 	size_t M = num_rows(A);
 	size_t N = num_cols(A);
 	Vector r(M);
@@ -40,11 +40,11 @@ sw::unum::blas::vector<Scalar> residual(const sw::unum::blas::matrix<Scalar>& A,
 */
 
 template<size_t nbits, size_t es, size_t capacity = 10>
-sw::unum::blas::vector<sw::unum::posit<nbits, es>> residual(const sw::unum::blas::matrix<sw::unum::posit<nbits, es>>& A, const sw::unum::blas::vector<sw::unum::posit<nbits, es>>& x, const sw::unum::blas::vector<sw::unum::posit<nbits, es>>& b) {
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
-	using Scalar = sw::unum::posit<nbits, es>;
-	using Vector = sw::unum::blas::vector<Scalar>;
+sw::universal::blas::vector<sw::universal::posit<nbits, es>> residual(const sw::universal::blas::matrix<sw::universal::posit<nbits, es>>& A, const sw::universal::blas::vector<sw::universal::posit<nbits, es>>& x, const sw::universal::blas::vector<sw::universal::posit<nbits, es>>& b) {
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
+	using Scalar = sw::universal::posit<nbits, es>;
+	using Vector = sw::universal::blas::vector<Scalar>;
 	size_t M = num_rows(A);
 	size_t N = num_cols(A);
 	Vector r(M);
@@ -61,9 +61,9 @@ sw::unum::blas::vector<sw::unum::posit<nbits, es>> residual(const sw::unum::blas
 template<typename Scalar>
 void FrankMatrixTest(int N) {
 	using namespace std;
-	using Vector = sw::unum::blas::vector<Scalar>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
-	Matrix A = sw::unum::blas::frank<Scalar>(N);
+	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
+	Matrix A = sw::universal::blas::frank<Scalar>(N);
 	cout << "Frank matrix order " << N << endl;
 	Vector b(N), x(N);
 	x = Scalar(1);
@@ -76,10 +76,10 @@ void FrankMatrixTest(int N) {
 }
 
 void Experiment1() {
-	sw::unum::blas::vector<int> sizes = { 5, 15, 45, 95 };
+	sw::universal::blas::vector<int> sizes = { 5, 15, 45, 95 };
 	for (auto N : sizes) {
 		FrankMatrixTest<float>(N);
-		FrankMatrixTest<sw::unum::posit<32, 2>>(N);
+		FrankMatrixTest<sw::universal::posit<32, 2>>(N);
 	}
 }
 
@@ -87,11 +87,11 @@ template<typename Matrix>
 void ResidualTest(const Matrix& A) {
 	/*
 	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
 
 	using Scalar = posit<nbits, es>;
-	using Vector = sw::unum::blas::vector<Scalar>;
+	using Vector = sw::universal::blas::vector<Scalar>;
 	using Matrix = matrix<Scalar>;
 
 	size_t M = num_rows(A);
@@ -106,7 +106,7 @@ void ResidualTest(const Matrix& A) {
 	Vector b(N), ones(N), x(N);
 	ones = Scalar(1);
 	b = A * ones; // <-- posit specialized FDP matrix-vector multiply
-	sw::unum::blas::vector<size_t> indx(N);
+	sw::universal::blas::vector<size_t> indx(N);
 	Matrix LU(A); // the LU decomposition is in place, so create a copy first
 	auto error = ludcmp(LU, indx);
 	if (error != 0) {
@@ -161,29 +161,29 @@ void Experiment2() {
 
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
-	using Scalar = sw::unum::posit<nbits, es>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Scalar = sw::universal::posit<nbits, es>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 	constexpr size_t N = 5;
-	Matrix A = sw::unum::blas::frank<Scalar>(N);
+	Matrix A = sw::universal::blas::frank<Scalar>(N);
 
 	cout << "Frank matrix\n";
 	ResidualTest(A);
 	cout << '\n';
 
 	cout << "Hilbert matrix\n";
-	A = sw::unum::blas::hilbert<Scalar>(N);
+	A = sw::universal::blas::hilbert<Scalar>(N);
 	ResidualTest(A);
 
 	{
 		// reference float version
 		using Scalar = float;
-		using Vector = sw::unum::blas::vector<Scalar>;
-		using Matrix = sw::unum::blas::matrix<Scalar>;
+		using Vector = sw::universal::blas::vector<Scalar>;
+		using Matrix = sw::universal::blas::matrix<Scalar>;
 
 		Vector ones(N);
 		ones = Scalar(1);
 		Vector b(N);
-		Matrix A = sw::unum::blas::hilbert<Scalar>(N);
+		Matrix A = sw::universal::blas::hilbert<Scalar>(N);
 		b = A * ones;
 		Vector x = solve(A, b);
 		cout << "1-norm of float ref    :   " << norm1(x - ones) << endl;
@@ -193,13 +193,13 @@ void Experiment2() {
 	{
 		// reference double version
 		using Scalar = double;
-		using Vector = sw::unum::blas::vector<Scalar>;
-		using Matrix = sw::unum::blas::matrix<Scalar>;
+		using Vector = sw::universal::blas::vector<Scalar>;
+		using Matrix = sw::universal::blas::matrix<Scalar>;
 
 		Vector ones(N);
 		ones = Scalar(1);
 		Vector b(N);
-		Matrix A = sw::unum::blas::hilbert<Scalar>(N);
+		Matrix A = sw::universal::blas::hilbert<Scalar>(N);
 		b = A * ones;
 		Vector x = solve(A, b);
 		cout << "1-norm of double ref   :   " << norm1(x - ones) << endl;
@@ -210,10 +210,10 @@ void Experiment2() {
 
 
 template<size_t nbits, size_t es>
-void QuireCompensation(const sw::unum::blas::matrix<sw::unum::posit<nbits, es>>& A, const sw::unum::posit<nbits, es>& tolerance = 1.0e-15, size_t MAX_ITERATIONS = 100) {
-	using Scalar = sw::unum::posit<nbits, es>;
-	using Vector = sw::unum::blas::vector<Scalar>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+void QuireCompensation(const sw::universal::blas::matrix<sw::universal::posit<nbits, es>>& A, const sw::universal::posit<nbits, es>& tolerance = 1.0e-15, size_t MAX_ITERATIONS = 100) {
+	using Scalar = sw::universal::posit<nbits, es>;
+	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	const size_t M = num_rows(A);
 	const size_t N = num_cols(A);
@@ -226,7 +226,7 @@ void QuireCompensation(const sw::unum::blas::matrix<sw::unum::posit<nbits, es>>&
 	constexpr size_t MAX_COLUMNS = 8;
 
 	Matrix LU(A);
-	sw::unum::blas::vector<size_t> indx(N);
+	sw::universal::blas::vector<size_t> indx(N);
 	if (ludcmp(LU, indx)) return; // LU decomposition failed, simply bail
 
 	Vector b(M), x(M), r(M), c(M);
@@ -269,9 +269,9 @@ void QuireCompensation(const sw::unum::blas::matrix<sw::unum::posit<nbits, es>>&
 template<typename Scalar>
 void IeeeReference(size_t MATRIX_ROWS) {
 	std::cout << "\n\ncalculate " << typeid(Scalar).name() << " reference\n";
-	using Vector = sw::unum::blas::vector<Scalar>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
-	Matrix A = sw::unum::blas::hilbert<Scalar>(MATRIX_ROWS);
+	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
+	Matrix A = sw::universal::blas::hilbert<Scalar>(MATRIX_ROWS);
 	const size_t MATRIX_COLS = MATRIX_ROWS; // we are a square matrix
 	Vector ones(MATRIX_COLS);
 	ones = 1.0;
@@ -285,8 +285,8 @@ void IeeeReference(size_t MATRIX_ROWS) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
 
 	cout << "Kulisch iterator\n";
 
@@ -294,13 +294,13 @@ try {
 
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
-	using Scalar = sw::unum::posit<nbits, es>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Scalar = sw::universal::posit<nbits, es>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	cout << "epsilon for " << typeid(Scalar).name() << " = " << numeric_limits<Scalar>::epsilon() << '\n';
 	cout << "Hilbert matrix\n";
 	constexpr size_t MATRIX_ROWS = 10;
-	Matrix A = sw::unum::blas::hilbert<Scalar>(MATRIX_ROWS); // default is a scaled Hilbert matrix with exact representation
+	Matrix A = sw::universal::blas::hilbert<Scalar>(MATRIX_ROWS); // default is a scaled Hilbert matrix with exact representation
 	QuireCompensation(A);
 
 	IeeeReference<float>(MATRIX_ROWS);

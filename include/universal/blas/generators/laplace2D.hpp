@@ -1,12 +1,12 @@
 #pragma once
 // laplace2D.hpp: generate 2D Laplace operator difference matrix on a square domain
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/blas/blas.hpp>
 
-namespace sw { namespace unum { namespace blas { 
+namespace sw { namespace universal { namespace blas { 
 
 // generate a 2D square domain Laplacian difference equation matrix
 template<typename Scalar>
@@ -27,4 +27,4 @@ void laplace2D(matrix<Scalar>& A, size_t m, size_t n) {
 	}
 }
 
-}}} // namespace sw::unum::blas
+}}} // namespace sw::universal::blas

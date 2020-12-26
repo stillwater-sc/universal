@@ -9,14 +9,14 @@
 #include "universal/posit/manipulators.hpp"
 
 template<size_t nbits, size_t es>
-void GenerateLogicPattern(double input, const sw::unum::posit<nbits, es>& presult, const sw::unum::posit<nbits + 1, es>& pnext) {
+void GenerateLogicPattern(double input, const sw::universal::posit<nbits, es>& presult, const sw::universal::posit<nbits + 1, es>& pnext) {
 	const int VALUE_WIDTH = 15;
 	bool fail = presult != pnext;
-	sw::unum::value<52> v(input);
+	sw::universal::value<52> v(input);
 	std::cout << std::setw(VALUE_WIDTH) << input << " "
 		<< " result " << std::setw(VALUE_WIDTH) << presult
 		<< "  scale= " << std::setw(3) << presult.scale()
-		<< "  k= " << std::setw(3) << sw::unum::calculate_k<nbits, es>(v.scale())
+		<< "  k= " << std::setw(3) << sw::universal::calculate_k<nbits, es>(v.scale())
 		<< "  exp= " << std::setw(3) << presult.get_exponent() << "  "
 		<< presult.get() << " "
 		<< pnext.get() << " "
@@ -31,13 +31,13 @@ void GenerateLogicPatternsForDebug() {
 	// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 	const int NR_TEST_CASES = (1 << (nbits + 1));
 	const int HALF = (1 << nbits);
-	sw::unum::posit<nbits + 1, es> pref, pprev, pnext;
+	sw::universal::posit<nbits + 1, es> pref, pprev, pnext;
 
 	// execute the test
 	const double eps = 1.0e-10;  // TODO for big posits, eps is important to resolve differences
 	double da, input;
-	sw::unum::posit<nbits, es> pa;
-	std::cout << sw::unum::dynamic_range(pa) << std::endl;
+	sw::universal::posit<nbits, es> pa;
+	std::cout << sw::universal::dynamic_range(pa) << std::endl;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
 		pref.set_raw_bits(i);
 		da = double(pref);
@@ -136,7 +136,7 @@ void GenerateLogicPatternsForDebug() {
 }
 
 template<size_t nbits>
-std::string LowerSegment(sw::unum::bitblock<nbits>& bits, unsigned msb) {
+std::string LowerSegment(sw::universal::bitblock<nbits>& bits, unsigned msb) {
 	std::stringstream ss;
 	for (int i = msb; i >= 0; i--) {
 		if (bits.test(i)) {
@@ -149,14 +149,14 @@ std::string LowerSegment(sw::unum::bitblock<nbits>& bits, unsigned msb) {
 	return ss.str();
 }
 template<size_t src_size, size_t nbits>
-void CopyLowerSegment(sw::unum::bitblock<src_size>& src, sw::unum::bitblock<nbits>& tgt, unsigned msb = nbits-1) {
+void CopyLowerSegment(sw::universal::bitblock<src_size>& src, sw::universal::bitblock<nbits>& tgt, unsigned msb = nbits-1) {
 	for (int i = msb; i >= 0; i--) {
 		tgt[i] = src[i];
 	}
 }
 template<size_t nbits, size_t src_size>
-sw::unum::bitblock<nbits> CopyInto(sw::unum::bitblock<src_size>& src) {
-	sw::unum::bitblock<nbits> tgt;
+sw::universal::bitblock<nbits> CopyInto(sw::universal::bitblock<src_size>& src) {
+	sw::universal::bitblock<nbits> tgt;
 	for (int i = nbits - 1; i >= 0; i--) {
 		tgt.set(i, src[i]);
 	}
@@ -165,8 +165,8 @@ sw::unum::bitblock<nbits> CopyInto(sw::unum::bitblock<src_size>& src) {
 
 // calculate the 2's complement of a 2's complement encoded number
 template<size_t nbits>
-sw::unum::bitblock<nbits> _twos_complement(sw::unum::bitblock<nbits> number) {
-	sw::unum::bitblock<nbits> complement;
+sw::universal::bitblock<nbits> _twos_complement(sw::universal::bitblock<nbits> number) {
+	sw::universal::bitblock<nbits> complement;
 	uint8_t _slice = 0;
 	uint8_t carry = 1;
 	for (size_t i = 0; i < nbits; i++) {
@@ -178,7 +178,7 @@ sw::unum::bitblock<nbits> _twos_complement(sw::unum::bitblock<nbits> number) {
 }
 
 template<size_t nbits>
-bool increment_unsigned(sw::unum::bitblock<nbits>& number, int nrBits = nbits - 1) {
+bool increment_unsigned(sw::universal::bitblock<nbits>& number, int nrBits = nbits - 1) {
 	bool carry = 1;  // ripple carry
 	int lsb = nbits - nrBits;
 	for (size_t i = lsb; i < nbits; i++) {
@@ -191,7 +191,7 @@ bool increment_unsigned(sw::unum::bitblock<nbits>& number, int nrBits = nbits - 
 
 // increment the input bitblock in place, and return true if there is a carry generated.
 template<size_t nbits>
-bool increment_bitblock(sw::unum::bitblock<nbits>& number) {
+bool increment_bitblock(sw::universal::bitblock<nbits>& number) {
 	bool carry = true;  // ripple carry
 	for (size_t i = 0; i < nbits; i++) {
 		bool _a = number[i];
@@ -203,7 +203,7 @@ bool increment_bitblock(sw::unum::bitblock<nbits>& number) {
 
 // decrement the input bitblock in place, and return true if there is a borrow generated.
 template<size_t nbits>
-bool decrement_bitblock(sw::unum::bitblock<nbits>& number) {
+bool decrement_bitblock(sw::universal::bitblock<nbits>& number) {
 	bool borrow = true;
 	for (size_t i = 0; i < nbits; i++) {
 		bool _a = number[i];
@@ -216,8 +216,8 @@ bool decrement_bitblock(sw::unum::bitblock<nbits>& number) {
 // DANGER: this depends on the implicit type conversion of number to a uint64_t to sign extent a 2's complement number system
 // if nbits > 64 then this code breaks.
 template<size_t nbits, class Type>
-sw::unum::bitblock<nbits> _convert_to_bitblock(Type number) {
-	sw::unum::bitblock<nbits> _Bits;
+sw::universal::bitblock<nbits> _convert_to_bitblock(Type number) {
+	sw::universal::bitblock<nbits> _Bits;
 	uint64_t mask = uint64_t(1);
 	for (size_t i = 0; i < nbits; i++) {
 		_Bits[i] = mask & number;
@@ -228,7 +228,7 @@ sw::unum::bitblock<nbits> _convert_to_bitblock(Type number) {
 
 // sticky bit representation of all the bits from [msb, lsb], that is, msb is included
 template<size_t nbits>
-bool _anyAfter(const sw::unum::bitblock<nbits>& bits, unsigned msb) {
+bool _anyAfter(const sw::universal::bitblock<nbits>& bits, unsigned msb) {
 	bool running = false;
 	for (int i = msb; i >= 0; i--) {
 		running |= bits.test(i);
@@ -261,7 +261,7 @@ BitXor[s * (2^nbits - 1), ptt] + s]
 template<size_t nbits, size_t es>
 void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "convert to posit<" << nbits << "," << es << ">" << endl;
 	// obtain the sign/scale/fraction representation of a float
@@ -308,7 +308,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	regime.set(0, 1 ^ r);
 	for (int i = 1; i <= run; i++) regime.set(i, r);
 	if (bPrintIntermediateSteps) cout << "reg      = " << LowerSegment(regime,run) << endl;
-	sw::unum::regime<nbits, es> _reg; _reg.assign(scale);
+	sw::universal::regime<nbits, es> _reg; _reg.assign(scale);
 	if (bPrintIntermediateSteps) cout << "_reg     = " << _reg << endl;
 	unsigned esval = scale % (uint32_t(1) << es);
 	if (bPrintIntermediateSteps) cout << "esval    = " << esval << endl;
@@ -371,16 +371,16 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 }
 
 template<size_t nbits, size_t es, size_t nrfbits>
-sw::unum::posit<nbits, es> convert_to_posit(sw::unum::value<nrfbits> v, bool bPrintIntermediateSteps = false) {
+sw::universal::posit<nbits, es> convert_to_posit(sw::universal::value<nrfbits> v, bool bPrintIntermediateSteps = false) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "convert to posit<" << nbits << "," << es << ">" << endl;
 	// ignore for the sake of clarity the special cases 0 and NaR (Not a Real)
 	bitblock<nrfbits> bits = v.fraction();
 
-	//float minpos = (float)sw::unum::minpos_value<nbits, es>();
-	//float maxpos = (float)sw::unum::maxpos_value<nbits, es>();
+	//float minpos = (float)sw::universal::minpos_value<nbits, es>();
+	//float maxpos = (float)sw::universal::maxpos_value<nbits, es>();
 
 	const size_t pt_len = nbits + 3 + es;
 	bitblock<pt_len> pt_bits;
@@ -463,7 +463,7 @@ sw::unum::posit<nbits, es> convert_to_posit(sw::unum::value<nrfbits> v, bool bPr
 	}
 	cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits - 1) << endl;
 	
-	sw::unum::posit<nbits, es> p;
+	sw::universal::posit<nbits, es> p;
 	p.set(ptt);
 	cout << "p = " << p.to_float() << endl;
 	return p;
@@ -473,22 +473,22 @@ sw::unum::posit<nbits, es> convert_to_posit(sw::unum::value<nrfbits> v, bool bPr
 // and then apply the nbits constraint to truncate to the final posit size.
 template<size_t nbits, size_t es>
 void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
-	sw::unum::value<23> v(x);
+	sw::universal::value<23> v(x);
 	int scale = v.scale();
 	
 	unsigned run = (scale >= 0 ? 1 + (scale >> es) : -scale >> es);
-	int k = sw::unum::calculate_k<nbits, es>(scale);
+	int k = sw::universal::calculate_k<nbits, es>(scale);
 	if (bPrintIntermediateSteps) std::cout << "k        = " << k << std::endl;
-	sw::unum::regime<nbits, es> _regime;
+	sw::universal::regime<nbits, es> _regime;
 	unsigned nr_of_regime_bits = _regime.assign(scale);
 	if (bPrintIntermediateSteps) std::cout << "regime   = " << _regime << " rbits " << nr_of_regime_bits << std::endl;
-	sw::unum::exponent<nbits, es> _exponent;
+	sw::universal::exponent<nbits, es> _exponent;
 	_exponent.assign(scale);
 	if (bPrintIntermediateSteps) std::cout << "exponent = " << _exponent << std::endl;
 	unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
 	if (bPrintIntermediateSteps) std::cout << "nf       = " << nf << std::endl;
-	sw::unum::bitblock<23> fraction_bitblock = v.fraction();
-	sw::unum::fraction<23> _fraction;
+	sw::universal::bitblock<23> fraction_bitblock = v.fraction();
+	sw::universal::fraction<23> _fraction;
 	bool sb = _fraction.assign<23>(nf, fraction_bitblock, nf+1);  // assign and create sticky bit
 	if (bPrintIntermediateSteps) std::cout << "sb       = " << sb << std::endl;
 	// 	assess if we need to round up the truncated posit
@@ -561,7 +561,7 @@ constexpr int SW_QUANDRANT = 3;
 template<size_t nbits, size_t es>
 void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	posit<nbits, es> p;
 	cout << endl << endl << "-------------------------------------------" << endl;
@@ -629,7 +629,7 @@ void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

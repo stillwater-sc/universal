@@ -1,15 +1,14 @@
 #pragma once
 // integers.hpp: manipulators for native integer types
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
 #include <string>
 #include <type_traits>
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 // fast power of 2 for integers
 template<typename Integer,
@@ -37,5 +36,4 @@ inline std::string to_binary(const Integer& number, int nbits = 0) {
 	return ss.str();
 }
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal

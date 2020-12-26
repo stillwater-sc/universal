@@ -1,7 +1,7 @@
 #pragma once
 // blocktriple.hpp: definition of a (sign, scale, fraction) representation of an approximation to a real value
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -14,8 +14,7 @@
 #include "../native/bit_functions.hpp"
 #include "trace_constants.hpp"
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 // Forward definitions
 template<size_t ebits, size_t fbits, typename bt> class blocktriple;
@@ -663,7 +662,7 @@ void module_add(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<ebits,
 	bool r1_sign = lhs.sign(), r2_sign = rhs.sign();
 	bool signs_are_different = r1_sign != r2_sign;
 
-	if (signs_are_different && sw::unum::abs(lhs) < sw::unum::abs(rhs)) {
+	if (signs_are_different && sw::universal::abs(lhs) < sw::universal::abs(rhs)) {
 		std::swap(r1, r2);
 		std::swap(r1_sign, r2_sign);
 	}
@@ -725,7 +724,7 @@ void module_subtract(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<e
 	bool r1_sign = lhs.sign(), r2_sign = !rhs.sign();
 	bool signs_are_different = r1_sign != r2_sign;
 
-	if (sw::unum::abs(lhs) < sw::unum::abs(rhs)) {
+	if (sw::universal::abs(lhs) < sw::universal::abs(rhs)) {
 		std::swap(r1, r2);
 		std::swap(r1_sign, r2_sign);
 	}
@@ -911,6 +910,4 @@ void module_divide(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<ebi
 	result.set(new_sign, new_scale, result_fraction, false, false, false);
 }
 
-}  // namespace unum
-
-}  // namespace sw
+}}  // namespace sw::universal

@@ -1,6 +1,6 @@
 ﻿// rounding_error_addition.cpp: rounding error comparision for addition
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
@@ -16,7 +16,7 @@ int GenerateAdditionError(const std::string& tag, bool bReportIndividualTestCase
 	using namespace std;
 	const size_t NR_POSITS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
-	using Posit = sw::unum::posit<nbits, es>;
+	using Posit = sw::universal::posit<nbits, es>;
 	Posit pa, pb, psum, pref;
 	//pair<Posit, Posit> s_and_r;
 	double da, db;
@@ -47,7 +47,7 @@ int GenerateAdditionError(const std::string& tag, bool bReportIndividualTestCase
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//constexpr size_t nbits = 32;
 	//constexpr size_t es = 2;
@@ -84,15 +84,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

@@ -1,6 +1,6 @@
 ﻿// integer_cover.cpp: covering the integers with a posit
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
@@ -76,7 +76,7 @@ template<size_t nbits, size_t es, size_t ibits>
 std::string CalculateIntegerCover() {
 	float fInt;
 	double dInt;
-	sw::unum::posit<nbits, es> pInt;
+	sw::universal::posit<nbits, es> pInt;
 
 	constexpr uint64_t nrSamples = (uint64_t)1 << ibits;
 	uint64_t fcover = 0, dcover = 0, pcover = 0, rounded;
@@ -112,7 +112,7 @@ std::string CalculateIntegerCover() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// preserve the existing ostream precision
 	auto precision = cout.precision();
@@ -191,15 +191,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

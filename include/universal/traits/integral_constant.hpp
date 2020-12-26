@@ -1,11 +1,11 @@
 #pragma once
 //  integral_constant.hpp : integral constant template type
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 	// integral_constant base type
 	template<typename Ty, Ty val>
@@ -34,4 +34,4 @@ namespace sw { namespace unum {
 	template<typename _Ty>
 	using value_type = typename value_type_trait<_Ty>::type;
 
-}} // namespace sw::unum
+}} // namespace sw::universal

@@ -1,6 +1,6 @@
 // api.cpp: functional tests of the value type API
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "universal/bitblock/bitblock.hpp"
@@ -9,7 +9,7 @@
 #include "../utils/test_helpers.hpp"
 
 template<size_t fbits>
-int Check(const sw::unum::value<fbits>& v, double ref, bool bReportIndividualTestCases) {
+int Check(const sw::universal::value<fbits>& v, double ref, bool bReportIndividualTestCases) {
 	int fails = 0;
 	if (v.to_double() != ref) {
 		++fails;
@@ -26,7 +26,7 @@ int Check(const sw::unum::value<fbits>& v, double ref, bool bReportIndividualTes
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;

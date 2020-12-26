@@ -23,12 +23,12 @@
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pb, pref, ppow;
+	sw::universal::posit<nbits, es> pa, pb, pref, ppow;
 	pa = a;
 	pb = b;
 	ref = std::pow(a,b);
 	pref = ref;
-	ppow = sw::unum::pow(pa,pb);
+	ppow = sw::universal::pow(pa,pb);
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << " -> pow(" << a << "," << b << ") = " << std::setw(nbits) << ref << std::endl;
 	std::cout << " -> pow( " << pa << "," << pb << ") = " << ppow.get() << " (reference: " << pref.get() << ")   " ;
@@ -140,7 +140,7 @@ int64_t ipow(int64_t base, uint8_t exp) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;

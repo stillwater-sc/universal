@@ -1,6 +1,6 @@
 // posit_properties.cpp example program comparing epsilon and minpos across posit configurations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -71,7 +71,7 @@ size_t fib2(const size_t n) {
 template<size_t ... nbits>
 long double eps_impl(std::index_sequence<nbits...>, size_t index) 
 {
-	constexpr std::array<size_t, sizeof...(nbits)> eps = { (long double)std::numeric_limits<sw::unum::posit<nbits+2,2>>::epsilon()... } ;
+	constexpr std::array<size_t, sizeof...(nbits)> eps = { (long double)std::numeric_limits<sw::universal::posit<nbits+2,2>>::epsilon()... } ;
     return eps[index];
 }
 
@@ -83,10 +83,10 @@ const long double eps(size_t nbits) {
 
 template<size_t nbits, size_t es>
 std::string properties(const std::string& label) {
-	using Scalar = sw::unum::posit<nbits, es>;
+	using Scalar = sw::universal::posit<nbits, es>;
 	Scalar minp, maxp;
-	sw::unum::minpos<nbits, es>(minp);
-	sw::unum::maxpos<nbits, es>(maxp);
+	sw::universal::minpos<nbits, es>(minp);
+	sw::universal::maxpos<nbits, es>(maxp);
 	Scalar eps  = std::numeric_limits<Scalar>::epsilon();
 	std::stringstream ostr;
 	ostr << nbits
@@ -108,7 +108,7 @@ std::string properties(const std::string& label) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "minpos/epsilon/maxpos for different number systems " << endl;
 
@@ -120,7 +120,7 @@ try {
 //	std::cout << "posit<16,2> | 16 |  " << eps(16) << '\n';
 
 	// operator=() of posit can't be constexpr due to bitset<>
-	// constexpr long double posit_16_2_eps = (long double)std::numeric_limits<sw::unum::posit<6, 2>>::epsilon();
+	// constexpr long double posit_16_2_eps = (long double)std::numeric_limits<sw::universal::posit<6, 2>>::epsilon();
 	// std::cout << "constexpr " << posit_16_2_eps;
 
 	std::cout << "nbits\tposit\tminpos\tepsilon\tmaxpos\teps/minpos\tmaxpos/eps\n";

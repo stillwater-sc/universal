@@ -17,7 +17,7 @@
 // If you have helper functions that the unum2 type could use, but dofsize not depend on 
 // the unum2 type, you can add them to the file unum_helpers.hpp.
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 // DEBUG/REPORTING HELPERS
 
@@ -66,5 +66,5 @@ std::string color_print(const unum2<essize, fsize>& p) {
 	return ss.str();
 }
 
-}}  // namfsizepace sw::unum
+}}  // namfsizepace sw::universal
 

@@ -1,6 +1,6 @@
 // compsi.cpp: components of a signed integer: cli to show the sign/scale/fraction components of a signed integer  
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -12,14 +12,14 @@
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	if (argc != 2) {
 		cerr << "compsi : components of a signed integer\n";
 		cerr << "Show the sign/scale/fraction components of a signed integer.\n";
 		cerr << "Usage: compsi integer_value\n";
 		cerr << "Example: compsi 1234567890123456789012345\n";
-		cerr << "class sw::unum::integer<128,unsigned int>         : 1234567890123456789012345 (+,80,00000101011011100000111100110110101001100100010000111101111000101101111101111001)";
+		cerr << "class sw::universal::integer<128,unsigned int>         : 1234567890123456789012345 (+,80,00000101011011100000111100110110101001100100010000111101111000101101111101111001)";
 		cerr << endl;
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}

@@ -1,6 +1,6 @@
 // constexpr_test.cpp: see whether posits can be constexpr 
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -13,8 +13,8 @@
 
 int main(int argc, char** argv)
 {
-//     constexpr sw::unum::posit<32, 2> p1{4.2};
-//     constexpr sw::unum::posit<32, 2> p2= 4.3;
+//     constexpr sw::universal::posit<32, 2> p1{4.2};
+//     constexpr sw::universal::posit<32, 2> p2= 4.3;
     
     
     return 0;

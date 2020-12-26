@@ -1,6 +1,6 @@
 // mod_complex_add.cpp: functional tests for arbitrary configuration fixed-point complex addition
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -15,7 +15,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/fixpnt/fixed_point.hpp>
 // fixed-point type manipulators such as pretty printers
-#include <universal/fixpnt/fixpnt_manipulators.hpp>
+#include <universal/fixpnt/manipulators.hpp>
 #include <universal/fixpnt/math_functions.hpp>
 #include "../../utils/fixpnt_test_suite.hpp"
 
@@ -24,7 +24,7 @@
 template<size_t nbits, size_t rbits, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::unum::fixpnt<nbits, rbits> a, b, cref, result;
+	sw::universal::fixpnt<nbits, rbits> a, b, cref, result;
 	a = _a;
 	b = _b;
 	result = a + b;
@@ -42,7 +42,7 @@ void GenerateTestCase(Ty _a, Ty _b) {
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
 int VerifyComplexAddition(const std::string& tag, bool bReportIndividualTestCases) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	using FixedPoint = fixpnt<nbits, rbits, arithmetic, BlockType>;
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	FixedPoint fpmaxpos, fpmaxneg;
@@ -108,20 +108,19 @@ int VerifyComplexAddition(const std::string& tag, bool bReportIndividualTestCase
 	return nrOfFailedTests;
 }
 
-namespace sw {
-namespace unum {
-namespace complex_literals {
-	std::complex<sw::unum::fixpnt<8, 4>> operator""_i(long double _Val)
+namespace sw { namespace universal { namespace complex_literals {
+
+	std::complex<fixpnt<8, 4>> operator""_i(long double _Val)
 	{	// return imaginary _Val
-		return (std::complex<sw::unum::fixpnt<8, 4>>(0.0, static_cast<sw::unum::fixpnt<8, 4>>(_Val)));
+		return (std::complex<fixpnt<8, 4>>(0.0, static_cast<fixpnt<8, 4>>(_Val)));
 	}
 
-	std::complex<sw::unum::fixpnt<8, 4>> operator""_i(unsigned long long _Val)
+	std::complex<fixpnt<8, 4>> operator""_i(unsigned long long _Val)
 	{	// return imaginary _Val
-		return (std::complex<sw::unum::fixpnt<8, 4>>(0.0, static_cast<sw::unum::fixpnt<8, 4>>(_Val)));
+		return (std::complex<fixpnt<8, 4>>(0.0, static_cast<fixpnt<8, 4>>(_Val)));
 	}
 } // namespace complex_literals
-} // namespace unum
+} // namespace universal
 } // namespace sw
 
 
@@ -132,7 +131,7 @@ namespace complex_literals {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -220,11 +219,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_arithmetic_exception& err) {
+catch (const sw::universal::fixpnt_arithmetic_exception& err) {
 	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_internal_exception& err) {
+catch (const sw::universal::fixpnt_internal_exception& err) {
 	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

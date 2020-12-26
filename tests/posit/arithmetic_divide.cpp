@@ -31,7 +31,7 @@
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pb, pref, pdiv;
+	sw::universal::posit<nbits, es> pa, pb, pref, pdiv;
 	pa = a;
 	pb = b;
 	ref = a / b;
@@ -48,15 +48,15 @@ template<size_t nbits, size_t es>
 void GenerateWorstCaseDivision() {
 	std::stringstream posit_descriptor;
 	posit_descriptor << "posit<" << nbits << ", " << es << ">";
-	sw::unum::posit<nbits, es> p_plus_eps(1), p_minus_eps(1), p_result;
+	sw::universal::posit<nbits, es> p_plus_eps(1), p_minus_eps(1), p_result;
 	p_plus_eps++;
 	p_minus_eps--;
 	p_result = p_plus_eps / p_minus_eps;
 	if (es < 2) {
-		std::cout << posit_descriptor.str() << " minpos = " << std::fixed << std::setprecision(nbits) << sw::unum::minpos_value<nbits, es>() << std::dec << std::endl;
+		std::cout << posit_descriptor.str() << " minpos = " << std::fixed << std::setprecision(nbits) << sw::universal::minpos_value<nbits, es>() << std::dec << std::endl;
 	}
 	else {
-		std::cout << posit_descriptor.str() << " minpos = " << std::setprecision(nbits) << sw::unum::minpos_value<nbits, es>() << std::endl;
+		std::cout << posit_descriptor.str() << " minpos = " << std::setprecision(nbits) << sw::universal::minpos_value<nbits, es>() << std::endl;
 
 	}
 	std::cout << p_plus_eps.get() << " / " << p_minus_eps.get() << " = " << p_result.get() << std::endl;
@@ -151,7 +151,7 @@ D / C = posit represented by integer 16386 (value is 1.00048828125)
 Notice that multiplying the B/A and A/B results gives 1 exactly, but multiplying the C/D and D/C results gives 1.000121891498565673828125.
 */
 void ToughDivisions2() {
-	sw::unum::posit<16, 1> a, b, c, d;
+	sw::universal::posit<16, 1> a, b, c, d;
 	a.set_raw_bits(20479);
 	b.set_raw_bits(2);
 	c.set_raw_bits(16383);
@@ -169,7 +169,7 @@ void ToughDivisions2() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

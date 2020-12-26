@@ -127,21 +127,21 @@ namespace std {
 #endif
 
 	template <size_t nbits, size_t es> 
-	class numeric_limits< sw::unum::posit<nbits, es> > {
+	class numeric_limits< sw::universal::posit<nbits, es> > {
 	public:
-		using Posit = sw::unum::posit<nbits, es>;
+		using Posit = sw::universal::posit<nbits, es>;
 		static constexpr bool is_specialized = true;
 		static constexpr Posit min() { // return minimum value
 			Posit pminpos;
-			return sw::unum::minpos<nbits, es>(pminpos);
+			return sw::universal::minpos<nbits, es>(pminpos);
 		} 
 		static constexpr Posit max() { // return maximum value
 			Posit pmaxpos;
-			return sw::unum::maxpos<nbits, es>(pmaxpos);
+			return sw::universal::maxpos<nbits, es>(pmaxpos);
 		} 
 		static constexpr Posit lowest() { // return most negative value
 			Posit pmaxneg;
-			return sw::unum::maxneg<nbits, es>(pmaxneg);
+			return sw::universal::maxneg<nbits, es>(pmaxneg);
 		} 
 		static constexpr Posit epsilon() { // return smallest effective increment from 1.0
 			Posit one{ 1 }, incr{ 1 };
@@ -152,7 +152,7 @@ namespace std {
 		}
 		static constexpr Posit denorm_min() {  // return minimum denormalized value
 			Posit pminpos;
-			return sw::unum::minpos<nbits, es>(pminpos);
+			return sw::universal::minpos<nbits, es>(pminpos);
 		}
 		static constexpr Posit infinity() { // return positive infinity
 			return Posit(NAR);

@@ -1,6 +1,6 @@
 // posit_256_5.cpp: Functionality tests for fast specialized 256-bit posit<256,5>
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -24,7 +24,7 @@ Standard posits with nbits = 256 have 5 exponent bits.
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	const size_t RND_TEST_CASES = 10000;
 

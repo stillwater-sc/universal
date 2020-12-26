@@ -1,14 +1,14 @@
 #pragma once
 // exceptions.hpp: exceptions for problems in bitblock calculations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <stdexcept>
 #include <string>
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// BITBLOCK ARITHMETIC EXCEPTIONS
@@ -60,4 +60,4 @@ struct cut_off_leading_bit
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-}} // namespace sw::unum
+}} // namespace sw::universal

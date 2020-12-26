@@ -1,11 +1,11 @@
 #pragma once
 // trigonometric.hpp: trigonometric functions for posits
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {	namespace unum {
+namespace sw {	namespace universal {
 
 // the current shims are NON-COMPLIANT with the posit standard, which says that every function must be
 // correctly rounded for every input value. Anything less sacrifices bitwise reproducibility of results.
@@ -16,28 +16,28 @@ namespace sw {	namespace unum {
 // sine of an angle of x radians
 template<size_t nbits, size_t es>
 posit<nbits,es> sin(posit<nbits,es> x) {
-	//std::cerr << "sw::unum::sin(posit<" << nbits << "," << es << ")";
+	//std::cerr << "sw::universal::sin(posit<" << nbits << "," << es << ")";
 	return posit<nbits,es>(std::sin(double(x)));
 }
 
 // cosine of an angle of x radians
 template<size_t nbits, size_t es>
 posit<nbits,es> cos(posit<nbits,es> x) {
-	//std::cerr << "sw::unum::cos(posit<" << nbits << "," << es << ")";
+	//std::cerr << "sw::universal::cos(posit<" << nbits << "," << es << ")";
 	return posit<nbits,es>(std::cos(double(x)));
 }
 
 // tangent of an angle of x radians
 template<size_t nbits, size_t es>
 posit<nbits,es> tan(posit<nbits,es> x) {
-	//std::cerr << "sw::unum::tan(posit<" << nbits << "," << es << ")";
+	//std::cerr << "sw::universal::tan(posit<" << nbits << "," << es << ")";
 	return posit<nbits,es>(std::tan(double(x)));
 }
 
 // cotangent of an angle of x radians
 template<size_t nbits, size_t es>
 posit<nbits,es> atan(posit<nbits,es> x) {
-	//std::cerr << "sw::unum::atan(posit<" << nbits << "," << es << ")";
+	//std::cerr << "sw::universal::atan(posit<" << nbits << "," << es << ")";
 	return posit<nbits,es>(std::atan(double(x)));
 }
 		
@@ -62,7 +62,7 @@ posit<nbits,es> asin(posit<nbits,es> x) {
 // cotangent an angle of x radians
 template<size_t nbits, size_t es>
 posit<nbits,es> cot(posit<nbits,es> x) {
-	return posit<nbits,es>(std::tan(sw::unum::m_pi_2-double(x)));
+	return posit<nbits,es>(std::tan(sw::universal::m_pi_2-double(x)));
 }
 
 // secant of an angle of x radians
@@ -77,4 +77,4 @@ posit<nbits,es> csc(posit<nbits,es> x) {
 	return posit<nbits,es>(1.0/std::sin(double(x)));
 }
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal

@@ -9,12 +9,12 @@
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	using namespace sw::sequences;
 
 	int nrOfFailedTestCases = 0;
 
-	using int256 = sw::unum::integer<256>;
+	using int256 = sw::universal::integer<256>;
 	auto v = Fibonacci<int256>(100);
 	cout << "Fibonacci sequence\n";
 	for (auto e: v) { cout << e << '\n'; }

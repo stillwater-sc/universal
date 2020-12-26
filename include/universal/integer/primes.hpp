@@ -1,11 +1,11 @@
 #pragma once
 // primes.hpp: algorithms to create, categorize, classify, and identify prime factors
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
-#include "./integer_exceptions.hpp"
+#include <universal/integer/exceptions.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -37,8 +37,7 @@
 
 #endif
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 	/* from numerics
 		// FUNCTION TEMPLATE gcd
@@ -209,5 +208,4 @@ integer<nbits, BlockType> fermatFactorization(const integer<nbits, BlockType>& n
 	return a - sqrt(bsquare);
 }
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal

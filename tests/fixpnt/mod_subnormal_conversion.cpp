@@ -1,6 +1,6 @@
 ﻿// mod_subnormal_conversion.cpp: functional tests for subnormal IEEE-754 floating-point to fixed-point 
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -13,7 +13,7 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/fixpnt/fixed_point.hpp>
 // fixed-point type manipulators such as pretty printers
-#include <universal/fixpnt/fixpnt_manipulators.hpp>
+#include <universal/fixpnt/manipulators.hpp>
 #include <universal/fixpnt/math_functions.hpp>
 #include "../utils/fixpnt_test_suite.hpp"
 
@@ -35,7 +35,7 @@ The minimum positive(subnormal) value is 2−149 ≈ 1.4 × 10−45.
 template<size_t nbits, size_t rbits>
 void TestDenormalizedNumberConversions() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// minimum positive normal value of a single precision float == 2^-126
 	float minpos_normal = 1.1754943508222875079687365372222e-38;
@@ -71,7 +71,7 @@ The minimum positive(subnormal) value is 2−1074 ≈ 1.4 × 10−45.
 template<size_t nbits, size_t rbits>
 void FloatGenerateFixedPointValues(std::ostream& ostr = std::cout) {
 	constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
-	sw::unum::fixpnt<nbits, rbits> a;
+	sw::universal::fixpnt<nbits, rbits> a;
 	ostr << "  fixpnt<" << nbits << "," << rbits << ">\n";
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 		a.set_raw_bits(i);
@@ -83,7 +83,7 @@ void FloatGenerateFixedPointValues(std::ostream& ostr = std::cout) {
 template<size_t nbits, size_t rbits>
 void DoubleGenerateFixedPointValues(std::ostream& ostr = std::cout) {
 	constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
-	sw::unum::fixpnt<nbits, rbits> a;
+	sw::universal::fixpnt<nbits, rbits> a;
 	ostr << "  fixpnt<" << nbits << "," << rbits << ">\n";
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
 		a.set_raw_bits(i);
@@ -99,7 +99,7 @@ void DoubleGenerateFixedPointValues(std::ostream& ostr = std::cout) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -152,11 +152,11 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_arithmetic_exception& err) {
+catch (const sw::universal::fixpnt_arithmetic_exception& err) {
 	std::cerr << "Uncaught fixpnt arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::fixpnt_internal_exception& err) {
+catch (const sw::universal::fixpnt_internal_exception& err) {
 	std::cerr << "Uncaught fixpnt internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

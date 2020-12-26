@@ -1,13 +1,13 @@
 #pragma once
 // cg_dot_dot.hpp: Conjugate Gradient method with dot matrix-vector operator and dot compensation operators
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/posit/posit_fwd.hpp>
 #include <universal/blas/matrix.hpp>
 
-namespace sw { namespace unum { namespace blas {
+namespace sw { namespace universal { namespace blas {
 
 // cg: Solution of x in Ax=b using preconditioned Conjugate Gradient algorithm 
 // with different precision for matrix-vector multiply and residual calculation
@@ -68,4 +68,4 @@ size_t cg_dot_dot(const Matrix& M, const Matrix& A, const Vector& b, Vector& x, 
 	return itr;
 }
 
-}}} // namespace sw::unum::blas
+}}} // namespace sw::universal::blas

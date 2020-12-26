@@ -1,6 +1,6 @@
 // rungekutta.cpp: program to solve odes with classic Runge-Kutta method
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 // Author: Jacob Todd  jtodd1@une.edu
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
@@ -62,7 +62,7 @@ void rk4(Scalar (*f)(const Scalar&, const Scalar&), size_t n, const Scalar& h, c
 int main() 
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	size_t N = 10; // number of intervals
 	double h = M_PI_4; // step size between intervals

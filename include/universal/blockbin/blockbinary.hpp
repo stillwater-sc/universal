@@ -1,7 +1,7 @@
 #pragma once
 // blockbinary.hpp: parameterized blocked binary number system representing a 2's complement binary number
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -39,7 +39,7 @@
 
 #endif
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 
 // forward references
@@ -824,4 +824,4 @@ std::ostream& operator<<(std::ostream& ostr, const blockbinary<nbits, bt>& numbe
 }
 
 
-}} // namespace sw::unum
+}} // namespace sw::universal

@@ -1,6 +1,6 @@
 ﻿// physics_constants.cpp: experiments with posit representations of important constants in physics 
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/posit/posit>
@@ -121,7 +121,7 @@ void Represent(std::ostream& ostr, Scalar s, std::streamsize precision = 17, boo
 }
 
 void Sample(std::ostream& ostr, long double constant) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	Represent(ostr << minmax_range< long double  >() << " : ", constant, 23);
 	Represent(ostr << minmax_range< double       >() << " : ", double(constant), 15);
 	Represent(ostr << minmax_range< float        >() << " : ", float(constant), 6);
@@ -135,7 +135,7 @@ void Sample(std::ostream& ostr, long double constant) {
 
 void CompareIEEEValues(std::ostream& ostr, long double constant) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	constexpr int f_prec = std::numeric_limits<float>::max_digits10;
 	constexpr int d_prec = std::numeric_limits<double>::max_digits10;
@@ -175,7 +175,7 @@ void CompareIEEEValues(std::ostream& ostr, long double constant) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//constexpr size_t nbits = 32;
 	//constexpr size_t es = 2;
@@ -250,39 +250,39 @@ The Planck constant h is exactly 6.62607015*10^-34 joule - second.
 				   long double min  2.22507e-308     max  1.79769e+308      : 6.6260701499999998297249e-34
 						double min  2.22507e-308     max  1.79769e+308      : 6.62607015e-34
 						 float min   1.17549e-38     max   3.40282e+38      : 6.62607e-34
-   class sw::unum::posit<32,2> min   7.52316e-37     max   1.32923e+36      : 7.7037197775489434e-34
-   class sw::unum::posit<32,3> min    5.6598e-73     max   1.76685e+72      : 6.6260265567150702e-34
-   class sw::unum::posit<40,3> min   3.06818e-92     max   3.25926e+91      : 6.6260706377532261e-34
-   class sw::unum::posit<48,3> min  1.66327e-111     max  6.01227e+110      : 6.6260701498771527e-34
-   class sw::unum::posit<64,3> min   4.8879e-150     max  2.04587e+149      : 6.6260701499999853e-34
+   class sw::universal::posit<32,2> min   7.52316e-37     max   1.32923e+36      : 7.7037197775489434e-34
+   class sw::universal::posit<32,3> min    5.6598e-73     max   1.76685e+72      : 6.6260265567150702e-34
+   class sw::universal::posit<40,3> min   3.06818e-92     max   3.25926e+91      : 6.6260706377532261e-34
+   class sw::universal::posit<48,3> min  1.66327e-111     max  6.01227e+110      : 6.6260701498771527e-34
+   class sw::universal::posit<64,3> min   4.8879e-150     max  2.04587e+149      : 6.6260701499999853e-34
 
 The elementary charge e is exactly 1.602176634*10^-19 coulomb.
 				   long double min  2.22507e-308     max  1.79769e+308      : 1.6021766339999998937562e-19
 						double min  2.22507e-308     max  1.79769e+308      : 1.602176634e-19
 						 float min   1.17549e-38     max   3.40282e+38      : 1.60218e-19
-   class sw::unum::posit<32,2> min   7.52316e-37     max   1.32923e+36      : 1.6022157592907125e-19
-   class sw::unum::posit<32,3> min    5.6598e-73     max   1.76685e+72      : 1.6021764682116162e-19
-   class sw::unum::posit<40,3> min   3.06818e-92     max   3.25926e+91      : 1.6021766378482653e-19
-   class sw::unum::posit<48,3> min  1.66327e-111     max  6.01227e+110      : 1.6021766339986241e-19
-   class sw::unum::posit<64,3> min   4.8879e-150     max  2.04587e+149      : 1.6021766340000001e-19
+   class sw::universal::posit<32,2> min   7.52316e-37     max   1.32923e+36      : 1.6022157592907125e-19
+   class sw::universal::posit<32,3> min    5.6598e-73     max   1.76685e+72      : 1.6021764682116162e-19
+   class sw::universal::posit<40,3> min   3.06818e-92     max   3.25926e+91      : 1.6021766378482653e-19
+   class sw::universal::posit<48,3> min  1.66327e-111     max  6.01227e+110      : 1.6021766339986241e-19
+   class sw::universal::posit<64,3> min   4.8879e-150     max  2.04587e+149      : 1.6021766340000001e-19
 
 The Boltzmann constant k is exactly 1.380649*10^-23 joule per kelvin.
 				   long double min  2.22507e-308     max  1.79769e+308      : 1.3806490000000000921522e-23
 						double min  2.22507e-308     max  1.79769e+308      : 1.380649e-23
 						 float min   1.17549e-38     max   3.40282e+38      : 1.38065e-23
-   class sw::unum::posit<32,2> min   7.52316e-37     max   1.32923e+36      : 1.3803576471978649e-23
-   class sw::unum::posit<32,3> min    5.6598e-73     max   1.76685e+72      : 1.380650472365883e-23
-   class sw::unum::posit<40,3> min   3.06818e-92     max   3.25926e+91      : 1.3806490129732083e-23
-   class sw::unum::posit<48,3> min  1.66327e-111     max  6.01227e+110      : 1.3806490000309591e-23
-   class sw::unum::posit<64,3> min   4.8879e-150     max  2.04587e+149      : 1.3806490000000013e-23
+   class sw::universal::posit<32,2> min   7.52316e-37     max   1.32923e+36      : 1.3803576471978649e-23
+   class sw::universal::posit<32,3> min    5.6598e-73     max   1.76685e+72      : 1.380650472365883e-23
+   class sw::universal::posit<40,3> min   3.06818e-92     max   3.25926e+91      : 1.3806490129732083e-23
+   class sw::universal::posit<48,3> min  1.66327e-111     max  6.01227e+110      : 1.3806490000309591e-23
+   class sw::universal::posit<64,3> min   4.8879e-150     max  2.04587e+149      : 1.3806490000000013e-23
 
 The Avogadro constant NA is exactly 6.02214076*10^+23 reciprocal mole.
 				   long double min  2.22507e-308     max  1.79769e+308      : 6.0221407599999998702387e+23
 						double min  2.22507e-308     max  1.79769e+308      : 6.02214076e+23
 						 float min   1.17549e-38     max   3.40282e+38      : 6.02214e+23
-   class sw::unum::posit<32,2> min   7.52316e-37     max   1.32923e+36      : 6.0210172656587976e+23
-   class sw::unum::posit<32,3> min    5.6598e-73     max   1.76685e+72      : 6.0221471287333124e+23
-   class sw::unum::posit<40,3> min   3.06818e-92     max   3.25926e+91      : 6.0221407336218415e+23
-   class sw::unum::posit<48,3> min  1.66327e-111     max  6.01227e+110      : 6.0221407600101206e+23
-   class sw::unum::posit<64,3> min   4.8879e-150     max  2.04587e+149      : 6.0221407600000005e+23
+   class sw::universal::posit<32,2> min   7.52316e-37     max   1.32923e+36      : 6.0210172656587976e+23
+   class sw::universal::posit<32,3> min    5.6598e-73     max   1.76685e+72      : 6.0221471287333124e+23
+   class sw::universal::posit<40,3> min   3.06818e-92     max   3.25926e+91      : 6.0221407336218415e+23
+   class sw::universal::posit<48,3> min  1.66327e-111     max  6.01227e+110      : 6.0221407600101206e+23
+   class sw::universal::posit<64,3> min   4.8879e-150     max  2.04587e+149      : 6.0221407600000005e+23
  */

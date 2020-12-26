@@ -1,12 +1,10 @@
 // arithmetic_add.cpp: functional tests for addition on arbitrary reals
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/native/bit_functions.hpp>
-#include <universal/areal/exceptions.hpp>
 #include <universal/areal/areal.hpp>
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
@@ -15,18 +13,20 @@
 // generate specific test case that you can trace with the trace conditions in areal.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
-void GenerateTestCase(Ty a, Ty b) {
-	Ty ref;
-	sw::unum::areal<nbits, es> pa, pb, pref, psum;
-	pa = a;
-	pb = b;
-	ref = a + b;
-	pref = ref;
-	psum = pa + pb;
+void GenerateTestCase(Ty _a, Ty _b) {
+	sw::universal::real<nbits, es> a, b, rref, rsum;
+	a = a;
+	b = b;
+	rsum = a + b;
+	// generate the reference
+	Ty ref = _a + _b;
+	rref = ref;
+
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << a << " + " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << pa.get() << " + " << pb.get() << " = " << psum.get() << " (reference: " << pref.get() << ")   " ;
-	std::cout << (pref == psum ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
+	std::cout << a << " + " << b << " = " << rsum << " (reference: " << rref << ")   ";
+	//	std::cout << a.get() << " + " << b.get() << " = " << rsum.get() << " (reference: " << rref.get() << ")   ";
+	std::cout << (rref == rsum ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
 }
 
@@ -36,7 +36,7 @@ void GenerateTestCase(Ty a, Ty b) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
@@ -75,7 +75,7 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::unum::areal_divide_by_zero& err) {
+catch (const sw::universal::real_divide_by_zero& err) {
 	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

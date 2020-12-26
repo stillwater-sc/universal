@@ -1,14 +1,14 @@
 #pragma once
 // fdp.hpp :  include file containing templated C++ interfaces to fused dot product
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <vector>
 #include <universal/traits/posit_traits.hpp>
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 /// //////////////////////////////////////////////////////////////////
 /// fused dot product operators
@@ -21,7 +21,7 @@ template<typename Qy, typename Vector>
 void fdp_qc(Qy& sum_of_products, size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy) {
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
-		sum_of_products += sw::unum::quire_mul(x[ix], y[iy]);
+		sum_of_products += sw::universal::quire_mul(x[ix], y[iy]);
 	}
 }
 
@@ -35,8 +35,8 @@ fdp_stride(size_t n, const Vector& x, size_t incx, const Vector& y, size_t incy)
 	quire<nbits, es, capacity> q = 0;
 	size_t ix, iy;
 	for (ix = 0, iy = 0; ix < n && iy < n; ix = ix + incx, iy = iy + incy) {
-		q += sw::unum::quire_mul(x[ix], y[iy]);
-		if (sw::unum::_trace_quire_add) std::cout << q << '\n';
+		q += sw::universal::quire_mul(x[ix], y[iy]);
+		if (sw::universal::_trace_quire_add) std::cout << q << '\n';
 	}
 	typename Vector::value_type sum;
 	convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
@@ -55,7 +55,7 @@ fdp(const Vector& x, const Vector& y) {
 	quire<nbits, es, capacity> q(0);
 	size_t ix, iy, n = size(x);
 	for (ix = 0, iy = 0; ix < n && iy < n; ++ix, ++iy) {
-		q += sw::unum::quire_mul(x[ix], y[iy]);
+		q += sw::universal::quire_mul(x[ix], y[iy]);
 	}
 	typename Vector::value_type sum;
 	convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
@@ -78,7 +78,7 @@ fdp(const Vector& x, const Vector& y) {
 	quire<nbits, es, capacity> q(0);
 	size_t ix, iy, n = size(x);
 	for (ix = 0, iy = 0; ix < n && iy < n; ++ix, ++iy) {
-		q += sw::unum::quire_mul(x[ix], y[iy]);
+		q += sw::universal::quire_mul(x[ix], y[iy]);
 	}
 	typename Vector::value_type sum;
 	convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
@@ -86,5 +86,5 @@ fdp(const Vector& x, const Vector& y) {
 }
 #endif
 
-}} // namespace sw::unum
+}} // namespace sw::universal
 

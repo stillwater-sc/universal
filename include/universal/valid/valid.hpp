@@ -1,14 +1,13 @@
 #pragma once
 // valid.hpp: definition of arbitrary valid number configurations
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <limits>
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 template<size_t nbits, size_t es>
 class valid {
@@ -73,11 +72,11 @@ public:
 	inline bool isopenupper() const {
 		return uubit;
 	}
-	inline bool getlb(sw::unum::posit<nbits, es>& _lb) const {
+	inline bool getlb(sw::universal::posit<nbits, es>& _lb) const {
 		_lb = lb;
 		return lubit;
 	}
-	inline bool getub(sw::unum::posit<nbits, es>& _ub) const {
+	inline bool getub(sw::universal::posit<nbits, es>& _ub) const {
 		_ub = ub;
 		return uubit;
 	}
@@ -97,11 +96,11 @@ public:
 		lubit = true;
 		uubit = true;
 	}
-	inline void setlb(sw::unum::posit<nbits, es>& _lb, bool ubit) {
+	inline void setlb(sw::universal::posit<nbits, es>& _lb, bool ubit) {
 		lb = _lb;
 		lubit = ubit;
 	}
-	inline void setub(sw::unum::posit<nbits, es>& _ub, bool ubit) {
+	inline void setub(sw::universal::posit<nbits, es>& _ub, bool ubit) {
 		ub = _ub;
 		uubit = ubit;
 	}
@@ -120,7 +119,7 @@ public:
 
 private:
 	// member variables
-	sw::unum::posit<nbits, es> lb, ub;  // lower_bound and upper_bound of the tile
+	sw::universal::posit<nbits, es> lb, ub;  // lower_bound and upper_bound of the tile
 	bool lubit, uubit; // lower ubit, upper ubit
 
 
@@ -249,6 +248,4 @@ inline std::istream& operator>> (std::istream& istr, const valid<nbits, es>& v) 
 	return istr;
 }
 
-	}  // namespace unum
-
-} // namespace sw
+}}  // namespace sw::universal

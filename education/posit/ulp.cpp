@@ -1,6 +1,6 @@
 // ulp.cpp: examples of unit in the last place
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/posit/posit>
@@ -10,7 +10,7 @@
 template<size_t nbits, size_t es>
 void GenerateMaxRangeUlp(int64_t startValue = 0, int precision = 20) {
 	using namespace std;
-	using Posit = sw::unum::posit<nbits, es>;
+	using Posit = sw::universal::posit<nbits, es>;
 	Posit p = 0;
 	Posit pn = startValue;  // just to speed up the loop as we are doing sw emulation
 	while (p != pn) {
@@ -31,7 +31,7 @@ void GenerateMaxRangeUlp(int64_t startValue = 0, int precision = 20) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "Unit in the last place experiments" << endl;
 

@@ -14,7 +14,7 @@ template<size_t nbits, size_t es>
 void GeneratePositReciprocalLookupTable(std::ostream& os) {
 	const size_t NR_OF_ENTRIES = size_t(1) << nbits;
 
-	sw::unum::posit<nbits, es> p, r;
+	sw::universal::posit<nbits, es> p, r;
 	double v,rv;
 	for (size_t i = 0; i < NR_OF_ENTRIES; i++) {
 		p.set_raw_bits(i);
@@ -29,7 +29,7 @@ void GeneratePositReciprocalLookupTable(std::ostream& os) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 

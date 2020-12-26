@@ -1,6 +1,6 @@
 // nodes.cpp: Does a posit configuration exist to produce chebyshev nodes
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -34,7 +34,7 @@ constexpr double pi = 3.14159265358979323846;  // best practice for C++
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 

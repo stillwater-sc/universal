@@ -1,6 +1,6 @@
 // hamming_1987.cpp: fpbench test of sqrt(x+1) - sqrt(x) 
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -25,9 +25,9 @@ Scalar testFunction(const Scalar& _x) {
 template<typename Scalar>
 void SampleFunctionEvaluation(const std::vector<double>& samples) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
-	using Oracle = sw::unum::posit<256,5>;
+	using Oracle = sw::universal::posit<256,5>;
 
 	size_t nrSamples = size(samples);
 	vector<Scalar> results(nrSamples);
@@ -63,7 +63,7 @@ void SampleFunctionEvaluation(const std::vector<double>& samples) {
 int main(int argc, char* argv[]) 
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// preserve the existing ostream precision
 	auto precision = cout.precision();
@@ -104,15 +104,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

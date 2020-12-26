@@ -1,6 +1,6 @@
 //  values.cpp : tests on values in scientific notation (sign, scale, fraction)
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -67,7 +67,7 @@ void TestConversionResult(bool bValid, const std::string& descriptor) {
 template<size_t fbits>
 bool ValidateValue() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	const int NR_TEST_CASES = 12;
 	float input[NR_TEST_CASES] = {
@@ -117,7 +117,7 @@ LDBL_TRUE_MIN
 template<size_t fbits>
 bool ValidateSubnormalFloats() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	constexpr float flt_min = std::numeric_limits<float>::min();
 	constexpr float flt_max = std::numeric_limits<float>::max();
@@ -146,14 +146,14 @@ bool ValidateSubnormalFloats() {
 }
 
 template<size_t fbits>
-void PrintValue(float f, const sw::unum::value<fbits>& v) {
-	std::cout << "float: " << std::setw(fbits) << f << sw::unum::components(v) << std::endl;
+void PrintValue(float f, const sw::universal::value<fbits>& v) {
+	std::cout << "float: " << std::setw(fbits) << f << sw::universal::components(v) << std::endl;
 }
 
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 

@@ -1,6 +1,6 @@
 // arithmetic_add.cpp: functional tests for addition on arbitrary logarithmic number system
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -14,7 +14,7 @@
 template<size_t nbits, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
-	sw::unum::lns<nbits> pa, pb, pref, psum;
+	sw::universal::lns<nbits> pa, pb, pref, psum;
 	pa = a;
 	pb = b;
 	ref = a + b;
@@ -40,7 +40,7 @@ int ValidateAddition(const std::string& tag, bool bReportIndividualTestCases) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 

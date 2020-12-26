@@ -1,6 +1,6 @@
-// arbitrary integer arithmetic type standard header
+// <universal/integer/integer>: arbitrary integer arithmetic type standard header
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifndef _INTEGER_STANDARD_HEADER_
@@ -31,8 +31,8 @@
 
 #include <universal/integer/primes.hpp>
 #include <universal/integer/sieves.hpp>
-#include <universal/integer/integer_manipulators.hpp>
-#include <universal/integer/integer_functions.hpp>
+#include <universal/integer/manipulators.hpp>
+#include <universal/integer/attributes.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions

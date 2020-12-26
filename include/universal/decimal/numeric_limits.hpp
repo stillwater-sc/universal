@@ -1,7 +1,7 @@
 #pragma once
 // numeric_limits.hpp: definition of numeric_limits for decimal types
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -126,7 +126,7 @@ namespace std {
 	};
 #endif
 
-		using namespace sw::unum;
+		using namespace sw::universal;
 /*
 		Trait class that identifies whether T is a literal type.
 
@@ -141,7 +141,7 @@ namespace std {
 		TODO: how to make the decimal class a literal type so that we can use it as a return type for min/max/lowest etc.
 */
 	template <> 
-	class numeric_limits< sw::unum::decimal >
+	class numeric_limits< sw::universal::decimal >
 	{
 	public:
 		static constexpr bool is_specialized = true;

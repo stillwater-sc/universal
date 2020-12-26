@@ -1,12 +1,12 @@
 #pragma once
 // quire.hpp: definition of a parameterized quire configurations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/native/boolean_logic_operators.hpp>
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 // Forward definitions
 template<size_t nbits, size_t es, size_t capacity> class quire;
@@ -139,7 +139,7 @@ public:
 		if (scale < -int(half_range)) 	throw operand_too_small_for_quire{};
 
 		int i, f; // running bit pointers, i for the quire, f for the incoming fraction
-		sw::unum::bitblock<fbits+1> fraction = rhs.get_fixed_point();
+		sw::universal::bitblock<fbits+1> fraction = rhs.get_fixed_point();
 		// divide bits between upper and lower accumulator
 		if (scale - int(fbits) >= 0) {
 			// all upper accumulator
@@ -985,4 +985,4 @@ value<2 * (nbits - 2 - es)> quire_mul(const posit<nbits, es>& lhs, const posit<n
 	return product;
 }
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal

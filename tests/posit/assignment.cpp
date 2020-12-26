@@ -13,7 +13,7 @@
 #define FLOAT_TABLE_WIDTH 20
 
 template<size_t nbits, size_t es, typename Ty>
-void ReportAssignmentError(const std::string& test_case, const std::string& op, const sw::unum::posit<nbits, es>& pref, const sw::unum::posit<nbits, es>& presult, const Ty& value) {
+void ReportAssignmentError(const std::string& test_case, const std::string& op, const sw::universal::posit<nbits, es>& pref, const sw::universal::posit<nbits, es>& presult, const Ty& value) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FLOAT_TABLE_WIDTH) << value
@@ -24,18 +24,18 @@ void ReportAssignmentError(const std::string& test_case, const std::string& op, 
 }
 
 template<size_t nbits, size_t es, typename Ty>
-void ReportAssignmentSuccess(const std::string& test_case, const std::string& op, const sw::unum::posit<nbits, es>& pref, const sw::unum::posit<nbits, es>& presult, const Ty& value) {
+void ReportAssignmentSuccess(const std::string& test_case, const std::string& op, const sw::universal::posit<nbits, es>& pref, const sw::universal::posit<nbits, es>& presult, const Ty& value) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(FLOAT_TABLE_WIDTH) << value
 		<< " == "
 		<< std::setw(FLOAT_TABLE_WIDTH) << presult << " reference value is "
 		<< std::setw(FLOAT_TABLE_WIDTH) << pref
-		<< "               posit fields " << sw::unum::pretty_print(presult) << std::endl;
+		<< "               posit fields " << sw::universal::pretty_print(presult) << std::endl;
 }
 
 template<size_t nbits, size_t es, typename Ty>
-Ty GenerateValue(const sw::unum::posit<nbits,es>& p) {
+Ty GenerateValue(const sw::universal::posit<nbits,es>& p) {
 	Ty value = 0;
 	if (std::numeric_limits<Ty>::is_exact) {
 		if (std::numeric_limits<Ty>::is_signed) {
@@ -58,7 +58,7 @@ int ValidateAssignment(bool bReportIndividualTestCases) {
 
 	// use only valid posit values
 	// posit_raw -> to value in Ty -> assign to posit -> compare posits
-	sw::unum::posit<nbits, es> p, assigned;
+	sw::universal::posit<nbits, es> p, assigned;
 	for (size_t i = 0; i < NR_POSITS; i++) {
 		p.set_raw_bits(i); // std::cout << p.get() << endl;
 		if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
@@ -79,7 +79,7 @@ int ValidateAssignment(bool bReportIndividualTestCases) {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;

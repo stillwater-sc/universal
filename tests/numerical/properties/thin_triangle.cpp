@@ -1,6 +1,6 @@
 ﻿// goldberg_thin_triangle.cpp: example program showing the Goldberg thin triangle example
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
@@ -115,7 +115,7 @@ Background references on the thin triangle problem: as previously mentioned this
 template<typename Scalar>
 Scalar HeronFormulaNaive(const Scalar& a, const Scalar& b, const Scalar& c, bool verbose = false) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	Scalar s = (a + b + c) / 2;
 	Scalar A = sqrt(s * (s - a)*(s - b)*(s - c));
@@ -162,7 +162,7 @@ The real cost is the ordering requirement in the cases where it’s not known no
 template<typename Scalar>
 Scalar HeronFormulaKahanRewrite(const Scalar& a, const Scalar& b, const Scalar& c, bool verbose = false) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// requires: a >= b >= c && a <= b+c && a <= 0x1.0p255
 	Scalar s = (a + b + c) / 2;
@@ -222,15 +222,15 @@ Scalar HeronFormulaKarlsruheAccurateArithmetic(const Scalar& a, const Scalar& b,
 
 template<typename Scalar>
 void printTriangleConfiguration(std::ostream& ostr, const Scalar& a, const Scalar& b, const Scalar& c) {
-	ostr << "    a  = " << sw::unum::to_binary(a) << " " << sw::unum::to_base2_scientific(a) << " : " << std::showpos << a << std::noshowpos << std::endl;
-	ostr << "    b  = " << sw::unum::to_binary(b) << " " << sw::unum::to_base2_scientific(b) << " : " << std::showpos << b << std::noshowpos << std::endl;
-	ostr << "    c  = " << sw::unum::to_binary(c) << " " << sw::unum::to_base2_scientific(c) << " : " << std::showpos << c << std::noshowpos << std::endl;
+	ostr << "    a  = " << sw::universal::to_binary(a) << " " << sw::universal::to_base2_scientific(a) << " : " << std::showpos << a << std::noshowpos << std::endl;
+	ostr << "    b  = " << sw::universal::to_binary(b) << " " << sw::universal::to_base2_scientific(b) << " : " << std::showpos << b << std::noshowpos << std::endl;
+	ostr << "    c  = " << sw::universal::to_binary(c) << " " << sw::universal::to_base2_scientific(c) << " : " << std::showpos << c << std::noshowpos << std::endl;
 }
 
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	/*
 	{
@@ -330,15 +330,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

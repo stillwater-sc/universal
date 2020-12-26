@@ -1,6 +1,6 @@
 //  performance.cpp : performance benchmarking for abitrary precision integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -39,13 +39,13 @@ void TestShiftOperatorPerformance() {
 
 	constexpr uint64_t NR_OPS = 1000000;
 
-	PerformanceRunner("integer<16>   shifts        ", ShiftPerformanceWorkload< sw::unum::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   shifts        ", ShiftPerformanceWorkload< sw::unum::integer<32> >, NR_OPS);
-	PerformanceRunner("integer<64>   shifts        ", ShiftPerformanceWorkload< sw::unum::integer<64> >, NR_OPS);
-	PerformanceRunner("integer<128>  shifts        ", ShiftPerformanceWorkload< sw::unum::integer<128> >, NR_OPS / 2);
-	PerformanceRunner("integer<256>  shifts        ", ShiftPerformanceWorkload< sw::unum::integer<256> >, NR_OPS / 4);
-	PerformanceRunner("integer<512>  shifts        ", ShiftPerformanceWorkload< sw::unum::integer<512> >, NR_OPS / 8);
-	PerformanceRunner("integer<1024> shifts        ", ShiftPerformanceWorkload< sw::unum::integer<1024> >, NR_OPS / 16);
+	PerformanceRunner("integer<16>   shifts        ", ShiftPerformanceWorkload< sw::universal::integer<16> >, NR_OPS);
+	PerformanceRunner("integer<32>   shifts        ", ShiftPerformanceWorkload< sw::universal::integer<32> >, NR_OPS);
+	PerformanceRunner("integer<64>   shifts        ", ShiftPerformanceWorkload< sw::universal::integer<64> >, NR_OPS);
+	PerformanceRunner("integer<128>  shifts        ", ShiftPerformanceWorkload< sw::universal::integer<128> >, NR_OPS / 2);
+	PerformanceRunner("integer<256>  shifts        ", ShiftPerformanceWorkload< sw::universal::integer<256> >, NR_OPS / 4);
+	PerformanceRunner("integer<512>  shifts        ", ShiftPerformanceWorkload< sw::universal::integer<512> >, NR_OPS / 8);
+	PerformanceRunner("integer<1024> shifts        ", ShiftPerformanceWorkload< sw::universal::integer<1024> >, NR_OPS / 16);
 }
 
 template<typename IntegerType>
@@ -97,39 +97,39 @@ void TestArithmeticOperatorPerformance() {
 
 	uint64_t NR_OPS = 1000000;
 
-	PerformanceRunner("integer<16>   add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<32> >, NR_OPS);
-	PerformanceRunner("integer<64>   add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<64> >, NR_OPS);
-	PerformanceRunner("integer<128>  add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<128> >, NR_OPS / 2);
-	PerformanceRunner("integer<256>  add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<256> >, NR_OPS / 4);
-	PerformanceRunner("integer<512>  add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<512> >, NR_OPS / 8);
-	PerformanceRunner("integer<1024> add/subtract  ", AdditionSubtractionWorkload< sw::unum::integer<1024> >, NR_OPS / 16);
+	PerformanceRunner("integer<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<16> >, NR_OPS);
+	PerformanceRunner("integer<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<32> >, NR_OPS);
+	PerformanceRunner("integer<64>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<64> >, NR_OPS);
+	PerformanceRunner("integer<128>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<128> >, NR_OPS / 2);
+	PerformanceRunner("integer<256>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<256> >, NR_OPS / 4);
+	PerformanceRunner("integer<512>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<512> >, NR_OPS / 8);
+	PerformanceRunner("integer<1024> add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<1024> >, NR_OPS / 16);
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("integer<16>   division      ", DivisionWorkload< sw::unum::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   division      ", DivisionWorkload< sw::unum::integer<32> >, NR_OPS);
-	PerformanceRunner("integer<64>   division      ", DivisionWorkload< sw::unum::integer<64> >, NR_OPS / 2);
-	PerformanceRunner("integer<128>  division      ", DivisionWorkload< sw::unum::integer<128> >, NR_OPS / 4);
-	PerformanceRunner("integer<512>  division      ", DivisionWorkload< sw::unum::integer<512> >, NR_OPS / 8);
-	PerformanceRunner("integer<1024> division      ", DivisionWorkload< sw::unum::integer<1024> >, NR_OPS / 16);
+	PerformanceRunner("integer<16>   division      ", DivisionWorkload< sw::universal::integer<16> >, NR_OPS);
+	PerformanceRunner("integer<32>   division      ", DivisionWorkload< sw::universal::integer<32> >, NR_OPS);
+	PerformanceRunner("integer<64>   division      ", DivisionWorkload< sw::universal::integer<64> >, NR_OPS / 2);
+	PerformanceRunner("integer<128>  division      ", DivisionWorkload< sw::universal::integer<128> >, NR_OPS / 4);
+	PerformanceRunner("integer<512>  division      ", DivisionWorkload< sw::universal::integer<512> >, NR_OPS / 8);
+	PerformanceRunner("integer<1024> division      ", DivisionWorkload< sw::universal::integer<1024> >, NR_OPS / 16);
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("integer<16>   remainder     ", RemainderWorkload< sw::unum::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   remainder     ", RemainderWorkload< sw::unum::integer<32> >, NR_OPS);
-	PerformanceRunner("integer<64>   remainder     ", RemainderWorkload< sw::unum::integer<64> >, NR_OPS / 2);
-	PerformanceRunner("integer<128>  remainder     ", RemainderWorkload< sw::unum::integer<128> >, NR_OPS / 4);
-	PerformanceRunner("integer<512>  remainder     ", RemainderWorkload< sw::unum::integer<512> >, NR_OPS / 8);
-	PerformanceRunner("integer<1024> remainder     ", RemainderWorkload< sw::unum::integer<1024> >, NR_OPS / 16);
+	PerformanceRunner("integer<16>   remainder     ", RemainderWorkload< sw::universal::integer<16> >, NR_OPS);
+	PerformanceRunner("integer<32>   remainder     ", RemainderWorkload< sw::universal::integer<32> >, NR_OPS);
+	PerformanceRunner("integer<64>   remainder     ", RemainderWorkload< sw::universal::integer<64> >, NR_OPS / 2);
+	PerformanceRunner("integer<128>  remainder     ", RemainderWorkload< sw::universal::integer<128> >, NR_OPS / 4);
+	PerformanceRunner("integer<512>  remainder     ", RemainderWorkload< sw::universal::integer<512> >, NR_OPS / 8);
+	PerformanceRunner("integer<1024> remainder     ", RemainderWorkload< sw::universal::integer<1024> >, NR_OPS / 16);
 
 	// multiplication is the slowest operator
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("integer<16>   multiplication", MultiplicationWorkload< sw::unum::integer<16> >, NR_OPS);
-	PerformanceRunner("integer<32>   multiplication", MultiplicationWorkload< sw::unum::integer<32> >, NR_OPS / 2);
-	PerformanceRunner("integer<64>   multiplication", MultiplicationWorkload< sw::unum::integer<64> >, NR_OPS / 4);
-	PerformanceRunner("integer<128>  multiplication", MultiplicationWorkload< sw::unum::integer<128> >, NR_OPS / 8);
-	PerformanceRunner("integer<512>  multiplication", MultiplicationWorkload< sw::unum::integer<512> >, NR_OPS / 16);
-	PerformanceRunner("integer<1024> multiplication", MultiplicationWorkload< sw::unum::integer<1024> >, NR_OPS / 32);
+	PerformanceRunner("integer<16>   multiplication", MultiplicationWorkload< sw::universal::integer<16> >, NR_OPS);
+	PerformanceRunner("integer<32>   multiplication", MultiplicationWorkload< sw::universal::integer<32> >, NR_OPS / 2);
+	PerformanceRunner("integer<64>   multiplication", MultiplicationWorkload< sw::universal::integer<64> >, NR_OPS / 4);
+	PerformanceRunner("integer<128>  multiplication", MultiplicationWorkload< sw::universal::integer<128> >, NR_OPS / 8);
+	PerformanceRunner("integer<512>  multiplication", MultiplicationWorkload< sw::universal::integer<512> >, NR_OPS / 16);
+	PerformanceRunner("integer<1024> multiplication", MultiplicationWorkload< sw::universal::integer<1024> >, NR_OPS / 32);
 }
 
 // conditional compilation
@@ -139,7 +139,7 @@ void TestArithmeticOperatorPerformance() {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "Integer operator performance benchmarking";
 

@@ -1,6 +1,6 @@
 // nodes.cpp: Does a posit configuration exist to produce chebyshev nodes
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
@@ -15,14 +15,14 @@
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum::blas;
+	using namespace sw::universal::blas;
 
 	int nrOfFailedTestCases = 0;
 
 	cout << "Chebyshev polynomial test skeleton" << endl;
 
-//	using Scalar = sw::unum::fixpnt<32,16, Modulo, uint32_t>;
-	using Scalar = sw::unum::posit<32, 2>;
+//	using Scalar = sw::universal::fixpnt<32,16, Modulo, uint32_t>;
+	using Scalar = sw::universal::posit<32, 2>;
 	Scalar PI{ 3.14159265358979323846 };  // best practice for C++
 	constexpr int N = 12;
 	auto k = arange<Scalar>(0, N);

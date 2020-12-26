@@ -1,10 +1,11 @@
 #pragma once
-// integer_manipulators.hpp: definition of manipulation functions for integer types
+// attributes.hpp: definition of attributes functions for integer types
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <exception>
+#include <vector>
+#include <universal/integer/exceptions.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -36,32 +37,21 @@
 
 #endif
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
-// return in triple form (sign, scale, fraction)
-template<size_t nbits, typename bt>
-inline std::string to_triple(const integer<nbits, bt>& number) {
-	std::stringstream ss;
+	// exponentiation by squaring is the standard method for modular exponentiation of large numbers in asymmetric cryptography
 
-	// print sign bit
-	ss << '(' << (number < 0 ? '-' : '+') << ',';
-
-	// scale
-	ss << scale(number) << ',';
-
-	// print fraction bits
-	long msb = findMsb(number);
-	if (msb < 0) {
-		ss << '-';
+// calculate the integer power a ^ b using exponentiation by squaring
+template<size_t nbits, typename BlockType>
+integer<nbits, BlockType> ipow(const integer<nbits, BlockType>& a, const integer<nbits, BlockType>& b) {
+	integer<nbits, BlockType> result(1), base(a), exp(b);
+	for (;;) {
+		if (exp.isodd()) result *= base;
+		exp >>= 1;
+		if (exp == 0) break;
+		base *= base;
 	}
-	else {
-		for (int i = msb-1; i >= 0; --i) {
-			ss << (number.at(i) ? '1' : '0');
-		}
-	}
-
-	ss << ')';
-	return ss.str();
+	return result;
 }
 
-}} // namespace sw::unum
+}} // namespace sw::universal

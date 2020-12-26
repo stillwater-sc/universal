@@ -1,7 +1,7 @@
 #pragma once
 //  bitblock.hpp : bitblock class
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
@@ -10,12 +10,10 @@
 // this should be removed when we have made the transition away from std::bitset to sw::unum::bitblock
 #include <cassert>
 #include <bitset>
-// boolean operators
 #include <universal/native/boolean_logic_operators.hpp>
-// bitblock exception definitions
 #include <universal/bitblock/exceptions.hpp>
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 // bitblock is a template class implementing efficient multi-precision binary arithmetic and logic
 template<size_t nbits>
@@ -717,4 +715,4 @@ bool anyAfter(const bitblock<nbits>& bits, int msb) {
 	return running;
 }
 
-}} // namespace sw::unum
+}} // namespace sw::universal

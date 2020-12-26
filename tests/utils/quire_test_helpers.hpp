@@ -1,9 +1,8 @@
 #pragma once
-
-//  posit_test_helpers.cpp : functions to aid in testing and test reporting on posit types.
+//  quire_test_helpers.cpp : functions to aid in testing and test reporting on quire types.
 // Needs to be included after posit type is declared.
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -13,7 +12,7 @@
 #include <limits>
 
 namespace sw {
-	namespace unum {
+	namespace universal {
 
 		int TestQuireAccumulationResult(int nrOfFailedTests, const std::string& descriptor)
 		{
@@ -115,7 +114,7 @@ namespace sw {
 					q = v;
 					std::cout << std::setw(10) << v << q << std::endl;
 					value<q.qbits> r = q.to_value();
-					double in  = double(v);
+					double in = double(v);
 					double out = (double)r;
 					if (std::abs(in - out) > 0.0000001) {
 						std::cerr << "quire value conversion failed: " << components(v) << " != " << components(r) << std::endl;
@@ -157,7 +156,7 @@ namespace sw {
 			//        = 01_1111_1110
 			// maxpos = 01_1111_1111
 			int nrOfPatterns = int(nbits) - 2;
-			std::vector<uint64_t> patterns(2*nrOfPatterns + 1);
+			std::vector<uint64_t> patterns(2 * nrOfPatterns + 1);
 			for (int i = 0; i < nrOfPatterns; i++) {
 				patterns[i] = ((uint64_t(1) << i) - 1);
 				//std::cout << patterns[i] << std::endl;
@@ -275,7 +274,5 @@ namespace sw {
 		}
 
 
-	} // namespace unum
-
-} // namespace sw
+}} // namespace sw::universal
 

@@ -1,6 +1,6 @@
 //  decimal_lpp.cpp : algorithm to find the largest palindrome product using decimal number system
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -17,15 +17,15 @@
  * Find the largest palindrome made from the product of two n-digit numbers.
  */
 
-sw::unum::decimal convert(std::string& palindrome) {
-	sw::unum::decimal p;
+sw::universal::decimal convert(std::string& palindrome) {
+	sw::universal::decimal p;
 	if (p.parse(palindrome)) {
 		return p;
 	}
-	return sw::unum::decimal(0);
+	return sw::universal::decimal(0);
 }
 
-bool isPalindrome(const sw::unum::decimal& suspectedPalindrome) {
+bool isPalindrome(const sw::universal::decimal& suspectedPalindrome) {
 	using namespace std;
 	string s1 = to_string(suspectedPalindrome);
 	string s2(s1);
@@ -33,9 +33,9 @@ bool isPalindrome(const sw::unum::decimal& suspectedPalindrome) {
 	return (s1 == s2);
 }
 
-bool LargestPalindromeProduct(const sw::unum::decimal& nrDigits) {
+bool LargestPalindromeProduct(const sw::universal::decimal& nrDigits) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	stringstream ss;
 	for (long i = 0; i < long(nrDigits); ++i) {
@@ -67,7 +67,7 @@ bool LargestPalindromeProduct(const sw::unum::decimal& nrDigits) {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	using Decimal = decimal;
 

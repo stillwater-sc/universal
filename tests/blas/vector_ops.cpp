@@ -1,6 +1,6 @@
-// vector_ops.cpp: example program to show sw::unum::blas::vector operators
+// vector_ops.cpp: example program to show sw::universal::blas::vector operators
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -18,16 +18,16 @@
 #include <universal/blas/blas.hpp>
 
 template<size_t nbits, size_t es>
-void PrintProducts(const sw::unum::blas::vector<sw::unum::posit<nbits,es>>& a, 
-		           const sw::unum::blas::vector<sw::unum::posit<nbits,es>>& b) 
+void PrintProducts(const sw::universal::blas::vector<sw::universal::posit<nbits,es>>& a, 
+		           const sw::universal::blas::vector<sw::universal::posit<nbits,es>>& b) 
 {
-	sw::unum::quire<nbits, es> q(0);
+	sw::universal::quire<nbits, es> q(0);
 	for (size_t i = 0; i < a.size(); ++i) {
-		q += sw::unum::quire_mul(a[i], b[i]);
+		q += sw::universal::quire_mul(a[i], b[i]);
 		std::cout << a[i] << " * " << b[i] << " = " << a[i] * b[i] << std::endl << "quire " << q << std::endl;
 	}
-	sw::unum::posit<nbits,es> sum;
-	sw::unum::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
+	sw::universal::posit<nbits,es> sum;
+	sw::universal::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 	std::cout << "fdp result " << sum << std::endl;
 }
 
@@ -35,14 +35,14 @@ void PrintProducts(const sw::unum::blas::vector<sw::unum::posit<nbits,es>>& a,
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
 
 	// set up the properties of the arithmetic system
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
-	using Scalar = sw::unum::posit<nbits, es>;
-	using Vector = sw::unum::blas::vector<Scalar>;
+	using Scalar = sw::universal::posit<nbits, es>;
+	using Vector = sw::universal::blas::vector<Scalar>;
 
 	constexpr size_t vectorSize = SIZE_32K + 2;
 	Vector a(vectorSize), b(vectorSize);

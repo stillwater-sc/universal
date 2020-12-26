@@ -1,8 +1,7 @@
 #pragma once
-//  posit_test_helpers.hpp : posit verification functions
-// Needs to be included after posit type is declared.
+// posit_test_helpers.hpp : posit test value verification functions
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -11,8 +10,7 @@
 #include <random>
 #include <limits>
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 	static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
@@ -206,7 +204,7 @@ namespace unum {
 
 	// logic operator consistency check
 	template<size_t nbits, size_t es>
-	void testLogicOperators(const sw::unum::posit<nbits, es>& a, const sw::unum::posit<nbits, es>& b) {
+	void testLogicOperators(const posit<nbits, es>& a, const posit<nbits, es>& b) {
 		using namespace std;
 		cout << a << " vs " << b << endl;
 		if (a == b) cout << "a == b\n"; else cout << "a != b\n";
@@ -624,7 +622,7 @@ namespace unum {
 		for (size_t i = 1; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> pa, psqrt, pref;
 			pa.set_raw_bits(i);
-			psqrt = sw::unum::sqrt(pa);
+			psqrt = sw::universal::sqrt(pa);
 			// generate reference
 			double da = double(pa);
 			pref = std::sqrt(da);
@@ -1302,6 +1300,5 @@ namespace unum {
 		return nrOfFailedTestCases;
 	}
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal
 

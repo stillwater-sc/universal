@@ -1,12 +1,11 @@
 #pragma once
-// valid_functions.hpp: simple math functions on valid types
+// attributes.hpp: functions to query attributes of valid types
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 	// functions to provide details about
 	// the properties of a valid configuration
@@ -184,5 +183,4 @@ namespace unum {
 	}
 
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal

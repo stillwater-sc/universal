@@ -1,7 +1,7 @@
 #pragma once
 // fixpnt_exceptions.hpp: definition of fixed-point exceptions
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <exception>
@@ -36,7 +36,7 @@
 
 #endif
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 // base class for fixed-point arithmetic exceptions
 struct fixpnt_arithmetic_exception
@@ -74,4 +74,4 @@ struct fixpnt_byte_index_out_of_bounds : public fixpnt_internal_exception {
 		: fixpnt_internal_exception(error) {}
 };
 
-}} // namespace sw::unum
+}} // namespace sw::universal

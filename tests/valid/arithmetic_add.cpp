@@ -1,6 +1,6 @@
 // arithmetic_add.cpp: functional tests for valid addition
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -29,7 +29,7 @@
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty reference;
-	sw::unum::valid<nbits, es> pa, pb, psum;
+	sw::universal::valid<nbits, es> pa, pb, psum;
 	pa = a;
 	pb = b;
 	reference = a + b;
@@ -43,7 +43,7 @@ void GenerateTestCase(Ty a, Ty b) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

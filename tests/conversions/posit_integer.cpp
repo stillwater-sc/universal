@@ -1,6 +1,6 @@
 //  posit_integer.cpp : test suite for conversions between integers and posits
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -27,9 +27,9 @@
 // shift all the msb-1 bits into a fraction, making the msb the hidden bit
 // round the bits we have with respect to the scale of the number
 template<size_t nbits, size_t es, size_t ibits>
-void GeneratePositConversionTestCase(sw::unum::posit<nbits, es>& p, const sw::unum::integer<ibits>& w) {
+void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const sw::universal::integer<ibits>& w) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	value<ibits> v;
 
@@ -55,7 +55,7 @@ void GeneratePositConversionTestCase(sw::unum::posit<nbits, es>& p, const sw::un
 template<size_t ibits, size_t pbits, size_t pes>
 int VerifyInteger2PositConversion(const std::string& tag, bool bReportIndividualTestCases) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	int nrOfFailedTests = 0;
 	posit<pbits, pes> p;
 	integer<ibits> i;
@@ -77,7 +77,7 @@ int VerifyInteger2PositConversion(const std::string& tag, bool bReportIndividual
 template<size_t ibits, size_t pbits, size_t pes>
 int VerifyPosit2IntegerConversion(const std::string& tag, bool bReportIndividualTestCases) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	int nrOfFailedTests = 0;
 	posit<pbits, pes> p;
 	integer<ibits> i;
@@ -107,20 +107,20 @@ int VerifyPosit2IntegerConversion(const std::string& tag, bool bReportIndividual
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "Conversion between integer and posit failed";
 
 #if MANUAL_TESTING
 
-	using int128_t = sw::unum::integer<128>;
-	using int256_t = sw::unum::integer<256>;
-	using posit8_t = sw::unum::posit<8,0>;
-	using posit16_t = sw::unum::posit<16,1>;
-	using posit32_t = sw::unum::posit<32,2>;
-	using posit64_t = sw::unum::posit<64,3>;
-	using posit128_t = sw::unum::posit<128,4>;
-	using posit256_t = sw::unum::posit<256,5>;
+	using int128_t = sw::universal::integer<128>;
+	using int256_t = sw::universal::integer<256>;
+	using posit8_t = sw::universal::posit<8,0>;
+	using posit16_t = sw::universal::posit<16,1>;
+	using posit32_t = sw::universal::posit<32,2>;
+	using posit64_t = sw::universal::posit<64,3>;
+	using posit128_t = sw::universal::posit<128,4>;
+	using posit256_t = sw::universal::posit<256,5>;
 
 
 	int128_t int128;

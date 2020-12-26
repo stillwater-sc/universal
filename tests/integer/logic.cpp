@@ -1,6 +1,6 @@
 //  logic.cpp : logic operators test suite for abitrary precision integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -21,7 +21,7 @@
 */
 
 namespace sw {
-namespace unum {
+namespace universal {
 
 #define INTEGER_TABLE_WIDTH 20
 	template<size_t nbits>
@@ -248,7 +248,7 @@ std::string convert_to_string(const std::vector<char>& v) {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "Integer Logic Operator tests failed";
 

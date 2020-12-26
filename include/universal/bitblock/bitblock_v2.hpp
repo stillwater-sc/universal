@@ -12,8 +12,7 @@
 #include "ubb.h"
 
 
-namespace sw {
-	namespace unum {
+namespace sw { namespace universal {
 
 		/**
 		 @brief templated class implementing efficient multi-precision binary arithmetic and logic
@@ -643,6 +642,5 @@ namespace sw {
 			shBits <<= (nbits - 1 - msb);
 			return shBits.count() > 0;
 		}
-	} // namespace sw
 
-} // namespace unum
+}} // namespace sw::universal

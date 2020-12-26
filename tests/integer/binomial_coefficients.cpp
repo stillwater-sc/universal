@@ -2,7 +2,7 @@
 //
 // Binomial coefficients are useful to generate the inverse of a Hilbert matrix
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -69,8 +69,8 @@ try {
 	using namespace sw::function;
 
 #if MANUAL_TESTING
-	using int128_t = sw::unum::integer<128>;
-	using posit = sw::unum::posit<32, 2>;
+	using int128_t = sw::universal::integer<128>;
+	using posit = sw::universal::posit<32, 2>;
 
 	PascalsTriangle(long(20));
 	PascalsTriangle(int128_t(20));
@@ -79,8 +79,8 @@ try {
 	Binomials(posit(21));
 
 #else // MANUAL_TESTING
-	using int128_t = sw::unum::integer<128>;
-	using posit = sw::unum::posit<32, 2>;
+	using int128_t = sw::universal::integer<128>;
+	using posit = sw::universal::posit<32, 2>;
 
 	PascalsTriangle(int128_t(15));
 	PascalsTriangle(posit(15));

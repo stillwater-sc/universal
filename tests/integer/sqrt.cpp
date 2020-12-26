@@ -1,6 +1,6 @@
 //  sqrt.cpp : square root tests for abitrary precision integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -41,7 +41,7 @@ inline double babylonian(double v) {
 template<size_t nbits, typename BlockType>
 int VerifyIntegerFloorSqrt(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (1 << (nbits-1));
-	using Integer = sw::unum::integer<nbits, BlockType>;
+	using Integer = sw::universal::integer<nbits, BlockType>;
 
 	int nrOfTestFailures = 0;
 	Integer a, result;
@@ -63,7 +63,7 @@ int VerifyIntegerFloorSqrt(const std::string& tag, bool bReportIndividualTestCas
 template<size_t nbits, typename BlockType>
 int VerifyIntegerCeilSqrt(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (1 << (nbits - 1));
-	using Integer = sw::unum::integer<nbits, BlockType>;
+	using Integer = sw::universal::integer<nbits, BlockType>;
 
 	int nrOfTestFailures = 0;
 	Integer a, result;
@@ -88,7 +88,7 @@ int VerifyIntegerCeilSqrt(const std::string& tag, bool bReportIndividualTestCase
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = true;

@@ -1,10 +1,7 @@
 #pragma once
-#ifdef _MSC_VER
-#pragma warning(disable : 4127) // warning C4127: conditional expression is constant
-#endif
 // ieee-754.hpp: manipulation functions for ieee-754 native type
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <sstream>
@@ -13,9 +10,12 @@
 #include <limits>
 #include <tuple>
 
+#ifdef _MSC_VER
+#pragma warning(disable : 4127) // warning C4127: conditional expression is constant
+#endif
 #include <universal/utility/color_print.hpp>
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 ////////////////////////////////////////////////////////////////////////
 // numerical helpers
@@ -942,5 +942,5 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 
 #endif
 
-}} // namespace sw::unum
+}} // namespace sw::universal
 

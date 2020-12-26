@@ -1,6 +1,6 @@
-// add.cpp: functional tests for addition on multi-precison linear floating point
+// add.cpp: functional tests for addition on adaptive precision linear floating point
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -10,59 +10,60 @@
 #include <limits>
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/mpfloat/mpfloat.hpp>
+#include <universal/adaptivefloat/adaptivefloat.hpp>
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
-//#include "mpfloat_test_helpers.hpp"
 
 // generate specific test case that you can trace with the trace conditions in mpreal.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<typename Ty>
-void GenerateTestCase(Ty a, Ty b) {
+void GenerateTestCase(Ty _a, Ty _b) {
 	Ty ref;
-	sw::unum::mpfloat mpa, mpb, mpref, mpsum;
-	mpa = a;
-	mpb = b;
-	ref = a + b;
-	mpref = ref;
-	mpsum = mpa + mpb;
+	sw::universal::adaptivefloat a, b, aref, asum;
+	a = _a;
+	b = _b;
+	asum = a + b;
+	ref = _a + _b;
+	aref = ref;
+
+	auto precision = std::cout.precision();
 	constexpr size_t ndigits = std::numeric_limits<Ty>::digits10;
 	std::cout << std::setprecision(ndigits);
-	std::cout << std::setw(ndigits) << a << " + " << std::setw(ndigits) << b << " = " << std::setw(ndigits) << ref << std::endl;
-	std::cout << mpa << " + " << mpb << " = " << mpsum << " (reference: " << mpref << ")   " ;
-	std::cout << (mpref == mpsum ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(5);
+	std::cout << std::setw(ndigits) << _a << " + " << std::setw(ndigits) << _b << " = " << std::setw(ndigits) << ref << std::endl;
+	std::cout << a << " + " << b << " = " << asum << " (reference: " << aref << ")   " ;
+	std::cout << (aref == asum ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << std::setprecision(precision);
 }
 
 // progressions
 void Progressions(uint32_t digit) {
 	using namespace std;
 	using BlockType = uint32_t;
-	sw::unum::mpfloat mpa;
+	sw::universal::adaptivefloat f;
 	vector<BlockType> coef;
 
 	constexpr size_t digitsInWord = 9;
 	coef.clear();
 	coef.push_back(digit);
 	for (size_t i = 0; i < digitsInWord; ++i) {
-		mpa.test(false, -1, coef);
-		cout << "(+, exp = -1, coef = " << coef[0] << ") = " << mpa << endl;
+		f.test(false, -1, coef);
+		cout << "(+, exp = -1, coef = " << coef[0] << ") = " << f << endl;
 		coef[0] *= 10;
 		coef[0] += digit;
 	}
 	coef.clear();
 	coef.push_back(digit);
 	for (size_t i = 0; i < digitsInWord; ++i) {
-		mpa.test(false, 0, coef);
-		cout << "(+, exp = 0, coef = " << coef[0] << ") = " << mpa << endl;
+		f.test(false, 0, coef);
+		cout << "(+, exp = 0, coef = " << coef[0] << ") = " << f << endl;
 		coef[0] *= 10;
 		coef[0] += digit;
 	}
 	coef.clear();
 	coef.push_back(digit);
 	for (size_t i = 0; i < digitsInWord; ++i) {
-		mpa.test(false, 1, coef);
-		cout << "(+, exp = 1, coef = " << coef[0] << ") = " << mpa << endl;
+		f.test(false, 1, coef);
+		cout << "(+, exp = 1, coef = " << coef[0] << ") = " << f << endl;
 		coef[0] *= 10;
 		coef[0] += digit;
 	}
@@ -74,11 +75,11 @@ void Progressions(uint32_t digit) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "multi-precision float addition failed: ";
+	std::string tag = "adaptive precision linear float addition failed: ";
 
 #if MANUAL_TESTING
 //	bool bReportIndividualTestCases = false;
@@ -86,9 +87,9 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase(INFINITY, INFINITY);
 
-	mpfloat mpa;
-	mpa = 0;
-	cout << mpa << endl;
+	adaptivefloat f;
+	f = 0;
+	cout << f << endl;
 
 	vector<uint32_t> coef;
 
@@ -97,30 +98,30 @@ try {
 
 	coef.clear();
 	coef.push_back(0);
-	mpa.test(false, 0, coef);
+	f.test(false, 0, coef);
 	for (int i = 0; i < 13; ++i) {
 		coef[0] += 1;
-		mpa.test(false, 0, coef);
-		cout << "(+, exp = 0, coef = " << coef[0] << ") = " << mpa << endl;
+		f.test(false, 0, coef);
+		cout << "(+, exp = 0, coef = " << coef[0] << ") = " << f << endl;
 	}
 	coef[0] = 999999999;
-	mpa.test(false, 0, coef);
-	cout << "(+, exp = 0, coef = " << coef[0] << ") = " << mpa << endl;
+	f.test(false, 0, coef);
+	cout << "(+, exp = 0, coef = " << coef[0] << ") = " << f << endl;
 	coef.push_back(0);
 	for (int i = 0; i < 13; ++i) {
 		coef[0] = 0;
 		coef[1] += 1;
-		mpa.test(false, 0, coef);
-		cout << "(+, exp = 0, coef = " << coef[0] << ", " << coef[1] << ") = " << mpa << endl;
+		f.test(false, 0, coef);
+		cout << "(+, exp = 0, coef = " << coef[0] << ", " << coef[1] << ") = " << f << endl;
 		coef[0] = 999999999;
-		mpa.test(false, 0, coef);
-		cout << "(+, exp = 0, coef = " << coef[0] << ", " << coef[1] << ") = " << mpa << endl;
+		f.test(false, 0, coef);
+		cout << "(+, exp = 0, coef = " << coef[0] << ", " << coef[1] << ") = " << f << endl;
 
 	}
 
 #else
 
-	cout << "multi-precision float addition validation" << endl;
+	cout << "adaptive precision linear float addition validation" << endl;
 
 
 #if STRESS_TESTING

@@ -1,7 +1,7 @@
 #pragma once
-//  areal_test_helpers.hpp : arbitrary real verification functions
+//  real_test_helpers.hpp : arbitrary real verification functions
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -10,12 +10,12 @@
 #include <random>
 #include <limits>
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 		static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 		template<size_t nbits, size_t es>
-		void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const areal<nbits, es>& presult) {
+		void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const real<nbits, es>& presult) {
 			static_assert(nbits > 2, "component_to_string requires nbits > 2");
 			//constexpr size_t fbits = nbits - 3 - es;
 
@@ -31,7 +31,7 @@ namespace sw { namespace unum {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportConversionSuccess(const std::string& test_case, const std::string& op, double input, double reference, const areal<nbits, es>& presult) {
+		void ReportConversionSuccess(const std::string& test_case, const std::string& op, double input, double reference, const real<nbits, es>& presult) {
 			static_assert(nbits > 2, "component_to_string requires nbits > 2");
 			//constexpr size_t fbits = nbits - 3 - es;
 
@@ -47,7 +47,7 @@ namespace sw { namespace unum {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportUnaryArithmeticError(const std::string& test_case, const std::string& op, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportUnaryArithmeticError(const std::string& test_case, const std::string& op, const real<nbits, es>& rhs, const real<nbits, es>& pref, const real<nbits, es>& presult) {
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
@@ -58,7 +58,7 @@ namespace sw { namespace unum {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportUnaryArithmeticSuccess(const std::string& test_case, const std::string& op, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportUnaryArithmeticSuccess(const std::string& test_case, const std::string& op, const real<nbits, es>& rhs, const real<nbits, es>& pref, const real<nbits, es>& presult) {
 			std::cerr << test_case
 				<< " " << op << " "
 				<< std::setw(FLOAT_TABLE_WIDTH) << rhs
@@ -69,7 +69,7 @@ namespace sw { namespace unum {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const real<nbits, es>& lhs, const real<nbits, es>& rhs, const real<nbits, es>& pref, const real<nbits, es>& presult) {
 			std::cerr << test_case << " " 
 				<< std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
@@ -84,7 +84,7 @@ namespace sw { namespace unum {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticErrorInBinary(const std::string& test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportBinaryArithmeticErrorInBinary(const std::string& test_case, const std::string& op, const real<nbits, es>& lhs, const real<nbits, es>& rhs, const real<nbits, es>& pref, const real<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setw(nbits) << lhs.get()
 				<< " " << op << " "
@@ -96,7 +96,7 @@ namespace sw { namespace unum {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const real<nbits, es>& lhs, const real<nbits, es>& rhs, const real<nbits, es>& pref, const real<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setprecision(20)
 				<< std::setw(FLOAT_TABLE_WIDTH) << lhs
@@ -111,7 +111,7 @@ namespace sw { namespace unum {
 		}
 
 		template<size_t nbits, size_t es>
-		void ReportBinaryArithmeticSuccessInBinary(const std::string& test_case, const std::string& op, const areal<nbits, es>& lhs, const areal<nbits, es>& rhs, const areal<nbits, es>& pref, const areal<nbits, es>& presult) {
+		void ReportBinaryArithmeticSuccessInBinary(const std::string& test_case, const std::string& op, const real<nbits, es>& lhs, const real<nbits, es>& rhs, const real<nbits, es>& pref, const real<nbits, es>& presult) {
 			std::cerr << test_case << " "
 				<< std::setw(nbits) << lhs.get()
 				<< " " << op << " "
@@ -123,14 +123,14 @@ namespace sw { namespace unum {
 		}
 		
 		template<size_t nbits, size_t es>
-		void ReportDecodeError(const std::string& test_case, const areal<nbits, es>& actual, double golden_value) {
+		void ReportDecodeError(const std::string& test_case, const real<nbits, es>& actual, double golden_value) {
 			std::cerr << test_case << " actual " << actual << " required " << golden_value << std::endl;
 		}
 
 		/////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
 		template<size_t nbits, size_t es>
-		int Compare(double input, const areal<nbits, es>& presult, double reference, bool bReportIndividualTestCases) {
+		int Compare(double input, const real<nbits, es>& presult, double reference, bool bReportIndividualTestCases) {
 			int fail = 0;
 			double result = double(presult);
 			if (std::fabs(result - reference) > 0.000000001) {
@@ -143,26 +143,26 @@ namespace sw { namespace unum {
 			return fail;
 		}
 
-		// enumerate all conversion cases for a areal configuration
+		// enumerate all conversion cases for a real configuration
 		template<size_t nbits, size_t es>
 		int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) {
-			// we are going to generate a test set that consists of all areal configs and their midpoints
-			// we do this by enumerating a areal that is 1-bit larger than the test areal configuration
-			// These larger posits will be at the mid-point between the smaller areal sample values
+			// we are going to generate a test set that consists of all real configs and their midpoints
+			// we do this by enumerating a real that is 1-bit larger than the test real configuration
+			// These larger posits will be at the mid-point between the smaller real sample values
 			// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
 			// to test the rounding logic of the conversion.
 			const int NR_TEST_CASES = (1 << (nbits + 1));
 			const int HALF = (1 << nbits);
-			areal<nbits + 1, es> pref, pprev, pnext;
+			real<nbits + 1, es> pref, pprev, pnext;
 
 			// execute the test
 			int nrOfFailedTests = 0;
-			areal<nbits+1, es> areal_minpos(0);
-			areal_minpos++;
-			double minpos = double(areal_minpos);
+			real<nbits+1, es> real_minpos(0);
+			real_minpos++;
+			double minpos = double(real_minpos);
 			double eps;
 			double da, input;
-			areal<nbits, es> pa;
+			real<nbits, es> pa;
 			for (int i = 0; i < NR_TEST_CASES; i++) {
 				pref.set_raw_bits(i);
 				da = double(pref);
@@ -211,7 +211,7 @@ namespace sw { namespace unum {
 						nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
 					}
 					else {
-						// for odd values, we are between areal values, so we create the round-up and round-down cases
+						// for odd values, we are between real values, so we create the round-up and round-down cases
 						// round-down
 						input = da - eps;
 						pa = input;
@@ -266,7 +266,7 @@ namespace sw { namespace unum {
 			constexpr size_t NR_OF_TESTS = (size_t(1) << (nbits - 1)) + 1;
 			int nrOfFailedTestCases = 0;
 
-			areal<nbits, es> p(0);
+			real<nbits, es> p(0);
 			if (!p.iszero()) nrOfFailedTestCases++;
 			p.setnar();  p = 0;
 			if (!p.iszero()) nrOfFailedTestCases++;
@@ -276,7 +276,7 @@ namespace sw { namespace unum {
 			for (size_t i = 0; i < NR_OF_TESTS; ++i) {
 				if (!p.isnar()) {
 					long long ref = (long long)p;
-					areal<nbits,es> presult = ref;
+					real<nbits,es> presult = ref;
 					if (presult != ref) {
 						if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
 					}
@@ -289,12 +289,12 @@ namespace sw { namespace unum {
 			return nrOfFailedTestCases;
 		}
 
-		// Generate ordered set in ascending order from [-NaR, -maxpos, ..., +maxpos] for a particular areal config <nbits, es>
+		// Generate ordered set in ascending order from [-NaR, -maxpos, ..., +maxpos] for a particular real config <nbits, es>
 		template<size_t nbits, size_t es>
-		void GenerateOrderedPositSet(std::vector<areal<nbits, es>>& set) {
+		void GenerateOrderedPositSet(std::vector<real<nbits, es>>& set) {
 			const size_t NR_OF_REALS = (unsigned(1) << nbits);		// don't do this for state spaces larger than 4G
-			std::vector< areal<nbits, es> > s(NR_OF_REALS);
-			areal<nbits, es> p;
+			std::vector< real<nbits, es> > s(NR_OF_REALS);
+			real<nbits, es> p;
 			// generate raw set, which will sort later
 			for (size_t i = 0; i < NR_OF_REALS; i++) {
 				p.set_raw_bits(i);
@@ -309,14 +309,14 @@ namespace sw { namespace unum {
 		template<size_t nbits, size_t es>
 		int ValidateIncrement(const std::string& tag, bool bReportIndividualTestCases)
 		{
-			std::vector< areal<nbits, es> > set;
+			std::vector< real<nbits, es> > set;
 			GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
 			int nrOfFailedTestCases = 0;
 
-			areal<nbits, es> p, ref;
+			real<nbits, es> p, ref;
 			// starting from NaR iterating from -maxpos to maxpos through zero
-			for (typename std::vector < areal<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
+			for (typename std::vector < real<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
 				p = *it;
 				p++;
 				ref = *(it + 1);
@@ -333,14 +333,14 @@ namespace sw { namespace unum {
 		template<size_t nbits, size_t es>
 		int ValidateDecrement(const std::string& tag, bool bReportIndividualTestCases)
 		{
-			std::vector< areal<nbits, es> > set;
+			std::vector< real<nbits, es> > set;
 			GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
 			int nrOfFailedTestCases = 0;
 
-			areal<nbits, es> p, ref;
+			real<nbits, es> p, ref;
 			// starting from maxpos iterating to -maxpos, and finally NaR via zero
-			for (typename std::vector < areal<nbits, es> >::iterator it = set.end() - 1; it != set.begin(); --it) {
+			for (typename std::vector < real<nbits, es> >::iterator it = set.end() - 1; it != set.begin(); --it) {
 				p = *it;
 				p--;
 				ref = *(it - 1);
@@ -357,14 +357,14 @@ namespace sw { namespace unum {
 		template<size_t nbits, size_t es>
 		int ValidatePostfix(const std::string& tag, bool bReportIndividualTestCases)
 		{
-			std::vector< areal<nbits, es> > set;
+			std::vector< real<nbits, es> > set;
 			GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
 			int nrOfFailedTestCases = 0;
 
-			areal<nbits, es> p, ref;
+			real<nbits, es> p, ref;
 			// from -maxpos to maxpos through zero
-			for (typename std::vector < areal<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
+			for (typename std::vector < real<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
 				p = *it;
 				p++;
 				ref = *(it + 1);
@@ -381,14 +381,14 @@ namespace sw { namespace unum {
 		template<size_t nbits, size_t es>
 		int ValidatePrefix(const std::string& tag, bool bReportIndividualTestCases)
 		{
-			std::vector< areal<nbits, es> > set;
+			std::vector< real<nbits, es> > set;
 			GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
 			int nrOfFailedTestCases = 0;
 
-			areal<nbits, es> p, ref;
+			real<nbits, es> p, ref;
 			// from -maxpos to maxpos through zero
-			for (typename std::vector < areal<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
+			for (typename std::vector < real<nbits, es> >::iterator it = set.begin(); it != set.end() - 1; ++it) {
 				p = *it;
 				++p;
 				ref = *(it + 1);
@@ -401,12 +401,12 @@ namespace sw { namespace unum {
 			return nrOfFailedTestCases;
 		}
 
-		// enumerate all negation cases for a areal configuration: executes within 10 sec till about nbits = 14
+		// enumerate all negation cases for a real configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateNegation(const std::string& tag, bool bReportIndividualTestCases) {
 			constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
-			areal<nbits, es> pa(0), pneg(0), pref(0);
+			real<nbits, es> pa(0), pneg(0), pref(0);
 
 			double da;
 			for (size_t i = 1; i < NR_TEST_CASES; i++) {
@@ -427,12 +427,12 @@ namespace sw { namespace unum {
 		}
 
 #if SQRT_IMPLEMENTED
-		// enumerate all SQRT cases for a areal configuration: executes within 10 sec till about nbits = 14
+		// enumerate all SQRT cases for a real configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateSqrt(const std::string& tag, bool bReportIndividualTestCases) {
 			constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
-			areal<nbits, es> pa, psqrt, pref;
+			real<nbits, es> pa, psqrt, pref;
 
 			double da;
 			for (size_t i = 1; i < NR_TEST_CASES; i++) {
@@ -453,12 +453,12 @@ namespace sw { namespace unum {
 		}
 #endif
 
-		// enumerate all addition cases for a areal configuration: is within 10sec till about nbits = 14
+		// enumerate all addition cases for a real configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateAddition(const std::string& tag, bool bReportIndividualTestCases) {
 			const size_t NR_POSITS = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
-			areal<nbits, es> pa, pb, psum, pref;
+			real<nbits, es> pa, pb, psum, pref;
 
 			double da, db;
 			for (size_t i = 0; i < NR_POSITS; i++) {
@@ -498,12 +498,12 @@ namespace sw { namespace unum {
 			return nrOfFailedTests;
 		}
 
-		// enumerate all subtraction cases for a areal configuration: is within 10sec till about nbits = 14
+		// enumerate all subtraction cases for a real configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 			const size_t NR_POSITS = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
-			areal<nbits, es> pa, pb, pref, pdif;
+			real<nbits, es> pa, pb, pref, pdif;
 
 			double da, db;
 			for (size_t i = 0; i < NR_POSITS; i++) {
@@ -542,13 +542,13 @@ namespace sw { namespace unum {
 			return nrOfFailedTests;
 		}
 
-		// enumerate all multiplication cases for a areal configuration: is within 10sec till about nbits = 14
+		// enumerate all multiplication cases for a real configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
 			const size_t NR_POSITS = (size_t(1) << nbits);
 
-			areal<nbits, es> pa, pb, pmul, pref;
+			real<nbits, es> pa, pb, pmul, pref;
 			double da, db;
 			for (size_t i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
@@ -585,12 +585,12 @@ namespace sw { namespace unum {
 			return nrOfFailedTests;
 		}
 
-		// enerate all reciprocation cases for a areal configuration: executes within 10 sec till about nbits = 14
+		// enerate all reciprocation cases for a real configuration: executes within 10 sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateReciprocation(const std::string& tag, bool bReportIndividualTestCases) {
 			const size_t NR_TEST_CASES = (size_t(1) << nbits);
 			int nrOfFailedTests = 0;
-			areal<nbits, es> pa, preciprocal, preference;
+			real<nbits, es> pa, preciprocal, preference;
 
 			double da;
 			for (size_t i = 0; i < NR_TEST_CASES; i++) {
@@ -616,13 +616,13 @@ namespace sw { namespace unum {
 			return nrOfFailedTests;
 		}
 
-		// enumerate all division cases for a areal configuration: is within 10sec till about nbits = 14
+		// enumerate all division cases for a real configuration: is within 10sec till about nbits = 14
 		template<size_t nbits, size_t es>
 		int ValidateDivision(const std::string& tag, bool bReportIndividualTestCases) {
 			int nrOfFailedTests = 0;
 			const size_t NR_POSITS = (size_t(1) << nbits);
 
-			areal<nbits, es> pa, pb, pdiv, pref;
+			real<nbits, es> pa, pb, pdiv, pref;
 			double da, db;
 			for (size_t i = 0; i < NR_POSITS; i++) {
 				pa.set_raw_bits(i);
@@ -696,7 +696,7 @@ namespace sw { namespace unum {
 		int ValidatePositLogicEqual() {
 			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 			int nrOfFailedTestCases = 0;
-			sw::unum::areal<nbits, es> a, b;
+			sw::universal::real<nbits, es> a, b;
 			bool ref, presult;
 
 			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -705,7 +705,7 @@ namespace sw { namespace unum {
 					b.set_raw_bits(j);
 					// set the golden reference
 					if (a.isnar() && b.isnar()) {
-						// special case of areal equality
+						// special case of real equality
 						ref = true;
 					}
 					else {
@@ -740,7 +740,7 @@ namespace sw { namespace unum {
 		int ValidatePositLogicNotEqual() {
 			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 			int nrOfFailedTestCases = 0;
-			sw::unum::areal<nbits, es> a, b;
+			sw::universal::real<nbits, es> a, b;
 			bool ref, presult;
 
 			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -750,7 +750,7 @@ namespace sw { namespace unum {
 
 					// set the golden reference
 					if (a.isnar() && b.isnar()) {
-						// special case of areal equality
+						// special case of real equality
 						ref = false;
 					}
 					else {
@@ -786,7 +786,7 @@ namespace sw { namespace unum {
 		int ValidatePositLogicLessThan() {
 			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 			int nrOfFailedTestCases = 0;
-			sw::unum::areal<nbits, es> a, b;
+			sw::universal::real<nbits, es> a, b;
 			bool ref, presult;
 
 			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -796,7 +796,7 @@ namespace sw { namespace unum {
 
 					// generate the golden reference
 					if (a.isnar() && !b.isnar()) {
-						// special case of areal NaR
+						// special case of real NaR
 						ref = true;
 					}
 					else {
@@ -815,12 +815,12 @@ namespace sw { namespace unum {
 		}
 
 		// Posit greater-than diverges from IEEE float in dealing with INFINITY/NAN
-		// Any number is greater-than areal NaR
+		// Any number is greater-than real NaR
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicGreaterThan() {
 			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 			int nrOfFailedTestCases = 0;
-			sw::unum::areal<nbits, es> a, b;
+			sw::universal::real<nbits, es> a, b;
 			bool ref, presult;
 
 			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -830,7 +830,7 @@ namespace sw { namespace unum {
 
 					// generate the golden reference
 					if (!a.isnar() && b.isnar()) {
-						// special case of areal NaR
+						// special case of real NaR
 						ref = true;
 					}
 					else {
@@ -854,7 +854,7 @@ namespace sw { namespace unum {
 		int ValidatePositLogicLessOrEqualThan() {
 			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 			int nrOfFailedTestCases = 0;
-			sw::unum::areal<nbits, es> a, b;
+			sw::universal::real<nbits, es> a, b;
 			bool ref, presult;
 
 			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -864,7 +864,7 @@ namespace sw { namespace unum {
 
 					// set the golden reference
 					if (a.isnar()) {
-						// special case of areal <= for NaR
+						// special case of real <= for NaR
 						ref = true;
 					}
 					else {
@@ -884,12 +884,12 @@ namespace sw { namespace unum {
 		}
 
 		// Posit greater-or-equal-than diverges from IEEE float in dealing with INFINITY/NAN
-		// Any number is greater-or-equal-than areal NaR
+		// Any number is greater-or-equal-than real NaR
 		template<size_t nbits, size_t es>
 		int ValidatePositLogicGreaterOrEqualThan() {
 			const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 			int nrOfFailedTestCases = 0;
-			sw::unum::areal<nbits, es> a, b;
+			sw::universal::real<nbits, es> a, b;
 			bool ref, presult;
 
 			for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -899,7 +899,7 @@ namespace sw { namespace unum {
 
 					// set the golden reference
 					if (b.isnar()) {
-						// special case of areal >= for NaR
+						// special case of real >= for NaR
 						ref = true;
 					}
 					else {
@@ -920,10 +920,10 @@ namespace sw { namespace unum {
 
 		//////////////////////////////////// RANDOMIZED TEST SUITE FOR BINARY OPERATORS ////////////////////////
 
-		// for testing areal configs that are > 14-15, we need a more efficient approach.
+		// for testing real configs that are > 14-15, we need a more efficient approach.
 		// One simple, brute force approach is to generate randoms.
 		// A more white box approach is to focus on the testcases 
-		// where something special happens in the areal arithmetic, such as rounding.
+		// where something special happens in the real arithmetic, such as rounding.
 
 		// operation opcodes
 		const int OPCODE_NOP = 0;
@@ -934,7 +934,7 @@ namespace sw { namespace unum {
 		const int OPCODE_RAN = 5;
 
 		template<size_t nbits, size_t es>
-		void execute(int opcode, double da, double db, const areal<nbits, es>& pa, const areal<nbits, es>& pb, areal<nbits, es>& preference, areal<nbits, es>& presult) {
+		void execute(int opcode, double da, double db, const real<nbits, es>& pa, const real<nbits, es>& pb, real<nbits, es>& preference, real<nbits, es>& presult) {
 			double reference = 0.0;
 			switch (opcode) {
 			default:
@@ -962,14 +962,14 @@ namespace sw { namespace unum {
 			preference = reference;
 		}
 
-		// generate a random set of operands to test the binary operators for a areal configuration
-		// Basic design is that we generate nrOfRandom areal values and store them in an operand array.
+		// generate a random set of operands to test the binary operators for a real configuration
+		// Basic design is that we generate nrOfRandom real values and store them in an operand array.
 		// We will then execute the binary operator nrOfRandom combinations.
 		template<size_t nbits, size_t es>
 		int ValidateBinaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
 			const size_t SIZE_STATE_SPACE = nrOfRandoms;
 			int nrOfFailedTests = 0;
-			areal<nbits, es> pa, pb, presult, preference;
+			real<nbits, es> pa, pb, presult, preference;
 
 			std::string operation_string;
 			switch (opcode) {
@@ -990,7 +990,7 @@ namespace sw { namespace unum {
 				operation_string = "/";
 				break;
 			}
-			// generate the full state space set of valid areal values
+			// generate the full state space set of valid real values
 			std::random_device rd;     //Get a random seed from the OS entropy device, or whatever
 			std::mt19937_64 eng(rd()); //Use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 									   //Define the distribution, by default it goes from 0 to MAX(unsigned long long)
@@ -998,14 +998,14 @@ namespace sw { namespace unum {
 #ifdef POSIT_USE_LONG_DOUBLE
 			std::vector<long double> operand_values(SIZE_STATE_SPACE);
 			for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
-				presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as areal encoding
+				presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as real encoding
 				operand_values[i] = (long double)(presult);
 			}
 			long double da, db;
 #else // USE DOUBLE
 			std::vector<double> operand_values(SIZE_STATE_SPACE);
 			for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
-				presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as areal encoding
+				presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as real encoding
 				operand_values[i] = double(presult);
 			}
 			double da, db;
@@ -1049,6 +1049,5 @@ namespace sw { namespace unum {
 		}
 
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal
 

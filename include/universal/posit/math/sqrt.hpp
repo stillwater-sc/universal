@@ -1,17 +1,17 @@
 #pragma once
 // sqrt.hpp: sqrt functions for posits
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include "universal/native/ieee-754.hpp"
-#include "sqrt_tables.hpp"
+#include <universal/native/ieee-754.hpp>
+#include <universal/posit/math/sqrt_tables.hpp>
 
 #ifndef POSIT_NATIVE_SQRT
 #define POSIT_NATIVE_SQRT 0
 #endif
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 	// straight Babylonian
 	inline double babylonian(double v) {
@@ -36,7 +36,7 @@ namespace sw { namespace unum {
 			diff = x_next - x_n;
 			if (_trace_sqrt) std::cout << " x_n+1: " << x_next << " x_n: " << x_n << " diff " << diff << std::endl;
 			x_n = x_next;
-		} while (double(sw::unum::abs(diff)) > eps);
+		} while (double(sw::universal::abs(diff)) > eps);
 		return x_n;
 	}
 
@@ -510,4 +510,4 @@ namespace sw { namespace unum {
 
 #endif // POSIT_FAST_POSIT_256_5
 
-}} // namespace sw::unum
+}} // namespace sw::universal

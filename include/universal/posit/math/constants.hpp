@@ -1,15 +1,14 @@
 ﻿#pragma once
 // math_constants.hpp: definition of math constants
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // default is double constants
 #undef PI_IN_LONG_DOUBLES
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 // best practice for C++11
 // inject mathematical constants in our namespace
@@ -43,5 +42,4 @@ constexpr double m_log10e   = 0.434294481903251827651; // log10(e)
 constexpr double m_ln2      = 0.693147180559945309417; // ln(2)
 constexpr double m_ln10     = 2.30258509299404568402;  // ln(10)
 
-}  // namespace unum
-}  // namespace sw
+}}  // namespace sw::universal

@@ -320,7 +320,8 @@ endif()
 # universal/posit
 # universal/valid
 # universal/areal
-# universal/mpfloat
+# universal/adaptiveint
+# universal/adaptivefloat
 include_directories("./include")
 
 ####
@@ -483,6 +484,7 @@ endif(BUILD_NATIVE_TYPES)
 # Arbitrary integers tests
 if(BUILD_INTEGERS)
 add_subdirectory("tests/integer")
+add_subdirectory("tests/adaptiveint")
 endif(BUILD_INTEGERS)
 
 if(BUILD_DECIMALS)
@@ -497,7 +499,7 @@ endif(BUILD_FIXPNTS)
 # Arbitrary reals tests
 if(BUILD_REALS)
 add_subdirectory("tests/areal")
-add_subdirectory("tests/mpfloat")
+add_subdirectory("tests/adaptivefloat")
 add_subdirectory("tests/value")
 endif(BUILD_REALS)
 

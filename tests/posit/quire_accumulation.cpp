@@ -1,6 +1,6 @@
 //  quire_accumulations.cpp : computational path experiments with quires
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -26,19 +26,19 @@ template<size_t nbits, size_t es, size_t capacity> void Issue45_2();
 #endif
 
 template<size_t nbits, size_t es>
-void PrintTestVector(std::ostream& ostr, const std::vector< sw::unum::posit<nbits,es> >& pv) {
-	std::for_each (begin(pv), end(pv), [&ostr](const sw::unum::posit<nbits,es>& p){
+void PrintTestVector(std::ostream& ostr, const std::vector< sw::universal::posit<nbits,es> >& pv) {
+	std::for_each (begin(pv), end(pv), [&ostr](const sw::universal::posit<nbits,es>& p){
 		ostr << p << std::endl;
 	});
 }
 
 template<size_t nbits, size_t es, size_t capacity>
-int GenerateQuireAccumulationTestCase(bool bReportIndividualTestCases, size_t nrOfElements, const sw::unum::posit<nbits,es>& seed) {
+int GenerateQuireAccumulationTestCase(bool bReportIndividualTestCases, size_t nrOfElements, const sw::universal::posit<nbits,es>& seed) {
 	int nrOfFailedTestCases = 0;
 	std::stringstream ss;
 	ss << "quire<" << nbits << "," << es << "," << capacity << ">";
-	std::vector< sw::unum::posit<nbits, es> > t = GenerateVectorForZeroValueFDP(nrOfElements, seed);
-	nrOfFailedTestCases += ReportTestResult(sw::unum::ValidateQuireAccumulation<nbits, es, capacity>(bReportIndividualTestCases, t), ss.str(), "accumulation");
+	std::vector< sw::universal::posit<nbits, es> > t = GenerateVectorForZeroValueFDP(nrOfElements, seed);
+	nrOfFailedTestCases += ReportTestResult(sw::universal::ValidateQuireAccumulation<nbits, es, capacity>(bReportIndividualTestCases, t), ss.str(), "accumulation");
 	return nrOfFailedTestCases;
 }
 
@@ -65,7 +65,7 @@ typename Vector::value_type dot(const Vector& a, const Vector& b) {
 template<size_t nbits, size_t es, size_t nrElements = 16>
 int ValidateExactDotProduct() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	int nrOfFailures = 0;
 	using Scalar = posit<nbits, es>;
 	using Vector = vector<Scalar>;
@@ -101,7 +101,7 @@ int ValidateExactDotProduct() {
 
 int ValidateQuireMagnitudeComparison() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	quire<16, 1, 2> q;
 	value<20> v;
@@ -121,19 +121,19 @@ int ValidateQuireMagnitudeComparison() {
 template<size_t nbits, size_t es, size_t capacity = 2>
 int ValidateSignMagnitudeTransitions() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 	std::cout << "Quire configuration: quire<" << nbits << ", " << es << ", " << capacity << ">" << std::endl;
 
 	// moving through the four quadrants of a sign/magnitue adder/subtractor
-	sw::unum::posit<nbits, es> minp, min2, min3, min4;
+	sw::universal::posit<nbits, es> minp, min2, min3, min4;
 	minpos(minp);                                   // ...0001
 	min2 = minp; min2++;                        // ...0010
 	min3 = minp; min3++; min3++;                // ...0011
 	min4 = minp; min4++; min4++; min4++;        // ...0100
 	posit<nbits, es> maxp, max2, max3, max4;
-	maxp = sw::unum::maxpos_value<nbits, es>(); // 01..111
+	maxp = sw::universal::maxpos_value<nbits, es>(); // 01..111
 	max2 = maxp; --max2;                        // 01..110
 	max3 = max2; --max3;                        // 01..101
 	max4 = max3; --max4;                        // 01..100
@@ -229,7 +229,7 @@ int ValidateSignMagnitudeTransitions() {
 
 template<size_t nbits, size_t es, size_t capacity = 2>
 int ValidateCarryPropagation(bool bReportIndividualTestCases) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	int nrOfFailedTests = 0;
 
 	constexpr size_t mbits = 2 * (nbits - 2 - es);
@@ -248,7 +248,7 @@ int ValidateCarryPropagation(bool bReportIndividualTestCases) {
 
 template<size_t nbits, size_t es, size_t capacity = 2>
 int ValidateBorrowPropagation(bool bReportIndividualTestCases) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	int nrOfFailedTests = 0;
 
 	constexpr size_t mbits = 2 * (nbits - 2 - es);
@@ -277,7 +277,7 @@ int ValidateQuireAccumulation(bool bReportIndividualTestCases) {
 // one of test to check that the quire can deal with 0
 void TestCaseForProperZeroHandling() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	quire<8, 1, 2> q;
 	posit<8, 1> minpos = minpos_value<8, 1>();
@@ -308,7 +308,7 @@ void TestCaseForProperZeroHandling() {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -426,16 +426,16 @@ catch (...) {
 // test case for github issue #45
 template<size_t nbits, size_t es>
 void Issue45() {
-	using ScalarType = sw::unum::posit<nbits, es>;
-	using magnitude = sw::unum::posit<nbits, es>;
-	using positX = sw::unum::posit<nbits, es>;
-	using quireX = sw::unum::quire<nbits, es, 10>;
-	using valueX = sw::unum::value<2 * (nbits - 2 - es)>;
+	using ScalarType = sw::universal::posit<nbits, es>;
+	using magnitude = sw::universal::posit<nbits, es>;
+	using positX = sw::universal::posit<nbits, es>;
+	using quireX = sw::universal::quire<nbits, es, 10>;
+	using valueX = sw::universal::value<2 * (nbits - 2 - es)>;
 
 	constexpr int n = 64;
 	std::vector<positX> Acoefficients(n);
 	for (int i = 0; i < n; ++i) {
-		Acoefficients[i] = sw::unum::minpos<nbits, es>();
+		Acoefficients[i] = sw::universal::minpos<nbits, es>();
 	}
 	std::vector<positX> xcoefficients(n);
 	for (int i = 0; i < n; ++i) {
@@ -459,14 +459,14 @@ void Issue45() {
 		sum = sumVal;
 
 		for (int i = 0; i < n; ++i) {
-			valueX addend = sw::unum::quire_mul(Acoefficients[i], xcoefficients[i]);
+			valueX addend = sw::universal::quire_mul(Acoefficients[i], xcoefficients[i]);
 			sum += addend;
 			std::cout << components(addend) << "\n" << sum << std::endl;
 		}
 		positX tempSum;
 		tempSum.convert(sum.to_value());
 		ycoefs[row] = tempSum;
-		valueX resultValueX = sw::unum::quire_mul(xcoefs[row], tempSum);
+		valueX resultValueX = sw::universal::quire_mul(xcoefs[row], tempSum);
 		resultAsQuire += resultValueX;
 
 	}
@@ -503,14 +503,14 @@ taking -2.68435e+08 += quire_mul(-0.00828552, 0.000999451) (which equals -8.2809
 template<size_t nbits, size_t es, size_t capacity = 30>
 void Issue45_2() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "Debug of issue #45\n";
 
 	constexpr size_t mbits = 2 * (nbits - 2 - es);
-	sw::unum::quire<nbits, es, capacity> q, q_base;
-	sw::unum::value<mbits> unrounded, q_value;
-	sw::unum::bitblock<mbits> fraction;
+	sw::universal::quire<nbits, es, capacity> q, q_base;
+	sw::universal::value<mbits> unrounded, q_value;
+	sw::universal::bitblock<mbits> fraction;
 
 	//  quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000100100000100000001100000000000000000000000";
 	//	quire_bits = "+:000000000000000000000000000000_000000000000000000000000000000000000000000000000000000000.00000000000000011011011000010011000000000000000000000000";
@@ -657,7 +657,7 @@ void Issue45_2() {
 
 	{
 		constexpr size_t mbits = 2 * (nbits - 2 - es);
-		sw::unum::quire<nbits, es, capacity> q, q_base;
+		sw::universal::quire<nbits, es, capacity> q, q_base;
 
 		// inefficient as we are copying a whole quire just to reset the sign bit, but we are leveraging the comparison logic
 		//quire<nbits, es, capacity> absq = abs(*this);

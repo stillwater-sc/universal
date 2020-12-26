@@ -1,6 +1,6 @@
 //  performance.cpp : performance benchmarking for block binary number arithmetic
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -31,13 +31,13 @@ void TestShiftOperatorPerformance() {
 
 	uint64_t NR_OPS = 1000000;
 
-	PerformanceRunner("blockbinary<16>   shifts        ", ShiftPerformanceWorkload< sw::unum::blockbinary<16> >, NR_OPS);
-	PerformanceRunner("blockbinary<32>   shifts        ", ShiftPerformanceWorkload< sw::unum::blockbinary<32> >, NR_OPS);
-	PerformanceRunner("blockbinary<64>   shifts        ", ShiftPerformanceWorkload< sw::unum::blockbinary<64> >, NR_OPS);
-	PerformanceRunner("blockbinary<128>  shifts        ", ShiftPerformanceWorkload< sw::unum::blockbinary<128> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<256>  shifts        ", ShiftPerformanceWorkload< sw::unum::blockbinary<256> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<512>  shifts        ", ShiftPerformanceWorkload< sw::unum::blockbinary<512> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<1024> shifts        ", ShiftPerformanceWorkload< sw::unum::blockbinary<1024> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<16>   shifts        ", ShiftPerformanceWorkload< sw::universal::blockbinary<16> >, NR_OPS);
+	PerformanceRunner("blockbinary<32>   shifts        ", ShiftPerformanceWorkload< sw::universal::blockbinary<32> >, NR_OPS);
+	PerformanceRunner("blockbinary<64>   shifts        ", ShiftPerformanceWorkload< sw::universal::blockbinary<64> >, NR_OPS);
+	PerformanceRunner("blockbinary<128>  shifts        ", ShiftPerformanceWorkload< sw::universal::blockbinary<128> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<256>  shifts        ", ShiftPerformanceWorkload< sw::universal::blockbinary<256> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<512>  shifts        ", ShiftPerformanceWorkload< sw::universal::blockbinary<512> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<1024> shifts        ", ShiftPerformanceWorkload< sw::universal::blockbinary<1024> >, NR_OPS / 16);
 }
 
 void TestBlockPerformanceOnShift() {
@@ -46,34 +46,34 @@ void TestBlockPerformanceOnShift() {
 
 	uint64_t NR_OPS = 1000000;
 
-	PerformanceRunner("blockbinary<8,uint8>     shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<8,uint8>     shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<8, uint8_t> >, NR_OPS);
 
-	PerformanceRunner("blockbinary<16,uint8>    shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<16,uint16>   shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<16,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<16,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<16, uint16_t> >, NR_OPS);
 
-	PerformanceRunner("blockbinary<32,uint8>    shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint16>   shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint32>   shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<32, uint32_t> >, NR_OPS);
 
-	PerformanceRunner("blockbinary<64,uint8>    shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint16>   shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint32>   shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint8>    shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint16>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint32>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<64, uint32_t> >, NR_OPS);
 
-	PerformanceRunner("blockbinary<128,uint8>   shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<128,uint16>  shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<128,uint32>  shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<128,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<128,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<128,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<128, uint32_t> >, NR_OPS / 2);
 
-	PerformanceRunner("blockbinary<256,uint8>   shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<256, uint8_t> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<256,uint16>  shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<256, uint16_t> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<256,uint32>  shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<256,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<256, uint8_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<256,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<256, uint16_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<256,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<256, uint32_t> >, NR_OPS / 4);
 
-	PerformanceRunner("blockbinary<512,uint8>   shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<1024, uint8_t> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<512,uint16>  shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<1024, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<512,uint32>  shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<1024, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<512,uint8>   shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<1024, uint8_t> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<512,uint16>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<1024, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<512,uint32>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<1024, uint32_t> >, NR_OPS / 8);
 
-	PerformanceRunner("blockbinary<1024,uint8>  shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<1024, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blockbinary<1024,uint16> shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<1024, uint16_t> >, NR_OPS /16);
-	PerformanceRunner("blockbinary<1024,uint32> shifts  ", ShiftPerformanceWorkload< sw::unum::blockbinary<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<1024,uint8>  shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<1024, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<1024,uint16> shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<1024, uint16_t> >, NR_OPS /16);
+	PerformanceRunner("blockbinary<1024,uint32> shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<1024, uint32_t> >, NR_OPS / 16);
 }
 
 template<typename IntegerType>
@@ -125,39 +125,39 @@ void TestArithmeticOperatorPerformance() {
 
 	size_t NR_OPS = 1000000;
 
-	PerformanceRunner("blockbinary<16>   add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockbinary<16> >, NR_OPS);
-	PerformanceRunner("blockbinary<32>   add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockbinary<32> >, NR_OPS);
-	PerformanceRunner("blockbinary<64>   add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockbinary<64> >, NR_OPS);
-	PerformanceRunner("blockbinary<128>  add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockbinary<128> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<256>  add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockbinary<256> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<512>  add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockbinary<512> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<1024> add/subtract  ", AdditionSubtractionWorkload< sw::unum::blockbinary<1024> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blockbinary<16> >, NR_OPS);
+	PerformanceRunner("blockbinary<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blockbinary<32> >, NR_OPS);
+	PerformanceRunner("blockbinary<64>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blockbinary<64> >, NR_OPS);
+	PerformanceRunner("blockbinary<128>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::blockbinary<128> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<256>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::blockbinary<256> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<512>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::blockbinary<512> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<1024> add/subtract  ", AdditionSubtractionWorkload< sw::universal::blockbinary<1024> >, NR_OPS / 16);
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("blockbinary<16>   division      ", DivisionWorkload< sw::unum::blockbinary<16> >, NR_OPS);
-	PerformanceRunner("blockbinary<32>   division      ", DivisionWorkload< sw::unum::blockbinary<32> >, NR_OPS);
-	PerformanceRunner("blockbinary<64>   division      ", DivisionWorkload< sw::unum::blockbinary<64> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<128>  division      ", DivisionWorkload< sw::unum::blockbinary<128> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<512>  division      ", DivisionWorkload< sw::unum::blockbinary<512> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<1024> division      ", DivisionWorkload< sw::unum::blockbinary<1024> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<16>   division      ", DivisionWorkload< sw::universal::blockbinary<16> >, NR_OPS);
+	PerformanceRunner("blockbinary<32>   division      ", DivisionWorkload< sw::universal::blockbinary<32> >, NR_OPS);
+	PerformanceRunner("blockbinary<64>   division      ", DivisionWorkload< sw::universal::blockbinary<64> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<128>  division      ", DivisionWorkload< sw::universal::blockbinary<128> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<512>  division      ", DivisionWorkload< sw::universal::blockbinary<512> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<1024> division      ", DivisionWorkload< sw::universal::blockbinary<1024> >, NR_OPS / 16);
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("blockbinary<16>   remainder     ", RemainderWorkload< sw::unum::blockbinary<16> >, NR_OPS);
-	PerformanceRunner("blockbinary<32>   remainder     ", RemainderWorkload< sw::unum::blockbinary<32> >, NR_OPS);
-	PerformanceRunner("blockbinary<64>   remainder     ", RemainderWorkload< sw::unum::blockbinary<64> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<128>  remainder     ", RemainderWorkload< sw::unum::blockbinary<128> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<512>  remainder     ", RemainderWorkload< sw::unum::blockbinary<512> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<1024> remainder     ", RemainderWorkload< sw::unum::blockbinary<1024> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<16>   remainder     ", RemainderWorkload< sw::universal::blockbinary<16> >, NR_OPS);
+	PerformanceRunner("blockbinary<32>   remainder     ", RemainderWorkload< sw::universal::blockbinary<32> >, NR_OPS);
+	PerformanceRunner("blockbinary<64>   remainder     ", RemainderWorkload< sw::universal::blockbinary<64> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<128>  remainder     ", RemainderWorkload< sw::universal::blockbinary<128> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<512>  remainder     ", RemainderWorkload< sw::universal::blockbinary<512> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<1024> remainder     ", RemainderWorkload< sw::universal::blockbinary<1024> >, NR_OPS / 16);
 
 	// multiplication is the slowest operator
 
 	NR_OPS = 1024 * 32;
-	PerformanceRunner("blockbinary<16>   multiplication", MultiplicationWorkload< sw::unum::blockbinary<16> >, NR_OPS);
-	PerformanceRunner("blockbinary<32>   multiplication", MultiplicationWorkload< sw::unum::blockbinary<32> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<64>   multiplication", MultiplicationWorkload< sw::unum::blockbinary<64> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<128>  multiplication", MultiplicationWorkload< sw::unum::blockbinary<128> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<512>  multiplication", MultiplicationWorkload< sw::unum::blockbinary<512> >, NR_OPS / 16);
-	PerformanceRunner("blockbinary<1024> multiplication", MultiplicationWorkload< sw::unum::blockbinary<1024> >, NR_OPS / 32);
+	PerformanceRunner("blockbinary<16>   multiplication", MultiplicationWorkload< sw::universal::blockbinary<16> >, NR_OPS);
+	PerformanceRunner("blockbinary<32>   multiplication", MultiplicationWorkload< sw::universal::blockbinary<32> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<64>   multiplication", MultiplicationWorkload< sw::universal::blockbinary<64> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<128>  multiplication", MultiplicationWorkload< sw::universal::blockbinary<128> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<512>  multiplication", MultiplicationWorkload< sw::universal::blockbinary<512> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<1024> multiplication", MultiplicationWorkload< sw::universal::blockbinary<1024> >, NR_OPS / 32);
 }
 
 void TestBlockPerformanceOnAdd() {
@@ -166,28 +166,28 @@ void TestBlockPerformanceOnAdd() {
 
 	size_t NR_OPS = 1000000;
 
-	PerformanceRunner("blockbinary<4,uint8>      add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<4, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<8,uint8>      add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<16,uint8>     add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<16,uint16>    add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint8>     add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint16>    add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint32>    add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint8>     add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint16>    add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint32>    add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<128,uint8>    add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<128,uint16>   add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<128,uint32>   add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<256,uint8>    add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<256, uint8_t> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<256,uint16>   add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<256, uint16_t> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<256,uint32>   add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<512,uint8>    add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<512, uint8_t> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<512,uint16>   add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<512, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<512,uint32>   add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<1024,uint8>   add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<1024, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blockbinary<1024,uint16>  add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<1024, uint16_t> >, NR_OPS / 16);
-	PerformanceRunner("blockbinary<1024,uint32>  add   ", AdditionSubtractionWorkload< sw::unum::blockbinary<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<4,uint8>      add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<4, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<8,uint8>      add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<16,uint8>     add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<16,uint16>    add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint8>     add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint16>    add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint32>    add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint8>     add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint16>    add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint32>    add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<128,uint8>    add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<128,uint16>   add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<128,uint32>   add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<256,uint8>    add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<256, uint8_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<256,uint16>   add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<256, uint16_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<256,uint32>   add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<512,uint8>    add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<512, uint8_t> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<512,uint16>   add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<512, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<512,uint32>   add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<1024,uint8>   add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<1024, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<1024,uint16>  add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<1024, uint16_t> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<1024,uint32>  add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<1024, uint32_t> >, NR_OPS / 16);
 }
 
 void TestBlockPerformanceOnDiv() {
@@ -195,28 +195,28 @@ void TestBlockPerformanceOnDiv() {
 	cout << endl << "block size performance" << endl;
 
 	size_t NR_OPS = 1000000;
-	PerformanceRunner("blockbinary<4,uint8>      div   ", DivisionWorkload< sw::unum::blockbinary<4, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<8,uint8>      div   ", DivisionWorkload< sw::unum::blockbinary<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<16,uint8>     div   ", DivisionWorkload< sw::unum::blockbinary<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<16,uint16>    div   ", DivisionWorkload< sw::unum::blockbinary<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint8>     div   ", DivisionWorkload< sw::unum::blockbinary<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint16>    div   ", DivisionWorkload< sw::unum::blockbinary<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint32>    div   ", DivisionWorkload< sw::unum::blockbinary<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint8>     div   ", DivisionWorkload< sw::unum::blockbinary<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint16>    div   ", DivisionWorkload< sw::unum::blockbinary<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint32>    div   ", DivisionWorkload< sw::unum::blockbinary<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<128,uint8>    div   ", DivisionWorkload< sw::unum::blockbinary<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<128,uint16>   div   ", DivisionWorkload< sw::unum::blockbinary<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<128,uint32>   div   ", DivisionWorkload< sw::unum::blockbinary<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<256,uint8>    div   ", DivisionWorkload< sw::unum::blockbinary<256, uint8_t> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<256,uint16>   div   ", DivisionWorkload< sw::unum::blockbinary<256, uint16_t> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<256,uint32>   div   ", DivisionWorkload< sw::unum::blockbinary<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<512,uint8>    div   ", DivisionWorkload< sw::unum::blockbinary<512, uint8_t> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<512,uint16>   div   ", DivisionWorkload< sw::unum::blockbinary<512, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<512,uint32>   div   ", DivisionWorkload< sw::unum::blockbinary<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<1024,uint8>   div   ", DivisionWorkload< sw::unum::blockbinary<1024, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blockbinary<1024,uint16>  div   ", DivisionWorkload< sw::unum::blockbinary<1024, uint16_t> >, NR_OPS / 16);
-	PerformanceRunner("blockbinary<1024,uint32>  div   ", DivisionWorkload< sw::unum::blockbinary<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<4,uint8>      div   ", DivisionWorkload< sw::universal::blockbinary<4, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<8,uint8>      div   ", DivisionWorkload< sw::universal::blockbinary<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<16,uint8>     div   ", DivisionWorkload< sw::universal::blockbinary<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<16,uint16>    div   ", DivisionWorkload< sw::universal::blockbinary<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint8>     div   ", DivisionWorkload< sw::universal::blockbinary<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint16>    div   ", DivisionWorkload< sw::universal::blockbinary<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint32>    div   ", DivisionWorkload< sw::universal::blockbinary<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint8>     div   ", DivisionWorkload< sw::universal::blockbinary<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint16>    div   ", DivisionWorkload< sw::universal::blockbinary<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint32>    div   ", DivisionWorkload< sw::universal::blockbinary<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<128,uint8>    div   ", DivisionWorkload< sw::universal::blockbinary<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<128,uint16>   div   ", DivisionWorkload< sw::universal::blockbinary<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<128,uint32>   div   ", DivisionWorkload< sw::universal::blockbinary<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<256,uint8>    div   ", DivisionWorkload< sw::universal::blockbinary<256, uint8_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<256,uint16>   div   ", DivisionWorkload< sw::universal::blockbinary<256, uint16_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<256,uint32>   div   ", DivisionWorkload< sw::universal::blockbinary<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<512,uint8>    div   ", DivisionWorkload< sw::universal::blockbinary<512, uint8_t> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<512,uint16>   div   ", DivisionWorkload< sw::universal::blockbinary<512, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<512,uint32>   div   ", DivisionWorkload< sw::universal::blockbinary<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<1024,uint8>   div   ", DivisionWorkload< sw::universal::blockbinary<1024, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<1024,uint16>  div   ", DivisionWorkload< sw::universal::blockbinary<1024, uint16_t> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<1024,uint32>  div   ", DivisionWorkload< sw::universal::blockbinary<1024, uint32_t> >, NR_OPS / 16);
 }
 
 void TestBlockPerformanceOnRem() {
@@ -224,28 +224,28 @@ void TestBlockPerformanceOnRem() {
 	cout << endl << "block size performance" << endl;
 
 	size_t NR_OPS = 1000000;
-	PerformanceRunner("blockbinary<4,uint8>      rem   ", RemainderWorkload< sw::unum::blockbinary<4, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<8,uint8>      rem   ", RemainderWorkload< sw::unum::blockbinary<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<16,uint8>     rem   ", RemainderWorkload< sw::unum::blockbinary<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<16,uint16>    rem   ", RemainderWorkload< sw::unum::blockbinary<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint8>     rem   ", RemainderWorkload< sw::unum::blockbinary<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint16>    rem   ", RemainderWorkload< sw::unum::blockbinary<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint32>    rem   ", RemainderWorkload< sw::unum::blockbinary<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint8>     rem   ", RemainderWorkload< sw::unum::blockbinary<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint16>    rem   ", RemainderWorkload< sw::unum::blockbinary<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint32>    rem   ", RemainderWorkload< sw::unum::blockbinary<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<128,uint8>    rem   ", RemainderWorkload< sw::unum::blockbinary<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<128,uint16>   rem   ", RemainderWorkload< sw::unum::blockbinary<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<128,uint32>   rem   ", RemainderWorkload< sw::unum::blockbinary<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<256,uint8>    rem   ", RemainderWorkload< sw::unum::blockbinary<256, uint8_t> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<256,uint16>   rem   ", RemainderWorkload< sw::unum::blockbinary<256, uint16_t> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<256,uint32>   rem   ", RemainderWorkload< sw::unum::blockbinary<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<512,uint8>    rem   ", RemainderWorkload< sw::unum::blockbinary<512, uint8_t> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<512,uint16>   rem   ", RemainderWorkload< sw::unum::blockbinary<512, uint16_t> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<512,uint32>   rem   ", RemainderWorkload< sw::unum::blockbinary<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<1024,uint8>   rem   ", RemainderWorkload< sw::unum::blockbinary<1024, uint8_t> >, NR_OPS / 16);
-	PerformanceRunner("blockbinary<1024,uint16>  rem   ", RemainderWorkload< sw::unum::blockbinary<1024, uint16_t> >, NR_OPS / 16);
-	PerformanceRunner("blockbinary<1024,uint32>  rem   ", RemainderWorkload< sw::unum::blockbinary<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<4,uint8>      rem   ", RemainderWorkload< sw::universal::blockbinary<4, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<8,uint8>      rem   ", RemainderWorkload< sw::universal::blockbinary<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<16,uint8>     rem   ", RemainderWorkload< sw::universal::blockbinary<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<16,uint16>    rem   ", RemainderWorkload< sw::universal::blockbinary<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint8>     rem   ", RemainderWorkload< sw::universal::blockbinary<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint16>    rem   ", RemainderWorkload< sw::universal::blockbinary<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint32>    rem   ", RemainderWorkload< sw::universal::blockbinary<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint8>     rem   ", RemainderWorkload< sw::universal::blockbinary<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint16>    rem   ", RemainderWorkload< sw::universal::blockbinary<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint32>    rem   ", RemainderWorkload< sw::universal::blockbinary<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<128,uint8>    rem   ", RemainderWorkload< sw::universal::blockbinary<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<128,uint16>   rem   ", RemainderWorkload< sw::universal::blockbinary<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<128,uint32>   rem   ", RemainderWorkload< sw::universal::blockbinary<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<256,uint8>    rem   ", RemainderWorkload< sw::universal::blockbinary<256, uint8_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<256,uint16>   rem   ", RemainderWorkload< sw::universal::blockbinary<256, uint16_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<256,uint32>   rem   ", RemainderWorkload< sw::universal::blockbinary<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<512,uint8>    rem   ", RemainderWorkload< sw::universal::blockbinary<512, uint8_t> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<512,uint16>   rem   ", RemainderWorkload< sw::universal::blockbinary<512, uint16_t> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<512,uint32>   rem   ", RemainderWorkload< sw::universal::blockbinary<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<1024,uint8>   rem   ", RemainderWorkload< sw::universal::blockbinary<1024, uint8_t> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<1024,uint16>  rem   ", RemainderWorkload< sw::universal::blockbinary<1024, uint16_t> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<1024,uint32>  rem   ", RemainderWorkload< sw::universal::blockbinary<1024, uint32_t> >, NR_OPS / 16);
 }
 
 void TestBlockPerformanceOnMul() {
@@ -253,28 +253,28 @@ void TestBlockPerformanceOnMul() {
 	cout << endl << "block size performance" << endl;
 
 	size_t NR_OPS = 500000;
-	PerformanceRunner("blockbinary<4,uint8>      mul   ", MultiplicationWorkload< sw::unum::blockbinary<4, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<8,uint8>      mul   ", MultiplicationWorkload< sw::unum::blockbinary<8, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<16,uint8>     mul   ", MultiplicationWorkload< sw::unum::blockbinary<16, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<16,uint16>    mul   ", MultiplicationWorkload< sw::unum::blockbinary<16, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint8>     mul   ", MultiplicationWorkload< sw::unum::blockbinary<32, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint16>    mul   ", MultiplicationWorkload< sw::unum::blockbinary<32, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<32,uint32>    mul   ", MultiplicationWorkload< sw::unum::blockbinary<32, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint8>     mul   ", MultiplicationWorkload< sw::unum::blockbinary<64, uint8_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint16>    mul   ", MultiplicationWorkload< sw::unum::blockbinary<64, uint16_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<64,uint32>    mul   ", MultiplicationWorkload< sw::unum::blockbinary<64, uint32_t> >, NR_OPS);
-	PerformanceRunner("blockbinary<128,uint8>    mul   ", MultiplicationWorkload< sw::unum::blockbinary<128, uint8_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<128,uint16>   mul   ", MultiplicationWorkload< sw::unum::blockbinary<128, uint16_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<128,uint32>   mul   ", MultiplicationWorkload< sw::unum::blockbinary<128, uint32_t> >, NR_OPS / 2);
-	PerformanceRunner("blockbinary<256,uint8>    mul   ", MultiplicationWorkload< sw::unum::blockbinary<256, uint8_t> >, NR_OPS / 4 / 2);
-	PerformanceRunner("blockbinary<256,uint16>   mul   ", MultiplicationWorkload< sw::unum::blockbinary<256, uint16_t> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<256,uint32>   mul   ", MultiplicationWorkload< sw::unum::blockbinary<256, uint32_t> >, NR_OPS / 4);
-	PerformanceRunner("blockbinary<512,uint8>    mul   ", MultiplicationWorkload< sw::unum::blockbinary<512, uint8_t> >, NR_OPS / 8 / 4);
-	PerformanceRunner("blockbinary<512,uint16>   mul   ", MultiplicationWorkload< sw::unum::blockbinary<512, uint16_t> >, NR_OPS / 8 / 2);
-	PerformanceRunner("blockbinary<512,uint32>   mul   ", MultiplicationWorkload< sw::unum::blockbinary<512, uint32_t> >, NR_OPS / 8);
-	PerformanceRunner("blockbinary<1024,uint8>   mul   ", MultiplicationWorkload< sw::unum::blockbinary<1024, uint8_t> >, NR_OPS / 16 / 4);
-	PerformanceRunner("blockbinary<1024,uint16>  mul   ", MultiplicationWorkload< sw::unum::blockbinary<1024, uint16_t> >, NR_OPS / 16 / 2);
-	PerformanceRunner("blockbinary<1024,uint32>  mul   ", MultiplicationWorkload< sw::unum::blockbinary<1024, uint32_t> >, NR_OPS / 16);
+	PerformanceRunner("blockbinary<4,uint8>      mul   ", MultiplicationWorkload< sw::universal::blockbinary<4, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<8,uint8>      mul   ", MultiplicationWorkload< sw::universal::blockbinary<8, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<16,uint8>     mul   ", MultiplicationWorkload< sw::universal::blockbinary<16, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<16,uint16>    mul   ", MultiplicationWorkload< sw::universal::blockbinary<16, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint8>     mul   ", MultiplicationWorkload< sw::universal::blockbinary<32, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint16>    mul   ", MultiplicationWorkload< sw::universal::blockbinary<32, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<32,uint32>    mul   ", MultiplicationWorkload< sw::universal::blockbinary<32, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint8>     mul   ", MultiplicationWorkload< sw::universal::blockbinary<64, uint8_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint16>    mul   ", MultiplicationWorkload< sw::universal::blockbinary<64, uint16_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<64,uint32>    mul   ", MultiplicationWorkload< sw::universal::blockbinary<64, uint32_t> >, NR_OPS);
+	PerformanceRunner("blockbinary<128,uint8>    mul   ", MultiplicationWorkload< sw::universal::blockbinary<128, uint8_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<128,uint16>   mul   ", MultiplicationWorkload< sw::universal::blockbinary<128, uint16_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<128,uint32>   mul   ", MultiplicationWorkload< sw::universal::blockbinary<128, uint32_t> >, NR_OPS / 2);
+	PerformanceRunner("blockbinary<256,uint8>    mul   ", MultiplicationWorkload< sw::universal::blockbinary<256, uint8_t> >, NR_OPS / 4 / 2);
+	PerformanceRunner("blockbinary<256,uint16>   mul   ", MultiplicationWorkload< sw::universal::blockbinary<256, uint16_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<256,uint32>   mul   ", MultiplicationWorkload< sw::universal::blockbinary<256, uint32_t> >, NR_OPS / 4);
+	PerformanceRunner("blockbinary<512,uint8>    mul   ", MultiplicationWorkload< sw::universal::blockbinary<512, uint8_t> >, NR_OPS / 8 / 4);
+	PerformanceRunner("blockbinary<512,uint16>   mul   ", MultiplicationWorkload< sw::universal::blockbinary<512, uint16_t> >, NR_OPS / 8 / 2);
+	PerformanceRunner("blockbinary<512,uint32>   mul   ", MultiplicationWorkload< sw::universal::blockbinary<512, uint32_t> >, NR_OPS / 8);
+	PerformanceRunner("blockbinary<1024,uint8>   mul   ", MultiplicationWorkload< sw::universal::blockbinary<1024, uint8_t> >, NR_OPS / 16 / 4);
+	PerformanceRunner("blockbinary<1024,uint16>  mul   ", MultiplicationWorkload< sw::universal::blockbinary<1024, uint16_t> >, NR_OPS / 16 / 2);
+	PerformanceRunner("blockbinary<1024,uint32>  mul   ", MultiplicationWorkload< sw::universal::blockbinary<1024, uint32_t> >, NR_OPS / 16);
 
 }
 
@@ -284,7 +284,7 @@ void TestBlockPerformanceOnMul() {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "Integer operator performance benchmarking";
 
@@ -293,7 +293,7 @@ try {
 	TestShiftOperatorPerformance();
 	TestArithmeticOperatorPerformance();
 
-	ShiftPerformanceWorkload< sw::unum::blockbinary<8, uint8_t> >(1);
+	ShiftPerformanceWorkload< sw::universal::blockbinary<8, uint8_t> >(1);
 	
 	cout << "done" << endl;
 

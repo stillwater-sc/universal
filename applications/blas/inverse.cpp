@@ -1,12 +1,12 @@
 // inverse.cpp: example program comparing float vs posit using Gauss-Jordan algorithm
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the HPRBLAS project, which is released under an MIT Open Source license.
 #ifdef _MSC_VER
 #pragma warning(disable : 4514)   // unreferenced inline function has been removed
 #pragma warning(disable : 4710)   // 'int sprintf_s(char *const ,const size_t,const char *const ,...)': function not inlined
-#pragma warning(disable : 4820)   // 'sw::unum::value<23>': '3' bytes padding added after data member 'sw::unum::value<23>::_sign'
+#pragma warning(disable : 4820)   // 'sw::universal::value<23>': '3' bytes padding added after data member 'sw::universal::value<23>::_sign'
 #pragma warning(disable : 5045)   // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 #endif
 
@@ -24,8 +24,8 @@
 template<typename Matrix, typename Vector>
 void BenchmarkGaussJordan(const Matrix& A, Vector& x, const Vector& b) {
 	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
 	assert(num_rows(A) == num_cols(A));
 	size_t N = num_cols(A);
 	{
@@ -52,11 +52,11 @@ void BenchmarkGaussJordan(const Matrix& A, Vector& x, const Vector& b) {
 
 void Test1() {
 	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
 
 	using Scalar = float;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	Matrix A = {
 		{  2, -1,  0,  0,  0 },
@@ -85,11 +85,11 @@ void Test1() {
 template<typename Scalar>
 void FiniteDifferenceTest(size_t N) {
 	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
 
-	using Matrix = sw::unum::blas::matrix<Scalar>;
-	using Vector = sw::unum::blas::vector<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using Vector = sw::universal::blas::vector<Scalar>;
 
 	Matrix A;
 	tridiag(A, N, Scalar(-1), Scalar(2), Scalar(-1));
@@ -116,7 +116,7 @@ void FiniteDifferenceTest(size_t N) {
 template<typename Scalar>
 void TestSingularMatrix() {
 	using namespace std;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	cout << "Test Singular matrix\n";
 
@@ -140,7 +140,7 @@ void TestNearSingular() {
 	cout << "Gauss-Jordan inverse test with near-singular matrix\n";
 	cout << "Scalar type: " << typeid(Scalar).name() << '\n';
 
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	// define a singular matrix
 	Matrix A = {
@@ -156,7 +156,7 @@ void TestNearSingular() {
 	};
 	cout << "eps: " << Aeps(2, 2) << endl;
 	Scalar m = 1024;
-	Matrix B = sw::unum::blas::inv(A + m * Aeps);
+	Matrix B = sw::universal::blas::inv(A + m * Aeps);
 	cout << "Test matrix with poor condition number\n" << (A + m * Aeps) << endl;
 	if (num_cols(B) == 0) {
 		cout << "singular matrix\n";
@@ -171,11 +171,11 @@ void TestNearSingular() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
 
 	using Scalar = float;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	if (argc == 1) cout << argv[0] << '\n';
 	int nrOfFailedTestCases = 0;
@@ -200,7 +200,7 @@ try {
 
 	constexpr size_t N = 100;
 	FiniteDifferenceTest<float>(N);
-	FiniteDifferenceTest < sw::unum::posit<32, 2> >(N);
+	FiniteDifferenceTest < sw::universal::posit<32, 2> >(N);
 
 	return (nrOfFailedTestCases == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

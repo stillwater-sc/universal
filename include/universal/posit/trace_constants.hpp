@@ -1,12 +1,11 @@
 #pragma once
 // trace_constants.hpp: definition of constants that direct intermediate result reporting
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw { namespace unum {
-
+namespace sw { namespace universal {
 
 # ifndef POSIT_VERBOSE_OUTPUT
 // posit decode and conversion
@@ -121,4 +120,4 @@ constexpr bool _trace_quire_add = true;
 # endif
 
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal

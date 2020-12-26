@@ -31,7 +31,7 @@
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pb, pref, psum;
+	sw::universal::posit<nbits, es> pa, pb, pref, psum;
 	pa = a;
 	pb = b;
 	ref = a + b;
@@ -49,10 +49,10 @@ void GenerateTestCase(Ty a, Ty b) {
 
 template<size_t nbits, size_t es>
 void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, 
-	const std::complex<sw::unum::posit<nbits, es>>& lhs, 
-	const std::complex<sw::unum::posit<nbits, es>>& rhs, 
-	const std::complex<sw::unum::posit<nbits, es>>& ref, 
-	const std::complex<sw::unum::posit<nbits, es>>& result) {
+	const std::complex<sw::universal::posit<nbits, es>>& lhs, 
+	const std::complex<sw::universal::posit<nbits, es>>& rhs, 
+	const std::complex<sw::universal::posit<nbits, es>>& ref, 
+	const std::complex<sw::universal::posit<nbits, es>>& result) {
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
 		<< std::setw(FLOAT_TABLE_WIDTH) << lhs
@@ -70,7 +70,7 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 template<size_t nbits, size_t es>
 int ValidateComplexAddition(const std::string& tag, bool bReportIndividualTestCases) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	const size_t NR_POSITS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> ar, ai, br, bi;
@@ -117,7 +117,7 @@ int ValidateComplexAddition(const std::string& tag, bool bReportIndividualTestCa
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -137,10 +137,10 @@ try {
 		using Real = posit<16,1>;
 #if defined(__GNUG__)
 /* TODO: this doesn't compile under g++
- error: conversion from ‘__complex__ double’ to non-scalar type ‘std::complex<sw::unum::posit<16, 1> >’ requested
+ error: conversion from ‘__complex__ double’ to non-scalar type ‘std::complex<sw::universal::posit<16, 1> >’ requested
    std::complex<Real> z4 = 1. + 2i, z5 = 1. - 2i; // conjugates
                            ~~~^~~~
- error: conversion from ‘__complex__ double’ to non-scalar type ‘std::complex<sw::unum::posit<16, 1> >’ requested
+ error: conversion from ‘__complex__ double’ to non-scalar type ‘std::complex<sw::universal::posit<16, 1> >’ requested
    std::complex<Real> z4 = 1. + 2i, z5 = 1. - 2i; // conjugates
                                          ~~~^~~~
 */

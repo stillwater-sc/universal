@@ -31,7 +31,7 @@
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty a, Ty b) {
 	Ty ref;
-	sw::unum::posit<nbits, es> pa, pb, pref, pmul;
+	sw::universal::posit<nbits, es> pa, pb, pref, pmul;
 	pa = a;
 	pb = b;
 	ref = a * b;
@@ -45,12 +45,12 @@ void GenerateTestCase(Ty a, Ty b) {
 }
 
 template<size_t nbits, size_t es>
-void GenerateTestCase( sw::unum::posit<nbits,es> pa, sw::unum::posit<nbits,es> pb, sw::unum::posit<nbits, es> pref) {
+void GenerateTestCase( sw::universal::posit<nbits,es> pa, sw::universal::posit<nbits,es> pb, sw::universal::posit<nbits, es> pref) {
 	double a = double(pa);
 	double b = double(pb);
 	double ref = a * b;
-	//sw::unum::posit<nbits, es> pref = ref;
-	sw::unum::posit<nbits, es> pmul = pa * pb;
+	//sw::universal::posit<nbits, es> pref = ref;
+	sw::universal::posit<nbits, es> pmul = pa * pb;
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << a << " * " << std::setw(nbits) << b << " = " << std::setw(nbits) << ref << std::endl;
 	std::cout << pa.get() << " * " << pb.get() << " = " << pmul.get() << " (reference: " << pref.get() << ")   ";
@@ -77,7 +77,7 @@ b61e2f1f fffffffe 00000002 00000003
 fffffffe b61e2f1f 00000002 00000003
 */
 void DifficultRoundingCases() {
-	sw::unum::posit<32, 2> a, b, pref;
+	sw::universal::posit<32, 2> a, b, pref;
 	std::vector<uint32_t> cases = {
 		0x00000002, 0x93ff6977, 0xfffffffa, 0xfffffff9,
 		0x00000002, 0xb61e2f1f, 0xfffffffe, 0xfffffffd,
@@ -110,7 +110,7 @@ void DifficultRoundingCases() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;

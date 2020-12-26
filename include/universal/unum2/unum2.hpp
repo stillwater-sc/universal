@@ -1,7 +1,7 @@
 #pragma once
 // unum2.hpp: definition of the flexible configuration universal number system
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cassert>
@@ -9,7 +9,7 @@
 
 #include <universal/native/ieee-754.hpp>
 
-namespace sw {	namespace unum {
+namespace sw {	namespace universal {
 		
 // Forward definitions
 template<size_t esizesize, size_t fsizesize, typename bt> class unum2;
@@ -299,4 +299,4 @@ unum2<esizesize,fsizesize> abs(const unum2<esizesize,fsizesize,bt>& v) {
 }
 
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal

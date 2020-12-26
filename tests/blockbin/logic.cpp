@@ -1,6 +1,6 @@
 //  logic.cpp : logic operators test suite for block binary numbers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -13,7 +13,7 @@
 #include "../utils/test_helpers.hpp"
 
 namespace sw {
-namespace unum {
+namespace universal {
 
 #define INTEGER_TABLE_WIDTH 20
 template<size_t nbits, typename BlockType>
@@ -223,7 +223,7 @@ int VerifyGreaterOrEqualThan(const std::string& tag, bool bReportIndividualTestC
 	return nrOfFailedTests;
 }
 
-} // namespace unum
+} // namespace universal
 } // namespace sw
 
 #define MANUAL_TESTING 0
@@ -232,7 +232,7 @@ int VerifyGreaterOrEqualThan(const std::string& tag, bool bReportIndividualTestC
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "blockbinary logic operator tests";
 

@@ -1,7 +1,7 @@
 #pragma once
 // posit.hpp: definition of arbitrary posit number configurations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
@@ -43,7 +43,7 @@
 #include <universal/posit/regime.hpp>
 #include <universal/posit/attributes.hpp>
 
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 // specialized configuration constants
 constexpr size_t NBITS_IS_2   =   2;
@@ -2688,6 +2688,6 @@ using posit256_t = posit<256, 5>;
 */
 
 
-}}  // namespace sw::unum
+}}  // namespace sw::universal
 
 

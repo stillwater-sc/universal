@@ -1,14 +1,14 @@
 #pragma once
 // blas_l1.hpp: BLAS Level 1 functions
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
 #include <universal/posit/posit>
 #include <universal/blas/vector.hpp>
 
-namespace sw { namespace unum { namespace blas { 
+namespace sw { namespace universal { namespace blas { 
 
 // 1-norm of a vector: sum of magnitudes of the vector elements, default increment stride is 1
 template<typename Vector>
@@ -165,14 +165,13 @@ void strided_print(std::ostream& ostr, size_t n, Vector& x, size_t incx = 1) {
 }
 
 
-} } } // namespace sw::unum::blas
+} } } // namespace sw::universal::blas
 
 // free function norms
 
-
 // 1-norm of a vector
 template<typename Scalar>
-Scalar norm1(const sw::unum::blas::vector<Scalar>& v) {
+Scalar norm1(const sw::universal::blas::vector<Scalar>& v) {
 	Scalar oneNorm = 0;
 	for (auto e : v) {
 		oneNorm += abs(e);
@@ -182,7 +181,7 @@ Scalar norm1(const sw::unum::blas::vector<Scalar>& v) {
 
 // 2-norm of a vector
 template<typename Scalar>
-Scalar norm2(const sw::unum::blas::vector<Scalar>& v) {
+Scalar norm2(const sw::universal::blas::vector<Scalar>& v) {
 	Scalar twoNorm = 0;
 	for (auto e : v) {
 		twoNorm += e * e;

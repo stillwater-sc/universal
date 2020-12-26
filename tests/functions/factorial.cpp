@@ -1,6 +1,6 @@
 ﻿// factorial.cpp: evaluation of factorials in the posit number systems
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 // enable conversion between posits and integers
@@ -18,7 +18,7 @@
 
 // generate factorials in an Integer and a Posit number system to compare
 template<size_t pbits, size_t pes>
-void GenerateFactorialTableComparison(unsigned upperbound, unsigned long long factorialValue = 1, sw::unum::posit<pbits,pes> positRef = 1, int columnWidth = 30) {
+void GenerateFactorialTableComparison(unsigned upperbound, unsigned long long factorialValue = 1, sw::universal::posit<pbits,pes> positRef = 1, int columnWidth = 30) {
 	using namespace std;
 	cout << "\n+---------------\n" << typeid(factorialValue).name() << " and " << typeid(positRef).name() << endl;
 	cout << "  i    " << setw(columnWidth) << "integer(N!)" << "  " << setw(columnWidth) << "posit(N!)" << setw(columnWidth) << "abs(error)\n";
@@ -33,16 +33,16 @@ void GenerateFactorialTableComparison(unsigned upperbound, unsigned long long fa
 }
 
 template<size_t ibits, size_t pbits, size_t pes>
-void GenerateFactorialTableComparison(unsigned upperbound, sw::unum::integer<ibits> factorialValue = 1, sw::unum::posit<pbits, pes> positRef = 1, int columnWidth = 30) {
+void GenerateFactorialTableComparison(unsigned upperbound, sw::universal::integer<ibits> factorialValue = 1, sw::universal::posit<pbits, pes> positRef = 1, int columnWidth = 30) {
 	using namespace std;
 	cout << "\n+---------------\n" << typeid(factorialValue).name() << " and " << typeid(positRef).name() << endl;
 	cout << "  i    " << setw(columnWidth) << "integer(N!)" << "  " << setw(columnWidth) << "posit(N!)" << setw(columnWidth) << "abs(error)\n";
 	for (unsigned i = 2; i < upperbound; ++i) {
 		factorialValue *= i;
 		positRef *= i;
-		sw::unum::integer<ibits> integerRef;
+		sw::universal::integer<ibits> integerRef;
 		integerRef = positRef;
-		sw::unum::integer<ibits> error = (factorialValue > integerRef ? factorialValue - integerRef : integerRef - factorialValue);
+		sw::universal::integer<ibits> error = (factorialValue > integerRef ? factorialValue - integerRef : integerRef - factorialValue);
 		cout << setw(5) << i << "  " << setw(columnWidth) << factorialValue << "  " << setw(columnWidth) << positRef << setw(columnWidth) << error << endl;
 	}
 }
@@ -52,7 +52,7 @@ void GenerateFactorialTableComparison(unsigned upperbound, sw::unum::integer<ibi
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;
@@ -75,7 +75,7 @@ try {
  
 		   /*
 +---------------
-unsigned __int64 and class sw::unum::posit<32,2>
+unsigned __int64 and class sw::universal::posit<32,2>
   i                                 integer(N!)                                 posit(N!)                             abs(error)
 	2                                         2                                         2                                       0
 	3                                         6                                         6                                       0
@@ -112,7 +112,7 @@ unsigned __int64 and class sw::unum::posit<32,2>
 		GenerateFactorialTableComparison(upperbound, Integer(1), Posit(1), columnWidth);
 		/*
 +---------------
-unsigned __int64 and class sw::unum::posit<64,2>
+unsigned __int64 and class sw::universal::posit<64,2>
   i                                 integer(N!)                                 posit(N!)                             abs(error)
 	2                                         2                                         2                                       0
 	3                                         6                                         6                                       0
@@ -140,7 +140,7 @@ unsigned __int64 and class sw::unum::posit<64,2>
 
 	upperbound = 30;
 	{
-		using Integer = sw::unum::integer<128>;
+		using Integer = sw::universal::integer<128>;
 		constexpr size_t nbits = 64;
 		constexpr size_t es = 3;
 		using Posit = posit<nbits, es>;
@@ -148,7 +148,7 @@ unsigned __int64 and class sw::unum::posit<64,2>
 		GenerateFactorialTableComparison(upperbound, Integer(1), Posit(1), columnWidth);
 		/*
 +---------------
-class sw::unum::integer<128> and class sw::unum::posit<64,3>
+class sw::universal::integer<128> and class sw::universal::posit<64,3>
   i                                 integer(N!)                                 posit(N!)                             abs(error)
 	2                                         2                                         2                                       0
 	3                                         6                                         6                                       0
@@ -182,7 +182,7 @@ class sw::unum::integer<128> and class sw::unum::posit<64,3>
 	}
 
 	{
-		using Integer = sw::unum::integer<128>;
+		using Integer = sw::universal::integer<128>;
 		constexpr size_t nbits = 128;
 		constexpr size_t es = 4;
 		using Posit = posit<nbits, es>;
@@ -190,7 +190,7 @@ class sw::unum::integer<128> and class sw::unum::posit<64,3>
 		GenerateFactorialTableComparison(upperbound, Integer(1), Posit(1), columnWidth);
 		/*
 +---------------
-class sw::unum::integer<128> and class sw::unum::posit<128,4>
+class sw::universal::integer<128> and class sw::universal::posit<128,4>
   i                                 integer(N!)                                 posit(N!)                             abs(error)
 	2                                         2                                         2                                       0
 	3                                         6                                         6                                       0
@@ -232,15 +232,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

@@ -1,6 +1,6 @@
 // logic.cpp : test suite for bitblock logic operators
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 1
@@ -14,13 +14,13 @@ template<size_t nbits>
 int VerifyBitsetLogicLessThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	sw::unum::bitblock<nbits> a, b;
+	sw::universal::bitblock<nbits> a, b;
 	bool ref, bref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = sw::unum::convert_to_bitblock<nbits, unsigned>(i);
+		a = sw::universal::convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = sw::unum::convert_to_bitblock<nbits, unsigned>(j);
+			b = sw::universal::convert_to_bitblock<nbits, unsigned>(j);
 			ref = i < j;
 			bref = a < b;
 			if (ref != bref) {
@@ -36,13 +36,13 @@ template<size_t nbits>
 int VerifyBitsetLogicGreaterThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	sw::unum::bitblock<nbits> a, b;
+	sw::universal::bitblock<nbits> a, b;
 	bool ref, bref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = sw::unum::convert_to_bitblock<nbits, unsigned>(i);
+		a = sw::universal::convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = sw::unum::convert_to_bitblock<nbits, unsigned>(j);
+			b = sw::universal::convert_to_bitblock<nbits, unsigned>(j);
 			ref = i > j;
 			bref = a > b;
 			if (ref != bref) {
@@ -58,13 +58,13 @@ template<size_t nbits>
 int VerifyBitsetLogicEqual() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	sw::unum::bitblock<nbits> a, b;
+	sw::universal::bitblock<nbits> a, b;
 	bool ref, bref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = sw::unum::convert_to_bitblock<nbits, unsigned>(i);
+		a = sw::universal::convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = sw::unum::convert_to_bitblock<nbits, unsigned>(j);
+			b = sw::universal::convert_to_bitblock<nbits, unsigned>(j);
 			ref = i == j;
 			bref = a == b;
 			if (ref != bref) {
@@ -80,13 +80,13 @@ template<size_t nbits>
 int VerifyBitsetLogicNotEqual() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	sw::unum::bitblock<nbits> a, b;
+	sw::universal::bitblock<nbits> a, b;
 	bool ref, bref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = sw::unum::convert_to_bitblock<nbits, unsigned>(i);
+		a = sw::universal::convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = sw::unum::convert_to_bitblock<nbits, unsigned>(j);
+			b = sw::universal::convert_to_bitblock<nbits, unsigned>(j);
 			ref = i != j;
 			bref = a != b;
 			if (ref != bref) {
@@ -102,13 +102,13 @@ template<size_t nbits>
 int VerifyBitsetLogicLessOrEqualThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	sw::unum::bitblock<nbits> a, b;
+	sw::universal::bitblock<nbits> a, b;
 	bool ref, bref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = sw::unum::convert_to_bitblock<nbits, unsigned>(i);
+		a = sw::universal::convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = sw::unum::convert_to_bitblock<nbits, unsigned>(j);
+			b = sw::universal::convert_to_bitblock<nbits, unsigned>(j);
 			ref = i <= j;
 			bref = a <= b;
 			if (ref != bref) {
@@ -124,13 +124,13 @@ template<size_t nbits>
 int VerifyBitsetLogicGreaterOrEqualThan() {
 	const size_t NR_TEST_CASES = (unsigned(1) << nbits);
 	int nrOfFailedTestCases = 0;
-	sw::unum::bitblock<nbits> a, b;
+	sw::universal::bitblock<nbits> a, b;
 	bool ref, bref;
 
 	for (unsigned i = 0; i < NR_TEST_CASES; i++) {
-		a = sw::unum::convert_to_bitblock<nbits, unsigned>(i);
+		a = sw::universal::convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
-			b = sw::unum::convert_to_bitblock<nbits, unsigned>(j);
+			b = sw::universal::convert_to_bitblock<nbits, unsigned>(j);
 			ref = i >= j;
 			bref = a >= b;
 			if (ref != bref) {
@@ -148,7 +148,7 @@ int VerifyBitsetLogicGreaterOrEqualThan() {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
