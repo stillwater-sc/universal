@@ -3,12 +3,13 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/blas/blas.hpp>
+
 // set to 1 if you want to generate hw test vectors
 #define HARDWARE_QA_OUTPUT 0
 
 // type definitions for the important types, posit<> and quire<>
 #include <universal/posit/posit.hpp>
+#include <universal/traits/posit_traits.hpp>
 #include <universal/posit/quire.hpp>
 #include <universal/posit/fdp.hpp>
 
@@ -47,6 +48,20 @@ void init(Vector& x, const Scalar& value) {
 	for (size_t i = 0; i < x.size(); ++i) x[i] = value;
 }
 
+// regular dot product
+template<typename Vector>
+typename Vector::value_type dot(const Vector& a, const Vector& b) {
+	typename Vector::value_type sum{ 0 };
+	if (size(a) != size(b)) {
+		std::cerr << "vectors are not the same size\n";
+		return sum;
+	}
+	for (size_t i = 0; i < size(a); ++i) {
+		sum += a[i] * b[i];
+	}
+	return sum;
+}
+
 template<size_t nbits, size_t es, size_t nrElements = 16>
 int ValidateExactDotProduct() {
 	using namespace std;
@@ -77,7 +92,7 @@ int ValidateExactDotProduct() {
 		for_each(begin(pv), end(pv), [&fones](const Scalar& p) {
 			fones.push_back(float(p));
 		});
-		float result = sw::unum::blas::dot(nrElements, fones, 1, fv, 1);
+		float result = dot(fones, fv);
 		cout << "regular DOT test yields = " << result << endl << endl;
 	}
 

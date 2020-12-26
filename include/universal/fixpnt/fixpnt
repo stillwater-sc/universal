@@ -1,4 +1,4 @@
-// arbitrary fixed-point arithmetic type standard header
+// <universal/fixpnt/fixpnt>: arbitrary fixed-point arithmetic type standard header
 //
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
@@ -26,13 +26,13 @@
 
 ////////////////////////////////////////////////////////////////////////////////////////
 /// INCLUDE FILES that make up the library
-#include "fixed_point.hpp"
-#include "numeric_limits.hpp"
-#include "fixpnt_exceptions.hpp"
+#include <universal/fixpnt/fixed_point.hpp>
+#include <universal/fixpnt/numeric_limits.hpp>
+#include <universal/fixpnt/fixpnt_exceptions.hpp>
 #include <universal/traits/fixpnt_traits.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions
-#include "math_functions.hpp"
+#include <universal/fixpnt/math_functions.hpp>
 
 #endif

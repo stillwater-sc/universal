@@ -15,9 +15,7 @@ void EnumeratePositComponentsAcrossTheirScale() {
 	using namespace std;
 	using namespace sw::unum;
 
-	cout << "Enumerating the posit components across the dynamic range of the posit<" << nbits << "," << es << ">\n";
-
-	posit<nbits, es> p;
+	cout << "Enumerating posit components across the dynamic range of the posit<" << nbits << "," << es << ">\n";
 
 	// calculate the dynamic range of this posit configuration
 	int k_max = nbits - 2;

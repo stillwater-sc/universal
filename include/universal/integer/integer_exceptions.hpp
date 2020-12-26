@@ -36,8 +36,7 @@
 
 #endif
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 // divide by zero arithmetic exception for integers
 struct integer_divide_by_zero : public std::runtime_error {
@@ -56,5 +55,4 @@ struct integer_byte_index_out_of_bounds : public std::runtime_error {
 	integer_byte_index_out_of_bounds() : std::runtime_error("byte index out of bounds") {}
 };
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::unum

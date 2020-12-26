@@ -44,8 +44,7 @@
 
 #endif
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 // forward references
 template<size_t nbits, typename BlockType> class integer;
@@ -1061,9 +1060,9 @@ bool parse(const std::string& number, integer<nbits, BlockType>& value) {
 	bool bSuccess = false;
 	value.clear();
 	// check if the txt is an integer form: [0123456789]+
-	std::regex decimal_regex("[0-9]+");
-	std::regex octal_regex("^0[1-7][0-7]*$");
-	std::regex hex_regex("0[xX][0-9a-fA-F']+");
+	std::regex decimal_regex("^[-+]*[0-9]+");
+	std::regex octal_regex("^[-+]*0[1-7][0-7]*$");
+	std::regex hex_regex("^[-+]*0[xX][0-9a-fA-F']+");
 	// setup associative array to map chars to nibbles
 	std::map<char, int> charLookup{
 		{ '0', 0 },
@@ -1101,22 +1100,56 @@ bool parse(const std::string& number, integer<nbits, BlockType>& value) {
 	else if (std::regex_match(number, hex_regex)) {
 		//std::cout << "found a hexadecimal representation\n";
 		// each char is a nibble
-		int byte;
+		int maxByteIndex = nbits / 8;
+		int byte = 0;
 		int byteIndex = 0;
 		bool odd = false;
 		for (std::string::const_reverse_iterator r = number.rbegin();
-			r != number.rend();
+			r != number.rend() && byteIndex < maxByteIndex;
 			++r) {
 			if (*r == '\'') {
 				// ignore
 			}
 			else if (*r == 'x' || *r == 'X') {
-				// we have reached the end of our parse
 				if (odd) {
 					// complete the most significant byte
 					value.setbyte(byteIndex, byte);
 				}
-				bSuccess = true;
+				// check that we have [-+]0[xX] format
+				++r;
+				if (r != number.rend()) {
+					if (*r == '0') {
+						// check if we have a sign
+						++r;
+						if (r == number.rend()) {
+							// no sign, thus by definition positive
+							bSuccess = true;
+						}
+						else if (*r == '+') {
+							// optional positive sign, no further action necessary
+							bSuccess = true;
+						}
+						else if (*r == '-') {
+							// negative sign, invert
+							value = -value;
+							bSuccess = true;
+						}
+						else {
+							// the regex will have filtered this out
+							bSuccess = false;
+						}
+					}
+					else {
+						// we didn't find the obligatory '0', the regex should have filtered this out
+						bSuccess = false;
+					}
+				}
+				else {
+					// we are missing the obligatory '0', the regex should have filtered this out
+					bSuccess = false;
+				}
+				// we have reached the end of our parse
+				break;
 			}
 			else {
 				if (odd) {
@@ -1137,14 +1170,27 @@ bool parse(const std::string& number, integer<nbits, BlockType>& value) {
 		for (std::string::const_reverse_iterator r = number.rbegin();
 			r != number.rend();
 			++r) {
-			integer<nbits, BlockType> digit = charLookup.at(*r);
-			value += scale * digit;
-			scale *= 10;
+			if (*r == '-') {
+				value = -value;
+			}
+			else if (*r == '+') {
+				break;
+			}
+			else {
+				integer<nbits, BlockType> digit = charLookup.at(*r);
+				value += scale * digit;
+				scale *= 10;
+			}
 		}
 		bSuccess = true;
 	}
 
 	return bSuccess;
+}
+
+template<size_t nbits, typename BlockType>
+std::string to_string(const integer<nbits, BlockType>& n) {
+	return convert_to_decimal_string(n);
 }
 
 // generate an integer format ASCII format

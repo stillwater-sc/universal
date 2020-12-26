@@ -1,12 +1,12 @@
 // conversion_functions.cpp : api experiments for conversion algorithms
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // minimum set of include files
 #include "universal/posit/posit.hpp"
-#include "universal/posit/posit_manipulators.hpp"
+#include "universal/posit/manipulators.hpp"
 
 template<size_t nbits, size_t es>
 void GenerateLogicPattern(double input, const sw::unum::posit<nbits, es>& presult, const sw::unum::posit<nbits + 1, es>& pnext) {

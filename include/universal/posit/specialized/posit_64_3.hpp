@@ -5,12 +5,23 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {
-namespace unum {
+// DO NOT USE DIRECTLY!
+// the compile guards in this file are only valid in the context of the specialization logic
+// configured in the main <universal/posit/posit>
+
+#ifndef POSIT_FAST_POSIT_64_3
+#define POSIT_FAST_POSIT_64_3 0
+#endif
+
+namespace sw { namespace unum {
 
 	// set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_64_3
+#ifdef _MSC_VER
 #pragma message("Fast specialization of posit<64,3>")
+//#else
+//#warning("Fast specialization of posit<64,3>")
+#endif
 
 // fast specialized posit<64,3>
 template<>
@@ -618,7 +629,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<NBITS_IS_64, ES_
 	std::ios_base::fmtflags ff;
 	ff = ostr.flags();
 	ss.flags(ff);
-	ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
+	ss << std::setw(width) << std::setprecision(prec) << to_string(p, prec);  // TODO: we need a true native serialization function
 #endif
 	return ostr << ss.str();
 }
@@ -651,7 +662,7 @@ inline bool operator!=(const posit<NBITS_IS_64, ES_IS_3>& lhs, const posit<NBITS
 	return !operator==(lhs, rhs);
 }
 inline bool operator< (const posit<NBITS_IS_64, ES_IS_3>& lhs, const posit<NBITS_IS_64, ES_IS_3>& rhs) {
-	return *(signed char*)(&lhs._bits) < *(signed char*)(&rhs._bits);
+	return int64_t(lhs._bits) < int64_t(rhs._bits);
 }
 inline bool operator> (const posit<NBITS_IS_64, ES_IS_3>& lhs, const posit<NBITS_IS_64, ES_IS_3>& rhs) {
 	return operator< (rhs, lhs);
@@ -731,11 +742,6 @@ inline bool operator>=(int lhs, const posit<NBITS_IS_64, ES_IS_3>& rhs) {
 
 #endif // POSIT_ENABLE_LITERALS
 
-#else  // POSIT_FAST_POSIT_64_3
-// too verbose during compilation, so disabled
-// #pragma message("Standard posit<64,3>")
-#	define POSIT_FAST_POSIT_64_3 0
 #endif // POSIT_FAST_POSIT_64_3
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::unum

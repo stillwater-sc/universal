@@ -1,11 +1,11 @@
 // reciprocal_tables.cpp: create lookup tables for reciprocal and division of small posits up to 16 bits.
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include "universal/posit/posit.hpp"
-#include "universal/posit/posit_manipulators.hpp"
+#include "universal/posit/manipulators.hpp"
 
 /*
   Generator of a single lookup table for reciprocals of any posit configuration with 16 or fewer bits.

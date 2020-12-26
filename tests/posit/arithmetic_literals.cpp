@@ -1,6 +1,6 @@
 // arithmetic_literals.cpp: functional tests for the use of literals in posit equations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -21,7 +21,7 @@
 #include "universal/posit/numeric_limits.hpp"
 #include "universal/posit/specializations.hpp"
 // posit type manipulators such as pretty printers
-#include "universal/posit/posit_manipulators.hpp"
+#include "universal/posit/manipulators.hpp"
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 #include "../utils/posit_math_helpers.hpp"

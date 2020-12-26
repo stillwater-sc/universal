@@ -1,7 +1,7 @@
 #pragma once
 // specializations.hpp: header to include and configure any posit specializations
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -26,15 +26,26 @@
 #define POSIT_FAST_POSIT_256_5 0
 #endif
 
+#ifdef _MSC_VER
+#pragma warning( push )
+#pragma warning( disable : 4242 ) // warning C4242: 'argument': conversion from 'int32_t' to 'const int8_t', possible loss of data
+#pragma warning( disable : 4244 ) // warning C4244: '=': conversion from 'uint32_t' to 'uint16_t', possible loss of data
+#pragma warning( disable : 4365 ) // warning C4365: 'initializing': conversion from 'long' to 'uint32_t', signed/unsigned mismatch
+#endif
+
 // fast specializations for special posit configurations
-#include "specialized/posit_2_0.hpp"
-#include "specialized/posit_3_0.hpp"
-#include "specialized/posit_3_1.hpp"
-#include "specialized/posit_4_0.hpp"
-#include "specialized/posit_8_0.hpp"
-#include "specialized/posit_8_1.hpp"
-#include "specialized/posit_16_1.hpp"
-#include "specialized/posit_32_2.hpp"
-#include "specialized/posit_64_3.hpp"
-#include "specialized/posit_128_4.hpp"
-#include "specialized/posit_256_5.hpp"
+#include <universal/posit/specialized/posit_2_0.hpp>
+#include <universal/posit/specialized/posit_3_0.hpp>
+#include <universal/posit/specialized/posit_3_1.hpp>
+#include <universal/posit/specialized/posit_4_0.hpp>
+#include <universal/posit/specialized/posit_8_0.hpp>
+#include <universal/posit/specialized/posit_8_1.hpp>
+#include <universal/posit/specialized/posit_16_1.hpp>
+#include <universal/posit/specialized/posit_32_2.hpp>
+#include <universal/posit/specialized/posit_64_3.hpp>
+#include <universal/posit/specialized/posit_128_4.hpp>
+#include <universal/posit/specialized/posit_256_5.hpp>
+
+#ifdef _MSC_VER
+#pragma warning( pop )
+#endif

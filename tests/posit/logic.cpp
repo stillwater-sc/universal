@@ -1,6 +1,6 @@
 // logic.cpp : tests for logic operators between posits
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -8,7 +8,7 @@
 // enable literals to simplify the testing codes
 #define POSIT_ENABLE_LITERALS 1
 #include "universal/posit/posit.hpp"
-#include "universal/posit/posit_manipulators.hpp"
+#include "universal/posit/manipulators.hpp"
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 #include "../utils/posit_test_helpers.hpp"

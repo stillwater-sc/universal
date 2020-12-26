@@ -170,7 +170,6 @@ try {
 		cout << "Tracing conversion algorithm\n";
 		long long sample = 1614591918;
 		posit<32, 2> p(sample);
-		posit<32, 2> pp(p);
 		cout << "long : " << sample << " posit : " << hex_format(p) << " rounded : " << (long long)p << endl;
 		p = convert_to_posit<32, 2, long long>(sample);
 		cout << color_print(p) << endl;

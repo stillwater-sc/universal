@@ -1,0 +1,47 @@
+IEEE float configurations from numeric_limits<Ty>
+            float                   minexp scale       -125     maxexp scale        128     minimum  1.17549e-38     maximum  3.40282e+38
+            double                  minexp scale      -1021     maxexp scale       1024     minimum 2.22507e-308     maximum 1.79769e+308
+       long double                  minexp scale     -16381     maxexp scale      16384     minimum 3.3621e-4932     maximum 1.18973e+4932
+es = 0
+ posit<  8,0> useed scale     1     minpos scale         -6     maxpos scale          6     minimum     0.015625     maximum           64
+ posit< 16,0> useed scale     1     minpos scale        -14     maxpos scale         14     minimum  6.10352e-05     maximum        16384
+ posit< 32,0> useed scale     1     minpos scale        -30     maxpos scale         30     minimum  9.31323e-10     maximum  1.07374e+09
+ posit< 64,0> useed scale     1     minpos scale        -62     maxpos scale         62     minimum   2.1684e-19     maximum  4.61169e+18
+ posit<128,0> useed scale     1     minpos scale       -126     maxpos scale        126     minimum  1.17549e-38     maximum  8.50706e+37
+ posit<256,0> useed scale     1     minpos scale       -254     maxpos scale        254     minimum  3.45447e-77     maximum   2.8948e+76
+es = 1
+ posit<  8,1> useed scale     2     minpos scale        -12     maxpos scale         12     minimum  0.000244141     maximum         4096
+ posit< 16,1> useed scale     2     minpos scale        -28     maxpos scale         28     minimum  3.72529e-09     maximum  2.68435e+08
+ posit< 32,1> useed scale     2     minpos scale        -60     maxpos scale         60     minimum  8.67362e-19     maximum  1.15292e+18
+ posit< 64,1> useed scale     2     minpos scale       -124     maxpos scale        124     minimum  4.70198e-38     maximum  2.12676e+37
+ posit<128,1> useed scale     2     minpos scale       -252     maxpos scale        252     minimum  1.38179e-76     maximum  7.23701e+75
+ posit<256,1> useed scale     2     minpos scale       -508     maxpos scale        508     minimum 1.19333e-153     maximum 8.37988e+152
+es = 2
+ posit<  8,2> useed scale     4     minpos scale        -24     maxpos scale         24     minimum  5.96046e-08     maximum  1.67772e+07
+ posit< 16,2> useed scale     4     minpos scale        -56     maxpos scale         56     minimum  1.38778e-17     maximum  7.20576e+16
+ posit< 32,2> useed scale     4     minpos scale       -120     maxpos scale        120     minimum  7.52316e-37     maximum  1.32923e+36
+ posit< 64,2> useed scale     4     minpos scale       -248     maxpos scale        248     minimum  2.21086e-75     maximum  4.52313e+74
+ posit<128,2> useed scale     4     minpos scale       -504     maxpos scale        504     minimum 1.90934e-152     maximum 5.23742e+151
+ posit<256,2> useed scale     4     minpos scale      -1016     maxpos scale       1016     minimum 1.42405e-306     maximum 7.02224e+305
+es = 3
+ posit<  8,3> useed scale     8     minpos scale        -48     maxpos scale         48     minimum  3.55271e-15     maximum  2.81475e+14
+ posit< 16,3> useed scale     8     minpos scale       -112     maxpos scale        112     minimum  1.92593e-34     maximum   5.1923e+33
+ posit< 32,3> useed scale     8     minpos scale       -240     maxpos scale        240     minimum   5.6598e-73     maximum  1.76685e+72
+ posit< 64,3> useed scale     8     minpos scale       -496     maxpos scale        496     minimum  4.8879e-150     maximum 2.04587e+149
+ posit<128,3> useed scale     8     minpos scale      -1008     maxpos scale       1008     minimum 3.64556e-304     maximum 2.74306e+303
+ posit<256,3> useed scale     8     minpos scale      -2032     maxpos scale       2032     minimum 2.02791e-612     maximum 4.93118e+611
+es = 4
+ posit<  8,4> useed scale    16     minpos scale        -96     maxpos scale         96     minimum  1.26218e-29     maximum  7.92282e+28
+ posit< 16,4> useed scale    16     minpos scale       -224     maxpos scale        224     minimum  3.70921e-68     maximum  2.69599e+67
+ posit< 32,4> useed scale    16     minpos scale       -480     maxpos scale        480     minimum 3.20333e-145     maximum 3.12175e+144
+ posit< 64,4> useed scale    16     minpos scale       -992     maxpos scale        992     minimum 2.38915e-299     maximum 4.18558e+298
+ posit<128,4> useed scale    16     minpos scale      -2016     maxpos scale       2016     minimum 1.32901e-607     maximum 7.52439e+606
+ posit<256,4> useed scale    16     minpos scale      -4064     maxpos scale       4064     minimum 4.11242e-1224    maximum 2.43166e+1223
+es = 5
+ posit<  8,5> useed scale    32     minpos scale       -192     maxpos scale        192     minimum  1.59309e-58     maximum   6.2771e+57
+ posit< 16,5> useed scale    32     minpos scale       -448     maxpos scale        448     minimum 1.37582e-135     maximum 7.26839e+134
+ posit< 32,5> useed scale    32     minpos scale       -960     maxpos scale        960     minimum 1.02613e-289     maximum 9.74531e+288
+ posit< 64,5> useed scale    32     minpos scale      -1984     maxpos scale       1984     minimum 5.70806e-598     maximum 1.75191e+597
+ posit<128,5> useed scale    32     minpos scale      -4032     maxpos scale       4032     minimum 1.76627e-1214    maximum 5.66164e+1213
+ posit<256,5> useed scale    32     minpos scale      -8128     maxpos scale       8128     minimum 1.6912e-2447     maximum 5.91296e+2446
+

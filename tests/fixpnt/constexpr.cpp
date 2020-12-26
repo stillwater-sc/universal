@@ -3,7 +3,6 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <strstream>
 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations

@@ -5,12 +5,23 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {
-namespace unum {
+// DO NOT USE DIRECTLY!
+// the compile guards in this file are only valid in the context of the specialization logic
+// configured in the main <universal/posit/posit>
+
+#ifndef POSIT_FAST_POSIT_32_2
+#define POSIT_FAST_POSIT_32_2 0
+#endif
+
+namespace sw { namespace unum {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_32_2
+#ifdef _MSC_VER
 #pragma message("Fast specialization of posit<32,2>")
+//#else
+//#warning("Fast specialization of posit<32,2>")
+#endif
 
 // fast specialized posit<32,2>
 template<>
@@ -43,8 +54,8 @@ public:
 	explicit           posit(unsigned long initial_value) : _bits(0) { *this = initial_value; }
 	explicit           posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
 	explicit           posit(float initial_value) : _bits(0) { *this = initial_value; }
-	explicit           posit(double initial_value) : _bits(0) { *this = initial_value; }
-	                   posit(long double initial_value) : _bits(0) { *this = initial_value; }
+	                   posit(double initial_value) : _bits(0) { *this = initial_value; }
+	explicit           posit(long double initial_value) : _bits(0) { *this = initial_value; }
 
 	// assignment operators for native types
 	constexpr posit& operator=(signed char rhs) { return integer_assign((long)(rhs)); }
@@ -71,11 +82,11 @@ public:
 	explicit operator unsigned long() const { return to_long(); }
 	explicit operator unsigned int() const { return to_int(); }
 
-	posit& set(sw::unum::bitblock<NBITS_IS_32>& raw) {
+	posit& set(const sw::unum::bitblock<NBITS_IS_32>& raw) {
 		_bits = uint32_t(raw.to_ulong());
 		return *this;
 	}
-	posit& set_raw_bits(uint64_t value) {
+	constexpr posit& set_raw_bits(uint64_t value) {
 		_bits = uint32_t(value & 0xFFFFFFFF);
 		return *this;
 	}
@@ -83,6 +94,7 @@ public:
 		posit p;
 		return p.set_raw_bits((~_bits) + 1);
 	}
+	// arithmetic assignment operators
 	posit& operator+=(const posit& b) {
 		// special case handling of the inputs
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -161,7 +173,7 @@ public:
 		}
 #endif
 		if (b.iszero()) return *this;
-		if (iszero()) { _bits = b._bits; return *this; }
+		if (iszero()) { _bits = -int32_t(b._bits) & 0xFFFFFFFF; return *this; }
 		posit bComplement = b.twosComplement();
 		if (isneg() != b.isneg()) return *this += bComplement;
 
@@ -401,6 +413,12 @@ public:
 		posit p = 1.0 / *this;
 		return p;
 	}
+	posit abs() const {
+		if (isneg()) {
+			return posit(-*this);
+		}
+		return *this;
+	}
 
 	// MODIFIERS
 	inline constexpr void clear() { _bits = 0x0; }
@@ -425,7 +443,7 @@ public:
 		return p.set_raw_bits((~_bits) + 1);
 	}
 
-#if NEW_TO_VALUE
+#ifdef NEW_TO_VALUE
 	int rscale() const { // scale of the regime
 		return 1;
 	}
@@ -861,7 +879,7 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<NBITS_IS_32, ES_
 	std::ios_base::fmtflags ff;
 	ff = ostr.flags();
 	ss.flags(ff);
-	ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
+	ss << std::setw(width) << std::setprecision(prec) << to_string(p, prec);  // TODO: we need a true native serialization function
 #endif
 	return ostr << ss.str();
 }
@@ -894,7 +912,7 @@ inline bool operator!=(const posit<NBITS_IS_32, ES_IS_2>& lhs, const posit<NBITS
 	return !operator==(lhs, rhs);
 }
 inline bool operator< (const posit<NBITS_IS_32, ES_IS_2>& lhs, const posit<NBITS_IS_32, ES_IS_2>& rhs) {
-	return long(lhs._bits) < long(rhs._bits);
+	return int32_t(lhs._bits) < int32_t(rhs._bits);
 }
 inline bool operator> (const posit<NBITS_IS_32, ES_IS_2>& lhs, const posit<NBITS_IS_32, ES_IS_2>& rhs) {
 	return operator< (rhs, lhs);
@@ -956,10 +974,6 @@ inline bool operator>=(int lhs, const posit<NBITS_IS_32, ES_IS_2>& rhs) {
 
 #endif // POSIT_ENABLE_LITERALS
 
-#else  // POSIT_FAST_POSIT_32_2
-// too verbose #pragma message("Standard posit<32,2>")
-#	define POSIT_FAST_POSIT_32_2 0
 #endif // POSIT_FAST_POSIT_32_2
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::unum

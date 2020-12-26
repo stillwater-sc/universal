@@ -4,59 +4,17 @@
 // Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 #include <cmath>
 #include <cassert>
 #include <iostream>
+#include <iomanip>
 #include <limits>
 #include <regex>
 #include <type_traits>
 
-// to yield a fast regression environment for productive development
-// we want to leverage the IEEE floating point hardware available on x86 and ARM.
-// Problem is that neither support a true IEEE 128bit long double.
-// x86 provides a irreproducible x87 80bit format that is susceptible to inconsistent results due to multi-programming
-// ARM only provides a 64bit double format.
-// This conditional section is intended to create a unification of a long double format across
-// different compilation environments that creates a fast verification environment through consistent hw support.
-// Another option is to use a multiprecision floating point emulation layer. 
-// Side note: the performance of the bitset<> manipulation is slower than a multiprecision floating point implementation
-// so this comment is talking about issues that will come to pass when we transition to a high performance sw emulation.
-
-// 128bit double-double
-struct __128bitdd {
-	double upper;
-	double lower;
-};
-
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-typedef __128bitdd double_double;
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-typedef __128bitdd double_double;
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-typedef __128bitdd double_double;
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-typedef __128bitdd double_double;
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
+#if POSIT_THROW_ARITHMETIC_EXCEPTION
+// propagate this behavior down to constituent classes
+#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 1
 #endif
 
 // calling environment should define behavioral flags
@@ -73,18 +31,19 @@ typedef __128bitdd double_double;
 #include "exceptions.hpp"
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
-#include "posit_fwd.hpp"
-#include "../native/bit_functions.hpp"
-#include "../bitblock/bitblock.hpp"
-#include "trace_constants.hpp"
-#include "../value/value.hpp"
-#include "fraction.hpp"
-#include "exponent.hpp"
-#include "regime.hpp"
-#include "posit_functions.hpp"
+// TODO: these need to be redesigned to enable constexpr and improve performance: roadmap V3 Q1 2021
+#include <universal/bitblock/bitblock.hpp>
+#include <universal/value/value.hpp>
+// posit environment
+#include <universal/posit/posit_fwd.hpp>
+#include <universal/native/bit_functions.hpp>
+#include <universal/posit/trace_constants.hpp>
+#include <universal/posit/fraction.hpp>
+#include <universal/posit/exponent.hpp>
+#include <universal/posit/regime.hpp>
+#include <universal/posit/attributes.hpp>
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 // specialized configuration constants
 constexpr size_t NBITS_IS_2   =   2;
@@ -150,7 +109,7 @@ int decode_regime(const bitblock<nbits>& raw_bits) {
 		m = 1;   // if a run of 1's k = m - 1
 		int start = (nbits == 2 ? nbits - 2 : nbits - 3);
 		for (int i = start; i >= 0; --i) {
-			if (raw_bits[i] == 1) {
+			if (raw_bits[size_t(i)] == 1) {
 				m++;
 			}
 			else {
@@ -163,7 +122,7 @@ int decode_regime(const bitblock<nbits>& raw_bits) {
 		m = 1;  // if a run of 0's k = -m
 		int start = (nbits == 2 ? nbits - 2 : nbits - 3);
 		for (int i = start; i >= 0; --i) {
-			if (raw_bits[i] == 0) {
+			if (raw_bits[size_t(i)] == 0) {
 				m++;
 			}
 			else {
@@ -191,8 +150,8 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 		bitblock<es> _exp;
 		if (msb >= 0 && es > 0) {
 			nrExponentBits = (msb >= static_cast<int>(es) - 1 ? es : msb + 1);
-			for (size_t i = 0; i < nrExponentBits; i++) {
-				_exp[es - 1 - i] = tmp[msb - i];
+			for (size_t i = 0; i < nrExponentBits; ++i) {
+				_exp[size_t(static_cast<int>(es) - 1 - i)] = tmp[size_t(msb - i)];
 			}
 		}
 		_exponent.set(_exp, nrExponentBits);
@@ -206,10 +165,10 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 	// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
 	bitblock<fbits> _frac;
 	msb = msb - int(nrExponentBits);
-	size_t nrFractionBits = (msb < 0 ? 0 : msb + 1);
+	size_t nrFractionBits = size_t(msb < 0 ? 0 : msb + 1);
 	if (msb >= 0) {
 		for (int i = msb; i >= 0; --i) {
-			_frac[fbits - 1 - (msb - i)] = tmp[i];
+			_frac[size_t(static_cast<int>(fbits) - 1 - (msb - i))] = tmp[size_t(i)];
 		}
 	}
 	_fraction.set(_frac, nrFractionBits);
@@ -284,20 +243,20 @@ inline bitblock<nbits>& convert_to_bb(bool _sign, int _scale, const bitblock<fbi
 		int e = _scale;
 		bool r = (e >= 0);
 
-		unsigned run = (r ? 1 + (e >> es) : -(e >> es));
+		size_t run = (r ? 1 + (e >> es) : -(e >> es));
 		regime.set(0, 1 ^ r);
-		for (unsigned i = 1; i <= run; i++) regime.set(i, r);
+		for (size_t i = 1; i <= run; i++) regime.set(i, r);
 
-		unsigned esval = e % (uint32_t(1) << es);
+		size_t esval = e % (size_t(1) << static_cast<int>(es));
 		exponent = convert_to_bitblock<pt_len>(esval);
-		unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
+		size_t nf = size_t(std::max<int>(0, (static_cast<int>(nbits) + 1) - (2 + int(run) + static_cast<int>(es))));
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
 		// copy the most significant nf fraction bits into fraction
-		unsigned lsb = nf <= fbits ? 0 : nf - fbits;
-		for (unsigned i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
+		size_t lsb = nf <= fbits ? 0 : nf - fbits;
+		for (size_t i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
 
-		bool sb = anyAfter(fraction_in, fbits - 1 - nf);
+		bool sb = anyAfter(fraction_in, static_cast<int>(fbits) - 1 - int(nf));
 
 		// construct the untruncated posit
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
@@ -311,13 +270,12 @@ inline bitblock<nbits>& convert_to_bb(bool _sign, int _scale, const bitblock<fbi
 		pt_bits |= fraction;
 		pt_bits |= sticky_bit;
 
-		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
+		size_t len = 1 + std::max<size_t>((nbits + 1), (2 + run + es));
 		bool blast = pt_bits.test(len - nbits);
 		bool bafter = pt_bits.test(len - nbits - 1);
-		bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
+		bool bsticky = anyAfter(pt_bits, int(len) - static_cast<int>(nbits) - 1 - 1);
 
 		bool rb = (blast & bafter) | (bafter & bsticky);
-
 
 		pt_bits <<= pt_len - len;
 		truncate(pt_bits, ptt);
@@ -345,7 +303,7 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		if (_trace_rounding) std::cout << "projection  rounding ";
 	}
 	else {
-		const size_t pt_len = nbits + 3 + es;
+		constexpr size_t pt_len = nbits + 3 + es;
 		bitblock<pt_len> pt_bits;
 		bitblock<pt_len> regime;
 		bitblock<pt_len> exponent;
@@ -356,20 +314,23 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		int e  = _scale;
 		bool r = (e >= 0);
 
-		unsigned run = (r ? 1 + (e >> es) : -(e >> es));
+		size_t run = size_t(r ? 1 + (e >> es) : -(e >> es));
 		regime.set(0, 1 ^ r);
-		for (unsigned i = 1; i <= run; i++) regime.set(i, r);
+		for (size_t i = 1; i <= run; i++) regime.set(i, r);
 
-		unsigned esval = e % (uint32_t(1) << es);
+		size_t esval = e % (uint32_t(1) << es);
 		exponent = convert_to_bitblock<pt_len>(esval);
-		unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
+		int nbits_plus_one = static_cast<int>(nbits) + 1;
+		int sign_regime_es = 2 + int(run) + static_cast<int>(es);
+		size_t nf = (size_t)std::max<int>(0, (nbits_plus_one - sign_regime_es));
+		//size_t nf = (size_t)std::max<int>(0, (static_cast<int>(nbits + 1) - (2 + run + static_cast<int>(es))));
 		// TODO: what needs to be done if nf > fbits?
 		//assert(nf <= input_fbits);
 		// copy the most significant nf fraction bits into fraction
-		unsigned lsb = nf <= fbits ? 0 : nf - fbits;
-		for (unsigned i = lsb; i < nf; i++) fraction[i] = fraction_in[fbits - nf + i];
+		size_t lsb = nf <= fbits ? 0 : nf - fbits;
+		for (size_t i = lsb; i < nf; ++i) fraction[i] = fraction_in[fbits - nf + i];
 
-		bool sb = anyAfter(fraction_in, fbits - 1 - nf);
+		bool sb = anyAfter(fraction_in, static_cast<int>(fbits) - 1 - int(nf));
 
 		// construct the untruncated posit
 		// pt    = BitOr[BitShiftLeft[reg, es + nf + 1], BitShiftLeft[esval, nf + 1], BitShiftLeft[fv, 1], sb];
@@ -383,10 +344,10 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		pt_bits |= fraction;
 		pt_bits |= sticky_bit;
 
-		unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
+		size_t len = 1 + std::max<size_t>((nbits + 1), (2 + run + es));
 		bool blast = pt_bits.test(len - nbits);
 		bool bafter = pt_bits.test(len - nbits - 1);
-		bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
+		bool bsticky = anyAfter(pt_bits, int(len) - static_cast<int>(nbits) - 1 - 1);
 
 		bool rb = (blast & bafter) | (bafter & bsticky);
 
@@ -1144,51 +1105,19 @@ private:
 		return (unsigned long long)(to_long_double());
 	}
 #else
-	short to_short() const {
-		if (iszero()) return 0;
-		if (isnar()) return int(INFINITY);
-		return short(to_float());
-	}
-	int to_int() const {
-		if (iszero()) return 0;
-		if (isnar()) return int(INFINITY);
-		return int(to_double());
-	}
-	long to_long() const {
-		if (iszero()) return 0;
-		if (isnar()) return long(INFINITY);
-		return long(to_long_double());
-	}
-	long long to_long_long() const {
-		if (iszero()) return 0;
-		if (isnar()) return (long long)(INFINITY);
-		return (long long)(to_long_double());
-	}
-	unsigned short to_ushort() const {
-		if (iszero()) return 0;
-		if (isnar()) return int(INFINITY);
-		return (unsigned short)(to_float());
-	}
-	unsigned int to_uint() const {
-		if (iszero()) return 0;
-		if (isnar()) return int(INFINITY);
-		return (unsigned int)(to_double());
-	}
-	unsigned long to_ulong() const {
-		if (iszero()) return 0;
-		if (isnar()) return long(INFINITY);
-		return (unsigned long)(to_long_double());
-	}
-	unsigned long long to_ulong_long() const {
-		if (iszero()) return 0;
-		if (isnar()) return (long long)(INFINITY);
-		return (unsigned long long)(to_long_double());
-	}
+	short to_short() const                   { return short(to_float()); }
+	int to_int() const                       { return int(to_double()); }
+	long to_long() const                     { return long(to_long_double()); }
+	long long to_long_long() const           { return (long long)(to_long_double()); }
+	unsigned short to_ushort() const         { return (unsigned short)(to_float()); }
+	unsigned int to_uint() const             { return (unsigned int)(to_double()); }
+	unsigned long to_ulong() const           { return (unsigned long)(to_long_double()); }
+	unsigned long long to_ulong_long() const { return (unsigned long long)(to_long_double()); }
 #endif
-	float       to_float() const {
+	float to_float() const {
 		return (float)to_double();
 	}
-	double      to_double() const {
+	double to_double() const {
 		if (iszero())	return 0.0;
 		if (isnar())	return NAN;
 		bool		     	 _sign;
@@ -1197,9 +1126,9 @@ private:
 		fraction<fbits>      _fraction;
 		decode(_raw_bits, _sign, _regime, _exponent, _fraction);
 		double s = (_sign ? -1.0 : 1.0);
-		double r = _regime.value();
-		double e = _exponent.value();
-		double f = (1.0 + _fraction.value());
+		double r = double(_regime.value());
+		double e = double(_exponent.value());
+		double f = (1.0 + double(_fraction.value()));
 		return s * r * e * f;
 	}
 	long double to_long_double() const {
@@ -1679,7 +1608,10 @@ inline std::ostream& operator<<(std::ostream& ostr, const posit<nbits, es>& p) {
 	ff = ostr.flags();
 	ss.flags(ff);
 //	ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
-	ss << std::setw(width) << std::setprecision(prec) << to_string(p, prec);  // TODO: we need a true native serialization function
+	// TODO: how do you react to fmtflags being set, such as hexfloat or showpos?
+	// it appears that the fmtflags are opaque and not a user-visible feature
+	ss << std::setw(width) << std::setprecision(prec);
+	ss << to_string(p, prec);  // TODO: we need a true native serialization function
 #endif
 	return ostr << ss.str();
 }
@@ -1816,7 +1748,7 @@ inline posit<nbits, es> operator*(const posit<nbits, es>& lhs, const posit<nbits
 // BINARY DIVISION
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator/(const posit<nbits, es>& lhs, const posit<nbits, es>& rhs) {
-	posit<nbits, es> ratio = lhs;
+	posit<nbits, es> ratio(lhs);
 	return ratio /= rhs;
 }
 
@@ -2498,13 +2430,6 @@ inline bool operator>=(long double lhs, const posit<nbits, es>& rhs) {
 	return !operator<(posit<nbits, es>(lhs), rhs);
 }
 
-// TODO: Find an appropriate location for this!
-template <typename T>
-constexpr bool is_intrinsic_numerical= std::is_integral<T>::value || std::is_floating_point<T>::value;
-
-template <typename T, typename U= void>
-using enable_intrinsic_numerical= std::enable_if_t<is_intrinsic_numerical<T>, U>;
-
 // BINARY ADDITION
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, double rhs) {
@@ -2512,6 +2437,14 @@ inline posit<nbits, es> operator+(const posit<nbits, es>& lhs, double rhs) {
 	sum += posit<nbits, es>(rhs);
 	return sum;
 }
+
+// TODO: need to find a place in traits
+// non-posit: native integer and floating point types
+template <typename T>
+constexpr bool is_intrinsic_numerical = std::is_integral<T>::value || std::is_floating_point<T>::value;
+
+template <typename T, typename U = void>
+using enable_intrinsic_numerical = std::enable_if_t<is_intrinsic_numerical<T>, U>;
 
 // More generic alternative to avoid ambiguities with intrinsic +
 template<size_t nbits, size_t es, typename Value, typename = enable_intrinsic_numerical<Value> >
@@ -2565,13 +2498,13 @@ inline posit<nbits, es> operator*(Value lhs, const posit<nbits, es>& rhs) {
 	return mul;
 }
     
-    
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator*(const posit<nbits, es>& lhs, double rhs) {
 	posit<nbits, es> mul(lhs);
 	mul *= posit<nbits, es>(rhs);
 	return mul;
 }
+
 // BINARY DIVISION
 template<size_t nbits, size_t es>
 inline posit<nbits, es> operator/(double lhs, const posit<nbits, es>& rhs) {
@@ -2612,6 +2545,10 @@ template<size_t nbits, size_t es>
 posit<nbits, es> fabs(const posit<nbits, es>& p) {
 	return p.abs();
 }
+template<typename Scalar>
+Scalar fabs(Scalar s) {
+	return std::fabs(s);
+}
 
 // fill a posit with minpos value
 template<size_t nbits, size_t es>
@@ -2625,6 +2562,13 @@ template<size_t nbits, size_t es>
 constexpr posit<nbits, es>& maxpos(posit<nbits, es>& p) {
 	p.setnar();
 	return --p;
+}
+
+// create a posit with maxpos value
+template<size_t nbits, size_t es>
+constexpr posit<nbits, es> maxpos() {
+	posit<nbits, es> p;
+	return maxpos(p);
 }
 
 // fill a posit with minneg value
@@ -2734,8 +2678,7 @@ value<nbits> fmma(const posit<nbits, es>& a, const posit<nbits, es>& b, const po
 // Standard posit short-hand types
 /*
 TODO: how do we use the same names as the posit C-types?
-right now, because we pull in the C++ as run-time to the C functions
- this causes a redefinition error
+right now, because we pull in the C++ as run-time to the C functions this causes a redefinition error
 using posit8_t   = posit<8, 0>;
 using posit16_t  = posit<16, 1>;
 using posit32_t  = posit<32, 2>;
@@ -2745,7 +2688,6 @@ using posit256_t = posit<256, 5>;
 */
 
 
-}  // namespace unum
-}  // namespace sw
+}}  // namespace sw::unum
 
 

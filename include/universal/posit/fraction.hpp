@@ -35,7 +35,7 @@ public:
 		if (_Bits.none()) return v;
 		long double scale = 0.5l;
 		for (int i = int(fbits) - 1; i >= 0; i--) {
-			if (_Bits.test(i)) v += scale;
+			if (_Bits.test(size_t(i))) v += scale;
 			scale *= 0.5l;
 			if (scale == 0.0l) break;
 		}
@@ -238,13 +238,12 @@ private:
 ////////////////////// FRACTION operators
 template<size_t nfbits>
 inline std::ostream& operator<<(std::ostream& ostr, const fraction<nfbits>& f) {
-	unsigned int nrOfFractionBitsProcessed = 0;
+	size_t nrOfFractionBitsProcessed = 0;
 	if (nfbits > 0) {
-		int upperbound = nfbits;
-		upperbound--;
+		int upperbound = int(nfbits) - 1;
 		for (int i = upperbound; i >= 0; --i) {
-			if (f._NrOfBits > nrOfFractionBitsProcessed++) {
-				ostr << (f._Bits[i] ? "1" : "0");
+			if (f._NrOfBits > ++nrOfFractionBitsProcessed) {
+				ostr << (f._Bits[size_t(i)] ? "1" : "0");
 			}
 			else {
 				ostr << "-";

@@ -82,7 +82,6 @@ int ValidateRegimeScales(const std::string& tag, bool bReportIndividualTestCases
 	int useed_scale = int(1) << es;  // int because we are doing int math with it
 
 	sw::unum::regime<nbits, es> r1;
-	sw::unum::posit<nbits, es> p; // for check_inward_projection_range
 	// scale represents the binary scale of a value to test
 	int size = int(nbits);
 	for (int k = (-size + 1); k <= (size - 1); k++) {

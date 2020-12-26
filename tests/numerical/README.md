@@ -1,6 +1,7 @@
-# Numerical tests and examples
+# Numerical
 
-Posits are a tapered floating point system. Floating point systems exhibit rounding error that makes any arithmetic
-using floating point systems approximate. 
+This directory contains explorations of the properties of number systems in the directory `properties`
+and numerical behavior of functions in `fpbench`.
 
-The programs in this directory explore these rounding errors and possible solutions.
+The programs in this directory explore rounding errors and possible solutions through user deferred rounding
+or rewriting of terms.

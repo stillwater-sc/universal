@@ -1,13 +1,13 @@
 // function_truncate.cpp: functional tests for truncation functions trunc, round, floor, and ceil
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // minimum set of include files to reflect source code dependencies
 #define POSIT_ENABLE_LITERALS 1
 #include "universal/posit/posit.hpp"
-#include "universal/posit/posit_manipulators.hpp"
+#include "universal/posit/manipulators.hpp"
 #include "universal/posit/math/truncate.hpp"
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"

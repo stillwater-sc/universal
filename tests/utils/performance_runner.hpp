@@ -32,7 +32,7 @@ std::string toPowerOfTen(Ty value) {
 }
 
 // generic test runner, takes a function that enumerates an operator NR_OPS time, and measures elapsed time
-void PerformanceRunner(const std::string& tag, void (f)(size_t), size_t NR_OPS) {
+void PerformanceRunner(const std::string& tag, void (f)(uint64_t), uint64_t NR_OPS) {
 	using namespace std;
 	using namespace std::chrono;
 

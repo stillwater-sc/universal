@@ -5,12 +5,23 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw {
-namespace unum {
+// DO NOT USE DIRECTLY!
+// the compile guards in this file are only valid in the context of the specialization logic
+// configured in the main <universal/posit/posit>
+
+#ifndef POSIT_FAST_POSIT_8_0
+#define POSIT_FAST_POSIT_8_0 0
+#endif
+
+namespace sw { namespace unum {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_8_0
+#ifdef _MSC_VER
 #pragma message("Fast specialization of posit<8,0>")
+//#else
+//#warning("Fast specialization of posit<8,0>")
+#endif
 
 	// injecting the C API into namespace sw::unum
 #include "posit_8_0.h"
@@ -73,19 +84,19 @@ namespace unum {
 		explicit operator unsigned long() const { return to_long(); }
 		explicit operator unsigned int() const { return to_int(); }
 
-		posit& set(sw::unum::bitblock<NBITS_IS_8>& raw) {
+		posit& set(const sw::unum::bitblock<NBITS_IS_8>& raw) {
 			_bits = uint8_t(raw.to_ulong());
 			return *this;
 		}
-		posit& set_raw_bits(uint64_t value) {
+		constexpr posit& set_raw_bits(uint64_t value) {
 			_bits = uint8_t(value & 0xff);
 			return *this;
 		}
-		posit operator-() const {
-			posit negated;
-			posit8_t b = { { _bits } };
-			return negated.set_raw_bits(posit8_negate(b).v);
+		constexpr posit operator-() const {
+			posit p;
+			return p.set_raw_bits((~_bits) + 1);
 		}
+		// arithmetic assignment operators
 		posit& operator+=(const posit& b) {
 			posit8_t lhs = { { _bits } };
 			posit8_t rhs = { { b._bits} };
@@ -114,6 +125,8 @@ namespace unum {
 			_bits = div.v;
 			return *this;
 		}
+				
+		// prefix/postfix operators
 		posit& operator++() {
 			++_bits;
 			return *this;
@@ -132,10 +145,18 @@ namespace unum {
 			operator--();
 			return tmp;
 		}
+		
 		posit reciprocate() const {
 			posit p = 1.0 / *this;
 			return p;
 		}
+		posit abs() const {
+			if (isneg()) {
+				return posit(-*this);
+			}
+			return *this;
+		}
+		
 		// SELECTORS
 		inline bool isnar() const      { return (_bits == sign_mask); }
 		inline bool iszero() const     { return (_bits == 0x00); }
@@ -363,7 +384,7 @@ namespace unum {
 		std::ios_base::fmtflags ff;
 		ff = ostr.flags();
 		ss.flags(ff);
-		ss << std::showpos << std::setw(width) << std::setprecision(prec) << (long double)p;
+		ss << std::setw(width) << std::setprecision(prec) << to_string(p, prec);  // TODO: we need a true native serialization function
 #endif
 		return ostr << ss.str();
 	}
@@ -396,7 +417,7 @@ namespace unum {
 		return !operator==(lhs, rhs);
 	}
 	inline bool operator< (const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
-		return (signed char)(lhs._bits) < (signed char)(rhs._bits);
+		return int8_t(lhs._bits) < int8_t(rhs._bits);
 	}
 	inline bool operator> (const posit<NBITS_IS_8, ES_IS_0>& lhs, const posit<NBITS_IS_8, ES_IS_0>& rhs) {
 		return operator< (rhs, lhs);
@@ -465,10 +486,6 @@ namespace unum {
 
 #endif // POSIT_ENABLE_LITERALS
 
-#else  // POSIT_FAST_POSIT_8_0
-// too verbose #pragma message("Standard posit<8,0>")
-#	define POSIT_FAST_POSIT_8_0 0
 #endif // POSIT_FAST_POSIT_8_0
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::unum

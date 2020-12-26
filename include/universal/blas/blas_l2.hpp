@@ -11,13 +11,23 @@
 // compilation flags
 // BLAS_TRACE_ROUNDING_EVENTS
 // when set traces the quire operations
+#ifndef BLAS_TRACE_ROUNDING_EVENTS
+#define BLAS_TRACE_ROUNDING_EVENTS 0
+#endif
 
-// Matrix-vector product: b = A * x
+// Matrix-vector product: b = A * x, no quire for posit values
 template<typename Matrix, typename Vector>
 void matvec(Vector& b, const Matrix& A, const Vector& x) {
-	b = A * x;
+	using Scalar = typename Vector::value_type;
+	for (size_t i = 0; i < A.rows(); ++i) {
+		b[i] = Scalar(0);
+		for (size_t j = 0; j < A.cols(); ++j) {
+			b[i] += A(i, j) * x[j];
+		}
+	}
 }
 
+#ifdef QUIRE_ENABLED_MATVEC
 // Matrix-vector product: b = A * x, posit specialized
 template<size_t nbits, size_t es>
 void matvec(sw::unum::blas::vector< sw::unum::posit<nbits, es> >& b, const sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A, const sw::unum::blas::vector< sw::unum::posit<nbits, es> >& x) {
@@ -57,6 +67,7 @@ void matvec(sw::unum::blas::vector< sw::unum::posit<nbits, es> >& b, const sw::u
 	}
 #endif
 }
+#endif // QUIRE_ENABLED_MATVEC
 
 // A times x = b fused matrix-vector product
 template<size_t nbits, size_t es>
@@ -93,7 +104,7 @@ sw::unum::blas::vector< sw::unum::posit<nbits, es> > fmv(const sw::unum::blas::m
 	}
 #if BLAS_TRACE_ROUNDING_EVENTS
 	if (errors) {
-		std::cout << "UNUM-BLAS: tracing found " << errors << " rounding errors in matvec operation\n";
+		std::cout << "Universal-BLAS: tracing found " << errors << " rounding errors in matvec operation\n";
 	}
 #endif
 	return b;

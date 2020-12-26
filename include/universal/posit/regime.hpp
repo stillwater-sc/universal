@@ -1,7 +1,7 @@
 #pragma once
 // regime.hpp: definition of a posit regime
 //
-// Copyright (C) 2017 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,7 +9,7 @@ namespace sw {
 namespace unum {
 
 // Forward definitions
-template<size_t nbits, size_t es> int calculate_k(int);
+template<size_t nbits, size_t es> constexpr int calculate_k(int);
 
 // template class representing the regime using <nbits,es> of the containing posit
 template<size_t nbits, size_t es>
@@ -98,7 +98,7 @@ public:
 			k = -_k - 1;
 			_Bits.reset();
 			if (k < static_cast<int>(nbits) - 2) {	// _RegimeBits = (k < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
-				_RegimeBits = k + 2;
+				_RegimeBits = size_t(k + 2);
 				_Bits.set(static_cast<int>(nbits) - 1 - _RegimeBits, true);   // set the run-length termination bit
 			}
 			else {
@@ -110,7 +110,7 @@ public:
 			_k = int(k < static_cast<int>(nbits) - 2 ? k : static_cast<int>(nbits) - 2); // constrain regime to maxpos
 			_Bits.set();
 			if (k < static_cast<int>(nbits) - 2) {	// _RegimeBits = (std::size_t(k) < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
-				_RegimeBits = k + 2;   
+				_RegimeBits = size_t(k + 2);   
 				_Bits.set(nbits - 1 - _RegimeBits, false);   // set the run-length termination bit
 			}
 			else {
@@ -162,10 +162,10 @@ inline int scale(const regime<nbits, es>& r) { return r.scale();  }
 /////////////////  REGIME operators
 template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const regime<nbits, es>& r) {
-	unsigned int nrOfRegimeBitsProcessed = 0;
+	size_t nrOfRegimeBitsProcessed = 0;
 	for (int i = nbits - 2; i >= 0; --i) {
 		if (r._RegimeBits > nrOfRegimeBitsProcessed++) {
-			ostr << (r._Bits[i] ? "1" : "0");
+			ostr << (r._Bits[size_t(i)] ? "1" : "0");
 		}
 		else {
 			ostr << "-";
@@ -184,10 +184,10 @@ template<size_t nbits, size_t es>
 inline std::string to_string(const regime<nbits, es>& r, bool dashExtent = true) {
 	std::stringstream ss;
 	bitblock<nbits - 1> bb = r.get();
-	unsigned int nrOfRegimeBitsProcessed = 0;
+	size_t nrOfRegimeBitsProcessed = 0;
 	for (int i = nbits - 2; i >= 0; --i) {
 		if (r.nrBits() > nrOfRegimeBitsProcessed++) {
-			ss << (bb[i] ? "1" : "0");
+			ss << (bb[size_t(i)] ? "1" : "0");
 		}
 		else {
 			ss << (dashExtent ? "-" : "");

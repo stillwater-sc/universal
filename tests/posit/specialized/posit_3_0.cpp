@@ -14,9 +14,7 @@
 #include "../../utils/test_helpers.hpp"
 #include "../../utils/posit_test_helpers.hpp"
 
-/*
- posit of size nbits = 3 without exponent bits, i.e. es = 0.
-*/
+// posit of size nbits = 3 without exponent bits, i.e. es = 0.
 
 int main(int argc, char** argv)
 try {
