@@ -9,8 +9,7 @@
 #define DECIMAL_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/decimal/decimal.hpp>
 #include <universal/decimal/numeric_limits.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
 
 namespace sw { namespace universal {
 

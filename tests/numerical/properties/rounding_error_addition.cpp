@@ -3,12 +3,9 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include "common.hpp"
-// pull in the posit number system
 #include <universal/posit/posit>
-// test helpers, such as, ReportTestResults
-#include "../tests/utils/test_helpers.hpp"
-#include "../tests/utils/posit_test_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
 
 // enumerate all addition cases for a posit configuration: is within 10sec till about nbits = 14
 template<size_t nbits, size_t es>

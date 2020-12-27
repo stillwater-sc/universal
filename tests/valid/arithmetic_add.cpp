@@ -19,9 +19,7 @@
 #include <universal/posit/posit.hpp>
 #include <universal/valid/valid.hpp>
 #include <universal/valid/manipulators.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/valid_test_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
 
 
 // generate specific test case that you can trace with the trace conditions in posit.h

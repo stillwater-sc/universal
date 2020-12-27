@@ -8,8 +8,7 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // type definitions for the important types, posit<> and quire<>
 #include <universal/posit/posit>
-// test support functions
-#include "../tests/utils/quire_test_helpers.hpp"
+#include <universal/verification/quire_test_suite.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0

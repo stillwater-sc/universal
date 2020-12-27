@@ -28,6 +28,9 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::setprecision(5);
 }
 
+#define MANUAL_TESTING 1
+#define STRESS_TESTING 0
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -44,6 +47,9 @@ try {
 
 	cout << "Standard quarter precision areal<8,2> configuration tests" << endl;
 
+#if MANUAL_TESTING
+
+#if 0
 	using TestType = areal<nbits, es>;
 	using ReferenceType = float;
 
@@ -58,9 +64,6 @@ try {
 	// test if conversion to int is implicit
 	// int anint = r;
 
-#if 0
-
-
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual             <TestType>(), tag, "    ==         ");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual          <TestType>(), tag, "    !=         ");
@@ -72,13 +75,18 @@ try {
 	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion<TestType>(tag, bReportIndividualTestCases), tag, "integer assign ");
 	nrOfFailedTestCases += ReportTestResult( VerifyConversion       <TestType>(tag, bReportIndividualTestCases), tag, "float assign   ");
 #endif
+
+#else // MANUAL_TESTING
+
 	// arithmetic tests
-	nrOfFailedTestCases += ReportTestResult( VerifyAddition         <TestType>(tag, bReportIndividualTestCases), tag, "add            ");
+//	nrOfFailedTestCases += ReportTestResult( VerifyAddition         <TestType>(tag, bReportIndividualTestCases), tag, "add            ");
 //	nrOfFailedTestCases += ReportTestResult( VerifySubtraction      <TestType>(tag, bReportIndividualTestCases), tag, "subtract       ");
 //	nrOfFailedTestCases += ReportTestResult( VerifyMultiplication   <TestType>(tag, bReportIndividualTestCases), tag, "multiply       ");
 //	nrOfFailedTestCases += ReportTestResult( VerifyDivision         <TestType>(tag, bReportIndividualTestCases), tag, "divide         ");
 //	nrOfFailedTestCases += ReportTestResult( VerifyNegation         <TestType>(tag, bReportIndividualTestCases), tag, "negate         ");
 //	nrOfFailedTestCases += ReportTestResult( VerifyReciprocation    <TestType>(tag, bReportIndividualTestCases), tag, "reciprocate    ");
+
+#endif // MANUAL_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

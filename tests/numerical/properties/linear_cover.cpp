@@ -3,12 +3,9 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include "common.hpp"
-// pull in the posit number system
 #include <universal/posit/posit>
-// test helpers, such as, ReportTestResults
-#include "../tests/utils/test_helpers.hpp"
-#include "../tests/utils/posit_test_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
 
 /*
 When using a discretization scheme, for example, an Analog-to-Digital converter,

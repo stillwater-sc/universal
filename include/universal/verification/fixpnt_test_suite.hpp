@@ -14,9 +14,8 @@
 // We want the test suite to be used with different configurations of the fixed-point number system
 // so the calling environment needs to set the configuration
 #include <universal/fixpnt/fixed_point.hpp>
-#include "universal/fixpnt/attributes.hpp"
-// test helpers, such as, ReportTestResults
-#include "test_helpers.hpp"
+#include <universal/fixpnt/attributes.hpp>
+#include <universal/verification/test_status.hpp> // ReportTestResult
 
 namespace sw { namespace universal {
 

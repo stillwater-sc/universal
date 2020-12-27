@@ -7,11 +7,11 @@
 // minimum set of include files to reflect source code dependencies
 #define POSIT_FAST_POSIT_32_2 1
 #define POSIT_ENABLE_LITERALS 1
-#include "universal/posit/posit.hpp"
-#include "universal/posit/manipulators.hpp"
+#include <universal/posit/posit.hpp>
+#include <universal/posit/manipulators.hpp>
 // test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/posit_math_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_math_test_suite.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0

@@ -17,8 +17,7 @@
 
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
 
 // generate a posit conversion test case
 // process to convert an integer to a posit is to

@@ -32,11 +32,12 @@ void PrintTestVector(std::ostream& ostr, const std::vector< sw::universal::posit
 
 template<size_t nbits, size_t es, size_t capacity>
 int GenerateQuireAccumulationTestCase(bool bReportIndividualTestCases, size_t nrOfElements, const sw::universal::posit<nbits,es>& seed) {
+	using namespace sw::universal;
 	int nrOfFailedTestCases = 0;
 	std::stringstream ss;
 	ss << "quire<" << nbits << "," << es << "," << capacity << ">";
 	std::vector< sw::universal::posit<nbits, es> > t = GenerateVectorForZeroValueFDP(nrOfElements, seed);
-	nrOfFailedTestCases += ReportTestResult(sw::universal::ValidateQuireAccumulation<nbits, es, capacity>(bReportIndividualTestCases, t), ss.str(), "accumulation");
+	nrOfFailedTestCases += ReportTestResult(ValidateQuireAccumulation<nbits, es, capacity>(bReportIndividualTestCases, t), ss.str(), "accumulation");
 	return nrOfFailedTestCases;
 }
 

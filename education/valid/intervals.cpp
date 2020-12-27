@@ -8,8 +8,6 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // pull in the valid number system
 #include <universal/valid/valid>
-// test support functions
-#include "../tests/utils/valid_test_helpers.hpp"
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0

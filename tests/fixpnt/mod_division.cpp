@@ -13,11 +13,10 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/fixpnt/fixed_point.hpp>
-// fixed-point type manipulators such as pretty printers
-#include <universal/native/integers.hpp>
 #include <universal/fixpnt/manipulators.hpp>
-#include <universal/fixpnt/attributes.hpp>
-#include "../utils/fixpnt_test_suite.hpp"
+#include <universal/fixpnt/math_functions.hpp>
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/fixpnt_test_suite.hpp>
 
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits
 // using nbits modulo arithmetic with final sign

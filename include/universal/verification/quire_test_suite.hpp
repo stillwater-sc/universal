@@ -272,5 +272,5 @@ int ValidateQuireAccumulation(bool bReportIndividualTestCases, const std::vector
 }
 
 
-}} // namespace sw::universal
+} // namespace sw::universal
 
