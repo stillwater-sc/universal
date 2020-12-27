@@ -8,10 +8,9 @@
 #define POSIT_TRACE_DECODE
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/posit/posit.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/posit_test_helpers.hpp"
+#include <universal/posit/posit.hpp>
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
 
 /*
   Posit values are a combination of

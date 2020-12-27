@@ -6,9 +6,9 @@
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 1
 #undef BITBLOCK_ROUND_TIES_AWAY_FROM_ZERO
 #undef BITBLOCK_ROUND_TIES_TO_ZERO
-#include "universal/bitblock/bitblock.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
+#include <universal/bitblock/bitblock.hpp>
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/bitblock_test_suite.hpp>
 
 template<size_t nbits>
 int VerifyBitsetLogicLessThan() {

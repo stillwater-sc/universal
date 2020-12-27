@@ -9,12 +9,11 @@
 #define POSIT_TRACE_POW
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/posit/posit.hpp"
-#include "universal/posit/manipulators.hpp"
-#include "universal/posit/math/exponent.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/posit_math_helpers.hpp"
+#include <universal/posit/posit.hpp>
+#include <universal/posit/manipulators.hpp>
+#include <universal/posit/math/exponent.hpp>
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_math_test_suite.hpp>
 
 // Background: http://numbers.computation.free.fr/Constants/E/e.html
 //

@@ -809,7 +809,7 @@ std::string to_hex(const blockbinary<nbits, bt>& number, bool wordMarker = false
 	std::stringstream ss;
 	ss << "0x" << std::hex;
 	int nrNibbles = int(1 + ((nbits - 1) >> 2));
-	for (int n = nrNibbles - 1; n >= 0; --n) {
+	for (long n = nrNibbles - 1; n >= 0; --n) {
 		uint8_t nibble = number.nibble(n);
 		ss << hexChar[nibble];
 		if (n > 0 && ((n * 4) % bitsInBlock) == 0) ss << '\'';

@@ -7,9 +7,8 @@
 #undef BITBLOCK_ROUND_TIES_AWAY_FROM_ZERO
 #undef BITBLOCK_ROUND_TIES_TO_ZERO
 #include <universal/bitblock/bitblock.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "bitblock_test_helpers.hpp"
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/bitblock_test_suite.hpp>
 
 #if defined(_MSC_VER)
 // Disable warnings for Microsoft Visual Studio

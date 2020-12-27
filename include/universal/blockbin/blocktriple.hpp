@@ -21,8 +21,8 @@ template<size_t ebits, size_t fbits, typename bt> class blocktriple;
 template<size_t ebits, size_t fbits, typename bt> blocktriple<ebits,fbits,bt> abs(const blocktriple<ebits,fbits,bt>& v);
 
 template<size_t nbits, typename bt>
-blockbinary<nbits> extract_23b_fraction(uint32_t _23b_fraction_without_hidden_bit) {
-	blockbinary<nbits, typename bt> _fraction;
+blockbinary<nbits,bt> extract_23b_fraction(uint32_t _23b_fraction_without_hidden_bit) {
+	blockbinary<nbits, bt> _fraction;
 	uint32_t mask = uint32_t(0x00400000ul);
 	unsigned int ub = (nbits < 23 ? nbits : 23);
 	for (unsigned int i = 0; i < ub; i++) {
@@ -345,9 +345,9 @@ public:
 	/// Normalized shift (e.g., for addition).
 	template <size_t Size>
 	blockbinary<Size> nshift(long shift) const {
-		bitblock<Size> number;
+		blockbinary<Size> number;
 
-#if POSIT_THROW_ARITHMETIC_EXCEPTIONS
+#if BLOCKTRIPLE_THROW_ARITHMETIC_EXCEPTIONS
 		// Check range
 		if (long(fbits) + shift >= long(Size))
 			throw shift_too_large{};
@@ -358,7 +358,7 @@ public:
 			number.reset();
 			return number;
 		}
-#endif // POSIT_THROW_ARITHMETIC_EXCEPTIONS
+#endif // BLOCKTRIPLE_THROW_ARITHMETIC_EXCEPTIONS
 
 		const long hpos = fbits + shift;       // position of hidden bit
 												  
@@ -437,7 +437,7 @@ public:
 		_inf = src.isinf();
 		_zero = src.iszero();
 		_nan = src.isnan();
-		bitblock<srcbits> src_fraction = src.fraction();
+		blockbinary<srcbits> src_fraction = src.fraction();
 		if (!_inf && !_zero && !_nan) {
 			for (int s = srcbits - 1, t = tgtbits - 1; s >= 0 && t >= 0; --s, --t)
 				_fraction[t] = src_fraction[s];
@@ -635,7 +635,7 @@ inline std::string components(const blocktriple<ebits, fbits, bt>& v) {
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
 template<size_t ebits, size_t fbits, typename bt>
 blocktriple<ebits, fbits, bt> abs(const blocktriple<ebits, fbits, bt>& v) {
-	return blocktriple<ebits, fbits, bt(false, v.scale(), v.fraction(), v.iszero());
+	return blocktriple<ebits, fbits, bt>(false, v.scale(), v.fraction(), v.iszero());
 }
 
 // add two values with fbits fraction bits, round them to abits, and return the abits+1 result value
@@ -677,7 +677,7 @@ void module_add(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<ebits,
 		std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
 	}
 
-	bitblock<abits + 1> sum;
+	blockbinary<abits + 1,bt> sum;
 	const bool carry = add_unsigned(r1, r2, sum);
 
 	if (_trace_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
@@ -719,8 +719,8 @@ void module_subtract(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<e
 	int lhs_scale = lhs.scale(), rhs_scale = rhs.scale(), scale_of_result = std::max(lhs_scale, rhs_scale);
 
 	// align the fractions
-	bitblock<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
-	bitblock<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
+	blockbinary<abits,bt> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
+	blockbinary<abits,bt> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
 	bool r1_sign = lhs.sign(), r2_sign = !rhs.sign();
 	bool signs_are_different = r1_sign != r2_sign;
 
@@ -736,7 +736,7 @@ void module_subtract(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<e
 		std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
 	}
 
-	bitblock<abits + 1> sum;
+	blockbinary<abits + 1,bt> sum;
 	const bool carry = add_unsigned(r1, r2, sum);
 
 	if (_trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
@@ -779,8 +779,8 @@ void module_subtract_BROKEN(const blocktriple<ebits,fbits,bt>& lhs, const blockt
 	int lhs_scale = lhs.scale(), rhs_scale = rhs.scale(), scale_of_result = std::max(lhs_scale, rhs_scale);
 
 	// align the fractions
-	bitblock<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
-	bitblock<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
+	blockbinary<abits,bt> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
+	blockbinary<abits,bt> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
 	bool r1_sign = lhs.sign(), r2_sign = rhs.sign();
 	//bool signs_are_equal = r1_sign == r2_sign;
 
@@ -792,7 +792,7 @@ void module_subtract_BROKEN(const blocktriple<ebits,fbits,bt>& lhs, const blockt
 		std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
 	}
 
-	bitblock<abits + 1> difference;
+	blockbinary<abits + 1,bt> difference;
 	const bool borrow = subtract_unsigned(r1, r2, difference);
 
 	if (_trace_sub) std::cout << (r1_sign ? "sign -1" : "sign  1") << " borrow" << std::setw(3) << (borrow ? 1 : 0) << " diff    " << difference << std::endl;
@@ -841,8 +841,8 @@ void module_multiply(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<e
 
 	if (fbits > 0) {
 		// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
-		bitblock<fhbits> r1 = lhs.get_fixed_point();
-		bitblock<fhbits> r2 = rhs.get_fixed_point();
+		blockbinary<fhbits,bt> r1 = lhs.get_fixed_point();
+		blockbinary<fhbits,bt> r2 = rhs.get_fixed_point();
 		multiply_unsigned(r1, r2, result_fraction);
 
 		if (_trace_mul) std::cout << "r1  " << r1 << std::endl << "r2  " << r2 << std::endl << "res " << result_fraction << std::endl;
@@ -884,8 +884,8 @@ void module_divide(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<ebi
 
 	if (fbits > 0) {
 		// fractions are without hidden bit, get_fixed_point adds the hidden bit back in
-		bitblock<fhbits> r1 = lhs.get_fixed_point();
-		bitblock<fhbits> r2 = rhs.get_fixed_point();
+		blockbinary<fhbits,bt> r1 = lhs.get_fixed_point();
+		blockbinary<fhbits,bt> r2 = rhs.get_fixed_point();
 		divide_with_fraction(r1, r2, result_fraction);
 		if (_trace_div) std::cout << "r1     " << r1 << std::endl << "r2     " << r2 << std::endl << "result " << result_fraction << std::endl << "scale  " << new_scale << std::endl;
 		// check if the radix point needs to shift

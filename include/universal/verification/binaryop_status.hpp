@@ -1,16 +1,17 @@
 #pragma once
-// error_success.cpp : error and success reporting of a binary arithmetic operation
+// binaryop_status.cpp : error and success reporting of a binary arithmetic operation
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>
+#include <iomanip>
 
 namespace sw { namespace universal {
 
 #define COLUMN_WIDTH 20
 template<typename Ty>
 void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const Ty& a, const Ty& b, const Ty& result, long double reference) {
-	using namespace sw::unum;
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
 		<< std::setprecision(20)
@@ -28,7 +29,6 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 
 template<typename Ty>
 void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const Ty& a, const Ty& b, const Ty& result, long double reference) {
-	using namespace sw::unum;
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
 		<< std::setprecision(20)

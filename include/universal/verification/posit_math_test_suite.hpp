@@ -1,5 +1,5 @@
 #pragma once
-//  posit_math_helpers.hpp : functions to aid in testing and test reporting of function evaluation on posit types.
+//  posit_math_test_suite.hpp : functions to aid in testing and test reporting of function evaluation on posit types.
 // Needs to be included after posit type is declared.
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
@@ -13,9 +13,7 @@
 
 // mathematical function definitions and implementations
 #include <universal/posit/math_functions.hpp>
-
-// include the base test helpers
-#include "posit_test_helpers.hpp"
+#include <universal/verification/posit_test_suite.hpp>
 
 namespace sw { namespace universal {
 

@@ -3,10 +3,9 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include "universal/bitblock/bitblock.hpp"
-#include "universal/value/value.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
+#include <universal/bitblock/bitblock.hpp>
+#include <universal/value/value.hpp>
+#include <universal/verification/test_status.hpp> // ReportTestResult
 
 // (sign, scale, fraction) representation using sbits for scale and fbits for fraction assuming a hidden bit
 template<size_t sbits, size_t fbits>

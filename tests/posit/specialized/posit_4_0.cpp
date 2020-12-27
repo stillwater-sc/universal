@@ -10,9 +10,8 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
-// test helpers, such as, ReportTestResults
-#include "../../utils/test_helpers.hpp"
-#include "../../utils/posit_test_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
 
 /*
  posits with nbits = 4 have no exponent bits, i.e. es = 0.

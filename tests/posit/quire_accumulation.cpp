@@ -12,11 +12,9 @@
 #include <universal/traits/posit_traits.hpp>
 #include <universal/posit/quire.hpp>
 #include <universal/posit/fdp.hpp>
-
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/posit_test_helpers.hpp"
-#include "../utils/quire_test_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/quire_test_suite.hpp>
 
 // if you want to enable ISSUE_45
 //#define ISSUE_45_DEBUG

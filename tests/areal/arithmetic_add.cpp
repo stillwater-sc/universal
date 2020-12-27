@@ -6,9 +6,8 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/areal/areal.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "areal_test_helpers.hpp"
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/test_suite_arithmetic.hpp>
 
 // generate specific test case that you can trace with the trace conditions in areal.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add

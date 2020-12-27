@@ -10,13 +10,11 @@
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/posit/posit>
-// test helpers, such as, ReportTestResults
-#include "../../utils/test_helpers.hpp"
-#include "../../utils/posit_test_randoms.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/posit_test_randoms.hpp>
 
-/*
-Standard posits with nbits = 128 have 4 exponent bits.
-*/
+/// Standard posits with nbits = 128 have 4 exponent bits.
 
 #define STRESS_TESTING 1
 

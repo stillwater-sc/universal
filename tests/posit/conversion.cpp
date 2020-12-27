@@ -10,11 +10,10 @@
 // enable the ability to use literals in binary logic and arithmetic operators
 #define POSIT_ENABLE_LITERALS 1
 // minimum set of include files to reflect source code dependencies
-#include "universal/posit/posit.hpp"
-#include "universal/posit/manipulators.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/posit_test_helpers.hpp"
+#include <universal/posit/posit.hpp>
+#include <universal/posit/manipulators.hpp>
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
 
 template<size_t nbits, size_t es>
 void GenerateLogicPattern(double input, const sw::universal::posit<nbits, es>& presult, const sw::universal::posit<nbits+1, es>& pnext) {

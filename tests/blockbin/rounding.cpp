@@ -14,8 +14,8 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/blockbin/blockbinary.hpp>
-#include "../utils/test_helpers.hpp"
-#include "../utils/blockbinary_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/blockbinary_test_status.hpp>
 
 // report helper to interpret rounding decision encoding
 std::string roundingDecision(int roundingDirection) {

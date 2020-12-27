@@ -9,13 +9,13 @@
 #define POSIT_TRACE_SQRT
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/posit/posit.hpp"
-#include "universal/posit/manipulators.hpp"
-#include "universal/posit/math/constants.hpp"   // for m_pi etc.
-#include "universal/posit/math/trigonometry.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/posit_math_helpers.hpp"
+
+#include <universal/posit/posit.hpp>
+#include <universal/posit/manipulators.hpp>
+#include <universal/posit/math/constants.hpp>   // for m_pi etc.
+#include <universal/posit/math/trigonometry.hpp>
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_math_test_suite.hpp>
 
 /* 
 Writes result sine result sin(πa) to the location pointed to by sp

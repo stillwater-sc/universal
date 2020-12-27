@@ -11,9 +11,9 @@
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
-// test helpers, such as, ReportTestResults
-#include "../../utils/test_helpers.hpp"
-#include "../../utils/posit_test_randoms.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/posit_test_randoms.hpp>
 
 /*
 Extended Standard posit with nbits = 48 have es = 2 exponent bits.

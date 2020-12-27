@@ -4,11 +4,11 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include "universal/posit/posit.hpp"
-#include "universal/posit/manipulators.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/posit_math_helpers.hpp"
+#include <universal/posit/posit.hpp>
+#include <universal/posit/manipulators.hpp>
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/posit_math_test_suite.hpp>
 
 #define FLOAT_TABLE_WIDTH 20
 

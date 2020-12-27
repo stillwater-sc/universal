@@ -12,10 +12,9 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include "universal/posit/posit.hpp"
 // posit type manipulators such as pretty printers
-#include "universal/posit/manipulators.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/posit_math_helpers.hpp"
+#include <universal/posit/manipulators.hpp>
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_math_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
 // for most bugs they are traceable with _trace_conversion and _trace_sub

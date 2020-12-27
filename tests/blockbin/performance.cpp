@@ -9,10 +9,9 @@
 
 //#include <universal/integer/integer.hpp>
 #include <universal/blockbin/blockbinary.hpp>
-
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/performance_runner.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/blockbinary_test_status.hpp>
+#include <universal/verification/performance_runner.hpp>
 
 // workload for testing shift operations on integer types
 template<typename IntegerType>

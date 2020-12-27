@@ -12,9 +12,9 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
 #include <universal/posit/posit_parse.hpp>
-// test helpers, such as, ReportTestResults
-#include "../../utils/test_helpers.hpp"
-#include "../../utils/posit_test_randoms.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/posit_test_randoms.hpp>
 
 // Standard posit with nbits = 32 have es = 2 exponent bits.
 

@@ -16,14 +16,13 @@
 #define POSIT_TRACE_CONVERSION
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/posit/posit.hpp"
-#include "universal/posit/numeric_limits.hpp"
-#include "universal/posit/specializations.hpp"
+#include <universal/posit/posit.hpp>
+#include <universal/posit/numeric_limits.hpp>
+#include <universal/posit/specializations.hpp>
 // posit type manipulators such as pretty printers
-#include "universal/posit/manipulators.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/posit_test_helpers.hpp"
+#include <universal/posit/manipulators.hpp>
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.hpp
 // Most bugs are traceable with _trace_conversion and _trace_add

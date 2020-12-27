@@ -1,4 +1,4 @@
-// division.cpp: functional tests for block triple number division
+// division.cpp: validation tests for block triple number division
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -20,7 +20,7 @@ std::string to_binary(const sw::universal::blocktriple<ebits, fbits, BlockType>&
 	return ss.str();
 }
 
-// enumerate all multiplication cases for an blocktriple<ebits,fbits,BlockType> configuration
+// enumerate all multiplication cases for a blocktriple<ebits,fbits,BlockType> configuration
 template<size_t ebits, size_t fbits, typename BlockType = uint8_t>
 int VerifyDivision(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << fbits);

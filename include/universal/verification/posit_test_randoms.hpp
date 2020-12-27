@@ -11,10 +11,9 @@
 #include <random>
 #include <limits>
 
-// include the base test helpers
-#include "posit_test_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 	//////////////////////////////////// RANDOMIZED TEST SUITE FOR LARGE POSITS ////////////////////////
 
@@ -481,4 +480,4 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 
-}} // namespace sw::universal
+} // namespace sw::universal

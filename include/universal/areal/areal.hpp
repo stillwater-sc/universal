@@ -48,9 +48,11 @@ areal<nbits, es, bt>& maxneg(areal<nbits, es, bt>& amaxneg) {
 }
 
 // template class representing a value in scientific notation, using a template size for the number of fraction bits
-template<size_t nbits, size_t es, typename bt = uint8_t>
+template<size_t NBITS, size_t EBITS, typename bt = uint8_t>
 class areal {
 public:
+	static constexpr size_t nbits = NBITS;
+	static constexpr size_t es = EBITS;
 	static constexpr size_t fbits  = nbits - 1 - es;    // number of fraction bits excluding the hidden bit
 	static constexpr size_t fhbits = fbits + 1;         // number of fraction bits including the hidden bit
 	static constexpr size_t abits = fhbits + 3;         // size of the addend
@@ -150,6 +152,9 @@ public:
 
 	// modifiers
 	void reset() {	}
+	areal& set_raw_bits(uint64_t a) {
+		return *this;
+	}
 
 	// selectors
 	inline bool isneg() const { return false; }
@@ -160,7 +165,6 @@ public:
 	inline int scale() const { return false; }
 	inline std::string get() const { return std::string("tbd"); }
 
-
 	long double to_long_double() const {
 		return 0.0l;
 	}
@@ -170,7 +174,8 @@ public:
 	float to_float() const {
 		return 0.0f;
 	}
-	// Maybe remove explicit
+
+	// make conversions to native types explicit
 	explicit operator long double() const { return to_long_double(); }
 	explicit operator double() const { return to_double(); }
 	explicit operator float() const { return to_float(); }
@@ -253,9 +258,9 @@ inline areal<nbits, es, bt> operator/(const areal<nbits, es, bt>& lhs, const are
 	return ratio;
 }
 
-
+// convert to std::string
 template<size_t nbits, size_t es, typename bt>
-inline std::string components(const areal<nbits,es,bt>& v) {
+inline std::string to_string(const areal<nbits,es,bt>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
 		s << " zero b" << std::setw(nbits) << v.fraction();
@@ -266,6 +271,12 @@ inline std::string components(const areal<nbits,es,bt>& v) {
 		return s.str();
 	}
 	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ")";
+	return s.str();
+}
+
+template<size_t nbits, size_t es, typename bt>
+inline std::string to_binary(const areal<nbits, es, bt>& v) {
+	std::stringstream s;
 	return s.str();
 }
 

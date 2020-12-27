@@ -1,4 +1,4 @@
-// 16dot5_float.cpp: Functionality tests for half precision floats
+// single_precision.cpp: Functionality tests for single precision floats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -6,11 +6,7 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/areal/areal.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "areal_test_helpers.hpp"
-
-// Standard posit with nbits = 16 have es = 1 exponent bit.
+#include <universal/verification/test_suite_arithmetic.hpp>
 
 int main(int argc, char** argv)
 try {
@@ -19,15 +15,15 @@ try {
 
 	//const size_t RND_TEST_CASES = 500000;
 
-	const size_t nbits = 16;
-	const size_t es = 5;
+	const size_t ebits = 8;
+	const size_t fbits = 23;
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = " real<16,5>";
+	std::string tag = " areal<8,23>";
 
-	cout << "Standard areal<16,5> configuration tests" << endl;
+	cout << "Standard single-precision areal<8,23> configuration tests" << endl;
 
-	areal<nbits, es> r;
+	areal<ebits, fbits> r;
 	r = 1.2345;
 	cout << r << endl;
 

@@ -8,9 +8,8 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/blockbin/blockbinary.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/blockbinary_helpers.hpp"
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/blockbinary_test_status.hpp>
 
 // enumerate all addition cases for an blockbinary<nbits,BlockType> configuration
 template<size_t nbits, typename BlockType = uint8_t>

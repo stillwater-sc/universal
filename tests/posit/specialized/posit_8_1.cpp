@@ -11,10 +11,9 @@
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
-// test helpers, such as, ReportTestResults
-#include "../../utils/test_helpers.hpp"
-#include "../../utils/posit_test_helpers.hpp"
-#include "../../utils/posit_math_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/posit_math_test_suite.hpp>
 
 /*
 specialized small 8-bit posit with es = 1 to increase dynamic range over standard posit<8,0>.

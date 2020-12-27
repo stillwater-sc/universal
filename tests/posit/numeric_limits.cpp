@@ -5,9 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <universal/posit/posit>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/posit_test_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_math_test_suite.hpp>
 
 int main(int argc, char** argv)
 try {

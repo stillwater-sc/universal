@@ -9,8 +9,7 @@
 
 #include <universal/native/integers.hpp>
 #include <universal/blockbin/blockbinary.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
 
 namespace sw {
 namespace universal {

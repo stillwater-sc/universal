@@ -1,5 +1,5 @@
 #pragma once
-// posit_test_helpers.hpp : posit test value verification functions
+// posit_test_suite.hpp : posit number system verification test suite
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -10,7 +10,7 @@
 #include <random>
 #include <limits>
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 	static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
@@ -1300,5 +1300,5 @@ namespace sw { namespace universal {
 		return nrOfFailedTestCases;
 	}
 
-}} // namespace sw::universal
+} // namespace sw::universal
 
