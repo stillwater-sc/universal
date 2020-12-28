@@ -35,6 +35,8 @@ int VerifyMultiplication(const std::string& tag, bool bReportIndividualTestCases
 	//bool bReportOverflowCondition = false;
 	int nrOfFailedTests = 0;
 
+	cout << "State space: " << NR_VALUES << endl;
+
 	return nrOfFailedTests;
 }
 

@@ -160,7 +160,7 @@ public:
 			reset();
 			_scale = findMostSignificantBit(rhs) - 1;
 			uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0ull : (rhs << (64 - _scale)); // the scale == -1 case is handled above
-			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
+			_fraction = _fraction_without_hidden_bit; // TODO: check correct rounding
 			_nrOfBits = fbits;
 		}
 		if (_trace_conversion) std::cout << "uint64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
@@ -492,24 +492,24 @@ private:
 	blockbinary<fbits, bt>  _fraction;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t eebits, size_t ffbits, typename bt>
-	friend std::ostream& operator<< (std::ostream& ostr, const blocktriple<eebits, ffbits, bt>& r);
-	template<size_t eebits, size_t ffbits, typename bt>
-	friend std::istream& operator>> (std::istream& istr, blocktriple<eebits, ffbits, bt>& r);
+	template<size_t eebits, size_t ffbits, typename bbt>
+	friend std::ostream& operator<< (std::ostream& ostr, const blocktriple<eebits, ffbits, bbt>& r);
+	template<size_t eebits, size_t ffbits, typename bbt>
+	friend std::istream& operator>> (std::istream& istr, blocktriple<eebits, ffbits, bbt>& r);
 
 	// logic operators
-	template<size_t eebits, size_t ffbits, typename bt>
-	friend bool operator==(const blocktriple<eebits, ffbits, bt>& lhs, const blocktriple<eebits, ffbits, bt>& rhs);
-	template<size_t eebits, size_t ffbits, typename bt>
-	friend bool operator!=(const blocktriple<eebits, ffbits, bt>& lhs, const blocktriple<eebits, ffbits, bt>& rhs);
-	template<size_t eebits, size_t ffbits, typename bt>
-	friend bool operator< (const blocktriple<eebits, ffbits, bt>& lhs, const blocktriple<eebits, ffbits, bt>& rhs);
-	template<size_t eebits, size_t ffbits, typename bt>
-	friend bool operator> (const blocktriple<eebits, ffbits, bt>& lhs, const blocktriple<eebits, ffbits, bt>& rhs);
-	template<size_t eebits, size_t ffbits, typename bt>
-	friend bool operator<=(const blocktriple<eebits, ffbits, bt>& lhs, const blocktriple<eebits, ffbits, bt>& rhs);
-	template<size_t eebits, size_t ffbits, typename bt>
-	friend bool operator>=(const blocktriple<eebits, ffbits, bt>& lhs, const blocktriple<eebits, ffbits, bt>& rhs);
+	template<size_t eebits, size_t ffbits, typename bbt>
+	friend bool operator==(const blocktriple<eebits, ffbits, bbt>& lhs, const blocktriple<eebits, ffbits, bbt>& rhs);
+	template<size_t eebits, size_t ffbits, typename bbt>
+	friend bool operator!=(const blocktriple<eebits, ffbits, bbt>& lhs, const blocktriple<eebits, ffbits, bbt>& rhs);
+	template<size_t eebits, size_t ffbits, typename bbt>
+	friend bool operator< (const blocktriple<eebits, ffbits, bbt>& lhs, const blocktriple<eebits, ffbits, bbt>& rhs);
+	template<size_t eebits, size_t ffbits, typename bbt>
+	friend bool operator> (const blocktriple<eebits, ffbits, bbt>& lhs, const blocktriple<eebits, ffbits, bbt>& rhs);
+	template<size_t eebits, size_t ffbits, typename bbt>
+	friend bool operator<=(const blocktriple<eebits, ffbits, bbt>& lhs, const blocktriple<eebits, ffbits, bbt>& rhs);
+	template<size_t eebits, size_t ffbits, typename bbt>
+	friend bool operator>=(const blocktriple<eebits, ffbits, bbt>& lhs, const blocktriple<eebits, ffbits, bbt>& rhs);
 };
 
 ////////////////////// operators

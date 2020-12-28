@@ -41,7 +41,7 @@ try {
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 2;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 	std::string tag = " areal<8,2>";
 
@@ -49,7 +49,6 @@ try {
 
 #if MANUAL_TESTING
 
-#if 0
 	using TestType = areal<nbits, es>;
 	using ReferenceType = float;
 
@@ -64,6 +63,7 @@ try {
 	// test if conversion to int is implicit
 	// int anint = r;
 
+#if 0
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual             <TestType>(), tag, "    ==         ");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual          <TestType>(), tag, "    !=         ");
