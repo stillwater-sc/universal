@@ -81,16 +81,21 @@ areal<nbits, es, bt>& maxneg(areal<nbits, es, bt>& amaxneg) {
 	return amaxneg;
 }
 
-// template class representing a value in scientific notation, using a template size for the number of fraction bits
-template<size_t NBITS, size_t EBITS, typename bt = uint8_t>
+/// <summary>
+/// An arbitrary configuration real number with gradual under/overflow
+/// </summary>
+/// <typeparam name="nbits">number of bits in the encoding</typeparam>
+/// <typeparam name="es">number of exponent bits in the encoding</typeparam>
+/// <typeparam name="bt">the type to use as storage class: one of [uint8_t|uint16_t|uint32_t]</typeparam>
+template<size_t _nbits, size_t _es, typename bt = uint8_t>
 class areal {
 public:
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 32, "storage unit for block arithmetic needs to be <= uint32_t");
 
-	static constexpr size_t nbits = NBITS;
-	static constexpr size_t es = EBITS;
+	static constexpr size_t nbits = _nbits;
+	static constexpr size_t es = _es;
 
 	static constexpr size_t nrBlocks = 1 + ((nbits - 1) / bitsInBlock);
 	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFul >> (64 - bitsInBlock));
@@ -100,6 +105,7 @@ public:
 		// warning C4310 : cast truncates constant value
 	static constexpr bt MSU_MASK = (bt(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1) << ((nbits - 1) % bitsInBlock));
+	static constexpr bt BLOCK_MASK = bt(0xFFFFFFFFFFFFFFFFul);
 
 	static constexpr size_t fbits  = nbits - 1 - es;    // number of fraction bits excluding the hidden bit
 	static constexpr size_t fhbits = fbits + 1;         // number of fraction bits including the hidden bit
@@ -227,7 +233,22 @@ public:
 			_block[i] = bt(0);
 		}
 	}
+	/// <summary>
+	/// set the number to +0
+	/// </summary>
+	/// <returns>void</returns>
 	inline constexpr void setzero() noexcept { clear(); }
+	/// <summary>
+	/// set the number to +inf
+	/// </summary>
+	/// <param name="sign">boolean to make it + or - infinity, default is -inf</param>
+	/// <returns>void</returns> 
+	inline constexpr void setinf(bool sign = true) noexcept {
+		for (size_t i = 0; i < nrBlocks-1; ++i) {
+			_block[i] = BLOCK_MASK;
+		}
+		_block[MSU] = sign ? MSU_MASK : (!SIGN_BIT_MASK & MSU_MASK);
+	}
 	/// <summary>
 	/// set the raw bits of the areal. This is a required function in the Universal number systems
 	/// that enables verification test suites to inject specific bit patterns using a common interface.
@@ -264,7 +285,43 @@ public:
 			return (_block[MSU] & !SIGN_BIT_MASK) == 0 ? true : false;
 		}
 	}
-	inline bool isinf() const { return false; }
+	inline bool isinf() const {
+		return isneginf() || isposinf();
+	}
+	inline bool isneginf() const {
+		switch (nrBlocks) {
+		case 0:
+			return false;
+		case 1:
+			return (_block[MSU] & MSU_MASK) == MSU_MASK ? true : false;
+		case 2:
+			return (_block[0] == BLOCK_MASK) && (_block[MSU] & MSU_MASK) == MSU_MASK ? true : false;
+			break;
+		case 3:
+			return (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK) && (_block[MSU] & MSU_MASK) == MSU_MASK ? true : false;
+			break;
+		default:
+			for (size_t i = 0; i < nrBlocks - 1; ++i) if (_block[i] != BLOCK_MASK) return false;
+			return (_block[MSU] & MSU_MASK) == MSU_MASK ? true : false;
+		}
+	}
+	inline bool isposinf() const {
+		switch (nrBlocks) {
+		case 0:
+			return false;
+		case 1:
+			return ((_block[MSU] ^ SIGN_BIT_MASK) & MSU_MASK) == MSU_MASK ? true : false;
+		case 2:
+			return (_block[0] == BLOCK_MASK) && ((_block[MSU] ^ SIGN_BIT_MASK) & MSU_MASK) == MSU_MASK ? true : false;
+			break;
+		case 3:
+			return (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK) && ((_block[MSU] ^ SIGN_BIT_MASK) & MSU_MASK) == MSU_MASK ? true : false;
+			break;
+		default:
+			for (size_t i = 0; i < nrBlocks - 1; ++i) if (_block[i] != BLOCK_MASK) return false;
+			return ((_block[MSU] ^ SIGN_BIT_MASK) & MSU_MASK) == MSU_MASK ? true : false;
+		}
+	}
 	inline bool isnan() const { return false; }
 
 	inline constexpr bool test(size_t bitIndex) const {

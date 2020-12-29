@@ -90,6 +90,163 @@ void TestIsZero(int& nrOfFailedTestCases) {
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 }
 
+template<size_t nbits, size_t es, typename bt = uint8_t>
+inline int TestInf() {
+	int fails = 0;
+	sw::universal::areal<nbits, es, bt> r;
+	r.setinf(); // default is to set -inf
+	//std::cout << to_binary(r) << std::endl;
+	if (!r.isinf()) ++fails;
+	r = -r;
+	//std::cout << to_binary(r) << std::endl;
+	if (!r.isinf()) ++fails;
+	return fails;
+}
+
+void TestIsInf(int& nrOfFailedTestCases) {
+	int currentFails = nrOfFailedTestCases;
+	std::cout << "isinf(): ";
+	// one block configurations
+	nrOfFailedTestCases += TestInf<3, 1>();
+	nrOfFailedTestCases += TestInf<4, 1>();
+	nrOfFailedTestCases += TestInf<5, 1>();
+	nrOfFailedTestCases += TestInf<6, 1>();
+	nrOfFailedTestCases += TestInf<7, 1>();
+	nrOfFailedTestCases += TestInf<8, 1>();
+	nrOfFailedTestCases += TestInf<8, 2>();
+	nrOfFailedTestCases += TestInf<8, 3>();
+
+	// two block configurations
+	nrOfFailedTestCases += TestInf<9, 3>();
+	nrOfFailedTestCases += TestInf<10, 3>();
+	nrOfFailedTestCases += TestInf<11, 3>();
+	nrOfFailedTestCases += TestInf<12, 3>();
+	nrOfFailedTestCases += TestInf<13, 3>();
+	nrOfFailedTestCases += TestInf<14, 3>();
+	nrOfFailedTestCases += TestInf<15, 3>();
+	nrOfFailedTestCases += TestInf<16, 3>();
+	nrOfFailedTestCases += TestInf<16, 4>();
+	nrOfFailedTestCases += TestInf<16, 5>();
+
+	// three block configurations
+	nrOfFailedTestCases += TestInf<17, 5>();
+	nrOfFailedTestCases += TestInf<18, 5>();
+	nrOfFailedTestCases += TestInf<19, 5>();
+	nrOfFailedTestCases += TestInf<20, 5>();
+	nrOfFailedTestCases += TestInf<21, 5>();
+	nrOfFailedTestCases += TestInf<22, 5>();
+	nrOfFailedTestCases += TestInf<23, 5>();
+	nrOfFailedTestCases += TestInf<24, 5>();
+	nrOfFailedTestCases += TestInf<24, 6>();
+	nrOfFailedTestCases += TestInf<24, 7>();
+
+	// four block configurations
+	nrOfFailedTestCases += TestInf<25, 8>();
+	nrOfFailedTestCases += TestInf<26, 8>();
+	nrOfFailedTestCases += TestInf<27, 8>();
+	nrOfFailedTestCases += TestInf<28, 8>();
+	nrOfFailedTestCases += TestInf<29, 8>();
+	nrOfFailedTestCases += TestInf<30, 8>();
+	nrOfFailedTestCases += TestInf<31, 8>();
+	nrOfFailedTestCases += TestInf<32, 8>();
+
+	// five block configurations
+	nrOfFailedTestCases += TestInf<39, 8>();
+	nrOfFailedTestCases += TestInf<40, 8>();
+
+	// six block configurations
+	nrOfFailedTestCases += TestInf<47, 9>();
+	nrOfFailedTestCases += TestInf<48, 9>();
+
+	// seven block configurations
+	nrOfFailedTestCases += TestInf<55, 10>();
+	nrOfFailedTestCases += TestInf<56, 10>();
+
+	// eight block configurations
+	nrOfFailedTestCases += TestInf<63, 11>();
+	nrOfFailedTestCases += TestInf<64, 11>();
+
+	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+}
+
+template<size_t nbits, size_t es, typename bt = uint8_t>
+inline int TestNaN() {
+	int fails = 0;
+	sw::universal::areal<nbits, es, bt> r;
+	//std::cout << to_binary(r) << std::endl;
+	if (!r.isnan()) ++fails;
+	r = -r;
+	//std::cout << to_binary(r) << std::endl;
+	if (!r.isnan()) ++fails;
+	return fails;
+}
+
+void TestIsNaN(int& nrOfFailedTestCases) {
+	int currentFails = nrOfFailedTestCases;
+	std::cout << "iszero(): ";
+	// one block configurations
+	nrOfFailedTestCases += TestNaN<3, 1>();
+	nrOfFailedTestCases += TestNaN<4, 1>();
+	nrOfFailedTestCases += TestNaN<5, 1>();
+	nrOfFailedTestCases += TestNaN<6, 1>();
+	nrOfFailedTestCases += TestNaN<7, 1>();
+	nrOfFailedTestCases += TestNaN<8, 1>();
+	nrOfFailedTestCases += TestNaN<8, 2>();
+	nrOfFailedTestCases += TestNaN<8, 3>();
+
+	// two block configurations
+	nrOfFailedTestCases += TestNaN<9, 3>();
+	nrOfFailedTestCases += TestNaN<10, 3>();
+	nrOfFailedTestCases += TestNaN<11, 3>();
+	nrOfFailedTestCases += TestNaN<12, 3>();
+	nrOfFailedTestCases += TestNaN<13, 3>();
+	nrOfFailedTestCases += TestNaN<14, 3>();
+	nrOfFailedTestCases += TestNaN<15, 3>();
+	nrOfFailedTestCases += TestNaN<16, 3>();
+	nrOfFailedTestCases += TestNaN<16, 4>();
+	nrOfFailedTestCases += TestNaN<16, 5>();
+
+	// three block configurations
+	nrOfFailedTestCases += TestNaN<17, 5>();
+	nrOfFailedTestCases += TestNaN<18, 5>();
+	nrOfFailedTestCases += TestNaN<19, 5>();
+	nrOfFailedTestCases += TestNaN<20, 5>();
+	nrOfFailedTestCases += TestNaN<21, 5>();
+	nrOfFailedTestCases += TestNaN<22, 5>();
+	nrOfFailedTestCases += TestNaN<23, 5>();
+	nrOfFailedTestCases += TestNaN<24, 5>();
+	nrOfFailedTestCases += TestNaN<24, 6>();
+	nrOfFailedTestCases += TestNaN<24, 7>();
+
+	// four block configurations
+	nrOfFailedTestCases += TestNaN<25, 8>();
+	nrOfFailedTestCases += TestNaN<26, 8>();
+	nrOfFailedTestCases += TestNaN<27, 8>();
+	nrOfFailedTestCases += TestNaN<28, 8>();
+	nrOfFailedTestCases += TestNaN<29, 8>();
+	nrOfFailedTestCases += TestNaN<30, 8>();
+	nrOfFailedTestCases += TestNaN<31, 8>();
+	nrOfFailedTestCases += TestNaN<32, 8>();
+
+	// five block configurations
+	nrOfFailedTestCases += TestNaN<39, 8>();
+	nrOfFailedTestCases += TestNaN<40, 8>();
+
+	// six block configurations
+	nrOfFailedTestCases += TestNaN<47, 9>();
+	nrOfFailedTestCases += TestNaN<48, 9>();
+
+	// seven block configurations
+	nrOfFailedTestCases += TestNaN<55, 10>();
+	nrOfFailedTestCases += TestNaN<56, 10>();
+
+	// eight block configurations
+	nrOfFailedTestCases += TestNaN<63, 11>();
+	nrOfFailedTestCases += TestNaN<64, 11>();
+
+	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
@@ -111,6 +268,7 @@ try {
 #if MANUAL_TESTING
 
 	TestIsZero(nrOfFailedTestCases);
+	TestIsInf(nrOfFailedTestCases);
 
 #else // !MANUAL_TESTING
 
