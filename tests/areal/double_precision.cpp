@@ -15,15 +15,15 @@ try {
 
 	//const size_t RND_TEST_CASES = 500000;
 
-	const size_t ebits = 11;
-	const size_t fbits = 52;
+	constexpr size_t nbits = 64;
+	constexpr size_t es = 11;
 
 	int nrOfFailedTestCases = 0;
 	std::string tag = " areal<11,52>";
 
 	cout << "Standard double-precision areal<11,52> configuration tests" << endl;
 
-	areal<ebits, fbits> r;
+	areal<nbits, es> r;
 	r = 1.2345;
 	cout << r << endl;
 

@@ -14,7 +14,7 @@
 // If you have helper functions that the posit type could use, but does not depend on 
 // the posit type, you can add them to the file posit_helpers.hpp.
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 enum ColorCode {
 	FG_DEFAULT = 39,
@@ -64,5 +64,5 @@ public:
 	}
 };
 
-}}  // namespace sw::universal
+}  // namespace sw::universal
 
