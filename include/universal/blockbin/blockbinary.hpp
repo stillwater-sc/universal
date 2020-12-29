@@ -39,8 +39,7 @@
 
 #endif
 
-namespace sw { namespace universal {
-
+namespace sw::universal {
 
 // forward references
 template<size_t nbits, typename bt> class blockbinary;
@@ -486,9 +485,13 @@ public:
 
 protected:
 	// HELPER methods
+	// none
 
 private:
 	bt _block[nrBlocks];
+
+	//////////////////////////////////////////////////////////////////////////////
+	// friend functions
 
 	// integer - integer logic comparisons
 	template<size_t N, typename B>
@@ -501,7 +504,7 @@ private:
 	friend std::ostream& operator<<(std::ostream& ostr, const blockbinary<nnbits, Bbt>& v);
 };
 
-///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////
 // logic operators
 
 template<size_t N, typename B>
@@ -792,7 +795,7 @@ std::string to_binary(const blockbinary<nbits, bt>& number, bool nibbleMarker = 
 	ss << 'b';
 	for (int i = int(nbits - 1); i >= 0; --i) {
 		ss << (number.at(i) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0) ss << '\'';
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) ss << '\'';
 	}
 	return ss.str();
 }
@@ -824,4 +827,4 @@ std::ostream& operator<<(std::ostream& ostr, const blockbinary<nbits, bt>& numbe
 }
 
 
-}} // namespace sw::universal
+} // namespace sw::universal

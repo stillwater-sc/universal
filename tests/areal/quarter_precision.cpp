@@ -3,7 +3,8 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#pragma warning(disable : 4514)
+#pragma warning(disable : 4710)
 // minimum set of include files to reflect source code dependencies
 #include <universal/areal/areal.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
@@ -36,6 +37,9 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
+	if (argc > 0) {
+		cout << argv[0] << endl;
+	}
 	// const size_t RND_TEST_CASES = 0;  // no randoms, 8-bit posits can be done exhaustively
 
 	constexpr size_t nbits = 8;
@@ -49,21 +53,31 @@ try {
 
 #if MANUAL_TESTING
 
-	using TestType = areal<nbits, es>;
+	using TestType = areal<nbits, es, uint8_t>;
 	using ReferenceType = float;
 
-	TestType r;
-	r = 0.0;
-	cout << r << endl;
+	{
+		areal<64, 8> r;
+		cout << to_binary(r, AREAL_NIBBLE_MARKER) << endl;
+	}
 
+	TestType r;
+	cout << to_string(r) << endl; // test if default constructor generates 0
+
+	r.set_raw_bits(0b1000'0000);
+	cout << to_binary(r) << endl;
+	cout << (r.isneg() ? "negative\n" : "positive\n");
+
+#if 0
 	ReferenceType a = 1.0f;
 	ReferenceType b = 1.0f;
 	GenerateTestCase<TestType, ReferenceType>(a, b);
 
-	// test if conversion to int is implicit
+	// conversion to native types are explicit
 	// int anint = r;
+	int anint = int(r);
 
-#if 0
+
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual             <TestType>(), tag, "    ==         ");
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicNotEqual          <TestType>(), tag, "    !=         ");
