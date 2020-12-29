@@ -166,8 +166,10 @@ public:
 
 	// arithmetic operators
 	// prefix operator
-	areal operator-() const {				
-		return *this;
+	inline areal operator-() const {
+		areal tmp(*this);
+		tmp._block[MSU] ^= SIGN_BIT_MASK;
+		return tmp;
 	}
 
 	areal& operator+=(const areal& rhs) {
@@ -197,18 +199,18 @@ public:
 	areal& operator/=(double rhs) {
 		return *this /= areal<nbits, es>(rhs);
 	}
-	areal& operator++() {
+	inline areal& operator++() {
 		return *this;
 	}
-	areal operator++(int) {
+	inline areal operator++(int) {
 		areal tmp(*this);
 		operator++();
 		return tmp;
 	}
-	areal& operator--() {
+	inline areal& operator--() {
 		return *this;
 	}
-	areal operator--(int) {
+	inline areal operator--(int) {
 		areal tmp(*this);
 		operator--();
 		return tmp;
@@ -220,7 +222,7 @@ public:
 	/// clear the content of this areal to zero
 	/// </summary>
 	/// <returns>void</returns>
-	inline void clear() noexcept {
+	inline constexpr void clear() noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(0);
 		}
@@ -242,12 +244,25 @@ public:
 	}
 
 	// selectors
-	inline bool sign() const { return test(nbits - 1); }
-	inline bool isneg() const { return sign(); }
-	inline bool ispos() const { return !sign(); }
+	inline constexpr bool sign() const { return (_block[MSU] & SIGN_BIT_MASK) == 0; }
+	inline constexpr bool isneg() const { return sign(); }
+	inline constexpr bool ispos() const { return !sign(); }
 	inline bool iszero() const { // TODO: need to deal with -0 as well
-		for (size_t i = 0; i < nrBlocks; ++i) if (_block[i] != 0) return false;
-		return true;
+		switch (nrBlocks) {
+		case 0:
+			return true;
+		case 1:
+			return (_block[MSU] & !SIGN_BIT_MASK) == 0 ? true : false;
+		case 2:
+			return (_block[0] == 0) && (_block[MSU] & !SIGN_BIT_MASK) == 0 ? true : false;
+			break;
+		case 3:
+			return (_block[0] == 0) && _block[1] == 0 && (_block[MSU] & !SIGN_BIT_MASK) == 0 ? true : false;
+			break;
+		default:
+			for (size_t i = 0; i < nrBlocks-1; ++i) if (_block[i] != 0) return false;
+			return (_block[MSU] & !SIGN_BIT_MASK) == 0 ? true : false;
+		}
 	}
 	inline bool isinf() const { return false; }
 	inline bool isnan() const { return false; }
