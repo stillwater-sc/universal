@@ -9,6 +9,16 @@
 #include <universal/areal/areal.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
+template<typename bt = uint8_t>
+std::string to_binary(bt bits) {
+	std::stringstream s;
+	bt mask = bt(1 << sizeof(bt) - 1);
+	while (mask > 0) {
+		s << (bits & mask) ? '1' : '0';
+	}
+	return s.str();
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -26,7 +36,7 @@ inline int TestZero() {
 
 void TestIsZero(int& nrOfFailedTestCases) {
 	int currentFails = nrOfFailedTestCases;
-	std::cout << "iszero(): ";
+	std::cout << "iszero()                       : ";
 	// one block configurations
 	nrOfFailedTestCases += TestZero<3, 1>();
 	nrOfFailedTestCases += TestZero<4, 1>();
@@ -105,7 +115,7 @@ inline int TestInf() {
 
 void TestIsInf(int& nrOfFailedTestCases) {
 	int currentFails = nrOfFailedTestCases;
-	std::cout << "isinf(): ";
+	std::cout << "isinf()                        : ";
 	// one block configurations
 	nrOfFailedTestCases += TestInf<3, 1>();
 	nrOfFailedTestCases += TestInf<4, 1>();
@@ -183,7 +193,7 @@ inline int TestNaN() {
 
 void TestIsNaN(int& nrOfFailedTestCases) {
 	int currentFails = nrOfFailedTestCases;
-	std::cout << "iszero(): ";
+	std::cout << "isnan()                        : ";
 	// one block configurations
 	nrOfFailedTestCases += TestNaN<3, 1>();
 	nrOfFailedTestCases += TestNaN<4, 1>();
@@ -247,6 +257,104 @@ void TestIsNaN(int& nrOfFailedTestCases) {
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 }
 
+void TestSizeof(int& nrOfFailedTestCases) {
+	using namespace sw::universal;
+	int currentFails = nrOfFailedTestCases;
+	std::cout << "sizeof with blocktype uint8_t  : ";
+	if (sizeof(areal<4, 1>(0)) != 1) ++nrOfFailedTestCases;
+	if (sizeof(areal<5, 1>(0)) != 1) ++nrOfFailedTestCases;
+	if (sizeof(areal<8, 2>(0)) != 1) ++nrOfFailedTestCases;
+	if (sizeof(areal<9, 2>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(areal<12, 3>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(areal<16, 5>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(areal<17, 5>(0)) != 3) ++nrOfFailedTestCases;
+	if (sizeof(areal<20, 5>(0)) != 3) ++nrOfFailedTestCases;
+	if (sizeof(areal<24, 5>(0)) != 3) ++nrOfFailedTestCases;
+	if (sizeof(areal<25, 6>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<28, 6>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<32, 8>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<33, 8>(0)) != 5) ++nrOfFailedTestCases;
+	if (sizeof(areal<36, 8>(0)) != 5) ++nrOfFailedTestCases;
+	if (sizeof(areal<40, 9>(0)) != 5) ++nrOfFailedTestCases;
+	if (sizeof(areal<44, 9>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(areal<48, 9>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(areal<52, 10>(0)) != 7) ++nrOfFailedTestCases;
+	if (sizeof(areal<56, 10>(0)) != 7) ++nrOfFailedTestCases;
+	if (sizeof(areal<60, 10>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<64, 11>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<72, 11>(0)) != 9) ++nrOfFailedTestCases;
+	if (sizeof(areal<80, 11>(0)) != 10) ++nrOfFailedTestCases;
+	if (sizeof(areal<88, 11>(0)) != 11) ++nrOfFailedTestCases;
+	if (sizeof(areal<96, 11>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(areal<104, 11>(0)) != 13) ++nrOfFailedTestCases;
+	if (sizeof(areal<112, 11>(0)) != 14) ++nrOfFailedTestCases;
+	if (sizeof(areal<120, 11>(0)) != 15) ++nrOfFailedTestCases;
+	if (sizeof(areal<128, 11>(0)) != 16) ++nrOfFailedTestCases;
+	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+	std::cout << "sizeof with blocktype uint16_t : ";
+	if (sizeof(areal<4, 1, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(areal<5, 1, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(areal<8, 2, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(areal<9, 2, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(areal<12, 3, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(areal<16, 5, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(areal<17, 5, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<20, 5, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<24, 5, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<25, 6, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<28, 6, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<32, 8, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<33, 8, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(areal<36, 8, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(areal<40, 9, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(areal<44, 9, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(areal<48, 9, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(areal<52, 10, uint16_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<56, 10, uint16_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<60, 10, uint16_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<64, 11, uint16_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<72, 11, uint16_t>(0)) != 10) ++nrOfFailedTestCases;
+	if (sizeof(areal<80, 11, uint16_t>(0)) != 10) ++nrOfFailedTestCases;
+	if (sizeof(areal<88, 11, uint16_t>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(areal<96, 11, uint16_t>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(areal<104, 11, uint16_t>(0)) != 14) ++nrOfFailedTestCases;
+	if (sizeof(areal<112, 11, uint16_t>(0)) != 14) ++nrOfFailedTestCases;
+	if (sizeof(areal<120, 11, uint16_t>(0)) != 16) ++nrOfFailedTestCases;
+	if (sizeof(areal<128, 11, uint16_t>(0)) != 16) ++nrOfFailedTestCases;
+	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+	std::cout << "sizeof with blocktype uint32_t : ";
+	if (sizeof(areal<4, 1, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<5, 1, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<8, 2, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<9, 2, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<12, 3, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<16, 5, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<17, 5, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<20, 5, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<24, 5, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<25, 6, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<28, 6, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<32, 8, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(areal<33, 8, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<36, 8, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<40, 9, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<44, 9, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<48, 9, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<52, 10, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<56, 10, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<60, 10, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<64, 11, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(areal<72, 11, uint32_t>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(areal<80, 11, uint32_t>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(areal<88, 11, uint32_t>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(areal<96, 11, uint32_t>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(areal<104, 11, uint32_t>(0)) != 16) ++nrOfFailedTestCases;
+	if (sizeof(areal<112, 11, uint32_t>(0)) != 16) ++nrOfFailedTestCases;
+	if (sizeof(areal<120, 11, uint32_t>(0)) != 16) ++nrOfFailedTestCases;
+	if (sizeof(areal<128, 11, uint32_t>(0)) != 16) ++nrOfFailedTestCases;
+	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
@@ -269,7 +377,21 @@ try {
 
 	TestIsZero(nrOfFailedTestCases);
 	TestIsInf(nrOfFailedTestCases);
+//	TestIsNaN(nrOfFailedTestCases);
+	TestSizeof(nrOfFailedTestCases);
 
+#if 0
+//	areal<8, 0> a; std::cout << to_binary(a.EXP_MASK) << std::endl;
+	areal<8, 1> b; std::cout << to_binary(b.EXP_MASK) << std::endl;
+	areal<8, 2> c; std::cout << to_binary(c.EXP_MASK) << std::endl;
+	areal<8, 3> d; std::cout << to_binary(d.EXP_MASK) << std::endl;
+	areal<8, 4> e; std::cout << to_binary(e.EXP_MASK) << std::endl;
+	areal<8, 5> f; std::cout << to_binary(f.EXP_MASK) << std::endl;
+	areal<8, 6> g; std::cout << to_binary(g.EXP_MASK) << std::endl;
+//	areal<8, 7> h; std::cout << to_binary(h.EXP_MASK) << std::endl;
+//	areal<8, 8> i; std::cout << to_binary(i.EXP_MASK) << std::endl;
+//	areal<8, 9> j; std::cout << to_binary(j.EXP_MASK) << std::endl; // we need to through a compilation error
+#endif 
 #else // !MANUAL_TESTING
 
 

@@ -90,6 +90,8 @@ areal<nbits, es, bt>& maxneg(areal<nbits, es, bt>& amaxneg) {
 template<size_t _nbits, size_t _es, typename bt = uint8_t>
 class areal {
 public:
+	static_assert(_nbits > _es + 1, "nbits is too small to accomodate requested exponent bits");
+	static_assert(_es > 0, "number of exponent bits must be bigger than 0");
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 32, "storage unit for block arithmetic needs to be <= uint32_t");
@@ -247,7 +249,7 @@ public:
 		for (size_t i = 0; i < nrBlocks-1; ++i) {
 			_block[i] = BLOCK_MASK;
 		}
-		_block[MSU] = sign ? MSU_MASK : (!SIGN_BIT_MASK & MSU_MASK);
+		_block[MSU] = sign ? MSU_MASK : (~SIGN_BIT_MASK & MSU_MASK);
 	}
 	/// <summary>
 	/// set the raw bits of the areal. This is a required function in the Universal number systems
@@ -265,7 +267,7 @@ public:
 	}
 
 	// selectors
-	inline constexpr bool sign() const { return (_block[MSU] & SIGN_BIT_MASK) == 0; }
+	inline constexpr bool sign() const { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
 	inline constexpr bool isneg() const { return sign(); }
 	inline constexpr bool ispos() const { return !sign(); }
 	inline bool iszero() const { // TODO: need to deal with -0 as well
@@ -273,16 +275,16 @@ public:
 		case 0:
 			return true;
 		case 1:
-			return (_block[MSU] & !SIGN_BIT_MASK) == 0 ? true : false;
+			return (_block[MSU] & ~SIGN_BIT_MASK) == 0 ? true : false;
 		case 2:
-			return (_block[0] == 0) && (_block[MSU] & !SIGN_BIT_MASK) == 0 ? true : false;
+			return (_block[0] == 0) && (_block[MSU] & ~SIGN_BIT_MASK) == 0 ? true : false;
 			break;
 		case 3:
-			return (_block[0] == 0) && _block[1] == 0 && (_block[MSU] & !SIGN_BIT_MASK) == 0 ? true : false;
+			return (_block[0] == 0) && _block[1] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0 ? true : false;
 			break;
 		default:
 			for (size_t i = 0; i < nrBlocks-1; ++i) if (_block[i] != 0) return false;
-			return (_block[MSU] & !SIGN_BIT_MASK) == 0 ? true : false;
+			return (_block[MSU] & ~SIGN_BIT_MASK) == 0 ? true : false;
 		}
 	}
 	inline bool isinf() const {
@@ -323,6 +325,10 @@ public:
 		}
 	}
 	inline bool isnan() const { return false; }
+	inline int exponent() const {
+		int exp{ 0 };
+		return exp;
+	}
 
 	inline constexpr bool test(size_t bitIndex) const {
 		return at(bitIndex);
@@ -355,6 +361,7 @@ public:
 	inline int scale() const { return false; }
 	inline std::string get() const { return std::string("tbd"); }
 
+	// casts to native types
 	long long to_long_long() const {
 		return 0ll;
 	}
@@ -362,9 +369,30 @@ public:
 		return 0.0l;
 	}
 	double to_double() const {
-		return 0.0;
+		double v{ 0.0 };
+		if (iszero()) return v;
+		if (isposinf()) {
+			v = INFINITY;
+		}
+		else if (isneginf()) {
+			v = -INFINITY;
+		}
+		else if (isnan()) {
+			v = NAN;
+		}
+		else {
+			int exp = exponent();
+			if (exp == 0) {
+				// subnormals
+			}
+			else {
+				// regular
+			}
+		}
+		return v;
 	}
 	float to_float() const {
+		float v{ 0.0f };
 		return 0.0f;
 	}
 
