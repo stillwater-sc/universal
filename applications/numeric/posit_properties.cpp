@@ -11,7 +11,8 @@
 
 // select the number systems we would like to compare
 #include <universal/integer/integer>
-#include <universal/fixpnt/fixpnt>
+//#include <universal/fixpnt/fixpnt>   // TODO: this causes this warning for an unknown reason:
+// include\universal/posit/posit.hpp(851,1): warning C4305: 'specialization': truncation from 'const size_t' to 'bool'
 #include <universal/areal/areal>
 #include <universal/posit/posit>
 #include <universal/lns/lns>
@@ -84,7 +85,7 @@ const long double eps(size_t nbits) {
 template<size_t nbits, size_t es>
 std::string properties(const std::string& label) {
 	using Scalar = sw::universal::posit<nbits, es>;
-	Scalar minp, maxp;
+	Scalar minp(0), maxp(0);
 	sw::universal::minpos<nbits, es>(minp);
 	sw::universal::maxpos<nbits, es>(maxp);
 	Scalar eps  = std::numeric_limits<Scalar>::epsilon();
@@ -105,6 +106,7 @@ std::string properties(const std::string& label) {
 		<< '\n';
 	return ostr.str();
 }
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -131,6 +133,7 @@ try {
 	std::cout << properties<128, 4>("posit<128,4>");
 	std::cout << properties<256, 5>("posit<256,5>");
 	std::cout << "\n";
+
 
 	std::cout << properties<6, 2>("posit<6,2> ");
 	std::cout << properties<8, 2>("posit<8,2> ");

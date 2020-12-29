@@ -8,7 +8,9 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/posit/posit>
-#include <universal/fixpnt/fixpnt>
+//#include <universal/fixpnt/fixpnt>// TODO: this causes this warning for an unknown reason:
+// include\universal/posit/posit.hpp(851,1): warning C4305: 'specialization': truncation from 'const size_t' to 'bool'
+
 #include <universal/blas/blas>
 
 // skeleton environment to experiment with Chebyshev polynomials and approximations

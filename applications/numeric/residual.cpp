@@ -10,7 +10,9 @@
 
 // select the number systems we would like to compare
 #include <universal/integer/integer>
-#include <universal/fixpnt/fixpnt>
+//#include <universal/fixpnt/fixpnt>// TODO: this causes this warning for an unknown reason:
+// include\universal/posit/posit.hpp(851,1): warning C4305: 'specialization': truncation from 'const size_t' to 'bool'
+
 #include <universal/areal/areal>
 #include <universal/posit/posit>
 #include <universal/lns/lns>
