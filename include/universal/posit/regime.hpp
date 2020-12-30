@@ -97,7 +97,7 @@ public:
 			k = -_k - 1;
 			_Bits.reset();
 			if (k < static_cast<int>(nbits) - 2) {	// _RegimeBits = (k < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
-				_RegimeBits = size_t(k + 2);
+				_RegimeBits = size_t(k) + 2;
 				_Bits.set(static_cast<int>(nbits) - 1 - _RegimeBits, true);   // set the run-length termination bit
 			}
 			else {
@@ -109,7 +109,7 @@ public:
 			_k = int(k < static_cast<int>(nbits) - 2 ? k : static_cast<int>(nbits) - 2); // constrain regime to maxpos
 			_Bits.set();
 			if (k < static_cast<int>(nbits) - 2) {	// _RegimeBits = (std::size_t(k) < static_cast<int>(nbits) - 2 ? k + 2 : nbits - 1);
-				_RegimeBits = size_t(k + 2);   
+				_RegimeBits = size_t(k) + 2;   
 				_Bits.set(nbits - 1 - _RegimeBits, false);   // set the run-length termination bit
 			}
 			else {

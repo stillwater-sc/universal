@@ -426,7 +426,7 @@ public:
 			return *this;
 		}
 		integer<nbits, BlockType> target;
-		for (unsigned i = shift; i < nbits; ++i) {  // TODO: inefficient as it works at the bit level
+		for (size_t i = shift; i < nbits; ++i) {  // TODO: inefficient as it works at the bit level
 			target.set(i, at(i - shift));
 		}
 		*this = target;
@@ -656,14 +656,14 @@ protected:
 	}
 	unsigned short to_ushort() const {
 		if (iszero()) return 0;
-		unsigned short us;
+		unsigned short us{ 0 };
 		char* p = (char*)&us;
 		*p = b[0];
 		*(p + 1) = b[1];
 		return us;
 	}
 	unsigned int to_uint() const {
-		unsigned int ui;
+		unsigned int ui{ 0 };
 		char* p = (char*)&ui;
 		*p = b[0];
 		*(p + 1) = b[1];
@@ -736,6 +736,7 @@ namespace impl {
 	// Decimal representation as a set of decimal digits with sign used for creating decimal representations of the integers
 class decimal : public std::vector<uint8_t> {
 public:
+	decimal() : sign{ false } {}
 	bool sign;
 	// remove any leading zeros from a decimal representation
 	void unpad() {

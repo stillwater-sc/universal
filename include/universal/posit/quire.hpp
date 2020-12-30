@@ -320,8 +320,8 @@ public:
 	// bit addressing operator
 	bool operator[](int index) const {
 		if (index < int(radix_point)) return _lower[static_cast<size_t>(index)];
-		if (index < int(radix_point) + int(upper_range)) return _upper[static_cast<size_t>(index - int(radix_point))];
-		if (index < int(radix_point) + int(upper_range) + int(capacity)) return _capacity[static_cast<size_t>(index - int(radix_point) - int(upper_range))];
+		if (index < int(radix_point + upper_range)) return _upper[static_cast<size_t>(index) - radix_point];
+		if (index < int(radix_point + upper_range + capacity)) return _capacity[static_cast<size_t>(index) - radix_point - upper_range];
 		throw "index out of range";
 	}
 

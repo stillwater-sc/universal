@@ -56,7 +56,7 @@ public:
 			size_t nrExponentBits = 0;
 			bitblock<es> _exp;
 			if (msb >= 0 && es > 0) {
-				nrExponentBits = (msb >= static_cast<int>(es) - 1 ? es : msb + 1);
+				nrExponentBits = (msb >= es - 1 ? es : static_cast<size_t>(msb) + 1);
 				for (size_t i = 0; i < nrExponentBits; i++) {
 					_exp[es - 1 - i] = _raw_bits[msb - i];
 				}

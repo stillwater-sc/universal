@@ -149,7 +149,7 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 	if (es > 0) {
 		bitblock<es> _exp;
 		if (msb >= 0 && es > 0) {
-			nrExponentBits = (msb >= static_cast<int>(es) - 1 ? es : msb + 1);
+			nrExponentBits = (msb >= static_cast<int>(es) - 1 ? es : static_cast<size_t>(msb) + 1);
 			for (size_t i = 0; i < nrExponentBits; ++i) {
 				_exp[size_t(static_cast<int>(es) - 1 - i)] = tmp[size_t(msb - i)];
 			}
@@ -1119,7 +1119,7 @@ private:
 	}
 	double to_double() const {
 		if (iszero())	return 0.0;
-		if (isnar())	return NAN;
+		if (isnar())	return std::numeric_limits<double>::quiet_NaN();
 		bool		     	 _sign;
 		regime<nbits, es>    _regime;
 		exponent<nbits, es>  _exponent;
@@ -1133,7 +1133,7 @@ private:
 	}
 	long double to_long_double() const {
 		if (iszero())  return 0.0l;
-		if (isnar())   return NAN;
+		if (isnar())   return std::numeric_limits<double>::quiet_NaN();;
 		bool		     	 _sign;
 		regime<nbits, es>    _regime;
 		exponent<nbits, es>  _exponent;

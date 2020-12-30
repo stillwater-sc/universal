@@ -246,10 +246,24 @@ public:
 	/// <param name="sign">boolean to make it + or - infinity, default is -inf</param>
 	/// <returns>void</returns> 
 	inline constexpr void setinf(bool sign = true) noexcept {
-		for (size_t i = 0; i < nrBlocks-1; ++i) {
-			_block[i] = BLOCK_MASK;
+		switch (nrBlocks) {
+		case 0:
+			return;
+		case 1:
+			break;
+		case 2:
+			_block[0] = BLOCK_MASK;
+			break;
+		case 3:
+			_block[0] = BLOCK_MASK;
+			_block[1] = BLOCK_MASK;
+		default:
+			for (size_t i = 0; i < nrBlocks - 1; ++i) {
+				_block[i] = BLOCK_MASK;
+			}
+			break;
 		}
-		_block[MSU] = sign ? MSU_MASK : (~SIGN_BIT_MASK & MSU_MASK);
+		_block[MSU] = sign ? MSU_MASK : (~SIGN_BIT_MASK & MSU_MASK);	
 	}
 	/// <summary>
 	/// set the raw bits of the areal. This is a required function in the Universal number systems
