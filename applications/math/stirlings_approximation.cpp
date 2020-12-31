@@ -7,10 +7,12 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
-// the oracle
+// the oracle number system
 #include <universal/decimal/decimal>
 #include <universal/posit/posit>
 #include <universal/functions/factorial.hpp>
+
+#include <universal/utility/error.hpp>
 
 /*
  * Stirling's approximation is an approximation for factorials, leading to accurate
@@ -50,13 +52,48 @@ Scalar StirlingsApproximation(size_t n) {
 	return factorial;
 }
 
+/*
+ factorial                Stirling's Approximation                      Real Approximation                        Actual Factorial                         Relative Error
+		 1! =                                 0.922137                                         1                                               1                                     -0.07786300
+		 2! =                                    1.919                                         2                                               2                                     -0.04049780
+		 3! =                                  5.83621                                         6                                               6                                     -0.02729840
+		 4! =                                  23.5062                                        24                                              24                                     -0.02057600
+		 5! =                                  118.019                                       120                                             120                                     -0.01650690
+		 6! =                                  710.078                                       720                                             720                                     -0.01378030
+		 7! =                                   4980.4                                      5040                                            5040                                     -0.01182620
+		 8! =                                  39902.4                                     40320                                           40320                                     -0.01035730
+		 9! =                                   359537                                    362880                                          362880                                     -0.00921276
+		10! =                               3.5987e+06                                3.6288e+06                                         3628800                                     -0.00829596
+		11! =                              3.96156e+07                               3.99168e+07                                        39916800                                     -0.00754507
+		12! =                              4.75687e+08                               4.79002e+08                                       479001600                                     -0.00691879
+		13! =                              6.18724e+09                               6.22702e+09                                      6227020800                                     -0.00638850
+		14! =                               8.6661e+10                               8.71783e+10                                     87178291200                                     -0.00593370
+		15! =                              1.30043e+12                               1.30767e+12                                   1307674368000                                     -0.00553933
+		16! =                              2.08141e+13                               2.09228e+13                                  20922789888000                                     -0.00519412
+		17! =                              3.53948e+14                               3.55687e+14                                 355687428096000                                     -0.00488940
+		18! =                               6.3728e+15                               6.40237e+15                                6402373705728000                                     -0.00461846
+		19! =                              1.21113e+17                               1.21645e+17                              121645100408832000                                     -0.00437596
+		20! =                              2.42279e+18                                2.4329e+18                             2432902008176640000                                     -0.00415765
+		21! =                              5.08886e+19                               5.10909e+19                            51090942171709440000                                     -0.00396009
+		22! =                              1.11975e+21                                 1.124e+21                          1124000727777607680000                                     -0.00378045
+		23! =                              2.57585e+22                                2.5852e+22                         25852016738884976640000                                     -0.00361641
+		24! =                              6.18298e+23                               6.20448e+23                        620448401733239439360000                                     -0.00346600
+		25! =                              1.54596e+25                               1.55112e+25                      15511210043330985984000000                                     -0.00332761
+		26! =                              4.02001e+26                               4.03291e+26                     403291461126605635584000000                                     -0.00319984
+		27! =                              1.08553e+28                               1.08889e+28                   10888869450418352160768000000                                     -0.00308152
+		28! =                              3.03982e+29                               3.04888e+29                  304888344611713860501504000000                                     -0.00297164
+		29! =                              8.81639e+30                               8.84176e+30                 8841761993739701954543616000000                                     -0.00286932
+		30! =                              2.64517e+32                               2.65253e+32               265252859812191058636308480000000                                     -0.00277382
+
+
+ */
+
 int main()
 try {
 	using namespace std;
 	using namespace sw::universal;
 
-	//using Real = mpf;
-	using Real = posit<32,2>;
+	using Real = posit<256,2>;
 	using Integer = decimal;
 
 	constexpr size_t FIRST_COLUMN = 10;
@@ -64,12 +101,17 @@ try {
 	cout << setw(FIRST_COLUMN) << "factorial"
 		<< setw(COLUMN_WIDTH) << "Stirling's Approximation"
 		<< setw(COLUMN_WIDTH) << "Real Approximation"
-		<< setw(COLUMN_WIDTH) << "Actual Factorial\n";
-	for (size_t i = 1; i < 30; i += 1) {
+		<< setw(COLUMN_WIDTH) << "Actual Factorial"
+		<< setw(COLUMN_WIDTH) << "Relative Error\n";
+	for (size_t i = 1; i < 31; i += 1) {
+		Real approximation = StirlingsApproximation<Real>(i);
+		Real actual        = sw::function::factorial<Real>(i);
+		Integer oracle     = sw::function::factorial<Integer>(i);
 		cout << setw(FIRST_COLUMN) << i << "! = "
-			<< setw(COLUMN_WIDTH) << StirlingsApproximation<Real>(i) << "\t"
-			<< setw(COLUMN_WIDTH) << sw::function::factorial<Real>(i) << "\t"
-			<< setw(COLUMN_WIDTH) << sw::function::factorial<Integer>(i) << endl;
+			<< setw(COLUMN_WIDTH) << approximation << '\t'
+			<< setw(COLUMN_WIDTH) << actual << '\t'
+			<< setw(COLUMN_WIDTH) << oracle << '\t'
+			<< setw(COLUMN_WIDTH) << RelativeError(approximation, actual) << endl;
 	}
 
 	return EXIT_SUCCESS;

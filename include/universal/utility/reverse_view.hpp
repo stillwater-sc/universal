@@ -9,7 +9,7 @@
 #include <type_traits>
 #include <utility>
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 #if NO_XVALUE_CONTAINER_REQUIRED
 
@@ -91,4 +91,4 @@ namespace sw { namespace universal {
 
 #endif // NO_XVALUE_CONTAINER_REQUIRED
 
-}} // namespace sw::universal
+} // namespace sw::universal
