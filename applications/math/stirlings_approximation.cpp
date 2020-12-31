@@ -7,8 +7,8 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
-// multi-precision float
-//#include <universal/mpf/mpf.hpp>
+// the oracle
+#include <universal/decimal/decimal>
 #include <universal/posit/posit>
 #include <universal/functions/factorial.hpp>
 
@@ -39,14 +39,14 @@
  *
  */
 
-template<typename Real>
-Real StirlingsApproximation(const Real& n) {
-	Real pi = 3.14159265358979323846;
-	Real term1 = sqrt(Real(2) * pi * n);
-	Real e = 2.71828182845904523536;
-	Real term2 = pow(n / e, n);
+template<typename Scalar>
+Scalar StirlingsApproximation(size_t n) {
+	Scalar pi = 3.14159265358979323846;
+	Scalar term1 = sqrt(Scalar(2) * pi * Scalar(n));
+	Scalar e = 2.71828182845904523536;
+	Scalar term2 = pow(Scalar(n) / e, Scalar(n));
 
-	Real factorial = term1 * term2;
+	Scalar factorial = term1 * term2;
 	return factorial;
 }
 
@@ -57,11 +57,19 @@ try {
 
 	//using Real = mpf;
 	using Real = posit<32,2>;
+	using Integer = decimal;
 
-	for (Real i = 1; i < 20; i += 1) {
-		cout << setw(2) << i << "! = " 
-			<< setw(20) << StirlingsApproximation(i) << "  " 
-			<< setw(20) << sw::function::factorial(i) << endl;
+	constexpr size_t FIRST_COLUMN = 10;
+	constexpr size_t COLUMN_WIDTH = 40;
+	cout << setw(FIRST_COLUMN) << "factorial"
+		<< setw(COLUMN_WIDTH) << "Stirling's Approximation"
+		<< setw(COLUMN_WIDTH) << "Real Approximation"
+		<< setw(COLUMN_WIDTH) << "Actual Factorial\n";
+	for (size_t i = 1; i < 30; i += 1) {
+		cout << setw(FIRST_COLUMN) << i << "! = "
+			<< setw(COLUMN_WIDTH) << StirlingsApproximation<Real>(i) << "\t"
+			<< setw(COLUMN_WIDTH) << sw::function::factorial<Real>(i) << "\t"
+			<< setw(COLUMN_WIDTH) << sw::function::factorial<Integer>(i) << endl;
 	}
 
 	return EXIT_SUCCESS;

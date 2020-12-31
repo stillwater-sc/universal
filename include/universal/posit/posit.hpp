@@ -143,15 +143,15 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 	size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp));
 
 	// get the exponent bits
-	// start of exponent is nbits - (sign_bit + regime_bits)
-	int msb = int(static_cast<int>(nbits) - 1 - (1 + nrRegimeBits));
+	// start of exponent is nbits-1 - (sign_bit + regime_bits)
+	int64_t msb = static_cast<int64_t>(nbits - 1ul - (1ul + nrRegimeBits));
 	size_t nrExponentBits = 0;
 	if (es > 0) {
 		bitblock<es> _exp;
 		if (msb >= 0 && es > 0) {
-			nrExponentBits = (msb >= static_cast<int>(es) - 1 ? es : static_cast<size_t>(msb) + 1);
+			nrExponentBits = (msb >= es - 1ul) ? es : static_cast<size_t>(msb + 1ll);
 			for (size_t i = 0; i < nrExponentBits; ++i) {
-				_exp[size_t(static_cast<int>(es) - 1 - i)] = tmp[size_t(msb - i)];
+				_exp[size_t(es - 1ull - i)] = tmp[msb - i];
 			}
 		}
 		_exponent.set(_exp, nrExponentBits);
@@ -165,10 +165,10 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 	// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
 	bitblock<fbits> _frac;
 	msb = msb - int(nrExponentBits);
-	size_t nrFractionBits = size_t(msb < 0 ? 0 : msb + 1);
+	size_t nrFractionBits = (msb < 0 ? 0ull : static_cast<size_t>(msb + 1ll));
 	if (msb >= 0) {
-		for (int i = msb; i >= 0; --i) {
-			_frac[size_t(static_cast<int>(fbits) - 1 - (msb - i))] = tmp[size_t(i)];
+		for (int64_t i = msb; i >= 0; --i) {
+			_frac[fbits - 1ull - (msb - i)] = tmp[i];
 		}
 	}
 	_fraction.set(_frac, nrFractionBits);
@@ -243,8 +243,8 @@ inline bitblock<nbits>& convert_to_bb(bool _sign, int _scale, const bitblock<fbi
 		int e = _scale;
 		bool r = (e >= 0);
 
-		size_t run = (r ? 1 + (e >> es) : -(e >> es));
-		regime.set(0, 1 ^ r);
+		size_t run = static_cast<size_t>(r ? 1ll + (e >> es) : -(e >> es));
+		regime.set(0, 1 ^ r);  // TODO: this expression can be improved 1 ^ r is the same as !r as r is a boolean, no need for a bitwise operator
 		for (size_t i = 1; i <= run; i++) regime.set(i, r);
 
 		size_t esval = e % (size_t(1) << static_cast<int>(es));
@@ -879,7 +879,7 @@ public:
 			p.set(raw_bits);
 		}
 		else {
-			bool s;
+			bool s{ false };
 			regime<nbits, es> r;
 			exponent<nbits, es> e;
 			fraction<fbits> f;
@@ -972,7 +972,7 @@ public:
 	inline bool isneg() const { return _raw_bits[nbits - 1]; }
 	inline bool ispos() const { return !_raw_bits[nbits - 1]; }
 	inline bool ispowerof2() const {
-		bool s;
+		bool s{ false };
 		regime<nbits, es> r;
 		exponent<nbits, es> e;
 		fraction<fbits> f;
@@ -1012,7 +1012,7 @@ public:
 
 	// currently, size is tied to fbits size of posit config. Is there a need for a case that captures a user-defined sized fraction?
 	value<fbits> to_value() const {
-		bool		     	 _sign;
+		bool		     	 _sign{ false };
 		regime<nbits, es>    _regime;
 		exponent<nbits, es>  _exponent;
 		fraction<fbits>      _fraction;
@@ -1020,7 +1020,7 @@ public:
 		return value<fbits>(_sign, _regime.scale() + _exponent.scale(), _fraction.get(), iszero(), isnar());
 	}
 	void normalize(value<fbits>& v) const {
-		bool		     	 _sign;
+		bool		     	 _sign{ false };
 		regime<nbits, es>    _regime;
 		exponent<nbits, es>  _exponent;
 		fraction<fbits>      _fraction;
@@ -1029,7 +1029,7 @@ public:
 	}
 	template<size_t tgt_fbits>
 	void normalize_to(value<tgt_fbits>& v) const {
-		bool		     	 _sign;
+		bool		     	 _sign{ false };
 		regime<nbits, es>    _regime;
 		exponent<nbits, es>  _exponent;
 		fraction<fbits>      _fraction;
@@ -1120,7 +1120,7 @@ private:
 	double to_double() const {
 		if (iszero())	return 0.0;
 		if (isnar())	return std::numeric_limits<double>::quiet_NaN();
-		bool		     	 _sign;
+		bool		     	 _sign{ false };
 		regime<nbits, es>    _regime;
 		exponent<nbits, es>  _exponent;
 		fraction<fbits>      _fraction;
@@ -1134,7 +1134,7 @@ private:
 	long double to_long_double() const {
 		if (iszero())  return 0.0l;
 		if (isnar())   return std::numeric_limits<double>::quiet_NaN();;
-		bool		     	 _sign;
+		bool		     	 _sign{ false };
 		regime<nbits, es>    _regime;
 		exponent<nbits, es>  _exponent;
 		fraction<fbits>      _fraction;
@@ -1658,7 +1658,7 @@ inline std::string to_string(const posit<nbits, es>& p, std::streamsize precisio
 template<size_t nbits, size_t es>
 inline std::string to_binary(const posit<nbits, es>& number) {
 	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
-	bool s;
+	bool s{ false };
 	regime<nbits, es> r;
 	exponent<nbits, es> e;
 	fraction<fbits> f;
@@ -1686,7 +1686,7 @@ inline posit<nbits, es> ulp(const posit<nbits, es>& a) {
 template<size_t nbits, size_t es>
 inline std::string to_base2_scientific(const posit<nbits, es>& number) {
 	constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);             // maximum number of fraction bits: derived
-	bool s;
+	bool s{ false };
 	scale(number);
 	regime<nbits, es> r;
 	exponent<nbits, es> e;
