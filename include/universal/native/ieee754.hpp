@@ -1,5 +1,5 @@
 #pragma once
-// ieee-754.hpp: manipulation functions for ieee-754 native type
+// ieee754.hpp: manipulation functions for IEEE-754 native types
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -15,7 +15,7 @@
 #endif
 #include <universal/utility/color_print.hpp>
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 ////////////////////////////////////////////////////////////////////////
 // numerical helpers
@@ -942,5 +942,21 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 
 #endif
 
-}} // namespace sw::universal
+inline int scale(float f) {
+	int exponent{ 0 };
+	auto _ = frexpf(f, &exponent);
+	return exponent;
+}
+inline int scale(double f) {
+	int exponent{ 0 };
+	auto _ =frexp(f, &exponent);
+	return exponent;
+}
+inline int scale(long double f) {
+	int exponent{ 0 };
+	auto _ = frexpl(f, &exponent);
+	return exponent;
+}
+
+} // namespace sw::universal
 

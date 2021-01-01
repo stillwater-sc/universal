@@ -10,8 +10,8 @@
 #include <limits>
 
 #include <universal/blockbin/blockbinary.hpp>
-#include "../native/ieee-754.hpp"
-#include "../native/bit_functions.hpp"
+#include <universal/native/ieee754.hpp>
+#include <universal/native/bit_functions.hpp>
 #include "trace_constants.hpp"
 
 namespace sw { namespace universal {
@@ -186,9 +186,9 @@ public:
 		case FP_SUBNORMAL:
 		case FP_NORMAL:
 			{
-				float _fr;
-				unsigned int _23b_fraction_without_hidden_bit;
-				int _exponent;
+			    float _fr{ 0.0f };
+				unsigned int _23b_fraction_without_hidden_bit{ 0u };
+				int _exponent{ 0 };
 				extract_fp_components(rhs, _sign, _exponent, _fr, _23b_fraction_without_hidden_bit);
 				_scale = _exponent - 1;
 				_fraction = extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
@@ -219,9 +219,9 @@ public:
 		case FP_SUBNORMAL:
 		case FP_NORMAL:
 			{
-				double _fr;
-				unsigned long long _52b_fraction_without_hidden_bit;
-				int _exponent;
+				double _fr{ 0.0 };
+				unsigned long long _52b_fraction_without_hidden_bit{ 0ull };
+				int _exponent{ 0 };
 				extract_fp_components(rhs, _sign, _exponent, _fr, _52b_fraction_without_hidden_bit);
 				_scale = _exponent - 1;
 				_fraction = extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
@@ -252,9 +252,9 @@ public:
 		case FP_SUBNORMAL:
 		case FP_NORMAL:
 			{
-				long double _fr;
-				unsigned long long _63b_fraction_without_hidden_bit;
-				int _exponent;
+				long double _fr{ 0.0l };
+				unsigned long long _63b_fraction_without_hidden_bit{ 0ull };
+				int _exponent{ 0 };
 				extract_fp_components(rhs, _sign, _exponent, _fr, _63b_fraction_without_hidden_bit);
 				_scale = _exponent - 1;
 				// how to interpret the fraction bits: TODO: this should be a static compile-time code block

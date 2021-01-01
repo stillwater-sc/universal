@@ -31,7 +31,7 @@ Run-time configuration is used to select modular vs saturation arithmetic.
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
 
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
-#include <universal/native/ieee-754.hpp>   // IEEE-754 decoders
+#include <universal/native/ieee754.hpp>   // IEEE-754 decoders
 #include <universal/native/integers.hpp>   // manipulators for native integer types
 #include <universal/blockbin/blockbinary.hpp>
 
@@ -2100,9 +2100,9 @@ bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& valu
 	else if (std::regex_match(number, hex_regex)) {
 		//std::cout << "found a hexadecimal representation\n";
 		// each char is a nibble
-		int byte;
-		int byteIndex = 0;
-		bool odd = false;
+		int byte{ 0 };
+		int byteIndex{ 0 };
+		bool odd{ false };
 		for (std::string::const_reverse_iterator r = number.rbegin();
 			r != number.rend();
 			++r) {

@@ -1,5 +1,5 @@
 #pragma once
-// exceptions.hpp: definition of adaptivefloat exceptions
+// exceptions.hpp: definition of adaptiveposit exceptions
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -36,36 +36,36 @@
 
 #endif
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
-// base class for adaptivefloat arithmetic exceptions
-struct adaptivefloat_arithmetic_exception
+// base class for adaptiveposit arithmetic exceptions
+struct adaptiveposit_arithmetic_exception
 	: public std::runtime_error
 {
-	explicit adaptivefloat_arithmetic_exception(const std::string& error) 
-		: std::runtime_error(std::string("adaptive-float arithmetic exception: ") + error) {};
+	explicit adaptiveposit_arithmetic_exception(const std::string& error) 
+		: std::runtime_error(std::string("adaptive-posit arithmetic exception: ") + error) {};
 };
 
-// divide by zero arithmetic exception for adaptive-float
-struct adaptivefloat_divide_by_zero : public adaptivefloat_arithmetic_exception {
-	explicit adaptivefloat_divide_by_zero(const std::string& error = "adaptive-float division by zero") 
-		: adaptivefloat_arithmetic_exception(error) {}
+// divide by zero arithmetic exception for fixed-point
+struct adaptiveposit_divide_by_zero : public adaptiveposit_arithmetic_exception {
+	explicit adaptiveposit_divide_by_zero(const std::string& error = "adaptive-posit division by zero") 
+		: adaptiveposit_arithmetic_exception(error) {}
 };
 
 ///////////////////////////////////////////////////////////////
 // internal implementation exceptions
 
-// base class for adaptive-float internal exceptions
-struct adaptivefloat_internal_exception
+// base class for fixed-point internal exceptions
+struct adaptiveposit_internal_exception
 	: public std::runtime_error
 {
-	explicit adaptivefloat_internal_exception(const std::string& error) 
-		: std::runtime_error(std::string("adaptive-float internal exception: ") + error) {};
+	explicit adaptiveposit_internal_exception(const std::string& error) 
+		: std::runtime_error(std::string("adaptive-posit internal exception: ") + error) {};
 };
 
-struct adaptivefloat_word_index_out_of_bounds : public adaptivefloat_internal_exception {
-	explicit adaptivefloat_word_index_out_of_bounds(const std::string& error = "word index out of bounds") 
-		: adaptivefloat_internal_exception(error) {}
+struct adaptiveposit_word_index_out_of_bounds : public adaptiveposit_internal_exception {
+	explicit adaptiveposit_word_index_out_of_bounds(const std::string& error = "word index out of bounds") 
+		: adaptiveposit_internal_exception(error) {}
 };
 
-}} // namespace sw::universal
+} // namespace sw::universal

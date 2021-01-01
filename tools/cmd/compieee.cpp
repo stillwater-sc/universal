@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
-#include <universal/native/ieee-754.hpp>
+#include <universal/native/ieee754.hpp>
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/value/value>
 

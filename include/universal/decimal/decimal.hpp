@@ -14,7 +14,7 @@
 #include <regex>
 #include <algorithm>
 
-#include <universal/native/ieee-754.hpp>
+#include <universal/native/ieee754.hpp>
 #include <universal/string/strmanip.hpp>
 #include <universal/decimal/exceptions.hpp>
 

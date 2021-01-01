@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "adaptivefloat" "Number Systems/floating-point/adaptive/linear" "${SOURCES}")
+compile_all("true" "afloat" "Number Systems/adaptive/floating-point/linear/adaptivefloat" "${SOURCES}")

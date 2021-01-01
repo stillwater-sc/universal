@@ -7,7 +7,7 @@
 #include <cassert>
 #include <limits>
 
-#include <universal/native/ieee-754.hpp>
+#include <universal/native/ieee754.hpp>
 
 namespace sw {	namespace universal {
 		

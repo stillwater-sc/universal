@@ -518,6 +518,7 @@ endif(BUILD_UNUM_TYPE_2)
 if(BUILD_POSITS)
 add_subdirectory("tests/posit")
 add_subdirectory("tests/posit/specialized")
+add_subdirectory("tests/adaptiveposit")
 endif(BUILD_POSITS)
 
 if(BUILD_VALIDS)

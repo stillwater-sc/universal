@@ -10,7 +10,7 @@
 #include <limits>
 #include <tuple>
 
-#include <universal/native/ieee-754.hpp>
+#include <universal/native/ieee754.hpp>
 #include <universal/blockbin/blockbinary.hpp>
 
 namespace sw { namespace universal {

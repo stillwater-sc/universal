@@ -4,7 +4,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/native/ieee-754.hpp>
+#include <universal/native/ieee754.hpp>
 #include <universal/posit/math/sqrt_tables.hpp>
 
 #ifndef POSIT_NATIVE_SQRT
@@ -87,7 +87,7 @@ namespace sw::universal {
 		union {
 			float f;
 			unsigned i;
-		} m;
+		} m{ 0 };
 		m.i = 0x3f7fffff;
 		float onemme = m.f;
 
@@ -466,12 +466,12 @@ namespace sw::universal {
 		}
 		// Strip off the hidden bit and round-to-nearest using last shift+5 bits.
 		result_fraction &= 0xFFFFFFFF;
-		uint32_t mask = static_cast<uint32_t>((1 << (4 + shift)));
+		uint64_t mask = static_cast<uint64_t>((1ul << (4ul + shift)));
 		if (mask & result_fraction) {
-			if (((mask - 1) & result_fraction) | ((mask << 1) & result_fraction)) result_fraction += (mask << 1);
+			if (((mask - 1) & result_fraction) | ((mask << 1ul) & result_fraction)) result_fraction += (mask << 1ul);
 		}
 		// Assemble the result and return it.
-		p.set_raw_bits(raw | (result_exp << (27 - shift)) | uint_fast32_t(result_fraction >> (5 + shift)));
+		p.set_raw_bits(uint64_t(raw) | (uint64_t(result_exp) << (27 - shift)) | uint64_t(result_fraction >> (5 + shift)));
 		return p;
 	}
 

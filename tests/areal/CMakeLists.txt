@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "areal" "Number Systems/floating-point/arbitrary/linear" "${SOURCES}")
+compile_all("true" "areal" "Number Systems/fixed size/floating-point/linear/areal" "${SOURCES}")

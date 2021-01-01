@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "lns" "Number Systems/logarithmic/lns" "${SOURCES}")
+compile_all("true" "lns" "Number Systems/fixed size/logarithmic/lns" "${SOURCES}")

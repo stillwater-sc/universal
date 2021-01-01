@@ -7,8 +7,9 @@
 #include <sstream>
 #include <cmath>
 #include <algorithm>
-// the oracle number system
-#include <universal/decimal/decimal>
+
+#include <universal/native/ieee754.hpp>
+#include <universal/decimal/decimal> // the oracle number system to use
 #include <universal/posit/posit>
 #include <universal/functions/factorial.hpp>
 
@@ -113,6 +114,7 @@ try {
 	}
 	cout << endl;
 	{
+		string ref = "815915283247897734345611269596115894272000000000";
 		double ld = sw::function::factorial<double>(40);
 		double ldr = sw::function::factoriali<double>(40);
 		decimal d = sw::function::factorial<decimal>(40);
@@ -121,29 +123,41 @@ try {
 		auto digits = std::numeric_limits<double>::max_digits10;
 		cout << setprecision(digits);
 		cout << "factorial(40) calculated with double and decimal oracle rounded to double\n";
+		cout << ref << '\n';
 		cout << d << '\n';
 		cout << setw(digits + 5ll) << ld << '\n';
 		cout << setw(digits + 5ll) << ldr << '\n';
-		cout << setw(digits + 5ll) << ad << "   TODO: explain the difference" << endl;
+		cout << setw(digits + 5ll) << ad << "   TODO: explain the difference between the two methods of calculation" << endl;
+		cout << "scale of 40! is " << scale(ld) << endl;
+
 		cout << "factorial(50) calculated with double and decimal oracle rounded to double\n";
+		ref = "30414093201713378043612608166064768844377641568960512000000000000";
 		ld = sw::function::factorial<double>(50);
 		ldr = sw::function::factoriali<double>(50);
 		d = sw::function::factorial<decimal>(50);
 		ad = double(d);
+		cout << ref << '\n';
 		cout << d << '\n';
 		cout << setw(digits + 5ll) << ld << '\n';
 		cout << setw(digits + 5ll) << ldr << '\n';
-		cout << setw(digits + 5ll) << ad << "   TODO: explain the difference" << endl;
+		cout << setw(digits + 5ll) << ad << "   TODO: explain the difference between the two methods of calculation" << endl;
+		cout << "scale of 50! is " << scale(ld) << endl;
+
 		cout << "factorial(60) calculated with double and decimal oracle rounded to double\n";
+		ref = "8320987112741390144276341183223364380754172606361245952449277696409600000000000000";
 		ld = sw::function::factorial<double>(60);
 		ldr = sw::function::factoriali<double>(60);
 		d = sw::function::factorial<decimal>(60);
 		ad = double(d);
+		cout << ref << '\n';
 		cout << d << '\n';
 		cout << setw(digits + 5ll) << ld << '\n';
 		cout << setw(digits + 5ll) << ldr << '\n';
-		cout << setw(digits + 5ll) << ad << "   TODO: explain why they show the same error" << endl;
+		cout << setw(digits + 5ll) << ad << "   TODO: explain why the two methods show the same error" << endl;
+		cout << "scale of 60! is " << scale(ld) << endl;
 		cout << setprecision(precision);
+
+		
 	}
 
 	return EXIT_SUCCESS;
