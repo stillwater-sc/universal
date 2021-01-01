@@ -84,8 +84,6 @@ Scalar StirlingsApproximation(size_t n) {
 		28! =                              3.03982e+29                               3.04888e+29                  304888344611713860501504000000                                     -0.00297164
 		29! =                              8.81639e+30                               8.84176e+30                 8841761993739701954543616000000                                     -0.00286932
 		30! =                              2.64517e+32                               2.65253e+32               265252859812191058636308480000000                                     -0.00277382
-
-
  */
 
 int main()
@@ -112,6 +110,40 @@ try {
 			<< setw(COLUMN_WIDTH) << actual << '\t'
 			<< setw(COLUMN_WIDTH) << oracle << '\t'
 			<< setw(COLUMN_WIDTH) << RelativeError(approximation, actual) << endl;
+	}
+	cout << endl;
+	{
+		double ld = sw::function::factorial<double>(40);
+		double ldr = sw::function::factoriali<double>(40);
+		decimal d = sw::function::factorial<decimal>(40);
+		double ad = double(d);
+		auto precision = cout.precision();
+		auto digits = std::numeric_limits<double>::max_digits10;
+		cout << setprecision(digits);
+		cout << "factorial(40) calculated with double and decimal oracle rounded to double\n";
+		cout << d << '\n';
+		cout << setw(digits + 5ll) << ld << '\n';
+		cout << setw(digits + 5ll) << ldr << '\n';
+		cout << setw(digits + 5ll) << ad << "   TODO: explain the difference" << endl;
+		cout << "factorial(50) calculated with double and decimal oracle rounded to double\n";
+		ld = sw::function::factorial<double>(50);
+		ldr = sw::function::factoriali<double>(50);
+		d = sw::function::factorial<decimal>(50);
+		ad = double(d);
+		cout << d << '\n';
+		cout << setw(digits + 5ll) << ld << '\n';
+		cout << setw(digits + 5ll) << ldr << '\n';
+		cout << setw(digits + 5ll) << ad << "   TODO: explain the difference" << endl;
+		cout << "factorial(60) calculated with double and decimal oracle rounded to double\n";
+		ld = sw::function::factorial<double>(60);
+		ldr = sw::function::factoriali<double>(60);
+		d = sw::function::factorial<decimal>(60);
+		ad = double(d);
+		cout << d << '\n';
+		cout << setw(digits + 5ll) << ld << '\n';
+		cout << setw(digits + 5ll) << ldr << '\n';
+		cout << setw(digits + 5ll) << ad << "   TODO: explain why they show the same error" << endl;
+		cout << setprecision(precision);
 	}
 
 	return EXIT_SUCCESS;

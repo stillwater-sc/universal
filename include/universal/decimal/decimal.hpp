@@ -1,10 +1,9 @@
 #pragma once
-// decimal.hpp: definition of arbitrary decimal integer configurations
+// decimal.hpp: definition of adaptive precision decimal integer data type
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
 #include <cstdint>
 #include <sstream>
 #include <cassert>
@@ -60,7 +59,10 @@ decimal remainder(const decimal&, const decimal&);
 int findMsd(const decimal&);
 template<typename Ty> void convert_to_decimal(Ty, decimal&);
 
-// Arbitrary precision decimal integer number
+/// <summary>
+/// Adaptive precision decimal number type
+/// </summary>
+/// The digits are managed as a vector with the digit for 10^0 stored at index 0, 10^1 stored at index 1, etc.
 class decimal : public std::vector<uint8_t> {
 public:
 	decimal() { setzero(); }
@@ -524,11 +526,9 @@ protected:
 	inline int to_int() const { return short(to_long_long()); }
 	inline long to_long() const { return short(to_long_long()); }
 	inline long long to_long_long() const {
-		long long v = 0;
-		decimal::const_iterator it;
-		long long order;
-		order = sign() ? -1 : 1;
-		for (it = this->begin(); it != this->end(); ++it) {
+		long long v = 0;	
+		long long order = sign() ? -1 : 1;
+		for (decimal::const_iterator it = this->begin(); it != this->end(); ++it) {
 			v += *it * order;
 			order *= 10;
 		}
@@ -541,13 +541,31 @@ protected:
 		return static_cast<unsigned long long>(to_long_long());
 	}
 	inline float to_float() const {
-		return 0.0f;
+		float f = 0.0f;
+		float order = sign() ? -1.0f : 1.0f;
+		for (decimal::const_iterator it = this->begin(); it != this->end(); ++it) {
+			f += *it * order;
+			order *= 10.0f;
+		}
+		return f;
 	}
 	inline double to_double() const {
-		return 0.0;
+		double d{ 0.0 };
+		double order = sign() ? -1.0 : 1.0;
+		for (decimal::const_iterator it = this->begin(); it != this->end(); ++it) {
+			d += *it * order;
+			order *= 10.0;
+		}
+		return d;
 	}
 	inline long double to_long_double() const {
-		return 0.0l;
+		long double ld{ 0.0l };
+		long double order = sign() ? -1.0l : 1.0l;
+		for (decimal::const_iterator it = this->begin(); it != this->end(); ++it) {
+			ld += *it * order;
+			order *= 10.0l;
+		}
+		return ld;
 	}
 
 	template<typename Ty>
@@ -564,7 +582,7 @@ protected:
 			constexpr uint64_t hidden_bit = (uint64_t(1) << 51);
 			uint64_t bits = decoder.parts.fraction | hidden_bit;
 			if (scale < 51) {
-				bits >>= (51 - scale);
+				bits >>= (51ll - scale);
 				*this = bits;
 			}
 			else {
