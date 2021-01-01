@@ -942,19 +942,34 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 
 #endif
 
-inline int scale(float f) {
+/// <summary>
+/// return the binary scale ( = 2^scale ) of a float
+/// </summary>
+/// <param name="v">single precision value</param>
+/// <returns>binary scale</returns>
+inline int scale(float v) {
 	int exponent{ 0 };
-	auto _ = frexpf(f, &exponent);
+	frexpf(v, &exponent);
 	return exponent;
 }
-inline int scale(double f) {
+/// <summary>
+/// return the binary scale ( = 2^scale ) of a double
+/// </summary>
+/// <param name="v">double precision value</param>
+/// <returns>binary scale</returns>
+inline int scale(double v) {
 	int exponent{ 0 };
-	auto _ =frexp(f, &exponent);
+	frexp(v, &exponent);
 	return exponent;
 }
-inline int scale(long double f) {
+/// <summary>
+/// return the binary scale ( = 2^scale ) of a long double
+/// </summary>
+/// <param name="v">quad precision value</param>
+/// <returns>binary scale</returns>
+inline int scale(long double v) {
 	int exponent{ 0 };
-	auto _ = frexpl(f, &exponent);
+	frexpl(v, &exponent);
 	return exponent;
 }
 

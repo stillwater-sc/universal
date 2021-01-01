@@ -1,6 +1,6 @@
 // primes.cpp: prime finding tests
 //
-// Binomial coefficients are useful to generate the inverse of a Hilbert matrix
+// prime number generation and Fermat factorization
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

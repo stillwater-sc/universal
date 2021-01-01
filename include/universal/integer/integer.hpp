@@ -740,9 +740,9 @@ public:
 	bool sign;
 	// remove any leading zeros from a decimal representation
 	void unpad() {
-		int n = (int)size();
-		for (int i = n - 1; i > 0; --i) {
-			if (operator[](i) == 0) pop_back();
+		size_t n = size();
+		for (size_t i = n - 1; i > 0; --i) {
+			if (operator[](i) == 0u) pop_back();
 		}
 	}
 private:
@@ -846,15 +846,15 @@ void sub(decimal& lhs, const decimal& rhs) {
 	}
 	decimal::iterator lit = lhs.begin();
 	decimal::iterator rit = _rhs.begin();
-	char borrow = 0;
+	uint8_t borrow = 0;
 	for (; lit != lhs.end() || rit != _rhs.end(); ++lit, ++rit) {
 		if (*rit > *lit - borrow) {
-			*lit = 10 + *lit - borrow - *rit;
-			borrow = 1;
+			*lit = 10u + *lit - borrow - *rit;
+			borrow = 1u;
 		}
 		else {
 			*lit = *lit - borrow - *rit;
-			borrow = 0;
+			borrow = 0u;
 		}
 	}
 	if (borrow) std::cout << "can this happen?" << std::endl;
@@ -869,16 +869,16 @@ void mul(decimal& lhs, const decimal& rhs) {
 	size_t r = rhs.size();
 	decimal::const_iterator sit, bit; // sit = smallest iterator, bit = biggest iterator
 	if (l < r) {
-		size_t position = 0;
+		int64_t position = 0;
 		for (sit = lhs.begin(); sit != lhs.end(); ++sit) {
 			decimal partial_sum;
 			partial_sum.insert(partial_sum.end(), r + position, 0);
 			decimal::iterator pit = partial_sum.begin() + position;
-			char carry = 0;
+			uint8_t carry = 0;
 			for (bit = rhs.begin(); bit != rhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
-				char digit = *sit * *bit + carry;
-				*pit = digit % 10;
-				carry = digit / 10;
+				uint8_t digit = *sit * *bit + carry;
+				*pit = digit % 10u;
+				carry = digit / 10u;
 			}
 			if (carry) partial_sum.push_back(carry);
 			add(product, partial_sum);
@@ -887,16 +887,16 @@ void mul(decimal& lhs, const decimal& rhs) {
 		}
 	}
 	else {
-		size_t position = 0;
+		int64_t position = 0;
 		for (sit = rhs.begin(); sit != rhs.end(); ++sit) {
 			decimal partial_sum;
 			partial_sum.insert(partial_sum.end(), l + position, 0);
 			decimal::iterator pit = partial_sum.begin() + position;
-			char carry = 0;
+			uint8_t carry = 0;
 			for (bit = lhs.begin(); bit != lhs.end() || pit != partial_sum.end(); ++bit, ++pit) {
-				char digit = *sit * *bit + carry;
-				*pit = digit % 10;
-				carry = digit / 10;
+				uint8_t digit = *sit * *bit + carry;
+				*pit = digit % 10u;
+				carry = digit / 10u;
 			}
 			if (carry) partial_sum.push_back(carry);
 			add(product, partial_sum);

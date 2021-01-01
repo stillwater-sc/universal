@@ -1,4 +1,4 @@
-// binomial_coefficients.cpp: example program to show binomial coefficients
+// pascals_triangle.cpp: example program to show binomial coefficients
 //
 // Binomial coefficients are useful to generate the inverse of a Hilbert matrix
 //
