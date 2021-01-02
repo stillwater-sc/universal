@@ -111,14 +111,13 @@ public:
 	static_assert(_es > 0, "number of exponent bits must be bigger than 0");
 	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
-	static_assert(bitsInBlock <= 32, "storage unit for block arithmetic needs to be <= uint32_t");
+	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint32_t");
 
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t es = _es;
 
 	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
 	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFul >> (64ull - bitsInBlock));
-	static constexpr bt maxBlockValue = (1ull << bitsInBlock) - 1ull;
 
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 	static constexpr bt MSU_MASK = (bt(-1) >> (nrBlocks * bitsInBlock - nbits));
@@ -301,6 +300,9 @@ public:
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		return *this;
 	}
+	inline areal& assign(const std::string& stringRep) {
+		return *this;
+	}
 
 	// selectors
 	inline constexpr bool sign() const { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
@@ -406,11 +408,10 @@ public:
 	}
 	inline int scale() const {
 		int e{ 0 };
-		//debug();
 		// make if constexpr
 		if (MSU_CAPTURES_E) {
-			e = static_cast<int>(_block[MSU] & ~SIGN_BIT_MASK);
-			e >>= EXP_SHIFT;
+			bt ebits = (_block[MSU] & ~SIGN_BIT_MASK);
+			e = static_cast<int>(ebits >> EXP_SHIFT);
 			e -= EXP_BIAS;
 		}
 		else {
