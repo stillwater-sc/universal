@@ -107,6 +107,7 @@ template<size_t _nbits, size_t _es, typename bt = uint8_t>
 class areal {
 public:
 	static_assert(_nbits > _es + 1ull, "nbits is too small to accomodate requested exponent bits");
+	static_assert(_es < 2147483647ull, "that is too big a number, are you trying to break the Interweb?");
 	static_assert(_es > 0, "number of exponent bits must be bigger than 0");
 	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
@@ -126,6 +127,7 @@ public:
 	static constexpr bool MSU_CAPTURES_E = (nbits - 1ull - es) < bitsInMSU;
 	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (nbits - 1ull - es) : 0);
 	static constexpr bt MSU_EXP_MASK = ((bt(-1) << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
+	static constexpr int EXP_BIAS = ((1l << (es - 1)) - 1l);
 	static constexpr bt BLOCK_MASK = bt(-1);
 
 	static constexpr size_t fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
@@ -276,6 +278,7 @@ public:
 		case 3:
 			_block[0] = BLOCK_MASK;
 			_block[1] = BLOCK_MASK;
+			break;
 		default:
 			for (size_t i = 0; i < nrBlocks - 1; ++i) {
 				_block[i] = BLOCK_MASK;
@@ -398,12 +401,21 @@ public:
 		std::cout << "SIGN_BIT_MASK : " << to_binary<bt>(SIGN_BIT_MASK, true) << std::endl;
 		std::cout << "MSU CAPTURES E: " << (MSU_CAPTURES_E ? "yes\n" : "no\n");
 		std::cout << "EXP_SHIFT     : " << EXP_SHIFT << std::endl;
-//		std::cout << "bla           : " << to_binary<bt>((bt(-1) << EXP_SHIFT)) << std::endl;
 		std::cout << "MSU EXP MASK  : " << to_binary<bt>(MSU_EXP_MASK, true) << std::endl;
+		std::cout << "EXP_BIAS      : " << EXP_BIAS << std::endl;
 	}
 	inline int scale() const {
 		int e{ 0 };
-		debug();
+		//debug();
+		// make if constexpr
+		if (MSU_CAPTURES_E) {
+			e = static_cast<int>(_block[MSU] & ~SIGN_BIT_MASK);
+			e >>= EXP_SHIFT;
+			e -= EXP_BIAS;
+		}
+		else {
+			e = 0;
+		}
 		return e;
 	}
 	inline std::string get() const { return std::string("tbd"); }

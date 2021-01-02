@@ -359,25 +359,99 @@ void TestSizeof(int& nrOfFailedTestCases) {
 
 void TestScale(int& nrOfFailedTestCases) {
 	using namespace sw::universal;
+	int currentFails = nrOfFailedTestCases;
+
+	{
+		std::cout << "scale areal<3,1>               : ";
+		areal<3, 1> a; 
+		a.set_raw_bits(2); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.set_raw_bits(3); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.set_raw_bits(5); if (a.scale() != 0) ++nrOfFailedTestCases;
+		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+	}
+
+	{
+		std::cout << "scale areal<4,1>               : ";
+		areal<4, 1> a; 
+		a.set_raw_bits(5); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.set_raw_bits(11); if (a.scale() != 0) ++nrOfFailedTestCases;
+		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+
+	}
+
+	{
+		std::cout << "scale areal<5,1>               : ";
+		areal<5, 1> a;
+		a.set_raw_bits(12); if (a.scale() != 1) ++nrOfFailedTestCases;
+		a.set_raw_bits(20); if (a.scale() != 0) ++nrOfFailedTestCases;
+		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+	}
+	{
+		std::cout << "scale areal<5,2>               : ";
+		areal<5, 2> a;
+		// [1-11-11]
+		a.set_raw_bits(0x1F); if (a.scale() != 2) ++nrOfFailedTestCases;
+		// [1-10-11]
+		a.set_raw_bits(0x1B); if (a.scale() != 1) ++nrOfFailedTestCases;
+		// [1-01-11]
+		a.set_raw_bits(0x17); if (a.scale() != 0) ++nrOfFailedTestCases;
+		// [1-00-11]
+		a.set_raw_bits(0x13); if (a.scale() != -1) ++nrOfFailedTestCases;
+		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+	}
+
+	{
+		std::cout << "scale areal<5,3>               : ";
+		areal<5, 3> a;
+		// [1-111-1]
+		a.set_raw_bits(0x1F); if (a.scale() != 4) ++nrOfFailedTestCases;
+		// [1-110-1]
+		a.set_raw_bits(0x1D); if (a.scale() != 3) ++nrOfFailedTestCases;
+		// [1-101-1]
+		a.set_raw_bits(0x1B); if (a.scale() != 2) ++nrOfFailedTestCases;
+		// [1-100-1]
+		a.set_raw_bits(0x19); if (a.scale() != 1) ++nrOfFailedTestCases;
+		// [1-011-1]
+		a.set_raw_bits(0x17); if (a.scale() != 0) ++nrOfFailedTestCases;
+		// [1-010-1]
+		a.set_raw_bits(0x15); if (a.scale() != -1) ++nrOfFailedTestCases;
+		// [1-001-1]
+		a.set_raw_bits(0x13); if (a.scale() != -2) ++nrOfFailedTestCases;
+		// [1-000-1]
+		a.set_raw_bits(0x11); if (a.scale() != -3) ++nrOfFailedTestCases;
+		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+	}
+
+
+	{
+		std::cout << "scale areal<6,1>               : ";
+		areal<6, 1> a;
+		// [1-1-1111]
+		a.set_raw_bits(0x3F); if (a.scale() != 1) ++nrOfFailedTestCases;
+		// [1-0-1111]
+		a.set_raw_bits(0x2F); if (a.scale() != 0) ++nrOfFailedTestCases;
+		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+	}
+	{
+		std::cout << "scale areal<7,1>               : ";
+		areal<7, 1> a;
+		// [1-1-1'1111]
+		a.set_raw_bits(0x7F); if (a.scale() != 1) ++nrOfFailedTestCases;
+		// [1-0-1'1111]
+		a.set_raw_bits(0x5F); if (a.scale() != 0) ++nrOfFailedTestCases;
+		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+	}
+	{
+		std::cout << "scale areal<8,1>               : ";
+		areal<8, 1> a;
+		// [1-1-11'1111]
+		a.set_raw_bits(0xFF); if (a.scale() != 1) ++nrOfFailedTestCases;
+		// [1-0-11'1111]
+		a.set_raw_bits(0xBF); if (a.scale() != 0) ++nrOfFailedTestCases;
+		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+	}
 #if 0
-	{
-		areal<3, 1> a; a.scale();
-	}
-	{
-		areal<4, 1> a; a.scale();
-	}
-	{
-		areal<5, 1> a; a.scale();
-	}
-	{
-		areal<5, 3> a; a.scale();
-	}
-	{
-		areal<6, 1> a; a.scale();
-	}
-	{
-		areal<7, 2> a; a.scale();
-	}
+
 	{
 		areal<8, 2> a; a.scale();
 	}
@@ -387,7 +461,7 @@ void TestScale(int& nrOfFailedTestCases) {
 	{
 		areal<8, 4> a; a.scale();
 	}
-#endif
+
 	{
 		areal<8, 5> a; a.scale();
 	}
@@ -404,6 +478,7 @@ void TestScale(int& nrOfFailedTestCases) {
 	{
 		areal<10, 3> a; a.scale();
 	}
+#endif
 }
 
 int main(int argc, char** argv)
@@ -432,18 +507,7 @@ try {
 	TestSizeof(nrOfFailedTestCases);
 	TestScale(nrOfFailedTestCases);
 
-#if 0
-//	areal<8, 0> a; std::cout << to_binary(a.EXP_MASK) << std::endl;
-	areal<8, 1> b; std::cout << to_binary(b.EXP_MASK) << std::endl;
-	areal<8, 2> c; std::cout << to_binary(c.EXP_MASK) << std::endl;
-	areal<8, 3> d; std::cout << to_binary(d.EXP_MASK) << std::endl;
-	areal<8, 4> e; std::cout << to_binary(e.EXP_MASK) << std::endl;
-	areal<8, 5> f; std::cout << to_binary(f.EXP_MASK) << std::endl;
-	areal<8, 6> g; std::cout << to_binary(g.EXP_MASK) << std::endl;
-//	areal<8, 7> h; std::cout << to_binary(h.EXP_MASK) << std::endl;
-//	areal<8, 8> i; std::cout << to_binary(i.EXP_MASK) << std::endl;
-//	areal<8, 9> j; std::cout << to_binary(j.EXP_MASK) << std::endl; // we need to through a compilation error
-#endif 
+
 #else // !MANUAL_TESTING
 
 

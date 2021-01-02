@@ -949,7 +949,8 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 /// <returns>binary scale</returns>
 inline int scale(float v) {
 	int exponent{ 0 };
-	frexpf(v, &exponent);
+	float f = frexpf(v, &exponent);
+	if (f == 0.0f) exponent = 0;
 	return exponent;
 }
 /// <summary>
@@ -959,7 +960,7 @@ inline int scale(float v) {
 /// <returns>binary scale</returns>
 inline int scale(double v) {
 	int exponent{ 0 };
-	frexp(v, &exponent);
+	frexp(v, &exponent); // C6031: return value ignored
 	return exponent;
 }
 /// <summary>
