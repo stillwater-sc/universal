@@ -3,8 +3,10 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#pragma warning(disable : 4514)
-#pragma warning(disable : 4710)
+#if defined(_MSC_VER)
+#pragma warning(disable : 4514)  // unreferenced function is removed
+#pragma warning(disable : 4710)  // function is not inlined
+#endif
 // minimum set of include files to reflect source code dependencies
 #include <universal/areal/areal.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
@@ -355,6 +357,55 @@ void TestSizeof(int& nrOfFailedTestCases) {
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 }
 
+void TestScale(int& nrOfFailedTestCases) {
+	using namespace sw::universal;
+#if 0
+	{
+		areal<3, 1> a; a.scale();
+	}
+	{
+		areal<4, 1> a; a.scale();
+	}
+	{
+		areal<5, 1> a; a.scale();
+	}
+	{
+		areal<5, 3> a; a.scale();
+	}
+	{
+		areal<6, 1> a; a.scale();
+	}
+	{
+		areal<7, 2> a; a.scale();
+	}
+	{
+		areal<8, 2> a; a.scale();
+	}
+	{
+		areal<8, 3> a; a.scale();
+	}
+	{
+		areal<8, 4> a; a.scale();
+	}
+#endif
+	{
+		areal<8, 5> a; a.scale();
+	}
+
+	{
+		areal<9, 2> a; a.scale();
+	}
+	{
+		areal<9, 3> a; a.scale();
+	}
+	{
+		areal<10, 2> a; a.scale();
+	}
+	{
+		areal<10, 3> a; a.scale();
+	}
+}
+
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
@@ -379,6 +430,7 @@ try {
 	TestIsInf(nrOfFailedTestCases);
 //	TestIsNaN(nrOfFailedTestCases);
 	TestSizeof(nrOfFailedTestCases);
+	TestScale(nrOfFailedTestCases);
 
 #if 0
 //	areal<8, 0> a; std::cout << to_binary(a.EXP_MASK) << std::endl;

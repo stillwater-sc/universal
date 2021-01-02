@@ -32,7 +32,7 @@
 
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
-
+//#pragma warning(disable : 4310)  // cast truncates constant value
 
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
@@ -81,6 +81,22 @@ areal<nbits, es, bt>& maxneg(areal<nbits, es, bt>& amaxneg) {
 	return amaxneg;
 }
 
+template<typename bt>
+inline std::string to_binary(const bt& number, bool nibbleMarker = false) {
+	std::stringstream ss;
+	ss << 'b';
+	constexpr size_t nbits = sizeof(bt) * 8;
+	bt mask = bt(bt(1u) << (nbits - 1ull));
+	size_t index = nbits;
+	for (size_t i = 0; i < nbits; ++i) {
+		ss << (number & mask ? '1' : '0');
+		--index;
+		if (index > 0 && (index % 4) == 0 && nibbleMarker) ss << '\'';
+		mask >>= 1ul;
+	}
+	return ss.str();
+}
+
 /// <summary>
 /// An arbitrary configuration real number with gradual under/overflow
 /// </summary>
@@ -90,30 +106,33 @@ areal<nbits, es, bt>& maxneg(areal<nbits, es, bt>& amaxneg) {
 template<size_t _nbits, size_t _es, typename bt = uint8_t>
 class areal {
 public:
-	static_assert(_nbits > _es + 1, "nbits is too small to accomodate requested exponent bits");
+	static_assert(_nbits > _es + 1ull, "nbits is too small to accomodate requested exponent bits");
 	static_assert(_es > 0, "number of exponent bits must be bigger than 0");
-	static constexpr size_t bitsInByte = 8;
+	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 32, "storage unit for block arithmetic needs to be <= uint32_t");
 
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t es = _es;
 
-	static constexpr size_t nrBlocks = 1 + ((nbits - 1) / bitsInBlock);
-	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFul >> (64 - bitsInBlock));
-	static constexpr bt maxBlockValue = (uint64_t(1) << bitsInBlock) - 1;
+	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
+	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFul >> (64ull - bitsInBlock));
+	static constexpr bt maxBlockValue = (1ull << bitsInBlock) - 1ull;
 
-	static constexpr size_t MSU = nrBlocks - 1; // MSU == Most Significant Unit, as MSB is already taken
-		// warning C4310 : cast truncates constant value
-	static constexpr bt MSU_MASK = (bt(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
-	static constexpr bt SIGN_BIT_MASK = bt(bt(1) << ((nbits - 1) % bitsInBlock));
-	static constexpr bt BLOCK_MASK = bt(0xFFFFFFFFFFFFFFFFul);
+	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
+	static constexpr bt MSU_MASK = (bt(-1) >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr size_t bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
+	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
+	static constexpr bool MSU_CAPTURES_E = (nbits - 1ull - es) < bitsInMSU;
+	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (nbits - 1ull - es) : 0);
+	static constexpr bt MSU_EXP_MASK = ((bt(-1) << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
+	static constexpr bt BLOCK_MASK = bt(-1);
 
-	static constexpr size_t fbits  = nbits - 1 - es;    // number of fraction bits excluding the hidden bit
-	static constexpr size_t fhbits = fbits + 1;         // number of fraction bits including the hidden bit
-	static constexpr size_t abits = fhbits + 3;         // size of the addend
-	static constexpr size_t mbits = 2 * fhbits;         // size of the multiplier output
-	static constexpr size_t divbits = 3 * fhbits + 4;   // size of the divider output
+	static constexpr size_t fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
+	static constexpr size_t fhbits = fbits + 1ull;         // number of fraction bits including the hidden bit
+	static constexpr size_t abits = fhbits + 3ull;         // size of the addend
+	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
+	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
 
 	// constructors
 	areal() noexcept : _block{ 0 } {};
@@ -263,7 +282,7 @@ public:
 			}
 			break;
 		}
-		_block[MSU] = sign ? MSU_MASK : (~SIGN_BIT_MASK & MSU_MASK);	
+		_block[MSU] = sign ? MSU_MASK : 1ull; // (~SIGN_BIT_MASK & MSU_MASK);
 	}
 	/// <summary>
 	/// set the raw bits of the areal. This is a required function in the Universal number systems
@@ -339,10 +358,6 @@ public:
 		}
 	}
 	inline bool isnan() const { return false; }
-	inline int exponent() const {
-		int exp{ 0 };
-		return exp;
-	}
 
 	inline constexpr bool test(size_t bitIndex) const {
 		return at(bitIndex);
@@ -372,7 +387,25 @@ public:
 		throw "block index out of bounds";
 	}
 
-	inline int scale() const { return false; }
+	void debug() const {
+		std::cout << "nbits         : " << nbits << std::endl;
+		std::cout << "es            : " << es << std::endl;
+		std::cout << "BLOCK_MASK    : " << to_binary<bt>(BLOCK_MASK, true) << std::endl;
+		std::cout << "nrBlocks      : " << nrBlocks << std::endl;
+		std::cout << "bits in MSU   : " << bitsInMSU << std::endl;
+		std::cout << "MSU           : " << MSU << std::endl;
+		std::cout << "MSU MASK      : " << to_binary<bt>(MSU_MASK, true) << std::endl;
+		std::cout << "SIGN_BIT_MASK : " << to_binary<bt>(SIGN_BIT_MASK, true) << std::endl;
+		std::cout << "MSU CAPTURES E: " << (MSU_CAPTURES_E ? "yes\n" : "no\n");
+		std::cout << "EXP_SHIFT     : " << EXP_SHIFT << std::endl;
+//		std::cout << "bla           : " << to_binary<bt>((bt(-1) << EXP_SHIFT)) << std::endl;
+		std::cout << "MSU EXP MASK  : " << to_binary<bt>(MSU_EXP_MASK, true) << std::endl;
+	}
+	inline int scale() const {
+		int e{ 0 };
+		debug();
+		return e;
+	}
 	inline std::string get() const { return std::string("tbd"); }
 
 	// casts to native types
@@ -395,8 +428,8 @@ public:
 			v = NAN;
 		}
 		else {
-			int exp = exponent();
-			if (exp == 0) {
+			int e = scale();
+			if (e == 0) {
 				// subnormals
 			}
 			else {
@@ -522,9 +555,10 @@ template<size_t nbits, size_t es, typename bt>
 inline std::string to_binary(const areal<nbits, es, bt>& number, bool nibbleMarker = false) {
 	std::stringstream ss;
 	ss << 'b';
-	for (int i = int(nbits - 1); i >= 0; --i) {
-		ss << (number.at(unsigned(i)) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) ss << '\'';
+	size_t index = nbits;
+	for (size_t i = 0; i < nbits; ++i) {
+		ss << (number.at(--index) ? '1' : '0');
+		if (index > 0 && (index % 4) == 0 && nibbleMarker) ss << '\'';
 	}
 	return ss.str();
 }
