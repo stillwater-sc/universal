@@ -1,10 +1,10 @@
 #pragma once
 // numeric_limits.hpp: definition of numeric_limits for arbitrary real types
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/areal/areal.hpp>
 namespace std {
 
 template <size_t nbits, size_t es, typename bt> 
@@ -14,15 +14,15 @@ public:
 	static constexpr bool is_specialized = true;
 	static constexpr AREAL min() { // return minimum value
 		AREAL aminpos;
-		return minpos<nbits,es,bt>(aminpos);
+		return sw::universal::minpos<nbits,es,bt>(aminpos);
 	} 
 	static constexpr AREAL max() { // return maximum value
 		AREAL amaxpos;
-		return maxpos<nbits, es, bt>(amaxpos);
+		return sw::universal::maxpos<nbits, es, bt>(amaxpos);
 	} 
 	static constexpr AREAL lowest() { // return most negative value
 		AREAL amaxneg;
-		return maxneg<nbits, es, bt>(amaxneg);
+		return sw::universal::maxneg<nbits, es, bt>(amaxneg);
 	} 
 	static constexpr AREAL epsilon() { // return smallest effective increment from 1.0
 		AREAL one{ 1.0f }, incr{ 1.0f };

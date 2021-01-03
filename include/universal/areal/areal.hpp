@@ -654,7 +654,7 @@ inline std::string to_binary(const areal<nbits, es, bt>& number, bool nibbleMark
 
 // helper to report on BlockType blocks
 template<typename bt>
-inline std::string to_binary(const bt& number, bool nibbleMarker = false) {
+inline std::string to_binary(const bt& number, bool nibbleMarker) {
 	std::stringstream ss;
 	ss << 'b';
 	constexpr size_t nbits = sizeof(bt) * 8;

@@ -55,8 +55,9 @@ try {
 	auto precision = cout.precision();
 	cout << setprecision(12);
 
-	using Rand = std::mt19937_64;
-//	using Rand = std::mt19937;
+#if defined(_MSC_VER)
+	//using Rand = std::mt19937_64;
+	using Rand = std::mt19937;
 	using Real = posit<16,2>;
 
 	//constexpr int N = 1'000'000;
@@ -78,6 +79,7 @@ try {
 	}
 	samples.pop_back();
 	printSamples(cout, samples);
+#endif
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);

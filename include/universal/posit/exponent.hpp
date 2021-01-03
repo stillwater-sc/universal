@@ -51,12 +51,12 @@ public:
 	void extract_exponent_bits(const bitblock<nbits>& _raw_bits, size_t nrRegimeBits) {
 		_Bits.reset();
 		// start of exponent is nbits - (sign_bit + regime_bits)
-		int msb = int(static_cast<int>(nbits) - 1 - (1 + nrRegimeBits));
+		int msb = int(static_cast<int>(nbits) - 1ull - (1ull + nrRegimeBits));
 		if (es > 0) {
 			size_t nrExponentBits = 0;
 			bitblock<es> _exp;
 			if (msb >= 0 && es > 0) {
-				nrExponentBits = (msb >= es - 1 ? es : static_cast<size_t>(msb) + 1);
+				nrExponentBits = (static_cast<size_t>(msb) >= es - 1ull ? es : static_cast<size_t>(msb) + 1ull);
 				for (size_t i = 0; i < nrExponentBits; i++) {
 					_exp[es - 1 - i] = _raw_bits[msb - i];
 				}

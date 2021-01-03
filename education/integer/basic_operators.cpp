@@ -26,8 +26,9 @@ try {
 	/* constexpr */ Integer maxpos = max_int<nbits, bt>();
 
 	// the two special cases of a posit configuration: 0 and NaR
-	i1 = 0;        checkSpecialCases(i1);
-	i2 = INFINITY; checkSpecialCases(i2);
+	i1 =  0;       checkSpecialCases(i1);
+	i2 = -1;       checkSpecialCases(i2);
+	i3 =  1;       checkSpecialCases(i3);
 
 	i1 =  1.0;
 	i2 = -1.0;
@@ -47,7 +48,7 @@ try {
 	cout << "maxpos      : " << maxpos << '\n';
 
 	i1 = 0; ++i1;         // another way to get to minpos
-	i2 = INFINITY; --i2;  // another way to get to maxpos
+	i2 = maxpos; --i2;  // another way to get to maxpos
 	cout << "minpos      : " << to_binary(i1) << '\n';
 	cout << "maxpos      : " << to_binary(i2) << '\n';
 
