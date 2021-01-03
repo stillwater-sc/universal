@@ -97,8 +97,17 @@ inline std::string to_binary(const bt& number, bool nibbleMarker = false) {
 	return ss.str();
 }
 
+static constexpr int NAN_TYPE_SIGNALLING = -1;   // a Signalling NaN
+static constexpr int NAN_TYPE_EITHER     = 0;    // any NaN
+static constexpr int NAN_TYPE_QUIET      = 1;    // a Quiet NaN
+
+static constexpr int INF_TYPE_NEGATIVE   = -1;   // -inf
+static constexpr int INF_TYPE_EITHER     = 0;    // any inf
+static constexpr int INF_TYPE_POSITIVE   = 1;    // +inf
+
+
 /// <summary>
-/// An arbitrary configuration real number with gradual under/overflow
+/// An arbitrary configuration real number with gradual under/overflow and uncertainty bit
 /// </summary>
 /// <typeparam name="nbits">number of bits in the encoding</typeparam>
 /// <typeparam name="es">number of exponent bits in the encoding</typeparam>
@@ -106,7 +115,7 @@ inline std::string to_binary(const bt& number, bool nibbleMarker = false) {
 template<size_t _nbits, size_t _es, typename bt = uint8_t>
 class areal {
 public:
-	static_assert(_nbits > _es + 1ull, "nbits is too small to accomodate requested exponent bits");
+	static_assert(_nbits > _es + 2ull, "nbits is too small to accomodate requested exponent bits");
 	static_assert(_es < 2147483647ull, "that is too big a number, are you trying to break the Interweb?");
 	static_assert(_es > 0, "number of exponent bits must be bigger than 0");
 	static constexpr size_t bitsInByte = 8ull;
@@ -123,6 +132,7 @@ public:
 	static constexpr bt MSU_MASK = (bt(-1) >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr size_t bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
+	static constexpr bt LSB_BIT_MASK = bt(1ull);
 	static constexpr bool MSU_CAPTURES_E = (nbits - 1ull - es) < bitsInMSU;
 	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (nbits - 1ull - es) : 0);
 	static constexpr bt MSU_EXP_MASK = ((bt(-1) << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
@@ -270,6 +280,37 @@ public:
 		case 0:
 			return;
 		case 1:
+			_block[MSU] = sign ? bt(MSU_MASK ^ LSB_BIT_MASK) : bt(~SIGN_BIT_MASK & (MSU_MASK ^ LSB_BIT_MASK));
+			break;
+		case 2:
+			_block[0] = BLOCK_MASK ^ LSB_BIT_MASK;
+			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
+			break;
+		case 3:
+			_block[0] = BLOCK_MASK ^ LSB_BIT_MASK;
+			_block[1] = BLOCK_MASK;
+			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
+			break;
+		default:
+			_block[0] = BLOCK_MASK ^ LSB_BIT_MASK;
+			for (size_t i = 1; i < nrBlocks - 1; ++i) {
+				_block[i] = BLOCK_MASK;
+			}
+			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
+			break;
+		}
+		
+	}
+	/// <summary>
+	/// set the number to a quiet NaN (+nan) or a signalling NaN (-nan, default)
+	/// </summary>
+	/// <param name="sign">boolean to make it + or - infinity, default is -inf</param>
+	/// <returns>void</returns> 
+	inline constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING) noexcept {
+		switch (nrBlocks) {
+		case 0:
+			return;
+		case 1:
 			break;
 		case 2:
 			_block[0] = BLOCK_MASK;
@@ -284,7 +325,7 @@ public:
 			}
 			break;
 		}
-		_block[MSU] = sign ? MSU_MASK : 1ull; // (~SIGN_BIT_MASK & MSU_MASK);
+		_block[MSU] = NaNType == NAN_TYPE_SIGNALLING ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 	}
 	/// <summary>
 	/// set the raw bits of the areal. This is a required function in the Universal number systems
@@ -301,6 +342,7 @@ public:
 		return *this;
 	}
 	inline areal& assign(const std::string& stringRep) {
+		std::cout << "assign TBD\n";
 		return *this;
 	}
 
@@ -325,44 +367,85 @@ public:
 			return (_block[MSU] & ~SIGN_BIT_MASK) == 0 ? true : false;
 		}
 	}
-	inline bool isinf() const {
-		return isneginf() || isposinf();
-	}
-	inline bool isneginf() const {
+	/// <summary>
+	/// check if value is infinite, -inf, or +inf. 
+	/// +inf = 0-1111-11111-0: sign = 0, uncertainty = 0, es/fraction bits = 1
+	/// -inf = 1-1111-11111-0: sign = 1, uncertainty = 0, es/fraction bits = 1
+	/// </summary>
+	/// <param name="InfType">default is 0, both types, -1 checks for -inf, 1 checks for +inf</param>
+	/// <returns>true if +-inf, false otherwise</returns>
+	inline bool isinf(int InfType = INF_TYPE_EITHER) const {
+		bool isInf = false;
+		bool isNegInf = false;
+		bool isPosInf = false;
 		switch (nrBlocks) {
 		case 0:
 			return false;
 		case 1:
-			return (_block[MSU] & MSU_MASK) == MSU_MASK ? true : false;
+			isNegInf = (_block[MSU] & MSU_MASK) == (MSU_MASK ^ LSB_BIT_MASK);
+			isPosInf = (_block[MSU] & MSU_MASK) == ((MSU_MASK ^ SIGN_BIT_MASK) ^ LSB_BIT_MASK);
+			return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
+					(InfType == INF_TYPE_NEGATIVE ?	isNegInf :
+					  (InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 		case 2:
-			return (_block[0] == BLOCK_MASK) && (_block[MSU] & MSU_MASK) == MSU_MASK ? true : false;
+			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
 			break;
 		case 3:
-			return (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK) && (_block[MSU] & MSU_MASK) == MSU_MASK ? true : false;
+			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) && 
+				    (_block[1] == BLOCK_MASK);
 			break;
 		default:
-			for (size_t i = 0; i < nrBlocks - 1; ++i) if (_block[i] != BLOCK_MASK) return false;
-			return (_block[MSU] & MSU_MASK) == MSU_MASK ? true : false;
+			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
+			for (size_t i = 1; i < nrBlocks - 1; ++i) {
+				if (_block[i] != BLOCK_MASK) {
+					isInf = false;
+					break;
+				}
+			}
+			break;
 		}
+		isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
+		isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
+		return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
+			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
+				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 	}
-	inline bool isposinf() const {
+
+	/// <summary>
+	/// check if a value is a quiet or a signalling NaN
+	/// quiet NaN      = 0-1111-11111-1: sign = 0, uncertainty = 1, es/fraction bits = 1
+	/// signalling NaN = 1-1111-11111-1: sign = 1, uncertainty = 1, es/fraction bits = 1
+	/// </summary>
+	/// <param name="NaNType">default is 0, both types, 1 checks for Signalling NaN, -1 checks for Quiet NaN</param>
+	/// <returns>true if the right kind of NaN, false otherwise</returns>
+	inline bool isnan(int NaNType = NAN_TYPE_EITHER) const {
+		bool isNaN = true;
 		switch (nrBlocks) {
 		case 0:
 			return false;
 		case 1:
-			return ((_block[MSU] ^ SIGN_BIT_MASK) & MSU_MASK) == MSU_MASK ? true : false;
+			break;
 		case 2:
-			return (_block[0] == BLOCK_MASK) && ((_block[MSU] ^ SIGN_BIT_MASK) & MSU_MASK) == MSU_MASK ? true : false;
+			isNaN = (_block[0] == BLOCK_MASK);
 			break;
 		case 3:
-			return (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK) && ((_block[MSU] ^ SIGN_BIT_MASK) & MSU_MASK) == MSU_MASK ? true : false;
+			isNaN = (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK);
 			break;
 		default:
-			for (size_t i = 0; i < nrBlocks - 1; ++i) if (_block[i] != BLOCK_MASK) return false;
-			return ((_block[MSU] ^ SIGN_BIT_MASK) & MSU_MASK) == MSU_MASK ? true : false;
+			for (size_t i = 0; i < nrBlocks - 1; ++i) {
+				if (_block[i] != BLOCK_MASK) {
+					isNaN = false;
+					break;
+				}
+			}
+			break;
 		}
+		bool isNegNaN = isNaN && ((_block[MSU] & MSU_MASK) == MSU_MASK);
+		bool isPosNaN = isNaN && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
+		return (NaNType == NAN_TYPE_EITHER ? (isNegNaN || isPosNaN) : 
+			     (NaNType == NAN_TYPE_SIGNALLING ? isNegNaN : 
+				   (NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
-	inline bool isnan() const { return false; }
 
 	inline constexpr bool test(size_t bitIndex) const {
 		return at(bitIndex);
@@ -401,6 +484,7 @@ public:
 		std::cout << "MSU           : " << MSU << std::endl;
 		std::cout << "MSU MASK      : " << to_binary<bt>(MSU_MASK, true) << std::endl;
 		std::cout << "SIGN_BIT_MASK : " << to_binary<bt>(SIGN_BIT_MASK, true) << std::endl;
+		std::cout << "LSB_BIT_MASK  : " << to_binary<bt>(LSB_BIT_MASK, true) << std::endl;
 		std::cout << "MSU CAPTURES E: " << (MSU_CAPTURES_E ? "yes\n" : "no\n");
 		std::cout << "EXP_SHIFT     : " << EXP_SHIFT << std::endl;
 		std::cout << "MSU EXP MASK  : " << to_binary<bt>(MSU_EXP_MASK, true) << std::endl;
@@ -410,7 +494,7 @@ public:
 		int e{ 0 };
 		// make if constexpr
 		if (MSU_CAPTURES_E) {
-			bt ebits = (_block[MSU] & ~SIGN_BIT_MASK);
+			bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
 			e = static_cast<int>(ebits >> EXP_SHIFT);
 			e -= EXP_BIAS;
 		}
@@ -431,14 +515,11 @@ public:
 	double to_double() const {
 		double v{ 0.0 };
 		if (iszero()) return v;
-		if (isposinf()) {
-			v = INFINITY;
-		}
-		else if (isneginf()) {
-			v = -INFINITY;
+		if (isinf()) {
+			v = sign() ? -INFINITY : INFINITY;;
 		}
 		else if (isnan()) {
-			v = NAN;
+			v = std::numeric_limits<double>::signaling_NaN;
 		}
 		else {
 			int e = scale();

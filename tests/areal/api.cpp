@@ -40,7 +40,6 @@ void TestIsZero(int& nrOfFailedTestCases) {
 	int currentFails = nrOfFailedTestCases;
 	std::cout << "iszero()                       : ";
 	// one block configurations
-	nrOfFailedTestCases += TestZero<3, 1>();
 	nrOfFailedTestCases += TestZero<4, 1>();
 	nrOfFailedTestCases += TestZero<5, 1>();
 	nrOfFailedTestCases += TestZero<6, 1>();
@@ -109,9 +108,13 @@ inline int TestInf() {
 	r.setinf(); // default is to set -inf
 	//std::cout << to_binary(r) << std::endl;
 	if (!r.isinf()) ++fails;
+	if (!r.isinf(sw::universal::INF_TYPE_NEGATIVE)) ++fails;
 	r = -r;
 	//std::cout << to_binary(r) << std::endl;
 	if (!r.isinf()) ++fails;
+	if (!r.isinf(sw::universal::INF_TYPE_POSITIVE)) ++fails;
+	r.setnan();
+	if (r.isinf()) ++fails;
 	return fails;
 }
 
@@ -119,7 +122,6 @@ void TestIsInf(int& nrOfFailedTestCases) {
 	int currentFails = nrOfFailedTestCases;
 	std::cout << "isinf()                        : ";
 	// one block configurations
-	nrOfFailedTestCases += TestInf<3, 1>();
 	nrOfFailedTestCases += TestInf<4, 1>();
 	nrOfFailedTestCases += TestInf<5, 1>();
 	nrOfFailedTestCases += TestInf<6, 1>();
@@ -185,11 +187,19 @@ template<size_t nbits, size_t es, typename bt = uint8_t>
 inline int TestNaN() {
 	int fails = 0;
 	sw::universal::areal<nbits, es, bt> r;
+	r.setnan();
 	//std::cout << to_binary(r) << std::endl;
 	if (!r.isnan()) ++fails;
+	if (!r.isnan(sw::universal::NAN_TYPE_SIGNALLING)) ++fails;
+
 	r = -r;
 	//std::cout << to_binary(r) << std::endl;
 	if (!r.isnan()) ++fails;
+	if (!r.isnan(sw::universal::NAN_TYPE_QUIET)) ++fails;
+
+	r.setinf();
+	if (r.isnan()) ++fails;
+
 	return fails;
 }
 
@@ -197,7 +207,6 @@ void TestIsNaN(int& nrOfFailedTestCases) {
 	int currentFails = nrOfFailedTestCases;
 	std::cout << "isnan()                        : ";
 	// one block configurations
-	nrOfFailedTestCases += TestNaN<3, 1>();
 	nrOfFailedTestCases += TestNaN<4, 1>();
 	nrOfFailedTestCases += TestNaN<5, 1>();
 	nrOfFailedTestCases += TestNaN<6, 1>();
@@ -361,6 +370,13 @@ void TestScale(int& nrOfFailedTestCases) {
 	using namespace sw::universal;
 	int currentFails = nrOfFailedTestCases;
 
+	/*
+	an areal is encoded as 1 sign bit, es exponent bits, f fraction bits, and 1 uncertainty bit
+	we are specifying just the size, nbits, and the number of exponent bits, es,
+	from which we deduce the number of fraction bits, fbits.
+	fbits = nbits - 1 sign bit - 1 uncertainty bit - es exponent bits
+	fbits > 0 if nbits > es + 2
+	thus an areal<3,1> fails that test
 	{
 		std::cout << "scale areal<3,1>               : ";
 		areal<3, 1> a; 
@@ -369,6 +385,7 @@ void TestScale(int& nrOfFailedTestCases) {
 		a.set_raw_bits(5); if (a.scale() != 0) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
+	*/
 
 	{
 		std::cout << "scale areal<4,1>               : ";
@@ -399,30 +416,6 @@ void TestScale(int& nrOfFailedTestCases) {
 		a.set_raw_bits(0x13); if (a.scale() != -1) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
-
-	{
-		std::cout << "scale areal<5,3>               : ";
-		areal<5, 3> a;
-		// [1-111-1]
-		a.set_raw_bits(0x1F); if (a.scale() != 4) ++nrOfFailedTestCases;
-		// [1-110-1]
-		a.set_raw_bits(0x1D); if (a.scale() != 3) ++nrOfFailedTestCases;
-		// [1-101-1]
-		a.set_raw_bits(0x1B); if (a.scale() != 2) ++nrOfFailedTestCases;
-		// [1-100-1]
-		a.set_raw_bits(0x19); if (a.scale() != 1) ++nrOfFailedTestCases;
-		// [1-011-1]
-		a.set_raw_bits(0x17); if (a.scale() != 0) ++nrOfFailedTestCases;
-		// [1-010-1]
-		a.set_raw_bits(0x15); if (a.scale() != -1) ++nrOfFailedTestCases;
-		// [1-001-1]
-		a.set_raw_bits(0x13); if (a.scale() != -2) ++nrOfFailedTestCases;
-		// [1-000-1]
-		a.set_raw_bits(0x11); if (a.scale() != -3) ++nrOfFailedTestCases;
-		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
-	}
-
-
 	{
 		std::cout << "scale areal<6,1>               : ";
 		areal<6, 1> a;
@@ -737,7 +730,6 @@ try {
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
-	std::string tag = " areal<8,2>";
 
 	std::cout << "areal<> Application Programming Interface tests" << std::endl;
 
@@ -745,10 +737,9 @@ try {
 
 	TestIsZero(nrOfFailedTestCases);
 	TestIsInf(nrOfFailedTestCases);
-//	TestIsNaN(nrOfFailedTestCases);
+	TestIsNaN(nrOfFailedTestCases);
 	TestSizeof(nrOfFailedTestCases);
 	TestScale(nrOfFailedTestCases);
-
 
 #else // !MANUAL_TESTING
 
