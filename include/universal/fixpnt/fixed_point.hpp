@@ -703,6 +703,8 @@ public:
 
 	// selectors
 	inline constexpr bool iszero() const { return bb.iszero(); }
+	inline constexpr bool ispos() const { return bb.ispos(); }
+	inline constexpr bool isneg() const { return bb.isneg(); }
 	inline constexpr bool sign() const { return bb.sign(); }
 	inline constexpr bool at(size_t bitIndex) const { return bb.at(bitIndex); }
 	inline constexpr bool test(size_t bitIndex) const { return bb.test(bitIndex); }

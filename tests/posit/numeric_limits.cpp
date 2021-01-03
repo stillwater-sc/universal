@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
 #include <universal/posit/posit>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_math_test_suite.hpp>

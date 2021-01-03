@@ -29,6 +29,7 @@
 #include <universal/areal/areal.hpp>
 #include <universal/areal/numeric_limits.hpp>
 #include <universal/areal/exceptions.hpp>
+#include <universal/areal/manipulators.hpp>
 
 ///////////////////////////////////////////////////////////////////////////////////////
 /// math functions

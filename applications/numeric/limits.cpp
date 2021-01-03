@@ -4,6 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
+#include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
 
 // select the number systems we would like to compare
 #include <universal/integer/integer>

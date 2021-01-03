@@ -53,6 +53,7 @@ template<size_t nbits, typename BlockType> integer<nbits, BlockType> min_int();
 template<size_t nbits, typename BlockType> struct idiv_t;
 template<size_t nbits, typename BlockType> idiv_t<nbits, BlockType> idiv(const integer<nbits, BlockType>&, const integer<nbits, BlockType>&b);
 
+// create the largest integer value
 template<size_t nbits, typename BlockType>
 inline integer<nbits, BlockType> max_int() {
 	// two's complement max is 01111111
@@ -61,12 +62,43 @@ inline integer<nbits, BlockType> max_int() {
 	mx.flip();
 	return mx;
 }
+// create the smallest integer value
 template<size_t nbits, typename BlockType>
 inline integer<nbits, BlockType> min_int() {
 	// two's complement min is 10000000
 	integer<nbits, BlockType> mn;
 	mn.set(nbits - 1, true);
 	return mn;
+}
+
+// fill an integer with the maximum positive value, which is of course 0111.1111
+template<size_t nbits, typename BlockType>
+constexpr inline integer<nbits, BlockType>& maxpos(integer<nbits, BlockType>& i) {
+	i.clear();
+	i.mx.set(nbits - 1ull, true);
+	i.flip();
+	return i;
+}
+// fill an integer with the minimum positive value, which is of course simply 1
+template<size_t nbits, typename BlockType>
+constexpr inline integer<nbits, BlockType>& minpos(integer<nbits, BlockType>& i) {
+	i.clear();
+	i.mx.set(0, true);
+	return i;
+}
+// fill an integer with the minimum negative value, which is of course simply all 1's
+template<size_t nbits, typename BlockType>
+constexpr inline integer<nbits, BlockType>& minneg(integer<nbits, BlockType>& i) {
+	i.clear();
+	i.flip();
+	return i;
+}
+// fill an integer with the maximum negative value, which is of course simply 1000...000
+template<size_t nbits, typename BlockType>
+constexpr inline integer<nbits, BlockType>& maxneg(integer<nbits, BlockType>& i) {
+	i.clear();
+	i.mx.set(nbits - 1ull, true);
+	return i;
 }
 
 // scale calculate the power of 2 exponent that would capture an approximation of a normalized real value
@@ -551,6 +583,8 @@ public:
 		}
 		return true;
 	}
+	inline bool ispos() const { return *this > 0; }
+	inline bool isneg() const {	return *this < 0; }
 	inline bool isone() const {
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			if (i == 0) {

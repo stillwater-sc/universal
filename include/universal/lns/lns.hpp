@@ -124,8 +124,9 @@ public:
 	void reset() {	}
 
 	// selectors
-	inline constexpr bool isneg() const { return false; }
 	inline constexpr bool iszero() const { return false; }
+	inline constexpr bool isneg() const { return false; }
+	inline constexpr bool ispos() const { return false; }
 	inline constexpr bool isinf() const { return false; }
 	inline constexpr bool isnan() const { return false; }
 	inline constexpr bool sign() const { return false; }

@@ -101,14 +101,14 @@ public:
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 32, "storage unit for block arithmetic needs to be <= uint32_t");
 
-	static constexpr size_t nrBlocks = 1 + ((nbits - 1) / bitsInBlock);
+	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
 	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFul >> (64 - bitsInBlock));
 	static constexpr bt maxBlockValue = (uint64_t(1) << bitsInBlock) - 1;
 
 	static constexpr size_t MSU = nrBlocks - 1; // MSU == Most Significant Unit
 	// warning C4310 : cast truncates constant value
-	static constexpr bt MSU_MASK = (bt(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
-	static constexpr bt SIGN_BIT_MASK = bt(bt(1) << ((nbits - 1) % bitsInBlock));
+	static constexpr bt MSU_MASK = (bt(-1) >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr bt SIGN_BIT_MASK = bt(bt(1) << ((nbits - 1ull) % bitsInBlock));
 
 	// constructors
 	constexpr blockbinary() noexcept : _block{ 0 } {}
@@ -815,7 +815,7 @@ std::string to_hex(const blockbinary<nbits, bt>& number, bool wordMarker = false
 	for (long n = nrNibbles - 1; n >= 0; --n) {
 		uint8_t nibble = number.nibble(n);
 		ss << hexChar[nibble];
-		if (n > 0 && ((n * 4) % bitsInBlock) == 0) ss << '\'';
+		if (n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
 	}
 	return ss.str();
 }

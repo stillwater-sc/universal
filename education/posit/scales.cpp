@@ -7,6 +7,7 @@
 #include <universal/posit/posit>
 #include <universal/posit/posit.hpp>
 #include <universal/posit/numeric_limits.hpp>
+#include <universal/utility/number_system_properties.hpp>
 
 #ifdef UNIVERSAL_MPRF_ENABLED
 // TODO: this needs to be done with MPRF as these scale factors grow very large

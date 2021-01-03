@@ -173,8 +173,9 @@ public:
 	void rfsizesizeet() {	}
 
 	// selectors
-	inline bool isneg() const { return false; }
 	inline bool iszero() const { return false; }
+	inline bool isneg() const { return false; }
+	inline bool ispos() const { return false; }
 	inline bool isinf() const { return false; }
 	inline bool isnan() const { return false; }
 	inline bool issnan() const { return false; }

@@ -13,67 +13,12 @@
 // pull in the color printing for shells utility
 #include <universal/utility/color_print.hpp>
 
-// This file contains functions that use the posit type.
-// If you have helper functions that the posit type could use, but does not depend on 
-// the posit type, you can add them to the file posit_helpers.hpp.
+// This file contains functions that manipulate a posit type
+// using posit number system knowledge.
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
-// DEBUG/REPORTING HELPERS
-
-// report the minimum and maximum of a type
-template<typename Ty>
-std::string minmax_range() {
-	std::stringstream ss;
-	Ty v(0);
-	ss << std::setw(30) << typeid(v).name() << ' ';
-	ss << "min " << std::setw(13) << std::numeric_limits<Ty>::min() << "     ";
-	ss << "max " << std::setw(13) << std::numeric_limits<Ty>::max() << "     ";
-	return ss.str();
-}
-
-// print the negative bounds, zero, and positive bounds of the number system
-template<typename Ty>
-std::string symmetry() {
-	std::stringstream ss;
-	Ty v(0);
-	constexpr unsigned WIDTH = 20;
-	ss << std::setw(30) << typeid(v).name() << ' ';
-	ss << "[ " 
-	   << std::setw(WIDTH) << std::numeric_limits<Ty>::lowest() 
-	    << ", "
-	   << std::setw(WIDTH) << -std::numeric_limits<Ty>::denorm_min()
-	    << "] 0 [ " 
-	   << std::setw(WIDTH) << std::numeric_limits<Ty>::denorm_min()
-		<< ", "
-	   << std::setw(WIDTH) << std::numeric_limits<Ty>::max() << ']';
-	return ss.str();
-}
-
-template<typename Ty>
-std::string dynamic_range(Ty v) {
-	std::stringstream ss;
-	ss << std::setw(30) << typeid(v).name();
-	ss << ' ';
-	ss << "minexp scale " << std::setw(10) << std::numeric_limits<Ty>::min_exponent << "     ";
-	ss << "maxexp scale " << std::setw(10) << std::numeric_limits<Ty>::max_exponent << "     ";
-	ss << "minimum " << std::setw(12) << std::numeric_limits<Ty>::min() << "     ";
-	ss << "maximum " << std::setw(12) << std::numeric_limits<Ty>::max() << "     ";
-	return ss.str();
-}
-template<typename Ty>
-std::string dynamic_range() {
-	std::stringstream ss;
-	Ty v(0);
-	ss << std::setw(30) << typeid(v).name();
-	ss << ' ';
-	ss << "minexp scale " << std::setw(10) << std::numeric_limits<Ty>::min_exponent << "     ";
-	ss << "maxexp scale " << std::setw(10) << std::numeric_limits<Ty>::max_exponent << "     ";
-	ss << "minimum " << std::setw(12) << std::numeric_limits<Ty>::min() << "     ";
-	ss << "maximum " << std::setw(12) << std::numeric_limits<Ty>::max() << "     ";
-	return ss.str();
-}
-// Specialized for <nbits,es> templates which are then interpreted as posit minpos/maxpos scales
+// report dynamic range of a type, specialized for a posit
 template<size_t nbits, size_t es>
 std::string dynamic_range() {
 	std::stringstream ss;
@@ -83,6 +28,19 @@ std::string dynamic_range() {
 	ss << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>();
 	return ss.str();
 }
+
+// report the dynamic range of the type associated with a value
+template<size_t nbits, size_t es>
+std::string dynamic_range(const posit<nbits, es>& p) {
+	std::stringstream ss;
+	ss << " posit<" << std::setw(3) << nbits << "," << es << "> ";
+	ss << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
+	ss << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
+	ss << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>();
+	return ss.str();
+}
+
+// report the dynamic range of a posit
 template<size_t nbits, size_t es>
 std::string posit_range() {
 	std::stringstream ss;
@@ -92,15 +50,6 @@ std::string posit_range() {
 	ss << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>() << "     ";
 	ss << "minimum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es>>::min() << "     ";
 	ss << "maximum " << std::setw(12) << std::numeric_limits<sw::universal::posit<nbits, es>>::max() ;
-	return ss.str();
-}
-template<size_t nbits, size_t es>
-std::string dynamic_range(const posit<nbits, es>& p) {
-	std::stringstream ss;
-	ss << " posit<" << std::setw(3) << nbits << "," << es << "> ";
-	ss << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
-	ss << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
-	ss << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>();
 	return ss.str();
 }
 
@@ -283,85 +232,5 @@ std::string color_print(const posit<nbits, es>& p) {
 	return ss.str();
 }
 
-// generate a full binary representation table for a given posit configuration
-template<size_t nbits, size_t es>
-void GeneratePositTable(std::ostream& ostr, bool csvFormat = false)	{
-	static constexpr size_t fbits = (es + 2 >= nbits ? 0 : nbits - 3 - es);
-	const size_t size = (1 << nbits);
-	posit<nbits, es>	p;
-	if (csvFormat) {
-		ostr << "\"Generate Posit Lookup table for a POSIT<" << nbits << "," << es << "> in CSV format\"" << std::endl;
-		ostr << "#, Binary, Decoded, k, sign, scale, regime, exponent, fraction, value, posit\n";
-		for (size_t i = 0; i < size; i++) {
-			p.set_raw_bits(i);
-			bool		     	 s;
-			regime<nbits, es>    r;
-			exponent<nbits, es>  e;
-			fraction<fbits>      f;
-			decode(p.get(), s, r, e, f);
-			ostr << i << ","
-				<< p.get() << ","
-				<< decoded(p) << ","
-				<< r.regime_k() << ","
-				<< s << ","
-				<< scale(p) << ","
-				<< std::right << r << ","
-				<< std::right << e << ","
-				<< std::right << f << ","
-				<< to_string(p, 22) << ","
-				<< p
-				<< '\n';
-		}
-		ostr << std::endl;
-	}
-	else {
-		ostr << "Generate Posit Lookup table for a POSIT<" << nbits << "," << es << "> in TXT format" << std::endl;
-
-		const size_t index_column = 5;
-		const size_t bin_column = 16;
-		const size_t k_column = 8;
-		const size_t sign_column = 8;
-		const size_t scale_column = 8;
-		const size_t regime_column = 16;
-		const size_t exponent_column = 16;
-		const size_t fraction_column = 16;
-		const size_t value_column = 30;
-		const size_t posit_format_column = 16;
-
-		ostr << std::setw(index_column) << " # "
-			<< std::setw(bin_column) << "Binary"
-			<< std::setw(bin_column) << "Decoded"
-			<< std::setw(k_column) << "k"
-			<< std::setw(sign_column) << "sign"
-			<< std::setw(scale_column) << "scale"
-			<< std::setw(regime_column) << "regime"
-			<< std::setw(exponent_column) << "exponent"
-			<< std::setw(fraction_column) << "fraction"
-			<< std::setw(value_column) << "value"
-			<< std::setw(posit_format_column) << "posit_format"
-			<< std::endl;
-		for (size_t i = 0; i < size; i++) {
-			p.set_raw_bits(i);
-			bool		     	 s;
-			regime<nbits, es>    r;
-			exponent<nbits, es>  e;
-			fraction<fbits>      f;
-			decode(p.get(), s, r, e, f);
-			ostr << std::setw(4) << i << ": "
-				<< std::setw(bin_column) << p.get()
-				<< std::setw(bin_column) << decoded(p)
-				<< std::setw(k_column) << r.regime_k()
-				<< std::setw(sign_column) << s
-				<< std::setw(scale_column) << scale(p)
-				<< std::setw(regime_column) << std::right << to_string(r)
-				<< std::setw(exponent_column) << std::right << to_string(e)
-				<< std::setw(fraction_column) << std::right << to_string(f)
-				<< std::setw(value_column) << to_string(p, 22) << " "
-				<< std::setw(posit_format_column) << std::right << p
-				<< std::endl;
-		}
-	}
-}
-
-}}  // namespace sw::universal
+}  // namespace sw::universal
 

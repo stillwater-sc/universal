@@ -36,7 +36,7 @@
 
 #endif
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 // return in triple form (sign, scale, fraction)
 template<size_t nbits, typename bt>
@@ -64,4 +64,4 @@ inline std::string to_triple(const integer<nbits, bt>& number) {
 	return ss.str();
 }
 
-}} // namespace sw::universal
+} // namespace sw::universal

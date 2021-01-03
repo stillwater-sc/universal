@@ -28,8 +28,9 @@ void VerifyToBinary() {
 	}
 }
 
-// This is a test suite that must test parsing of large literals and output of large values
-// using native posit algorithms that do not cast to native floating point types.
+// This is a test suite that must test parsing of large literals 
+// and output/input of large values using native posit algorithms 
+// that do not cast to native floating point types.
 
 int main(int argc, char** argv)
 try {
@@ -39,13 +40,11 @@ try {
 	//bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
-	std::string tag = "serialization failed: ";
+	std::string tag = "serialization TBD: ";
 
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 
-	bool csv = false;
-	GeneratePositTable<4, 0>(cout, csv);
 	VerifyToBinary<4, 0>();
 
 	nrOfFailedTestCases = 0; // nullify accumulated test failures in manual testing

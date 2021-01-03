@@ -1,24 +1,13 @@
-// tables.cpp: create detailed component tables that spell out all the components that make up a posit
+// posits.cpp: create detailed component tables that decompose the components that comprise a posit
 //
-// Copyright (C) 2017-201 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // enable/disable special posit format I/O
 #define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 1
 #include <universal/posit/posit>
-
-/*
-  Posit values are a combination of 
-  - a scaling factor: useed, 
-  - an exponent: e, and 
-  - a fraction: f.
-  For small posits, it is faster to have a lookup mechanism to obtain the value.
-  This is most valuable for conversion operators from posit to int.
-
-  TODO: create a single lookup table for any posit configuration with 16 or fewer bits.
-*/
-
+#include <universal/posit/table.hpp>
 
 int main(int argc, char** argv)
 try {

@@ -38,7 +38,7 @@ void GenerateLogicPatternsForDebug() {
 	double da, input;
 	sw::universal::posit<nbits, es> pa;
 	std::cout << sw::universal::dynamic_range(pa) << std::endl;
-	for (int i = 0; i < NR_TEST_CASES; i++) {
+	for (size_t i = 0; i < NR_TEST_CASES; i++) {
 		pref.set_raw_bits(i);
 		da = double(pref);
 		if (i % 2) {
@@ -652,7 +652,6 @@ try {
 	convert_to_posit<nbits, es>(f1, true);
 	convert_to_posit<nbits, es>(f2, true);
 	convert_to_posit<nbits, es>(f3, true);
-	GeneratePositTable<5, 0>(cout);
 
 #else
 	ReportPositScales();

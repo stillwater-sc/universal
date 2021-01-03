@@ -48,12 +48,31 @@ namespace sw::universal {
 		
 // Forward definitions
 template<size_t nbits, size_t es, typename bt> class areal;
-template<size_t nbits, size_t es, typename bt> areal<nbits,es,bt> abs(const areal<nbits,es,bt>& v);
+template<size_t nbits, size_t es, typename bt> areal<nbits,es,bt> abs(const areal<nbits,es,bt>&);
+template<typename bt> inline std::string to_binary(const bt&, bool);
+
+static constexpr int NAN_TYPE_SIGNALLING = -1;   // a Signalling NaN
+static constexpr int NAN_TYPE_EITHER     = 0;    // any NaN
+static constexpr int NAN_TYPE_QUIET      = 1;    // a Quiet NaN
+
+static constexpr int INF_TYPE_NEGATIVE   = -1;   // -inf
+static constexpr int INF_TYPE_EITHER     = 0;    // any inf
+static constexpr int INF_TYPE_POSITIVE   = 1;    // +inf
+
 constexpr bool AREAL_NIBBLE_MARKER = true;
 
-template<size_t nbits, size_t es, typename bt>
-void extract_fields(const blockbinary<nbits, bt>& raw_bits, bool& _sign, blockbinary<es, bt>& _exponent, blockbinary<nbits - es - 1, bt>& _fraction) {
 
+// decode an areal value into its constituent parts
+template<size_t nbits, size_t es, size_t fbits, typename bt>
+void decode(const areal<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f, bool& ubit) {
+	s = false;
+	e.clear();
+	f.clear();
+	ubit = false;
+}
+template<size_t nbits, size_t es, typename bt>
+int scale(const areal<nbits, es, bt>& v) {
+	return v.scale();
 }
 
 // fill an areal object with mininum positive value
@@ -80,31 +99,6 @@ areal<nbits, es, bt>& maxneg(areal<nbits, es, bt>& amaxneg) {
 
 	return amaxneg;
 }
-
-template<typename bt>
-inline std::string to_binary(const bt& number, bool nibbleMarker = false) {
-	std::stringstream ss;
-	ss << 'b';
-	constexpr size_t nbits = sizeof(bt) * 8;
-	bt mask = bt(bt(1u) << (nbits - 1ull));
-	size_t index = nbits;
-	for (size_t i = 0; i < nbits; ++i) {
-		ss << (number & mask ? '1' : '0');
-		--index;
-		if (index > 0 && (index % 4) == 0 && nibbleMarker) ss << '\'';
-		mask >>= 1ul;
-	}
-	return ss.str();
-}
-
-static constexpr int NAN_TYPE_SIGNALLING = -1;   // a Signalling NaN
-static constexpr int NAN_TYPE_EITHER     = 0;    // any NaN
-static constexpr int NAN_TYPE_QUIET      = 1;    // a Quiet NaN
-
-static constexpr int INF_TYPE_NEGATIVE   = -1;   // -inf
-static constexpr int INF_TYPE_EITHER     = 0;    // any inf
-static constexpr int INF_TYPE_POSITIVE   = 1;    // +inf
-
 
 /// <summary>
 /// An arbitrary configuration real number with gradual under/overflow and uncertainty bit
@@ -139,7 +133,7 @@ public:
 	static constexpr int EXP_BIAS = ((1l << (es - 1)) - 1l);
 	static constexpr bt BLOCK_MASK = bt(-1);
 
-	static constexpr size_t fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
+	static constexpr size_t fbits  = nbits - 2ull - es;    // number of fraction bits excluding the hidden bit
 	static constexpr size_t fhbits = fbits + 1ull;         // number of fraction bits including the hidden bit
 	static constexpr size_t abits = fhbits + 3ull;         // size of the addend
 	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
@@ -576,7 +570,7 @@ private:
 ////////////////////// operators
 template<size_t nnbits, size_t nes, typename nbt>
 inline std::ostream& operator<<(std::ostream& ostr, const areal<nnbits,nes,nbt>& v) {
-
+	ostr << "tbd";
 	return ostr;
 }
 
@@ -645,6 +639,7 @@ inline std::string to_string(const areal<nbits,es,bt>& v) {
 	return s.str();
 }
 
+// transform areal to a binary representation
 template<size_t nbits, size_t es, typename bt>
 inline std::string to_binary(const areal<nbits, es, bt>& number, bool nibbleMarker = false) {
 	std::stringstream ss;
@@ -653,6 +648,23 @@ inline std::string to_binary(const areal<nbits, es, bt>& number, bool nibbleMark
 	for (size_t i = 0; i < nbits; ++i) {
 		ss << (number.at(--index) ? '1' : '0');
 		if (index > 0 && (index % 4) == 0 && nibbleMarker) ss << '\'';
+	}
+	return ss.str();
+}
+
+// helper to report on BlockType blocks
+template<typename bt>
+inline std::string to_binary(const bt& number, bool nibbleMarker = false) {
+	std::stringstream ss;
+	ss << 'b';
+	constexpr size_t nbits = sizeof(bt) * 8;
+	bt mask = bt(bt(1ull) << (nbits - 1ull));
+	size_t index = nbits;
+	for (size_t i = 0; i < nbits; ++i) {
+		ss << (number & mask ? '1' : '0');
+		--index;
+		if (index > 0 && (index % 4) == 0 && nibbleMarker) ss << '\'';
+		mask >>= 1ul;
 	}
 	return ss.str();
 }
