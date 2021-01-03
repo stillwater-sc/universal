@@ -65,10 +65,12 @@ constexpr bool AREAL_NIBBLE_MARKER = true;
 // decode an areal value into its constituent parts
 template<size_t nbits, size_t es, size_t fbits, typename bt>
 void decode(const areal<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f, bool& ubit) {
-	s = false;
+	s = v.at(nbits - 1ull);
+	ubit = v.at(0);
 	e.clear();
+	for (size_t i = 0; i < es; ++i) { e.set(i, v.at(nbits - 1ull - es + i)); }
 	f.clear();
-	ubit = false;
+	for (size_t i = 0; i < fbits; ++i) { f.set(i, v.at(nbits - 1ull - es - fbits + i)); }
 }
 template<size_t nbits, size_t es, typename bt>
 int scale(const areal<nbits, es, bt>& v) {
@@ -342,6 +344,19 @@ public:
 
 	// selectors
 	inline constexpr bool sign() const { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
+	inline int scale() const {
+		int e{ 0 };
+		// make if constexpr
+		if (MSU_CAPTURES_E) {
+			bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
+			e = static_cast<int>(ebits >> EXP_SHIFT);
+			e -= EXP_BIAS;
+		}
+		else {
+			e = 0;
+		}
+		return e;
+	}
 	inline constexpr bool isneg() const { return sign(); }
 	inline constexpr bool ispos() const { return !sign(); }
 	inline bool iszero() const { // TODO: need to deal with -0 as well
@@ -484,28 +499,12 @@ public:
 		std::cout << "MSU EXP MASK  : " << to_binary<bt>(MSU_EXP_MASK, true) << std::endl;
 		std::cout << "EXP_BIAS      : " << EXP_BIAS << std::endl;
 	}
-	inline int scale() const {
-		int e{ 0 };
-		// make if constexpr
-		if (MSU_CAPTURES_E) {
-			bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
-			e = static_cast<int>(ebits >> EXP_SHIFT);
-			e -= EXP_BIAS;
-		}
-		else {
-			e = 0;
-		}
-		return e;
-	}
+
 	inline std::string get() const { return std::string("tbd"); }
 
 	// casts to native types
-	long long to_long_long() const {
-		return 0ll;
-	}
-	long double to_long_double() const {
-		return 0.0l;
-	}
+	long long to_long_long() const { return (long long)(to_double()); }
+	long double to_long_double() const { return to_double(); }
 	double to_double() const {
 		double v{ 0.0 };
 		if (iszero()) return v;
@@ -513,26 +512,34 @@ public:
 			v = sign() ? -INFINITY : INFINITY;;
 		}
 		else if (isnan()) {
-			v = std::numeric_limits<double>::signaling_NaN;
+			v = sign() ? std::numeric_limits<double>::signaling_NaN() : std::numeric_limits<double>::quiet_NaN();
 		}
 		else {
+			double f{ 1.0 };
+			double fbit = 0.5;
+			for (size_t i = nbits - 2ull - es; i > 0; --i) {
+				f += at(i) ? fbit : 0.0;
+				fbit *= 0.5;
+			}
+			int bias = (1l << (es - 1ull));  // this implies that es will be less than 32
 			int e = scale();
 			if (e == 0) {
-				// subnormals
+				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (1 + f/2^fbits))
+				v = std::pow(2.0, 2 - bias) * f;
 			}
 			else {
-				// regular
+				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
+				v = std::pow(2.0, e + 1 - bias) * f;
 			}
+			v = sign() ? -v : v;
 		}
 		return v;
 	}
-	float to_float() const {
-		float v{ 0.0f };
-		return 0.0f;
-	}
+	float to_float() const { return float(to_double());	}
 
 	// make conversions to native types explicit
 	explicit operator int() const { return to_long_long(); }
+	explicit operator long long() const { return to_long_long(); }
 	explicit operator long double() const { return to_long_double(); }
 	explicit operator double() const { return to_double(); }
 	explicit operator float() const { return to_float(); }
@@ -570,7 +577,11 @@ private:
 ////////////////////// operators
 template<size_t nnbits, size_t nes, typename nbt>
 inline std::ostream& operator<<(std::ostream& ostr, const areal<nnbits,nes,nbt>& v) {
-	ostr << "tbd";
+	// TODO: make it a native conversion
+	double d = double(v);
+	ostr << d;
+	bool ubit = v.at(0);
+	ostr << (ubit ? "..." : "=  ");
 	return ostr;
 }
 

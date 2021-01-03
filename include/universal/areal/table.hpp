@@ -16,16 +16,17 @@ template<size_t nbits, size_t es, typename bt = uint8_t>
 void GenerateArealTable(std::ostream& ostr, bool csvFormat = false)	{
 	constexpr size_t NR_VALUES = (1 << nbits);
 	areal<nbits, es, bt> v;
+	constexpr size_t fbits = v.fbits;
 	if (csvFormat) {
 		ostr << "\"Generate Lookup table for a " << typeid(v).name() << " in CSV format\"" << std::endl;
 		ostr << "#, Binary, sign, scale, exponent, fraction, ubit, scientific, hex\n";
 		for (size_t i = 0; i < NR_VALUES; i++) {
 			v.set_raw_bits(i);
 			bool s{ false };
-			blockbinary<v.es, bt> e;
-			blockbinary<v.fbits, bt> f;
+			blockbinary<es, bt> e;
+			blockbinary<fbits, bt> f;
 			bool u{ false };
-			sw::universal::decode(v, s, e, f, u);
+			sw::universal::decode<nbits,es,fbits,bt>(v, s, e, f, u);
 			ostr << i << ','
 				<< to_binary(v) << ','
 				<< s << ','
@@ -64,10 +65,10 @@ void GenerateArealTable(std::ostream& ostr, bool csvFormat = false)	{
 		for (size_t i = 0; i < NR_VALUES; i++) {
 			v.set_raw_bits(i);
 			bool s{ false };
-			blockbinary<v.es, bt> e;
-			blockbinary<v.fbits, bt> f;
+			blockbinary<es, bt> e;
+			blockbinary<fbits, bt> f;
 			bool ubit{ false };
-			sw::universal::decode(v, s, e, f, ubit);
+			sw::universal::decode<nbits, es, fbits, bt>(v, s, e, f, ubit);
 			ostr << std::setw(4) << i << ": "
 				<< std::setw(bin_column) << to_binary(v)
 				<< std::setw(sign_column) << s
@@ -75,7 +76,7 @@ void GenerateArealTable(std::ostream& ostr, bool csvFormat = false)	{
 				<< std::setw(exponent_column) << std::right << to_binary(e, true)
 				<< std::setw(fraction_column) << std::right << to_binary(f, true)
 				<< std::setw(ubit_column) << ubit
-				<< std::setw(value_column) << v << ':'
+				<< std::setw(value_column) << v
 				<< std::setw(hex_format_column) << std::right << hex_print(v)
 				<< std::endl;
 		}

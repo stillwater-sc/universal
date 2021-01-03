@@ -18,8 +18,6 @@ try {
 
 	cout << "Generate value tables for areal configurations" << endl;
 
-	GenerateArealTable<5, 2>(cout, csv);
-	return 0;
 	GenerateArealTable<4, 1>(cout, csv);
 
 	GenerateArealTable<5, 1>(cout, csv);
