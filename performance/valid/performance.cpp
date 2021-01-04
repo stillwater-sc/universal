@@ -14,41 +14,10 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/performance_runner.hpp>
 
-
-template<typename Scalar>
-void AdditionSubtractionWorkload(uint64_t NR_OPS) {
-	Scalar a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-//		c = a + b;
-//		a = c - b;
-	}
-}
-
-template<typename Scalar>
-void MultiplicationWorkload(uint64_t NR_OPS) {
-	Scalar a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-//		c = a * b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
-template<typename Scalar>
-void DivisionWorkload(uint64_t NR_OPS) {
-	Scalar a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-//		c = a / b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
+// measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
 	using namespace std;
+	using namespace sw::universal;
 	cout << endl << "VALID Arithmetic operator performance" << endl;
 
 	uint64_t NR_OPS = 1000000;

@@ -26,7 +26,7 @@ class valid {
 public:
 	static constexpr size_t somebits = 10;
 
-	valid<nbits, es>() { clear(); }
+	valid() : lb{ 0 }, ub{ 0 }, lubit{ false }, uubit{ false } { }
 
 	valid(const valid&) = default;
 	valid(valid&&) = default;
@@ -34,6 +34,7 @@ public:
 	valid& operator=(const valid&) = default;
 	valid& operator=(valid&&) = default;
 
+	explicit valid(int initial_value) { *this = initial_value; }
 	explicit valid(long initial_value) { *this = initial_value; }
 	explicit valid(unsigned long long initial_value) { *this = initial_value; }
 	         valid(double initial_value) { *this = initial_value; }
@@ -104,6 +105,12 @@ public:
 		ub = _ub;
 		uubit = ubit;
 	}
+	inline void set_raw_bits(uint64_t v) { // API to be consistent with the other number systems
+		lb.set_raw_bits(v & 0xFFFFFFFFul);
+		ub.set_raw_bits((v >> 32) & 0xFFFFFFFFul);
+		lubit = false;
+		uubit = false;
+	} 
 
 	// relative_order returns -1 if v was rounded up, 0 if it was exact, and 1 if v was rounded down
 	template <size_t FBits>
@@ -162,7 +169,7 @@ private:
 
 			unsigned esval = e % (uint32_t(1) << es);
 			exponent = convert_to_bitblock<pt_len>(esval);
-			unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2 + run + es));
+			unsigned nf = (unsigned)std::max<int>(0, (nbits + 1) - (2ull + run + es));
 			// TODO: what needs to be done if nf > fbits?
 			//assert(nf <= input_fbits);
 			// copy the most significant nf fraction bits into fraction
@@ -183,7 +190,7 @@ private:
 			pt_bits |= fraction;
 			pt_bits |= sticky_bit;
 
-			unsigned len = 1 + std::max<unsigned>((nbits + 1), (2 + run + es));
+			unsigned len = 1 + std::max<unsigned>((nbits + 1), (2ull + run + es));
 			bool blast = pt_bits.test(len - nbits);
 			bool bafter = pt_bits.test(len - nbits - 1);
 			bool bsticky = anyAfter(pt_bits, len - nbits - 1 - 1);
@@ -246,6 +253,36 @@ template<size_t nbits, size_t es>
 inline std::istream& operator>> (std::istream& istr, const valid<nbits, es>& v) {
 	istr >> v._Bits;
 	return istr;
+}
+
+// valid - valid binary arithmetic operators
+// BINARY ADDITION
+template<size_t nbits, size_t es>
+inline valid<nbits, es> operator+(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) {
+	valid<nbits, es> sum(lhs);
+	sum += rhs;
+	return sum;
+}
+// BINARY SUBTRACTION
+template<size_t nbits, size_t es>
+inline valid<nbits, es> operator-(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) {
+	valid<nbits, es> diff(lhs);
+	diff -= rhs;
+	return diff;
+}
+// BINARY MULTIPLICATION
+template<size_t nbits, size_t es>
+inline valid<nbits, es> operator*(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) {
+	valid<nbits, es> mul(lhs);
+	mul *= rhs;
+	return mul;
+}
+// BINARY DIVISION
+template<size_t nbits, size_t es>
+inline valid<nbits, es> operator/(const valid<nbits, es>& lhs, const valid<nbits, es>& rhs) {
+	valid<nbits, es> ratio(lhs);
+	ratio /= rhs;
+	return ratio;
 }
 
 }}  // namespace sw::universal

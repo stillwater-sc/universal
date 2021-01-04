@@ -19,49 +19,7 @@
    linear floating-point type to explore the benefits of multi-precision algorithms.
 */
 
-template<typename RealType>
-void AdditionSubtractionWorkload(uint64_t NR_OPS) {
-	RealType a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a + b;
-		a = c - b;
-	}
-}
-
-template<typename RealType>
-void MultiplicationWorkload(uint64_t NR_OPS) {
-	RealType a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a * b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
-template<typename RealType>
-void DivisionWorkload(uint64_t NR_OPS) {
-	RealType a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a / b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
-template<typename RealType>
-void RemainderWorkload(uint64_t NR_OPS) {
-	RealType a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a % b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
+// measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
 	using namespace std;
 	using namespace sw::universal;

@@ -50,8 +50,8 @@ lns<nbits, bt>& maxneg(lns<nbits, bt>& lmaxneg) {
 template<size_t nbits, typename bt = uint8_t>
 class lns {
 public:
-	static constexpr size_t rbits = nbits / 2;
-	static constexpr double scaling = double(1 << rbits);
+	static constexpr size_t rbits = nbits >> 1;
+	static constexpr double scaling = double(1ull << rbits);
 
 	lns() : _bits{ 0 } {}
 
@@ -123,6 +123,7 @@ public:
 	// modifiers
 	inline void reset() {	}
 	inline void clear() { reset(); }
+	inline void set_raw_bits(uint64_t v) { _bits.set_raw_bits(v); } // API to be consistent with the other number systems
 
 	// selectors
 	inline constexpr bool iszero() const { return false; }

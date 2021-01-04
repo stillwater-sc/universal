@@ -442,6 +442,7 @@ public:
 		push_back(d);
 		negative = sign;
 	}
+	inline void set_raw_bits(uint64_t v) { *this = v; } // API to be consistent with the other number systems
 
 	// remove any leading zeros from a decimal representation
 	void unpad() {

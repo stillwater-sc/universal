@@ -21,16 +21,6 @@
    can be used for forward error analysis studies.
 */
 
-// workload for testing shift operations on fixpnt types
-template<typename Scalar>
-void ShiftPerformanceWorkload(uint64_t NR_OPS) {
-	Scalar a = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a >>= 13;
-		a <<= 37;
-	}
-}
-
 // test performance of shift operator on fixpnt<> class
 void TestShiftOperatorPerformance() {
 	using namespace std;
@@ -49,49 +39,8 @@ void TestShiftOperatorPerformance() {
 	PerformanceRunner("fixpnt<1024,32,Saturating, uint32_t> shifts         ", ShiftPerformanceWorkload< sw::universal::fixpnt<1024, 32, Saturating, uint32_t> >, NR_OPS / 16);
 }
 
-template<typename Scalar>
-void AdditionSubtractionWorkload(uint64_t NR_OPS) {
-	Scalar a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a + b;
-		a = c - b;
-	}
-}
 
-template<typename Scalar>
-void MultiplicationWorkload(uint64_t NR_OPS) {
-	Scalar a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a * b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
-template<typename Scalar>
-void DivisionWorkload(uint64_t NR_OPS) {
-	Scalar a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a / b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
-template<typename Scalar>
-void RemainderWorkload(uint64_t NR_OPS) {
-	Scalar a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a % b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
+// measure performance of arithmetic operations
 void TestArithmeticOperatorPerformance() {
 	using namespace std;
 	cout << endl << "FIXPNT Fixed-Point Saturating Arithmetic operator performance" << endl;

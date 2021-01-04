@@ -19,38 +19,7 @@
    for applications that manipulate exponential properties.
 */
 
-template<typename Scalar>
-void AdditionSubtractionWorkload(uint64_t NR_OPS) {
-	Scalar a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a + b;
-		a = c - b;
-	}
-}
-
-template<typename Scalar>
-void MultiplicationWorkload(uint64_t NR_OPS) {
-	Scalar a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a * b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
-template<typename Scalar>
-void DivisionWorkload(uint64_t NR_OPS) {
-	Scalar a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a / b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
+// measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
 	using namespace std;
 	using namespace sw::universal;
@@ -58,7 +27,7 @@ void TestArithmeticOperatorPerformance() {
 
 	uint64_t NR_OPS = 1000000;
 
-	PerformanceRunner("lns<8>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<16> >, NR_OPS);
+	PerformanceRunner("lns<8>    add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<16> >, NR_OPS);
 	PerformanceRunner("lns<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<16> >, NR_OPS);
 	PerformanceRunner("lns<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<32> >, NR_OPS);
 	PerformanceRunner("lns<64>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::lns<64> >, NR_OPS);

@@ -18,16 +18,6 @@
    The goal of the adaptive decimal integers is to provide an oracle big integer type
 */
 
-// workload for testing shift operations on integer types
-template<typename IntegerType>
-void ShiftPerformanceWorkload(uint64_t NR_OPS) {
-	IntegerType a = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a >>= 13;
-		a <<= 37;
-	}
-}
-
 // test performance of shift operator on integer<> class
 void TestShiftOperatorPerformance() {
 	using namespace std;
@@ -41,49 +31,7 @@ void TestShiftOperatorPerformance() {
 	PerformanceRunner("decimal 100-digits   shifts        ", ShiftPerformanceWorkload< decimal >, NR_OPS);
 }
 
-template<typename IntegerType>
-void AdditionSubtractionWorkload(uint64_t NR_OPS) {
-	IntegerType a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a + b;
-		a = c - b;
-	}
-}
-
-template<typename IntegerType>
-void MultiplicationWorkload(uint64_t NR_OPS) {
-	IntegerType a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a * b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
-template<typename IntegerType>
-void DivisionWorkload(uint64_t NR_OPS) {
-	IntegerType a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a / b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
-template<typename IntegerType>
-void RemainderWorkload(uint64_t NR_OPS) {
-	IntegerType a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a % b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
+// measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
 	using namespace std;
 	using namespace sw::universal;

@@ -9,6 +9,69 @@
 #include <chrono>
 
 namespace sw::universal {
+
+	// Generic workload for testing shift operations on a given number system type that supports operator>> and operator<<
+	template<typename Scalar>
+	void ShiftPerformanceWorkload(uint64_t NR_OPS) {
+		Scalar a{ 0 };
+		a.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
+		for (uint64_t i = 0; i < NR_OPS; ++i) {
+			a >>= 13;
+			a <<= 37;
+		}
+	}
+
+	// Generic set of adds and subtracts for a given number system type
+	template<typename Scalar>
+	void AdditionSubtractionWorkload(uint64_t NR_OPS) {
+		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
+		d.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
+		a = b = c = d;
+		for (uint64_t i = 0; i < NR_OPS; ++i) {
+			c = a + b;
+			a = c - b;
+		}
+	}
+
+	// Generic set of multiplies for a given number system type
+	template<typename Scalar>
+	void MultiplicationWorkload(uint64_t NR_OPS) {
+		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
+		d.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
+		a = b = c = d;
+		for (uint64_t i = 0; i < NR_OPS; ++i) {
+			c = a * b;
+			c.clear(); // reset to zero so d = c is fast
+			d = c;
+		}
+	}
+
+	// Generic set of divides for a given number system type
+	template<typename Scalar>
+	void DivisionWorkload(uint64_t NR_OPS) {
+		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
+		d.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
+		a = b = c = d;
+		for (uint64_t i = 0; i < NR_OPS; ++i) {
+			c = a / b;
+			c.clear(); // reset to zero so d = c is fast
+			d = c;
+		}
+	}
+
+	// Generic set of remainder calculations for a given number system type that supports the % operator
+	template<typename Scalar>
+	void RemainderWorkload(uint64_t NR_OPS) {
+		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
+		d.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
+		a = b = c = d;
+		for (uint64_t i = 0; i < NR_OPS; ++i) {
+			c = a % b;
+			c.clear(); // reset to zero so d = c is fast
+			d = c;
+		}
+	}
+
 	// convert a floating point value to a power-of-ten string
 	template<typename Ty>
 	std::string toPowerOfTen(Ty value) {
