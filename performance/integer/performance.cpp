@@ -34,10 +34,11 @@ void ShiftPerformanceWorkload(uint64_t NR_OPS) {
 // test performance of shift operator on integer<> class
 void TestShiftOperatorPerformance() {
 	using namespace std;
-	cout << endl << "Logical shift operator performance" << endl;
+	cout << endl << "INTEGER Logical shift operator performance" << endl;
 
 	constexpr uint64_t NR_OPS = 1000000;
 
+	PerformanceRunner("integer<8>    shifts        ", ShiftPerformanceWorkload< sw::universal::integer<8> >, NR_OPS);
 	PerformanceRunner("integer<16>   shifts        ", ShiftPerformanceWorkload< sw::universal::integer<16> >, NR_OPS);
 	PerformanceRunner("integer<32>   shifts        ", ShiftPerformanceWorkload< sw::universal::integer<32> >, NR_OPS);
 	PerformanceRunner("integer<64>   shifts        ", ShiftPerformanceWorkload< sw::universal::integer<64> >, NR_OPS);
@@ -92,10 +93,12 @@ void RemainderWorkload(uint64_t NR_OPS) {
 
 void TestArithmeticOperatorPerformance() {
 	using namespace std;
-	cout << endl << "Arithmetic operator performance" << endl;
+	using namespace sw::universal;
+	cout << endl << "INTEGER Arithmetic operator performance" << endl;
 
 	uint64_t NR_OPS = 1000000;
 
+	PerformanceRunner("integer<8>    add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<8> >, NR_OPS);
 	PerformanceRunner("integer<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<16> >, NR_OPS);
 	PerformanceRunner("integer<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<32> >, NR_OPS);
 	PerformanceRunner("integer<64>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<64> >, NR_OPS);
@@ -105,6 +108,7 @@ void TestArithmeticOperatorPerformance() {
 	PerformanceRunner("integer<1024> add/subtract  ", AdditionSubtractionWorkload< sw::universal::integer<1024> >, NR_OPS / 16);
 
 	NR_OPS = 1024 * 32;
+	PerformanceRunner("integer<8>    division      ", DivisionWorkload< sw::universal::integer<8> >, NR_OPS);
 	PerformanceRunner("integer<16>   division      ", DivisionWorkload< sw::universal::integer<16> >, NR_OPS);
 	PerformanceRunner("integer<32>   division      ", DivisionWorkload< sw::universal::integer<32> >, NR_OPS);
 	PerformanceRunner("integer<64>   division      ", DivisionWorkload< sw::universal::integer<64> >, NR_OPS / 2);
@@ -113,6 +117,7 @@ void TestArithmeticOperatorPerformance() {
 	PerformanceRunner("integer<1024> division      ", DivisionWorkload< sw::universal::integer<1024> >, NR_OPS / 16);
 
 	NR_OPS = 1024 * 32;
+	PerformanceRunner("integer<8>    remainder     ", RemainderWorkload< sw::universal::integer<8> >, NR_OPS);
 	PerformanceRunner("integer<16>   remainder     ", RemainderWorkload< sw::universal::integer<16> >, NR_OPS);
 	PerformanceRunner("integer<32>   remainder     ", RemainderWorkload< sw::universal::integer<32> >, NR_OPS);
 	PerformanceRunner("integer<64>   remainder     ", RemainderWorkload< sw::universal::integer<64> >, NR_OPS / 2);
@@ -123,6 +128,7 @@ void TestArithmeticOperatorPerformance() {
 	// multiplication is the slowest operator
 
 	NR_OPS = 1024 * 32;
+	PerformanceRunner("integer<8>    multiplication", MultiplicationWorkload< sw::universal::integer<8> >, NR_OPS);
 	PerformanceRunner("integer<16>   multiplication", MultiplicationWorkload< sw::universal::integer<16> >, NR_OPS);
 	PerformanceRunner("integer<32>   multiplication", MultiplicationWorkload< sw::universal::integer<32> >, NR_OPS / 2);
 	PerformanceRunner("integer<64>   multiplication", MultiplicationWorkload< sw::universal::integer<64> >, NR_OPS / 4);

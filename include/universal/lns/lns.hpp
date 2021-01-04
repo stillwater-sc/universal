@@ -121,7 +121,8 @@ public:
 	}
 
 	// modifiers
-	void reset() {	}
+	inline void reset() {	}
+	inline void clear() { reset(); }
 
 	// selectors
 	inline constexpr bool iszero() const { return false; }

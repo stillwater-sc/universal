@@ -538,7 +538,14 @@ endif(BUILD_CONVERSION_TESTS)
 
 # performance benchmarks
 if(BUILD_PERFORMANCE_TESTS)
-add_subdirectory("tests/performance")
+add_subdirectory("performance/decimal")
+add_subdirectory("performance/integer")
+add_subdirectory("performance/fixpnt")
+add_subdirectory("performance/areal")
+add_subdirectory("performance/lns")
+add_subdirectory("performance/posit")
+add_subdirectory("performance/valid")
+add_subdirectory("performance/unum")
 endif(BUILD_PERFORMANCE_TESTS)
 
 # command line tools and utilities 

@@ -721,6 +721,12 @@ inline decimal operator/(const decimal& lhs, const decimal& rhs) {
 	ratio /= rhs;
 	return ratio;
 }
+// binary remainder of decimal numbers
+inline decimal operator%(const decimal& lhs, const decimal& rhs) {
+	decimal remainder = lhs;
+	remainder %= rhs;
+	return remainder;
+}
 // binary left shift
 inline decimal operator<<(const decimal& lhs, int shift) {
 	decimal d(lhs);

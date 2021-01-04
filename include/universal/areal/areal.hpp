@@ -608,28 +608,28 @@ inline bool operator>=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,
 // BINARY ADDITION
 template<size_t nbits, size_t es, typename bt>
 inline areal<nbits, es, bt> operator+(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
-	areal<nbits, es> sum(lhs);
+	areal<nbits, es, bt> sum(lhs);
 	sum += rhs;
 	return sum;
 }
 // BINARY SUBTRACTION
 template<size_t nbits, size_t es, typename bt>
 inline areal<nbits, es, bt> operator-(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
-	areal<nbits, es> diff(lhs);
+	areal<nbits, es, bt> diff(lhs);
 	diff -= rhs;
 	return diff;
 }
 // BINARY MULTIPLICATION
 template<size_t nbits, size_t es, typename bt>
 inline areal<nbits, es, bt> operator*(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
-	areal<nbits, es> mul(lhs);
+	areal<nbits, es, bt> mul(lhs);
 	mul *= rhs;
 	return mul;
 }
 // BINARY DIVISION
 template<size_t nbits, size_t es, typename bt>
 inline areal<nbits, es, bt> operator/(const areal<nbits, es, bt>& lhs, const areal<nbits, es, bt>& rhs) {
-	areal<nbits, es> ratio(lhs);
+	areal<nbits, es, bt> ratio(lhs);
 	ratio /= rhs;
 	return ratio;
 }
