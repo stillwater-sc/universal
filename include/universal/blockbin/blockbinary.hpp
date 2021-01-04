@@ -99,11 +99,11 @@ class blockbinary {
 public:
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
-	static_assert(bitsInBlock <= 32, "storage unit for block arithmetic needs to be <= uint32_t");
+	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t");
 
 	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
 	static constexpr uint64_t storageMask = (0xFFFFFFFFFFFFFFFFul >> (64 - bitsInBlock));
-	static constexpr bt maxBlockValue = (uint64_t(1) << bitsInBlock) - 1;
+	static constexpr bt maxBlockValue = bt(-1);
 
 	static constexpr size_t MSU = nrBlocks - 1; // MSU == Most Significant Unit
 	// warning C4310 : cast truncates constant value
@@ -328,14 +328,14 @@ public:
 	 // clear a block binary number
 	inline constexpr void clear() noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) {
-			_block[i] = bt(0);
+			_block[i] = bt(0ull);
 		}
 	}
 	inline constexpr void setzero() noexcept { clear(); }
 	inline constexpr void reset(size_t i) {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
-			bt mask = ~(1 << (i % bitsInBlock));
+			bt mask = ~(1ull << (i % bitsInBlock));
 			_block[i / bitsInBlock] = block & mask;
 			return;
 		}
@@ -344,7 +344,7 @@ public:
 	inline constexpr void set(size_t i, bool v = true) {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
-			bt null = ~(1 << (i % bitsInBlock));
+			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = (v ? 1 : 0);
 			bt mask = (bit << (i % bitsInBlock));
 			_block[i / bitsInBlock] = (block & null) | mask;
