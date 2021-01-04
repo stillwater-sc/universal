@@ -13,24 +13,17 @@
 #include <universal/verification/blockbinary_test_status.hpp>
 #include <universal/verification/performance_runner.hpp>
 
-using namespace std;
-using namespace sw::universal;
 
-// workload for testing shift operations on integer types
-template<typename IntegerType>
-void ShiftPerformanceWorkload(uint64_t NR_OPS) {
-	IntegerType a = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a >>= 13;
-		a <<= 37;
-	}
-}
+
+
 
 // test performance of shift operator on integer<> class
 void TestShiftOperatorPerformance() {
+	using namespace std;
+	using namespace sw::universal;
 	cout << endl << "Logical shift operator performance" << endl;
 
-	constexpr size_t NR_OPS = 1024 * 1024;
+	constexpr size_t NR_OPS = 1024ull * 1024ull;
 
 	PerformanceRunner("blockbinary<16>   shifts        ", ShiftPerformanceWorkload< sw::universal::blockbinary<16> >, NR_OPS);
 	PerformanceRunner("blockbinary<32>   shifts        ", ShiftPerformanceWorkload< sw::universal::blockbinary<32> >, NR_OPS);
@@ -42,9 +35,11 @@ void TestShiftOperatorPerformance() {
 }
 
 void TestBlockPerformanceOnShift() {
+	using namespace std;
+	using namespace sw::universal;
 	cout << endl << "Block size performance on logical shift operators" << endl;
 
-	constexpr size_t NR_OPS = 1024 * 1024;
+	constexpr size_t NR_OPS = 1024ull * 1024ull;
 
 	PerformanceRunner("blockbinary<8,uint8>     shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<8, uint8_t> >, NR_OPS);
 
@@ -76,53 +71,12 @@ void TestBlockPerformanceOnShift() {
 	PerformanceRunner("blockbinary<1024,uint32> shifts  ", ShiftPerformanceWorkload< sw::universal::blockbinary<1024, uint32_t> >, NR_OPS / 16);
 }
 
-template<typename IntegerType>
-void AdditionSubtractionWorkload(uint64_t NR_OPS) {
-	IntegerType a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a + b;
-		a = c - b;
-	}
-}
-
-template<typename IntegerType>
-void MultiplicationWorkload(uint64_t NR_OPS) {
-	IntegerType a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a * b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
-template<typename IntegerType>
-void DivisionWorkload(uint64_t NR_OPS) {
-	IntegerType a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a / b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
-template<typename IntegerType>
-void RemainderWorkload(uint64_t NR_OPS) {
-	IntegerType a, b, c, d;
-	a = b = c = d = 0xFFFFFFFFFFFFFFFF;
-	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		c = a % b;
-		c.clear(); // reset to zero so d = c is fast
-		d = c;
-	}
-}
-
 void TestArithmeticOperatorPerformance() {
+	using namespace std;
+	using namespace sw::universal;
 	cout << endl << "Arithmetic operator performance" << endl;
 
-	size_t NR_OPS = 1024*1024 * 4;
+	size_t NR_OPS = 1024ull * 1024ull * 4ull;
 
 	PerformanceRunner("blockbinary<16>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blockbinary<16> >, NR_OPS);
 	PerformanceRunner("blockbinary<32>   add/subtract  ", AdditionSubtractionWorkload< sw::universal::blockbinary<32> >, NR_OPS);
@@ -132,7 +86,7 @@ void TestArithmeticOperatorPerformance() {
 	PerformanceRunner("blockbinary<512>  add/subtract  ", AdditionSubtractionWorkload< sw::universal::blockbinary<512> >, NR_OPS / 8);
 	PerformanceRunner("blockbinary<1024> add/subtract  ", AdditionSubtractionWorkload< sw::universal::blockbinary<1024> >, NR_OPS / 16);
 
-	NR_OPS = 1024 * 1024;
+	NR_OPS = 1024ull * 1024ull;
 	PerformanceRunner("blockbinary<16>   multiplication", MultiplicationWorkload< sw::universal::blockbinary<16> >, NR_OPS);
 	PerformanceRunner("blockbinary<32>   multiplication", MultiplicationWorkload< sw::universal::blockbinary<32> >, NR_OPS / 2);
 	PerformanceRunner("blockbinary<64>   multiplication", MultiplicationWorkload< sw::universal::blockbinary<64> >, NR_OPS / 4);
@@ -140,7 +94,7 @@ void TestArithmeticOperatorPerformance() {
 	PerformanceRunner("blockbinary<512>  multiplication", MultiplicationWorkload< sw::universal::blockbinary<512> >, NR_OPS / 512);     // TODO: why is this so slow?
 	PerformanceRunner("blockbinary<1024> multiplication", MultiplicationWorkload< sw::universal::blockbinary<1024> >, NR_OPS / 1024);   // TODO: why is this so slow?
 
-	NR_OPS = 1024 * 512;
+	NR_OPS = 1024ull * 512ull;
 	PerformanceRunner("blockbinary<16>   division      ", DivisionWorkload< sw::universal::blockbinary<16> >, NR_OPS);
 	PerformanceRunner("blockbinary<32>   division      ", DivisionWorkload< sw::universal::blockbinary<32> >, NR_OPS);
 	PerformanceRunner("blockbinary<64>   division      ", DivisionWorkload< sw::universal::blockbinary<64> >, NR_OPS / 2);
@@ -148,7 +102,7 @@ void TestArithmeticOperatorPerformance() {
 	PerformanceRunner("blockbinary<512>  division      ", DivisionWorkload< sw::universal::blockbinary<512> >, NR_OPS / 8);
 	PerformanceRunner("blockbinary<1024> division      ", DivisionWorkload< sw::universal::blockbinary<1024> >, NR_OPS / 16);
 
-	NR_OPS = 1024 * 512;
+	NR_OPS = 1024ull * 512ull;
 	PerformanceRunner("blockbinary<16>   remainder     ", RemainderWorkload< sw::universal::blockbinary<16> >, NR_OPS);
 	PerformanceRunner("blockbinary<32>   remainder     ", RemainderWorkload< sw::universal::blockbinary<32> >, NR_OPS);
 	PerformanceRunner("blockbinary<64>   remainder     ", RemainderWorkload< sw::universal::blockbinary<64> >, NR_OPS / 2);
@@ -159,9 +113,11 @@ void TestArithmeticOperatorPerformance() {
 }
 
 void TestBlockPerformanceOnAdd() {
+	using namespace std;
+	using namespace sw::universal;
 	cout << endl << "ADDITION: blockbinary arithemetic performance as a function of size and BlockType" << endl;
 
-	constexpr size_t NR_OPS = 32 * 1024 * 1024;
+	constexpr size_t NR_OPS = 32ull * 1024ull * 1024ull;
 
 	PerformanceRunner("blockbinary<4,uint8>      add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<4, uint8_t> >, NR_OPS);
 	PerformanceRunner("blockbinary<8,uint8>      add   ", AdditionSubtractionWorkload< sw::universal::blockbinary<8, uint8_t> >, NR_OPS);
@@ -188,9 +144,11 @@ void TestBlockPerformanceOnAdd() {
 }
 
 void TestBlockPerformanceOnDiv() {
+	using namespace std;
+	using namespace sw::universal;
 	cout << endl << "DIVISION: blockbinary arithemetic performance as a function of size and BlockType" << endl;
 
-	constexpr size_t NR_OPS = 1024 * 1024;
+	constexpr size_t NR_OPS = 1024ull * 1024;
 	PerformanceRunner("blockbinary<4,uint8>      div   ", DivisionWorkload< sw::universal::blockbinary<4, uint8_t> >, NR_OPS);
 	PerformanceRunner("blockbinary<8,uint8>      div   ", DivisionWorkload< sw::universal::blockbinary<8, uint8_t> >, NR_OPS);
 	PerformanceRunner("blockbinary<16,uint8>     div   ", DivisionWorkload< sw::universal::blockbinary<16, uint8_t> >, NR_OPS);
@@ -216,9 +174,11 @@ void TestBlockPerformanceOnDiv() {
 }
 
 void TestBlockPerformanceOnRem() {
+	using namespace std;
+	using namespace sw::universal;
 	cout << endl << "REMAINDER: blockbinary arithemetic performance as a function of size and BlockType" << endl;
 
-	constexpr size_t NR_OPS = 1024 * 1024;
+	constexpr size_t NR_OPS = 1024ull * 1024;
 	PerformanceRunner("blockbinary<4,uint8>      rem   ", RemainderWorkload< sw::universal::blockbinary<4, uint8_t> >, NR_OPS);
 	PerformanceRunner("blockbinary<8,uint8>      rem   ", RemainderWorkload< sw::universal::blockbinary<8, uint8_t> >, NR_OPS);
 	PerformanceRunner("blockbinary<16,uint8>     rem   ", RemainderWorkload< sw::universal::blockbinary<16, uint8_t> >, NR_OPS);
@@ -244,9 +204,11 @@ void TestBlockPerformanceOnRem() {
 }
 
 void TestBlockPerformanceOnMul() {
+	using namespace std;
+	using namespace sw::universal;
 	cout << endl << "MULTIPLICATION: blockbinary arithemetic performance as a function of size and BlockType" << endl;
 
-	constexpr size_t NR_OPS = 512 * 1024;
+	constexpr size_t NR_OPS = 512ull * 1024;
 	PerformanceRunner("blockbinary<4,uint8>      mul   ", MultiplicationWorkload< sw::universal::blockbinary<4, uint8_t> >, NR_OPS);
 	PerformanceRunner("blockbinary<8,uint8>      mul   ", MultiplicationWorkload< sw::universal::blockbinary<8, uint8_t> >, NR_OPS);
 	PerformanceRunner("blockbinary<16,uint8>     mul   ", MultiplicationWorkload< sw::universal::blockbinary<16, uint8_t> >, NR_OPS);
