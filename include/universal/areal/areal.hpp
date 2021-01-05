@@ -120,9 +120,10 @@ public:
 
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t es = _es;
+	using BlockType = bt;
 
 	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
-	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFul >> (64ull - bitsInBlock));
+	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 	static constexpr bt MSU_MASK = (bt(-1) >> (nrBlocks * bitsInBlock - nbits));
@@ -132,7 +133,7 @@ public:
 	static constexpr bool MSU_CAPTURES_E = (nbits - 1ull - es) < bitsInMSU;
 	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (nbits - 1ull - es) : 0);
 	static constexpr bt MSU_EXP_MASK = ((bt(-1) << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
-	static constexpr int EXP_BIAS = ((1l << (es - 1)) - 1l);
+	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 	static constexpr bt BLOCK_MASK = bt(-1);
 
 	static constexpr size_t fbits  = nbits - 2ull - es;    // number of fraction bits excluding the hidden bit
@@ -462,7 +463,7 @@ public:
 	inline constexpr bool at(size_t bitIndex) const {
 		if (bitIndex < nbits) {
 			bt word = _block[bitIndex / bitsInBlock];
-			bt mask = bt(1 << (bitIndex % bitsInBlock));
+			bt mask = bt(1ull << (bitIndex % bitsInBlock));
 			return (word & mask);
 		}
 		throw "bit index out of bounds";

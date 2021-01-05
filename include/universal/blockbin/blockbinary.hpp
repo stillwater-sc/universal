@@ -388,7 +388,7 @@ public:
 	inline constexpr bool at(size_t bitIndex) const {
 		if (bitIndex < nbits) {
 			bt word = _block[bitIndex / bitsInBlock];
-			bt mask = (bt(1) << (bitIndex % bitsInBlock));
+			bt mask = (bt(1ull) << (bitIndex % bitsInBlock));
 			return (word & mask);
 		}
 		throw "bit index out of bounds";

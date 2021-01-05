@@ -19,6 +19,67 @@
    linear floating-point type to explore the benefits of multi-precision algorithms.
 */
 
+// measure performance of conversion operators
+void TestConversionPerformance() {
+	using namespace std;
+	using namespace sw::universal;
+	cout << endl << "AREAL Conversion operator performance" << endl;
+
+	uint64_t NR_OPS = 1000000;
+}
+
+template<typename Scalar>
+void DecodeWorkload(uint64_t NR_OPS) {
+	using namespace std;
+	using namespace sw::universal;
+
+	Scalar a{ 0 };
+	a.set_raw_bits(0xEEEEEEEEEEEEEEEEull);
+	size_t success{ 0 };
+	bool first{ true };
+	for (uint64_t i = 0; i < NR_OPS; ++i) {
+		bool s{ false };
+		blockbinary<a.es, Scalar::BlockType> e;
+		blockbinary<a.fbits, Scalar::BlockType> f;
+		bool ubit{ false };
+		sw::universal::decode(a, s, e, f, ubit);
+		if (s != ubit) ++success; 
+		else { 
+			// this shouldn't happen, but found a bug this way with areal<64,11,uint64_t> as type
+			if (first) {
+				first = false;
+				cout << typeid(a).name() << " :\n" 
+					<< to_binary(a,true) << "\n" 
+					<< "sign    : " << (s ? "-1\n" : "+1\n") 
+					<< "exponent: " << to_binary(e,true) << "\n" 
+					<< "fraction: " << to_binary(f,true) << "\n"
+					<< "ubit    : " << (ubit ? "1" : "0") << endl;
+			}
+		}
+	}
+	if (success == 0) cout << "DECODE FAIL\n"; // just a quick double check that all went well
+}
+
+// measure performance of conversion operators
+void TestDecodePerformance() {
+	using namespace std;
+	using namespace sw::universal;
+	cout << endl << "AREAL decode operator performance" << endl;
+
+	uint64_t NR_OPS = 1000000;
+	PerformanceRunner("areal<8,2,uint8_t>      decode         ", DecodeWorkload< sw::universal::areal<8, 2, uint8_t> >, NR_OPS);
+	PerformanceRunner("areal<16,5,uint16_t>    decode         ", DecodeWorkload< sw::universal::areal<16, 5, uint16_t> >, NR_OPS);
+	PerformanceRunner("areal<32,8,uint32_t>    decode         ", DecodeWorkload< sw::universal::areal<32, 8, uint32_t> >, NR_OPS);
+	PerformanceRunner("areal<64,11,uint64_t>   decode         ", DecodeWorkload< sw::universal::areal<64, 11, uint64_t> >, NR_OPS);
+/* 1/4/2021
+AREAL decode operator performance: this is a decode that enumerates the bits, thus slowest possible algorithm
+areal<8,2,uint8_t>      decode             1000000 per        0.012412sec ->  80 Mops/sec
+areal<16,5,uint16_t>    decode             1000000 per       0.0287893sec ->  34 Mops/sec
+areal<32,8,uint32_t>    decode             1000000 per       0.0649867sec ->  15 Mops/sec
+areal<64,11,uint64_t>   decode             1000000 per        0.129481sec ->   7 Mops/sec
+*/
+}
+
 // measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
 	using namespace std;
@@ -73,7 +134,24 @@ try {
 
 #if MANUAL_TESTING
 
-	TestArithmeticOperatorPerformance();
+	using Scalar = areal<64, 11, uint64_t>;
+	Scalar a;
+	a.set_raw_bits(0xEEEEEEEEEEEEEEEEull);
+	bool s{ false };
+	blockbinary<a.es, Scalar::BlockType> e;
+	blockbinary<a.fbits, Scalar::BlockType> f;
+	bool ubit{ false };
+	sw::universal::decode(a, s, e, f, ubit);
+	cout << typeid(a).name() << " :\n"
+		<< to_binary(a, true) << "\n"
+		<< "sign    : " << (s ? "-1\n" : "+1\n")
+		<< "exponent: " << to_binary(e, true) << "\n"
+		<< "fraction: " << to_binary(f, true) << "\n"
+		<< "ubit    : " << (ubit ? "1" : "0") << endl;
+
+	cout << "nbits: " << a.nbits << endl;
+	cout << "es   : " << a.es << endl;
+	cout << "fbits: " << a.fbits << endl;
 
 	cout << "done" << endl;
 
@@ -83,6 +161,7 @@ try {
 
 	int nrOfFailedTestCases = 0;
 	   
+	TestDecodePerformance();
 	TestArithmeticOperatorPerformance();
 
 #if STRESS_TESTING
