@@ -39,8 +39,8 @@ void DecodeWorkload(uint64_t NR_OPS) {
 	bool first{ true };
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
 		bool s{ false };
-		blockbinary<a.es, Scalar::BlockType> e;
-		blockbinary<a.fbits, Scalar::BlockType> f;
+		blockbinary<a.es, typename Scalar::BlockType> e;
+		blockbinary<a.fbits, typename Scalar::BlockType> f;
 		bool ubit{ false };
 		sw::universal::decode(a, s, e, f, ubit);
 		if (s != ubit) ++success; 
@@ -138,8 +138,8 @@ try {
 	Scalar a;
 	a.set_raw_bits(0xEEEEEEEEEEEEEEEEull);
 	bool s{ false };
-	blockbinary<a.es, Scalar::BlockType> e;
-	blockbinary<a.fbits, Scalar::BlockType> f;
+	blockbinary<a.es, typename Scalar::BlockType> e;
+	blockbinary<a.fbits, typename Scalar::BlockType> f;
 	bool ubit{ false };
 	sw::universal::decode(a, s, e, f, ubit);
 	cout << typeid(a).name() << " :\n"
