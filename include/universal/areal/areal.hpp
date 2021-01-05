@@ -62,40 +62,63 @@ static constexpr int INF_TYPE_POSITIVE   = 1;    // +inf
 constexpr bool AREAL_NIBBLE_MARKER = true;
 
 
-// decode an areal value into its constituent parts
+/// <summary>
+/// decode an areal value into its constituent parts
+/// </summary>
+/// <typeparam name="bt"></typeparam>
+/// <param name="v"></param>
+/// <param name="s"></param>
+/// <param name="e"></param>
+/// <param name="f"></param>
+/// <param name="ubit"></param>
 template<size_t nbits, size_t es, size_t fbits, typename bt>
 void decode(const areal<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f, bool& ubit) {
 	s = v.at(nbits - 1ull);
 	ubit = v.at(0);
-	e.clear();
-	for (size_t i = 0; i < es; ++i) { e.set(i, v.at(nbits - 1ull - es + i)); }
-	f.clear();
-	for (size_t i = 0; i < fbits; ++i) { f.set(i, v.at(nbits - 1ull - es - fbits + i)); }
+	v.exponent(e);
+	v.fraction(f);
 }
+
+/// <summary>
+/// return the binary scale of the given number
+/// </summary>
+/// <typeparam name="bt">Block type used for storage: derived through ADL</typeparam>
+/// <param name="v">the areal number for which we seek to know the binary scale</param>
+/// <returns>binary scale, i.e. 2^scale, of the value of the areal</returns>
 template<size_t nbits, size_t es, typename bt>
 int scale(const areal<nbits, es, bt>& v) {
 	return v.scale();
 }
 
-// fill an areal object with mininum positive value
-template<size_t nbits, size_t es, typename bt>
-areal<nbits, es, bt>& minpos(areal<nbits, es, bt>& aminpos) {
+/////////////////////////////////////////////////////////////////////////////////
+/// free functions that can set an areal to extreme values in its state space
+/// organized in descending order.
 
-	return aminpos;
-}
 // fill an areal object with maximum positive value
 template<size_t nbits, size_t es, typename bt>
 areal<nbits, es, bt>& maxpos(areal<nbits, es, bt>& amaxpos) {
 
 	return amaxpos;
 }
-// fill an areal object with mininum negative value
+// fill an areal object with mininum positive value
+template<size_t nbits, size_t es, typename bt>
+areal<nbits, es, bt>& minpos(areal<nbits, es, bt>& aminpos) {
+
+	return aminpos;
+}
+// fill an areal object with zero
+template<size_t nbits, size_t es, typename bt>
+areal<nbits, es, bt>& zero(areal<nbits, es, bt>& tobezero) {
+	tobezero.clear();
+	return tobezero;
+}
+// fill an areal object with smallest negative value
 template<size_t nbits, size_t es, typename bt>
 areal<nbits, es, bt>& minneg(areal<nbits, es, bt>& aminneg) {
 
 	return aminneg;
 }
-// fill an areal object with maximum negative value
+// fill an areal object with largest negative value
 template<size_t nbits, size_t es, typename bt>
 areal<nbits, es, bt>& maxneg(areal<nbits, es, bt>& amaxneg) {
 
@@ -354,7 +377,9 @@ public:
 			e -= EXP_BIAS;
 		}
 		else {
-			e = 0;
+			blockbinary<es, bt> ebits;
+			exponent(ebits);
+			e = ebits.to_long_long() - EXP_BIAS;
 		}
 		return e;
 	}
@@ -420,7 +445,6 @@ public:
 			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 	}
-
 	/// <summary>
 	/// check if a value is a quiet or a signalling NaN
 	/// quiet NaN      = 0-1111-11111-1: sign = 0, uncertainty = 1, es/fraction bits = 1
@@ -501,8 +525,52 @@ public:
 		std::cout << "EXP_BIAS      : " << EXP_BIAS << std::endl;
 	}
 
-	inline std::string get() const { return std::string("tbd"); }
+	//inline std::string get() const { return std::string("tbd"); }
+	// extract the exponent field from the encoding
+	inline constexpr void exponent(blockbinary<es, bt>& e) const {
+		e.clear();
+		switch (nrBlocks) {
+		case 0:
+			return;
+		case 1:
+		{
+			bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
+			e.set_raw_bits(ebits >> EXP_SHIFT);
+		}
+		break;
+		default:
+		{
+			if (MSU_CAPTURES_E) {
+				bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
+				e.set_raw_bits(ebits >> EXP_SHIFT);
+			}
+			else {
+				for (size_t i = 0; i < es; ++i) { e.set(i, at(nbits - 1ull - es + i)); }
+			}
+		}
+		break;
+		}
+	}
+	// extract the fraction field from the encoding
+	inline constexpr void fraction(blockbinary<fbits, bt>& f) const {
+		f.clear();
+		switch (nrBlocks) {
+		case 0:
+			return;
+		case 1:
+		{
+			bt fbits = bt(_block[MSU] & ~MSU_EXP_MASK);
+			f.set_raw_bits(fbits >> bt(1ull));
+		}
+		break;
+		default:
+		{
+			for (size_t i = 0; i < fbits; ++i) { f.set(i, at(nbits - 1ull - es - fbits + i)); }
+		}
+		break;
+		}
 
+	}
 	// casts to native types
 	long long to_long_long() const { return (long long)(to_double()); }
 	long double to_long_double() const { return to_double(); }

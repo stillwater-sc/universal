@@ -71,12 +71,26 @@ void TestDecodePerformance() {
 	PerformanceRunner("areal<16,5,uint16_t>    decode         ", DecodeWorkload< sw::universal::areal<16, 5, uint16_t> >, NR_OPS);
 	PerformanceRunner("areal<32,8,uint32_t>    decode         ", DecodeWorkload< sw::universal::areal<32, 8, uint32_t> >, NR_OPS);
 	PerformanceRunner("areal<64,11,uint64_t>   decode         ", DecodeWorkload< sw::universal::areal<64, 11, uint64_t> >, NR_OPS);
-/* 1/4/2021
+/* 
+1/4/2021
 AREAL decode operator performance: this is a decode that enumerates the bits, thus slowest possible algorithm
 areal<8,2,uint8_t>      decode             1000000 per        0.012412sec ->  80 Mops/sec
 areal<16,5,uint16_t>    decode             1000000 per       0.0287893sec ->  34 Mops/sec
 areal<32,8,uint32_t>    decode             1000000 per       0.0649867sec ->  15 Mops/sec
 areal<64,11,uint64_t>   decode             1000000 per        0.129481sec ->   7 Mops/sec
+
+1/5/2021
+AREAL decode operator performance: this is an exponent block move if there is no straddle
+areal<8,2,uint8_t>      decode             1000000 per       0.0082558sec -> 121 Mops/sec
+areal<16,5,uint16_t>    decode             1000000 per       0.0185946sec ->  53 Mops/sec
+areal<32,8,uint32_t>    decode             1000000 per       0.0465827sec ->  21 Mops/sec
+areal<64,11,uint64_t>   decode             1000000 per        0.104031sec ->   9 Mops/sec
+
+AREAL decode operator performance: this is an exponent and fraction block move if there is no straddle
+areal<8,2,uint8_t>      decode             1000000 per       0.0002446sec ->   4 Gops/sec
+areal<16,5,uint16_t>    decode             1000000 per       0.0002446sec ->   4 Gops/sec
+areal<32,8,uint32_t>    decode             1000000 per       0.0002675sec ->   4 Gops/sec
+areal<64,11,uint64_t>   decode             1000000 per       0.0003521sec ->   4 Gops/sec
 */
 }
 
