@@ -8,7 +8,7 @@ The following segments presents short description of their use.
 
 Compare the three IEEE formats on a given real number value:
 
-```
+```text
 λ ./compieee.exe
 Show the truncated value and (sign/scale/fraction) components of different floating point types.
 Usage: compieee floating_point_value
@@ -23,7 +23,7 @@ long double:  0.0312499899999999983247 (+,-6,11111111111111111110100101111010001
 
 Show the sign/scale/fraction components of an IEEE float.
 
-```
+```text
 λ ./compf.exe
 compf : components of an IEEE single-precision float
 Show the sign/scale/fraction components of an IEEE float.
@@ -70,7 +70,6 @@ Usage: compfp float_value
 Example: compfp 1.0625
 class sw::unum::fixpnt<32,16,1,unsigned char>: 1.0625000000000000 b0000000000000001.0001000000000000
 ```
-
 
 ## propp
 

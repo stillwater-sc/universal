@@ -17,53 +17,6 @@
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 1
 #endif
 
-// to yield a fast regression environment for productive development
-// we want to leverage the IEEE floating point hardware available on x86 and ARM.
-// Problem is that neither support a true IEEE 128bit long double.
-// x86 provides a irreproducible x87 80bit format that is susceptible to inconsistent results due to multi-programming
-// ARM only provides a 64bit double format.
-// This conditional section is intended to create a unification of a long double format across
-// different compilation environments that creates a fast verification environment through consistent hw support.
-// Another option is to use a multiprecision floating point emulation layer. 
-// Side note: the performance of the bitset<> manipulation is slower than a multiprecision floating point implementation
-// so this comment is talking about issues that will come to pass when we transition to a high performance sw emulation.
-
-// 128bit double-double
-struct __128bitdd {
-	double upper;
-	double lower;
-};
-
-#if defined(__clang__)
-/* Clang/LLVM. ---------------------------------------------- */
-typedef __128bitdd double_double;
-
-#elif defined(__ICC) || defined(__INTEL_COMPILER)
-/* Intel ICC/ICPC. ------------------------------------------ */
-typedef __128bitdd double_double;
-
-#elif defined(__GNUC__) || defined(__GNUG__)
-/* GNU GCC/G++. --------------------------------------------- */
-typedef __128bitdd double_double;
-
-#elif defined(__HP_cc) || defined(__HP_aCC)
-/* Hewlett-Packard C/aC++. ---------------------------------- */
-
-#elif defined(__IBMC__) || defined(__IBMCPP__)
-/* IBM XL C/C++. -------------------------------------------- */
-
-#elif defined(_MSC_VER)
-/* Microsoft Visual Studio. --------------------------------- */
-typedef __128bitdd double_double;
-
-#elif defined(__PGI)
-/* Portland Group PGCC/PGCPP. ------------------------------- */
-
-#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
-/* Oracle Solaris Studio. ----------------------------------- */
-
-#endif
-
 // calling environment should define behavioral flags
 // typically set in the library aggregation include file <posit>
 // but can be set by individual programs when including posit.hpp
@@ -78,18 +31,17 @@ typedef __128bitdd double_double;
 #include "exceptions.hpp"
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 
+#include <universal/bitblock/bitblock.hpp>
+#include <universal/value/value.hpp>
 #include <universal/posit/posit_fwd.hpp>
 #include <universal/native/bit_functions.hpp>
-#include <universal/bitblock/bitblock.hpp>
 #include <universal/posit/trace_constants.hpp>
-#include <universal/value/value.hpp>
 #include <universal/posit/fraction.hpp>
 #include <universal/posit/exponent.hpp>
 #include <universal/posit/regime.hpp>
 #include <universal/posit/posit_functions.hpp>
 
-namespace sw {
-namespace unum {
+namespace sw { namespace unum {
 
 // specialized configuration constants
 constexpr size_t NBITS_IS_2   =   2;
@@ -2724,8 +2676,7 @@ value<nbits> fmma(const posit<nbits, es>& a, const posit<nbits, es>& b, const po
 // Standard posit short-hand types
 /*
 TODO: how do we use the same names as the posit C-types?
-right now, because we pull in the C++ as run-time to the C functions
- this causes a redefinition error
+right now, because we pull in the C++ as run-time to the C functions this causes a redefinition error
 using posit8_t   = posit<8, 0>;
 using posit16_t  = posit<16, 1>;
 using posit32_t  = posit<32, 2>;
@@ -2735,7 +2686,6 @@ using posit256_t = posit<256, 5>;
 */
 
 
-}  // namespace unum
-}  // namespace sw
+}}  // namespace sw::unum
 
 

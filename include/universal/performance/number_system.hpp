@@ -54,9 +54,10 @@ namespace unum {
 	static constexpr int NR_TEST_CASES = 100000;
 	static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
-	template<size_t nbits, size_t es>
-	void ReportPerformance(std::ostream& ostr, const std::string& header, OperatorPerformance &perf) {
-		ostr << "Performance Report: " << header << '\n'
+	template<typename Scalar>
+	std::string ReportPerformance(const Scalar& number, OperatorPerformance &perf) {
+		std::stringstream ostr;
+		ostr << "Performance Report for type: " << typeid(number).name() << '\n'
 			<< "Conversion int  : " << to_scientific(perf.intconvert) << "POPS\n"
 			<< "Conversion ieee : " << to_scientific(perf.ieeeconvert) << "POPS\n"
 			<< "Prefix          : " << to_scientific(perf.prefix) << "POPS\n"
@@ -68,266 +69,145 @@ namespace unum {
 			<< "Division        : " << to_scientific(perf.div) << "POPS\n"
 			<< "Square Root     : " << to_scientific(perf.sqrt) << "POPS\n"
 			<< std::endl;
+		return ostr.str();
 	}
 
 	// Integer conversion case for a posit configuration
-	template<size_t nbits, size_t es>
-	int MeasureIntegerConversionPerformance(int &positives, int &negatives) {
-		posit<nbits, es> p(0);
-
+	template<typename Scalar>
+	int MeasureIntegerConversionPerformance(Scalar& a, int &positives, int &negatives) {
 		positives = 0, negatives = 0;
 		for (int i = -(NR_TEST_CASES >> 1); i < (NR_TEST_CASES >> 1); ++i) {
-			p = i;
-			p >= 0 ? positives++ : negatives++;
+			a = i;
+			a >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
 
 
 	// IEEE conversion case for a posit configuration
-	template<size_t nbits, size_t es>
-	int MeasureIeeeConversionPerformance(int &positives, int &negatives) {
-		posit<nbits, es> p(0);
-
+	template<typename Scalar>
+	int MeasureIeeeConversionPerformance(Scalar& a, int &positives, int &negatives) {
 		positives = 0, negatives = 0;
 		for (int i = 1; i < NR_TEST_CASES; i++) {
-			p = 1.0;
-			p >= 0 ? positives++ : negatives++;
+			a = double(i);
+			a >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
 
 
 	// measure performance of the postfix operator++
-	template<size_t nbits, size_t es>
-	int MeasurePostfixPerformance(int &positives, int &negatives)	{
-		posit<nbits, es> p(0);
-
+	template<typename Scalar>
+	int MeasurePostfixPerformance(Scalar& a, int &positives, int &negatives)	{
+		a = 1;
 		positives = 0; negatives = 0;
 		for (int i = 1; i < NR_TEST_CASES; i++) {
-			p++;
-			p >= 0 ? positives++ : negatives++;
+			a++;
+			a >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
 
 
 	// measure performance of the prefix operator++
-	template<size_t nbits, size_t es>
-	int MeasurePrefixPerformance(int &positives, int &negatives) {
-		posit<nbits, es> p(0);
-
+	template<typename Scalar>
+	int MeasurePrefixPerformance(Scalar& a, int &positives, int &negatives) {
+		a = 1;
 		positives = 0; negatives = 0;
 		for (int i = 1; i < NR_TEST_CASES; i++) {
-			++p;
-			p >= 0 ? positives++ : negatives++;
+			++a;
+			a >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
 
 
 	// enumerate all negation cases for a posit configuration: executes within 10 sec till about nbits = 14
-	template<size_t nbits, size_t es>
-	int MeasureNegationPerformance(int &positives, int &negatives) {
-		posit<nbits, es> pa(0);
-
+	template<typename Scalar>
+	int MeasureNegationPerformance(Scalar& a, int &positives, int &negatives) {
+		a = 1;
 		positives = 0; negatives = 0;
 		for (int i = 1; i < NR_TEST_CASES; i++) {
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
-			try {
-				pa = -pa;
-			}
-			catch (const operand_is_nar& err) {
-				if (pa.isnar()) {
-					// correctly caught the operand is nar condition
-					pa.setnar();
-				}
-				else {
-					throw err;
-				}
-			}
-#else
-			pa = -pa;
-#endif
-			pa >= 0 ? positives++ : negatives++;
+			a = -a;
+			a >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
 
 	// enumerate all SQRT cases for a posit configuration: executes within 10 sec till about nbits = 14
-	template<size_t nbits, size_t es>
-	int MeasureSqrtPerformance(int &positives, int &negatives) {		
-		posit<nbits, es> pa, psqrt;
-
+	template<typename Scalar>
+	int MeasureSqrtPerformance(Scalar& a, int &positives, int &negatives) {		
+		using std::sqrt;
+		using namespace sw::unum;
 		positives = 0; negatives = 0;
 		for (int i = 0; i < NR_TEST_CASES; i++) {
-			pa.set_raw_bits(i);
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
-			try {
-				psqrt = sw::unum::sqrt(pa);
-			}
-			catch (const operand_is_nar& err) {
-				if (pa.isnar()) {
-					// correctly caught the operand is nar condition
-					psqrt.setnar();
-			}
-			else {
-					throw err;
-				}
-			}
-#else
-			psqrt = sw::unum::sqrt(pa);
-#endif
-
-			psqrt >= 0 ? positives++ : negatives++;
+			a = i;
+			Scalar root = sqrt(a);
+			root >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
 
 	// measure performance of arithmetic addition
-	template<size_t nbits, size_t es>
-	int MeasureAdditionPerformance(int &positives, int &negatives) {
-		posit<nbits, es> pa(1), pb, psum;
-
+	template<typename Scalar>
+	int MeasureAdditionPerformance(Scalar& a, int &positives, int &negatives) {
+		a = 1;
 		positives = 0; negatives = 0;
 		for (int i = 0; i < NR_TEST_CASES; i++) {
-			pb.set_raw_bits(i);
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
-			try {
-				psum = pa + pb;
-			}
-			catch (const operand_is_nar& err) {
-				if (pa.isnar() || pb.isnar()) {
-					// correctly caught the operand is nar condition
-					psum.setnar();
-				}
-				else {
-					throw err;
-				}
-			}
-#else
-			psum = pa + pb;
-#endif
-			psum >= 0 ? positives++ : negatives++;
+			Scalar b( i );
+			Scalar sum = a + b;
+			sum >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
 
 	// measure performance of arithmetic subtraction
-	template<size_t nbits, size_t es>
-	int MeasureSubtractionPerformance(int &positives, int &negatives) {
-		posit<nbits, es> pa(1), pb, pdif;
-
+	template<typename Scalar>
+	int MeasureSubtractionPerformance(Scalar& a, int &positives, int &negatives) {
+		a = 1;
 		positives = 0; negatives = 0;
 		for (int i = 0; i < NR_TEST_CASES; i++) {
-			pb.set_raw_bits(i);
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
-			try {
-				pdif = pa - pb;
-			}
-			catch (const operand_is_nar& err) {
-				if (pa.isnar() || pb.isnar()) {
-					// correctly caught the operand is nar condition
-					pdif.setnar();
-				}
-				else {
-					throw err;
-				}
-			}
-#else
-			pdif = pa - pb;
-#endif
-			pdif >= 0 ? positives++ : negatives++;
+			Scalar b( i );
+			Scalar diff = a - b;
+			diff >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
 
 	// measure performance of arithmetic multiplication
-	template<size_t nbits, size_t es>
-	int MeasureMultiplicationPerformance(int &positives, int &negatives) {
-		posit<nbits, es> pa(1), pb, pmul;
-
+	template<typename Scalar>
+	int MeasureMultiplicationPerformance(Scalar& a, int &positives, int &negatives) {
+		a = 1;
 		positives = 0; negatives = 0;
 		for (int i = 0; i < NR_TEST_CASES; i++) {
-			pb.set_raw_bits(i);
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
-			try {
-				pmul = pa * pb;
-			}
-			catch (const operand_is_nar& err) {
-				if (pa.isnar() || pb.isnar()) {
-					// correctly caught the operand is nar condition
-					pmul.setnar();
-				}
-				else {
-					throw err;
-				}
-			}
-#else
-			pmul = pa * pb;
-#endif
-
-			pmul >= 0 ? positives++ : negatives++;
+			Scalar b( i );
+			Scalar mul = a * b;
+			mul >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
 
 	// measure performance of arithmetic reciprocation
-	template<size_t nbits, size_t es>
-	int MeasureReciprocationPerformance(int &positives, int &negatives) {
-		posit<nbits, es> pa(0); ++pa; // minpos
-
+	template<typename Scalar>
+	int MeasureReciprocationPerformance(Scalar& a, int &positives, int &negatives) {
 		positives = 0; negatives = 0;
-		for (int i = 0; i < NR_TEST_CASES; i++) {
-			pa = pa.reciprocate();
-			pa >= 0 ? positives++ : negatives++;
+		for (size_t i = 1; i < NR_TEST_CASES; i++) {
+			a.set_raw_bits(i);
+			a = a.reciprocate();
+			a >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
 
 	// measure performance of arithmetic division
-	template<size_t nbits, size_t es>
-	int MeasureDivisionPerformance(int &positives, int &negatives) {
-		posit<nbits, es> pa(1), pb, pdiv;
-
+	template<typename Scalar>
+	int MeasureDivisionPerformance(Scalar& a, int &positives, int &negatives) {
+		a = 1;
 		positives = 0; negatives = 0;
 		for (int i = 0; i < NR_TEST_CASES; i++) {
-			pb.set_raw_bits(i);
-#if POSIT_THROW_ARITHMETIC_EXCEPTION
-			try {
-				pdiv = pa / pb;
-			}
-			catch (const divide_by_zero& err) {
-				if (pb.iszero()) {
-					// correctly caught the divide by zero condition
-					pdiv.setnar();
-				}
-				else {
-					throw err;
-				}
-			}
-			catch (const divide_by_nar& err) {
-				if (pb.isnar()) {
-					// correctly caught the divide by nar condition
-					pdiv = 0.0f;
-				}
-				else {
-					throw err;
-				}
-			}
-			catch (const operand_is_nar& err) {
-				if (pa.isnar()) {
-					// correctly caught the operand is nar condition
-					pdiv.setnar();
-				}
-				else {
-					throw err;
-				}
-			}
-#else
-			pdiv = pa / pb;
-#endif
-			pdiv >= 0 ? positives++ : negatives++;
+			Scalar b( i );
+			Scalar div = a / b;
+			div >= Scalar(0) ? positives++ : negatives++;
 		}
 		return positives + negatives;
 	}
@@ -347,43 +227,43 @@ namespace unum {
 	const int OPCODE_DIV = 4;
 	const int OPCODE_RAN = 5;
 
-	template<size_t nbits, size_t es>
-	void execute(int opcode, double da, double db, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& preference, posit<nbits, es>& presult) {
-		double reference;
+	template<typename Scalar>
+	void execute(int opcode, double da, double db, const Scalar& a, const Scalar& b, Scalar& reference, Scalar& result) {
+		double oracle;
 		switch (opcode) {
 		default:
 		case OPCODE_NOP:
-			preference.setzero();
-			presult.setzero();
+			reference.setzero();
+			result.setzero();
 			return;
 		case OPCODE_ADD:
-			presult = pa + pb;
-			reference = da + db;
+			result = a + b;
+			oracle = da + db;
 			break;
 		case OPCODE_SUB:
-			presult = pa - pb;
-			reference = da - db;
+			result = a - b;
+			oracle = da - db;
 			break;
 		case OPCODE_MUL:
-			presult = pa * pb;
-			reference = da * db;
+			result = a * b;
+			oracle = da * db;
 			break;
 		case OPCODE_DIV:
-			presult = pa / pb;
-			reference = da / db;
+			result = a / b;
+			oracle = da / db;
 			break;
 		}
-		preference = reference;
+		reference = oracle;
 	}
 
-	// generate a random set of operands to test the binary operators for a posit configuration
-	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
+	// generate a random set of operands to test the binary operators for an arbitrary number type
+	// Basic design is that we generate nrOfRandom values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
-	template<size_t nbits, size_t es>
+	template<typename Scalar>
 	int MeasureArithmeticPerformance(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
 		const size_t SIZE_STATE_SPACE = nrOfRandoms;
 		int nrOfFailedTests = 0;
-		posit<nbits, es> pa, pb, presult, preference;
+		Scalar a, b, result, reference;
 
 		std::string operation_string;
 		switch (opcode) {
@@ -411,35 +291,36 @@ namespace unum {
 		std::uniform_int_distribution<unsigned long long> distr;
 		std::vector<long double> operand_values(SIZE_STATE_SPACE);
 		for (uint32_t i = 0; i < SIZE_STATE_SPACE; i++) {
-			presult.set_raw_bits(distr(eng));  // take the bottom nbits bits as posit encoding
-			operand_values[i] = (long double)(presult);
+			result = (distr(eng)); 
+			operand_values[i] = (long double)(result);
 		}
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			unsigned ia = std::rand() % SIZE_STATE_SPACE; // random indices for picking operands to test
 			long double da = operand_values[ia];
-			pa = da;
+			a = da;
 			unsigned ib = std::rand() % SIZE_STATE_SPACE;
 			long double db = operand_values[ib];
-			pb = db;
+			b = db;
 			// in case you have numeric_limits<long double>::digits trouble... this will show that
 			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " pa " << pa << std::endl;
 			//std::cout << "sizeof db: " << sizeof(db) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value db " << db << " at index " << ia << " pa " << pb << std::endl;
-			execute(opcode, da, db, pa, pb, preference, presult);
-			if (presult != preference) {
+			execute(opcode, da, db, a, b, reference, result);
+			if (result != reference) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases) ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, pa, pb, preference, presult);
+				if (bReportIndividualTestCases) ReportBinaryArithmeticErrorInBinary("FAIL", operation_string, a, b, reference, result);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccessInBinary("PASS", operation_string, pa, pb, preference, presult);
+				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccessInBinary("PASS", operation_string, a, b, reference, result);
 			}
 		}
 
 		return nrOfFailedTests;
 	}
 
-	// run and measure performance tests and generate an operator performance report 
-	template<size_t nbits, size_t es>
-	void GeneratePerformanceReport(OperatorPerformance &report) {
+	// run and measure performance tests and generate an operator performance report
+	// The number argument is just for ADL specialization
+	template<typename Scalar>
+	void GeneratePerformanceReport(Scalar& number, OperatorPerformance &report) {
 		using namespace std;
 		using namespace std::chrono;
 		int positives, negatives;
@@ -449,70 +330,70 @@ namespace unum {
 		double elapsed;
 
 		begin = steady_clock::now();
-		    MeasureIntegerConversionPerformance<nbits, es>(positives, negatives);
+		    MeasureIntegerConversionPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
 		report.intconvert = float((positives + negatives) / elapsed);
 
 		begin = steady_clock::now();
-			MeasureIeeeConversionPerformance<nbits, es>(positives, negatives);
+			MeasureIeeeConversionPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
 		report.ieeeconvert = float((positives + negatives) / elapsed);
 
 		begin = steady_clock::now();
-		    MeasurePrefixPerformance<nbits, es>(positives, negatives);
+		    MeasurePrefixPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
 		report.prefix = float((positives + negatives) / elapsed);
 
 		begin = steady_clock::now();
-		    MeasurePostfixPerformance<nbits, es>(positives, negatives);
+		    MeasurePostfixPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
 		report.postfix = float((positives + negatives) / elapsed);
 
 		begin = steady_clock::now();
-		    MeasureNegationPerformance<nbits, es>(positives, negatives);
+		    MeasureNegationPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
 		report.neg = float((positives + negatives) / elapsed);
 
 		begin = steady_clock::now();
-		    MeasureSqrtPerformance<nbits, es>(positives, negatives);
+		    MeasureSqrtPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
 		report.sqrt = float((positives + negatives) / elapsed);
 
 		begin = steady_clock::now();
-		    MeasureAdditionPerformance<nbits, es>(positives, negatives);
+		    MeasureAdditionPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
 		report.add = float((positives + negatives) / elapsed);
 
 		begin = steady_clock::now();
-		    MeasureSubtractionPerformance<nbits, es>(positives, negatives);
+		    MeasureSubtractionPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
 		report.sub = float((positives + negatives) / elapsed);
 
 		begin = steady_clock::now();
-		    MeasureMultiplicationPerformance<nbits, es>(positives, negatives);
+		    MeasureMultiplicationPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
 		report.mul = float((positives + negatives) / elapsed);
 
 		begin = steady_clock::now();
-		    MeasureDivisionPerformance<nbits, es>(positives, negatives);
+		    MeasureDivisionPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();

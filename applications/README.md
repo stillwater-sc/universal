@@ -6,7 +6,8 @@ of using custom arithmetic types, such as fixed-point and posits, to solve compu
 ## Accuracy
 
 Ginormous posit configurations
-```
+
+```text
  posit< 80,2> useed scale     4     minpos scale       -312     maxpos scale        312
  posit< 80,3> useed scale     8     minpos scale       -624     maxpos scale        624
  posit< 80,4> useed scale    16     minpos scale      -1248     maxpos scale       1248
@@ -28,7 +29,8 @@ controls the value of useed, which is the exponential shift, 2^2^es, of the regi
 
 This yields the ability of very small posits to still cover a very large dynamic range:
 Extended Modified Standard posit configurations
-```
+
+```text
  posit<  4,0> useed scale     1     minpos scale         -2     maxpos scale          2
  posit<  4,1> useed scale     2     minpos scale         -4     maxpos scale          4
  posit<  8,0> useed scale     1     minpos scale         -6     maxpos scale          6
@@ -51,12 +53,12 @@ Extended Modified Standard posit configurations
  posit< 64,2> useed scale     4     minpos scale       -248     maxpos scale        248
  posit< 64,3> useed scale     8     minpos scale       -496     maxpos scale        496
  posit< 64,4> useed scale    16     minpos scale       -992     maxpos scale        992
-```
 
 IEEE float configurations from numeric_limits<Ty>
         float                       minexp scale       -125     maxexp scale        128     minimum  1.17549e-38     maximum  3.40282e+38
        double                       minexp scale      -1021     maxexp scale       1024     minimum 2.22507e-308     maximum 1.79769e+308
   long double                       minexp scale      -1021     maxexp scale       1024     minimum 2.22507e-308     maximum 1.79769e+308
+```
 
 ## Reproducibility
 
@@ -64,13 +66,25 @@ The crown jewel of posit arithmetic is the ability to restore associative and di
 
 With IEEE floating point, associativity, that is
 
-    y = (a + b) + c  -> y = a + (b + c)
+```eq
+    y = (a + b) + c    =>    y = a + (b + c)
+```
 
 does not hold. The reason is that with IEEE floating point arithmetic, each operation immediately rounds
-the result to the available precision. This caused two different rounding paths for the two equations.
+the result to the available precision. This creates two different rounding paths for the two equations, and depending on the precision and dynamic range of the results creates the possibility of rounding differences.
 
 Similarly, distribution, that is
 
-    y = (a + b) * c  -> y = a*c + b*c
+```eq
+    y = (a + b) * c    =>    y = a*c + b*c
+```
 
-also does not hold, for the same reason.
+also fails for IEEE floating point, for the same reason.
+
+### The Kulisch super-accumulator
+
+The solution to this problem is simple: do not round intermediate steps. This requires an accumulator that is able to faithfully represent the product of the smallest number and the biggest number in the number system. And if we want to accumulate a collection of these products, we will also need some capacity bits to capture the overflow carries.
+
+The fact that the accumulator must be able to represent the products of the smallest and largest number in the number system makes it clear that the dynamic range of the number system will have a dramatic impact on the size of this super-accumulator. For example, to provide an accumulator for IEEE double precision floats requires 4100 bits. 
+
+With posits we can control precision and dynamic range independently, which creates more opportunities to apply a super-accumulator, which is dubbed `quire` in the posit standard. For example, the quire for a standard 64-bit posit is just 1024 bits.

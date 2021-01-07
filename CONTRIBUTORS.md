@@ -37,6 +37,10 @@ Universal Number Library Contributors
   * Chebyshev Polynomials for approximation
   * MATPAK Matrix Utilities
 
+* **[Jacob Todd](https://github.com/jtodd440)**
+
+  * ODE solvers
+
 * Universal integration into TVM for Bring-Your-Own-Type
   * **[Gus Smith](https://github.com/gussmith23)**
   * **[Andrew Liu](https://github.com/hypercubestart)**

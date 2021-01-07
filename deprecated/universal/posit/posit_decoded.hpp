@@ -448,11 +448,9 @@ namespace sw {
 
 				// special case handling on the output
 				if (ratio.iszero()) {
-					throw "result can't be zero";
 					setzero();  // this can't happen as we would project back onto minpos
 				}
 				else if (ratio.isinf()) {
-					throw "result can't be NaR";
 					setnar();  // this can't happen as we would project back onto maxpos
 				}
 				else {
@@ -539,23 +537,23 @@ namespace sw {
 			}
 			// SELECTORS
 			bool isnar() const {
-				return (_sign & _regime.iszero());
+				return (_sign && _regime.iszero());
 			}
 			bool iszero() const {
-				return (!_sign & _regime.iszero());
+				return (!_sign && _regime.iszero());
 			}
 			bool isone() const { // pattern 010000....
 				bitblock<nbits> tmp(_raw_bits);
 				tmp.set(nbits - 2, false);
 				bool oneBitSet = tmp.none();
-				return !_sign & oneBitSet;
+				return !_sign && oneBitSet;
 			}
 			bool isminusone() const { // pattern 110000...
 				bitblock<nbits> tmp(_raw_bits);
 				tmp.set(nbits - 1, false);
 				tmp.set(nbits - 2, false);
 				bool oneBitSet = tmp.none();
-				return _sign & oneBitSet;
+				return _sign && oneBitSet;
 			}
 			bool isneg() const {
 				return _sign;

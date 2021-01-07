@@ -26,7 +26,6 @@ your own, so I suggest you look for a linear algebra library that supports it.
 
 This latter method is the one that is used in MATLAB and other numerical computing packages, and doesn't rely on arbitrary tolerances and limits.
 
-
 Edit: Added link to polynomial division example by Horner's method
 
 You need to find a way to get rid of your step and compare constants.
@@ -48,12 +47,10 @@ The algorithm is as follows.
 Given a polynomial pn(x) of degree n with zeros zn < zn − 1 < ... < z1 make some initial guess x0 such that x0 > z1. 
 Now follow the steps outline below.
 
-1. Using Newton's method find the largest zero, z1 of pn(x) using the guess x0.
-
-2. Use the Horner scheme to divide out (x − z1) to obtain pn − 1. Return to step 1 but use the polynomial pn − 1 and the initial guess z1.
+1.   Using Newton's method find the largest zero, z1 of pn(x) using the guess x0.
+2.   Use the Horner scheme to divide out (x − z1) to obtain pn − 1. Return to step 1 but use the polynomial pn − 1 and the initial guess z1.
 
 These two steps are repeated until all real zeros are found for the polynomial. If the approximated zeros are not precise enough, the obtained values can be used as initial guesses for Newton's method but using the full polynomial rather than the reduced polynomials.
-
 
 It then works through an example, and gives you the MATLAB/OCTAVE source code for the polynomial factorisation, which is the part you don't have yet.
 

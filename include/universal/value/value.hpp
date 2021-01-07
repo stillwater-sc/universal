@@ -130,13 +130,11 @@ public:
 		}
 		else {
 			// process positive number
-			if (rhs != 0) {
-				_scale = int(findMostSignificantBit(rhs)) - 1;
-				uint64_t _fraction_without_hidden_bit = uint64_t(_scale == 0 ? 0 : (rhs << (64 - _scale)));
-				_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
-				_nrOfBits = fbits;
-				if (_trace_value_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
-			}
+			_scale = int(findMostSignificantBit(rhs)) - 1;
+			uint64_t _fraction_without_hidden_bit = uint64_t(_scale == 0 ? 0 : (rhs << (64 - _scale)));
+			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
+			_nrOfBits = fbits;
+			if (_trace_value_conversion) std::cout << "int64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 		}
 		return *this;
 	}
@@ -294,6 +292,16 @@ public:
 	// operators
 	constexpr value<fbits> operator-() const {				
 		return value<fbits>(!_sign, _scale, _fraction, _zero, _inf);
+	}
+
+	value<fbits>& operator++() {
+		*this = *this + value<fbits>(1);
+		return *this;
+	}
+	value<fbits> operator++(int) {
+		value<fbits> tmp{ *this };
+		operator++();
+		return tmp;
 	}
 
 	// modifiers
@@ -910,6 +918,55 @@ void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbi
 	if (_trace_value_div) std::cout << "sign " << (new_sign ? "-1 " : " 1 ") << "scale " << new_scale << " fraction " << result_fraction << std::endl;
 
 	result.set(new_sign, new_scale, result_fraction, false, false, false);
+}
+
+template<size_t fbits>
+value<fbits> operator+(const value<fbits>& lhs, const value<fbits>& rhs) {
+	constexpr size_t abits = fbits + 5;
+	value<abits+1> result;
+	module_add<fbits,abits>(lhs, rhs, result);
+#if defined(__GNUC__) || defined(__GNUG__)
+	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+#else
+	return result.round_to<fbits>();
+#endif
+}
+template<size_t fbits>
+value<fbits> operator-(const value<fbits>& lhs, const value<fbits>& rhs) {
+	constexpr size_t abits = fbits + 5;
+	value<abits+1> result;
+	module_subtract<fbits,abits>(lhs, rhs, result);
+#if defined(__GNUC__) || defined(__GNUG__)
+	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+#else
+	return result.round_to<fbits>();
+#endif
+}
+template<size_t fbits>
+value<fbits> operator*(const value<fbits>& lhs, const value<fbits>& rhs) {
+	constexpr size_t mbits = 2*fbits + 2;
+	value<mbits> result;
+	module_multiply(lhs, rhs, result);
+#if defined(__GNUC__) || defined(__GNUG__)
+	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+#else
+	return result.round_to<fbits>();
+#endif
+}
+template<size_t fbits>
+value<fbits> operator/(const value<fbits>& lhs, const value<fbits>& rhs) {
+	constexpr size_t divbits = 2 * fbits + 5;
+	value<divbits> result;
+	module_divide(lhs, rhs, result);
+#if defined(__GNUC__) || defined(__GNUG__)
+	return value<fbits>(); // for some reason GCC doesn't want to compile result.round_to<fbits>()
+#else
+	return result.round_to<fbits>();
+#endif
+}
+template<size_t fbits>
+value<fbits> sqrt(const value<fbits>& a) {
+	return std::sqrt(double(a));
 }
 
 }}  // namespace sw::unum

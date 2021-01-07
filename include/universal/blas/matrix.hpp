@@ -144,24 +144,20 @@ public:
 	// in-place transpose
 	matrix& transpose() {
 		size_t size = _m * _n - 1;
-		Scalar e; // holds value of element to be swapped
-		size_t next; // index of e
-		size_t cycleStart; // holds start of cycle
-		size_t index;
 		std::map<size_t, bool> b; // mark visits
-		b[0] = true; // A(0,0) stays put
-		b[size] = true; // A(m-1,n-1) stays put
-		index = 1;
+		b[0] = true; // A(0,0) is stationary
+		b[size] = true; // A(m-1,n-1) is stationary
+		size_t index = 1;
 		while (index < size) {
-			cycleStart = index;
-			e = data[index];
+			size_t cycleStart = index; // holds start of cycle
+			Scalar e = data[index]; // holds value of the element to be swapped
 			do {
-				next = (index * _m) % size;
+				size_t next = (index * _m) % size; // index of e
 				std::swap(data[next], e);
 				b[index] = true;
 				index = next;
 			} while (index != cycleStart);
-			// get the next cycle starting point
+			// get the starting point of the next cycle
 			for (index = 1; index < size && b[index]; ++index) {}
 		}
 		std::swap(_m, _n);

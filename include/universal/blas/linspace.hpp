@@ -39,7 +39,6 @@ sw::unum::blas::vector<Scalar> linspace(const Scalar& start, const Scalar& stop,
 	sw::unum::blas::vector<Scalar> v(steps);
 	steps = (endpoint ? steps - 1 : steps); // if endpoint is inclusive, we have one less segment
 	Scalar step = (stop - start) / steps;
-	Scalar x = start;
 	for (size_t i = 0; i < steps; ++i) {
 		v[i] = i * step;
 	}

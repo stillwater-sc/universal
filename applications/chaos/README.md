@@ -3,14 +3,19 @@
 This directory contains computational science examples in chaos theory and experiment
 that demonstrate and quantify the benefits of using posit arithmetic.
 
-## Accuracy
+## Precision
 
+Posits control their precision by the number of bits in the encoding. They have their highest
+precision around +-1.0 in regime 0 and 1. The number of fraction bits in those regimes is
+
+```test
+fbits = nbits - signBit - 2 regime bits - es exponent bits
+```
 
 ## Dynamic Range
 
 Posits control their dynamic range by the number of exponent bits. The number of exponent bits directly
 controls the value of useed, which is the exponential shift, 2^2^es, of the regime.
-
 
 IEEE float configurations from numeric_limits<Ty>
         float                       minexp scale       -125     maxexp scale        128     minimum  1.17549e-38     maximum  3.40282e+38

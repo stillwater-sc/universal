@@ -381,11 +381,10 @@ vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const
 		return vector<Scalar>{};
 	}
 	vector<Scalar> x(b);
-	Scalar sum = 0;
 	// forward substitution
 	for (size_t i = 0; i < N; ++i) {
 		size_t ip = indx(i);
-		sum = x(ip);
+		Scalar sum = x(ip);
 		x(ip) = x(i);
 		for (size_t j = 0; j < i; ++j) {
 			sum -= A(i, j) * x(j);
@@ -394,7 +393,7 @@ vector<Scalar> lubksb(const matrix<Scalar>& A, const vector<size_t>& indx, const
 	}
 	// backsubstitution
 	for (size_t i = N; i >= 1; --i) {
-		sum = x(i - 1);
+		Scalar sum = x(i - 1);
 		for (size_t j = i; j < N; ++j) {
 			sum -= A(i - 1, j) * x(j);
 		}
@@ -517,11 +516,10 @@ vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 //	cout << "A\n" << A << endl;
 
 	vector<Scalar> x(_b);
-	Scalar sum = 0;
 	// forward substitution
 	for (size_t i = 0; i < N; ++i) {
 		size_t ip = indx(i);
-		sum = x(ip);
+		Scalar sum = x(ip);
 		x(ip) = x(i);
 		for (size_t j = 0; j < i; ++j) {
 			sum -= A(i, j) * x(j);
@@ -531,7 +529,7 @@ vector<Scalar> solve(const matrix<Scalar>& _A, const vector<Scalar>& _b) {
 //	cout << "y\n" << x << endl;
 	// backsubstitution
 	for (size_t i = N; i >= 1; --i) {
-		sum = x(i-1);
+		Scalar sum = x(i-1);
 		for (size_t j = i; j < N; ++j) {
 			sum -= A(i-1, j) * x(j);
 		}
@@ -614,13 +612,13 @@ vector<sw::unum::posit<nbits, es> > solve(const matrix<sw::unum::posit<nbits, es
 	//	cout << "A\n" << A << endl;
 
 	vector<Scalar> x(_b);
-	Scalar sum = 0;
 	// forward substitution
 	for (size_t i = 0; i < N; ++i) {
 		size_t ip = indx(i);
 		quire<nbits, es, capacity> q(x(ip));
 		x(ip) = x(i);
 		for (size_t j = 0; j < i; ++j) q -= quire_mul(A(i, j), x(j));
+		Scalar sum;
 		convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 		x(i) = sum;
 	}
@@ -629,6 +627,7 @@ vector<sw::unum::posit<nbits, es> > solve(const matrix<sw::unum::posit<nbits, es
 	for (size_t i = N; i >= 1; --i) {
 		quire<nbits, es, capacity> q(x(i - 1));
 		for (size_t j = i; j < N; ++j) q -= quire_mul(A(i - 1, j), x(j));
+		Scalar sum;
 		convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 		x(i - 1) = sum / A(i - 1, i - 1);
 	}

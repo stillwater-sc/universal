@@ -9,7 +9,7 @@
 // second: disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/posit/posit>
-#include "posit_performance.hpp"
+#include <universal/performance/number_system.hpp>
 
 int main(int argc, char** argv)
 try {
@@ -18,11 +18,11 @@ try {
 
 	constexpr size_t nbits = 48;
 	constexpr size_t es = 3;
-
+	posit<nbits, es> number;
 	OperatorPerformance perfReport;
-	GeneratePerformanceReport<nbits, es>(perfReport);
-	ReportPerformance<nbits, es>(cout, "posit<48,3>", perfReport);
-
+	GeneratePerformanceReport(number, perfReport);
+	cout << ReportPerformance(number, perfReport);
+	cout << endl;
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
