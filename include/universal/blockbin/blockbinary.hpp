@@ -139,11 +139,11 @@ public:
 	}
 
 	// conversion operators
-	explicit operator int() const                { return to_long_long(); }
-	explicit operator long() const               { return to_long_long(); }
+	explicit operator int() const                { return int(to_long_long()); }
+	explicit operator long() const               { return long(to_long_long()); }
 	explicit operator long long() const          { return to_long_long(); }
-	explicit operator unsigned int() const       { return to_ull(); }
-	explicit operator unsigned long() const      { return to_ull(); }
+	explicit operator unsigned int() const       { return unsigned(to_ull()); }
+	explicit operator unsigned long() const      { return (unsigned long)to_ull(); }
 	explicit operator unsigned long long() const { return to_ull(); }
 	explicit operator float() const              { return float(to_long_long()); }
 	explicit operator double() const             { return double(to_long_long()); }
@@ -353,9 +353,9 @@ public:
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
-			bt bit = (v ? 1 : 0);
-			bt mask = (bit << (i % bitsInBlock));
-			_block[i / bitsInBlock] = (block & null) | mask;
+			bt bit = bt(v ? 1 : 0);
+			bt mask = bt(bit << (i % bitsInBlock));
+			_block[i / bitsInBlock] = bt((block & null) | mask);
 			return;
 		}
 		throw "blockbinary<nbits, bt>.set(index): bit index out of bounds";
@@ -396,7 +396,7 @@ public:
 	inline constexpr bool at(size_t bitIndex) const {
 		if (bitIndex < nbits) {
 			bt word = _block[bitIndex / bitsInBlock];
-			bt mask = (bt(1ull) << (bitIndex % bitsInBlock));
+			bt mask = bt(1ull << (bitIndex % bitsInBlock));
 			return (word & mask);
 		}
 		throw "bit index out of bounds";

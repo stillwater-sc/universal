@@ -368,6 +368,7 @@ void TestSizeof(int& nrOfFailedTestCases) {
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 }
 
+// TODO: this does not properly test for gradual underflow and gradual overflow
 void TestScale(int& nrOfFailedTestCases) {
 	using namespace sw::universal;
 	int currentFails = nrOfFailedTestCases;
@@ -699,6 +700,9 @@ void TestScale(int& nrOfFailedTestCases) {
 		areal<64, 11, uint64_t> a;
 		// [1-111'1111'1111-'1111'1111'1111'1111'0000]
 		a.set_raw_bits(0xFFFF'FFFF'FFFF'FFF0); if (a.scale() != 1024) ++nrOfFailedTestCases;
+		// [1-111'1111'1110-'1111'1111'1111'1111'0000]
+		a.set_raw_bits(0xFFEF'FFFF'FFFF'FFF0); 
+		if (a.scale() != 1023) ++nrOfFailedTestCases;
 		// [1-011'1111'1111-'1111'1111'1111'1111'0000]
 		a.set_raw_bits(0xBFFF'FFFF'FFFF'FFF0); if (a.scale() != 0) ++nrOfFailedTestCases;
 		// [1-000'0000'0000-'1111'1111'1111'1111'0000]
@@ -714,12 +718,13 @@ void TestScale(int& nrOfFailedTestCases) {
 //		a.assign("0xBFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFF0"); if (a.scale() != 0) ++nrOfFailedTestCases;
 		// [1-000'0000'0000'0000-'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'0000]
 //		a.assign("0x800F'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFF0"); if (a.scale() != -(16*1024 - 1)) ++nrOfFailedTestCases;
-		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+		//std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
+		std::cout << "TBD\n";
 	}
 }
 
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)

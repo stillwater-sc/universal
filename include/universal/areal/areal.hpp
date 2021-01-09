@@ -372,7 +372,7 @@ public:
 		int e{ 0 };
 		// make if constexpr
 		if (MSU_CAPTURES_E) {
-			e = int((_block[MSU] & ~SIGN_BIT_MASK)) >> EXP_SHIFT;
+			e = int((_block[MSU] & ~SIGN_BIT_MASK) >> EXP_SHIFT);
 			if (e == 0) {
 				// subnormal scale is determined by fraction
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
@@ -399,7 +399,7 @@ public:
 				}
 			}
 			else {
-				e = ebits.to_long_long() - EXP_BIAS;
+				e = int(ebits) - EXP_BIAS;
 			}
 		}
 		return e;
@@ -556,14 +556,14 @@ public:
 		case 1:
 		{
 			bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
-			e.set_raw_bits(ebits >> EXP_SHIFT);
+			e.set_raw_bits(uint64_t(ebits >> EXP_SHIFT));
 		}
 		break;
 		default:
 		{
 			if (MSU_CAPTURES_E) {
 				bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
-				e.set_raw_bits(ebits >> EXP_SHIFT);
+				e.set_raw_bits(uint64_t(ebits >> EXP_SHIFT));
 			}
 			else {
 				for (size_t i = 0; i < es; ++i) { e.set(i, at(nbits - 1ull - es + i)); }
