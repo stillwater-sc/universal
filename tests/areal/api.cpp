@@ -7,9 +7,14 @@
 #pragma warning(disable : 4514)  // unreferenced function is removed
 #pragma warning(disable : 4710)  // function is not inlined
 #endif
+#include <iostream>
+#include <iomanip>
+#include <typeinfo>
 // minimum set of include files to reflect source code dependencies
 #include <universal/areal/areal.hpp>
+#include <universal/areal/manipulators.hpp>  // hex_print and the like
 #include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/areal/table.hpp>
 
 template<typename bt = uint8_t>
 std::string to_binary(bt bits) {
@@ -20,9 +25,6 @@ std::string to_binary(bt bits) {
 	}
 	return s.str();
 }
-
-#define MANUAL_TESTING 1
-#define STRESS_TESTING 0
 
 template<size_t nbits, size_t es, typename bt = uint8_t>
 inline int TestZero() {
@@ -716,6 +718,10 @@ void TestScale(int& nrOfFailedTestCases) {
 	}
 }
 
+
+#define MANUAL_TESTING 1
+#define STRESS_TESTING 0
+
 int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
@@ -735,14 +741,52 @@ try {
 
 #if MANUAL_TESTING
 
+	// scales for gradual overflow range are incorrect
+// also scales for es = 1 are just underflow and overflow ranges, and currently incorrect
+
+	{
+		areal<5, 1> a;
+		std::cout << typeid(a).name() << std::endl;
+		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
+		a.set_raw_bits(0x02);
+		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
+		a.set_raw_bits(0x04);
+		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
+		a.set_raw_bits(0x08);
+		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
+		a.set_raw_bits(0x0C);
+		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
+	}
+	{
+		areal<5, 2> a;
+		std::cout << typeid(a).name() << std::endl;
+		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
+		a.set_raw_bits(0x02);
+		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
+		a.set_raw_bits(0x04);
+		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
+		a.set_raw_bits(0x08);
+		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
+		a.set_raw_bits(0x0C);
+		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
+	}
+
+	/*
+	constexpr bool csv = false;
+	GenerateArealTable<5, 1>(std::cout, csv);
+	GenerateArealTable<5, 2>(std::cout, csv);
+	GenerateArealTable<6, 1>(std::cout, csv);
+	GenerateArealTable<6, 2>(std::cout, csv);
+	GenerateArealTable<6, 3>(std::cout, csv);
+	*/
+
+#else // !MANUAL_TESTING
+
 	TestIsZero(nrOfFailedTestCases);
 	TestIsInf(nrOfFailedTestCases);
 	TestIsNaN(nrOfFailedTestCases);
 	TestSizeof(nrOfFailedTestCases);
 	TestScale(nrOfFailedTestCases);
-
-#else // !MANUAL_TESTING
-
 
 #endif // MANUAL_TESTING
 

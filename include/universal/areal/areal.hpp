@@ -372,14 +372,35 @@ public:
 		int e{ 0 };
 		// make if constexpr
 		if (MSU_CAPTURES_E) {
-			bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
-			e = static_cast<int>(ebits >> EXP_SHIFT);
-			e -= EXP_BIAS;
+			e = int((_block[MSU] & ~SIGN_BIT_MASK)) >> EXP_SHIFT;
+			if (e == 0) {
+				// subnormal scale is determined by fraction
+				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
+				;
+				e = (2l - (1l << (es - 1ull))) - 1;
+				for (size_t i = nbits - 2ull - es; i > 0; --i) {
+					if (test(i)) break;
+					--e;
+				}
+			}
+			else {
+				e -= EXP_BIAS;
+			}
 		}
 		else {
 			blockbinary<es, bt> ebits;
 			exponent(ebits);
-			e = ebits.to_long_long() - EXP_BIAS;
+			if (ebits.iszero()) {
+				// subnormal scale is determined by fraction
+				e = -1;
+				for (size_t i = nbits - 2ull - es; i > 0; --i) {
+					if (test(i)) break;
+					--e;
+				}
+			}
+			else {
+				e = ebits.to_long_long() - EXP_BIAS;
+			}
 		}
 		return e;
 	}
@@ -577,28 +598,30 @@ public:
 	double to_double() const {
 		double v{ 0.0 };
 		if (iszero()) return v;
-		if (isinf()) {
-			v = sign() ? -INFINITY : INFINITY;;
-		}
-		else if (isnan()) {
+		if (isnan()) {
 			v = sign() ? std::numeric_limits<double>::signaling_NaN() : std::numeric_limits<double>::quiet_NaN();
 		}
+		else if (isinf()) {
+			v = sign() ? -INFINITY : INFINITY;
+		}
 		else {
-			double f{ 1.0 };
-			double fbit = 0.5;
+			double f{ 0.0 };
+			double fbit{ 0.5 };
 			for (size_t i = nbits - 2ull - es; i > 0; --i) {
 				f += at(i) ? fbit : 0.0;
 				fbit *= 0.5;
 			}
-			int bias = (1l << (es - 1ull));  // this implies that es will be less than 32
-			int e = scale();
-			if (e == 0) {
-				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (1 + f/2^fbits))
-				v = std::pow(2.0, 2 - bias) * f;
+			blockbinary<es, bt> ebits;
+			exponent(ebits);
+			if (ebits.iszero()) {
+				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
+				double exponent = double(1ll << (2ll - (1ll << (es - 1ull))));
+				v = exponent * f;
 			}
 			else {
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
-				v = std::pow(2.0, e + 1 - bias) * f;
+				double exponent = double(1ll << (unsigned(ebits) + 1ll - (1ll << (es - 1ull))));
+				v = exponent * (1 + f);
 			}
 			v = sign() ? -v : v;
 		}

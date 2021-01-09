@@ -139,7 +139,15 @@ public:
 	}
 
 	// conversion operators
-	explicit operator long long() const { return to_long_long(); }
+	explicit operator int() const                { return to_long_long(); }
+	explicit operator long() const               { return to_long_long(); }
+	explicit operator long long() const          { return to_long_long(); }
+	explicit operator unsigned int() const       { return to_ull(); }
+	explicit operator unsigned long() const      { return to_ull(); }
+	explicit operator unsigned long long() const { return to_ull(); }
+	explicit operator float() const              { return float(to_long_long()); }
+	explicit operator double() const             { return double(to_long_long()); }
+	explicit operator long double() const        { return (long double)to_long_long(); }
 
 	// prefix operators
 	blockbinary operator-() const {
@@ -445,10 +453,10 @@ public:
 		return -1; // no significant bit found, all bits are zero
 	}
 	// conversion to native types
-	long long to_long_long() const {
+	int64_t to_long_long() const {
 		constexpr unsigned sizeoflonglong = 8 * sizeof(long long);
-		long long ll = 0;
-		long long mask = 1;
+		int64_t ll{ 0 };
+		int64_t mask{ 1 };
 		unsigned upper = (nbits < sizeoflonglong ? nbits : sizeoflonglong);
 		for (unsigned i = 0; i < upper; ++i) {
 			ll |= at(i) ? mask : 0;
@@ -461,6 +469,16 @@ public:
 			}
 		}
 		return ll;
+	}
+	uint64_t to_ull() const {
+		uint64_t ull{ 0 };
+		uint64_t mask{ 1 };
+		uint32_t msb = nbits < 64 ? nbits : 64;
+		for (uint32_t i = 0; i < msb; ++i) {
+			ull |= at(i) ? mask : 0;
+			mask <<= 1;
+		}
+		return ull;
 	}
 
 	// determine the rounding mode: result needs to be rounded up if true

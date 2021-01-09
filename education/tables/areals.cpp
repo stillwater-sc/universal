@@ -9,6 +9,8 @@
 #include <universal/areal/areal>
 #include <universal/areal/table.hpp>
 
+#define MANUAL_TESTING 0
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -18,6 +20,18 @@ try {
 
 	cout << "Generate value tables for areal configurations" << endl;
 
+#if MANUAL_TESTING
+	areal<5, 2> a;
+	a.set_raw_bits(0x08);
+	cout << a << endl;
+
+	GenerateArealTable<5, 1>(cout, csv);
+	GenerateArealTable<5, 2>(cout, csv);
+	GenerateArealTable<6, 1>(cout, csv);
+	GenerateArealTable<6, 2>(cout, csv);
+	GenerateArealTable<6, 3>(cout, csv);
+
+#else // !MANUAL_TESTING
 	GenerateArealTable<4, 1>(cout, csv);
 
 	GenerateArealTable<5, 1>(cout, csv);
@@ -41,6 +55,7 @@ try {
 	GenerateArealTable<8, 4>(cout, csv);
 	GenerateArealTable<8, 5>(cout, csv);
 //	GenerateArealTable<8, 6>(cout, csv);
+#endif
 
 	return EXIT_SUCCESS;
 }
