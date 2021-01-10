@@ -26,9 +26,9 @@ try {
 	cout << "numeric_limits for different number systems " << endl;
 
 	using int32    = integer<32>;
-	using fixpnt32 = fixpnt<32,16>;
+	using fixpnt32 = fixpnt<32, 16>;
 	using posit32  = posit<32,2>;
-	using areal32  = areal<32,8>;
+	using areal32  = areal<32,8,uint32_t>; // should use a uint32_t for efficiency
 	using lns32    = lns<32>;
 
 	// report on precision and dynamic range of the number system

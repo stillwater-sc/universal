@@ -811,6 +811,8 @@ try {
 	TestIsNaN(nrOfFailedTestCases);
 	TestSizeof(nrOfFailedTestCases);
 	TestScale(nrOfFailedTestCases);
+	/// TODO: subnormal numbers have a scale adjustment as 2^(2-2^(es - 1)).
+	/// check if this is correct if es is > 2. In particular, areal<32,8> and areal<64,11> should write test suite for that
 
 //	TestMultiply< sw::universal::areal<8, 2,uint8_t> > (nrOfFailedTestCases);
 //	TestMultiply< sw::universal::areal<16, 5, uint8_t> >(nrOfFailedTestCases);

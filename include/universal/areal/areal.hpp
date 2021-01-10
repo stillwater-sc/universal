@@ -615,7 +615,7 @@ public:
 			exponent(ebits);
 			if (ebits.iszero()) {
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
-				double exponent = double(1ll << (2ll - (1ll << (es - 1ull))));
+				double exponent = double(1ull << (2ull - (1ull << (es - 1ull))));
 				v = exponent * f;
 			}
 			else {
