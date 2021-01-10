@@ -1,4 +1,4 @@
-// arithmetic_add.cpp: functional tests for addition on arbitrary reals
+// addition.cpp: functional tests for addition on arbitrary reals
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

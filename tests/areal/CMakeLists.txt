@@ -1,3 +1,9 @@
-file (GLOB SOURCES "./*.cpp")
+file (GLOB API_SRC "api/*.cpp")
+file (GLOB LOGIC_SRC "logic/*.cpp")
+file (GLOB ARITHMETIC_SRC "arithmetic/*.cpp")
+file (GLOB STANDARD_SRC "standard/*.cpp")
 
-compile_all("true" "areal" "Number Systems/fixed size/floating-point/linear/areal" "${SOURCES}")
+compile_all("true" "areal" "Number Systems/fixed size/floating-point/linear/areal/api" "${API_SRC}")
+compile_all("true" "areal" "Number Systems/fixed size/floating-point/linear/areal/logic" "${LOGIC_SRC}")
+compile_all("true" "areal" "Number Systems/fixed size/floating-point/linear/areal/arithmetic" "${ARITHMETIC_SRC}")
+compile_all("true" "areal" "Number Systems/fixed size/floating-point/linear/areal/standard" "${STANDARD_SRC}")

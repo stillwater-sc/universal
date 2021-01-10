@@ -1,4 +1,4 @@
-// tables.cpp: generates tables of fixed-point configurations
+// fixpnts.cpp: generates encoding tables of fixed-point configurations
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

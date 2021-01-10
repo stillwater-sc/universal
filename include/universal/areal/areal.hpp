@@ -546,7 +546,6 @@ public:
 		std::cout << "EXP_BIAS      : " << EXP_BIAS << std::endl;
 	}
 
-	//inline std::string get() const { return std::string("tbd"); }
 	// extract the exponent field from the encoding
 	inline constexpr void exponent(blockbinary<es, bt>& e) const {
 		e.clear();
@@ -592,6 +591,7 @@ public:
 		}
 
 	}
+	
 	// casts to native types
 	long long to_long_long() const { return (long long)(to_double()); }
 	long double to_long_double() const { return to_double(); }
@@ -778,5 +778,34 @@ areal<nbits,es> abs(const areal<nbits,es,bt>& v) {
 	return areal<nbits,es>(false, v.scale(), v.fraction(), v.isZero());
 }
 
+
+///////////////////////////////////////////////////////////////////////
+///   binary logic literal comparisons
+
+// posit - long logic operators
+template<size_t nbits, size_t es, typename bt>
+inline bool operator==(const areal<nbits, es, bt>& lhs, long long rhs) {
+	return operator==(lhs, areal<nbits, es, bt>(rhs));
+}
+template<size_t nbits, size_t es, typename bt>
+inline bool operator!=(const areal<nbits, es, bt>& lhs, long long rhs) {
+	return operator!=(lhs, areal<nbits, es, bt>(rhs));
+}
+template<size_t nbits, size_t es, typename bt>
+inline bool operator< (const areal<nbits, es, bt>& lhs, long long rhs) {
+	return operator<(lhs, areal<nbits, es, bt>(rhs));
+}
+template<size_t nbits, size_t es, typename bt>
+inline bool operator> (const areal<nbits, es, bt>& lhs, long long rhs) {
+	return operator<(areal<nbits, es, bt>(rhs), lhs);
+}
+template<size_t nbits, size_t es, typename bt>
+inline bool operator<=(const areal<nbits, es, bt>& lhs, long long rhs) {
+	return operator<(lhs, areal<nbits, es, bt>(rhs)) || operator==(lhs, areal<nbits, es, bt>(rhs));
+}
+template<size_t nbits, size_t es, typename bt>
+inline bool operator>=(const areal<nbits, es, bt>& lhs, long long rhs) {
+	return !operator<(lhs, areal<nbits, es, bt>(rhs));
+}
 
 }  // namespace sw::universal

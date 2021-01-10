@@ -723,6 +723,25 @@ void TestScale(int& nrOfFailedTestCases) {
 	}
 }
 
+template<typename Real>
+void TestMultiply(int& nrOfFailedTestCases) {
+	using namespace sw::universal;
+	int currentFails = nrOfFailedTestCases;
+
+	std::cout << "multiply operator              : ";
+
+
+	Real a, b, c;
+
+	a = 1.0;
+	b = 1.0;
+	c = a * b;
+	if (c != 1) ++nrOfFailedTestCases;
+
+
+	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS " : "FAIL ");
+	std::cout << std::setw(30) << typeid(Real).name() << '\n';
+}
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
@@ -792,6 +811,11 @@ try {
 	TestIsNaN(nrOfFailedTestCases);
 	TestSizeof(nrOfFailedTestCases);
 	TestScale(nrOfFailedTestCases);
+
+	TestMultiply< sw::universal::areal<8, 2,uint8_t> > (nrOfFailedTestCases);
+	TestMultiply< sw::universal::areal<16, 5, uint8_t> >(nrOfFailedTestCases);
+	TestMultiply< sw::universal::areal<32, 8, uint8_t> >(nrOfFailedTestCases);
+	TestMultiply< sw::universal::areal<64, 11, uint8_t> >(nrOfFailedTestCases);
 
 #endif // MANUAL_TESTING
 
