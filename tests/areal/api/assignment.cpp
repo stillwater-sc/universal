@@ -16,7 +16,7 @@
 #include <universal/areal/manipulators.hpp>
 #include <universal/areal/math_functions.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
-#include <universal/verification/areal_test_suite.hpp>
+#include <universal/verification/test_suite_arithmetic.hpp>
 
 void PositiveTestCases() {
 	using namespace std;
@@ -24,9 +24,9 @@ void PositiveTestCases() {
 
 	{
 		float fa, fb, fc, fd;
-		areal<8, 4> a, b, c, d;
+		areal<8, 2> a, b, c, d;
 
-		cout << "POSITIVE TEST CASES\n";
+		std::cout << "POSITIVE TEST CASES\n";
 		a.set_raw_bits(0x14);
 		b.set_raw_bits(0x15);
 		c.set_raw_bits(0x16);
@@ -35,27 +35,27 @@ void PositiveTestCases() {
 		fb = float(b);
 		fc = float(c);
 		fd = float(d);
-		cout << to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << endl;
-		cout << to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << endl;
-		cout << to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << endl;
-		cout << to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << endl;
+		std::cout << to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << std::endl;
+		std::cout << to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << std::endl;
+		std::cout << to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << std::endl;
+		std::cout << to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << std::endl;
 
-		cout << to_hex(fa) << endl;
-		cout << to_hex(fb) << endl;
-		cout << to_hex(fc) << endl;
-		cout << to_hex(fd) << endl;
+		std::cout << to_hex(fa) << std::endl;
+		std::cout << to_hex(fb) << std::endl;
+		std::cout << to_hex(fc) << std::endl;
+		std::cout << to_hex(fd) << std::endl;
 	}
 
 	{
-		float eps[24];
+		float eps[24] = { 0.0f };
 		for (int i = 23; i >= 0; --i) {
 			eps[i] = 1.0f / float(1 << i);
 		}
 
-		cout << to_binary(eps[20]) << endl;
-		cout << to_binary(eps[21]) << endl;
-		cout << to_binary(eps[22]) << endl;
-		cout << to_binary(eps[23]) << endl;
+		std::cout << to_binary(eps[20]) << std::endl;
+		std::cout << to_binary(eps[21]) << std::endl;
+		std::cout << to_binary(eps[22]) << std::endl;
+		std::cout << to_binary(eps[23]) << std::endl;
 	}
 
 }
@@ -65,9 +65,9 @@ void NegativeTestCases() {
 	using namespace sw::universal;
 
 	float fa, fb, fc, fd;
-	areal<8, 4> a, b, c, d;
+	areal<8, 2> a, b, c, d;
 
-	cout << "NEGATIVE TEST CASES\n";
+	std::cout << "NEGATIVE TEST CASES\n";
 	a.set_raw_bits(~0x14 + 1);
 	b.set_raw_bits(~0x15 + 1);
 	c.set_raw_bits(~0x16 + 1);
@@ -76,29 +76,29 @@ void NegativeTestCases() {
 	fb = float(b);
 	fc = float(c);
 	fd = float(d);
-	cout << to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << endl;
-	cout << to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << endl;
-	cout << to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << endl;
-	cout << to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << endl;
+	std::cout << to_binary(fa) << ' ' << fa << ' ' << to_binary(a) << ' ' << a << std::endl;
+	std::cout << to_binary(fb) << ' ' << fb << ' ' << to_binary(b) << ' ' << b << std::endl;
+	std::cout << to_binary(fc) << ' ' << fc << ' ' << to_binary(c) << ' ' << c << std::endl;
+	std::cout << to_binary(fd) << ' ' << fd << ' ' << to_binary(d) << ' ' << d << std::endl;
 
-	cout << to_hex(fa) << endl;
-	cout << to_hex(fb) << endl;
-	cout << to_hex(fc) << endl;
-	cout << to_hex(fd) << endl;
+	std::cout << to_hex(fa) << std::endl;
+	std::cout << to_hex(fb) << std::endl;
+	std::cout << to_hex(fc) << std::endl;
+	std::cout << to_hex(fd) << std::endl;
 
-	float eps[24];
+	float eps[24] = { 0.0f };
 	for (int i = 23; i >= 0; --i) {
 		eps[i] = 1.0f / float(1 << i);
 	}
 
-	cout << to_binary(eps[20]) << endl;
-	cout << to_binary(eps[21]) << endl;
-	cout << to_binary(eps[22]) << endl;
-	cout << to_binary(eps[23]) << endl;
+	std::cout << to_binary(eps[20]) << std::endl;
+	std::cout << to_binary(eps[21]) << std::endl;
+	std::cout << to_binary(eps[22]) << std::endl;
+	std::cout << to_binary(eps[23]) << std::endl;
 
 	float mashup;
-	areal<8, 4> af;
-	cout << "fa - eps" << endl;
+	areal<8, 2> af;
+	std::cout << "fa - eps" << std::endl;
 	/*
 	for (int i = 5; i < 9; ++i) {
 		mashup = fa + eps[i];
@@ -109,30 +109,30 @@ void NegativeTestCases() {
 
 	mashup = fa - eps[5];
 	af = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
 	mashup = fa - eps[5] - eps[6];
 	af = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
 	mashup = fa - eps[5] - eps[20];
 	af = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
 	mashup = fa - eps[6];
 	af = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
 
-	cout << "fb - eps" << endl;
+	std::cout << "fb - eps" << endl;
 	mashup = fb - eps[5];
 	af = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
 	mashup = fb - eps[5] - eps[6];
 	af = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
 	mashup = fb - eps[5] - eps[20];
 	af = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
 	mashup = fb - eps[6];
 	af = mashup;
-	cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
+	std::cout << to_binary(mashup) << ' ' << mashup << ' ' << to_binary(af) << ' ' << af << ' ' << to_triple(mashup) << endl;
 }
 
 // conditional compile flags
@@ -156,25 +156,25 @@ try {
 
 	return 0;
 	{
-		areal<4, 1> a, b, c;
+		areal<5, 2> a, b, c;
 		// overflow test
-		a = -4; cout << a << endl;  // rounds to 3.5
+		a = -4; std::cout << a << endl;  // rounds to 3.5
 		b = 4.0f;
 		c = a * b;
-		cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
+		std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
 	}
 
 	{
-		areal<4, 1> a, b, c;
+		areal<5, 2> a, b, c;
 		// rounding test
-		a = 0.5f; cout << a << endl;
+		a = 0.5f; std::cout << a << endl;
 		b = 0.5f;
 		c = a * b;
-		cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
+		std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(c) << " " << c << endl;
 	}
 
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 1,  uint8_t, float>(bReportIndividualTestCases), tag, "areal<4,1,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<float, sw::universal::areal<5, 2,  uint8_t> >(bReportIndividualTestCases), tag, "areal<5,2,uint8_t>");
 	
 #if STRESS_TESTING
 
@@ -185,18 +185,18 @@ try {
 #else
 	cout << "AREAL assignment validation" << endl;
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<4, 1,  uint8_t, float>(bReportIndividualTestCases), tag, "areal<4,1,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<4, 1,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<4,1,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 1,  uint8_t, float>(bReportIndividualTestCases), tag, "areal<6,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<6, 2,  uint8_t, float>(bReportIndividualTestCases), tag, "areal<6,2,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<6, 1,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<6,1,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<6, 2,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<6,2,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 1,  uint8_t, float>(bReportIndividualTestCases), tag, "areal<8,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 2,  uint8_t, float>(bReportIndividualTestCases), tag, "areal<8,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<8, 3,  uint8_t, float>(bReportIndividualTestCases), tag, "areal<8,3,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<8, 1,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<8,1,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<8, 2,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<8,2,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<8, 3,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<8,3,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<10, 1,  uint8_t, float>(bReportIndividualTestCases), tag, "areal<10,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<10, 2,  uint8_t, float>(bReportIndividualTestCases), tag, "areal<10,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateAssignment<10, 3,  uint8_t, float>(bReportIndividualTestCases), tag, "areal<10,3,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<10, 1,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<10,1,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<10, 2,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<10,2,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<10, 3,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<10,3,uint8_t>");
 
 
 #if STRESS_TESTING

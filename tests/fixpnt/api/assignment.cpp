@@ -44,7 +44,7 @@ void PositiveTestCases() {
 	cout << to_hex(fc) << endl;
 	cout << to_hex(fd) << endl;
 
-	float eps[24];
+	float eps[24] = { 0.0f };
 	for (int i = 23; i >= 0; --i) {
 		eps[i] = 1.0f / float(1 << i);
 	}
@@ -119,7 +119,7 @@ void NegativeTestCases() {
 	cout << to_hex(fc) << endl;
 	cout << to_hex(fd) << endl;
 
-	float eps[24];
+	float eps[24] = { 0.0f };
 	for (int i = 23; i >= 0; --i) {
 		eps[i] = 1.0f / float(1 << i);
 	}

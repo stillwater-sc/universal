@@ -812,12 +812,14 @@ try {
 	TestSizeof(nrOfFailedTestCases);
 	TestScale(nrOfFailedTestCases);
 
-	TestMultiply< sw::universal::areal<8, 2,uint8_t> > (nrOfFailedTestCases);
-	TestMultiply< sw::universal::areal<16, 5, uint8_t> >(nrOfFailedTestCases);
-	TestMultiply< sw::universal::areal<32, 8, uint8_t> >(nrOfFailedTestCases);
-	TestMultiply< sw::universal::areal<64, 11, uint8_t> >(nrOfFailedTestCases);
+//	TestMultiply< sw::universal::areal<8, 2,uint8_t> > (nrOfFailedTestCases);
+//	TestMultiply< sw::universal::areal<16, 5, uint8_t> >(nrOfFailedTestCases);
+//	TestMultiply< sw::universal::areal<32, 8, uint8_t> >(nrOfFailedTestCases);
+//	TestMultiply< sw::universal::areal<64, 11, uint8_t> >(nrOfFailedTestCases);
 
 #endif // MANUAL_TESTING
+
+	std::cout << "\nAREAL API test suite           : " << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

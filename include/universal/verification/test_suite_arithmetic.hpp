@@ -19,7 +19,7 @@
 
 #include <universal/verification/test_status.hpp>
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 #define NUMBER_COLUMN_WIDTH 20
 
@@ -84,7 +84,7 @@ void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::stri
 }
 
 template<typename RefType, typename TestType>
-void ReportAssignmentError(const std::string& test_case, const std::string& op, const RefType& ref, const TestType& result, const RefType& value) {
+void ReportAssignmentError(const std::string& test_case, const std::string& op, const TestType& value, const TestType& result, const RefType& ref) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << value
@@ -95,7 +95,7 @@ void ReportAssignmentError(const std::string& test_case, const std::string& op, 
 }
 
 template<typename RefType, typename TestType>
-void ReportAssignmentSuccess(const std::string& test_case, const std::string& op, const RefType& ref, const TestType& result, const RefType& value) {
+void ReportAssignmentSuccess(const std::string& test_case, const std::string& op, const TestType& value, const TestType& result, const RefType& ref) {
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << value
@@ -149,7 +149,7 @@ int VerifyAssignment(bool bReportIndividualTestCases, bool verbose = false) {
 // enumerate all addition cases for a number system configuration
 template<typename TestType>
 int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
-	TestType a, b, result, cref;
+	TestType a{ 0 }, b{ 0 }, result, cref;
 	constexpr size_t nbits = a.nbits;  // number system concept requires a static member indicating its size in bits
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
@@ -208,4 +208,4 @@ int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 // enumerate all division cases for an fixpnt<nbits,rbits> configuration
 
 
-}} // namespace sw::universal
+} // namespace sw::universal
