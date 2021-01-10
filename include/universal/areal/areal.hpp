@@ -46,6 +46,31 @@
 
 namespace sw::universal {
 		
+	static constexpr double oneOver2p30 = 1.0 / 1073741824.0;
+	static constexpr double oneOver2p50 = 1.0 / 1125899906842624.0;
+	static constexpr double oneOver2p62 = 1.0 / 4611686018427387904.0;
+	static constexpr double oneOver2p126 = oneOver2p62 * oneOver2p62 * 0.25;
+	static constexpr double oneOver2p254 = oneOver2p126 * oneOver2p126 * 0.25;
+	static constexpr double oneOver2p510 = oneOver2p254 * oneOver2p254 * 0.25;
+	static constexpr double oneOver2p1022 = oneOver2p510 * oneOver2p510 * 0.25;
+
+// precomputed values for subnormal exponents as a function of es
+// es > 11 requires a long double representation, which MSVC does not provide.
+	static constexpr double subnormal_exponent[] = {
+		NAN,                  // es = 0
+		2.0,                  // es = 1 : 2^(2 - 2^(es-1)) = 2^1
+		1.0,                  // es = 2 : 2^(2 - 2^(es-1)) = 2^0
+		0.25,                 // es = 3 : 2^(2 - 2^(es-1)) = 2^-2
+		0.015625,             // es = 4 : 2^(2 - 2^(es-1)) = 2^-6
+		0.00006103515625,     // es = 5 : 2^(2 - 2^(es-1)) = 2^-14
+		oneOver2p30,          // es = 6 : 2^(2 - 2^(es-1)) = 2^-30
+		oneOver2p62,          // es = 7 : 2^(2 - 2^(es-1)) = 2^-62
+		oneOver2p126,         // es = 8 : 2^(2 - 2^(es-1)) = 2^-126
+		oneOver2p254,         // es = 9 : 2^(2 - 2^(es-1)) = 2^-254
+		oneOver2p510,         // es = 10 : 2^(2 - 2^(es-1)) = 2^-510
+		oneOver2p1022         // es = 11 : 2^(2 - 2^(es-1)) = 2^-1022
+	};
+
 // Forward definitions
 template<size_t nbits, size_t es, typename bt> class areal;
 template<size_t nbits, size_t es, typename bt> areal<nbits,es,bt> abs(const areal<nbits,es,bt>&);
@@ -595,6 +620,10 @@ public:
 	// casts to native types
 	long long to_long_long() const { return (long long)(to_double()); }
 	long double to_long_double() const { return to_double(); }
+	// transform value to a native C++ double. We are using doubles to compute,
+	// which means that all sub-values need to be representable by doubles.
+	// A more accurate appromation would require an adaptive precision algorithm
+	// with a final rounding step.
 	double to_double() const {
 		double v{ 0.0 };
 		if (iszero()) return v;
@@ -615,7 +644,7 @@ public:
 			exponent(ebits);
 			if (ebits.iszero()) {
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
-				double exponent = double(1ull << (2ull - (1ull << (es - 1ull))));
+				double exponent = subnormal_exponent[es]; // precomputed values for 2^(2-2^(es-1))
 				v = exponent * f;
 			}
 			else {
@@ -672,8 +701,8 @@ inline std::ostream& operator<<(std::ostream& ostr, const areal<nnbits,nes,nbt>&
 	// TODO: make it a native conversion
 	double d = double(v);
 	ostr << d;
-	bool ubit = v.at(0);
-	ostr << (ubit ? "..." : "=  ");
+//	bool ubit = v.at(0);
+//	ostr << (ubit ? "..." : "=  ");
 	return ostr;
 }
 

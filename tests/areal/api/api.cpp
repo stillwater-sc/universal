@@ -9,6 +9,7 @@
 #endif
 #include <iostream>
 #include <iomanip>
+#include <fstream>
 #include <typeinfo>
 // minimum set of include files to reflect source code dependencies
 #include <universal/areal/areal.hpp>
@@ -19,9 +20,10 @@
 template<typename bt = uint8_t>
 std::string to_binary(bt bits) {
 	std::stringstream s;
-	bt mask = bt(1 << sizeof(bt) - 1);
+	bt mask = bt(1 << sizeof(bt)*8 - 1);
 	while (mask > 0) {
-		s << (bits & mask) ? '1' : '0';
+		s << (bits & mask ? '1' : '0');
+		mask >>= 1;
 	}
 	return s.str();
 }
@@ -766,35 +768,35 @@ try {
 #if MANUAL_TESTING
 
 	// scales for gradual overflow range are incorrect
-// also scales for es = 1 are just underflow and overflow ranges, and currently incorrect
+    // also scales for es = 1 are just underflow and overflow ranges, and currently incorrect
 
-	{
-		areal<5, 1> a;
-		std::cout << typeid(a).name() << std::endl;
-		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
-		a.set_raw_bits(0x02);
-		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
-		a.set_raw_bits(0x04);
-		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
-		a.set_raw_bits(0x08);
-		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
-		a.set_raw_bits(0x0C);
-		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
+	/// TODO: subnormal numbers have a scale adjustment as 2^(2-2^(es - 1)).
+	/// check if this is correct if es is > 2. In particular, areal<32,8> and areal<64,11> should write test suite for that
+
+	areal<8, 2> a;
+	uint32_t pattern = 0x00000001ul;
+	for (unsigned i = 0; i < 23; ++i) {
+		a.set_raw_bits(pattern);
+		std::cout << std::setw(10) << pattern << " " << to_binary(a) << " " << a << std::endl;
+		pattern <<= 1;
 	}
-	{
-		areal<5, 2> a;
-		std::cout << typeid(a).name() << std::endl;
-		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
-		a.set_raw_bits(0x02);
-		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
-		a.set_raw_bits(0x04);
-		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
-		a.set_raw_bits(0x08);
-		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
-		a.set_raw_bits(0x0C);
-		std::cout << to_binary(a) << " " << a << " " << a.scale() << std::endl;
+//	GenerateArealTable<8, 2>(std::cout, true);
+
+	int exponents[] = {
+		0, 1, 0, -2, -6, -14, -30, -62, -126, -254, -510, -1022
+	};
+	for (int i = 1; i < 12; ++i) {
+		double e{ 0.0 };
+		std::cout << "es = " << exponents[i] << " " << std::setprecision(17) << subnormal_exponent[i] << std::endl;
 	}
 
+	std::ofstream ostr;
+	ostr.open("areal_8_3.csv");
+	GenerateArealTable<8, 2>(ostr, true);
+	ostr.close();
+	ostr.open("areal_16_3.csv");
+	GenerateArealTable<16, 3, uint16_t>(ostr, true);
+	ostr.close();
 	/*
 	constexpr bool csv = false;
 	GenerateArealTable<5, 1>(std::cout, csv);
@@ -811,8 +813,7 @@ try {
 	TestIsNaN(nrOfFailedTestCases);
 	TestSizeof(nrOfFailedTestCases);
 	TestScale(nrOfFailedTestCases);
-	/// TODO: subnormal numbers have a scale adjustment as 2^(2-2^(es - 1)).
-	/// check if this is correct if es is > 2. In particular, areal<32,8> and areal<64,11> should write test suite for that
+
 
 //	TestMultiply< sw::universal::areal<8, 2,uint8_t> > (nrOfFailedTestCases);
 //	TestMultiply< sw::universal::areal<16, 5, uint8_t> >(nrOfFailedTestCases);
