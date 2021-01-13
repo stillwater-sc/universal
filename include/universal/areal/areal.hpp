@@ -46,6 +46,8 @@
 
 namespace sw::universal {
 		
+	static constexpr double oneOver2p6 = 0.015625;
+	static constexpr double oneOver2p14 = 0.00006103515625;
 	static constexpr double oneOver2p30 = 1.0 / 1073741824.0;
 	static constexpr double oneOver2p50 = 1.0 / 1125899906842624.0;
 	static constexpr double oneOver2p62 = 1.0 / 4611686018427387904.0;
@@ -57,12 +59,12 @@ namespace sw::universal {
 // precomputed values for subnormal exponents as a function of es
 // es > 11 requires a long double representation, which MSVC does not provide.
 	static constexpr double subnormal_exponent[] = {
-		NAN,                  // es = 0
+		0,                    // es = 0 : not a valid value
 		2.0,                  // es = 1 : 2^(2 - 2^(es-1)) = 2^1
 		1.0,                  // es = 2 : 2^(2 - 2^(es-1)) = 2^0
 		0.25,                 // es = 3 : 2^(2 - 2^(es-1)) = 2^-2
-		0.015625,             // es = 4 : 2^(2 - 2^(es-1)) = 2^-6
-		0.00006103515625,     // es = 5 : 2^(2 - 2^(es-1)) = 2^-14
+		oneOver2p6,           // es = 4 : 2^(2 - 2^(es-1)) = 2^-6
+		oneOver2p14,          // es = 5 : 2^(2 - 2^(es-1)) = 2^-14
 		oneOver2p30,          // es = 6 : 2^(2 - 2^(es-1)) = 2^-30
 		oneOver2p62,          // es = 7 : 2^(2 - 2^(es-1)) = 2^-62
 		oneOver2p126,         // es = 8 : 2^(2 - 2^(es-1)) = 2^-126

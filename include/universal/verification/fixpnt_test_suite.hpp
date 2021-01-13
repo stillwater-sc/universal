@@ -22,11 +22,11 @@ namespace sw { namespace universal {
 #define FIXPNT_TABLE_WIDTH 20
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
+void ReportConversionError(const std::string& test_case, const std::string& op, double testValue, double reference, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case
 		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << input
+		<< std::setw(FIXPNT_TABLE_WIDTH) << testValue
 		<< " did not convert to "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << reference << " instead it yielded  "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << double(result)
@@ -36,10 +36,10 @@ void ReportConversionError(const std::string& test_case, const std::string& op, 
 }
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-void ReportConversionSuccess(const std::string& test_case, const std::string& op, double input, double reference, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
+void ReportConversionSuccess(const std::string& test_case, const std::string& op, double testValue, double reference, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
 	std::cerr << test_case
 		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << input
+		<< std::setw(FIXPNT_TABLE_WIDTH) << testValue
 		<< " success            "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " golden reference is "
 		<< std::setw(FIXPNT_TABLE_WIDTH) << reference
@@ -125,21 +125,21 @@ void ReportAssignmentSuccess(const std::string& test_case, const std::string& op
 /////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int Compare(double input, const fixpnt<nbits, rbits, arithmetic, BlockType>& presult, double reference, bool bReportIndividualTestCases) {
+int Compare(double testValue, const fixpnt<nbits, rbits, arithmetic, BlockType>& presult, double reference, bool bReportIndividualTestCases) {
 	int fail = 0;
 	double result = double(presult);
 	if (std::fabs(result - reference) > 0.000000001) {
 		fail++;
-		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, presult);
+		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", testValue, reference, presult);
 	}
 	else {
-		// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
+		// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", testValue, reference, presult);
 	}
 	return fail;
 }
 
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType, typename Ty>
-int ValidateAssignment(bool bReportIndividualTestCases) {
+int VerifyAssignment(bool bReportIndividualTestCases) {
 	const size_t NR_NUMBERS = (size_t(1) << nbits);
 	int nrOfFailedTestCases = 0;
 
@@ -169,21 +169,24 @@ int ValidateAssignment(bool bReportIndividualTestCases) {
  */
 // enumerate all conversion cases for a fixed-point configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 	// we are going to generate a test set that consists of all fixed-point configs and their midpoints
 	// we do this by enumerating a fixed-point that is 1-bit larger than the test configuration
 	// with the extra bit allocated to the fraction => rbits+1
-	// These larger posits will be at the mid-point between the smaller posit sample values
-	// and we'll enumerate the exact value, and a perturbation smaller and a perturbation larger
+	// These larger configuration fixpnt valuess will be at the mid-point between the smaller 
+	// configuration fixpnt values thus creating a full cover test set for value conversions.
+	// The precondition for this type of test is that the value conversion is verified.
+	// To generate the three test cases, we'll enumerate the exact value, and a perturbation slightly
+	// smaller from the midpoint that will round down, and one slightly larger that will round up,
 	// to test the rounding logic of the conversion.
 	constexpr size_t NR_TEST_CASES = (size_t(1) << (nbits + 1));
 	constexpr size_t HALF = (size_t(1) << nbits);
-	fixpnt<nbits + 1, rbits + 1, arithmetic, BlockType> pref, pprev, pnext;
+	fixpnt<nbits + 1, rbits + 1, arithmetic, BlockType> ref, prev, next;
 
 	const unsigned max = nbits > 20 ? 20 : nbits + 1;
 	size_t max_tests = (size_t(1) << max);
 	if (max_tests < NR_TEST_CASES) {
-		std::cout << "ValidateConversion<" << nbits << "," << rbits << ">: NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
+		std::cout << "VerifyConversion<" << nbits << "," << rbits << ">: NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
 	}
 
 	// execute the test
@@ -193,69 +196,67 @@ int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) 
 	fixpnt<nbits, rbits, arithmetic, BlockType> fpmaxneg;
 	double dmaxneg = double(maxneg(fpmaxneg));
 
-	double eps;
-	double da, input;
-	fixpnt<nbits, rbits, arithmetic, BlockType> nut; // NUT: number under test
+	// NUT: number under test
+	fixpnt<nbits, rbits, arithmetic, BlockType> nut;
+	double eps = dminpos / 2.0;  // the test value between 0 and minpos
 	for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
-		pref.set_raw_bits(i);
-		da = double(pref);
-		if (i == 0) {
-			eps = dminpos / 2.0;
-		}
-		else {
+		double testValue{ 0.0 };
+		ref.set_raw_bits(i);
+		double da = double(ref);
+		if (i > 0) {
 			eps = da > 0 ? da * 1.0e-6 : da * -1.0e-6;
 		}
 		if (i % 2) {
 			if (i == 1) {
 				// special case of a tie that needs to round to even -> 0
-				input = da;
-				nut = input;
-				nrOfFailedTests += Compare(input, nut, 0.0, bReportIndividualTestCases);
+				testValue = da;
+				nut = testValue;
+				nrOfFailedTests += Compare(testValue, nut, 0.0, bReportIndividualTestCases);
 
 				// this rounds up
-				input = da + eps;
-				nut = input;
-				pnext.set_raw_bits(i + 1);
-				nrOfFailedTests += Compare(input, nut, (double)pnext, bReportIndividualTestCases);
+				testValue = da + eps;
+				nut = testValue;
+				next.set_raw_bits(i + 1);
+				nrOfFailedTests += Compare(testValue, nut, (double)next, bReportIndividualTestCases);
 
 			}
 			else if (i == HALF - 1) {
 				// special case of projecting to maxpos
-				input = da - eps;
-				nut = input;
-				pprev.set_raw_bits(HALF - 2);
-				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
+				testValue = da - eps;
+				nut = testValue;
+				prev.set_raw_bits(HALF - 2);
+				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
 			}
 			else if (i == HALF + 1) {
 				// special case of projecting to maxneg
-				input = da - eps;
-				nut = input;
-				nrOfFailedTests += Compare(input, nut, dmaxneg, bReportIndividualTestCases);
+				testValue = da - eps;
+				nut = testValue;
+				nrOfFailedTests += Compare(testValue, nut, dmaxneg, bReportIndividualTestCases);
 			}
 			else if (i == NR_TEST_CASES - 1) {
 				// special case of projecting to minneg
-				input = da - eps;
-				nut = input;
-				pprev.set_raw_bits(i - 1);
-				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
+				testValue = da - eps;
+				nut = testValue;
+				prev.set_raw_bits(i - 1);
+				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
 				// but the +delta goes to 0
-				input = da + eps;
-				nut = input;
-//				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
-				nrOfFailedTests += Compare(input, nut, 0.0, bReportIndividualTestCases);
+				testValue = da + eps;
+				nut = testValue;
+//				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, 0.0, bReportIndividualTestCases);
 			}
 			else {
 				// for odd values, we are between fixed point values, so we create the round-up and round-down cases
 				// round-down
-				input = da - eps;
-				nut = input;
-				pprev.set_raw_bits(i - 1);
-				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
+				testValue = da - eps;
+				nut = testValue;
+				prev.set_raw_bits(i - 1);
+				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
 				// round-up
-				input = da + eps;
-				nut = input;
-				pnext.set_raw_bits(i + 1);
-				nrOfFailedTests += Compare(input, nut, (double)pnext, bReportIndividualTestCases);
+				testValue = da + eps;
+				nut = testValue;
+				next.set_raw_bits(i + 1);
+				nrOfFailedTests += Compare(testValue, nut, (double)next, bReportIndividualTestCases);
 			}
 		}
 		else {
@@ -263,33 +264,33 @@ int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) 
 			if (i == 0) {
 				// pref = 0
 				// 0                 -> value = 0
-				// half of pnext     -> value = 0
+				// half of next     -> value = 0
 				// special case of assigning to 0
-				input = da;
-				nut = input;
-				nrOfFailedTests += Compare(input, nut, da, bReportIndividualTestCases);
+				testValue = da;
+				nut = testValue;
+				nrOfFailedTests += Compare(testValue, nut, da, bReportIndividualTestCases);
 
-				input = da + eps;
-				nut = input;
-				nrOfFailedTests += Compare(input, nut, da, bReportIndividualTestCases);
+				testValue = da + eps;
+				nut = testValue;
+				nrOfFailedTests += Compare(testValue, nut, da, bReportIndividualTestCases);
 			}
 			else if (i == NR_TEST_CASES - 2) {
 				// special case of projecting to minneg
-				input = da - eps;
-				nut = input;
-				pprev.set_raw_bits(NR_TEST_CASES - 2);
-				nrOfFailedTests += Compare(input, nut, (double)pprev, bReportIndividualTestCases);
+				testValue = da - eps;
+				nut = testValue;
+				prev.set_raw_bits(NR_TEST_CASES - 2);
+				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
 			}
 			else {
 				// for even values, we are on actual fixed point values, so we create the round-up and round-down cases
 				// round-up
-				input = da - eps;
-				nut = input;
-				nrOfFailedTests += Compare(input, nut, da, bReportIndividualTestCases);
+				testValue = da - eps;
+				nut = testValue;
+				nrOfFailedTests += Compare(testValue, nut, da, bReportIndividualTestCases);
 				// round-down
-				input = da + eps;
-				nut = input;
-				nrOfFailedTests += Compare(input, nut, da, bReportIndividualTestCases);
+				testValue = da + eps;
+				nut = testValue;
+				nrOfFailedTests += Compare(testValue, nut, da, bReportIndividualTestCases);
 			}
 		}
 	}

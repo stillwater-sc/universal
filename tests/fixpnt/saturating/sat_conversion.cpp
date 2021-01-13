@@ -190,11 +190,11 @@ try {
 	//cout << "quire<512,240>\n";
 	//ReportFixedPointRanges<512, 240>(cout);
 
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,4,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,4,Saturating,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 8, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,8,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,8,Saturating,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,1,Saturating,uint8_t>");
 
 #if STRESS_TESTING
 
@@ -206,40 +206,40 @@ try {
 
 	cout << "Fixed-point conversion validation" << endl;
 
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,0,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,1,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,2,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,3,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<4, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,4,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,0,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,3,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<4, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<4,4,Saturating,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,0,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,1,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,2,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,3,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,4,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 5, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,5,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 6, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,6,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 7, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,7,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<8, 8, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,8,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,0,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,3,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,4,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 5, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,5,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 6, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,6,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 7, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,7,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<8, 8, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<8,8,Saturating,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,0,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,1,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,2,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,3,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,4,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 6, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,6,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 8, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,8,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 10, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,10,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<12, 12, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,12,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,0,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,3,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,4,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 6, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,6,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 8, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,8,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 10, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,10,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<12, 12, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<12,12,Saturating,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,0,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,1,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,2,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,3,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,4,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 8, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,8,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 12, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,12,Saturating,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(ValidateConversion<16, 16, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,16,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,0,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,1,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,2,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,3,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,4,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 8, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,8,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 12, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,12,Saturating,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion<16, 16, Saturating, uint8_t>(tag, bReportIndividualTestCases), tag, "fixpnt<16,16,Saturating,uint8_t>");
 
 #if STRESS_TESTING
 
