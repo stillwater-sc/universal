@@ -21,7 +21,7 @@
 
 IEEE-754 has subnormal numbers that a fixed-point needs to be able to pick up.
 
-The stored exponents 0x00 and 0xFF are interpreted specially.
+The exponent values 0x00 and 0xFF are encoding special cases.
 
 Exponent     |     fraction = 0     |      fraction ≠ 0      |      Equation
 0x00         |       zero           |    subnormal number    |    (-1)sign * 0.fraction * 2^-126
@@ -57,7 +57,7 @@ void TestDenormalizedNumberConversions() {
 
 IEEE-754 has subnormal numbers that a fixed-point needs to be able to pick up.
 
-The stored exponents 0x000 and 0x7FF are interpreted specially.
+The exponent values 0x000 and 0x7FF are encoding special cases.
 
 Exponent      |     fraction = 0     |      fraction ≠ 0      |      Equation
 0x000         |       zero           |    subnormal number    |    (-1)^sign * 0.fraction * 2^-1022
@@ -116,23 +116,22 @@ try {
 	float minpos_normal = 1.1754943508222875079687365372222e-38;
 	std::cout << to_binary(minpos_normal) << std::endl;
 
-	// minimum positive normal value of a single precision float == 2^-1022
+	// minimum positive normal value of a double precision float == 2^-1022
 	double dbl_minpos_normal = 2.2250738585072013830902327173324e-308;
 	cout << to_binary(dbl_minpos_normal) << endl;
 	double dbl_minpos_subnormal = 4.940656458412465441765687928622e-324;
 	cout << to_binary(dbl_minpos_subnormal) << endl;
 
-	FloatGenerateFixedPointValues<8, 4>();
-	DoubleGenerateFixedPointValues<8, 4>();
-
-	return 0;
+	//FloatGenerateFixedPointValues<8, 4>();
+	//DoubleGenerateFixedPointValues<8, 4>();
 
 	// can't use the regular exhaustive test suites for these very large fixed-points
-	// nrOfFailedTestCases = ReportTestResult(ValidateAssignment<256, 150, Modular, uint32_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,0, Modular, uint32_t>");
-	
+	// nrOfFailedTestCases = ReportTestResult(VerifyAssignment<256, 150, Modular, uint32_t, float>(bReportIndividualTestCases), tag, "fixpnt<4,0, Modular, uint32_t>");
+
+
 #if STRESS_TESTING
 
-	// manual exhaustive test
+	// manual stress test
 
 #endif
 
@@ -141,6 +140,8 @@ try {
 
 
 #if STRESS_TESTING
+
+	// regression stress test
 
 #endif  // STRESS_TESTING
 
