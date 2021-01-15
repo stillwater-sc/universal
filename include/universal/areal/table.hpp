@@ -11,9 +11,15 @@
 
 namespace sw::universal {
 
-// generate a full binary representation table for a given areal configuration
+/// <summary>
+/// generate a full binary representation table for a given areal configuration
+/// </summary>
+/// <typeparam name="bt">type of the storage block used to represent the areal</typeparam>
+/// <param name="ostr">ostream reference to write to</param>
+/// <param name="uncertainty">if true output certain and uncertain values, otherwise only certain values</param>
+/// <param name="csvFormat">if true present as a comma separated value format, text otherwise</param>
 template<size_t nbits, size_t es, typename bt = uint8_t>
-void GenerateArealTable(std::ostream& ostr, bool csvFormat = false)	{
+void GenerateArealTable(std::ostream& ostr, bool uncertainty = true, bool csvFormat = false)	{
 	constexpr size_t NR_VALUES = (1 << nbits);
 	areal<nbits, es, bt> v;
 	constexpr size_t fbits = v.fbits;
@@ -21,6 +27,7 @@ void GenerateArealTable(std::ostream& ostr, bool csvFormat = false)	{
 		ostr << "\"Generate Lookup table for a " << typeid(v).name() << " in CSV format\"" << std::endl;
 		ostr << "#, Binary, sign, scale, exponent, fraction, ubit, scientific, hex\n";
 		for (size_t i = 0; i < NR_VALUES; i++) {
+			if (!uncertainty && i % 2) continue;
 			v.set_raw_bits(i);
 			bool s{ false };
 			blockbinary<es, bt> e;
@@ -63,6 +70,7 @@ void GenerateArealTable(std::ostream& ostr, bool csvFormat = false)	{
 			<< std::setw(hex_format_column) << "hex_format"
 			<< std::endl;
 		for (size_t i = 0; i < NR_VALUES; i++) {
+			if (!uncertainty && i % 2) continue;
 			v.set_raw_bits(i);
 			bool s{ false };
 			blockbinary<es, bt> e;

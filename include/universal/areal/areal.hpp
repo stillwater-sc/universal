@@ -124,16 +124,22 @@ int scale(const areal<nbits, es, bt>& v) {
 // fill an areal object with maximum positive value
 template<size_t nbits, size_t es, typename bt>
 areal<nbits, es, bt>& maxpos(areal<nbits, es, bt>& amaxpos) {
-
+	// maximum positive value has this bit pattern: 0-1...1-111...110, that is, sign = 0, e = 1.1, f = 111...111, u = 0
+	amaxpos.clear();
+	amaxpos.flip();
+	amaxpos.reset(nbits - 1ull);
+	amaxpos.reset(0ull);
 	return amaxpos;
 }
 // fill an areal object with mininum positive value
 template<size_t nbits, size_t es, typename bt>
 areal<nbits, es, bt>& minpos(areal<nbits, es, bt>& aminpos) {
-
+	// minimum positive value has this bit pattern: 0-000-00...010, that is, sign = 0, e = 00, f = 00001, u = 0
+	aminpos.clear();
+	aminpos.set(1);
 	return aminpos;
 }
-// fill an areal object with zero
+// fill an areal object with the zero encoding: 0-0...0-00...000-0
 template<size_t nbits, size_t es, typename bt>
 areal<nbits, es, bt>& zero(areal<nbits, es, bt>& tobezero) {
 	tobezero.clear();
@@ -142,13 +148,19 @@ areal<nbits, es, bt>& zero(areal<nbits, es, bt>& tobezero) {
 // fill an areal object with smallest negative value
 template<size_t nbits, size_t es, typename bt>
 areal<nbits, es, bt>& minneg(areal<nbits, es, bt>& aminneg) {
-
+	// minimum negative value has this bit pattern: 1-000-00...010, that is, sign = 1, e = 00, f = 00001, u = 0
+	aminneg.clear();
+	aminneg.set(nbits - 1ull);
+	aminneg.set(1);
 	return aminneg;
 }
 // fill an areal object with largest negative value
 template<size_t nbits, size_t es, typename bt>
 areal<nbits, es, bt>& maxneg(areal<nbits, es, bt>& amaxneg) {
-
+	// maximum negative value has this bit pattern: 1-1...1-111...110, that is, sign = 1, e = 1.1, f = 111...111, u = 0
+	amaxneg.clear();
+	amaxneg.flip();
+	amaxneg.reset(0ull);
 	return amaxneg;
 }
 
@@ -161,12 +173,12 @@ areal<nbits, es, bt>& maxneg(areal<nbits, es, bt>& amaxneg) {
 template<size_t _nbits, size_t _es, typename bt = uint8_t>
 class areal {
 public:
-	static_assert(_nbits > _es + 2ull, "nbits is too small to accomodate requested exponent bits");
-	static_assert(_es < 2147483647ull, "that is too big a number, are you trying to break the Interweb?");
-	static_assert(_es > 0, "number of exponent bits must be bigger than 0");
+	static_assert(_nbits > _es + 2ull, "nbits is too small to accomodate the requested number of exponent bits");
+	static_assert(_es < 2147483647ull, "my God that is a big number, are you trying to break the Interweb?");
+	static_assert(_es > 0, "number of exponent bits must be bigger than 0 to be a floating point number");
 	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
-	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint32_t");
+	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code
 
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t es = _es;
@@ -184,6 +196,8 @@ public:
 	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (nbits - 1ull - es) : 0);
 	static constexpr bt MSU_EXP_MASK = ((bt(-1) << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
+	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;
+	static constexpr int MIN_EXP = -EXP_BIAS;
 	static constexpr bt BLOCK_MASK = bt(-1);
 
 	static constexpr size_t fbits  = nbits - 2ull - es;    // number of fraction bits excluding the hidden bit
@@ -241,7 +255,38 @@ public:
 		return *this;
 	}
 	areal& operator=(double rhs) {
+		clear();
+		if (rhs == 0.0) {
+			return *this;
+		}
+#define TYPE_PUNNING
+#ifdef TYPE_PUNNING
+		double_decoder decoder;
+		decoder.d = rhs;
+		bool s = decoder.parts.sign ? true : false;
+		uint64_t raw = (uint64_t(1) << 52) | decoder.parts.fraction;
+		int exponent = static_cast<int>(decoder.parts.exponent) - 1023;  // apply bias
+#else
+		uint64_t fraction = *reinterpret_cast<const uint64_t*>(&rhs) & 0x000F'FFFF'FFFF'FFFFull;
+		uint64_t raw = 0x0010'0000'0000'0000ull | fraction;
+		uint64_t exponent = (*reinterpret_cast<uint64_t*>(&rhs) & 0x7FF0'0000'0000'0000ull) >> 52;
+#endif
+		if (exponent > MAX_EXP) {	
+			if (s) maxneg(*this); else maxpos(*this); // saturate the maxpos or maxneg
+			return *this;
+		}
+		if (exponent < MIN_EXP) {
+			if (s) minneg(*this); else minpos(*this); // saturate to minpos or minneg
+		}
+		// fraction processing
+		int shiftRight = 52 - static_cast<int>(fbits);
+		// do we need to round?
+		if (shiftRight > 0) {
+			// the ubit makes the rounding decision a lot easier than the guard/round/sticky bit algorithm
+			// we have 52 fraction bits and one hidden bit for a normal, and no hidden bit for a subnormal
 
+			std::cout << std::endl << "value: " << to_binary(rhs) << " fraction bits: 0x" << std::hex << raw << std::dec << std::endl;
+		}
 		return *this;
 	}
 	areal& operator=(long double rhs) {
@@ -374,6 +419,8 @@ public:
 		}
 		_block[MSU] = NaNType == NAN_TYPE_SIGNALLING ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 	}
+
+
 	/// <summary>
 	/// set the raw bits of the areal. This is a required function in the Universal number systems
 	/// that enables verification test suites to inject specific bit patterns using a common interface.
@@ -388,6 +435,51 @@ public:
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		return *this;
 	}
+	/// <summary>
+	/// set a specific bit in the encoding to true or false. If bit index is out of bounds, no modification takes place.
+	/// </summary>
+	/// <param name="i">bit index to set</param>
+	/// <param name="v">boolean value to set the bit to. Default is true.</param>
+	/// <returns>void</returns>
+	inline constexpr void set(size_t i, bool v = true) noexcept {
+		if (i < nbits) {
+			bt block = _block[i / bitsInBlock];
+			bt null = ~(1ull << (i % bitsInBlock));
+			bt bit = bt(v ? 1 : 0);
+			bt mask = bt(bit << (i % bitsInBlock));
+			_block[i / bitsInBlock] = bt((block & null) | mask);
+			return;
+		}
+	}
+	/// <summary>
+	/// reset a specific bit in the encoding to false. If bit index is out of bounds, no modification takes place.
+	/// </summary>
+	/// <param name="i">bit index to reset</param>
+	/// <returns>void</returns>
+	inline constexpr void reset(size_t i) noexcept {
+		if (i < nbits) {
+			bt block = _block[i / bitsInBlock];
+			bt mask = ~(1ull << (i % bitsInBlock));
+			_block[i / bitsInBlock] = block & mask;
+			return;
+		}
+	}
+	/// <summary>
+	/// 1's complement of the encoding
+	/// </summary>
+	/// <returns>reference to this areal object</returns>
+	inline constexpr areal& flip() noexcept { // in-place one's complement
+		for (size_t i = 0; i < nrBlocks; ++i) {
+			_block[i] = ~_block[i];
+		}
+		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
+		return *this;
+	}
+	/// <summary>
+	/// assign the value of the string representation of a scientific number to the areal
+	/// </summary>
+	/// <param name="stringRep">decimal scientific notation of a real number to be assigned</param>
+	/// <returns>reference to this areal</returns>
 	inline areal& assign(const std::string& stringRep) {
 		std::cout << "assign TBD\n";
 		return *this;
@@ -543,10 +635,10 @@ public:
 	inline constexpr uint8_t nibble(size_t n) const {
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
-			int nibbleIndexInWord = n % (bitsInBlock >> 2);
-			bt mask = 0xF << (nibbleIndexInWord * 4);
-			bt nibblebits = mask & word;
-			return (nibblebits >> (nibbleIndexInWord * 4));
+			int nibbleIndexInWord = int(n % (bitsInBlock >> 2ull));
+			bt mask = bt(0xF << (nibbleIndexInWord * 4));
+			bt nibblebits = bt(mask & word);
+			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
 		}
 		throw "nibble index out of bounds";
 	}
@@ -606,8 +698,8 @@ public:
 			return;
 		case 1:
 		{
-			bt fbits = bt(_block[MSU] & ~MSU_EXP_MASK);
-			f.set_raw_bits(fbits >> bt(1ull));
+			bt fraction = bt(_block[MSU] & ~MSU_EXP_MASK);
+			f.set_raw_bits(bt(fraction >> bt(1ull)));
 		}
 		break;
 		default:
@@ -646,13 +738,16 @@ public:
 			exponent(ebits);
 			if (ebits.iszero()) {
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
-				double exponent = subnormal_exponent[es]; // precomputed values for 2^(2-2^(es-1))
-				v = exponent * f;
+				double exponentiation = subnormal_exponent[es]; // precomputed values for 2^(2-2^(es-1))
+				v = exponentiation * f;
+//				std::cout << "exponentiation " << exponentiation << " ";
 			}
 			else {
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
-				double exponent = double(1ll << (unsigned(ebits) + 1ll - (1ll << (es - 1ull))));
-				v = exponent * (1 + f);
+				int exponent = unsigned(ebits) + 1ll - (1ll << (es - 1ull));
+				double exponentiation = (exponent >= 0 ? double(1ull << exponent) : (1.0 / double(1ull << -exponent)));
+				v = exponentiation * (1 + f);
+//				std::cout << "exponent = " << exponent << " exponentiation " << exponentiation << " ";
 			}
 			v = sign() ? -v : v;
 		}

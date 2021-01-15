@@ -56,9 +56,9 @@ inline std::string to_hex(const areal<nbits, es, bt>& v) {
 	};
 	std::stringstream ss;
 	ss << "0x" << std::hex;
-	int nrNibbles = int(1 + ((nbits - 1) >> 2));
+	long nrNibbles = long(1ull + ((nbits - 1ull) >> 2ull));
 	for (long n = nrNibbles - 1; n >= 0; --n) {
-		uint8_t nibble = v.nibble(n);
+		uint8_t nibble = v.nibble(size_t(n));
 		ss << hexChar[nibble];
 		if (n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
 	}

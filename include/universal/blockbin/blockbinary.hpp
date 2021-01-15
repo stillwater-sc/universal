@@ -812,7 +812,7 @@ std::string to_binary(const blockbinary<nbits, bt>& number, bool nibbleMarker = 
 	std::stringstream ss;
 	ss << 'b';
 	for (int i = int(nbits - 1); i >= 0; --i) {
-		ss << (number.at(i) ? '1' : '0');
+		ss << (number.at(size_t(i)) ? '1' : '0');
 		if (i > 0 && (i % 4) == 0 && nibbleMarker) ss << '\'';
 	}
 	return ss.str();

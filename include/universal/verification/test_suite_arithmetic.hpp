@@ -108,15 +108,15 @@ void ReportAssignmentSuccess(const std::string& test_case, const std::string& op
 /////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
 template<typename TestType>
-int Compare(double input, const TestType& presult, double reference, bool bReportIndividualTestCases) {
+int Compare(double input, const TestType& testValue, double reference, bool bReportIndividualTestCases) {
 	int fail = 0;
-	double result = double(presult);
+	double result = double(testValue);
 	if (std::fabs(result - reference) > 0.000000001) {
 		fail++;
-		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, presult);
+		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, testValue);
 	}
 	else {
-		// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
+		// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, testValue);
 	}
 	return fail;
 }
@@ -178,7 +178,7 @@ int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 	// TestType: fixpnt<nbits,rbits,Saturating,uint8_t> needs RefType fixpnt<nbits+1,rbits+1,Saturating,uint8_t>
 	// TestType: areal<nbits,es,uint8_t> needs RefType areal<nbits + 1, es, uint8_t>
 
-	RefType ref, prev, next;
+
 
 	const unsigned max = nbits > 20 ? 20 : nbits + 1;
 	size_t max_tests = (size_t(1) << max);
@@ -188,20 +188,21 @@ int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 
 	// execute the test
 	int nrOfFailedTests = 0;
-	RefType fpminpos;
-	double dminpos = double(minpos(fpminpos));
-	RefType fpmaxneg;
-	double dmaxneg = double(maxneg(fpmaxneg));
+	RefType positive_minimum;
+	double dminpos = double(minpos(positive_minimum));
+	RefType negative_maximum;
+	double dmaxneg = double(maxneg(negative_maximum));
 
 	// NUT: number under test
 	TestType nut;
 	double eps = dminpos / 2.0;  // the test value between 0 and minpos
 	for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
+		RefType ref, prev, next;
 		double testValue{ 0.0 };
 		ref.set_raw_bits(i);
 		double da = double(ref);
 		if (i > 0) {
-			eps = da > 0 ? da * 1.0e-6 : da * -1.0e-6;
+			eps = 1.0e-6; // da > 0 ? da * 1.0e-6 : da * -1.0e-6;
 		}
 		if (i % 2) {
 			if (i == 1) {
@@ -259,8 +260,8 @@ int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 		else {
 			// for the even values, we generate the round-to-actual cases
 			if (i == 0) {
-				// pref = 0
-				// 0                 -> value = 0
+				// ref = 0
+				// 0                -> value = 0
 				// half of next     -> value = 0
 				// special case of assigning to 0
 				testValue = da;
