@@ -6,8 +6,9 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <limits>
+#include <universal/posit/posit.hpp>
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 template<size_t nbits, size_t es>
 class valid {
@@ -113,8 +114,8 @@ public:
 	} 
 
 	// relative_order returns -1 if v was rounded up, 0 if it was exact, and 1 if v was rounded down
-	template <size_t FBits>
-	inline int relative_order(const value<FBits>& v) {
+	template <size_t NrFractionBits>
+	inline int relative_order(const value<NrFractionBits>& v) {
 		if (v.iszero()) {
 			return 0;
 		}
@@ -285,4 +286,4 @@ inline valid<nbits, es> operator/(const valid<nbits, es>& lhs, const valid<nbits
 	return ratio;
 }
 
-}}  // namespace sw::universal
+}  // namespace sw::universal

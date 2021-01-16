@@ -1,4 +1,4 @@
-// arithmetic_sqrt.cpp: test suite runner for posit sqrt
+// sqrt.cpp: test suite runner for posit sqrt
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

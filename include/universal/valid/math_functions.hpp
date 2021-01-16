@@ -1,5 +1,5 @@
 #pragma once
-// math_functions.hpp: elementary functions for the posit number system
+// math_functions.hpp: elementary functions for the valid number system
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -15,6 +15,8 @@ sin, cos, exp, and their inverse functions (including arcsin, log, x^(1/n)).
 Elementary functions were introduced by Joseph Liouville in a series of papers from 1833 to 1841. 
 An algebraic treatment of elementary functions was started by Joseph Fels Ritt in the 1930s.
 */
+
+/*
 #include "math/classify.hpp"
 #include "math/complex.hpp"
 #include "math/constants.hpp"
@@ -30,4 +32,4 @@ An algebraic treatment of elementary functions was started by Joseph Fels Ritt i
 #include "math/sqrt.hpp"
 #include "math/trigonometry.hpp"
 #include "math/truncate.hpp"
-
+*/
