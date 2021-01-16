@@ -1,4 +1,4 @@
-// function_logarithm.cpp: functional tests for the logarithm functions (log2, log10, ln)
+// function_logarithm.cpp: test suite runner for the logarithm functions (log2, log10, ln)
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -12,7 +12,6 @@
 #include <universal/posit/posit.hpp>
 #include <universal/posit/manipulators.hpp>
 #include <universal/posit/math/logarithm.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_math_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
@@ -67,89 +66,89 @@ try {
 	cout << endl;
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<2, 0>("Manual Testing", true), "posit<2,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<2, 0>("Manual Testing", true), "posit<2,0>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<3, 0>("Manual Testing", true), "posit<3,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<3, 1>("Manual Testing", true), "posit<3,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<3, 0>("Manual Testing", true), "posit<3,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<3, 1>("Manual Testing", true), "posit<3,1>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<4, 0>("Manual Testing", true), "posit<4,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<4, 1>("Manual Testing", true), "posit<4,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<4, 0>("Manual Testing", true), "posit<4,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<4, 1>("Manual Testing", true), "posit<4,1>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<5, 0>("Manual Testing", true), "posit<5,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<5, 1>("Manual Testing", true), "posit<5,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<5, 2>("Manual Testing", true), "posit<5,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<5, 0>("Manual Testing", true), "posit<5,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<5, 1>("Manual Testing", true), "posit<5,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<5, 2>("Manual Testing", true), "posit<5,2>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<8, 4>("Manual Testing", true), "posit<8,4>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog2<8, 4>("Manual Testing", true), "posit<8,4>", "log2");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog10<8, 4>("Manual Testing", true), "posit<8,4>", "log10");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 4>("Manual Testing", true), "posit<8,4>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog2<8, 4>("Manual Testing", true), "posit<8,4>", "log2");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog10<8, 4>("Manual Testing", true), "posit<8,4>", "log10");
 
 #else
 
 	cout << "Posit log validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<9, 3>(tag, bReportIndividualTestCases), "posit<9,3>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<9, 4>(tag, bReportIndividualTestCases), "posit<9,4>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<9, 5>(tag, bReportIndividualTestCases), "posit<9,5>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<9, 6>(tag, bReportIndividualTestCases), "posit<9,6>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 3>(tag, bReportIndividualTestCases), "posit<9,3>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 4>(tag, bReportIndividualTestCases), "posit<9,4>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 5>(tag, bReportIndividualTestCases), "posit<9,5>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<9, 6>(tag, bReportIndividualTestCases), "posit<9,6>", "log");
 	
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<10, 7>(tag, bReportIndividualTestCases), "posit<10,7>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 7>(tag, bReportIndividualTestCases), "posit<10,7>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "log");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "log");
 
 
 #if STRESS_TESTING
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 3>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,3>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 4>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,4>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 3>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,3>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 4>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,4>", "log");
 
 
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "log");
-	nrOfFailedTestCases += ReportTestResult(ValidateLog<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "log");
+	nrOfFailedTestCases += ReportTestResult(VerifyLog<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "log");
 	
 #endif  // STRESS_TESTING
 

@@ -1,4 +1,4 @@
-// prefix.cpp functional tests for prefix operators
+// prefix.cpp test suite runner for prefix operators
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -6,7 +6,6 @@
 
 #include <universal/posit/posit.hpp>
 #include <universal/posit/manipulators.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_math_test_suite.hpp>
 
 int main(int argc, char** argv)
@@ -17,10 +16,10 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePrefix<3, 0>("Increment failed", bReportIndividualTestCases), "posit<3,0>", "prefix ++posit");
+	nrOfFailedTestCases += ReportTestResult(VerifyPrefix<3, 0>("Increment failed", bReportIndividualTestCases), "posit<3,0>", "prefix ++posit");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePrefix<4, 0>("Increment failed", bReportIndividualTestCases), "posit<4,0>", "prefix ++posit");
-	nrOfFailedTestCases += ReportTestResult(ValidatePrefix<4, 1>("Increment failed", bReportIndividualTestCases), "posit<4,1>", "prefix ++posit");
+	nrOfFailedTestCases += ReportTestResult(VerifyPrefix<4, 0>("Increment failed", bReportIndividualTestCases), "posit<4,0>", "prefix ++posit");
+	nrOfFailedTestCases += ReportTestResult(VerifyPrefix<4, 1>("Increment failed", bReportIndividualTestCases), "posit<4,1>", "prefix ++posit");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

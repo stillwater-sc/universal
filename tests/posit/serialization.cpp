@@ -1,4 +1,4 @@
-// serialization.cpp: functional tests for serialization functions of posits
+// serialization.cpp: test suite runner for serialization functions of posits
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -9,8 +9,6 @@
 #define POSIT_ENABLE_LITERALS 1
 #include <universal/posit/posit.hpp>
 #include <universal/posit/manipulators.hpp>
-// test helpers, such as, ReportTestResults
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_math_test_suite.hpp>
 
 #define MANUAL_TESTING 1

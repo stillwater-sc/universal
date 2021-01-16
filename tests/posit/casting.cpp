@@ -1,4 +1,4 @@
-// casting.cpp : functional tests for casting operators between posit configurations
+// casting.cpp : test suite runner for casting operators between posit configurations
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -12,7 +12,6 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/posit/posit.hpp>
 #include <universal/posit/manipulators.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_test_suite.hpp>
 
 template<size_t nbits, size_t es>

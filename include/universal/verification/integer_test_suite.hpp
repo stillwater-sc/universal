@@ -18,56 +18,6 @@
 
 namespace sw::universal {
 
-#if 0
-#define INTEGER_TABLE_WIDTH 20
-	template<size_t nbits, typename BlockType>
-	void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs, const integer<nbits, BlockType>& pref, const integer<nbits, BlockType>& presult) {
-		auto old_precision = std::cerr.precision(); 
-		std::cerr << test_case << " "
-			<< std::setprecision(20)
-			<< std::setw(INTEGER_TABLE_WIDTH) << lhs
-			<< " " << op << " "
-			<< std::setw(INTEGER_TABLE_WIDTH) << rhs
-			<< " != "
-			<< std::setw(INTEGER_TABLE_WIDTH) << pref << " instead it yielded "
-			<< std::setw(INTEGER_TABLE_WIDTH) << presult
-			<< " " << to_binary(pref) << " vs " << to_binary(presult)
-			<< std::setprecision(old_precision)
-			<< std::endl;
-	}
-
-	template<size_t nbits, typename BlockType>
-	void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs, const integer<nbits, BlockType>& pref, const integer<nbits, BlockType>& presult) {
-		auto old_precision = std::cerr.precision();
-		std::cerr << test_case << " "
-			<< std::setprecision(20)
-			<< std::setw(INTEGER_TABLE_WIDTH) << lhs
-			<< " " << op << " "
-			<< std::setw(INTEGER_TABLE_WIDTH) << rhs
-			<< " == "
-			<< std::setw(INTEGER_TABLE_WIDTH) << pref << " matches reference "
-			<< std::setw(INTEGER_TABLE_WIDTH) << presult
-			<< " " << to_binary(pref) << " vs " << to_binary(presult)
-			<< std::setprecision(old_precision)
-			<< std::endl;
-	}
-
-	template<size_t nbits, typename BlockType>
-	void ReportUnaryArithmeticError(const std::string& test_case, const std::string& op, const integer<nbits, BlockType>& argument, const integer<nbits, BlockType>& ref, const integer<nbits, BlockType>& result) {
-		auto old_precision = std::cerr.precision();
-		std::cerr << test_case << " "
-			<< " " << op << " "
-			<< std::setprecision(20)
-			<< std::setw(INTEGER_TABLE_WIDTH) << argument
-			<< " != "
-			<< std::setw(INTEGER_TABLE_WIDTH) << ref << " instead it yielded "
-			<< std::setw(INTEGER_TABLE_WIDTH) << result
-			<< " " << to_binary(ref) << " vs " << to_binary(result)
-			<< std::setprecision(old_precision)
-			<< std::endl;
-	}
-#endif
-
 	// enumerate all addition cases for an integer<16> configuration compared against native short
 	template<typename BlockType>
 	int VerifyShortAddition(const std::string& tag, bool bReportIndividualTestCases) {

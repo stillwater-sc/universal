@@ -9,9 +9,12 @@
 #include <typeinfo>
 #include <random>
 #include <limits>
+#include <universal/verification/test_status.hpp> // ReportTestResult used by test suite runner
+#include <universal/verification/test_reporters.hpp> 
 
 namespace sw::universal {
 
+#if 0
 	static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
 	template<size_t nbits, size_t es>
@@ -180,7 +183,8 @@ namespace sw::universal {
 			<< std::setw(nbits) << pref.get()
 			<< " " << pretty_print(presult,20) << std::endl;
 	}
-		
+#endif
+
 	template<size_t nbits, size_t es>
 	void ReportDecodeError(const std::string& test_case, const posit<nbits, es>& actual, double golden_value) {
 		std::cerr << test_case << " actual " << actual << " required " << golden_value << std::endl;
@@ -217,7 +221,7 @@ namespace sw::universal {
 
 	// enumerate all conversion cases for a posit configuration
 	template<size_t nbits, size_t es>
-	int ValidateConversion(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 		// we are going to generate a test set that consists of all posit configs and their midpoints
 		// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 		// These larger posits will be at the mid-point between the smaller posit sample values
@@ -228,7 +232,7 @@ namespace sw::universal {
 		size_t HALF = (size_t(1) << max);
 
 		if (nbits > 20) {
-			std::cout << "ValidateConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 20" << std::endl;
+			std::cout << "VerifyConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 20" << std::endl;
 		}
 
 		// execute the test
@@ -327,7 +331,7 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 	template<>
-	int ValidateConversion<NBITS_IS_2, ES_IS_0>(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyConversion<NBITS_IS_2, ES_IS_0>(const std::string& tag, bool bReportIndividualTestCases) {
 		int nrOfFailedTestCases = 0;
 		// special case
 		posit<NBITS_IS_2, ES_IS_0> p = -INFINITY;
@@ -352,7 +356,7 @@ namespace sw::universal {
 
 	// enumerate all conversion cases for integers
 	template<size_t nbits, size_t es>
-	int ValidateIntegerConversion(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyIntegerConversion(const std::string& tag, bool bReportIndividualTestCases) {
 		// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
 		constexpr unsigned max = nbits > 20 ? 20 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;  
@@ -384,7 +388,7 @@ namespace sw::universal {
 /*
 	// specialized template for fast posit<2,0>
 	template<>
-	int ValidateIntegerConversion<NBITS_IS_2, ES_IS_0>(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyIntegerConversion<NBITS_IS_2, ES_IS_0>(const std::string& tag, bool bReportIndividualTestCases) {
 		std::vector<int> in = { -4, -3, -2, -1, 0, 1, 2, 3, 4 };
 		std::vector<int> ref = { -1, -1, -1, -1, 0, 1, 1, 1, 1 };
 		int nrOfFailedTestCases = 0;
@@ -405,7 +409,7 @@ namespace sw::universal {
 	}
 	// specialized template for fast posit<3,0>
 	template<>
-	int ValidateIntegerConversion<NBITS_IS_3, ES_IS_0>(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyIntegerConversion<NBITS_IS_3, ES_IS_0>(const std::string& tag, bool bReportIndividualTestCases) {
 		std::vector<int> in = { -4, -3, -2, -1, 0, 1, 2, 3, 4 };
 		std::vector<int> ref = { -2, -2, -2, -1, 0, 1, 2, 2, 2 };
 		int nrOfFailedTestCases = 0;
@@ -428,7 +432,7 @@ namespace sw::universal {
 
 // enumerate all conversion cases for integers
 	template<size_t nbits, size_t es>
-	int ValidateUintConversion(std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyUintConversion(std::string& tag, bool bReportIndividualTestCases) {
 		// we generate numbers from 1 via NaR to -1 and through the special case of 0 back to 1
 		constexpr unsigned max = nbits > 20 ? 20 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << (max - 1)) + 1;
@@ -493,9 +497,9 @@ namespace sw::universal {
 		set = s;
 	}
 
-	// validate the increment operator++
+	// Verify the increment operator++
 	template<size_t nbits, size_t es>
-	int ValidateIncrement(const std::string& tag, bool bReportIndividualTestCases)	{
+	int VerifyIncrement(const std::string& tag, bool bReportIndividualTestCases)	{
 		std::vector< posit<nbits, es> > set;
 		GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
 
@@ -516,9 +520,9 @@ namespace sw::universal {
 		return nrOfFailedTestCases;
 	}
 
-	// validate the decrement operator--
+	// Verify the decrement operator--
 	template<size_t nbits, size_t es>
-	int ValidateDecrement(const std::string& tag, bool bReportIndividualTestCases)
+	int VerifyDecrement(const std::string& tag, bool bReportIndividualTestCases)
 	{
 		std::vector< posit<nbits, es> > set;
 		GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -540,9 +544,9 @@ namespace sw::universal {
 		return nrOfFailedTestCases;
 	}
 
-	// validate the postfix operator++
+	// Verify the postfix operator++
 	template<size_t nbits, size_t es>
-	int ValidatePostfix(const std::string& tag, bool bReportIndividualTestCases)
+	int VerifyPostfix(const std::string& tag, bool bReportIndividualTestCases)
 	{
 		std::vector< posit<nbits, es> > set;
 		GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -564,9 +568,9 @@ namespace sw::universal {
 		return nrOfFailedTestCases;
 	}
 
-	// validate the prefix operator++
+	// Verify the prefix operator++
 	template<size_t nbits, size_t es>
-	int ValidatePrefix(const std::string& tag, bool bReportIndividualTestCases)
+	int VerifyPrefix(const std::string& tag, bool bReportIndividualTestCases)
 	{
 		std::vector< posit<nbits, es> > set;
 		GenerateOrderedPositSet(set);  // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -590,7 +594,7 @@ namespace sw::universal {
 
 	// enumerate all negation cases for a posit configuration: executes within 10 sec till about nbits = 14
 	template<size_t nbits, size_t es>
-	int ValidateNegation(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyNegation(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		posit<nbits, es> pa(0), pneg(0), pref(0);
@@ -615,7 +619,7 @@ namespace sw::universal {
 
 	// enumerate all SQRT cases for a posit configuration: executes within 10 sec till about nbits = 14
 	template<size_t nbits, size_t es>
-	int ValidateSqrt(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifySqrt(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 
@@ -641,7 +645,7 @@ namespace sw::universal {
 
 	// enumerate all addition cases for a posit configuration
 	template<size_t nbits, size_t es>
-	int ValidateAddition(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 		const size_t NR_POSITS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		posit<nbits, es> pa, pb, psum, pref;
@@ -686,7 +690,7 @@ namespace sw::universal {
 
 	// enumerate all addition cases for a posit configuration
 	template<size_t nbits, size_t es>
-	int ValidateInPlaceAddition(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyInPlaceAddition(const std::string& tag, bool bReportIndividualTestCases) {
 		const size_t NR_POSITS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_POSITS; i++) {
@@ -732,7 +736,7 @@ namespace sw::universal {
 
 	// enumerate all subtraction cases for a posit configuration: is within 10sec till about nbits = 14
 	template<size_t nbits, size_t es>
-	int ValidateSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 		const size_t NR_POSITS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_POSITS; i++) {
@@ -776,7 +780,7 @@ namespace sw::universal {
 
 	// enumerate all subtraction cases for a posit configuration: is within 10sec till about nbits = 14
 	template<size_t nbits, size_t es>
-	int ValidateInPlaceSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyInPlaceSubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 		const size_t NR_POSITS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_POSITS; i++) {
@@ -821,7 +825,7 @@ namespace sw::universal {
 
 	// enumerate all multiplication cases for a posit configuration: is within 10sec till about nbits = 14
 	template<size_t nbits, size_t es>
-	int ValidateMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
 		int nrOfFailedTests = 0;
 		const size_t NR_POSITS = (size_t(1) << nbits);
 		for (size_t i = 0; i < NR_POSITS; i++) {
@@ -863,7 +867,7 @@ namespace sw::universal {
 
 	// enumerate all multiplication cases for a posit configuration: is within 10sec till about nbits = 14
 	template<size_t nbits, size_t es>
-	int ValidateInPlaceMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyInPlaceMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
 		int nrOfFailedTests = 0;
 		const size_t NR_POSITS = (size_t(1) << nbits);
 		for (size_t i = 0; i < NR_POSITS; i++) {
@@ -907,7 +911,7 @@ namespace sw::universal {
 
 	// enerate all reciprocation cases for a posit configuration: executes within 10 sec till about nbits = 14
 	template<size_t nbits, size_t es>
-	int ValidateReciprocation(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyReciprocation(const std::string& tag, bool bReportIndividualTestCases) {
 		const size_t NR_TEST_CASES = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_TEST_CASES; i++) {
@@ -937,7 +941,7 @@ namespace sw::universal {
 
 	// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
 	template<size_t nbits, size_t es>
-	int ValidateDivision(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyDivision(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_POSITS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_POSITS; i++) {
@@ -1010,7 +1014,7 @@ namespace sw::universal {
 
 	// enumerate all division cases for a posit configuration: is within 10sec till about nbits = 14
 	template<size_t nbits, size_t es>
-	int ValidateInPlaceDivision(const std::string& tag, bool bReportIndividualTestCases) {
+	int VerifyInPlaceDivision(const std::string& tag, bool bReportIndividualTestCases) {
 		constexpr size_t NR_POSITS = (size_t(1) << nbits);
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_POSITS; i++) {
@@ -1086,7 +1090,7 @@ namespace sw::universal {
 	// Posit equal diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR can be checked for equality/inequality
 	template<size_t nbits, size_t es>
-	int ValidatePositLogicEqual() {
+	int VerifyPositLogicEqual() {
 		constexpr size_t max = nbits > 10 ? 10 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
@@ -1131,7 +1135,7 @@ namespace sw::universal {
 	// Posit not-equal diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR can be checked for equality/inequality
 	template<size_t nbits, size_t es>
-	int ValidatePositLogicNotEqual() {
+	int VerifyPositLogicNotEqual() {
 		constexpr size_t max = nbits > 10 ? 10 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
@@ -1177,7 +1181,7 @@ namespace sw::universal {
 	// Posit less-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR is smaller than any other value
 	template<size_t nbits, size_t es>
-	int ValidatePositLogicLessThan() {
+	int VerifyPositLogicLessThan() {
 		constexpr size_t max = nbits > 10 ? 10 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
@@ -1214,7 +1218,7 @@ namespace sw::universal {
 	// Posit greater-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Any number is greater-than posit NaR
 	template<size_t nbits, size_t es>
-	int ValidatePositLogicGreaterThan() {
+	int VerifyPositLogicGreaterThan() {
 		constexpr size_t max = nbits > 10 ? 10 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
@@ -1243,7 +1247,7 @@ namespace sw::universal {
 	// Posit less-or-equal-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Posit NaR is smaller or equal than any other value
 	template<size_t nbits, size_t es>
-	int ValidatePositLogicLessOrEqualThan() {
+	int VerifyPositLogicLessOrEqualThan() {
 		constexpr size_t max = nbits > 10 ? 10 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
@@ -1273,7 +1277,7 @@ namespace sw::universal {
 	// Posit greater-or-equal-than diverges from IEEE float in dealing with INFINITY/NAN
 	// Any number is greater-or-equal-than posit NaR
 	template<size_t nbits, size_t es>
-	int ValidatePositLogicGreaterOrEqualThan() {
+	int VerifyPositLogicGreaterOrEqualThan() {
 		constexpr size_t max = nbits > 10 ? 10 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;

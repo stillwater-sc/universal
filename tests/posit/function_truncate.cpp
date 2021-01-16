@@ -1,4 +1,4 @@
-// function_truncate.cpp: functional tests for truncation functions trunc, round, floor, and ceil
+// function_truncate.cpp: test suite runner for truncation functions trunc, round, floor, and ceil
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -9,7 +9,6 @@
 #include <universal/posit/posit.hpp>
 #include <universal/posit/manipulators.hpp>
 #include <universal/posit/math/truncate.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_math_test_suite.hpp>
 
 #define MANUAL_TESTING 1

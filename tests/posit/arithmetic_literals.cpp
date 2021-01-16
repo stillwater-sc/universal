@@ -1,4 +1,4 @@
-// arithmetic_literals.cpp: functional tests for the use of literals in posit equations
+// arithmetic_literals.cpp: test suite runner for the use of literals in posit equations
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

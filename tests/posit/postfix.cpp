@@ -1,4 +1,4 @@
-// postfix.cpp functional tests for postfix operators
+// postfix.cpp test suite runner for postfix operators
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -6,7 +6,6 @@
 
 #include <universal/posit/posit.hpp>
 #include <universal/posit/manipulators.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_math_test_suite.hpp>
 
 int main(int argc, char** argv)
@@ -17,10 +16,10 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePostfix<3, 0>("Postfix failed", bReportIndividualTestCases), "posit<3,0>", "posit++");
+	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<3, 0>("Postfix failed", bReportIndividualTestCases), "posit<3,0>", "posit++");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePostfix<4, 0>("Postfix failed", bReportIndividualTestCases), "posit<4,0>", "posit++");
-	nrOfFailedTestCases += ReportTestResult(ValidatePostfix<4, 1>("Postfix failed", bReportIndividualTestCases), "posit<4,1>", "posit++");
+	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<4, 0>("Postfix failed", bReportIndividualTestCases), "posit<4,0>", "posit++");
+	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<4, 1>("Postfix failed", bReportIndividualTestCases), "posit<4,1>", "posit++");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

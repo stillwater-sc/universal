@@ -69,6 +69,20 @@ void ReportUnaryArithmeticError(const std::string& test_case, const std::string&
 		<< std::endl;
 }
 
+template<typename TestType>
+void ReportUnaryArithmeticSucces(const std::string& test_case, const std::string& op, const TestType& argument, const TestType& result, const TestType& ref) {
+	auto old_precision = std::cerr.precision();
+	std::cerr << test_case << " "
+		<< " " << op << " "
+		<< std::setprecision(20)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << argument
+		<< " == "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " reference value is "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
+		<< std::setprecision(old_precision)
+		<< std::endl;
+}
+
 template<typename TestType, typename RefType>
 void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const TestType& lhs, const TestType& rhs, const TestType& result, const RefType& ref) {
 	auto old_precision = std::cerr.precision();

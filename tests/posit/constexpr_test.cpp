@@ -7,6 +7,8 @@
 // forth: enable/disable the ability to use literals in binary logic and arithmetic operators
 #define POSIT_ENABLE_LITERALS 1
 
+// requires C++20 <bit>
+
 // minimum set of include files to reflect source code dependencies
 #include "universal/posit/posit.hpp"
 #include "universal/posit/numeric_limits.hpp"

@@ -1,4 +1,4 @@
-// function_hyperbolic.cpp: functional tests for hyperbolic functions (sinh/cosh/tanh/atanh/acosh/asinh)
+// function_hyperbolic.cpp: test suite runner for hyperbolic functions (sinh/cosh/tanh/atanh/acosh/asinh)
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -12,7 +12,6 @@
 #include <universal/posit/posit.hpp>
 #include <universal/posit/manipulators.hpp>
 #include <universal/posit/math/hyperbolic.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_math_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
@@ -135,89 +134,89 @@ try {
 	cout << endl;
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<2, 0>("Manual Testing", true), "posit<2,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<2, 0>("Manual Testing", true), "posit<2,0>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<3, 0>("Manual Testing", true), "posit<3,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<3, 1>("Manual Testing", true), "posit<3,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 0>("Manual Testing", true), "posit<3,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 1>("Manual Testing", true), "posit<3,1>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<4, 0>("Manual Testing", true), "posit<4,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<4, 1>("Manual Testing", true), "posit<4,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<4, 0>("Manual Testing", true), "posit<4,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<4, 1>("Manual Testing", true), "posit<4,1>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<5, 0>("Manual Testing", true), "posit<5,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<5, 1>("Manual Testing", true), "posit<5,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<5, 2>("Manual Testing", true), "posit<5,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 0>("Manual Testing", true), "posit<5,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 1>("Manual Testing", true), "posit<5,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 2>("Manual Testing", true), "posit<5,2>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<8, 0>("Manual Testing", true), "posit<8,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateCosh<8, 0>("Manual Testing", true), "posit<8,0>", "cosh");
-	nrOfFailedTestCases += ReportTestResult(ValidateTanh<8, 0>("Manual Testing", true), "posit<8,0>", "tanh");
-	nrOfFailedTestCases += ReportTestResult(ValidateAtanh<8, 0>("Manual Testing", true), "posit<8,0>", "atanh");
-	nrOfFailedTestCases += ReportTestResult(ValidateAcosh<8, 0>("Manual Testing", true), "posit<8,0>", "acosh");
-	nrOfFailedTestCases += ReportTestResult(ValidateAsinh<8, 0>("Manual Testing", true), "posit<8,0>", "asinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 0>("Manual Testing", true), "posit<8,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh<8, 0>("Manual Testing", true), "posit<8,0>", "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh<8, 0>("Manual Testing", true), "posit<8,0>", "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<8, 0>("Manual Testing", true), "posit<8,0>", "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<8, 0>("Manual Testing", true), "posit<8,0>", "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<8, 0>("Manual Testing", true), "posit<8,0>", "asinh");
 #else
 
 	cout << "Posit hyperbolic sine/cosine/tangent function validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<9, 3>(tag, bReportIndividualTestCases), "posit<9,3>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<9, 4>(tag, bReportIndividualTestCases), "posit<9,4>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<9, 5>(tag, bReportIndividualTestCases), "posit<9,5>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<9, 6>(tag, bReportIndividualTestCases), "posit<9,6>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 3>(tag, bReportIndividualTestCases), "posit<9,3>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 4>(tag, bReportIndividualTestCases), "posit<9,4>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 5>(tag, bReportIndividualTestCases), "posit<9,5>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<9, 6>(tag, bReportIndividualTestCases), "posit<9,6>", "sinh");
 	
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<10, 7>(tag, bReportIndividualTestCases), "posit<10,7>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 7>(tag, bReportIndividualTestCases), "posit<10,7>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "sinh");
 
 
 #if STRESS_TESTING
 	// nbits=64 requires long double compiler support
-	// nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "sinh");
+	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "sinh");
 
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(ValidateSinh<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "sinh");
 	
 #endif  // STRESS_TESTING
 

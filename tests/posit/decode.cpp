@@ -1,4 +1,4 @@
-// decode.cpp: functional tests of the posit decode method
+// decode.cpp: test suite runner of the posit decode method
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -9,7 +9,6 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/posit/posit.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_test_suite.hpp>
 
 /*

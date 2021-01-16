@@ -12,7 +12,6 @@
 #include <universal/traits/posit_traits.hpp>
 #include <universal/posit/quire.hpp>
 #include <universal/posit/fdp.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/quire_test_suite.hpp>
 

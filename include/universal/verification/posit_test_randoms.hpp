@@ -12,6 +12,7 @@
 #include <limits>
 
 #include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_reporters.hpp>
 
 namespace sw::universal {
 
@@ -58,48 +59,48 @@ namespace sw::universal {
 	const int OPCODE_RAN   = 60;
 
 	// Execute a binary operator
-	template<size_t nbits, size_t es>
-	void executeBinary(int opcode, double da, double db, const posit<nbits, es>& pa, const posit<nbits, es>& pb, posit<nbits, es>& preference, posit<nbits, es>& presult) {
+	template<typename TestType>
+	void executeBinary(int opcode, double da, double db, const TestType& testa, const TestType& testb, TestType& testresult, TestType& testref) {
 		double reference = 0.0;
 		switch (opcode) {
 		case OPCODE_ADD:
-			presult = pa + pb;
+			testresult = testa + testb;
 			reference = da + db;
 			break;
 		case OPCODE_SUB:
-			presult = pa - pb;
+			testresult = testa - testb;
 			reference = da - db;
 			break;
 		case OPCODE_MUL:
-			presult = pa * pb;
+			testresult = testa * testb;
 			reference = da * db;
 			break;
 		case OPCODE_DIV:
-			presult = pa / pb;
+			testresult = testa / testb;
 			reference = da / db;
 			break;
 		case OPCODE_IPA:
-			presult = pa;
-			presult += pb;
+			testresult = testa;
+			testresult += testb;
 			reference = da + db;
 			break;
 		case OPCODE_IPS:
-			presult = pa;
-			presult -= pb;
+			testresult = testa;
+			testresult -= testb;
 			reference = da - db;
 			break;
 		case OPCODE_IPM:
-			presult = pa;
-			presult *= pb;
+			testresult = testa;
+			testresult *= testb;
 			reference = da * db;
 			break;
 		case OPCODE_IPD:
-			presult = pa;
-			presult /= pb;
+			testresult = testa;
+			testresult /= testb;
 			reference = da / db;
 			break;
 		case OPCODE_POW:
-			presult = sw::universal::pow(pa, pb);
+			testresult = sw::universal::pow(testa, testb);
 			reference = std::pow(da, db);
 			break;
 		case OPCODE_NOP:
@@ -107,88 +108,86 @@ namespace sw::universal {
 			std::cerr << "Unsupported unary operator: operation ignored\n";
 			break;
 		}
-		preference = reference;
+		testref = reference;
 	}
 
 	// Execute a unary operator
-	template<size_t nbits, size_t es>
-	void executeUnary(int opcode, double da, const posit<nbits, es>& pa, posit<nbits, es>& preference, posit<nbits, es>& presult) {
-		posit<nbits, es> pminpos;
-		double dminpos = double(minpos<nbits, es>(pminpos));
+	template<typename TestType>
+	void executeUnary(int opcode, double da, const TestType& testa, TestType& testref, TestType& testresult, double dminpos) {
 		double reference = 0.0;
 		switch (opcode) {
 		case OPCODE_SQRT:
-			presult = sw::universal::sqrt(pa);
+			testresult = sw::universal::sqrt(testa);
 			reference = std::sqrt(da);
 			break;
 		case OPCODE_EXP:
-			presult = sw::universal::exp(pa);
+			testresult = sw::universal::exp(testa);
 			reference = std::exp(da);
 			if (0.0 == reference) reference = dminpos;
 			break;
 		case OPCODE_EXP2:
-			presult = sw::universal::exp2(pa);
+			testresult = sw::universal::exp2(testa);
 			reference = std::exp2(da);
 			if (0.0 == reference) reference = dminpos;
 			break;
 		case OPCODE_LOG:
-			presult = sw::universal::log(pa);
+			testresult = sw::universal::log(testa);
 			reference = std::log(da);
 			break;
 		case OPCODE_LOG2:
-			presult = sw::universal::log2(pa);
+			testresult = sw::universal::log2(testa);
 			reference = std::log2(da);
 			break;
 		case OPCODE_LOG10:
-			presult = sw::universal::log10(pa);
+			testresult = sw::universal::log10(testa);
 			reference = std::log10(da);
 			break;
 		case OPCODE_SIN:
-			presult = sw::universal::sin(pa);
+			testresult = sw::universal::sin(testa);
 			reference = std::sin(da);
 			break;
 		case OPCODE_COS:
-			presult = sw::universal::cos(pa);
+			testresult = sw::universal::cos(testa);
 			reference = std::cos(da);
 			break;
 		case OPCODE_TAN:
-			presult = sw::universal::tan(pa);
+			testresult = sw::universal::tan(testa);
 			reference = std::tan(da);
 			break;
 		case OPCODE_ASIN:
-			presult = sw::universal::asin(pa);
+			testresult = sw::universal::asin(testa);
 			reference = std::asin(da);
 			break;
 		case OPCODE_ACOS:
-			presult = sw::universal::acos(pa);
+			testresult = sw::universal::acos(testa);
 			reference = std::acos(da);
 			break;
 		case OPCODE_ATAN:
-			presult = sw::universal::atan(pa);
+			testresult = sw::universal::atan(testa);
 			reference = std::atan(da);
 			break;
 		case OPCODE_SINH:
-			presult = sw::universal::sinh(pa);
+			testresult = sw::universal::sinh(testa);
 			reference = std::sinh(da);
 			break;
 		case OPCODE_COSH:
-			presult = sw::universal::cosh(pa);
+			testresult = sw::universal::cosh(testa);
 			reference = std::cosh(da);
 			break;
 		case OPCODE_TANH:
-			presult = sw::universal::tanh(pa);
+			testresult = sw::universal::tanh(testa);
 			reference = std::tanh(da);
 			break;
 		case OPCODE_ASINH:
-			presult = sw::universal::asinh(pa);
+			testresult = sw::universal::asinh(testa);
 			reference = std::asinh(da);
 			break;
 		case OPCODE_ACOSH:
-			presult = sw::universal::acosh(pa);
+			testresult = sw::universal::acosh(testa);
 			reference = std::acosh(da);
 			break;
 		case OPCODE_ATANH:
-			presult = sw::universal::atanh(pa);
+			testresult = sw::universal::atanh(testa);
 			reference = std::atanh(da);
 			break;
 		case OPCODE_NOP:
@@ -196,14 +195,14 @@ namespace sw::universal {
 			std::cerr << "Unsupported binary operator: operation ignored\n";
 			break;
 		}
-		preference = reference;
+		testref = reference;
 	}
 
 	// generate a random set of operands to test the binary operators for a posit configuration
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
 	template<size_t nbits, size_t es>
-	int ValidateBinaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
+	int VerifyBinaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
 		std::string operation_string;
 		switch (opcode) {
 		case OPCODE_ADD:
@@ -245,21 +244,21 @@ namespace sw::universal {
 		std::uniform_int_distribution<unsigned long long> distr;
 		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
-			posit<nbits, es> pa, pb, presult, preference;
-			pa.set_raw_bits(distr(eng));
-			pb.set_raw_bits(distr(eng));
-			double da = double(pa);
-			double db = double(pb);
+			posit<nbits, es> testa, testb, testresult, testref;
+			testa.set_raw_bits(distr(eng));
+			testb.set_raw_bits(distr(eng));
+			double da = double(testa);
+			double db = double(testb);
 			// in case you have numeric_limits<long double>::digits trouble... this will show that
-			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " pa " << pa << std::endl;
-			//std::cout << "sizeof db: " << sizeof(db) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value db " << db << " at index " << ia << " pa " << pb << std::endl;
+			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " testa " << testa << std::endl;
+			//std::cout << "sizeof db: " << sizeof(db) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value db " << db << " at index " << ia << " testa " << testb << std::endl;
 
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 			try {
-				executeBinary(opcode, da, db, pa, pb, preference, presult);
+				executeBinary(opcode, da, db, testa, testb, testref, testresult);
 			}
 			catch (const posit_arithmetic_exception& err) {
-				if (pa.isnar() || pb.isnar() || ((opcode == OPCODE_DIV || opcode == OPCODE_IPD) && pb.iszero())) {
+				if (testa.isnar() || testb.isnar() || ((opcode == OPCODE_DIV || opcode == OPCODE_IPD) && testb.iszero())) {
 					if (bReportIndividualTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 				}
 				else {
@@ -267,16 +266,16 @@ namespace sw::universal {
 				}
 			}
 #else
-			executeBinary(opcode, da, db, pa, pb, preference, presult);
+			executeBinary(opcode, da, db, testa, testb, testref, testresult);
 #endif
 
-			presult = preference;
-			if (presult != preference) {
+			testresult = testref;
+			if (testresult != testref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", operation_string, pa, pb, preference, presult);
+				if (bReportIndividualTestCases) ReportBinaryArithmeticError("FAIL", operation_string, testa, testb, testresult, testref);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, pa, pb, preference, presult);
+				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", operation_string, testa, testb, testresult, testref);
 			}
 		}
 		return nrOfFailedTests;
@@ -285,8 +284,9 @@ namespace sw::universal {
 	// generate a random set of operands to test the binary operators for a posit configuration
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
-	template<size_t nbits, size_t es>
-	int ValidateUnaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
+	// provide 		double dminpos = double(minpos<nbits, es>(pminpos));
+	template<typename TestType>
+	int VerifyUnaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms, double dminpos) {
 		std::string operation_string;
 		bool sqrtOperator = false;  // we need to filter negative values from the randoms
 		switch (opcode) {
@@ -349,18 +349,18 @@ namespace sw::universal {
 		std::uniform_int_distribution<unsigned long long> distr;
 		int nrOfFailedTests = 0;
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
-			posit<nbits, es> pa, presult, preference;
-			pa.set_raw_bits(distr(eng));
-			if (sqrtOperator && pa < 0) pa = -pa;
-			double da = double(pa);
+			TestType testa, testresult, testref;
+			testa.set_raw_bits(distr(eng));
+			if (sqrtOperator && testa < 0) testa = -testa;
+			double da = double(testa);
 			// in case you have numeric_limits<long double>::digits trouble... this will show that
-			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " pa " << pa << std::endl;
+			//std::cout << "sizeof da: " << sizeof(da) << " bits in significant " << (std::numeric_limits<long double>::digits - 1) << " value da " << da << " at index " << ia << " testa " << testa << std::endl;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 			try {
-				executeUnary(opcode, da, pa, preference, presult);
+				executeUnary(opcode, da, testa, testref, testresult, dminpos);
 			}
 			catch (const posit_arithmetic_exception& err) {
-				if (pa.isnar()) {
+				if (testa.isnar()) {
 					if (bReportIndividualTestCases) std::cerr << "Correctly caught arithmetic exception: " << err.what() << std::endl;
 				}
 				else {
@@ -368,14 +368,14 @@ namespace sw::universal {
 				}
 			}
 #else
-			executeUnary(opcode, da, pa, preference, presult);
+			executeUnary(opcode, da, testa, testref, testresult, dminpos);
 #endif
-			if (presult != preference) {
+			if (testresult != testref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", operation_string, pa, preference, presult);
+				if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", operation_string, testa, testresult, testref);
 			}
 			else {
-				if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", operation_string, pa, preference, presult);
+				//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", operation_string, testa, testresult, testref);
 			}
 		}
 
@@ -383,19 +383,19 @@ namespace sw::universal {
 	}
 
 	template<size_t nbits, size_t es>
-	int Compare(long double input, const posit<nbits, es>& presult, const posit<nbits, es>& ptarget, const posit<nbits+1,es>& pref, bool bReportIndividualTestCases) {
+	int Compare(long double input, const posit<nbits, es>& testresult, const posit<nbits, es>& ptarget, const posit<nbits+1,es>& pref, bool bReportIndividualTestCases) {
 		int fail = 0;
-		if (presult != ptarget) {
+		if (testresult != ptarget) {
 			fail++;
 			if (bReportIndividualTestCases) {
-				ReportConversionError("FAIL", "=", input, (long double)(ptarget), presult);
+				ReportConversionError("FAIL", "=", input, (long double)(ptarget), testresult);
 				std::cout << "reference   : " << pref.get() << std::endl;
 				std::cout << "target bits : " << ptarget.get() << std::endl;
-				std::cout << "actual bits : " << presult.get() << std::endl;
+				std::cout << "actual bits : " << testresult.get() << std::endl;
 			}
 		}
 		else {
-			// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, presult);
+			// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, testresult);
 		}
 		return fail;
 	}
@@ -403,7 +403,7 @@ namespace sw::universal {
 
 	// generate a random set of conversion cases
 	template<size_t nbits, size_t es>
-	int ValidateConversionThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, uint32_t nrOfRandoms) {
+	int VerifyConversionThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, uint32_t nrOfRandoms) {
 		// we are going to generate a test set that consists of all posit configs and their midpoints
 		// we do this by enumerating a posit that is 1-bit larger than the test posit configuration
 		// These larger posits will be at the mid-point between the smaller posit sample values
@@ -420,7 +420,7 @@ namespace sw::universal {
 		// execute the test
 		int nrOfFailedTests = 0;
 		for (uint32_t i = 0; i < nrOfRandoms; ++i) {
-			posit<nbits, es> presult, ptarget;
+			posit<nbits, es> testresult, ptarget;
 			// generate random value
 			unsigned long long value = distr(eng);
 			pref.set_raw_bits(value);   // assign to a posit<nbits+1,es> to generate the reference we know how to perturb
@@ -448,16 +448,16 @@ namespace sw::universal {
 
 				// round-down case
 				input = (long double)(pprev);
-				presult = input;
+				testresult = input;
 				truncate(pprev.get(), raw_target);
 				ptarget.set(raw_target);
-				nrOfFailedTests += Compare(input, presult, ptarget, pref, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, testresult, ptarget, pref, bReportIndividualTestCases);
 				// round-up
 				input = (long double)(pnext);
-				presult = input;
+				testresult = input;
 				truncate(pnext.get(), raw_target);
 				ptarget.set(raw_target);
-				nrOfFailedTests += Compare(input, presult, ptarget, pref, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, testresult, ptarget, pref, bReportIndividualTestCases);
 			}
 			else {
 				// for even values, we are on a posit value, so we create the round-up and round-down cases
@@ -467,14 +467,14 @@ namespace sw::universal {
 
 				// round-up
 				input = (long double)(pprev);
-				presult = input;
+				testresult = input;
 				ptarget = (long double)(pref);
-				//nrOfFailedTests += Compare(input, presult, ptarget, pref, bReportIndividualTestCases);
+				//nrOfFailedTests += Compare(input, testresult, ptarget, pref, bReportIndividualTestCases);
 				// round-down
 				input = (long double)(pnext);
-				presult = input;
+				testresult = input;
 				ptarget = (long double)(pref);
-				nrOfFailedTests += Compare(input, presult, ptarget, pref, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(input, testresult, ptarget, pref, bReportIndividualTestCases);
 			}
 		}
 		return nrOfFailedTests;

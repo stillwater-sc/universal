@@ -1,4 +1,4 @@
-// function_classify.cpp: functional tests for classification functions of the Reals specialized for posits
+// function_classify.cpp: test suite runner for classification functions of the Reals specialized for posits
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -9,7 +9,6 @@
 #include <universal/posit/posit.hpp>
 #include <universal/posit/manipulators.hpp>
 #include <universal/posit/math/classify.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_math_test_suite.hpp>
 
 #define MANUAL_TESTING 1

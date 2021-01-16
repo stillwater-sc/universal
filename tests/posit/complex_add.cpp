@@ -1,4 +1,4 @@
-// complex_add.cpp: functional tests for posit complex addition
+// complex_add.cpp: test suite runner for posit complex addition
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -20,7 +20,6 @@
 #include <universal/posit/specializations.hpp>
 #include <universal/posit/manipulators.hpp>
 #include <universal/posit/math_functions.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 

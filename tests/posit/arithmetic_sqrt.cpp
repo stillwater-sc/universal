@@ -1,4 +1,4 @@
-// arithmetic_sqrt.cpp: functional tests for posit sqrt
+// arithmetic_sqrt.cpp: test suite runner for posit sqrt
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -20,7 +20,6 @@
 #include <universal/posit/specializations.hpp>
 #include <universal/posit/math_functions.hpp>
 #include <universal/posit/manipulators.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
@@ -97,88 +96,88 @@ try {
 	cout << endl;
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<2, 0>("Manual Testing", true), "posit<2,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<2, 0>("Manual Testing", true), "posit<2,0>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<3, 0>("Manual Testing", true), "posit<3,0>", "sqrt");
-//	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<3, 1>("Manual Testing", true), "posit<3,1>", "sqrt");   // TODO: these configs where nbits < es+sign+regime don't work
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<3, 0>("Manual Testing", true), "posit<3,0>", "sqrt");
+//	nrOfFailedTestCases += ReportTestResult(VerifySqrt<3, 1>("Manual Testing", true), "posit<3,1>", "sqrt");   // TODO: these configs where nbits < es+sign+regime don't work
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<4, 0>("Manual Testing", true), "posit<4,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<4, 1>("Manual Testing", true), "posit<4,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<4, 0>("Manual Testing", true), "posit<4,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<4, 1>("Manual Testing", true), "posit<4,1>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<5, 0>("Manual Testing", true), "posit<5,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<5, 1>("Manual Testing", true), "posit<5,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<5, 2>("Manual Testing", true), "posit<5,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 0>("Manual Testing", true), "posit<5,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 1>("Manual Testing", true), "posit<5,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 2>("Manual Testing", true), "posit<5,2>", "sqrt");
 
-	//nrOfFailedTestCases += ReportTestResult(ValidateSqrt<8, 4>("Manual Testing", true), "posit<8,4>", "sqrt");
+	//nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 4>("Manual Testing", true), "posit<8,4>", "sqrt");
 
 #else
 
 	cout << "Posit sqrt validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "sqrt");
-//	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "sqrt");	// TODO: these configs where nbits < es+sign+regime don't work
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "sqrt");
+//	nrOfFailedTestCases += ReportTestResult(VerifySqrt<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "sqrt");	// TODO: these configs where nbits < es+sign+regime don't work
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 3>(tag, bReportIndividualTestCases), "posit<9,3>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 4>(tag, bReportIndividualTestCases), "posit<9,4>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 5>(tag, bReportIndividualTestCases), "posit<9,5>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<9, 6>(tag, bReportIndividualTestCases), "posit<9,6>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 3>(tag, bReportIndividualTestCases), "posit<9,3>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 4>(tag, bReportIndividualTestCases), "posit<9,4>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 5>(tag, bReportIndividualTestCases), "posit<9,5>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<9, 6>(tag, bReportIndividualTestCases), "posit<9,6>", "sqrt");
 	
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "sqrt");
 	// fails due to regime representation not being able to be represented by double
-	// nrOfFailedTestCases += ReportTestResult(ValidateSqrt<10, 7>(tag, bReportIndividualTestCases), "posit<10,7>", "sqrt");
+	// nrOfFailedTestCases += ReportTestResult(VerifySqrt<10, 7>(tag, bReportIndividualTestCases), "posit<10,7>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "sqrt");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "sqrt");
 
 
 #if STRESS_TESTING
 	// nbits=64 requires long double compiler support
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 2>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 3>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,3>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<64, 4>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,4>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 3>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,3>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 4>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,4>", "sqrt");
 
 
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "sqrt");
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "sqrt");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "sqrt");
 	
 #endif  // STRESS_TESTING
 

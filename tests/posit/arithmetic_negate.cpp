@@ -1,4 +1,4 @@
-// arithmetic_negate.cpp: functional tests for posit arithmetic negation
+// arithmetic_negate.cpp: test suite runner for posit arithmetic negation
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -19,7 +19,6 @@
 #include <universal/posit/numeric_limits.hpp>
 #include <universal/posit/specializations.hpp>
 #include <universal/posit/manipulators.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
@@ -53,48 +52,48 @@ try {
 	GenerateTestCase<5, 0, float>(-0.625f);
 	GenerateTestCase<5, 0, float>(-0.500f);
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 0>("Manual Testing: ", true), "posit<5,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<5, 0>("Manual Testing: ", true), "posit<5,0>", "multiplication");
 
 #else
 
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "negation");
 
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "negation");
 
 #if STRESS_TESTING
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<20, 1>(tag, bReportIndividualTestCases), "posit<20,1>", "negation");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation<24, 1>(tag, bReportIndividualTestCases), "posit<24,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<20, 1>(tag, bReportIndividualTestCases), "posit<20,1>", "negation");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation<24, 1>(tag, bReportIndividualTestCases), "posit<24,1>", "negation");
 
 #endif  // STRESS_TESTING
 

@@ -1,4 +1,4 @@
-// assignment.cpp : tests for native type literal assignments for posits
+// assignment.cpp : test suite runner for native type literal assignments for posits
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -6,7 +6,6 @@
 
 #include <universal/posit/posit.hpp>
 #include <universal/posit/manipulators.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 

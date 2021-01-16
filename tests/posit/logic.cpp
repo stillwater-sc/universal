@@ -1,4 +1,4 @@
-// logic.cpp : tests for logic operators between posits
+// logic.cpp :test suite runner for logic operators between posits
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -10,7 +10,6 @@
 #include <universal/posit/posit.hpp>
 #include <universal/posit/manipulators.hpp>
 #include <universal/posit/math/classify.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_test_suite.hpp>
 
 #define MANUAL_TESTING 0
@@ -47,12 +46,12 @@ try {
 	}
 
 	{
-		nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<3, 0>(), "posit<3,0>", "==");
-		nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<3, 0>(), "posit<3,0>", "!=");
-		nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<3, 0>(), "posit<3,0>", "<");
-		nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<3, 0>(), "posit<3,0>", ">");
-		nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<3, 0>(), "posit<3,0>", "<=");
-		nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<3, 0>(), "posit<3,0>", ">=");
+		nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<3, 0>(), "posit<3,0>", "==");
+		nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<3, 0>(), "posit<3,0>", "!=");
+		nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<3, 0>(), "posit<3,0>", "<");
+		nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<3, 0>(), "posit<3,0>", ">");
+		nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<3, 0>(), "posit<3,0>", "<=");
+		nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<3, 0>(), "posit<3,0>", ">=");
 	}
 
 
@@ -60,27 +59,27 @@ try {
 	posit<16, 1> p;
 
 	cout << "Logic: operator==()" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<3, 0>(), "posit<3,0>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<4, 0>(), "posit<4,0>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<4, 1>(), "posit<4,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<5, 0>(), "posit<5,0>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<5, 1>(), "posit<5,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<5, 2>(), "posit<5,2>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<6, 0>(), "posit<6,0>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<6, 1>(), "posit<6,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<6, 2>(), "posit<6,2>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<6, 3>(), "posit<6,3>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<7, 0>(), "posit<7,0>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<7, 1>(), "posit<7,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<7, 2>(), "posit<7,2>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<7, 3>(), "posit<7,3>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<7, 4>(), "posit<7,4>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 0>(), "posit<8,0>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 1>(), "posit<8,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 2>(), "posit<8,2>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 3>(), "posit<8,3>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 4>(), "posit<8,4>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<8, 5>(), "posit<8,5>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<3, 0>(), "posit<3,0>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<4, 0>(), "posit<4,0>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<4, 1>(), "posit<4,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<5, 0>(), "posit<5,0>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<5, 1>(), "posit<5,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<5, 2>(), "posit<5,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<6, 0>(), "posit<6,0>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<6, 1>(), "posit<6,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<6, 2>(), "posit<6,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<6, 3>(), "posit<6,3>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<7, 0>(), "posit<7,0>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<7, 1>(), "posit<7,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<7, 2>(), "posit<7,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<7, 3>(), "posit<7,3>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<7, 4>(), "posit<7,4>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<8, 0>(), "posit<8,0>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<8, 1>(), "posit<8,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<8, 2>(), "posit<8,2>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<8, 3>(), "posit<8,3>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<8, 4>(), "posit<8,4>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<8, 5>(), "posit<8,5>", "==");
 	if (!(p == 0)) { 
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> == 0", "== int literal");
 	}
@@ -107,24 +106,24 @@ try {
 	}
 	
 	cout << "Logic: operator!=()" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<3, 0>(), "posit<3,0>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<4, 0>(), "posit<4,0>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<4, 1>(), "posit<4,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<5, 0>(), "posit<5,0>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<5, 1>(), "posit<5,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<5, 2>(), "posit<5,2>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<6, 0>(), "posit<6,0>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<6, 1>(), "posit<6,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<6, 2>(), "posit<6,2>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<6, 3>(), "posit<6,3>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<7, 0>(), "posit<7,0>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<7, 1>(), "posit<7,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<7, 2>(), "posit<7,2>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<7, 3>(), "posit<7,3>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<8, 0>(), "posit<8,0>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<8, 1>(), "posit<8,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<8, 2>(), "posit<8,2>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<8, 3>(), "posit<8,3>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<3, 0>(), "posit<3,0>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<4, 0>(), "posit<4,0>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<4, 1>(), "posit<4,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<5, 0>(), "posit<5,0>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<5, 1>(), "posit<5,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<5, 2>(), "posit<5,2>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<6, 0>(), "posit<6,0>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<6, 1>(), "posit<6,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<6, 2>(), "posit<6,2>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<6, 3>(), "posit<6,3>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<7, 0>(), "posit<7,0>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<7, 1>(), "posit<7,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<7, 2>(), "posit<7,2>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<7, 3>(), "posit<7,3>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<8, 0>(), "posit<8,0>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<8, 1>(), "posit<8,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<8, 2>(), "posit<8,2>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<8, 3>(), "posit<8,3>", "!=");
 	if (p != 0) { 
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> != 0", "!= int literal");
 	}
@@ -151,24 +150,24 @@ try {
 	}
 
 	std::cout << "Logic: operator<()" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<3, 0>(), "posit<3,0>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<4, 0>(), "posit<4,0>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<4, 1>(), "posit<4,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<5, 0>(), "posit<5,0>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<5, 1>(), "posit<5,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<5, 2>(), "posit<5,2>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<6, 0>(), "posit<6,0>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<6, 1>(), "posit<6,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<6, 2>(), "posit<6,2>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<6, 3>(), "posit<6,3>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<7, 0>(), "posit<7,0>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<7, 1>(), "posit<7,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<7, 2>(), "posit<7,2>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<7, 3>(), "posit<7,3>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<8, 0>(), "posit<8,0>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<8, 1>(), "posit<8,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<8, 2>(), "posit<8,2>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<8, 3>(), "posit<8,3>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<3, 0>(), "posit<3,0>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<4, 0>(), "posit<4,0>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<4, 1>(), "posit<4,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<5, 0>(), "posit<5,0>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<5, 1>(), "posit<5,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<5, 2>(), "posit<5,2>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<6, 0>(), "posit<6,0>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<6, 1>(), "posit<6,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<6, 2>(), "posit<6,2>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<6, 3>(), "posit<6,3>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<7, 0>(), "posit<7,0>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<7, 1>(), "posit<7,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<7, 2>(), "posit<7,2>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<7, 3>(), "posit<7,3>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<8, 0>(), "posit<8,0>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<8, 1>(), "posit<8,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<8, 2>(), "posit<8,2>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<8, 3>(), "posit<8,3>", "<");
 	if (p < 0) { 
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> < 0", "< int literal");
 	}
@@ -195,24 +194,24 @@ try {
 	}
 
 	std::cout << "Logic: operator<=()" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<3, 0>(), "posit<3,0>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<4, 0>(), "posit<4,0>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<4, 1>(), "posit<4,1>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<5, 0>(), "posit<5,0>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<5, 1>(), "posit<5,1>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<5, 2>(), "posit<5,2>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<6, 0>(), "posit<6,0>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<6, 1>(), "posit<6,1>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<6, 2>(), "posit<6,2>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<6, 3>(), "posit<6,3>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<7, 0>(), "posit<7,0>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<7, 1>(), "posit<7,1>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<7, 2>(), "posit<7,2>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<7, 3>(), "posit<7,3>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<8, 0>(), "posit<8,0>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<8, 1>(), "posit<8,1>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<8, 2>(), "posit<8,2>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<8, 3>(), "posit<8,3>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<3, 0>(), "posit<3,0>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<4, 0>(), "posit<4,0>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<4, 1>(), "posit<4,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<5, 0>(), "posit<5,0>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<5, 1>(), "posit<5,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<5, 2>(), "posit<5,2>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<6, 0>(), "posit<6,0>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<6, 1>(), "posit<6,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<6, 2>(), "posit<6,2>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<6, 3>(), "posit<6,3>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<7, 0>(), "posit<7,0>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<7, 1>(), "posit<7,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<7, 2>(), "posit<7,2>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<7, 3>(), "posit<7,3>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<8, 0>(), "posit<8,0>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<8, 1>(), "posit<8,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<8, 2>(), "posit<8,2>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<8, 3>(), "posit<8,3>", "<=");
 	if (!(p <= 0)) {
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> <= 0", "<= int literal");
 	}
@@ -239,24 +238,24 @@ try {
 	}
 
 	std::cout << "Logic: operator>()" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<3, 0>(), "posit<3,0>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<4, 0>(), "posit<4,0>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<4, 1>(), "posit<4,1>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<5, 0>(), "posit<5,0>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<5, 1>(), "posit<5,1>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<5, 2>(), "posit<5,2>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<6, 0>(), "posit<6,0>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<6, 1>(), "posit<6,1>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<6, 2>(), "posit<6,2>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<6, 3>(), "posit<6,3>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<7, 0>(), "posit<7,0>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<7, 1>(), "posit<7,1>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<7, 2>(), "posit<7,2>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<7, 3>(), "posit<7,3>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<8, 0>(), "posit<8,0>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<8, 1>(), "posit<8,1>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<8, 2>(), "posit<8,2>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<8, 3>(), "posit<8,3>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<3, 0>(), "posit<3,0>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<4, 0>(), "posit<4,0>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<4, 1>(), "posit<4,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<5, 0>(), "posit<5,0>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<5, 1>(), "posit<5,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<5, 2>(), "posit<5,2>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<6, 0>(), "posit<6,0>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<6, 1>(), "posit<6,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<6, 2>(), "posit<6,2>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<6, 3>(), "posit<6,3>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<7, 0>(), "posit<7,0>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<7, 1>(), "posit<7,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<7, 2>(), "posit<7,2>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<7, 3>(), "posit<7,3>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<8, 0>(), "posit<8,0>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<8, 1>(), "posit<8,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<8, 2>(), "posit<8,2>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<8, 3>(), "posit<8,3>", ">");
 	if (p > 0) { 
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> > 0", "> int literal");
 	}
@@ -283,24 +282,24 @@ try {
 	}
 
 	std::cout << "Logic: operator>=()" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<3, 0>(), "posit<3,0>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<4, 0>(), "posit<4,0>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<4, 1>(), "posit<4,1>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<5, 0>(), "posit<5,0>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<5, 1>(), "posit<5,1>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<5, 2>(), "posit<5,2>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<6, 0>(), "posit<6,0>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<6, 1>(), "posit<6,1>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<6, 2>(), "posit<6,2>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<6, 3>(), "posit<6,3>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<7, 0>(), "posit<7,0>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<7, 1>(), "posit<7,1>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<7, 2>(), "posit<7,2>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<7, 3>(), "posit<7,3>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<8, 0>(), "posit<8,0>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<8, 1>(), "posit<8,1>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<8, 2>(), "posit<8,2>", ">=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<8, 3>(), "posit<8,3>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<3, 0>(), "posit<3,0>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<4, 0>(), "posit<4,0>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<4, 1>(), "posit<4,1>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<5, 0>(), "posit<5,0>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<5, 1>(), "posit<5,1>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<5, 2>(), "posit<5,2>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<6, 0>(), "posit<6,0>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<6, 1>(), "posit<6,1>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<6, 2>(), "posit<6,2>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<6, 3>(), "posit<6,3>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<7, 0>(), "posit<7,0>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<7, 1>(), "posit<7,1>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<7, 2>(), "posit<7,2>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<7, 3>(), "posit<7,3>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<8, 0>(), "posit<8,0>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<8, 1>(), "posit<8,1>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<8, 2>(), "posit<8,2>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<8, 3>(), "posit<8,3>", ">=");
 	if (!(p >= 0)) { 
 		nrOfFailedTestCases += ReportTestResult(1, "posit<16,1> >= 0", ">= int literal");
 	}
@@ -328,12 +327,12 @@ try {
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual<16, 1>(), "posit<16,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual<16, 1>(), "posit<16,1>", "!=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan<16, 1>(), "posit<16,1>", "<");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan<16, 1>(), "posit<16,1>", "<=");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan<16, 1>(), "posit<16,1>", ">");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<16, 1>(), "posit<16,1>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual<16, 1>(), "posit<16,1>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual<16, 1>(), "posit<16,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan<16, 1>(), "posit<16,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan<16, 1>(), "posit<16,1>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan<16, 1>(), "posit<16,1>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<16, 1>(), "posit<16,1>", ">=");
 
 #endif // STRESS_TESTING
 

@@ -1,4 +1,4 @@
-// arithmetic_fma.cpp: functional tests for fused-multiply-add
+// arithmetic_fma.cpp: test suite runner for fused-multiply-add
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -13,7 +13,6 @@
 #include "universal/posit/posit.hpp"
 // posit type manipulators such as pretty printers
 #include <universal/posit/manipulators.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_math_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h

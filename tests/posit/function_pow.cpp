@@ -1,4 +1,4 @@
-// function_pow.cpp: functional tests for pow function
+// function_pow.cpp: test suite runner for pow function
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -14,7 +14,6 @@
 #include <universal/posit/posit.hpp>
 #include <universal/posit/manipulators.hpp>
 #include <universal/posit/math/pow.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/posit_math_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
@@ -176,79 +175,79 @@ try {
 	cout << endl;
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<2, 0>("Manual Testing", true), "posit<2,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<2, 0>("Manual Testing", true), "posit<2,0>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<3, 0>("Manual Testing", true), "posit<3,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<3, 1>("Manual Testing", true), "posit<3,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 0>("Manual Testing", true), "posit<3,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 1>("Manual Testing", true), "posit<3,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<4, 0>("Manual Testing", true), "posit<4,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<4, 1>("Manual Testing", true), "posit<4,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 0>("Manual Testing", true), "posit<4,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 1>("Manual Testing", true), "posit<4,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<5, 0>("Manual Testing", true), "posit<5,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<5, 1>("Manual Testing", true), "posit<5,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<5, 2>("Manual Testing", true), "posit<5,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 0>("Manual Testing", true), "posit<5,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 1>("Manual Testing", true), "posit<5,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 2>("Manual Testing", true), "posit<5,2>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<8, 0>("Manual Testing", true), "posit<8,0>", "pow");	
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<8, 1>("Manual Testing", true), "posit<8,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<8, 4>("Manual Testing", true), "posit<8,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 0>("Manual Testing", true), "posit<8,0>", "pow");	
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 1>("Manual Testing", true), "posit<8,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 4>("Manual Testing", true), "posit<8,4>", "pow");
 
-	//nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<16, 1>("Manual Testing", true), "posit<16,1>", "pow");
+	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>("Manual Testing", true), "posit<16,1>", "pow");
 
 #else
 
 	cout << "Posit Power function validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<9, 3>(tag, bReportIndividualTestCases), "posit<9,3>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<9, 4>(tag, bReportIndividualTestCases), "posit<9,4>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<9, 5>(tag, bReportIndividualTestCases), "posit<9,5>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<9, 6>(tag, bReportIndividualTestCases), "posit<9,6>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 3>(tag, bReportIndividualTestCases), "posit<9,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 4>(tag, bReportIndividualTestCases), "posit<9,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 5>(tag, bReportIndividualTestCases), "posit<9,5>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 6>(tag, bReportIndividualTestCases), "posit<9,6>", "pow");
 	
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "pow");
 	// fails due to regime representation not being able to be represented by double
-	// nrOfFailedTestCases += ReportTestResult(ValidatePowMethod<10, 7>(tag, bReportIndividualTestCases), "posit<10,7>", "pow");
+	// nrOfFailedTestCases += ReportTestResult(VerifyPowMethod<10, 7>(tag, bReportIndividualTestCases), "posit<10,7>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(ValidatePowerFunction<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "pow");
 
 
 #if STRESS_TESTING
