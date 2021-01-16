@@ -1,4 +1,4 @@
-//  subtraction.cpp : arithmetic test suite for subracting abitrary precision integers
+//  subtraction.cpp : test suite runner for subracting abitrary precision integers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -12,8 +12,6 @@
 #include <universal/integer/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-// test helpers, such as, ReportTestResults
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/integer_test_suite.hpp>
 
 /*

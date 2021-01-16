@@ -1,4 +1,4 @@
-// arithmetic_add.cpp: functional tests for addition on arbitrary logarithmic number system
+// arithmetic_add.cpp: test suite runner for addition on arbitrary logarithmic number system
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

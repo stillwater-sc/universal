@@ -1,4 +1,4 @@
-//  sqrt.cpp : square root tests for abitrary precision integers
+//  sqrt.cpp : test runner for square root on abitrary precision integers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -13,7 +13,6 @@
 #include <universal/integer/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/integer_test_suite.hpp>
 
 /*
@@ -44,7 +43,7 @@ int VerifyIntegerFloorSqrt(const std::string& tag, bool bReportIndividualTestCas
 
 	int nrOfTestFailures = 0;
 	Integer a, result;
-	size_t ref;
+	size_t ref; // we use an unsigned type as sqrt can't be negative
 	for (size_t i = 0; i < NR_VALUES; ++i) {
 		a = i;
 		result = floor_sqrt(a);
@@ -52,7 +51,7 @@ int VerifyIntegerFloorSqrt(const std::string& tag, bool bReportIndividualTestCas
 //		std::cout << "sqrt of " << a << " " << result << " vs " << ref << " vs " << Integer(ref) << std::endl;
 		if (result != ref) {
 			++nrOfTestFailures;
-			if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", "sqrt", a, Integer(ref), result);
+			if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", "sqrt", a, result, Integer(ref));
 		}
 		if (nrOfTestFailures > 24) return nrOfTestFailures;
 	}
@@ -74,7 +73,7 @@ int VerifyIntegerCeilSqrt(const std::string& tag, bool bReportIndividualTestCase
 //		std::cout << "sqrt of " << a << " " << result << " vs " << ref << " vs " << Integer(ref) << std::endl;
 		if (result != ref) {
 			++nrOfTestFailures;
-			if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", "ceil_sqrt", a, Integer(ref), result);
+			if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", "ceil_sqrt", a, result, Integer(ref));
 		}
 		if (nrOfTestFailures > 24) return nrOfTestFailures;
 	}

@@ -17,7 +17,6 @@
 #include <universal/fixpnt/fixed_point.hpp>
 #include <universal/fixpnt/manipulators.hpp>
 #include <universal/fixpnt/math_functions.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 namespace sw { namespace universal { namespace complex_literals {

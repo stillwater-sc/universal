@@ -1,8 +1,10 @@
-// sat_division.cpp: functional tests for arbitrary configuration fixed-point saturating division
+// sat_division.cpp: test suite runner for arbitrary configuration fixed-point saturating division
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>
+#include <iomanip>
 #include <typeinfo>
 
 // Configure the fixpnt template environment
@@ -16,7 +18,6 @@
 #include <universal/native/integers.hpp>
 #include <universal/fixpnt/manipulators.hpp>
 #include <universal/fixpnt/attributes.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits

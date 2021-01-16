@@ -170,13 +170,7 @@ try {
 	{
 		/*
 		Generate table for a class sw::universal::areal<6,3,unsigned char> in TXT format
-   #           Binary    sign   scale        exponent        fraction    ubit                         value      hex_format
-   0:          b000000       0      -4            b000              b0       0                             0       6.3x0x00r
-   2:          b000010       0      -3            b000              b1       0                         0.125       6.3x0x02r
-   4:          b000100       0      -2            b001              b0       0                   4.61169e+18       6.3x0x04r
-   6:          b000110       0      -2            b001              b1       0                   6.91753e+18       6.3x0x06r
-   8:          b001000       0      -1            b010              b0       0                  -9.22337e+18       6.3x0x08r
-  10:          b001010       0      -1            b010              b1       0                  -1.38351e+19       6.3x0x0Ar
+
 		*/
 		areal<6, 3> a, b, c;
 		a.set_raw_bits(0x02); std::cout << to_binary(a) << " " << a << endl;

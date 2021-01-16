@@ -1,4 +1,4 @@
-// api.cpp: class interface tests for arbitrary configuration fixed-point types
+// api.cpp: test suite runner for class interface tests of the fixpnt<nbits,rbits,Modulo/Saturating,BlockType> type
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

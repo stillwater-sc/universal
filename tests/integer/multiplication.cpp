@@ -1,4 +1,4 @@
-//  multiplication.cpp : arithmetic test suite for multiplication of abitrary precision integers
+//  multiplication.cpp : test suite runner for multiplication of abitrary precision integers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -11,7 +11,6 @@
 #include <universal/integer/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/integer_test_suite.hpp>
 
 /*

@@ -4,123 +4,18 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <vector>
 #include <iostream>
+#include <iomanip>
 #include <typeinfo>
-#include <random>
-#include <limits>
-#include <complex>
 
 // We want the test suite to be used with different configurations of the fixed-point number system
 // so the calling environment needs to set the configuration
 #include <universal/fixpnt/fixed_point.hpp>
 #include <universal/fixpnt/attributes.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/test_status.hpp> // ReportTestResult used by test suite runner
+#include <universal/verification/test_reporters.hpp> 
 
 namespace sw { namespace universal {
-
-#define FIXPNT_TABLE_WIDTH 20
-
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-void ReportConversionError(const std::string& test_case, const std::string& op, double testValue, double reference, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case
-		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << testValue
-		<< " did not convert to "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << reference << " instead it yielded  "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << double(result)
-		<< "  raw " << std::setw(nbits) << to_binary(result)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-void ReportConversionSuccess(const std::string& test_case, const std::string& op, double testValue, double reference, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
-	std::cerr << test_case
-		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << testValue
-		<< " success            "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " golden reference is "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << reference
-		<< "  raw " << std::setw(nbits) << to_binary(result)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(FIXPNT_TABLE_WIDTH) << lhs
-		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
-		<< " != "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " golden reference is "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref
-		<< " " << to_binary(result) << " vs " << to_binary(ref)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, 
-	const std::complex<fixpnt<nbits, rbits, arithmetic, BlockType>>& lhs, 
-	const std::complex<fixpnt<nbits, rbits, arithmetic, BlockType>>& rhs, 
-	const std::complex<fixpnt<nbits, rbits, arithmetic, BlockType>>& ref, 
-	const std::complex<fixpnt<nbits, rbits, arithmetic, BlockType>>& result) {
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(FIXPNT_TABLE_WIDTH) << lhs
-		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
-		<< " != "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " golden reference is "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref
-		<< " (" << to_binary(result.real()) << ", " << to_binary(result.imag()) << "i) vs (" 
-		<< to_binary(ref.real()) << ", " << to_binary(ref.imag()) << "i)"
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const fixpnt<nbits, rbits, arithmetic, BlockType>& lhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& rhs, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt<nbits, rbits, arithmetic, BlockType>& result) {
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(FIXPNT_TABLE_WIDTH) << lhs
-		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << rhs
-		<< " == "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " matches reference "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref
-		<< " " << to_binary(result) << " vs " << to_binary(ref)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType, typename Ty>
-void ReportAssignmentError(const std::string& test_case, const std::string& op, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt <nbits, rbits, arithmetic, BlockType>& result, const Ty& value) {
-	std::cerr << test_case
-		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << value
-		<< " != "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " golden reference is "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref
-		<< " " << to_binary(result) << " vs " << to_binary(ref) << std::endl;
-}
-
-template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType, typename Ty>
-void ReportAssignmentSuccess(const std::string& test_case, const std::string& op, const fixpnt<nbits, rbits, arithmetic, BlockType>& ref, const fixpnt <nbits, rbits, arithmetic, BlockType>& result, const Ty& value) {
-	std::cerr << test_case
-		<< " " << op << " "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << value
-		<< " == "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << result << " reference value is "
-		<< std::setw(FIXPNT_TABLE_WIDTH) << ref
-		<< "               fixpnt bits " << to_binary(result) << std::endl;
-}
 
 /////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 

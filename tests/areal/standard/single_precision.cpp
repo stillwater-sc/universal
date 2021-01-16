@@ -1,9 +1,10 @@
-// single_precision.cpp: Functionality tests for single precision floats
+// single_precision.cpp: test suite runner for single precision floats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <iostream>
+#include <iomanip>
 // minimum set of include files to reflect source code dependencies
 #include <universal/areal/areal.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>

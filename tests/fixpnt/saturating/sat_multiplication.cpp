@@ -1,8 +1,10 @@
-// sat_multiplication.cpp: functional tests for arbitrary configuration fixed-point saturating multiplication
+// sat_multiplication.cpp: test suite runner for arbitrary configuration fixed-point saturating multiplication
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>
+#include <iomanip>
 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
@@ -14,7 +16,6 @@
 #include <universal/fixpnt/fixed_point.hpp>
 #include <universal/fixpnt/manipulators.hpp>
 #include <universal/fixpnt/math_functions.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in fixed_point.hpp

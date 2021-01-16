@@ -1,4 +1,4 @@
-//  divide.cpp : arithmetic division test suite for abitrary precision integers
+//  divide.cpp : test suite runner for division of abitrary precision integers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -13,7 +13,6 @@
 #include <universal/integer/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/integer_test_suite.hpp>
 
 /*

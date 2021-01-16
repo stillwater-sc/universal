@@ -1,4 +1,4 @@
-//  decimal.cpp : test suite for abitrary precision decimal integers
+//  decimal.cpp : test suite runner for abitrary precision decimal integers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -11,7 +11,7 @@
 #include <universal/decimal/numeric_limits.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 static constexpr unsigned DECIMAL_TABLE_WIDTH = 15;
 
@@ -152,7 +152,7 @@ bool less(const decimal& lhs, const decimal& rhs) {
 }
 
 
-}}  // namespace sw::universal
+}  // namespace sw::universal
 
 
 void examples() {

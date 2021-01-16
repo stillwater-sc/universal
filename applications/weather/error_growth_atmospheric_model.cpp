@@ -8,8 +8,7 @@
 #include <universal/posit/posit>
 
 /*
-On the relation between reliable computation time, float-point precision and the
-Lyapunov exponent in chaotic systems
+On the relation between reliable computation time, float-point precision and the Lyapunov exponent in chaotic systems
 Wang PengFei (1,2) and Li JianPing (3)
 1 Center for Monsoon System Research, Institute of Atmospheric Physics, 
   Chinese Academy of Sciences, Beijing 100190, China

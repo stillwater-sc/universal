@@ -129,12 +129,12 @@ public:
 		uint32_t exp = remaining >> 29;
 
 		// extract the remaining fraction
-		uint64_t frac64A = ((0x40000000ull | remaining << 1) & 0x7FFFFFFFull) << 32;  // ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
+		uint64_t frac64A = ((0x40000000ull | uint64_t(remaining) << 1) & 0x7FFFFFFFull) << 32;  // ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
 		int32_t shiftRight = m;
 
 		// adjust shift and extract fraction bits of rhs
 		extractAddand(rhs, shiftRight, remaining);
-		uint64_t frac64B = ((0x40000000ull | remaining << 1) & 0x7FFFFFFFull) << 32; // ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
+		uint64_t frac64B = ((0x40000000ull | uint64_t(remaining) << 1) & 0x7FFFFFFFull) << 32; // ((0x4000'0000ull | remaining << 1) & 0x7FFF'FFFFull) << 32;
 		// This is 4kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
 		shiftRight = (shiftRight << 2) + exp - (remaining >> 29);
 
@@ -201,12 +201,12 @@ public:
 		uint32_t exp = remaining >> 29;
 
 		// extract the remaining fraction
-		uint64_t frac64A = ((0x40000000ull | remaining << 1) & 0x7FFFFFFFull) << 32;
+		uint64_t frac64A = ((0x40000000ull | uint64_t(remaining) << 1) & 0x7FFFFFFFull) << 32;
 		int32_t shiftRight = m;
 
 		// adjust shift and extract fraction bits of rhs
 		extractAddand(rhs, shiftRight, remaining);
-		uint64_t frac64B = ((0x40000000ull | remaining << 1) & 0x7FFFFFFFull) << 32;
+		uint64_t frac64B = ((0x40000000ull | uint64_t(remaining) << 1ull) & 0x7FFFFFFFull) << 32;
 
 		// This is 4kZ + expZ; (where kZ=kA-kB and expZ=expA-expB)
 		shiftRight = (shiftRight << 2) + exp - (remaining >> 29);
@@ -816,7 +816,7 @@ private:
 			if (scale <= 28) {
 				bitNPlusOne = bool (frac64 >> ((scale + 1)) & 0x1);
 				exp <<= (28 - scale);
-				if (bitNPlusOne) moreBits = (((1 << (scale + 1)) - 1) & frac64) ? 0x1 : 0x0;
+				if (bitNPlusOne) moreBits = (((1ull << (scale + 1)) - 1ull) & frac64) ? 0x1 : 0x0;
 			}
 			else {
 				if (scale == 30) {

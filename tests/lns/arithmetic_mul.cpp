@@ -1,4 +1,4 @@
-// arithmetic_mul.cpp: functional tests for multiplication of arbitrary logarithmic number system
+// arithmetic_mul.cpp: test suite runner for multiplication of arbitrary logarithmic number system
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

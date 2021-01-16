@@ -1,9 +1,10 @@
-// mod_complex_sub.cpp: functional tests for arbitrary configuration fixed-point complex subtraction
+// mod_complex_sub.cpp: test suite runner for arbitrary configuration fixed-point complex subtraction
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
+#include <iomanip>
 #include <complex>
 
 // Configure the fixpnt template environment
@@ -16,7 +17,6 @@
 #include <universal/fixpnt/fixed_point.hpp>
 #include <universal/fixpnt/manipulators.hpp>
 #include <universal/fixpnt/math_functions.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in fixed_point.hpp
@@ -93,10 +93,10 @@ int VerifyComplexSubtraction(const std::string& tag, bool bReportIndividualTestC
 
 					if (result.real() != ref.real() || result.imag() != ref.imag()) {
 						nrOfFailedTests++;
-						if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, ref, result);
+						if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, result, ref);
 					}
 					else {
-						//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, ref, result);
+						//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, result, ref);
 					}
 					if (nrOfFailedTests > 100) return nrOfFailedTests;
 				}

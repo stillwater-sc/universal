@@ -13,9 +13,12 @@
    that enables fast computation with exceptions for overflow, so that the type
    can be used for forward error analysis studies.
 */
+#include <universal/verification/test_status.hpp> // ReportTestResult used by test suite runner
+#include <universal/verification/test_reporters.hpp> 
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
+#if 0
 #define INTEGER_TABLE_WIDTH 20
 	template<size_t nbits, typename BlockType>
 	void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const integer<nbits, BlockType>& lhs, const integer<nbits, BlockType>& rhs, const integer<nbits, BlockType>& pref, const integer<nbits, BlockType>& presult) {
@@ -63,6 +66,7 @@ namespace sw { namespace universal {
 			<< std::setprecision(old_precision)
 			<< std::endl;
 	}
+#endif
 
 	// enumerate all addition cases for an integer<16> configuration compared against native short
 	template<typename BlockType>
@@ -564,4 +568,4 @@ namespace sw { namespace universal {
 		return nrOfFailedTests;
 	}
 
-}} // namespace sw::universal
+} // namespace sw::universal

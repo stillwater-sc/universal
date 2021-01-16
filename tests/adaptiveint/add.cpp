@@ -1,4 +1,4 @@
-// add.cpp: functional tests for addition on adaptive precision binary integer
+// add.cpp: test suite runner for addition on adaptive precision binary integer
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

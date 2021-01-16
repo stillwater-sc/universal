@@ -1,4 +1,4 @@
-//  logic.cpp : logic operators test suite for abitrary precision integers
+//  logic.cpp : test suite runner for logic operators on abitrary precision integers
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -11,8 +11,7 @@
 #include <universal/integer/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
-//#include <universal/verification/integer_test_suite.hpp>
+#include <universal/verification/test_status.hpp> // ReportTestResult used by test suite runner
 
 /*
    The goal of the arbitrary integers is to provide a constrained big integer type
@@ -20,8 +19,7 @@
    can be used for forward error analysis studies.
 */
 
-namespace sw {
-namespace universal {
+namespace sw::universal {
 
 #define INTEGER_TABLE_WIDTH 20
 	template<size_t nbits>
@@ -231,8 +229,7 @@ namespace universal {
 		return nrOfFailedTests;
 	}
 
-}
-}
+} // namespace sw::universal
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0

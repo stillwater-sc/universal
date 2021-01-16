@@ -67,15 +67,40 @@ inline std::string to_hex(const areal<nbits, es, bt>& v) {
 
 // generate a areal format ASCII format nbits.esxNN...NNa
 template<size_t nbits, size_t es, typename bt>
-inline std::string hex_print(const areal<nbits, es, bt>& v) {
+inline std::string hex_print(const areal<nbits, es, bt>& r) {
 	std::stringstream ss;
-	ss << nbits << '.' << es << 'x' << to_hex(v) << 'r';
+	ss << nbits << '.' << es << 'x' << to_hex(r) << 'r';
 	return ss.str();
 }
 
 template<size_t nbits, size_t es, typename bt>
-std::string pretty_print(const areal<nbits, es, bt>& p, int printPrecision = std::numeric_limits<double>::max_digits10) {
-	return "TBD";
+std::string pretty_print(const areal<nbits, es, bt>& r, int printPrecision = std::numeric_limits<double>::max_digits10) {
+	std::stringstream ss;
+	bool s{ false };
+	blockbinary<es, bt> e;
+	blockbinary<r.fbits> f;
+	bool ubit{ false };
+	decode(r, s, e, f, ubit);
+
+	// sign bit
+	ss << (r.isneg() ? '1' : '0');
+
+	// exponent bits
+	ss << '-';
+	for (int i = int(es) - 1; i >= 0; --i) {
+		ss << (e.test(i) ? '1' : '0');
+	}
+
+	// fraction bits
+	ss << '-';
+	for (int i = int(r.fbits) - 1; i >= 0; --i) {
+		ss << (f.test(i) ? '1' : '0');
+	}
+
+	// uncertainty bit
+	ss << '-';
+	ss << (r.test(0) ? "1" : "0");
+	return ss.str();
 }
 
 template<size_t nbits, size_t es, typename bt>
@@ -87,7 +112,7 @@ template<size_t nbits, size_t es, typename bt>
 std::string color_print(const areal<nbits, es, bt>& r) {
 	std::stringstream ss;
 	bool s{ false };
-	int  e{ 0 };
+	blockbinary<es,bt> e;
 	blockbinary<r.fbits> f;
 	bool ubit{ false };
 	decode(r, s, e, f, ubit);
@@ -99,31 +124,24 @@ std::string color_print(const areal<nbits, es, bt>& r) {
 	Color cyan(ColorCode::FG_CYAN);
 	Color white(ColorCode::FG_WHITE);
 	Color def(ColorCode::FG_DEFAULT);
+
+	// sign bit
 	ss << red << (r.isneg() ? "1" : "0");
 
-	/*
-	 *
-	bitblock<es> e = _exponent.get();
-	int exponentBits = (int)_exponent.nrBits();
-	int nrOfExponentBitsProcessed = 0;
+	// exponent bits
 	for (int i = int(es) - 1; i >= 0; --i) {
-		if (exponentBits > nrOfExponentBitsProcessed++) {
-			ss << cyan << (_sign ? (e[i] ? '0' : '1') : (e[i] ? '1' : '0'));
-		}
+		ss << cyan << (e.test(i) ? '1' : '0');
 	}
 
-	bitblock<posit<nbits, es>::fbits> f = _fraction.get();
-	f = (_sign ? twos_complement(f) : f);
-	int fractionBits = (int)_fraction.nrBits();
-	int nrOfFractionBitsProcessed = 0;
-	for (int i = int(p.fbits) - 1; i >= 0; --i) {
-		if (fractionBits > nrOfFractionBitsProcessed++) {
-			ss << magenta << (f[i] ? "1" : "0");
-		}
+	// fraction bits
+	for (int i = int(r.fbits) - 1; i >= 0; --i) {
+		ss << magenta << (f.test(i) ? '1' : '0');
 	}
+
+	// uncertainty bit
+	ss << yellow << (r.test(0) ? "1" : "0");
 
 	ss << def;
-	*/
 	return ss.str();
 }
 

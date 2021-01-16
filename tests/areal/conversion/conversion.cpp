@@ -1,9 +1,10 @@
-// mod_conversion.cpp: functional tests for areal conversions
+// conversion.cpp: test suite runner for areal conversions
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <iostream>
+#include <iomanip>
 // Configure the areal template environment
 // first: enable general or specialized configurations
 #define AREAL_FAST_SPECIALIZATION
@@ -14,7 +15,6 @@
 #include <universal/areal/areal.hpp>
 #include <universal/areal/manipulators.hpp>
 #include <universal/areal/math_functions.hpp>
-#include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 // generate specific test case that you can trace with the trace conditions
@@ -36,23 +36,6 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
-
-template<size_t nbits, size_t es>
-void GenerateArealComparisonTable(std::string& tag) {
-	using namespace std;
-	using namespace sw::universal;
-	constexpr size_t NR_VALUES = (size_t(1) << nbits);
-	areal<nbits, es> a;
-	areal<nbits+1, es+1> next;
-	cout << "  areal<" << nbits + 1 << "," << es << ">      |    areal<" << nbits << ", " << es << ">" << endl;
-	for (size_t i = 0; i < NR_VALUES; ++i) {
-		a.set_raw_bits(i);
-		next.set_raw_bits(2*i);
-		cout << to_binary(next) << ' ' << setw(10) << next << "  |  " << to_binary(a) << ' ' << setw(15) << a << endl;
-		next.set_raw_bits(2 * i + 1);
-		cout << to_binary(next) << ' ' << setw(10) << next << "  |  " << endl;
-	}
-}
 
 // conditional compile flags
 #define MANUAL_TESTING 0
@@ -86,10 +69,9 @@ try {
 
 #else  // !MANUAL_TESTING
 
-	cout << "Fixed-point conversion validation" << endl;
+	cout << "AREAL conversion validation" << endl;
 
-
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<areal<4, 1, uint8_t>, areal<5, 1, uint8_t>>(tag, bReportIndividualTestCases), tag, "areal<4,1,uint8_t>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyConversion<areal<4, 1, uint8_t>, areal<5, 1, uint8_t>>(tag, bReportIndividualTestCases), tag, "areal<4,1,uint8_t>");
 
 //	nrOfFailedTestCases = ReportTestResult(VerifyConversion< areal<8, 2, uint8_t>, areal<9, 2, uint8_t>>(tag, bReportIndividualTestCases), tag, "areal<8,2,uint8_t>");
 //	nrOfFailedTestCases = ReportTestResult(VerifyConversion< areal<8, 3, uint8_t>, areal<9, 4, uint8_t>>(tag, bReportIndividualTestCases), tag, "areal<8,3,uint8_t>");
