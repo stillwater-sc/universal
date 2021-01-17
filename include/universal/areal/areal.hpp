@@ -43,7 +43,6 @@
 #endif
 
 #define THROW_ARITHMETIC_EXCEPTION 0
-#define TRACE_CONVERSION 0
 
 namespace sw::universal {
 		
@@ -291,8 +290,14 @@ public:
 		// set the exponent
 		uint64_t biasedExponent{ 0 };
 		int shiftRight{ 0 };
+		// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
+		// simpler rounding as compared to IEEE as uncertainty bit captures any non-zero bit past the LSB
+		// ...  lsb | sticky      ubit
+		//       x      0          0
+		//       x  |   1          1
 		bool ubit = false;
-		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
+		uint64_t mask = 0x000F'FFFF'FFFF'FFFF >> (52 - shiftRight - 1); // mask for sticky bit 
+		if (exponent >= MIN_EXP_SUBNORMAL && exponent <= MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
 			// trick though is that it might be a normal number in IEEE double precision representation
 			if (exponent > -1022) {
@@ -304,15 +309,8 @@ public:
 				// fraction processing
 				shiftRight = 52 - exponent - static_cast<int>(fbits) - 1; // to leave room for the uncertainty bit
 				if (shiftRight > 0) {		// do we need to round?
-					// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
-					// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
-					// ...  lsb | sticky      ubit
-					//       x      0          0
-					//       x  |   1          1
-					uint64_t mask = 0x000F'FFFF'FFFF'FFFF >> (52 - shiftRight - 1); // mask for sticky bit 
 					ubit = (mask & raw) != 0;
 					raw >>= shiftRight;
-
 				}
 				else { // all bits of the double go into this representation and need to be shifted up
 					// ubit = false; already set to false
@@ -336,7 +334,6 @@ public:
 				// ...  lsb | sticky      ubit
 				//       x      0          0
 				//       x  |   1          1
-				uint64_t mask = 0x000F'FFFF'FFFF'FFFF >> (52 - shiftRight - 1); // mask for sticky bit 
 				ubit = (mask & raw) != 0;
 				raw >>= shiftRight;
 			}

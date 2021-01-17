@@ -12,7 +12,8 @@
 #define AREAL_FAST_SPECIALIZATION
 // second: enable/disable areal arithmetic exceptions
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 0
-
+// enabling tracing
+#define TRACE_CONVERSION 0
 // minimum set of include files to reflect source code dependencies
 #include <universal/areal/areal.hpp>
 // fixed-point type manipulators such as pretty printers
@@ -149,25 +150,9 @@ NEGATIVE
 
 	// Real b; b.debug();
 
-	if (false) {
+//	Real a = 0.5;
+	//std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
 
-
-		Real subnormals[] = { 0.1875, 0.25, 0.3125 };
-		Real normals[] = { 1.875, 1.9375, 2.0, 2.125, 2.25 };
-		Real supernormals[] = { 5.75, 6.0, 6.25 };
-
-		for (auto v : subnormals) {
-			std::cout << to_binary(v) << " : " << color_print(v) << " : " << v << '\n';
-		}
-		for (auto v : normals) {
-			std::cout << to_binary(v) << " : " << color_print(v) << " : " << v << '\n';
-		}
-		for (auto v : supernormals) {
-			std::cout << to_binary(v) << " : " << color_print(v) << " : " << v << '\n';
-		}
-	}
-	//130:        b10000010       1      -4             b00           b0001       0                       -0.0625       8.2x0x82r
-	Real a = -0.0625;
 	bReportIndividualTestCases = true;
 	bool bVerbose = true;
 	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<8,2>(tag, bReportIndividualTestCases, bVerbose), "reverse sample", "=");
