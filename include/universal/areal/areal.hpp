@@ -182,7 +182,11 @@ public:
 
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t es = _es;
-	using BlockType = bt;
+	static constexpr size_t fbits  = nbits - 2ull - es;    // number of fraction bits excluding the hidden bit
+	static constexpr size_t fhbits = fbits + 1ull;         // number of fraction bits including the hidden bit
+	static constexpr size_t abits = fhbits + 3ull;         // size of the addend
+	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
+	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
 
 	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
 	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
@@ -197,14 +201,11 @@ public:
 	static constexpr bt MSU_EXP_MASK = ((bt(-1) << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;
-	static constexpr int MIN_EXP = -EXP_BIAS;
+	static constexpr int MIN_EXP_NORMAL = -EXP_BIAS;
+	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - fbits; // the scale of smallest ULP
 	static constexpr bt BLOCK_MASK = bt(-1);
 
-	static constexpr size_t fbits  = nbits - 2ull - es;    // number of fraction bits excluding the hidden bit
-	static constexpr size_t fhbits = fbits + 1ull;         // number of fraction bits including the hidden bit
-	static constexpr size_t abits = fhbits + 3ull;         // size of the addend
-	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
-	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
+	using BlockType = bt;
 
 	// constructors
 	areal() noexcept : _block{ 0 } {};
@@ -259,24 +260,42 @@ public:
 		if (rhs == 0.0) {
 			return *this;
 		}
-#define TYPE_PUNNING
-#ifdef TYPE_PUNNING
+
 		double_decoder decoder;
 		decoder.d = rhs;
 		bool s = decoder.parts.sign ? true : false;
-		uint64_t raw = (uint64_t(1) << 52) | decoder.parts.fraction;
+		uint64_t raw = decoder.parts.fraction; // don't bring in a hidden bit
 		int exponent = static_cast<int>(decoder.parts.exponent) - 1023;  // apply bias
-#else
-		uint64_t fraction = *reinterpret_cast<const uint64_t*>(&rhs) & 0x000F'FFFF'FFFF'FFFFull;
-		uint64_t raw = 0x0010'0000'0000'0000ull | fraction;
-		uint64_t exponent = (*reinterpret_cast<uint64_t*>(&rhs) & 0x7FF0'0000'0000'0000ull) >> 52;
-#endif
+
+		std::cout << '\n';
+		std::cout << "value         : " << rhs << '\n';
+		std::cout << "segments      : " << to_binary(rhs) << '\n';
+		std::cout << "sign   bits   : " << (s ? '1' : '0') << '\n';
+		std::cout << "exponent bits : 0x" << std::hex << decoder.parts.exponent << std::dec << '\n';
+		std::cout << "exponent value: " << exponent << '\n';
+		std::cout << "fraction bits : 0x" << std::hex << raw << std::dec << std::endl;
+
+		// saturate to minpos/maxpos with uncertainty bit set to 1
 		if (exponent > MAX_EXP) {	
 			if (s) maxneg(*this); else maxpos(*this); // saturate the maxpos or maxneg
+			this->set(0);
 			return *this;
 		}
-		if (exponent < MIN_EXP) {
+		if (exponent < MIN_EXP_SUBNORMAL) {
 			if (s) minneg(*this); else minpos(*this); // saturate to minpos or minneg
+			this->set(0);
+			return *this;
+		}
+		// set the exponent
+		uint64_t biasedExponent{ 0 };
+		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
+			// this number is a subnormal number in this representation
+			std::cout << "subnormal TBD\n";
+		}
+		else {
+			// this number is a normal/supernormal number in this representation
+			biasedExponent = uint64_t(exponent + EXP_BIAS); // reasonable limit exponent to 32bits
+			std::cout << "biased exponent : " << biasedExponent << " : " << std::hex << biasedExponent << std::dec << '\n';
 		}
 		// fraction processing
 		int shiftRight = 52 - static_cast<int>(fbits);
@@ -284,8 +303,20 @@ public:
 		if (shiftRight > 0) {
 			// the ubit makes the rounding decision a lot easier than the guard/round/sticky bit algorithm
 			// we have 52 fraction bits and one hidden bit for a normal, and no hidden bit for a subnormal
-
-			std::cout << std::endl << "value: " << to_binary(rhs) << " fraction bits: 0x" << std::hex << raw << std::dec << std::endl;
+			raw >>= shiftRight;
+			std::cout << "fraction bits  : " << std::hex << raw << std::dec << '\n';
+		}
+		// construct the target areal
+		uint64_t bits = (s ? 1 : 0);
+		bits <<= 1ull + es;
+		bits |= biasedExponent;
+		bits <<= nbits - 1ull - es;
+		bits |= raw;
+		if (nrBlocks == 1) {
+			_block[MSU] = bits;
+		}
+		else {
+			copyBits(raw);
 		}
 		return *this;
 	}
@@ -621,18 +652,17 @@ public:
 				   (NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
 
-	inline constexpr bool test(size_t bitIndex) const {
+	inline constexpr bool test(size_t bitIndex) const noexcept {
 		return at(bitIndex);
 	}
-	inline constexpr bool at(size_t bitIndex) const {
+	inline constexpr bool at(size_t bitIndex) const noexcept {
 		if (bitIndex < nbits) {
 			bt word = _block[bitIndex / bitsInBlock];
 			bt mask = bt(1ull << (bitIndex % bitsInBlock));
 			return (word & mask);
 		}
-		throw "bit index out of bounds";
 	}
-	inline constexpr uint8_t nibble(size_t n) const {
+	inline constexpr uint8_t nibble(size_t n) const noexcept {
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
 			int nibbleIndexInWord = int(n % (bitsInBlock >> 2ull));
@@ -640,29 +670,30 @@ public:
 			bt nibblebits = bt(mask & word);
 			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
 		}
-		throw "nibble index out of bounds";
 	}
-	inline constexpr bt block(size_t b) const {
+	inline constexpr bt block(size_t b) const noexcept {
 		if (b < nrBlocks) {
 			return _block[b];
 		}
-		throw "block index out of bounds";
 	}
 
 	void debug() const {
-		std::cout << "nbits         : " << nbits << std::endl;
-		std::cout << "es            : " << es << std::endl;
-		std::cout << "BLOCK_MASK    : " << to_binary<bt>(BLOCK_MASK, true) << std::endl;
-		std::cout << "nrBlocks      : " << nrBlocks << std::endl;
-		std::cout << "bits in MSU   : " << bitsInMSU << std::endl;
-		std::cout << "MSU           : " << MSU << std::endl;
-		std::cout << "MSU MASK      : " << to_binary<bt>(MSU_MASK, true) << std::endl;
-		std::cout << "SIGN_BIT_MASK : " << to_binary<bt>(SIGN_BIT_MASK, true) << std::endl;
-		std::cout << "LSB_BIT_MASK  : " << to_binary<bt>(LSB_BIT_MASK, true) << std::endl;
-		std::cout << "MSU CAPTURES E: " << (MSU_CAPTURES_E ? "yes\n" : "no\n");
-		std::cout << "EXP_SHIFT     : " << EXP_SHIFT << std::endl;
-		std::cout << "MSU EXP MASK  : " << to_binary<bt>(MSU_EXP_MASK, true) << std::endl;
-		std::cout << "EXP_BIAS      : " << EXP_BIAS << std::endl;
+		std::cout << "nbits             : " << nbits << '\n';
+		std::cout << "es                : " << es << std::endl;
+		std::cout << "BLOCK_MASK        : " << to_binary<bt>(BLOCK_MASK, true) << '\n';
+		std::cout << "nrBlocks          : " << nrBlocks << '\n';
+		std::cout << "bits in MSU       : " << bitsInMSU << '\n';
+		std::cout << "MSU               : " << MSU << '\n';
+		std::cout << "MSU MASK          : " << to_binary<bt>(MSU_MASK, true) << '\n';
+		std::cout << "SIGN_BIT_MASK     : " << to_binary<bt>(SIGN_BIT_MASK, true) << '\n';
+		std::cout << "LSB_BIT_MASK      : " << to_binary<bt>(LSB_BIT_MASK, true) << '\n';
+		std::cout << "MSU CAPTURES E    : " << (MSU_CAPTURES_E ? "yes\n" : "no\n");
+		std::cout << "EXP_SHIFT         : " << EXP_SHIFT << '\n';
+		std::cout << "MSU EXP MASK      : " << to_binary<bt>(MSU_EXP_MASK, true) << '\n';
+		std::cout << "EXP_BIAS          : " << EXP_BIAS << '\n';
+		std::cout << "MAX_EXP           : " << MAX_EXP << '\n';
+		std::cout << "MIN_EXP_NORMAL    : " << MIN_EXP_NORMAL << '\n';
+		std::cout << "MIN_EXP_SUBNORMAL : " << MIN_EXP_SUBNORMAL << '\n';
 	}
 
 	// extract the exponent field from the encoding
@@ -764,7 +795,114 @@ public:
 
 protected:
 	// HELPER methods
-	// none
+
+	template<typename ArgumentBlockType>
+	void copyBits(ArgumentBlockType v) {
+		int blocksRequired = (8 * sizeof(v) + 1 ) / bitsInBlock;
+		int maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
+		bt b{ 0 }; b = ~b;
+		ArgumentBlockType mask = ArgumentBlockType(b);
+		size_t shift = 0;
+		for (int i = 0; i < maxBlockNr; ++i) {
+			_block[i] = (mask & v) >> shift;
+			mask <<= bitsInBlock;
+			shift += bitsInBlock;
+		}
+	}
+	void shiftLeft(int bitsToShift) {
+		if (bitsToShift == 0) return;
+		if (bitsToShift < 0) return shiftRight(-bitsToShift);
+		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
+		if (bitsToShift >= long(bitsInBlock)) {
+			int blockShift = bitsToShift / bitsInBlock;
+			for (signed i = signed(MSU); i >= blockShift; --i) {
+				_block[i] = _block[i - blockShift];
+			}
+			for (signed i = blockShift - 1; i >= 0; --i) {
+				_block[i] = bt(0);
+			}
+			// adjust the shift
+			bitsToShift -= (long)(blockShift * bitsInBlock);
+			if (bitsToShift == 0) return;
+		}
+		// construct the mask for the upper bits in the block that need to move to the higher word
+		bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
+		for (unsigned i = MSU; i > 0; --i) {
+			_block[i] <<= bitsToShift;
+			// mix in the bits from the right
+			bt bits = (mask & _block[i - 1]);
+			_block[i] |= (bits >> (bitsInBlock - bitsToShift));
+		}
+		_block[0] <<= bitsToShift;
+	}
+
+	void shiftRight(int bitsToShift) {
+		if (bitsToShift == 0) return;
+		if (bitsToShift < 0) return shiftLeft(-bitsToShift);
+		if (bitsToShift >= long(nbits)) {
+			setzero();
+			return;
+		}
+		bool signext = sign();
+		size_t blockShift = 0;
+		if (bitsToShift >= long(bitsInBlock)) {
+			blockShift = bitsToShift / bitsInBlock;
+			if (MSU >= blockShift) {
+				// shift by blocks
+				for (size_t i = 0; i <= MSU - blockShift; ++i) {
+					_block[i] = _block[i + blockShift];
+				}
+			}
+			// adjust the shift
+			bitsToShift -= (long)(blockShift * bitsInBlock);
+			if (bitsToShift == 0) {
+				// fix up the leading zeros if we have a negative number
+				if (signext) {
+					// bitsToShift is guaranteed to be less than nbits
+					bitsToShift += (long)(blockShift * bitsInBlock);
+					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+						this->set(i);
+					}
+				}
+				else {
+					// clean up the blocks we have shifted clean
+					bitsToShift += (long)(blockShift * bitsInBlock);
+					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+						this->reset(i);
+					}
+				}
+			}
+		}
+		//bt mask = 0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock);  // is that shift necessary?
+		bt mask = bt(0xFFFFFFFFFFFFFFFFull);
+		mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
+		for (unsigned i = 0; i < MSU; ++i) {  // TODO: can this be improved? we should not have to work on the upper blocks in case we block shifted
+			_block[i] >>= bitsToShift;
+			// mix in the bits from the left
+			bt bits = (mask & _block[i + 1]);
+			_block[i] |= (bits << (bitsInBlock - bitsToShift));
+		}
+		_block[MSU] >>= bitsToShift;
+
+		// fix up the leading zeros if we have a negative number
+		if (signext) {
+			// bitsToShift is guaranteed to be less than nbits
+			bitsToShift += (long)(blockShift * bitsInBlock);
+			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+				this->set(i);
+			}
+		}
+		else {
+			// clean up the blocks we have shifted clean
+			bitsToShift += (long)(blockShift * bitsInBlock);
+			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+				this->reset(i);
+			}
+		}
+
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block[MSU] &= MSU_MASK;
+	}
 
 private:
 	bt _block[nrBlocks];
