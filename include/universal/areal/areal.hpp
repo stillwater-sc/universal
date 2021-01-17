@@ -268,12 +268,12 @@ public:
 		int exponent = static_cast<int>(decoder.parts.exponent) - 1023;  // apply bias
 
 		std::cout << '\n';
-		std::cout << "value         : " << rhs << '\n';
-		std::cout << "segments      : " << to_binary(rhs) << '\n';
-		std::cout << "sign   bits   : " << (s ? '1' : '0') << '\n';
-		std::cout << "exponent bits : 0x" << std::hex << decoder.parts.exponent << std::dec << '\n';
-		std::cout << "exponent value: " << exponent << '\n';
-		std::cout << "fraction bits : 0x" << std::hex << raw << std::dec << std::endl;
+		std::cout << "value           : " << rhs << '\n';
+		std::cout << "segments        : " << to_binary(rhs) << '\n';
+		std::cout << "sign   bits     : " << (s ? '1' : '0') << '\n';
+		std::cout << "exponent bits   : " << to_binary(decoder.parts.exponent, true) << '\n';
+		std::cout << "exponent value  : " << exponent << '\n';
+		std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 
 		// saturate to minpos/maxpos with uncertainty bit set to 1
 		if (exponent > MAX_EXP) {	
@@ -298,13 +298,23 @@ public:
 			std::cout << "biased exponent : " << biasedExponent << " : " << std::hex << biasedExponent << std::dec << '\n';
 		}
 		// fraction processing
-		int shiftRight = 52 - static_cast<int>(fbits);
-		// do we need to round?
-		if (shiftRight > 0) {
-			// the ubit makes the rounding decision a lot easier than the guard/round/sticky bit algorithm
-			// we have 52 fraction bits and one hidden bit for a normal, and no hidden bit for a subnormal
+		int shiftRight = 52 - static_cast<int>(fbits) - 1; // to leave room for the uncertainty bit
+		bool ubit = false;
+		std::cout << "shift           : " << shiftRight << '\n';
+		if (shiftRight > 0) {		// do we need to round?
+			// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
+			// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
+			// ...  lsb | sticky      ubit
+			//       x      0          0
+			//       x  |   1          1
+			uint64_t mask = 0x000F'FFFF'FFFF'FFFF >> (52 - shiftRight - 1); // mask for sticky bit 
+			std::cout << "sticky bit mask : " << to_binary(mask, true) << '\n';
+			ubit = (mask & raw) != 0;
+			std::cout << "uncertainty bit : " << (ubit ? "1\n" : "0\n");
 			raw >>= shiftRight;
-			std::cout << "fraction bits  : " << std::hex << raw << std::dec << '\n';
+			std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
+		}
+		else { // all bits of the double go into this representation
 		}
 		// construct the target areal
 		uint64_t bits = (s ? 1 : 0);
@@ -312,6 +322,8 @@ public:
 		bits |= biasedExponent;
 		bits <<= nbits - 1ull - es;
 		bits |= raw;
+		bits &= 0xFFFF'FFFF'FFFF'FFFE;
+		bits |= (ubit ? 0x1 : 0x0);
 		if (nrBlocks == 1) {
 			_block[MSU] = bits;
 		}

@@ -105,12 +105,16 @@ NEGATIVE
 
 		Real subnormals[] = { 0.1875, 0.25, 0.3125 };
 		Real normals[] = { 1.875, 1.9375, 2.0, 2.125, 2.25 };
+		Real ubit_normals[] = { 1.876, 1.9376, 2.0625, 2.126, 2.26 };
 		Real supernormals[] = { 5.75, 6.0, 6.25 };
 
 		for (auto v : subnormals) {
 			std::cout << to_binary(v) << " : " << color_print(v) << " : " << v << '\n';
 		}
 		for (auto v : normals) {
+			std::cout << to_binary(v) << " : " << color_print(v) << " : " << v << '\n';
+		}
+		for (auto v : ubit_normals) {
 			std::cout << to_binary(v) << " : " << color_print(v) << " : " << v << '\n';
 		}
 		for (auto v : supernormals) {
@@ -127,23 +131,10 @@ NEGATIVE
 			fraction bits : 0x10000000000000
 			biased exponent : 2 : 2
 			*/
-			Real v = 2.0;
+			Real v = 2.0025;
 			std::cout << to_binary(v) << " : " << color_print(v) << " : " << v << '\n';
 		}
 
-		{
-			/*
-			value         : 2.125
-			segments      : 0.10000000000.0001000000000000000000000000000000000000000000000000
-			sign   bits   : 0
-			exponent bits : 0x400
-			exponent value: 1
-			fraction bits : 0x11000000000000
-			biased exponent : 2 : 2
-			*/
-			Real v = 2.125;
-			std::cout << to_binary(v) << " : " << color_print(v) << " : " << v << '\n';
-		}
 
 		/*
 			nbits             : 8
