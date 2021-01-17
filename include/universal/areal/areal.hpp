@@ -270,7 +270,8 @@ public:
 			raw & 0x1 ? setnan(NAN_TYPE_SIGNALLING) : setnan(NAN_TYPE_QUIET);
 			return *this;
 		}
-		if (rhs == 0.0) {
+		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
+			set(nbits - 1ull, s);
 			return *this;
 		}
 		if (std::isinf(rhs)) {
@@ -810,7 +811,7 @@ public:
 	// with a final rounding step.
 	double to_double() const {
 		double v{ 0.0 };
-		if (iszero()) return v;
+		if (iszero()) return sign() ? -v : v;
 		if (isnan()) {
 			v = sign() ? std::numeric_limits<double>::signaling_NaN() : std::numeric_limits<double>::quiet_NaN();
 		}

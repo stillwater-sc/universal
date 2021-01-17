@@ -181,6 +181,10 @@ NEGATIVE
 	a = da;
 	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
 
+	// test -0.0
+	da = -0.0;
+	a = da;
+	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
 
 	bReportIndividualTestCases = true;
 	bool bVerbose = true;
