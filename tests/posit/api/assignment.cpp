@@ -9,6 +9,7 @@
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
+#if DEPRECATED
 #define FLOAT_TABLE_WIDTH 20
 
 template<size_t nbits, size_t es, typename Ty>
@@ -32,6 +33,7 @@ void ReportAssignmentSuccess(const std::string& test_case, const std::string& op
 		<< std::setw(FLOAT_TABLE_WIDTH) << pref
 		<< "               posit fields " << sw::universal::pretty_print(presult) << std::endl;
 }
+#endif
 
 template<size_t nbits, size_t es, typename Ty>
 Ty GenerateValue(const sw::universal::posit<nbits,es>& p) {

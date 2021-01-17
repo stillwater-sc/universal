@@ -45,7 +45,7 @@ int VerifyAssignment(bool bReportIndividualTestCases, bool verbose = false) {
 	// algorithm: TestType raw -> to value in RefType -> assign back to TestType -> compare resulting TestTypes
 	TestType number, assigned;
 	constexpr size_t nbits = number.nbits;  // number system concept requires a static member indicating its size in bits
-	const size_t NR_NUMBERS = (size_t(1) << nbits);
+	constexpr size_t NR_NUMBERS = (size_t(1) << nbits);
 	int nrOfFailedTestCases = 0;
 
 	for (size_t i = 0; i < NR_NUMBERS; i++) {

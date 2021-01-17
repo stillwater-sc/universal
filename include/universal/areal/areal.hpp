@@ -43,6 +43,7 @@
 #endif
 
 #define THROW_ARITHMETIC_EXCEPTION 0
+#define TRACE_CONVERSION 0
 
 namespace sw::universal {
 		
@@ -267,6 +268,7 @@ public:
 		uint64_t raw = decoder.parts.fraction; // don't bring in a hidden bit
 		int exponent = static_cast<int>(decoder.parts.exponent) - 1023;  // apply bias
 
+#if TRACE_CONVERSION
 		std::cout << '\n';
 		std::cout << "value           : " << rhs << '\n';
 		std::cout << "segments        : " << to_binary(rhs) << '\n';
@@ -274,7 +276,7 @@ public:
 		std::cout << "exponent bits   : " << to_binary(decoder.parts.exponent, true) << '\n';
 		std::cout << "exponent value  : " << exponent << '\n';
 		std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
-
+#endif
 		// saturate to minpos/maxpos with uncertainty bit set to 1
 		if (exponent > MAX_EXP) {	
 			if (s) maxneg(*this); else maxpos(*this); // saturate the maxpos or maxneg
@@ -288,37 +290,71 @@ public:
 		}
 		// set the exponent
 		uint64_t biasedExponent{ 0 };
+		int shiftRight{ 0 };
+		bool ubit = false;
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
-			std::cout << "subnormal TBD\n";
+			// trick though is that it might be a normal number in IEEE double precision representation
+			if (exponent > -1022) {
+				// add the hidden bit to the fraction bits
+				raw |= (1ull << 52);
+#if TRACE_CONVERSION
+				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
+#endif
+				// fraction processing
+				shiftRight = 52 - exponent - static_cast<int>(fbits) - 1; // to leave room for the uncertainty bit
+				if (shiftRight > 0) {		// do we need to round?
+					// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
+					// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
+					// ...  lsb | sticky      ubit
+					//       x      0          0
+					//       x  |   1          1
+					uint64_t mask = 0x000F'FFFF'FFFF'FFFF >> (52 - shiftRight - 1); // mask for sticky bit 
+					ubit = (mask & raw) != 0;
+					raw >>= shiftRight;
+
+				}
+				else { // all bits of the double go into this representation and need to be shifted up
+					// ubit = false; already set to false
+					std::cout << "conversion of IEEE double to more precise areals not implemented yet\n";
+				}
+			}
+			else {
+				// this is a subnormal double
+				std::cout << "conversion of subnormal IEEE doubles not implemented yet\n";
+			}
 		}
 		else {
 			// this number is a normal/supernormal number in this representation
-			biasedExponent = uint64_t(exponent + EXP_BIAS); // reasonable limit exponent to 32bits
-			std::cout << "biased exponent : " << biasedExponent << " : " << std::hex << biasedExponent << std::dec << '\n';
+			biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
+
+			// fraction processing
+			shiftRight = 52 - static_cast<int>(fbits) - 1; // to leave room for the uncertainty bit
+			if (shiftRight > 0) {		// do we need to round?
+				// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
+				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
+				// ...  lsb | sticky      ubit
+				//       x      0          0
+				//       x  |   1          1
+				uint64_t mask = 0x000F'FFFF'FFFF'FFFF >> (52 - shiftRight - 1); // mask for sticky bit 
+				ubit = (mask & raw) != 0;
+				raw >>= shiftRight;
+			}
+			else { // all bits of the double go into this representation and need to be shifted up
+				// ubit = false; already set to false
+				std::cout << "conversion of IEEE double to more precise areals not implemented yet\n";
+			}
 		}
-		// fraction processing
-		int shiftRight = 52 - static_cast<int>(fbits) - 1; // to leave room for the uncertainty bit
-		bool ubit = false;
+#if TRACE_CONVERSION
+		std::cout << "biased exponent : " << biasedExponent << " : " << std::hex << biasedExponent << std::dec << '\n';
 		std::cout << "shift           : " << shiftRight << '\n';
-		if (shiftRight > 0) {		// do we need to round?
-			// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
-			// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
-			// ...  lsb | sticky      ubit
-			//       x      0          0
-			//       x  |   1          1
-			uint64_t mask = 0x000F'FFFF'FFFF'FFFF >> (52 - shiftRight - 1); // mask for sticky bit 
-			std::cout << "sticky bit mask : " << to_binary(mask, true) << '\n';
-			ubit = (mask & raw) != 0;
-			std::cout << "uncertainty bit : " << (ubit ? "1\n" : "0\n");
-			raw >>= shiftRight;
-			std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
-		}
-		else { // all bits of the double go into this representation
-		}
+		std::cout << "sticky bit mask : " << to_binary(mask, true) << '\n';
+		std::cout << "uncertainty bit : " << (ubit ? "1\n" : "0\n");
+		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
+#endif
 		// construct the target areal
 		uint64_t bits = (s ? 1 : 0);
-		bits <<= 1ull + es;
+		bits <<= es;
 		bits |= biasedExponent;
 		bits <<= nbits - 1ull - es;
 		bits |= raw;
@@ -673,6 +709,7 @@ public:
 			bt mask = bt(1ull << (bitIndex % bitsInBlock));
 			return (word & mask);
 		}
+		return false;
 	}
 	inline constexpr uint8_t nibble(size_t n) const noexcept {
 		if (n < (1 + ((nbits - 1) >> 2))) {
@@ -682,11 +719,13 @@ public:
 			bt nibblebits = bt(mask & word);
 			return uint8_t(nibblebits >> (nibbleIndexInWord * 4));
 		}
+		return false;
 	}
 	inline constexpr bt block(size_t b) const noexcept {
 		if (b < nrBlocks) {
 			return _block[b];
 		}
+		return 0;
 	}
 
 	void debug() const {
@@ -960,11 +999,18 @@ inline std::istream& operator>>(std::istream& istr, const areal<nnbits,nes,nbt>&
 }
 
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return false; }
+inline bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { 
+	for (size_t i = 0; i < lhs.nrBlocks; ++i) {
+		if (lhs._block[i] != rhs._block[i]) {
+			return false;
+		}
+	}
+	return true;
+}
 template<size_t nnbits, size_t nes, typename nbt>
 inline bool operator!=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator< (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return false; }
+inline bool operator< (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return (lhs - rhs) < 0.0; }
 template<size_t nnbits, size_t nes, typename nbt>
 inline bool operator> (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return  operator< (rhs, lhs); }
 template<size_t nnbits, size_t nes, typename nbt>

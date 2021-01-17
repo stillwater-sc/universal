@@ -156,7 +156,7 @@ void ReportAssignmentSuccess(const std::string& test_case, const std::string& op
 		<< " == "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " reference value is "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
-		<< "               fixpnt bits " << to_binary(result) << std::endl;
+		<< "               bit pattern " << to_binary(result) << std::endl;
 }
 
 } // namespace sw::universal

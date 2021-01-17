@@ -38,6 +38,27 @@ void copyBits(ArgumentBlockType v, BlockType _block[16]) {
 	}
 }
 
+template<size_t nbits, size_t es, typename bt = uint8_t>
+int VerifyReverseSampling(const std::string& tag, bool bReportIndividualTestCases = false, bool verbose = false) {
+	constexpr size_t NR_SAMPLES = (1ull << nbits);
+	int nrOfFailedTestCases = 0;
+	using Real = sw::universal::areal<nbits, es, bt>;
+	Real ref{ 0 }; Real result{ 0 };
+	for (size_t i = 0; i < NR_SAMPLES; i += 2) {
+		ref.set_raw_bits(i);
+		double input = double(ref);
+		result = input;
+		if (result != ref) {
+			nrOfFailedTestCases++;
+			if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+		}
+		else {
+			if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+		}
+	}
+	return nrOfFailedTestCases;
+}
+
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -52,22 +73,27 @@ try {
 
 	std::string tag = "AREAL assignment: ";
 
-#if COPY_DEBUG
-	uint8_t  storage[16] = { 0 };
-	uint32_t value = 0x00A5A5A5;
-	copyBits(value, storage);
-	for (auto v : storage) {
-		std::cout << std::hex << int(v) << std::endl;
-	}
-#endif
-
 #if MANUAL_TESTING
 
 /*
 * subnormals
+   #           Binary    sign   scale        exponent        fraction    ubit                         value      hex_format
+   0:        b00000000       0      -5             b00           b0000       0                             0       8.2x0x00r
+   2:        b00000010       0      -4             b00           b0001       0                        0.0625       8.2x0x02r
+   4:        b00000100       0      -3             b00           b0010       0                         0.125       8.2x0x04r
    6:        b00000110       0      -3             b00           b0011       0                        0.1875       8.2x0x06r
    8:        b00001000       0      -2             b00           b0100       0                          0.25       8.2x0x08r
   10:        b00001010       0      -2             b00           b0101       0                        0.3125       8.2x0x0Ar
+  12:        b00001100       0      -2             b00           b0110       0                         0.375       8.2x0x0Cr
+  14:        b00001110       0      -2             b00           b0111       0                        0.4375       8.2x0x0Er
+  16:        b00010000       0      -1             b00           b1000       0                           0.5       8.2x0x10r
+  18:        b00010010       0      -1             b00           b1001       0                        0.5625       8.2x0x12r
+  20:        b00010100       0      -1             b00           b1010       0                         0.625       8.2x0x14r
+  22:        b00010110       0      -1             b00           b1011       0                        0.6875       8.2x0x16r
+  24:        b00011000       0      -1             b00           b1100       0                          0.75       8.2x0x18r
+  26:        b00011010       0      -1             b00           b1101       0                        0.8125       8.2x0x1Ar
+  28:        b00011100       0      -1             b00           b1110       0                         0.875       8.2x0x1Cr
+  30:        b00011110       0      -1             b00           b1111       0                        0.9375       8.2x0x1Er
 
 * normals
   60:        b00111100       0       0             b01           b1110       0                         1.875       8.2x0x3Cr
@@ -100,12 +126,34 @@ NEGATIVE
  240:        b11110000       1       2             b11           b1000       0                            -6       8.2x0xF0r
  242:        b11110010       1       2             b11           b1001       0                         -6.25       8.2x0xF2r
 */
-	{
-		using Real = sw::universal::areal<8, 2>;
+
+	using Real = sw::universal::areal<8, 2>;
+/*
+	nbits             : 8
+	es                : 2
+	BLOCK_MASK        : b1111'1111
+	nrBlocks          : 1
+	bits in MSU       : 8
+	MSU               : 0
+	MSU MASK          : b1111'1111
+	SIGN_BIT_MASK     : b1000'0000
+	LSB_BIT_MASK      : b0000'0001
+	MSU CAPTURES E    : yes
+	EXP_SHIFT         : 5
+	MSU EXP MASK      : b0110'0000
+	EXP_BIAS          : 1
+	MAX_EXP           : 3
+	MIN_EXP_NORMAL    : -1
+	MIN_EXP_SUBNORMAL : -4
+	*/
+
+	// Real b; b.debug();
+
+	if (false) {
+
 
 		Real subnormals[] = { 0.1875, 0.25, 0.3125 };
 		Real normals[] = { 1.875, 1.9375, 2.0, 2.125, 2.25 };
-		Real ubit_normals[] = { 1.876, 1.9376, 2.0625, 2.126, 2.26 };
 		Real supernormals[] = { 5.75, 6.0, 6.25 };
 
 		for (auto v : subnormals) {
@@ -114,61 +162,15 @@ NEGATIVE
 		for (auto v : normals) {
 			std::cout << to_binary(v) << " : " << color_print(v) << " : " << v << '\n';
 		}
-		for (auto v : ubit_normals) {
-			std::cout << to_binary(v) << " : " << color_print(v) << " : " << v << '\n';
-		}
 		for (auto v : supernormals) {
 			std::cout << to_binary(v) << " : " << color_print(v) << " : " << v << '\n';
 		}
-
-		{
-			/*
-			value         : 2
-			segments      : 0.10000000000.0000000000000000000000000000000000000000000000000000
-			sign   bits   : 0
-			exponent bits : 0x400
-			exponent value: 1
-			fraction bits : 0x10000000000000
-			biased exponent : 2 : 2
-			*/
-			Real v = 2.0025;
-			std::cout << to_binary(v) << " : " << color_print(v) << " : " << v << '\n';
-		}
-
-
-		/*
-			nbits             : 8
-			es                : 2
-			BLOCK_MASK        : b1111'1111
-			nrBlocks          : 1
-			bits in MSU       : 8
-			MSU               : 0
-			MSU MASK          : b1111'1111
-			SIGN_BIT_MASK     : b1000'0000
-			LSB_BIT_MASK      : b0000'0001
-			MSU CAPTURES E    : yes
-			EXP_SHIFT         : 5
-			MSU EXP MASK      : b0110'0000
-			EXP_BIAS          : 1
-			MAX_EXP           : 3
-			MIN_EXP_NORMAL    : -1
-			MIN_EXP_SUBNORMAL : -4
-			*/
-		// Real b; b.debug();
-		{
-			/*
-			value         : 0.25
-			segments      : 0.01111111101.0000000000000000000000000000000000000000000000000000
-			sign   bits   : 0
-			exponent bits : 0x3fd
-			fraction bits : 0x10000000000000
-			*/
-			Real v = 0.25;
-			std::cout << to_binary(v) << " : " << color_print(v) << " : " << v << '\n';
-		}
-
 	}
-
+	//130:        b10000010       1      -4             b00           b0001       0                       -0.0625       8.2x0x82r
+	Real a = -0.0625;
+	bReportIndividualTestCases = true;
+	bool bVerbose = true;
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<8,2>(tag, bReportIndividualTestCases, bVerbose), "reverse sample", "=");
 //	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<sw::universal::areal<5, 2,  uint8_t>, float >(bReportIndividualTestCases), tag, "areal<5,2,uint8_t>");
 	
 #if STRESS_TESTING
