@@ -150,8 +150,37 @@ NEGATIVE
 
 	// Real b; b.debug();
 
-//	Real a = 0.5;
-	//std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+	Real a;
+	double da;
+
+	// test sNaN
+	a.setnan(NAN_TYPE_SIGNALLING);
+	da = double(a);
+	std::cout << to_binary(da) << " " << da << std::endl;
+	a = da;
+	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+
+	// test qNaN
+	a.setnan(NAN_TYPE_QUIET);
+	da = double(a);
+	std::cout << to_binary(da) << " " << da << std::endl;
+	a = da;
+	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+
+	// test +inf
+	a.setinf(false); // +inf
+	da = double(a);
+	std::cout << to_binary(da) << " " << da << std::endl;	
+	a = da;
+	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+
+	// test -inf
+	a.setinf(true); // -inf
+	da = double(a);
+	std::cout << to_binary(da) << " " << da << std::endl;
+	a = da;
+	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+
 
 	bReportIndividualTestCases = true;
 	bool bVerbose = true;

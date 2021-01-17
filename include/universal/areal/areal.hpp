@@ -124,11 +124,12 @@ int scale(const areal<nbits, es, bt>& v) {
 // fill an areal object with maximum positive value
 template<size_t nbits, size_t es, typename bt>
 areal<nbits, es, bt>& maxpos(areal<nbits, es, bt>& amaxpos) {
-	// maximum positive value has this bit pattern: 0-1...1-111...110, that is, sign = 0, e = 1.1, f = 111...111, u = 0
+	// maximum positive value has this bit pattern: 0-1...1-111...100, that is, sign = 0, e = 1.1, f = 111...110, u = 0
 	amaxpos.clear();
 	amaxpos.flip();
 	amaxpos.reset(nbits - 1ull);
 	amaxpos.reset(0ull);
+	amaxpos.reset(1ull);
 	return amaxpos;
 }
 // fill an areal object with mininum positive value
@@ -157,10 +158,11 @@ areal<nbits, es, bt>& minneg(areal<nbits, es, bt>& aminneg) {
 // fill an areal object with largest negative value
 template<size_t nbits, size_t es, typename bt>
 areal<nbits, es, bt>& maxneg(areal<nbits, es, bt>& amaxneg) {
-	// maximum negative value has this bit pattern: 1-1...1-111...110, that is, sign = 1, e = 1.1, f = 111...111, u = 0
+	// maximum negative value has this bit pattern: 1-1...1-111...110, that is, sign = 1, e = 1.1, f = 111...110, u = 0
 	amaxneg.clear();
 	amaxneg.flip();
 	amaxneg.reset(0ull);
+	amaxneg.reset(1ull);
 	return amaxneg;
 }
 
@@ -201,7 +203,7 @@ public:
 	static constexpr bt MSU_EXP_MASK = ((bt(-1) << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;
-	static constexpr int MIN_EXP_NORMAL = -EXP_BIAS;
+	static constexpr int MIN_EXP_NORMAL = 1 - EXP_BIAS;
 	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - fbits; // the scale of smallest ULP
 	static constexpr bt BLOCK_MASK = bt(-1);
 
@@ -257,15 +259,24 @@ public:
 	}
 	areal& operator=(double rhs) {
 		clear();
-		if (rhs == 0.0) {
-			return *this;
-		}
-
 		double_decoder decoder;
 		decoder.d = rhs;
 		bool s = decoder.parts.sign ? true : false;
 		uint64_t raw = decoder.parts.fraction; // don't bring in a hidden bit
 		int exponent = static_cast<int>(decoder.parts.exponent) - 1023;  // apply bias
+		if (std::isnan(rhs)) {
+			// 0.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
+			// 0.11111111111.1000000000000000000000000000000000000000000000000000 quiet nan
+			raw & 0x1 ? setnan(NAN_TYPE_SIGNALLING) : setnan(NAN_TYPE_QUIET);
+			return *this;
+		}
+		if (rhs == 0.0) {
+			return *this;
+		}
+		if (std::isinf(rhs)) {
+			setinf(s);
+			return *this;
+		}
 
 #if TRACE_CONVERSION
 		std::cout << '\n';
@@ -297,7 +308,7 @@ public:
 		//       x  |   1          1
 		bool ubit = false;
 		uint64_t mask = 0x000F'FFFF'FFFF'FFFF >> (52 - shiftRight - 1); // mask for sticky bit 
-		if (exponent >= MIN_EXP_SUBNORMAL && exponent <= MIN_EXP_NORMAL) {
+		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
 			// trick though is that it might be a normal number in IEEE double precision representation
 			if (exponent > -1022) {
