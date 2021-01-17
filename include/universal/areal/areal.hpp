@@ -508,7 +508,6 @@ public:
 		_block[MSU] = NaNType == NAN_TYPE_SIGNALLING ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 	}
 
-
 	/// <summary>
 	/// set the raw bits of the areal. This is a required function in the Universal number systems
 	/// that enables verification test suites to inject specific bit patterns using a common interface.
@@ -811,8 +810,13 @@ public:
 	// with a final rounding step.
 	double to_double() const {
 		double v{ 0.0 };
-		if (iszero()) return sign() ? -v : v;
-		if (isnan()) {
+		if (iszero()) {
+			if (sign()) // the optimizer might destroy the sign
+				return -0.0;
+			else 
+				return 0.0; 
+		}
+		else if (isnan()) {
 			v = sign() ? std::numeric_limits<double>::signaling_NaN() : std::numeric_limits<double>::quiet_NaN();
 		}
 		else if (isinf()) {
