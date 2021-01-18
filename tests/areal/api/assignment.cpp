@@ -22,6 +22,14 @@
 #include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/areal/table.hpp>
 
+// print the constexpr values of the areal class
+template<size_t nbits, size_t es, typename bt>
+void configuration() {
+	sw::universal::areal<nbits, es, bt> a;
+	a.debug();
+}
+
+// free function that does the same as the private copyBits function of the areal class
 template<typename ArgumentBlockType, typename BlockType>
 void copyBits(ArgumentBlockType v, BlockType _block[16]) {
 	size_t bitsInBlock = sizeof(BlockType) * 8;
@@ -65,6 +73,76 @@ int VerifyReverseSampling(const std::string& tag, bool bReportIndividualTestCase
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
+/*
+* e = exponent bit, m = most significant fraction bit, f = fraction bit, h = hidden bit
+float       s-eee'eeee'efff'ffff'ffff'ffff'ffff'ffff (23 fraction bits, 1 hidden bit)
+                                                                                 float fbits = 0x007F'FFFF  fbits   hidden+raw    0x00FF'FFFF            shift right == 24 - fbits - ubit
+areal<4,1>                                     'semu   fraction = '0000'0000'0000'0000'0000'0000'0000'00h0     1    sticky mask = 0x007F'FFFF   raw+hidden 0x00FF'FFFF >> 22 to get to 0x0000'0003
+areal<5,1>                                    s'emfu   fraction = '0000'0000'0000'0000'0000'0000'0000'0h10     2    sticky mask = 0x003F'FFFF   raw+hidden 0x00FF'FFFF >> 21 to get to 0x0000'0007
+areal<6,1>                                   se'mffu   fraction = '0000'0000'0000'0000'0000'0000'0000'h110     3    sticky mask = 0x001F'FFFF   raw+hidden 0x00FF'FFFF >> 20 to get to 0x0000'000F
+areal<7,1>                                  sem'fffu   fraction = '0000'0000'0000'0000'0000'0000'000h'1110     4    sticky mask = 0x000F'FFFF   raw+hidden 0x00FF'FFFF >> 19 to get to 0x0000'001F
+areal<8,1>                                'semf'fffu   fraction = '0000'0000'0000'0000'0000'0000'00h1'1110     5    sticky mask = 0x0007'FFFF   raw+hidden 0x00FF'FFFF >> 18 to get to 0x0000'003F
+areal<9,1>                               s'emff'fffu   fraction = '0000'0000'0000'0000'0000'0000'0h11'1110     6    sticky mask = 0x0003'FFFF   raw+hidden 0x00FF'FFFF >> 17 to get to 0x0000'007F
+areal<10,1>                             se'mfff'fffu   fraction = '0000'0000'0000'0000'0000'0000'h111'1110     7    sticky mask = 0x0001'FFFF   raw+hidden 0x00FF'FFFF >> 16 to get to 0x0000'00FF
+areal<11,1>                            sem'ffff'fffu   fraction = '0000'0000'0000'0000'0000'000h'1111'1110     8    sticky mask = 0x0000'FFFF   raw+hidden 0x00FF'FFFF >> 15 to get to 0x0000'01FF
+areal<12,1>                          'semf'ffff'fffu   fraction = '0000'0000'0000'0000'0000'00h1'1111'1110     9    sticky mask = 0x0000'7FFF   raw+hidden 0x00FF'FFFF >> 14 to get to 0x0000'03FF
+areal<13,1>                         s'emff'ffff'fffu   fraction = '0000'0000'0000'0000'0000'0h11'1111'1110    10    sticky mask = 0x0000'3FFF   raw+hidden 0x00FF'FFFF >> 13 to get to 0x0000'07FF
+areal<14,1>                        se'mfff'ffff'fffu   fraction = '0000'0000'0000'0000'0000'h111'1111'1110    11    sticky mask = 0x0000'1FFF   raw+hidden 0x00FF'FFFF >> 12 to get to 0x0000'0FFF
+areal<15,1>                       sem'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'000h'1111'1111'1110    12    sticky mask = 0x0000'0FFF   raw+hidden 0x00FF'FFFF >> 11 to get to 0x0000'1FFF
+areal<16,1>                     'semf'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'00h1'1111'1111'1110    13    sticky mask = 0x0000'07FF   raw+hidden 0x00FF'FFFF >> 10 to get to 0x0000'3FFF
+areal<17,1>                    s'emff'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'0h11'1111'1111'1110    14    sticky mask = 0x0000'03FF   raw+hidden 0x00FF'FFFF >>  9 to get to 0x0000'7FFF
+areal<18,1>                   se'mfff'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'h111'1111'1111'1110    15    sticky mask = 0x0000'01FF   raw+hidden 0x00FF'FFFF >>  8 to get to 0x0000'FFFF
+areal<19,1>                  sem'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'000h'1111'1111'1111'1110    16    sticky mask = 0x0000'00FF   raw+hidden 0x00FF'FFFF >>  7 to get to 0x0001'FFFF
+areal<20,1>                'semf'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'00h1'1111'1111'1111'1110    17    sticky mask = 0x0000'007F   raw+hidden 0x00FF'FFFF >>  6 to get to 0x0003'FFFF
+areal<21,1>               s'emff'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'0h11'1111'1111'1111'1110    18    sticky mask = 0x0000'003F   raw+hidden 0x00FF'FFFF >>  5 to get to 0x0007'FFFF
+areal<22,1>              se'mfff'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'h111'1111'1111'1111'1110    19    sticky mask = 0x0000'001F   raw+hidden 0x00FF'FFFF >>  4 to get to 0x000F'FFFF
+areal<23,1>             sem'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'000h'1111'1111'1111'1111'1110    20    sticky mask = 0x0000'000F   raw+hidden 0x00FF'FFFF >>  3 to get to 0x001F'FFFF
+areal<24,1>           'semf'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'00h1'1111'1111'1111'1111'1110    21    sticky mask = 0x0000'0007   raw+hidden 0x00FF'FFFF >>  2 to get to 0x003F'FFFF
+areal<25,1>          s'emff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'0h11'1111'1111'1111'1111'1110    22    sticky mask = 0x0000'0003   raw+hidden 0x00FF'FFFF >>  1 to get to 0x007F'FFFF
+areal<26,1>         se'mfff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'h111'1111'1111'1111'1111'1110    23    sticky mask = 0x0000'0001   raw+hidden 0x00FF'FFFF >>  0 to get to 0x00FF'FFFF
+areal<27,1>      ' sem'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'000h'1111'1111'1111'1111'1111'1110    24    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -1 to get to 0x01FF'FFFF
+areal<28,1>      'semf'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'00h1'1111'1111'1111'1111'1111'1110    25    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -2 to get to 0x03FF'FFFF
+areal<29,1>     s'emff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0h11'1111'1111'1111'1111'1111'1110    26    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -3 to get to 0x07FF'FFFF
+areal<30,1>    se'mfff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'h111'1111'1111'1111'1111'1111'1110    27    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -4 to get to 0x0FFF'FFFF
+areal<31,1> ' sem'ffff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '000h'1111'1111'1111'1111'1111'1111'1110    28    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -5 to get to 0x1FFF'FFFF
+areal<32,1> 'semf'ffff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '00h1'1111'1111'1111'1111'1111'1111'1110    29    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -6 to get to 0x3FFF'FFFF
+
+                                                                                 float fbits = 0x007F'FFFF  fbits   hidden+raw    0x00FF'FFFF            shift right == 24 - fbits - ubit
+areal<4,2>                                      seeu  (N/A)                                                    0
+areal<5,2>                                    s'eemu   fraction = '0000'0000'0000'0000'0000'0000'0000'00h0     1    sticky mask = 0x003F'FFFF   raw+hidden 0x00FF'FFFF >> 22 to get to 0x0000'0003
+areal<6,2>                                   se'emfu   fraction = '0000'0000'0000'0000'0000'0000'0000'0h10     2    sticky mask = 0x001F'FFFF   raw+hidden 0x00FF'FFFF >> 21 to get to 0x0000'0007
+areal<7,2>                                  see'mffu   fraction = '0000'0000'0000'0000'0000'0000'0000'h110     3    sticky mask = 0x000F'FFFF   raw+hidden 0x00FF'FFFF >> 20 to get to 0x0000'000F
+areal<8,2>                                'seem'fffu   fraction = '0000'0000'0000'0000'0000'0000'000h'1110     4    sticky mask = 0x0007'FFFF   raw+hidden 0x00FF'FFFF >> 19 to get to 0x0000'001F
+areal<9,2>                               s'eemf'fffu   fraction = '0000'0000'0000'0000'0000'0000'00h1'1110     5    sticky mask = 0x0003'FFFF   raw+hidden 0x00FF'FFFF >> 18 to get to 0x0000'003F
+areal<10,2>                             se'emff'fffu   fraction = '0000'0000'0000'0000'0000'0000'0h11'1110     6    sticky mask = 0x0001'FFFF   raw+hidden 0x00FF'FFFF >> 17 to get to 0x0000'007F
+areal<11,2>                            see'mfff'fffu   fraction = '0000'0000'0000'0000'0000'0000'h111'1110     7    sticky mask = 0x0000'FFFF   raw+hidden 0x00FF'FFFF >> 16 to get to 0x0000'00FF
+areal<12,2>                          'seem'ffff'fffu   fraction = '0000'0000'0000'0000'0000'000h'1111'1110     8    sticky mask = 0x0000'7FFF   raw+hidden 0x00FF'FFFF >> 15 to get to 0x0000'01FF
+areal<13,2>                         s'eemf'ffff'fffu   fraction = '0000'0000'0000'0000'0000'00h1'1111'1110     9    sticky mask = 0x0000'3FFF   raw+hidden 0x00FF'FFFF >> 14 to get to 0x0000'03FF
+areal<14,2>                        se'emff'ffff'fffu   fraction = '0000'0000'0000'0000'0000'0h11'1111'1110    10    sticky mask = 0x0000'1FFF   raw+hidden 0x00FF'FFFF >> 13 to get to 0x0000'07FF
+areal<15,2>                       see'mfff'ffff'fffu   fraction = '0000'0000'0000'0000'0000'h111'1111'1110    11    sticky mask = 0x0000'0FFF   raw+hidden 0x00FF'FFFF >> 12 to get to 0x0000'0FFF
+areal<16,2>                     'seem'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'000h'1111'1111'1110    12    sticky mask = 0x0000'07FF   raw+hidden 0x00FF'FFFF >> 11 to get to 0x0000'1FFF
+areal<17,2>                    s'eemf'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'00h1'1111'1111'1110    13    sticky mask = 0x0000'03FF   raw+hidden 0x00FF'FFFF >> 10 to get to 0x0000'3FFF
+areal<18,2>                   se'emff'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'0h11'1111'1111'1110    14    sticky mask = 0x0000'01FF   raw+hidden 0x00FF'FFFF >>  9 to get to 0x0000'7FFF
+areal<19,2>                  see'mfff'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'h111'1111'1111'1110    15    sticky mask = 0x0000'00FF   raw+hidden 0x00FF'FFFF >>  8 to get to 0x0000'FFFF
+areal<20,2>                'seem'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'000h'1111'1111'1111'1110    16    sticky mask = 0x0000'007F   raw+hidden 0x00FF'FFFF >>  7 to get to 0x0001'FFFF
+areal<21,2>               s'eemf'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'00h1'1111'1111'1111'1110    17    sticky mask = 0x0000'003F   raw+hidden 0x00FF'FFFF >>  6 to get to 0x0003'FFFF
+areal<22,2>              se'emff'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'0h11'1111'1111'1111'1110    18    sticky mask = 0x0000'001F   raw+hidden 0x00FF'FFFF >>  5 to get to 0x0007'FFFF
+areal<23,2>             see'mfff'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'h111'1111'1111'1111'1110    19    sticky mask = 0x0000'000F   raw+hidden 0x00FF'FFFF >>  4 to get to 0x000F'FFFF
+areal<24,2>           'seem'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'000h'1111'1111'1111'1111'1110    20    sticky mask = 0x0000'0007   raw+hidden 0x00FF'FFFF >>  3 to get to 0x001F'FFFF
+areal<25,2>          s'eemf'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'00h1'1111'1111'1111'1111'1110    21    sticky mask = 0x0000'0003   raw+hidden 0x00FF'FFFF >>  2 to get to 0x003F'FFFF
+areal<26,2>         se'emff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'0h11'1111'1111'1111'1111'1110    22    sticky mask = 0x0000'0001   raw+hidden 0x00FF'FFFF >>  1 to get to 0x007F'FFFF
+areal<27,2>        see'mfff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'h111'1111'1111'1111'1111'1110    23    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >>  0 to get to 0x00FF'FFFF
+areal<28,2>      'seem'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'000h'1111'1111'1111'1111'1111'1110    24    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -1 to get to 0x01FF'FFFF
+areal<29,2>     s'eemf'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'00h1'1111'1111'1111'1111'1111'1110    25    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -2 to get to 0x03FF'FFFF
+areal<30,2>    se'emff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0h11'1111'1111'1111'1111'1111'1110    26    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -3 to get to 0x07FF'FFFF
+areal<31,2>   see'mfff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'h111'1111'1111'1111'1111'1111'1110    27    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -4 to get to 0x0FFF'FFFF
+areal<32,2> 'seem'ffff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '000h'1111'1111'1111'1111'1111'1111'1110    28    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -5 to get to 0x1FFF'FFFF
+
+areal<4,1>  s-e-f-u         fraction = 0-0-h-0, sticky mask = 0x007F'FFFF
+double      s-eee'eeee'eeee-ffff'...'ffff  (52 fraction bits, 1 hidden bit
+
+*/
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
@@ -74,6 +152,18 @@ try {
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "AREAL assignment: ";
+
+	{
+		using Real = sw::universal::areal<5, 1>;
+		Real a = 0.5;
+		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+	}
+	{
+		using Real = sw::universal::areal<6, 1>;
+		Real a = 0.5;
+		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+	}
+
 
 #if MANUAL_TESTING
 
@@ -129,30 +219,12 @@ NEGATIVE
  242:        b11110010       1       2             b11           b1001       0                         -6.25       8.2x0xF2r
 */
 
-	using Real = sw::universal::areal<8, 2>;
-/*
-	nbits             : 8
-	es                : 2
-	BLOCK_MASK        : b1111'1111
-	nrBlocks          : 1
-	bits in MSU       : 8
-	MSU               : 0
-	MSU MASK          : b1111'1111
-	SIGN_BIT_MASK     : b1000'0000
-	LSB_BIT_MASK      : b0000'0001
-	MSU CAPTURES E    : yes
-	EXP_SHIFT         : 5
-	MSU EXP MASK      : b0110'0000
-	EXP_BIAS          : 1
-	MAX_EXP           : 3
-	MIN_EXP_NORMAL    : -1
-	MIN_EXP_SUBNORMAL : -4
-	*/
 
-	// Real b; b.debug();
+	using Real = sw::universal::areal<8, 2>;
 
 	Real a;
 	double da;
+
 
 	// test sNaN
 	a.setnan(NAN_TYPE_SIGNALLING);
@@ -206,14 +278,35 @@ NEGATIVE
 	std::cout << "assignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
 	if (a.iszero()) std::cout << "PASS -0 == iszero()\n"; else std::cout << "FAIL -0 != iszero()\n";
 
-	bReportIndividualTestCases = false;
 	bool bVerbose = false;
-//	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<4, 1>(tag, true, bVerbose), "areal<4,1>", "=");
-//	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<5, 1>(tag, true, bVerbose), "areal<5,1>", "=");
+	// es = 1 encodings
+	// 1 block representations
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 4, 1, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<4,1,uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 5, 1, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<5,1,uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 6, 1, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<6,1,uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 7, 1, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<7,1,uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 8, 1, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<8,1,uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, 1, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<9,1,uint16_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<10, 1, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<10,1,uint16_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<12, 1, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<12,1,uint16_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<14, 1, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<14,1,uint16_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<16, 1, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<16,1,uint16_t>", "=");
+
+	// 2 block representations
+//	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, 1, uint8_t>(tag, false, bVerbose), "areal<9,1,uint8_t>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<10, 1, uint8_t>(tag, false, bVerbose), "areal<10,1,uint8_t>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<16, 1, uint8_t>(tag, false, bVerbose), "areal<16,1,uint8_t>", "=");
+
+
+
+	// es = 2 encodings
+	// 1 block representations
 	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<5, 2>(tag, bReportIndividualTestCases, bVerbose), "areal<5,2>", "=");
 	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<6, 2>(tag, bReportIndividualTestCases, bVerbose), "areal<6,2>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<7, 2>(tag, bReportIndividualTestCases, bVerbose), "areal<7,2>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<8, 2>(tag, bReportIndividualTestCases, bVerbose), "areal<8,2>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<7, 2>(tag, true, bVerbose), "areal<7,2>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<8, 2>(tag, true, bVerbose), "areal<8,2>", "=");
+
+	// 2 block representations
 //	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<9, 2>(tag, bReportIndividualTestCases, bVerbose), "areal<9,2>", "=");
 //	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<9, 3>(tag, bReportIndividualTestCases, bVerbose), "areal<9,3>", "=");
 

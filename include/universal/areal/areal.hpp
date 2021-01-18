@@ -57,6 +57,20 @@ namespace sw::universal {
 	static constexpr double oneOver2p1022 = oneOver2p510 * oneOver2p510 * 0.25;
 
 // precomputed values for subnormal exponents as a function of es
+	static constexpr int subnormal_reciprocal_shift[] = {
+		0,                    // es = 0 : not a valid value
+		-1,                   // es = 1 : 2^(2 - 2^(es-1)) = 2^1
+		0,                    // es = 2 : 2^(2 - 2^(es-1)) = 2^0
+		2,                    // es = 3 : 2^(2 - 2^(es-1)) = 2^-2
+		6,                    // es = 4 : 2^(2 - 2^(es-1)) = 2^-6
+		14,                   // es = 5 : 2^(2 - 2^(es-1)) = 2^-14
+		30,                   // es = 6 : 2^(2 - 2^(es-1)) = 2^-30
+		62,                   // es = 7 : 2^(2 - 2^(es-1)) = 2^-62
+		126,                  // es = 8 : 2^(2 - 2^(es-1)) = 2^-126
+		254,                  // es = 9 : 2^(2 - 2^(es-1)) = 2^-254
+		510,                  // es = 10 : 2^(2 - 2^(es-1)) = 2^-510
+		1022                  // es = 11 : 2^(2 - 2^(es-1)) = 2^-1022
+	};
 // es > 11 requires a long double representation, which MSVC does not provide.
 	static constexpr double subnormal_exponent[] = {
 		0,                    // es = 0 : not a valid value
@@ -308,21 +322,22 @@ public:
 		//       x      0          0
 		//       x  |   1          1
 		bool ubit = false;
-		uint64_t mask = 0x000F'FFFF'FFFF'FFFF >> (52 - shiftRight - 1); // mask for sticky bit 
+		uint64_t mask = 0x000F'FFFF'FFFF'FFFF >> fbits; // mask for sticky bit 
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
 			// trick though is that it might be a normal number in IEEE double precision representation
 			if (exponent > -1022) {
-				// add the hidden bit to the fraction bits
+				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 52);
 #if TRACE_CONVERSION
 				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
-				// fraction processing
-				shiftRight = 52 - exponent - static_cast<int>(fbits) - 1; // to leave room for the uncertainty bit
+				// fraction processing: we have 53 bits = 1 hidden + 52 explicit fraction bits
+				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (exponent + fbits - (2 -2^(es-1))))
+				shiftRight = 52 - (exponent + static_cast<int>(fbits) - subnormal_reciprocal_shift[es]);
 				if (shiftRight > 0) {		// do we need to round?
 					ubit = (mask & raw) != 0;
-					raw >>= shiftRight;
+					raw >>= shiftRight + 1;
 				}
 				else { // all bits of the double go into this representation and need to be shifted up
 					// ubit = false; already set to false
@@ -335,7 +350,7 @@ public:
 			}
 		}
 		else {
-			// this number is a normal/supernormal number in this representation
+			// this number is a normal/supernormal number in this representation, we can leave the hidden bit hidden
 			biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
 
 			// fraction processing
@@ -617,16 +632,16 @@ public:
 		case 0:
 			return true;
 		case 1:
-			return (_block[MSU] & ~SIGN_BIT_MASK) == 0 ? true : false;
+			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		case 2:
-			return (_block[0] == 0) && (_block[MSU] & ~SIGN_BIT_MASK) == 0 ? true : false;
+			return (_block[0] == 0) && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 			break;
 		case 3:
-			return (_block[0] == 0) && _block[1] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0 ? true : false;
+			return (_block[0] == 0) && _block[1] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 			break;
 		default:
 			for (size_t i = 0; i < nrBlocks-1; ++i) if (_block[i] != 0) return false;
-			return (_block[MSU] & ~SIGN_BIT_MASK) == 0 ? true : false;
+			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		}
 	}
 	/// <summary>
@@ -758,17 +773,12 @@ public:
 	// extract the exponent field from the encoding
 	inline constexpr void exponent(blockbinary<es, bt>& e) const {
 		e.clear();
-		switch (nrBlocks) {
-		case 0:
-			return;
-		case 1:
-		{
+		if constexpr (0 == nrBlocks) return;
+		else if constexpr (1 == nrBlocks) {
 			bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
 			e.set_raw_bits(uint64_t(ebits >> EXP_SHIFT));
 		}
-		break;
-		default:
-		{
+		else if constexpr (nrBlocks > 1) {
 			if (MSU_CAPTURES_E) {
 				bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
 				e.set_raw_bits(uint64_t(ebits >> EXP_SHIFT));
@@ -777,28 +787,18 @@ public:
 				for (size_t i = 0; i < es; ++i) { e.set(i, at(nbits - 1ull - es + i)); }
 			}
 		}
-		break;
-		}
 	}
 	// extract the fraction field from the encoding
 	inline constexpr void fraction(blockbinary<fbits, bt>& f) const {
 		f.clear();
-		switch (nrBlocks) {
-		case 0:
-			return;
-		case 1:
-		{
+		if constexpr (0 == nrBlocks) return;
+		else if constexpr (1 == nrBlocks) {
 			bt fraction = bt(_block[MSU] & ~MSU_EXP_MASK);
 			f.set_raw_bits(bt(fraction >> bt(1ull)));
 		}
-		break;
-		default:
-		{
+		else if constexpr (nrBlocks > 1) {
 			for (size_t i = 0; i < fbits; ++i) { f.set(i, at(nbits - 1ull - es - fbits + i)); }
 		}
-		break;
-		}
-
 	}
 	
 	// casts to native types
