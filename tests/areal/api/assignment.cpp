@@ -46,6 +46,31 @@ void copyBits(ArgumentBlockType v, BlockType _block[16]) {
 	}
 }
 
+// verify the subnormals of an areal configuration
+template<size_t nbits, size_t es, typename bt = uint8_t>
+int VerifySubnormalReverseSampling(const std::string& tag, bool bReportIndividualTestCases = false, bool verbose = false) {
+	// subnormals exist in the exponent = 0 range
+	constexpr size_t fbits = nbits - 1ull - es - 1ull;
+	constexpr size_t NR_SAMPLES = (1ull << (fbits + 1ull)); //  the first segment of fbits+ubit are subnormals
+	int nrOfFailedTestCases = 0;
+	using Real = sw::universal::areal<nbits, es, bt>;
+	Real ref{ 0 }; Real result{ 0 };
+	for (size_t i = 0; i < NR_SAMPLES; i += 2) {
+		ref.set_raw_bits(i);
+		double input = double(ref);
+		result = input;
+		if (result != ref) {
+			nrOfFailedTestCases++;
+			//			std::cout << "------->  " << i << " " << sw::universal::to_binary(input) << " " << sw::universal::to_binary(result) << std::endl;
+			if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+		}
+		else {
+			if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+		}
+	}
+	return nrOfFailedTestCases;
+}
+
 template<size_t nbits, size_t es, typename bt = uint8_t>
 int VerifyReverseSampling(const std::string& tag, bool bReportIndividualTestCases = false, bool verbose = false) {
 	constexpr size_t NR_SAMPLES = (1ull << nbits);
@@ -67,6 +92,73 @@ int VerifyReverseSampling(const std::string& tag, bool bReportIndividualTestCase
 		}
 	}
 	return nrOfFailedTestCases;
+}
+
+template<typename TestType, typename NativeFloatingPointType>
+int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases = false) {
+	using namespace sw::universal;
+	int nrOfFailedTests{ 0 };
+	TestType a{ 0 };
+	NativeFloatingPointType fa{ 0 };
+
+	std::cout << "Verify special cases for " << typeid(NativeFloatingPointType).name() << '\n';
+
+	// test sNaN
+	a.setnan(NAN_TYPE_SIGNALLING);
+	fa = NativeFloatingPointType(a);
+	std::cout << to_binary(fa) << " " << fa << " : ";
+	a = fa;
+	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+
+	// test qNaN
+	a.setnan(NAN_TYPE_QUIET);
+	fa = NativeFloatingPointType(a);
+	std::cout << to_binary(fa) << " " << fa << " : ";
+	a = fa;
+	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+
+	// test +inf
+	a.setinf(false); // +inf
+	fa = NativeFloatingPointType(a);
+	std::cout << to_binary(fa) << " " << fa << " : ";
+	a = fa;
+	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+
+	// test -inf
+	a.setinf(true); // -inf
+	fa = NativeFloatingPointType(a);
+	std::cout << to_binary(fa) << " " << fa << " : ";
+	a = fa;
+	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+
+	std::cout << "Representations of zero in " << typeid(NativeFloatingPointType).name() << '\n';
+	NativeFloatingPointType zero;
+	zero = 0.0;
+	std::cout << "+0.0 = " << to_binary(+zero) << " " << zero << '\n';
+	std::cout << "-0.0 = " << to_binary(-zero) << " " << -zero << '\n';
+
+	// test 0.0
+	std::cout << "Test positive 0.0\n";
+	a.set_raw_bits(0x00);
+	std::cout << "convertion(a)= " << NativeFloatingPointType(a) << '\n';
+	fa = NativeFloatingPointType(a);
+	std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
+	a = fa;
+	std::cout << "assignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+	if (a.iszero()) std::cout << "PASS +0 == iszero()\n"; else std::cout << "FAIL +0 != iszero()\n";
+
+	// Testing problem: the optimizer might destroy the sign of a copy of a -0.0
+	// test -0.0
+	std::cout << "Test negative 0.0\n";
+	a.set_raw_bits(0x80);
+	std::cout << "conversion(a)= " << double(a) << '\n';
+	fa = double(a);
+	std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
+	a = fa;
+	std::cout << "assignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+	if (a.iszero()) std::cout << "PASS -0 == iszero()\n"; else std::cout << "FAIL -0 != iszero()\n";
+
+	return nrOfFailedTests;
 }
 
 // conditional compile flags
@@ -153,17 +245,6 @@ try {
 
 	std::string tag = "AREAL assignment: ";
 
-	{
-		using Real = sw::universal::areal<5, 1>;
-		Real a = 0.5;
-		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
-	}
-	{
-		using Real = sw::universal::areal<6, 1>;
-		Real a = 0.5;
-		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
-	}
-
 
 #if MANUAL_TESTING
 
@@ -222,61 +303,55 @@ NEGATIVE
 
 	using Real = sw::universal::areal<8, 2>;
 
-	Real a;
-	double da;
+	nrOfFailedTestCases += VerifySpecialCases<Real, float>("float->areal special cases");
+	nrOfFailedTestCases += VerifySpecialCases<Real, double>("double->areal special cases");
+	nrOfFailedTestCases += VerifySpecialCases<Real, long double>("long double->areal special cases");
+	return 0;
 
+	{
+		using Real = sw::universal::areal<7, 2>;
+		Real a = 0.375;
+		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+		a = 0.5;
+		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+	}
 
-	// test sNaN
-	a.setnan(NAN_TYPE_SIGNALLING);
-	da = double(a);
-	std::cout << to_binary(da) << " " << da << std::endl;
-	a = da;
-	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<4, 1>(tag, true, true), "areal<4,1>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<5, 1>(tag, true, true), "areal<5,1>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<6, 1>(tag, true, true), "areal<6,1>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<7, 1>(tag, true, true), "areal<7,1>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 1>(tag, true, true), "areal<8,1>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 1>(tag, true, true), "areal<9,1>", "=");
+	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<10, 1>(tag, true, true), "areal<10,1>", "=");
+	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<12, 1>(tag, true, true), "areal<12,1>", "=");
+	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<14, 1>(tag, true, true), "areal<14,1>", "=");
+	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<16, 1>(tag, true, true), "areal<16,1>", "=");
 
-	// test qNaN
-	a.setnan(NAN_TYPE_QUIET);
-	da = double(a);
-	std::cout << to_binary(da) << " " << da << std::endl;
-	a = da;
-	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<5, 2>(tag, false, true), "areal<5,2>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<6, 2>(tag, false, true), "areal<6,2>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<7, 2>(tag, false, true), "areal<7,2>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 2>(tag, false, true), "areal<8,2>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 2>(tag, false, true), "areal<9,2>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<10, 2>(tag, false, true), "areal<10,2>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<12, 2>(tag, false, true), "areal<12,2>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<14, 2>(tag, false, true), "areal<14,2>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<16, 2>(tag, false, true), "areal<16,2>", "=");
 
-	// test +inf
-	a.setinf(false); // +inf
-	da = double(a);
-	std::cout << to_binary(da) << " " << da << std::endl;	
-	a = da;
-	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<6, 3>(tag, true, true), "areal<6,3>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<7, 3>(tag, true, true), "areal<7,3>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 3>(tag, true, true), "areal<8,3>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 3>(tag, true, true), "areal<9,3>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<10, 3>(tag, true, true), "areal<10,3>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<12, 3>(tag, true, true), "areal<12,3>", "=");
+	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<14, 3>(tag, true, true), "areal<14,3>", "=");
+	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<16, 3>(tag, true, true), "areal<16,3>", "=");
 
-	// test -inf
-	a.setinf(true); // -inf
-	da = double(a);
-	std::cout << to_binary(da) << " " << da << std::endl;
-	a = da;
-	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<7, 4>(tag, true, true), "areal<7,4>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 4>(tag, true, true), "areal<8,4>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 4>(tag, true, true), "areal<9,4>", "=");
 
-	std::cout << "+0.0 = " << to_binary(+0.0) << " " << 0.0 << std::endl;
-	std::cout << "-0.0 = " << to_binary(-0.0) << " " << -0.0 << std::endl;
+	return 0;
 
-	// test 0.0
-	std::cout << "Test positive 0.0\n";
-	a.set_raw_bits(0x00);
-	std::cout << "double(a)    = " << double(a) << std::endl;
-	da = double(a);
-	std::cout << "reference  a = " << a << " " << to_binary(da) << " " << da << std::endl;
-	a = da;
-	std::cout << "assignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
-	if (a.iszero()) std::cout << "PASS +0 == iszero()\n"; else std::cout << "FAIL +0 != iszero()\n";
-
-	// Testing problem: the optimizer might destroy the sign of a copy of a -0.0
-	// test -0.0
-	std::cout << "Test negative 0.0\n";
-	a.set_raw_bits(0x80);
-	std::cout << "double(a)    = " << double(a) << std::endl;
-	da = double(a);
-	std::cout << "reference  a = " << a << " " << to_binary(da) << " " << da << std::endl;
-	a = da;
-	std::cout << "assignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
-	if (a.iszero()) std::cout << "PASS -0 == iszero()\n"; else std::cout << "FAIL -0 != iszero()\n";
 
 	bool bVerbose = false;
 	// es = 1 encodings
@@ -303,7 +378,7 @@ NEGATIVE
 	// 1 block representations
 	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<5, 2>(tag, bReportIndividualTestCases, bVerbose), "areal<5,2>", "=");
 	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<6, 2>(tag, bReportIndividualTestCases, bVerbose), "areal<6,2>", "=");
-//	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<7, 2>(tag, true, bVerbose), "areal<7,2>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<7, 2>(tag, true, bVerbose), "areal<7,2>", "=");
 //	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<8, 2>(tag, true, bVerbose), "areal<8,2>", "=");
 
 	// 2 block representations
@@ -473,6 +548,73 @@ Generate table for a class sw::universal::areal<6,2,unsigned char> in TXT format
   58:          b111010       1       2             b11             b01       0                            -5       6.2x0x3Ar
   60:          b111100       1       2             b11             b10       0                            -6       6.2x0x3Cr
   62:          b111110       1       2             b11             b11       0                          -inf       6.2x0x3Er
+
+Generate table for a class sw::universal::areal<7,2,unsigned char> in TXT format
+   #           Binary    sign   scale        exponent        fraction    ubit                         value      hex_format
+   0:         b0000000       0      -4             b00            b000       0                             0       7.2x0x00r
+   2:         b0000010       0      -3             b00            b001       0                         0.125       7.2x0x02r
+   4:         b0000100       0      -2             b00            b010       0                          0.25       7.2x0x04r
+   6:         b0000110       0      -2             b00            b011       0                         0.375       7.2x0x06r
+   8:         b0001000       0      -1             b00            b100       0                           0.5       7.2x0x08r
+  10:         b0001010       0      -1             b00            b101       0                         0.625       7.2x0x0Ar
+  12:         b0001100       0      -1             b00            b110       0                          0.75       7.2x0x0Cr
+  14:         b0001110       0      -1             b00            b111       0                         0.875       7.2x0x0Er
+  16:         b0010000       0       0             b01            b000       0                             1       7.2x0x10r
+  18:         b0010010       0       0             b01            b001       0                         1.125       7.2x0x12r
+  20:         b0010100       0       0             b01            b010       0                          1.25       7.2x0x14r
+  22:         b0010110       0       0             b01            b011       0                         1.375       7.2x0x16r
+  24:         b0011000       0       0             b01            b100       0                           1.5       7.2x0x18r
+  26:         b0011010       0       0             b01            b101       0                         1.625       7.2x0x1Ar
+  28:         b0011100       0       0             b01            b110       0                          1.75       7.2x0x1Cr
+  30:         b0011110       0       0             b01            b111       0                         1.875       7.2x0x1Er
+  32:         b0100000       0       1             b10            b000       0                             2       7.2x0x20r
+  34:         b0100010       0       1             b10            b001       0                          2.25       7.2x0x22r
+  36:         b0100100       0       1             b10            b010       0                           2.5       7.2x0x24r
+  38:         b0100110       0       1             b10            b011       0                          2.75       7.2x0x26r
+  40:         b0101000       0       1             b10            b100       0                             3       7.2x0x28r
+  42:         b0101010       0       1             b10            b101       0                          3.25       7.2x0x2Ar
+  44:         b0101100       0       1             b10            b110       0                           3.5       7.2x0x2Cr
+  46:         b0101110       0       1             b10            b111       0                          3.75       7.2x0x2Er
+  48:         b0110000       0       2             b11            b000       0                             4       7.2x0x30r
+  50:         b0110010       0       2             b11            b001       0                           4.5       7.2x0x32r
+  52:         b0110100       0       2             b11            b010       0                             5       7.2x0x34r
+  54:         b0110110       0       2             b11            b011       0                           5.5       7.2x0x36r
+  56:         b0111000       0       2             b11            b100       0                             6       7.2x0x38r
+  58:         b0111010       0       2             b11            b101       0                           6.5       7.2x0x3Ar
+  60:         b0111100       0       2             b11            b110       0                             7       7.2x0x3Cr
+  62:         b0111110       0       2             b11            b111       0                           inf       7.2x0x3Er
+  64:         b1000000       1      -4             b00            b000       0                            -0       7.2x0x40r
+  66:         b1000010       1      -3             b00            b001       0                        -0.125       7.2x0x42r
+  68:         b1000100       1      -2             b00            b010       0                         -0.25       7.2x0x44r
+  70:         b1000110       1      -2             b00            b011       0                        -0.375       7.2x0x46r
+  72:         b1001000       1      -1             b00            b100       0                          -0.5       7.2x0x48r
+  74:         b1001010       1      -1             b00            b101       0                        -0.625       7.2x0x4Ar
+  76:         b1001100       1      -1             b00            b110       0                         -0.75       7.2x0x4Cr
+  78:         b1001110       1      -1             b00            b111       0                        -0.875       7.2x0x4Er
+  80:         b1010000       1       0             b01            b000       0                            -1       7.2x0x50r
+  82:         b1010010       1       0             b01            b001       0                        -1.125       7.2x0x52r
+  84:         b1010100       1       0             b01            b010       0                         -1.25       7.2x0x54r
+  86:         b1010110       1       0             b01            b011       0                        -1.375       7.2x0x56r
+  88:         b1011000       1       0             b01            b100       0                          -1.5       7.2x0x58r
+  90:         b1011010       1       0             b01            b101       0                        -1.625       7.2x0x5Ar
+  92:         b1011100       1       0             b01            b110       0                         -1.75       7.2x0x5Cr
+  94:         b1011110       1       0             b01            b111       0                        -1.875       7.2x0x5Er
+  96:         b1100000       1       1             b10            b000       0                            -2       7.2x0x60r
+  98:         b1100010       1       1             b10            b001       0                         -2.25       7.2x0x62r
+ 100:         b1100100       1       1             b10            b010       0                          -2.5       7.2x0x64r
+ 102:         b1100110       1       1             b10            b011       0                         -2.75       7.2x0x66r
+ 104:         b1101000       1       1             b10            b100       0                            -3       7.2x0x68r
+ 106:         b1101010       1       1             b10            b101       0                         -3.25       7.2x0x6Ar
+ 108:         b1101100       1       1             b10            b110       0                          -3.5       7.2x0x6Cr
+ 110:         b1101110       1       1             b10            b111       0                         -3.75       7.2x0x6Er
+ 112:         b1110000       1       2             b11            b000       0                            -4       7.2x0x70r
+ 114:         b1110010       1       2             b11            b001       0                          -4.5       7.2x0x72r
+ 116:         b1110100       1       2             b11            b010       0                            -5       7.2x0x74r
+ 118:         b1110110       1       2             b11            b011       0                          -5.5       7.2x0x76r
+ 120:         b1111000       1       2             b11            b100       0                            -6       7.2x0x78r
+ 122:         b1111010       1       2             b11            b101       0                          -6.5       7.2x0x7Ar
+ 124:         b1111100       1       2             b11            b110       0                            -7       7.2x0x7Cr
+ 126:         b1111110       1       2             b11            b111       0                          -inf       7.2x0x7Er
 
 Generate table for a class sw::universal::areal<8,2,unsigned char> in TXT format
    #           Binary    sign   scale        exponent        fraction    ubit                         value      hex_format

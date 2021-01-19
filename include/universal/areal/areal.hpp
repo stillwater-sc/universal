@@ -268,7 +268,125 @@ public:
 		return *this;
 	}
 	areal& operator=(float rhs) {
+		clear();
+		float_decoder decoder;
+		decoder.f = rhs;
+		bool s = decoder.parts.sign ? true : false;
+		uint32_t raw = decoder.parts.fraction; // don't bring in a hidden bit
+		int exponent = static_cast<int>(decoder.parts.exponent) - 127;  // apply bias
+		if (std::isnan(rhs)) {
+			// 0.11111111.00000000000000000000001 signalling nan
+			// 0.11111111.10000000000000000000000 quiet nan
+			raw & 0x1 ? setnan(NAN_TYPE_SIGNALLING) : setnan(NAN_TYPE_QUIET);
+			return *this;
+		}
+		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
+			set(nbits - 1ull, s);
+			return *this;
+		}
+		if (std::isinf(rhs)) {
+			setinf(s);
+			return *this;
+		}
 
+#if TRACE_CONVERSION
+		std::cout << '\n';
+		std::cout << "value           : " << rhs << '\n';
+		std::cout << "segments        : " << to_binary(rhs) << '\n';
+		std::cout << "sign   bits     : " << (s ? '1' : '0') << '\n';
+		std::cout << "exponent bits   : " << to_binary(decoder.parts.exponent, true) << '\n';
+		std::cout << "exponent value  : " << exponent << '\n';
+		std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
+#endif
+		// saturate to minpos/maxpos with uncertainty bit set to 1
+		if (exponent > MAX_EXP) {
+			if (s) maxneg(*this); else maxpos(*this); // saturate the maxpos or maxneg
+			this->set(0);
+			return *this;
+		}
+		if (exponent < MIN_EXP_SUBNORMAL) {
+			if (s) minneg(*this); else minpos(*this); // saturate to minpos or minneg
+			this->set(0);
+			return *this;
+		}
+		// set the exponent
+		uint32_t biasedExponent{ 0 };
+		int shiftRight{ 0 };
+		// we have 23 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
+		// simpler rounding as compared to IEEE as uncertainty bit captures any non-zero bit past the LSB
+		// ...  lsb | sticky      ubit
+		//       x      0          0
+		//       x  |   1          1
+		bool ubit = false;
+		uint32_t mask = 0x007F'FFFF >> fbits; // mask for sticky bit 
+		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
+			// this number is a subnormal number in this representation
+			// trick though is that it might be a normal number in IEEE double precision representation
+			if (exponent > -1022) {
+				// the source real is a normal number, so we must add the hidden bit to the fraction bits
+				raw |= (1ull << 52);
+#if TRACE_CONVERSION
+				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
+#endif
+				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits 
+				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (-exponent + fbits - (2 -2^(es-1))))
+				// -exponent because we are right shifting and exponent in this range is negative
+				shiftRight = 23 - (exponent + static_cast<int>(fbits) - subnormal_reciprocal_shift[es]);
+				if (shiftRight > 0) {		// do we need to round?
+					ubit = (mask & raw) != 0;
+					raw >>= shiftRight - 1;
+				}
+				else { // all bits of the double go into this representation and need to be shifted up
+					// ubit = false; already set to false
+					std::cout << "conversion of IEEE double to more precise areals not implemented yet\n";
+				}
+			}
+			else {
+				// this is a subnormal double
+				std::cout << "conversion of subnormal IEEE doubles not implemented yet\n";
+			}
+		}
+		else {
+			// this number is a normal/supernormal number in this representation, we can leave the hidden bit hidden
+			biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
+
+			// fraction processing
+			shiftRight = 23 - static_cast<int>(fbits) - 1; // to leave room for the uncertainty bit
+			if (shiftRight > 0) {		// do we need to round?
+				// we have 23 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
+				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
+				// ...  lsb | sticky      ubit
+				//       x      0          0
+				//       x  |   1          1
+				ubit = (mask & raw) != 0;
+				raw >>= shiftRight;
+			}
+			else { // all bits of the double go into this representation and need to be shifted up
+				// ubit = false; already set to false
+				std::cout << "conversion of IEEE double to more precise areals not implemented yet\n";
+			}
+		}
+#if TRACE_CONVERSION
+		std::cout << "biased exponent : " << biasedExponent << " : " << std::hex << biasedExponent << std::dec << '\n';
+		std::cout << "shift           : " << shiftRight << '\n';
+		std::cout << "sticky bit mask : " << to_binary(mask, true) << '\n';
+		std::cout << "uncertainty bit : " << (ubit ? "1\n" : "0\n");
+		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
+#endif
+		// construct the target areal
+		uint64_t bits = (s ? 1 : 0);
+		bits <<= es;
+		bits |= biasedExponent;
+		bits <<= nbits - 1ull - es;
+		bits |= raw;
+		bits &= 0xFFFF'FFFF'FFFF'FFFE;
+		bits |= (ubit ? 0x1 : 0x0);
+		if (nrBlocks == 1) {
+			_block[MSU] = bits;
+		}
+		else {
+			copyBits(raw);
+		}
 		return *this;
 	}
 	areal& operator=(double rhs) {
@@ -332,12 +450,13 @@ public:
 #if TRACE_CONVERSION
 				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
-				// fraction processing: we have 53 bits = 1 hidden + 52 explicit fraction bits
-				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (exponent + fbits - (2 -2^(es-1))))
+				// fraction processing: we have 53 bits = 1 hidden + 52 explicit fraction bits 
+				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (-exponent + fbits - (2 -2^(es-1))))
+				// -exponent because we are right shifting and exponent in this range is negative
 				shiftRight = 52 - (exponent + static_cast<int>(fbits) - subnormal_reciprocal_shift[es]);
 				if (shiftRight > 0) {		// do we need to round?
 					ubit = (mask & raw) != 0;
-					raw >>= shiftRight + 1;
+					raw >>= shiftRight-1;
 				}
 				else { // all bits of the double go into this representation and need to be shifted up
 					// ubit = false; already set to false
@@ -502,23 +621,23 @@ public:
 	/// <param name="sign">boolean to make it + or - infinity, default is -inf</param>
 	/// <returns>void</returns> 
 	inline constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING) noexcept {
-		switch (nrBlocks) {
-		case 0:
+		if constexpr (0 == nrBlocks) {
 			return;
-		case 1:
-			break;
-		case 2:
+		}
+		else if constexpr (1 == nrBlocks) {
+			// fall through
+		}
+		else if constexpr (2 == nrBlocks) {
 			_block[0] = BLOCK_MASK;
-			break;
-		case 3:
+		}
+		else if constexpr (3 == nrBlocks) {
 			_block[0] = BLOCK_MASK;
 			_block[1] = BLOCK_MASK;
-			break;
-		default:
+		}
+		else {
 			for (size_t i = 0; i < nrBlocks - 1; ++i) {
 				_block[i] = BLOCK_MASK;
 			}
-			break;
 		}
 		_block[MSU] = NaNType == NAN_TYPE_SIGNALLING ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 	}
@@ -591,8 +710,7 @@ public:
 	inline constexpr bool sign() const { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
 	inline int scale() const {
 		int e{ 0 };
-		// make if constexpr
-		if (MSU_CAPTURES_E) {
+		if constexpr (MSU_CAPTURES_E) {
 			e = int((_block[MSU] & ~SIGN_BIT_MASK) >> EXP_SHIFT);
 			if (e == 0) {
 				// subnormal scale is determined by fraction
@@ -628,18 +746,20 @@ public:
 	inline constexpr bool isneg() const { return sign(); }
 	inline constexpr bool ispos() const { return !sign(); }
 	inline bool iszero() const { // TODO: need to deal with -0 as well
-		switch (nrBlocks) {
-		case 0:
+
+		if constexpr (0 == nrBlocks) {
 			return true;
-		case 1:
+		}
+		else if constexpr (1 == nrBlocks) {
 			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
-		case 2:
+		}
+		else if constexpr (2 == nrBlocks) {
 			return (_block[0] == 0) && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
-			break;
-		case 3:
+		}
+		else if constexpr (3 == nrBlocks) {
 			return (_block[0] == 0) && _block[1] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
-			break;
-		default:
+		}
+		else {
 			for (size_t i = 0; i < nrBlocks-1; ++i) if (_block[i] != 0) return false;
 			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		}
@@ -802,60 +922,59 @@ public:
 	}
 	
 	// casts to native types
-	long long to_long_long() const { return (long long)(to_double()); }
-	long double to_long_double() const { return to_double(); }
-	// transform value to a native C++ double. We are using doubles to compute,
-	// which means that all sub-values need to be representable by doubles.
+	long to_long() const { return long(to_native<double>()); }
+	long long to_long_long() const { return (long long)(to_native<double>()); }
+	// transform an areal to a native C++ floating-point. We are using the native
+	// precision to compute, which means that all sub-values need to be representable 
+	// by the native precision.
 	// A more accurate appromation would require an adaptive precision algorithm
 	// with a final rounding step.
-	double to_double() const {
-		double v{ 0.0 };
+	template<typename TargetFloat>
+	TargetFloat to_native() const { 
+		TargetFloat v = TargetFloat(0);
 		if (iszero()) {
 			if (sign()) // the optimizer might destroy the sign
-				return -0.0;
-			else 
-				return 0.0; 
+				return -TargetFloat(0);
+			else
+				return TargetFloat(0);
 		}
 		else if (isnan()) {
-			v = sign() ? std::numeric_limits<double>::signaling_NaN() : std::numeric_limits<double>::quiet_NaN();
+			v = sign() ? std::numeric_limits<TargetFloat>::signaling_NaN() : std::numeric_limits<TargetFloat>::quiet_NaN();
 		}
 		else if (isinf()) {
 			v = sign() ? -INFINITY : INFINITY;
 		}
-		else {
-			double f{ 0.0 };
-			double fbit{ 0.5 };
+		else { // TODO: this approach has catastrophic cancellation when nbits is large and native target float is small
+			TargetFloat f{ 0 };
+			TargetFloat fbit{ 0.5 };
 			for (size_t i = nbits - 2ull - es; i > 0; --i) {
-				f += at(i) ? fbit : 0.0;
-				fbit *= 0.5;
+				f += at(i) ? fbit : TargetFloat(0);
+				fbit *= TargetFloat(0.5);
 			}
 			blockbinary<es, bt> ebits;
 			exponent(ebits);
 			if (ebits.iszero()) {
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
-				double exponentiation = subnormal_exponent[es]; // precomputed values for 2^(2-2^(es-1))
+				TargetFloat exponentiation = subnormal_exponent[es]; // precomputed values for 2^(2-2^(es-1))
 				v = exponentiation * f;
-//				std::cout << "exponentiation " << exponentiation << " ";
 			}
 			else {
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
 				int exponent = unsigned(ebits) + 1ll - (1ll << (es - 1ull));
-				double exponentiation = (exponent >= 0 ? double(1ull << exponent) : (1.0 / double(1ull << -exponent)));
-				v = exponentiation * (1 + f);
-//				std::cout << "exponent = " << exponent << " exponentiation " << exponentiation << " ";
+				TargetFloat exponentiation = (exponent >= 0 ? TargetFloat(1ull << exponent) : (1.0f / TargetFloat(1ull << -exponent)));
+				v = exponentiation * (TargetFloat(1) + f);
 			}
 			v = sign() ? -v : v;
 		}
 		return v;
 	}
-	float to_float() const { return float(to_double());	}
 
 	// make conversions to native types explicit
 	explicit operator int() const { return to_long_long(); }
 	explicit operator long long() const { return to_long_long(); }
-	explicit operator long double() const { return to_long_double(); }
-	explicit operator double() const { return to_double(); }
-	explicit operator float() const { return to_float(); }
+	explicit operator long double() const { return to_native<long double>(); }
+	explicit operator double() const { return to_native<double>(); }
+	explicit operator float() const { return to_native<float>(); }
 
 protected:
 	// HELPER methods
