@@ -47,7 +47,7 @@ void copyBits(ArgumentBlockType v, BlockType _block[16]) {
 }
 
 // verify the subnormals of an areal configuration
-template<size_t nbits, size_t es, typename bt = uint8_t>
+template<size_t nbits, size_t es, typename bt = uint8_t, typename NativeFloatingPointType = double>
 int VerifySubnormalReverseSampling(const std::string& tag, bool bReportIndividualTestCases = false, bool verbose = false) {
 	// subnormals exist in the exponent = 0 range
 	constexpr size_t fbits = nbits - 1ull - es - 1ull;
@@ -57,7 +57,7 @@ int VerifySubnormalReverseSampling(const std::string& tag, bool bReportIndividua
 	Real ref{ 0 }; Real result{ 0 };
 	for (size_t i = 0; i < NR_SAMPLES; i += 2) {
 		ref.set_raw_bits(i);
-		double input = double(ref);
+		NativeFloatingPointType input = NativeFloatingPointType(ref);
 		result = input;
 		if (result != ref) {
 			nrOfFailedTestCases++;
@@ -71,7 +71,7 @@ int VerifySubnormalReverseSampling(const std::string& tag, bool bReportIndividua
 	return nrOfFailedTestCases;
 }
 
-template<size_t nbits, size_t es, typename bt = uint8_t>
+template<size_t nbits, size_t es, typename bt = uint8_t, typename NativeFloatingPointType = double>
 int VerifyReverseSampling(const std::string& tag, bool bReportIndividualTestCases = false, bool verbose = false) {
 	constexpr size_t NR_SAMPLES = (1ull << nbits);
 	int nrOfFailedTestCases = 0;
@@ -79,9 +79,9 @@ int VerifyReverseSampling(const std::string& tag, bool bReportIndividualTestCase
 	Real ref{ 0 }; Real result{ 0 };
 	for (size_t i = 0; i < NR_SAMPLES; i += 2) {
 		ref.set_raw_bits(i);
-		double input = double(ref);
+		NativeFloatingPointType input = NativeFloatingPointType(ref);
 		result = input;
-		if (result != ref && !result.iszero() && !ref.iszero()) {
+		if (result != ref && !ref.iszero()) {
                            // ignore the -0 case as the compiler might optimize that sign away
 			nrOfFailedTestCases++;
 //			std::cout << "------->  " << i << " " << sw::universal::to_binary(input) << " " << sw::universal::to_binary(result) << std::endl;
@@ -303,52 +303,70 @@ NEGATIVE
 
 	using Real = sw::universal::areal<8, 2>;
 
-	nrOfFailedTestCases += VerifySpecialCases<Real, float>("float->areal special cases");
-	nrOfFailedTestCases += VerifySpecialCases<Real, double>("double->areal special cases");
-	nrOfFailedTestCases += VerifySpecialCases<Real, long double>("long double->areal special cases");
-	return 0;
+//	nrOfFailedTestCases += VerifySpecialCases<Real, float>("float->areal special cases");
+//	nrOfFailedTestCases += VerifySpecialCases<Real, double>("double->areal special cases");
+//	nrOfFailedTestCases += VerifySpecialCases<Real, long double>("long double->areal special cases");
+
+//	GenerateArealTable<6, 1>(cout, false);
 
 	{
-		using Real = sw::universal::areal<7, 2>;
-		Real a = 0.375;
-		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
-		a = 0.5;
-		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << std::endl;
+		using Real = sw::universal::areal<6,1>;
+		float f = 0.75;
+		std::cout << to_binary(f) << " " << f << " " << '\n';
+
+		Real a = f;
+		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+		a = 1.0f;
+		std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 	}
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<4, 1, uint8_t, float>(tag, false, true), "areal<4,1, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<5, 1, uint8_t, float>(tag, true, true), "areal<5,1, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<6, 1, uint8_t, float>(tag, true, true), "areal<6,1, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<7, 1, uint8_t, float>(tag, false, true), "areal<7,1, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<8, 1, uint8_t, float>(tag, false, true), "areal<8,1, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<5, 2, uint8_t, float>(tag, false, true), "areal<5,2, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<6, 2, uint8_t, float>(tag, false, true), "areal<6,2, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<7, 2, uint8_t, float>(tag, false, true), "areal<7,2, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<8, 2, uint8_t, float>(tag, false, true), "areal<8,2, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<6, 3, uint8_t, float>(tag, false, true), "areal<6,3, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<7, 3, uint8_t, float>(tag, false, true), "areal<7,3, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<8, 3, uint8_t, float>(tag, false, true), "areal<8,3, uint8_t>", "=");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<4, 1>(tag, true, true), "areal<4,1>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<5, 1>(tag, true, true), "areal<5,1>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<6, 1>(tag, true, true), "areal<6,1>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<7, 1>(tag, true, true), "areal<7,1>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 1>(tag, true, true), "areal<8,1>", "=");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 1>(tag, true, true), "areal<9,1>", "=");
-	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<10, 1>(tag, true, true), "areal<10,1>", "=");
-	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<12, 1>(tag, true, true), "areal<12,1>", "=");
-	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<14, 1>(tag, true, true), "areal<14,1>", "=");
-	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<16, 1>(tag, true, true), "areal<16,1>", "=");
+	return 0;
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<5, 2>(tag, false, true), "areal<5,2>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<6, 2>(tag, false, true), "areal<6,2>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<7, 2>(tag, false, true), "areal<7,2>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 2>(tag, false, true), "areal<8,2>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 2>(tag, false, true), "areal<9,2>", "=");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<10, 2>(tag, false, true), "areal<10,2>", "=");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<12, 2>(tag, false, true), "areal<12,2>", "=");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<14, 2>(tag, false, true), "areal<14,2>", "=");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<16, 2>(tag, false, true), "areal<16,2>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<4, 1, uint8_t, float>(tag, true, true), "areal<4,1, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<5, 1, uint8_t, float>(tag, true, true), "areal<5,1, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<6, 1, uint8_t, float>(tag, true, true), "areal<6,1, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<7, 1, uint8_t, float>(tag, true, true), "areal<7,1, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 1, uint8_t, float>(tag, true, true), "areal<8,1, uint8_t>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 1, uint8_t, float>(tag, true, true), "areal<9,1, uint8_t>", "=");
+	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<10, 1, uint8_t, float>(tag, true, true), "areal<10,1, uint8_t>", "=");
+	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<12, 1, uint8_t, float>(tag, true, true), "areal<12,1, uint8_t>", "=");
+	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<14, 1, uint8_t, float>(tag, true, true), "areal<14,1, uint8_t>", "=");
+	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<16, 1, uint8_t, float>(tag, true, true), "areal<16,1, uint8_t>", "=");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<6, 3>(tag, true, true), "areal<6,3>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<7, 3>(tag, true, true), "areal<7,3>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 3>(tag, true, true), "areal<8,3>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 3>(tag, true, true), "areal<9,3>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<10, 3>(tag, true, true), "areal<10,3>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<12, 3>(tag, true, true), "areal<12,3>", "=");
-	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<14, 3>(tag, true, true), "areal<14,3>", "=");
-	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<16, 3>(tag, true, true), "areal<16,3>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<5, 2, uint8_t, float>(tag, false, true), "areal<5,2, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<6, 2, uint8_t, float>(tag, false, true), "areal<6,2, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<7, 2, uint8_t, float>(tag, false, true), "areal<7,2, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 2, uint8_t, float>(tag, false, true), "areal<8,2, uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 2, uint8_t, float>(tag, false, true), "areal<9,2, uint8_t>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<10, 2, uint8_t, float>(tag, false, true), "areal<10,2, uint8_t>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<12, 2, uint8_t, float>(tag, false, true), "areal<12,2, uint8_t>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<14, 2, uint8_t, float>(tag, false, true), "areal<14,2, uint8_t>", "=");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<16, 2, uint8_t, float>(tag, false, true), "areal<16,2, uint8_t>", "=");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<7, 4>(tag, true, true), "areal<7,4>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 4>(tag, true, true), "areal<8,4>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 4>(tag, true, true), "areal<9,4>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<6, 3, uint8_t, float>(tag, true, true), "areal<6,3,uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<7, 3, uint8_t, float>(tag, true, true), "areal<7,3,uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 3, uint8_t, float>(tag, true, true), "areal<8,3,uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 3, uint8_t, float>(tag, true, true), "areal<9,3,uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<10, 3, uint8_t, float>(tag, true, true), "areal<10,3,uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<12, 3, uint8_t, float>(tag, true, true), "areal<12,3,uint8_t>", "=");
+	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<14, 3, uint8_t, float>(tag, true, true), "areal<14,3,uint8_t>", "=");
+	//	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<16, 3, uint8_t, float>(tag, true, true), "areal<16,3,uint8_t>", "=");
+
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<7, 4, uint8_t, float>(tag, true, true), "areal<7,4,uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 4, uint8_t, float>(tag, true, true), "areal<8,4,uint8_t>", "=");
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 4, uint8_t, float>(tag, true, true), "areal<9,4,uint8_t>", "=");
 
 	return 0;
 

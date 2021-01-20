@@ -293,7 +293,7 @@ public:
 		std::cout << '\n';
 		std::cout << "value           : " << rhs << '\n';
 		std::cout << "segments        : " << to_binary(rhs) << '\n';
-		std::cout << "sign   bits     : " << (s ? '1' : '0') << '\n';
+		std::cout << "sign     bit    : " << (s ? '1' : '0') << '\n';
 		std::cout << "exponent bits   : " << to_binary(decoder.parts.exponent, true) << '\n';
 		std::cout << "exponent value  : " << exponent << '\n';
 		std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
@@ -322,21 +322,21 @@ public:
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
 			// trick though is that it might be a normal number in IEEE double precision representation
-			if (exponent > -1022) {
+			if (exponent > -128) {
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
-				raw |= (1ull << 52);
+				raw |= (1ull << 23);
 #if TRACE_CONVERSION
 				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
 				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits 
-				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (-exponent + fbits - (2 -2^(es-1))))
+				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
 				// -exponent because we are right shifting and exponent in this range is negative
-				shiftRight = 23 - (exponent + static_cast<int>(fbits) - subnormal_reciprocal_shift[es]);
+				shiftRight = 23 - (-exponent + static_cast<int>(fbits) - subnormal_reciprocal_shift[es]);
 				if (shiftRight > 0) {		// do we need to round?
 					ubit = (mask & raw) != 0;
-					raw >>= shiftRight - 1;
+					raw >>= shiftRight + 1;
 				}
-				else { // all bits of the double go into this representation and need to be shifted up
+				else { // all bits of the float go into this representation and need to be shifted up
 					// ubit = false; already set to false
 					std::cout << "conversion of IEEE double to more precise areals not implemented yet\n";
 				}
@@ -348,7 +348,7 @@ public:
 		}
 		else {
 			// this number is a normal/supernormal number in this representation, we can leave the hidden bit hidden
-			biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
+			biasedExponent = static_cast<uint32_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
 
 			// fraction processing
 			shiftRight = 23 - static_cast<int>(fbits) - 1; // to leave room for the uncertainty bit
@@ -367,7 +367,7 @@ public:
 			}
 		}
 #if TRACE_CONVERSION
-		std::cout << "biased exponent : " << biasedExponent << " : " << std::hex << biasedExponent << std::dec << '\n';
+		std::cout << "biased exponent : " << biasedExponent << " : 0x" << std::hex << biasedExponent << std::dec << '\n';
 		std::cout << "shift           : " << shiftRight << '\n';
 		std::cout << "sticky bit mask : " << to_binary(mask, true) << '\n';
 		std::cout << "uncertainty bit : " << (ubit ? "1\n" : "0\n");
@@ -590,30 +590,29 @@ public:
 	/// <param name="sign">boolean to make it + or - infinity, default is -inf</param>
 	/// <returns>void</returns> 
 	inline constexpr void setinf(bool sign = true) noexcept {
-		switch (nrBlocks) {
-		case 0:
+		if constexpr (0 == nrBlocks) {
 			return;
-		case 1:
+		}
+		else if constexpr (1 == nrBlocks) {
 			_block[MSU] = sign ? bt(MSU_MASK ^ LSB_BIT_MASK) : bt(~SIGN_BIT_MASK & (MSU_MASK ^ LSB_BIT_MASK));
-			break;
-		case 2:
+		}
+		else if constexpr (2 == nrBlocks) {
 			_block[0] = BLOCK_MASK ^ LSB_BIT_MASK;
 			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
-			break;
-		case 3:
+		}
+		else if constexpr (3 == nrBlocks) {
 			_block[0] = BLOCK_MASK ^ LSB_BIT_MASK;
 			_block[1] = BLOCK_MASK;
 			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
-			break;
-		default:
+		}
+		else {
 			_block[0] = BLOCK_MASK ^ LSB_BIT_MASK;
 			for (size_t i = 1; i < nrBlocks - 1; ++i) {
 				_block[i] = BLOCK_MASK;
 			}
 			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 			break;
-		}
-		
+		}	
 	}
 	/// <summary>
 	/// set the number to a quiet NaN (+nan) or a signalling NaN (-nan, default)
