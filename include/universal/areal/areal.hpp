@@ -253,19 +253,19 @@ public:
 
 	// assignment operators
 	areal& operator=(signed char rhs) {
-		return *this = (long long)(rhs);
+		return *this = (float)(rhs);
 	}
 	areal& operator=(short rhs) {
-		return *this = (long long)(rhs);
+		return *this = (float)(rhs);
 	}
 	areal& operator=(int rhs) {
-		return *this = (long long)(rhs);
+		return *this = (double)(rhs);
 	}
 	areal& operator=(long long rhs) {
-		return *this;
+		return *this = double(rhs); // TODO: doubles will truncate a long long
 	}
 	areal& operator=(unsigned long long rhs) {
-		return *this;
+		return *this = double(rhs); // TODO: doubles will truncate an unsigned long long
 	}
 	areal& operator=(float rhs) {
 		clear();

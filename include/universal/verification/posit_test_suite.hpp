@@ -1091,7 +1091,7 @@ namespace sw::universal {
 	// Posit NaR can be checked for equality/inequality
 	template<size_t nbits, size_t es>
 	int VerifyPositLogicEqual() {
-		constexpr size_t max = nbits > 10 ? 10 : nbits;
+		constexpr size_t max = nbits > 20 ? 20 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -1119,7 +1119,7 @@ namespace sw::universal {
 					// and thus we can't relay on IEEE float as reference
 
 					// instead, use the bit pattern as reference
-					ref = (i == j ? true : false);
+					ref = (i == j);
 				}
 
 				bool presult = (a == b);
@@ -1136,7 +1136,7 @@ namespace sw::universal {
 	// Posit NaR can be checked for equality/inequality
 	template<size_t nbits, size_t es>
 	int VerifyPositLogicNotEqual() {
-		constexpr size_t max = nbits > 10 ? 10 : nbits;
+		constexpr size_t max = nbits > 20 ? 20 : nbits;
 		size_t NR_TEST_CASES = (size_t(1) << max);
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
@@ -1162,10 +1162,10 @@ namespace sw::universal {
 					// \fp:strict	floating point model set to strict
 					//	NaN == NaN  : IEEE = false    Posit = true
 					//	NaN == real : IEEE = false    Posit = false
-					// and thus we can't relay on IEEE float as reference
+					// and thus we can't rely on IEEE float as reference
 
 					// instead, use the bit pattern as reference
-					ref = (i != j ? true : false);
+					ref = (i != j);
 				}
 
 				bool presult = (a != b);

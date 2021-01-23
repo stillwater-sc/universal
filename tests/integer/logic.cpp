@@ -14,7 +14,7 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult used by test suite runner
 
 /*
-   The goal of the arbitrary integers is to provide a constrained big integer type
+   The goal of the arbitrary integers is to provide a fast fixed-size integer type
    that enables fast computation with exceptions for overflow, so that the type
    can be used for forward error analysis studies.
 */
