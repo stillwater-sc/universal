@@ -375,12 +375,12 @@ public:
 		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
 #endif
 		// construct the target areal
-		uint64_t bits = (s ? 1 : 0);
+		uint32_t bits = (s ? 1 : 0);
 		bits <<= es;
 		bits |= biasedExponent;
 		bits <<= nbits - 1ull - es;
 		bits |= raw;
-		bits &= 0xFFFF'FFFF'FFFF'FFFE;
+		bits &= 0xFFFF'FFFE;
 		bits |= (ubit ? 0x1 : 0x0);
 		if (nrBlocks == 1) {
 			_block[MSU] = bits;
@@ -434,7 +434,8 @@ public:
 		}
 		// set the exponent
 		uint64_t biasedExponent{ 0 };
-		int shiftRight{ 0 };
+		int shiftRight = 52 - static_cast<int>(fbits) - 1; // this is the bit shift to get the MSB of the src to the MSB of the tgt
+		int adjustment{ 0 };
 		// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 		// simpler rounding as compared to IEEE as uncertainty bit captures any non-zero bit past the LSB
 		// ...  lsb | sticky      ubit
@@ -454,10 +455,10 @@ public:
 				// fraction processing: we have 53 bits = 1 hidden + 52 explicit fraction bits 
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (-exponent + fbits - (2 -2^(es-1))))
 				// -exponent because we are right shifting and exponent in this range is negative
-				shiftRight = 52 - (exponent + static_cast<int>(fbits) - subnormal_reciprocal_shift[es]);
+				adjustment = -(exponent + subnormal_reciprocal_shift[es]);
 				if (shiftRight > 0) {		// do we need to round?
 					ubit = (mask & raw) != 0;
-					raw >>= shiftRight-1;
+					raw >>= shiftRight + adjustment;
 				}
 				else { // all bits of the double go into this representation and need to be shifted up
 					// ubit = false; already set to false
@@ -474,7 +475,6 @@ public:
 			biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
 
 			// fraction processing
-			shiftRight = 52 - static_cast<int>(fbits) - 1; // to leave room for the uncertainty bit
 			if (shiftRight > 0) {		// do we need to round?
 				// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB

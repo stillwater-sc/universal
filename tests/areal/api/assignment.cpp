@@ -177,6 +177,84 @@ void ConversionTest(NativeFloatingPointType& value) {
 	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
 }
 
+template<size_t es, typename NativeFloatingPointType>
+int SingleBlockTestSuite(const std::string& tag, const std::string& op, bool bReportIndividualTestCases, bool bVerbose) {
+	using namespace sw::universal;
+	int nrOfFailedTestCases = 0;
+
+	// 1 block representations
+
+	std::string testcase;
+
+	if constexpr (es < 2) {
+		std::stringstream ss;
+		ss << "areal<4, " << es << ", uint8_t> ";
+		testcase = ss.str();
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 4, es, uint8_t, float>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+	}
+	if constexpr (es < 3) {
+		std::stringstream ss;
+		ss << "areal<5, " << es << ", uint8_t> ";
+		testcase = ss.str();
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 5, es, uint8_t, float>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+	}
+	if constexpr (es < 4) {
+		std::stringstream ss;
+		ss << "areal<6, " << es << ", uint8_t> ";
+		testcase = ss.str();
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 6, es, uint8_t, float>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+	}
+	if constexpr (es < 5) {
+		std::stringstream ss;
+		ss << "areal<7, " << es << ", uint8_t> ";
+		testcase = ss.str();
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 7, es, uint8_t, float>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+	}
+	if constexpr (es < 6) {
+		std::stringstream ss;
+		ss << "areal<8, " << es << ", uint8_t> ";
+		testcase = ss.str();
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 8, es, uint8_t, float>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+	}
+	if constexpr (es < 7) {
+		std::stringstream ss;
+		ss << "areal<9, " << es << ", uint16_t> ";
+		testcase = ss.str();
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, es, uint16_t, float>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+	}
+	if constexpr (es < 8) {
+		std::stringstream ss;
+		ss << "areal<10, " << es << ", uint16_t> ";
+		testcase = ss.str();
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<10, es, uint16_t, float>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+	}
+	if constexpr (es < 10) {
+		std::stringstream ss;
+		ss << "areal<12, " << es << ", uint16_t> ";
+		testcase = ss.str();
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<12, es, uint16_t, float>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+	}
+	if constexpr (es < 12) {
+		std::stringstream ss;
+		ss << "areal<14, " << es << ", uint16_t> ";
+		testcase = ss.str();
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<14, es, uint16_t, float>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+	}
+	if constexpr (es < 14) {
+		std::stringstream ss;
+		ss << "areal<16, " << es << ", uint16_t> ";
+		testcase = ss.str();
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<16, es, uint16_t, float>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+	}
+	if constexpr (es < 18) {
+		std::stringstream ss;
+		ss << "areal<20, " << es << ", uint32_t> ";
+		testcase = ss.str();
+		nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<20, es, uint32_t, float>(tag, bReportIndividualTestCases, bVerbose), testcase, op);
+	}
+
+	return nrOfFailedTestCases;
+}
 // conditional compile flags
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
@@ -264,66 +342,13 @@ try {
 
 #if MANUAL_TESTING
 
-	/*
-	* subnormals
-	   #           Binary    sign   scale        exponent        fraction    ubit                         value      hex_format
-	   0:        b00000000       0      -5             b00           b0000       0                             0       8.2x0x00r
-	   2:        b00000010       0      -4             b00           b0001       0                        0.0625       8.2x0x02r
-	   4:        b00000100       0      -3             b00           b0010       0                         0.125       8.2x0x04r
-	   6:        b00000110       0      -3             b00           b0011       0                        0.1875       8.2x0x06r
-	   8:        b00001000       0      -2             b00           b0100       0                          0.25       8.2x0x08r
-	  10:        b00001010       0      -2             b00           b0101       0                        0.3125       8.2x0x0Ar
-	  12:        b00001100       0      -2             b00           b0110       0                         0.375       8.2x0x0Cr
-	  14:        b00001110       0      -2             b00           b0111       0                        0.4375       8.2x0x0Er
-	  16:        b00010000       0      -1             b00           b1000       0                           0.5       8.2x0x10r
-	  18:        b00010010       0      -1             b00           b1001       0                        0.5625       8.2x0x12r
-	  20:        b00010100       0      -1             b00           b1010       0                         0.625       8.2x0x14r
-	  22:        b00010110       0      -1             b00           b1011       0                        0.6875       8.2x0x16r
-	  24:        b00011000       0      -1             b00           b1100       0                          0.75       8.2x0x18r
-	  26:        b00011010       0      -1             b00           b1101       0                        0.8125       8.2x0x1Ar
-	  28:        b00011100       0      -1             b00           b1110       0                         0.875       8.2x0x1Cr
-	  30:        b00011110       0      -1             b00           b1111       0                        0.9375       8.2x0x1Er
-
-	* normals
-	  60:        b00111100       0       0             b01           b1110       0                         1.875       8.2x0x3Cr
-	  62:        b00111110       0       0             b01           b1111       0                        1.9375       8.2x0x3Er
-	  64:        b01000000       0       1             b10           b0000       0                             2       8.2x0x40r
-	  66:        b01000010       0       1             b10           b0001       0                         2.125       8.2x0x42r
-	  68:        b01000100       0       1             b10           b0010       0                          2.25       8.2x0x44r
-
-	* supernormals
-	 110:        b01101110       0       2             b11           b0111       0                          5.75       8.2x0x6Er
-	 112:        b01110000       0       2             b11           b1000       0                             6       8.2x0x70r
-	 114:        b01110010       0       2             b11           b1001       0                          6.25       8.2x0x72r
-
-
-	NEGATIVE
-	* subnormals
-	 134:        b10000110       1      -3             b00           b0011       0                       -0.1875       8.2x0x86r
-	 136:        b10001000       1      -2             b00           b0100       0                         -0.25       8.2x0x88r
-	 138:        b10001010       1      -2             b00           b0101       0                       -0.3125       8.2x0x8Ar
-
-	* normals
-	 188:        b10111100       1       0             b01           b1110       0                        -1.875       8.2x0xBCr
-	 190:        b10111110       1       0             b01           b1111       0                       -1.9375       8.2x0xBEr
-	 192:        b11000000       1       1             b10           b0000       0                            -2       8.2x0xC0r
-	 194:        b11000010       1       1             b10           b0001       0                        -2.125       8.2x0xC2r
-	 196:        b11000100       1       1             b10           b0010       0                         -2.25       8.2x0xC4r
-
-	* supernormals
-	 238:        b11101110       1       2             b11           b0111       0                         -5.75       8.2x0xEEr
-	 240:        b11110000       1       2             b11           b1000       0                            -6       8.2x0xF0r
-	 242:        b11110010       1       2             b11           b1001       0                         -6.25       8.2x0xF2r
-	*/
-
-
 	using Real = sw::universal::areal<8, 2>;
 
 	//	nrOfFailedTestCases += VerifySpecialCases<Real, float>("float->areal special cases");
 	//	nrOfFailedTestCases += VerifySpecialCases<Real, double>("double->areal special cases");
 	//	nrOfFailedTestCases += VerifySpecialCases<Real, long double>("long double->areal special cases");
 
-	//	GenerateArealTable<8, 3>(cout, false);
+	// GenerateArealTable<4, 1>(cout, false);
 
 	//float test = 0.8333333f;
 	float test = 0.0625f;
@@ -374,10 +399,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 4, uint8_t, float>(tag, true, true), "areal<8,4,uint8_t>", "=");
 	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 4, uint8_t, float>(tag, true, true), "areal<9,4,uint8_t>", "=");
 
-	return 0;
-
-
-
 	//	nrOfFailedTestCases = ReportTestResult(VerifyAssignment<sw::universal::areal<5, 2,  uint8_t>, float >(bReportIndividualTestCases), tag, "areal<5,2,uint8_t>");
 	
 #if STRESS_TESTING
@@ -392,47 +413,19 @@ try {
 	cout << "AREAL assignment validation" << endl;
 
 	bool bVerbose = false;
-	// es = 1 encodings
-	// 1 block representations
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 4, 1, uint8_t>(tag, true, bVerbose), "areal<4,1,uint8_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 5, 1, uint8_t>(tag, true, bVerbose), "areal<5,1,uint8_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 6, 1, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<6,1,uint8_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 7, 1, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<7,1,uint8_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 8, 1, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<8,1,uint8_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, 1, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<9,1,uint16_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<10, 1, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<10,1,uint16_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<12, 1, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<12,1,uint16_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<14, 1, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<14,1,uint16_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<16, 1, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<16,1,uint16_t>", "=");
+	std::cout << "Single block representations\n--------------------------------------------- es = 1 encodings\n";
+	nrOfFailedTestCases += SingleBlockTestSuite<1, float>(tag, "=float", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += SingleBlockTestSuite<1, double>(tag, "=double", bReportIndividualTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 2 encodings\n";
+	nrOfFailedTestCases += SingleBlockTestSuite<2, float>(tag, "=float", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += SingleBlockTestSuite<2, double>(tag, "=double", bReportIndividualTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 3 encodings\n";
+	nrOfFailedTestCases += SingleBlockTestSuite<3, float>(tag, "=float", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += SingleBlockTestSuite<3, double>(tag, "=double", bReportIndividualTestCases, bVerbose);
+	std::cout << "--------------------------------------------- es = 4 encodings\n";
+	nrOfFailedTestCases += SingleBlockTestSuite<4, float>(tag, "=float", bReportIndividualTestCases, bVerbose);
+	nrOfFailedTestCases += SingleBlockTestSuite<4, double>(tag, "=double", bReportIndividualTestCases, bVerbose);
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<4, 1, uint8_t, float>(tag, bReportIndividualTestCases, bVerbose), "areal<4,1, uint8_t>", "subnormal");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<5, 1, uint8_t, float>(tag, bReportIndividualTestCases, bVerbose), "areal<5,1, uint8_t>", "subnormal");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<6, 1, uint8_t, float>(tag, bReportIndividualTestCases, bVerbose), "areal<6,1, uint8_t>", "subnormal");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<7, 1, uint8_t, float>(tag, bReportIndividualTestCases, bVerbose), "areal<7,1, uint8_t>", "subnormal");
-	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<8, 1, uint8_t, float>(tag, bReportIndividualTestCases, bVerbose), "areal<8,1, uint8_t>", "subnormal");
-
-	// 2 block representations
-//	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, 1, uint8_t>(tag, false, bVerbose), "areal<9,1,uint8_t>", "=");
-//	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<10, 1, uint8_t>(tag, false, bVerbose), "areal<10,1,uint8_t>", "=");
-//	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<16, 1, uint8_t>(tag, false, bVerbose), "areal<16,1,uint8_t>", "=");
-
-	// es = 2 encodings
-	// 1 block representations
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 5, 2, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<5,2,uint8_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 6, 2, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<6,2,uint8_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 7, 2, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<7,2,uint8_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 8, 2, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<8,2,uint8_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, 2, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<9,2,uint16_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<10, 2, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<10,2,uint16_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<12, 2, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<12,2,uint16_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<14, 2, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<14,2,uint16_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<16, 2, uint16_t>(tag, bReportIndividualTestCases, bVerbose), "areal<16,2,uint16_t>", "=");
-
-	// 2 block representations
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, 1, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<9,1,uint8_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, 2, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<9,2,uint8_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, 3, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<9,3,uint8_t>", "=");
-	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling< 9, 4, uint8_t>(tag, bReportIndividualTestCases, bVerbose), "areal<9,4,uint8_t>", "=");
 
 	/*
 	nrOfFailedTestCases = ReportTestResult(ValidateAssignment< sw::universal::areal<4, 1,  uint8_t>, float>(bReportIndividualTestCases), tag, "areal<4,1,uint8_t>");
