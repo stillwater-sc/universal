@@ -1141,7 +1141,7 @@ inline bool operator==(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,
 template<size_t nnbits, size_t nes, typename nbt>
 inline bool operator!=(const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return !operator==(lhs, rhs); }
 template<size_t nnbits, size_t nes, typename nbt>
-inline bool operator< (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return (lhs - rhs) < 0.0; }
+inline bool operator< (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return (lhs - rhs).isneg(); }
 template<size_t nnbits, size_t nes, typename nbt>
 inline bool operator> (const areal<nnbits,nes,nbt>& lhs, const areal<nnbits,nes,nbt>& rhs) { return  operator< (rhs, lhs); }
 template<size_t nnbits, size_t nes, typename nbt>

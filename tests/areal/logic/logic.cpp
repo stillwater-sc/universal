@@ -86,6 +86,158 @@ namespace sw::universal {
 		return nrOfFailedTestCases;
 	}
 
+	template<typename TestType>
+	int VerifyArealLogicLessThan() {
+		constexpr size_t max = TestType::nbits > 16 ? 16 : TestType::nbits;
+		size_t NR_TEST_CASES = (size_t(1) << max);
+		int nrOfFailedTestCases = 0;
+		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+			TestType a;
+			a.set_raw_bits(i);
+			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+				TestType b;
+				b.set_raw_bits(j);
+
+				// set the golden reference
+
+					// initially, we thought this would be the same behavior as IEEE floats
+					// ref = double(a) == double(b);
+					// but we have found that some compilers (MSVC) take liberty with NaN
+					// \fp:fast		floating point model set to fast
+					//	NaN == NaN  : IEEE = true    Areal = true  because we have unique encodings for +-NaN
+					//	NaN == real : IEEE = true    Areal = false
+					// \fp:strict	floating point model set to strict
+					//	NaN == NaN  : IEEE = false    Areal = true
+					//	NaN == real : IEEE = false    Areal = false
+					// and thus we can't rely on IEEE float as reference
+
+				// since this function is only useful for small areal<>s, we can depend on the double conversion
+				bool ref = (double(a) < double(b));
+
+				bool result = (a < b);
+				if (ref != result) {
+					nrOfFailedTestCases++;
+					std::cout << a << " < " << b << " fails: reference is " << ref << " actual is " << result << std::endl;
+				}
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	template<typename TestType>
+	int VerifyArealLogicLessOrEqualThan() {
+		constexpr size_t max = TestType::nbits > 16 ? 16 : TestType::nbits;
+		size_t NR_TEST_CASES = (size_t(1) << max);
+		int nrOfFailedTestCases = 0;
+		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+			TestType a;
+			a.set_raw_bits(i);
+			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+				TestType b;
+				b.set_raw_bits(j);
+
+				// set the golden reference
+
+					// initially, we thought this would be the same behavior as IEEE floats
+					// ref = double(a) == double(b);
+					// but we have found that some compilers (MSVC) take liberty with NaN
+					// \fp:fast		floating point model set to fast
+					//	NaN == NaN  : IEEE = true    Areal = true  because we have unique encodings for +-NaN
+					//	NaN == real : IEEE = true    Areal = false
+					// \fp:strict	floating point model set to strict
+					//	NaN == NaN  : IEEE = false    Areal = true
+					//	NaN == real : IEEE = false    Areal = false
+					// and thus we can't rely on IEEE float as reference
+
+				// since this function is only useful for small areal<>s, we can depend on the double conversion
+				bool ref = (double(a) <= double(b));
+
+				bool result = (a <= b);
+				if (ref != result) {
+					nrOfFailedTestCases++;
+					std::cout << a << " < " << b << " fails: reference is " << ref << " actual is " << result << std::endl;
+				}
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	template<typename TestType>
+	int VerifyArealLogicGreaterThan() {
+		constexpr size_t max = TestType::nbits > 16 ? 16 : TestType::nbits;
+		size_t NR_TEST_CASES = (size_t(1) << max);
+		int nrOfFailedTestCases = 0;
+		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+			TestType a;
+			a.set_raw_bits(i);
+			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+				TestType b;
+				b.set_raw_bits(j);
+
+				// set the golden reference
+
+					// initially, we thought this would be the same behavior as IEEE floats
+					// ref = double(a) == double(b);
+					// but we have found that some compilers (MSVC) take liberty with NaN
+					// \fp:fast		floating point model set to fast
+					//	NaN == NaN  : IEEE = true    Areal = true  because we have unique encodings for +-NaN
+					//	NaN == real : IEEE = true    Areal = false
+					// \fp:strict	floating point model set to strict
+					//	NaN == NaN  : IEEE = false    Areal = true
+					//	NaN == real : IEEE = false    Areal = false
+					// and thus we can't rely on IEEE float as reference
+
+				// since this function is only useful for small areal<>s, we can depend on the double conversion
+				bool ref = (double(a) > double(b));
+
+				bool result = (a > b);
+				if (ref != result) {
+					nrOfFailedTestCases++;
+					std::cout << a << " < " << b << " fails: reference is " << ref << " actual is " << result << std::endl;
+				}
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
+	template<typename TestType>
+	int VerifyArealLogicGreaterOrEqualThan() {
+		constexpr size_t max = TestType::nbits > 16 ? 16 : TestType::nbits;
+		size_t NR_TEST_CASES = (size_t(1) << max);
+		int nrOfFailedTestCases = 0;
+		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
+			TestType a;
+			a.set_raw_bits(i);
+			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
+				TestType b;
+				b.set_raw_bits(j);
+
+				// set the golden reference
+
+					// initially, we thought this would be the same behavior as IEEE floats
+					// ref = double(a) == double(b);
+					// but we have found that some compilers (MSVC) take liberty with NaN
+					// \fp:fast		floating point model set to fast
+					//	NaN == NaN  : IEEE = true    Areal = true  because we have unique encodings for +-NaN
+					//	NaN == real : IEEE = true    Areal = false
+					// \fp:strict	floating point model set to strict
+					//	NaN == NaN  : IEEE = false    Areal = true
+					//	NaN == real : IEEE = false    Areal = false
+					// and thus we can't rely on IEEE float as reference
+
+				// since this function is only useful for small areal<>s, we can depend on the double conversion
+				bool ref = (double(a) >= double(b));
+
+				bool result = (a >= b);
+				if (ref != result) {
+					nrOfFailedTestCases++;
+					std::cout << a << " < " << b << " fails: reference is " << ref << " actual is " << result << std::endl;
+				}
+			}
+		}
+		return nrOfFailedTestCases;
+	}
+
 } // namespace sw::universal
 
 #define MANUAL_TESTING 0
@@ -123,7 +275,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicEqual< areal< 8, 1> >(), "areal< 8,1>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicEqual< areal< 9, 1> >(), "areal< 9,1>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicEqual< areal<10, 1> >(), "areal<10,1>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicEqual< areal<12, 1> >(), "areal<12,1>", "==");
 
 	if (!(a == 0)) {
 		nrOfFailedTestCases += ReportTestResult(1, "areal<16,1> == 0", "== int literal");
@@ -151,7 +302,6 @@ try {
 	}
 	
 	cout << "Logic: operator!=()" << endl;
-
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicNotEqual< areal< 4, 1> >(), "areal< 4,1>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicNotEqual< areal< 5, 1> >(), "areal< 5,1>", "!=");
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicNotEqual< areal< 6, 1> >(), "areal< 6,1>", "!=");
@@ -171,23 +321,103 @@ try {
 		nrOfFailedTestCases += ReportTestResult(1, "areal<16,1> != 0.0f", "!= float literal");
 	}
 	else {
-		ReportTestResult(0, "areal<16,1> != 0.0f", "== float literal");
+		ReportTestResult(0, "areal<16,1> != 0.0f", "!= float literal");
 	}
 	if (a != 0.0) {
 		nrOfFailedTestCases += ReportTestResult(1, "areal<16,1> != 0.0", "!= double literal");
 	}
 	else {
-		ReportTestResult(0, "areal<16,1> != 0.0", "== double literal");
+		ReportTestResult(0, "areal<16,1> != 0.0", "!= double literal");
 	}
 	if (a != 0.0l) {
 		nrOfFailedTestCases += ReportTestResult(1, "areal<16,1> != 0.0l", "!= long double literal");
 	}
 	else {
-		ReportTestResult(0, "areal<16,1> != 0.0l", "== long double literal");
+		ReportTestResult(0, "areal<16,1> != 0.0l", "!= long double literal");
 	}
+
+#ifdef AREAL_SUBTRACT_IS_IMPLEMENTED
+	cout << "Logic: operator<()" << endl;
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 4, 1> >(), "areal< 4,1>", "<");
+	return 0;
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 5, 1> >(), "areal< 5,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 6, 1> >(), "areal< 6,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 7, 1> >(), "areal< 7,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 8, 1> >(), "areal< 8,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 9, 1> >(), "areal< 9,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal<10, 1> >(), "areal<10,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal<12, 1> >(), "areal<12,1>", "<");
+
+	if (a < 0) {
+		nrOfFailedTestCases += ReportTestResult(1, "areal<16,1> < 0", "< int literal");
+	}
+	else {
+		ReportTestResult(0, "areal<16,1> < 0", "< int literal");
+	}
+	if (a < 0.0f) {
+		nrOfFailedTestCases += ReportTestResult(1, "areal<16,1> < 0.0f", "< float literal");
+	}
+	else {
+		ReportTestResult(0, "areal<16,1> < 0.0f", "== float literal");
+	}
+	if (a < 0.0) {
+		nrOfFailedTestCases += ReportTestResult(1, "areal<16,1> < 0.0", "< double literal");
+	}
+	else {
+		ReportTestResult(0, "areal<16,1> < 0.0", "< double literal");
+	}
+	if (a < 0.0l) {
+		nrOfFailedTestCases += ReportTestResult(1, "areal<16,1> < 0.0l", "< long double literal");
+	}
+	else {
+		ReportTestResult(0, "areal<16,1> < 0.0l", "== long double literal");
+	}
+
+	cout << "Logic: operator<=()" << endl;
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 4, 1> >(), "areal< 4,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 5, 1> >(), "areal< 5,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 6, 1> >(), "areal< 6,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 7, 1> >(), "areal< 7,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 8, 1> >(), "areal< 8,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal< 9, 1> >(), "areal< 9,1>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal<10, 1> >(), "areal<10,1>", "<");
+//	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicLessThan< areal<12, 1> >(), "areal<12,1>", "<");
+
+	if (a < 0) {
+		nrOfFailedTestCases += ReportTestResult(1, "areal<16,1> < 0", "< int literal");
+	}
+	else {
+		ReportTestResult(0, "areal<16,1> < 0", "< int literal");
+	}
+	if (a < 0.0f) {
+		nrOfFailedTestCases += ReportTestResult(1, "areal<16,1> < 0.0f", "< float literal");
+	}
+	else {
+		ReportTestResult(0, "areal<16,1> < 0.0f", "== float literal");
+	}
+	if (a < 0.0) {
+		nrOfFailedTestCases += ReportTestResult(1, "areal<16,1> < 0.0", "< double literal");
+	}
+	else {
+		ReportTestResult(0, "areal<16,1> < 0.0", "< double literal");
+	}
+	if (a < 0.0l) {
+		nrOfFailedTestCases += ReportTestResult(1, "areal<16,1> < 0.0l", "< long double literal");
+	}
+	else {
+		ReportTestResult(0, "areal<16,1> < 0.0l", "== long double literal");
+	}
+
+#endif //	AREAL_SUBTRACT_IS_IMPLEMENTED
+
 #if STRESS_TESTING
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicEqual< areal<12, 1> >(), "areal<12,1>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicEqual< areal<14, 1> >(), "areal<14,1>", "==");
 	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicEqual< areal<16, 1> >(), "areal<16,1>", "==");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicNotEqual< areal<12, 1> >(), "areal<12,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicNotEqual< areal<14, 1> >(), "areal<14,1>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyArealLogicNotEqual< areal<16, 1> >(), "areal<16,1>", "!=");
 
 #endif  // STRESS_TESTING
 
