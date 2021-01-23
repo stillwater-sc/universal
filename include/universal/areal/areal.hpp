@@ -386,7 +386,7 @@ public:
 			_block[MSU] = bits;
 		}
 		else {
-			copyBits(raw);
+			copyBits(bits);
 		}
 		return *this;
 	}
@@ -508,7 +508,7 @@ public:
 			_block[MSU] = bits;
 		}
 		else {
-			copyBits(raw);
+			copyBits(bits);
 		}
 		return *this;
 	}
@@ -612,7 +612,6 @@ public:
 				_block[i] = BLOCK_MASK;
 			}
 			_block[MSU] = sign ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
-			break;
 		}	
 	}
 	/// <summary>
