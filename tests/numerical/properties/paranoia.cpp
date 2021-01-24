@@ -2,10 +2,9 @@
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
-// This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
-// pull in the posit number system
-#include <universal/posit/posit>
+#include <universal/posit/posit> // the NUT: number system under test
 
 #define BATCHMODE 1
 
@@ -351,9 +350,9 @@ _sigfpe(int x)
 
 
 FLOAT
-Sign(FLOAT X)
+Sign(FLOAT _X)
 {
-	return X >= 0. ? 1.0 : -1.0;
+	return _X >= 0. ? 1.0 : -1.0;
 }
 
 void
@@ -375,31 +374,31 @@ Pause()
 }
 
 void
-BadCond(int K, const char* T)
+BadCond(int K, const char* _T)
 {
 	static const char *msg[] =
 	{ "FAILURE", "SERIOUS DEFECT", "DEFECT", "FLAW" };
 
 	ErrCnt[K] = ErrCnt[K] + 1;
 #ifndef CYGNUS
-	printf("%s:  %s", msg[K], T);
+	printf("%s:  %s", msg[K], _T);
 #else
-	printf("ERROR: Severity: %s:  %s", msg[K], T);
+	printf("ERROR: Severity: %s:  %s", msg[K], _T);
 #endif /* CYGNUS */
 }
 
 void
-TstCond(int K, int Valid, const char* T)
+TstCond(int K, int Valid, const char* _T)
 {
 #ifdef CYGNUS
-	printf("TEST: %s\n", T);
+	printf("TEST: %s\n", _T);
 #endif /* CYGNUS */
 	if (!Valid) {
-		BadCond(K, T);
+		BadCond(K, _T);
 		printf(".\n");
 	}
 #ifdef CYGNUS
-	printf("PASS: %s\n", T);
+	printf("PASS: %s\n", _T);
 #endif /* CYGNUS */
 }
 
@@ -413,19 +412,19 @@ TstCond(int K, int Valid, const char* T)
 FLOAT
 Random()
 {
-	FLOAT   X, Y;
+	FLOAT   x, y;
 
-	X = Random1 + Random9;
-	Y = X * X;
-	Y = Y * Y;
-	X = X * Y;
-	Y = X - FLOOR(X);
-	Random1 = Y + X * 0.000005;
+	x = Random1 + Random9;
+	y = x * x;
+	y = y * y;
+	X = x * y;
+	y = x - FLOOR(x);
+	Random1 = y + x * 0.000005;
 	return (Random1);
 }
 
 void
-SqXMinX(int rrKind)
+SqXMinX(int ErrKind)
 {
 	FLOAT   XA, XB;
 
@@ -438,7 +437,7 @@ SqXMinX(int rrKind)
 		if (SqEr > MaxSqEr)
 			MaxSqEr = SqEr;
 		J = J + 1.0;
-//		BadCond(ErrKind, "\n");
+		BadCond(ErrKind, "\n");
 		printf("sqrt( %.17e) - %.17e  = %.17e\n", X * X, X, OneUlp * SqEr);
 		printf("\tinstead of correct value 0 .\n");
 	}
@@ -2301,6 +2300,8 @@ the system traps on overflow.\n");
 		return 0;
 }
 
+// goal is to make the paranoia diagnostics parameterized in type
+#ifdef PARAMETERIZED_PARANOIA
 int main_(int argc, char** argv)
 try {
 	using namespace std;
@@ -2308,7 +2309,7 @@ try {
 
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
-	using Posit = posit<nbits,es>;
+	using Real = posit<nbits,es>;
 
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;
@@ -2317,8 +2318,7 @@ try {
 	auto precision = cout.precision();
 	cout << setprecision(12);
 
-	Posit p;
-	cout << "minpos : " << minpos<nbits, es>(p) << endl;
+	paranoia<Real>();
 
 	// restore the previous ostream precision
 	cout << setprecision(precision);
@@ -2349,3 +2349,4 @@ catch (...) {
 	std::cerr << "Caught unknown exception" << std::endl;
 	return EXIT_FAILURE;
 }
+#endif
