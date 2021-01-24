@@ -6,7 +6,7 @@
 #include <iostream>
 
 //#include <universal/integer/integer.hpp>
-#include <universal/blockbin/blockbinary.hpp>
+#include <universal/blockbinary/blockbinary.hpp>
 
 int main()
 try {

@@ -8,7 +8,7 @@
 #include <limits>
 
 #include <universal/native/ieee754.hpp>
-#include <universal/blockbin/blockbinary.hpp>
+#include <universal/blockbinary/blockbinary.hpp>
 #include <universal/abstract/triple.hpp>
 
 namespace sw {	namespace universal {

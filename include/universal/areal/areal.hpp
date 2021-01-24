@@ -8,7 +8,7 @@
 #include <limits>
 
 #include <universal/native/ieee754.hpp>
-#include <universal/blockbin/blockbinary.hpp>
+#include <universal/blockbinary/blockbinary.hpp>
 #include <universal/areal/exceptions.hpp>
 
 // compiler specific operators
@@ -42,7 +42,12 @@
 
 #endif
 
+#ifndef THROW_ARITHMETIC_EXCEPTION
 #define THROW_ARITHMETIC_EXCEPTION 0
+#endif
+#ifndef TRACE_CONVERSION
+#define TRACE_CONVERSION 0
+#endif
 
 namespace sw::universal {
 		
@@ -218,7 +223,7 @@ public:
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;
 	static constexpr int MIN_EXP_NORMAL = 1 - EXP_BIAS;
-	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - fbits; // the scale of smallest ULP
+	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
 	static constexpr bt BLOCK_MASK = bt(-1);
 
 	using BlockType = bt;
@@ -375,7 +380,7 @@ public:
 		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
 #endif
 		// construct the target areal
-		uint32_t bits = (s ? 1 : 0);
+		uint32_t bits = (s ? 1u : 0u);
 		bits <<= es;
 		bits |= biasedExponent;
 		bits <<= nbits - 1ull - es;
@@ -383,7 +388,7 @@ public:
 		bits &= 0xFFFF'FFFE;
 		bits |= (ubit ? 0x1 : 0x0);
 		if (nrBlocks == 1) {
-			_block[MSU] = bits;
+			_block[MSU] = bt(bits);
 		}
 		else {
 			copyBits(bits);
@@ -497,7 +502,7 @@ public:
 		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
 #endif
 		// construct the target areal
-		uint64_t bits = (s ? 1 : 0);
+		uint64_t bits = (s ? 1ull : 0ull);
 		bits <<= es;
 		bits |= biasedExponent;
 		bits <<= nbits - 1ull - es;
@@ -505,7 +510,7 @@ public:
 		bits &= 0xFFFF'FFFF'FFFF'FFFE;
 		bits |= (ubit ? 0x1 : 0x0);
 		if (nrBlocks == 1) {
-			_block[MSU] = bits;
+			_block[MSU] = bt(bits);
 		}
 		else {
 			copyBits(bits);
@@ -680,7 +685,7 @@ public:
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt mask = ~(1ull << (i % bitsInBlock));
-			_block[i / bitsInBlock] = block & mask;
+			_block[i / bitsInBlock] = bt(block & mask);
 			return;
 		}
 	}
@@ -690,7 +695,7 @@ public:
 	/// <returns>reference to this areal object</returns>
 	inline constexpr areal& flip() noexcept { // in-place one's complement
 		for (size_t i = 0; i < nrBlocks; ++i) {
-			_block[i] = ~_block[i];
+			_block[i] = bt(~_block[i]);
 		}
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
@@ -981,12 +986,12 @@ protected:
 	template<typename ArgumentBlockType>
 	void copyBits(ArgumentBlockType v) {
 		int blocksRequired = (8 * sizeof(v) + 1 ) / bitsInBlock;
-		int maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
-		bt b{ 0 }; b = ~b;
+		int maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : int(nrBlocks));
+		bt b{ 0ul }; b = bt(~b);
 		ArgumentBlockType mask = ArgumentBlockType(b);
 		size_t shift = 0;
 		for (int i = 0; i < maxBlockNr; ++i) {
-			_block[i] = (mask & v) >> shift;
+			_block[i] = bt((mask & v) >> shift);
 			mask <<= bitsInBlock;
 			shift += bitsInBlock;
 		}

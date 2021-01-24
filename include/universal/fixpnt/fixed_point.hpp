@@ -1,5 +1,5 @@
 #pragma once
-// fixed_point.hpp: definition of an arbitrary configuration binary fixed-point number parameterized in total bits and radix bits
+// fixpnt.hpp: definition of an arbitrary configuration binary fixed-point number parameterized in total bits and radix bits
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -33,7 +33,7 @@ Run-time configuration is used to select modular vs saturation arithmetic.
 #endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
 #include <universal/native/ieee754.hpp>   // IEEE-754 decoders
 #include <universal/native/integers.hpp>   // manipulators for native integer types
-#include <universal/blockbin/blockbinary.hpp>
+#include <universal/blockbinary/blockbinary.hpp>
 
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */

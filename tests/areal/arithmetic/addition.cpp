@@ -1,4 +1,4 @@
-// addition.cpp: functional tests for addition on arbitrary reals
+// addition.cpp: test suite runner for addition on arbitrary reals
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -13,19 +13,19 @@
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
-	sw::universal::areal<nbits, es> a, b, rref, rsum;
+	sw::universal::areal<nbits, es> a, b, sum, ref;
 	a = a;
 	b = b;
-	rsum = a + b;
+	sum = a + b;
 	// generate the reference
-	Ty ref = _a + _b;
-	rref = ref;
+	Ty reference = _a + _b;
+	ref = reference;
 
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << ref << std::endl;
-	std::cout << a << " + " << b << " = " << rsum << " (reference: " << rref << ")   ";
-	//	std::cout << a.get() << " + " << b.get() << " = " << rsum.get() << " (reference: " << rref.get() << ")   ";
-	std::cout << (rref == rsum ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << reference << std::endl;
+	std::cout << a << " + " << b << " = " << sum << " (reference: " << ref << ")   ";
+	std::cout << to_binary(a, true) << " + " << to_binary(b, true) << " = " << to_binary(sum, true) << " (reference: " << to_binary(ref, true) << ")   ";
+	std::cout << (ref == sum ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::setprecision(5);
 }
 
@@ -37,6 +37,12 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
+	if (argc > 1) {
+		for (int i = 0; i < argc; ++i) {
+			std::cout << argv[i] << ' ';
+		}
+		std::cout << std::endl;
+	}
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
@@ -46,8 +52,8 @@ try {
 	GenerateTestCase<8, 4, float>(0.5f, -0.5f);
 
 	// manual exhaustive test
-	//nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>("Manual Testing", true), "areal<8,2>", "addition");
-	//
+	//nrOfFailedTestCases += ReportTestResult(VerifyAddition< areal<8, 2, uint8_t> >("Manual Testing", true), "areal<8,2,uint8_t>", "addition");
+
 	
 	nrOfFailedTestCases = 0;
 
@@ -69,6 +75,7 @@ try {
 #endif  // MANUAL_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

@@ -9,7 +9,7 @@
 
 #ifdef LATER
 // minimum set of include files to reflect source code dependencies
-#include <universal/blockbin/blocktriple.hpp>
+#include <universal/blockbinary/blocktriple.hpp>
 // test helpers, such as, ReportTestResults
 #include "../utils/test_helpers.hpp"
 #include "../utils/blocktriple_helpers.hpp"

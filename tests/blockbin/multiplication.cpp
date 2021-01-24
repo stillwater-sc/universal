@@ -8,7 +8,7 @@
 #include <bitset>      // not used: just here to access the API
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/blockbin/blockbinary.hpp>
+#include <universal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/blockbinary_test_status.hpp>
 

@@ -8,7 +8,7 @@
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/native/integers.hpp> // for to_binary(int)
-#include <universal/blockbin/blockbinary.hpp>
+#include <universal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/blockbinary_test_status.hpp>
 

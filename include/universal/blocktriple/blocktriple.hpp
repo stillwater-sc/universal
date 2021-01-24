@@ -9,16 +9,16 @@
 #include <iomanip>
 #include <limits>
 
-#include <universal/blockbin/blockbinary.hpp>
 #include <universal/native/ieee754.hpp>
 #include <universal/native/bit_functions.hpp>
-#include "trace_constants.hpp"
+#include <universal/blockbinary/blockbinary.hpp>
+#include <universal/blocktriple/trace_constants.hpp>
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 // Forward definitions
-template<size_t ebits, size_t fbits, typename bt> class blocktriple;
-template<size_t ebits, size_t fbits, typename bt> blocktriple<ebits,fbits,bt> abs(const blocktriple<ebits,fbits,bt>& v);
+template<size_t fbits, typename bt> class blocktriple;
+template<size_t fbits, typename bt> blocktriple<fbits,bt> abs(const blocktriple<fbits,bt>& v);
 
 template<size_t nbits, typename bt>
 blockbinary<nbits,bt> extract_23b_fraction(uint32_t _23b_fraction_without_hidden_bit) {
@@ -56,9 +56,14 @@ blockbinary<nbits, bt> extract_63b_fraction(uint64_t _63b_fraction_without_hidde
 	return _fraction;
 }
 
-// template class representing a value in scientific notation
-// using a template parameter for the number of exponent and fraction bits
-template<size_t ebits, size_t fbits, typename bt = uint8_t>
+/// <summary>
+/// compute class to provide an arbitrary configuration but fixed size binary scientific number and arithmetic.
+/// 
+/// Parameters are the number of fraction bits to maintain, and the blocktype to organize them by.
+/// The exponent is an implicit signed integer.
+/// </summary>
+/// <typeparam name="bt">block type to use: default is uint32_t</typeparam>
+template<size_t fbits, typename bt = uint32_t>
 class blocktriple {
 public:
 	static constexpr size_t fhbits = fbits + 1;    // number of fraction bits including the hidden bit
@@ -284,7 +289,7 @@ public:
 
 	// operators
 	blocktriple operator-() const {				
-		return blocktriple<ebits, fbits>(!_sign, _scale, _fraction, _zero, _inf);
+		return blocktriple<fbits>(!_sign, _scale, _fraction, _zero, _inf);
 	}
 
 	// modifiers
@@ -430,7 +435,7 @@ public:
 
 	// TODO: this does not implement a 'real' right extend. tgtbits need to be shorter than fbits
 	template<size_t srcbits, size_t tgtbits>
-	void right_extend(const blocktriple<ebits,srcbits,bt>& src) {
+	void right_extend(const blocktriple<srcbits,bt>& src) {
 		_sign = src.sign();
 		_scale = src.scale();
 		_nrOfBits = tgtbits;
@@ -443,8 +448,8 @@ public:
 				_fraction[t] = src_fraction[s];
 		}
 	}
-	template<size_t tgt_ebits, size_t tgt_fbits>
-	blocktriple<tgt_ebits, tgt_fbits, bt> round_to() {
+	template<size_t tgt_fbits>
+	blocktriple<tgt_fbits, bt> round_to() {
 		blockbinary<tgt_fbits, bt> rounded_fraction;
 		if (tgt_fbits == 0) {
 			bool round_up = false;
@@ -456,7 +461,7 @@ public:
 			else if (fbits == 1) {
 				round_up = _fraction[0];
 			}
-			return blocktriple<tgt_ebits,tgt_fbits,bt>(_sign, (round_up ? _scale + 1 : _scale), rounded_fraction, _zero, _inf);
+			return blocktriple<tgt_fbits,bt>(_sign, (round_up ? _scale + 1 : _scale), rounded_fraction, _zero, _inf);
 		}
 		else {
 			if (!_zero || !_inf) {
@@ -479,42 +484,42 @@ public:
 				}
 			}
 		}
-		return blocktriple<tgt_ebits, tgt_fbits, bt>(_sign, _scale, rounded_fraction, _zero, _inf);
+		return blocktriple<tgt_fbits, bt>(_sign, _scale, rounded_fraction, _zero, _inf);
 	}
 
 private:
-	bool                _sign;
-	int                 _scale;
-	int                 _nrOfBits;  // in case the fraction is smaller than the full fbits
-	bool                _inf;
-	bool                _zero;
-	bool                _nan;
+	bool                    _sign;
+	int                     _scale;
+	int                     _nrOfBits;  // in case the fraction is smaller than the full fbits
+	bool                    _inf;
+	bool                    _zero;
+	bool                    _nan;
 	blockbinary<fbits, bt>  _fraction;
 
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t eebits, size_t ffbits, typename bbt>
-	friend std::ostream& operator<< (std::ostream& ostr, const blocktriple<eebits, ffbits, bbt>& r);
-	template<size_t eebits, size_t ffbits, typename bbt>
-	friend std::istream& operator>> (std::istream& istr, blocktriple<eebits, ffbits, bbt>& r);
+	template<size_t ffbits, typename bbt>
+	friend std::ostream& operator<< (std::ostream& ostr, const blocktriple<ffbits, bbt>& r);
+	template<size_t ffbits, typename bbt>
+	friend std::istream& operator>> (std::istream& istr, blocktriple<ffbits, bbt>& r);
 
 	// logic operators
-	template<size_t eebits, size_t ffbits, typename bbt>
-	friend bool operator==(const blocktriple<eebits, ffbits, bbt>& lhs, const blocktriple<eebits, ffbits, bbt>& rhs);
-	template<size_t eebits, size_t ffbits, typename bbt>
-	friend bool operator!=(const blocktriple<eebits, ffbits, bbt>& lhs, const blocktriple<eebits, ffbits, bbt>& rhs);
-	template<size_t eebits, size_t ffbits, typename bbt>
-	friend bool operator< (const blocktriple<eebits, ffbits, bbt>& lhs, const blocktriple<eebits, ffbits, bbt>& rhs);
-	template<size_t eebits, size_t ffbits, typename bbt>
-	friend bool operator> (const blocktriple<eebits, ffbits, bbt>& lhs, const blocktriple<eebits, ffbits, bbt>& rhs);
-	template<size_t eebits, size_t ffbits, typename bbt>
-	friend bool operator<=(const blocktriple<eebits, ffbits, bbt>& lhs, const blocktriple<eebits, ffbits, bbt>& rhs);
-	template<size_t eebits, size_t ffbits, typename bbt>
-	friend bool operator>=(const blocktriple<eebits, ffbits, bbt>& lhs, const blocktriple<eebits, ffbits, bbt>& rhs);
+	template<size_t ffbits, typename bbt>
+	friend bool operator==(const blocktriple<ffbits, bbt>& lhs, const blocktriple<ffbits, bbt>& rhs);
+	template<size_t ffbits, typename bbt>
+	friend bool operator!=(const blocktriple<ffbits, bbt>& lhs, const blocktriple<ffbits, bbt>& rhs);
+	template<size_t ffbits, typename bbt>
+	friend bool operator< (const blocktriple<ffbits, bbt>& lhs, const blocktriple<ffbits, bbt>& rhs);
+	template<size_t ffbits, typename bbt>
+	friend bool operator> (const blocktriple<ffbits, bbt>& lhs, const blocktriple<ffbits, bbt>& rhs);
+	template<size_t ffbits, typename bbt>
+	friend bool operator<=(const blocktriple<ffbits, bbt>& lhs, const blocktriple<ffbits, bbt>& rhs);
+	template<size_t ffbits, typename bbt>
+	friend bool operator>=(const blocktriple<ffbits, bbt>& lhs, const blocktriple<ffbits, bbt>& rhs);
 };
 
 ////////////////////// operators
-template<size_t ebits, size_t fbits, typename bt>
-inline std::ostream& operator<<(std::ostream& ostr, const blocktriple<ebits, fbits, bt>& v) {
+template<size_t fbits, typename bt>
+inline std::ostream& operator<<(std::ostream& ostr, const blocktriple<fbits, bt>& v) {
 	if (v._inf) {
 		ostr << FP_INFINITE;
 	}
@@ -524,25 +529,31 @@ inline std::ostream& operator<<(std::ostream& ostr, const blocktriple<ebits, fbi
 	return ostr;
 }
 
-template<size_t ebits, size_t fbits, typename bt>
-inline std::istream& operator>> (std::istream& istr, const blocktriple<ebits, fbits, bt>& v) {
+template<size_t fbits, typename bt>
+inline std::istream& operator>> (std::istream& istr, const blocktriple<fbits, bt>& v) {
 	istr >> v._fraction;
 	return istr;
 }
 
-template<size_t ebits, size_t fbits, typename bt>
-inline blocktriple<ebits, fbits, bt> operator/(const blocktriple<ebits, fbits, bt>& lhs, const blocktriple<ebits, fbits, bt>& rhs) {
+template<size_t fbits, typename bt>
+std::string to_binary(const sw::universal::blocktriple<fbits, bt>& a) {
+	std::stringstream ss;
+	return ss.str();
+}
+
+template<size_t fbits, typename bt>
+inline blocktriple<fbits, bt> operator/(const blocktriple<fbits, bt>& lhs, const blocktriple<fbits, bt>& rhs) {
 	return lhs;
 }
 
-template<size_t ebits, size_t fbits, typename bt>
-inline bool operator==(const blocktriple<ebits, fbits, bt>& lhs, const blocktriple<ebits, fbits, bt>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._fraction == rhs._fraction && lhs._nrOfBits == rhs._nrOfBits && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
+template<size_t fbits, typename bt>
+inline bool operator==(const blocktriple<fbits, bt>& lhs, const blocktriple<fbits, bt>& rhs) { return lhs._sign == rhs._sign && lhs._scale == rhs._scale && lhs._fraction == rhs._fraction && lhs._nrOfBits == rhs._nrOfBits && lhs._zero == rhs._zero && lhs._inf == rhs._inf; }
 
-template<size_t ebits, size_t fbits, typename bt>
-inline bool operator!=(const blocktriple<ebits, fbits, bt>& lhs, const blocktriple<ebits, fbits, bt>& rhs) { return !operator==(lhs, rhs); }
+template<size_t fbits, typename bt>
+inline bool operator!=(const blocktriple<fbits, bt>& lhs, const blocktriple<fbits, bt>& rhs) { return !operator==(lhs, rhs); }
 
-template<size_t ebits, size_t fbits, typename bt>
-inline bool operator< (const blocktriple<ebits, fbits, bt>& lhs, const blocktriple<ebits, fbits, bt>& rhs) {
+template<size_t fbits, typename bt>
+inline bool operator< (const blocktriple<fbits, bt>& lhs, const blocktriple<fbits, bt>& rhs) {
 	if (lhs._inf) {
 		if (rhs._inf) return false; else return true; // everything is less than -infinity
 	}
@@ -610,15 +621,15 @@ inline bool operator< (const blocktriple<ebits, fbits, bt>& lhs, const blocktrip
 	return false;
 }
 
-template<size_t ebits, size_t fbits, typename bt>
-inline bool operator> (const blocktriple<ebits, fbits, bt>& lhs, const blocktriple<ebits, fbits, bt>& rhs) { return  operator< (rhs, lhs); }
-template<size_t ebits, size_t fbits, typename bt>
-inline bool operator<=(const blocktriple<ebits, fbits, bt>& lhs, const blocktriple<ebits, fbits, bt>& rhs) { return !operator> (lhs, rhs); }
-template<size_t ebits, size_t fbits, typename bt>
-inline bool operator>=(const blocktriple<ebits, fbits, bt>& lhs, const blocktriple<ebits, fbits, bt>& rhs) { return !operator< (lhs, rhs); }
+template<size_t fbits, typename bt>
+inline bool operator> (const blocktriple<fbits, bt>& lhs, const blocktriple<fbits, bt>& rhs) { return  operator< (rhs, lhs); }
+template<size_t fbits, typename bt>
+inline bool operator<=(const blocktriple<fbits, bt>& lhs, const blocktriple<fbits, bt>& rhs) { return !operator> (lhs, rhs); }
+template<size_t fbits, typename bt>
+inline bool operator>=(const blocktriple<fbits, bt>& lhs, const blocktriple<fbits, bt>& rhs) { return !operator< (lhs, rhs); }
 
-template<size_t ebits, size_t fbits, typename bt>
-inline std::string components(const blocktriple<ebits, fbits, bt>& v) {
+template<size_t fbits, typename bt>
+inline std::string components(const blocktriple<fbits, bt>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
 		s << "(+,0," << std::setw(fbits) << v.fraction() << ')';
@@ -633,14 +644,14 @@ inline std::string components(const blocktriple<ebits, fbits, bt>& v) {
 }
 
 /// Magnitude of a scientific notation value (equivalent to turning the sign bit off).
-template<size_t ebits, size_t fbits, typename bt>
-blocktriple<ebits, fbits, bt> abs(const blocktriple<ebits, fbits, bt>& v) {
-	return blocktriple<ebits, fbits, bt>(false, v.scale(), v.fraction(), v.iszero());
+template<size_t fbits, typename bt>
+blocktriple<fbits, bt> abs(const blocktriple<fbits, bt>& v) {
+	return blocktriple<fbits, bt>(false, v.scale(), v.fraction(), v.iszero());
 }
 
 // add two values with fbits fraction bits, round them to abits, and return the abits+1 result value
-template<size_t ebits, size_t fbits, size_t abits, typename bt>
-void module_add(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<ebits,fbits,bt>& rhs, blocktriple<ebits,abits + 1,bt>& result) {
+template<size_t fbits, size_t abits, typename bt>
+void module_add(const blocktriple<fbits,bt>& lhs, const blocktriple<fbits,bt>& rhs, blocktriple<abits + 1,bt>& result) {
 	// with sign/magnitude adders it is customary to organize the computation 
 	// along the four quadrants of sign combinations
 	//  + + = +
@@ -710,8 +721,8 @@ void module_add(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<ebits,
 }
 
 // subtract module: use ADDER
-template<size_t ebits, size_t fbits, size_t abits, typename bt>
-void module_subtract(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<ebits,fbits,bt>& rhs, blocktriple<ebits,abits + 1,bt>& result) {
+template<size_t fbits, size_t abits, typename bt>
+void module_subtract(const blocktriple<fbits,bt>& lhs, const blocktriple<fbits,bt>& rhs, blocktriple<abits + 1,bt>& result) {
 	if (lhs.isinf() || rhs.isinf()) {
 		result.setinf();
 		return;
@@ -769,8 +780,8 @@ void module_subtract(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<e
 }
 
 // subtract module using SUBTRACTOR: CURRENTLY BROKEN FOR UNKNOWN REASON
-template<size_t ebits, size_t fbits, size_t abits, typename bt>
-void module_subtract_BROKEN(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<ebits,fbits,bt>& rhs, blocktriple<ebits,abits + 1,bt>& result) {
+template<size_t fbits, size_t abits, typename bt>
+void module_subtract_BROKEN(const blocktriple<fbits,bt>& lhs, const blocktriple<fbits,bt>& rhs, blocktriple<abits + 1,bt>& result) {
 
 	if (lhs.isinf() || rhs.isinf()) {
 		result.setinf();
@@ -821,8 +832,8 @@ void module_subtract_BROKEN(const blocktriple<ebits,fbits,bt>& lhs, const blockt
 }
 
 // multiply module
-template<size_t ebits, size_t fbits, size_t mbits, typename bt>
-void module_multiply(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<ebits,fbits,bt>& rhs, blocktriple<ebits,mbits,bt>& result) {
+template<size_t fbits, size_t mbits, typename bt>
+void module_multiply(const blocktriple<fbits,bt>& lhs, const blocktriple<fbits,bt>& rhs, blocktriple<mbits,bt>& result) {
 	static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
 	if (_trace_mul) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
 
@@ -864,8 +875,8 @@ void module_multiply(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<e
 }
 
 // divide module
-template<size_t ebits, size_t fbits, size_t divbits, typename bt>
-void module_divide(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<ebits,fbits,bt>& rhs, blocktriple<ebits,divbits,bt>& result) {
+template<size_t fbits, size_t divbits, typename bt>
+void module_divide(const blocktriple<fbits,bt>& lhs, const blocktriple<fbits,bt>& rhs, blocktriple<divbits,bt>& result) {
 	static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
 	if (_trace_div) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
 
@@ -910,4 +921,4 @@ void module_divide(const blocktriple<ebits,fbits,bt>& lhs, const blocktriple<ebi
 	result.set(new_sign, new_scale, result_fraction, false, false, false);
 }
 
-}}  // namespace sw::universal
+}  // namespace sw::universal

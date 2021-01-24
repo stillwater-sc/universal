@@ -8,7 +8,7 @@
 #include <string>
 
 #include <universal/native/integers.hpp>
-#include <universal/blockbin/blockbinary.hpp>
+#include <universal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
 namespace sw {

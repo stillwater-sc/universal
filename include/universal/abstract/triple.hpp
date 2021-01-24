@@ -11,7 +11,7 @@
 #include <tuple>
 
 #include <universal/native/ieee754.hpp>
-#include <universal/blockbin/blockbinary.hpp>
+#include <universal/blockbinary/blockbinary.hpp>
 
 namespace sw { namespace universal {
 

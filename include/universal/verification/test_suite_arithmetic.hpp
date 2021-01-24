@@ -214,7 +214,14 @@ int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 ///                             ARITHMETIC TEST SUITES                              ///
 ///////////////////////////////////////////////////////////////////////////////////////
 
-// enumerate all addition cases for a number system configuration
+/// <summary>
+/// Enumerate all addition cases for a number system configuration.
+/// Uses doubles to create a reference to compare to.
+/// </summary>
+/// <typeparam name="TestType">the number system type to verify</typeparam>
+/// <param name="tag">string representation of the type</param>
+/// <param name="bReportIndividualTestCases">if yes, report on individual test failures</param>
+/// <returns></returns>
 template<typename TestType>
 int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 	TestType a{ 0 }, b{ 0 }, result, cref;
@@ -241,7 +248,7 @@ int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 				result = a + b;
 			}
 			catch (...) {
-				if (ref < double(maxnegitive) || ref > double(maxpositive)) {
+				if (ref < double(maxnegative) || ref > double(maxpositive)) {
 					// correctly caught the overflow exception
 					continue;
 				}
