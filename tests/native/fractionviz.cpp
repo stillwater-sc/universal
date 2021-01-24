@@ -1,11 +1,11 @@
-//  fractionviz.cpp : fraction bits visualization of real types
+//  fractionviz.cpp : fraction bits visualization of native IEEE-754 types
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
-#include <universal/posit/posit>
+#include <universal/native/ieee754.hpp>
 
 // conditional compile flags
 #define MANUAL_TESTING 1
@@ -21,14 +21,10 @@ try {
 	float f         = 1.0e10;
 	double d        = 1.0e10;
 	long double ld  = 1.0e10;
-	posit<32,2> p32 = 1.0e10;
-	posit<64,2> p64 = 1.0e10;
 
-	cout << color_print(f) << endl;
-	cout << color_print(d) << endl;
-	cout << color_print(ld) << endl;
-	cout << color_print(p32) << endl;
-	cout << color_print(p64) << endl;
+	cout << "single precision float     : " << color_print(f) << endl;
+	cout << "double precision float     : " << color_print(d) << endl;
+	cout << "long double precision float: " << color_print(ld) << endl;
 
 	return EXIT_SUCCESS;
 }

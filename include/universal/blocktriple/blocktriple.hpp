@@ -20,40 +20,10 @@ namespace sw::universal {
 template<size_t fbits, typename bt> class blocktriple;
 template<size_t fbits, typename bt> blocktriple<fbits,bt> abs(const blocktriple<fbits,bt>& v);
 
-template<size_t nbits, typename bt>
-blockbinary<nbits,bt> extract_23b_fraction(uint32_t _23b_fraction_without_hidden_bit) {
-	blockbinary<nbits, bt> _fraction;
-	uint32_t mask = uint32_t(0x00400000ul);
-	unsigned int ub = (nbits < 23 ? nbits : 23);
-	for (unsigned int i = 0; i < ub; i++) {
-		_fraction[nbits - 1 - i] = _23b_fraction_without_hidden_bit & mask;
-		mask >>= 1;
-	}
-	return _fraction;
-}
 
-template<size_t nbits, typename bt>
-blockbinary<nbits, bt> extract_52b_fraction(uint64_t _52b_fraction_without_hidden_bit) {
-	blockbinary<nbits, bt> _fraction;
-	uint64_t mask = uint64_t(0x0008000000000000ull);
-	unsigned int ub = (nbits < 52 ? nbits : 52);
-	for (unsigned int i = 0; i < ub; i++) {
-		_fraction[nbits - 1 - i] = _52b_fraction_without_hidden_bit & mask;
-		mask >>= 1;
-	}
-	return _fraction;
-}
-
-template<size_t nbits, typename bt>
-blockbinary<nbits, bt> extract_63b_fraction(uint64_t _63b_fraction_without_hidden_bit) {
-	blockbinary<nbits, bt> _fraction;
-	uint64_t mask = uint64_t(0x4000000000000000ull);
-	unsigned int ub = (nbits < 63 ? nbits : 63);
-	for (unsigned int i = 0; i < ub; i++) {
-		_fraction[nbits - 1 - i] = _63b_fraction_without_hidden_bit & mask;
-		mask >>= 1;
-	}
-	return _fraction;
+template<size_t fbits, typename bt>
+blocktriple<fbits, bt>& convert(unsigned long long uint, blocktriple<fbits, bt>& tgt) {
+	return tgt;
 }
 
 /// <summary>
@@ -63,9 +33,10 @@ blockbinary<nbits, bt> extract_63b_fraction(uint64_t _63b_fraction_without_hidde
 /// The exponent is an implicit signed integer.
 /// </summary>
 /// <typeparam name="bt">block type to use: default is uint32_t</typeparam>
-template<size_t fbits, typename bt = uint32_t>
+template<size_t _fbits, typename bt = uint32_t>
 class blocktriple {
 public:
+	static constexpr size_t fbits = _fbits;
 	static constexpr size_t fhbits = fbits + 1;    // number of fraction bits including the hidden bit
 
 	blocktriple() : _sign(false), _scale(0), _nrOfBits(fbits), _fraction(), _inf(false), _zero(true), _nan(false) {}
@@ -87,16 +58,9 @@ public:
 	blocktriple(const long double initial_value)        { *this = initial_value; }
 	blocktriple(const blocktriple& rhs)                 { *this = rhs; }
 
-	blocktriple& operator=(const blocktriple& rhs) {
-		_sign	  = rhs._sign;
-		_scale	  = rhs._scale;
-		_fraction = rhs._fraction;
-		_nrOfBits = rhs._nrOfBits;
-		_inf      = rhs._inf;
-		_zero     = rhs._zero;
-		_nan      = rhs._nan;
-		return *this;
-	}
+	blocktriple& operator=(const blocktriple&) = default;
+	blocktriple& operator=(blocktriple&&) = default;
+
 	blocktriple& operator=(const signed char rhs) {
 		*this = (long long)(rhs);
 		return *this;
@@ -196,7 +160,7 @@ public:
 				int _exponent{ 0 };
 				extract_fp_components(rhs, _sign, _exponent, _fr, _23b_fraction_without_hidden_bit);
 				_scale = _exponent - 1;
-				_fraction = extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
+				_fraction = 0; //  extract_23b_fraction<fbits, bt>(_23b_fraction_without_hidden_bit);
 				_nrOfBits = fbits;
 				if (_trace_conversion) std::cout << "float " << rhs << " sign " << _sign << " scale " << _scale << " 23b fraction 0x" << std::hex << _23b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 			}
@@ -229,7 +193,7 @@ public:
 				int _exponent{ 0 };
 				extract_fp_components(rhs, _sign, _exponent, _fr, _52b_fraction_without_hidden_bit);
 				_scale = _exponent - 1;
-				_fraction = extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
+				_fraction = 0; // extract_52b_fraction<fbits, bt>(_52b_fraction_without_hidden_bit);
 				_nrOfBits = fbits;
 				if (_trace_conversion) std::cout << "double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _52b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 			}
@@ -265,13 +229,13 @@ public:
 				// how to interpret the fraction bits: TODO: this should be a static compile-time code block
 				if (sizeof(long double) == 8) {
 					// we are just a double and thus only have 52bits of fraction
-					_fraction = extract_52b_fraction<fbits,bt>(_63b_fraction_without_hidden_bit);
+					_fraction = 0; //  extract_52b_fraction<fbits, bt>(_63b_fraction_without_hidden_bit);
 					if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 52b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 
 				}
 				else if (sizeof(long double) == 16) {
 					// how to differentiate between 80bit and 128bit formats?
-					_fraction = extract_63b_fraction<fbits,bt>(_63b_fraction_without_hidden_bit);
+					_fraction = 0; //  extract_63b_fraction<fbits, bt>(_63b_fraction_without_hidden_bit);
 					if (_trace_conversion) std::cout << "long double " << rhs << " sign " << _sign << " scale " << _scale << " 63b fraction 0x" << std::hex << _63b_fraction_without_hidden_bit << " _fraction b" << _fraction << std::dec << std::endl;
 
 				}
@@ -346,10 +310,10 @@ public:
 	inline bool isnan() const { return _nan; }
 	inline bool sign() const { return _sign; }
 	inline int scale() const { return _scale; }
-	blockbinary<fbits> fraction() const { return _fraction; }
+	blockbinary<fbits, bt> fraction() const { return _fraction; }
 	/// Normalized shift (e.g., for addition).
 	template <size_t Size>
-	blockbinary<Size> nshift(long shift) const {
+	blockbinary<Size, bt> nshift(long shift) const {
 		blockbinary<Size> number;
 
 #if BLOCKTRIPLE_THROW_ARITHMETIC_EXCEPTIONS
@@ -442,7 +406,7 @@ public:
 		_inf = src.isinf();
 		_zero = src.iszero();
 		_nan = src.isnan();
-		blockbinary<srcbits> src_fraction = src.fraction();
+		blockbinary<srcbits, bt> src_fraction = src.fraction();
 		if (!_inf && !_zero && !_nan) {
 			for (int s = srcbits - 1, t = tgtbits - 1; s >= 0 && t >= 0; --s, --t)
 				_fraction[t] = src_fraction[s];
@@ -461,7 +425,7 @@ public:
 			else if (fbits == 1) {
 				round_up = _fraction[0];
 			}
-			return blocktriple<tgt_fbits,bt>(_sign, (round_up ? _scale + 1 : _scale), rounded_fraction, _zero, _inf);
+			return blocktriple<tgt_fbits, bt>(_sign, (round_up ? _scale + 1 : _scale), rounded_fraction, _zero, _inf);
 		}
 		else {
 			if (!_zero || !_inf) {
@@ -536,7 +500,7 @@ inline std::istream& operator>> (std::istream& istr, const blocktriple<fbits, bt
 }
 
 template<size_t fbits, typename bt>
-std::string to_binary(const sw::universal::blocktriple<fbits, bt>& a) {
+std::string to_binary(const sw::universal::blocktriple<fbits, bt>& a, bool bNibbleMarker = true) {
 	std::stringstream ss;
 	return ss.str();
 }

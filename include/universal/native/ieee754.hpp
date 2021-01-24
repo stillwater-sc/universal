@@ -256,7 +256,7 @@ inline std::string to_hex(const double& number) {
 }
 
 // generate a binary string for a native double precision IEEE floating point
-inline std::string to_binary(const double& number) {
+inline std::string to_binary(const double& number, bool bNibbleMarker = false) {
 	std::stringstream ss;
 	double_decoder decoder;
 	decoder.d = number;
@@ -269,6 +269,7 @@ inline std::string to_binary(const double& number) {
 		uint64_t mask = 0x400;
 		for (int i = 10; i >= 0; --i) {
 			ss << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (bNibbleMarker && (i % 4) == 0) ss << '\'';
 			mask >>= 1;
 		}
 	}
@@ -279,6 +280,7 @@ inline std::string to_binary(const double& number) {
 	uint64_t mask = (uint64_t(1) << 51);
 	for (int i = 51; i >= 0; --i) {
 		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (bNibbleMarker && (i % 4) == 0) ss << '\'';
 		mask >>= 1;
 	}
 

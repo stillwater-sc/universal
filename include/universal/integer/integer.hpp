@@ -44,7 +44,7 @@
 
 #endif
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 // forward references
 template<size_t nbits, typename BlockType> class integer;
@@ -1518,4 +1518,4 @@ inline integer<nbits, BlockType> operator^(const long long lhs, const integer<nb
 	return operator^(integer<nbits, BlockType>(lhs), rhs);
 }
 
-}} // namespace sw::universal
+} // namespace sw::universal
