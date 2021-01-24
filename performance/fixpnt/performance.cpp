@@ -8,7 +8,7 @@
 #include <chrono>
 // configure the fixpnt arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/fixpnt/fixed_point.hpp>
+#include <universal/fixpnt/fixpnt.hpp>
 #include <universal/fixpnt/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>

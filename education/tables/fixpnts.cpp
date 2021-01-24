@@ -11,7 +11,7 @@
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/fixpnt/fixed_point.hpp>
+#include <universal/fixpnt/fixpnt.hpp>
 #include <universal/fixpnt/manipulators.hpp>
 #include <universal/fixpnt/math_functions.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
