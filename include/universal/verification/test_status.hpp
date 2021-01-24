@@ -26,11 +26,11 @@ int ReportCheck(const std::string& tag, const std::string& test, bool success) {
 	constexpr int TEST_TAG_WIDTH = 26;
 	int nrOfFailedTestCases = 0;
 	if (success) {
-		std::cout << tag << " " << std::left << std::setw(TEST_TAG_WIDTH) << test << "PASS\n";
+		std::cout << tag << " " << std::left << std::setw(TEST_TAG_WIDTH) << test << " PASS\n";
 	}
 	else {
 		++nrOfFailedTestCases;
-		std::cout << tag << " " << std::left << std::setw(TEST_TAG_WIDTH) << test << "FAIL\n";
+		std::cout << tag << " " << std::left << std::setw(TEST_TAG_WIDTH) << test << " FAIL\n";
 	}
 	return nrOfFailedTestCases;
 }

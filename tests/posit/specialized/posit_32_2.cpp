@@ -141,7 +141,7 @@ try {
 
 	// special cases
 	cout << "Special case tests " << endl;
-	string test = "Initialize to zero: ";
+	string test = "Initialize to zero";
 	p = 0;
 	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
 	test = "Initialize to NAN";

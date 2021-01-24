@@ -14,7 +14,9 @@
 
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
 // propagate this behavior down to constituent classes
+#ifndef BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 1
+#endif
 #endif
 
 // calling environment should define behavioral flags
