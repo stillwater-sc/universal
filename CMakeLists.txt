@@ -473,8 +473,8 @@ endif(BUILD_CI_CHECK)
 # Build the tests for the underlying storage classes
 if(BUILD_STORAGE_CLASSES)
 add_subdirectory("tests/bitblock")
-add_subdirectory("tests/blockbin")
-add_subdirectory("tests/blocktri")
+add_subdirectory("tests/blockbinary")
+add_subdirectory("tests/blocktriple")
 endif(BUILD_STORAGE_CLASSES)
 
 if(BUILD_NATIVE_TYPES)
