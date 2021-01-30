@@ -10,8 +10,8 @@
 // enable the ability to use literals in binary logic and arithmetic operators
 #define VALID_ENABLE_LITERALS 1
 // minimum set of include files to reflect source code dependencies
-#include <universal/valid/valid.hpp>
-#include <universal/valid/manipulators.hpp>
+#include <universal/number/valid/valid.hpp>
+#include <universal/number/valid/manipulators.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 #define MANUAL_TESTING 0

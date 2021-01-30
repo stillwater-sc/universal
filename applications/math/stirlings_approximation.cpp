@@ -9,8 +9,8 @@
 #include <algorithm>
 
 #include <universal/native/ieee754.hpp>
-#include <universal/decimal/decimal> // the oracle number system to use
-#include <universal/posit/posit>
+#include <universal/number/decimal/decimal> // the oracle number system to use
+#include <universal/number/posit/posit>
 #include <universal/functions/factorial.hpp>
 
 #include <universal/utility/error.hpp>

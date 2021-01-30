@@ -15,7 +15,7 @@
 #include <algorithm>
 #include <cmath>
 // universal BLAS
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 #include <universal/blas/vector.hpp>
 #include <universal/blas/matrix.hpp>
 #include <universal/blas/solvers/lu.hpp>

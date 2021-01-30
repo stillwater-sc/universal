@@ -6,8 +6,8 @@
 #include <iostream>
 #include <sstream>
 #include <cmath>
-#include <universal/integer/integer.hpp>
-#include <universal/decimal/decimal.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/decimal/decimal.hpp>
 
 /*
  * A palinddrome number reads the same both ways. The largest palindrome made from the product

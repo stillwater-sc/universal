@@ -12,7 +12,8 @@
 #include <fstream>
 #include <typeinfo>
 // minimum set of include files to reflect source code dependencies
-#include <universal/blocktriple/blocktriple.hpp>
+#include <universal/internal/blocktriple/blocktriple.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -32,6 +33,11 @@ try {
 #if MANUAL_TESTING
 
 	{
+		fixpnt<20, 9> a;
+		a.set_raw_bits(0x15);
+		cout << to_binary(a, true) << " " << a << endl;
+	}
+	{
 		blocktriple<16, uint32_t> a;
 		a = 1.0f;
 		cout << to_binary(a) << '\n';
@@ -43,7 +49,7 @@ try {
 
 #endif // MANUAL_TESTING
 
-	std::cout << "\nBlocktriple API test suite           : " << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
+	std::cout << "\nblocktriple API test suite           : " << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

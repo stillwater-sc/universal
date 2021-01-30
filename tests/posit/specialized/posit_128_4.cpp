@@ -9,7 +9,7 @@
 #define POSIT_FAST_POSIT_128_4 0
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 

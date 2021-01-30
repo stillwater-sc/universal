@@ -11,7 +11,7 @@
 #define POSIT_TRACE_CONVERSION
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 int main(int argc, char** argv)
 try {

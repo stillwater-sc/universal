@@ -6,7 +6,7 @@
 #include <iostream>
 #include <iomanip>
 #include <typeinfo>
-#include <universal/integer/integer>
+#include <universal/number/integer/integer>
 
 // receive an unsigned integer and print its components
 int main(int argc, char** argv)

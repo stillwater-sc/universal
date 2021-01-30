@@ -3,12 +3,14 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/bitblock/bitblock.hpp>
-#include <universal/value/value.hpp>
+#include <universal/internal/bitblock/bitblock.hpp>  // TODO: remove: should not have an internal type in the public interface
+#include <universal/internal/value/value.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
+using namespace sw::universal::internal;
+
 template<size_t fbits>
-int Check(const sw::universal::value<fbits>& v, double ref, bool bReportIndividualTestCases) {
+int Check(const value<fbits>& v, double ref, bool bReportIndividualTestCases) {
 	int fails = 0;
 	if (v.to_double() != ref) {
 		++fails;
@@ -26,6 +28,7 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::universal;
+	using namespace sw::universal::internal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;

@@ -3,12 +3,10 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>
+#include <string>
 
-// minimum set of include files
-#include "universal/posit/exceptions.hpp"
-#include "universal/bitblock/bitblock.hpp"
-#include "universal/value/value.hpp"
-#include "universal/float/quire.hpp"
+#include <universal/number/float/quire.hpp>
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0

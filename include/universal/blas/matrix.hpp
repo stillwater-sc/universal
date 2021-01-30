@@ -9,7 +9,7 @@
 #include <initializer_list>
 #include <map>
 #include <universal/blas/exceptions.hpp>
-#include <universal/posit/posit_fwd.hpp>
+#include <universal/number/posit/posit_fwd.hpp>
 
 namespace sw { namespace universal { namespace blas { 
 

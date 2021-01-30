@@ -12,7 +12,7 @@
 #include <limits>
 
 // mathematical function definitions and implementations
-#include <universal/posit/math_functions.hpp>
+#include <universal/number/posit/math_functions.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 namespace sw { namespace universal {

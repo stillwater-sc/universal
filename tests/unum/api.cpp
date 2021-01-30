@@ -12,10 +12,10 @@
 #define UNUM_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/unum/unum.hpp>
+#include <universal/number/unum/unum.hpp>
 // type manipulators such as pretty printers
-#include <universal/unum/manipulators.hpp>
-#include <universal/unum/math_functions.hpp>
+#include <universal/number/unum/manipulators.hpp>
+#include <universal/number/unum/math_functions.hpp>
 
 // conditional compile flags
 #define MANUAL_TESTING 1

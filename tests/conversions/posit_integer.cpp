@@ -9,10 +9,10 @@
 #include <universal/adapters/adapt_integer_and_posit.hpp>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/integer/integer>
+#include <universal/number/integer/integer>
 // configure the posit arithmetic class
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 
 // is representable
@@ -30,7 +30,7 @@ void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const s
 	using namespace std;
 	using namespace sw::universal;
 
-	value<ibits> v;
+	internal::value<ibits> v;
 
 	bool sign = w < 0;
 	bool isZero = w == 0;
@@ -38,7 +38,7 @@ void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const s
 	bool isNan = false;
 	long _scale = scale(w);
 	int msb = findMsb(w);
-	bitblock<ibits> fraction_without_hidden_bit;
+	internal::bitblock<ibits> fraction_without_hidden_bit;
 	int fbit = ibits - 1;
 	for (int i = msb - 1; i >= 0; --i) {
 		fraction_without_hidden_bit.set(fbit, w.at(i));

@@ -14,7 +14,7 @@
 #include <typeinfo>
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 typedef sw::universal::posit<32,2> posit_32_2;
 

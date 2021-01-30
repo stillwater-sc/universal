@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <typeinfo>
-#include <universal/fixpnt/fixpnt>
+#include <universal/number/fixpnt/fixpnt>
 
 // receive a float and print its components
 int main(int argc, char** argv)

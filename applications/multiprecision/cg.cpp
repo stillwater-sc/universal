@@ -20,7 +20,7 @@
 // and fast posits
 //#define POSIT_FAST_SPECIALIZATION 1
 #define POSIT_FAST_POSIT_32_2 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 #include <universal/blas/solvers/cg.hpp> // adaptive CG, regular dot for IEEE, fused-dot for posits

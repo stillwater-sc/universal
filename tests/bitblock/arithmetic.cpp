@@ -6,12 +6,12 @@
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 1
 #undef BITBLOCK_ROUND_TIES_AWAY_FROM_ZERO
 #undef BITBLOCK_ROUND_TIES_TO_ZERO
-#include <universal/bitblock/bitblock.hpp>
+#include <universal/internal/bitblock/bitblock.hpp>
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/bitblock_test_suite.hpp>
 
 int Conversions() {
-	using namespace sw::universal;
+	using namespace sw::universal::internal;
 	const size_t nbits = 33;
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b, ref;
@@ -57,10 +57,11 @@ int Conversions() {
 
 // ? what is this trying to test TODO
 int IncrementRightAdjustedBitset() {
+	using namespace sw::universal::internal;
 	const size_t nbits = 5;
 	int nrOfFailedTestCases = 0;
 
-	sw::universal::bitblock<nbits> r1;
+	bitblock<nbits> r1;
 	bool carry;
 
 	std::cout << "Increments" << std::endl;
@@ -69,7 +70,7 @@ int IncrementRightAdjustedBitset() {
 		r1.set(nbits - 1 - i, true);
 		carry = false;
 		std::cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- input" << std::endl;
-		carry = sw::universal::increment_unsigned(r1, int(i));
+		carry = increment_unsigned(r1, int(i));
 		std::cout << "carry " << (carry ? "1" : "0") << " r1 " << r1 << " <-- result" << std::endl;
 	}
 
@@ -78,11 +79,12 @@ int IncrementRightAdjustedBitset() {
 
 template<size_t src_size, size_t tgt_size>
 int VerifyCopyInto(bool bReportIndividualTestCases = false) {
+	using namespace sw::universal::internal;
 	int nrOfFailedTestCases = 0;
 
-	sw::universal::bitblock<src_size> operand;
-	sw::universal::bitblock<tgt_size> addend;
-	sw::universal::bitblock<tgt_size> reference;
+	bitblock<src_size> operand;
+	bitblock<tgt_size> addend;
+	bitblock<tgt_size> reference;
 	
 	// use a programmatic pattern of alternating bits
 	// so it is easy to spot any differences
@@ -92,7 +94,7 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 	}
 
 	for (size_t i = 0; i < tgt_size - src_size + 1; i++) {
-		sw::universal::copy_into<src_size, tgt_size>(operand, i, addend);
+		copy_into<src_size, tgt_size>(operand, i, addend);
 
 		if (reference != addend) {
 			nrOfFailedTestCases++;
@@ -116,6 +118,7 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::universal;
+	using namespace sw::universal::internal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

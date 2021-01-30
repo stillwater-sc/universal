@@ -2,7 +2,7 @@
 #include "common.hpp"
 // configure the number system
 // simply use defaults
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 // generic template function for all integer types
 template<typename Ty>

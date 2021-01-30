@@ -3,9 +3,9 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/integer/integer>
+#include <universal/number/integer/integer>
 #include <universal/sequences/tribonacci.hpp>
-#include <universal/integer/integer.hpp>
+
 int main(int argc, char** argv)
 try {
 	using namespace std;

@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
-#include <universal/posit/posit_fwd.hpp>
+#include <universal/number/posit/posit_fwd.hpp>
 #include <universal/blas/matrix.hpp>
 
 // compilation flags

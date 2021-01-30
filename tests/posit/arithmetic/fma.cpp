@@ -10,9 +10,9 @@
 // minimum set of include files to reflect source code dependencies
 // enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-#include "universal/posit/posit.hpp"
+#include "universal/number/posit/posit.hpp"
 // posit type manipulators such as pretty printers
-#include <universal/posit/manipulators.hpp>
+#include <universal/number/posit/manipulators.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h
@@ -111,10 +111,6 @@ catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
 catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
@@ -133,21 +129,22 @@ void ReportSizeof()
 {
 	using namespace std;
 	using namespace sw::universal;
+	using namespace sw::universal::internal;
 
 	posit< 8, 0> p8_0;
 	regime<8, 0> r8_0;
 	exponent<8, 0> e8_0;
 	fraction<8> f8_0;
-	value<8> v8;
+	internal::value<8> v8;
 	posit<16, 1> p16_1;
-	value<16> v16;
+	internal::value<16> v16;
 	posit<32, 2> p32_2;
-	value<32> v32;
+	internal::value<32> v32;
 	regime<32, 2> r32_2;
 	exponent<32, 2> e32_2;
 	fraction<32> f32_2;
 	posit<64, 3> p64_3;
-	value<64> v64;
+	internal::value<64> v64;
 
 	cout << "sizeof(posit< 8,0>)    = " << sizeof(p8_0)  << " bytes" << endl;
 	cout << "sizeof(posit<16,1>)    = " << sizeof(p16_1) << " bytes" << endl;

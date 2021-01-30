@@ -7,9 +7,10 @@
 // minimum set of include files to reflect source code dependencies
 // enable literals to simplify the testing codes
 #define POSIT_ENABLE_LITERALS 1
-#include <universal/posit/posit.hpp>
-#include <universal/posit/manipulators.hpp>
-#include <universal/posit/math/classify.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/manipulators.hpp>
+#include <universal/number/posit/math/classify.hpp>
+#include <universal/number/quire/exceptions.hpp>  // as we are catching quire exceptions
 #include <universal/verification/posit_test_suite.hpp>
 
 #define MANUAL_TESTING 0

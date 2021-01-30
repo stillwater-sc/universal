@@ -8,7 +8,7 @@
 #define POSIT_FAST_POSIT_48_3 0
 // second: disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 #include <universal/performance/number_system.hpp>
 
 int main(int argc, char** argv)

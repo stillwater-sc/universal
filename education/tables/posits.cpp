@@ -6,8 +6,8 @@
 
 // enable/disable special posit format I/O
 #define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 1
-#include <universal/posit/posit>
-#include <universal/posit/table.hpp>
+#include <universal/number/posit/posit>
+#include <universal/number/posit/table.hpp>
 
 int main(int argc, char** argv)
 try {

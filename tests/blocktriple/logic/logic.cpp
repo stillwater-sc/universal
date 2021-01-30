@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/blocktriple/blocktriple.hpp>
+#include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/verification/test_status.hpp>
 
 namespace sw::universal {

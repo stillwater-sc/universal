@@ -6,9 +6,9 @@
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
 #include <iostream>
-#include <universal/integer/integer>
-#include <universal/integer/math_functions.hpp>
-#include <universal/integer/primes.hpp>
+#include <universal/number/integer/integer>
+#include <universal/number/integer/math_functions.hpp>
+#include <universal/number/integer/primes.hpp>
 
 // conditional compilation
 #define MANUAL_TESTING 1

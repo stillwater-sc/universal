@@ -4,8 +4,8 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
-#include <universal/posit/posit>
-#include <universal/integer/integer>
+#include <universal/number/posit/posit>
+#include <universal/number/integer/integer>
 
 /*
 The 2019 redefinition of the SI base units came into force on 20 May 2019,[1][2] the 144th anniversary 
@@ -150,9 +150,9 @@ void CompareIEEEValues(std::ostream& ostr, long double constant) {
 	double d = double(constant);
 	long double q = constant;
 
-	value<f_fbits> vf(f);
-	value<d_fbits> vd(d);
-	value<q_fbits> vq(q);
+	internal::value<f_fbits> vf(f);
+	internal::value<d_fbits> vd(d);
+	internal::value<q_fbits> vq(q);
 
 	int width = q_prec + 5;
 

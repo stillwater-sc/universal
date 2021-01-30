@@ -12,8 +12,8 @@
 
 // enable/disable special hex format I/O
 #define AREAL_ROUNDING_ERROR_FREE_IO_FORMAT 1
-#include <universal/areal/areal>
-#include <universal/areal/table.hpp>
+#include <universal/number/areal/areal>
+#include <universal/number/areal/table.hpp>
 
 #define MANUAL_TESTING 1
 

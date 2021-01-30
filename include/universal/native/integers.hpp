@@ -8,7 +8,7 @@
 #include <string>
 #include <type_traits>
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 // fast power of 2 for integers
 template<typename Integer,
@@ -36,4 +36,4 @@ inline std::string to_binary(const Integer& number, int nbits = 0) {
 	return ss.str();
 }
 
-}} // namespace sw::universal
+} // namespace sw::universal

@@ -8,10 +8,10 @@
 #define HARDWARE_QA_OUTPUT 0
 
 // type definitions for the important types, posit<> and quire<>
-#include <universal/posit/posit.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/traits/posit_traits.hpp>
-#include <universal/posit/quire.hpp>
-#include <universal/posit/fdp.hpp>
+#include <universal/number/posit/quire.hpp>
+#include <universal/number/posit/fdp.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/quire_test_suite.hpp>
 
@@ -102,7 +102,7 @@ int ValidateQuireMagnitudeComparison() {
 	using namespace sw::universal;
 
 	quire<16, 1, 2> q;
-	value<20> v;
+	internal::value<20> v;
 	v = 0xAAAA;
 	q += v;
 	v = 0xAAAB;
@@ -153,7 +153,7 @@ int ValidateSignMagnitudeTransitions() {
 	cout << "Quire experiments: sign/magnitude transitions at the range extremes" << endl;
 
 	quire<nbits, es, capacity> q;
-	value<2 * (nbits - 2 - es)> addend;
+	internal::value<2 * (nbits - 2 - es)> addend;
 	// TODO: how would you print a header to make it easier to interpret the bit positions
 	cout << q << "                                               <-- start at zero" << endl;
 	// start in the positive, SE quadrant with minpos^2
@@ -233,7 +233,7 @@ int ValidateCarryPropagation(bool bReportIndividualTestCases) {
 	constexpr size_t mbits = 2 * (nbits - 2 - es);
 	quire<nbits, es, capacity> q;
 	posit<nbits, es> mp; minpos(mp);
-	value<mbits> minpos_square = quire_mul(mp, mp);
+	internal::value<mbits> minpos_square = quire_mul(mp, mp);
 	constexpr size_t NR_INCREMENTS_TO_OVERFLOW = (size_t(1) << (q.qbits+1));
 	for (size_t i = 0; i < NR_INCREMENTS_TO_OVERFLOW; ++i) {
 		q += minpos_square;
@@ -252,7 +252,7 @@ int ValidateBorrowPropagation(bool bReportIndividualTestCases) {
 	constexpr size_t mbits = 2 * (nbits - 2 - es);
 	quire<nbits, es, capacity> q;
 	posit<nbits, es> mp; minpos(mp);
-	value<mbits> minpos_square = quire_mul(mp, mp);
+	internal::value<mbits> minpos_square = quire_mul(mp, mp);
 	q -= minpos_square;
 	std::cout << q << std::endl;
 	constexpr size_t NR_DECREMENTS_TO_OVERFLOW = (size_t(1) << (q.qbits + 1));
@@ -280,9 +280,9 @@ void TestCaseForProperZeroHandling() {
 	quire<8, 1, 2> q;
 	posit<8, 1> minpos = minpos_value<8, 1>();
 	q += quire_mul(minpos, minpos);
-	value<3> v3 = q.to_value().round_to<3>();
-	value<5> v5 = q.to_value().round_to<5>();
-	value<7> v7 = q.to_value().round_to<7>();
+	internal::value<3> v3 = q.to_value().round_to<3>();
+	internal::value<5> v5 = q.to_value().round_to<5>();
+	internal::value<7> v7 = q.to_value().round_to<7>();
 	cout << components(v3) << endl;
 	cout << components(v5) << endl;
 	cout << components(v7) << endl;
@@ -292,11 +292,11 @@ void TestCaseForProperZeroHandling() {
 	cout << q << endl;
 	posit<8, 1> one = 1;
 	posit<8, 1> aThird = 0.3333333333333333333333333333333333333333333;
-	value< posit<8, 1>::mbits > mul = quire_mul(aThird, -one);
+	internal::value< posit<8, 1>::mbits > mul = quire_mul(aThird, -one);
 	cout << components(mul) << endl;
 	q += quire_mul(aThird, -one);
 	cout << q << endl;
-	value<8> result = q.to_value().round_to<8>();
+	internal::value<8> result = q.to_value().round_to<8>();
 	cout << result << " " << components(result) << endl;
 }
 
@@ -663,7 +663,7 @@ void Issue45_2() {
 		//constexpr size_t fbits = nbits - 3 - es;
 		//value<qbits> absq = abs(q);
 		quire <nbits, es, capacity> absq = abs(q);
-		value<mbits> absv = abs(unrounded);
+		internal::value<mbits> absv = abs(unrounded);
 		if (absq < absv) {
 			cout << "q < v" << endl;
 		}

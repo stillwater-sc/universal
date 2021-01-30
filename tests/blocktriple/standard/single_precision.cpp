@@ -6,7 +6,7 @@
 #include <iostream>
 #include <iomanip>
 // minimum set of include files to reflect source code dependencies
-#include <universal/blocktriple/blocktriple.hpp>
+#include <universal/internal/blocktriple/blocktriple.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0

@@ -11,7 +11,7 @@
 #include <chrono>
 // include the number system we want to use, and configure overflow exceptions so we can capture failures
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/integer/integer>
+#include <universal/number/integer/integer>
 
 template<size_t nbits, typename BlockType>
 void MeasureLCM(const std::vector<sw::universal::integer<nbits, BlockType>>& v) {

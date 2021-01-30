@@ -10,11 +10,11 @@
 #include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
 
 // select the number systems we would like to compare
-#include <universal/integer/integer>
-#include <universal/fixpnt/fixpnt>
-#include <universal/areal/areal>
-#include <universal/posit/posit>
-#include <universal/lns/lns>
+#include <universal/number/integer/integer>
+#include <universal/number/fixpnt/fixpnt>
+#include <universal/number/areal/areal>
+#include <universal/number/posit/posit>
+#include <universal/number/lns/lns>
 
 #include <cstddef>
 #include <stdexcept>

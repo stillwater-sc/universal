@@ -6,7 +6,7 @@
 #include <iostream>
 #include <iomanip>
 #include <universal/native/integers.hpp> // for to_binary(int)
-#include <universal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blockbinary/blockbinary.hpp>
 
 namespace sw { namespace universal {
 

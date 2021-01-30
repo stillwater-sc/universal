@@ -11,7 +11,7 @@
 #include <initializer_list>
 #include <cmath>  // for std::sqrt
 // special number system definitions
-#include <universal/posit/posit_fwd.hpp>
+#include <universal/number/posit/posit_fwd.hpp>
 #include <universal/traits/posit_traits.hpp>
 
 #if defined(__clang__)

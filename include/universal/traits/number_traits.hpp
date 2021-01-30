@@ -49,13 +49,13 @@ namespace universal {
 			is_integer = std::numeric_limits<ScalarType>::is_integer,
 			is_signed = std::numeric_limits<ScalarType>::is_signed,
 			is_complex = 0,
-			needs_init = internal::is_arithmetic<ScalarType>::value ? 0 : 1
+			needs_init = sw::internal::is_arithmetic<ScalarType>::value ? 0 : 1
 		};
 		static inline ScalarType epsilon() {
 			return numext::numeric_limits<ScalarType>::epsilon();
 		}
 		static inline int digits10() {
-			return internal::default_digits10_impl<ScalarType>::run();
+			return sw::internal::default_digits10_impl<ScalarType>::run();
 		}
 
 		static inline ScalarType max() {

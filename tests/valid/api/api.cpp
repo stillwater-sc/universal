@@ -13,10 +13,10 @@
 #define POSIT_ENABLE_LITERALS 1
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/valid/valid.hpp>
+#include <universal/number/valid/valid.hpp>
 // type manipulators such as pretty printers
-#include <universal/valid/manipulators.hpp>
-#include <universal/valid/math_functions.hpp>
+#include <universal/number/valid/manipulators.hpp>
+#include <universal/number/valid/math_functions.hpp>
 
 // conditional compile flags
 #define MANUAL_TESTING 0

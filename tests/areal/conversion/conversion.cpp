@@ -12,9 +12,9 @@
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 0
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/areal/areal.hpp>
-#include <universal/areal/manipulators.hpp>
-#include <universal/areal/math_functions.hpp>
+#include <universal/number/areal/areal.hpp>
+#include <universal/number/areal/manipulators.hpp>
+#include <universal/number/areal/math_functions.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 // generate specific test case that you can trace with the trace conditions

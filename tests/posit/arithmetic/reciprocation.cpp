@@ -16,11 +16,11 @@
 #define POSIT_TRACE_CONVERSION
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/posit/posit.hpp>
-#include <universal/posit/numeric_limits.hpp>
-#include <universal/posit/specializations.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/numeric_limits.hpp>
+#include <universal/number/posit/specializations.hpp>
 // posit type manipulators such as pretty printers
-#include <universal/posit/manipulators.hpp>
+#include <universal/number/posit/manipulators.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.hpp
@@ -133,10 +133,6 @@ catch (char const* msg) {
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_internal_exception& err) {

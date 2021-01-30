@@ -10,8 +10,8 @@
 
 // select your number system
 //#include <universal/areal/areal>
-#include <universal/posit/posit>
-#include <universal/valid/valid>
+#include <universal/number/posit/posit>
+#include <universal/number/valid/valid>
 
 // test function is y = sqrt(x+1) - sqrt(x)
 template<typename Scalar>

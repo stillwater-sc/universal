@@ -4,7 +4,7 @@
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #define ALIASING_ALLOWED
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 #include <universal/functions/loss.hpp>
 
 int main(int argc, char** argv)

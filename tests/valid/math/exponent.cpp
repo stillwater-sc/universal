@@ -1,17 +1,19 @@
-// function_exponent.cpp: test suite runner for exponent (exp, exp2, exp10) functions
+// exponent.cpp: test suite runner for exponent (exp, exp2, exp10) functions
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>
+#include <string>
 
 // when you define POSIT_VERBOSE_OUTPUT the code will print intermediate results for selected arithmetic operations
 //#define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_POW
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/valid/valid.hpp>
-#include <universal/valid/manipulators.hpp>
-//#include <universal/valid/math/exponent.hpp>
+#include <universal/number/valid/valid.hpp>
+#include <universal/number/valid/manipulators.hpp>
+//#include <universal/number/valid/math/exponent.hpp>
 //#include <universal/verification/valid_math_test_suite.hpp>
 
 // Background: http://numbers.computation.free.fr/Constants/E/e.html

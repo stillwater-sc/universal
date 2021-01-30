@@ -3,13 +3,14 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/value/value>
+#include <limits>
+#include <universal/internal/value/value>
 
 // receive a float and print the components of a double representation
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::universal;
+	using namespace sw::universal::internal;
 
 	// double attributes
 	constexpr int max_digits10 = std::numeric_limits<double>::max_digits10;

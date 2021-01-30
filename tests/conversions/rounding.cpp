@@ -6,11 +6,11 @@
 #include <iostream>
 #include <string>
 // configure the posit arithmetic
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/integer/integer.hpp>
-#include <universal/integer/numeric_limits.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/integer/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
@@ -59,7 +59,7 @@ void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const s
 	using namespace std;
 	using namespace sw::universal;
 
-	value<ibits> v;
+	internal::value<ibits> v;
 
 	bool sign = w < 0;
 	bool isZero = w == 0;
@@ -67,7 +67,7 @@ void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const s
 	bool isNan = false;
 	long _scale = scale(w);
 	int msb = findMsb(w);
-	bitblock<ibits> fraction_without_hidden_bit;
+	internal::bitblock<ibits> fraction_without_hidden_bit;
 	int fbit = ibits - 1;
 	for (int i = msb - 1; i >= 0; --i) {
 		fraction_without_hidden_bit.set(fbit, w.at(i));

@@ -7,7 +7,7 @@
 // enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // pull in the valid number system
-#include <universal/valid/valid>
+#include <universal/number/valid/valid>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0

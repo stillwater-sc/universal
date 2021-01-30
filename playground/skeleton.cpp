@@ -9,7 +9,8 @@
 #define POSIT_TRACE_CONVERSION
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
+#include <universal/number/integer/integer>
 
 /*
 
@@ -291,7 +292,7 @@ void NumberTraits() {
 	cout << "max pos for posit<256,5> : " << number_traits<posit<256, 5> >::max() << endl; // TODO
 }
 
-#include <universal/integer/integer>
+
 int main(int argc, char** argv)
 try {
 	using namespace std;

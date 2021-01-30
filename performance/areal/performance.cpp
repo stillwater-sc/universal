@@ -8,7 +8,7 @@
 #include <chrono>
 // configure the areal arithmetic class
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/areal/areal>
+#include <universal/number/areal/areal>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult

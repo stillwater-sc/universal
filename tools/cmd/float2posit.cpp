@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
 template<size_t nbits, size_t es, typename Ty>
@@ -13,7 +13,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 	using namespace std;
 	using namespace sw::universal;
 
-	value<fbits> v((Ty)rhs);
+	internal::value<fbits> v((Ty)rhs);
 	posit<nbits, es> p;
 
 	cout << setprecision(numeric_limits<Ty>::digits10) << v << "   input value\n";

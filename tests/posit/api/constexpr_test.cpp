@@ -10,8 +10,8 @@
 // requires C++20 <bit>
 
 // minimum set of include files to reflect source code dependencies
-#include "universal/posit/posit.hpp"
-#include "universal/posit/numeric_limits.hpp"
+#include "universal/number/posit/posit.hpp"
+#include "universal/number/posit/numeric_limits.hpp"
 
 int main(int argc, char** argv)
 {

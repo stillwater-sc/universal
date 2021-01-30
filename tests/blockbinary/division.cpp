@@ -8,7 +8,7 @@
 #include <typeinfo>
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/blockbinary_test_status.hpp>
 

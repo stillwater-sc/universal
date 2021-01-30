@@ -3,8 +3,8 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/bitblock/bitblock.hpp>
-#include <universal/value/value.hpp>
+#include <universal/internal/bitblock/bitblock.hpp> // TODO: remove: should not have an internal type in the public interface
+#include <universal/internal/value/value.hpp>
 #include <universal/performance/number_system.hpp>
 
 #define MANUAL_TESTING 1
@@ -14,6 +14,7 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::universal;
+	using namespace sw::universal::internal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;

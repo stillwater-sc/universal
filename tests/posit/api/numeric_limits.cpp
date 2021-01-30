@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 #include <universal/verification/posit_math_test_suite.hpp>
 
 int main(int argc, char** argv)

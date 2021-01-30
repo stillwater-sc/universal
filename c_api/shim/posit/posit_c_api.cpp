@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <tuple>
-#include <universal/posit/posit_c_api.h>
+#include <universal/number/posit/posit_c_api.h>
 
 // configure the C++ library
 // default behavior that is kept
@@ -22,7 +22,7 @@
 #define POSIT_FAST_POSIT_128_4 0
 #define POSIT_FAST_POSIT_256_5 0
 // Now include the C++ library
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 
 // marshal takes a positN_t and marshals it into a raw bitblock
@@ -275,31 +275,31 @@ extern "C" {
 #define POSIT_IMPLS
 
 #define POSIT_NBITS 4
-#include "universal/posit/posit_c_macros.h"
+#include "universal/number/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 8
-#include "universal/posit/posit_c_macros.h"
+#include "universal/number/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 16
-#include "universal/posit/posit_c_macros.h"
+#include "universal/number/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 32
-#include "universal/posit/posit_c_macros.h"
+#include "universal/number/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 64
-#include "universal/posit/posit_c_macros.h"
+#include "universal/number/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 128
-#include "universal/posit/posit_c_macros.h"
+#include "universal/number/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 #define POSIT_NBITS 256
-#include "universal/posit/posit_c_macros.h"
+#include "universal/number/posit/posit_c_macros.h"
 #undef POSIT_NBITS
 
 }

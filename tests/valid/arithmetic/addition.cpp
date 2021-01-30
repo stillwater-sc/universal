@@ -3,6 +3,8 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <iostream>
+#include <string>
 
 // Configure the valid template environment
 // first: enable  general or specialized posit configurations
@@ -13,27 +15,12 @@
 // when you define VALID_VERBOSE_OUTPUT executing an ADD the code will print intermediate results
 //#define VALID_VERBOSE_OUTPUT
 #define VALID_TRACE_SUB
-#include <universal/posit/exceptions.hpp>
-#include <universal/bitblock/bitblock.hpp>
-#include <universal/value/value.hpp>
-#include <universal/posit/posit.hpp>
-#include <universal/valid/valid.hpp>
-#include <universal/valid/manipulators.hpp>
+#include <universal/number/posit/exceptions.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/valid/valid.hpp>
+#include <universal/number/valid/manipulators.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
-
-// generate specific test case that you can trace with the trace conditions in posit.h
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename Ty>
-void GenerateTestCase(Ty a, Ty b) {
-	Ty reference;
-	sw::universal::valid<nbits, es> pa, pb, psum;
-	pa = a;
-	pb = b;
-	reference = a + b;
-	//psum = pa + pb;
-	std::cout << "reference " << reference << " result " << psum << '\n' << std::endl;
-}
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -68,9 +55,6 @@ try {
 	v2.setlb(lb, false);
 	v2.setub(ub, true);
 	cout << v2 << endl;
-
-	int order = v2.relative_order(value<10>(0));
-	cout << order << endl;
 
 #else
 

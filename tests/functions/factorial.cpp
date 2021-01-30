@@ -5,8 +5,8 @@
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 // enable conversion between posits and integers
 #include <universal/adapters/adapt_integer_and_posit.hpp>
-#include <universal/posit/posit>
-#include <universal/integer/integer>
+#include <universal/number/posit/posit>
+#include <universal/number/integer/integer>
 
 // TODO: this should be writable as a single generic function taking an Integer concept and a Posit concept
 // the simple 

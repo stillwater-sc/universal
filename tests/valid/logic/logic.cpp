@@ -7,9 +7,9 @@
 // minimum set of include files to reflect source code dependencies
 // enable literals to simplify the testing codes
 #define Valid_ENABLE_LITERALS 1
-#include <universal/valid/valid.hpp>
-#include <universal/valid/manipulators.hpp>
-//#include <universal/valid/math/classify.hpp>
+#include <universal/number/valid/valid.hpp>
+#include <universal/number/valid/manipulators.hpp>
+//#include <universal/number/valid/math/classify.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 #define MANUAL_TESTING 0

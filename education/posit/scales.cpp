@@ -4,9 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <universal/posit/posit>
-#include <universal/posit/posit.hpp>
-#include <universal/posit/numeric_limits.hpp>
+#include <universal/number/posit/posit>
 #include <universal/utility/number_system_properties.hpp>
 
 #ifdef UNIVERSAL_MPRF_ENABLED

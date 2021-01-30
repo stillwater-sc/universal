@@ -10,7 +10,7 @@
 #include <limits>
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/adaptiveposit/adaptiveposit.hpp>
+#include <universal/number/adaptiveposit/adaptiveposit.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 
 // generate specific test case that you can trace with the trace conditions in mpreal.hpp

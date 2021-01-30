@@ -7,7 +7,7 @@
 // Configure the posit library to enable arithmetic exceptions
 // enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 int main()
 try {
@@ -87,7 +87,7 @@ try {
 	}
 
 	quire<nbits, es, capacity> q1, q2, q3;
-	value<pa.mbits> v;
+	internal::value<pa.mbits> v;
 	// report some parameters about the posit and quire configuration
 	int max_scale = q1.max_scale();
 	v = std::pow(2.0, max_scale+1);

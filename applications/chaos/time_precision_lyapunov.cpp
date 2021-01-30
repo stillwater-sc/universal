@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 /*
 On the relation between reliable computation time, float-point precision and the

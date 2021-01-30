@@ -10,8 +10,8 @@
 
 // We want the test suite to be used with different configurations of the fixed-point number system
 // so the calling environment needs to set the configuration
-#include <universal/fixpnt/fixpnt.hpp>
-#include <universal/fixpnt/attributes.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/fixpnt/attributes.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult used by test suite runner
 #include <universal/verification/test_reporters.hpp> 
 

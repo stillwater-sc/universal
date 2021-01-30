@@ -10,8 +10,8 @@
 #define POSIT_FAST_POSIT_32_2 1
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
-#include <universal/posit/posit_parse.hpp>
+#include <universal/number/posit/posit>
+#include <universal/number/posit/posit_parse.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_test_randoms.hpp>
 

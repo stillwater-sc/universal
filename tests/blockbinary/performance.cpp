@@ -8,7 +8,7 @@
 #include <chrono>
 
 //#include <universal/integer/integer.hpp>
-#include <universal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/blockbinary_test_status.hpp>
 #include <universal/verification/performance_runner.hpp>

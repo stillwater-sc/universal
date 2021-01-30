@@ -9,9 +9,10 @@
 #define POSIT_TRACE_SQRT
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/posit/posit.hpp>
-#include <universal/posit/manipulators.hpp>
-#include <universal/posit/math/hyperbolic.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/manipulators.hpp>
+#include <universal/number/posit/math/hyperbolic.hpp>
+#include <universal/number/quire/exceptions.hpp>  // math library might use quire
 #include <universal/verification/posit_math_test_suite.hpp>
 
 // generate specific test case that you can trace with the trace conditions in posit.h

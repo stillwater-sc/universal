@@ -4,7 +4,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
-#include <universal/posit/posit> // the NUT: number system under test
+#include <universal/number/posit/posit> // the NUT: number system under test
 
 #define BATCHMODE 1
 

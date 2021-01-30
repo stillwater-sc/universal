@@ -14,10 +14,10 @@
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
 
 // minimum set of include files to reflect source code dependencies
-#include <universal/fixpnt/fixpnt.hpp>
 #include <universal/native/integers.hpp>
-#include <universal/fixpnt/manipulators.hpp>
-#include <universal/fixpnt/attributes.hpp>
+#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/fixpnt/manipulators.hpp>
+#include <universal/number/fixpnt/attributes.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
 // unrounded multiplication, returns a blockbinary that is of size 2*nbits

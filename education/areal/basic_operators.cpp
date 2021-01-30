@@ -3,8 +3,8 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/areal/areal>
-#include <universal/areal/manipulators.hpp>
+#include <universal/number/areal/areal>
+#include <universal/number/areal/manipulators.hpp>
 // quick helper to report on a posit's specialness
 template<size_t nbits, size_t es>
 void checkSpecialCases(sw::universal::areal<nbits, es> p) {

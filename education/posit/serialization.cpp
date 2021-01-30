@@ -6,7 +6,7 @@
 
 // configure the posit environment to print native posit format as default
 #define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 int main(int argc, char** argv)
 try {

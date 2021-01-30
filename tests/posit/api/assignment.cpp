@@ -4,8 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <universal/posit/posit.hpp>
-#include <universal/posit/manipulators.hpp>
+#include <universal/number/posit/posit.hpp>
+#include <universal/number/posit/manipulators.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 #include <universal/verification/posit_math_test_suite.hpp>
 
@@ -129,10 +129,6 @@ catch (char const* msg) {
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_internal_exception& err) {

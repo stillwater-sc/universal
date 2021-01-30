@@ -12,10 +12,10 @@
 #include <fstream>
 #include <typeinfo>
 // minimum set of include files to reflect source code dependencies
-#include <universal/areal/areal.hpp>
-#include <universal/areal/manipulators.hpp>  // hex_print and the like
+#include <universal/number/areal/areal.hpp>
+#include <universal/number/areal/manipulators.hpp>  // hex_print and the like
 #include <universal/verification/test_suite_arithmetic.hpp>
-#include <universal/areal/table.hpp>
+#include <universal/number/areal/table.hpp>
 
 template<typename bt = uint8_t>
 std::string to_binary(bt bits) {

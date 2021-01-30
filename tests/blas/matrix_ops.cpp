@@ -12,9 +12,9 @@
 #pragma warning(disable : 4820)
 #endif
 // pull in the number systems you would like to use
-#include <universal/posit/posit>
-#include <universal/integer/integer>
-#include <universal/decimal/decimal>
+#include <universal/number/posit/posit>
+#include <universal/number/integer/integer>
+#include <universal/number/decimal/decimal>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 

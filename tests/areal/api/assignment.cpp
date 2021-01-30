@@ -15,12 +15,12 @@
 // enabling tracing
 #define TRACE_CONVERSION 0
 // minimum set of include files to reflect source code dependencies
-#include <universal/areal/areal.hpp>
+#include <universal/number/areal/areal.hpp>
 // fixed-point type manipulators such as pretty printers
-#include <universal/areal/manipulators.hpp>
-#include <universal/areal/math_functions.hpp>
+#include <universal/number/areal/manipulators.hpp>
+#include <universal/number/areal/math_functions.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
-#include <universal/areal/table.hpp>
+#include <universal/number/areal/table.hpp>
 
 // print the constexpr values of the areal class
 template<size_t nbits, size_t es, typename bt>

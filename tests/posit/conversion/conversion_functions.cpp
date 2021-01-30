@@ -5,8 +5,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // minimum set of include files
-#include "universal/posit/posit.hpp"
-#include "universal/posit/manipulators.hpp"
+#include "universal/number/posit/posit.hpp"
+#include "universal/number/posit/manipulators.hpp"
 
 template<size_t nbits, size_t es>
 void GenerateLogicPattern(double input, const sw::universal::posit<nbits, es>& presult, const sw::universal::posit<nbits + 1, es>& pnext) {
@@ -262,11 +262,12 @@ template<size_t nbits, size_t es>
 void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	using namespace std;
 	using namespace sw::universal;
+	using namespace sw::universal::internal;
 
 	cout << "convert to posit<" << nbits << "," << es << ">" << endl;
 	// obtain the sign/scale/fraction representation of a float
 	constexpr int nrfbits = std::numeric_limits<float>::digits - 1;
-	value<nrfbits> v(x);
+	internal::value<nrfbits> v(x);
 	// ignore for the sake of clarity the special cases 0 and NaR (Not a Real)
 	//bool sign = v.sign();
 	int scale = v.scale();
@@ -277,11 +278,11 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	float maxpos = (float)maxpos_value<nbits, es>();
 
 	const size_t pt_len = nbits + 3 + es;
-	bitblock<pt_len> pt_bits;
-	bitblock<pt_len> regime;
-	bitblock<pt_len> exponent;
-	bitblock<pt_len> fraction;
-	bitblock<pt_len> sticky_bit;
+	internal::bitblock<pt_len> pt_bits;
+	internal::bitblock<pt_len> regime;
+	internal::bitblock<pt_len> exponent;
+	internal::bitblock<pt_len> fraction;
+	internal::bitblock<pt_len> sticky_bit;
 
 	bool s = (x < 0);
 	if (bPrintIntermediateSteps) cout << "s        = " << (s ? "negative" : "positive") << endl;
@@ -356,14 +357,14 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 
 	bool rb = (blast & bafter) | (bafter & bsticky);
 	cout << "rb       = " << rb << endl;
-	bitblock<pt_len> ptt = pt_bits;
+	internal::bitblock<pt_len> ptt = pt_bits;
 	ptt >>= (len - nbits);
 	if (bPrintIntermediateSteps) cout << "ptt      = " << ptt << endl;
 	if (rb) increment_bitblock(ptt);
 	if (s) ptt = _twos_complement(ptt);
 	cout << "posit<" << nbits << "," << es << "> = " << LowerSegment(ptt, nbits-1) << endl;
 
-	bitblock<nbits> ptt_t;
+	internal::bitblock<nbits> ptt_t;
 	CopyLowerSegment(ptt, ptt_t);
 	posit<nbits, es> p;
 	p.set_raw_bits(ptt_t.to_ullong());
@@ -604,9 +605,9 @@ void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
 	}
 	f_mineps = (float)(f - eps);
 	f_pluseps = (float)(f + eps);
-	value<23> v_mineps(f_mineps);
-	value<23> v(f);
-	value<23> v_pluseps(f_pluseps);
+	internal::value<23> v_mineps(f_mineps);
+	internal::value<23> v(f);
+	internal::value<23> v_pluseps(f_pluseps);
 	cout << roundingType << " mean - eps: " << f_mineps  << " " << components(v_mineps) << endl;
 	cout << roundingType << " mean      : " << f         << " " << components(v) << endl;
 	cout << roundingType << " mean + eps: " << f_pluseps << " " << components(v_pluseps) << endl;
@@ -674,10 +675,6 @@ catch (char const* msg) {
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
-	return EXIT_FAILURE;
-}
-catch (const sw::universal::quire_exception& err) {
-	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_internal_exception& err) {

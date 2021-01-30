@@ -8,13 +8,13 @@
 #include <numeric>   // nextafter
 
 // select the number systems we would like to compare
-#include <universal/integer/integer>
-#include <universal/fixpnt/fixpnt>
-#include <universal/areal/areal>
-#include <universal/posit/posit>
-#include <universal/lns/lns>
+#include <universal/number/integer/integer>
+#include <universal/number/fixpnt/fixpnt>
+#include <universal/number/areal/areal>
+#include <universal/number/posit/posit>
+#include <universal/number/lns/lns>
 
-#include <universal/posit/numeric_limits.hpp>
+#include <universal/number/posit/numeric_limits.hpp>
 
 template<typename Scalar>
 void ULP(std::ostream& ostr, const Scalar& s) {

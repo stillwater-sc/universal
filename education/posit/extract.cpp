@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 /*
 Laid out as bits, floating point numbers look like this:
@@ -61,8 +61,8 @@ sw::universal::posit<nbits, es> extract(float f) {
 	uint32_t	 _23b_fraction_without_hidden_bit;
 
 	sw::universal::extract_fp_components(f, _sign, _scale, _fr, _23b_fraction_without_hidden_bit);
-	sw::universal::bitblock<fbits> _fraction = sw::universal::extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
-	sw::universal::value<fbits> v(_sign, _scale, _fraction);
+	sw::universal::internal::bitblock<fbits> _fraction = sw::universal::extract_23b_fraction<fbits>(_23b_fraction_without_hidden_bit);
+	sw::universal::internal::value<fbits> v(_sign, _scale, _fraction);
 	return sw::universal::convert(v, p);
 }
 
@@ -76,8 +76,8 @@ sw::universal::posit<nbits, es> extract(double d) {
 	unsigned long long	_52b_fraction_without_hidden_bit;
 
 	sw::universal::extract_fp_components(d, _sign, _scale, _fr, _52b_fraction_without_hidden_bit);
-	sw::universal::bitblock<fbits> _fraction = sw::universal::extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
-	sw::universal::value<fbits> v(_sign, _scale, _fraction);
+	sw::universal::internal::bitblock<fbits> _fraction = sw::universal::extract_52b_fraction<fbits>(_52b_fraction_without_hidden_bit);
+	sw::universal::internal::value<fbits> v(_sign, _scale, _fraction);
 	return sw::universal::convert(v, p);
 }
 

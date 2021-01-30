@@ -6,7 +6,7 @@
 #include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
 // configure the posit environment
 #define POSIT_FAST_SPECIALIZATION 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 //#define POSIT_DECODED_CLASS
 #ifdef POSIT_DECODED_CLASS

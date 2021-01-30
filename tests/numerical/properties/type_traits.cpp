@@ -7,11 +7,11 @@
 // pull in the native tools
 #include <universal/native/native>
 // pull in the posit number system
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 // pull in the arbitrary integer number system
-#include <universal/integer/integer>
+#include <universal/number/integer/integer>
 // pull in the fixed-point systems
-#include <universal/fixpnt/fixpnt>
+#include <universal/number/fixpnt/fixpnt>
 
 template<typename Scalar>
 bool TestPosit() {

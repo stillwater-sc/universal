@@ -8,7 +8,7 @@
 #include <iostream>
 #include <iomanip>
 // minimum set of include files to reflect source code dependencies
-#include <universal/areal/areal.hpp>
+#include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 // generate specific test case that you can trace with the trace conditions in areal.hpp

@@ -5,7 +5,7 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <iostream>
-#include <universal/unum/unum>
+#include <universal/number/unum/unum>
 
 template<typename Real>
 void ReportNumberTraits(std::ostream& ostr) {
