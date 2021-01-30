@@ -12,7 +12,7 @@ template<size_t nbits, size_t es>
 void GenerateLogicPattern(double input, const sw::universal::posit<nbits, es>& presult, const sw::universal::posit<nbits + 1, es>& pnext) {
 	const int VALUE_WIDTH = 15;
 	bool fail = presult != pnext;
-	sw::universal::value<52> v(input);
+	sw::universal::internal::value<52> v(input);
 	std::cout << std::setw(VALUE_WIDTH) << input << " "
 		<< " result " << std::setw(VALUE_WIDTH) << presult
 		<< "  scale= " << std::setw(3) << presult.scale()
@@ -474,7 +474,7 @@ sw::universal::posit<nbits, es> convert_to_posit(sw::universal::value<nrfbits> v
 // and then apply the nbits constraint to truncate to the final posit size.
 template<size_t nbits, size_t es>
 void posit_component_conversion(float x, bool bPrintIntermediateSteps = false) {
-	sw::universal::value<23> v(x);
+	sw::universal::internal::value<23> v(x);
 	int scale = v.scale();
 	
 	unsigned run = (scale >= 0 ? 1 + (scale >> es) : -scale >> es);

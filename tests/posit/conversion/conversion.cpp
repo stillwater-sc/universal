@@ -27,7 +27,7 @@ void GenerateLogicPattern(double input, const sw::universal::posit<nbits, es>& p
 			break;
 		}
 	}
-	sw::universal::value<52> v(input);
+	sw::universal::internal::value<52> v(input);
 	std::cout << std::setw(VALUE_WIDTH) << input << " "
 		<< " result " << std::setw(VALUE_WIDTH) << presult 
 		<< "  scale= " << std::setw(3) << sw::universal::scale(presult) 

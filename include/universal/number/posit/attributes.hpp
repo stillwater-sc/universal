@@ -9,7 +9,11 @@ namespace sw::universal {
 
 // functions to provide details about properties of a posit configuration
 
-	using namespace sw::universal::internal;
+using namespace sw::universal::internal;
+
+// forward references
+template<size_t nbits, size_t es> class posit;
+template<size_t nbits> int decode_regime(const bitblock<nbits>&);
 
 // calculate exponential scale of useed
 template<size_t nbits, size_t es>
@@ -109,9 +113,6 @@ constexpr bitblock<nbits> maxpos_pattern(bool sign = false) {
 	return (sign ? twos_complement(_bits) : _bits);
 }
 
-// forward reference
-template<size_t nbits, size_t es> class posit;
-
 template<size_t nbits, size_t es>
 constexpr inline int sign_value(const posit<nbits, es>& p) {
 	bitblock<nbits> _bits = p.get();
@@ -133,8 +134,8 @@ inline long double exponent_value(const posit<nbits, es>& p) {
 	exponent<nbits, es>  _exponent;
 	bitblock<nbits> tmp(p.get());
 	tmp = sign(p) ? twos_complement(tmp) : tmp;
-	size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime<nbits>(tmp));	// get the regime bits
-	_exponent.extract_exponent_bits(tmp, nrRegimeBits);							// get the exponent bits
+	size_t nrRegimeBits = _regime.assign_regime_pattern(decode_regime(tmp)); // get the regime bits
+	_exponent.extract_exponent_bits(tmp, nrRegimeBits);			 // get the exponent bits
 	return _exponent.value();
 }
 
@@ -162,7 +163,7 @@ inline int scale(const posit<nbits, es>& p) {
 	exponent<nbits, es>  _exponent;
 	internal::bitblock<nbits> tmp(p.get());
 	tmp = sign(p) ? internal::twos_complement(tmp) : tmp;
-	int k = decode_regime<nbits>(tmp);
+	int k = decode_regime(tmp);
 	size_t nrRegimeBits = _regime.assign_regime_pattern(k);	// get the regime bits
 	_exponent.extract_exponent_bits(tmp, nrRegimeBits);							// get the exponent bits
 	// return the scale
