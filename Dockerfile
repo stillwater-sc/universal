@@ -4,7 +4,7 @@
 # docker build --target release -t stillwater/universal:release will just build a release container
 
 # BUILDER stage
-FROM gcc:11 as builder
+FROM gcc:10.2 as builder
 LABEL Theodore Omtzigt
 # create a build environment
 RUN apt-get update && apt-get install -y --no-install-recommends -V \
