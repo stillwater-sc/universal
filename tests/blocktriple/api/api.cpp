@@ -38,11 +38,15 @@ try {
 		cout << to_binary(a, true) << " " << a << endl;
 	}
 	{
-		blocktriple<16, uint32_t> a;
-		a = 1.0f;
-		cout << to_binary(a) << '\n';
+		constexpr blocktriple<9, uint32_t> a = 511.5f;
+		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
 	}
-
+	{
+		constexpr double d = 511.5;
+		//cout << to_binary(d, true) << '\n';
+		constexpr blocktriple<9, uint64_t> a = d;
+		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
+	}
 #else // !MANUAL_TESTING
 
 
