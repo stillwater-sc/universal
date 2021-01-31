@@ -3,8 +3,10 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#if defined(_MSC_VER)
 #pragma warning(disable : 4514)
 #pragma warning(disable : 4710)
+#endif
 #include <iostream>
 #include <iomanip>
 // minimum set of include files to reflect source code dependencies
@@ -56,7 +58,7 @@ try {
 #if MANUAL_TESTING
 
 	using TestType = areal<nbits, es, uint8_t>;
-	using ReferenceType = float;
+	//using ReferenceType = float;
 
 	{
 		areal<64, 8> r;

@@ -28,10 +28,7 @@ try {
 
 	cout << "blocktriple constexpr tests" << endl;
 	
-	constexpr size_t nbits = 1;
-	constexpr blocktriple<32, uint32_t> a;
-
-#ifdef LATER
+#if BIT_CAST_SUPPORT
 	{
 		// decorated constructors
 		{
@@ -56,7 +53,6 @@ try {
 		}
 	}
 
-
 	{
 		// assignment operators
 		{
@@ -80,7 +76,7 @@ try {
 			cout << a << endl;
 		}
 	}
-#endif
+#endif // BIT_CAST_SUPPORT
 
 	if (nrOfFailedTestCases > 0) {
 		cout << "FAIL" << endl;

@@ -8,12 +8,48 @@
 #include <iostream>
 #include <iomanip>
 #include <limits>
-#include <bit>
 
 #include <universal/native/ieee754.hpp>
 #include <universal/native/bit_functions.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/internal/blocktriple/trace_constants.hpp>
+
+
+#if defined(__clang__)
+/* Clang/LLVM. ---------------------------------------------- */
+
+#define BIT_CAST_SUPPORT 0
+#define CONSTEXPRESSION 
+
+#elif defined(__ICC) || defined(__INTEL_COMPILER)
+/* Intel ICC/ICPC. ------------------------------------------ */
+
+
+#elif defined(__GNUC__) || defined(__GNUG__)
+/* GNU GCC/G++. --------------------------------------------- */
+
+#define BIT_CAST_SUPPORT 0
+#define CONSTEXPRESSION 
+
+#elif defined(__HP_cc) || defined(__HP_aCC)
+/* Hewlett-Packard C/aC++. ---------------------------------- */
+
+#elif defined(__IBMC__) || defined(__IBMCPP__)
+/* IBM XL C/C++. -------------------------------------------- */
+
+#elif defined(_MSC_VER)
+/* Microsoft Visual Studio. --------------------------------- */
+#define BIT_CAST_SUPPORT 1
+#define CONSTEXPRESSION constexpr
+#include <bit>
+
+#elif defined(__PGI)
+/* Portland Group PGCC/PGCPP. ------------------------------- */
+
+#elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
+/* Oracle Solaris Studio. ----------------------------------- */
+
+#endif
 
 namespace sw::universal {
 
@@ -52,6 +88,7 @@ public:
 
 	constexpr blocktriple& operator=(float rhs) noexcept { // TODO: deal with subnormals and inf
 		if (rhs == 0.0f) return *this;
+#if BIT_CAST_SUPPORT
 		_zero = false; 
 		// TODO: check inf and NaN
 		_inf = false; _nan = false;
@@ -60,11 +97,14 @@ public:
 		_scale = ((0x7F80'0000 & bc) >> 23) - 127;
 		uint32_t raw = (1ul << 23) | (0x007F'FFFF & bc);
 		_significant = round_to<23, uint32_t>(raw);
+#else
+#endif // !BIT_CAST_SUPPORT
 		return *this;
 	}
 
 	constexpr blocktriple& operator=(double rhs) noexcept { // TODO: deal with subnormals and inf
 		if (rhs == 0.0f) return *this;
+#if BIT_CAST_SUPPORT
 		_zero = false; 
 		// TODO: check inf and NaN
 		_inf = false; _nan = false;
@@ -73,12 +113,14 @@ public:
 		_scale = ((0x7FF0'0000'0000'0000ull & bc) >> 52) - 1023;
 		uint64_t raw = (1ull << 52) | (0x000F'FFFF'FFFF'FFFFull & bc);
 		_significant = round_to<52, uint64_t>(raw);
+#else
+#endif // !BIT_CAST_SUPPORT
 		return *this;
 	}
 
-	template<size_t nfbits, typename bt>
-	constexpr bt round_to(bt raw) noexcept {
-		bt significant{ raw };
+	template<size_t nfbits, typename StorageType>
+	constexpr StorageType round_to(StorageType raw) noexcept {
+		StorageType significant{ raw };
 		if constexpr (significantbits <= nfbits) {
 			 // round to even: lsb round guard sticky
 			// collect guard, round, and sticky bits
@@ -86,12 +128,12 @@ public:
 			// we only have a guard bit and no round and sticky bits
 			// because the mask logic will make round and sticky both 0
 			constexpr uint32_t shift = nfbits - significantbits;
-			bt mask = (bt(1ull) << shift);
+			StorageType mask = (StorageType(1ull) << shift);
 			bool guard = (mask & raw);
 			mask >>= 1;
 			bool round = (mask & raw);
 			if constexpr (shift > 1) { // protect against a negative shift
-				mask = (bt(-1) << (shift - 2));
+				mask = (StorageType(-1) << (shift - 2));
 				mask = ~mask;
 			}
 			else {

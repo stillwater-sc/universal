@@ -19,7 +19,6 @@ try {
 	for (int i = 0; i < argc; ++i) std::cout << argv[0] << ' ';
 	std::cout << std::endl;
 
-	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 	std::string tag = " blocktriple<23>";
 
@@ -32,6 +31,7 @@ try {
 #else // !MANUAL_TESTING
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
 
+	bool bReportIndividualTestCases = false;
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition      ");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction   ");
 	nrOfFailedTestCases += ReportTestResult(ValidateThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication");

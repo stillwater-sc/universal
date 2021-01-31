@@ -41,7 +41,7 @@ try {
 	for (int i = 0; i < argc; ++i) std::cout << argv[0] << ' ';
 	std::cout << std::endl;
 
-	bool bReportIndividualTestCases = true;
+	//bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "conversion: ";

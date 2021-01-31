@@ -261,7 +261,7 @@ try {
 #else
 	cout << "AREAL logic operator validation" << endl;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	std::string tag = "Comparison failed: ";
 
 	areal<16, 1> a;

@@ -757,10 +757,6 @@ try {
 	}
 	// const size_t RND_TEST_CASES = 0;  // no randoms, 8-bit posits can be done exhaustively
 
-	constexpr size_t nbits = 8;
-	constexpr size_t es = 2;
-
-	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::cout << "areal<> Application Programming Interface tests" << std::endl;
@@ -808,6 +804,8 @@ try {
 
 #else // !MANUAL_TESTING
 
+	//bool bReportIndividualTestCases = false;
+	//
 	TestIsZero(nrOfFailedTestCases);
 	TestIsInf(nrOfFailedTestCases);
 	TestIsNaN(nrOfFailedTestCases);

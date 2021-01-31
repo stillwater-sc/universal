@@ -4,7 +4,7 @@
 # docker build --target release -t stillwater/universal:release will just build a release container
 
 # BUILDER stage
-FROM gcc:7 as builder
+FROM gcc:11 as builder
 LABEL Theodore Omtzigt
 # create a build environment
 RUN apt-get update && apt-get install -y --no-install-recommends -V \
@@ -54,7 +54,7 @@ RUN cmake -DBUILD_CI_CHECK=ON .. && make
 # the command 'make test' is run as part of the CI test pipeline of the release container
 
 # add a command that when you run the container without a command, it produces something meaningful
-CMD ["echo", "Universal Numbers Library Builder Version 2.1.41"]
+CMD ["echo", "Universal Numbers Library Builder Version 3.0.11"]
 
 
 # RELEASE stage
@@ -100,4 +100,4 @@ WORKDIR /home/stillwater/universal/build
 
 # the command 'make test' is run as part of the CI test pipeline of this release container
 
-CMD ["echo", "Universal Numbers Library Version 2.1.41"]
+CMD ["echo", "Universal Numbers Library Version 3.0.11"]

@@ -46,12 +46,13 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "conversion: ";
 
 #if MANUAL_TESTING
+
+	bool bReportIndividualTestCases = true;
 
 	ReportRanges<12, 3>(cout);
 
@@ -71,6 +72,7 @@ try {
 
 	cout << "AREAL conversion validation" << endl;
 
+//	bool bReportIndividualTestCases = false;
 //	nrOfFailedTestCases = ReportTestResult(VerifyConversion<areal<4, 1, uint8_t>, areal<5, 1, uint8_t>>(tag, bReportIndividualTestCases), tag, "areal<4,1,uint8_t>");
 
 //	nrOfFailedTestCases = ReportTestResult(VerifyConversion< areal<8, 2, uint8_t>, areal<9, 2, uint8_t>>(tag, bReportIndividualTestCases), tag, "areal<8,2,uint8_t>");

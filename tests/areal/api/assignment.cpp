@@ -162,6 +162,7 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	return nrOfFailedTests;
 }
 
+#if EXPERIMENT
 void projectToFloat() {
 	uint32_t a = 0x3F55'5555;
 	float f = *(float*)(&a);
@@ -169,6 +170,7 @@ void projectToFloat() {
 	float f2{ 0.8333333f };
 	std::cout << sw::universal::to_binary(f2) << " : " << f2 << std::endl;
 }
+#endif
 
 template<typename TestType, typename NativeFloatingPointType>
 void ConversionTest(NativeFloatingPointType& value) {

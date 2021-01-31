@@ -140,11 +140,11 @@ endif()
 if(MSVC)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-message(STATUS "C++20 support has been enabled by default")
+message(STATUS "C++20 has been enabled by default")
 else()
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-message(STATUS "C++17 support has been enabled by default")
+message(STATUS "C++20 has been enabled by default")
 endif()
 
 # Compiler specific environments
@@ -176,7 +176,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	#set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3 -DNDEBUG")
 	#set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
 
-	#set(EXTRA_CXX_FLAGS "-std=c++17") # isn't this done by CMAKE_CXX_STANDARD?
+	#set(EXTRA_CXX_FLAGS "-std=c++20") # isn't this done by CMAKE_CXX_STANDARD?
 elseif(MSVC)
 	# Streaming SIMD Extension (SSE) ISA
 	if (USE_SSE3)

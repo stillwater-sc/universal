@@ -647,12 +647,15 @@ public:
 	}
 
 	/// <summary>
-	/// set the raw bits of the areal. This is a required function in the Universal number systems
-	/// that enables verification test suites to inject specific bit patterns using a common interface.
+	/// set the raw bits of the areal. This is a required API function for number systems in the Universal Numbers Library
+	/// This enables verification test suites to inject specific test bit patterns using a common interface.
+	//  This is a memcpy type operator, but the target number system may not have a linear memory layout and
+	//  thus needs to steer the bits in potentially more complicated ways then memcpy.
 	/// </summary>
 	/// <param name="raw_bits">unsigned long long carrying bits that will be written verbatim to the areal</param>
 	/// <returns>reference to the areal</returns>
 	inline areal& set_raw_bits(uint64_t raw_bits) noexcept {
+		// TODO: how to disable the GCC warning about shift ?
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = raw_bits & storageMask;
 			raw_bits >>= bitsInBlock; // shift can be the same size as type as it is protected by loop constraints
@@ -985,12 +988,12 @@ protected:
 
 	template<typename ArgumentBlockType>
 	void copyBits(ArgumentBlockType v) {
-		int blocksRequired = (8 * sizeof(v) + 1 ) / bitsInBlock;
-		int maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : int(nrBlocks));
+		size_t blocksRequired = (8 * sizeof(v) + 1 ) / bitsInBlock;
+		size_t maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
 		bt b{ 0ul }; b = bt(~b);
 		ArgumentBlockType mask = ArgumentBlockType(b);
 		size_t shift = 0;
-		for (int i = 0; i < maxBlockNr; ++i) {
+		for (size_t i = 0; i < maxBlockNr; ++i) {
 			_block[i] = bt((mask & v) >> shift);
 			mask <<= bitsInBlock;
 			shift += bitsInBlock;

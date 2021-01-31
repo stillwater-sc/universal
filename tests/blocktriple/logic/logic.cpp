@@ -264,7 +264,7 @@ try {
 #else
 	cout << "BLOCKTRIPLE logic operator validation" << endl;
 
-	bool bReportIndividualTestCases = false;
+	//bool bReportIndividualTestCases = false;
 	std::string tag = "Comparison failed: ";
 
 	blocktriple<13> a;
