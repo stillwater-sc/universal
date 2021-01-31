@@ -3,7 +3,9 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#if defined(_MSC_VER)
+#pragma warning(disable : 4820) // 'sw::universal::blocktriple<32,uint32_t>': '3' bytes padding added after data member 'sw::universal::blocktriple<32,uint32_t>::_sign'
+#endif
 // Configure the areal template environment
 // first: enable general or specialized fixed-point configurations
 #define AREAL_FAST_SPECIALIZATION
@@ -32,11 +34,11 @@ try {
 	{
 		// decorated constructors
 		{
-			constexpr blocktriple<32> a(1);  // signed long
+			blocktriple<32> a(1);  // signed long
 			cout << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a(1ul);  // unsigned long
+			blocktriple<32> a(1ul);  // unsigned long
 			cout << a << endl;
 		}
 		{
@@ -76,6 +78,7 @@ try {
 			cout << a << endl;
 		}
 	}
+
 #endif // BIT_CAST_SUPPORT
 
 	if (nrOfFailedTestCases > 0) {

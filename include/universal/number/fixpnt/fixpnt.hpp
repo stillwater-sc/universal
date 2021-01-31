@@ -28,9 +28,6 @@ Compile-time configuration flags are used to select the exception mode.
 Run-time configuration is used to select modular vs saturation arithmetic.
 */
 #include <universal/number/fixpnt/exceptions.hpp>  // you need the exception types defined, but you may not throw them
-#if FIXPNT_THROW_ARITHMETIC_EXCEPTION
-
-#endif // FIXPNT_THROW_ARITHMETIC_EXCEPTION
 #include <universal/native/ieee754.hpp>   // IEEE-754 decoders
 #include <universal/native/integers.hpp>   // manipulators for native integer types
 #include <universal/internal/blockbinary/blockbinary.hpp>
@@ -224,7 +221,7 @@ public:
 	static constexpr size_t nrBlocks = (1 + ((nbits - 1) / bitsInBlock));
 	static constexpr size_t MSU = nrBlocks - 1;
 	// warning C4310: cast truncates constant value
-	static constexpr bt MSU_MASK = (bt(0xFFFFFFFFFFFFFFFFul) >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr bt MSU_MASK = (bt(-1) >> (nrBlocks * bitsInBlock - nbits));
 
 	constexpr fixpnt() noexcept : bb(0) {}
 

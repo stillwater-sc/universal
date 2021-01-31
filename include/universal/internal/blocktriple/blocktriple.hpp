@@ -77,16 +77,121 @@ public:
 
 	constexpr blocktriple() noexcept : _sign(false), _scale(0), _inf(false), _zero(false), _nan(false), _significant(0) {}
 
+	constexpr blocktriple(signed char iv) noexcept { *this = iv; }
+	constexpr blocktriple(short iv) noexcept { *this = iv; }
 	constexpr blocktriple(int iv) noexcept { *this = iv;  }
+	constexpr blocktriple(long iv) noexcept { *this = iv; }
+	constexpr blocktriple(long long iv) noexcept { *this = iv; }
+	constexpr blocktriple(char iv) noexcept { *this = iv; }
+	constexpr blocktriple(unsigned short iv) noexcept { *this = iv; }
+	constexpr blocktriple(unsigned int iv) noexcept { *this = iv; }
+	constexpr blocktriple(unsigned long iv) noexcept { *this = iv; }
+	constexpr blocktriple(unsigned long long iv) noexcept { *this = iv; }
 	constexpr blocktriple(float iv) noexcept { *this = iv; }
 	constexpr blocktriple(double iv) noexcept { *this = iv; }
+	constexpr blocktriple(long double iv) noexcept { *this = iv; }
 
-	constexpr blocktriple& operator=(const int rhs) noexcept {
+	constexpr blocktriple& operator=(signed char rhs) noexcept {
 		reset();
+		if (0 == rhs) return *this;
+		_sign = (rhs < 0);
+		uint8_t raw = uint8_t(_sign ? -rhs : rhs);
+		_scale = findMostSignificantBit(rhs);
+		uint8_t shift = 7 - _scale;
+		raw <<= shift;
+		_significant = round_to<8, uint8_t>(raw);
 		return *this;
 	}
-
+	constexpr blocktriple& operator=(short rhs) noexcept {
+		reset();
+		if (0 == rhs) return *this;
+		_sign = (rhs < 0);
+		uint16_t raw = uint16_t(_sign ? -rhs : rhs);
+		_scale = findMostSignificantBit(rhs);
+		uint16_t shift = 15 - _scale;
+		raw <<= shift;
+		_significant = round_to<16, uint16_t>(raw);
+		return *this;
+	}
+	constexpr blocktriple& operator=(int rhs) noexcept {
+		reset();
+		if (0 == rhs) return *this;
+		_sign = (rhs < 0);
+		uint32_t raw = uint32_t(_sign ? -rhs : rhs);
+		_scale = int(findMostSignificantBit(rhs));
+		uint32_t shift = 31 - _scale;
+		raw <<= shift;
+		_significant = round_to<32, uint32_t>(raw);
+		return *this;
+	}
+	constexpr blocktriple& operator=(long rhs) noexcept {
+		reset();
+		if (0 == rhs) return *this;
+		_sign = (rhs < 0);
+		uint32_t raw = uint32_t(_sign ? -rhs : rhs);
+		_scale = int(findMostSignificantBit(raw));
+		uint32_t shift = 31ul - _scale;
+		raw <<= shift;
+		_significant = round_to<32, uint32_t>(raw);
+		return *this;
+	}
+	constexpr blocktriple& operator=(long long rhs) noexcept {
+		reset();
+		if (0 == rhs) return *this;
+		_sign = (rhs < 0);
+		uint64_t raw = uint64_t(_sign ? -rhs : rhs);
+		_scale = int(findMostSignificantBit(raw));
+		uint64_t shift = 63ull - _scale;
+		raw <<= shift;
+		_significant = round_to<64, uint64_t>(raw);
+		return *this;
+	}
+	constexpr blocktriple& operator=(char rhs) noexcept {
+		reset();
+		if (0 == rhs) return *this;
+		_sign = false;
+		uint8_t raw = rhs;
+		_scale = int(findMostSignificantBit(rhs));
+		uint8_t shift = 7 - _scale;
+		raw <<= shift;
+		_significant = round_to<8, uint8_t>(raw);
+		return *this;
+	}
+	constexpr blocktriple& operator=(unsigned short rhs) noexcept {
+		reset();
+		if (0 == rhs) return *this;
+		_sign = false;
+		uint16_t raw = rhs;
+		_scale = int(findMostSignificantBit(rhs));
+		uint16_t shift = 15 - _scale;
+		raw <<= shift;
+		_significant = round_to<16, uint16_t>(raw);
+		return *this;
+	}
+	constexpr blocktriple& operator=(unsigned long rhs) noexcept {
+		reset();
+		if (0 == rhs) return *this;
+		_sign = false;
+		uint32_t raw = rhs;
+		_scale = int(findMostSignificantBit(raw));
+		uint32_t shift = 31ul - _scale;
+		raw <<= shift;
+		_significant = round_to<32, uint32_t>(raw);
+		return *this;
+	}
+	constexpr blocktriple& operator=(unsigned long long rhs) noexcept {
+		reset();
+		if (0 == rhs) return *this;
+		_sign = false;
+		uint64_t raw = rhs;
+		_scale = int(findMostSignificantBit(raw));
+		uint64_t shift = 63ull - _scale;
+		raw <<= shift;
+		_significant = round_to<64, uint64_t>(raw);
+		return *this;
+	}
 	constexpr blocktriple& operator=(float rhs) noexcept { // TODO: deal with subnormals and inf
+		reset();
 		if (rhs == 0.0f) return *this;
 #if BIT_CAST_SUPPORT
 		_zero = false; 
@@ -94,7 +199,7 @@ public:
 		_inf = false; _nan = false;
 		uint32_t bc = std::bit_cast<uint32_t>(rhs);
 		_sign = (0x8000'0000 & bc);
-		_scale = ((0x7F80'0000 & bc) >> 23) - 127;
+		_scale = int((0x7F80'0000 & bc) >> 23) - 127;
 		uint32_t raw = (1ul << 23) | (0x007F'FFFF & bc);
 		_significant = round_to<23, uint32_t>(raw);
 #else
@@ -103,6 +208,7 @@ public:
 	}
 
 	constexpr blocktriple& operator=(double rhs) noexcept { // TODO: deal with subnormals and inf
+		reset();
 		if (rhs == 0.0f) return *this;
 #if BIT_CAST_SUPPORT
 		_zero = false; 
@@ -110,13 +216,16 @@ public:
 		_inf = false; _nan = false;
 		uint64_t bc = std::bit_cast<uint64_t>(rhs);
 		_sign = (0x8000'0000'0000'0000 & bc);
-		_scale = ((0x7FF0'0000'0000'0000ull & bc) >> 52) - 1023;
+		_scale = int((0x7FF0'0000'0000'0000ull & bc) >> 52) - 1023;
 		uint64_t raw = (1ull << 52) | (0x000F'FFFF'FFFF'FFFFull & bc);
-		_significant = round_to<52, uint64_t>(raw);
+		_significant = bt(round_to<52, uint64_t>(raw));
 #else
 #endif // !BIT_CAST_SUPPORT
 		return *this;
 	}
+	constexpr blocktriple& operator=(long double rhs) noexcept {
+		return *this = double(rhs);
+	};
 
 	template<size_t nfbits, typename StorageType>
 	constexpr StorageType round_to(StorageType raw) noexcept {
@@ -141,8 +250,8 @@ public:
 			}
 			bool sticky = (mask & raw);
 
-			raw >>= shift + 1;  // shift out the bits we are rounding away
-			raw |= (1ul << significantbits - 1); // explicitly normalized significant
+			raw >>= (shift + 1);  // shift out the bits we are rounding away
+			raw |= (1ul << (significantbits - 1)); // explicitly normalized significant
 			bool lsb = (raw & 0x1);
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
@@ -154,7 +263,7 @@ public:
 			if (guard) {
 				if (lsb && (!round && !sticky)) ++raw; // round to even
 				if (round || sticky) ++raw;
-				if (raw >= (1ul << significantbits)) { // overflow
+				if (raw == (1ull << significantbits)) { // overflow
 					++_scale;
 				}
 			}
@@ -183,11 +292,11 @@ public:
 	explicit operator long double() const { return to_long_double(); }
 
 private:
-	bool      		                  _sign;
-	int      		                  _scale;
 	bool     		                  _inf;
 	bool 		                      _zero;
 	bool							  _nan;
+	bool      		                  _sign;
+	int      		                  _scale;
 	blockbinary<significantbits, bt>  _significant;
 
 	// helpers
