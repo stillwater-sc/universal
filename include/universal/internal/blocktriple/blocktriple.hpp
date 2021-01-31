@@ -75,7 +75,7 @@ public:
 	constexpr blocktriple& operator=(const blocktriple&) noexcept = default;
 	constexpr blocktriple& operator=(blocktriple&&) noexcept = default;
 
-	constexpr blocktriple() noexcept : _sign(false), _scale(0), _inf(false), _zero(false), _nan(false), _significant(0) {}
+	constexpr blocktriple() noexcept : _nan(false), _inf(false), _zero(false), _sign(false), _scale(0), _significant(0) {}
 
 	constexpr blocktriple(signed char iv) noexcept { *this = iv; }
 	constexpr blocktriple(short iv) noexcept { *this = iv; }
@@ -274,11 +274,11 @@ public:
 
 	// modifiers
 	constexpr void reset() noexcept {
-		_sign = false;
-		_scale = 0;
+		_nan = false;
 		_inf = false;
 		_zero = true;
-		_nan = false;
+		_sign = false;
+		_scale = 0;
 		_significant.clear();
 	}
 
@@ -292,19 +292,20 @@ public:
 	explicit operator long double() const { return to_long_double(); }
 
 private:
-	bool     		                  _inf;
-	bool 		                      _zero;
-	bool							  _nan;
-	bool      		                  _sign;
-	int      		                  _scale;
-	blockbinary<significantbits, bt>  _significant;
+	bool _nan; // most dominant state
+	bool _inf; // second most dominant state
+	bool _zero;// third most dominant special case
+	// the triple (sign, scale, significant)
+	bool _sign;
+	int  _scale;
+	blockbinary<significantbits, bt> _significant;
 
 	// helpers
 
 	double      to_float() const {
-		return 0.0f;
+		return float(to_double());
 	}
-	double      to_double() const {
+	double      to_double() const {  // TODO: this needs a native, correctly rounded version
 		if (_zero) return 0.0;
 		double v = 1.0;
 		double scale = 0.5;
@@ -316,8 +317,8 @@ private:
 		v *= std::pow(2.0, _scale);
 		return (_sign ? -v : v);
 	}
-	double      to_long_double() const {
-		return 0.0l;
+	long double to_long_double() const {
+		return (long double)(to_double());
 	}
 
 	// template parameters need names different from class template parameters (for gcc and clang)

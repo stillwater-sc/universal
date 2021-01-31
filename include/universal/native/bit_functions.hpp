@@ -14,7 +14,7 @@ namespace sw::universal {
 
 //////////////////////////// UNSIGNED integer types ////////////////////////
 
-static const unsigned int bval[] = { 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
+//static const unsigned int bval[] = { 0,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4 };
 
 // find the most significant bit set
 // first bit is defined to be at position 1, so that no bits set returns 0
@@ -130,7 +130,12 @@ inline constexpr unsigned int findMostSignificantBit(long long x) {
 	if (tmp & 0x00000000FFFF0000) { base += 16; tmp >>= 16; }
 	if (tmp & 0x000000000000FF00) { base += 8;  tmp >>= 8; }
 	if (tmp & 0x00000000000000F0) { base += 4;  tmp >>= 4; }
-	return base + bval[tmp];
+	unsigned int bval = 0;
+	while (tmp > 0) {
+		++bval;
+		tmp >>= 1;
+	}
+	return base + bval;
 }
 
 }  // namespace sw::universal
