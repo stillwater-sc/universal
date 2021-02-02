@@ -30,38 +30,49 @@ try {
 
 	cout << "blocktriple constexpr tests" << endl;
 	
-#if BIT_CAST_SUPPORT
+
 	{
 		// decorated constructors
 		{
-			blocktriple<32> a(2);  // signed long
+			// this will round-up to 16 due to the fact that we only have 3 bits of significant
+			constexpr blocktriple<3> a(15);  // signed long
 			cout << "constexpr constructor for type 'int'                 " << a << endl;
 		}
 		{
-			blocktriple<32> a(4l);  // long long
+			// this will stay 15 due to the fact that we have 4 bits of significant
+			constexpr blocktriple<4> a(15);  // signed long
+			cout << "constexpr constructor for type 'int'                 " << a << endl;
+		}
+		{
+			constexpr blocktriple<32> a(2);  // signed long
+			cout << "constexpr constructor for type 'int'                 " << a << endl;
+		}
+		{
+			constexpr blocktriple<32> a(4l);  // long long
 			cout << "constexpr constructor for type 'long long'           " << a << endl;
 		}
 		{
-			blocktriple<32> a(8ul);  // unsigned long
+			constexpr blocktriple<32> a(8ul);  // unsigned long
 			cout << "constexpr constructor for type 'unsigned long'       " << a << endl;
 		}
 		{
-			blocktriple<32> a(16ull);  // unsigned long
+			constexpr blocktriple<32> a(16ull);  // unsigned long
 			cout << "constexpr constructor for type 'unsigned long long'  " << a << endl;
 		}
-
+#if BIT_CAST_SUPPORT
 		{
-			blocktriple<32> a(1.0f);  // float
+			constexpr blocktriple<32> a(1.125f);  // float
 			cout << "constexpr constructor for type 'float'               " << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a(1.0);   // double
+			constexpr blocktriple<32> a(1.0625);   // double
 			cout << "constexpr constructor for type 'double'              " << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a(1.0l);  // long double
+			constexpr blocktriple<32> a(1.03125l);  // long double
 			cout << "constexpr constructor for type 'long double'         " << a << endl;
 		}
+#endif // BIT_CAST_SUPPORT
 	}
 
 	{
@@ -74,6 +85,7 @@ try {
 			constexpr blocktriple<32> a = 1ul;  // unsigned long
 			cout << a << endl;
 		}
+#if BIT_CAST_SUPPORT
 		{
 			constexpr blocktriple<32> a = 1.0f;  // float
 			cout << a << endl;
@@ -86,9 +98,10 @@ try {
 			constexpr blocktriple<32> a = 1.0l;  // long double
 			cout << a << endl;
 		}
+#endif // BIT_CAST_SUPPORT
 	}
 
-#endif // BIT_CAST_SUPPORT
+
 
 	if (nrOfFailedTestCases > 0) {
 		cout << "FAIL" << endl;

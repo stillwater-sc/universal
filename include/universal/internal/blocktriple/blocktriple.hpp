@@ -68,6 +68,7 @@ class blocktriple {
 public:
 	static constexpr size_t nbits = significantbits;
 	static constexpr size_t fbits = significantbits - 1;
+	using bits = blockbinary<significantbits, bt>;
 
 	constexpr blocktriple(const blocktriple&) noexcept = default;
 	constexpr blocktriple(blocktriple&&) noexcept = default;
@@ -75,20 +76,22 @@ public:
 	constexpr blocktriple& operator=(const blocktriple&) noexcept = default;
 	constexpr blocktriple& operator=(blocktriple&&) noexcept = default;
 
-	constexpr blocktriple() noexcept : _nan(false), _inf(false), _zero(false), _sign(false), _scale(0), _significant(0) {}
+	constexpr blocktriple() noexcept : 
+		_nan{ false }, 	_inf{ false }, _zero{ false }, 
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } {}
 
 	constexpr blocktriple(signed char iv) noexcept { *this = iv; }
-	constexpr blocktriple(short iv) noexcept { *this = iv; }
-	constexpr blocktriple(int iv) noexcept { *this = iv;  }
-	constexpr blocktriple(long iv) noexcept { *this = iv; }
-	constexpr blocktriple(long long iv) noexcept { *this = iv; }
-	constexpr blocktriple(char iv) noexcept { *this = iv; }
-	constexpr blocktriple(unsigned short iv) noexcept { *this = iv; }
-	constexpr blocktriple(unsigned int iv) noexcept { *this = iv; }
-	constexpr blocktriple(unsigned long iv) noexcept { *this = iv; }
+	constexpr blocktriple(short iv)       noexcept { *this = iv; }
+	constexpr blocktriple(int iv)         noexcept { *this = iv;  }
+	constexpr blocktriple(long iv)        noexcept { *this = iv; }
+	constexpr blocktriple(long long iv)   noexcept { *this = iv; }
+	constexpr blocktriple(char iv)               noexcept { *this = iv; }
+	constexpr blocktriple(unsigned short iv)     noexcept { *this = iv; }
+	constexpr blocktriple(unsigned int iv)       noexcept { *this = iv; }
+	constexpr blocktriple(unsigned long iv)      noexcept { *this = iv; }
 	constexpr blocktriple(unsigned long long iv) noexcept { *this = iv; }
-	constexpr blocktriple(float iv) noexcept { *this = iv; }
-	constexpr blocktriple(double iv) noexcept { *this = iv; }
+	constexpr blocktriple(float iv)       noexcept { *this = iv; }
+	constexpr blocktriple(double iv)      noexcept { *this = iv; }
 	constexpr blocktriple(long double iv) noexcept { *this = iv; }
 
 	constexpr blocktriple& operator=(signed char rhs) noexcept {
@@ -144,12 +147,17 @@ public:
 		_zero = false; 
 		// TODO: check inf and NaN
 		_inf = false; _nan = false;
+		// normal number
 		uint32_t bc = std::bit_cast<uint32_t>(rhs);
 		_sign = (0x8000'0000 & bc);
 		_scale = int((0x7F80'0000 & bc) >> 23) - 127;
 		uint32_t raw = (1ul << 23) | (0x007F'FFFF & bc);
 		_significant = round_to<23, uint32_t>(raw);
 #else
+		_zero = true;
+		_sign = false;
+		_scale = 0;
+		_significant.clear();
 #endif // !BIT_CAST_SUPPORT
 		return *this;
 	}
@@ -162,22 +170,31 @@ public:
 		_zero = false; 
 		// TODO: check inf and NaN
 		_inf = false; _nan = false;
+		// normal
 		uint64_t bc = std::bit_cast<uint64_t>(rhs);
 		_sign = (0x8000'0000'0000'0000 & bc);
 		_scale = int((0x7FF0'0000'0000'0000ull & bc) >> 52) - 1023;
 		uint64_t raw = (1ull << 52) | (0x000F'FFFF'FFFF'FFFFull & bc);
 		_significant = bt(round_to<52, uint64_t>(raw));
 #else
+		_zero = true;
+		_sign = false;
+		_scale = 0;
+		_significant.clear();
 #endif // !BIT_CAST_SUPPORT
 		return *this;
 	}
 	constexpr blocktriple& operator=(long double rhs) noexcept {
 		return *this = double(rhs);
 	};
-
+	/// <summary>
+	/// round to a set number of fraction bits. nfbits is the number of fraction bits to round to.
+	/// </summary>
+	/// <typeparam name="StorageType"></typeparam>
+	/// <param name="raw"></param>
+	/// <returns></returns>
 	template<size_t nfbits, typename StorageType>
 	constexpr StorageType round_to(StorageType raw) noexcept {
-		StorageType significant{ raw };
 		if constexpr (significantbits <= nfbits) {
 			 // round to even: lsb round guard sticky
 			// collect guard, round, and sticky bits
@@ -199,7 +216,7 @@ public:
 			bool sticky = (mask & raw);
 
 			raw >>= (shift + 1);  // shift out the bits we are rounding away
-			raw |= (1ul << (significantbits - 1)); // explicitly normalized significant
+//			raw |= (1ul << (significantbits - 1)); // explicitly normalized significant
 			bool lsb = (raw & 0x1);
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
@@ -215,8 +232,13 @@ public:
 					++_scale;
 				}
 			}
-			significant = (1ul << (significantbits - 1)) | raw;
+//			significant = (1ul << (significantbits - 1)) | raw;
 		}
+		else {
+			constexpr size_t shift = significantbits - nfbits - 1;
+			raw <<= shift;
+		}
+		StorageType significant = (1ul << (significantbits - 1)) | raw;
 		return significant;
 	}
 
@@ -240,13 +262,15 @@ public:
 	explicit operator long double() const { return to_long_double(); }
 
 private:
+	           // special cases to keep track of
 	bool _nan; // most dominant state
 	bool _inf; // second most dominant state
 	bool _zero;// third most dominant special case
-	// the triple (sign, scale, significant)
+
+			   // the triple (sign, scale, significant)
 	bool _sign;
 	int  _scale;
-	blockbinary<significantbits, bt> _significant;
+	bits _significant;
 
 	// helpers
 
