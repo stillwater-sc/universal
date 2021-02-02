@@ -92,106 +92,53 @@ public:
 	constexpr blocktriple(long double iv) noexcept { *this = iv; }
 
 	constexpr blocktriple& operator=(signed char rhs) noexcept {
-		reset();
-		if (0 == rhs) return *this;
-		_sign = (rhs < 0);
-		uint8_t raw = uint8_t(_sign ? -rhs : rhs);
-		_scale = findMostSignificantBit(rhs);
-		uint8_t shift = 7 - _scale;
-		raw <<= shift;
-		_significant = round_to<8, uint8_t>(raw);
-		return *this;
+		return convert_integer(rhs);
 	}
 	constexpr blocktriple& operator=(short rhs) noexcept {
-		reset();
-		if (0 == rhs) return *this;
-		_sign = (rhs < 0);
-		uint16_t raw = uint16_t(_sign ? -rhs : rhs);
-		_scale = findMostSignificantBit(rhs);
-		uint16_t shift = 15 - _scale;
-		raw <<= shift;
-		_significant = round_to<16, uint16_t>(raw);
-		return *this;
+		return convert_integer(rhs);
 	}
 	constexpr blocktriple& operator=(int rhs) noexcept {
-		reset();
-		if (0 == rhs) return *this;
-		_sign = (rhs < 0);
-		uint32_t raw = uint32_t(_sign ? -rhs : rhs);
-		_scale = int(findMostSignificantBit(rhs));
-		uint32_t shift = 31 - _scale;
-		raw <<= shift;
-		_significant = round_to<32, uint32_t>(raw);
-		return *this;
+		return convert_integer(rhs);
 	}
 	constexpr blocktriple& operator=(long rhs) noexcept {
-		reset();
-		if (0 == rhs) return *this;
-		_sign = (rhs < 0);
-		uint32_t raw = uint32_t(_sign ? -rhs : rhs);
-		_scale = int(findMostSignificantBit(raw));
-		uint32_t shift = 31ul - _scale;
-		raw <<= shift;
-		_significant = round_to<32, uint32_t>(raw);
-		return *this;
+		return convert_integer(rhs);
 	}
 	constexpr blocktriple& operator=(long long rhs) noexcept {
-		reset();
-		if (0 == rhs) return *this;
-		_sign = (rhs < 0);
-		uint64_t raw = uint64_t(_sign ? -rhs : rhs);
-		_scale = int(findMostSignificantBit(raw));
-		uint64_t shift = 63ull - _scale;
-		raw <<= shift;
-		_significant = round_to<64, uint64_t>(raw);
-		return *this;
+		return convert_integer(rhs);
 	}
+
 	constexpr blocktriple& operator=(char rhs) noexcept {
-		reset();
-		if (0 == rhs) return *this;
-		_sign = false;
-		uint8_t raw = rhs;
-		_scale = int(findMostSignificantBit(rhs));
-		uint8_t shift = 7 - _scale;
-		raw <<= shift;
-		_significant = round_to<8, uint8_t>(raw);
-		return *this;
+		return convert_integer(rhs);
 	}
 	constexpr blocktriple& operator=(unsigned short rhs) noexcept {
-		reset();
-		if (0 == rhs) return *this;
-		_sign = false;
-		uint16_t raw = rhs;
-		_scale = int(findMostSignificantBit(rhs));
-		uint16_t shift = 15 - _scale;
-		raw <<= shift;
-		_significant = round_to<16, uint16_t>(raw);
-		return *this;
+		return convert_integer(rhs);
 	}
 	constexpr blocktriple& operator=(unsigned long rhs) noexcept {
-		reset();
-		if (0 == rhs) return *this;
-		_sign = false;
-		uint32_t raw = rhs;
-		_scale = int(findMostSignificantBit(raw));
-		uint32_t shift = 31ul - _scale;
-		raw <<= shift;
-		_significant = round_to<32, uint32_t>(raw);
-		return *this;
+		return convert_integer(rhs);
 	}
 	constexpr blocktriple& operator=(unsigned long long rhs) noexcept {
-		reset();
+		return convert_integer(rhs);
+	}
+	template<typename Ty>
+	constexpr blocktriple& convert_integer(const Ty& rhs) noexcept {
+		_nan = false;
+		_inf = false;
+		_zero = true;
 		if (0 == rhs) return *this;
-		_sign = false;
-		uint64_t raw = rhs;
-		_scale = int(findMostSignificantBit(raw));
-		uint64_t shift = 63ull - _scale;
+		_zero = false;
+		_sign = (rhs < 0);
+		uint64_t raw = uint64_t(_sign ? -rhs : rhs);
+		_scale = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
+		uint32_t shift = sizeInBits - _scale;
 		raw <<= shift;
-		_significant = round_to<64, uint64_t>(raw);
+		_significant = round_to<sizeInBits, uint64_t>(raw);
 		return *this;
 	}
 	constexpr blocktriple& operator=(float rhs) noexcept { // TODO: deal with subnormals and inf
-		reset();
+		_nan = false;
+		_inf = false;
+		_zero = true;
 		if (rhs == 0.0f) return *this;
 #if BIT_CAST_SUPPORT
 		_zero = false; 
@@ -206,9 +153,10 @@ public:
 #endif // !BIT_CAST_SUPPORT
 		return *this;
 	}
-
 	constexpr blocktriple& operator=(double rhs) noexcept { // TODO: deal with subnormals and inf
-		reset();
+		_nan = false;
+		_inf = false;
+		_zero = true;
 		if (rhs == 0.0f) return *this;
 #if BIT_CAST_SUPPORT
 		_zero = false; 

@@ -34,24 +34,33 @@ try {
 	{
 		// decorated constructors
 		{
-			blocktriple<32> a(1);  // signed long
-			cout << a << endl;
+			blocktriple<32> a(2);  // signed long
+			cout << "constexpr constructor for type 'int'                 " << a << endl;
 		}
 		{
-			blocktriple<32> a(1ul);  // unsigned long
-			cout << a << endl;
+			blocktriple<32> a(4l);  // long long
+			cout << "constexpr constructor for type 'long long'           " << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a(1.0f);  // float
-			cout << a << endl;
+			blocktriple<32> a(8ul);  // unsigned long
+			cout << "constexpr constructor for type 'unsigned long'       " << a << endl;
+		}
+		{
+			blocktriple<32> a(16ull);  // unsigned long
+			cout << "constexpr constructor for type 'unsigned long long'  " << a << endl;
+		}
+
+		{
+			blocktriple<32> a(1.0f);  // float
+			cout << "constexpr constructor for type 'float'               " << a << endl;
 		}
 		{
 			constexpr blocktriple<32> a(1.0);   // double
-			cout << a << endl;
+			cout << "constexpr constructor for type 'double'              " << a << endl;
 		}
 		{
 			constexpr blocktriple<32> a(1.0l);  // long double
-			cout << a << endl;
+			cout << "constexpr constructor for type 'long double'         " << a << endl;
 		}
 	}
 
