@@ -2190,7 +2190,7 @@ inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic, bt>& number,
 	}
 	ss << '.';
 	for (int i = int(rbits) - 1; i >= 0; --i) {
-		ss << (number.at(i) ? '1' : '0');
+		ss << (number.at(size_t(i)) ? '1' : '0');
 		if (bNibbleMarker && (rbits - i) % 4 == 0) ss << '\'';
 	}
 	return ss.str();

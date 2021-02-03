@@ -6,6 +6,7 @@
 #if defined(_MSC_VER)
 #pragma warning(disable : 4514)  // unreferenced function is removed
 #pragma warning(disable : 4710)  // function is not inlined
+#pragma warning(disable : 5045)  // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 #endif
 #include <iostream>
 #include <iomanip>
@@ -31,14 +32,16 @@ try {
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
-
+/*
 	{
 		fixpnt<20, 9> a;
 		a.set_raw_bits(0x15);
 		cout << to_binary(a, true) << " " << a << endl;
 	}
+*/
+
 	{
-		CONSTEXPRESSION blocktriple<9, uint32_t> a = 511.5f;
+		/*CONSTEXPRESSION*/ blocktriple<9, uint32_t> a = 511.5f;
 		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
 	}
 	{
@@ -47,6 +50,7 @@ try {
 		CONSTEXPRESSION blocktriple<9, uint64_t> a = d;
 		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
 	}
+
 #else // !MANUAL_TESTING
 
 

@@ -6,14 +6,53 @@
 #if defined(_MSC_VER)
 #pragma warning(disable : 4820) // 'sw::universal::blocktriple<32,uint32_t>': '3' bytes padding added after data member 'sw::universal::blocktriple<32,uint32_t>::_sign'
 #endif
-// Configure the areal template environment
-// first: enable general or specialized fixed-point configurations
-#define AREAL_FAST_SPECIALIZATION
-// second: enable/disable areal arithmetic exceptions
-#define AREAL_THROW_ARITHMETIC_EXCEPTION 1
+#include <iostream>
+#include <iomanip>
+#include <cstdint>
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/internal/blocktriple/blocktriple.hpp>
+
+namespace sw::experiment {
+	template<size_t nbits, typename bt = uint32_t>
+	class blocktriple {
+	public:
+		static constexpr size_t bitsInByte = 8;
+		static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
+
+		static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
+
+		blocktriple(const blocktriple&) noexcept = default;
+		blocktriple(blocktriple&&) noexcept = default;
+
+		blocktriple& operator=(const blocktriple&) noexcept = default;
+		blocktriple& operator=(blocktriple&&) noexcept = default;
+
+		constexpr blocktriple() noexcept : _block{ 0 } {}
+		constexpr blocktriple(int iv) noexcept : _block{ 0 } { *this = iv; }
+		constexpr blocktriple& operator=(int rhs) noexcept {
+			return convert_signed_integer(rhs);
+		}
+		template<typename Ty>
+		constexpr blocktriple& convert_signed_integer(const Ty& rhs) noexcept {
+			//_scale = 1;
+			return *this;
+		}
+	private:
+		bt _block[nrBlocks];
+
+		// template parameters need names different from class template parameters (for gcc and clang)
+		template<size_t sbits, typename bbt>
+		friend std::ostream& operator<< (std::ostream& ostr, const blocktriple<sbits, bbt>& a);
+
+	};
+
+	template<size_t significantbits, typename bt>
+	inline std::ostream& operator<<(std::ostream& ostr, const blocktriple<significantbits, bt>& a) {
+		ostr << a._scale;
+		return ostr;
+	}
+} // namespace sw::experiment
 
 // conditional compile flags
 #define MANUAL_TESTING 0
@@ -30,6 +69,22 @@ try {
 
 	cout << "blocktriple constexpr tests" << endl;
 	
+#if LATER
+	{
+		blocktriple<32> a;
+		cout << "0 : " << a << endl;
+		for (int i = 1; i < 65; ++i) {
+			a = i;
+			cout << i << " : " << to_binary(a, true) << " : " << a << endl;
+		}
+		a = 0.0;
+		cout << "0 : " << a << endl;
+		for (int i = 1; i < 1025; i *= 2) {
+			a = double(i);
+			cout << i << " : " << to_binary(a, true) << " : " << a << endl;
+		}
+	}
+#endif // LATER
 
 	{
 		// decorated constructors
@@ -48,7 +103,7 @@ try {
 			cout << "constexpr constructor for type 'int'                 " << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a(4l);  // long long
+			constexpr blocktriple<32> a(4ll);  // long long
 			cout << "constexpr constructor for type 'long long'           " << a << endl;
 		}
 		{

@@ -63,12 +63,11 @@ blocktriple<significantbits, bt>& convert(unsigned long long uint, blocktriple<s
 	return tgt;
 }
 
-template<size_t significantbits, typename bt = uint32_t>
+template<size_t nbits, typename bt = uint32_t>
 class blocktriple {
 public:
-	static constexpr size_t nbits = significantbits;
-	static constexpr size_t fbits = significantbits - 1;
-	using bits = blockbinary<significantbits, bt>;
+	static constexpr size_t fbits = nbits - 1;
+	using bits = blockbinary<nbits, bt>;
 
 	constexpr blocktriple(const blocktriple&) noexcept = default;
 	constexpr blocktriple(blocktriple&&) noexcept = default;
@@ -77,65 +76,107 @@ public:
 	constexpr blocktriple& operator=(blocktriple&&) noexcept = default;
 
 	constexpr blocktriple() noexcept : 
-		_nan{ false }, 	_inf{ false }, _zero{ false }, 
+		_nan{ false }, 	_inf{ false }, _zero{ true }, 
 		_sign{ false }, _scale{ 0 }, _significant{ 0 } {}
 
-	constexpr blocktriple(signed char iv) noexcept { *this = iv; }
-	constexpr blocktriple(short iv)       noexcept { *this = iv; }
-	constexpr blocktriple(int iv)         noexcept { *this = iv;  }
-	constexpr blocktriple(long iv)        noexcept { *this = iv; }
-	constexpr blocktriple(long long iv)   noexcept { *this = iv; }
-	constexpr blocktriple(char iv)               noexcept { *this = iv; }
-	constexpr blocktriple(unsigned short iv)     noexcept { *this = iv; }
-	constexpr blocktriple(unsigned int iv)       noexcept { *this = iv; }
-	constexpr blocktriple(unsigned long iv)      noexcept { *this = iv; }
-	constexpr blocktriple(unsigned long long iv) noexcept { *this = iv; }
-	constexpr blocktriple(float iv)       noexcept { *this = iv; }
-	constexpr blocktriple(double iv)      noexcept { *this = iv; }
-	constexpr blocktriple(long double iv) noexcept { *this = iv; }
+	constexpr blocktriple(signed char iv) noexcept :
+		_nan{ false }, _inf{ false }, _zero{ true },
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+	constexpr blocktriple(short iv)       noexcept :
+		_nan{ false }, _inf{ false }, _zero{ true },
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+	constexpr blocktriple(int iv)         noexcept :
+		_nan{ false }, _inf{ false }, _zero{ true },
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+	constexpr blocktriple(long iv)        noexcept :
+		_nan{ false }, _inf{ false }, _zero{ true },
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+	constexpr blocktriple(long long iv)   noexcept :
+		_nan{ false }, _inf{ false }, _zero{ true },
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+	constexpr blocktriple(char iv)               noexcept :
+		_nan{ false }, _inf{ false }, _zero{ true },
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+	constexpr blocktriple(unsigned short iv)     noexcept :
+		_nan{ false }, _inf{ false }, _zero{ true },
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+	constexpr blocktriple(unsigned int iv)       noexcept :
+		_nan{ false }, _inf{ false }, _zero{ true },
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+	constexpr blocktriple(unsigned long iv)      noexcept :
+		_nan{ false }, _inf{ false }, _zero{ true },
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+	constexpr blocktriple(unsigned long long iv) noexcept :
+		_nan{ false }, _inf{ false }, _zero{ true },
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+	constexpr blocktriple(float iv)       noexcept :
+		_nan{ false }, _inf{ false }, _zero{ true },
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+	constexpr blocktriple(double iv)      noexcept :
+		_nan{ false }, _inf{ false }, _zero{ true },
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+	constexpr blocktriple(long double iv) noexcept :
+		_nan{ false }, _inf{ false }, _zero{ true },
+		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
 
 	constexpr blocktriple& operator=(signed char rhs) noexcept {
-		return convert_integer(rhs);
+		return convert_signed_integer(rhs);
 	}
 	constexpr blocktriple& operator=(short rhs) noexcept {
-		return convert_integer(rhs);
+		return convert_signed_integer(rhs);
 	}
 	constexpr blocktriple& operator=(int rhs) noexcept {
-		return convert_integer(rhs);
+		return convert_signed_integer(rhs);
 	}
 	constexpr blocktriple& operator=(long rhs) noexcept {
-		return convert_integer(rhs);
+		return convert_signed_integer(rhs);
 	}
 	constexpr blocktriple& operator=(long long rhs) noexcept {
-		return convert_integer(rhs);
+		return convert_signed_integer(rhs);
 	}
 
 	constexpr blocktriple& operator=(char rhs) noexcept {
-		return convert_integer(rhs);
+		return convert_unsigned_integer(rhs);
 	}
 	constexpr blocktriple& operator=(unsigned short rhs) noexcept {
-		return convert_integer(rhs);
+		return convert_unsigned_integer(rhs);
 	}
 	constexpr blocktriple& operator=(unsigned long rhs) noexcept {
-		return convert_integer(rhs);
+		return convert_unsigned_integer(rhs);
 	}
 	constexpr blocktriple& operator=(unsigned long long rhs) noexcept {
-		return convert_integer(rhs);
+		return convert_unsigned_integer(rhs);
 	}
 	template<typename Ty>
-	constexpr blocktriple& convert_integer(const Ty& rhs) noexcept {
+	constexpr blocktriple& convert_unsigned_integer(const Ty& rhs) noexcept {
+		_nan = false;
+		_inf = false;
+		_zero = true;
+		if (0 == rhs) return *this;
+		_zero = false;
+		_sign = false;
+		uint64_t raw = static_cast<uint64_t>(rhs);
+		_scale = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
+		uint32_t shift = sizeInBits - _scale - 1;
+		raw <<= shift;
+		_significant = round_to<sizeInBits>(raw);
+		return *this;
+	}
+	template<typename Ty>
+	constexpr blocktriple& convert_signed_integer(const Ty& rhs) noexcept {
 		_nan = false;
 		_inf = false;
 		_zero = true;
 		if (0 == rhs) return *this;
 		_zero = false;
 		_sign = (rhs < 0);
-		uint64_t raw = uint64_t(_sign ? -rhs : rhs);
+		uint64_t raw = static_cast<uint64_t>(_sign ? -rhs : rhs);
 		_scale = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
 		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-		uint32_t shift = sizeInBits - _scale;
+		uint32_t shift = sizeInBits - _scale - 1;
 		raw <<= shift;
-		_significant = round_to<sizeInBits, uint64_t>(raw);
+		_significant = round_to<sizeInBits, uint64_t>(uint64_t(raw));
 		return *this;
 	}
 	constexpr blocktriple& operator=(float rhs) noexcept { // TODO: deal with subnormals and inf
@@ -188,20 +229,20 @@ public:
 		return *this = double(rhs);
 	};
 	/// <summary>
-	/// round to a set number of fraction bits. nfbits is the number of fraction bits to round to.
+	/// round to a target number of bits. tgtbits is the number of significant bits to round to.
 	/// </summary>
 	/// <typeparam name="StorageType"></typeparam>
 	/// <param name="raw"></param>
 	/// <returns></returns>
-	template<size_t nfbits, typename StorageType>
+	template<size_t tgtbits, typename StorageType>
 	constexpr StorageType round_to(StorageType raw) noexcept {
-		if constexpr (significantbits <= nfbits) {
+		if constexpr (nbits < tgtbits) {
 			 // round to even: lsb round guard sticky
 			// collect guard, round, and sticky bits
 			// this same logic will work for the case where
 			// we only have a guard bit and no round and sticky bits
 			// because the mask logic will make round and sticky both 0
-			constexpr uint32_t shift = nfbits - significantbits;
+			constexpr uint32_t shift = tgtbits - nbits - 1;
 			StorageType mask = (StorageType(1ull) << shift);
 			bool guard = (mask & raw);
 			mask >>= 1;
@@ -216,7 +257,6 @@ public:
 			bool sticky = (mask & raw);
 
 			raw >>= (shift + 1);  // shift out the bits we are rounding away
-//			raw |= (1ul << (significantbits - 1)); // explicitly normalized significant
 			bool lsb = (raw & 0x1);
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
@@ -228,17 +268,16 @@ public:
 			if (guard) {
 				if (lsb && (!round && !sticky)) ++raw; // round to even
 				if (round || sticky) ++raw;
-				if (raw == (1ull << significantbits)) { // overflow
+				if (raw == (1ull << nbits)) { // overflow
 					++_scale;
 				}
 			}
-//			significant = (1ul << (significantbits - 1)) | raw;
 		}
 		else {
-			constexpr size_t shift = significantbits - nfbits - 1;
+			constexpr size_t shift = nbits - tgtbits;
 			raw <<= shift;
 		}
-		StorageType significant = (1ul << (significantbits - 1)) | raw;
+		StorageType significant = raw;
 		return significant;
 	}
 
@@ -281,8 +320,8 @@ private:
 		if (_zero) return 0.0;
 		double v = 1.0;
 		double scale = 0.5;
-		for (int i = int(significantbits) - 2; i >= 0; i--) {
-			if (_significant.test(i)) v += scale;
+		for (int i = int(nbits) - 2; i >= 0; i--) {
+			if (_significant.test(size_t(i))) v += scale;
 			scale *= 0.5;
 			if (scale == 0.0) break;
 		}
@@ -321,8 +360,8 @@ private:
 };
 
 ////////////////////// operators
-template<size_t significantbits, typename bt>
-inline std::ostream& operator<<(std::ostream& ostr, const blocktriple<significantbits, bt>& a) {
+template<size_t nbits, typename bt>
+inline std::ostream& operator<<(std::ostream& ostr, const blocktriple<nbits, bt>& a) {
 	if (a._inf) {
 		ostr << FP_INFINITE;
 	}
@@ -332,8 +371,8 @@ inline std::ostream& operator<<(std::ostream& ostr, const blocktriple<significan
 	return ostr;
 }
 
-template<size_t significantbits, typename bt>
-inline std::istream& operator>> (std::istream& istr, const blocktriple<significantbits, bt>& a) {
+template<size_t nbits, typename bt>
+inline std::istream& operator>> (std::istream& istr, const blocktriple<nbits, bt>& a) {
 	istr >> a._fraction;
 	return istr;
 }
@@ -421,26 +460,17 @@ template<size_t sbits, typename bt>
 inline bool operator>=(const blocktriple<sbits, bt>& lhs, const blocktriple<sbits, bt>& rhs) { return !operator< (lhs, rhs); }
 
 
-template<size_t significantbits, typename bt>
-std::string to_binary(const sw::universal::blocktriple<significantbits, bt>& a, bool bNibbleMarker = true) {
+template<size_t nbits, typename bt>
+std::string to_binary(const sw::universal::blocktriple<nbits, bt>& a, bool bNibbleMarker = true) {
 	std::stringstream s;
-	s << (a._sign ? "- " : "+ ");
-	// 16-bits of exponent would support 128bit long doubles
-	uint32_t mask = (1ul << 16);
-	int cnt = 16;
-	while (mask > 0) {
-		s << (mask & a._scale ? '1' : '0');
-		if (bNibbleMarker && cnt % 4 == 0 && cnt > 0) s << '\'';
-		mask >>= 1;
-		++cnt;
-	}
-	s << ": "; 
-	s << to_binary(a._significant, bNibbleMarker);
+	s << (a._sign ? "(-, " : "(+, ");
+	s << a._scale << ", "; 
+	s << to_binary(a._significant, bNibbleMarker) << ')';
 	return s.str();
 }
 
-template<size_t significantbits, typename bt>
-std::string to_triple(const blocktriple<significantbits, bt>& a, bool bNibbleMarker = true) {
+template<size_t nbits, typename bt>
+std::string to_triple(const blocktriple<nbits, bt>& a, bool bNibbleMarker = true) {
 	std::stringstream s;
 	s << (a._sign ? "(-, " : "(+, ") << a._scale << ", " << to_binary(a._significant, bNibbleMarker) << ')';
 	return s.str();

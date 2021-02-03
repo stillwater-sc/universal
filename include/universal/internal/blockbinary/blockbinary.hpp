@@ -369,7 +369,7 @@ public:
 	}
 	inline constexpr blockbinary& flip() noexcept { // in-place one's complement
 		for (size_t i = 0; i < nrBlocks; ++i) {
-			_block[i] = ~_block[i];
+			_block[i] = bt(~_block[i]);
 		}		
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
