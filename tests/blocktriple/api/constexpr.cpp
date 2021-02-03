@@ -4,7 +4,9 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #if defined(_MSC_VER)
+#pragma warning(disable : 4515) // 'sw::universal::findMostSignificantBit': unreferenced inline function has been removed
 #pragma warning(disable : 4820) // 'sw::universal::blocktriple<32,uint32_t>': '3' bytes padding added after data member 'sw::universal::blocktriple<32,uint32_t>::_sign'
+#pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 #endif
 #include <iostream>
 #include <iomanip>

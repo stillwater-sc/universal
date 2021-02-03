@@ -54,12 +54,12 @@
 namespace sw::universal {
 
 // Forward definitions
-template<size_t significantbits, typename bt> class blocktriple;
-template<size_t significantbits, typename bt> blocktriple<significantbits,bt> abs(const blocktriple<significantbits,bt>& v);
+template<size_t nbits, typename bt> class blocktriple;
+template<size_t nbits, typename bt> blocktriple<nbits,bt> abs(const blocktriple<nbits,bt>& v);
 
 
-template<size_t significantbits, typename bt>
-blocktriple<significantbits, bt>& convert(unsigned long long uint, blocktriple<significantbits, bt>& tgt) {
+template<size_t nbits, typename bt>
+blocktriple<nbits, bt>& convert(unsigned long long uint, blocktriple<nbits, bt>& tgt) {
 	return tgt;
 }
 
@@ -119,34 +119,18 @@ public:
 		_nan{ false }, _inf{ false }, _zero{ true },
 		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
 
-	constexpr blocktriple& operator=(signed char rhs) noexcept {
-		return convert_signed_integer(rhs);
-	}
-	constexpr blocktriple& operator=(short rhs) noexcept {
-		return convert_signed_integer(rhs);
-	}
-	constexpr blocktriple& operator=(int rhs) noexcept {
-		return convert_signed_integer(rhs);
-	}
-	constexpr blocktriple& operator=(long rhs) noexcept {
-		return convert_signed_integer(rhs);
-	}
-	constexpr blocktriple& operator=(long long rhs) noexcept {
-		return convert_signed_integer(rhs);
-	}
+	constexpr blocktriple& operator=(signed char rhs) noexcept { return convert_signed_integer(rhs); }
+	constexpr blocktriple& operator=(short rhs)       noexcept { return convert_signed_integer(rhs); }
+	constexpr blocktriple& operator=(int rhs)         noexcept { return convert_signed_integer(rhs); }
+	constexpr blocktriple& operator=(long rhs)        noexcept { return convert_signed_integer(rhs); }
+	constexpr blocktriple& operator=(long long rhs)   noexcept { return convert_signed_integer(rhs); }
 
-	constexpr blocktriple& operator=(char rhs) noexcept {
-		return convert_unsigned_integer(rhs);
-	}
-	constexpr blocktriple& operator=(unsigned short rhs) noexcept {
-		return convert_unsigned_integer(rhs);
-	}
-	constexpr blocktriple& operator=(unsigned long rhs) noexcept {
-		return convert_unsigned_integer(rhs);
-	}
-	constexpr blocktriple& operator=(unsigned long long rhs) noexcept {
-		return convert_unsigned_integer(rhs);
-	}
+	constexpr blocktriple& operator=(char rhs)               noexcept { return convert_unsigned_integer(rhs); }
+	constexpr blocktriple& operator=(unsigned short rhs)     noexcept { return convert_unsigned_integer(rhs); }
+	constexpr blocktriple& operator=(unsigned int rhs)       noexcept { return convert_unsigned_integer(rhs); }
+	constexpr blocktriple& operator=(unsigned long rhs)      noexcept { return convert_unsigned_integer(rhs); }
+	constexpr blocktriple& operator=(unsigned long long rhs) noexcept { return convert_unsigned_integer(rhs); }
+
 	template<typename Ty>
 	constexpr blocktriple& convert_unsigned_integer(const Ty& rhs) noexcept {
 		_nan = false;
@@ -160,7 +144,7 @@ public:
 		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
 		uint32_t shift = sizeInBits - _scale - 1;
 		raw <<= shift;
-		_significant = round_to<sizeInBits>(raw);
+		_significant = round_to<sizeInBits, uint64_t>(raw);
 		return *this;
 	}
 	template<typename Ty>
@@ -176,7 +160,7 @@ public:
 		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
 		uint32_t shift = sizeInBits - _scale - 1;
 		raw <<= shift;
-		_significant = round_to<sizeInBits, uint64_t>(uint64_t(raw));
+		_significant = round_to<sizeInBits, uint64_t>(raw);
 		return *this;
 	}
 	constexpr blocktriple& operator=(float rhs) noexcept { // TODO: deal with subnormals and inf
@@ -193,7 +177,7 @@ public:
 		_sign = (0x8000'0000 & bc);
 		_scale = int((0x7F80'0000 & bc) >> 23) - 127;
 		uint32_t raw = (1ul << 23) | (0x007F'FFFF & bc);
-		_significant = round_to<23, uint32_t>(raw);
+		_significant = round_to<24, uint32_t>(raw);
 #else
 		_zero = true;
 		_sign = false;
@@ -216,7 +200,7 @@ public:
 		_sign = (0x8000'0000'0000'0000 & bc);
 		_scale = int((0x7FF0'0000'0000'0000ull & bc) >> 52) - 1023;
 		uint64_t raw = (1ull << 52) | (0x000F'FFFF'FFFF'FFFFull & bc);
-		_significant = bt(round_to<52, uint64_t>(raw));
+		_significant = round_to<53, uint64_t>(raw);
 #else
 		_zero = true;
 		_sign = false;
@@ -234,21 +218,21 @@ public:
 	/// <typeparam name="StorageType"></typeparam>
 	/// <param name="raw"></param>
 	/// <returns></returns>
-	template<size_t tgtbits, typename StorageType>
-	constexpr StorageType round_to(StorageType raw) noexcept {
-		if constexpr (nbits < tgtbits) {
-			 // round to even: lsb round guard sticky
+	template<size_t nrsrcbits, typename StorageType>
+	constexpr bt round_to(StorageType raw) noexcept {
+		if constexpr (nbits < nrsrcbits) {
+			 // round to even: lsb guard round sticky
 			// collect guard, round, and sticky bits
 			// this same logic will work for the case where
 			// we only have a guard bit and no round and sticky bits
 			// because the mask logic will make round and sticky both 0
-			constexpr uint32_t shift = tgtbits - nbits - 1;
+			constexpr uint32_t shift = nrsrcbits - nbits - 1;
 			StorageType mask = (StorageType(1ull) << shift);
 			bool guard = (mask & raw);
 			mask >>= 1;
 			bool round = (mask & raw);
 			if constexpr (shift > 1) { // protect against a negative shift
-				mask = (StorageType(-1) << (shift - 2));
+				mask = StorageType(-1ll << (shift - 2));
 				mask = ~mask;
 			}
 			else {
@@ -270,14 +254,15 @@ public:
 				if (round || sticky) ++raw;
 				if (raw == (1ull << nbits)) { // overflow
 					++_scale;
+					raw >>= 1;
 				}
 			}
 		}
 		else {
-			constexpr size_t shift = nbits - tgtbits;
+			constexpr size_t shift = nbits - nrsrcbits;
 			raw <<= shift;
 		}
-		StorageType significant = raw;
+		bt significant = bt(raw);
 		return significant;
 	}
 

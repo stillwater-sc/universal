@@ -25,12 +25,13 @@ inline Integer two_to_the_power(Integer n) {
 template<typename Integer,
          typename = typename std::enable_if< std::is_integral<Integer>::value, Integer >::type
 >
-inline std::string to_binary(const Integer& number, int nbits = 0) {
+inline std::string to_binary(const Integer& number, int nbits = 0, bool bNibbleMarker = true) {
 	std::stringstream ss;
 	if (nbits == 0) nbits = 8*sizeof(number);
 	uint64_t mask = (uint64_t(1) << (nbits - 1));
 	for (int i = int(nbits) - 1; i >= 0; --i) {
 		ss << ((number & mask) ? '1' : '0');
+		if (bNibbleMarker && i > 0 && i % 4 == 0) ss << '\'';
 		mask >>= 1;
 	}
 	return ss.str();
