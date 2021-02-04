@@ -71,23 +71,6 @@ try {
 
 	cout << "blocktriple constexpr tests" << endl;
 	
-#if LATER
-	{
-		blocktriple<32> a;
-		cout << "0 : " << a << endl;
-		for (int i = 1; i < 65; ++i) {
-			a = i;
-			cout << i << " : " << to_binary(a, true) << " : " << a << endl;
-		}
-		a = 0.0;
-		cout << "0 : " << a << endl;
-		for (int i = 1; i < 1025; i *= 2) {
-			a = double(i);
-			cout << i << " : " << to_binary(a, true) << " : " << a << endl;
-		}
-	}
-#endif // LATER
-
 	{
 		// decorated constructors
 		{

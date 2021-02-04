@@ -14,7 +14,8 @@
 // compiler specific operators
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
-
+#define BIT_CAST_SUPPORT 1
+#define CONSTEXPRESSION 
 
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
 /* Intel ICC/ICPC. ------------------------------------------ */
@@ -22,7 +23,8 @@
 
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
-
+#define BIT_CAST_SUPPORT 1
+#define CONSTEXPRESSION 
 
 #elif defined(__HP_cc) || defined(__HP_aCC)
 /* Hewlett-Packard C/aC++. ---------------------------------- */
@@ -33,6 +35,10 @@
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
 //#pragma warning(disable : 4310)  // cast truncates constant value
+
+#define BIT_CAST_SUPPORT 1
+#define CONSTEXPRESSION constexpr
+#include <bit>
 
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
@@ -229,7 +235,13 @@ public:
 	using BlockType = bt;
 
 	// constructors
-	areal() noexcept : _block{ 0 } {};
+	constexpr areal() noexcept : _block{ 0 } {};
+
+	constexpr areal(const areal&) noexcept = default;
+	constexpr areal(areal&&) noexcept = default;
+
+	constexpr areal& operator=(const areal&) noexcept = default;
+	constexpr areal& operator=(areal&&) noexcept = default;
 
 	// decorated/converting constructors
 
@@ -245,54 +257,77 @@ public:
 	/// <summary>
 	/// construct an areal from a native type, specialized for size
 	/// </summary>
-	/// <param name="initial_value"></param>
-	areal(signed char initial_value)        { *this = initial_value; }
-	areal(short initial_value)              { *this = initial_value; }
-	areal(int initial_value)                { *this = initial_value; }
-	areal(long long initial_value)          { *this = initial_value; }
-	areal(unsigned long long initial_value) { *this = initial_value; }
-	areal(float initial_value)              { *this = initial_value; }
-	areal(double initial_value)             { *this = initial_value; }
-	areal(long double initial_value)        { *this = initial_value; }
-	areal(const areal& rhs)                 { *this = rhs; }
+	/// <param name="iv">initial value to construct</param>
+	constexpr areal(signed char iv)        noexcept : _block{ 0 } { *this = iv; }
+	constexpr areal(short iv)              noexcept : _block{ 0 } { *this = iv; }
+	constexpr areal(int iv)                noexcept : _block{ 0 } { *this = iv; }
+	constexpr areal(long iv)               noexcept : _block{ 0 } { *this = iv; }
+	constexpr areal(long long iv)          noexcept : _block{ 0 } { *this = iv; }
+	constexpr areal(char iv)               noexcept : _block{ 0 } { *this = iv; }
+	constexpr areal(unsigned short iv)     noexcept : _block{ 0 } { *this = iv; }
+	constexpr areal(unsigned int iv)       noexcept : _block{ 0 } { *this = iv; }
+	constexpr areal(unsigned long iv)      noexcept : _block{ 0 } { *this = iv; }
+	constexpr areal(unsigned long long iv) noexcept : _block{ 0 } { *this = iv; }
+	constexpr areal(float iv)              noexcept : _block{ 0 } { *this = iv; }
+	constexpr areal(double iv)             noexcept : _block{ 0 } { *this = iv; }
+	constexpr areal(long double iv)        noexcept : _block{ 0 } { *this = iv; }
 
 	// assignment operators
-	areal& operator=(signed char rhs) {
-		return *this = (float)(rhs);
-	}
-	areal& operator=(short rhs) {
-		return *this = (float)(rhs);
-	}
-	areal& operator=(int rhs) {
-		return *this = (double)(rhs);
-	}
-	areal& operator=(long long rhs) {
+	constexpr areal& operator=(signed char rhs) { return *this = (float)(rhs); }
+	constexpr areal& operator=(short rhs)       { return *this = (float)(rhs); }
+	constexpr areal& operator=(int rhs)         { return *this = (double)(rhs); }
+	constexpr areal& operator=(long rhs)        { return *this = (double)(rhs); }
+	constexpr areal& operator=(long long rhs) {
 		return *this = double(rhs); // TODO: doubles will truncate a long long
 	}
-	areal& operator=(unsigned long long rhs) {
+	constexpr areal& operator=(char rhs)           { return *this = (float)(rhs); }
+	constexpr areal& operator=(unsigned short rhs) { return *this = (float)(rhs); }
+	constexpr areal& operator=(unsigned int rhs)   { return *this = (double)(rhs); }
+	constexpr areal& operator=(unsigned long rhs)  { return *this = (double)(rhs); }
+	constexpr areal& operator=(unsigned long long rhs) {
 		return *this = double(rhs); // TODO: doubles will truncate an unsigned long long
 	}
-	areal& operator=(float rhs) {
+	constexpr areal& operator=(float rhs) {
 		clear();
+#if BIT_CAST_SUPPORT
+		// normal number
+		uint32_t bc = std::bit_cast<uint32_t>(rhs);
+		bool s = (0x8000'0000 & bc);
+		int exponent = int((0x7F80'0000 & bc) >> 23) - 127;
+		uint32_t raw = (0x007F'FFFF & bc);
+#else // !BIT_CAST_SUPPORT
 		float_decoder decoder;
 		decoder.f = rhs;
 		bool s = decoder.parts.sign ? true : false;
 		uint32_t raw = decoder.parts.fraction; // don't bring in a hidden bit
 		int exponent = static_cast<int>(decoder.parts.exponent) - 127;  // apply bias
-		if (std::isnan(rhs)) {
-			// 0.11111111.00000000000000000000001 signalling nan
-			// 0.11111111.10000000000000000000000 quiet nan
-			raw & 0x1 ? setnan(NAN_TYPE_SIGNALLING) : setnan(NAN_TYPE_QUIET);
-			return *this;
+#endif // !BIT_CAST_SUPPORT
+
+		// special case handling
+		if (exponent == 0xFF) { // special cases
+			if (!s && raw == 1) {
+				// 0.11111111.00000000000000000000001 signalling nan
+				setnan(NAN_TYPE_SIGNALLING);
+				return *this;
+			}
+			if (!s && raw == 0x0040'0000ul) {
+				// 0.11111111.10000000000000000000000 quiet nan
+				setnan(NAN_TYPE_QUIET);
+				return *this;
+			}
+			if (raw == 0) {
+				// 1.11111111.00000000000000000000000 -inf
+				// 0.11111111.00000000000000000000000 +inf
+				setinf(s);
+				return *this;
+			}
 		}
 		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
 			set(nbits - 1ull, s);
 			return *this;
 		}
-		if (std::isinf(rhs)) {
-			setinf(s);
-			return *this;
-		}
+		// this is a normal number
+		raw |= (1ull << 23); // add the hidden bit
 
 #if TRACE_CONVERSION
 		std::cout << '\n';
@@ -395,27 +430,45 @@ public:
 		}
 		return *this;
 	}
-	areal& operator=(double rhs) {
+	constexpr areal& operator=(double rhs) {
 		clear();
+#if BIT_CAST_SUPPORT
+		// normal number
+		uint64_t bc = std::bit_cast<uint64_t>(rhs);
+		bool s = (0x8000'0000'0000'0000 & bc);
+		int exponent = int((0x7FF0'0000'0000'0000ull & bc) >> 52) - 1023;
+		uint64_t raw = (0x000F'FFFF'FFFF'FFFFull & bc);
+#else // !BIT_CAST_SUPPORT
 		double_decoder decoder;
 		decoder.d = rhs;
 		bool s = decoder.parts.sign ? true : false;
-		uint64_t raw = decoder.parts.fraction; // don't bring in a hidden bit
 		int exponent = static_cast<int>(decoder.parts.exponent) - 1023;  // apply bias
-		if (std::isnan(rhs)) {
-			// 0.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
-			// 0.11111111111.1000000000000000000000000000000000000000000000000000 quiet nan
-			raw & 0x1 ? setnan(NAN_TYPE_SIGNALLING) : setnan(NAN_TYPE_QUIET);
-			return *this;
+		uint64_t raw = decoder.parts.fraction; // no hidden bit
+#endif // !BIT_CAST_SUPPORT
+		if (exponent == 0x7FF) { // special cases
+			if (!s && raw == 1) {
+				// 0.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
+				setnan(NAN_TYPE_SIGNALLING);
+				return *this;
+			}
+			if (!s && raw == 0x0008'FFFF'FFFF'FFFFull) {
+				// 0.11111111111.1000000000000000000000000000000000000000000000000000 quiet nan
+				setnan(NAN_TYPE_QUIET);
+				return *this;
+			}
+			if (raw == 0) {
+				// 1.11111111111.0000000000000000000000000000000000000000000000000000 -inf
+				// 0.11111111111.0000000000000000000000000000000000000000000000000000 +inf
+				setinf(s);
+				return *this;
+			}
 		}
 		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
 			set(nbits - 1ull, s);
 			return *this;
 		}
-		if (std::isinf(rhs)) {
-			setinf(s);
-			return *this;
-		}
+		// this is a normal number
+		raw |= (1ull << 52); // add the hidden bit
 
 #if TRACE_CONVERSION
 		std::cout << '\n';
@@ -517,9 +570,8 @@ public:
 		}
 		return *this;
 	}
-	areal& operator=(long double rhs) {
-
-		return *this;
+	constexpr areal& operator=(long double rhs) {
+		return *this = double(rhs);
 	}
 
 	// arithmetic operators
@@ -654,7 +706,7 @@ public:
 	/// </summary>
 	/// <param name="raw_bits">unsigned long long carrying bits that will be written verbatim to the areal</param>
 	/// <returns>reference to the areal</returns>
-	inline areal& set_raw_bits(uint64_t raw_bits) noexcept {
+	inline constexpr areal& set_raw_bits(uint64_t raw_bits) noexcept {
 		// TODO: how to disable the GCC warning about shift ?
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = raw_bits & storageMask;
@@ -715,7 +767,7 @@ public:
 
 	// selectors
 	inline constexpr bool sign() const { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
-	inline int scale() const {
+	inline constexpr int scale() const {
 		int e{ 0 };
 		if constexpr (MSU_CAPTURES_E) {
 			e = int((_block[MSU] & ~SIGN_BIT_MASK) >> EXP_SHIFT);
@@ -752,7 +804,7 @@ public:
 	}
 	inline constexpr bool isneg() const { return sign(); }
 	inline constexpr bool ispos() const { return !sign(); }
-	inline bool iszero() const { // TODO: need to deal with -0 as well
+	inline constexpr bool iszero() const { // TODO: need to deal with -0 as well
 
 		if constexpr (0 == nrBlocks) {
 			return true;
@@ -778,7 +830,7 @@ public:
 	/// </summary>
 	/// <param name="InfType">default is 0, both types, -1 checks for -inf, 1 checks for +inf</param>
 	/// <returns>true if +-inf, false otherwise</returns>
-	inline bool isinf(int InfType = INF_TYPE_EITHER) const {
+	inline constexpr bool isinf(int InfType = INF_TYPE_EITHER) const {
 		bool isInf = false;
 		bool isNegInf = false;
 		bool isPosInf = false;
@@ -821,7 +873,7 @@ public:
 	/// </summary>
 	/// <param name="NaNType">default is 0, both types, 1 checks for Signalling NaN, -1 checks for Quiet NaN</param>
 	/// <returns>true if the right kind of NaN, false otherwise</returns>
-	inline bool isnan(int NaNType = NAN_TYPE_EITHER) const {
+	inline constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const {
 		bool isNaN = true;
 		switch (nrBlocks) {
 		case 0:

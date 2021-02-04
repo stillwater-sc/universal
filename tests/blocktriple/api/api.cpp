@@ -41,7 +41,7 @@ try {
 */
 
 	{
-		/*CONSTEXPRESSION*/ blocktriple<9, uint32_t> a = 511.5f;
+		CONSTEXPRESSION blocktriple<9, uint32_t> a = 511.5f;
 		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
 	}
 	{
