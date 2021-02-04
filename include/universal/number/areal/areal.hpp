@@ -14,7 +14,7 @@
 // compiler specific operators
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
-#define BIT_CAST_SUPPORT 1
+#define BIT_CAST_SUPPORT 0
 #define CONSTEXPRESSION 
 
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
@@ -23,7 +23,7 @@
 
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
-#define BIT_CAST_SUPPORT 1
+#define BIT_CAST_SUPPORT 0
 #define CONSTEXPRESSION 
 
 #elif defined(__HP_cc) || defined(__HP_aCC)

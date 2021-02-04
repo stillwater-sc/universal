@@ -44,15 +44,15 @@ try {
 		}
 #if BIT_CAST_SUPPORT
 		{
-			constexpr areal<8, 4> a(1.0f);  // float
+			CONSTEXPRESSION areal<8, 4> a(1.0f);  // float
 			cout << a << endl;
 		}
 		{
-			constexpr areal<8, 4> a(1.0);   // double
+			CONSTEXPRESSION areal<8, 4> a(1.0);   // double
 			cout << a << endl;
 		}
 		{
-			constexpr areal<8, 4> a(1.0l);  // long double
+			CONSTEXPRESSION areal<8, 4> a(1.0l);  // long double
 			cout << a << endl;
 		}
 #endif // BIT_CAST_SUPPORT
@@ -69,15 +69,15 @@ try {
 		}
 #if BIT_CAST_SUPPORT
 		{
-			constexpr areal<8, 4> a = 1.0f;  // float
+			CONSTEXPRESSION areal<8, 4> a = 1.0f;  // float
 			cout << a << endl;
 		}
 		{
-			constexpr areal<8, 4> a = 1.0;   // double
+			CONSTEXPRESSION areal<8, 4> a = 1.0;   // double
 			cout << a << endl;
 		}
 		{
-			constexpr areal<8, 4> a = 1.0l;  // long double
+			CONSTEXPRESSION areal<8, 4> a = 1.0l;  // long double
 			cout << a << endl;
 		}
 #endif
