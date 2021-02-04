@@ -144,7 +144,7 @@ public:
 		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
 		uint32_t shift = sizeInBits - _scale - 1;
 		raw <<= shift;
-		_significant = round_to<sizeInBits, uint64_t>(raw);
+		_significant = round<sizeInBits, uint64_t>(raw);
 		return *this;
 	}
 	template<typename Ty>
@@ -160,7 +160,7 @@ public:
 		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
 		uint32_t shift = sizeInBits - _scale - 1;
 		raw <<= shift;
-		_significant = round_to<sizeInBits, uint64_t>(raw);
+		_significant = round<sizeInBits, uint64_t>(raw);
 		return *this;
 	}
 	constexpr blocktriple& operator=(float rhs) noexcept { // TODO: deal with subnormals and inf
@@ -177,7 +177,7 @@ public:
 		_sign = (0x8000'0000 & bc);
 		_scale = int((0x7F80'0000 & bc) >> 23) - 127;
 		uint32_t raw = (1ul << 23) | (0x007F'FFFF & bc);
-		_significant = round_to<24, uint32_t>(raw);
+		_significant = round<24, uint32_t>(raw);
 #else
 		_zero = true;
 		_sign = false;
@@ -200,7 +200,7 @@ public:
 		_sign = (0x8000'0000'0000'0000 & bc);
 		_scale = int((0x7FF0'0000'0000'0000ull & bc) >> 52) - 1023;
 		uint64_t raw = (1ull << 52) | (0x000F'FFFF'FFFF'FFFFull & bc);
-		_significant = round_to<53, uint64_t>(raw);
+		_significant = round<53, uint64_t>(raw);
 #else
 		_zero = true;
 		_sign = false;
@@ -212,21 +212,23 @@ public:
 	constexpr blocktriple& operator=(long double rhs) noexcept {
 		return *this = double(rhs);
 	};
+	
 	/// <summary>
-	/// round to a target number of bits. tgtbits is the number of significant bits to round to.
+	/// round a set of source bits to the present representation.
+	/// srcbits is the number of bits of significant in the source representation
 	/// </summary>
 	/// <typeparam name="StorageType"></typeparam>
 	/// <param name="raw"></param>
 	/// <returns></returns>
-	template<size_t nrsrcbits, typename StorageType>
-	constexpr bt round_to(StorageType raw) noexcept {
-		if constexpr (nbits < nrsrcbits) {
+	template<size_t srcbits, typename StorageType>
+	constexpr bt round(StorageType raw) noexcept {
+		if constexpr (nbits < srcbits) {
 			 // round to even: lsb guard round sticky
 			// collect guard, round, and sticky bits
 			// this same logic will work for the case where
 			// we only have a guard bit and no round and sticky bits
 			// because the mask logic will make round and sticky both 0
-			constexpr uint32_t shift = nrsrcbits - nbits - 1;
+			constexpr uint32_t shift = srcbits - nbits - 1;
 			StorageType mask = (StorageType(1ull) << shift);
 			bool guard = (mask & raw);
 			mask >>= 1;
@@ -259,7 +261,7 @@ public:
 			}
 		}
 		else {
-			constexpr size_t shift = nbits - nrsrcbits;
+			constexpr size_t shift = nbits - srcbits;
 			raw <<= shift;
 		}
 		bt significant = bt(raw);

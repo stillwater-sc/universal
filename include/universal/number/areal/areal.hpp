@@ -8,6 +8,7 @@
 #include <limits>
 
 #include <universal/native/ieee754.hpp>
+#include <universal/native/bit_functions.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/number/areal/exceptions.hpp>
 
@@ -273,20 +274,44 @@ public:
 	constexpr areal(long double iv)        noexcept : _block{ 0 } { *this = iv; }
 
 	// assignment operators
-	constexpr areal& operator=(signed char rhs) { return *this = (float)(rhs); }
-	constexpr areal& operator=(short rhs)       { return *this = (float)(rhs); }
-	constexpr areal& operator=(int rhs)         { return *this = (double)(rhs); }
-	constexpr areal& operator=(long rhs)        { return *this = (double)(rhs); }
-	constexpr areal& operator=(long long rhs) {
-		return *this = double(rhs); // TODO: doubles will truncate a long long
+	constexpr areal& operator=(signed char rhs) { return convert_signed_integer(rhs); }
+	constexpr areal& operator=(short rhs)       { return convert_signed_integer(rhs); }
+	constexpr areal& operator=(int rhs)         { return convert_signed_integer(rhs); }
+	constexpr areal& operator=(long rhs)        { return convert_signed_integer(rhs); }
+	constexpr areal& operator=(long long rhs)   { return convert_signed_integer(rhs); }
+
+	constexpr areal& operator=(char rhs)               { return convert_unsigned_integer(rhs); }
+	constexpr areal& operator=(unsigned short rhs)     { return convert_unsigned_integer(rhs); }
+	constexpr areal& operator=(unsigned int rhs)       { return convert_unsigned_integer(rhs); }
+	constexpr areal& operator=(unsigned long rhs)      { return convert_unsigned_integer(rhs); }
+	constexpr areal& operator=(unsigned long long rhs) { return convert_unsigned_integer(rhs); }
+
+	template<typename Ty>
+	constexpr areal& convert_unsigned_integer(const Ty& rhs) noexcept {
+		if (0 == rhs) return *this;
+		bool s = false;
+		uint64_t raw = static_cast<uint64_t>(rhs);
+		int exponent = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
+		uint32_t shift = sizeInBits - exponent - 1;
+		raw <<= shift;
+		raw = round<sizeInBits, uint64_t>(raw, exponent);
+		return *this;
 	}
-	constexpr areal& operator=(char rhs)           { return *this = (float)(rhs); }
-	constexpr areal& operator=(unsigned short rhs) { return *this = (float)(rhs); }
-	constexpr areal& operator=(unsigned int rhs)   { return *this = (double)(rhs); }
-	constexpr areal& operator=(unsigned long rhs)  { return *this = (double)(rhs); }
-	constexpr areal& operator=(unsigned long long rhs) {
-		return *this = double(rhs); // TODO: doubles will truncate an unsigned long long
+	template<typename Ty>
+	constexpr areal& convert_signed_integer(const Ty& rhs) noexcept {
+		if (0 == rhs) return *this;
+		bool s = (rhs < 0);
+		uint64_t raw = static_cast<uint64_t>(s ? -rhs : rhs);
+		int exponent = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
+		uint32_t shift = sizeInBits - exponent - 1;
+		raw <<= shift;
+		raw = round<sizeInBits, uint64_t>(raw, exponent);
+		return *this;
 	}
+
+
 	constexpr areal& operator=(float rhs) {
 		clear();
 #if BIT_CAST_SUPPORT
@@ -1038,6 +1063,60 @@ public:
 protected:
 	// HELPER methods
 
+	/// <summary>
+	/// round a set of source bits to the present representation.
+	/// srcbits is the number of bits of significant in the source representation
+	/// </summary>
+	/// <typeparam name="StorageType"></typeparam>
+	/// <param name="raw"></param>
+	/// <returns></returns>
+	template<size_t srcbits, typename StorageType>
+	constexpr uint64_t round(StorageType raw, int& exponent) noexcept {
+		if constexpr (fhbits < srcbits) {
+			// round to even: lsb guard round sticky
+		   // collect guard, round, and sticky bits
+		   // this same logic will work for the case where
+		   // we only have a guard bit and no round and sticky bits
+		   // because the mask logic will make round and sticky both 0
+			constexpr uint32_t shift = srcbits - fhbits - 1;
+			StorageType mask = (StorageType(1ull) << shift);
+			bool guard = (mask & raw);
+			mask >>= 1;
+			bool round = (mask & raw);
+			if constexpr (shift > 1) { // protect against a negative shift
+				mask = StorageType(-1ll << (shift - 2));
+				mask = ~mask;
+			}
+			else {
+				mask = 0;
+			}
+			bool sticky = (mask & raw);
+
+			raw >>= (shift + 1);  // shift out the bits we are rounding away
+			bool lsb = (raw & 0x1);
+			//  ... lsb | guard  round sticky   round
+			//       x     0       x     x       down
+			//       0     1       0     0       down  round to even
+			//       1     1       0     0        up   round to even
+			//       x     1       0     1        up
+			//       x     1       1     0        up
+			//       x     1       1     1        up
+			if (guard) {
+				if (lsb && (!round && !sticky)) ++raw; // round to even
+				if (round || sticky) ++raw;
+				if (raw == (1ull << nbits)) { // overflow
+					++exponent;
+					raw >>= 1;
+				}
+			}
+		}
+		else {
+			constexpr size_t shift = fhbits - srcbits;
+			raw <<= shift;
+		}
+		uint64_t significant = raw;
+		return significant;
+	}
 	template<typename ArgumentBlockType>
 	void copyBits(ArgumentBlockType v) {
 		size_t blocksRequired = (8 * sizeof(v) + 1 ) / bitsInBlock;
