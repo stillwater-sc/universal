@@ -876,23 +876,24 @@ public:
 		bool isInf = false;
 		bool isNegInf = false;
 		bool isPosInf = false;
-		switch (nrBlocks) {
-		case 0:
+		if constexpr (0 == nrBlocks) {
 			return false;
-		case 1:
+		}
+		else if constexpr (1 == nrBlocks) {
 			isNegInf = (_block[MSU] & MSU_MASK) == (MSU_MASK ^ LSB_BIT_MASK);
 			isPosInf = (_block[MSU] & MSU_MASK) == ((MSU_MASK ^ SIGN_BIT_MASK) ^ LSB_BIT_MASK);
 			return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
-					(InfType == INF_TYPE_NEGATIVE ?	isNegInf :
-					  (InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
-		case 2:
+				(InfType == INF_TYPE_NEGATIVE ? isNegInf :
+					(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
+		}
+		else if constexpr (2 == nrBlocks) {
 			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
-			break;
-		case 3:
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) && 
-				    (_block[1] == BLOCK_MASK);
-			break;
-		default:
+		}
+		else if constexpr (3 == nrBlocks) {
+			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) &&
+				(_block[1] == BLOCK_MASK);
+		}
+		else {
 			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
 			for (size_t i = 1; i < nrBlocks - 1; ++i) {
 				if (_block[i] != BLOCK_MASK) {
@@ -900,7 +901,6 @@ public:
 					break;
 				}
 			}
-			break;
 		}
 		isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
 		isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
@@ -917,25 +917,24 @@ public:
 	/// <returns>true if the right kind of NaN, false otherwise</returns>
 	inline constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const {
 		bool isNaN = true;
-		switch (nrBlocks) {
-		case 0:
+		if constexpr (0 == nrBlocks) {
 			return false;
-		case 1:
-			break;
-		case 2:
+		}
+		else if constexpr (1 == nrBlocks) {
+		}
+		else if constexpr (2 == nrBlocks) {
 			isNaN = (_block[0] == BLOCK_MASK);
-			break;
-		case 3:
+		}
+		else if constexpr (3 == nrBlocks) {
 			isNaN = (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK);
-			break;
-		default:
+		}
+		else {
 			for (size_t i = 0; i < nrBlocks - 1; ++i) {
 				if (_block[i] != BLOCK_MASK) {
 					isNaN = false;
 					break;
 				}
 			}
-			break;
 		}
 		bool isNegNaN = isNaN && ((_block[MSU] & MSU_MASK) == MSU_MASK);
 		bool isPosNaN = isNaN && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
