@@ -16,6 +16,60 @@
 #include <universal/number/areal/manipulators.hpp>
 #include <universal/number/areal/math_functions.hpp>
 
+template<typename Real>
+void TestConstexprConstruction() {
+	// decorated constructors
+	{
+		Real a(1l);  // signed long
+		std::cout << a << '\n';
+	}
+	{
+		constexpr Real a(1ul);  // unsigned long
+		std::cout << a << '\n';
+	}
+#if BIT_CAST_SUPPORT
+	{
+		CONSTEXPRESSION Real a(1.0f);  // float
+		std::cout << a << '\n';
+	}
+	{
+		CONSTEXPRESSION Real a(1.0);   // double
+		std::cout << a << '\n';
+	}
+	{
+		CONSTEXPRESSION Real a(1.0l);  // long double
+		std::cout << a << '\n';
+	}
+#endif // BIT_CAST_SUPPORT
+}
+
+template<typename Real>
+void TestConstexprAssignment() {
+	// decorated constructors
+	{
+		Real a = 1l;  // signed long
+		std::cout << a << '\n';
+	}
+	{
+		constexpr Real a = 1ul;  // unsigned long
+		std::cout << a << '\n';
+	}
+#if BIT_CAST_SUPPORT
+	{
+		CONSTEXPRESSION Real a = 1.0f;  // float
+		std::cout << a << '\n';
+	}
+	{
+		CONSTEXPRESSION Real a = 1.0;   // double
+		std::cout << a << '\n';
+	}
+	{
+		CONSTEXPRESSION Real a = 1.0l;  // long double
+		std::cout << a << '\n';
+	}
+#endif // BIT_CAST_SUPPORT
+}
+
 // conditional compile flags
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
@@ -31,57 +85,9 @@ try {
 
 	cout << "AREAL constexpr tests" << endl;
 	
-
-	{
-		// decorated constructors
-		{
-			constexpr areal<8, 4> a(1l);  // signed long
-			cout << a << endl;
-		}
-		{
-			constexpr areal<8, 4> a(1ul);  // unsigned long
-			cout << a << endl;
-		}
-#if BIT_CAST_SUPPORT
-		{
-			CONSTEXPRESSION areal<8, 4> a(1.0f);  // float
-			cout << a << endl;
-		}
-		{
-			CONSTEXPRESSION areal<8, 4> a(1.0);   // double
-			cout << a << endl;
-		}
-		{
-			CONSTEXPRESSION areal<8, 4> a(1.0l);  // long double
-			cout << a << endl;
-		}
-#endif // BIT_CAST_SUPPORT
-	}
-	{
-		// assignment operators
-		{
-			constexpr areal<8, 4> a = 1l;  // signed long
-			cout << a << endl;
-		}
-		{
-			constexpr areal<8, 4> a = 1ul;  // unsigned long
-			cout << a << endl;
-		}
-#if BIT_CAST_SUPPORT
-		{
-			CONSTEXPRESSION areal<8, 4> a = 1.0f;  // float
-			cout << a << endl;
-		}
-		{
-			CONSTEXPRESSION areal<8, 4> a = 1.0;   // double
-			cout << a << endl;
-		}
-		{
-			CONSTEXPRESSION areal<8, 4> a = 1.0l;  // long double
-			cout << a << endl;
-		}
-#endif
-	}
+	using Real = areal<8, 2>;
+	TestConstexprConstruction<Real>();
+	TestConstexprAssignment<Real>();
 
 	if (nrOfFailedTestCases > 0) {
 		cout << "FAIL" << endl;

@@ -288,6 +288,7 @@ public:
 
 	template<typename Ty>
 	constexpr areal& convert_unsigned_integer(const Ty& rhs) noexcept {
+		clear();
 		if (0 == rhs) return *this;
 		bool s = false;
 		uint64_t raw = static_cast<uint64_t>(rhs);
@@ -300,6 +301,7 @@ public:
 	}
 	template<typename Ty>
 	constexpr areal& convert_signed_integer(const Ty& rhs) noexcept {
+		clear();
 		if (0 == rhs) return *this;
 		bool s = (rhs < 0);
 		uint64_t raw = static_cast<uint64_t>(s ? -rhs : rhs);
@@ -308,11 +310,26 @@ public:
 		uint32_t shift = sizeInBits - exponent - 1;
 		raw <<= shift;
 		raw = round<sizeInBits, uint64_t>(raw, exponent);
+		bool ubit = true;
+		// construct the target areal
+		uint64_t bits = (s ? 1u : 0u);
+		bits <<= es;
+		bits |= exponent + EXP_BIAS;
+		bits <<= nbits - 1ull - es;
+		bits |= raw;
+		bits &= 0xFFFF'FFFE;
+		bits |= (ubit ? 0x1 : 0x0);
+		if constexpr (1 == nrBlocks) {
+			_block[MSU] = bt(bits);
+		}
+		else {
+			copyBits(bits);
+		}
 		return *this;
 	}
 
 
-	constexpr areal& operator=(float rhs) {
+	CONSTEXPRESSION areal& operator=(float rhs) {
 		clear();
 #if BIT_CAST_SUPPORT
 		// normal number
@@ -447,7 +464,7 @@ public:
 		bits |= raw;
 		bits &= 0xFFFF'FFFE;
 		bits |= (ubit ? 0x1 : 0x0);
-		if (nrBlocks == 1) {
+		if constexpr (1 == nrBlocks) {
 			_block[MSU] = bt(bits);
 		}
 		else {
@@ -455,7 +472,7 @@ public:
 		}
 		return *this;
 	}
-	constexpr areal& operator=(double rhs) {
+	CONSTEXPRESSION areal& operator=(double rhs) {
 		clear();
 #if BIT_CAST_SUPPORT
 		// normal number
@@ -595,7 +612,7 @@ public:
 		}
 		return *this;
 	}
-	constexpr areal& operator=(long double rhs) {
+	CONSTEXPRESSION areal& operator=(long double rhs) {
 		return *this = double(rhs);
 	}
 
@@ -799,7 +816,6 @@ public:
 			if (e == 0) {
 				// subnormal scale is determined by fraction
 				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
-				;
 				e = (2l - (1l << (es - 1ull))) - 1;
 				for (size_t i = nbits - 2ull - es; i > 0; --i) {
 					if (test(i)) break;
