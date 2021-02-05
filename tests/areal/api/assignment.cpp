@@ -82,8 +82,39 @@ int VerifyReverseSampling(const std::string& tag, bool bReportIndividualTestCase
 		ref.set_raw_bits(i);
 		NativeFloatingPointType input = NativeFloatingPointType(ref);
 		result = input;
-		if (result != ref && !ref.iszero()) {
-                           // ignore the -0 case as the compiler might optimize that sign away
+		// special cases do not have consistent compiler behavior
+		if (ref.iszero()) {
+			// optimization compilers may destroy the sign on -0
+			if (input != 0) {
+				nrOfFailedTestCases++;
+				if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+			}
+			else {
+				if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+			}
+		}
+		else if (ref.isnan()) {
+			// optimization compilers may change signalling NaNs to quiet NaNs
+			if (fpclassify(input) != FP_NAN) {
+				nrOfFailedTestCases++;
+				if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+			}
+			else {
+				if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+			}
+		}
+		else if (ref.isinf()) {
+			// optimization compilers may destroy the sign on -0
+			if (fpclassify(input) != FP_INFINITE) {
+				nrOfFailedTestCases++;
+				if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
+			}
+			else {
+				if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", input, result, ref);
+			}
+		}
+		else if (result != ref) {
+                          
 			nrOfFailedTestCases++;
 //			std::cout << "------->  " << i << " " << sw::universal::to_binary(input) << " " << sw::universal::to_binary(result) << std::endl;
 			if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
@@ -141,7 +172,7 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	// test 0.0
 	std::cout << "Test positive 0.0\n";
 	a.set_raw_bits(0x00);
-	std::cout << "convertion(a)= " << NativeFloatingPointType(a) << '\n';
+	std::cout << "conversion(a)= " << NativeFloatingPointType(a) << '\n';
 	fa = NativeFloatingPointType(a);
 	std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
 	a = fa;
@@ -418,7 +449,7 @@ try {
 
 	// GenerateArealTable<4, 1>(cout, false);
 
-	bool bConversionTest = false;
+	bool bConversionTest = true;
 	if (bConversionTest) {
 		float test = 0.0625f;
 		std::cout << to_binary(test) << " : " << test << std::endl;
@@ -436,7 +467,33 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<9, 1, uint8_t, float>(tag, true, false), "areal<9,1, uint8_t>", "=float");
 	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<9, 1, uint8_t, float>(tag, true, false), "areal<9,1, uint8_t>", "=float");
 
+	{
+		float f;
+		sw::universal::areal<9, 1> a;
+		a.set_raw_bits(0x1FF); f = float(a);
+		std::cout << "signalling NaN : " << color_print(a) << " : " << a << " : " << f << '\n';
+		a.set_raw_bits(0x0FF); f = float(a);
+		std::cout << "     quiet NaN : " << color_print(a) << " : " << a << " : " << f << '\n';
+		a.set_raw_bits(0x1FE); f = float(a);
+		std::cout << "     -INFINITY : " << color_print(a) << " : " << a << " : " << f << '\n';
+		a.set_raw_bits(0x0FE); f = float(a);
+		std::cout << "     +INFINITY : " << color_print(a) << " : " << a << " : " << f << '\n';
+	}
 	
+	nrOfFailedTestCases += ReportTestResult(VerifySubnormalReverseSampling<5, 2, uint8_t, float>(tag, true, true), "areal<5,2, uint8_t>", "=float");
+	nrOfFailedTestCases += ReportTestResult(VerifyReverseSampling<5, 2, uint8_t, float>(tag, true, true), "areal<5,2, uint8_t>", "=float");
+
+	{
+		float f;
+		sw::universal::areal<5, 2> a;
+		a.set_raw_bits(0x18);
+		std::cout << color_print(a) << " : " << a << '\n';
+		f = float(a);
+		a = f;
+		std::cout << "source -2 : " << color_print(a) << " : " << a << " : " << f << '\n';
+
+	}
+
 #if STRESS_TESTING
 
 	// manual exhaustive test

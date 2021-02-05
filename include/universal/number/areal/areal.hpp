@@ -369,8 +369,7 @@ public:
 			set(nbits - 1ull, s);
 			return *this;
 		}
-		// this is a normal number
-		raw |= (1ull << 23); // add the hidden bit
+		// this is not a special number
 
 #if TRACE_CONVERSION
 		std::cout << '\n';
@@ -426,8 +425,8 @@ public:
 				}
 			}
 			else {
-				// this is a subnormal double
-				std::cout << "conversion of subnormal IEEE doubles not implemented yet\n";
+				// this is a subnormal float
+				std::cout << "conversion of subnormal IEEE float not implemented yet\n";
 			}
 		}
 		else {
@@ -510,8 +509,7 @@ public:
 			set(nbits - 1ull, s);
 			return *this;
 		}
-		// this is a normal number
-		raw |= (1ull << 52); // add the hidden bit
+		// this is not a special number
 
 #if TRACE_CONVERSION
 		std::cout << '\n';
