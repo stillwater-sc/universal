@@ -220,13 +220,14 @@ public:
 	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
-	static constexpr bt MSU_MASK = (bt(-1) >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr bt ALLONES = bt(~0);
+	static constexpr bt MSU_MASK = (ALLONES >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr size_t bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt LSB_BIT_MASK = bt(1ull);
 	static constexpr bool MSU_CAPTURES_E = (nbits - 1ull - es) < bitsInMSU;
 	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (nbits - 1ull - es) : 0);
-	static constexpr bt MSU_EXP_MASK = ((bt(-1) << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
+	static constexpr bt MSU_EXP_MASK = ((ALLONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;
 	static constexpr int MIN_EXP_NORMAL = 1 - EXP_BIAS;
@@ -974,6 +975,7 @@ public:
 	void debug() const {
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
+		std::cout << "ALLONES           : " << to_binary(ALLONES, true) << '\n';
 		std::cout << "BLOCK_MASK        : " << to_binary<bt>(BLOCK_MASK, true) << '\n';
 		std::cout << "nrBlocks          : " << nrBlocks << '\n';
 		std::cout << "bits in MSU       : " << bitsInMSU << '\n';
@@ -1100,7 +1102,8 @@ protected:
 			mask >>= 1;
 			bool round = (mask & raw);
 			if constexpr (shift > 1) { // protect against a negative shift
-				mask = StorageType(-1ll << (shift - 2));
+				StorageType allones(~0);
+				mask = StorageType(allones << (shift - 2));
 				mask = ~mask;
 			}
 			else {
@@ -1134,7 +1137,7 @@ protected:
 		return significant;
 	}
 	template<typename ArgumentBlockType>
-	void copyBits(ArgumentBlockType v) {
+	constexpr void copyBits(ArgumentBlockType v) {
 		size_t blocksRequired = (8 * sizeof(v) + 1 ) / bitsInBlock;
 		size_t maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
 		bt b{ 0ul }; b = bt(~b);

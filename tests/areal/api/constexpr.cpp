@@ -85,7 +85,10 @@ try {
 
 	cout << "AREAL constexpr tests" << endl;
 	
-	using Real = areal<8, 2>;
+	using Real = areal<12, 2>;
+	Real a;
+	a.debug();
+
 	TestConstexprConstruction<Real>();
 	TestConstexprAssignment<Real>();
 
