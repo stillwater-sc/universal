@@ -78,7 +78,7 @@ std::string pretty_print(const areal<nbits, es, bt>& r, int printPrecision = std
 	std::stringstream ss;
 	bool s{ false };
 	blockbinary<es, bt> e;
-	blockbinary<r.fbits> f;
+	blockbinary<areal<nbits, es, bt>::fbits> f;
 	bool ubit{ false };
 	decode(r, s, e, f, ubit);
 
@@ -113,7 +113,7 @@ std::string color_print(const areal<nbits, es, bt>& r) {
 	std::stringstream ss;
 	bool s{ false };
 	blockbinary<es,bt> e;
-	blockbinary<r.fbits> f;
+	blockbinary<areal<nbits, es, bt>::fbits> f;
 	bool ubit{ false };
 	decode(r, s, e, f, ubit);
 

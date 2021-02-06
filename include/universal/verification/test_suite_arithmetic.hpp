@@ -65,7 +65,7 @@ int VerifyAssignment(bool bReportIndividualTestCases, bool verbose = false) {
 	return nrOfFailedTestCases;
 }
 
-// enumerate all conversion cases for a fixed-point configuration
+// enumerate all conversion cases for a number system configuration that uses 'round-to-even'
 
 /// <summary>
 /// enumerate all conversion cases for a TestType
@@ -92,7 +92,6 @@ int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 
 	// For example: 
 	// TestType: fixpnt<nbits,rbits,Saturating,uint8_t> needs RefType fixpnt<nbits+1, rbits+1, Saturating,uint8_t>
-	// TestType: areal<nbits,es,uint8_t> needs RefType areal<nbits + 1, es, uint8_t>
 	// TestType: posit<nbits,es,uint8_t> needs RefType posit<nbits + 1, es, uint8_t>
 
 	const unsigned max = nbits > 20 ? 20 : nbits + 1;

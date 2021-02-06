@@ -523,12 +523,12 @@ public:
 		// saturate to minpos/maxpos with uncertainty bit set to 1
 		if (exponent > MAX_EXP) {	
 			if (s) maxneg(*this); else maxpos(*this); // saturate the maxpos or maxneg
-			this->set(0);
+			this->set(0); // and set the uncertainty bit to reflect it is (maxpos, inf) or (maxneg, -inf)
 			return *this;
 		}
 		if (exponent < MIN_EXP_SUBNORMAL) {
-			if (s) minneg(*this); else minpos(*this); // saturate to minpos or minneg
-			this->set(0);
+			if (s) this->set(nbits - 1); // set -0
+			this->set(0); // and set the uncertainty bit to reflect (0,minpos) or (-0,minneg)
 			return *this;
 		}
 		// set the exponent
@@ -557,7 +557,7 @@ public:
 				adjustment = -(exponent + subnormal_reciprocal_shift[es]);
 				if (shiftRight > 0) {		// do we need to round?
 					ubit = (mask & raw) != 0;
-					raw >>= shiftRight + adjustment;
+					raw >>= (shiftRight + adjustment);
 				}
 				else { // all bits of the double go into this representation and need to be shifted up
 					// ubit = false; already set to false
@@ -650,7 +650,42 @@ public:
 	areal& operator/=(double rhs) {
 		return *this /= areal<nbits, es>(rhs);
 	}
+	/// <summary>
+	/// move to the next bit encoding modulo 2^nbits
+	/// </summary>
+	/// <typeparam name="bt"></typeparam>
 	inline areal& operator++() {
+		if constexpr (0 == nrBlocks) {
+			return *this;
+		}
+		else if constexpr (1 == nrBlocks) {
+			// special cases are: 011...111 and 111...111
+			if ((_block[MSU] & MSU_MASK) == MSU_MASK) { // == all bits are set
+				_block[MSU] = 0;
+			}
+			else {
+				++_block[MSU];
+			}
+		}
+		else {
+			bool carry = true;
+			for (unsigned i = 0; i < MSU; ++i) {
+				if ((_block[i] & storageMask) == storageMask) { // block will overflow
+					++_block[i];
+				}
+				else {
+					++_block[i];
+					carry = false;
+					break;
+				}
+			}
+			if (carry && ((_block[MSU] & MSU_MASK) == MSU_MASK)) {
+				_block[MSU] = 0;
+			}
+			else {
+				++_block[MSU];
+			}
+		}
 		return *this;
 	}
 	inline areal operator++(int) {
@@ -659,6 +694,7 @@ public:
 		return tmp;
 	}
 	inline areal& operator--() {
+
 		return *this;
 	}
 	inline areal operator--(int) {
@@ -1268,13 +1304,25 @@ private:
 };
 
 ////////////////////// operators
-template<size_t nnbits, size_t nes, typename nbt>
-inline std::ostream& operator<<(std::ostream& ostr, const areal<nnbits,nes,nbt>& v) {
+template<size_t nbits, size_t es, typename bt>
+inline std::ostream& operator<<(std::ostream& ostr, const areal<nbits,es,bt>& v) {
 	// TODO: make it a native conversion
 	double d = double(v);
-	ostr << d;
-//	bool ubit = v.at(0);
-//	ostr << (ubit ? "..." : "=  ");
+	bool ubit = v.at(0);
+	if (ubit) {
+		if (v.isnan()) {
+			ostr << '[' << d << ']';
+		}
+		else {
+			areal<nbits, es, bt> next(v);
+			++next;
+			double dnext = double(next);
+			ostr << '(' << d << ", " << dnext << ')';
+		}
+	}
+	else { // exact value
+		ostr << '[' << d << ']';
+	}
 	return ostr;
 }
 

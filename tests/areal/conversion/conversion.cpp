@@ -16,6 +16,7 @@
 #include <universal/number/areal/manipulators.hpp>
 #include <universal/number/areal/math_functions.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
+#include <universal/number/areal/table.hpp> // only used for value table generation
 
 // generate specific test case that you can trace with the trace conditions
 // for most bugs they are traceable with _trace_conversion and _trace_add
@@ -36,9 +37,208 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
+// sign of 0 is flipped on MSVC Release builds
+void CompilerBug() {
+	using namespace std;
+	using namespace sw::universal;
+	{
+		areal<5, 1> a;
+		a.set_raw_bits(0x0);
+		cout << "areal<5,1> : " << to_binary(a) << " : " << a << endl;
+		float f = float(a);
+		cout << "float      : " << f << endl;
+		double d = double(a);
+		cout << "double     : " << d << endl;
+	}
+	{
+		areal<5, 1> a;
+		a.set_raw_bits(0x10);
+		cout << "areal<5,1> : " << to_binary(a) << " : " << a << endl;
+		float f = float(a);
+		cout << "float      : " << f << endl;
+		double d = double(a);
+		cout << "double     : " << d << endl;
+	}
+
+	{
+		areal<6, 1> a;
+		a.set_raw_bits(0x0);
+		cout << "areal<6,1> : " << to_binary(a) << " : " << a << endl;
+		float f = float(a);
+		cout << "float      : " << f << endl;
+		double d = double(a);
+		cout << "double     : " << d << endl;
+	}
+	{
+		areal<6, 1> a;
+		a.set_raw_bits(0x20);
+		cout << "areal<6,1> : " << to_binary(a) << " : " << a << endl;
+		float f = float(a);
+		cout << "float      : " << f << endl;
+		double d = double(a);
+		cout << "double     : " << d << endl;
+	}
+}
+
+namespace sw::universal {
+
+	template<typename TestType>
+	void ReportIntervalConversionError(const std::string& test_case, const std::string& op, double input, const TestType& reference, const TestType& result) {
+		constexpr size_t nbits = result.nbits;  // number system concept requires a static member indicating its size in bits
+		auto old_precision = std::cerr.precision();
+		std::cerr << test_case
+			<< " " << op << " "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << input
+			<< " did not convert to "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << reference << " instead it yielded  "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << result
+			<< "  raw " << to_binary(result)
+			<< std::setprecision(old_precision)
+			<< std::endl;
+	}
+
+	template<typename TestType>
+	void ReportIntervalConversionSuccess(const std::string& test_case, const std::string& op, double input, const TestType& reference, const TestType& result) {
+		constexpr size_t nbits = result.nbits;  // number system concept requires a static member indicating its size in bits
+		std::cerr << test_case
+			<< " " << op << " "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << input
+			<< " success            "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
+			<< std::setw(NUMBER_COLUMN_WIDTH) << reference
+			<< "  raw " << std::setw(nbits) << to_binary(result)
+			<< std::endl;
+	}
+
+	template<typename TestType>
+	int Compare(double input, const TestType& testValue, const TestType& reference, bool bReportIndividualTestCases) {
+		int fail = 0;
+		if (testValue != reference) {
+			fail++;
+			if (bReportIndividualTestCases)	ReportIntervalConversionError("FAIL", "=", input, reference, testValue);
+		}
+		else {
+			if (bReportIndividualTestCases) ReportIntervalConversionSuccess("PASS", "=", input, reference, testValue);
+		}
+		return fail;
+	}
+
+	/// <summary>
+	/// enumerate all conversion cases for a number system with ubits
+	/// </summary>
+	/// <typeparam name="TestType">the test configuration</typeparam>
+	/// <typeparam name="RefType">the reference configuration</typeparam>
+	/// <param name="tag">string to indicate what is being tested</param>
+	/// <param name="bReportIndividualTestCases">if true print results of each test case. Default is false.</param>
+	/// <returns>number of failed test cases</returns>
+	template<typename TestType>
+	int VerifyArealIntervalConversion(const std::string& tag, bool bReportIndividualTestCases) {
+		// areal<> is organized as a set of exact samples followed by an interval to the next exact value
+		//
+		// vprev    exact value          ######-0     ubit = false     some value [vprev,vprev]
+		//          interval value       ######-1     ubit = true      (vprev, v)
+		// v        exact value          ######-0     ubit = false     some value [v,v]
+		//          interval value       ######-1     ubit = true      (v, vnext)
+		// vnext    exact value          ######-0     ubit = false     some value [vnext,vnext]
+		//          interval value       ######-1     ubit = true      (vnext, vnextnext)
+		//
+		// the assignment test can thus be constructed by enumerating the exact values of a configuration
+		// and taking a -diff to obtain the interval value of vprev, 
+		// and taking a +diff to obtain the interval value of v
+		constexpr size_t nbits = TestType::nbits;
+		constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
+
+		const unsigned max = nbits > 20 ? 20 : nbits + 1;
+		size_t max_tests = (size_t(1) << max);
+		if (max_tests < NR_TEST_CASES) {
+			std::cout << "VerifyArealIntervalConversion " << typeid(TestType).name() << ": NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
+		}
+
+		// execute the test
+		int nrOfFailedTests = 0;
+		TestType positive_minimum;
+		double dminpos = double(minpos(positive_minimum));
+		TestType negative_maximum;
+		double dmaxneg = double(maxneg(negative_maximum));
+
+		// NUT: number under test
+		TestType nut;
+
+		for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; i += 2) {
+			TestType current, interval;
+			double testValue{ 0.0 };
+			current.set_raw_bits(i);
+			interval.set_raw_bits(i + 1);  // sets the ubit
+			double da = double(current);
+			std::cout << "current : " << to_binary(current) << " : " << current << std::endl;
+			std::cout << "interval: " << to_binary(interval) << " : " << interval << std::endl;
+			// da - delta = (prev, current)
+			// da         = [current, current]
+			// da + delta = (current, next)
+
+			if (current.iszero()) {
+				double delta = dminpos / 4.0;  // the test value between 0 and minpos
+				if (current.sign()) {
+					// da         = [-0]
+					testValue = da;
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, current, bReportIndividualTestCases);
+					// da - delta = (-0,-minpos)
+					testValue = da - delta;
+					nrOfFailedTests += Compare(testValue, nut, interval, bReportIndividualTestCases);
+				}
+				else {
+					// da         = [0]
+					testValue = da;
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, current, bReportIndividualTestCases);
+					// da + delta = (0,minpos)
+					testValue = da + delta;
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, interval, bReportIndividualTestCases);
+				}
+			}
+			else if (current.isinf(INF_TYPE_NEGATIVE)) {
+
+			}
+			else if (current.isinf(INF_TYPE_POSITIVE)) {
+
+			}
+			else if (current.isinf(NAN_TYPE_SIGNALLING)) {  // sign is true
+
+			}
+			else if (current.isinf(NAN_TYPE_QUIET)) {       // sign is false
+
+			}
+			else {
+				TestType previous, previousInterval;
+				previous.set_raw_bits(i - 2);
+				previousInterval.set_raw_bits(i - 1);
+				std::cout << "previous: " << to_binary(previous) << " : " << previous << std::endl;
+				std::cout << "interval: " << to_binary(previousInterval) << " : " << previousInterval << std::endl;
+				double delta = (da - double(previous)) / 2.0;  // NOTE: the sign will flip the relationship between the enumeration and the values
+				std::cout << "delta   : " << delta << std::endl;
+															   // da - delta = (prev,current) == previous + ubit
+				testValue = da - delta;
+				nut = testValue;
+				nrOfFailedTests += Compare(testValue, nut, previousInterval, bReportIndividualTestCases);
+				// da         = [v]
+				testValue = da;
+				nut = testValue;
+				nrOfFailedTests += Compare(testValue, nut, current, bReportIndividualTestCases);
+				// da + delta = (v+,next) == current + ubit
+				testValue = da + delta;
+				nut = testValue;
+				nrOfFailedTests += Compare(testValue, nut, interval, bReportIndividualTestCases);
+			}
+		}
+		return nrOfFailedTests;
+	}
+
+} // namespace sw::universal
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -54,13 +254,31 @@ try {
 
 	bool bReportIndividualTestCases = true;
 
-	ReportRanges<12, 3>(cout);
+	// areal<> is organized as a set of exact samples and an interval to the next exact value
+	//
+	// vprev    exact value          ######-0     ubit = false     some value [vprev,vprev]
+	//          interval value       ######-1     ubit = true      (vprev, v)
+	// v        exact value          ######-0     ubit = false     some value [v,v]
+	//          interval value       ######-1     ubit = true      (v, vnext)
+	// vnext    exact value          ######-0     ubit = false     some value [vnext,vnext]
+	//          interval value       ######-1     ubit = true      (vnext, vnextnext)
+	//
+	// the assignment test can thus be constructed by enumerating the exact values
+	// and taking a -diff to obtain the interval value of vprev, 
+	// and taking a +diff to obtain the interval value of v
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<areal<4, 1>, areal<5,1>>(tag, bReportIndividualTestCases), tag, "areal<4,1>");
+//	GenerateArealTable<4, 1>(cout, true);
+//	areal<4, 1> a{ 1.5 };
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<areal<8, 2>, areal<9,2>>(tag, bReportIndividualTestCases), tag, "areal<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<4, 1> >(tag, bReportIndividualTestCases), tag, "areal<4,1>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<5, 1> >(tag, false), tag, "areal<5,1>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<6, 1> >(tag, false), tag, "areal<6,1>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<7, 1> >(tag, false), tag, "areal<7,1>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<8, 1> >(tag, false), tag, "areal<8,1>");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion<areal<12, 3>, areal<13,3>>(tag, bReportIndividualTestCases), tag, "areal<12,3>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<8, 2> >(tag, bReportIndividualTestCases), tag, "areal<8,2>");
+
+//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<12, 3> >(tag, bReportIndividualTestCases), tag, "areal<12,3>");
 
 #if STRESS_TESTING
 
@@ -117,7 +335,6 @@ catch (...) {
 
 
 /*
-  Value relationships between areal<nbits+1,es+1> and areal<nbits,es> we'll use for validation
 
   To generate:
   	GenerateFixedPointComparisonTable<4, 0>(std::string("-"));
