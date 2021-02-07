@@ -386,8 +386,8 @@ public:
 			return *this;
 		}
 		if (exponent < MIN_EXP_SUBNORMAL) {
-			if (s) minneg(*this); else minpos(*this); // saturate to minpos or minneg
-			this->set(0);
+			if (s) this->set(nbits - 1); // set -0
+			this->set(0); // and set the uncertainty bit to reflect (0,minpos) or (-0,minneg)
 			return *this;
 		}
 		// set the exponent
@@ -407,6 +407,7 @@ public:
 			if (exponent > -128) {
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 23);
+				mask = 0x00FF'FFFF >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
 #if TRACE_CONVERSION
 				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
@@ -545,8 +546,7 @@ public:
 			// but it might be a normal number in IEEE double precision representation
 			// which will require a reinterpretation of the bits as the hidden bit becomes explicit in a subnormal representation
 			if (exponent > -1022) {
-				// with exponent we have better cover for conversion, without exponent we have perfect exacts
-				mask = 0x001F'FFFF'FFFF'FFFF >> (fbits /*+ exponent*/); // mask for sticky bit 
+				mask = 0x001F'FFFF'FFFF'FFFF >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 52);
 #if TRACE_CONVERSION
@@ -557,6 +557,11 @@ public:
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (-exponent + fbits - (2 -2^(es-1))))
 				// -exponent because we are right shifting and exponent in this range is negative
 				adjustment = -(exponent + subnormal_reciprocal_shift[es]);
+#if TRACE_CONVERSION
+				std::cout << "exponent        : " << exponent << std::endl;
+				std::cout << "bias shift      : " << subnormal_reciprocal_shift[es] << std::endl;
+				std::cout << "adjustment      : " << adjustment << std::endl;
+#endif
 				if (shiftRight > 0) {		// do we need to round?
 					ubit = (mask & raw) != 0;
 					raw >>= (shiftRight + adjustment);
@@ -682,11 +687,14 @@ public:
 					break;
 				}
 			}
-			if (carry && ((_block[MSU] & MSU_MASK) == MSU_MASK)) {
-				_block[MSU] = 0;
-			}
-			else {
-				++_block[MSU];
+			if (carry) {
+				// encoding behaves like a 2's complement modulo wise
+				if ((_block[MSU] & MSU_MASK) == MSU_MASK) {
+					_block[MSU] = 0;
+				}
+				else {
+					++_block[MSU]; // a carry will flip the sign
+				}
 			}
 		}
 		return *this;
@@ -883,8 +891,7 @@ public:
 	}
 	inline constexpr bool isneg() const { return sign(); }
 	inline constexpr bool ispos() const { return !sign(); }
-	inline constexpr bool iszero() const { // TODO: need to deal with -0 as well
-
+	inline constexpr bool iszero() const {
 		if constexpr (0 == nrBlocks) {
 			return true;
 		}
