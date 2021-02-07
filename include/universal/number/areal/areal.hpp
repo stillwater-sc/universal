@@ -313,18 +313,23 @@ public:
 		raw = round<sizeInBits, uint64_t>(raw, exponent);
 		bool ubit = true;
 		// construct the target areal
-		uint64_t bits = (s ? 1u : 0u);
-		bits <<= es;
-		bits |= exponent + EXP_BIAS;
-		bits <<= nbits - 1ull - es;
-		bits |= raw;
-		bits &= 0xFFFF'FFFE;
-		bits |= (ubit ? 0x1 : 0x0);
-		if constexpr (1 == nrBlocks) {
-			_block[MSU] = bt(bits);
+		if constexpr (64 >= nbits - es - 1ull) {
+			uint64_t bits = (s ? 1u : 0u);
+			bits <<= es;
+			bits |= exponent + EXP_BIAS;
+			bits <<= nbits - 1ull - es;
+			bits |= raw;
+			bits &= 0xFFFF'FFFE;
+			bits |= (ubit ? 0x1 : 0x0);
+			if constexpr (1 == nrBlocks) {
+				_block[MSU] = bt(bits);
+			}
+			else {
+				copyBits(bits);
+			}
 		}
 		else {
-			copyBits(bits);
+			std::cerr << "TBD\n";
 		}
 		return *this;
 	}

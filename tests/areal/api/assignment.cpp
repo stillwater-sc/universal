@@ -95,7 +95,7 @@ int VerifyReverseSampling(const std::string& tag, bool bReportIndividualTestCase
 		}
 		else if (ref.isnan()) {
 			// optimization compilers may change signalling NaNs to quiet NaNs
-			if (fpclassify(input) != FP_NAN) {
+			if (std::fpclassify(input) != FP_NAN) {
 				nrOfFailedTestCases++;
 				if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
 			}
@@ -105,7 +105,7 @@ int VerifyReverseSampling(const std::string& tag, bool bReportIndividualTestCase
 		}
 		else if (ref.isinf()) {
 			// optimization compilers may destroy the sign on -0
-			if (fpclassify(input) != FP_INFINITE) {
+			if (std::fpclassify(input) != FP_INFINITE) {
 				nrOfFailedTestCases++;
 				if (bReportIndividualTestCases) ReportAssignmentError("FAIL", "=", input, result, ref);
 			}

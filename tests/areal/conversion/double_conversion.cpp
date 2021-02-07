@@ -160,8 +160,6 @@ namespace sw::universal {
 		int nrOfFailedTests = 0;
 		TestType positive_minimum;
 		double dminpos = double(minpos(positive_minimum));
-		TestType negative_maximum;
-		double dmaxneg = double(maxneg(negative_maximum));
 
 		// NUT: number under test
 		TestType nut;

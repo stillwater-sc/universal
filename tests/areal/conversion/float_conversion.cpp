@@ -98,8 +98,6 @@ namespace sw::universal {
 		int nrOfFailedTests = 0;
 		TestType positive_minimum;
 		SrcType dminpos = SrcType(minpos(positive_minimum));
-		TestType negative_maximum;
-		SrcType dmaxneg = SrcType(maxneg(negative_maximum));
 
 		// NUT: number under test
 		TestType nut;
