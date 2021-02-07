@@ -10,6 +10,8 @@
 #define AREAL_FAST_SPECIALIZATION
 // second: enable/disable arithmetic exceptions
 #define AREAL_THROW_ARITHMETIC_EXCEPTION 0
+// third: enable trace conversion
+#define TRACE_CONVERSION 0
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/areal/areal.hpp>
@@ -118,7 +120,7 @@ namespace sw::universal {
 			if (bReportIndividualTestCases)	ReportIntervalConversionError("FAIL", "=", input, reference, testValue);
 		}
 		else {
-			if (bReportIndividualTestCases) ReportIntervalConversionSuccess("PASS", "=", input, reference, testValue);
+			//if (bReportIndividualTestCases) ReportIntervalConversionSuccess("PASS", "=", input, reference, testValue);
 		}
 		return fail;
 	}
@@ -170,8 +172,8 @@ namespace sw::universal {
 			current.set_raw_bits(i);
 			interval.set_raw_bits(i + 1);  // sets the ubit
 			double da = double(current);
-			std::cout << "current : " << to_binary(current) << " : " << current << std::endl;
-			std::cout << "interval: " << to_binary(interval) << " : " << interval << std::endl;
+//			std::cout << "current : " << to_binary(current) << " : " << current << std::endl;
+//			std::cout << "interval: " << to_binary(interval) << " : " << interval << std::endl;
 			// da - delta = (prev, current)
 			// da         = [current, current]
 			// da + delta = (current, next)
@@ -185,6 +187,7 @@ namespace sw::universal {
 					nrOfFailedTests += Compare(testValue, nut, current, bReportIndividualTestCases);
 					// da - delta = (-0,-minpos)
 					testValue = da - delta;
+					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, interval, bReportIndividualTestCases);
 				}
 				else {
@@ -214,10 +217,10 @@ namespace sw::universal {
 				TestType previous, previousInterval;
 				previous.set_raw_bits(i - 2);
 				previousInterval.set_raw_bits(i - 1);
-				std::cout << "previous: " << to_binary(previous) << " : " << previous << std::endl;
-				std::cout << "interval: " << to_binary(previousInterval) << " : " << previousInterval << std::endl;
+//				std::cout << "previous: " << to_binary(previous) << " : " << previous << std::endl;
+//				std::cout << "interval: " << to_binary(previousInterval) << " : " << previousInterval << std::endl;
 				double delta = (da - double(previous)) / 2.0;  // NOTE: the sign will flip the relationship between the enumeration and the values
-				std::cout << "delta   : " << delta << std::endl;
+//				std::cout << "delta   : " << delta << std::endl;
 															   // da - delta = (prev,current) == previous + ubit
 				testValue = da - delta;
 				nut = testValue;
@@ -268,17 +271,54 @@ try {
 	// and taking a +diff to obtain the interval value of v
 
 //	GenerateArealTable<4, 1>(cout, true);
-//	areal<4, 1> a{ 1.5 };
+	/*
+FAIL =               0.0625 did not convert to                    [0.0625] instead it yielded                     (0.0625, 0.125)  raw b00000011
+FAIL =               0.1875 did not convert to                    [0.1875] instead it yielded                     (0.1875, 0.25)  raw b00000111
+FAIL =               0.3125 did not convert to                    [0.3125] instead it yielded                     (0.3125, 0.375)  raw b00001011
+FAIL =               0.4375 did not convert to                    [0.4375] instead it yielded                     (0.4375, 0.5)  raw b00001111
+FAIL =               0.5625 did not convert to                    [0.5625] instead it yielded                     (0.5625, 0.625)  raw b00010011
+FAIL =               0.6875 did not convert to                    [0.6875] instead it yielded                     (0.6875, 0.75)  raw b00010111
+FAIL =               0.8125 did not convert to                    [0.8125] instead it yielded                     (0.8125, 0.875)  raw b00011011
+FAIL =               0.9375 did not convert to                    [0.9375] instead it yielded                     (0.9375, 1)  raw b00011111
+FAIL =              -0.0625 did not convert to                    [-0.0625] instead it yielded                     (-0.0625, -0.125)  raw b10000011
+FAIL =              -0.1875 did not convert to                    [-0.1875] instead it yielded                     (-0.1875, -0.25)  raw b10000111
+FAIL =              -0.3125 did not convert to                    [-0.3125] instead it yielded                     (-0.3125, -0.375)  raw b10001011
+FAIL =              -0.4375 did not convert to                    [-0.4375] instead it yielded                     (-0.4375, -0.5)  raw b10001111
+FAIL =              -0.5625 did not convert to                    [-0.5625] instead it yielded                     (-0.5625, -0.625)  raw b10010011
+FAIL =              -0.6875 did not convert to                    [-0.6875] instead it yielded                     (-0.6875, -0.75)  raw b10010111
+FAIL =              -0.8125 did not convert to                    [-0.8125] instead it yielded                     (-0.8125, -0.875)  raw b10011011
+FAIL =              -0.9375 did not convert to                    [-0.9375] instead it yielded                     (-0.9375, -1)  raw b10011111
+conversion:  areal<8,2> FAIL 16 failed test cases
+*/
+	areal<8,2> a;
+	a = 0.0624; cout << a << endl;
+	a = 0.0625; cout << a << endl;
+	a = 0.1; cout << a << endl;
+	a = 0.1875; cout << a << endl;
+	a = 0.3125; cout << a << endl;
+	a = 0.4375; cout << a << endl;
+	a = 0.5625; cout << a << endl;
+	a = 0.6875; cout << a << endl;
+	a = 0.8125; cout << a << endl;
+	a = 0.9375; cout << a << endl;
+
 
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<4, 1> >(tag, bReportIndividualTestCases), tag, "areal<4,1>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<5, 1> >(tag, false), tag, "areal<5,1>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<6, 1> >(tag, false), tag, "areal<6,1>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<7, 1> >(tag, false), tag, "areal<7,1>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<8, 1> >(tag, false), tag, "areal<8,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<5, 1> >(tag, bReportIndividualTestCases), tag, "areal<5,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<6, 1> >(tag, bReportIndividualTestCases), tag, "areal<6,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<7, 1> >(tag, bReportIndividualTestCases), tag, "areal<7,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<7, 2> >(tag, bReportIndividualTestCases), tag, "areal<7,2>");
 
-//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<8, 2> >(tag, bReportIndividualTestCases), tag, "areal<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<8, 1> >(tag, bReportIndividualTestCases), tag, "areal<8,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<8, 2> >(tag, bReportIndividualTestCases), tag, "areal<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<8, 3> >(tag, bReportIndividualTestCases), tag, "areal<8,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<8, 4> >(tag, bReportIndividualTestCases), tag, "areal<8,4>");
+
+
 
 //	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<12, 3> >(tag, bReportIndividualTestCases), tag, "areal<12,3>");
+
+	cout << "failed tests: " << nrOfFailedTestCases << endl;
 
 #if STRESS_TESTING
 

@@ -376,7 +376,6 @@ public:
 		std::cout << "value           : " << rhs << '\n';
 		std::cout << "segments        : " << to_binary(rhs) << '\n';
 		std::cout << "sign     bit    : " << (s ? '1' : '0') << '\n';
-		std::cout << "exponent bits   : " << to_binary(decoder.parts.exponent, true) << '\n';
 		std::cout << "exponent value  : " << exponent << '\n';
 		std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
@@ -516,7 +515,6 @@ public:
 		std::cout << "value           : " << rhs << '\n';
 		std::cout << "segments        : " << to_binary(rhs) << '\n';
 		std::cout << "sign   bits     : " << (s ? '1' : '0') << '\n';
-		std::cout << "exponent bits   : " << to_binary(decoder.parts.exponent, true) << '\n';
 		std::cout << "exponent value  : " << exponent << '\n';
 		std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
@@ -541,14 +539,18 @@ public:
 		//       x      0          0
 		//       x  |   1          1
 		bool ubit = false;
-		uint64_t mask = 0x000F'FFFF'FFFF'FFFF >> fbits; // mask for sticky bit 
+		uint64_t mask;
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
-			// trick though is that it might be a normal number in IEEE double precision representation
+			// but it might be a normal number in IEEE double precision representation
+			// which will require a reinterpretation of the bits as the hidden bit becomes explicit in a subnormal representation
 			if (exponent > -1022) {
+				// with exponent we have better cover for conversion, without exponent we have perfect exacts
+				mask = 0x001F'FFFF'FFFF'FFFF >> (fbits /*+ exponent*/); // mask for sticky bit 
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 52);
 #if TRACE_CONVERSION
+				std::cout << "mask     bits   : " << to_binary(mask, true) << std::endl;
 				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
 				// fraction processing: we have 53 bits = 1 hidden + 52 explicit fraction bits 
@@ -574,6 +576,7 @@ public:
 			biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
 
 			// fraction processing
+			mask = 0x000F'FFFF'FFFF'FFFF >> fbits; // mask for sticky bit 
 			if (shiftRight > 0) {		// do we need to round?
 				// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
