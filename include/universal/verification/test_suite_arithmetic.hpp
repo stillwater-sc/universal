@@ -23,7 +23,7 @@ namespace sw::universal {
 /////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
 template<typename TestType>
-int Compare(double input, const TestType& testValue, double reference, bool bReportIndividualTestCases) {
+int CompareAgainstDouble(double input, const TestType& testValue, double reference, bool bReportIndividualTestCases) {
 	int fail = 0;
 	double result = double(testValue);
 	if (std::fabs(result - reference) > 0.000000001) {
@@ -61,6 +61,35 @@ int VerifyAssignment(bool bReportIndividualTestCases, bool verbose = false) {
 		else {
 			if (verbose && bReportIndividualTestCases) ReportAssignmentSuccess("PASS", "=", number, assigned, value);
 		}
+	}
+	return nrOfFailedTestCases;
+}
+
+// enumerate all conversion cases for integers
+template<typename TestType>
+int VerifyIntegerConversion(const std::string& tag, bool bReportIndividualTestCases) {
+	// we generate numbers from 1 to NaN to -1 and the special case of 0
+	constexpr size_t nbits = TestType::nbits; 
+	constexpr size_t NR_OF_TESTS = (size_t(1) << (nbits - 1)) + 1;
+	int nrOfFailedTestCases = 0;
+
+	TestType a(0);
+	if (!a.iszero()) nrOfFailedTestCases++;
+
+	a = 1;
+	if (!a.isone()) nrOfFailedTestCases++;
+	for (size_t i = 0; i < NR_OF_TESTS; ++i) {
+		if (!a.isnar()) {
+			long long ref = (long long)a;
+			TestType result = ref;
+			if (result != ref) {
+				if (bReportIndividualTestCases) std::cout << tag << " FAIL " << a << " != " << ref << std::endl;
+			}
+			else {
+				// if (bReportIndividualTestCases) std::cout << tag << " PASS " << a << " == " << ref << std::endl;
+			}
+		}
+		++a;  // assumes that the number system has an encoding enumerator operator++()
 	}
 	return nrOfFailedTestCases;
 }
@@ -212,6 +241,37 @@ int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 ///////////////////////////////////////////////////////////////////////////////////////
 ///                             ARITHMETIC TEST SUITES                              ///
 ///////////////////////////////////////////////////////////////////////////////////////
+
+
+/// <summary>
+/// enumerate all negation cases for a TestType
+/// </summary>
+/// <param name="tag"></param>
+/// <param name="bReportIndividualTestCases"></param>
+/// <returns></returns>
+template<typename TestType>
+int VerifyNegation(const std::string& tag, bool bReportIndividualTestCases) {
+	constexpr size_t nbits = TestType::nbits;
+	constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
+	int nrOfFailedTests = 0;
+	TestType a(0), neg(0), ref(0);
+
+	for (size_t i = 1; i < NR_TEST_CASES; i++) {
+		a.set_raw_bits(i);
+		neg = -a;
+		// generate reference
+		double da = double(a);
+		ref = -da;
+		if (neg != ref) {
+			nrOfFailedTests++;
+			if (bReportIndividualTestCases)	ReportUnaryArithmeticError("FAIL", "-", a, ref, neg);
+		}
+		else {
+			//if (bReportIndividualTestCases) ReportUnaryArithmeticSuccess("PASS", "-", a, ref, neg);
+		}
+	}
+	return nrOfFailedTests;
+}
 
 /// <summary>
 /// Enumerate all addition cases for a number system configuration.
