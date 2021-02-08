@@ -183,7 +183,7 @@ namespace sw::universal {
 				nut = testValue;
 				nrOfFailedTests += Compare(testValue, nut, interval, bReportIndividualTestCases);
 
-				if (false) { // nrOfFailedTests - currentFailures) {
+				if (nrOfFailedTests - currentFailures) {
 					std::cout << "previous: " << to_binary(previous) << " : " << previous << std::endl;
 					std::cout << "interval: " << to_binary(previousInterval) << " : " << previousInterval << std::endl;
 					std::cout << "current : " << to_binary(current) << " : " << current << std::endl;
@@ -191,6 +191,10 @@ namespace sw::universal {
 					std::cout << "delta   : " << delta << " : " << to_binary(delta, true) << std::endl;
 				}
 
+			}
+			if (nrOfFailedTests > 24) {
+				std::cout << "Too many errors: exiting\n";
+				break;
 			}
 		}
 		return nrOfFailedTests;

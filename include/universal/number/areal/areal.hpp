@@ -225,7 +225,7 @@ public:
 	static constexpr size_t bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt LSB_BIT_MASK = bt(1ull);
-	static constexpr bool MSU_CAPTURES_E = (nbits - 1ull - es) < bitsInMSU;
+	static constexpr bool MSU_CAPTURES_E = (1ull + es) <= bitsInMSU;
 	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (nbits - 1ull - es) : 0);
 	static constexpr bt MSU_EXP_MASK = ((ALLONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
@@ -1053,7 +1053,7 @@ public:
 		else if constexpr (nrBlocks > 1) {
 			if (MSU_CAPTURES_E) {
 				bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
-				e.set_raw_bits(uint64_t(ebits >> EXP_SHIFT));
+				e.set_raw_bits(uint64_t(ebits >> ((nbits - 1ull - es) % bitsInBlock)));
 			}
 			else {
 				for (size_t i = 0; i < es; ++i) { e.set(i, at(nbits - 1ull - es + i)); }
