@@ -102,7 +102,7 @@ namespace sw::universal {
 // Forward definitions
 template<size_t nbits, size_t es, typename bt> class areal;
 template<size_t nbits, size_t es, typename bt> areal<nbits,es,bt> abs(const areal<nbits,es,bt>&);
-template<typename bt> inline std::string to_binary(const bt&, bool);
+template<typename bt> inline std::string to_binary_storage(const bt&, bool);
 
 static constexpr int NAN_TYPE_SIGNALLING = -1;   // a Signalling NaN
 static constexpr int NAN_TYPE_EITHER     = 0;    // any NaN
@@ -382,7 +382,7 @@ public:
 		std::cout << "segments        : " << to_binary(rhs) << '\n';
 		std::cout << "sign     bit    : " << (s ? '1' : '0') << '\n';
 		std::cout << "exponent value  : " << exponent << '\n';
-		std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
+		std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
 #endif
 		// saturate to minpos/maxpos with uncertainty bit set to 1
 		if (exponent > MAX_EXP) {
@@ -414,7 +414,7 @@ public:
 				raw |= (1ull << 23);
 				mask = 0x00FF'FFFF >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
 #if TRACE_CONVERSION
-				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
+				std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
 #endif
 				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits 
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
@@ -457,9 +457,9 @@ public:
 		std::cout << "biased exponent : " << biasedExponent << " : 0x" << std::hex << biasedExponent << std::dec << '\n';
 		std::cout << "shift           : " << shiftRight << '\n';
 		std::cout << "adjustment shift: " << adjustment << '\n';
-		std::cout << "sticky bit mask : " << to_binary(mask, true) << '\n';
+		std::cout << "sticky bit mask : " << to_binary_storage(mask, true) << '\n';
 		std::cout << "uncertainty bit : " << (ubit ? "1\n" : "0\n");
-		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
+		std::cout << "fraction bits   : " << to_binary_storage(raw, true) << '\n';
 #endif
 		// construct the target areal
 		uint32_t bits = (s ? 1u : 0u);
@@ -522,7 +522,7 @@ public:
 		std::cout << "segments        : " << to_binary(rhs) << '\n';
 		std::cout << "sign   bits     : " << (s ? '1' : '0') << '\n';
 		std::cout << "exponent value  : " << exponent << '\n';
-		std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
+		std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
 #endif
 		// saturate to minpos/maxpos with uncertainty bit set to 1
 		if (exponent > MAX_EXP) {	
@@ -555,8 +555,8 @@ public:
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 52);
 #if TRACE_CONVERSION
-				std::cout << "mask     bits   : " << to_binary(mask, true) << std::endl;
-				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
+				std::cout << "mask     bits   : " << to_binary_storage(mask, true) << std::endl;
+				std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
 #endif
 				// fraction processing: we have 53 bits = 1 hidden + 52 explicit fraction bits 
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (-exponent + fbits - (2 -2^(es-1))))
@@ -604,9 +604,9 @@ public:
 #if TRACE_CONVERSION
 		std::cout << "biased exponent : " << biasedExponent << " : " << std::hex << biasedExponent << std::dec << '\n';
 		std::cout << "shift           : " << shiftRight << '\n';
-		std::cout << "sticky bit mask : " << to_binary(mask, true) << '\n';
+		std::cout << "sticky bit mask : " << to_binary_storage(mask, true) << '\n';
 		std::cout << "uncertainty bit : " << (ubit ? "1\n" : "0\n");
-		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
+		std::cout << "fraction bits   : " << to_binary_storage(raw, true) << '\n';
 #endif
 		// construct the target areal
 		uint64_t bits = (s ? 1ull : 0ull);
@@ -937,10 +937,11 @@ public:
 		}
 		else if constexpr (2 == nrBlocks) {
 			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
+			// fall through to the MSU processing
 		}
 		else if constexpr (3 == nrBlocks) {
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) &&
-				(_block[1] == BLOCK_MASK);
+			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) && (_block[1] == BLOCK_MASK);
+			// fall through to the MSU processing 
 		}
 		else {
 			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
@@ -950,6 +951,7 @@ public:
 					break;
 				}
 			}
+			// fall through to the MSU processing 
 		}
 		isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
 		isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
@@ -1023,17 +1025,17 @@ public:
 	void debug() const {
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
-		std::cout << "ALLONES           : " << to_binary(ALLONES, true) << '\n';
-		std::cout << "BLOCK_MASK        : " << to_binary<bt>(BLOCK_MASK, true) << '\n';
+		std::cout << "ALLONES           : " << to_binary_storage(ALLONES, true) << '\n';
+		std::cout << "BLOCK_MASK        : " << to_binary_storage(BLOCK_MASK, true) << '\n';
 		std::cout << "nrBlocks          : " << nrBlocks << '\n';
 		std::cout << "bits in MSU       : " << bitsInMSU << '\n';
 		std::cout << "MSU               : " << MSU << '\n';
-		std::cout << "MSU MASK          : " << to_binary<bt>(MSU_MASK, true) << '\n';
-		std::cout << "SIGN_BIT_MASK     : " << to_binary<bt>(SIGN_BIT_MASK, true) << '\n';
-		std::cout << "LSB_BIT_MASK      : " << to_binary<bt>(LSB_BIT_MASK, true) << '\n';
+		std::cout << "MSU MASK          : " << to_binary_storage(MSU_MASK, true) << '\n';
+		std::cout << "SIGN_BIT_MASK     : " << to_binary_storage(SIGN_BIT_MASK, true) << '\n';
+		std::cout << "LSB_BIT_MASK      : " << to_binary_storage(LSB_BIT_MASK, true) << '\n';
 		std::cout << "MSU CAPTURES E    : " << (MSU_CAPTURES_E ? "yes\n" : "no\n");
 		std::cout << "EXP_SHIFT         : " << EXP_SHIFT << '\n';
-		std::cout << "MSU EXP MASK      : " << to_binary<bt>(MSU_EXP_MASK, true) << '\n';
+		std::cout << "MSU EXP MASK      : " << to_binary_storage(MSU_EXP_MASK, true) << '\n';
 		std::cout << "EXP_BIAS          : " << EXP_BIAS << '\n';
 		std::cout << "MAX_EXP           : " << MAX_EXP << '\n';
 		std::cout << "MIN_EXP_NORMAL    : " << MIN_EXP_NORMAL << '\n';
@@ -1111,8 +1113,14 @@ public:
 			else {
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
 				int exponent = unsigned(ebits) + 1ll - (1ll << (es - 1ull));
-				TargetFloat exponentiation = (exponent >= 0 ? TargetFloat(1ull << exponent) : (1.0f / TargetFloat(1ull << -exponent)));
-				v = exponentiation * (TargetFloat(1) + f);
+				if (exponent < 64) {
+					TargetFloat exponentiation = (exponent >= 0 ? TargetFloat(1ull << exponent) : (1.0f / TargetFloat(1ull << -exponent)));
+					v = exponentiation * (TargetFloat(1) + f);
+				}
+				else {
+					double exponentiation = ipow(exponent);
+					v = exponentiation * (1.0 + f);
+				}
 			}
 			v = sign() ? -v : v;
 		}
@@ -1292,6 +1300,21 @@ protected:
 		_block[MSU] &= MSU_MASK;
 	}
 
+	// calculate the integer power 2 ^ b using exponentiation by squaring
+	double ipow(int exponent) const {
+		bool negative = (exponent < 0);
+		exponent = negative ? -exponent : exponent;
+		double result(1.0);
+		double base = 2.0;
+		for (;;) {
+			if (exponent % 2) result *= base;
+			exponent >>= 1;
+			if (exponent == 0) break;
+			base *= base;
+		}
+		return (negative ? (1.0 / result) : result);
+	}
+
 private:
 	bt _block[nrBlocks];
 
@@ -1428,7 +1451,7 @@ inline std::string to_binary(const areal<nbits, es, bt>& number, bool nibbleMark
 
 // helper to report on BlockType blocks
 template<typename bt>
-inline std::string to_binary(const bt& number, bool nibbleMarker) {
+inline std::string to_binary_storage(const bt& number, bool nibbleMarker) {
 	std::stringstream ss;
 	ss << 'b';
 	constexpr size_t nbits = sizeof(bt) * 8;

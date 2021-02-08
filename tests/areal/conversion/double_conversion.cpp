@@ -73,8 +73,11 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	int nrOfFailedTestCases = 0;
+	if (argc > 0) {
+		std::cout << argv[0] << std::endl;
+	}
 
+	int nrOfFailedTestCases = 0;
 	std::string tag = "conversion: ";
 
 #if MANUAL_TESTING
@@ -166,13 +169,13 @@ try {
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<12, 6>, double >(tag, bReportIndividualTestCases), tag, "areal<12,6>");
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<14, 6>, double >(tag, bReportIndividualTestCases), tag, "areal<14,6>");
 
-#if LATER
+
 	// es = 7
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<10, 7>, double >(tag, true), tag, "areal<10,7>");
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<12, 7>, double >(tag, bReportIndividualTestCases), tag, "areal<12,7>");
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<14, 7>, double >(tag, bReportIndividualTestCases), tag, "areal<14,7>");
 
-
+#if LATER
 	// es = 8
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<11, 8>, double >(tag, bReportIndividualTestCases), tag, "areal<11,8>");
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<12, 8>, double >(tag, bReportIndividualTestCases), tag, "areal<12,8>");

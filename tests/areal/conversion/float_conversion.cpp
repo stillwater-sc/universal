@@ -22,7 +22,7 @@
 #include <universal/number/areal/table.hpp> // only used for value table generation
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -30,8 +30,11 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	int nrOfFailedTestCases = 0;
+	if (argc > 0) {
+		std::cout << argv[0] << std::endl;
+	}
 
+	int nrOfFailedTestCases = 0;
 	std::string tag = "conversion: ";
 
 #if MANUAL_TESTING
@@ -54,11 +57,17 @@ try {
 //	GenerateArealTable<9, 6>(cout, true);  // ok
 //	GenerateArealTable<10, 7>(cout, true); // fails
 
-	areal<10, 7> a;
-	a.set_raw_bits(0x1F6);  // b01'1111'0110;
-	cout << to_binary(a) << " : " << a << endl;
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<10, 7, uint8_t>, float >(tag, true), tag, "areal<10,7,uint8_t>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<10, 7, uint16_t>, float >(tag, true), tag, "areal<10,7,uint16_t>");
+	{
+		areal<10, 7> a;
+		a.setnan(false);
+		float f = float(a);
+		if (a.isnan()) {
+			cout << to_binary(a) << " : " << a << endl;
+		}
+	}
+
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<11, 8, uint8_t>, float >(tag, true), tag, "areal<11,8,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<14, 8, uint16_t>, float >(tag, false), tag, "areal<14,8,uint16_t>");
 
 	cout << "failed tests: " << nrOfFailedTestCases << endl;
 
@@ -123,13 +132,13 @@ try {
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<12, 6>, float >(tag, bReportIndividualTestCases), tag, "areal<12,6>");
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<14, 6>, float >(tag, bReportIndividualTestCases), tag, "areal<14,6>");
 
-#if LATER
+
 	// es = 7
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<10, 7>, float >(tag, true), tag, "areal<10,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<10, 7>, float >(tag, bReportIndividualTestCases), tag, "areal<10,7>");
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<12, 7>, float >(tag, bReportIndividualTestCases), tag, "areal<12,7>");
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<14, 7>, float >(tag, bReportIndividualTestCases), tag, "areal<14,7>");
 
-
+#if LATER
 	// es = 8
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<11, 8>, float >(tag, bReportIndividualTestCases), tag, "areal<11,8>");
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<12, 8>, float >(tag, bReportIndividualTestCases), tag, "areal<12,8>");

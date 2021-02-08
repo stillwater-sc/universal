@@ -17,17 +17,6 @@
 #include <universal/verification/test_suite_arithmetic.hpp>
 #include <universal/number/areal/table.hpp>
 
-template<typename bt = uint8_t>
-std::string to_binary(bt bits) {
-	std::stringstream s;
-	bt mask = bt(1 << sizeof(bt)*8 - 1);
-	while (mask > 0) {
-		s << (bits & mask ? '1' : '0');
-		mask >>= 1;
-	}
-	return s.str();
-}
-
 template<size_t nbits, size_t es, typename bt = uint8_t>
 inline int TestZero() {
 	int fails = 0;

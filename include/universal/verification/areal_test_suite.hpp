@@ -93,8 +93,8 @@ namespace sw::universal {
 
 		// NUT: number under test
 		TestType nut;
-		TestType x;
-		x.set_raw_bits(0x0FC);
+		TestType debugTarget;
+//		debugTarget.set_raw_bits(0x1FE); // set it to something to catch
 
 		for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; i += 2) {
 			TestType current, interval;
@@ -102,21 +102,21 @@ namespace sw::universal {
 			current.set_raw_bits(i);
 			interval.set_raw_bits(i + 1);  // sets the ubit
 			SrcType da = SrcType(current);
-			//			std::cout << "current : " << to_binary(current) << " : " << current << std::endl;
-			//			std::cout << "interval: " << to_binary(interval) << " : " << interval << std::endl;
-						// da - delta = (prev, current)
-						// da         = [current, current]
-						// da + delta = (current, next)
 
-						// debug condition to catch specific failures
-			//			TestType x;
-			//			x.set_raw_bits(0xsomebits);
-			//			if (current == x) {
-			//				std::cout << "[1] " << x << std::endl;
-			//			}
+			// basic design of the test suite
+			// generate a reference, called da, which is an IEEE native format (float/double/long double)
+			// from that generate the test cases
+			// da - delta = falls into the previous interval == (prev, current)
+			// da         = is exact                         == [current]
+			// da + delta = falls into the next interval     == (current, next)
+
+			// debug condition to catch specific failures
+//			if (current == debugTarget) {
+//				std::cout << "found debug target : " << debugTarget << " : interval " << interval << std::endl;
+//			}
 
 			if (current.iszero()) {
-				SrcType delta = dminpos / 4.0;  // the test value between 0 and minpos
+				SrcType delta = SrcType(dminpos / 4.0);  // the test value between 0 and minpos
 				if (current.sign()) {
 					// da         = [-0]
 					testValue = da;
@@ -145,40 +145,52 @@ namespace sw::universal {
 				}
 			}
 			else if (current.isinf(INF_TYPE_NEGATIVE)) {
-
+				std::cout << "-inf tbd\n";
 			}
 			else if (current.isinf(INF_TYPE_POSITIVE)) {
-
+				std::cout << "+inf tbd\n";
 			}
-			else if (current.isinf(NAN_TYPE_SIGNALLING)) {  // sign is true
-
+			else if (current.isnan(NAN_TYPE_SIGNALLING)) {  // sign is true
+				// can never happen as snan is odd, i.e. ubit = 1 and this loop enumerates only even encodings
 			}
-			else if (current.isinf(NAN_TYPE_QUIET)) {       // sign is false
-
+			else if (current.isnan(NAN_TYPE_QUIET)) {       // sign is false
+				// can never happen as snan is odd, i.e. ubit = 1 and this loop enumerates only even encodings
 			}
 			else {
 				TestType previous, previousInterval;
 				previous.set_raw_bits(i - 2);
 				previousInterval.set_raw_bits(i - 1);
-				//				std::cout << "previous: " << to_binary(previous) << " : " << previous << std::endl;
-				//				std::cout << "interval: " << to_binary(previousInterval) << " : " << previousInterval << std::endl;
-				SrcType delta = (da - SrcType(previous)) / 2.0;  // NOTE: the sign will flip the relationship between the enumeration and the values
-//				std::cout << "delta   : " << delta << " : " << to_binary(delta, true) << std::endl;
-															   // da - delta = (prev,current) == previous + ubit
+				SrcType prev = SrcType(previous);
+				SrcType delta = SrcType(SrcType(da - prev) / SrcType(2.0));  // NOTE: the sign will flip the relationship between the enumeration and the values
+				int currentFailures = nrOfFailedTests;
+				if (current == debugTarget) {
+					std::cout << "previous: " << to_binary(previous) << " : " << previous << std::endl;
+					std::cout << "interval: " << to_binary(previousInterval) << " : " << previousInterval << std::endl;
+					std::cout << "current : " << to_binary(current) << " : " << current << std::endl;
+					std::cout << "interval: " << to_binary(interval) << " : " << interval << std::endl;
+					std::cout << "delta   : " << delta << " : " << to_binary(delta, true) << std::endl;
+				}
+				// da - delta = (prev,current) == previous + ubit = previous interval value
 				testValue = da - delta;
 				nut = testValue;
 				nrOfFailedTests += Compare(testValue, nut, previousInterval, bReportIndividualTestCases);
 				// da         = [v]
 				testValue = da;
-				//				if (testValue == 1.0) {
-				//					std::cout << "test value: " << testValue << std::endl;
-				//				}
 				nut = testValue;
 				nrOfFailedTests += Compare(testValue, nut, current, bReportIndividualTestCases);
-				// da + delta = (v+,next) == current + ubit
+				// da + delta = (v+,next) == current + ubit = current interval value
 				testValue = da + delta;
 				nut = testValue;
 				nrOfFailedTests += Compare(testValue, nut, interval, bReportIndividualTestCases);
+
+				if (false) { // nrOfFailedTests - currentFailures) {
+					std::cout << "previous: " << to_binary(previous) << " : " << previous << std::endl;
+					std::cout << "interval: " << to_binary(previousInterval) << " : " << previousInterval << std::endl;
+					std::cout << "current : " << to_binary(current) << " : " << current << std::endl;
+					std::cout << "interval: " << to_binary(interval) << " : " << interval << std::endl;
+					std::cout << "delta   : " << delta << " : " << to_binary(delta, true) << std::endl;
+				}
+
 			}
 		}
 		return nrOfFailedTests;
