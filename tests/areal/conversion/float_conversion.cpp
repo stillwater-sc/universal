@@ -57,25 +57,17 @@ try {
 //	GenerateArealTable<10, 1>(cout, true); 
 
 	{
-		areal<10, 1> a;
-		a.set_raw_bits(0x100); 
+		areal<11, 8> a;
+		a.set_raw_bits(0x002); 
 		float f;
 		f = float(a);
-		cout << to_binary(a) << " : " << a << " : " << f << endl;
-
-
-		for (size_t i = 0; i < 18; ++i) {
-			a.set_raw_bits(i);
-			float f = float(a);
-			cout << to_binary(a) << " : " << a << endl;
-		}
-
+		std::cout << to_binary(a) << " : " << a << " : " << f << endl;
 	}
 
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<10, 1, uint8_t>, float >(tag, true), tag, "areal<10,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<10, 1, uint16_t>, float >(tag, false), tag, "areal<10,1,uint16_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<11, 8, uint8_t>, float >(tag, true), tag, "areal<11,8,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<11, 8, uint16_t>, float >(tag, false), tag, "areal<11,8,uint16_t>");
 
-	cout << "failed tests: " << nrOfFailedTestCases << endl;
+	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
 
 #if STRESS_TESTING
 
@@ -145,9 +137,9 @@ try {
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<14, 7>, float >(tag, bReportIndividualTestCases), tag, "areal<14,7>");
 
 	// es = 8
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<11, 8>, float >(tag, bReportIndividualTestCases), tag, "areal<11,8>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<12, 8>, float >(tag, bReportIndividualTestCases), tag, "areal<12,8>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<14, 8>, float >(tag, bReportIndividualTestCases), tag, "areal<14,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<11, 8>, float >(tag, bReportIndividualTestCases), tag, "areal<11,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<12, 8>, float >(tag, bReportIndividualTestCases), tag, "areal<12,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<14, 8>, float >(tag, bReportIndividualTestCases), tag, "areal<14,8>");
 
 #if STRESS_TESTING
 

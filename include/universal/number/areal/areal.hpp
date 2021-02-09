@@ -409,7 +409,7 @@ public:
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
 			// trick though is that it might be a normal number in IEEE double precision representation
-			if (exponent > -128) {
+			if (exponent > -127) {
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 23);
 				mask = 0x00FF'FFFF >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
@@ -426,12 +426,27 @@ public:
 				}
 				else { // all bits of the float go into this representation and need to be shifted up
 					// ubit = false; already set to false
-					std::cout << "conversion of IEEE double to more precise areals not implemented yet\n";
+					std::cout << "conversion of IEEE float to more precise areals not implemented yet\n";
 				}
 			}
 			else {
-				// this is a subnormal float
-				std::cout << "conversion of subnormal IEEE float not implemented yet\n";
+				// the source real is a subnormal number, and the target representation is a subnormal representation
+				mask = 0x00FF'FFFF >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+#if TRACE_CONVERSION
+				std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
+#endif
+				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits 
+				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
+				// -exponent because we are right shifting and exponent in this range is negative
+				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
+				if (shiftRight > 0) {		// do we need to round?
+					ubit = (mask & raw) != 0;
+					raw >>= shiftRight + adjustment;
+				}
+				else { // all bits of the float go into this representation and need to be shifted up
+					// ubit = false; already set to false
+					std::cout << "conversion of subnormal IEEE float to more precise areals not implemented yet\n";
+				}
 			}
 		}
 		else {

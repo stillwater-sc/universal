@@ -28,6 +28,13 @@ inline Real ulp(const Real& a) {
 	return std::nextafter(a, a + 1.0f) - a;
 }
 
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >:: type
+>
+inline bool isdenorm(const Real& a) {
+	return (std::fpclassify(a) == FP_SUBNORMAL);
+}
+
 // IEEE double precision constants
 static constexpr unsigned IEEE_FLOAT_FRACTION_BITS = 23;
 static constexpr unsigned IEEE_FLOAT_EXPONENT_BITS = 8;
@@ -38,6 +45,7 @@ static constexpr unsigned IEEE_DOUBLE_EXPONENT_BITS = 11;
 static constexpr unsigned IEEE_DOUBLE_SIGN_BITS = 1;
 // IEEE long double precision constants are compiler dependent
 
+// TODO: completely replace this with <bit> library bit_cast<>
 union float_decoder {
   float_decoder() : f{0.0f} {}
   float_decoder(float _f) : f{_f} {}
@@ -374,15 +382,6 @@ inline std::tuple<bool, int64_t, uint64_t> ieee_components(double fp)
 		static_cast<int64_t>(dd.parts.exponent),
 		static_cast<uint64_t>(dd.parts.fraction) 
 	);
-
-#if 0 // reinterpret_cast forbidden in constexpr
-	// uint64_t& as_int= reinterpret_cast<uint64_t&>(fp);
-	uint64_t& as_int = (uint64_t&)fp; // forbidden since executed as reinterpret_cast
-	uint64_t exp = static_cast<int64_t>(as_int >> 52);
-	if (exp & 0x400)
-		exp |= 0xfffffffffffff800ll; // turn on leading bits for negativ exponent
-	return { fp < 0.0, exp, as_int & uint64_t{0x000FFFFFFFFFFFFFull} };
-#endif
 }
 
 
