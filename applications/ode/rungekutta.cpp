@@ -83,6 +83,18 @@ try {
 	{	using Scalar = posit<16, 2>;
 		Scalar x0 = 0; // initial x
 		Scalar y0 = 1; // initial y
+		Scalar h = Scalar(M_PI_4); // step size between intervals
+		int n = 4;  // number of intervals
+		std::cout << "\nThe ode is: dy/dx = (5*x*x - y)/exp(x + y)\n" << std::endl;
+		std::cout << "Using float" << std::endl;
+		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + n * h << std::endl;
+		std::cout << "step size = " << h << std::endl;
+		rk4(&myFunc, n, h, x0, y0);
+	}
+
+	{	using Scalar = posit<16, 2>;
+		Scalar x0 = 0; // initial x
+		Scalar y0 = 1; // initial y
 		std::cout << "\nThe ode is: dy/dx = (5*x*x - y)/exp(x + y)\n" << std::endl;
 		std::cout << "Using posit<16, 1>" << std::endl;
 		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + N*h << std::endl;
