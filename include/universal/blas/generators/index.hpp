@@ -1,14 +1,14 @@
 #pragma once
 // index.hpp: generate a linear index matrix 
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 #include <random>
 #include <algorithm>
 
-namespace sw { namespace unum { namespace blas {
+namespace sw { namespace universal { namespace blas {
 
 // fill a dense (M, N) matrix with linear index values in row order
 template <typename Scalar>
@@ -46,4 +46,4 @@ matrix<Scalar> column_order_index(size_t M, size_t N, Scalar start = 1) {
 	return A;
 }
 
-}}} // namespace sw::unum::blas
+}}} // namespace sw::universal::blas

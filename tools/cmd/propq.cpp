@@ -1,16 +1,16 @@
 // propq.cpp: cli to show a table of quires
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 typedef std::numeric_limits< double > dbl;
 
 template<size_t nbits, size_t capacity = 10>
 void QuireSizeTableRow(std::ostream& ostr, unsigned first_column, unsigned size_column) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	ostr << setw(first_column) << nbits;
 	ostr << setw(size_column) << quire_size<nbits, 0, capacity>();
 	ostr << setw(size_column) << quire_size<nbits, 1, capacity>();
@@ -28,7 +28,7 @@ void QuireSizeTableRow(std::ostream& ostr, unsigned first_column, unsigned size_
 template<size_t nbits, size_t capacity = 10>
 void QuireSizeTable(std::ostream& ostr) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	ostr << "Quire size table as a function of <nbits, es, capacity = " << capacity << ">" << endl;
 	ostr << "Capacity is 2^" << capacity << " accumulations of max_pos^2" << endl;
@@ -55,7 +55,7 @@ void QuireSizeTable(std::ostream& ostr) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	if (argc == 1) cout << argv[0] << ": print quire size tables" << endl;
 

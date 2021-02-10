@@ -1,12 +1,12 @@
 // propenv.cpp: cli to show the type properties of the compiler environment
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/number_system_properties.hpp> //minmax_range etc. for native types
 // configure the posit environment
 #define POSIT_FAST_SPECIALIZATION 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 //#define POSIT_DECODED_CLASS
 #ifdef POSIT_DECODED_CLASS
@@ -16,7 +16,7 @@
 // of the class and making it unusable for real computational work.
 void WhyWeRemovedDecodedPosits() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// report on the size of different posit components and implementations
 	posit<4, 0> p4_0;
@@ -52,7 +52,7 @@ void WhyWeRemovedDecodedPosits() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// long double attributes
 	constexpr int f_prec = std::numeric_limits<float>::max_digits10;
@@ -149,7 +149,7 @@ try {
 	int         scale 	    = 0;
 	long double fr    	    = 0;
 	unsigned long long fraction = 0;
-	sw::unum::extract_fp_components(ld.da, sign, scale, fr, fraction);
+	sw::universal::extract_fp_components(ld.da, sign, scale, fr, fraction);
 
 	cout << "value    " << setprecision(q_prec) << ld.da << setprecision(f_prec) << endl;
 	cout << "hex      ";

@@ -1,13 +1,13 @@
 // experiment.c: playground for manual experimenting with behavior of the C API
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #if defined(_MSC_VER)
 #define POSIT_NO_GENERICS // MSVC doesn't support _Generic so disable the generic C11 macros
 #endif
-#include <universal/posit/posit_c_api.h>
+#include <universal/number/posit/posit_c_api.h>
 
 int main(int argc, char* argv[])
 {

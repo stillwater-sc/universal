@@ -1,14 +1,14 @@
 // posit8.c: example program showing the use of the posit8_t type of the C API of the posit library
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // pull in the posit C API definitions
-#include <universal/posit/posit_c_api.h>
+#include <universal/number/posit/posit_c_api.h>
 
 // pull in the source code to be compiled as a C library
-#include <universal/posit/specialized/posit_8_0.h>
+#include <universal/number/posit/specialized/posit_8_0.h>
 
 // elementary functions
 posit8_t posit8_sqrt(posit8_t a) {

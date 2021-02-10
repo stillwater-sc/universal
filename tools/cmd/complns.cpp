@@ -1,13 +1,13 @@
 // complns.cpp: components of a logarithmic number: cli to show the sign/scale/fraction components of a logarithmic number 
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/lns/lns>
+#include <universal/number/lns/lns>
 //#include <universal/lns/lns_manipulators.hpp>
 
 namespace sw {
-	namespace unum {
+	namespace universal {
 		// return in triple form (sign, scale, fraction)
 		template<size_t nbits, typename bt>
 		inline std::string to_triple(const lns<nbits, bt>& number) {
@@ -33,7 +33,7 @@ namespace sw {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// lns attributes
 	constexpr int max_digits10 = std::numeric_limits<double>::max_digits10;

@@ -1,7 +1,7 @@
 #pragma once
 // inverse.hpp: Gauss-Jordan algorithm to generate matrix inverse
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -15,7 +15,7 @@
 #define BLAS_TRACE_ROUNDING_EVENTS 0
 #endif
 
-namespace sw { namespace unum { namespace blas {
+namespace sw { namespace universal { namespace blas {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Gauss-Jordan algorithm to generate a matrix inverse
@@ -134,4 +134,4 @@ matrix<Scalar> invfast(const matrix<Scalar>& A) {
 	return Ainv;
 }
 
-} } }  // namespace sw::unum::blas
+} } }  // namespace sw::universal::blas

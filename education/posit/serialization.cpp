@@ -1,17 +1,17 @@
 //  serialization.cpp : examples how to serialize posit values
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // configure the posit environment to print native posit format as default
 #define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 

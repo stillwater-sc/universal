@@ -1,6 +1,6 @@
 // distinct_powers.cpp : algorithm to find all integer combinations of a^b for some range [min, max]
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -9,12 +9,11 @@
 #include <set>
 #include <algorithm>
 // integer number system
-#include <universal/integer/integer.hpp>
-#include <universal/integer/integer_functions.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/integer/attributes.hpp>
 // posit number system
 #define POSIT_ENABLE_LITERALS 1
-#include <universal/posit/posit.hpp>
-#include <universal/posit/posit_functions.hpp>
+#include <universal/number/posit/posit.hpp>
 
 /*
  * Consider all integer combinations of a^b for lowerbound <= a <= upperbound, lowerbound <= b <= upperbound
@@ -22,9 +21,9 @@
  * Sorted, with any repeats removed, we get some sequence. What is the cardinality of that sequence?
  */
 template<size_t nbits>
-sw::unum::integer<nbits> IntegerPowerCombinationsUsingVector(const sw::unum::integer<nbits>& min, const sw::unum::integer<nbits>& max) {
+sw::universal::integer<nbits> IntegerPowerCombinationsUsingVector(const sw::universal::integer<nbits>& min, const sw::universal::integer<nbits>& max) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	using Integer = integer<nbits>;
 
 	vector<Integer> combinations;
@@ -40,9 +39,9 @@ sw::unum::integer<nbits> IntegerPowerCombinationsUsingVector(const sw::unum::int
 }
 	
 template<size_t nbits>
-sw::unum::integer<nbits> IntegerPowerCombinationsUsingSet(const sw::unum::integer<nbits>& min, const sw::unum::integer<nbits>& max) {
+sw::universal::integer<nbits> IntegerPowerCombinationsUsingSet(const sw::universal::integer<nbits>& min, const sw::universal::integer<nbits>& max) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	using Integer = integer<nbits>;
 
 	set<Integer> combinations;
@@ -55,9 +54,9 @@ sw::unum::integer<nbits> IntegerPowerCombinationsUsingSet(const sw::unum::intege
 }
 
 template<size_t nbits, size_t es>
-size_t IntegerPowerCombinationsUsingSet(const sw::unum::posit<nbits, es>& min, const sw::unum::posit<nbits, es>& max) {
+size_t IntegerPowerCombinationsUsingSet(const sw::universal::posit<nbits, es>& min, const sw::universal::posit<nbits, es>& max) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	using Posit = posit<nbits, es>;
 
 	set<Posit> combinations;
@@ -84,7 +83,7 @@ size_t DistinctPowerCombinations(size_t min, size_t max) {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	goto version_double;
 	goto version_integer_vector;

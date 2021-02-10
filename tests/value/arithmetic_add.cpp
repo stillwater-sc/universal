@@ -1,39 +1,40 @@
 // arithmetic_add.cpp: functional tests for arithmetic add of values
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include "universal/bitblock/bitblock.hpp"
-#include "universal/value/value.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
+#include <universal/internal/bitblock/bitblock.hpp>  // TODO: remove: should not have an internal type in the public interface
+#include <universal/internal/value/value.hpp>
+#include <universal/verification/test_status.hpp> // ReportTestResult
 
 // (sign, scale, fraction) representation using sbits for scale and fbits for fraction assuming a hidden bit
 template<size_t sbits, size_t fbits>
 int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
+	using namespace sw::universal;
+	using namespace sw::universal::internal;
 	//constexpr size_t NR_OF_VALUES = (size_t(1) << (1 + scale + fbits));
 	constexpr size_t abits = fbits + 4;
 	int nrOfFailedTestCases = 0;
-	sw::unum::value<fbits> a, b;
-	sw::unum::value<abits+1> sum, ref;
+	value<fbits> a, b;
+	value<abits+1> sum, ref;
 
 	// assume scale is a 2's complement representation and thus ranges from -2^(sbits-1) to 2^(sbits-1) - 1
 	int scale_lb = -(int(1) << (sbits - 1));
 	int scale_ub = (int(1) << (sbits - 1)) - 1;
 	size_t max_fract = (size_t(1) << fbits);
-	sw::unum::bitblock<fbits> afraction, bfraction;
+	bitblock<fbits> afraction, bfraction;
 	for (size_t sign = 0; sign < 2; ++sign) {
 		for (int scale = scale_lb; scale < scale_ub; ++scale) {
 			for (size_t afrac = 0; afrac < max_fract; ++afrac) {
-				afraction = sw::unum::convert_to_bitblock<fbits>(afrac);
+				afraction = convert_to_bitblock<fbits>(afrac);
 				a.set(sign == 1, scale, afraction, false, false);
 				// std::cout << components(a) << std::endl;
 				for (size_t sign = 0; sign < 2; ++sign) {
 					for (int scale = scale_lb; scale < scale_ub; ++scale) {
 						for (size_t bfrac = 0; bfrac < max_fract; ++bfrac) {
-							bfraction = sw::unum::convert_to_bitblock<fbits>(bfrac);
+							bfraction = convert_to_bitblock<fbits>(bfrac);
 							b.set(sign == 1, scale, bfraction, false, false);
-							sw::unum::module_add<fbits, abits>(a, b, sum);
+							module_add<fbits, abits>(a, b, sum);
 							// std::cout << components(a) << " + " << components(b) << " = " << components(sum) << std::endl;
 
 							double dsum = sum.to_double();
@@ -74,7 +75,7 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;

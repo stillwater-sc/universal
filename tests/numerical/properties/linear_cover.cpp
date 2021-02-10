@@ -1,14 +1,11 @@
 ﻿// linear_cover.cpp: covering a linear range with a posit
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include "common.hpp"
-// pull in the posit number system
-#include <universal/posit/posit>
-// test helpers, such as, ReportTestResults
-#include "../tests/utils/test_helpers.hpp"
-#include "../tests/utils/posit_test_helpers.hpp"
+#include <universal/number/posit/posit>
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
 
 /*
 When using a discretization scheme, for example, an Analog-to-Digital converter,
@@ -24,7 +21,7 @@ different regions.
 
 template<size_t nbits, size_t es, size_t adc_width>
 double CalculateLinearCover(bool verbose = false) {
-	sw::unum::posit<nbits, es> pLevel;// , pFraction;
+	sw::universal::posit<nbits, es> pLevel;// , pFraction;
 
 	constexpr unsigned long nrSamples = (unsigned long)1 << adc_width;
 	unsigned long cover = 0;
@@ -47,7 +44,7 @@ template<size_t nbits, size_t es>
 void GenerateLinearSamples() {
 	// the linear range is going to be multiples of epsilon() around 1.0
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	using Posit = posit<nbits, es>;
 
 	Posit epsilon = numeric_limits<Posit>::epsilon();
@@ -67,7 +64,7 @@ template<size_t nbits, size_t es>
 void TestLinearSamples() {
 	// the linear range is going to be multiples of epsilon() around 1.0
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	using Posit = posit<nbits, es>;
 
 	Posit epsilon = numeric_limits<Posit>::epsilon();
@@ -92,7 +89,7 @@ void TestLinearSamples() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// preserve the existing ostream precision
 	auto precision = cout.precision();
@@ -159,15 +156,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

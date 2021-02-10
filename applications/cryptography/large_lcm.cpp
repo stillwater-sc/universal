@@ -1,6 +1,6 @@
 // large_lcm.cpp: calculating a least common multiple of a very large set
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -11,14 +11,14 @@
 #include <chrono>
 // include the number system we want to use, and configure overflow exceptions so we can capture failures
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/integer/integer>
+#include <universal/number/integer/integer>
 
 template<size_t nbits, typename BlockType>
-void MeasureLCM(const std::vector<sw::unum::integer<nbits, BlockType>>& v) {
+void MeasureLCM(const std::vector<sw::universal::integer<nbits, BlockType>>& v) {
 	using namespace std;
 	chrono::steady_clock::time_point begin, end;
 	begin = chrono::steady_clock::now();
-	using Integer = sw::unum::integer<nbits, BlockType>;
+	using Integer = sw::universal::integer<nbits, BlockType>;
 	Integer least_common_multple = lcm(v);
 	end = chrono::steady_clock::now();
 	using TimeReal = float;
@@ -32,7 +32,7 @@ void MeasureLCM(const std::vector<sw::unum::integer<nbits, BlockType>>& v) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 	   	

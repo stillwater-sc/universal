@@ -1,6 +1,6 @@
 // fermat.cpp: factor numbers using Fermat's basic factorization algorithm, a^2 - b^2 = N
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -12,18 +12,18 @@
 #include <chrono>
 // include the number system we want to use, and configure overflow exceptions so we can capture failures
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/integer/integer>
-#include <universal/integer/primes.hpp>
+#include <universal/number/integer/integer>
+#include <universal/number/integer/primes.hpp>
 
 template<size_t nbits, typename BlockType>
-bool miller_rabin(const sw::unum::integer<nbits, BlockType>& a, int reps) {
+bool miller_rabin(const sw::universal::integer<nbits, BlockType>& a, int reps) {
 	return true;
 }
 
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	{
 		constexpr size_t nbits = 1024;

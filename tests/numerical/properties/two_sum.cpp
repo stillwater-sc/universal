@@ -1,14 +1,11 @@
 ﻿// two_sum.cpp: TwoSum evaluation of posit number systems
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include "common.hpp"
-// pull in the posit number system
-#include <universal/posit/posit>
-// test helpers, such as, ReportTestResults
-#include "../tests/utils/test_helpers.hpp"
-#include "../tests/utils/posit_test_helpers.hpp"
+#include <universal/number/posit/posit>
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
 
 /*
 important properties of linear floating point arithmetic:
@@ -41,7 +38,7 @@ generate a rounded sum s and a remainder r, such that
 */
 
 template<size_t nbits, size_t es>
-void ReportTwoSumError(const std::string& test_case, const std::string& op, const sw::unum::posit<nbits, es>& a, const sw::unum::posit<nbits, es>& b, const sw::unum::posit<nbits, es>& s, const sw::unum::posit<nbits, es>& r) {
+void ReportTwoSumError(const std::string& test_case, const std::string& op, const sw::universal::posit<nbits, es>& a, const sw::universal::posit<nbits, es>& b, const sw::universal::posit<nbits, es>& s, const sw::universal::posit<nbits, es>& r) {
 	std::cerr << test_case << " "
 		<< std::setw(nbits) << a.get()
 		<< " " << op << " "
@@ -90,7 +87,7 @@ int ValidateTwoSum(const std::string& tag, bool bReportIndividualTestCases) {
 	using namespace std;
 	const size_t NR_POSITS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
-	using Posit = sw::unum::posit<nbits, es>;
+	using Posit = sw::universal::posit<nbits, es>;
 	Posit pa, pb, ps, pr, psum, pref;
 	pair<Posit, Posit> s_and_r;
 	for (size_t i = 0; i < NR_POSITS; i++) {
@@ -98,7 +95,7 @@ int ValidateTwoSum(const std::string& tag, bool bReportIndividualTestCases) {
 		for (size_t j = 0; j < NR_POSITS; j++) {
 			pb.set_raw_bits(j);
 
-			s_and_r = sw::unum::twoSum(pa, pb);
+			s_and_r = sw::universal::twoSum(pa, pb);
 			ps = s_and_r.first;
 			pr = s_and_r.second;
 			pref = ps + pr;
@@ -125,7 +122,7 @@ int ValidateTwoSum(const std::string& tag, bool bReportIndividualTestCases) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;
@@ -201,15 +198,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

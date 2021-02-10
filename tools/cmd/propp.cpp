@@ -1,9 +1,9 @@
 // propp.cpp: cli to show the arithmetic properties of posit configurations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 typedef std::numeric_limits< double > dbl;
 const char* msg = "arithmetic properties of a posit<16, 1> environment\n\
@@ -22,20 +22,20 @@ Quire segments\n\
 
 template<size_t nbits, size_t es, size_t capacity = 10>
 void arithmetic_properties(std::ostream& ostr) {
-	sw::unum::posit<nbits, es> p;
-	ostr << sw::unum::posit_range<nbits, es>() << std::endl;
-	ostr << "  minpos                     : " << sw::unum::hex_format(sw::unum::minpos<nbits, es>(p)) << " " << sw::unum::minpos<nbits, es>(p) << std::endl;
-	ostr << "  maxpos                     : " << sw::unum::hex_format(sw::unum::maxpos<nbits, es>(p)) << " " << sw::unum::maxpos<nbits, es>(p) << std::endl;
-	ostr << sw::unum::quire_properties<nbits, es, capacity>() << std::endl;
+	sw::universal::posit<nbits, es> p;
+	ostr << sw::universal::posit_range<nbits, es>() << std::endl;
+	ostr << "  minpos                     : " << sw::universal::hex_format(sw::universal::minpos<nbits, es>(p)) << " " << sw::universal::minpos<nbits, es>(p) << std::endl;
+	ostr << "  maxpos                     : " << sw::universal::hex_format(sw::universal::maxpos<nbits, es>(p)) << " " << sw::universal::maxpos<nbits, es>(p) << std::endl;
+	ostr << sw::universal::quire_properties<nbits, es, capacity>() << std::endl;
 	ostr << "Quire segments" << std::endl;
-	ostr << sw::unum::quire<nbits, es, capacity>() << std::endl;
+	ostr << sw::universal::quire<nbits, es, capacity>() << std::endl;
 }
 
 // transformation of user-provided values to constexpr values
 template<size_t capacity>
 void ReportArithmeticProperties(size_t nbits, size_t es) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "arithmetic properties of a posit<" << nbits << ", " << es << "> environment" << endl;
 
@@ -339,7 +339,7 @@ void ReportArithmeticProperties(size_t nbits, size_t es) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	if (argc == 4) cout << argv[0] << ": posit properties\n";
 	if (argc != 4) {

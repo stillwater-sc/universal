@@ -1,15 +1,13 @@
 //  intervals.cpp : demonstration of valid intervals
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // pull in the valid number system
-#include <universal/valid/valid>
-// test support functions
-#include "../tests/utils/valid_test_helpers.hpp"
+#include <universal/number/valid/valid>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -17,7 +15,7 @@
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

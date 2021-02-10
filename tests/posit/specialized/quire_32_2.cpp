@@ -1,6 +1,6 @@
-// quire_32_2.cpp: dot product and fused dot product unctionality tests for fast specialized posit<32,2>
+// quire_32_2.cpp: test suite runner for dot product and fused dot product functionality tests for fast specialized posit<32,2>
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -10,15 +10,14 @@
 #define POSIT_FAST_POSIT_32_2 1
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
-// test helpers, such as, ReportTestResults
-#include "../../utils/test_helpers.hpp"
-#include "../../utils/posit_test_randoms.hpp"
+#include <universal/number/posit/posit>
+#include <universal/verification/posit_test_suite.hpp>
+#include <universal/verification/posit_test_randoms.hpp>
 
 /// Standard posit with nbits = 32 have es = 2 exponent bits.
 
 template<size_t nbits, size_t es>
-int Validate() {
+int Verify() {
 	int nrOfFailedTests = 0;
 
 	return nrOfFailedTests;
@@ -27,7 +26,7 @@ int Validate() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	constexpr size_t RND_TEST_CASES = 500000;
 
@@ -56,7 +55,7 @@ try {
 
 	// logic tests
 //	cout << "Logic operator tests " << endl;
-//	nrOfFailedTestCases += ReportTestResult( ValidatePositLogicEqual             <nbits, es>(), tag, "    ==          (native)  ");
+//	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicEqual             <nbits, es>(), tag, "    ==          (native)  ");
 
 	// conversion tests
 	cout << "Assignment/conversion tests " << endl;
@@ -65,8 +64,8 @@ try {
 
 	// arithmetic tests
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition        (native)  ");
-	nrOfFailedTestCases += ReportTestResult(ValidateBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication  (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition        (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication  (native)  ");
 
 	// elementary function tests
 //	cout << "Elementary function tests " << endl;
@@ -77,15 +76,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

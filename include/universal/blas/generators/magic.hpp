@@ -1,14 +1,14 @@
 #pragma once
 // magric.hpp: generate a magic square matrix 
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 #include <random>
 #include <algorithm>
 
-namespace sw { namespace unum { namespace blas {
+namespace sw { namespace universal { namespace blas {
 
 // fill a dense (N, N) matrix with linear index values in row order
 template <typename Scalar>
@@ -59,4 +59,4 @@ matrix<Scalar> magic(int N) {
 	return A;
 }
 
-}}} // namespace sw::unum::blas
+}}} // namespace sw::universal::blas

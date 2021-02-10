@@ -1,20 +1,20 @@
 //  misc.cpp : miscellaneous tests for abitrary precision integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/integer/integer.hpp>
-#include <universal/integer/math_functions.hpp>
-#include <universal/integer/numeric_limits.hpp>
-#include <universal/integer/integer_functions.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/integer/math_functions.hpp>
+#include <universal/number/integer/numeric_limits.hpp>
+#include <universal/number/integer/attributes.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
+//#include <universal/verification/integer_test_suite.hpp>
 
 /*
    The goal of the arbitrary integers is to provide a constrained big integer type
@@ -43,7 +43,7 @@ integer<nbits, BlockType> ipow(integer<nbits, BlockType> base, integer<nbits, Bl
 
 void TestSizeof() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << endl << "TestSizeof" << endl;
 	bool pass = true;
@@ -72,7 +72,7 @@ void TestSizeof() {
 
 void TestConversion() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << endl << "TestConversion" << endl;
 
@@ -93,7 +93,7 @@ void TestConversion() {
 
 void TestFindMsb() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << endl << "TestFindMsb" << endl;
 	bool pass = true;
@@ -113,7 +113,7 @@ void TestFindMsb() {
 void ReproducibilityTestSuite() {
 	for (int i = 0; i < 30; i += 3) {
 		for (int j = 0; j < 70; j += 7) {
-			sw::unum::reportRepresentability(i, j);
+			sw::universal::reportRepresentability(i, j);
 		}
 	}
 }
@@ -124,7 +124,7 @@ void ReproducibilityTestSuite() {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "Miscellaneous integer tests failed";
 

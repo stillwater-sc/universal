@@ -1,6 +1,6 @@
 // skeleton.cpp example showing the basic program structure to use custom posit configurations
 //
-// Copyright (C) 2017-2018 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include "common.hpp"
@@ -9,7 +9,8 @@
 #define POSIT_TRACE_CONVERSION
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
+#include <universal/number/integer/integer>
 
 /*
 
@@ -36,7 +37,7 @@ void ColorPrintTable()
 {
 	using namespace std;
 	constexpr size_t NR_POSITS = (size_t(1) << nbits);
-	sw::unum::posit<nbits, es> p;
+	sw::universal::posit<nbits, es> p;
 	cout << "Color Printing a posit configuration\n";
 	for (size_t i = 0; i < NR_POSITS; ++i) {
 		p.set_raw_bits(i);
@@ -59,7 +60,7 @@ void HexVsDefaultFloatPrinting()
 void LongDoubleExample()
 {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "LongDouble values\n";
 	double d = (double)0.79432823472428150206586100479;
@@ -90,7 +91,7 @@ template<size_t nbits, size_t es>
 void PiExamples()
 {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "Value of PI as a function of the posit configuration\n";
 	posit<nbits, es> p;
@@ -112,7 +113,7 @@ void PiExamples()
 void DynamicRangeTable()
 {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "Dynamic Range table of posit with nbits = 8\n";
 	constexpr size_t nbits = 8;
@@ -151,7 +152,7 @@ template<size_t nbits = 8>
 void OneMinusEps()
 {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "1.0 - epsilon\n";
 	{
@@ -189,7 +190,7 @@ template<size_t nbits = 8>
 void OnePlusEps()
 {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "1.0 + epsilon\n";
 	{
@@ -225,7 +226,7 @@ void OnePlusEps()
 
 void Conversions() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	posit<8, 0> p8a;
 	posit<16, 1> p16;
@@ -241,7 +242,7 @@ void Conversions() {
 
 void NumberTraits() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "epsilon for floats       : " << number_traits<float>::epsilon() << endl;
 	cout << "epsilon for doubles      : " << number_traits<double>::epsilon() << endl;
@@ -291,11 +292,11 @@ void NumberTraits() {
 	cout << "max pos for posit<256,5> : " << number_traits<posit<256, 5> >::max() << endl; // TODO
 }
 
-#include <universal/integer/integer>
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	bool bSuccess = true;
 	auto old_precision = cout.precision();
@@ -337,15 +338,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

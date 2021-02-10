@@ -2,14 +2,14 @@
 //
 // Binomial coefficients are useful to generate the inverse of a Hilbert matrix
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal number project, which is released under an MIT Open Source license.
 #include <iostream>
-#include <universal/integer/integer>
+#include <universal/number/integer/integer>
 
 template<size_t nbits, typename BlockType>
-sw::unum::integer<nbits, BlockType> greatest_common_divisor(const sw::unum::integer<nbits, BlockType>& a, const sw::unum::integer<nbits, BlockType>& b) {
+sw::universal::integer<nbits, BlockType> greatest_common_divisor(const sw::universal::integer<nbits, BlockType>& a, const sw::universal::integer<nbits, BlockType>& b) {
 	std::cout << "gcd(" << a << ", " << b << ")\n";
 	return b.iszero() ? a : greatest_common_divisor(b, a % b);
 }
@@ -21,7 +21,7 @@ sw::unum::integer<nbits, BlockType> greatest_common_divisor(const sw::unum::inte
 int main() 
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 #if MANUAL_TESTING
 
@@ -31,7 +31,7 @@ try {
 	b = 92875085904958;
 	c = a * b * 10;
 	cout << greatest_common_divisor(a,c) << " a = " << a << endl;
-	cout << sw::unum::gcd(a, c) << " a = " << a << endl;
+	cout << sw::universal::gcd(a, c) << " a = " << a << endl;
 
 	a = 252;
 	b = 105;

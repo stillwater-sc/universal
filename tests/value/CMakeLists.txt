@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "value" "Number Systems/floating-point/linear-generalized" "${SOURCES}")
+compile_all("true" "value" "Internal/Compute Classes/bit-level/value" "${SOURCES}")

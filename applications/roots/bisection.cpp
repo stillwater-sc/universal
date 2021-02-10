@@ -1,13 +1,13 @@
 // bisection.cpp: example program to a root of a polynomial through bisection, a linear method
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 /*
 
@@ -75,7 +75,7 @@ Scalar bisection(Scalar& a, Scalar& b, Scalar (*f)(const Scalar&), const Scalar&
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	{
 		using Scalar = posit<16, 1>;
@@ -116,15 +116,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

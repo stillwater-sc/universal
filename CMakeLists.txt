@@ -19,13 +19,13 @@ endif(POLICY CMP0048)
 ####
 # Set project variables
 if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
-  set(UNIVERSAL_VERSION_MAJOR 2)
+  set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 1)
+  set(UNIVERSAL_VERSION_MINOR 0)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
-  set(UNIVERSAL_VERSION_PATCH 41)
+  set(UNIVERSAL_VERSION_PATCH 0)
 endif()
 project(universal 
 	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
@@ -140,11 +140,11 @@ endif()
 if(MSVC)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-message(STATUS "C++20 support has been enabled by default")
+message(STATUS "C++20 has been enabled by default")
 else()
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-message(STATUS "C++17 support has been enabled by default")
+message(STATUS "C++20 has been enabled by default: but bit_cast<> requires gcc 11")
 endif()
 
 # Compiler specific environments
@@ -176,7 +176,7 @@ if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	#set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} -O3 -DNDEBUG")
 	#set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} -g3 -pthread")
 
-	set(EXTRA_CXX_FLAGS "-std=c++14")
+	#set(EXTRA_CXX_FLAGS "-std=c++20") # isn't this done by CMAKE_CXX_STANDARD?
 elseif(MSVC)
 	# Streaming SIMD Extension (SSE) ISA
 	if (USE_SSE3)
@@ -228,7 +228,7 @@ elseif(MSVC)
 	# Also, the value of the __cplusplus macro is not affected by the /permissive- switch.
 	#set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /Zc:__cplusplus /std:c++14")
 	# for the moment turn off since we are getting: cl : Command line warning D9002: ignoring unknown option '/Zc:__cplusplus`
-	set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} /std:c++14")
+	#set(EXTRA_CXX_FLAGS "${EXTRA_CXX_FLAGS} /std:c++17")
 
 	# Optimization
 	# Option	Purpose
@@ -320,7 +320,8 @@ endif()
 # universal/posit
 # universal/valid
 # universal/areal
-# universal/mpfloat
+# universal/adaptiveint
+# universal/adaptivefloat
 include_directories("./include")
 
 ####
@@ -472,8 +473,8 @@ endif(BUILD_CI_CHECK)
 # Build the tests for the underlying storage classes
 if(BUILD_STORAGE_CLASSES)
 add_subdirectory("tests/bitblock")
-add_subdirectory("tests/blockbin")
-add_subdirectory("tests/blocktri")
+add_subdirectory("tests/blockbinary")
+add_subdirectory("tests/blocktriple")
 endif(BUILD_STORAGE_CLASSES)
 
 if(BUILD_NATIVE_TYPES)
@@ -483,6 +484,7 @@ endif(BUILD_NATIVE_TYPES)
 # Arbitrary integers tests
 if(BUILD_INTEGERS)
 add_subdirectory("tests/integer")
+add_subdirectory("tests/adaptiveint")
 endif(BUILD_INTEGERS)
 
 if(BUILD_DECIMALS)
@@ -497,7 +499,7 @@ endif(BUILD_FIXPNTS)
 # Arbitrary reals tests
 if(BUILD_REALS)
 add_subdirectory("tests/areal")
-add_subdirectory("tests/mpfloat")
+add_subdirectory("tests/adaptivefloat")
 add_subdirectory("tests/value")
 endif(BUILD_REALS)
 
@@ -516,6 +518,7 @@ endif(BUILD_UNUM_TYPE_2)
 if(BUILD_POSITS)
 add_subdirectory("tests/posit")
 add_subdirectory("tests/posit/specialized")
+add_subdirectory("tests/adaptiveposit")
 endif(BUILD_POSITS)
 
 if(BUILD_VALIDS)
@@ -535,7 +538,14 @@ endif(BUILD_CONVERSION_TESTS)
 
 # performance benchmarks
 if(BUILD_PERFORMANCE_TESTS)
-add_subdirectory("tests/performance")
+add_subdirectory("performance/decimal")
+add_subdirectory("performance/integer")
+add_subdirectory("performance/fixpnt")
+add_subdirectory("performance/areal")
+add_subdirectory("performance/lns")
+add_subdirectory("performance/posit")
+add_subdirectory("performance/valid")
+add_subdirectory("performance/unum")
 endif(BUILD_PERFORMANCE_TESTS)
 
 # command line tools and utilities 
@@ -545,9 +555,15 @@ add_subdirectory("tools/utils")
 endif(BUILD_CMD_LINE_TOOLS)
 
 if(BUILD_EDUCATION)
+add_subdirectory("education/tables")
+add_subdirectory("education/integer")
+add_subdirectory("education/fixpnt")
+add_subdirectory("education/areal")
+add_subdirectory("education/unum")
 add_subdirectory("education/posit")
 add_subdirectory("education/quire")
 add_subdirectory("education/valid")
+add_subdirectory("education/lns")
 endif(BUILD_EDUCATION)
 
 if(BUILD_APPLICATIONS)
@@ -566,6 +582,7 @@ add_subdirectory("applications/engineering")
 add_subdirectory("applications/science")
 add_subdirectory("applications/cryptography")
 add_subdirectory("applications/numeric")
+add_subdirectory("applications/sequences")
 add_subdirectory("applications/multiprecision")
 endif(BUILD_APPLICATIONS)
 

@@ -1,13 +1,14 @@
 // compieee.cpp: cli to show the sign/scale/fraction components of a 32b/64/128b IEEE floats
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
-#include <universal/native/ieee-754.hpp>
+#include <limits>
+#include <universal/native/ieee754.hpp>
 #include <universal/functions/isrepresentable.hpp>
-#include <universal/value/value>
+#include <universal/internal/value/value>
 
 std::string version_string(int a, int b, int c) {
 	std::ostringstream ss;
@@ -57,7 +58,7 @@ std::string report_compiler_version() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal::internal;
 
 	// long double attributes
 	constexpr int f_prec = std::numeric_limits<float>::max_digits10;

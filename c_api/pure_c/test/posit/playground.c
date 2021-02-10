@@ -1,9 +1,9 @@
 // playground.c: example C program showing the use of the C API of the posit library
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/posit/posit_c_api.h>
+#include <universal/number/posit/posit_c_api.h>
 
 // enumerate all addition cases for a posit configuration
 int ValidateAddition(char* tag) {

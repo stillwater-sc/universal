@@ -1,15 +1,14 @@
 //  quires.cpp : test suite for quires
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 // enable/disable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 // type definitions for the important types, posit<> and quire<>
-#include <universal/posit/posit>
-// test support functions
-#include "../tests/utils/quire_test_helpers.hpp"
+#include <universal/number/posit/posit>
+#include <universal/verification/quire_test_suite.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -17,7 +16,7 @@
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
@@ -48,8 +47,8 @@ try {
 		cout << "Compare value and quire content\n";
 
 		float v = 2.6226e-05f;
-		sw::unum::quire<16, 1, 2> q;
-		sw::unum::posit<16, 1> p1, p2, argA, argB;
+		sw::universal::quire<16, 1, 2> q;
+		sw::universal::posit<16, 1> p1, p2, argA, argB;
 
 		p1 = v;
 		q = p1.to_value();
@@ -87,13 +86,13 @@ try {
 	{
 		std::cout << "Nothing prohibiting us from creating quires for float and double arithmetic" << std::endl;
 		float f = 1.555555555555e-10f;
-		value<23> vf(f);
+		internal::value<23> vf(f);
 		quire<10, 2, 2> fquire;
 		fquire += vf;
 		std::cout << "float:  " << setw(15) << f << " " << fquire << std::endl;
 
 		double d = 1.555555555555e16;
-		value<52> vd(d);
+		internal::value<52> vd(d);
 		quire<10, 2, 2> dquire;
 		dquire += vd;
 		std::cout << "double: " << setw(15) << d << " " << dquire << std::endl;
@@ -116,20 +115,20 @@ try {
 		//  17 16   15 14 13 12 11 10  9  8    7  6  5  4  3  2  1  0
 		// [ 0  0    0  0  0  0  0  0  0  0    0  0  0  0  0  0  0  0 ]
 		quire<nbits, es, capacity> q;
-		value<5> maxpos, maxpos_squared, minpos, minpos_squared;
-		long double dmax = sw::unum::maxpos_value<nbits, es>();
+		internal::value<5> maxpos, maxpos_squared, minpos, minpos_squared;
+		long double dmax = sw::universal::maxpos_value<nbits, es>();
 		maxpos = dmax;
 		maxpos_squared = dmax*dmax;
 		std::cout << "maxpos * maxpos = " << components(maxpos_squared) << std::endl;
-		long double dmin = sw::unum::minpos_value<nbits, es>();
+		long double dmin = sw::universal::minpos_value<nbits, es>();
 		minpos = dmin;
 		minpos_squared = dmin*dmin;
 		std::cout << "minpos * minpos = " << components(minpos_squared) << std::endl;
-		value<5> c(maxpos_squared);
+		internal::value<5> c(maxpos_squared);
 
 		std::cout << "Add/Subtract propagating carry/borrows to and from capacity segment" << std::endl;
 		q.clear();
-		value<5> v(64);
+		internal::value<5> v(64);
 		q += v;		std::cout << q << std::endl;
 		q += v;		std::cout << q << std::endl;
 		q += v;		std::cout << q << std::endl;

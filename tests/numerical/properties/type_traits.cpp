@@ -1,23 +1,23 @@
 ﻿// type_traits.cpp: experiments with type traits of posit number types
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
 // pull in the native tools
 #include <universal/native/native>
 // pull in the posit number system
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 // pull in the arbitrary integer number system
-#include <universal/integer/integer>
+#include <universal/number/integer/integer>
 // pull in the fixed-point systems
-#include <universal/fixpnt/fixpnt>
+#include <universal/number/fixpnt/fixpnt>
 
 template<typename Scalar>
 bool TestPosit() {
 	using namespace std;
 	bool isPosit = false;
-	if (sw::unum::is_posit<Scalar>) {
+	if (sw::universal::is_posit<Scalar>) {
 		cout << "type is a posit: " << typeid(Scalar).name() << "  ";
 		isPosit = true;
 	}
@@ -31,7 +31,7 @@ template<typename Scalar>
 bool TestFixpnt() {
 	using namespace std;
 	bool isFixpnt = false;
-	if (sw::unum::is_fixpnt<Scalar>) {
+	if (sw::universal::is_fixpnt<Scalar>) {
 		cout << "type is a fixed-point: " << typeid(Scalar).name() << "  ";
 		isFixpnt = true;
 	}
@@ -44,7 +44,7 @@ bool TestFixpnt() {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 2;
@@ -57,12 +57,12 @@ try {
 	auto precision = cout.precision();
 	cout << setprecision(12);
 
-	static_assert( !is_integral< sw::unum::posit<nbits,es> >(), "a posit<nbits,es> is not an integral type");
-	static_assert( !is_floating_point< sw::unum::posit<nbits, es> >(), "a posit<nbits,es> is a floating point type");
-	static_assert( !is_arithmetic< sw::unum::posit<nbits, es> >(), "a posit<nbits,es> is not an arithmetic type");
+	static_assert( !is_integral< sw::universal::posit<nbits,es> >(), "a posit<nbits,es> is not an integral type");
+	static_assert( !is_floating_point< sw::universal::posit<nbits, es> >(), "a posit<nbits,es> is a floating point type");
+	static_assert( !is_arithmetic< sw::universal::posit<nbits, es> >(), "a posit<nbits,es> is not an arithmetic type");
 	static_assert( !is_arithmetic< Scalar >(), "This Scalar is not an arithmetic type");
 
-	static_assert( is_posit< sw::unum::posit<nbits, es> >, "a posit<nbits,es> is a posit type");
+	static_assert( is_posit< sw::universal::posit<nbits, es> >, "a posit<nbits,es> is a posit type");
 	static_assert( is_posit_trait< Scalar >(), "This Scalar is a posit type");
 
 	constexpr size_t rbits = nbits / 2;
@@ -86,15 +86,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

@@ -1,11 +1,11 @@
 #pragma once
 // numeric_limits_utility.hpp: utility functions for working with numeric_limits<> 
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw { namespace unum {
+namespace sw::universal {
 
 // a standard table format for numeric_limits<> of type Scalar
 template<typename Scalar, size_t ColumnWidth = 20>
@@ -51,4 +51,4 @@ void compareNumberTraits(std::ostream& ostr) {
 }
 
 
-} }  // namespace sw::unum
+}  // namespace sw::universal

@@ -1,10 +1,10 @@
 //  regimes.cpp : examples of working with posit regimes
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-#include <universal/posit/posit>
+#include <iostream>
+#include <universal/number/posit/posit>
 
 // test reporting helper
 int ReportTestResult(int nrOfFailedTests, const std::string& description, const std::string& test_operation)
@@ -37,7 +37,7 @@ int ValidateRegimeOperations(const std::string& tag, bool bReportIndividualTestC
 	constexpr int NR_TEST_CASES = int(nbits);
 	int nrOfFailedTestCases = 0;
 
-	sw::unum::regime<nbits, es> r;
+	sw::universal::regime<nbits, es> r;
 	for (int k = -NR_TEST_CASES; k < NR_TEST_CASES + 1; k++) {
 		int reference    = r.regime_size(k);
 		int nrRegimeBits = int(r.assign_regime_pattern(k));
@@ -59,7 +59,7 @@ int ValidateInwardProjection(const std::string& tag, bool bReportIndividualTestC
 	int nrOfFailedTests = 0;
 	unsigned useed_scale = unsigned(1) << es;
 
-	sw::unum::posit<nbits, es> p;
+	sw::universal::posit<nbits, es> p;
 	// k represents the regime encoding 
 	int size = int(nbits);
 	for (int k = -size + 1; k <= size - 1; k++) {
@@ -81,14 +81,14 @@ int ValidateRegimeScales(const std::string& tag, bool bReportIndividualTestCases
 	int nrOfFailedTests = 0;
 	int useed_scale = int(1) << es;  // int because we are doing int math with it
 
-	sw::unum::regime<nbits, es> r1;
+	sw::universal::regime<nbits, es> r1;
 	// scale represents the binary scale of a value to test
 	int size = int(nbits);
 	for (int k = (-size + 1); k <= (size - 1); k++) {
 		int scale = k*useed_scale;
 		r1.assign_regime_pattern(k);
 		if (r1.scale() != scale) {
-			if (sw::unum::check_inward_projection_range<nbits, es>(scale)) {
+			if (sw::universal::check_inward_projection_range<nbits, es>(scale)) {
 				if (r1.scale() == (k - 1)*useed_scale || r1.scale() == (k + 1)*useed_scale) {
 					continue;
 				}
@@ -98,7 +98,7 @@ int ValidateRegimeScales(const std::string& tag, bool bReportIndividualTestCases
 				<< " scale = " << std::setw(3) << scale
 				<< " calc k " << std::setw(3) << r1.regime_k()
 				<< " bits " << r1 << ":scale=" << r1.scale()
-				<< " clamp " << sw::unum::check_inward_projection_range<nbits,es>(scale) << std::endl;
+				<< " clamp " << sw::universal::check_inward_projection_range<nbits,es>(scale) << std::endl;
 		}
 
 	}

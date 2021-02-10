@@ -1,20 +1,19 @@
 //  rounding.cpp : rounding and assignment test suite for abitrary precision integers to real number types
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
 // configure the posit arithmetic
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/integer/integer.hpp>
-#include <universal/integer/numeric_limits.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/integer/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult
 
 /*
    The goal of the arbitrary integers is to provide a constrained big integer type
@@ -23,7 +22,7 @@
 */
 
 namespace sw {
-namespace unum {
+namespace universal {
 
 
 }
@@ -56,11 +55,11 @@ Rounding rules:
 // shift all the msb-1 bits into a fraction, making the msb the hidden bit
 // round the bits we have with respect to the scale of the number
 template<size_t nbits, size_t es, size_t ibits>
-void GeneratePositConversionTestCase(sw::unum::posit<nbits, es>& p, const sw::unum::integer<ibits>& w) {
+void GeneratePositConversionTestCase(sw::universal::posit<nbits, es>& p, const sw::universal::integer<ibits>& w) {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
-	value<ibits> v;
+	internal::value<ibits> v;
 
 	bool sign = w < 0;
 	bool isZero = w == 0;
@@ -68,7 +67,7 @@ void GeneratePositConversionTestCase(sw::unum::posit<nbits, es>& p, const sw::un
 	bool isNan = false;
 	long _scale = scale(w);
 	int msb = findMsb(w);
-	bitblock<ibits> fraction_without_hidden_bit;
+	internal::bitblock<ibits> fraction_without_hidden_bit;
 	int fbit = ibits - 1;
 	for (int i = msb - 1; i >= 0; --i) {
 		fraction_without_hidden_bit.set(fbit, w.at(i));
@@ -87,9 +86,9 @@ template<size_t nbits>
 void VerifyScale() {
 	assert(nbits > 1); // we are representing numbers not booleans
 	int cntr = 0;
-	sw::unum::integer<nbits> i = 1;
+	sw::universal::integer<nbits> i = 1;
 	while (cntr < nbits) {
-		std::cout << std::setw(20) << sw::unum::to_binary(i) << std::setw(20) << i << " scale is " << sw::unum::scale(i) << std::endl;
+		std::cout << std::setw(20) << sw::universal::to_binary(i) << std::setw(20) << i << " scale is " << sw::universal::scale(i) << std::endl;
 		i *= 2;
 		++cntr;
 	}
@@ -98,7 +97,7 @@ void VerifyScale() {
 	i.set(nbits - 1, true); i >>= 1; i.set(nbits-1, true);
 	cntr = 1;
 	while (cntr < nbits) {
-		std::cout << std::setw(20) << sw::unum::to_binary(i) << std::setw(20) << i << " scale is " << sw::unum::scale(i) << std::endl;
+		std::cout << std::setw(20) << sw::universal::to_binary(i) << std::setw(20) << i << " scale is " << sw::universal::scale(i) << std::endl;
 		i >>= 1; i.set(nbits-1, true);
 		++cntr;
 	}
@@ -111,7 +110,7 @@ void VerifyScale() {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "Integer Rounding tests failed";
 

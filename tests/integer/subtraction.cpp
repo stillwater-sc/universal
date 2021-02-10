@@ -1,6 +1,6 @@
-//  subtraction.cpp : arithmetic test suite for subracting abitrary precision integers
+//  subtraction.cpp : test suite runner for subracting abitrary precision integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -8,13 +8,11 @@
 #include <typeinfo>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/integer/integer.hpp>
-#include <universal/integer/numeric_limits.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/integer/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/integer_test_helpers.hpp"
+#include <universal/verification/integer_test_suite.hpp>
 
 /*
    The goal of the arbitrary integers is to provide a constrained big integer type
@@ -24,7 +22,7 @@
 
 template<typename Scalar>
 void GenerateSubTest(const Scalar& x, const Scalar& y, Scalar& z) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	z = x - y;
 	std::cout << typeid(Scalar).name() << ": " << x << " - " << y << " = " << z << std::endl;
 }
@@ -35,7 +33,7 @@ void GenerateSubTest(const Scalar& x, const Scalar& y, Scalar& z) {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "integer subtraction";
 

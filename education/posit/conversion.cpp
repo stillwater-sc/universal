@@ -1,20 +1,20 @@
 // conversion.cpp: step-by-step example of conversion of values to posits
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 
 // convert a floating point value to a specific posit configuration. Semantically, p = v, return reference to p
 template<size_t nbits, size_t es, typename Ty>
-sw::unum::posit<nbits, es> convert_to_posit(Ty rhs) {
+sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 	constexpr size_t fbits = std::numeric_limits<Ty>::digits - 1;
 
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
-	value<fbits> v((Ty)rhs);
+	internal::value<fbits> v((Ty)rhs);
 	posit<nbits, es> p;
 
 	cout << setprecision(numeric_limits<Ty>::digits10) << v << "   input value\n";
@@ -44,7 +44,7 @@ sw::unum::posit<nbits, es> convert_to_posit(Ty rhs) {
 
 	bool _sign = v.sign();
 	int _scale = v.scale();
-	sw::unum::bitblock<fbits> fraction_in = v.fraction();
+	sw::universal::bitblock<fbits> fraction_in = v.fraction();
 
 	p.clear();
 	cout << " construct the posit\n";
@@ -149,7 +149,7 @@ sw::unum::posit<nbits, es> convert_to_posit(Ty rhs) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
 

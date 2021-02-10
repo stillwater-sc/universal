@@ -1,8 +1,7 @@
 #pragma once
-//  posit_performance.hpp : functions to aid in measuring arithmetic performance of posit types.
-// Needs to be included after posit type is declared.
+// performance.hpp : functions to aid in measuring arithmetic performance of custom number system types
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <vector>
@@ -12,8 +11,7 @@
 #include <limits>
 #include <chrono>
 
-namespace sw {
-namespace unum {
+namespace sw { namespace universal {
 
 	// standardized structure to hold performance measurement results
 	// 
@@ -138,7 +136,7 @@ namespace unum {
 	template<typename Scalar>
 	int MeasureSqrtPerformance(Scalar& a, int &positives, int &negatives) {		
 		using std::sqrt;
-		using namespace sw::unum;
+		using namespace sw::universal;
 		positives = 0; negatives = 0;
 		for (int i = 0; i < NR_TEST_CASES; i++) {
 			a = i;
@@ -400,6 +398,4 @@ namespace unum {
 		report.div = float((positives + negatives) / elapsed);
 	}
 
-} // namespace unum
-} // namespace sw
-
+}} // namespace sw::universal

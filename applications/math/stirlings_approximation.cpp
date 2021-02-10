@@ -1,16 +1,19 @@
 //  stirlings_approximation.cpp : Stirling's approximation for factorials
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <sstream>
 #include <cmath>
 #include <algorithm>
-// multi-precision float
-//#include <universal/mpf/mpf.hpp>
-#include <universal/posit/posit>
+
+#include <universal/native/ieee754.hpp>
+#include <universal/number/decimal/decimal> // the oracle number system to use
+#include <universal/number/posit/posit>
 #include <universal/functions/factorial.hpp>
+
+#include <universal/utility/error.hpp>
 
 /*
  * Stirling's approximation is an approximation for factorials, leading to accurate
@@ -39,29 +42,122 @@
  *
  */
 
-template<typename Real>
-Real StirlingsApproximation(const Real& n) {
-	Real pi = 3.14159265358979323846;
-	Real term1 = sqrt(Real(2) * pi * n);
-	Real e = 2.71828182845904523536;
-	Real term2 = pow(n / e, n);
+template<typename Scalar>
+Scalar StirlingsApproximation(size_t n) {
+	Scalar pi = 3.14159265358979323846;
+	Scalar term1 = sqrt(Scalar(2) * pi * Scalar(n));
+	Scalar e = 2.71828182845904523536;
+	Scalar term2 = pow(Scalar(n) / e, Scalar(n));
 
-	Real factorial = term1 * term2;
+	Scalar factorial = term1 * term2;
 	return factorial;
 }
+
+/*
+ factorial                Stirling's Approximation                      Real Approximation                        Actual Factorial                         Relative Error
+		 1! =                                 0.922137                                         1                                               1                                     -0.07786300
+		 2! =                                    1.919                                         2                                               2                                     -0.04049780
+		 3! =                                  5.83621                                         6                                               6                                     -0.02729840
+		 4! =                                  23.5062                                        24                                              24                                     -0.02057600
+		 5! =                                  118.019                                       120                                             120                                     -0.01650690
+		 6! =                                  710.078                                       720                                             720                                     -0.01378030
+		 7! =                                   4980.4                                      5040                                            5040                                     -0.01182620
+		 8! =                                  39902.4                                     40320                                           40320                                     -0.01035730
+		 9! =                                   359537                                    362880                                          362880                                     -0.00921276
+		10! =                               3.5987e+06                                3.6288e+06                                         3628800                                     -0.00829596
+		11! =                              3.96156e+07                               3.99168e+07                                        39916800                                     -0.00754507
+		12! =                              4.75687e+08                               4.79002e+08                                       479001600                                     -0.00691879
+		13! =                              6.18724e+09                               6.22702e+09                                      6227020800                                     -0.00638850
+		14! =                               8.6661e+10                               8.71783e+10                                     87178291200                                     -0.00593370
+		15! =                              1.30043e+12                               1.30767e+12                                   1307674368000                                     -0.00553933
+		16! =                              2.08141e+13                               2.09228e+13                                  20922789888000                                     -0.00519412
+		17! =                              3.53948e+14                               3.55687e+14                                 355687428096000                                     -0.00488940
+		18! =                               6.3728e+15                               6.40237e+15                                6402373705728000                                     -0.00461846
+		19! =                              1.21113e+17                               1.21645e+17                              121645100408832000                                     -0.00437596
+		20! =                              2.42279e+18                                2.4329e+18                             2432902008176640000                                     -0.00415765
+		21! =                              5.08886e+19                               5.10909e+19                            51090942171709440000                                     -0.00396009
+		22! =                              1.11975e+21                                 1.124e+21                          1124000727777607680000                                     -0.00378045
+		23! =                              2.57585e+22                                2.5852e+22                         25852016738884976640000                                     -0.00361641
+		24! =                              6.18298e+23                               6.20448e+23                        620448401733239439360000                                     -0.00346600
+		25! =                              1.54596e+25                               1.55112e+25                      15511210043330985984000000                                     -0.00332761
+		26! =                              4.02001e+26                               4.03291e+26                     403291461126605635584000000                                     -0.00319984
+		27! =                              1.08553e+28                               1.08889e+28                   10888869450418352160768000000                                     -0.00308152
+		28! =                              3.03982e+29                               3.04888e+29                  304888344611713860501504000000                                     -0.00297164
+		29! =                              8.81639e+30                               8.84176e+30                 8841761993739701954543616000000                                     -0.00286932
+		30! =                              2.64517e+32                               2.65253e+32               265252859812191058636308480000000                                     -0.00277382
+ */
 
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
-	//using Real = mpf;
-	using Real = posit<32,2>;
+	using Real = posit<256,2>;
+	using Integer = decimal;
 
-	for (Real i = 1; i < 20; i += 1) {
-		cout << setw(2) << i << "! = " 
-			<< setw(20) << StirlingsApproximation(i) << "  " 
-			<< setw(20) << sw::function::factorial(i) << endl;
+	constexpr size_t FIRST_COLUMN = 10;
+	constexpr size_t COLUMN_WIDTH = 40;
+	cout << setw(FIRST_COLUMN) << "factorial"
+		<< setw(COLUMN_WIDTH) << "Stirling's Approximation"
+		<< setw(COLUMN_WIDTH) << "Real Approximation"
+		<< setw(COLUMN_WIDTH) << "Actual Factorial"
+		<< setw(COLUMN_WIDTH) << "Relative Error\n";
+	for (size_t i = 1; i < 31; i += 1) {
+		Real approximation = StirlingsApproximation<Real>(i);
+		Real actual        = sw::function::factorial<Real>(i);
+		Integer oracle     = sw::function::factorial<Integer>(i);
+		cout << setw(FIRST_COLUMN) << i << "! = "
+			<< setw(COLUMN_WIDTH) << approximation << '\t'
+			<< setw(COLUMN_WIDTH) << actual << '\t'
+			<< setw(COLUMN_WIDTH) << oracle << '\t'
+			<< setw(COLUMN_WIDTH) << RelativeError(approximation, actual) << endl;
+	}
+	cout << endl;
+	{
+		string ref = "815915283247897734345611269596115894272000000000";
+		double ld = sw::function::factorial<double>(40);
+		double ldr = sw::function::factoriali<double>(40);
+		decimal d = sw::function::factorial<decimal>(40);
+		double ad = double(d);
+		auto precision = cout.precision();
+		auto digits = std::numeric_limits<double>::max_digits10;
+		cout << setprecision(digits);
+		cout << "factorial(40) calculated with double and decimal oracle rounded to double\n";
+		cout << ref << '\n';
+		cout << d << '\n';
+		cout << setw(digits + 5ll) << ld << '\n';
+		cout << setw(digits + 5ll) << ldr << '\n';
+		cout << setw(digits + 5ll) << ad << "   TODO: explain the difference between the two methods of calculation" << endl;
+		cout << "scale of 40! is " << scale(ld) << endl;
+
+		cout << "factorial(50) calculated with double and decimal oracle rounded to double\n";
+		ref = "30414093201713378043612608166064768844377641568960512000000000000";
+		ld = sw::function::factorial<double>(50);
+		ldr = sw::function::factoriali<double>(50);
+		d = sw::function::factorial<decimal>(50);
+		ad = double(d);
+		cout << ref << '\n';
+		cout << d << '\n';
+		cout << setw(digits + 5ll) << ld << '\n';
+		cout << setw(digits + 5ll) << ldr << '\n';
+		cout << setw(digits + 5ll) << ad << "   TODO: explain the difference between the two methods of calculation" << endl;
+		cout << "scale of 50! is " << scale(ld) << endl;
+
+		cout << "factorial(60) calculated with double and decimal oracle rounded to double\n";
+		ref = "8320987112741390144276341183223364380754172606361245952449277696409600000000000000";
+		ld = sw::function::factorial<double>(60);
+		ldr = sw::function::factoriali<double>(60);
+		d = sw::function::factorial<decimal>(60);
+		ad = double(d);
+		cout << ref << '\n';
+		cout << d << '\n';
+		cout << setw(digits + 5ll) << ld << '\n';
+		cout << setw(digits + 5ll) << ldr << '\n';
+		cout << setw(digits + 5ll) << ad << "   TODO: explain why the two methods show the same error" << endl;
+		cout << "scale of 60! is " << scale(ld) << endl;
+		cout << setprecision(precision);
+
+		
 	}
 
 	return EXIT_SUCCESS;

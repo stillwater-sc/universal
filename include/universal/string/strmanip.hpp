@@ -1,12 +1,12 @@
 #pragma once
 // strmanip.hpp: string manipulation helpers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
-namespace sw {
-namespace unum {
+#include <string>
+#include <locale>
+namespace sw { namespace universal {
 
 // remove white space from the left side of the string
 std::string& ltrim(std::string& s)
@@ -32,5 +32,4 @@ std::string& rtrim(std::string& s) {
 // remove white space on left and right side of the string
 inline std::string& trim(std::string& s) { return ltrim(rtrim(s)); }
 
-} // namespace unum
-} // namespace sw
+}} // namespace sw::universal

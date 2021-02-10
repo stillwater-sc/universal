@@ -1,6 +1,6 @@
 // ulp_math.cpp: example program to show operations on Unit in Last Position
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <ostream>
@@ -8,17 +8,17 @@
 #include <numeric>   // nextafter
 
 // select the number systems we would like to compare
-#include <universal/integer/integer>
-#include <universal/fixpnt/fixpnt>
-#include <universal/areal/areal>
-#include <universal/posit/posit>
-#include <universal/lns/lns>
+#include <universal/number/integer/integer>
+#include <universal/number/fixpnt/fixpnt>
+#include <universal/number/areal/areal>
+#include <universal/number/posit/posit>
+#include <universal/number/lns/lns>
 
-#include <universal/posit/numeric_limits.hpp>
+#include <universal/number/posit/numeric_limits.hpp>
 
 template<typename Scalar>
 void ULP(std::ostream& ostr, const Scalar& s) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	int maxDigits = std::numeric_limits<Scalar>::max_digits10;
 	ostr << "scalar type: " << std::setw(50) << typeid(s).name() << " max digits: " << std::setw(5) << maxDigits << '\n';
 	// needs C++20 to become constexpr for generic universal types
@@ -33,9 +33,9 @@ void ULP(std::ostream& ostr, const Scalar& s) {
 }
 
 template<size_t nbits, size_t es>
-void ULP(std::ostream& ostr, const sw::unum::posit<nbits,es>& s) {
-	using namespace sw::unum;
-	using Scalar = sw::unum::posit<nbits, es>;
+void ULP(std::ostream& ostr, const sw::universal::posit<nbits,es>& s) {
+	using namespace sw::universal;
+	using Scalar = sw::universal::posit<nbits, es>;
 	int maxDigits = std::numeric_limits<Scalar>::max_digits10;
 	ostr << "scalar type: " << std::setw(50) << typeid(s).name() << " max digits: " << std::setw(5) << maxDigits << '\n';
 	// needs C++20 to become constexpr for generic universal types
@@ -58,7 +58,7 @@ void smallest_value(std::ostream& ostr) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "ULP math " << endl;
 
