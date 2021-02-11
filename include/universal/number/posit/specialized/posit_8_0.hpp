@@ -55,9 +55,9 @@ namespace sw { namespace universal {
 		constexpr explicit posit(unsigned int initial_value) : _bits(0)       { *this = initial_value; }
 		constexpr explicit posit(unsigned long initial_value) : _bits(0)      { *this = initial_value; }
 		constexpr explicit posit(unsigned long long initial_value) : _bits(0) { *this = initial_value; }
-		constexpr explicit posit(float initial_value) : _bits(0)              { *this = initial_value; }
-		constexpr          posit(double initial_value) : _bits(0)             { *this = initial_value; }
-		constexpr explicit posit(long double initial_value) : _bits(0)        { *this = initial_value; }
+		          explicit posit(float initial_value) : _bits(0)              { *this = initial_value; }
+		                   posit(double initial_value) : _bits(0)             { *this = initial_value; }
+		          explicit posit(long double initial_value) : _bits(0)        { *this = initial_value; }
 
 		// assignment operators for native types
 		constexpr posit& operator=(signed char rhs)             { return operator=((int)(rhs)); }
@@ -70,9 +70,9 @@ namespace sw { namespace universal {
 		constexpr posit& operator=(unsigned int rhs)            { return operator=((int)(rhs)); }
 		constexpr posit& operator=(unsigned long rhs)           { return operator=((int)(rhs)); }
 		constexpr posit& operator=(unsigned long long rhs)      { return operator=((int)(rhs)); }
-		constexpr posit& operator=(float rhs)                   { return float_assign(rhs); }
-		constexpr posit& operator=(double rhs)                  { return float_assign(float(rhs)); }
-		constexpr posit& operator=(long double rhs)             { return float_assign(float(rhs)); }
+		          posit& operator=(float rhs)                   { return float_assign(rhs); }
+				  posit& operator=(double rhs)                  { return float_assign(float(rhs)); }
+				  posit& operator=(long double rhs)             { return float_assign(float(rhs)); }
 
 		explicit operator long double() const { return to_long_double(); }
 		explicit operator double() const { return to_double(); }
@@ -265,7 +265,7 @@ namespace sw { namespace universal {
 			_bits = sign ? -raw : raw;
 			return *this;
 		}
-		constexpr posit& float_assign(float rhs) {
+		posit& float_assign(float rhs) {
 			bool sign = false;
 			bool bitNPlusOne = 0, bitsMore = 0;
 			constexpr float _minpos = 0.015625f;

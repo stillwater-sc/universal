@@ -79,9 +79,9 @@ public:
 	constexpr value(unsigned int initial_value)       { *this = initial_value; }
 	constexpr value(unsigned long initial_value)      { *this = initial_value; }
 	constexpr value(unsigned long long initial_value) { *this = initial_value; }
-	constexpr value(float initial_value)              { *this = initial_value; }
-	constexpr value(double initial_value) : value{}   { *this = initial_value; }
-	constexpr value(long double initial_value)        { *this = initial_value; }
+	value(float initial_value)              { *this = initial_value; }
+	value(double initial_value) : value{}   { *this = initial_value; }
+	value(long double initial_value)        { *this = initial_value; }
 
 	// assignment operators
 	constexpr value& operator=(const value& rhs) {
@@ -168,7 +168,7 @@ public:
 		if (_trace_value_conversion) std::cout << "uint64 " << rhs << " sign " << _sign << " scale " << _scale << " fraction b" << _fraction << std::dec << std::endl;
 		return *this;
 	}
-	constexpr value<fbits>& operator=(float rhs) {
+	value<fbits>& operator=(float rhs) {
 		reset();
 		if (_trace_value_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
@@ -201,7 +201,7 @@ public:
 		}
 		return *this;
 	}
-	constexpr value<fbits>& operator=(double rhs) {
+	value<fbits>& operator=(double rhs) {
 		using std::get;
 		reset();
 		if (_trace_value_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
@@ -243,7 +243,7 @@ public:
 		}
 		return *this;
 	}
-	constexpr value<fbits>& operator=(long double rhs) {
+	value<fbits>& operator=(long double rhs) {
 		reset();
 		if (_trace_value_conversion) std::cout << "---------------------- CONVERT -------------------" << std::endl;
 
