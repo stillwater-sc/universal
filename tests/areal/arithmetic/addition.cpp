@@ -14,8 +14,8 @@
 template<size_t nbits, size_t es, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
 	sw::universal::areal<nbits, es> a, b, sum, ref;
-	a = a;
-	b = b;
+	a = _a;
+	b = _b;
 	sum = a + b;
 	// generate the reference
 	Ty reference = _a + _b;

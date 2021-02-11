@@ -129,12 +129,19 @@ public:
 	constexpr blockbinary(long long initial_value) noexcept : _block{ 0 } { *this = initial_value; }
 
 	constexpr blockbinary& operator=(long long rhs) noexcept {
-		for (unsigned i = 0; i < nrBlocks; ++i) {
-			_block[i] = rhs & storageMask;
-			rhs >>= bitsInBlock;
+		if constexpr (1 < nrBlocks) {
+			for (unsigned i = 0; i < nrBlocks; ++i) {
+				_block[i] = rhs & storageMask;
+				rhs >>= bitsInBlock;
+			}
+			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+			_block[MSU] &= MSU_MASK;
+		} 
+		else if constexpr (1 == nrBlocks) {
+			_block[0] = rhs & storageMask;
+			// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+			_block[MSU] &= MSU_MASK;
 		}
-		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		_block[MSU] &= MSU_MASK;
 		return *this;
 	}
 
@@ -361,9 +368,14 @@ public:
 		throw "blockbinary<nbits, bt>.set(index): bit index out of bounds";
 	}
 	inline constexpr void set_raw_bits(uint64_t value) noexcept {
-		for (size_t i = 0; i < nrBlocks; ++i) {
-			_block[i] = value & storageMask;
-			value >>= bitsInBlock;
+		if constexpr (1 == nrBlocks) {
+			_block[0] = value & storageMask;
+		}
+		else if constexpr (1 < nrBlocks) {
+			for (size_t i = 0; i < nrBlocks; ++i) {
+				_block[i] = value & storageMask;
+				value >>= bitsInBlock;
+			}
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}

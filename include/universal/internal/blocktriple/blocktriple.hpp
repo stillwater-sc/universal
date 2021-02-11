@@ -234,7 +234,7 @@ public:
 			mask >>= 1;
 			bool round = (mask & raw);
 			if constexpr (shift > 1) { // protect against a negative shift
-				mask = StorageType(-1ll << (shift - 2));
+				mask = StorageType(StorageType(~0) << (shift - 2));
 				mask = ~mask;
 			}
 			else {

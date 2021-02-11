@@ -18,8 +18,8 @@
 template<typename TestType, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
 	TestType a, b, rref, rresult;
-	a = a;
-	b = b;
+	a = _a;
+	b = _b;
 	rresult = a + b;
 	// generate the reference
 	Ty ref = _a + _b;

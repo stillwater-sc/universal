@@ -291,7 +291,6 @@ public:
 	constexpr areal& convert_unsigned_integer(const Ty& rhs) noexcept {
 		clear();
 		if (0 == rhs) return *this;
-		bool s = false;
 		uint64_t raw = static_cast<uint64_t>(rhs);
 		int exponent = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
 		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
@@ -311,6 +310,7 @@ public:
 		uint32_t shift = sizeInBits - exponent - 1;
 		raw <<= shift;
 		raw = round<sizeInBits, uint64_t>(raw, exponent);
+#ifdef LATER
 		bool ubit = true;
 		// construct the target areal
 		if constexpr (64 >= nbits - es - 1ull) {
@@ -331,6 +331,7 @@ public:
 		else {
 			std::cerr << "TBD\n";
 		}
+#endif
 		return *this;
 	}
 
@@ -815,10 +816,17 @@ public:
 	/// <param name="raw_bits">unsigned long long carrying bits that will be written verbatim to the areal</param>
 	/// <returns>reference to the areal</returns>
 	inline constexpr areal& set_raw_bits(uint64_t raw_bits) noexcept {
-		// TODO: how to disable the GCC warning about shift ?
-		for (size_t i = 0; i < nrBlocks; ++i) {
-			_block[i] = raw_bits & storageMask;
-			raw_bits >>= bitsInBlock; // shift can be the same size as type as it is protected by loop constraints
+		if constexpr (0 == nrBlocks) {
+			return *this;
+		}
+		else if constexpr (1 == nrBlocks) {
+			_block[0] = raw_bits & storageMask;
+		}
+		else {
+			for (size_t i = 0; i < nrBlocks; ++i) {
+				_block[i] = raw_bits & storageMask;
+				raw_bits >>= bitsInBlock; // shift can be the same size as type as it is protected by loop constraints
+			}
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		return *this;

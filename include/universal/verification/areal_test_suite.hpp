@@ -14,7 +14,7 @@ namespace sw::universal {
 
 	template<typename SrcType, typename TestType>
 	void ReportIntervalConversionError(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
-		constexpr size_t nbits = result.nbits;  // number system concept requires a static member indicating its size in bits
+		// constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		auto old_precision = std::cerr.precision();
 		std::cerr << test_case
 			<< " " << op << " "
@@ -29,7 +29,7 @@ namespace sw::universal {
 
 	template<typename SrcType, typename TestType>
 	void ReportIntervalConversionSuccess(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
-		constexpr size_t nbits = result.nbits;  // number system concept requires a static member indicating its size in bits
+		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		std::cerr << test_case
 			<< " " << op << " "
 			<< std::setw(NUMBER_COLUMN_WIDTH) << input

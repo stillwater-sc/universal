@@ -16,6 +16,11 @@
 #include <universal/number/areal/manipulators.hpp>
 #include <universal/number/areal/math_functions.hpp>
 
+#if BIT_CAST_SUPPORT
+// stylistic constexpr of pi that we'll assign constexpr to an areal
+constexpr double pi = 3.14159265358979323846;
+#endif // BIT_CAST_SUPPORT
+
 template<typename Real>
 void TestConstexprConstruction() {
 	// decorated constructors
@@ -33,7 +38,7 @@ void TestConstexprConstruction() {
 		std::cout << a << '\n';
 	}
 	{
-		CONSTEXPRESSION Real a(1.0);   // double
+		CONSTEXPRESSION Real a(pi);   // double
 		std::cout << a << '\n';
 	}
 	{
@@ -60,7 +65,7 @@ void TestConstexprAssignment() {
 		std::cout << a << '\n';
 	}
 	{
-		CONSTEXPRESSION Real a = 1.0;   // double
+		CONSTEXPRESSION Real a = pi;   // double
 		std::cout << a << '\n';
 	}
 	{
@@ -73,8 +78,6 @@ void TestConstexprAssignment() {
 // conditional compile flags
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
-
-constexpr double pi = 3.14159265358979323846;
 
 int main(int argc, char** argv)
 try {

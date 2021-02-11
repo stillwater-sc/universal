@@ -267,8 +267,6 @@ try {
 	//bool bReportIndividualTestCases = false;
 	std::string tag = "Comparison failed: ";
 
-	blocktriple<13> a;
-
 	cout << "Logic: operator==()" << endl;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBlocktripleLogicEqual< blocktriple< 4> >(), "blocktriple< 4>", "==");

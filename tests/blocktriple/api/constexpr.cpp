@@ -75,41 +75,41 @@ try {
 		// decorated constructors
 		{
 			// this will round-up to 16 due to the fact that we only have 3 bits of significant
-			constexpr blocktriple<3> a(15);  // signed long
+			CONSTEXPRESSION blocktriple<3> a(15);  // signed long
 			cout << "constexpr constructor for type 'int'                 " << a << endl;
 		}
 		{
 			// this will stay 15 due to the fact that we have 4 bits of significant
-			constexpr blocktriple<4> a(15);  // signed long
+			CONSTEXPRESSION blocktriple<4> a(15);  // signed long
 			cout << "constexpr constructor for type 'int'                 " << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a(2);  // signed long
+			CONSTEXPRESSION blocktriple<32> a(2);  // signed long
 			cout << "constexpr constructor for type 'int'                 " << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a(4ll);  // long long
+			CONSTEXPRESSION blocktriple<32> a(4ll);  // long long
 			cout << "constexpr constructor for type 'long long'           " << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a(8ul);  // unsigned long
+			CONSTEXPRESSION blocktriple<32> a(8ul);  // unsigned long
 			cout << "constexpr constructor for type 'unsigned long'       " << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a(16ull);  // unsigned long
+			CONSTEXPRESSION blocktriple<32> a(16ull);  // unsigned long
 			cout << "constexpr constructor for type 'unsigned long long'  " << a << endl;
 		}
 #if BIT_CAST_SUPPORT
 		{
-			constexpr blocktriple<32> a(1.125f);  // float
+			CONSTEXPRESSION blocktriple<32> a(1.125f);  // float
 			cout << "constexpr constructor for type 'float'               " << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a(1.0625);   // double
+			CONSTEXPRESSION blocktriple<32> a(1.0625);   // double
 			cout << "constexpr constructor for type 'double'              " << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a(1.03125l);  // long double
+			CONSTEXPRESSION blocktriple<32> a(1.03125l);  // long double
 			cout << "constexpr constructor for type 'long double'         " << a << endl;
 		}
 #endif // BIT_CAST_SUPPORT
@@ -118,24 +118,24 @@ try {
 	{
 		// assignment operators
 		{
-			constexpr blocktriple<32> a = 1l;  // signed long
+			CONSTEXPRESSION blocktriple<32> a = 1l;  // signed long
 			cout << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a = 1ul;  // unsigned long
+			CONSTEXPRESSION blocktriple<32> a = 1ul;  // unsigned long
 			cout << a << endl;
 		}
 #if BIT_CAST_SUPPORT
 		{
-			constexpr blocktriple<32> a = 1.0f;  // float
+			CONSTEXPRESSION blocktriple<32> a = 1.0f;  // float
 			cout << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a = 1.0;   // double
+			CONSTEXPRESSION blocktriple<32> a = 1.0;   // double
 			cout << a << endl;
 		}
 		{
-			constexpr blocktriple<32> a = 1.0l;  // long double
+			CONSTEXPRESSION blocktriple<32> a = 1.0l;  // long double
 			cout << a << endl;
 		}
 #endif // BIT_CAST_SUPPORT

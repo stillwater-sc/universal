@@ -28,7 +28,7 @@ std::string to_binary(const std::complex<NumberType>& c) {
 
 template<typename TestType>
 void ReportConversionError(const std::string& test_case, const std::string& op, double input, double reference, const TestType& result) {
-	constexpr size_t nbits = result.nbits;  // number system concept requires a static member indicating its size in bits
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case
 		<< " " << op << " "
@@ -43,7 +43,7 @@ void ReportConversionError(const std::string& test_case, const std::string& op, 
 
 template<typename TestType>
 void ReportConversionSuccess(const std::string& test_case, const std::string& op, double input, double reference, const TestType& result) {
-	constexpr size_t nbits = result.nbits;  // number system concept requires a static member indicating its size in bits
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	std::cerr << test_case
 		<< " " << op << " "
 		<< std::setw(NUMBER_COLUMN_WIDTH) << input
