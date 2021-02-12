@@ -515,7 +515,7 @@ public:
 		}
 		throw "integer<nbits, BlockType> bit index out of bounds";
 	}
-	inline void reset(unsigned int i) {
+	inline void reset(size_t i) {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
 			uint8_t mask = ~(1 << (i % 8));
@@ -524,7 +524,7 @@ public:
 		}
 		throw "integer<nbits, BlockType> bit index out of bounds";
 	}
-	inline void set(unsigned i, bool v) {
+	inline void set(size_t i, bool v) {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
 			uint8_t null = ~(1 << (i % 8));
@@ -535,7 +535,7 @@ public:
 		}
 		throw "integer<nbits, BlockType> bit index out of bounds";
 	}
-	inline void setbyte(unsigned i, uint8_t value) {
+	inline void setbyte(size_t i, uint8_t value) {
 		if (i < nrBytes) { b[i] = value; return; }
 		throw integer_byte_index_out_of_bounds{};
 	}
