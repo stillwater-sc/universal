@@ -1,13 +1,11 @@
 ﻿// catastrophic_cancellation.cpp: examples of catastrophic cancellation
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
-#include "common.hpp"
-#include "universal/posit/posit"
-// test helpers, such as, ReportTestResults
-#include "../tests/utils/test_helpers.hpp"
-#include "../tests/utils/posit_test_helpers.hpp"
+#include <universal/number/posit/posit>
+#include <universal/verification/test_status.hpp> // ReportTestResult
+#include <universal/verification/posit_test_suite.hpp>
 
 // example of catastrophic cancellation if the number representation doesn't have enough precision bits
 template<typename Scalar>
@@ -24,7 +22,7 @@ Scalar GenerateTestCase(Scalar e, Scalar x, Scalar origin) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;
@@ -116,15 +114,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

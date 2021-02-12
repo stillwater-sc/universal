@@ -1,7 +1,7 @@
 #pragma once
 // hilbert.hpp: generate a Hilbert matrix and its exact inverse
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
@@ -9,7 +9,7 @@
 #include <algorithm>
 #include <universal/functions/binomial.hpp>
 
-namespace sw { namespace unum { namespace blas {
+namespace sw { namespace universal { namespace blas {
 
 // Generate the scaling factor of a Hilbert matrix so that its elements are representable
 // that is, no infinite expensions of rationals, such as 1/3, 1/10, etc.
@@ -28,9 +28,9 @@ size_t GenerateHilbertMatrix(matrix<Scalar>& M, bool bScale = true) {
 	size_t N = num_rows(M);
 	size_t lcm = HilbertScalingFactor(N); // always calculate the Least Common Multiplier
 	Scalar scale = bScale ? Scalar(lcm) : Scalar(1);
-	for (int i = 1; i <= int(N); ++i) {
-		for (int j = 1; j <= int(N); ++j) {
-			M[i - 1][j - 1] = scale / Scalar(i + j - 1);
+	for (size_t i = 0; i < N; ++i) {
+		for (size_t j = 0; j < N; ++j) {
+			M[i][j] = scale / Scalar(i + j + 1ul);
 		}
 	}
 	return lcm;
@@ -40,14 +40,14 @@ template<typename Scalar>
 void GenerateHilbertMatrixInverse(matrix<Scalar>& M, Scalar scale = Scalar(1.0)) {
 	assert(num_rows(M) == num_cols(M)); // needs to be square
 	size_t N = num_rows(M);
-	for (int i = 1; i <= int(N); ++i) {
-		for (int j = 1; j <= int(N); ++j) {
+	for (size_t i = 0; i < N; ++i) {
+		for (size_t j = 0; j < N; ++j) {
 			Scalar sign = ((i + j) % 2) ? Scalar(-1) : Scalar(1);
-			Scalar factor1 = Scalar(i + j - 1);
-			Scalar factor2 = Scalar(sw::function::binomial<uint64_t>(N + i - 1, N - j));
-			Scalar factor3 = Scalar(sw::function::binomial<uint64_t>(N + j - 1, N - i));
-			Scalar factor4 = Scalar(sw::function::binomial<uint64_t>(i + j - 2, i - 1));
-			M[i - 1][j - 1] = Scalar(sign * factor1 * factor2 * factor3 * factor4 * factor4);
+			Scalar factor1 = Scalar(i + j + 1ul);
+			Scalar factor2 = Scalar(sw::function::binomial<uint64_t>(N + i, N - j - 1ul));
+			Scalar factor3 = Scalar(sw::function::binomial<uint64_t>(N + j, N - i - 1ul));
+			Scalar factor4 = Scalar(sw::function::binomial<uint64_t>(i + j, i));
+			M[i][j] = Scalar(sign * factor1 * factor2 * factor3 * factor4 * factor4);
 			/* for tracing dynamic range failures
 			std::cout << "element " << i << "," << j << std::endl;
 			std::cout << "sign    " << sign << std::endl;
@@ -69,4 +69,4 @@ matrix<Scalar> hilbert(size_t N, bool bScale = true) {
 	return H;
 }
 
-}}} // namespace sw::unum::blas
+}}} // namespace sw::universal::blas

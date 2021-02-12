@@ -1,19 +1,19 @@
 #pragma once
 // trigonometry.hpp: vectorized trigonometry functions
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
 #include <universal/blas/vector.hpp>
 
-namespace sw { namespace unum { namespace blas {
+namespace sw { namespace universal { namespace blas {
 
 // vector sine function
 template<typename Scalar>
 vector<Scalar> sin(const vector<Scalar>& radians) {
 	using std::sin;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	vector<Scalar> v(radians.size());
 	for (size_t i = 0; i < radians.size(); ++i) {
 		v[i] = sin(radians[i]);
@@ -25,7 +25,7 @@ vector<Scalar> sin(const vector<Scalar>& radians) {
 template<typename Scalar>
 vector<Scalar> cos(const vector<Scalar>& radians) {
 	using std::cos;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	vector<Scalar> v(radians.size());
 	for (size_t i = 0; i < radians.size(); ++i) {
 		v[i] = cos(radians[i]);
@@ -36,7 +36,7 @@ vector<Scalar> cos(const vector<Scalar>& radians) {
 template<typename Scalar>
 vector<Scalar> tan(const vector<Scalar>& radians) {
 	using std::tan;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	vector<Scalar> v(radians.size());
 	for (size_t i = 0; i < radians.size(); ++i) {
 		v[i] = tan(radians[i]);
@@ -44,4 +44,4 @@ vector<Scalar> tan(const vector<Scalar>& radians) {
 	return v;
 }
 
-} } }  // namespace sw::unum::blas
+} } }  // namespace sw::universal::blas

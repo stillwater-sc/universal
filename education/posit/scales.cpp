@@ -1,12 +1,11 @@
 // scales.cpp : report dynamic range of posit configurations and posit numbers
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <universal/posit/posit>
-#include <universal/posit/posit.hpp>
-#include <universal/posit/numeric_limits.hpp>
+#include <universal/number/posit/posit>
+#include <universal/utility/number_system_properties.hpp>
 
 #ifdef UNIVERSAL_MPRF_ENABLED
 // TODO: this needs to be done with MPRF as these scale factors grow very large
@@ -46,7 +45,7 @@ void printScaleFactors(uint64_t scale_factors[MAX_ES][MAX_K]) {
 
 // print scales for small posit configurations
 void ReportSmallPositScales() {
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::cout << std::endl;
 	std::cout << "Scales are represented as the binary scale of the number: i.e. 2^scale" << std::endl << std::endl;
@@ -76,7 +75,7 @@ void ReportSmallPositScales() {
 
 // print scales of different posit configurations
 void ReportStandardPositScales() {
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::cout << "es = 0" << std::endl;
 	std::cout << posit_range<8, 0>() << std::endl;
@@ -132,7 +131,7 @@ void ReportStandardPositScales() {
 // maxpos = useed^(nbits-2)
 // minpos = useed^(2-nbits)
 void ReportPositScales() {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	posit<3, 0> p3_0;
 	posit<3, 1> p3_1;
 	posit<3, 2> p3_2;
@@ -352,11 +351,11 @@ void ReportPositScales() {
 // enumerate and validate scales
 template<size_t nbits, size_t es>
 int ValidateScales(std::string& str, bool bReportIndividualTestCases) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	int nrOfTestFailures = 0;
 	constexpr size_t NR_OF_TESTCASES = (size_t(1) << nbits);
 
-	sw::unum::posit<nbits, es> p;
+	sw::universal::posit<nbits, es> p;
 	for (size_t i = 0; i < NR_OF_TESTCASES; ++i) {
 		p.set_raw_bits(i);
 		constexpr size_t fbits = nbits - 3 - es;
@@ -376,7 +375,7 @@ int ValidateScales(std::string& str, bool bReportIndividualTestCases) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 

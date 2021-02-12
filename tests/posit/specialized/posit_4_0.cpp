@@ -1,6 +1,6 @@
-// posit_4_0.cpp: Functionality tests for specialized 4-bit posits based on look-up tables
+// posit_4_0.cpp: test suite runner for specialized 4-bit posits based on look-up tables
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -9,10 +9,8 @@
 #define POSIT_FAST_POSIT_4_0 1
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
-// test helpers, such as, ReportTestResults
-#include "../../utils/test_helpers.hpp"
-#include "../../utils/posit_test_helpers.hpp"
+#include <universal/number/posit/posit>
+#include <universal/verification/posit_test_suite.hpp>
 
 /*
  posits with nbits = 4 have no exponent bits, i.e. es = 0.
@@ -21,7 +19,7 @@
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// no randoms, 4-bit posits can be done exhaustively
 
@@ -51,30 +49,30 @@ try {
 
 	// logic tests
 	cout << "Logic operator tests " << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicEqual             <nbits, es>(), tag, "    ==         ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessThan          <nbits, es>(), tag, "    <          ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
-	nrOfFailedTestCases += ReportTestResult(ValidatePositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual             <nbits, es>(), tag, "    ==         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan          <nbits, es>(), tag, "    <          ");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
+	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
 	
 	// conversion tests
 	cout << "Assignment/conversion tests " << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidateIntegerConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "integer assign ");
-	nrOfFailedTestCases += ReportTestResult(ValidateConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "integer assign ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");
 	
 	// arithmetic tests
 	cout << "Arithmetic tests " << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition         <nbits, es>(tag, bReportIndividualTestCases), tag, "add            ");
-	nrOfFailedTestCases += ReportTestResult(ValidateSubtraction      <nbits, es>(tag, bReportIndividualTestCases), tag, "subtract       ");
-	nrOfFailedTestCases += ReportTestResult(ValidateMultiplication   <nbits, es>(tag, bReportIndividualTestCases), tag, "multiply       ");
-	nrOfFailedTestCases += ReportTestResult(ValidateDivision         <nbits, es>(tag, bReportIndividualTestCases), tag, "divide         ");
-	nrOfFailedTestCases += ReportTestResult(ValidateNegation         <nbits, es>(tag, bReportIndividualTestCases), tag, "negate         ");
-	nrOfFailedTestCases += ReportTestResult(ValidateReciprocation    <nbits, es>(tag, bReportIndividualTestCases), tag, "reciprocate    ");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(tag, bReportIndividualTestCases), tag, "add            ");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <nbits, es>(tag, bReportIndividualTestCases), tag, "subtract       ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <nbits, es>(tag, bReportIndividualTestCases), tag, "multiply       ");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <nbits, es>(tag, bReportIndividualTestCases), tag, "divide         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <nbits, es>(tag, bReportIndividualTestCases), tag, "negate         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <nbits, es>(tag, bReportIndividualTestCases), tag, "reciprocate    ");
 
 	// elementary function tests
 	cout << "Elementary function tests " << endl;
-	nrOfFailedTestCases += ReportTestResult(ValidateSqrt             <nbits, es>(tag, bReportIndividualTestCases), tag, "sqrt           ");
+	nrOfFailedTestCases += ReportTestResult(VerifySqrt             <nbits, es>(tag, bReportIndividualTestCases), tag, "sqrt           ");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
@@ -82,15 +80,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

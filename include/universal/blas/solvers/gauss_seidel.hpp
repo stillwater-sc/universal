@@ -1,13 +1,13 @@
 #pragma once
 // gauss_seidel.hpp: Gauss-Seidel iterative method
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/posit/posit_fwd.hpp>
+#include <universal/number/posit/posit_fwd.hpp>
 #include <universal/blas/matrix.hpp>
 
-namespace sw { namespace unum { namespace blas {
+namespace sw::universal::blas {
 
 // Gauss-Seidel: Solution of x in Ax=b using Gauss-Seidel Method
 template<typename Matrix, typename Vector, size_t MAX_ITERATIONS = 100>
@@ -37,4 +37,4 @@ size_t GaussSeidel(const Matrix& A, const Vector& b, Vector& x, typename Matrix:
 	return itr;
 }
 
-}}} // namespace sw::unum::blas
+} // namespace sw::universal::blas

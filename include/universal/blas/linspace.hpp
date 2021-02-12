@@ -1,22 +1,22 @@
 #pragma once
 // linspace.hpp: linspace/logspace/geomspace implementations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/blas/vector.hpp>
 #include <universal/blas/vmath/power.hpp>
 
-namespace sw { namespace unum { namespace blas {
+namespace sw { namespace universal { namespace blas {
 
 /*
  * arange generates an integer sequence between start and stop with stride
  * Use template argument to project the sequence into a target data type
  */
 template<typename Scalar>
-sw::unum::blas::vector<Scalar> arange(int64_t start, int64_t stop, int64_t step = 1) {
-	if (start > stop) return sw::unum::blas::vector<Scalar>(0);
-	sw::unum::blas::vector<Scalar> v;
+sw::universal::blas::vector<Scalar> arange(int64_t start, int64_t stop, int64_t step = 1) {
+	if (start > stop) return sw::universal::blas::vector<Scalar>(0);
+	sw::universal::blas::vector<Scalar> v;
 	int64_t sample = start;
 	while (sample <= stop) {
 		v.push_back(Scalar(sample));
@@ -33,10 +33,10 @@ sw::unum::blas::vector<Scalar> arange(int64_t start, int64_t stop, int64_t step 
  * The endpoint of the interval can optionally be excluded.
 */
 template<typename Scalar>
-sw::unum::blas::vector<Scalar> linspace(const Scalar& start, const Scalar& stop, size_t steps, bool endpoint = true) {
-	if (steps == 0) return sw::unum::blas::vector<Scalar>(0);
-	if (steps == 1) return sw::unum::blas::vector<Scalar>(1) = start;
-	sw::unum::blas::vector<Scalar> v(steps);
+sw::universal::blas::vector<Scalar> linspace(const Scalar& start, const Scalar& stop, size_t steps, bool endpoint = true) {
+	if (steps == 0) return sw::universal::blas::vector<Scalar>(0);
+	if (steps == 1) return sw::universal::blas::vector<Scalar>(1) = start;
+	sw::universal::blas::vector<Scalar> v(steps);
 	steps = (endpoint ? steps - 1 : steps); // if endpoint is inclusive, we have one less segment
 	Scalar step = (stop - start) / steps;
 	for (size_t i = 0; i < steps; ++i) {
@@ -56,10 +56,10 @@ sw::unum::blas::vector<Scalar> linspace(const Scalar& start, const Scalar& stop,
  * The endpoint of the interval can optionally be excluded.
 */
 template<typename Scalar>
-sw::unum::blas::vector<Scalar> logspace(const Scalar& start, const Scalar& stop, size_t steps, bool endpoint = true, const Scalar& base = Scalar(10.0)) {
+sw::universal::blas::vector<Scalar> logspace(const Scalar& start, const Scalar& stop, size_t steps, bool endpoint = true, const Scalar& base = Scalar(10.0)) {
 	using std::pow;
-	if (steps == 0) return sw::unum::blas::vector<Scalar>(0);
-	if (steps == 1) return sw::unum::blas::vector<Scalar>(1) = pow(base, start);
+	if (steps == 0) return sw::universal::blas::vector<Scalar>(0);
+	if (steps == 1) return sw::universal::blas::vector<Scalar>(1) = pow(base, start);
 	auto exponents = linspace(start, stop, steps, endpoint);
 	return power(base, exponents);
 }
@@ -72,10 +72,10 @@ sw::unum::blas::vector<Scalar> logspace(const Scalar& start, const Scalar& stop,
  * The endpoint of the interval can optionally be excluded.
 */
 template<typename Scalar>
-sw::unum::blas::vector<Scalar> geomspace(const Scalar& start, const Scalar& stop, size_t steps, bool endpoint = true, const Scalar& base = Scalar(10.0)) {
+sw::universal::blas::vector<Scalar> geomspace(const Scalar& start, const Scalar& stop, size_t steps, bool endpoint = true, const Scalar& base = Scalar(10.0)) {
 	using std::pow;
-	if (steps == 0) return sw::unum::blas::vector<Scalar>(0);
-	if (steps == 1) return sw::unum::blas::vector<Scalar>(1) = pow(base, start);
+	if (steps == 0) return sw::universal::blas::vector<Scalar>(0);
+	if (steps == 1) return sw::universal::blas::vector<Scalar>(1) = pow(base, start);
 	auto samples = logspace(start, stop, steps, endpoint);
 	return samples;
 }
@@ -113,4 +113,4 @@ array([-1.00000000e+00+1.22464680e-16j, -7.07106781e-01+7.07106781e-01j,
 1.00000000e+00+0.00000000e+00j])
 */
 
-} } }  // namespace sw::unum::blas
+} } }  // namespace sw::universal::blas

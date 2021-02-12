@@ -1,11 +1,11 @@
 ﻿// kahan_sum.cpp: Kahan summation evaluation of posit number systems
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the UNIVERSAL project, which is released under an MIT Open Source license.
 #include "common.hpp"
 // pull in the posit number system
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 constexpr size_t COLUMN_WIDTH = 25;
 
@@ -88,7 +88,7 @@ void GenerateTest(std::ostream& ostr, size_t N) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// print detailed bit-level computational intermediate results
 	// bool verbose = false;
@@ -108,13 +108,13 @@ Kahan summation comparison
 									type,                 Naive Sum,                 Kahan Sum,            Residual Error
 								   float,               0.999999344,                         1,            2.23517418e-08
 								  double,        1.0000000000000007,                         1,   -2.0816681711721685e-17
-			 class sw::unum::posit<32,2>,                1.00000007,                         1,           -9.31322575e-10
-			 class sw::unum::posit<64,3>,                         1,                         1,   8.67361737988403547e-19
+			 class sw::universal::posit<32,2>,                1.00000007,                         1,           -9.31322575e-10
+			 class sw::universal::posit<64,3>,                         1,                         1,   8.67361737988403547e-19
 >>>> a floating point value that is perfectly representable
 								   float,                         1,                         1,                         0
 								  double,                         1,                         1,                         0
-			 class sw::unum::posit<32,2>,                         1,                         1,                         0
-			 class sw::unum::posit<64,3>,                         1,                         1,                         0
+			 class sw::universal::posit<32,2>,                         1,                         1,                         0
+			 class sw::universal::posit<64,3>,                         1,                         1,                         0
 */
 
 	cout << setw(COLUMN_WIDTH+15) << "type" << ", " 
@@ -126,8 +126,8 @@ Kahan summation comparison
 		constexpr size_t N = 100;
 		GenerateTest<float>(cout, N);
 		GenerateTest<double>(cout, N);
-		GenerateTest<sw::unum::posit<32, 2>>(cout, N);
-		GenerateTest<sw::unum::posit<64, 3>>(cout, N);
+		GenerateTest<sw::universal::posit<32, 2>>(cout, N);
+		GenerateTest<sw::universal::posit<64, 3>>(cout, N);
 	}
 
 	cout << ">>>> a floating point value that is perfectly representable\n";
@@ -135,8 +135,8 @@ Kahan summation comparison
 		constexpr size_t N = 65536;
 		GenerateTest<float>(cout, N);
 		GenerateTest<double>(cout, N);
-		GenerateTest<sw::unum::posit<32, 2>>(cout, N);
-		GenerateTest<sw::unum::posit<64, 3>>(cout, N);
+		GenerateTest<sw::universal::posit<32, 2>>(cout, N);
+		GenerateTest<sw::universal::posit<64, 3>>(cout, N);
 	}
 
 #else
@@ -153,15 +153,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

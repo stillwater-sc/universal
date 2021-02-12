@@ -1,19 +1,17 @@
-//  addition.cpp : arithmetic test suite for addition of abitrary precision integers
+//  addition.cpp : test runner for addition of abitrary precision integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/integer/integer.hpp>
-#include <universal/integer/numeric_limits.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/integer/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/integer_test_helpers.hpp"
+#include <universal/verification/integer_test_suite.hpp>
 
 /*
    The goal of the arbitrary integers is to provide a constrained big integer type
@@ -24,7 +22,7 @@
 #include <typeinfo>
 template<typename Scalar>
 void GenerateAddTest(const Scalar& x, const Scalar& y, Scalar& z) {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	z = x + y;
 	std::cout << typeid(Scalar).name() << ": " << x << " + " << y << " = " << z << std::endl;
 }
@@ -34,15 +32,15 @@ void GenerateAddTest(const Scalar& x, const Scalar& y, Scalar& z) {
 void ExamplePattern() {
 	short s = 0;
 	GenerateAddTest<short>(2, 16, s);
-	sw::unum::integer<16> z = 0;
-	GenerateAddTest<sw::unum::integer<16> >(2, 16, z);
+	sw::universal::integer<16> z = 0;
+	GenerateAddTest<sw::universal::integer<16> >(2, 16, z);
 }
 
 // enumerate a couple ratios to test representability
 void ReproducibilityTestSuite() {
 	for (int i = 0; i < 30; i += 3) {
 		for (int j = 0; j < 70; j += 7) {
-			sw::unum::reportRepresentability(i, j);
+			sw::universal::reportRepresentability(i, j);
 		}
 	}
 }
@@ -62,7 +60,7 @@ std::string convert_to_string(const std::vector<char>& v) {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "Integer Arithmetic tests failed";
 

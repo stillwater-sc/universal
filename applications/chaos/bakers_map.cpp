@@ -1,11 +1,11 @@
 //  bakers_map.cpp : The baker's map is a chaotic map from the unit squre into itself.
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #define POSIT_ENABLE_LITERALS 1
-#include <universal/posit/posit.hpp>
+#include <universal/number/posit/posit.hpp>
 #include <universal/blas/blas.hpp>
 
 /*
@@ -50,7 +50,7 @@ std::pair<Real, Real> BakersMap(const std::pair<Real, Real>& xy) {
 
 template<typename Real>
 std::ostream& operator<<(std::ostream& ostr, std::pair<Real, Real>& xy) {
-	return ostr << '(' << sw::unum::color_print(xy.first) << ", " << sw::unum::color_print(xy.second) << ") : (" << xy.first << ", " << xy.second << ')';
+	return ostr << '(' << sw::universal::color_print(xy.first) << ", " << sw::universal::color_print(xy.second) << ") : (" << xy.first << ", " << xy.second << ')';
 }
 
 // iterate a set of (x,y) values through the Baker's map
@@ -114,8 +114,8 @@ void KneadAndFold(const Matrix& S, Matrix& Snext) {
 			}
 			// trace the accuracy of (x,y) of a point
 			if (i == (n - 1) && j == (m - 1)) {
-				std::cout << '(' << std::setw(15) << sw::unum::to_binary(xnext * n) << ',';
-				std::cout << std::setw(15) << sw::unum::to_binary(ynext * m) << ")\n";
+				std::cout << '(' << std::setw(15) << sw::universal::to_binary(xnext * n) << ',';
+				std::cout << std::setw(15) << sw::universal::to_binary(ynext * m) << ")\n";
 				std::cout << '(' << x << ',' << y << ") maps to ";
 				std::cout << '(' << xnext << ',' << ynext << ") truncates to ";
 				std::cout << '(' << unsigned(xnext * n) << ',' << unsigned(ynext * m) << ")\n";
@@ -129,7 +129,7 @@ void KneadAndFold(const Matrix& S, Matrix& Snext) {
 template<typename Real>
 void Knead(int nrOfFolds) {
 	constexpr int N = 100;
-	sw::unum::blas::matrix<Real> S1(N, N), S2(N, N);
+	sw::universal::blas::matrix<Real> S1(N, N), S2(N, N);
 	InitializeTwoBands(S1);
 	//cout << S1 << endl;
 
@@ -146,7 +146,7 @@ void Knead(int nrOfFolds) {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum::blas;
+	using namespace sw::universal::blas;
 
 	cout << "Baker's Map\n";
 
@@ -158,7 +158,7 @@ try {
 	}
 
 	{
-		using Real = sw::unum::posit<32,2>;
+		using Real = sw::universal::posit<32,2>;
 		Real x = 0.125 * 0.125 * 0.125 * 0.125 * 0.125 * 0.125;
 		Real y = 0.75;
 		TraceBakersMap(x, y, 25);
@@ -173,7 +173,7 @@ try {
 		TraceBakersMap(x, y, 25);
 	}
 	{
-		using Real = sw::unum::posit<32, 2>;
+		using Real = sw::universal::posit<32, 2>;
 		Real x = random_value;
 		Real y = 0.75;
 		TraceBakersMap(x, y, 25);
@@ -183,32 +183,32 @@ try {
 
 	cout << "Baker's Map: minpos fail:\n";
 	{
-		using Real = sw::unum::posit<32, 2>;
+		using Real = sw::universal::posit<32, 2>;
 		std::cout << std::setprecision(17);
 		Real x;
-		sw::unum::minpos(x);
+		sw::universal::minpos(x);
 		std::cout << "minpos<32,2> : " << x << '\n';
 		Real y = 0.75;
 		TraceBakersMap(x, y, 5);
 	}
 	cout << "Baker's Map: region k-1:\n";
 	{
-		using Real = sw::unum::posit<32, 2>;
+		using Real = sw::universal::posit<32, 2>;
 		std::cout << std::setprecision(17);
 		Real x;
-		sw::unum::minpos(x);
-		x *= sw::unum::useed<32, 2>();
+		sw::universal::minpos(x);
+		x *= sw::universal::useed<32, 2>();
 		std::cout << "minpos<32,2> * useed : " << x << '\n';
 		Real y = 0.75;
 		TraceBakersMap(x, y, 5);
 	}
 	cout << "Baker's Map: region k-2:\n";
 	{
-		using Real = sw::unum::posit<32, 2>;
+		using Real = sw::universal::posit<32, 2>;
 		std::cout << std::setprecision(17);
 		Real x;
-		sw::unum::minpos(x);
-		x *= sw::unum::useed<32, 2>() * sw::unum::useed<32,2>();
+		sw::universal::minpos(x);
+		x *= sw::universal::useed<32, 2>() * sw::universal::useed<32,2>();
 		std::cout << "minpos<32,2> * useed^2 : " << x << '\n';
 		Real y = 0.75;
 		TraceBakersMap(x, y, 125);
@@ -220,15 +220,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

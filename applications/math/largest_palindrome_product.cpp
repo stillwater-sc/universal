@@ -1,13 +1,13 @@
 //  largest_palindrome_product.cpp : algorithm to find the largest palindrome product
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <sstream>
 #include <cmath>
-#include <universal/integer/integer.hpp>
-#include <universal/decimal/decimal.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/decimal/decimal.hpp>
 
 /*
  * A palinddrome number reads the same both ways. The largest palindrome made from the product
@@ -19,7 +19,7 @@
 template<size_t nbits>
 bool Largest2DigitPalindromeProduct() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	using Integer = integer<nbits>;
 	using Real = long double;
@@ -55,7 +55,7 @@ bool Largest2DigitPalindromeProduct() {
 template<size_t nbits>
 bool Largest3DigitPalindromeProduct() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	using Integer = integer<nbits>;
 	using Real = long double;
@@ -93,7 +93,7 @@ bool Largest3DigitPalindromeProduct() {
 template<size_t nbits>
 bool Largest4DigitPalindromeProduct() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	using Integer = integer<nbits>;
 	using Real = long double;
@@ -133,7 +133,7 @@ bool Largest4DigitPalindromeProduct() {
 template<size_t nbits>
 bool Largest5DigitPalindromeProduct() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	using Integer = integer<nbits>;
 	using Real = long double;
@@ -175,7 +175,7 @@ bool Largest5DigitPalindromeProduct() {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	Largest2DigitPalindromeProduct<16>();
 	Largest3DigitPalindromeProduct<24>();

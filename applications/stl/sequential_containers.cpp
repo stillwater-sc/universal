@@ -2,7 +2,7 @@
 #include "common.hpp"
 // configure the number system
 // simply use defaults
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 // generic template function for all integer types
 template<typename Ty>
@@ -58,7 +58,7 @@ bool GenerateData(size_t nrOfSamples, std::vector<long double>& data) {
 }
 
 template<size_t nbits, size_t es>
-bool GenerateData(size_t nrOfSamples, std::vector< sw::unum::posit<nbits, es> >& data) {
+bool GenerateData(size_t nrOfSamples, std::vector< sw::universal::posit<nbits, es> >& data) {
 	std::random_device seed;
 	std::mt19937 engine(seed());
 	std::uniform_real_distribution< double > dist(0, 100);  // use automatic conversion to take it from double to posit
@@ -121,7 +121,7 @@ try {
 	}
 
 	{
-		using namespace sw::unum;
+		using namespace sw::universal;
 		constexpr size_t nbits = 16;
 		constexpr size_t es = 1;
 		using value_type = posit<nbits,es>;
@@ -138,15 +138,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

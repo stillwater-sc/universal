@@ -1,6 +1,6 @@
 // rungekutta.cpp: program to solve odes with classic Runge-Kutta method
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 // Author: Jacob Todd  jtodd1@une.edu
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
@@ -9,7 +9,7 @@
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 /*
 
@@ -62,10 +62,33 @@ void rk4(Scalar (*f)(const Scalar&, const Scalar&), size_t n, const Scalar& h, c
 int main() 
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	size_t N = 10; // number of intervals
 	double h = M_PI_4; // step size between intervals
+
+	{	
+		using Scalar = float;
+		Scalar x0 = 0; // initial x
+		Scalar y0 = 1; // initial y
+		Scalar h = Scalar(M_PI_4); // step size between intervals
+		std::cout << "\nThe ode is: dy/dx = (5*x*x - y)/exp(x + y)\n" << std::endl;
+		std::cout << "Using float" << std::endl;
+		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + N * h << std::endl;
+		std::cout << "step size = " << h << std::endl;
+		rk4(&myFunc, N, h, x0, y0);
+	}
+
+	{	using Scalar = posit<16, 2>;
+		Scalar x0 = 0; // initial x
+		Scalar y0 = 1; // initial y
+		Scalar h = Scalar(M_PI_4); // step size between intervals
+		std::cout << "\nThe ode is: dy/dx = (5*x*x - y)/exp(x + y)\n" << std::endl;
+		std::cout << "Using float" << std::endl;
+		std::cout << "Appoximating y(x) from " << x0 << " to " << x0 + N * h << std::endl;
+		std::cout << "step size = " << h << std::endl;
+		rk4(&myFunc, N, h, x0, y0);
+	}
 
 	{	using Scalar = posit<16, 2>;
 		Scalar x0 = 0; // initial x
@@ -101,15 +124,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

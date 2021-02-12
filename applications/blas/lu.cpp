@@ -1,12 +1,12 @@
 // lu.cpp: example program comparing float vs posit Gaussian Elimination (LU Decomposition) equation solver
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the HPRBLAS project, which is released under an MIT Open Source license.
 #ifdef _MSC_VER
 #pragma warning(disable : 4514)   // unreferenced inline function has been removed
 #pragma warning(disable : 4710)   // 'int sprintf_s(char *const ,const size_t,const char *const ,...)': function not inlined
-#pragma warning(disable : 4820)   // 'sw::unum::value<23>': '3' bytes padding added after data member 'sw::unum::value<23>::_sign'
+#pragma warning(disable : 4820)   // 'sw::universal::value<23>': '3' bytes padding added after data member 'sw::universal::value<23>::_sign'
 #pragma warning(disable : 5045)   // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 #endif
 
@@ -20,10 +20,10 @@
 #include <universal/functions/isrepresentable.hpp>
 
 template<size_t nbits, size_t es, size_t capacity = 10>
-void BenchmarkLUDecomposition(sw::unum::blas::matrix< sw::unum::posit<nbits, es> >& A, sw::unum::blas::vector< sw::unum::posit<nbits, es> >& x, sw::unum::blas::vector< sw::unum::posit<nbits, es> >& b) {
+void BenchmarkLUDecomposition(sw::universal::blas::matrix< sw::universal::posit<nbits, es> >& A, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& x, sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b) {
 	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
 	assert(num_rows(A) == num_cols(A));
 
 	size_t N = num_cols(A);
@@ -67,11 +67,11 @@ void BenchmarkLUDecomposition(sw::unum::blas::matrix< sw::unum::posit<nbits, es>
 template<size_t nbits, size_t es>
 void GaussianEliminationTest() {
 	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
-	using Scalar = sw::unum::posit<nbits, es>;
-	using Vector = sw::unum::blas::vector<Scalar>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
+	using Scalar = sw::universal::posit<nbits, es>;
+	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 	cout << "Using " << dynamic_range<nbits, es>() << endl;
 
 	// repeat set up for posits
@@ -108,7 +108,7 @@ void GaussianEliminationTest() {
 template<typename Scalar>
 void LUTest() {
 	using namespace std;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	Matrix A = {
 	{ 5, 4, 3, 2, 1 },
@@ -122,7 +122,7 @@ void LUTest() {
 	cout << "\n---------------- result ------------------\n";
 	cout << "Combined matrix\n" << LU << endl;
 	auto D = diag(diag(LU));
-	auto L = tril(LU) - D + sw::unum::blas::eye<Scalar>(num_cols(A));
+	auto L = tril(LU) - D + sw::universal::blas::eye<Scalar>(num_cols(A));
 	auto U = triu(LU);
 	cout << "Lower Triangular matrix\n" << L << endl;
 	cout << "Upper Triangular matrix\n" << U << endl;
@@ -131,8 +131,8 @@ void LUTest() {
 template<typename Scalar>
 void FrankMatrixTest() {
 	using namespace std;
-	using Vector = sw::unum::blas::vector<Scalar>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	Matrix A = {
 	{ 5, 4, 3, 2, 1 },
@@ -147,7 +147,7 @@ void FrankMatrixTest() {
 	Vector b(5);
 	b = A * x;
 	// now solve for b should yield a vector of 1's
-	sw::unum::blas::vector<size_t> p;
+	sw::universal::blas::vector<size_t> p;
 	ludcmp(A, p);
 	auto xx = lubksb(A, p, b);
 	auto e = xx - x;
@@ -162,7 +162,7 @@ void FrankMatrixTest() {
 }
 
 void FrankMatrix() {
-	using namespace sw::unum;
+	using namespace sw::universal;
 	std::cout << "Frank matrix solver\n";
 	FrankMatrixTest<float>();
 	FrankMatrixTest<double>();
@@ -178,9 +178,9 @@ void FrankMatrix() {
 template<typename Scalar>
 void MagicSquareTest(int N) {
 	using namespace std;
-	using namespace sw::unum::blas;
-	using Vector = sw::unum::blas::vector<Scalar>;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using namespace sw::universal::blas;
+	using Vector = sw::universal::blas::vector<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	Matrix A = magic<Scalar>(N);
 	Scalar magicSum = sum(diag(A));
@@ -218,8 +218,8 @@ void MagicSquareTest(int N) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
 
 	// We want to solve the system Ax=b
 	// GaussianEliminationTest<32, 2>();
@@ -294,15 +294,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

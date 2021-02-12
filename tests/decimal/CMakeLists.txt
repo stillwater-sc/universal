@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "decimal" "Number Systems/decimal" "${SOURCES}")
+compile_all("true" "decimal" "Number Systems/adaptive/integer/decimal" "${SOURCES}")

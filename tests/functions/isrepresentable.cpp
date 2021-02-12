@@ -1,6 +1,6 @@
 // isrepresentable.cpp : test suite for representability test in different number systems
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -8,8 +8,8 @@
 #include <universal/functions/isrepresentable.hpp>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/integer/integer.hpp>
-#include <universal/integer/numeric_limits.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/integer/numeric_limits.hpp>
 
 
 #define MANUAL_TESTING 1
@@ -19,7 +19,7 @@
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "representation tests failed";
 

@@ -1,15 +1,15 @@
-//  blocktriple_helpers.cpp : functions to aid in testing and test reporting block triple numbers
+#pragma once
+// error_success.cpp : error and success reporting of a binary arithmetic operation
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#include <universal/native/integers.hpp> // for to_binary(int)
-#include <universal/blockbin/blockbinary.hpp>
+namespace sw { namespace universal {
 
 #define COLUMN_WIDTH 20
-template<size_t ebits, size_t fbits, typename Ty = uint8_t>
-void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const sw::unum::blocktriple<ebits,fbits,Ty>& a, const sw::unum::blocktriple<ebits,fbits, Ty>& b, const sw::unum::blocktriple<ebits,fbits, Ty>& result, long double reference) {
+template<typename Ty>
+void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const Ty& a, const Ty& b, const Ty& result, long double reference) {
 	using namespace sw::unum;
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
@@ -26,8 +26,8 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 		<< std::endl;
 }
 
-template<size_t ebits, size_t fbits, typename Ty = uint8_t>
-void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const sw::unum::blocktriple<ebits,fbits, Ty>& a, const sw::unum::blocktriple<ebits,fbits, Ty>& b, const sw::unum::blocktriple<ebits,fbits, Ty>& result, long double reference) {
+template<typename Ty>
+void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const Ty& a, const Ty& b, const Ty& result, long double reference) {
 	using namespace sw::unum;
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
@@ -44,4 +44,4 @@ void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::stri
 		<< std::endl;
 }
 
-
+}} // namespace sw::universal

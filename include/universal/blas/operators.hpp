@@ -1,13 +1,13 @@
 #pragma once
 // operators.hpp: matrix operators
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/blas/vector.hpp>
 #include <universal/blas/matrix.hpp>
 
-namespace sw { namespace unum { namespace blas { 
+namespace sw { namespace universal { namespace blas { 
 
 // generate identity matrix
 template<typename Scalar>
@@ -83,4 +83,4 @@ matrix<Scalar> triu(const matrix<Scalar>& A, size_t k = 0) {
 	return U;
 }
 
-}}} // namespace sw::unum::blas
+}}} // namespace sw::universal::blas

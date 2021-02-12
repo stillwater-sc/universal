@@ -1,15 +1,15 @@
 // enumeration.cpp: examples of enumerating the posit state space
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 // example of enumerating the state space of a posit configuration
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "State space enumeration" << endl;
 

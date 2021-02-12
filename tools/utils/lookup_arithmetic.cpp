@@ -1,11 +1,11 @@
 // lookup_arithmetic.cpp: generate tables for small posit lookup arithmetic
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <chrono>
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 enum BINARY_ARITHMETIC_OPERATOR {
 	ADD = 0,
@@ -30,7 +30,7 @@ enum UNARY_ARITHMETIC_OPERATOR {
 template<size_t nbits, size_t es>
 void GenerateLookupTable(BINARY_ARITHMETIC_OPERATOR op) {
 	constexpr size_t nr_of_posits = (1 << nbits);
-	sw::unum::posit<nbits, es> pa, pb, presult;
+	sw::universal::posit<nbits, es> pa, pb, presult;
 	for (size_t i = 0; i < nr_of_posits; i++) {
 		pa.set_raw_bits(i);
 		for (size_t j = 0; j < nr_of_posits; j++) {
@@ -62,7 +62,7 @@ void GenerateLookupTable(BINARY_ARITHMETIC_OPERATOR op) {
 template<size_t nbits, size_t es>
 void GenerateLookupTable(BINARY_LOGIC_OPERATOR op) {
 	constexpr size_t nr_of_posits = (1 << nbits);
-	sw::unum::posit<nbits, es> pa, pb;
+	sw::universal::posit<nbits, es> pa, pb;
 	bool result;
 	for (size_t i = 0; i < nr_of_posits; i++) {
 		pa.set_raw_bits(i);
@@ -95,7 +95,7 @@ void GenerateLookupTable(BINARY_LOGIC_OPERATOR op) {
 template<size_t nbits, size_t es>
 void GenerateLookupTable(UNARY_ARITHMETIC_OPERATOR op) {
 	constexpr size_t nr_of_posits = (1 << nbits);
-	sw::unum::posit<nbits, es> pa, presult;
+	sw::universal::posit<nbits, es> pa, presult;
 
 	std::cout << std::hex;
 	for (size_t i = 0; i < nr_of_posits; i += 8) {
@@ -110,7 +110,7 @@ void GenerateLookupTable(UNARY_ARITHMETIC_OPERATOR op) {
 				break;
 			case SQRT:
 				if (pa.ispos() || pa.iszero()) {
-					presult = sw::unum::sqrt(pa);
+					presult = sw::universal::sqrt(pa);
 					std::cout << "0x" << std::hex << presult.get().to_ulong() << ",";
 				}
 				break;
@@ -197,7 +197,7 @@ namespace sw {
 				return *this;
 			}
 
-			sw::unum::bitblock<5> get() const { sw::unum::bitblock<5> bb; bb = int(_bits); return bb; }
+			sw::universal::bitblock<5> get() const { sw::universal::bitblock<5> bb; bb = int(_bits); return bb; }
 		private:
 			uint8_t _bits;
 
@@ -255,7 +255,7 @@ int Validate5_0_Lookup() {
 	constexpr size_t nr_of_posits = 32;
 	int nrOfFailures = 0;
 
-	sw::unum::posit<nbits, es> pa, pb, psum;
+	sw::universal::posit<nbits, es> pa, pb, psum;
 	sw::spec::posit<nbits, es> sa, sb, ssum;
 	for (size_t i = 0; i < nr_of_posits; i++) {
 		pa.set_raw_bits(i);
@@ -295,7 +295,7 @@ int MeasureAdditionPerformance(int &positives, int &negatives) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 	using namespace std::chrono;
 	int positives, negatives;
 

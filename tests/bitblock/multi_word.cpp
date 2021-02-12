@@ -1,15 +1,14 @@
 // multi_word.cpp :  test suite for bitblock-based multi-word operators
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 1
 #undef BITBLOCK_ROUND_TIES_AWAY_FROM_ZERO
 #undef BITBLOCK_ROUND_TIES_TO_ZERO
-#include "universal/bitblock/bitblock.hpp"
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "bitblock_test_helpers.hpp"
+#include <universal/internal/bitblock/bitblock.hpp>
+#include <universal/verification/test_status.hpp>
+#include <universal/verification/bitblock_test_suite.hpp>
 
 #if defined(_MSC_VER)
 // Disable warnings for Microsoft Visual Studio
@@ -40,7 +39,7 @@ void CheckUnsignedNegationBehavior() {
 
 void CheckMultiWordBehavior() {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal::internal;
 	using WordT = unsigned char;
 
 	// checking UBB_WORDS
@@ -98,7 +97,7 @@ void CheckMultiWordBehavior() {
 #endif
 
 int Conversions() {
-	using namespace sw::unum;
+	using namespace sw::universal::internal;
 	const size_t nbits = 33;
 	int nrOfFailedTestCases = 0;
 	bitblock<nbits> a, b, ref;
@@ -143,11 +142,12 @@ int Conversions() {
 
 template<size_t src_size, size_t tgt_size>
 int VerifyCopyInto(bool bReportIndividualTestCases = false) {
+	using namespace sw::universal::internal;
 	int nrOfFailedTestCases = 0;
 
-	sw::unum::bitblock<src_size> operand;
-	sw::unum::bitblock<tgt_size> addend;
-	sw::unum::bitblock<tgt_size> reference;
+	bitblock<src_size> operand;
+	bitblock<tgt_size> addend;
+	bitblock<tgt_size> reference;
 	
 	// use a programmatic pattern of alternating bits
 	// so it is easy to spot any differences
@@ -157,7 +157,7 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 	}
 
 	for (size_t i = 0; i < tgt_size - src_size + 1; i++) {
-		sw::unum::copy_into<src_size, tgt_size>(operand, i, addend);
+		copy_into<src_size, tgt_size>(operand, i, addend);
 
 		if (reference != addend) {
 			nrOfFailedTestCases++;
@@ -180,7 +180,9 @@ int VerifyCopyInto(bool bReportIndividualTestCases = false) {
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+
+	using namespace sw::universal;
+	using namespace sw::universal::internal;
 
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;

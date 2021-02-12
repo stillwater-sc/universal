@@ -1,15 +1,15 @@
 //  exponents.cpp : examples of working with posit exponents
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 // examples of how regime and exponent are related to the scale of a posit
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	// generate individual testcases to hand trace/debug
 	cout << "Manual Exponent tests" << endl;

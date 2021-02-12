@@ -1,11 +1,11 @@
 #pragma once
 // isrepresentable.hpp: test to see if a ratio of Integer type can be represented by a binary real
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <string>
-namespace sw { namespace unum {
+namespace sw { namespace universal {
 
 /*
 A number can be exactly represented in base 10 if the prime factorization of the denominator consists of only 2's and 5's.
@@ -33,4 +33,4 @@ bool isRepresentableInBinary(const std::string& scientificDecimalNumber) {
 	return true;
 }
 
-}} // namespace sw::unum
+}} // namespace sw::universal

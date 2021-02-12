@@ -1,14 +1,14 @@
 #pragma once
 //  number_traits.hpp : number system traits
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/traits/metaprogramming.hpp>
 
 namespace sw { 
 
-namespace unum {
+namespace universal {
 	// forward reference
 	template<typename ScalarType> struct number_traits;
 }
@@ -19,7 +19,7 @@ namespace internal {
 	// 0 for integer types, and log10(epsilon()) otherwise.
 	template< typename ScalarType,
 		bool use_numeric_limits = std::numeric_limits<ScalarType>::is_specialized,
-		bool is_integer = sw::unum::number_traits<ScalarType>::is_integer>
+		bool is_integer = sw::universal::number_traits<ScalarType>::is_integer>
 		struct default_digits10_impl
 	{
 		static int run() { return std::numeric_limits<ScalarType>::digits10; }
@@ -29,7 +29,7 @@ namespace internal {
 	struct default_digits10_impl<ScalarType, false, false> // Floating point
 	{
 		static int run() {
-			return int(ceil(-log10(sw::unum::number_traits<ScalarType>::epsilon())));
+			return int(ceil(-log10(sw::universal::number_traits<ScalarType>::epsilon())));
 		}
 	};
 
@@ -41,7 +41,7 @@ namespace internal {
 
 } // namespace internal
 
-namespace unum {
+namespace universal {
 
 	template<typename ScalarType>
 	struct generic_number_traits {
@@ -49,13 +49,13 @@ namespace unum {
 			is_integer = std::numeric_limits<ScalarType>::is_integer,
 			is_signed = std::numeric_limits<ScalarType>::is_signed,
 			is_complex = 0,
-			needs_init = internal::is_arithmetic<ScalarType>::value ? 0 : 1
+			needs_init = sw::internal::is_arithmetic<ScalarType>::value ? 0 : 1
 		};
 		static inline ScalarType epsilon() {
 			return numext::numeric_limits<ScalarType>::epsilon();
 		}
 		static inline int digits10() {
-			return internal::default_digits10_impl<ScalarType>::run();
+			return sw::internal::default_digits10_impl<ScalarType>::run();
 		}
 
 		static inline ScalarType max() {
@@ -100,8 +100,7 @@ namespace unum {
 		static inline long double rough_precision() { return 1e-15l; }
 	};
 
-} // namespace unum
-
+} // namespace universal
 
 
 } // namespace sw

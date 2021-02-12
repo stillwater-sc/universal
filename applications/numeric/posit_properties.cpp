@@ -1,6 +1,6 @@
 // posit_properties.cpp example program comparing epsilon and minpos across posit configurations
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -10,12 +10,13 @@
 #include <array>
 
 // select the number systems we would like to compare
-#include <universal/integer/integer>
-#include <universal/fixpnt/fixpnt>
-#include <universal/areal/areal>
-#include <universal/posit/posit>
-#include <universal/lns/lns>
-#include <universal/valid/valid>
+#include <universal/number/integer/integer>
+//#include <universal/fixpnt/fixpnt>   // TODO: this causes this warning for an unknown reason:
+// include\universal/posit/posit.hpp(851,1): warning C4305: 'specialization': truncation from 'const size_t' to 'bool'
+#include <universal/number/areal/areal>
+#include <universal/number/posit/posit>
+#include <universal/number/lns/lns>
+#include <universal/number/valid/valid>
 
 //constexpr long double pi     = 3.14159265358979323846;
 //constexpr long double e      = 2.71828182845904523536;
@@ -71,7 +72,7 @@ size_t fib2(const size_t n) {
 template<size_t ... nbits>
 long double eps_impl(std::index_sequence<nbits...>, size_t index) 
 {
-	constexpr std::array<size_t, sizeof...(nbits)> eps = { (long double)std::numeric_limits<sw::unum::posit<nbits+2,2>>::epsilon()... } ;
+	constexpr std::array<size_t, sizeof...(nbits)> eps = { (long double)std::numeric_limits<sw::universal::posit<nbits+2,2>>::epsilon()... } ;
     return eps[index];
 }
 
@@ -83,10 +84,10 @@ const long double eps(size_t nbits) {
 
 template<size_t nbits, size_t es>
 std::string properties(const std::string& label) {
-	using Scalar = sw::unum::posit<nbits, es>;
-	Scalar minp, maxp;
-	sw::unum::minpos<nbits, es>(minp);
-	sw::unum::maxpos<nbits, es>(maxp);
+	using Scalar = sw::universal::posit<nbits, es>;
+	Scalar minp(0), maxp(0);
+	sw::universal::minpos<nbits, es>(minp);
+	sw::universal::maxpos<nbits, es>(maxp);
 	Scalar eps  = std::numeric_limits<Scalar>::epsilon();
 	std::stringstream ostr;
 	ostr << nbits
@@ -105,10 +106,11 @@ std::string properties(const std::string& label) {
 		<< '\n';
 	return ostr.str();
 }
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "minpos/epsilon/maxpos for different number systems " << endl;
 
@@ -120,7 +122,7 @@ try {
 //	std::cout << "posit<16,2> | 16 |  " << eps(16) << '\n';
 
 	// operator=() of posit can't be constexpr due to bitset<>
-	// constexpr long double posit_16_2_eps = (long double)std::numeric_limits<sw::unum::posit<6, 2>>::epsilon();
+	// constexpr long double posit_16_2_eps = (long double)std::numeric_limits<sw::universal::posit<6, 2>>::epsilon();
 	// std::cout << "constexpr " << posit_16_2_eps;
 
 	std::cout << "nbits\tposit\tminpos\tepsilon\tmaxpos\teps/minpos\tmaxpos/eps\n";
@@ -131,6 +133,7 @@ try {
 	std::cout << properties<128, 4>("posit<128,4>");
 	std::cout << properties<256, 5>("posit<256,5>");
 	std::cout << "\n";
+
 
 	std::cout << properties<6, 2>("posit<6,2> ");
 	std::cout << properties<8, 2>("posit<8,2> ");

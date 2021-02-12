@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "edu" "Educational/quire" "${SOURCES}")
+compile_all("true" "edu_quire" "Educational/quire" "${SOURCES}")

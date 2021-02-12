@@ -1,6 +1,6 @@
 // midpoint.cpp: example program to use C++20 <cmath> lerp and midpoint functions
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <limits>
@@ -11,11 +11,11 @@
 
 
 // select the number systems we would like to compare
-#include <universal/integer/integer>
-#include <universal/fixpnt/fixpnt>
-#include <universal/areal/areal>
-#include <universal/posit/posit>
-#include <universal/lns/lns>
+#include <universal/number/integer/integer>
+#include <universal/number/fixpnt/fixpnt>
+#include <universal/number/areal/areal>
+#include <universal/number/posit/posit>
+#include <universal/number/lns/lns>
 
 #include <cstddef>
 #include <stdexcept>
@@ -25,7 +25,7 @@
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	cout << "high-precision constants " << endl;
 

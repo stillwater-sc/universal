@@ -1,6 +1,6 @@
-//  sqrt.cpp : square root tests for abitrary precision integers
+//  sqrt.cpp : test runner for square root on abitrary precision integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -8,14 +8,12 @@
 #include <cmath>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 0
-#include <universal/integer/integer.hpp>
-#include <universal/integer/math_functions.hpp>
-#include <universal/integer/numeric_limits.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/integer/math_functions.hpp>
+#include <universal/number/integer/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
-#include "../utils/integer_test_helpers.hpp"
+#include <universal/verification/integer_test_suite.hpp>
 
 /*
    The goal of the arbitrary integers is to provide a constrained big integer type
@@ -41,11 +39,11 @@ inline double babylonian(double v) {
 template<size_t nbits, typename BlockType>
 int VerifyIntegerFloorSqrt(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (1 << (nbits-1));
-	using Integer = sw::unum::integer<nbits, BlockType>;
+	using Integer = sw::universal::integer<nbits, BlockType>;
 
 	int nrOfTestFailures = 0;
 	Integer a, result;
-	size_t ref;
+	size_t ref; // we use an unsigned type as sqrt can't be negative
 	for (size_t i = 0; i < NR_VALUES; ++i) {
 		a = i;
 		result = floor_sqrt(a);
@@ -53,7 +51,7 @@ int VerifyIntegerFloorSqrt(const std::string& tag, bool bReportIndividualTestCas
 //		std::cout << "sqrt of " << a << " " << result << " vs " << ref << " vs " << Integer(ref) << std::endl;
 		if (result != ref) {
 			++nrOfTestFailures;
-			if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", "sqrt", a, Integer(ref), result);
+			if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", "sqrt", a, result, Integer(ref));
 		}
 		if (nrOfTestFailures > 24) return nrOfTestFailures;
 	}
@@ -63,7 +61,7 @@ int VerifyIntegerFloorSqrt(const std::string& tag, bool bReportIndividualTestCas
 template<size_t nbits, typename BlockType>
 int VerifyIntegerCeilSqrt(const std::string& tag, bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (1 << (nbits - 1));
-	using Integer = sw::unum::integer<nbits, BlockType>;
+	using Integer = sw::universal::integer<nbits, BlockType>;
 
 	int nrOfTestFailures = 0;
 	Integer a, result;
@@ -75,7 +73,7 @@ int VerifyIntegerCeilSqrt(const std::string& tag, bool bReportIndividualTestCase
 //		std::cout << "sqrt of " << a << " " << result << " vs " << ref << " vs " << Integer(ref) << std::endl;
 		if (result != ref) {
 			++nrOfTestFailures;
-			if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", "ceil_sqrt", a, Integer(ref), result);
+			if (bReportIndividualTestCases) ReportUnaryArithmeticError("FAIL", "ceil_sqrt", a, result, Integer(ref));
 		}
 		if (nrOfTestFailures > 24) return nrOfTestFailures;
 	}
@@ -88,7 +86,7 @@ int VerifyIntegerCeilSqrt(const std::string& tag, bool bReportIndividualTestCase
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	int nrOfFailedTestCases = 0;
 	bool bReportIndividualTestCases = true;

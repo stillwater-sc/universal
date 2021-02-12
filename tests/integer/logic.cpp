@@ -1,27 +1,25 @@
-//  logic.cpp : logic operators test suite for abitrary precision integers
+//  logic.cpp : test suite runner for logic operators on abitrary precision integers
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
 #include <string>
 // configure the integer arithmetic class
 #define INTEGER_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/integer/integer.hpp>
-#include <universal/integer/numeric_limits.hpp>
+#include <universal/number/integer/integer.hpp>
+#include <universal/number/integer/numeric_limits.hpp>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
-// test helpers, such as, ReportTestResults
-#include "../utils/test_helpers.hpp"
+#include <universal/verification/test_status.hpp> // ReportTestResult used by test suite runner
 
 /*
-   The goal of the arbitrary integers is to provide a constrained big integer type
+   The goal of the arbitrary integers is to provide a fast fixed-size integer type
    that enables fast computation with exceptions for overflow, so that the type
    can be used for forward error analysis studies.
 */
 
-namespace sw {
-namespace unum {
+namespace sw::universal {
 
 #define INTEGER_TABLE_WIDTH 20
 	template<size_t nbits>
@@ -231,8 +229,7 @@ namespace unum {
 		return nrOfFailedTests;
 	}
 
-}
-}
+} // namespace sw::universal
 
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
@@ -248,7 +245,7 @@ std::string convert_to_string(const std::vector<char>& v) {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "Integer Logic Operator tests failed";
 

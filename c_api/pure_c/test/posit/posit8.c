@@ -1,13 +1,13 @@
 // posit8.c: example test of the posit API for C programs using 8-bit posits
 //
-// Copyright (C) 2017-2019 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
 #include <math.h>	// required to provide explicit sqrt/exp/log declarations
 
 #define POSIT_NO_GENERICS // MSVC doesn't support _Generic so we'll leave it out from these tests
-#include <universal/posit/posit_c_api.h>
+#include <universal/number/posit/posit_c_api.h>
 
 void SpecialCases() {
 	char str[posit8_str_SIZE];

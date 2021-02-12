@@ -1,13 +1,13 @@
 #pragma once
 // cg_fdp_fdp.hpp: Conjugate Gradient method with fused-dot product matrix-vector operator and fused-dot product compensation operators
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/posit/posit_fwd.hpp>
+#include <universal/number/posit/posit_fwd.hpp>
 #include <universal/blas/matrix.hpp>
 
-namespace sw { namespace unum { namespace blas {
+namespace sw::universal::blas {
 
 // cg: Solution of x in Ax=b using preconditioned Conjugate Gradient algorithm 
 // with different precision for matrix-vector multiply and residual calculation
@@ -38,7 +38,7 @@ size_t cg_fdp_fdp(const Matrix& M, const Matrix& A, const Vector& b, Vector& x, 
 	while (residual > tolerance && itr < MAX_ITERATIONS) {
 		zeta = M * rho;
 		sigma_2 = sigma_1;
-		sigma_1 = sw::unum::fdp(zeta, rho); // dot product, fused dot product if Scalar is a posit type
+		sigma_1 = sw::universal::fdp(zeta, rho); // dot product, fused dot product if Scalar is a posit type
 		if (firstIteration) {
 			firstIteration = false;
 			p = zeta;
@@ -48,7 +48,7 @@ size_t cg_fdp_fdp(const Matrix& M, const Matrix& A, const Vector& b, Vector& x, 
 			p = zeta + beta * p;
 		}
 		q = A * p;
-		alpha = sigma_1 / sw::unum::fdp(p, q);
+		alpha = sigma_1 / sw::universal::fdp(p, q);
 		Vector x_1(x);
 		x = x + alpha * p;
 		rho = rho - alpha * q;
@@ -67,4 +67,4 @@ size_t cg_fdp_fdp(const Matrix& M, const Matrix& A, const Vector& b, Vector& x, 
 	return itr;
 }
 
-}}} // namespace sw::unum::blas
+} // namespace sw::universal::blas

@@ -1,7 +1,7 @@
 #pragma once
 // matrix.hpp: super-simple dense matrix class implementation
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -9,9 +9,9 @@
 #include <initializer_list>
 #include <map>
 #include <universal/blas/exceptions.hpp>
-#include <universal/posit/posit_fwd.hpp>
+#include <universal/number/posit/posit_fwd.hpp>
 
-namespace sw { namespace unum { namespace blas { 
+namespace sw { namespace universal { namespace blas { 
 
 template<typename Scalar> class matrix;
 template<typename Scalar>
@@ -200,7 +200,7 @@ std::ostream& operator<<(std::ostream& ostr, const matrix<Scalar>& A) {
 
 // generate a posit format ASCII format nbits.esxNN...NNp
 template<size_t nbits, size_t es>
-inline std::string hex_format(const matrix< sw::unum::posit<nbits, es> >& A) {
+inline std::string hex_format(const matrix< sw::universal::posit<nbits, es> >& A) {
 	// we need to transform the posit into a string
 	std::stringstream ostr;
 	size_t m = A.rows();
@@ -340,4 +340,4 @@ bool operator!=(const matrix<Scalar>& A, const matrix<Scalar>& B) {
 	return !(A == B);
 }
 
-}}} // namespace sw::unum::blas
+}}} // namespace sw::universal::blas

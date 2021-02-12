@@ -1,6 +1,6 @@
 // l1_fused_dot.cpp: example program showing a fused-dot product for error free linear algebra
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifdef _MSC_VER
@@ -26,20 +26,20 @@
 #define POSIT_FAST_POSIT_64_3 0  // TODO
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 #include <universal/blas/blas.hpp>
 
 template<typename Vector>
 void PrintProducts(const Vector& a, const Vector& b) {
 	constexpr size_t nbits = Vector::value_type::nbits;
 	constexpr size_t es = Vector::value_type::es;
-	sw::unum::quire<nbits, es> q(0);
+	sw::universal::quire<nbits, es> q(0);
 	for (size_t i = 0; i < a.size(); ++i) {
-		q += sw::unum::quire_mul(a[i], b[i]);
+		q += sw::universal::quire_mul(a[i], b[i]);
 		std::cout << a[i] << " * " << b[i] << " = " << a[i] * b[i] << std::endl << "quire " << q << std::endl;
 	}
 	typename Vector::value_type sum;
-	sw::unum::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
+	sw::universal::convert(q.to_value(), sum);     // one and only rounding step of the fused-dot product
 	std::cout << "fdp result " << sum << std::endl;
 }
 
@@ -54,7 +54,7 @@ void reportOnCatastrophicCancellation(const std::string& type, const ResultScala
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	//constexpr size_t nbits = 16;
 	//constexpr size_t es = 1;
@@ -75,7 +75,7 @@ try {
 	
 	{
 		using Scalar = float;
-		using Vector = sw::unum::blas::vector<Scalar>;
+		using Vector = sw::universal::blas::vector<Scalar>;
 		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
 		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
 		Vector a = { a1, a2, a3, a4 };
@@ -90,7 +90,7 @@ try {
 
 	{
 		using Scalar = double;
-		using Vector = sw::unum::blas::vector<Scalar>;
+		using Vector = sw::universal::blas::vector<Scalar>;
 		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
 		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
 		Vector a = { a1, a2, a3, a4 };
@@ -110,6 +110,7 @@ try {
 		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
 		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
 
+#ifdef LATER
 		{
 			using Scalar = posit<8, 0>;
 			vector<Scalar> x = { a1, a2, a3, a4 };
@@ -131,6 +132,7 @@ try {
 
 			reportOnCatastrophicCancellation("posit< 8,3> fused dot(x,y)  : ", fdp(x, y), 2);
 		}
+#endif
 		{
 			using Scalar = posit<16, 1>;
 			vector<Scalar> x = { a1, a2, a3, a4 };
@@ -194,15 +196,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

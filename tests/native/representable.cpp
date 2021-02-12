@@ -1,6 +1,6 @@
 //  representable.cpp : check if a ratio is representable
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <iostream>
@@ -12,7 +12,7 @@
 void ReproducibilityTestSuite() {
 	for (int i = 0; i < 30; i += 3) {
 		for (int j = 0; j < 70; j += 7) {
-			sw::unum::reportRepresentability(i, j);
+			sw::universal::reportRepresentability(i, j);
 		}
 	}
 }
@@ -24,7 +24,7 @@ void ReproducibilityTestSuite() {
 int main()
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
 
 	std::string tag = "failed";
 

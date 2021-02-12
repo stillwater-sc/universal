@@ -1,6 +1,6 @@
 // l2_fused_mv.cpp: example program showing a fused matrix-vector product
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
@@ -10,7 +10,7 @@
 #define QUIRE_TRACE_ADD
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <universal/blas/blas.hpp>
 
@@ -18,8 +18,8 @@ template<typename Scalar>
 void catastrophicCancellationTest() {
 	using namespace std;
 	cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
-	using Matrix = sw::unum::blas::matrix<Scalar>;
-	using Vector = sw::unum::blas::vector<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
+	using Vector = sw::universal::blas::vector<Scalar>;
 
 	Scalar a1 = 3.2e8;
 	Scalar a2 = 1;
@@ -50,7 +50,7 @@ try {
 
 	catastrophicCancellationTest<float>();
 	catastrophicCancellationTest<double>();
-	catastrophicCancellationTest< sw::unum::posit<32,2> >();
+	catastrophicCancellationTest< sw::universal::posit<32,2> >();
 
 	return EXIT_SUCCESS;
 }
@@ -58,15 +58,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

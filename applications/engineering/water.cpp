@@ -1,6 +1,6 @@
 // water.cpp: example program showing water chemical equilibrium calculation sensitivity
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
@@ -15,7 +15,7 @@
 #include <algorithm>
 #include <cmath>
 // universal BLAS
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 #include <universal/blas/vector.hpp>
 #include <universal/blas/matrix.hpp>
 #include <universal/blas/solvers/lu.hpp>
@@ -27,8 +27,8 @@ using std::endl;
 using std::setw;
 
 using Real = double;
-using Vec = sw::unum::blas::vector<Real>;
-using Mat = sw::unum::blas::matrix<Real>;
+using Vec = sw::universal::blas::vector<Real>;
+using Mat = sw::universal::blas::matrix<Real>;
 
 // The number of species.
 const auto N = 5; // H2O, H+, OH-, O2, H2

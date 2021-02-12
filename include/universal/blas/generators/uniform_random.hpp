@@ -1,14 +1,14 @@
 #pragma once
 // uniform_random.hpp: uniform random matrix generator
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 #include <random>
 #include <algorithm>
 
-namespace sw { namespace unum { namespace blas {
+namespace sw { namespace universal { namespace blas {
 
 // fill a dense matrix with random values between [lowerbound, upperbound]
 template <typename Matrix>
@@ -38,4 +38,4 @@ void uniform_rand(Matrix& A, double lowerbound = 0.0, double upperbound = 1.0)
 	}
 }
 
-}}} // namespace sw::unum::blas
+}}} // namespace sw::universal::blas

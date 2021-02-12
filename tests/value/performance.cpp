@@ -1,10 +1,10 @@
 // performance.cpp: functional tests of the value type API
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/bitblock/bitblock.hpp>
-#include <universal/value/value.hpp>
+#include <universal/internal/bitblock/bitblock.hpp> // TODO: remove: should not have an internal type in the public interface
+#include <universal/internal/value/value.hpp>
 #include <universal/performance/number_system.hpp>
 
 #define MANUAL_TESTING 1
@@ -13,7 +13,8 @@
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
+	using namespace sw::universal;
+	using namespace sw::universal::internal;
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
@@ -105,7 +106,7 @@ OS        : 64-bit, x64-based processor
 Performance benchmarks for value<> class
  reporting individual testcases
 half precision float
-Performance Report for type: class sw::unum::value<10>
+Performance Report for type: class sw::universal::value<10>
 Conversion int  : 104 MPOPS
 Conversion ieee :  31 MPOPS
 Prefix          :   9 MPOPS
@@ -119,7 +120,7 @@ Square Root     :  10 MPOPS
 
 
 single precision float
-Performance Report for type: class sw::unum::value<22>
+Performance Report for type: class sw::universal::value<22>
 Conversion int  :  18 MPOPS
 Conversion ieee :  14 MPOPS
 Prefix          :   4 MPOPS
@@ -133,7 +134,7 @@ Square Root     :   4 MPOPS
 
 
 double precision float
-Performance Report for type: class sw::unum::value<53>
+Performance Report for type: class sw::universal::value<53>
 Conversion int  :   9 MPOPS
 Conversion ieee :  10 MPOPS
 Prefix          :   2 MPOPS
@@ -147,7 +148,7 @@ Square Root     :   2 MPOPS
 
 
 extended precision float
-Performance Report for type: class sw::unum::value<64>
+Performance Report for type: class sw::universal::value<64>
 Conversion int  :   9 MPOPS
 Conversion ieee :  10 MPOPS
 Prefix          :   1 MPOPS
@@ -161,7 +162,7 @@ Square Root     :   2 MPOPS
 
 
 quad precision float
-Performance Report for type: class sw::unum::value<112>
+Performance Report for type: class sw::universal::value<112>
 Conversion int  :   8 MPOPS
 Conversion ieee :  10 MPOPS
 Prefix          :   1 MPOPS

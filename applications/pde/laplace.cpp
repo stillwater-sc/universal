@@ -1,6 +1,6 @@
 // laplace.cpp: successive over-relaxation with adaptive unum/posit precision
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #ifdef _MSC_VER
@@ -9,7 +9,7 @@
 // Configure the posit library with arithmetic exceptions
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators.hpp>
 
@@ -92,14 +92,14 @@ but ran out of time. My manuscript was six months late as it was!
 int main(int argc, char** argv)
 try {
 	using namespace std;
-	using namespace sw::unum;
-	using namespace sw::unum::blas;
+	using namespace sw::universal;
+	using namespace sw::universal::blas;
 
 	constexpr size_t nbits = 16;
 	constexpr size_t es = 1;
 	using Scalar = posit<nbits, es>;
 //	using Scalar = float;
-	using Matrix = sw::unum::blas::matrix<Scalar>;
+	using Matrix = sw::universal::blas::matrix<Scalar>;
 
 	int nrOfFailedTestCases = 0;
 
@@ -116,15 +116,15 @@ catch (char const* msg) {
 	std::cerr << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_arithmetic_exception& err) {
+catch (const sw::universal::posit_arithmetic_exception& err) {
 	std::cerr << "Uncaught posit arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const quire_exception& err) {
+catch (const sw::universal::quire_exception& err) {
 	std::cerr << "Uncaught quire exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const posit_internal_exception& err) {
+catch (const sw::universal::posit_internal_exception& err) {
 	std::cerr << "Uncaught posit internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
