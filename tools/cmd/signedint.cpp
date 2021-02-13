@@ -1,4 +1,4 @@
-// compsi.cpp: components of a signed integer: cli to show the sign/scale/fraction components of a signed integer  
+// signedint.cpp: components of a signed integer: cli to show the sign/scale/fraction components of a signed integer  
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -15,10 +15,10 @@ try {
 	using namespace sw::universal;
 
 	if (argc != 2) {
-		cerr << "compsi : components of a signed integer\n";
+		cerr << "signedint : components of a signed integer\n";
 		cerr << "Show the sign/scale/fraction components of a signed integer.\n";
-		cerr << "Usage: compsi integer_value\n";
-		cerr << "Example: compsi 1234567890123456789012345\n";
+		cerr << "Usage: signedint integer_value\n";
+		cerr << "Example: signedint 1234567890123456789012345\n";
 		cerr << "class sw::universal::integer<128,unsigned int>         : 1234567890123456789012345 (+,80,00000101011011100000111100110110101001100100010000111101111000101101111101111001)";
 		cerr << endl;
 		return EXIT_SUCCESS;  // signal successful completion for ctest

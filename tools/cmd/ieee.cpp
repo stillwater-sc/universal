@@ -1,4 +1,4 @@
-// compieee.cpp: cli to show the sign/scale/fraction components of a 32b/64/128b IEEE floats
+// ieee.cpp: cli to show the sign/scale/fraction components of a 32b/64/128b IEEE floats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -71,8 +71,8 @@ try {
 
 	if (argc != 2) {
 		cerr << "Show the truncated value and (sign/scale/fraction) components of different floating point types." << endl;
-		cerr << "Usage: compieee floating_point_value\n";
-		cerr << "Example: compieee 0.03124999\n";
+		cerr << "Usage: ieee floating_point_value\n";
+		cerr << "Example: ieee 0.03124999\n";
                 cerr << "input value:                0.03124999\n";
                 cerr << "      float:              0.0312499907 (+,-6,11111111111111111111011)\n";
                 cerr << "     double:      0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)\n";

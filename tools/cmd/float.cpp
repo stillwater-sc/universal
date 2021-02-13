@@ -1,4 +1,4 @@
-// compf.cpp: components of a float: cli to show the sign/scale/fraction components of a float 
+// float.cpp: components of a float: cli to show the sign/scale/fraction components of a float 
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -17,10 +17,10 @@ try {
 	constexpr int fbits = std::numeric_limits<float>::digits - 1;
 
 	if (argc != 2) {
-		cerr << "compf : components of an IEEE single-precision float\n";
+		cerr << "float : components of an IEEE single-precision float\n";
 		cerr << "Show the sign/scale/fraction components of an IEEE float.\n";
-	    cerr << "Usage: compf float_value\n";
-		cerr << "Example: compf 0.03124999\n";
+		cerr << "Usage: float float_value\n";
+		cerr << "Example: float 0.03124999\n";
 		cerr << "float: 0.031249990686774254 (+,-6,11111111111111111111011)" << endl;
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}

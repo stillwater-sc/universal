@@ -1,4 +1,4 @@
-// compui.cpp: components of an unsigned integer: cli to show the sign/scale/fraction components of an unsigned integer  
+// unsignedint.cpp: components of an unsigned integer: cli to show the sign/scale/fraction components of an unsigned integer  
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -15,10 +15,10 @@ try {
 	using namespace sw::universal;
 
 	if (argc != 2) {
-		cerr << "compui : components of an unsigned integer\n";
+		cerr << "unsignedint : components of an unsigned integer\n";
 		cerr << "Show the sign/scale/fraction components of an unsigned integer.\n";
-		cerr << "Usage: compui integer_value\n";
-		cerr << "Example: compui 123456789012345670\n";
+		cerr << "Usage: unsignedint integer_value\n";
+		cerr << "Example: unsignedint 123456789012345670\n";
 		cerr << "TBD: ";
 		cerr << endl;
 		return EXIT_SUCCESS;  // signal successful completion for ctest

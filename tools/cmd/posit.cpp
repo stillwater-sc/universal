@@ -1,4 +1,4 @@
-// compp.cpp: components of a posit: cli to show the sign/scale/regime/exponent/fraction components of standard posit configurations
+// posit.cpp: components of a posit: cli to show the sign/scale/regime/exponent/fraction components of standard posit configurations
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -31,10 +31,10 @@ try {
 	using namespace sw::universal;
 
 	if (argc != 2) {
-		cerr << "pc : posit components" << endl;
+		cerr << "posit : posit components" << endl;
 		cerr << "Show the sign/scale/regime/exponent/fraction components of a posit." << endl;
-	    cerr << "Usage: pc float_value" << endl;
-		cerr << "Example: pc -1.123456789e17" << endl;
+		cerr << "Usage: posit float_value" << endl;
+		cerr << "Example: posit -1.123456789e17" << endl;
 		cerr <<  msg << endl;
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}
@@ -56,25 +56,43 @@ try {
 	posit<64, 2> p64_2(d);
 	posit<64, 3> p64_3(d);
 	posit<64, 4> p64_4(d);
+	posit<128, 2> p128_2(d);
+	posit<128, 3> p128_3(d);
+	posit<128, 4> p128_4(d);
+	posit<128, 5> p128_5(d);
+	posit<256, 2> p256_2(d);
+	posit<256, 3> p256_3(d);
+	posit<256, 4> p256_4(d);
+	posit<256, 5> p256_5(d);
 
 	int precision = dbl::max_digits10;
-	cout << "posit< 8,0> = " << pretty_print(p8_0, precision) << endl;
-	cout << "posit< 8,1> = " << pretty_print(p8_1, precision) << endl;
-	cout << "posit< 8,2> = " << pretty_print(p8_2, precision) << endl;
-	cout << "posit< 8,3> = " << pretty_print(p8_3, precision) << endl;
-	cout << "posit<16,1> = " << pretty_print(p16_1, precision) << endl;
-	cout << "posit<16,2> = " << pretty_print(p16_2, precision) << endl;
-	cout << "posit<16,3> = " << pretty_print(p16_3, precision) << endl;
-	cout << "posit<32,1> = " << pretty_print(p32_1, precision) << endl;
-	cout << "posit<32,2> = " << pretty_print(p32_2, precision) << endl;
-	cout << "posit<32,3> = " << pretty_print(p32_3, precision) << endl;
-	cout << "posit<48,1> = " << pretty_print(p48_1, precision) << endl;
-	cout << "posit<48,2> = " << pretty_print(p48_2, precision) << endl;
-	cout << "posit<48,3> = " << pretty_print(p48_3, precision) << endl;
-	cout << "posit<64,1> = " << pretty_print(p64_1, precision) << endl;
-	cout << "posit<64,2> = " << pretty_print(p64_2, precision) << endl;
-	cout << "posit<64,3> = " << pretty_print(p64_3, precision) << endl;
-	cout << "posit<64,4> = " << pretty_print(p64_4, precision) << endl;
+	cout << "posit< 8,0>  = " << pretty_print(p8_0, precision) << endl;
+	cout << "posit< 8,1>  = " << pretty_print(p8_1, precision) << endl;
+	cout << "posit< 8,2>  = " << pretty_print(p8_2, precision) << endl;
+	cout << "posit< 8,3>  = " << pretty_print(p8_3, precision) << endl;
+	cout << "posit<16,1>  = " << pretty_print(p16_1, precision) << endl;
+	cout << "posit<16,2>  = " << pretty_print(p16_2, precision) << endl;
+	cout << "posit<16,3>  = " << pretty_print(p16_3, precision) << endl;
+	cout << "posit<32,1>  = " << pretty_print(p32_1, precision) << endl;
+	cout << "posit<32,2>  = " << pretty_print(p32_2, precision) << endl;
+	cout << "posit<32,3>  = " << pretty_print(p32_3, precision) << endl;
+	cout << "posit<48,1>  = " << pretty_print(p48_1, precision) << endl;
+	cout << "posit<48,2>  = " << pretty_print(p48_2, precision) << endl;
+	cout << "posit<48,3>  = " << pretty_print(p48_3, precision) << endl;
+	cout << "posit<64,1>  = " << pretty_print(p64_1, precision) << endl;
+	cout << "posit<64,2>  = " << pretty_print(p64_2, precision) << endl;
+	cout << "posit<64,3>  = " << pretty_print(p64_3, precision) << endl;
+	cout << "posit<64,4>  = " << pretty_print(p64_4, precision) << endl;
+
+	cout << "posit<128,2> = " << pretty_print(p128_2, precision) << endl;
+	cout << "posit<128,3> = " << pretty_print(p128_3, precision) << endl;
+	cout << "posit<128,4> = " << pretty_print(p128_4, precision) << endl;
+	cout << "posit<128,5> = " << pretty_print(p128_5, precision) << endl;
+
+	cout << "posit<256,2> = " << pretty_print(p256_2, precision) << endl;
+	cout << "posit<256,3> = " << pretty_print(p256_3, precision) << endl;
+	cout << "posit<256,4> = " << pretty_print(p256_4, precision) << endl;
+	cout << "posit<256,5> = " << pretty_print(p256_5, precision) << endl;
 
 	return EXIT_SUCCESS;
 }

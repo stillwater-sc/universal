@@ -1,4 +1,4 @@
-// complns.cpp: components of a logarithmic number: cli to show the sign/scale/fraction components of a logarithmic number 
+// lns.cpp: components of a logarithmic number: cli to show the sign/scale/fraction components of a logarithmic number 
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -39,10 +39,10 @@ try {
 	constexpr int max_digits10 = std::numeric_limits<double>::max_digits10;
 
 	if (argc != 2) {
-		cerr << "complns : components of a logarithmic number\n";
+		cerr << "lns : components of a logarithmic number\n";
 		cerr << "Show the sign/scale/fraction components of a logarithmic number.\n";
-	    cerr << "Usage: complns float_value\n";
-		cerr << "Example: complns 0.03124999\n";
+		cerr << "Usage: lns float_value\n";
+		cerr << "Example: lns 0.03124999\n";
 		cerr << "TBD" << endl;
 		return EXIT_SUCCESS;  // signal successful completion for ctest
 	}

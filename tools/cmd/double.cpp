@@ -1,4 +1,4 @@
-// compd.cpp: components of a double: cli to show the sign/scale/fraction components of a double
+// double.cpp: components of a double: cli to show the sign/scale/fraction components of a double
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -17,10 +17,10 @@ try {
 	constexpr int fbits = std::numeric_limits<double>::digits - 1;
 
 	if (argc != 2) {
-		cerr << "compd : components of an IEEE double-precision float\n";
+		cerr << "double : components of an IEEE double-precision float\n";
 		cerr << "Show the sign/scale/fraction components of an IEEE double.\n";
-		cerr << "Usage: compf double_value\n";
-		cerr << "Example: compd 0.03124999\n";
+		cerr << "Usage: double double_value\n";
+		cerr << "Example: double 0.03124999\n";
 		cerr << "double: 0.031249989999999998 (+,-6,1111111111111111111101010100001100111000100011101110)" << endl;
 		return EXIT_SUCCESS;   // signal successful completion for ctest
 	}
