@@ -46,7 +46,7 @@ The library contains integers, decimals, fixed-points, rationals, linear floats,
 
 ## Citation
 
-Please cite [our work](https://arxiv.org/abs/2012:11011) if you use _Universal_.
+Please cite [our work](https://arxiv.org/abs/2012.11011) if you use _Universal_.
 
 ```bib
 @article{Omtzigt2020,
