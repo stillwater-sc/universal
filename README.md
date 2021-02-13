@@ -6,9 +6,9 @@
 [ ![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master)](https://app.codeship.com/projects/286490)
 [![Coverage Status](https://coveralls.io/repos/github/stillwater-sc/universal/badge.svg?branch=master)](https://coveralls.io/github/stillwater-sc/universal?branch=master)
 
-The goal of Universal Numbers, or unums, is to replace IEEE floating-point with a number system that is more efficient and mathematically consistent in concurrent execution environments.
+The goal of the Universal Numbers Library is to offer applications alternatives to IEEE floating-point that are more efficient and mathematically robust.
 
-The motivation to replace IEEE floating-point had been brewing in the HPC community since the late 90's as most algorithms became memory bound. The inefficiency of IEEE floating-point has been measured and agreed upon, but it was the AI Deep Learning community that moved first and replaced IEEE with number systems that are tailored to the application to yield speed-ups of two to three orders of magnitude.
+The motivation to find improvements to IEEE floating-point had been brewing in the HPC community since the late 90's as most algorithms became memory bound and computational scientists were looking for alternatives that provided more granularity in precision and dynamic range. Even though the inefficiency of IEEE floating-point had been measured and agreed upon in the HPC community, it was the commercial demands of Deep Learning that provided the incentive to replaced IEEE-754 with alternatives, such as half-floats, and bfloats. These alternatives are tailored to the application and yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
 
 The Universal library is a ready-to-use header-only library that provides plug-in replacement for native types, and provides a low-friction environment to start exploring alternatives to IEEE floating-point in your own algorithms. 
 
@@ -34,7 +34,28 @@ int main() {
 }
 ```
 
-The library contains integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and several multi-precision integers and floats. There are example skeletons to get you started quickly if you desire to add your own number system, which is highly encouraged.
+The library contains integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and adaptive-precision integers and floats. There are example number system skeletons to get you started quickly if you desire to add your own, which is highly encouraged.
+
+## Communication channels
+
+* [GitHub Issue](https://github.com/stillwater-sc/universal/issues): bug reports,
+  feature requests, etc.
+* [Forum](https://groups.google.com/u/1/g/unum-computing): discussion of alternatives to IEEE-754 for computational science.
+* [Slack](https://fptalks.slack.com): online chats, discussions,
+  and collaboration with other users, researchers and developers.
+
+## Citation
+
+Please cite [our work](https://arxiv.org/abs/2012:11011) if you use _Universal_.
+
+```bib
+@article{Omtzigt2020,
+    author    = {E. Theodore L. Omtzigt and Peter Gottschling and Mark Seligman and William Zorn},
+    title     = {{Universal Numbers Library}: design and implementation of a high-performance reproducible number systems library},
+    journal   = {arXiv:2012.11011},
+    year      = {2020},
+}
+```
 
 ## Quick start
 
