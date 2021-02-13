@@ -15,7 +15,7 @@ The Universal library is a ready-to-use header-only library that provides plug-i
 The basic use pattern is as simple as:
 
 ```code
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 template<typename Real>
 Real MyKernel(const Real& a, const Real& b) {
@@ -25,7 +25,7 @@ Real MyKernel(const Real& a, const Real& b) {
 constexpr double pi = 3.14159265358979323846;
 
 int main() {
-    using Real = sw::unum::posit<32,2>;  
+    using Real = sw::universal::posit<32,2>;  
 
     Real a = sqrt(2);
     Real b = pi;
@@ -614,18 +614,21 @@ In contrast, the _posit_ number system is designed to be efficient, symmetric, a
 
 ## Goals of the library
 
-This library is a bit-level arithmetic reference implementation of the evolving unum III (posit and valid) standard.
-The goal is to provide a faithful posit arithmetic layer for any C/C++/Python environment.
+The _Universal_ library started as a bit-level arithmetic reference implementation of the evolving unum Type III (posit and valid) standard.
+However, the demands for supporting number systems, such as adaptive-precision integers to solve large factorials, adaptive-precision 
+floats to act as Oracles, or comparing linear and tapered floats provided the opportunity to create a complete platform for
+numerical analysis and computational mathematics. With this _Universal_ platform we enable a new direction for optimization of algorithms 
+to take advantage of mixed-precision to maximize performance and/or minimize energy demands. Energy efficiency is going to be the
+key differentiator for embedded intelligence applications.
 
-As a reference library, there is extensive test infrastructure to validate the arithmetic, and there is a host
-of utilities to become familiar with the internal workings of posits and valids.
+As a reference library, _Universal_ offers an xtensive test infrastructure to validate number system arithmetic operations, and there is 
+a host of utilities to inspect the internal encodings and operations of the different number systems.
 
-We want to provide a complete unum library, and we are looking for contributors to finish the Type I and II unum implementations.
+The design space for custom arithmetic is vast, and any contribution to expand the capability of the _Universal_ library is encouraged. 
 
 ## Contributing to universal
 
-We are happy to accept pull requests via GitHub. The only requirement that we would like PR's to adhere to
-is that all the test cases pass, so that we know the new code isn't breaking any functionality.
+We are happy to accept pull requests via GitHub. The only requirement is that the entire regression test suite passes.
 
 [![Stargazers over time](https://starchart.cc/stillwater-sc/universal.svg)](https://starchart.cc/stillwater-sc/universal)
 
@@ -658,17 +661,21 @@ The universal library contains a set of functional groups to deal with different
 
 Here is a complete list:
 
-- *universal/unum* - flexible configuration unum number system
-- *universal/integer* - arbitrary configuration integers
-- *universal/fixpnt* - arbitrary configuration fixed-point number systems
-- *universal/areal* - arbitrary configuration linear floating-point number systems
-- *universal/posit* - arbitrary configuration posit number systems
-- *universal/valid* - arbitrary configuration valid number systems
-- *universal/decimal* - multi-precision decimal
-- *universal/mpfloat* - multi-precision linear floating-point
-- *universal/rational* - multi-precision rational number system
-- *universal/float* - contains the implementation of the IEEE floating point augmentations for reproducible computation
-- *universal/lns* - logarithmic number system
+- *universal/number/integer* - arbitrary configuration fixed-size integer
+- *universal/number/fixpnt* - arbitrary configuration fixed-size fixed-point number system
+- *universal/number/areal* - arbitrary configuration fixed-size linear floating-point
+- *universal/number/posit* - arbitrary configuration fixed-size posit number system
+- *universal/number/valid* - arbitrary configuration fixed-size valid number system
+- *universal/number/quire* - arbitrary configuration fixed-size super accumulator number system (add/sub/abs/sqrt)
+- *universal/number/unum* - flexible configuration unum Type 1 number system
+- *universal/number/unum2* - flexible configuration unum Type 2 number system
+- *universal/number/lns* - logarithmic number system
+- *universal/number/float* - contains the implementation of the IEEE floating point augmentations for reproducible computation
+- *universal/number/decimal* - adaptive-precision decimal
+- *universal/number/rational* - adaptive-precision rational number system
+- *universal/number/adaptiveint* - adaptive-precision binary integer
+- *universal/number/adaptivefloat* - adaptive-precision linear floating-point
+- *universal/number/adaptiveposit* - adaptive-precision tapered floating-point
 
 And each of these functionality groups have an associated test suite located in ".../universal/tests/..."
 
