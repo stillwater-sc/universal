@@ -96,24 +96,42 @@ int64_t fastipow(int64_t base, uint8_t exp) {
 		if (exp & 1) result *= base;
 		exp >>= 1;
 		base *= base;
+#if defined(_MSC_VER)
+		[[fallthrough]]; // fallthrough is explicit
+#endif
 	case 5:
 		if (exp & 1) result *= base;
 		exp >>= 1;
 		base *= base;
+#if defined(_MSC_VER)
+		[[fallthrough]]; // fallthrough is explicit
+#endif
 	case 4:
 		if (exp & 1) result *= base;
 		exp >>= 1;
 		base *= base;
+#if defined(_MSC_VER)
+		[[fallthrough]]; // fallthrough is explicit
+#endif
 	case 3:
 		if (exp & 1) result *= base;
 		exp >>= 1;
 		base *= base;
+#if defined(_MSC_VER)
+		[[fallthrough]]; // fallthrough is explicit
+#endif
 	case 2:
 		if (exp & 1) result *= base;
 		exp >>= 1;
 		base *= base;
+#if defined(_MSC_VER)
+		[[fallthrough]]; // fallthrough is explicit
+#endif
 	case 1:
 		if (exp & 1) result *= base;
+#if defined(_MSC_VER)
+		[[fallthrough]]; // fallthrough is explicit
+#endif
 	default:
 		return result;
 	}

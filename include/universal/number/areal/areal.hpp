@@ -413,7 +413,7 @@ public:
 			if (exponent > -127) {
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 23);
-				mask = 0x00FF'FFFF >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
 #if TRACE_CONVERSION
 				std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
 #endif
@@ -432,7 +432,7 @@ public:
 			}
 			else {
 				// the source real is a subnormal number, and the target representation is a subnormal representation
-				mask = 0x00FF'FFFF >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
 #if TRACE_CONVERSION
 				std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
 #endif
@@ -937,6 +937,16 @@ public:
 			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		}
 	}
+	inline constexpr bool isone() const {
+		// unbiased exponent = scale = 0, fraction = 0
+		int s = scale();
+		if (scale() == 0) {
+			blockbinary<fbits, bt> f;
+			fraction(f);
+			return f.iszero();
+		}
+		return false;
+	}
 	/// <summary>
 	/// check if value is infinite, -inf, or +inf. 
 	/// +inf = 0-1111-11111-0: sign = 0, uncertainty = 0, es/fraction bits = 1
@@ -1175,13 +1185,13 @@ protected:
 		   // this same logic will work for the case where
 		   // we only have a guard bit and no round and sticky bits
 		   // because the mask logic will make round and sticky both 0
-			constexpr uint32_t shift = srcbits - fhbits - 1;
+			constexpr uint32_t shift = srcbits - fhbits - 1ull;
 			StorageType mask = (StorageType(1ull) << shift);
 			bool guard = (mask & raw);
 			mask >>= 1;
 			bool round = (mask & raw);
-			if constexpr (shift > 1) { // protect against a negative shift
-				StorageType allones(~0);
+			if constexpr (shift > 1u) { // protect against a negative shift
+				StorageType allones(StorageType(~0));
 				mask = StorageType(allones << (shift - 2));
 				mask = ~mask;
 			}
@@ -1191,7 +1201,7 @@ protected:
 			bool sticky = (mask & raw);
 
 			raw >>= (shift + 1);  // shift out the bits we are rounding away
-			bool lsb = (raw & 0x1);
+			bool lsb = (raw & 0x1u);
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
 			//       0     1       0     0       down  round to even
@@ -1204,7 +1214,7 @@ protected:
 				if (round || sticky) ++raw;
 				if (raw == (1ull << nbits)) { // overflow
 					++exponent;
-					raw >>= 1;
+					raw >>= 1u;
 				}
 			}
 		}
