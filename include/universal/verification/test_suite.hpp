@@ -24,11 +24,30 @@ int ExhaustiveNumberSystemTest(const std::string& tag, bool bReportIndividualTes
 
 	// special cases
 	v = 0;
-	if (!v.iszero()) ++nrOfFailedTestCases;
+	if (!v.iszero()) {
+		cout << "FAIL: test of zero: " << to_binary(v, true) << " : " << v << '\n';
+		++nrOfFailedTestCases;
+	}
 	v = NAN;
-	if (!v.isnan()) ++nrOfFailedTestCases;
+	if (!v.isnan()) {
+		cout << "FAIL: test of float assign to NaN: " << to_binary(v, true) << " : " << v << '\n';
+		++nrOfFailedTestCases;
+	}
 	v = INFINITY;
-	if (!v.isinf()) ++nrOfFailedTestCases;
+	if (!v.isinf()) {
+		cout << "FAIL: test of float assign to INF: " << to_binary(v, true) << " : " << v << '\n';
+		++nrOfFailedTestCases;
+	}
+	v = double(NAN);
+	if (!v.isnan()) {
+		cout << "FAIL: test of double assign to NaN: " << to_binary(v, true) << " : " << v << '\n';
+		++nrOfFailedTestCases;
+	}
+	v = double(INFINITY);
+	if (!v.isinf()) {
+		cout << "FAIL: test of double assign to INF: " << to_binary(v, true) << " : " << v << '\n';
+		++nrOfFailedTestCases;
+	}
 
 	// logic tests
 	nrOfFailedTestCases += ReportTestResult(VerifyLogicEqual             <TestType>(), tag, "    ==         ");

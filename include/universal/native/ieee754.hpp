@@ -64,7 +64,7 @@ union double_decoder {
   struct {
     uint64_t fraction : 52;
     uint64_t exponent : 11;
-    uint64_t  sign    :  1;
+    uint64_t sign     :  1;
   } parts;
 };
 
@@ -83,7 +83,7 @@ inline std::string to_hex(const float& number) {
 }
 
 // generate a binary string for a native single precision IEEE floating point
-inline std::string to_binary(const float& number) {
+inline std::string to_binary(const float& number, bool bNibbleMarker = false) {
 	std::stringstream ss;
 	float_decoder decoder;
 	decoder.f = number;
@@ -96,6 +96,7 @@ inline std::string to_binary(const float& number) {
 		uint8_t mask = 0x80;
 		for (int i = 7; i >= 0; --i) {
 			ss << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (bNibbleMarker && i != 0 && (i % 4) == 0) ss << '\'';
 			mask >>= 1;
 		}
 	}
@@ -106,6 +107,7 @@ inline std::string to_binary(const float& number) {
 	uint32_t mask = (uint32_t(1) << 22);
 	for (int i = 22; i >= 0; --i) {
 		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (bNibbleMarker && i != 0 && (i % 4) == 0) ss << '\'';
 		mask >>= 1;
 	}
 
@@ -277,7 +279,7 @@ inline std::string to_binary(const double& number, bool bNibbleMarker = false) {
 		uint64_t mask = 0x400;
 		for (int i = 10; i >= 0; --i) {
 			ss << ((decoder.parts.exponent & mask) ? '1' : '0');
-			if (bNibbleMarker && (i % 4) == 0) ss << '\'';
+			if (bNibbleMarker && i != 0 && (i % 4) == 0) ss << '\'';
 			mask >>= 1;
 		}
 	}
@@ -288,7 +290,7 @@ inline std::string to_binary(const double& number, bool bNibbleMarker = false) {
 	uint64_t mask = (uint64_t(1) << 51);
 	for (int i = 51; i >= 0; --i) {
 		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
-		if (bNibbleMarker && (i % 4) == 0) ss << '\'';
+		if (bNibbleMarker && i != 0 && (i % 4) == 0) ss << '\'';
 		mask >>= 1;
 	}
 

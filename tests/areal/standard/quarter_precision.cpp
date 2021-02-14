@@ -32,7 +32,6 @@ try {
 	constexpr size_t nbits = 8;
 	constexpr size_t es = 2;
 
-	
 	int nrOfFailedTestCases = 0;
 	std::string tag = " areal<8,2>";
 
@@ -40,10 +39,12 @@ try {
 
 #if MANUAL_TESTING
 
-	using TestType = areal<nbits, es, uint8_t>;
-
 	bool bReportIndividualTestCases = true;
-	nrOfFailedTestCases += ExhaustiveNumberSystemTest<TestType>(tag, bReportIndividualTestCases);
+	{
+		using TestType = areal<nbits, es, uint8_t>;
+		nrOfFailedTestCases += ExhaustiveNumberSystemTest<TestType>(tag, bReportIndividualTestCases);
+	}
+
 
 #else // !MANUAL_TESTING
 
@@ -52,6 +53,9 @@ try {
 
 #endif // MANUAL_TESTING
 
+	if (nrOfFailedTestCases) {
+		cout << "FAIL: " << nrOfFailedTestCases << " failures\n";
+	}
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
