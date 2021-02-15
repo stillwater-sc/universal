@@ -77,18 +77,21 @@ option(BUILD_FUNCTIONS                   "Set to ON to build special functions p
 option(BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
 option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"               OFF)
 option(BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       OFF)
+
 # number systems and their verification suites
 option(BUILD_STORAGE_CLASSES             "Set to ON to build storage class tests"              OFF)
 option(BUILD_NATIVE_TYPES                "Set to ON to build native type tests"                OFF)
 option(BUILD_INTEGERS                    "Set to ON to build integer tests"                    OFF)
 option(BUILD_DECIMALS                    "Set to ON to build decimal tests"                    OFF)
 option(BUILD_FIXPNTS                     "Set to ON to build fixed-point tests"                OFF)
-option(BUILD_LNS                         "Set to ON to build LNS tests"                        OFF)
-option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 tests"                OFF)
-option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 tests"                OFF)
-option(BUILD_POSITS                      "Set to ON to build UNUM Type 3 posit tests"          OFF)
-option(BUILD_VALIDS                      "Set to ON to build UNUM Type 3 valid tests"          OFF)
+option(BUILD_BFLOATS                     "Set to ON to build bfloat tests"                     OFF)
+option(BUILD_AREALS                      "Set to ON to build areal tests"                      OFF)
+option(BUILD_UNUM_TYPE_1                 "Set to ON to build unum Type 1 tests"                OFF)
+option(BUILD_UNUM_TYPE_2                 "Set to ON to build unum Type 2 tests"                OFF)
+option(BUILD_POSITS                      "Set to ON to build unum Type 3 posit tests"          OFF)
+option(BUILD_VALIDS                      "Set to ON to build unum Type 3 valid tests"          OFF)
 option(BUILD_REALS                       "Set to ON to build real tests"                       OFF)
+option(BUILD_LNS                         "Set to ON to build LNS tests"                        OFF)
 # Basic Linear Algebra 
 option(BUILD_BLAS                        "Set to ON to build the BLAS tests"                   OFF)
 # conversion test suites
@@ -449,12 +452,13 @@ if(BUILD_CI_CHECK)
 	set(BUILD_INTEGERS ON)
 	set(BUILD_DECIMALS ON)
 	set(BUILD_FIXPNTS ON)
-	set(BUILD_LNS ON)
+	set(BUILD_BFLOATS ON)
+	set(BUILD_AREALS ON)
 	set(BUILD_UNUM_TYPE_1 ON)
 	set(BUILD_UNUM_TYPE_2 ON)
 	set(BUILD_POSITS ON)
 	set(BUILD_VALIDS ON)
-	set(BUILD_AREAL ON)
+	set(BUILD_LNS ON)
 	# build the BLAS test/verification suites
 	set(BUILD_BLAS ON)
 	set(BUILD_VMATH ON)
@@ -498,7 +502,6 @@ endif(BUILD_FIXPNTS)
 
 # Arbitrary reals tests
 if(BUILD_REALS)
-add_subdirectory("tests/areal")
 add_subdirectory("tests/adaptivefloat")
 add_subdirectory("tests/value")
 endif(BUILD_REALS)
@@ -524,6 +527,16 @@ endif(BUILD_POSITS)
 if(BUILD_VALIDS)
 add_subdirectory("tests/valid")
 endif(BUILD_VALIDS)
+
+# reals with an uncertainty bit
+if(BUILD_AREALS)
+add_subdirectory("tests/areal")
+endif(BUILD_AREALS)
+
+# bfloats
+if(BUILD_BFLOATS)
+add_subdirectory("tests/bfloat")
+endif(BUILD_BFLOATS)
 
 # Basic Linear Algebra library
 if(BUILD_BLAS)
