@@ -734,7 +734,7 @@ void TestMultiply(int& nrOfFailedTestCases) {
 	std::cout << std::setw(30) << typeid(Real).name() << '\n';
 }
 
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -765,7 +765,7 @@ try {
 		std::cout << std::setw(10) << pattern << " " << to_binary(a) << " " << a << std::endl;
 		pattern <<= 1;
 	}
-//	GenerateArealTable<8, 2>(std::cout, true);
+	GenerateArealTable<8, 2>(std::cout, true);
 
 	int exponents[] = {
 		0, 1, 0, -2, -6, -14, -30, -62, -126, -254, -510, -1022

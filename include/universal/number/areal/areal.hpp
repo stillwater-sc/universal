@@ -21,7 +21,6 @@
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
 /* Intel ICC/ICPC. ------------------------------------------ */
 
-
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
 #define BIT_CAST_SUPPORT 0
@@ -340,31 +339,33 @@ public:
 		clear();
 #if BIT_CAST_SUPPORT
 		// normal number
-		uint32_t bc = std::bit_cast<uint32_t>(rhs);
-		bool s = (0x8000'0000 & bc);
-		int exponent = int((0x7F80'0000 & bc) >> 23) - 127;
-		uint32_t raw = (0x007F'FFFF & bc);
+		uint32_t bc      = std::bit_cast<uint32_t>(rhs);
+		bool s           = (0x8000'0000u & bc);
+		uint32_t raw_exp = uint32_t((0x7F80'0000u & bc) >> 23u);
+		uint32_t raw     = (0x007F'FFFFu & bc);
 #else // !BIT_CAST_SUPPORT
 		float_decoder decoder;
-		decoder.f = rhs;
-		bool s = decoder.parts.sign ? true : false;
-		uint32_t raw = decoder.parts.fraction; // don't bring in a hidden bit
-		int exponent = static_cast<int>(decoder.parts.exponent) - 127;  // apply bias
+		decoder.f        = rhs;
+		bool s           = decoder.parts.sign ? true : false;
+		uint32_t raw_exp = decoder.parts.exponent;
+		uint32_t raw     = decoder.parts.fraction;
 #endif // !BIT_CAST_SUPPORT
 
 		// special case handling
-		if (exponent == 0xFF) { // special cases
-			if (!s && raw == 1) {
+		if (raw_exp == 0xFFu) { // special cases
+			if (raw == 1ul) {
+				// 1.11111111.00000000000000000000001 signalling nan
 				// 0.11111111.00000000000000000000001 signalling nan
 				setnan(NAN_TYPE_SIGNALLING);
 				return *this;
 			}
-			if (!s && raw == 0x0040'0000ul) {
+			if (raw == 0x0040'0000ul) {
+				// 1.11111111.10000000000000000000000 quiet nan
 				// 0.11111111.10000000000000000000000 quiet nan
 				setnan(NAN_TYPE_QUIET);
 				return *this;
 			}
-			if (raw == 0) {
+			if (raw == 0ul) {
 				// 1.11111111.00000000000000000000000 -inf
 				// 0.11111111.00000000000000000000000 +inf
 				setinf(s);
@@ -375,7 +376,9 @@ public:
 			set(nbits - 1ull, s);
 			return *this;
 		}
+		
 		// this is not a special number
+		int exponent = int(raw_exp) - 127;  // unbias the exponent
 
 #if TRACE_CONVERSION
 		std::cout << '\n';
@@ -413,7 +416,7 @@ public:
 			if (exponent > -127) {
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 23);
-				mask = 0x00FF'FFFF >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
 #if TRACE_CONVERSION
 				std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
 #endif
@@ -432,7 +435,7 @@ public:
 			}
 			else {
 				// the source real is a subnormal number, and the target representation is a subnormal representation
-				mask = 0x00FF'FFFF >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
 #if TRACE_CONVERSION
 				std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
 #endif
@@ -483,8 +486,8 @@ public:
 		bits |= biasedExponent;
 		bits <<= nbits - 1ull - es;
 		bits |= raw;
-		bits &= 0xFFFF'FFFE;
-		bits |= (ubit ? 0x1 : 0x0);
+		bits &= 0xFFFF'FFFEu;
+		bits |= (ubit ? 0x1u : 0x0u);
 		if constexpr (1 == nrBlocks) {
 			_block[MSU] = bt(bits);
 		}
@@ -497,29 +500,31 @@ public:
 		clear();
 #if BIT_CAST_SUPPORT
 		// normal number
-		uint64_t bc = std::bit_cast<uint64_t>(rhs);
-		bool s = (0x8000'0000'0000'0000 & bc);
-		int exponent = int((0x7FF0'0000'0000'0000ull & bc) >> 52) - 1023;
-		uint64_t raw = (0x000F'FFFF'FFFF'FFFFull & bc);
+		uint64_t bc      = std::bit_cast<uint64_t>(rhs);
+		bool s           = (0x8000'0000'0000'0000ull & bc);
+		uint32_t raw_exp = static_cast<uint32_t>((0x7FF0'0000'0000'0000ull & bc) >> 52);
+		uint64_t raw     = (0x000F'FFFF'FFFF'FFFFull & bc);
 #else // !BIT_CAST_SUPPORT
 		double_decoder decoder;
-		decoder.d = rhs;
-		bool s = decoder.parts.sign ? true : false;
-		int exponent = static_cast<int>(decoder.parts.exponent) - 1023;  // apply bias
-		uint64_t raw = decoder.parts.fraction; // no hidden bit
+		decoder.d        = rhs;
+		bool s           = decoder.parts.sign ? true : false;
+		uint32_t raw_exp = static_cast<uint32_t>(decoder.parts.exponent);
+		uint64_t raw     = decoder.parts.fraction;
 #endif // !BIT_CAST_SUPPORT
-		if (exponent == 0x7FF) { // special cases
-			if (!s && raw == 1) {
+		if (raw_exp == 0x7FFul) { // special cases
+			if (raw == 1ull) {
+				// 1.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
 				// 0.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
 				setnan(NAN_TYPE_SIGNALLING);
 				return *this;
 			}
-			if (!s && raw == 0x0008'FFFF'FFFF'FFFFull) {
+			if (raw == 0x0008'0000'0000'0000ull) {
+				// 1.11111111111.1000000000000000000000000000000000000000000000000000 quiet nan
 				// 0.11111111111.1000000000000000000000000000000000000000000000000000 quiet nan
 				setnan(NAN_TYPE_QUIET);
 				return *this;
 			}
-			if (raw == 0) {
+			if (raw == 0ull) {
 				// 1.11111111111.0000000000000000000000000000000000000000000000000000 -inf
 				// 0.11111111111.0000000000000000000000000000000000000000000000000000 +inf
 				setinf(s);
@@ -531,7 +536,7 @@ public:
 			return *this;
 		}
 		// this is not a special number
-
+		int exponent = int(raw_exp) - 1023;  // unbias the exponent
 #if TRACE_CONVERSION
 		std::cout << '\n';
 		std::cout << "value           : " << rhs << '\n';
@@ -937,6 +942,16 @@ public:
 			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		}
 	}
+	inline constexpr bool isone() const {
+		// unbiased exponent = scale = 0, fraction = 0
+		int s = scale();
+		if (scale() == 0) {
+			blockbinary<fbits, bt> f;
+			fraction(f);
+			return f.iszero();
+		}
+		return false;
+	}
 	/// <summary>
 	/// check if value is infinite, -inf, or +inf. 
 	/// +inf = 0-1111-11111-0: sign = 0, uncertainty = 0, es/fraction bits = 1
@@ -954,17 +969,16 @@ public:
 		else if constexpr (1 == nrBlocks) {
 			isNegInf = (_block[MSU] & MSU_MASK) == (MSU_MASK ^ LSB_BIT_MASK);
 			isPosInf = (_block[MSU] & MSU_MASK) == ((MSU_MASK ^ SIGN_BIT_MASK) ^ LSB_BIT_MASK);
-			return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
-				(InfType == INF_TYPE_NEGATIVE ? isNegInf :
-					(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 		}
 		else if constexpr (2 == nrBlocks) {
 			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
-			// fall through to the MSU processing
+			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
+			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
 		else if constexpr (3 == nrBlocks) {
 			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) && (_block[1] == BLOCK_MASK);
-			// fall through to the MSU processing 
+			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
+			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
 		else {
 			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
@@ -974,10 +988,10 @@ public:
 					break;
 				}
 			}
-			// fall through to the MSU processing 
+			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
+			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
-		isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
-		isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
+
 		return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
 			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
@@ -1175,13 +1189,13 @@ protected:
 		   // this same logic will work for the case where
 		   // we only have a guard bit and no round and sticky bits
 		   // because the mask logic will make round and sticky both 0
-			constexpr uint32_t shift = srcbits - fhbits - 1;
+			constexpr uint32_t shift = srcbits - fhbits - 1ull;
 			StorageType mask = (StorageType(1ull) << shift);
 			bool guard = (mask & raw);
 			mask >>= 1;
 			bool round = (mask & raw);
-			if constexpr (shift > 1) { // protect against a negative shift
-				StorageType allones(~0);
+			if constexpr (shift > 1u) { // protect against a negative shift
+				StorageType allones(StorageType(~0));
 				mask = StorageType(allones << (shift - 2));
 				mask = ~mask;
 			}
@@ -1191,7 +1205,7 @@ protected:
 			bool sticky = (mask & raw);
 
 			raw >>= (shift + 1);  // shift out the bits we are rounding away
-			bool lsb = (raw & 0x1);
+			bool lsb = (raw & 0x1u);
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
 			//       0     1       0     0       down  round to even
@@ -1204,7 +1218,7 @@ protected:
 				if (round || sticky) ++raw;
 				if (raw == (1ull << nbits)) { // overflow
 					++exponent;
-					raw >>= 1;
+					raw >>= 1u;
 				}
 			}
 		}
