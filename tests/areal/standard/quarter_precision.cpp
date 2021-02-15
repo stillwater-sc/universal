@@ -14,7 +14,7 @@
 #include <universal/number/areal/areal.hpp>
 #include <universal/verification/test_suite.hpp>
 #include <universal/verification/areal_test_suite.hpp>
-
+#include <universal/number/areal/table.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -54,7 +54,10 @@ try {
 #endif // MANUAL_TESTING
 
 	if (nrOfFailedTestCases) {
-		cout << "FAIL: " << nrOfFailedTestCases << " failures\n";
+		cout << tag << " tests FAIL: " << nrOfFailedTestCases << " failures\n";
+	}
+	else {
+		cout << tag << " tests PASS\n";
 	}
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
