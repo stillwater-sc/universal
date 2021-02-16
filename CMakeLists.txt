@@ -272,7 +272,8 @@ elseif(MSVC)
 	# in the Visual Studio Installer. They're found in the Individual Components tab under 
 	# Compilers, build tools, and runtimes, and have "Libs for Spectre" in the name.
 	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Qspectre")
-	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Qspectre")
+	# /Qspectre is very noise, so do not include it for debug builds
+	# set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Qspectre")
 
 endif()
 

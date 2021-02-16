@@ -149,14 +149,14 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 
 	// get the exponent bits
 	// start of exponent is nbits-1 - (sign_bit + regime_bits)
-	int64_t msb = static_cast<int64_t>(nbits - 1ul - (1ul + nrRegimeBits));
+	int msb = static_cast<int>(nbits - 1ul - (1ul + nrRegimeBits));
 	size_t nrExponentBits = 0;
 	if (es > 0) {
 		bitblock<es> _exp;
 		if (msb >= 0 && es > 0) {
-			nrExponentBits = (msb >= int64_t(es - 1ul)) ? es : static_cast<size_t>(msb + 1ll);
+			nrExponentBits = (msb >= static_cast<int>(es - 1ull)) ? es : static_cast<size_t>(msb + 1ll);
 			for (size_t i = 0; i < nrExponentBits; ++i) {
-				_exp[size_t(es - 1ull - i)] = tmp[msb - i];
+				_exp[size_t(es - 1ull - i)] = tmp[static_cast<size_t>(msb) - i];
 			}
 		}
 		_exponent.set(_exp, nrExponentBits);
@@ -170,10 +170,10 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 	// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
 	bitblock<fbits> _frac;
 	msb = msb - int(nrExponentBits);
-	size_t nrFractionBits = (msb < 0 ? 0ull : static_cast<size_t>(msb + 1ll));
+	size_t nrFractionBits = (msb < 0 ? 0ull : static_cast<size_t>(msb + 1));
 	if (msb >= 0) {
-		for (int64_t i = msb; i >= 0; --i) {
-			_frac[fbits - 1ull - (msb - i)] = tmp[i];
+		for (int i = msb; i >= 0; --i) {
+			_frac[fbits - 1ull - static_cast<size_t>(msb - i)] = tmp[static_cast<size_t>(i)];
 		}
 	}
 	_fraction.set(_frac, nrFractionBits);
@@ -911,8 +911,8 @@ public:
 			int new_scale = -scale(*this);
 			int msb = findMostSignificantBit(reciprocal);
 			if (msb > 0) {
-				int shift = reciprocal_size - msb;
-				reciprocal <<= shift;
+				int shift = static_cast<int>(reciprocal_size - static_cast<size_t>(msb));
+				reciprocal <<= static_cast<size_t>(shift);
 				new_scale -= (shift-1);
 				if (_trace_reciprocate) std::cout << "result " << reciprocal << std::endl;
 			}

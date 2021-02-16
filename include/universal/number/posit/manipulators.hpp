@@ -36,7 +36,7 @@ std::string dynamic_range(const posit<nbits, es>& p) {
 	ss << " posit<" << std::setw(3) << nbits << "," << es << "> ";
 	ss << "useed scale  " << std::setw(4) << useed_scale<nbits, es>() << "     ";
 	ss << "minpos scale " << std::setw(10) << minpos_scale<nbits, es>() << "     ";
-	ss << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>();
+	ss << "maxpos scale " << std::setw(10) << maxpos_scale<nbits, es>() << "  :  " << p;
 	return ss.str();
 }
 
