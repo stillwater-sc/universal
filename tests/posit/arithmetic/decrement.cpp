@@ -30,7 +30,7 @@ try {
 		std::cout << s.get() << " " << s << std::endl;
 	});
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<nbits, es>("Decrement failed", bReportIndividualTestCases), positConfig, "operator++");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<nbits, es>(bReportIndividualTestCases), positConfig, "operator++");
 
 #else
 	// Note: increment/decrement depend on the 2's complement ordering of the posit encoding
@@ -39,66 +39,66 @@ try {
 
 	// DECREMENT tests
 	cout << endl << "DECREMENT tests" << endl;
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<3, 0>("Decrement failed", bReportIndividualTestCases), "posit<3,0>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<3, 0>(bReportIndividualTestCases), "posit<3,0>", "operator--");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<4, 0>("Decrement failed", bReportIndividualTestCases), "posit<4,0>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<4, 1>("Decrement failed", bReportIndividualTestCases), "posit<4,1>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<4, 0>(bReportIndividualTestCases), "posit<4,0>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<4, 1>(bReportIndividualTestCases), "posit<4,1>", "operator--");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<5, 0>("Decrement failed", bReportIndividualTestCases), "posit<5,0>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<5, 1>("Decrement failed", bReportIndividualTestCases), "posit<5,1>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<5, 2>("Decrement failed", bReportIndividualTestCases), "posit<5,2>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<5, 0>(bReportIndividualTestCases), "posit<5,0>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<5, 1>(bReportIndividualTestCases), "posit<5,1>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<5, 2>(bReportIndividualTestCases), "posit<5,2>", "operator--");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<6, 0>("Decrement failed", bReportIndividualTestCases), "posit<6,0>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<6, 1>("Decrement failed", bReportIndividualTestCases), "posit<6,1>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<6, 2>("Decrement failed", bReportIndividualTestCases), "posit<6,2>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<6, 3>("Decrement failed", bReportIndividualTestCases), "posit<6,3>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<6, 0>(bReportIndividualTestCases), "posit<6,0>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<6, 1>(bReportIndividualTestCases), "posit<6,1>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<6, 2>(bReportIndividualTestCases), "posit<6,2>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<6, 3>(bReportIndividualTestCases), "posit<6,3>", "operator--");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<7, 0>("Decrement failed", bReportIndividualTestCases), "posit<7,0>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<7, 1>("Decrement failed", bReportIndividualTestCases), "posit<7,1>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<7, 2>("Decrement failed", bReportIndividualTestCases), "posit<7,2>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<7, 3>("Decrement failed", bReportIndividualTestCases), "posit<7,3>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<7, 4>("Decrement failed", bReportIndividualTestCases), "posit<7,4>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<7, 0>(bReportIndividualTestCases), "posit<7,0>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<7, 1>(bReportIndividualTestCases), "posit<7,1>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<7, 2>(bReportIndividualTestCases), "posit<7,2>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<7, 3>(bReportIndividualTestCases), "posit<7,3>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<7, 4>(bReportIndividualTestCases), "posit<7,4>", "operator--");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<8, 0>("Decrement failed", bReportIndividualTestCases), "posit<8,0>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<8, 1>("Decrement failed", bReportIndividualTestCases), "posit<8,1>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<8, 2>("Decrement failed", bReportIndividualTestCases), "posit<8,2>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<8, 3>("Decrement failed", bReportIndividualTestCases), "posit<8,3>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<8, 4>("Decrement failed", bReportIndividualTestCases), "posit<8,4>", "operator--");
-	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<8, 5>("Decrement failed", bReportIndividualTestCases), "posit<8,5>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<8, 0>(bReportIndividualTestCases), "posit<8,0>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<8, 1>(bReportIndividualTestCases), "posit<8,1>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<8, 2>(bReportIndividualTestCases), "posit<8,2>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<8, 3>(bReportIndividualTestCases), "posit<8,3>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<8, 4>(bReportIndividualTestCases), "posit<8,4>", "operator--");
+	nrOfFailedTestCases += ReportTestResult(VerifyDecrement<8, 5>(bReportIndividualTestCases), "posit<8,5>", "operator--");
 
 #endif // MANUAL_TESTING
 
 	// long running
 	if (argc == 2 && std::string(argv[1]) == std::string("-l")) {
 		// AD/DA adapted data path configurations
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<10, 0>("Decrement failed", bReportIndividualTestCases), "posit<10,0>", "operator--");
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<10, 1>("Decrement failed", bReportIndividualTestCases), "posit<10,1>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<10, 0>(bReportIndividualTestCases), "posit<10,0>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<10, 1>(bReportIndividualTestCases), "posit<10,1>", "operator--");
 
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<12, 0>("Decrement failed", bReportIndividualTestCases), "posit<12,0>", "operator--");
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<12, 1>("Decrement failed", bReportIndividualTestCases), "posit<12,1>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<12, 0>(bReportIndividualTestCases), "posit<12,0>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<12, 1>(bReportIndividualTestCases), "posit<12,1>", "operator--");
 
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<14, 0>("Decrement failed", bReportIndividualTestCases), "posit<14,0>", "operator--");
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<14, 1>("Decrement failed", bReportIndividualTestCases), "posit<14,1>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<14, 0>(bReportIndividualTestCases), "posit<14,0>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<14, 1>(bReportIndividualTestCases), "posit<14,1>", "operator--");
 
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<15, 0>("Decrement failed", bReportIndividualTestCases), "posit<15,0>", "operator--");
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<15, 1>("Decrement failed", bReportIndividualTestCases), "posit<15,1>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<15, 0>(bReportIndividualTestCases), "posit<15,0>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<15, 1>(bReportIndividualTestCases), "posit<15,1>", "operator--");
 
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<16, 0>("Decrement failed", bReportIndividualTestCases), "posit<16,0>", "operator--");
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<16, 1>("Decrement failed", bReportIndividualTestCases), "posit<16,1>", "operator--");
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<16, 2>("Decrement failed", bReportIndividualTestCases), "posit<16,2>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<16, 0>(bReportIndividualTestCases), "posit<16,0>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<16, 1>(bReportIndividualTestCases), "posit<16,1>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<16, 2>(bReportIndividualTestCases), "posit<16,2>", "operator--");
 
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<18, 0>("Decrement failed", bReportIndividualTestCases), "posit<18,0>", "operator--");
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<18, 1>("Decrement failed", bReportIndividualTestCases), "posit<18,1>", "operator--");
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<18, 2>("Decrement failed", bReportIndividualTestCases), "posit<18,2>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<18, 0>(bReportIndividualTestCases), "posit<18,0>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<18, 1>(bReportIndividualTestCases), "posit<18,1>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<18, 2>(bReportIndividualTestCases), "posit<18,2>", "operator--");
 
-		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<20, 1>("Decrement failed", bReportIndividualTestCases), "posit<20,1>", "operator--");
+		nrOfFailedTestCases += ReportTestResult(VerifyDecrement<20, 1>(bReportIndividualTestCases), "posit<20,1>", "operator--");
 
 		// legit float replacement
-		//nrOfFailedTestCases += ReportTestResult(VerifyDecrement<24, 1>("Decrement failed", bReportIndividualTestCases), "posit<24,1>", "operator--");
-		//nrOfFailedTestCases += ReportTestResult(VerifyDecrement<28, 1>("Decrement failed", bReportIndividualTestCases), "posit<28,2>", "operator--");
+		//nrOfFailedTestCases += ReportTestResult(VerifyDecrement<24, 1>(bReportIndividualTestCases), "posit<24,1>", "operator--");
+		//nrOfFailedTestCases += ReportTestResult(VerifyDecrement<28, 1>(bReportIndividualTestCases), "posit<28,2>", "operator--");
 
 		// legit double replacement
-		//nrOfFailedTestCases += ReportTestResult(VerifyDecrement<32, 2>("Decrement failed", bReportIndividualTestCases), "posit<32,2>", "operator--");
+		//nrOfFailedTestCases += ReportTestResult(VerifyDecrement<32, 2>(bReportIndividualTestCases), "posit<32,2>", "operator--");
 	}
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

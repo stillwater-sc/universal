@@ -16,10 +16,10 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<3, 0>("Postfix failed", bReportIndividualTestCases), "posit<3,0>", "posit++");
+	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<3, 0>(bReportIndividualTestCases), "posit<3,0>", "posit++");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<4, 0>("Postfix failed", bReportIndividualTestCases), "posit<4,0>", "posit++");
-	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<4, 1>("Postfix failed", bReportIndividualTestCases), "posit<4,1>", "posit++");
+	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<4, 0>(bReportIndividualTestCases), "posit<4,0>", "posit++");
+	nrOfFailedTestCases += ReportTestResult(VerifyPostfix<4, 1>(bReportIndividualTestCases), "posit<4,1>", "posit++");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

@@ -208,58 +208,58 @@ try {
 
 #else
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<2, 0>(bReportIndividualTestCases), "posit<2,0>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 2>(tag, bReportIndividualTestCases), "posit<3,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 3>(tag, bReportIndividualTestCases), "posit<3,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 0>(bReportIndividualTestCases), "posit<3,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 1>(bReportIndividualTestCases), "posit<3,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 2>(bReportIndividualTestCases), "posit<3,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<3, 3>(bReportIndividualTestCases), "posit<3,3>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2>(tag, bReportIndividualTestCases), "posit<4,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0>(bReportIndividualTestCases), "posit<4,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1>(bReportIndividualTestCases), "posit<4,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2>(bReportIndividualTestCases), "posit<4,2>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 3>(tag, bReportIndividualTestCases), "posit<5,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 0>(bReportIndividualTestCases), "posit<5,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 1>(bReportIndividualTestCases), "posit<5,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 2>(bReportIndividualTestCases), "posit<5,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<5, 3>(bReportIndividualTestCases), "posit<5,3>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 4>(tag, bReportIndividualTestCases), "posit<6,4>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 0>(bReportIndividualTestCases), "posit<6,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 1>(bReportIndividualTestCases), "posit<6,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 2>(bReportIndividualTestCases), "posit<6,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 3>(bReportIndividualTestCases), "posit<6,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<6, 4>(bReportIndividualTestCases), "posit<6,4>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 0>(bReportIndividualTestCases), "posit<7,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 1>(bReportIndividualTestCases), "posit<7,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 2>(bReportIndividualTestCases), "posit<7,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 3>(bReportIndividualTestCases), "posit<7,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<7, 4>(bReportIndividualTestCases), "posit<7,4>", "division");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0>(bReportIndividualTestCases), "posit<8,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1>(bReportIndividualTestCases), "posit<8,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2>(bReportIndividualTestCases), "posit<8,2>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 3>(bReportIndividualTestCases), "posit<8,3>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4>(bReportIndividualTestCases), "posit<8,4>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 5>(bReportIndividualTestCases), "posit<8,5>", "division");
 
 #if STRESS_TESTING
-        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<16,1>", "division");
-        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<24, 1>(tag, bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<24,1>", "division");
-        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<32, 1>(tag, bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<32,1>", "division");
-        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<32, 2>(tag, bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<32,2>", "division");
-        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<48, 2>(tag, bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<48,2>", "division");
+        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<16, 1>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<16,1>", "division");
+        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<24, 1>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<24,1>", "division");
+        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<32, 1>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<32,1>", "division");
+        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<32, 2>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<32,2>", "division");
+        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<48, 2>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<48,2>", "division");
 
         // nbits=64 requires long double compiler support
-        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(tag, bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<64,2>", "division");
-        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 3>(tag, bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<64,3>", "division");
+        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<64,2>", "division");
+        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 3>(bReportIndividualTestCases, OPCODE_DIV, 1000), "posit<64,3>", "division");
         // posit<64,4> is hitting subnormal numbers
-        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 4>(tag, bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<64,4>", "multiplication");
+        nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 4>(bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<64,4>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<10, 0>(bReportIndividualTestCases), "posit<10,0>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<12, 1>(bReportIndividualTestCases), "posit<12,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<14, 1>(bReportIndividualTestCases), "posit<14,1>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<16, 1>(bReportIndividualTestCases), "posit<16,1>", "division");
 
 #endif // STRESS_TESTING
 
