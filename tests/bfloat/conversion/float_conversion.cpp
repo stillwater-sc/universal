@@ -54,7 +54,7 @@ try {
 	// and taking a -diff to obtain the interval value of vprev, 
 	// and taking a +diff to obtain the interval value of v
 
-//	GenerateArealTable<10, 1>(cout, true); 
+//	GenerateBfloatTable<10, 1>(cout, true); 
 
 	{
 		bfloat<11, 8> a;
@@ -64,8 +64,8 @@ try {
 		std::cout << to_binary(a) << " : " << a << " : " << f << endl;
 	}
 
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<11, 8, uint8_t>, float >(tag, true), tag, "bfloat<11,8,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<11, 8, uint16_t>, float >(tag, false), tag, "bfloat<11,8,uint16_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<11, 8, uint8_t>, float >(tag, true), tag, "bfloat<11,8,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<11, 8, uint16_t>, float >(tag, false), tag, "bfloat<11,8,uint16_t>");
 
 	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
 
@@ -80,66 +80,66 @@ try {
 	cout << "BFLOAT conversion from float validation" << endl;
 
 	// es = 1
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<4, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<4,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<5, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<5,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<6, 1>, float >(tag, true), tag, "bfloat<6,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<7, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<7,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<8, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<8,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<9, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<9,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<10, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<12, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<4, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<4,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<5, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<5,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<6, 1>, float >(tag, true), tag, "bfloat<6,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<7, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<7,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<8, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<8,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<9, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<9,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<10, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<12, 1>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,1>");
 
 
 	// es = 2
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<5, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<5,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<6, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<6,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<7, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<7,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<8, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<8,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<10, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<12, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<14, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<5, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<5,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<6, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<6,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<7, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<7,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<8, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<10, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<12, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<14, 2>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,2>");
 
 
 	// es = 3
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<6, 3>, float >(tag, bReportIndividualTestCases), tag, "bfloat<6,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<7, 3>, float >(tag, bReportIndividualTestCases), tag, "bfloat<7,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<8, 3>, float >(tag, bReportIndividualTestCases), tag, "bfloat<8,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<10, 3>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<12, 3>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<14, 3>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<6, 3>, float >(tag, bReportIndividualTestCases), tag, "bfloat<6,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<7, 3>, float >(tag, bReportIndividualTestCases), tag, "bfloat<7,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<8, 3>, float >(tag, bReportIndividualTestCases), tag, "bfloat<8,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<10, 3>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<12, 3>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<14, 3>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,3>");
 
 
 	// es = 4
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<7, 4>, float >(tag, bReportIndividualTestCases), tag, "bfloat<7,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<8, 4>, float >(tag, bReportIndividualTestCases), tag, "bfloat<8,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<10, 4>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<12, 4>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<14, 4>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<7, 4>, float >(tag, bReportIndividualTestCases), tag, "bfloat<7,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<8, 4>, float >(tag, bReportIndividualTestCases), tag, "bfloat<8,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<10, 4>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<12, 4>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<14, 4>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,4>");
 
 
 	// es = 5
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<8, 5>, float >(tag, bReportIndividualTestCases), tag, "bfloat<8,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<10, 5>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<12, 5>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<14, 5>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<8, 5>, float >(tag, bReportIndividualTestCases), tag, "bfloat<8,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<10, 5>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<12, 5>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<14, 5>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,5>");
 
 
 	// es = 6
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<9, 6>, float >(tag, bReportIndividualTestCases), tag, "bfloat<9,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<10, 6>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<12, 6>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<14, 6>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<9, 6>, float >(tag, bReportIndividualTestCases), tag, "bfloat<9,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<10, 6>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<12, 6>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<14, 6>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,6>");
 
 
 	// es = 7
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<10, 7>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<12, 7>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<14, 7>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<10, 7>, float >(tag, bReportIndividualTestCases), tag, "bfloat<10,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<12, 7>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<14, 7>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,7>");
 
 	// es = 8
-//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<11, 8>, float >(tag, bReportIndividualTestCases), tag, "bfloat<11,8>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<12, 8>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,8>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< bfloat<14, 8>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<11, 8>, float >(tag, bReportIndividualTestCases), tag, "bfloat<11,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<12, 8>, float >(tag, bReportIndividualTestCases), tag, "bfloat<12,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyBfloatIntervalConversion< bfloat<14, 8>, float >(tag, bReportIndividualTestCases), tag, "bfloat<14,8>");
 
 #if STRESS_TESTING
 

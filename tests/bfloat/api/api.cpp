@@ -765,7 +765,7 @@ try {
 		std::cout << std::setw(10) << pattern << " " << to_binary(a) << " " << a << std::endl;
 		pattern <<= 1;
 	}
-	GenerateBfloatTable<8, 2>(std::cout, true);
+	//GenerateBfloatTable<8, 2>(std::cout, true);
 
 	int exponents[] = {
 		0, 1, 0, -2, -6, -14, -30, -62, -126, -254, -510, -1022
@@ -777,10 +777,10 @@ try {
 
 	std::ofstream ostr;
 	ostr.open("bfloat_8_3.csv");
-	GenerateBfloatTable<8, 2>(ostr, true);
+	//GenerateBfloatTable<8, 2>(ostr, true);
 	ostr.close();
 	ostr.open("bfloat_16_3.csv");
-	GenerateBfloatTable<16, 3, uint16_t>(ostr, true);
+	//GenerateBfloatTable<16, 3, uint16_t>(ostr, true);
 	ostr.close();
 	/*
 	constexpr bool csv = false;
