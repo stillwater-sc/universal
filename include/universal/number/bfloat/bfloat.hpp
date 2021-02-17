@@ -122,11 +122,9 @@ constexpr bool AREAL_NIBBLE_MARKER = true;
 /// <param name="s"></param>
 /// <param name="e"></param>
 /// <param name="f"></param>
-/// <param name="ubit"></param>
 template<size_t nbits, size_t es, size_t fbits, typename bt>
-void decode(const bfloat<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f, bool& ubit) {
-	s = v.at(nbits - 1ull);
-	ubit = v.at(0);
+void decode(const bfloat<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f) {
+	v.sign(s);
 	v.exponent(e);
 	v.fraction(f);
 }
@@ -200,7 +198,7 @@ bfloat<nbits, es, bt>& maxneg(bfloat<nbits, es, bt>& amaxneg) {
 template<size_t _nbits, size_t _es, typename bt = uint8_t>
 class bfloat {
 public:
-	static_assert(_nbits > _es + 2ull, "nbits is too small to accomodate the requested number of exponent bits");
+	static_assert(_nbits > _es + 1ull, "nbits is too small to accomodate the requested number of exponent bits");
 	static_assert(_es < 2147483647ull, "my God that is a big number, are you trying to break the Interweb?");
 	static_assert(_es > 0, "number of exponent bits must be bigger than 0 to be a floating point number");
 	static constexpr size_t bitsInByte = 8ull;
@@ -209,7 +207,7 @@ public:
 
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t es = _es;
-	static constexpr size_t fbits  = nbits - 2ull - es;    // number of fraction bits excluding the hidden bit
+	static constexpr size_t fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
 	static constexpr size_t fhbits = fbits + 1ull;         // number of fraction bits including the hidden bit
 	static constexpr size_t abits = fhbits + 3ull;         // size of the addend
 	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
@@ -310,7 +308,6 @@ public:
 		raw <<= shift;
 		raw = round<sizeInBits, uint64_t>(raw, exponent);
 #ifdef LATER
-		bool ubit = true;
 		// construct the target bfloat
 		if constexpr (64 >= nbits - es - 1ull) {
 			uint64_t bits = (s ? 1u : 0u);
@@ -318,8 +315,7 @@ public:
 			bits |= exponent + EXP_BIAS;
 			bits <<= nbits - 1ull - es;
 			bits |= raw;
-			bits &= 0xFFFF'FFFE;
-			bits |= (ubit ? 0x1 : 0x0);
+			bits &= 0xFFFF'FFFF;
 			if constexpr (1 == nrBlocks) {
 				_block[MSU] = bt(bits);
 			}
@@ -405,10 +401,9 @@ public:
 		int adjustment{ 0 };
 		// we have 23 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 		// simpler rounding as compared to IEEE as uncertainty bit captures any non-zero bit past the LSB
-		// ...  lsb | sticky      ubit
+		// ...  lsb | round guard sticky
 		//       x      0          0
 		//       x  |   1          1
-		bool ubit = false;
 		uint32_t mask = 0x007F'FFFF >> fbits; // mask for sticky bit 
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
@@ -425,11 +420,9 @@ public:
 				// -exponent because we are right shifting and exponent in this range is negative
 				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
 				if (shiftRight > 0) {		// do we need to round?
-					ubit = (mask & raw) != 0;
 					raw >>= shiftRight + adjustment;
 				}
 				else { // all bits of the float go into this representation and need to be shifted up
-					// ubit = false; already set to false
 					std::cout << "conversion of IEEE float to more precise bfloats not implemented yet\n";
 				}
 			}
@@ -444,11 +437,9 @@ public:
 				// -exponent because we are right shifting and exponent in this range is negative
 				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
 				if (shiftRight > 0) {		// do we need to round?
-					ubit = (mask & raw) != 0;
 					raw >>= shiftRight + adjustment;
 				}
 				else { // all bits of the float go into this representation and need to be shifted up
-					// ubit = false; already set to false
 					std::cout << "conversion of subnormal IEEE float to more precise bfloats not implemented yet\n";
 				}
 			}
@@ -461,14 +452,12 @@ public:
 			if (shiftRight > 0) {		// do we need to round?
 				// we have 23 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
-				// ...  lsb | sticky      ubit
+				// ...  lsb | round guard sticky
 				//       x      0          0
 				//       x  |   1          1
-				ubit = (mask & raw) != 0;
 				raw >>= shiftRight;
 			}
 			else { // all bits of the double go into this representation and need to be shifted up
-				// ubit = false; already set to false
 				std::cout << "conversion of IEEE double to more precise bfloats not implemented yet\n";
 			}
 		}
@@ -477,7 +466,6 @@ public:
 		std::cout << "shift           : " << shiftRight << '\n';
 		std::cout << "adjustment shift: " << adjustment << '\n';
 		std::cout << "sticky bit mask : " << to_binary_storage(mask, true) << '\n';
-		std::cout << "uncertainty bit : " << (ubit ? "1\n" : "0\n");
 		std::cout << "fraction bits   : " << to_binary_storage(raw, true) << '\n';
 #endif
 		// construct the target bfloat
@@ -486,8 +474,7 @@ public:
 		bits |= biasedExponent;
 		bits <<= nbits - 1ull - es;
 		bits |= raw;
-		bits &= 0xFFFF'FFFEu;
-		bits |= (ubit ? 0x1u : 0x0u);
+		bits &= 0xFFFF'FFFFu;
 		if constexpr (1 == nrBlocks) {
 			_block[MSU] = bt(bits);
 		}
@@ -562,10 +549,9 @@ public:
 		int adjustment{ 0 };
 		// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 		// simpler rounding as compared to IEEE as uncertainty bit captures any non-zero bit past the LSB
-		// ...  lsb | sticky      ubit
+		// ...  lsb | round guard sticky
 		//       x      0          0
 		//       x  |   1          1
-		bool ubit = false;
 		uint64_t mask;
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
@@ -589,11 +575,9 @@ public:
 				std::cout << "adjustment      : " << adjustment << std::endl;
 #endif
 				if (shiftRight > 0) {		// do we need to round?
-					ubit = (mask & raw) != 0;
 					raw >>= (shiftRight + adjustment);
 				}
 				else { // all bits of the double go into this representation and need to be shifted up
-					// ubit = false; already set to false
 					std::cout << "conversion of IEEE double to more precise bfloats not implemented yet\n";
 				}
 			}
@@ -611,14 +595,12 @@ public:
 			if (shiftRight > 0) {		// do we need to round?
 				// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 				// simpler rounding as uncertainty bit captures any non-zero bit past the LSB
-				// ...  lsb | sticky      ubit
+				// ...  lsb | round guard sticky
 				//       x      0          0
 				//       x  |   1          1
-				ubit = (mask & raw) != 0;
 				raw >>= shiftRight;
 			}
 			else { // all bits of the double go into this representation and need to be shifted up
-				// ubit = false; already set to false
 				std::cout << "conversion of IEEE double to more precise bfloats not implemented yet\n";
 			}
 		}
@@ -626,7 +608,6 @@ public:
 		std::cout << "biased exponent : " << biasedExponent << " : " << std::hex << biasedExponent << std::dec << '\n';
 		std::cout << "shift           : " << shiftRight << '\n';
 		std::cout << "sticky bit mask : " << to_binary_storage(mask, true) << '\n';
-		std::cout << "uncertainty bit : " << (ubit ? "1\n" : "0\n");
 		std::cout << "fraction bits   : " << to_binary_storage(raw, true) << '\n';
 #endif
 		// construct the target bfloat
@@ -635,8 +616,7 @@ public:
 		bits |= biasedExponent;
 		bits <<= nbits - 1ull - es;
 		bits |= raw;
-		bits &= 0xFFFF'FFFF'FFFF'FFFE;
-		bits |= (ubit ? 0x1 : 0x0);
+		bits &= 0xFFFF'FFFF'FFFF'FFFFULL;
 		if (nrBlocks == 1) {
 			_block[MSU] = bt(bits);
 		}
@@ -1078,7 +1058,10 @@ public:
 		std::cout << "MIN_EXP_NORMAL    : " << MIN_EXP_NORMAL << '\n';
 		std::cout << "MIN_EXP_SUBNORMAL : " << MIN_EXP_SUBNORMAL << '\n';
 	}
-
+	// extract the sign firld from the encoding
+	inline constexpr void sign(bool& s) const {
+		s = sign();
+	}
 	// extract the exponent field from the encoding
 	inline constexpr void exponent(blockbinary<es, bt>& e) const {
 		e.clear();
@@ -1382,22 +1365,7 @@ private:
 template<size_t nbits, size_t es, typename bt>
 inline std::ostream& operator<<(std::ostream& ostr, const bfloat<nbits,es,bt>& v) {
 	// TODO: make it a native conversion
-	double d = double(v);
-	bool ubit = v.at(0);
-	if (ubit) {
-		if (v.isnan()) {
-			ostr << '[' << d << ']';
-		}
-		else {
-			bfloat<nbits, es, bt> next(v);
-			++next;
-			double dnext = double(next);
-			ostr << '(' << d << ", " << dnext << ')';
-		}
-	}
-	else { // exact value
-		ostr << '[' << d << ']';
-	}
+	ostr << double(v);
 	return ostr;
 }
 

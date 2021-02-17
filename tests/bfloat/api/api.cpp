@@ -775,13 +775,21 @@ try {
 		std::cout << "es = " << exponents[i] << " " << std::setprecision(17) << subnormal_exponent[i] << std::endl;
 	}
 
-	std::ofstream ostr;
-	ostr.open("bfloat_8_3.csv");
-	//GenerateBfloatTable<8, 2>(ostr, true);
-	ostr.close();
-	ostr.open("bfloat_16_3.csv");
-	//GenerateBfloatTable<16, 3, uint16_t>(ostr, true);
-	ostr.close();
+	{
+		using Real = bfloat<8, 2, uint8_t>;
+		std::ofstream ostr;
+		ostr.open("bfloat_8_3.csv");
+		GenerateTable<Real>(ostr, true);
+		ostr.close();
+	}
+	{
+		using Real = bfloat<16, 3, uint16_t>;
+		std::ofstream ostr;
+		ostr.open("bfloat_16_3.csv");
+		GenerateTable<Real>(ostr, true);
+		ostr.close();
+	}
+
 	/*
 	constexpr bool csv = false;
 	GenerateBfloatTable<5, 1>(std::cout, csv);

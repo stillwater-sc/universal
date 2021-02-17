@@ -19,10 +19,13 @@ namespace sw::universal {
 /// <param name="ostr">ostream reference to write to</param>
 /// <param name="uncertainty">if true output certain and uncertain values, otherwise only certain values</param>
 /// <param name="csvFormat">if true present as a comma separated value format, text otherwise</param>
-template<size_t nbits, size_t es, typename bt = uint8_t>
-void GenerateArealTable(std::ostream& ostr, bool uncertainty = true, bool csvFormat = false)	{
+template<typename TestType>
+void GenerateTable(std::ostream& ostr, bool uncertainty = true, bool csvFormat = false)	{
+	constexpr size_t nbits = TestType::nbits;
+	constexpr size_t es = TestType::es;
+	using bt = typename TestType::BlockType;
 	constexpr size_t NR_VALUES = (1 << nbits);
-	bfloat<nbits, es, bt> v;
+	TestType v;
 	constexpr size_t fbits = v.fbits;
 	if (csvFormat) {
 		ostr << "\"Generate Lookup table for a " << typeid(v).name() << " in CSV format\"" << std::endl;
@@ -33,15 +36,13 @@ void GenerateArealTable(std::ostream& ostr, bool uncertainty = true, bool csvFor
 			bool s{ false };
 			blockbinary<es, bt> e;
 			blockbinary<fbits, bt> f;
-			bool u{ false };
-			sw::universal::decode<nbits,es,fbits,bt>(v, s, e, f, u);
+			sw::universal::decode<nbits, es, fbits, bt>(v, s, e, f);
 			ostr << i << ','
 				<< to_binary(v) << ','
 				<< s << ','
 				<< scale(v) << ','
 				<< std::right << to_binary(e) << ','
 				<< std::right << to_binary(f) << ','
-				<< u << ','
 				<< v
 				<< '\n';
 		}
@@ -56,7 +57,6 @@ void GenerateArealTable(std::ostream& ostr, bool uncertainty = true, bool csvFor
 		const size_t scale_column = 8;
 		const size_t exponent_column = 16;
 		const size_t fraction_column = 16;
-		const size_t ubit_column = 8;
 		const size_t value_column = 30;
 		const size_t hex_format_column = 16;
 
@@ -66,7 +66,6 @@ void GenerateArealTable(std::ostream& ostr, bool uncertainty = true, bool csvFor
 			<< std::setw(scale_column) << "scale"
 			<< std::setw(exponent_column) << "exponent"
 			<< std::setw(fraction_column) << "fraction"
-			<< std::setw(ubit_column) << "ubit"
 			<< std::setw(value_column) << "value"
 			<< std::setw(hex_format_column) << "hex_format"
 			<< std::endl;
@@ -76,15 +75,13 @@ void GenerateArealTable(std::ostream& ostr, bool uncertainty = true, bool csvFor
 			bool s{ false };
 			blockbinary<es, bt> e;
 			blockbinary<fbits, bt> f;
-			bool ubit{ false };
-			sw::universal::decode<nbits, es, fbits, bt>(v, s, e, f, ubit);
+			sw::universal::decode<nbits, es, fbits, bt>(v, s, e, f);
 			ostr << std::setw(4) << i << ": "
 				<< std::setw(bin_column) << to_binary(v)
 				<< std::setw(sign_column) << s
 				<< std::setw(scale_column) << scale(v)
 				<< std::setw(exponent_column) << std::right << to_binary(e, true)
 				<< std::setw(fraction_column) << std::right << to_binary(f, true)
-				<< std::setw(ubit_column) << ubit
 				<< std::setw(value_column) << v
 				<< std::setw(hex_format_column) << std::right << hex_print(v)
 				<< std::endl;
