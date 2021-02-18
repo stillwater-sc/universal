@@ -24,8 +24,8 @@ inline Integer two_to_the_power(Integer n) {
 /// <param name="base"></param>
 /// <param name="exp"></param>
 /// <returns></returns>
-long long ipow(long long base, unsigned exp) {
-	long long result = 1;
+int64_t ipow(int64_t base, unsigned exp) {
+	int64_t result = 1;
 	for (;;) {
 		if (exp & 1)
 			result *= base;
@@ -79,7 +79,7 @@ int64_t fastipow(int64_t base, uint8_t exp) {
 		255, 255, 255, 255, 255, 255, 255, 255,
 	};
 
-	uint64_t result = 1;
+	int64_t result = 1;
 
 	switch (highest_bit_set[exp]) {
 	case 255: // we use 255 as an overflow marker and return 0 on overflow/underflow
@@ -88,7 +88,7 @@ int64_t fastipow(int64_t base, uint8_t exp) {
 		}
 
 		if (base == -1) {
-			return 1 - 2 * (exp & 1);
+			return 1ll - 2ll * static_cast<int64_t>(exp & 0x01u);
 		}
 
 		return 0;

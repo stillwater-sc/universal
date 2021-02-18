@@ -79,8 +79,7 @@ std::string pretty_print(const bfloat<nbits, es, bt>& r, int printPrecision = st
 	bool s{ false };
 	blockbinary<es, bt> e;
 	blockbinary<bfloat<nbits, es, bt>::fbits> f;
-	bool ubit{ false };
-	decode(r, s, e, f, ubit);
+	decode(r, s, e, f);
 
 	// sign bit
 	ss << (r.isneg() ? '1' : '0');
@@ -97,9 +96,6 @@ std::string pretty_print(const bfloat<nbits, es, bt>& r, int printPrecision = st
 		ss << (f.test(i) ? '1' : '0');
 	}
 
-	// uncertainty bit
-	ss << '-';
-	ss << (r.test(0) ? "1" : "0");
 	return ss.str();
 }
 
@@ -114,8 +110,7 @@ std::string color_print(const bfloat<nbits, es, bt>& r) {
 	bool s{ false };
 	blockbinary<es,bt> e;
 	blockbinary<bfloat<nbits, es, bt>::fbits> f;
-	bool ubit{ false };
-	decode(r, s, e, f, ubit);
+	decode(r, s, e, f);
 
 	Color red(ColorCode::FG_RED);
 	Color yellow(ColorCode::FG_YELLOW);
@@ -137,9 +132,6 @@ std::string color_print(const bfloat<nbits, es, bt>& r) {
 	for (int i = int(r.fbits) - 1; i >= 0; --i) {
 		ss << magenta << (f.test(i) ? '1' : '0');
 	}
-
-	// uncertainty bit
-	ss << yellow << (r.test(0) ? "1" : "0");
 
 	ss << def;
 	return ss.str();

@@ -8,7 +8,11 @@
 #include <stdexcept>
 #include <string>
 
-namespace sw { namespace universal {
+#ifndef BITBLOCK_THROW_ARITHMETIC_EXCEPTION
+#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
+#endif
+
+namespace sw::universal {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// BITBLOCK ARITHMETIC EXCEPTIONS
@@ -60,4 +64,4 @@ struct cut_off_leading_bit
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-}} // namespace sw::universal
+} // namespace sw::universal

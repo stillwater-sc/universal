@@ -146,22 +146,22 @@ int scale(const bfloat<nbits, es, bt>& v) {
 
 // fill an bfloat object with maximum positive value
 template<size_t nbits, size_t es, typename bt>
-bfloat<nbits, es, bt>& maxpos(bfloat<nbits, es, bt>& amaxpos) {
-	// maximum positive value has this bit pattern: 0-1...1-111...100, that is, sign = 0, e = 1.1, f = 111...110, u = 0
-	amaxpos.clear();
-	amaxpos.flip();
-	amaxpos.reset(nbits - 1ull);
-	amaxpos.reset(0ull);
-	amaxpos.reset(1ull);
-	return amaxpos;
+bfloat<nbits, es, bt>& maxpos(bfloat<nbits, es, bt>& bmaxpos) {
+	// maximum positive value has this bit pattern: 0-1...1-111...111, that is, sign = 0, e = 1.1, f = 111...100
+	bmaxpos.clear();
+	bmaxpos.flip();
+	bmaxpos.reset(nbits - 1ull);
+	bmaxpos.reset(0ull);
+	bmaxpos.reset(1ull);
+	return bmaxpos;
 }
 // fill an bfloat object with mininum positive value
 template<size_t nbits, size_t es, typename bt>
-bfloat<nbits, es, bt>& minpos(bfloat<nbits, es, bt>& aminpos) {
+bfloat<nbits, es, bt>& minpos(bfloat<nbits, es, bt>& bminpos) {
 	// minimum positive value has this bit pattern: 0-000-00...010, that is, sign = 0, e = 00, f = 00001, u = 0
-	aminpos.clear();
-	aminpos.set(1);
-	return aminpos;
+	bminpos.clear();
+	bminpos.set(1);
+	return bminpos;
 }
 // fill an bfloat object with the zero encoding: 0-0...0-00...000-0
 template<size_t nbits, size_t es, typename bt>
@@ -171,22 +171,22 @@ bfloat<nbits, es, bt>& zero(bfloat<nbits, es, bt>& tobezero) {
 }
 // fill an bfloat object with smallest negative value
 template<size_t nbits, size_t es, typename bt>
-bfloat<nbits, es, bt>& minneg(bfloat<nbits, es, bt>& aminneg) {
+bfloat<nbits, es, bt>& minneg(bfloat<nbits, es, bt>& bminneg) {
 	// minimum negative value has this bit pattern: 1-000-00...010, that is, sign = 1, e = 00, f = 00001, u = 0
-	aminneg.clear();
-	aminneg.set(nbits - 1ull);
-	aminneg.set(1);
-	return aminneg;
+	bminneg.clear();
+	bminneg.set(nbits - 1ull);
+	bminneg.set(1);
+	return bminneg;
 }
 // fill an bfloat object with largest negative value
 template<size_t nbits, size_t es, typename bt>
-bfloat<nbits, es, bt>& maxneg(bfloat<nbits, es, bt>& amaxneg) {
+bfloat<nbits, es, bt>& maxneg(bfloat<nbits, es, bt>& bmaxneg) {
 	// maximum negative value has this bit pattern: 1-1...1-111...110, that is, sign = 1, e = 1.1, f = 111...110, u = 0
-	amaxneg.clear();
-	amaxneg.flip();
-	amaxneg.reset(0ull);
-	amaxneg.reset(1ull);
-	return amaxneg;
+	bmaxneg.clear();
+	bmaxneg.flip();
+	bmaxneg.reset(0ull);
+	bmaxneg.reset(1ull);
+	return bmaxneg;
 }
 
 /// <summary>
@@ -217,14 +217,14 @@ public:
 	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
-	static constexpr bt ALLONES = bt(~0);
-	static constexpr bt MSU_MASK = (ALLONES >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr bt ALL_ONES = bt(~0);
+	static constexpr bt MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr size_t bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt LSB_BIT_MASK = bt(1ull);
 	static constexpr bool MSU_CAPTURES_E = (1ull + es) <= bitsInMSU;
 	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (nbits - 1ull - es) : 0);
-	static constexpr bt MSU_EXP_MASK = ((ALLONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
+	static constexpr bt MSU_EXP_MASK = ((ALL_ONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;
 	static constexpr int MIN_EXP_NORMAL = 1 - EXP_BIAS;
@@ -1042,7 +1042,7 @@ public:
 	void debug() const {
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
-		std::cout << "ALLONES           : " << to_binary_storage(ALLONES, true) << '\n';
+		std::cout << "ALL_ONES           : " << to_binary_storage(ALL_ONES, true) << '\n';
 		std::cout << "BLOCK_MASK        : " << to_binary_storage(BLOCK_MASK, true) << '\n';
 		std::cout << "nrBlocks          : " << nrBlocks << '\n';
 		std::cout << "bits in MSU       : " << bitsInMSU << '\n';

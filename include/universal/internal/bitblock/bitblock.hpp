@@ -350,7 +350,7 @@ void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, size_t be
 	for (size_t i = begin; i < end; i++)
 		tgt.set(i + shift, src[i]);
 }
-#else
+#else // !BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 // copy a slice of a bitset into a bigger bitset starting at position indicated by the shift value
 template<size_t src_size, size_t tgt_size>
 void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, size_t begin = 0, size_t end = src_size, size_t shift = 0) {
@@ -360,7 +360,7 @@ void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, size_t be
 	for (size_t i = begin; i < end; i++)
 		tgt.set(i + shift, src[i]);
 }
-#endif // BITBLOCK_THROW_ARITHMETIC_EXCEPTION
+#endif // !BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 
 template<size_t from, size_t to, size_t src_size>
 bitblock<to - from> fixed_subset(const bitblock<src_size>& src) {

@@ -3,7 +3,12 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#if defined(_MSC_VER)
+#pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#pragma warning(disable : 4514)  // unreferenced function is removed
+#pragma warning(disable : 4820) // bytes padding added after data member
+#pragma warning(disable : 4710)  // function is not inlined
+#endif
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
 #define FIXPNT_FAST_SPECIALIZATION
@@ -24,6 +29,8 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::universal;
+
+	if (argc > 0) { cout << argv[0] << endl; }
 
 	int nrOfFailedTestCases = 0;
 
