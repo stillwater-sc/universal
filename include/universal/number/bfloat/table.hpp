@@ -20,18 +20,18 @@ namespace sw::universal {
 /// <param name="uncertainty">if true output certain and uncertain values, otherwise only certain values</param>
 /// <param name="csvFormat">if true present as a comma separated value format, text otherwise</param>
 template<typename TestType>
-void GenerateTable(std::ostream& ostr, bool uncertainty = true, bool csvFormat = false)	{
+void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 	constexpr size_t nbits = TestType::nbits;
-	constexpr size_t es = TestType::es;
+	constexpr size_t es    = TestType::es;
+	constexpr size_t fbits = TestType::fbits;
 	using bt = typename TestType::BlockType;
 	constexpr size_t NR_VALUES = (1 << nbits);
 	TestType v;
-	constexpr size_t fbits = v.fbits;
+
 	if (csvFormat) {
 		ostr << "\"Generate Lookup table for a " << typeid(v).name() << " in CSV format\"" << std::endl;
 		ostr << "#, Binary, sign, scale, exponent, fraction, ubit, scientific, hex\n";
 		for (size_t i = 0; i < NR_VALUES; i++) {
-			if (!uncertainty && i % 2) continue;
 			v.set_raw_bits(i);
 			bool s{ false };
 			blockbinary<es, bt> e;
@@ -70,7 +70,6 @@ void GenerateTable(std::ostream& ostr, bool uncertainty = true, bool csvFormat =
 			<< std::setw(hex_format_column) << "hex_format"
 			<< std::endl;
 		for (size_t i = 0; i < NR_VALUES; i++) {
-			if (!uncertainty && i % 2) continue;
 			v.set_raw_bits(i);
 			bool s{ false };
 			blockbinary<es, bt> e;

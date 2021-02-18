@@ -318,12 +318,13 @@ endif()
 # universal/integer
 # universal/decimal
 # universal/fixpnt
-# universal/lns
+# universal/bfloat
+# universal/areal
 # universal/unum
 # universal/unum2
 # universal/posit
 # universal/valid
-# universal/areal
+# universal/lns
 # universal/adaptiveint
 # universal/adaptivefloat
 include_directories("./include")
@@ -555,6 +556,7 @@ if(BUILD_PERFORMANCE_TESTS)
 add_subdirectory("performance/decimal")
 add_subdirectory("performance/integer")
 add_subdirectory("performance/fixpnt")
+add_subdirectory("performance/bfloat")
 add_subdirectory("performance/areal")
 add_subdirectory("performance/lns")
 add_subdirectory("performance/posit")
@@ -572,6 +574,7 @@ if(BUILD_EDUCATION)
 add_subdirectory("education/tables")
 add_subdirectory("education/integer")
 add_subdirectory("education/fixpnt")
+add_subdirectory("education/bfloat")
 add_subdirectory("education/areal")
 add_subdirectory("education/unum")
 add_subdirectory("education/posit")

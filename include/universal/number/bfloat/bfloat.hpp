@@ -1086,10 +1086,10 @@ public:
 		if constexpr (0 == nrBlocks) return;
 		else if constexpr (1 == nrBlocks) {
 			bt fraction = bt(_block[MSU] & ~MSU_EXP_MASK);
-			f.set_raw_bits(bt(fraction >> bt(1ull)));
+			f.set_raw_bits(fraction);
 		}
 		else if constexpr (nrBlocks > 1) {
-			for (size_t i = 0; i < fbits; ++i) { f.set(i, at(nbits - 1ull - es - fbits + i)); }
+			for (size_t i = 0; i < fbits; ++i) { f.set(i, at(nbits - 1ull - es - fbits + i)); } // TODO: TEST!
 		}
 	}
 	
@@ -1119,7 +1119,7 @@ public:
 		else { // TODO: this approach has catastrophic cancellation when nbits is large and native target float is small
 			TargetFloat f{ 0 };
 			TargetFloat fbit{ 0.5 };
-			for (size_t i = nbits - 2ull - es; i > 0; --i) {
+			for (size_t i = nbits - 1ull - es; i > 0; --i) {
 				f += at(i) ? fbit : TargetFloat(0);
 				fbit *= TargetFloat(0.5);
 			}
