@@ -29,10 +29,34 @@ inline Real ulp(const Real& a) {
 }
 
 template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline bool iszero(const Real& a) {
+	return (std::fpclassify(a) == FP_ZERO);
+}
+template<typename Real,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >:: type
 >
-inline bool issubnorm(const Real& a) {
+inline bool isnormal(const Real& a) {
+	return (std::fpclassify(a) == FP_NORMAL);
+}
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline bool issubnormal(const Real& a) {
 	return (std::fpclassify(a) == FP_SUBNORMAL);
+}
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline bool isnan(const Real& a) {
+	return (std::fpclassify(a) == FP_NAN);
+}
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline bool isinf(const Real& a) {
+	return (std::fpclassify(a) == FP_INFINITE);
 }
 
 // IEEE double precision constants
