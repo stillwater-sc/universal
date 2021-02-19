@@ -3,7 +3,12 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#if defined(_MSC_VER)
+#pragma warning(disable : 4514)  // unreferenced function is removed
+#pragma warning(disable : 4710)  // function is not inlined
+#pragma warning(disable : 4820)  // bytes padding added after data member
+#pragma warning(disable : 5045)  // compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#endif 
 // enable/disable special posit format I/O
 #define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 1
 #include <universal/number/posit/posit>
@@ -14,6 +19,12 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
+	if (argc > 1) {
+		for (int i = 0; i < argc; ++i) {
+			std::cout << argv[i] << ' ';
+		}
+		std::cout << std::endl;
+	}
 	bool csv = false;
 
 	cout << "Generate posit configurations" << endl;

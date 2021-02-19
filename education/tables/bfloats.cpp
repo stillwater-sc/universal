@@ -6,12 +6,15 @@
 #if defined(_MSC_VER)
 #pragma warning(disable : 4514)  // unreferenced function is removed
 #pragma warning(disable : 4710)  // function is not inlined
+#pragma warning(disable : 5045)  // compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 #endif 
 #include <iostream>
 #include <iomanip>
 
 // enable/disable special hex format I/O
-#define AREAL_ROUNDING_ERROR_FREE_IO_FORMAT 1
+#define BFLOAT_ROUNDING_ERROR_FREE_IO_FORMAT 1
+// if you want to trace conversion: tracing will disable the constexpr-ness of operator=
+#define TRACE_CONVERSION 1
 #include <universal/number/bfloat/bfloat>
 #include <universal/number/bfloat/table.hpp>
 
@@ -31,6 +34,9 @@ try {
 	cout << "Generate value tables for bfloat configurations" << endl;
 
 #if MANUAL_TESTING
+
+	bfloat<5, 1> b = 1.0f;
+	cout << to_binary(b) << " : " << b << endl;
 
 	constexpr bool csv = false;
 

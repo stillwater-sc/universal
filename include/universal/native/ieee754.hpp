@@ -31,7 +31,7 @@ inline Real ulp(const Real& a) {
 template<typename Real,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >:: type
 >
-inline bool isdenorm(const Real& a) {
+inline bool issubnorm(const Real& a) {
 	return (std::fpclassify(a) == FP_SUBNORMAL);
 }
 

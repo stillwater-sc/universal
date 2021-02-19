@@ -111,7 +111,7 @@ static constexpr int INF_TYPE_NEGATIVE   = -1;   // -inf
 static constexpr int INF_TYPE_EITHER     = 0;    // any inf
 static constexpr int INF_TYPE_POSITIVE   = 1;    // +inf
 
-constexpr bool AREAL_NIBBLE_MARKER = true;
+constexpr bool BFLOAT_NIBBLE_MARKER = true;
 
 
 /// <summary>
@@ -381,10 +381,11 @@ public:
 		std::cout << "value           : " << rhs << '\n';
 		std::cout << "segments        : " << to_binary(rhs) << '\n';
 		std::cout << "sign     bit    : " << (s ? '1' : '0') << '\n';
-		std::cout << "exponent value  : " << exponent << '\n';
+		std::cout << "exponent bits   : " << to_binary_storage(uint8_t(raw_exp), true) << '\n';
 		std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
+		std::cout << "exponent value  : " << exponent << '\n';
 #endif
-		// saturate to minpos/maxpos with uncertainty bit set to 1
+		// saturate to minpos/maxpos if out of range
 		if (exponent > MAX_EXP) {
 			if (s) maxneg(*this); else maxpos(*this); // saturate the maxpos or maxneg
 			this->set(0);
@@ -392,7 +393,7 @@ public:
 		}
 		if (exponent < MIN_EXP_SUBNORMAL) {
 			if (s) this->set(nbits - 1); // set -0
-			this->set(0); // and set the uncertainty bit to reflect (0,minpos) or (-0,minneg)
+			this->set(0);
 			return *this;
 		}
 		// set the exponent
@@ -404,10 +405,10 @@ public:
 		// ...  lsb | round guard sticky
 		//       x      0          0
 		//       x  |   1          1
-		uint32_t mask = 0x007F'FFFF >> fbits; // mask for sticky bit 
+		uint32_t mask = 0x007F'FFFFu >> fbits; // mask for sticky bit 
 		if (exponent >= MIN_EXP_SUBNORMAL && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
-			// trick though is that it might be a normal number in IEEE double precision representation
+			// but it might be a normal number in IEEE single precision (float) representation
 			if (exponent > -127) {
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 23);
@@ -474,7 +475,6 @@ public:
 		bits |= biasedExponent;
 		bits <<= nbits - 1ull - es;
 		bits |= raw;
-		bits &= 0xFFFF'FFFFu;
 		if constexpr (1 == nrBlocks) {
 			_block[MSU] = bt(bits);
 		}
@@ -1119,8 +1119,8 @@ public:
 		else { // TODO: this approach has catastrophic cancellation when nbits is large and native target float is small
 			TargetFloat f{ 0 };
 			TargetFloat fbit{ 0.5 };
-			for (size_t i = nbits - 1ull - es; i > 0; --i) {
-				f += at(i) ? fbit : TargetFloat(0);
+			for (int i = static_cast<int>(nbits - 2ull - es); i >= 0; --i) {
+				f += at(static_cast<size_t>(i)) ? fbit : TargetFloat(0);
 				fbit *= TargetFloat(0.5);
 			}
 			blockbinary<es, bt> ebits;
@@ -1135,7 +1135,7 @@ public:
 				int exponent = unsigned(ebits) + 1ll - (1ll << (es - 1ull));
 				if (exponent < 64) {
 					TargetFloat exponentiation = (exponent >= 0 ? TargetFloat(1ull << exponent) : (1.0f / TargetFloat(1ull << -exponent)));
-					v = exponentiation * (TargetFloat(1) + f);
+					v = exponentiation * (TargetFloat(1.0) + f);
 				}
 				else {
 					double exponentiation = ipow(exponent);
