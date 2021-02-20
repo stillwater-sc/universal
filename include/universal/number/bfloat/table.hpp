@@ -30,7 +30,7 @@ void GenerateTable(std::ostream& ostr, bool csvFormat = false)	{
 
 	if (csvFormat) {
 		ostr << "\"Generate Lookup table for a " << typeid(v).name() << " in CSV format\"" << std::endl;
-		ostr << "#, Binary, sign, scale, exponent, fraction, ubit, scientific, hex\n";
+		ostr << "#, Binary, sign, scale, exponent, fraction, value, hex\n";
 		for (size_t i = 0; i < NR_VALUES; i++) {
 			v.set_raw_bits(i);
 			bool s{ false };

@@ -15,36 +15,39 @@
 #include <universal/number/areal/areal>
 #include <universal/number/areal/table.hpp>
 
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::universal;
 
-	if (argc > 1) {
-		for (int i = 0; i < argc; ++i) {
-			std::cout << argv[i] << ' ';
-		}
-		std::cout << std::endl;
+	// Usage: areals [-ubit] [-csv]
+	bool csv = false;
+	bool ubit = false;
+	if (argc == 2) {
+		if (std::string(argv[1]) == std::string("-ubit")) ubit = true;
+		if (std::string(argv[1]) == std::string("-csv")) csv = true;
+	}
+	else if (argc == 3) {
+		if (std::string(argv[1]) == std::string("-ubit")) ubit = true;
+		if (std::string(argv[1]) == std::string("-csv")) csv = true;
+		if (std::string(argv[2]) == std::string("-ubit")) ubit = true;
+		if (std::string(argv[2]) == std::string("-csv")) csv = true;
 	}
 	cout << "Generate value tables for areal configurations" << endl;
 
 #if MANUAL_TESTING
-	areal<5, 2> a;
-	a.set_raw_bits(0x08);
-	cout << a << endl;
 
-	constexpr bool csv = false;
-	constexpr bool uncertainty = false;
 
-	GenerateArealTable<5, 1>(cout, uncertainty, csv);
-	GenerateArealTable<5, 2>(cout, uncertainty, csv);
-	GenerateArealTable<6, 1>(cout, uncertainty, csv);
-	GenerateArealTable<6, 2>(cout, uncertainty, csv);
-	GenerateArealTable<6, 3>(cout, uncertainty, csv);
 
-	GenerateArealTable<8, 3>(cout, uncertainty, csv);
+	GenerateArealTable<5, 1>(cout, ubit, csv);
+	GenerateArealTable<5, 2>(cout, ubit, csv);
+	GenerateArealTable<6, 1>(cout, ubit, csv);
+	GenerateArealTable<6, 2>(cout, ubit, csv);
+	GenerateArealTable<6, 3>(cout, ubit, csv);
+
+	GenerateArealTable<8, 3>(cout, ubit, csv);
 
 	/*
 	* #include <fstream>
@@ -61,29 +64,26 @@ try {
 	*/
 
 #else // !MANUAL_TESTING
-	GenerateArealTable<4, 1>(cout);
+	GenerateArealTable<4, 1>(cout, ubit, csv);
 
-	GenerateArealTable<5, 1>(cout);
-	GenerateArealTable<5, 2>(cout);
-//	GenerateArealTable<5, 3>(cout);
+	GenerateArealTable<5, 1>(cout, ubit, csv);
+	GenerateArealTable<5, 2>(cout, ubit, csv);
 
-	GenerateArealTable<6, 1>(cout);
-	GenerateArealTable<6, 2>(cout);
-	GenerateArealTable<6, 3>(cout);
-//	GenerateArealTable<6, 4>(cout);
+	GenerateArealTable<6, 1>(cout, ubit, csv);
+	GenerateArealTable<6, 2>(cout, ubit, csv);
+	GenerateArealTable<6, 3>(cout, ubit, csv);
 
-	GenerateArealTable<7, 1>(cout);
-	GenerateArealTable<7, 2>(cout);
-	GenerateArealTable<7, 3>(cout);
-	GenerateArealTable<7, 4>(cout);
-//	GenerateArealTable<7, 5>(cout);
+	GenerateArealTable<7, 1>(cout, ubit, csv);
+	GenerateArealTable<7, 2>(cout, ubit, csv);
+	GenerateArealTable<7, 3>(cout, ubit, csv);
+	GenerateArealTable<7, 4>(cout, ubit, csv);
 
-	GenerateArealTable<8, 1>(cout);
-	GenerateArealTable<8, 2>(cout);
-	GenerateArealTable<8, 3>(cout);
-	GenerateArealTable<8, 4>(cout);
-	GenerateArealTable<8, 5>(cout);
-//	GenerateArealTable<8, 6>(cout);
+	GenerateArealTable<8, 1>(cout, ubit, csv);
+	GenerateArealTable<8, 2>(cout, ubit, csv);
+	GenerateArealTable<8, 3>(cout, ubit, csv);
+	GenerateArealTable<8, 4>(cout, ubit, csv);
+	GenerateArealTable<8, 5>(cout, ubit, csv);
+
 #endif
 
 	return EXIT_SUCCESS;

@@ -19,17 +19,13 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	if (argc > 1) {
-		for (int i = 0; i < argc; ++i) {
-			std::cout << argv[i] << ' ';
-		}
-		std::cout << std::endl;
-	}
+	// Usage: posits [-csv]
 	bool csv = false;
+	if (argc == 2) {
+		if (std::string(argv[1]) == std::string("-csv")) csv = true;
+	}
+	cout << "Generate value tables for posit configurations" << endl;
 
-	cout << "Generate posit configurations" << endl;
-
-	// TODO: need to re-enable nbits = 2
 	GeneratePositTable<2, 0>(cout, csv);
 
 	GeneratePositTable<3, 0>(cout, csv);
