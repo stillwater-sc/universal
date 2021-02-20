@@ -3,6 +3,12 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#if defined(_MSC_VER)
+#pragma warning(disable : 4514)  // unreferenced function is removed
+#pragma warning(disable : 4710)  // function is not inlined
+#pragma warning(disable : 4820)  // bytes padding added after data member
+#pragma warning(disable : 5045)  // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#endif
 #include <iostream>
 #include <iomanip>
 // Configure the bfloat template environment
@@ -39,22 +45,20 @@ try {
 
 #if MANUAL_TESTING
 
-	bool bReportIndividualTestCases = false;
-
 	// bfloat<> is a linear floating-point
 
 	{
-		bfloat<11, 8> a;
+		bfloat<4, 1> a;
+		a.debug();
 		a.set_raw_bits(0x002); 
-		float f;
-		f = float(a);
+		float f = float(a);
+		a = 0.250001f;
 		std::cout << to_binary(a) << " : " << a << " : " << f << endl;
 	}
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<4, 1, uint8_t>, bfloat<5, 1, uint8_t>, double >(true), tag, "bfloat<4,1,uint8_t>");
-
-//	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<8, 2, uint8_t>, bfloat<9, 2, uint8_t>, float >(true), tag, "bfloat<8,2,uint8_t>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<11, 2, uint16_t>, bfloat<12, 2, uint16_t>, float >(false), tag, "bfloat<11,2,uint16_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<4, 1, uint8_t>, bfloat<5, 1, uint8_t>, float >(true), tag, "bfloat<4,1,uint8_t>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 1, uint8_t>, bfloat<6, 1, uint8_t>, float >(false), tag, "bfloat<5,1,uint8_t>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<8, 1, uint8_t>, bfloat<9, 1, uint8_t>, float >(false), tag, "bfloat<8,1,uint8_t>");
 
 	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
@@ -70,9 +74,10 @@ try {
 	cout << "BFLOAT conversion from float validation" << endl;
 
 	// es = 1
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<3, 1>, float >(bReportIndividualTestCases), tag, "bfloat<3,1>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<4, 1>, float >(bReportIndividualTestCases), tag, "bfloat<4,1>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<5, 1>, float >(bReportIndividualTestCases), tag, "bfloat<5,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<6, 1>, float >(tag, true), tag, "bfloat<6,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<6, 1>, float >(bReportIndividualTestCases), tag, "bfloat<6,1>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<7, 1>, float >(bReportIndividualTestCases), tag, "bfloat<7,1>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<8, 1>, float >(bReportIndividualTestCases), tag, "bfloat<8,1>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<9, 1>, float >(bReportIndividualTestCases), tag, "bfloat<9,1>");
@@ -81,6 +86,7 @@ try {
 
 
 	// es = 2
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<4, 2>, float >(bReportIndividualTestCases), tag, "bfloat<4,2>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<5, 2>, float >(bReportIndividualTestCases), tag, "bfloat<5,2>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<6, 2>, float >(bReportIndividualTestCases), tag, "bfloat<6,2>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<7, 2>, float >(bReportIndividualTestCases), tag, "bfloat<7,2>");
@@ -91,6 +97,7 @@ try {
 
 
 	// es = 3
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<5, 3>, float >(bReportIndividualTestCases), tag, "bfloat<5,3>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<6, 3>, float >(bReportIndividualTestCases), tag, "bfloat<6,3>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<7, 3>, float >(bReportIndividualTestCases), tag, "bfloat<7,3>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<8, 3>, float >(bReportIndividualTestCases), tag, "bfloat<8,3>");
@@ -100,6 +107,7 @@ try {
 
 
 	// es = 4
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<6, 4>, float >(bReportIndividualTestCases), tag, "bfloat<6,4>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<7, 4>, float >(bReportIndividualTestCases), tag, "bfloat<7,4>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<8, 4>, float >(bReportIndividualTestCases), tag, "bfloat<8,4>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<10, 4>, float >(bReportIndividualTestCases), tag, "bfloat<10,4>");
@@ -108,6 +116,7 @@ try {
 
 
 	// es = 5
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<7, 5>, float >(bReportIndividualTestCases), tag, "bfloat<7,5>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<8, 5>, float >(bReportIndividualTestCases), tag, "bfloat<8,5>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<10, 5>, float >(bReportIndividualTestCases), tag, "bfloat<10,5>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<12, 5>, float >(bReportIndividualTestCases), tag, "bfloat<12,5>");
@@ -115,6 +124,7 @@ try {
 
 
 	// es = 6
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<8, 6>, float >(bReportIndividualTestCases), tag, "bfloat<8,6>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<9, 6>, float >(bReportIndividualTestCases), tag, "bfloat<9,6>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<10, 6>, float >(bReportIndividualTestCases), tag, "bfloat<10,6>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<12, 6>, float >(bReportIndividualTestCases), tag, "bfloat<12,6>");
@@ -122,6 +132,7 @@ try {
 
 
 	// es = 7
+	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat< 9, 7>, float >(bReportIndividualTestCases), tag, "bfloat<9,7>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<10, 7>, float >(bReportIndividualTestCases), tag, "bfloat<10,7>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<12, 7>, float >(bReportIndividualTestCases), tag, "bfloat<12,7>");
 	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<14, 7>, float >(bReportIndividualTestCases), tag, "bfloat<14,7>");

@@ -88,13 +88,13 @@ std::string pretty_print(const bfloat<nbits, es, bt>& r, int printPrecision = st
 	// exponent bits
 	ss << '-';
 	for (int i = int(es) - 1; i >= 0; --i) {
-		ss << (e.test(i) ? '1' : '0');
+		ss << (e.test(static_cast<size_t>(i)) ? '1' : '0');
 	}
 
 	// fraction bits
 	ss << '-';
 	for (int i = int(r.fbits) - 1; i >= 0; --i) {
-		ss << (f.test(i) ? '1' : '0');
+		ss << (f.test(static_cast<size_t>(i)) ? '1' : '0');
 	}
 
 	return ss.str();
@@ -126,12 +126,12 @@ std::string color_print(const bfloat<nbits, es, bt>& r) {
 
 	// exponent bits
 	for (int i = int(es) - 1; i >= 0; --i) {
-		ss << cyan << (e.test(i) ? '1' : '0');
+		ss << cyan << (e.test(static_cast<size_t>(i)) ? '1' : '0');
 	}
 
 	// fraction bits
 	for (int i = int(r.fbits) - 1; i >= 0; --i) {
-		ss << magenta << (f.test(i) ? '1' : '0');
+		ss << magenta << (f.test(static_cast<size_t>(i)) ? '1' : '0');
 	}
 
 	ss << def;

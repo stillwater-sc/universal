@@ -329,7 +329,7 @@ public:
 		}
 		float_decoder decoder;
 		decoder.f = rhs;
-		uint32_t raw = (1u << 23u) | decoder.parts.fraction; // TODO: this only works for normalized numbers 1.###, need a test for denorm
+		uint32_t raw = (1ul << 23ul) | decoder.parts.fraction; // TODO: this only works for normalized numbers 1.###, need a test for denorm
 		int radixPoint = 23 - (static_cast<int>(decoder.parts.exponent) - 127); // move radix point to the right if scale > 0, left if scale < 0
 		// our fixed-point has its radixPoint at rbits
 		int shiftRight = radixPoint - int(rbits);
@@ -355,7 +355,7 @@ public:
 			bool sticky = (mask & raw);
 			
 			raw >>= shiftRight;  // shift out the bits we are rounding away
-			bool lsb = (raw & 0x1);
+			bool lsb = (raw & 0x1ul);
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
 			//       0     1       0     0       down  round to even

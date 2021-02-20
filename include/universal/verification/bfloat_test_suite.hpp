@@ -55,155 +55,234 @@ namespace sw::universal {
 
 	/////////////////////////////// VERIFICATION TEST SUITES ////////////////////////////////
 
-		/// <summary>
-		/// enumerate all conversion cases for a number system with ubits
-		/// </summary>
-		/// <typeparam name="TestType">the test configuration</typeparam>
-		/// <typeparam name="SrcType">the source type to convert from</typeparam>
-		/// <param name="tag">string to indicate what is being tested</param>
-		/// <param name="bReportIndividualTestCases">if true print results of each test case. Default is false.</param>
-		/// <returns>number of failed test cases</returns>
-	template<typename TestType, typename SrcType>
-	int VerifyBfloatIntervalConversion(const std::string& tag, bool bReportIndividualTestCases) {
-		// bfloat<> is organized as a set of exact samples followed by an interval to the next exact value
-		//
-		// vprev    exact value          ######-0     ubit = false     some value [vprev,vprev]
-		//          interval value       ######-1     ubit = true      (vprev, v)
-		// v        exact value          ######-0     ubit = false     some value [v,v]
-		//          interval value       ######-1     ubit = true      (v, vnext)
-		// vnext    exact value          ######-0     ubit = false     some value [vnext,vnext]
-		//          interval value       ######-1     ubit = true      (vnext, vnextnext)
-		//
-		// the assignment test can thus be constructed by enumerating the exact values of a configuration
-		// and taking a -diff to obtain the interval value of vprev, 
-		// and taking a +diff to obtain the interval value of v
+	/*
+   0:            b0000       0      -1             b00              b0                             0        4.2x0x0r
+   1:            b0001       0      -1             b00              b1                           0.5        4.2x0x1r
+   2:            b0010       0       0             b01              b0                             1        4.2x0x2r
+   3:            b0011       0       0             b01              b1                           1.5        4.2x0x3r
+   4:            b0100       0       1             b10              b0                             2        4.2x0x4r
+   5:            b0101       0       1             b10              b1                             3        4.2x0x5r
+   6:            b0110       0       2             b11              b0                           inf        4.2x0x6r
+   7:            b0111       0       2             b11              b1                           nan        4.2x0x7r
+   8:            b1000       1      -1             b00              b0                             0        4.2x0x8r
+
+   0:           b00000       0      -2              b0            b000                             0       5.1x0x00r
+   1:           b00001       0      -2              b0            b001                          0.25       5.1x0x01r
+   2:           b00010       0      -1              b0            b010                           0.5       5.1x0x02r
+   3:           b00011       0      -1              b0            b011                          0.75       5.1x0x03r
+   4:           b00100       0       0              b0            b100                             1       5.1x0x04r
+   5:           b00101       0       0              b0            b101                          1.25       5.1x0x05r
+   6:           b00110       0       0              b0            b110                           1.5       5.1x0x06r
+   7:           b00111       0       0              b0            b111                          1.75       5.1x0x07r
+   8:           b01000       0       1              b1            b000                             2       5.1x0x08r
+   9:           b01001       0       1              b1            b001                          2.25       5.1x0x09r
+  10:           b01010       0       1              b1            b010                           2.5       5.1x0x0Ar
+  11:           b01011       0       1              b1            b011                          2.75       5.1x0x0Br
+  12:           b01100       0       1              b1            b100                             3       5.1x0x0Cr
+  13:           b01101       0       1              b1            b101                          3.25       5.1x0x0Dr
+  14:           b01110       0       1              b1            b110                           inf       5.1x0x0Er
+  15:           b01111       0       1              b1            b111                           nan       5.1x0x0Fr
+  16:           b10000       1      -2              b0            b000                             0       5.1x0x10r
+	
+   0:           b0000-0       0      -2              b0            b000                             0       5.1x0x00r  <---- 4.1x0x0r
+   1:           b0000-1       0      -2              b0            b001                          0.25       5.1x0x01r
+   2:           b0001-0       0      -1              b0            b010                           0.5       5.1x0x02r  <---- 4.1x0x1r
+   3:           b0001-1       0      -1              b0            b011                          0.75       5.1x0x03r
+   4:           b0010-0       0       0              b0            b100                             1       5.1x0x04r  <---- 4.1x0x2r
+   5:           b0010-1       0       0              b0            b101                          1.25       5.1x0x05r
+   6:           b0011-0       0       0              b0            b110                           1.5       5.1x0x06r  <---- 4.1x0x3r
+   7:           b0011-1       0       0              b0            b111                          1.75       5.1x0x07r
+   8:           b0100-0       0       1              b1            b000                             2       5.1x0x08r  <---- 4.1x0x4r
+   9:           b0100-1       0       1              b1            b001                          2.25       5.1x0x09r
+  10:           b0101-0       0       1              b1            b010                           2.5       5.1x0x0Ar  <---- 4.1x0x4r
+  11:           b0101-1       0       1              b1            b011                          2.75       5.1x0x0Br
+  12:           b0110-0       0       1              b1            b100                             3       5.1x0x0Cr  <---- 4.1x0x4r
+  13:           b0110-1       0       1              b1            b101                          3.25       5.1x0x0Dr
+  14:           b0111-0       0       1              b1            b110                           inf       5.1x0x0Er  <---- 4.1x0x7r
+  15:           b0111-1       0       1              b1            b111                           nan       5.1x0x0Fr
+  16:           b1000-0       1      -2              b0            b000                             0       5.1x0x10r  <---- 4.1x0x7r
+
+  VerifyConversion algorithm: enumerate bfloat<nbits+1, es> and create minus and plus deltas that you a priori know which way they round
+																								 1.00 - delta       round up
+   4:           b0010-0       0       0              b0            b100                             1       5.1x0x04r  <---- 4.1x0x2r
+                                                                                                 1.00 + delta       round down
+
+																								 1.25 - delta       round up
+   5:           b0010-1       0       0              b0            b101                          1.25       5.1x0x05r
+																								 1.25 + delta       round down
+
+																								 1.50 - delta       round up
+   6:           b0011-0       0       0              b0            b110                           1.5       5.1x0x06r  <---- 4.1x0x3r
+																								 1.50 + delta       round down
+
+																								 1.75 - delta       round up
+   7:           b0011-1       0       0              b0            b111                          1.75       5.1x0x07r
+																								 1.75 + delta       round down
+
+
+   8:           b0100-0       0       1              b1            b000                             2       5.1x0x08r  <---- 4.1x0x4r
+
+	*/
+
+/// <summary>
+/// enumerate all conversion cases for a TestType
+/// </summary>
+/// <typeparam name="TestType">the test configuration</typeparam>
+/// <typeparam name="RefType">the reference configuration</typeparam>
+/// <param name="tag">string to indicate what is being tested</param>
+/// <param name="bReportIndividualTestCases">if true print results of each test case. Default is false.</param>
+/// <returns>number of failed test cases</returns>
+	template<typename TestType, typename RefType, typename SrcType = double>
+	int VerifyBfloatConversion(bool bReportIndividualTestCases) {
+		// we are going to generate a test set that consists of all configs and their midpoints
+		// we do this by enumerating a configuration that is 1-bit larger than the test configuration
+		// with the extra bit allocated to the fraction.
+		// The sample values of the  larger configuration will be at the mid-point between the smaller 
+		// configuration sample values thus creating a full cover test set for value conversions.
+		// The precondition for this type of test is that the value conversion is verified.
+		// To generate the three test cases, we'll enumerate the exact value, and a perturbation slightly
+		// smaller from the midpoint that will round down, and one slightly larger that will round up,
+		// to test the rounding logic of the conversion.
 		constexpr size_t nbits = TestType::nbits;
-		constexpr size_t NR_TEST_CASES = (size_t(1) << nbits);
+		constexpr size_t NR_TEST_CASES = (size_t(1) << (nbits + 1));
+		constexpr size_t HALF = (size_t(1) << nbits);
+
+		// For example: 
+		// TestType: fixpnt<nbits,rbits,Saturating,uint8_t> needs RefType fixpnt<nbits+1, rbits+1, Saturating,uint8_t>
+		// TestType: bfloat<nbits, es, uint8_t> needs RefType bfloat<nbits + 1, es, uint8_t>
+		// TestType: posit<nbits, es, uint8_t> needs RefType posit<nbits + 1, es, uint8_t>
 
 		const unsigned max = nbits > 20 ? 20 : nbits + 1;
 		size_t max_tests = (size_t(1) << max);
 		if (max_tests < NR_TEST_CASES) {
-			std::cout << "VerifyBfloatIntervalConversion " << typeid(TestType).name() << ": NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
+			std::cout << "VerifyConversion " << typeid(TestType).name() << ": NR_TEST_CASES = " << NR_TEST_CASES << " clipped by " << max_tests << std::endl;
 		}
 
 		// execute the test
 		int nrOfFailedTests = 0;
-		TestType positive_minimum;
-		SrcType dminpos = SrcType(minpos(positive_minimum));
+		RefType positive_minimum;
+		double dminpos = double(minpos(positive_minimum));
+		RefType negative_maximum;
+		double dmaxneg = double(maxneg(negative_maximum));
 
 		// NUT: number under test
-		TestType nut;
-		TestType debugTarget;
-//		debugTarget.set_raw_bits(0x1FE); // set it to something to catch
-
-		for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; i += 2) {
-			TestType current, interval;
+		TestType nut, golden;
+		double eps = dminpos / 2.0;  // the test value between 0 and minpos
+		for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
+			RefType ref, prev, next;
 			SrcType testValue{ 0.0 };
-			current.set_raw_bits(i);
-			interval.set_raw_bits(i + 1);  // sets the ubit
-			SrcType da = SrcType(current);
-
-			// basic design of the test suite
-			// generate a reference, called da, which is an IEEE native format (float/double/long double)
-			// from that generate the test cases
-			// da - delta = falls into the previous interval == (prev, current)
-			// da         = is exact                         == [current]
-			// da + delta = falls into the next interval     == (current, next)
-
-			// debug condition to catch specific failures
-//			if (current == debugTarget) {
-//				std::cout << "found debug target : " << debugTarget << " : interval " << interval << std::endl;
-//			}
-
-			if (current.iszero()) {
-				SrcType delta = SrcType(dminpos / 4.0);  // the test value between 0 and minpos
-				if (current.sign()) {
-					// da         = [-0]
+			ref.set_raw_bits(i);
+			SrcType da = SrcType(ref);
+			if (i > 0) {
+				eps = 1.0e-6; // da > 0 ? da * 1.0e-6 : da * -1.0e-6;
+			}
+			if (i % 2) {
+				if (i == 1)	{
+					// special case of a tie that needs to round to even -> 0
 					testValue = da;
 					nut = testValue;
-					if (!nut.iszero()) {
-						// working around optimizing compilers ignoring or flipping the sign on 0
-						nrOfFailedTests += Compare(testValue, nut, current, bReportIndividualTestCases);
-					}
-					// da - delta = (-0,-minpos)
-					testValue = da - delta;
+					golden = 0.0f;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+
+					// this rounds up
+					testValue = SrcType(da + eps);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, interval, bReportIndividualTestCases);
+					next.set_raw_bits(i + 1);
+					golden = double(next);
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+
+				}
+				else if (i == HALF - 1) {
+					// special case of projecting to maxpos
+					testValue = SrcType(da - eps);
+					nut = testValue;
+					prev.set_raw_bits(HALF - 2);
+					golden = double(prev);
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+				}
+				else if (i == HALF + 1) {
+					// special case of projecting to maxneg
+					testValue = SrcType(da - eps);
+					nut = testValue;
+					golden = dmaxneg;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+				}
+				else if (i == NR_TEST_CASES - 1) {
+					// special case of projecting to minneg
+					testValue = SrcType(da - eps);
+					nut = testValue;
+					prev.set_raw_bits(i - 1);
+					golden = double(prev);
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+
+					// but the +delta goes to 0
+					testValue = SrcType(da + eps);
+					nut = testValue;
+					//				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
+					golden = 0.0f;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else {
-					// da         = [0]
-					testValue = da;
+					// for odd values, we are between sample values, so we create the round-up and round-down cases
+					// round-down
+					testValue = SrcType(da - eps);
 					nut = testValue;
-					if (!nut.iszero()) {
-						// working around optimizing compilers ignoring of flipping the sign on 0
-						nrOfFailedTests += Compare(testValue, nut, current, bReportIndividualTestCases);
-					}
-					// da + delta = (0,minpos)
-					testValue = da + delta;
-					if (isdenorm(testValue)) { std::cout << testValue << " is denormalized\n"; }
+					prev.set_raw_bits(i - 1);
+					golden = double(prev);
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					// round-up
+					testValue = SrcType(da + eps);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, interval, bReportIndividualTestCases);
+					next.set_raw_bits(i + 1);
+					golden = double(next);
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
-			}
-			else if (current.isinf(INF_TYPE_NEGATIVE)) {
-				std::cout << "-inf tbd\n";
-			}
-			else if (current.isinf(INF_TYPE_POSITIVE)) {
-				std::cout << "+inf tbd\n";
-			}
-			else if (current.isnan(NAN_TYPE_SIGNALLING)) {  // sign is true
-				// can never happen as snan is odd, i.e. ubit = 1 and this loop enumerates only even encodings
-			}
-			else if (current.isnan(NAN_TYPE_QUIET)) {       // sign is false
-				// can never happen as snan is odd, i.e. ubit = 1 and this loop enumerates only even encodings
 			}
 			else {
-				TestType previous, previousInterval;
-				previous.set_raw_bits(i - 2);
-				previousInterval.set_raw_bits(i - 1);
-				SrcType prev = SrcType(previous);
-				SrcType delta = SrcType(SrcType(da - prev) / SrcType(2.0));  // NOTE: the sign will flip the relationship between the enumeration and the values
-				int currentFailures = nrOfFailedTests;
-				if (current == debugTarget) {
-					std::cout << "previous: " << to_binary(previous) << " : " << previous << std::endl;
-					std::cout << "interval: " << to_binary(previousInterval) << " : " << previousInterval << std::endl;
-					std::cout << "current : " << to_binary(current) << " : " << current << std::endl;
-					std::cout << "interval: " << to_binary(interval) << " : " << interval << std::endl;
-					std::cout << "delta   : " << delta << " : " << to_binary(delta, true) << std::endl;
-				}
-				// da - delta = (prev,current) == previous + ubit = previous interval value
-				testValue = da - delta;
-				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, previousInterval, bReportIndividualTestCases);
-				// da         = [v]
-				testValue = da;
-				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, current, bReportIndividualTestCases);
-				// da + delta = (v+,next) == current + ubit = current interval value
-				testValue = da + delta;
-				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, interval, bReportIndividualTestCases);
+				// for the even values, we generate the round-to-actual cases
+				if (i == 0) {
+					// ref = 0
+					// 0                -> value = 0
+					// half of next     -> value = 0
+					// special case of assigning to 0
+					testValue = da;
+					nut = testValue;
+					golden = 0.0f;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 
-				if (nrOfFailedTests - currentFailures) {
-					std::cout << "previous: " << to_binary(previous) << " : " << previous << std::endl;
-					std::cout << "interval: " << to_binary(previousInterval) << " : " << previousInterval << std::endl;
-					std::cout << "current : " << to_binary(current) << " : " << current << std::endl;
-					std::cout << "interval: " << to_binary(interval) << " : " << interval << std::endl;
-					std::cout << "delta   : " << delta << " : " << to_binary(delta, true) << std::endl;
+					testValue = SrcType(da + eps);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
-
-			}
-			if (nrOfFailedTests > 24) {
-				std::cout << "Too many errors: exiting\n";
-				break;
+				else if (i == NR_TEST_CASES - 2) {
+					// special case of projecting to minneg
+					testValue = SrcType(da - eps);
+					nut = testValue;
+					prev.set_raw_bits(NR_TEST_CASES - 2);
+					golden = double(prev);
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+				}
+				else {
+					// for even values, we are on actual representable values, so we create the round-up and round-down cases
+					// round-up
+					testValue = SrcType(da - eps);
+					nut = testValue;
+					golden = da;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					// round-down
+					testValue = SrcType(da + eps);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+				}
 			}
 		}
 		return nrOfFailedTests;
 	}
 
+
 	// validate the increment operator++
 	template<size_t nbits, size_t es>
-	int VerifyIncrement(const std::string& tag, bool bReportIndividualTestCases)
+	int VerifyIncrement(bool bReportIndividualTestCases)
 	{
 		std::vector< bfloat<nbits, es> > set;
 		//	GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -217,7 +296,7 @@ namespace sw::universal {
 			p++;
 			ref = *(it + 1);
 			if (p != ref) {
-				if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
+				if (bReportIndividualTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
 		}
@@ -227,7 +306,7 @@ namespace sw::universal {
 
 	// validate the decrement operator--
 	template<size_t nbits, size_t es>
-	int VerifyDecrement(const std::string& tag, bool bReportIndividualTestCases)
+	int VerifyDecrement(bool bReportIndividualTestCases)
 	{
 		std::vector< bfloat<nbits, es> > set;
 		//	GenerateOrderedPositSet(set); // [NaR, -maxpos, ..., -minpos, 0, minpos, ..., maxpos]
@@ -241,7 +320,7 @@ namespace sw::universal {
 			p--;
 			ref = *(it - 1);
 			if (p != ref) {
-				if (bReportIndividualTestCases) std::cout << tag << " FAIL " << p << " != " << ref << std::endl;
+				if (bReportIndividualTestCases) std::cout << " FAIL " << p << " != " << ref << std::endl;
 				nrOfFailedTestCases++;
 			}
 		}
