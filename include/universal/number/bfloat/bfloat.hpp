@@ -349,9 +349,12 @@ public:
 
 		// special case handling
 		if (raw_exp == 0xFFu) { // special cases
-			if (raw == 1ul) {
+			if (raw == 1ul || raw == 0x0040'0001ul) {
 				// 1.11111111.00000000000000000000001 signalling nan
 				// 0.11111111.00000000000000000000001 signalling nan
+				// MSVC
+				// 1.11111111.10000000000000000000001 signalling nan
+				// 0.11111111.10000000000000000000001 signalling nan
 				setnan(NAN_TYPE_SIGNALLING);
 				return *this;
 			}
@@ -398,7 +401,7 @@ public:
 		}
 		// set the exponent
 		uint32_t biasedExponent{ 0 };
-		int shiftRight = 23 - static_cast<int>(fbits) - 1; // this is the bit shift to get the MSB of the src to the MSB of the tgt
+		int shiftRight = 23 - static_cast<int>(fbits); // this is the bit shift to get the MSB of the src to the MSB of the tgt
 		int adjustment{ 0 };
 		// we have 23 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 		// simpler rounding as compared to IEEE as uncertainty bit captures any non-zero bit past the LSB
@@ -545,7 +548,7 @@ public:
 		}
 		// set the exponent
 		uint64_t biasedExponent{ 0 };
-		int shiftRight = 52 - static_cast<int>(fbits) - 1; // this is the bit shift to get the MSB of the src to the MSB of the tgt
+		int shiftRight = 52 - static_cast<int>(fbits); // this is the bit shift to get the MSB of the src to the MSB of the tgt
 		int adjustment{ 0 };
 		// we have 52 fraction bits and one hidden bit for a normal number, and no hidden bit for a subnormal
 		// simpler rounding as compared to IEEE as uncertainty bit captures any non-zero bit past the LSB
@@ -902,6 +905,7 @@ public:
 		}
 		return e;
 	}
+	// tests
 	inline constexpr bool isneg() const { return sign(); }
 	inline constexpr bool ispos() const { return !sign(); }
 	inline constexpr bool iszero() const {

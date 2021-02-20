@@ -141,6 +141,8 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	std::cout << to_binary(fa) << " " << fa << " : ";
 	a = fa;
 	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+	if (!a.isnan(NAN_TYPE_SIGNALLING)) ++nrOfFailedTests;
+	if (a.isnan(NAN_TYPE_SIGNALLING)) std::cout << "PASS snan\n"; else std::cout << "FAIL snan\n";
 
 	// test qNaN
 	a.setnan(NAN_TYPE_QUIET);
@@ -148,6 +150,8 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	std::cout << to_binary(fa) << " " << fa << " : ";
 	a = fa;
 	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+	if (!a.isnan(NAN_TYPE_QUIET)) ++nrOfFailedTests;
+	if (a.isnan(NAN_TYPE_QUIET)) std::cout << "PASS qnan\n"; else std::cout << "FAIL qnan\n";
 
 	// test +inf
 	a.setinf(false); // +inf
@@ -155,6 +159,8 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	std::cout << to_binary(fa) << " " << fa << " : ";
 	a = fa;
 	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+	if (!a.isinf(INF_TYPE_POSITIVE)) ++nrOfFailedTests;
+	if (a.isinf(INF_TYPE_POSITIVE)) std::cout << "PASS +inf\n"; else std::cout << "FAIL +inf\n";
 
 	// test -inf
 	a.setinf(true); // -inf
@@ -162,6 +168,8 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	std::cout << to_binary(fa) << " " << fa << " : ";
 	a = fa;
 	std::cout << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+	if (!a.isinf(INF_TYPE_NEGATIVE)) ++nrOfFailedTests;
+	if (a.isinf(INF_TYPE_NEGATIVE)) std::cout << "PASS -inf\n"; else std::cout << "FAIL -inf\n";
 
 	std::cout << "Representations of zero in " << typeid(NativeFloatingPointType).name() << '\n';
 	NativeFloatingPointType zero;
@@ -177,6 +185,7 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
 	a = fa;
 	std::cout << "assignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+	if (!a.iszero()) ++nrOfFailedTests;
 	if (a.iszero()) std::cout << "PASS +0 == iszero()\n"; else std::cout << "FAIL +0 != iszero()\n";
 
 	// Testing problem: the optimizer might destroy the sign of a copy of a -0.0
@@ -188,6 +197,7 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
 	a = fa;
 	std::cout << "assignment a = " << color_print(a) << " " << pretty_print(a) << " " << a << '\n';
+	if (!a.iszero()) ++nrOfFailedTests;
 	if (a.iszero()) std::cout << "PASS -0 == iszero()\n"; else std::cout << "FAIL -0 != iszero()\n";
 
 	return nrOfFailedTests;
@@ -366,70 +376,68 @@ int TestTripleBlockRepresentations(const std::string& tag, const std::string& op
 /*
 * e = exponent bit, m = most significant fraction bit, f = fraction bit, h = hidden bit
 float       s-eee'eeee'efff'ffff'ffff'ffff'ffff'ffff (23 fraction bits, 1 hidden bit)
-                                                                                 float fbits = 0x007F'FFFF  fbits   hidden+raw    0x00FF'FFFF            shift right == 24 - fbits - ubit
-bfloat<4,1>                                     'semu   fraction = '0000'0000'0000'0000'0000'0000'0000'00h0     1    sticky mask = 0x007F'FFFF   raw+hidden 0x00FF'FFFF >> 22 to get to 0x0000'0003
-bfloat<5,1>                                    s'emfu   fraction = '0000'0000'0000'0000'0000'0000'0000'0h10     2    sticky mask = 0x003F'FFFF   raw+hidden 0x00FF'FFFF >> 21 to get to 0x0000'0007
-bfloat<6,1>                                   se'mffu   fraction = '0000'0000'0000'0000'0000'0000'0000'h110     3    sticky mask = 0x001F'FFFF   raw+hidden 0x00FF'FFFF >> 20 to get to 0x0000'000F
-bfloat<7,1>                                  sem'fffu   fraction = '0000'0000'0000'0000'0000'0000'000h'1110     4    sticky mask = 0x000F'FFFF   raw+hidden 0x00FF'FFFF >> 19 to get to 0x0000'001F
-bfloat<8,1>                                'semf'fffu   fraction = '0000'0000'0000'0000'0000'0000'00h1'1110     5    sticky mask = 0x0007'FFFF   raw+hidden 0x00FF'FFFF >> 18 to get to 0x0000'003F
-bfloat<9,1>                               s'emff'fffu   fraction = '0000'0000'0000'0000'0000'0000'0h11'1110     6    sticky mask = 0x0003'FFFF   raw+hidden 0x00FF'FFFF >> 17 to get to 0x0000'007F
-bfloat<10,1>                             se'mfff'fffu   fraction = '0000'0000'0000'0000'0000'0000'h111'1110     7    sticky mask = 0x0001'FFFF   raw+hidden 0x00FF'FFFF >> 16 to get to 0x0000'00FF
-bfloat<11,1>                            sem'ffff'fffu   fraction = '0000'0000'0000'0000'0000'000h'1111'1110     8    sticky mask = 0x0000'FFFF   raw+hidden 0x00FF'FFFF >> 15 to get to 0x0000'01FF
-bfloat<12,1>                          'semf'ffff'fffu   fraction = '0000'0000'0000'0000'0000'00h1'1111'1110     9    sticky mask = 0x0000'7FFF   raw+hidden 0x00FF'FFFF >> 14 to get to 0x0000'03FF
-bfloat<13,1>                         s'emff'ffff'fffu   fraction = '0000'0000'0000'0000'0000'0h11'1111'1110    10    sticky mask = 0x0000'3FFF   raw+hidden 0x00FF'FFFF >> 13 to get to 0x0000'07FF
-bfloat<14,1>                        se'mfff'ffff'fffu   fraction = '0000'0000'0000'0000'0000'h111'1111'1110    11    sticky mask = 0x0000'1FFF   raw+hidden 0x00FF'FFFF >> 12 to get to 0x0000'0FFF
-bfloat<15,1>                       sem'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'000h'1111'1111'1110    12    sticky mask = 0x0000'0FFF   raw+hidden 0x00FF'FFFF >> 11 to get to 0x0000'1FFF
-bfloat<16,1>                     'semf'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'00h1'1111'1111'1110    13    sticky mask = 0x0000'07FF   raw+hidden 0x00FF'FFFF >> 10 to get to 0x0000'3FFF
-bfloat<17,1>                    s'emff'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'0h11'1111'1111'1110    14    sticky mask = 0x0000'03FF   raw+hidden 0x00FF'FFFF >>  9 to get to 0x0000'7FFF
-bfloat<18,1>                   se'mfff'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'h111'1111'1111'1110    15    sticky mask = 0x0000'01FF   raw+hidden 0x00FF'FFFF >>  8 to get to 0x0000'FFFF
-bfloat<19,1>                  sem'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'000h'1111'1111'1111'1110    16    sticky mask = 0x0000'00FF   raw+hidden 0x00FF'FFFF >>  7 to get to 0x0001'FFFF
-bfloat<20,1>                'semf'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'00h1'1111'1111'1111'1110    17    sticky mask = 0x0000'007F   raw+hidden 0x00FF'FFFF >>  6 to get to 0x0003'FFFF
-bfloat<21,1>               s'emff'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'0h11'1111'1111'1111'1110    18    sticky mask = 0x0000'003F   raw+hidden 0x00FF'FFFF >>  5 to get to 0x0007'FFFF
-bfloat<22,1>              se'mfff'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'h111'1111'1111'1111'1110    19    sticky mask = 0x0000'001F   raw+hidden 0x00FF'FFFF >>  4 to get to 0x000F'FFFF
-bfloat<23,1>             sem'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'000h'1111'1111'1111'1111'1110    20    sticky mask = 0x0000'000F   raw+hidden 0x00FF'FFFF >>  3 to get to 0x001F'FFFF
-bfloat<24,1>           'semf'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'00h1'1111'1111'1111'1111'1110    21    sticky mask = 0x0000'0007   raw+hidden 0x00FF'FFFF >>  2 to get to 0x003F'FFFF
-bfloat<25,1>          s'emff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'0h11'1111'1111'1111'1111'1110    22    sticky mask = 0x0000'0003   raw+hidden 0x00FF'FFFF >>  1 to get to 0x007F'FFFF
-bfloat<26,1>         se'mfff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'h111'1111'1111'1111'1111'1110    23    sticky mask = 0x0000'0001   raw+hidden 0x00FF'FFFF >>  0 to get to 0x00FF'FFFF
-bfloat<27,1>      ' sem'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'000h'1111'1111'1111'1111'1111'1110    24    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -1 to get to 0x01FF'FFFF
-bfloat<28,1>      'semf'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'00h1'1111'1111'1111'1111'1111'1110    25    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -2 to get to 0x03FF'FFFF
-bfloat<29,1>     s'emff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0h11'1111'1111'1111'1111'1111'1110    26    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -3 to get to 0x07FF'FFFF
-bfloat<30,1>    se'mfff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'h111'1111'1111'1111'1111'1111'1110    27    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -4 to get to 0x0FFF'FFFF
-bfloat<31,1> ' sem'ffff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '000h'1111'1111'1111'1111'1111'1111'1110    28    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -5 to get to 0x1FFF'FFFF
-bfloat<32,1> 'semf'ffff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '00h1'1111'1111'1111'1111'1111'1111'1110    29    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -6 to get to 0x3FFF'FFFF
+                                                                                  float fbits = 0x007F'FFFF  fbits   hidden+raw    0x00FF'FFFF            shift right == 24 - fbits
+bfloat<3,1>                                      'sem   fraction = '0000'0000'0000'0000'0000'0000'0000'000h     1    sticky mask = 0x00FF'FFFF   raw+hidden 0x00FF'FFFF >> 23 to get to 0x0000'0001
+bfloat<4,1>                                     'semf   fraction = '0000'0000'0000'0000'0000'0000'0000'00h0     2    sticky mask = 0x007F'FFFF   raw+hidden 0x00FF'FFFF >> 22 to get to 0x0000'0003
+bfloat<5,1>                                    s'emff   fraction = '0000'0000'0000'0000'0000'0000'0000'0h10     3    sticky mask = 0x003F'FFFF   raw+hidden 0x00FF'FFFF >> 21 to get to 0x0000'0007
+bfloat<6,1>                                   se'mfff   fraction = '0000'0000'0000'0000'0000'0000'0000'h110     4    sticky mask = 0x001F'FFFF   raw+hidden 0x00FF'FFFF >> 20 to get to 0x0000'000F
+bfloat<7,1>                                  sem'ffff   fraction = '0000'0000'0000'0000'0000'0000'000h'1110     5    sticky mask = 0x000F'FFFF   raw+hidden 0x00FF'FFFF >> 19 to get to 0x0000'001F
+bfloat<8,1>                                'semf'ffff   fraction = '0000'0000'0000'0000'0000'0000'00h1'1110     6    sticky mask = 0x0007'FFFF   raw+hidden 0x00FF'FFFF >> 18 to get to 0x0000'003F
+bfloat<9,1>                               s'emff'ffff   fraction = '0000'0000'0000'0000'0000'0000'0h11'1110     7    sticky mask = 0x0003'FFFF   raw+hidden 0x00FF'FFFF >> 17 to get to 0x0000'007F
+bfloat<10,1>                             se'mfff'ffff   fraction = '0000'0000'0000'0000'0000'0000'h111'1110     8    sticky mask = 0x0001'FFFF   raw+hidden 0x00FF'FFFF >> 16 to get to 0x0000'00FF
+bfloat<11,1>                            sem'ffff'ffff   fraction = '0000'0000'0000'0000'0000'000h'1111'1110     9    sticky mask = 0x0000'FFFF   raw+hidden 0x00FF'FFFF >> 15 to get to 0x0000'01FF
+bfloat<12,1>                          'semf'ffff'ffff   fraction = '0000'0000'0000'0000'0000'00h1'1111'1110    10    sticky mask = 0x0000'7FFF   raw+hidden 0x00FF'FFFF >> 14 to get to 0x0000'03FF
+bfloat<13,1>                         s'emff'ffff'ffff   fraction = '0000'0000'0000'0000'0000'0h11'1111'1110    11    sticky mask = 0x0000'3FFF   raw+hidden 0x00FF'FFFF >> 13 to get to 0x0000'07FF
+bfloat<14,1>                        se'mfff'ffff'ffff   fraction = '0000'0000'0000'0000'0000'h111'1111'1110    12    sticky mask = 0x0000'1FFF   raw+hidden 0x00FF'FFFF >> 12 to get to 0x0000'0FFF
+bfloat<15,1>                       sem'ffff'ffff'ffff   fraction = '0000'0000'0000'0000'000h'1111'1111'1110    13    sticky mask = 0x0000'0FFF   raw+hidden 0x00FF'FFFF >> 11 to get to 0x0000'1FFF
+bfloat<16,1>                     'semf'ffff'ffff'ffff   fraction = '0000'0000'0000'0000'00h1'1111'1111'1110    14    sticky mask = 0x0000'07FF   raw+hidden 0x00FF'FFFF >> 10 to get to 0x0000'3FFF
+bfloat<17,1>                    s'emff'ffff'ffff'ffff   fraction = '0000'0000'0000'0000'0h11'1111'1111'1110    15    sticky mask = 0x0000'03FF   raw+hidden 0x00FF'FFFF >>  9 to get to 0x0000'7FFF
+bfloat<18,1>                   se'mfff'ffff'ffff'ffff   fraction = '0000'0000'0000'0000'h111'1111'1111'1110    16    sticky mask = 0x0000'01FF   raw+hidden 0x00FF'FFFF >>  8 to get to 0x0000'FFFF
+bfloat<19,1>                  sem'ffff'ffff'ffff'ffff   fraction = '0000'0000'0000'000h'1111'1111'1111'1110    17    sticky mask = 0x0000'00FF   raw+hidden 0x00FF'FFFF >>  7 to get to 0x0001'FFFF
+bfloat<20,1>                'semf'ffff'ffff'ffff'ffff   fraction = '0000'0000'0000'00h1'1111'1111'1111'1110    18    sticky mask = 0x0000'007F   raw+hidden 0x00FF'FFFF >>  6 to get to 0x0003'FFFF
+bfloat<21,1>               s'emff'ffff'ffff'ffff'ffff   fraction = '0000'0000'0000'0h11'1111'1111'1111'1110    19    sticky mask = 0x0000'003F   raw+hidden 0x00FF'FFFF >>  5 to get to 0x0007'FFFF
+bfloat<22,1>              se'mfff'ffff'ffff'ffff'ffff   fraction = '0000'0000'0000'h111'1111'1111'1111'1110    20    sticky mask = 0x0000'001F   raw+hidden 0x00FF'FFFF >>  4 to get to 0x000F'FFFF
+bfloat<23,1>             sem'ffff'ffff'ffff'ffff'ffff   fraction = '0000'0000'000h'1111'1111'1111'1111'1110    21    sticky mask = 0x0000'000F   raw+hidden 0x00FF'FFFF >>  3 to get to 0x001F'FFFF
+bfloat<24,1>           'semf'ffff'ffff'ffff'ffff'ffff   fraction = '0000'0000'00h1'1111'1111'1111'1111'1110    22    sticky mask = 0x0000'0007   raw+hidden 0x00FF'FFFF >>  2 to get to 0x003F'FFFF
+bfloat<25,1>          s'emff'ffff'ffff'ffff'ffff'ffff   fraction = '0000'0000'0h11'1111'1111'1111'1111'1110    23    sticky mask = 0x0000'0003   raw+hidden 0x00FF'FFFF >>  1 to get to 0x007F'FFFF
+bfloat<26,1>         se'mfff'ffff'ffff'ffff'ffff'ffff   fraction = '0000'0000'h111'1111'1111'1111'1111'1110    24    sticky mask = 0x0000'0001   raw+hidden 0x00FF'FFFF >>  0 to get to 0x00FF'FFFF
+bfloat<27,1>      ' sem'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '0000'000h'1111'1111'1111'1111'1111'1110    25    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -1 to get to 0x01FF'FFFF
+bfloat<28,1>      'semf'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '0000'00h1'1111'1111'1111'1111'1111'1110    26    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -2 to get to 0x03FF'FFFF
+bfloat<29,1>     s'emff'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '0000'0h11'1111'1111'1111'1111'1111'1110    27    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -3 to get to 0x07FF'FFFF
+bfloat<30,1>    se'mfff'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '0000'h111'1111'1111'1111'1111'1111'1110    28    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -4 to get to 0x0FFF'FFFF
+bfloat<31,1> ' sem'ffff'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '000h'1111'1111'1111'1111'1111'1111'1110    29    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -5 to get to 0x1FFF'FFFF
+bfloat<32,1> 'semf'ffff'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '00h1'1111'1111'1111'1111'1111'1111'1110    30    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -6 to get to 0x3FFF'FFFF
 
-                                                                                 float fbits = 0x007F'FFFF  fbits   hidden+raw    0x00FF'FFFF            shift right == 24 - fbits - ubit
-bfloat<4,2>                                      seeu  (N/A)                                                    0
-bfloat<5,2>                                    s'eemu   fraction = '0000'0000'0000'0000'0000'0000'0000'00h0     1    sticky mask = 0x003F'FFFF   raw+hidden 0x00FF'FFFF >> 22 to get to 0x0000'0003
-bfloat<6,2>                                   se'emfu   fraction = '0000'0000'0000'0000'0000'0000'0000'0h10     2    sticky mask = 0x001F'FFFF   raw+hidden 0x00FF'FFFF >> 21 to get to 0x0000'0007
-bfloat<7,2>                                  see'mffu   fraction = '0000'0000'0000'0000'0000'0000'0000'h110     3    sticky mask = 0x000F'FFFF   raw+hidden 0x00FF'FFFF >> 20 to get to 0x0000'000F
-bfloat<8,2>                                'seem'fffu   fraction = '0000'0000'0000'0000'0000'0000'000h'1110     4    sticky mask = 0x0007'FFFF   raw+hidden 0x00FF'FFFF >> 19 to get to 0x0000'001F
-bfloat<9,2>                               s'eemf'fffu   fraction = '0000'0000'0000'0000'0000'0000'00h1'1110     5    sticky mask = 0x0003'FFFF   raw+hidden 0x00FF'FFFF >> 18 to get to 0x0000'003F
-bfloat<10,2>                             se'emff'fffu   fraction = '0000'0000'0000'0000'0000'0000'0h11'1110     6    sticky mask = 0x0001'FFFF   raw+hidden 0x00FF'FFFF >> 17 to get to 0x0000'007F
-bfloat<11,2>                            see'mfff'fffu   fraction = '0000'0000'0000'0000'0000'0000'h111'1110     7    sticky mask = 0x0000'FFFF   raw+hidden 0x00FF'FFFF >> 16 to get to 0x0000'00FF
-bfloat<12,2>                          'seem'ffff'fffu   fraction = '0000'0000'0000'0000'0000'000h'1111'1110     8    sticky mask = 0x0000'7FFF   raw+hidden 0x00FF'FFFF >> 15 to get to 0x0000'01FF
-bfloat<13,2>                         s'eemf'ffff'fffu   fraction = '0000'0000'0000'0000'0000'00h1'1111'1110     9    sticky mask = 0x0000'3FFF   raw+hidden 0x00FF'FFFF >> 14 to get to 0x0000'03FF
-bfloat<14,2>                        se'emff'ffff'fffu   fraction = '0000'0000'0000'0000'0000'0h11'1111'1110    10    sticky mask = 0x0000'1FFF   raw+hidden 0x00FF'FFFF >> 13 to get to 0x0000'07FF
-bfloat<15,2>                       see'mfff'ffff'fffu   fraction = '0000'0000'0000'0000'0000'h111'1111'1110    11    sticky mask = 0x0000'0FFF   raw+hidden 0x00FF'FFFF >> 12 to get to 0x0000'0FFF
-bfloat<16,2>                     'seem'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'000h'1111'1111'1110    12    sticky mask = 0x0000'07FF   raw+hidden 0x00FF'FFFF >> 11 to get to 0x0000'1FFF
-bfloat<17,2>                    s'eemf'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'00h1'1111'1111'1110    13    sticky mask = 0x0000'03FF   raw+hidden 0x00FF'FFFF >> 10 to get to 0x0000'3FFF
-bfloat<18,2>                   se'emff'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'0h11'1111'1111'1110    14    sticky mask = 0x0000'01FF   raw+hidden 0x00FF'FFFF >>  9 to get to 0x0000'7FFF
-bfloat<19,2>                  see'mfff'ffff'ffff'fffu   fraction = '0000'0000'0000'0000'h111'1111'1111'1110    15    sticky mask = 0x0000'00FF   raw+hidden 0x00FF'FFFF >>  8 to get to 0x0000'FFFF
-bfloat<20,2>                'seem'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'000h'1111'1111'1111'1110    16    sticky mask = 0x0000'007F   raw+hidden 0x00FF'FFFF >>  7 to get to 0x0001'FFFF
-bfloat<21,2>               s'eemf'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'00h1'1111'1111'1111'1110    17    sticky mask = 0x0000'003F   raw+hidden 0x00FF'FFFF >>  6 to get to 0x0003'FFFF
-bfloat<22,2>              se'emff'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'0h11'1111'1111'1111'1110    18    sticky mask = 0x0000'001F   raw+hidden 0x00FF'FFFF >>  5 to get to 0x0007'FFFF
-bfloat<23,2>             see'mfff'ffff'ffff'ffff'fffu   fraction = '0000'0000'0000'h111'1111'1111'1111'1110    19    sticky mask = 0x0000'000F   raw+hidden 0x00FF'FFFF >>  4 to get to 0x000F'FFFF
-bfloat<24,2>           'seem'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'000h'1111'1111'1111'1111'1110    20    sticky mask = 0x0000'0007   raw+hidden 0x00FF'FFFF >>  3 to get to 0x001F'FFFF
-bfloat<25,2>          s'eemf'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'00h1'1111'1111'1111'1111'1110    21    sticky mask = 0x0000'0003   raw+hidden 0x00FF'FFFF >>  2 to get to 0x003F'FFFF
-bfloat<26,2>         se'emff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'0h11'1111'1111'1111'1111'1110    22    sticky mask = 0x0000'0001   raw+hidden 0x00FF'FFFF >>  1 to get to 0x007F'FFFF
-bfloat<27,2>        see'mfff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0000'h111'1111'1111'1111'1111'1110    23    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >>  0 to get to 0x00FF'FFFF
-bfloat<28,2>      'seem'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'000h'1111'1111'1111'1111'1111'1110    24    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -1 to get to 0x01FF'FFFF
-bfloat<29,2>     s'eemf'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'00h1'1111'1111'1111'1111'1111'1110    25    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -2 to get to 0x03FF'FFFF
-bfloat<30,2>    se'emff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'0h11'1111'1111'1111'1111'1111'1110    26    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -3 to get to 0x07FF'FFFF
-bfloat<31,2>   see'mfff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '0000'h111'1111'1111'1111'1111'1111'1110    27    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -4 to get to 0x0FFF'FFFF
-bfloat<32,2> 'seem'ffff'ffff'ffff'ffff'ffff'ffff'fffu   fraction = '000h'1111'1111'1111'1111'1111'1111'1110    28    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -5 to get to 0x1FFF'FFFF
-
-bfloat<4,1>  s-e-f-u         fraction = 0-0-h-0, sticky mask = 0x007F'FFFF
-double      s-eee'eeee'eeee-ffff'...'ffff  (52 fraction bits, 1 hidden bit
+                                                                                 float fbits = 0x007F'FFFF  fbits   hidden+raw    0x00FF'FFFF            shift right == 24 - fbits
+bfloat<4,2>                                      seem   fraction = '0000'0000'0000'0000'0000'0000'0000'000h     1    sticky mask = 0x00FF'FFFF   raw+hidden 0x00FF'FFFF >> 23 to get to 0x0000'0001
+bfloat<5,2>                                    s'eemf   fraction = '0000'0000'0000'0000'0000'0000'0000'00h0     2    sticky mask = 0x003F'FFFF   raw+hidden 0x00FF'FFFF >> 22 to get to 0x0000'0003
+bfloat<6,2>                                   se'emff   fraction = '0000'0000'0000'0000'0000'0000'0000'0h10     3    sticky mask = 0x001F'FFFF   raw+hidden 0x00FF'FFFF >> 21 to get to 0x0000'0007
+bfloat<7,2>                                  see'mfff   fraction = '0000'0000'0000'0000'0000'0000'0000'h110     4    sticky mask = 0x000F'FFFF   raw+hidden 0x00FF'FFFF >> 20 to get to 0x0000'000F
+bfloat<8,2>                                'seem'ffff   fraction = '0000'0000'0000'0000'0000'0000'000h'1110     5    sticky mask = 0x0007'FFFF   raw+hidden 0x00FF'FFFF >> 19 to get to 0x0000'001F
+bfloat<9,2>                               s'eemf'ffff   fraction = '0000'0000'0000'0000'0000'0000'00h1'1110     6    sticky mask = 0x0003'FFFF   raw+hidden 0x00FF'FFFF >> 18 to get to 0x0000'003F
+bfloat<10,2>                             se'emff'ffff   fraction = '0000'0000'0000'0000'0000'0000'0h11'1110     7    sticky mask = 0x0001'FFFF   raw+hidden 0x00FF'FFFF >> 17 to get to 0x0000'007F
+bfloat<11,2>                            see'mfff'ffff   fraction = '0000'0000'0000'0000'0000'0000'h111'1110     8    sticky mask = 0x0000'FFFF   raw+hidden 0x00FF'FFFF >> 16 to get to 0x0000'00FF
+bfloat<12,2>                          'seem'ffff'ffff   fraction = '0000'0000'0000'0000'0000'000h'1111'1110     9    sticky mask = 0x0000'7FFF   raw+hidden 0x00FF'FFFF >> 15 to get to 0x0000'01FF
+bfloat<13,2>                         s'eemf'ffff'ffff   fraction = '0000'0000'0000'0000'0000'00h1'1111'1110    10    sticky mask = 0x0000'3FFF   raw+hidden 0x00FF'FFFF >> 14 to get to 0x0000'03FF
+bfloat<14,2>                        se'emff'ffff'ffff   fraction = '0000'0000'0000'0000'0000'0h11'1111'1110    11    sticky mask = 0x0000'1FFF   raw+hidden 0x00FF'FFFF >> 13 to get to 0x0000'07FF
+bfloat<15,2>                       see'mfff'ffff'ffff   fraction = '0000'0000'0000'0000'0000'h111'1111'1110    12    sticky mask = 0x0000'0FFF   raw+hidden 0x00FF'FFFF >> 12 to get to 0x0000'0FFF
+bfloat<16,2>                     'seem'ffff'ffff'ffff   fraction = '0000'0000'0000'0000'000h'1111'1111'1110    13    sticky mask = 0x0000'07FF   raw+hidden 0x00FF'FFFF >> 11 to get to 0x0000'1FFF
+bfloat<17,2>                    s'eemf'ffff'ffff'ffff   fraction = '0000'0000'0000'0000'00h1'1111'1111'1110    14    sticky mask = 0x0000'03FF   raw+hidden 0x00FF'FFFF >> 10 to get to 0x0000'3FFF
+bfloat<18,2>                   se'emff'ffff'ffff'ffff   fraction = '0000'0000'0000'0000'0h11'1111'1111'1110    15    sticky mask = 0x0000'01FF   raw+hidden 0x00FF'FFFF >>  9 to get to 0x0000'7FFF
+bfloat<19,2>                  see'mfff'ffff'ffff'ffff   fraction = '0000'0000'0000'0000'h111'1111'1111'1110    16    sticky mask = 0x0000'00FF   raw+hidden 0x00FF'FFFF >>  8 to get to 0x0000'FFFF
+bfloat<20,2>                'seem'ffff'ffff'ffff'ffff   fraction = '0000'0000'0000'000h'1111'1111'1111'1110    17    sticky mask = 0x0000'007F   raw+hidden 0x00FF'FFFF >>  7 to get to 0x0001'FFFF
+bfloat<21,2>               s'eemf'ffff'ffff'ffff'ffff   fraction = '0000'0000'0000'00h1'1111'1111'1111'1110    18    sticky mask = 0x0000'003F   raw+hidden 0x00FF'FFFF >>  6 to get to 0x0003'FFFF
+bfloat<22,2>              se'emff'ffff'ffff'ffff'ffff   fraction = '0000'0000'0000'0h11'1111'1111'1111'1110    19    sticky mask = 0x0000'001F   raw+hidden 0x00FF'FFFF >>  5 to get to 0x0007'FFFF
+bfloat<23,2>             see'mfff'ffff'ffff'ffff'ffff   fraction = '0000'0000'0000'h111'1111'1111'1111'1110    20    sticky mask = 0x0000'000F   raw+hidden 0x00FF'FFFF >>  4 to get to 0x000F'FFFF
+bfloat<24,2>           'seem'ffff'ffff'ffff'ffff'ffff   fraction = '0000'0000'000h'1111'1111'1111'1111'1110    21    sticky mask = 0x0000'0007   raw+hidden 0x00FF'FFFF >>  3 to get to 0x001F'FFFF
+bfloat<25,2>          s'eemf'ffff'ffff'ffff'ffff'ffff   fraction = '0000'0000'00h1'1111'1111'1111'1111'1110    22    sticky mask = 0x0000'0003   raw+hidden 0x00FF'FFFF >>  2 to get to 0x003F'FFFF
+bfloat<26,2>         se'emff'ffff'ffff'ffff'ffff'ffff   fraction = '0000'0000'0h11'1111'1111'1111'1111'1110    23    sticky mask = 0x0000'0001   raw+hidden 0x00FF'FFFF >>  1 to get to 0x007F'FFFF
+bfloat<27,2>        see'mfff'ffff'ffff'ffff'ffff'ffff   fraction = '0000'0000'h111'1111'1111'1111'1111'1110    24    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >>  0 to get to 0x00FF'FFFF
+bfloat<28,2>      'seem'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '0000'000h'1111'1111'1111'1111'1111'1110    25    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -1 to get to 0x01FF'FFFF
+bfloat<29,2>     s'eemf'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '0000'00h1'1111'1111'1111'1111'1111'1110    26    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -2 to get to 0x03FF'FFFF
+bfloat<30,2>    se'emff'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '0000'0h11'1111'1111'1111'1111'1111'1110    27    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -3 to get to 0x07FF'FFFF
+bfloat<31,2>   see'mfff'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '0000'h111'1111'1111'1111'1111'1111'1110    28    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -4 to get to 0x0FFF'FFFF
+bfloat<32,2> 'seem'ffff'ffff'ffff'ffff'ffff'ffff'ffff   fraction = '000h'1111'1111'1111'1111'1111'1111'1110    29    sticky mask = 0x0000'0000   raw+hidden 0x00FF'FFFF >> -5 to get to 0x1FFF'FFFF
 
 */
 
