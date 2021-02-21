@@ -29,18 +29,16 @@ template<size_t nbits, size_t es, typename bt>
 std::string components(const bfloat<nbits, es, bt>& v) {
 	std::stringstream ss;
 	bool s{ false };
-	int  e{ 0 };
-	blockbinary<v.fbits> f;
-	bool u{ false };
-	decode(v, s, e, f, u);
+	blockbinary<v.es, bt> e;
+	blockbinary<v.fbits, bt> f;
+	decode(v, s, e, f);
 
 	// TODO: hardcoded field width is governed by pretty printing bfloat tables, which by construction will always be small bfloats
 	ss << std::setw(14) << to_binary(v) 
 		<< " Sign : " << std::setw(2) << s
 		<< " Exponent : " << std::setw(5) << e
-		<< " Fraction : " << std::setw(8) << std::setprecision(21) << "TBD"
-		<< " Uncertainty : " << std::setw(2) << u
-		<< " Value : " << std::setw(16) << u;
+		<< " Fraction : " << std::setw(8) << f
+		<< " Value : " << std::setw(16) << v;
 
 	return ss.str();
 }

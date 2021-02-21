@@ -70,11 +70,17 @@ try {
 	{
 		bfloat<6,2> a;
 		a.debug();
-		float testValue = 0.99999988f;
+		std::cout << "maxpos : " << maxpos(a) << " : " << scale(a) << '\n';
+		std::cout << "minpos : " << minpos(a) << " : " << scale(a) << '\n';
+		std::cout << "zero   : " << zero(a)   << " : " << scale(a) << '\n';
+		std::cout << "minneg : " << minneg(a) << " : " << scale(a) << '\n';
+		std::cout << "maxneg : " << maxneg(a) << " : " << scale(a) << '\n';
+		float testValue = 8.0f;
 		a = testValue;
 		float f = float(a);
 		std::cout << to_binary(a) << " : " << a << " : " << f << " : " << setprecision(8) << testValue << endl;
 	}
+	return 0;
 
 //	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<4, 1, uint8_t>, bfloat<5, 1, uint8_t>, float >(true), tag, "bfloat<4,1,uint8_t>");
 //	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 1, uint8_t>, bfloat<6, 1, uint8_t>, float >(false), tag, "bfloat<5,1,uint8_t>");

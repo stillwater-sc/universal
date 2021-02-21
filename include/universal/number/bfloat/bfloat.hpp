@@ -147,11 +147,10 @@ int scale(const bfloat<nbits, es, bt>& v) {
 // fill an bfloat object with maximum positive value
 template<size_t nbits, size_t es, typename bt>
 bfloat<nbits, es, bt>& maxpos(bfloat<nbits, es, bt>& bmaxpos) {
-	// maximum positive value has this bit pattern: 0-1...1-111...111, that is, sign = 0, e = 1.1, f = 111...100
+	// maximum positive value has this bit pattern: 0-1...1-111...111, that is, sign = 0, e = 1.1, f = 111...101
 	bmaxpos.clear();
 	bmaxpos.flip();
 	bmaxpos.reset(nbits - 1ull);
-	bmaxpos.reset(0ull);
 	bmaxpos.reset(1ull);
 	return bmaxpos;
 }
@@ -160,7 +159,7 @@ template<size_t nbits, size_t es, typename bt>
 bfloat<nbits, es, bt>& minpos(bfloat<nbits, es, bt>& bminpos) {
 	// minimum positive value has this bit pattern: 0-000-00...010, that is, sign = 0, e = 00, f = 00001, u = 0
 	bminpos.clear();
-	bminpos.set(1);
+	bminpos.set(0);
 	return bminpos;
 }
 // fill an bfloat object with the zero encoding: 0-0...0-00...000-0
@@ -175,16 +174,15 @@ bfloat<nbits, es, bt>& minneg(bfloat<nbits, es, bt>& bminneg) {
 	// minimum negative value has this bit pattern: 1-000-00...010, that is, sign = 1, e = 00, f = 00001, u = 0
 	bminneg.clear();
 	bminneg.set(nbits - 1ull);
-	bminneg.set(1);
+	bminneg.set(0);
 	return bminneg;
 }
 // fill an bfloat object with largest negative value
 template<size_t nbits, size_t es, typename bt>
 bfloat<nbits, es, bt>& maxneg(bfloat<nbits, es, bt>& bmaxneg) {
-	// maximum negative value has this bit pattern: 1-1...1-111...110, that is, sign = 1, e = 1.1, f = 111...110, u = 0
+	// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1.1, f = 111...101, u = 0
 	bmaxneg.clear();
 	bmaxneg.flip();
-	bmaxneg.reset(0ull);
 	bmaxneg.reset(1ull);
 	return bmaxneg;
 }
