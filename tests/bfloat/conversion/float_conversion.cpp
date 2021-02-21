@@ -27,6 +27,19 @@
 #include <universal/verification/bfloat_test_suite.hpp>
 #include <universal/number/bfloat/table.hpp> // only used for value table generation
 
+
+template<typename TestType>
+void EnumerateSubnormals(float topOfRange, size_t bitRange) {
+	TestType a;
+	float testValue = topOfRange;
+	for (size_t i = 0; i < bitRange; ++i) {
+		a = testValue;
+		std::cout << sw::universal::to_binary(a, true) << " : " << sw::universal::color_print(a) << " : " << a << '\n';
+		std::cout << sw::universal::to_binary(testValue, true) << " : " << testValue << "\n---\n";
+		testValue *= 0.5f;
+	}
+}
+
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -47,18 +60,25 @@ try {
 
 	// bfloat<> is a linear floating-point
 
+#if 1
+	// to track conversion in more detail
+	std::cout << std::setprecision(8);
+	std::cerr << std::setprecision(8);
+#endif
+//	EnumerateSubnormals<bfloat<6, 2, uint8_t>>(1.0f, 6);
+
 	{
-		bfloat<4, 1> a;
+		bfloat<6,2> a;
 		a.debug();
-		a.set_raw_bits(0x002); 
+		float testValue = 0.99999988f;
+		a = testValue;
 		float f = float(a);
-		a = 0.250001f;
-		std::cout << to_binary(a) << " : " << a << " : " << f << endl;
+		std::cout << to_binary(a) << " : " << a << " : " << f << " : " << setprecision(8) << testValue << endl;
 	}
 
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<4, 1, uint8_t>, bfloat<5, 1, uint8_t>, float >(true), tag, "bfloat<4,1,uint8_t>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<4, 1, uint8_t>, bfloat<5, 1, uint8_t>, float >(true), tag, "bfloat<4,1,uint8_t>");
 //	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 1, uint8_t>, bfloat<6, 1, uint8_t>, float >(false), tag, "bfloat<5,1,uint8_t>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<8, 1, uint8_t>, bfloat<9, 1, uint8_t>, float >(false), tag, "bfloat<8,1,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<6, 2, uint8_t>, bfloat<7, 2, uint8_t>, float >(true), tag, "bfloat<6,2,uint8_t>");
 
 	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system

@@ -13,7 +13,7 @@
 namespace sw::universal {
 
 	template<typename SrcType, typename TestType>
-	void ReportIntervalConversionError(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
+	void ReportConversionError(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
 		// constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		auto old_precision = std::cerr.precision();
 		std::cerr << test_case
@@ -28,7 +28,7 @@ namespace sw::universal {
 	}
 
 	template<typename SrcType, typename TestType>
-	void ReportIntervalConversionSuccess(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
+	void ReportConversionSuccess(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
 		constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		std::cerr << test_case
 			<< " " << op << " "
@@ -45,10 +45,10 @@ namespace sw::universal {
 		int fail = 0;
 		if (testValue != reference) {
 			fail++;
-			if (bReportIndividualTestCases)	ReportIntervalConversionError("FAIL", "=", input, reference, testValue);
+			if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, testValue);
 		}
 		else {
-			//if (bReportIndividualTestCases) ReportIntervalConversionSuccess("PASS", "=", input, reference, testValue);
+			if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, testValue);
 		}
 		return fail;
 	}
@@ -167,15 +167,14 @@ namespace sw::universal {
 
 		// NUT: number under test
 		TestType nut, golden;
-		double eps = dminpos / 2.0;  // the test value between 0 and minpos
 		for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
 			RefType ref, prev, next;
 			SrcType testValue{ 0.0 };
 			ref.set_raw_bits(i);
 			SrcType da = SrcType(ref);
-			if (i > 0) {
-				eps = 1.0e-6; // da > 0 ? da * 1.0e-6 : da * -1.0e-6;
-			}
+			int old = nrOfFailedTests;
+			SrcType oneULP = (da > 0 ? ulp(da) : -ulp(da));
+
 			if (i % 2) {
 				if (i == 1)	{
 					// special case of a tie that needs to round to even -> 0
@@ -184,17 +183,16 @@ namespace sw::universal {
 					golden = 0.0f;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 
-					// this rounds up
-					testValue = SrcType(da + eps);
+					// this rounds up 
+					testValue = SrcType(da + oneULP);  // the test value between 0 and minpos
 					nut = testValue;
 					next.set_raw_bits(i + 1);
 					golden = double(next);
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
-
 				}
 				else if (i == HALF - 1) {
 					// special case of projecting to maxpos
-					testValue = SrcType(da - eps);
+					testValue = SrcType(da - oneULP);
 					nut = testValue;
 					prev.set_raw_bits(HALF - 2);
 					golden = double(prev);
@@ -202,36 +200,37 @@ namespace sw::universal {
 				}
 				else if (i == HALF + 1) {
 					// special case of projecting to maxneg
-					testValue = SrcType(da - eps);
+					testValue = SrcType(da - oneULP);
 					nut = testValue;
 					golden = dmaxneg;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else if (i == NR_TEST_CASES - 1) {
 					// special case of projecting to minneg
-					testValue = SrcType(da - eps);
+					testValue = SrcType(da - oneULP);
 					nut = testValue;
 					prev.set_raw_bits(i - 1);
 					golden = double(prev);
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 
 					// but the +delta goes to 0
-					testValue = SrcType(da + eps);
+					testValue = SrcType(da + oneULP);
 					nut = testValue;
 					//				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
 					golden = 0.0f;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else {
-					// for odd values, we are between sample values, so we create the round-up and round-down cases
+					// for odd values of i, we are between sample values of the NUT
+					// create the round-up and round-down cases
 					// round-down
-					testValue = SrcType(da - eps);
+					testValue = SrcType(da - oneULP);
 					nut = testValue;
 					prev.set_raw_bits(i - 1);
 					golden = double(prev);
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 					// round-up
-					testValue = SrcType(da + eps);
+					testValue = SrcType(da + oneULP);
 					nut = testValue;
 					next.set_raw_bits(i + 1);
 					golden = double(next);
@@ -247,16 +246,17 @@ namespace sw::universal {
 					// special case of assigning to 0
 					testValue = da;
 					nut = testValue;
-					golden = 0.0f;
+					golden.setzero(); // make certain we are +0
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 
-					testValue = SrcType(da + eps);
+					// half of next rounds down to 0
+					testValue = SrcType(dminpos / 2.0);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else if (i == NR_TEST_CASES - 2) {
 					// special case of projecting to minneg
-					testValue = SrcType(da - eps);
+					testValue = SrcType(da - oneULP);
 					nut = testValue;
 					prev.set_raw_bits(NR_TEST_CASES - 2);
 					golden = double(prev);
@@ -265,15 +265,22 @@ namespace sw::universal {
 				else {
 					// for even values, we are on actual representable values, so we create the round-up and round-down cases
 					// round-up
-					testValue = SrcType(da - eps);
+					testValue = SrcType(da - oneULP);
 					nut = testValue;
 					golden = da;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 					// round-down
-					testValue = SrcType(da + eps);
+					testValue = SrcType(da + oneULP);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
+			}
+			if (nrOfFailedTests > old) {
+				std::cout << to_binary(oneULP, true) << " : " << oneULP << '\n';
+				std::cout << to_binary(da - oneULP, true) << " : " << da - oneULP << '\n';
+				std::cout << to_binary(da, true) << " : " << da << '\n';
+				std::cout << to_binary(da + oneULP, true) << " : " << da + oneULP << '\n';
+				std::cout << "[" << i << "]\n";
 			}
 		}
 		return nrOfFailedTests;
