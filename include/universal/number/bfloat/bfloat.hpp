@@ -411,7 +411,7 @@ public:
 			if (exponent > -127) {
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 23);
-				uint32_t subnormalShift = (static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1);
+				uint32_t subnormalShift = static_cast<uint32_t>(static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1);
 				mask = 0x00FF'FFFFu >> subnormalShift; // mask for rounding 
 #if TRACE_CONVERSION
 				std::cout << "fraction bits     : " << to_binary_storage(raw, true) << std::endl;
@@ -587,6 +587,18 @@ public:
 		}
 		else {
 			copyBits(bits);
+		}
+		// implement saturation
+		if (this->isinf(INF_TYPE_POSITIVE) || this->isnan(NAN_TYPE_QUIET)) {
+			clear();
+			flip();
+			reset(nbits - 1ull);
+			reset(1ull);
+		}
+		else if (this->isinf(INF_TYPE_NEGATIVE) || this->isnan(NAN_TYPE_SIGNALLING)) {
+			clear();
+			flip();
+			reset(1ull);
 		}
 		return *this;
 	}
