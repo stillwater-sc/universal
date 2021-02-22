@@ -173,8 +173,9 @@ namespace sw::universal {
 			SrcType testValue{ 0.0 };
 			ref.set_raw_bits(i);
 			SrcType da = SrcType(ref);
+			float fulp = ulp(float(da));
 			int old = nrOfFailedTests;
-			SrcType oneULP = (da > 0 ? ulp(da) : -ulp(da));
+			SrcType oneULP = (da > 0 ? fulp : -fulp);
 
 			if (i % 2) {
 				if (i == 1)	{
@@ -259,14 +260,19 @@ namespace sw::universal {
 					// 0                -> value = 0
 					// half of next     -> value = 0
 					// special case of assigning to 0
-					testValue = da;
+
+					/* ignore
+					testValue = da;  // the optimizer removes the sign on -0
 					nut = testValue;
 					golden.setzero(); golden = -golden; // make certain we are -0
+					std::cout << i << " : " << to_binary(nut) << " : " << to_binary(golden) << std::endl;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					*/
 
 					// half of next rounds down to -0
 					testValue = SrcType(-dminpos / 2.0);
 					nut = testValue;
+					golden.setzero(); golden = -golden; // make certain we are -0
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else if (i == HALF - 4) {

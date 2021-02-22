@@ -54,17 +54,16 @@ try {
 	}
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = "conversion: ";
+	std::string tag = "float conversion: ";
 
 #if MANUAL_TESTING
 
 	// bfloat<> is a linear floating-point
 
-#if 1
 	// to track conversion in more detail
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
-#endif
+#
 //	EnumerateSubnormals<bfloat<6, 2, uint8_t>>(1.0f, 6);
 
 	{

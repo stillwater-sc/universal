@@ -71,7 +71,7 @@ void CompilerBug() {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -84,23 +84,32 @@ try {
 	}
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = "conversion: ";
+	std::string tag = "double conversion: ";
 
 #if MANUAL_TESTING
 
-	bool bReportIndividualTestCases = false;
+	// to track conversion in more detail
+	std::cout << std::setprecision(15);
+	std::cerr << std::setprecision(15);
 
-	// bfloat<> is a linear floating-point 
+	{
+		bfloat<6, 2> a;
+		a.debug();
+		double testValue = 0.0625000074505806;
+		a = testValue;
+		double da = double(a);
+		std::cout << to_binary(a) << " : " << a << " : " << da << " : " << setprecision(8) << testValue << endl;
+	}
 
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<4, 1, uint8_t>, bfloat<5, 1, uint8_t>, double >(true), tag, "bfloat<4,1,uint8_t>");
-
-//	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<8, 2, uint8_t>, bfloat<9, 2, uint8_t>, double >(true), tag, "bfloat<8,2,uint8_t>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<11, 2, uint16_t>, bfloat<12, 2, uint16_t>, double >(false), tag, "bfloat<11,2,uint16_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<4, 1, uint8_t>, double >(false), tag, "bfloat<4,1,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 1, uint8_t>, double >(false), tag, "bfloat<5,1,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 2, uint8_t>, double >(false), tag, "bfloat<5,2,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<6, 2, uint8_t>, double >(false), tag, "bfloat<6,2,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<7, 2, uint8_t>, double >(false), tag, "bfloat<7,2,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<8, 2, uint8_t>, double >(false), tag, "bfloat<8,2,uint8_t>");
 
 	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
-
-	cout << "failed tests: " << nrOfFailedTestCases << endl;
 
 #if STRESS_TESTING
 
@@ -113,67 +122,67 @@ try {
 	cout << "BFLOAT conversion from double validation" << endl;
 
 	// es = 1
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<4, 1>, double >(bReportIndividualTestCases), tag, "bfloat<4,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<5, 1>, double >(bReportIndividualTestCases), tag, "bfloat<5,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<6, 1>, double >(bReportIndividualTestCases), tag, "bfloat<6,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<7, 1>, double >(bReportIndividualTestCases), tag, "bfloat<7,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<8, 1>, double >(bReportIndividualTestCases), tag, "bfloat<8,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<9, 1>, double >(bReportIndividualTestCases), tag, "bfloat<9,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<10, 1>, double >(bReportIndividualTestCases), tag, "bfloat<10,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<12, 1>, double >(bReportIndividualTestCases), tag, "bfloat<12,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<4, 1>, double >(bReportIndividualTestCases), tag, "bfloat<4,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 1>, double >(bReportIndividualTestCases), tag, "bfloat<5,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<6, 1>, double >(bReportIndividualTestCases), tag, "bfloat<6,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<7, 1>, double >(bReportIndividualTestCases), tag, "bfloat<7,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<8, 1>, double >(bReportIndividualTestCases), tag, "bfloat<8,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<9, 1>, double >(bReportIndividualTestCases), tag, "bfloat<9,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<10, 1>, double >(bReportIndividualTestCases), tag, "bfloat<10,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<12, 1>, double >(bReportIndividualTestCases), tag, "bfloat<12,1>");
 
 
 	// es = 2
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<5, 2>, double >(bReportIndividualTestCases), tag, "bfloat<5,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<6, 2>, double >(bReportIndividualTestCases), tag, "bfloat<6,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<7, 2>, double >(bReportIndividualTestCases), tag, "bfloat<7,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<8, 2>, double >(bReportIndividualTestCases), tag, "bfloat<8,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<10, 2>, double >(bReportIndividualTestCases), tag, "bfloat<10,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<12, 2>, double >(bReportIndividualTestCases), tag, "bfloat<12,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<14, 2>, double >(bReportIndividualTestCases), tag, "bfloat<14,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 2>, double >(bReportIndividualTestCases), tag, "bfloat<5,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<6, 2>, double >(bReportIndividualTestCases), tag, "bfloat<6,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<7, 2>, double >(bReportIndividualTestCases), tag, "bfloat<7,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<8, 2>, double >(bReportIndividualTestCases), tag, "bfloat<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<10, 2>, double >(bReportIndividualTestCases), tag, "bfloat<10,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<12, 2>, double >(bReportIndividualTestCases), tag, "bfloat<12,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<14, 2>, double >(bReportIndividualTestCases), tag, "bfloat<14,2>");
 
 
 	// es = 3
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<6, 3>, double >(bReportIndividualTestCases), tag, "bfloat<6,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<7, 3>, double >(bReportIndividualTestCases), tag, "bfloat<7,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<8, 3>, double >(bReportIndividualTestCases), tag, "bfloat<8,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<10, 3>, double >(bReportIndividualTestCases), tag, "bfloat<10,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<12, 3>, double >(bReportIndividualTestCases), tag, "bfloat<12,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<14, 3>, double >(bReportIndividualTestCases), tag, "bfloat<14,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<6, 3>, double >(bReportIndividualTestCases), tag, "bfloat<6,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<7, 3>, double >(bReportIndividualTestCases), tag, "bfloat<7,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<8, 3>, double >(bReportIndividualTestCases), tag, "bfloat<8,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<10, 3>, double >(bReportIndividualTestCases), tag, "bfloat<10,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<12, 3>, double >(bReportIndividualTestCases), tag, "bfloat<12,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<14, 3>, double >(bReportIndividualTestCases), tag, "bfloat<14,3>");
 
 
 	// es = 4
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<7, 4>, double >(bReportIndividualTestCases), tag, "bfloat<7,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<8, 4>, double >(bReportIndividualTestCases), tag, "bfloat<8,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<10, 4>, double >(bReportIndividualTestCases), tag, "bfloat<10,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<12, 4>, double >(bReportIndividualTestCases), tag, "bfloat<12,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<14, 4>, double >(bReportIndividualTestCases), tag, "bfloat<14,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<7, 4>, double >(bReportIndividualTestCases), tag, "bfloat<7,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<8, 4>, double >(bReportIndividualTestCases), tag, "bfloat<8,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<10, 4>, double >(bReportIndividualTestCases), tag, "bfloat<10,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<12, 4>, double >(bReportIndividualTestCases), tag, "bfloat<12,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<14, 4>, double >(bReportIndividualTestCases), tag, "bfloat<14,4>");
 
 
 	// es = 5
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<8, 5>, double >(bReportIndividualTestCases), tag, "bfloat<8,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<10, 5>, double >(bReportIndividualTestCases), tag, "bfloat<10,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<12, 5>, double >(bReportIndividualTestCases), tag, "bfloat<12,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<14, 5>, double >(bReportIndividualTestCases), tag, "bfloat<14,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<8, 5>, double >(bReportIndividualTestCases), tag, "bfloat<8,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<10, 5>, double >(bReportIndividualTestCases), tag, "bfloat<10,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<12, 5>, double >(bReportIndividualTestCases), tag, "bfloat<12,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<14, 5>, double >(bReportIndividualTestCases), tag, "bfloat<14,5>");
 
-
+#ifdef LATER
 	// es = 6
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<9, 6>, double >(bReportIndividualTestCases), tag, "bfloat<9,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<10, 6>, double >(bReportIndividualTestCases), tag, "bfloat<10,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<12, 6>, double >(bReportIndividualTestCases), tag, "bfloat<12,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<14, 6>, double >(bReportIndividualTestCases), tag, "bfloat<14,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<9, 6>, double >(bReportIndividualTestCases), tag, "bfloat<9,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<10, 6>, double >(bReportIndividualTestCases), tag, "bfloat<10,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<12, 6>, double >(bReportIndividualTestCases), tag, "bfloat<12,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<14, 6>, double >(bReportIndividualTestCases), tag, "bfloat<14,6>");
 
 
 	// es = 7
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<10, 7>, double >(tag, true), tag, "bfloat<10,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<12, 7>, double >(bReportIndividualTestCases), tag, "bfloat<12,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<14, 7>, double >(bReportIndividualTestCases), tag, "bfloat<14,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<10, 7>, double >(bReportIndividualTestCases), tag, "bfloat<10,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<12, 7>, double >(bReportIndividualTestCases), tag, "bfloat<12,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<14, 7>, double >(bReportIndividualTestCases), tag, "bfloat<14,7>");
 
-#if LATER
+
 	// es = 8
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<11, 8>, double >(bReportIndividualTestCases), tag, "bfloat<11,8>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<12, 8>, double >(bReportIndividualTestCases), tag, "bfloat<12,8>");
-	nrOfFailedTestCases = ReportTestResult(VerifyConversion< bfloat<14, 8>, double >(bReportIndividualTestCases), tag, "bfloat<14,8>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<11, 8>, double >(bReportIndividualTestCases), tag, "bfloat<11,8>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<12, 8>, double >(bReportIndividualTestCases), tag, "bfloat<12,8>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<14, 8>, double >(bReportIndividualTestCases), tag, "bfloat<14,8>");
 
 #endif // LATER
 
