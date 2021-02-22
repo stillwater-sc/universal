@@ -25,7 +25,7 @@ template<typename Real,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 >
 inline Real ulp(const Real& a) {
-	return std::nextafter(a, a + 1.0f) - a;
+	return std::nextafter(a, a + a/2.0f) - a;
 }
 
 // check if the floating-point number is zero
