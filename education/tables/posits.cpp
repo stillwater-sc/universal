@@ -3,7 +3,12 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#if defined(_MSC_VER)
+#pragma warning(disable : 4514)  // unreferenced function is removed
+#pragma warning(disable : 4710)  // function is not inlined
+#pragma warning(disable : 4820)  // bytes padding added after data member
+#pragma warning(disable : 5045)  // compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#endif 
 // enable/disable special posit format I/O
 #define POSIT_ROUNDING_ERROR_FREE_IO_FORMAT 1
 #include <universal/number/posit/posit>
@@ -14,11 +19,13 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
+	// Usage: posits [-csv]
 	bool csv = false;
+	if (argc == 2) {
+		if (std::string(argv[1]) == std::string("-csv")) csv = true;
+	}
+	cout << "Generate value tables for posit configurations" << endl;
 
-	cout << "Generate posit configurations" << endl;
-
-	// TODO: need to re-enable nbits = 2
 	GeneratePositTable<2, 0>(cout, csv);
 
 	GeneratePositTable<3, 0>(cout, csv);

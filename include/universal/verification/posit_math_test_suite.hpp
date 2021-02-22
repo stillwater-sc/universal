@@ -15,7 +15,7 @@
 #include <universal/number/posit/math_functions.hpp>
 #include <universal/verification/posit_test_suite.hpp>
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
 
@@ -77,12 +77,12 @@ void ReportOneInputFunctionSuccess(const std::string& test_case, const std::stri
 
 // enumerate all NATURAL LOGARITHM cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyLog(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyLog(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, plog, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		plog = sw::universal::log(pa);
 		// generate reference
@@ -101,12 +101,12 @@ int VerifyLog(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all BINARY LOGARITHM cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyLog2(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyLog2(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, plog2, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		plog2 = sw::universal::log2(pa);
 		// generate reference
@@ -126,12 +126,12 @@ int VerifyLog2(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all DECIMAL LOGARITHM cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyLog10(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyLog10(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, plog10, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		plog10 = sw::universal::log10(pa);
 		// generate reference
@@ -151,12 +151,12 @@ int VerifyLog10(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all base-e exponent cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyExp(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyExp(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pexp, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		pexp = sw::universal::exp(pa);
 		// generate reference
@@ -177,12 +177,12 @@ int VerifyExp(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all base-2 exponent cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyExp2(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyExp2(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pexp2, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		pexp2 = sw::universal::exp2(pa);
 		// generate reference
@@ -203,16 +203,16 @@ int VerifyExp2(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all power method cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyPowerFunction(const std::string& tag, bool bReportIndividualTestCases, unsigned int maxSamples = 10000) {
-	const int NR_POSITS = (unsigned(1) << nbits);
+int VerifyPowerFunction(bool bReportIndividualTestCases, unsigned int maxSamples = 10000) {
+	constexpr size_t NR_POSITS = (unsigned(1) << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pb, ppow, pref;
 
 	uint32_t testNr = 0;
-	for (int i = 0; i < NR_POSITS; i++) {
+	for (size_t i = 0; i < NR_POSITS; ++i) {
 		pa.set_raw_bits(i);
 		double da = double(pa);
-		for (int j = 0; j < NR_POSITS; j++) {
+		for (size_t j = 0; j < NR_POSITS; ++j) {
 			pb.set_raw_bits(j);
 			double db = double(pb);
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -251,12 +251,12 @@ int VerifyPowerFunction(const std::string& tag, bool bReportIndividualTestCases,
 
 // enumerate all trigonometric sine cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifySine(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifySine(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, psin, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		psin = sw::universal::sin(pa);
 		// generate reference
@@ -275,12 +275,12 @@ int VerifySine(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all trigonometric cosine cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyCosine(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyCosine(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pcos, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		pcos = sw::universal::cos(pa);
 		// generate reference
@@ -299,12 +299,12 @@ int VerifyCosine(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all trigonometric tangent cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyTangent(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyTangent(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, ptan, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		ptan = sw::universal::tan(pa);
 		// generate reference
@@ -323,12 +323,12 @@ int VerifyTangent(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all trigonometric cotangent cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyAtan(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyAtan(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, patan, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		patan = sw::universal::atan(pa);
 		// generate reference
@@ -347,12 +347,12 @@ int VerifyAtan(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all trigonometric sec cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyAsin(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyAsin(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pasin, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		pasin = sw::universal::asin(pa);
 		// generate reference
@@ -371,12 +371,12 @@ int VerifyAsin(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all trigonometric cosec cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyAcos(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyAcos(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pacos, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		pacos = sw::universal::acos(pa);
 		// generate reference
@@ -395,12 +395,12 @@ int VerifyAcos(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all hyperbolic sine cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifySinh(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifySinh(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, psinh, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		psinh = sw::universal::sinh(pa);
 		// generate reference
@@ -419,12 +419,12 @@ int VerifySinh(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all hyperbolic cosine cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyCosh(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyCosh(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pcosh, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		pcosh = sw::universal::cosh(pa);
 		// generate reference
@@ -443,12 +443,12 @@ int VerifyCosh(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all hyperbolic tangent cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyTanh(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyTanh(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, ptanh, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		ptanh = sw::universal::tanh(pa);
 		// generate reference
@@ -467,12 +467,12 @@ int VerifyTanh(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all hyperbolic cotangent cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyAtanh(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyAtanh(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, patanh, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		patanh = sw::universal::atanh(pa);
 		// generate reference
@@ -491,12 +491,12 @@ int VerifyAtanh(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all hyperbolic sec cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyAsinh(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyAsinh(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pasinh, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		pasinh = sw::universal::asinh(pa);
 		// generate reference
@@ -515,12 +515,12 @@ int VerifyAsinh(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all hyperbolic cosec cases for a posit configuration
 template<size_t nbits, size_t es>
-int VerifyAcosh(const std::string& tag, bool bReportIndividualTestCases) {
-	const int NR_TEST_CASES = (1 << nbits);
+int VerifyAcosh(bool bReportIndividualTestCases) {
+	constexpr size_t NR_TEST_CASES = (1 << nbits);
 	int nrOfFailedTests = 0;
 	posit<nbits, es> pa, pacosh, pref;
 
-	for (int i = 1; i < NR_TEST_CASES; i++) {
+	for (size_t i = 1; i < NR_TEST_CASES; ++i) {
 		pa.set_raw_bits(i);
 		pacosh = sw::universal::acosh(pa);
 		// generate reference
@@ -540,6 +540,5 @@ int VerifyAcosh(const std::string& tag, bool bReportIndividualTestCases) {
 //////////////////////////////////// RANDOMIZED TEST SUITE FOR BINARY OPERATORS ////////////////////////
 
 
-
-}} // namespace sw:universal
+} // namespace sw:universal
 

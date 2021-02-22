@@ -445,19 +445,19 @@ namespace sw::universal {
 		uint32_t shift;
 		if (scale < 0) {
 			shift = static_cast<uint32_t>((-1 - scale) >> 2);
-			raw = static_cast<uint32_t>(0x20000000 >> shift);     // build up the raw bits of the result posit
+			raw = static_cast<uint32_t>(0x20000000u >> shift);     // build up the raw bits of the result posit
 		}
 		else {
 			shift = static_cast<uint32_t>(scale >> 2);
-			raw = static_cast<uint32_t>(0x7FFFFFFF - (0x3FFFFFFF >> shift));
+			raw = static_cast<uint32_t>(0x7FFFFFFFu - (0x3FFFFFFFu >> shift));
 		}
 
 		// Trick for eliminating off-by-one cases that only uses one multiply:
 		result_fraction++;
-		if (!(result_fraction & 0x000F)) {
+		if (!(result_fraction & 0x000Fu)) {
 			uint64_t shiftedFraction = result_fraction >> 1;
 			uint64_t negRem = (shiftedFraction * shiftedFraction) & 0x1FFFFFFFF; // 0x1'FFFF'FFFF;
-			if (negRem & 0x100000000) {  // 0x1'0000'0000 
+			if (negRem & 0x100000000u) {  // 0x1'0000'0000 
 				result_fraction |= 1;
 			}
 			else {
@@ -465,8 +465,8 @@ namespace sw::universal {
 			}
 		}
 		// Strip off the hidden bit and round-to-nearest using last shift+5 bits.
-		result_fraction &= 0xFFFFFFFF;
-		uint64_t mask = static_cast<uint64_t>((1ul << (4ul + shift)));
+		result_fraction &= 0xFFFF'FFFFu;
+		uint64_t mask = (1ull << (4ull + shift));
 		if (mask & result_fraction) {
 			if (((mask - 1) & result_fraction) | ((mask << 1ul) & result_fraction)) result_fraction += (mask << 1ul);
 		}

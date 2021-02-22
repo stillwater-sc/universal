@@ -28,11 +28,44 @@ inline Real ulp(const Real& a) {
 	return std::nextafter(a, a + 1.0f) - a;
 }
 
+// check if the floating-point number is zero
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline bool iszero(const Real& a) {
+	return (std::fpclassify(a) == FP_ZERO);
+}
+
+// check if the floating-point number is normal
 template<typename Real,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >:: type
 >
-inline bool isdenorm(const Real& a) {
+inline bool isnormal(const Real& a) {
+	return (std::fpclassify(a) == FP_NORMAL);
+}
+
+// check if the floating-point number is subnormal
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline bool issubnorm(const Real& a) {
 	return (std::fpclassify(a) == FP_SUBNORMAL);
+}
+
+// check if the floating-point number is Not-a-Number
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline bool isnan(const Real& a) {
+	return (std::fpclassify(a) == FP_NAN);
+}
+
+// check if the floating-point number is infinite
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline bool isinf(const Real& a) {
+	return (std::fpclassify(a) == FP_INFINITE);
 }
 
 // IEEE double precision constants

@@ -36,6 +36,19 @@ int CompareAgainstDouble(double input, const TestType& testValue, double referen
 	return fail;
 }
 
+template<typename TestType, typename RefType, typename SrcType>
+int Compare(SrcType input, const TestType& nut, const RefType& reference, bool bReportIndividualTestCases) {
+	int fail = 0;
+	if (nut != reference) {
+		fail++;
+		if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", double(input), double(reference), nut);
+	}
+	else {
+		//if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", double(input), double(reference), nut);
+	}
+	return fail;
+}
+
 ///////////////////////////////////////////////////////////////////////////////////////
 ///                        ASSIGNMENT/CONVERSION TEST SUITES                        ///
 ///////////////////////////////////////////////////////////////////////////////////////
@@ -67,7 +80,7 @@ int VerifyAssignment(bool bReportIndividualTestCases, bool verbose = false) {
 
 // enumerate all conversion cases for integers
 template<typename TestType>
-int VerifyIntegerConversion(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyIntegerConversion(bool bReportIndividualTestCases) {
 	// we generate numbers from 1 to NaN to -1 and the special case of 0
 	constexpr size_t nbits = TestType::nbits; 
 	constexpr size_t NR_OF_TESTS = (size_t(1) << (nbits - 1)) + 1;
@@ -84,10 +97,10 @@ int VerifyIntegerConversion(const std::string& tag, bool bReportIndividualTestCa
 			long long ref = (long long)a;
 			TestType result = ref;
 			if (result != ref) {
-				if (bReportIndividualTestCases) std::cout << tag << " FAIL " << a << " != " << ref << std::endl;
+				if (bReportIndividualTestCases) std::cout << " FAIL " << a << " != " << ref << std::endl;
 			}
 			else {
-				// if (bReportIndividualTestCases) std::cout << tag << " PASS " << a << " == " << ref << std::endl;
+				// if (bReportIndividualTestCases) std::cout << " PASS " << a << " == " << ref << std::endl;
 			}
 		}
 		++a;  // assumes that the number system has an encoding enumerator operator++()
@@ -105,8 +118,8 @@ int VerifyIntegerConversion(const std::string& tag, bool bReportIndividualTestCa
 /// <param name="tag">string to indicate what is being tested</param>
 /// <param name="bReportIndividualTestCases">if true print results of each test case. Default is false.</param>
 /// <returns>number of failed test cases</returns>
-template<typename TestType, typename RefType>
-int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
+template<typename TestType, typename RefType, typename SrcType = double>
+int VerifyConversion(bool bReportIndividualTestCases) {
 	// we are going to generate a test set that consists of all configs and their midpoints
 	// we do this by enumerating a configuration that is 1-bit larger than the test configuration
 	// with the extra bit allocated to the fraction.
@@ -122,7 +135,8 @@ int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 
 	// For example: 
 	// TestType: fixpnt<nbits,rbits,Saturating,uint8_t> needs RefType fixpnt<nbits+1, rbits+1, Saturating,uint8_t>
-	// TestType: posit<nbits,es,uint8_t> needs RefType posit<nbits + 1, es, uint8_t>
+	// TestType: bfloat<nbits, es, uint8_t> needs RefType bfloat<nbits + 1, es, uint8_t>
+	// TestType: posit<nbits, es, uint8_t> needs RefType posit<nbits + 1, es, uint8_t>
 
 	const unsigned max = nbits > 20 ? 20 : nbits + 1;
 	size_t max_tests = (size_t(1) << max);
@@ -138,28 +152,31 @@ int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 	double dmaxneg = double(maxneg(negative_maximum));
 
 	// NUT: number under test
-	TestType nut;
+	TestType nut, golden;
 	double eps = dminpos / 2.0;  // the test value between 0 and minpos
 	for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
 		RefType ref, prev, next;
-		double testValue{ 0.0 };
+		SrcType testValue{ 0.0 };
 		ref.set_raw_bits(i);
-		double da = double(ref);
+		SrcType da = SrcType(ref);
 		if (i > 0) {
 			eps = 1.0e-6; // da > 0 ? da * 1.0e-6 : da * -1.0e-6;
 		}
 		if (i % 2) {
-			if (i == 1) {
+			if (i == 1)
+			{
 				// special case of a tie that needs to round to even -> 0
 				testValue = da;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, 0.0, bReportIndividualTestCases);
+				golden = 0.0f;
+				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 
 				// this rounds up
 				testValue = da + eps;
 				nut = testValue;
 				next.set_raw_bits(i + 1);
-				nrOfFailedTests += Compare(testValue, nut, (double)next, bReportIndividualTestCases);
+				golden = double(next);
+				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 
 			}
 			else if (i == HALF - 1) {
@@ -167,25 +184,30 @@ int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 				testValue = da - eps;
 				nut = testValue;
 				prev.set_raw_bits(HALF - 2);
-				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
+				golden = double(prev);
+				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 			}
 			else if (i == HALF + 1) {
 				// special case of projecting to maxneg
 				testValue = da - eps;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, dmaxneg, bReportIndividualTestCases);
+				golden = dmaxneg;
+				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 			}
 			else if (i == NR_TEST_CASES - 1) {
 				// special case of projecting to minneg
 				testValue = da - eps;
 				nut = testValue;
 				prev.set_raw_bits(i - 1);
-				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
+				golden = double(prev);
+				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+
 				// but the +delta goes to 0
 				testValue = da + eps;
 				nut = testValue;
 				//				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
-				nrOfFailedTests += Compare(testValue, nut, 0.0, bReportIndividualTestCases);
+				golden = 0.0f;
+				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 			}
 			else {
 				// for odd values, we are between fixed point values, so we create the round-up and round-down cases
@@ -193,12 +215,14 @@ int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 				testValue = da - eps;
 				nut = testValue;
 				prev.set_raw_bits(i - 1);
-				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
+				golden = double(prev);
+				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				// round-up
 				testValue = da + eps;
 				nut = testValue;
 				next.set_raw_bits(i + 1);
-				nrOfFailedTests += Compare(testValue, nut, (double)next, bReportIndividualTestCases);
+				golden = double(next);
+				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 			}
 		}
 		else {
@@ -210,29 +234,32 @@ int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 				// special case of assigning to 0
 				testValue = da;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, da, bReportIndividualTestCases);
+				golden = 0.0f;
+				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 
 				testValue = da + eps;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, da, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 			}
 			else if (i == NR_TEST_CASES - 2) {
 				// special case of projecting to minneg
 				testValue = da - eps;
 				nut = testValue;
 				prev.set_raw_bits(NR_TEST_CASES - 2);
-				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
+				golden = double(prev);
+				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 			}
 			else {
-				// for even values, we are on actual fixed point values, so we create the round-up and round-down cases
+				// for even values, we are on actual representable values, so we create the round-up and round-down cases
 				// round-up
 				testValue = da - eps;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, da, bReportIndividualTestCases);
+				golden = da;
+				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				// round-down
 				testValue = da + eps;
 				nut = testValue;
-				nrOfFailedTests += Compare(testValue, nut, da, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 			}
 		}
 	}

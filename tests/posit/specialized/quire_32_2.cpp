@@ -3,7 +3,12 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#if defined(_MSC_VER)
+#pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#pragma warning(disable : 4514) // unreferenced inline function has been removed
+#pragma warning(disable : 4820) // bytes padding added after data member
+#pragma warning(disable : 4710) // function not inlined
+#endif
 // Configure the posit template environment
 // first: enable fast specialized posit<32,2>
 //#define POSIT_FAST_SPECIALIZATION   // turns on all fast specializations
@@ -27,6 +32,8 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::universal;
+
+	if (argc > 0) { cout << argv[0] << endl; }
 
 	constexpr size_t RND_TEST_CASES = 500000;
 
@@ -64,8 +71,8 @@ try {
 
 	// arithmetic tests
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition        (native)  ");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication  (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition        (native)  ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication  (native)  ");
 
 	// elementary function tests
 //	cout << "Elementary function tests " << endl;

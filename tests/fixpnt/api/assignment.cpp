@@ -3,9 +3,14 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#if defined(_MSC_VER)
+#pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#pragma warning(disable : 4514)  // unreferenced function is removed
+#pragma warning(disable : 4820) // bytes padding added after data member
+#pragma warning(disable : 4710)  // function is not inlined
+#endif
 #include <iostream>
 #include <iomanip>
-
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
 #define FIXPNT_FAST_SPECIALIZATION
@@ -102,10 +107,10 @@ void NegativeTestCases() {
 	fixpnt<8, 4> a, b, c, d;
 
 	cout << "NEGATIVE TEST CASES\n";
-	a.set_raw_bits(~0x14 + 1);
-	b.set_raw_bits(~0x15 + 1);
-	c.set_raw_bits(~0x16 + 1);
-	d.set_raw_bits(~0x17 + 1);
+	a.set_raw_bits(~0x14u + 1u);
+	b.set_raw_bits(~0x15u + 1u);
+	c.set_raw_bits(~0x16u + 1u);
+	d.set_raw_bits(~0x17u + 1u);
 	fa = float(a);
 	fb = float(b);
 	fc = float(c);
@@ -178,6 +183,8 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
+	if (argc > 0) { cout << argv[0] << endl; }
+
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -188,7 +195,6 @@ try {
 	PositiveTestCases();
 	NegativeTestCases();
 
-	return 0;
 	{
 		fixpnt<4, 1> a, b, c;
 		// overflow test

@@ -84,42 +84,42 @@ try {
 
 #else
 	tag = "Reciprocation failed: ";
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<3, 0>(bReportIndividualTestCases), "posit<3,0>", "reciprocation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<4, 0>(bReportIndividualTestCases), "posit<4,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<4, 1>(bReportIndividualTestCases), "posit<4,1>", "reciprocation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 0>(bReportIndividualTestCases), "posit<5,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 1>(bReportIndividualTestCases), "posit<5,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<5, 2>(bReportIndividualTestCases), "posit<5,2>", "reciprocation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 0>(bReportIndividualTestCases), "posit<6,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 1>(bReportIndividualTestCases), "posit<6,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 2>(bReportIndividualTestCases), "posit<6,2>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<6, 3>(bReportIndividualTestCases), "posit<6,3>", "reciprocation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 0>(bReportIndividualTestCases), "posit<7,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 1>(bReportIndividualTestCases), "posit<7,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 2>(bReportIndividualTestCases), "posit<7,2>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 3>(bReportIndividualTestCases), "posit<7,3>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<7, 4>(bReportIndividualTestCases), "posit<7,4>", "reciprocation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 0>(bReportIndividualTestCases), "posit<8,0>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 1>(bReportIndividualTestCases), "posit<8,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 2>(bReportIndividualTestCases), "posit<8,2>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 3>(bReportIndividualTestCases), "posit<8,3>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 4>(bReportIndividualTestCases), "posit<8,4>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<8, 5>(bReportIndividualTestCases), "posit<8,5>", "reciprocation");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<10, 1>(bReportIndividualTestCases), "posit<10,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<12, 1>(bReportIndividualTestCases), "posit<12,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<14, 1>(bReportIndividualTestCases), "posit<14,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<16, 1>(bReportIndividualTestCases), "posit<16,1>", "reciprocation");
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<18, 1>(tag, bReportIndividualTestCases), "posit<18,1>", "reciprocation");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<20, 1>(tag, bReportIndividualTestCases), "posit<20,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<18, 1>(bReportIndividualTestCases), "posit<18,1>", "reciprocation");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation<20, 1>(bReportIndividualTestCases), "posit<20,1>", "reciprocation");
 
 #endif // STRESS_TESTING
 

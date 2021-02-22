@@ -269,7 +269,7 @@ inline std::string to_string(const fraction<nfbits>& f, bool dashExtent = true) 
 		upperbound--;
 		for (int i = upperbound; i >= 0; --i) {
 			if (f.nrBits() > nrOfFractionBitsProcessed++) {
-				ss << (bb[i] ? "1" : "0");
+				ss << (bb[static_cast<size_t>(i)] ? "1" : "0");
 			}
 			else {
 				ss << (dashExtent ? "-" : "");

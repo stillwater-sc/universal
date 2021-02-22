@@ -22,10 +22,10 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 0)
+  set(UNIVERSAL_VERSION_MINOR 1)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
-  set(UNIVERSAL_VERSION_PATCH 0)
+  set(UNIVERSAL_VERSION_PATCH 1)
 endif()
 project(universal 
 	DESCRIPTION "A header only C++ library for plug-in replacement number systems for native types"
@@ -77,18 +77,21 @@ option(BUILD_FUNCTIONS                   "Set to ON to build special functions p
 option(BUILD_C_API_PURE_LIB              "Set to ON to build C API native library"             OFF)
 option(BUILD_C_API_SHIM_LIB              "Set to ON to build C API shim library"               OFF)
 option(BUILD_C_API_LIB_PIC               "Set to ON to compile C API library with -fPIC"       OFF)
+
 # number systems and their verification suites
 option(BUILD_STORAGE_CLASSES             "Set to ON to build storage class tests"              OFF)
 option(BUILD_NATIVE_TYPES                "Set to ON to build native type tests"                OFF)
 option(BUILD_INTEGERS                    "Set to ON to build integer tests"                    OFF)
 option(BUILD_DECIMALS                    "Set to ON to build decimal tests"                    OFF)
 option(BUILD_FIXPNTS                     "Set to ON to build fixed-point tests"                OFF)
-option(BUILD_LNS                         "Set to ON to build LNS tests"                        OFF)
-option(BUILD_UNUM_TYPE_1                 "Set to ON to build UNUM Type 1 tests"                OFF)
-option(BUILD_UNUM_TYPE_2                 "Set to ON to build UNUM Type 2 tests"                OFF)
-option(BUILD_POSITS                      "Set to ON to build UNUM Type 3 posit tests"          OFF)
-option(BUILD_VALIDS                      "Set to ON to build UNUM Type 3 valid tests"          OFF)
+option(BUILD_BFLOATS                     "Set to ON to build bfloat tests"                     OFF)
+option(BUILD_AREALS                      "Set to ON to build areal tests"                      OFF)
+option(BUILD_UNUM_TYPE_1                 "Set to ON to build unum Type 1 tests"                OFF)
+option(BUILD_UNUM_TYPE_2                 "Set to ON to build unum Type 2 tests"                OFF)
+option(BUILD_POSITS                      "Set to ON to build unum Type 3 posit tests"          OFF)
+option(BUILD_VALIDS                      "Set to ON to build unum Type 3 valid tests"          OFF)
 option(BUILD_REALS                       "Set to ON to build real tests"                       OFF)
+option(BUILD_LNS                         "Set to ON to build LNS tests"                        OFF)
 # Basic Linear Algebra 
 option(BUILD_BLAS                        "Set to ON to build the BLAS tests"                   OFF)
 # conversion test suites
@@ -269,7 +272,8 @@ elseif(MSVC)
 	# in the Visual Studio Installer. They're found in the Individual Components tab under 
 	# Compilers, build tools, and runtimes, and have "Libs for Spectre" in the name.
 	set(EXTRA_C_FLAGS_RELEASE "${EXTRA_C_FLAGS_RELEASE} /Qspectre")
-	set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Qspectre")
+	# /Qspectre is very noise, so do not include it for debug builds
+	# set(EXTRA_C_FLAGS_DEBUG "${EXTRA_C_FLAGS_DEBUG} /Qspectre")
 
 endif()
 
@@ -314,12 +318,13 @@ endif()
 # universal/integer
 # universal/decimal
 # universal/fixpnt
-# universal/lns
+# universal/bfloat
+# universal/areal
 # universal/unum
 # universal/unum2
 # universal/posit
 # universal/valid
-# universal/areal
+# universal/lns
 # universal/adaptiveint
 # universal/adaptivefloat
 include_directories("./include")
@@ -449,12 +454,13 @@ if(BUILD_CI_CHECK)
 	set(BUILD_INTEGERS ON)
 	set(BUILD_DECIMALS ON)
 	set(BUILD_FIXPNTS ON)
-	set(BUILD_LNS ON)
+	set(BUILD_BFLOATS ON)
+	set(BUILD_AREALS ON)
 	set(BUILD_UNUM_TYPE_1 ON)
 	set(BUILD_UNUM_TYPE_2 ON)
 	set(BUILD_POSITS ON)
 	set(BUILD_VALIDS ON)
-	set(BUILD_AREAL ON)
+	set(BUILD_LNS ON)
 	# build the BLAS test/verification suites
 	set(BUILD_BLAS ON)
 	set(BUILD_VMATH ON)
@@ -498,7 +504,6 @@ endif(BUILD_FIXPNTS)
 
 # Arbitrary reals tests
 if(BUILD_REALS)
-add_subdirectory("tests/areal")
 add_subdirectory("tests/adaptivefloat")
 add_subdirectory("tests/value")
 endif(BUILD_REALS)
@@ -525,6 +530,16 @@ if(BUILD_VALIDS)
 add_subdirectory("tests/valid")
 endif(BUILD_VALIDS)
 
+# reals with an uncertainty bit
+if(BUILD_AREALS)
+add_subdirectory("tests/areal")
+endif(BUILD_AREALS)
+
+# bfloats
+if(BUILD_BFLOATS)
+add_subdirectory("tests/bfloat")
+endif(BUILD_BFLOATS)
+
 # Basic Linear Algebra library
 if(BUILD_BLAS)
 add_subdirectory("tests/blas")
@@ -541,6 +556,7 @@ if(BUILD_PERFORMANCE_TESTS)
 add_subdirectory("performance/decimal")
 add_subdirectory("performance/integer")
 add_subdirectory("performance/fixpnt")
+add_subdirectory("performance/bfloat")
 add_subdirectory("performance/areal")
 add_subdirectory("performance/lns")
 add_subdirectory("performance/posit")
@@ -558,6 +574,7 @@ if(BUILD_EDUCATION)
 add_subdirectory("education/tables")
 add_subdirectory("education/integer")
 add_subdirectory("education/fixpnt")
+add_subdirectory("education/bfloat")
 add_subdirectory("education/areal")
 add_subdirectory("education/unum")
 add_subdirectory("education/posit")

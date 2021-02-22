@@ -135,24 +135,24 @@ try {
 	cout << endl;
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<2, 0>("Manual Testing", true), "posit<2,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<2, 0>(true), "posit<2,0>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 0>("Manual Testing", true), "posit<3,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 1>("Manual Testing", true), "posit<3,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 0>(true), "posit<3,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<3, 1>(true), "posit<3,1>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<4, 0>("Manual Testing", true), "posit<4,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<4, 1>("Manual Testing", true), "posit<4,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<4, 0>(true), "posit<4,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<4, 1>(true), "posit<4,1>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 0>("Manual Testing", true), "posit<5,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 1>("Manual Testing", true), "posit<5,1>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 2>("Manual Testing", true), "posit<5,2>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 0>(true), "posit<5,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 1>(true), "posit<5,1>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<5, 2>(true), "posit<5,2>", "sinh");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 0>("Manual Testing", true), "posit<8,0>", "sinh");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosh<8, 0>("Manual Testing", true), "posit<8,0>", "cosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyTanh<8, 0>("Manual Testing", true), "posit<8,0>", "tanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<8, 0>("Manual Testing", true), "posit<8,0>", "atanh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<8, 0>("Manual Testing", true), "posit<8,0>", "acosh");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<8, 0>("Manual Testing", true), "posit<8,0>", "asinh");
+	nrOfFailedTestCases += ReportTestResult(VerifySinh<8, 0>(true), "posit<8,0>", "sinh");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosh<8, 0>(true), "posit<8,0>", "cosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyTanh<8, 0>(true), "posit<8,0>", "tanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtanh<8, 0>(true), "posit<8,0>", "atanh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcosh<8, 0>(true), "posit<8,0>", "acosh");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsinh<8, 0>(true), "posit<8,0>", "asinh");
 #else
 
 	cout << "Posit hyperbolic sine/cosine/tangent function validation" << endl;
