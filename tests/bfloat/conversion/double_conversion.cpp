@@ -71,7 +71,7 @@ void CompilerBug() {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -94,7 +94,7 @@ try {
 
 	{
 		bfloat<6, 2> a;
-		a.debug();
+		a.constexprParameters();
 		double testValue = 0.0625000074505806;
 		a = testValue;
 		double da = double(a);

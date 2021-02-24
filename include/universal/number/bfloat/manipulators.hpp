@@ -16,6 +16,16 @@
 
 namespace sw::universal {
 
+// report dynamic range of a type, specialized for a posit
+template<size_t nbits, size_t es, typename bt>
+std::string dynamic_range(bfloat<nbits, es, bt>& b) {
+	std::stringstream ss;
+	ss << type_tag(b) << ": ";
+	ss << "minpos scale " << std::setw(10) << minpos(b).scale() << "     ";
+	ss << "maxpos scale " << std::setw(10) << maxpos(b).scale();
+	return ss.str();
+}
+
 // Generate a type tag for this posit, for example, posit<8,1>
 template<size_t nbits, size_t es, typename bt>
 std::string type_tag(const bfloat<nbits, es, bt>& v) {

@@ -29,7 +29,8 @@
 // #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
-// Posits encode error conditions as NaR (Not a Real), propagating the error through arithmetic operations is preferred
+// Posits encode error conditions as NaR (Not a Real)
+// propagating the error through arithmetic operations is preferred
 #include "exceptions.hpp"
 #endif // POSIT_THROW_ARITHMETIC_EXCEPTION
 

@@ -10,6 +10,7 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/native/bit_functions.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/bfloat/exceptions.hpp>
 
 // compiler specific operators
@@ -56,7 +57,8 @@
 #endif
 
 namespace sw::universal {
-		
+	constexpr bool _trace_bfloat_add = true;
+
 	static constexpr double oneOver2p6 = 0.015625;
 	static constexpr double oneOver2p14 = 0.00006103515625;
 	static constexpr double oneOver2p30 = 1.0 / 1073741824.0;
@@ -327,7 +329,6 @@ public:
 #endif
 		return *this;
 	}
-
 
 	CONSTEXPRESSION bfloat& operator=(float rhs) {
 		clear();
@@ -865,31 +866,64 @@ public:
 	}
 
 	bfloat& operator+=(const bfloat& rhs) {
+		if constexpr (_trace_bfloat_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+		// special case handling of the inputs
+#if BFLOAT_THROW_ARITHMETIC_EXCEPTION
+		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
+			throw bfloat_operand_is_nan{};
+		}
+#else
+		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+			setnan(NAN_TYPE_QUIET);
+			return *this;
+		}
+#endif
+		if (iszero()) {
+			*this = rhs;
+			return *this;
+		}
+		if (rhs.iszero()) return *this;
+
+		// arithmetic operation
+		blocktriple<abits + 1, BlockType> sum;
+		blocktriple<fhbits, BlockType> a, b;
+
+		normalize(a); // transform the inputs into (sign,scale,significant) triples
+		rhs.normalize(b);
+		module_add<fhbits, abits>(a, b, sum); // add the two inputs
+
+		// special case handling of the result
+		if (sum.iszero()) {
+			setzero();
+		}
+		else if (sum.isinf()) {
+			setinf(sum.sign());
+		}
+		else {
+//			convert(sum.sign(), sum.scale(), sum.significant(), *this);
+		}
 		return *this;
 	}
 	bfloat& operator+=(double rhs) {
 		return *this += bfloat(rhs);
 	}
 	bfloat& operator-=(const bfloat& rhs) {
-
-		return *this;
+		return *this += -rhs;
 	}
 	bfloat& operator-=(double rhs) {
-		return *this -= bfloat<nbits, es>(rhs);
+		return *this -= bfloat(rhs);
 	}
 	bfloat& operator*=(const bfloat& rhs) {
-
 		return *this;
 	}
 	bfloat& operator*=(double rhs) {
-		return *this *= bfloat<nbits, es>(rhs);
+		return *this *= bfloat(rhs);
 	}
 	bfloat& operator/=(const bfloat& rhs) {
-
 		return *this;
 	}
 	bfloat& operator/=(double rhs) {
-		return *this /= bfloat<nbits, es>(rhs);
+		return *this /= bfloat(rhs);
 	}
 	/// <summary>
 	/// move to the next bit encoding modulo 2^nbits
@@ -938,7 +972,6 @@ public:
 		return tmp;
 	}
 	inline bfloat& operator--() {
-
 		return *this;
 	}
 	inline bfloat operator--(int) {
@@ -1094,8 +1127,8 @@ public:
 	}
 
 	// selectors
-	inline constexpr bool sign() const { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
-	inline constexpr int scale() const {
+	inline constexpr bool sign() const noexcept { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
+	inline constexpr int  scale() const noexcept {
 		int e{ 0 };
 		if constexpr (MSU_CAPTURES_E) {
 			e = int((_block[MSU] & ~SIGN_BIT_MASK) >> EXP_SHIFT);
@@ -1130,9 +1163,9 @@ public:
 		return e;
 	}
 	// tests
-	inline constexpr bool isneg() const { return sign(); }
-	inline constexpr bool ispos() const { return !sign(); }
-	inline constexpr bool iszero() const {
+	inline constexpr bool isneg() const noexcept { return sign(); }
+	inline constexpr bool ispos() const noexcept { return !sign(); }
+	inline constexpr bool iszero() const noexcept {
 		if constexpr (0 == nrBlocks) {
 			return true;
 		}
@@ -1150,7 +1183,7 @@ public:
 			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		}
 	}
-	inline constexpr bool isone() const {
+	inline constexpr bool isone() const noexcept {
 		// unbiased exponent = scale = 0, fraction = 0
 		int s = scale();
 		if (scale() == 0) {
@@ -1167,7 +1200,7 @@ public:
 	/// </summary>
 	/// <param name="InfType">default is 0, both types, -1 checks for -inf, 1 checks for +inf</param>
 	/// <returns>true if +-inf, false otherwise</returns>
-	inline constexpr bool isinf(int InfType = INF_TYPE_EITHER) const {
+	inline constexpr bool isinf(int InfType = INF_TYPE_EITHER) const noexcept {
 		bool isInf = false;
 		bool isNegInf = false;
 		bool isPosInf = false;
@@ -1211,7 +1244,7 @@ public:
 	/// </summary>
 	/// <param name="NaNType">default is 0, both types, 1 checks for Signalling NaN, -1 checks for Quiet NaN</param>
 	/// <returns>true if the right kind of NaN, false otherwise</returns>
-	inline constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const {
+	inline constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const noexcept {
 		bool isNaN = true;
 		if constexpr (0 == nrBlocks) {
 			return false;
@@ -1238,7 +1271,16 @@ public:
 			     (NaNType == NAN_TYPE_SIGNALLING ? isNegNaN : 
 				   (NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
-
+	inline constexpr bool isnormal() const noexcept {
+		blockbinary<es, bt> e;
+		exponent(e);
+		return !e.iszero() && !isinf() && !isnan();
+	}
+	inline constexpr bool issubnorm() const noexcept {
+		blockbinary<es, bt> e;
+		exponent(e);
+		return e.iszero();
+	}
 	inline constexpr bool test(size_t bitIndex) const noexcept {
 		return at(bitIndex);
 	}
@@ -1267,7 +1309,7 @@ public:
 		return 0;
 	}
 
-	void debug() const {
+	void constexprParameters() const {
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
 		std::cout << "ALL_ONES          : " << to_binary_storage(ALL_ONES, true) << '\n';
@@ -1319,6 +1361,39 @@ public:
 		else if constexpr (nrBlocks > 1) {
 			for (size_t i = 0; i < fbits; ++i) { f.set(i, at(nbits - 1ull - es - fbits + i)); } // TODO: TEST!
 		}
+	}
+	// construct the significant from the encoding, returns normalization offset
+	inline constexpr int significant(blockbinary<fhbits, bt>& s, bool isNormal = true) const {
+		s.clear();
+		int msb = 0;
+		if (iszero()) return msb;
+		if constexpr (0 == nrBlocks) return msb;
+		else if constexpr (1 == nrBlocks) {
+			bt significant = bt(_block[MSU] & ~MSU_EXP_MASK);
+			if (isNormal) significant |= (bt(0x1ul) << fbits);
+			s.set_raw_bits(significant);
+		}
+		else if constexpr (nrBlocks > 1) {
+			if (isNormal) {
+				s.set(fbits);
+				for (size_t i = 0; i < fbits; ++i) { s.set(i, at(nbits - 1ull - es - fbits + i)); } // TODO: TEST!
+			}
+			else {
+				// h00001010101
+				// 101010100000
+
+				for (int i = static_cast<int>(fbits - 1); i >= 0; --i) { // msb protected from not being assigned through iszero test at prelude of function
+					if (test(static_cast<size_t>(i))) {
+						msb = i;
+						break;
+					}
+				}
+				for (int i = msb; i > 0; --i) {
+					s.set(fbits, at(nbits - 1ull - es - fbits + i));
+				}
+			}
+		}
+		return static_cast<int>(fbits) - 1 - msb;
 	}
 	
 	// casts to native types
@@ -1382,8 +1457,18 @@ public:
 	explicit operator double() const { return to_native<double>(); }
 	explicit operator float() const { return to_native<float>(); }
 
+	void normalize(blocktriple<fhbits, BlockType>& v) const {
+		bool _sign = sign();
+		int  _scale = scale();
+		blockbinary<fhbits, BlockType> _significant;
+		if (_scale < MIN_EXP_NORMAL) { // need to normalize the subnormal number to yield a consistent significant
+		}
+		significant(_significant);
+		v.set(_sign, _scale, _significant);
+	}
 protected:
 	// HELPER methods
+
 
 	/// <summary>
 	/// round a set of source bits to the present representation.
@@ -1479,7 +1564,6 @@ protected:
 		}
 		_block[0] <<= bitsToShift;
 	}
-
 	void shiftRight(int bitsToShift) {
 		if (bitsToShift == 0) return;
 		if (bitsToShift < 0) return shiftLeft(-bitsToShift);

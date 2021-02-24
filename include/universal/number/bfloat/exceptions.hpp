@@ -21,7 +21,7 @@ struct bfloat_arithmetic_exception
 //////////////////////////////////////////////////////////////////////////////////////////////////
 /// specialized exceptions to aid application level exception handling
 
-// not_a_real is thrown when a rvar is NaR
+// not_a_real is thrown when a rvar is NaN
 struct bfloat_not_a_number
 	: bfloat_arithmetic_exception
 {
@@ -35,25 +35,25 @@ struct bfloat_divide_by_zero
 	bfloat_divide_by_zero(const std::string& error = "real division by zero") : bfloat_arithmetic_exception(error) {}
 };
 
-// divide_by_nar is thrown when the denominator in a division operator is NaR
+// divide_by_nar is thrown when the denominator in a division operator is NaN
 struct bfloat_divide_by_nan
 	: bfloat_arithmetic_exception
 {
 	bfloat_divide_by_nan(const std::string& error = "divide by NaN") : bfloat_arithmetic_exception(error) {}
 };
 
-// numerator_is_nar is thrown when the numerator in a division operator is NaR
-struct bfloat_numerator_is_nar
+// numerator_is_nar is thrown when the numerator in a division operator is NaN
+struct bfloat_numerator_is_nan
 	: bfloat_arithmetic_exception
 {
-	bfloat_numerator_is_nar(const std::string& error = "numerator is nar") : bfloat_arithmetic_exception(error) {}
+	bfloat_numerator_is_nan(const std::string& error = "numerator is nar") : bfloat_arithmetic_exception(error) {}
 };
 
-// operand_is_nar is thrown when an rvar in a binary operator is NaR
-struct bfloat_operand_is_nar
+// operand_is_nar is thrown when an rvar in a binary operator is NaN
+struct bfloat_operand_is_nan
 	: public bfloat_arithmetic_exception
 {
-	bfloat_operand_is_nar(const std::string& error = "operand is nar") : bfloat_arithmetic_exception(error) {}
+	bfloat_operand_is_nan(const std::string& error = "operand is nar") : bfloat_arithmetic_exception(error) {}
 };
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
