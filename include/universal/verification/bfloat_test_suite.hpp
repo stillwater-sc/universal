@@ -175,8 +175,7 @@ namespace sw::universal {
 			SrcType da = SrcType(ref);
 			float fulp = ulp(float(da));
 			int old = nrOfFailedTests;
-			SrcType oneULP = (da > 0 ? fulp : -fulp);
-
+			SrcType oneULP = ulp(da); //  (da > 0 ? fulp : -fulp);
 			if (i % 2) {
 				if (i == 1)	{
 					// special case of a tie that needs to round to even -> 0

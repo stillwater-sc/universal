@@ -71,7 +71,7 @@ void CompilerBug() {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -104,7 +104,7 @@ try {
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<4, 1, uint8_t>, double >(false), tag, "bfloat<4,1,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 1, uint8_t>, double >(false), tag, "bfloat<5,1,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 2, uint8_t>, double >(false), tag, "bfloat<5,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<6, 2, uint8_t>, double >(false), tag, "bfloat<6,2,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<6, 2, uint8_t>, double >(true), tag, "bfloat<6,2,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<7, 2, uint8_t>, double >(false), tag, "bfloat<7,2,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<8, 2, uint8_t>, double >(false), tag, "bfloat<8,2,uint8_t>");
 
