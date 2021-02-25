@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -32,7 +33,7 @@ void ReportBinaryLogicError(const std::string& test_case, const std::string& op,
 
 // enumerate all less than cases for an blockbinary<nbits, BlockType> configuration
 template<size_t nbits, typename BlockType>
-int VerifyEqual(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyEqual(bool bReportIndividualTestCases) {
 	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
@@ -64,7 +65,7 @@ int VerifyEqual(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all less than or equal cases for an blockbinary<nbits, BlockType> configuration
 template<size_t nbits, typename BlockType>
-int VerifyNotEqual(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyNotEqual(bool bReportIndividualTestCases) {
 	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
@@ -96,7 +97,7 @@ int VerifyNotEqual(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all less than cases for an blockbinary<nbits, BlockType> configuration
 template<size_t nbits, typename BlockType>
-int VerifyLessThan(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyLessThan(bool bReportIndividualTestCases) {
 	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
@@ -128,7 +129,7 @@ int VerifyLessThan(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all less than or equal cases for an blockbinary<nbits, BlockType> configuration
 template<size_t nbits, typename BlockType>
-int VerifyLessOrEqualThan(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyLessOrEqualThan(bool bReportIndividualTestCases) {
 	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
@@ -160,7 +161,7 @@ int VerifyLessOrEqualThan(const std::string& tag, bool bReportIndividualTestCase
 
 // enumerate all greater than cases for an blockbinary<nbits, BlockType> configuration
 template<size_t nbits, typename BlockType>
-int VerifyGreaterThan(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyGreaterThan(bool bReportIndividualTestCases) {
 	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
@@ -192,7 +193,7 @@ int VerifyGreaterThan(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all greater than or equal cases for an blockbinary<nbits, BlockType> configuration
 template<size_t nbits, typename BlockType>
-int VerifyGreaterOrEqualThan(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyGreaterOrEqualThan(bool bReportIndividualTestCases) {
 	constexpr size_t NR_INTEGERS = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	blockbinary<nbits, BlockType> ia, ib;
@@ -244,12 +245,12 @@ try {
 	ic = ia - ib;
 	cout << to_binary(ia) << " - " << to_binary(ib) << " = " << to_binary(ic) << " " << int(ic) << endl;
 
-	ReportTestResult(VerifyEqual<4, uint8_t>("manual test", true), "blockbinary<4,uint8_t>", "==");
-	ReportTestResult(VerifyNotEqual<4, uint8_t>("manual test", true), "blockbinary<4,uint8_t>", "!=");
-	ReportTestResult(VerifyLessThan<4, uint8_t>("manual test", true), "blockbinary<4,uint8_t>", "<");
-	ReportTestResult(VerifyLessOrEqualThan<4, uint8_t>("manual test", true), "blockbinary<4,uint8_t>", "<=");
-	ReportTestResult(VerifyGreaterThan<4, uint8_t>("manual test", true), "blockbinary<4,uint8_t>", ">");
-	ReportTestResult(VerifyGreaterOrEqualThan<4, uint8_t>("manual test", true), "blockbinary<4,uint8_t>", ">=");
+	ReportTestResult(VerifyEqual<4, uint8_t>(true), "blockbinary<4,uint8_t>", "==");
+	ReportTestResult(VerifyNotEqual<4, uint8_t>(true), "blockbinary<4,uint8_t>", "!=");
+	ReportTestResult(VerifyLessThan<4, uint8_t>(true), "blockbinary<4,uint8_t>", "<");
+	ReportTestResult(VerifyLessOrEqualThan<4, uint8_t>(true), "blockbinary<4,uint8_t>", "<=");
+	ReportTestResult(VerifyGreaterThan<4, uint8_t>(true), "blockbinary<4,uint8_t>", ">");
+	ReportTestResult(VerifyGreaterOrEqualThan<4, uint8_t>(true), "blockbinary<4,uint8_t>", ">=");
 
 	cout << "done" << endl;
 
@@ -260,27 +261,27 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<8, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint8_t>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<8, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint8_t>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<8, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint8_t>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<8, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint8_t>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<8, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint8_t>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<8, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint8_t>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8,uint8_t>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8,uint8_t>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8,uint8_t>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8,uint8_t>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8,uint8_t>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8,uint8_t>", ">=");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8_t>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8_t>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8_t>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8_t>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8_t>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8_t>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", ">=");
 
 #if STRESS_TESTING
-	nrOfFailedTestCases += ReportTestResult(VerifyEqual<16, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<16,uint16_t>", "==");
-	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<16, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<16,uint16_t>", "!=");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<16, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<16,uint16_t>", "<");
-	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<16, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<16,uint16_t>", "<=");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<16, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<16,uint16_t>", ">");
-	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<16, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<16,uint16_t>", ">=");
+	nrOfFailedTestCases += ReportTestResult(VerifyEqual<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", "==");
+	nrOfFailedTestCases += ReportTestResult(VerifyNotEqual<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", "!=");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessThan<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", "<");
+	nrOfFailedTestCases += ReportTestResult(VerifyLessOrEqualThan<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", "<=");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterThan<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", ">");
+	nrOfFailedTestCases += ReportTestResult(VerifyGreaterOrEqualThan<16, uint16_t>(bReportIndividualTestCases), "blockbinary<16,uint16_t>", ">=");
 #endif // STRESS_TESTING
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);

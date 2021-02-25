@@ -80,9 +80,9 @@ namespace sw::universal {
 		Ty scale_factor = 1.0;
 		int integer_value = 0;
 		int scale = 0;
-		for (unsigned i = 0; i < sizeof(scales); ++i) {
+		for (int i = 0; i < sizeof(scales); ++i) {
 			if (value > lower_bound && value < 1000 * lower_bound) {
-				integer_value = int(value / scale_factor);
+				integer_value = static_cast<int>(value / scale_factor);
 				scale = i;
 				break;
 			}

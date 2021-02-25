@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 
@@ -13,7 +14,7 @@
 
 // enumerate all addition cases for an blockbinary<nbits,BlockType> configuration
 template<size_t nbits, typename BlockType = uint8_t>
-int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyAddition(bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace std;
 	using namespace sw::universal;
@@ -50,7 +51,7 @@ int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 				if (bReportOverflowCondition)cout << endl;
 			}
 
-			refResult.set_raw_bits(cref);
+			refResult.set_raw_bits(static_cast<uint64_t>(cref));
 			if (result != refResult) {
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, result, cref);
@@ -101,6 +102,8 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
+	if (argc > 1) std::cout << argv[0] << std::endl; 
+	
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -135,14 +138,14 @@ try {
 	cout << c.to_long_long() << endl;
 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>(tag, bReportIndividualTestCases), "uint8_t<12>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint16_t>(tag, bReportIndividualTestCases), "uint16_t<12>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>(bReportIndividualTestCases), "uint8_t<12>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint16_t>(bReportIndividualTestCases), "uint16_t<12>", "addition");
 
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint8_t>("Manual Testing", true), "uint8_t<4>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint16_t>("Manual Testing", true), "uint16_t<4>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint32_t>("Manual Testing", true), "uint32_t<4>", "addition");
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint64_t>("Manual Testing", true), "uint64_t<4>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint8_t>(true), "uint8_t<4>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint16_t>(true), "uint16_t<4>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint32_t>(true), "uint32_t<4>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint64_t>(true), "uint64_t<4>", "addition");
 
 
 #if STRESS_TESTING
@@ -153,29 +156,29 @@ try {
 
 	cout << "block addition validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<4,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<4,uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<4,uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint8_t>(bReportIndividualTestCases), "blockbinary<4,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint16_t>(bReportIndividualTestCases), "blockbinary<4,uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, uint32_t>(bReportIndividualTestCases), "blockbinary<4,uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<8,uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint8_t>(bReportIndividualTestCases), "blockbinary<8,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint16_t>(bReportIndividualTestCases), "blockbinary<8,uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<8, uint32_t>(bReportIndividualTestCases), "blockbinary<8,uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<9, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<9,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<9, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<9,uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<9, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<9,uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<9, uint8_t>(bReportIndividualTestCases), "blockbinary<9,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<9, uint16_t>(bReportIndividualTestCases), "blockbinary<9,uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<9, uint32_t>(bReportIndividualTestCases), "blockbinary<9,uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<10,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<10,uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<10,uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, uint8_t>(bReportIndividualTestCases), "blockbinary<10,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, uint16_t>(bReportIndividualTestCases), "blockbinary<10,uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<10, uint32_t>(bReportIndividualTestCases), "blockbinary<10,uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<11,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<11,uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<11,uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint8_t>(bReportIndividualTestCases), "blockbinary<11,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint16_t>(bReportIndividualTestCases), "blockbinary<11,uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<11, uint32_t>(bReportIndividualTestCases), "blockbinary<11,uint32_t>", "addition");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint16_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint16_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint32_t>(tag, bReportIndividualTestCases), "blockbinary<12,uint32_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint8_t>(bReportIndividualTestCases), "blockbinary<12,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint16_t>(bReportIndividualTestCases), "blockbinary<12,uint16_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition<12, uint32_t>(bReportIndividualTestCases), "blockbinary<12,uint32_t>", "addition");
 
 #if STRESS_TESTING
 

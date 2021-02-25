@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <sstream>
 
@@ -29,22 +30,22 @@ int ValidateAny(bool bReportIndividualTestCases) {
 	sw::universal::blockbinary<18> a;
 
 	a.set_raw_bits(0x32000); // 11'0010'0000'0000'0000
-	if (a.any(8)) { ++nrFailures; std::cout << "fail\n"; }
-	if (a.any(9)) {	++nrFailures; std::cout << "fail\n"; }
-	if (a.any(10)) { ++nrFailures; std::cout << "fail\n"; }
-	if (a.any(11)) { ++nrFailures; std::cout << "fail\n"; }
-	if (a.any(12)) { ++nrFailures; std::cout << "fail\n"; }
-	if (a.any(13) != true) { ++nrFailures; std::cout << "fail\n"; }
-	if (a.any(14) != true) { ++nrFailures; std::cout << "fail\n"; }
-	if (a.any(16) != true) { ++nrFailures; std::cout << "fail\n"; }
+	if (a.any(8)) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
+	if (a.any(9)) {	++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
+	if (a.any(10)) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
+	if (a.any(11)) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
+	if (a.any(12)) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
+	if (a.any(13) != true) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
+	if (a.any(14) != true) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
+	if (a.any(16) != true) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
 
 	a.set_raw_bits(0x3244); // 00'0011'0010'0100'0100
-	if (a.any(1)) { ++nrFailures; std::cout << "fail\n"; }
-	if (a.any(4) != true) { ++nrFailures; std::cout << "fail\n"; }
+	if (a.any(1)) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
+	if (a.any(4) != true) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
 	a.set_raw_bits(0x3240); // 00'0011'0010'0100'0000
-	if (a.any(5)) { ++nrFailures; std::cout << "fail\n"; }
-	if (a.any(6) != true) { ++nrFailures; std::cout << "fail\n"; }
-	if (a.any(7) != true) { ++nrFailures; std::cout << "fail\n"; }
+	if (a.any(5)) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
+	if (a.any(6) != true) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
+	if (a.any(7) != true) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
 
 	return nrFailures;
 }
@@ -276,6 +277,8 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
+	if (argc > 1) std::cout << argv[0] << std::endl; 
+	
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
