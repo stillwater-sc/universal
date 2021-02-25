@@ -86,7 +86,7 @@ template<typename Scalar>
 void rk4(Scalar (*f)(const Scalar&, const Scalar&), int n, Scalar& h, Scalar& x, Scalar& y) {
 	using namespace std;
 	const Scalar x0 = x;
-	for (unsigned int i = 0; i < n + 1; i++) {
+	for (int i = 0; i < n + 1; i++) {
 		x = x0 + i*h;
 		auto f1 = h*f(x, y);
 		auto f2 = h*f(x + h/2, y + f1/2);

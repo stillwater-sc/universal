@@ -1201,7 +1201,6 @@ public:
 	/// <param name="InfType">default is 0, both types, -1 checks for -inf, 1 checks for +inf</param>
 	/// <returns>true if +-inf, false otherwise</returns>
 	inline constexpr bool isinf(int InfType = INF_TYPE_EITHER) const noexcept {
-		bool isInf = false;
 		bool isNegInf = false;
 		bool isPosInf = false;
 		if constexpr (0 == nrBlocks) {
@@ -1212,17 +1211,17 @@ public:
 			isPosInf = (_block[MSU] & MSU_MASK) == ((MSU_MASK ^ SIGN_BIT_MASK) ^ LSB_BIT_MASK);
 		}
 		else if constexpr (2 == nrBlocks) {
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
+			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
 			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
 			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
 		else if constexpr (3 == nrBlocks) {
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) && (_block[1] == BLOCK_MASK);
+			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) && (_block[1] == BLOCK_MASK);
 			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
 			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
 		else {
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
+			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
 			for (size_t i = 1; i < nrBlocks - 1; ++i) {
 				if (_block[i] != BLOCK_MASK) {
 					isInf = false;

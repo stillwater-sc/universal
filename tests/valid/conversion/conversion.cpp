@@ -22,7 +22,6 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Conversion test";
@@ -30,6 +29,7 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 
+	bool bReportIndividualTestCases = false;
 	// manual exhaustive testing
 	tag = "Manual Testing";
 

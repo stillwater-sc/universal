@@ -225,7 +225,7 @@ public:
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt LSB_BIT_MASK = bt(1ull);
 	static constexpr bool MSU_CAPTURES_E = (1ull + es) <= bitsInMSU;
-	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (nbits - 1ull - es) : 0);
+	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull - es)) : 0);
 	static constexpr bt MSU_EXP_MASK = ((ALLONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;
@@ -960,7 +960,6 @@ public:
 	/// <param name="InfType">default is 0, both types, -1 checks for -inf, 1 checks for +inf</param>
 	/// <returns>true if +-inf, false otherwise</returns>
 	inline constexpr bool isinf(int InfType = INF_TYPE_EITHER) const {
-		bool isInf = false;
 		bool isNegInf = false;
 		bool isPosInf = false;
 		if constexpr (0 == nrBlocks) {
@@ -971,17 +970,17 @@ public:
 			isPosInf = (_block[MSU] & MSU_MASK) == ((MSU_MASK ^ SIGN_BIT_MASK) ^ LSB_BIT_MASK);
 		}
 		else if constexpr (2 == nrBlocks) {
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
+			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
 			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
 			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
 		else if constexpr (3 == nrBlocks) {
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) && (_block[1] == BLOCK_MASK);
+			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) && (_block[1] == BLOCK_MASK);
 			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
 			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
 		else {
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
+			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
 			for (size_t i = 1; i < nrBlocks - 1; ++i) {
 				if (_block[i] != BLOCK_MASK) {
 					isInf = false;
