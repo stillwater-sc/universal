@@ -3,7 +3,11 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#if defined(_MSC_VER)
+#pragma warning(disable : 4514)  // unreferenced function is removed
+#pragma warning(disable : 4710)  // function is not inlined
+#pragma warning(disable : 5045)  // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#endif
 // Configure the bfloat template environment
 // first: enable general or specialized fixed-point configurations
 #define BFLOAT_FAST_SPECIALIZATION
@@ -83,6 +87,8 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::universal;
+
+	if (argc > 0) std::cout << argv[0] << std::endl;
 
 	int nrOfFailedTestCases = 0;
 

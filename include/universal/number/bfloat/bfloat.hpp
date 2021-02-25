@@ -49,8 +49,8 @@
 
 #endif
 
-#ifndef THROW_ARITHMETIC_EXCEPTION
-#define THROW_ARITHMETIC_EXCEPTION 0
+#ifndef BFLOAT_THROW_ARITHMETIC_EXCEPTION
+#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 #ifndef TRACE_CONVERSION
 #define TRACE_CONVERSION 0
@@ -223,7 +223,7 @@ public:
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt LSB_BIT_MASK = bt(1ull);
 	static constexpr bool MSU_CAPTURES_E = (1ull + es) <= bitsInMSU;
-	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (nbits - 1ull - es) : 0);
+	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull -es)) : 0);
 	static constexpr bt MSU_EXP_MASK = ((ALL_ONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;

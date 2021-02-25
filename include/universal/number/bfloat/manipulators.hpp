@@ -82,7 +82,7 @@ inline std::string hex_print(const bfloat<nbits, es, bt>& r) {
 }
 
 template<size_t nbits, size_t es, typename bt>
-std::string pretty_print(const bfloat<nbits, es, bt>& r, int printPrecision = std::numeric_limits<double>::max_digits10) {
+std::string pretty_print(const bfloat<nbits, es, bt>& r) {
 	std::stringstream ss;
 	constexpr size_t fbits = bfloat<nbits, es, bt>::fbits;
 	bool s{ false };

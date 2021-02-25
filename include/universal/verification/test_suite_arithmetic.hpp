@@ -11,8 +11,12 @@
 // CALLING ENVIRONMENT PREREQUISITE!!!!!
 // We want the test suite to be used with different configurations of number systems
 // so the calling environment needs to set the configuration
-// This usually entails setting environment variables, such as
-// #default POSIT_THOW_ARITHMETIC_EXCEPTIONS 1
+// This usually entails setting environment variables, such as THROW_ARITHMETIC_EXCEPTIONS
+// as a function of the configured state of the number system.
+// If it is not set, default is to turn it on.
+#ifndef THROW_ARITHMETIC_EXCEPTION
+#define THROW_ARITHMETIC_EXCEPTION 1
+#endif
 
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_reporters.hpp>  // error/success reporting

@@ -6,6 +6,7 @@
 #if defined(_MSC_VER)
 #pragma warning(disable : 4514)  // unreferenced function is removed
 #pragma warning(disable : 4710)  // function is not inlined
+#pragma warning(disable : 5045)  // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
 #endif
 #include <iostream>
 #include <iomanip>
@@ -14,6 +15,12 @@
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/bfloat/bfloat.hpp>
 #include <universal/number/bfloat/manipulators.hpp>  // hex_print and the like
+// marshall the exception state of bfloat to the test suite
+#if BFLOAT_THROW_ARITHMETIC_EXCEPTION 
+#define THROW_ARITHMETIC_EXCEPTION 1
+#else
+#define THROW_ARITHMETIC_EXCEPTION 0
+#endif
 #include <universal/verification/test_suite_arithmetic.hpp>
 
 template<size_t nbits, size_t es, typename bt = uint8_t>
