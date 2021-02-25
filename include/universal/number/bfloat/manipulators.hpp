@@ -118,7 +118,7 @@ std::string color_print(const bfloat<nbits, es, bt>& r) {
 	std::stringstream ss;
 	bool s{ false };
 	blockbinary<es,bt> e;
-	blockbinary<bfloat<nbits, es, bt>::fbits> f;
+	blockbinary<r.fbits,bt> f;
 	decode(r, s, e, f);
 
 	Color red(ColorCode::FG_RED);
@@ -130,7 +130,7 @@ std::string color_print(const bfloat<nbits, es, bt>& r) {
 	Color def(ColorCode::FG_DEFAULT);
 
 	// sign bit
-	ss << red << (r.isneg() ? "1" : "0");
+	ss << red << (r.isneg() ? '1' : '0');
 
 	// exponent bits
 	for (int i = int(es) - 1; i >= 0; --i) {

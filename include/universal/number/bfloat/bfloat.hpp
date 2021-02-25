@@ -1756,14 +1756,25 @@ inline std::string to_string(const bfloat<nbits,es,bt>& v) {
 // transform bfloat to a binary representation
 template<size_t nbits, size_t es, typename bt>
 inline std::string to_binary(const bfloat<nbits, es, bt>& number, bool nibbleMarker = false) {
-	std::stringstream ss;
-	ss << 'b';
+	std::stringstream s;
+	s << 'b';
 	size_t index = nbits;
-	for (size_t i = 0; i < nbits; ++i) {
-		ss << (number.at(--index) ? '1' : '0');
-		if (index > 0 && (index % 4) == 0 && nibbleMarker) ss << '\'';
+	s << (number.at(--index) ? '1' : '0') << '.';
+
+	for (int i = int(es)-1; i >= 0; --i) {
+		s << (number.at(--index) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 	}
-	return ss.str();
+
+	s << '.';
+
+	constexpr int fbits = nbits - 1ull - es;
+	for (int i = fbits-1; i >= 0; --i) {
+		s << (number.at(--index) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	}
+
+	return s.str();
 }
 
 // helper to report on BlockType blocks
