@@ -3,10 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 4514)  // unreferenced function is removed
-#pragma warning(disable : 4710)  // function is not inlined
-#endif
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -49,30 +46,6 @@ try {
 		std::cout << color_print(b) << std::endl;
 		bfloat<16, 4, uint16_t> c;
 		c = a * b;
-	}
-
-	{
-		/*
-		nbits             : 44
-		es                : 9
-		ALL_ONES          : b1111'1111'1111'1111
-		BLOCK_MASK        : b1111'1111'1111'1111
-		nrBlocks          : 3
-		bits in MSU       : 12
-		MSU               : 2
-		MSU MASK          : b0000'1111'1111'1111
-		SIGN_BIT_MASK     : b0000'1000'0000'0000
-		LSB_BIT_MASK      : b0000'0000'0000'0001
-		MSU CAPTURES E    : yes
-		EXP_SHIFT         : 34
-		MSU EXP MASK      : b0000'0000'0000'0000
-		EXP_BIAS          : 255
-		MAX_EXP           : 257
-		MIN_EXP_NORMAL    : -254
-		MIN_EXP_SUBNORMAL : -288
-		*/
-		bfloat<44, 9, uint16_t> a;
-		a.constexprParameters();
 	}
 
 	{
