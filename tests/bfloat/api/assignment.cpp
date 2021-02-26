@@ -447,9 +447,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	if (argc > 0) {
-		std::cout << argv[0] << std::endl;
-	}
+	print_cmd_line(argc, argv);
 
 	std::string tag = "BFLOAT assignment: ";
 

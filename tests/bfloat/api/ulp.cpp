@@ -40,14 +40,11 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	if (argc > 0) {
-		std::cout << argv[0] << std::endl;
-	}
-	// const size_t RND_TEST_CASES = 0;  // no randoms, 8-bit posits can be done exhaustively
+	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "bfloat<> Application Programming Interface tests" << std::endl;
+	std::cout << "bfloat<> Unit in Last Position tests" << std::endl;
 
 #if MANUAL_TESTING
 
@@ -57,11 +54,12 @@ try {
 
 #else // !MANUAL_TESTING
 
-	//bool bReportIndividualTestCases = false;
+
 
 #endif // MANUAL_TESTING
 
 	std::cout << "\nBFLOAT Unit in Last Position test suite           : " << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
+	//bool bReportIndividualTestCases = false;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

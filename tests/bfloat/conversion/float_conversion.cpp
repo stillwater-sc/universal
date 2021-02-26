@@ -44,9 +44,7 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	if (argc > 0) {
-		std::cout << argv[0] << std::endl;
-	}
+	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 	std::string tag = "float conversion: ";

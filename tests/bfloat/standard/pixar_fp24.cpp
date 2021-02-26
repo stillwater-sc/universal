@@ -15,8 +15,10 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	const size_t nbits = 24;
-	const size_t ebits = 8;
+	print_cmd_line(argc, argv);
+
+	constexpr size_t nbits = 24;
+	constexpr size_t ebits = 8;
 
 	int nrOfFailedTestCases = 0;
 	std::string tag = " bfloat<24,8>";

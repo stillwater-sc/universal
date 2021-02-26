@@ -22,7 +22,7 @@ int main(int argc, char** argv)
 try {
 	using namespace sw::universal;
 
-	if (argc > 0) std::cout << argv[0] << std::endl;
+	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 

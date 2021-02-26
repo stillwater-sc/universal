@@ -1,4 +1,4 @@
-// addition.cpp: test suite runner for addition on arbitrary reals
+// double_subnormals.cpp: test suite runner for conversion tests of double subnormals to bfloats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -9,25 +9,6 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
-// generate specific test case that you can trace with the trace conditions in bfloat.hpp
-// for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename Ty>
-void GenerateTestCase(Ty _a, Ty _b) {
-	sw::universal::bfloat<nbits, es> a, b, sum, ref;
-	a = _a;
-	b = _b;
-	sum = a + b;
-	// generate the reference
-	Ty reference = _a + _b;
-	ref = reference;
-
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << reference << std::endl;
-	std::cout << a << " + " << b << " = " << sum << " (reference: " << ref << ")   ";
-	std::cout << to_binary(a, true) << " + " << to_binary(b, true) << " = " << to_binary(sum, true) << " (reference: " << to_binary(ref, true) << ")   ";
-	std::cout << (ref == sum ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::setprecision(5);
-}
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -43,9 +24,6 @@ try {
 
 #if MANUAL_TESTING
 
-	// generate individual testcases to hand trace/debug
-	GenerateTestCase<16, 8, double>(INFINITY, INFINITY);
-	GenerateTestCase<8, 4, float>(0.5f, -0.5f);
 
 	// manual exhaustive test
 	//nrOfFailedTestCases += ReportTestResult(VerifyAddition< bfloat<8, 2, uint8_t> >("Manual Testing", true), "bfloat<8,2,uint8_t>", "addition");
@@ -64,8 +42,6 @@ try {
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<10, 4>(tag, bReportIndividualTestCases), "bfloat<10,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<16, 8>(tag, bReportIndividualTestCases), "bfloat<16,8>", "addition");
 #endif  // STRESS_TESTING
 
 #endif  // MANUAL_TESTING

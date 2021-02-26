@@ -248,6 +248,8 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
+	print_cmd_line(argc, argv);
+
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
