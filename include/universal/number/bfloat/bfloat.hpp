@@ -57,7 +57,7 @@
 #endif
 
 namespace sw::universal {
-	constexpr bool _trace_bfloat_add = true;
+	constexpr bool _trace_bfloat_add = false;
 
 	static constexpr double oneOver2p6 = 0.015625;
 	static constexpr double oneOver2p14 = 0.00006103515625;

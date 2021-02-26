@@ -3,11 +3,10 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iostream>
-#include <string>
+#include <universal/utility/directives.hpp>
 #include <chrono>
 // configure the bfloat arithmetic class
-#define AREAL_THROW_ARITHMETIC_EXCEPTION 0
+#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/bfloat/bfloat>
 // is representable
 #include <universal/functions/isrepresentable.hpp>
@@ -34,15 +33,15 @@ void DecodeWorkload(uint64_t NR_OPS) {
 	using namespace sw::universal;
 
 	Scalar a{ 0 };
-	a.set_raw_bits(0xEEEEEEEEEEEEEEEEull);
 	size_t success{ 0 };
 	bool first{ true };
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
+		a.set_raw_bits(i);
 		bool s{ false };
 		blockbinary<a.es, typename Scalar::BlockType> e;
 		blockbinary<a.fbits, typename Scalar::BlockType> f;
 		sw::universal::decode(a, s, e, f);
-		if (s != f.at(0)) {
+		if ((i%2) == f.at(0)) {
 			++success;
 		}
 		else {
@@ -66,31 +65,18 @@ void TestDecodePerformance() {
 	using namespace sw::universal;
 	cout << endl << "BFLOAT decode operator performance" << endl;
 
-	uint64_t NR_OPS = 1000000;
+	uint64_t NR_OPS = 10000000;
 	PerformanceRunner("bfloat<8,2,uint8_t>      decode         ", DecodeWorkload< sw::universal::bfloat<8, 2, uint8_t> >, NR_OPS);
 	PerformanceRunner("bfloat<16,5,uint16_t>    decode         ", DecodeWorkload< sw::universal::bfloat<16, 5, uint16_t> >, NR_OPS);
 	PerformanceRunner("bfloat<32,8,uint32_t>    decode         ", DecodeWorkload< sw::universal::bfloat<32, 8, uint32_t> >, NR_OPS);
 	PerformanceRunner("bfloat<64,11,uint64_t>   decode         ", DecodeWorkload< sw::universal::bfloat<64, 11, uint64_t> >, NR_OPS);
 /* 
-1/4/2021
-AREAL decode operator performance: this is a decode that enumerates the bits, thus slowest possible algorithm
-bfloat<8,2,uint8_t>      decode             1000000 per        0.012412sec ->  80 Mops/sec
-bfloat<16,5,uint16_t>    decode             1000000 per       0.0287893sec ->  34 Mops/sec
-bfloat<32,8,uint32_t>    decode             1000000 per       0.0649867sec ->  15 Mops/sec
-bfloat<64,11,uint64_t>   decode             1000000 per        0.129481sec ->   7 Mops/sec
-
-1/5/2021
-AREAL decode operator performance: this is an exponent block move if there is no straddle
-bfloat<8,2,uint8_t>      decode             1000000 per       0.0082558sec -> 121 Mops/sec
-bfloat<16,5,uint16_t>    decode             1000000 per       0.0185946sec ->  53 Mops/sec
-bfloat<32,8,uint32_t>    decode             1000000 per       0.0465827sec ->  21 Mops/sec
-bfloat<64,11,uint64_t>   decode             1000000 per        0.104031sec ->   9 Mops/sec
-
-AREAL decode operator performance: this is an exponent and fraction block move if there is no straddle
-bfloat<8,2,uint8_t>      decode             1000000 per       0.0002446sec ->   4 Gops/sec
-bfloat<16,5,uint16_t>    decode             1000000 per       0.0002446sec ->   4 Gops/sec
-bfloat<32,8,uint32_t>    decode             1000000 per       0.0002675sec ->   4 Gops/sec
-bfloat<64,11,uint64_t>   decode             1000000 per       0.0003521sec ->   4 Gops/sec
+2/26/2021
+BFLOAT decode operator performance                                                           <---- this includes set_raw_bits()
+bfloat<8,2,uint8_t>      decode            10000000 per       0.0105318sec -> 949 Mops/sec
+bfloat<16,5,uint16_t>    decode            10000000 per        0.017448sec -> 573 Mops/sec
+bfloat<32,8,uint32_t>    decode            10000000 per       0.0158896sec -> 629 Mops/sec
+bfloat<64,11,uint64_t>   decode            10000000 per       0.0149587sec -> 668 Mops/sec
 */
 }
 
@@ -98,7 +84,7 @@ bfloat<64,11,uint64_t>   decode             1000000 per       0.0003521sec ->   
 void TestArithmeticOperatorPerformance() {
 	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "AREAL Arithmetic operator performance" << endl;
+	cout << endl << "BFLOAT Arithmetic operator performance" << endl;
 
 	uint64_t NR_OPS = 1000000;
 
@@ -144,7 +130,7 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	std::string tag = "AREAL operator performance benchmarking";
+	std::string tag = "BFLOAT operator performance benchmarking";
 
 #if MANUAL_TESTING
 

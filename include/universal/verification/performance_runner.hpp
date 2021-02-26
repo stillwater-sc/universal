@@ -75,12 +75,12 @@ namespace sw::universal {
 	// convert a floating point value to a power-of-ten string
 	template<typename Ty>
 	std::string toPowerOfTen(Ty value) {
-		const char* scales[] = { " ", "K", "M", "G", "T" };
+		const char* scales[] = { " ", "K", "M", "G", "T", "P", "E", "Z" };
 		Ty lower_bound = Ty(1);
 		Ty scale_factor = 1.0;
 		int integer_value = 0;
-		int scale = 0;
-		for (int i = 0; i < sizeof(scales); ++i) {
+		size_t scale = 0;
+		for (size_t i = 0; i < sizeof(scales); ++i) {
 			if (value > lower_bound && value < 1000 * lower_bound) {
 				integer_value = static_cast<int>(value / scale_factor);
 				scale = i;

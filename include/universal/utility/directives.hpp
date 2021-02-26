@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <iomanip>
+#include <string>
 #include <typeinfo>
 
 namespace sw::universal {
