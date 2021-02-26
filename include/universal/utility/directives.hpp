@@ -12,6 +12,9 @@
 #endif
 
 #include <iostream>
+#include <iomanip>
+#include <typeinfo>
+
 namespace sw::universal {
 
 	/// <summary>

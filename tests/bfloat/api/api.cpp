@@ -4,16 +4,19 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <typeinfo>
+
 // minimum set of include files to reflect source code dependencies
+// Configure the bfloat template environment
+// first: enable general or specialized configurations
+#define BFLOAT_FAST_SPECIALIZATION
+// second: enable/disable arithmetic exceptions
+#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+// third: enable trace conversion
+#define TRACE_CONVERSION 0
+
 #include <universal/number/bfloat/bfloat.hpp>
 #include <universal/number/bfloat/manipulators.hpp>  // hex_print and the like
 #include <universal/verification/test_suite_arithmetic.hpp>
-
-
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -30,11 +33,7 @@ try {
 
 #if MANUAL_TESTING
 
-	// scales for gradual overflow range are incorrect
-    // also scales for es = 1 are just underflow and overflow ranges, and currently incorrect
 
-	/// TODO: subnormal numbers have a scale adjustment as 2^(2-2^(es - 1)).
-	/// check if this is correct if es is > 2. In particular, bfloat<32,8> and bfloat<64,11> should write test suite for that
 
 	{
 		bfloat<16, 4, uint16_t> a(1.0);

@@ -4,13 +4,17 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
-#include <iostream>
-#include <iomanip>
-#include <fstream>
-#include <typeinfo>
+
 // minimum set of include files to reflect source code dependencies
+// Configure the bfloat template environment
+// first: enable general or specialized configurations
+#define BFLOAT_FAST_SPECIALIZATION
+// second: enable/disable arithmetic exceptions
+#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+
 #include <universal/number/bfloat/bfloat.hpp>
 #include <universal/number/bfloat/manipulators.hpp>  // hex_print and the like
+
 // marshall the exception state of bfloat to the test suite
 #if BFLOAT_THROW_ARITHMETIC_EXCEPTION 
 #define THROW_ARITHMETIC_EXCEPTION 1

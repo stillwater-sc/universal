@@ -4,6 +4,8 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <universal/utility/directives.hpp>
+
+// minimum set of include files to reflect source code dependencies
 // Configure the bfloat template environment
 // first: enable general or specialized configurations
 #define BFLOAT_FAST_SPECIALIZATION
@@ -11,13 +13,11 @@
 #define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 // enabling tracing
 #define TRACE_CONVERSION 0
-// minimum set of include files to reflect source code dependencies
+
 #include <universal/number/bfloat/bfloat.hpp>
-// fixed-point type manipulators such as pretty printers
 #include <universal/number/bfloat/manipulators.hpp>
 #include <universal/number/bfloat/math_functions.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
-#include <universal/number/bfloat/table.hpp>
 
 // print the constexpr values of the bfloat class
 template<size_t nbits, size_t es, typename bt>
@@ -454,8 +454,6 @@ try {
 #if MANUAL_TESTING
 
 	using Real = sw::universal::bfloat<8, 2>;
-
-	// GenerateBfloatTable<4, 1>(cout, false);
 
 	bool bConversionTest = true;
 	if (bConversionTest) {

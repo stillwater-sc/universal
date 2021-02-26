@@ -208,7 +208,7 @@ public:
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t es = _es;
 	static constexpr size_t fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
-	static constexpr size_t fhbits = fbits + 1ull;         // number of fraction bits including the hidden bit
+	static constexpr size_t fhbits = nbits - es;           // number of fraction bits including the hidden bit
 	static constexpr size_t abits = fhbits + 3ull;         // size of the addend
 	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
 	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
@@ -1362,14 +1362,22 @@ public:
 		}
 	}
 	// construct the significant from the encoding, returns normalization offset
-	inline constexpr int significant(blockbinary<fhbits, bt>& s, bool isNormal = true) const {
+	inline constexpr size_t significant(blockbinary<fhbits, bt>& s, bool isNormal = true) const {
 		s.clear();
-		int msb = 0;
-		if (iszero()) return msb;
-		if constexpr (0 == nrBlocks) return msb;
+		size_t shift = 0;
+		if (iszero()) return 0;
+		if constexpr (0 == nrBlocks) return 0;
 		else if constexpr (1 == nrBlocks) {
 			bt significant = bt(_block[MSU] & ~MSU_EXP_MASK);
-			if (isNormal) significant |= (bt(0x1ul) << fbits);
+			if (isNormal) {
+				significant |= (bt(0x1ul) << fbits);
+			}
+			else {
+				int msb = findMostSignificantBit(significant);
+				std::cout << "msb : " << msb << " : fhbits : " << fhbits << " : " << to_binary_storage(significant, true) << std::endl;
+				shift = fhbits - msb;
+				significant <<= shift;
+			}
 			s.set_raw_bits(significant);
 		}
 		else if constexpr (nrBlocks > 1) {
@@ -1380,7 +1388,7 @@ public:
 			else {
 				// h00001010101
 				// 101010100000
-
+				int msb = 0;
 				for (int i = static_cast<int>(fbits - 1); i >= 0; --i) { // msb protected from not being assigned through iszero test at prelude of function
 					if (test(static_cast<size_t>(i))) {
 						msb = i;
@@ -1390,9 +1398,11 @@ public:
 				for (int i = msb; i > 0; --i) {
 					s.set(fbits, at(nbits - 1ull - es - fbits + i));
 				}
+				shift = fhbits - msb;
+				significant <<= shift;
 			}
 		}
-		return static_cast<int>(fbits) - 1 - msb;
+		return shift;
 	}
 	
 	// casts to native types
@@ -1456,13 +1466,17 @@ public:
 	explicit operator double() const { return to_native<double>(); }
 	explicit operator float() const { return to_native<float>(); }
 
+	// normalize a non-special bfloat, that is, no zero, inf, or nan
 	void normalize(blocktriple<fhbits, BlockType>& v) const {
 		bool _sign = sign();
 		int  _scale = scale();
 		blockbinary<fhbits, BlockType> _significant;
 		if (_scale < MIN_EXP_NORMAL) { // need to normalize the subnormal number to yield a consistent significant
+			int shift = significant(_significant, false);
 		}
-		significant(_significant);
+		else {
+			significant(_significant, true);
+		}
 		v.set(_sign, _scale, _significant);
 	}
 protected:
