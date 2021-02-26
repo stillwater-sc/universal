@@ -49,7 +49,7 @@ int VerifyBitsetAddition(bool bReportIndividualTestCases = false) {
 		a = convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 			b = convert_to_bitblock<nbits, unsigned>(j);
-			ref = i + j;
+			ref = static_cast<int>(i + j);
 			bref = convert_to_bitblock<nbits + 1, unsigned>(ref);
 			carry = add_unsigned(a, b, bsum);
 			if (carry) {
@@ -82,7 +82,7 @@ int VerifyBitsetSubtraction(bool bReportIndividualTestCases = false) {
 		a = convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 			b = convert_to_bitblock<nbits, unsigned>(j);
-			ref = i - j;
+			ref = static_cast<int>(i - j);
 			bref = convert_to_bitblock<nbits + 1, unsigned>(ref);
 			borrow = subtract_unsigned(a, b, bsub);
 			if (borrow) {
@@ -114,7 +114,7 @@ int VerifyBitsetMultiplication(bool bReportIndividualTestCases = false) {
 		a = convert_to_bitblock<nbits, unsigned>(i);
 		for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 			b = convert_to_bitblock<nbits, unsigned>(j);
-			ref = i * j;
+			ref = static_cast<int>(i * j);
 			bref = convert_to_bitblock<rbits, unsigned>(ref);
 			multiply_unsigned(a, b, bmul);
 			if (bref != bmul) {

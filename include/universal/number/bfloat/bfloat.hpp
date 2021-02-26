@@ -1150,7 +1150,8 @@ public:
 			exponent(ebits);
 			if (ebits.iszero()) {
 				// subnormal scale is determined by fraction
-				e = -1;
+				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
+				e = (2l - (1l << (es - 1ull))) - 1;
 				for (size_t i = nbits - 2ull - es; i > 0; --i) {
 					if (test(i)) break;
 					--e;
@@ -1363,43 +1364,43 @@ public:
 	}
 	// construct the significant from the encoding, returns normalization offset
 	inline constexpr size_t significant(blockbinary<fhbits, bt>& s, bool isNormal = true) const {
-		s.clear();
 		size_t shift = 0;
 		if (iszero()) return 0;
 		if constexpr (0 == nrBlocks) return 0;
 		else if constexpr (1 == nrBlocks) {
-			bt significant = bt(_block[MSU] & ~MSU_EXP_MASK);
+			bt significant = bt(_block[MSU] & ~MSU_EXP_MASK & ~SIGN_BIT_MASK);
 			if (isNormal) {
 				significant |= (bt(0x1ul) << fbits);
 			}
 			else {
-				int msb = findMostSignificantBit(significant);
-				std::cout << "msb : " << msb << " : fhbits : " << fhbits << " : " << to_binary_storage(significant, true) << std::endl;
+				size_t msb = findMostSignificantBit(significant);
+//				std::cout << "msb : " << msb << " : fhbits : " << fhbits << " : " << to_binary_storage(significant, true) << std::endl;
 				shift = fhbits - msb;
 				significant <<= shift;
 			}
 			s.set_raw_bits(significant);
 		}
 		else if constexpr (nrBlocks > 1) {
+			s.clear();
+			// TODO: design and implement a block-oriented algorithm, this sequential algorithm is super slow
 			if (isNormal) {
 				s.set(fbits);
-				for (size_t i = 0; i < fbits; ++i) { s.set(i, at(nbits - 1ull - es - fbits + i)); } // TODO: TEST!
+				for (size_t i = 0; i < fbits; ++i) { s.set(i, at(i)); }
 			}
 			else {
+				// Find the MSB of the subnormal: 
+				size_t msb = 0;
+				for (size_t i = 0; i < fbits; ++i) { // msb protected from not being assigned through iszero test at prelude of function
+					msb = fbits - 1ull - i;
+					if (test(msb)) break;
+				}
+				//      m-----lsb
 				// h00001010101
 				// 101010100000
-				int msb = 0;
-				for (int i = static_cast<int>(fbits - 1); i >= 0; --i) { // msb protected from not being assigned through iszero test at prelude of function
-					if (test(static_cast<size_t>(i))) {
-						msb = i;
-						break;
-					}
-				}
-				for (int i = msb; i > 0; --i) {
-					s.set(fbits, at(nbits - 1ull - es - fbits + i));
+				for (size_t i = 0; i <= msb; ++i) {
+					s.set(fbits - msb + i, at(i));
 				}
 				shift = fhbits - msb;
-				significant <<= shift;
 			}
 		}
 		return shift;
@@ -1472,13 +1473,14 @@ public:
 		int  _scale = scale();
 		blockbinary<fhbits, BlockType> _significant;
 		if (_scale < MIN_EXP_NORMAL) { // need to normalize the subnormal number to yield a consistent significant
-			int shift = significant(_significant, false);
+			/* size_t shift = */significant(_significant, false);
 		}
 		else {
 			significant(_significant, true);
 		}
 		v.set(_sign, _scale, _significant);
 	}
+
 protected:
 	// HELPER methods
 

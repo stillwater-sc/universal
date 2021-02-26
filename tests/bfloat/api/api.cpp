@@ -61,7 +61,7 @@ try {
 			std::cout << to_binary(subnormal, true) << " : " << subnormal << std::endl;
 			subnormal *= 2.0f;
 
-			int scale_offset = a.significant(significant);
+			size_t scale_offset = a.significant(significant);
 			std::cout << to_binary(significant, true) << " : " << a.MIN_EXP_SUBNORMAL << " : " << a.MIN_EXP_NORMAL - scale_offset << " vs " << a.scale() << std::endl;
 		}
 	}
@@ -70,7 +70,6 @@ try {
 		0, 1, 0, -2, -6, -14, -30, -62, -126, -254, -510, -1022
 	};
 	for (int i = 1; i < 12; ++i) {
-		double e{ 0.0 };
 		std::cout << "es = " << exponents[i] << " " << std::setprecision(17) << subnormal_exponent[i] << std::endl;
 	}
 
