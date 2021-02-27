@@ -160,6 +160,71 @@ void TestDecodePerformance() {
 	PerformanceRunner("bfloat<256,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::bfloat<256, 11, uint64_t> >, NR_OPS);
 }
 
+template<typename BfloatConfiguration>
+void NormalizeWorkload(uint64_t NR_OPS) {
+	using namespace std;
+	using namespace sw::universal;
+	constexpr size_t nbits = BfloatConfiguration::nbits;
+	constexpr size_t es = BfloatConfiguration::es;
+	using bt = typename BfloatConfiguration::BlockType;
+	constexpr size_t fhbits = nbits - es;
+	bfloat<nbits, es, bt> a;
+	blocktriple<fhbits, bt> b;  // representing significant
+
+	bool bFail = false;
+	for (uint64_t i = 0; i < NR_OPS; ++i) {
+		a.set_raw_bits(i);
+		a.normalize(b);
+		if (a.sign() != b.sign()) {
+//			cout << to_binary(a, true) << " : " << to_triple(b, true) << '\n';
+			bFail = true;
+		}
+	}
+	if (bFail) cout << "NORMALIZE FAIL\n"; // just a quick double check that all went well
+}
+
+/*
+02/27/2021
+BFLOAT normalize operator performance
+single block representations
+bfloat<8,2,uint8_t>      normalize          1000000 per       0.0008232sec ->   1 Gops/sec
+bfloat<16,5,uint16_t>    normalize          1000000 per       0.0007658sec ->   1 Gops/sec
+bfloat<32,8,uint32_t>    normalize           100000 per       0.0006639sec -> 150 Mops/sec
+bfloat<64,11,uint64_t>   normalize           100000 per       0.0024509sec ->  40 Mops/sec
+byte representations
+bfloat<8,2,uint8_t>      normalize           100000 per        8.33e-05sec ->   1 Gops/sec
+bfloat<16,5,uint8_t>     normalize           100000 per       0.0016208sec ->  61 Mops/sec
+bfloat<32,8,uint8_t>     normalize           100000 per       0.0072102sec ->  13 Mops/sec
+bfloat<64,11,uint8_t>    normalize           100000 per       0.0126001sec ->   7 Mops/sec
+bfloat<128,11,uint8_t>   normalize           100000 per        0.026631sec ->   3 Mops/sec
+*/
+
+/// <summary>
+/// measure performance of decode operator
+/// NOTE: es is <= 11 due to limits of dynamic range of a 64-bit double
+/// </summary>
+void TestNormalizePerformance() {
+	using namespace std;
+	using namespace sw::universal;
+	cout << endl << "BFLOAT normalize operator performance" << endl;
+
+	uint64_t NR_OPS = 100000;
+	// single block representations
+	cout << "single block representations\n";
+	PerformanceRunner("bfloat<8,2,uint8_t>      normalize      ", NormalizeWorkload< sw::universal::bfloat<8, 2, uint8_t> >, NR_OPS * 10);
+	PerformanceRunner("bfloat<16,5,uint16_t>    normalize      ", NormalizeWorkload< sw::universal::bfloat<16, 5, uint16_t> >, NR_OPS * 10);
+	PerformanceRunner("bfloat<32,8,uint32_t>    normalize      ", NormalizeWorkload< sw::universal::bfloat<32, 8, uint32_t> >, NR_OPS);
+	PerformanceRunner("bfloat<64,11,uint64_t>   normalize      ", NormalizeWorkload< sw::universal::bfloat<64, 11, uint64_t> >, NR_OPS);
+
+	// multi-block representations
+	cout << "byte representations\n";
+	PerformanceRunner("bfloat<8,2,uint8_t>      normalize      ", NormalizeWorkload< sw::universal::bfloat<8, 2, uint8_t> >, NR_OPS);
+	PerformanceRunner("bfloat<16,5,uint8_t>     normalize      ", NormalizeWorkload< sw::universal::bfloat<16, 5, uint8_t> >, NR_OPS);
+	PerformanceRunner("bfloat<32,8,uint8_t>     normalize      ", NormalizeWorkload< sw::universal::bfloat<32, 8, uint8_t> >, NR_OPS);
+	PerformanceRunner("bfloat<64,11,uint8_t>    normalize      ", NormalizeWorkload< sw::universal::bfloat<64, 11, uint8_t> >, NR_OPS);
+	PerformanceRunner("bfloat<128,11,uint8_t>   normalize      ", NormalizeWorkload< sw::universal::bfloat<128, 11, uint8_t> >, NR_OPS);
+}
+
 // measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
 	using namespace std;
@@ -241,6 +306,7 @@ try {
 	int nrOfFailedTestCases = 0;
 	   
 	TestDecodePerformance();
+	TestNormalizePerformance();
 	TestArithmeticOperatorPerformance();
 
 #if STRESS_TESTING

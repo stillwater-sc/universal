@@ -322,6 +322,10 @@ public:
 	inline constexpr int  scale()       const noexcept { return _scale; }
 	inline constexpr bits significant() const noexcept { return _significant; }
 
+	// fraction bit accessors
+	inline constexpr bool at(size_t index)   const noexcept { return _significant.at(index); }
+	inline constexpr bool test(size_t index) const noexcept { return _significant.at(index); }
+
 	// conversion operators
 	explicit operator float()       const noexcept { return to_float(); }
 	explicit operator double()      const noexcept { return to_double(); }
