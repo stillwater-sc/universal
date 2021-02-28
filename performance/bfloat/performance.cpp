@@ -1,4 +1,4 @@
-// performance.cpp : performance benchmarking for abitrary fixed-precision reals
+// performance.cpp : performance benchmarking for abitrary fixed-precision bfloats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -14,17 +14,128 @@
 #include <universal/verification/performance_runner.hpp>
 
 /*
-   The goal of the arbitrary fixed-precision reals is to provide a constrained 
-   linear floating-point type to explore the benefits of multi-precision algorithms.
+   The goal of the arbitrary fixed-precision bfloats is to provide a constrained 
+   linear floating-point type to explore the benefits of mixed-precision algorithms.
 */
 
-// measure performance of conversion operators
-void TestConversionPerformance() {
+template<typename BfloatConfiguration>
+void CopyWorkload(uint64_t NR_OPS) {
 	using namespace std;
 	using namespace sw::universal;
-	cout << endl << "BFLOAT Conversion operator performance" << endl;
+	constexpr size_t nbits = BfloatConfiguration::nbits;
+	constexpr size_t es = BfloatConfiguration::es;
+	using bt = typename BfloatConfiguration::BlockType;
+	constexpr size_t fhbits = nbits - es;
+	BfloatConfiguration a,b,c;
 
-	uint64_t NR_OPS = 1000000;
+	bool bFail = false;
+	size_t j = 0;
+	for (size_t i = 0; i < NR_OPS; ++i,++j) {
+		a.set_raw_bits(i);
+		b = a;
+		c.set_raw_bits(j);
+		if (b.sign() != c.sign()) {
+			bFail = true;
+		}
+	}
+	if (bFail) cout << "COPY FAIL\n"; // just a quick double check that all went well
+}
+
+/* 
+2/28/2021
+BFLOAT decode operator performance
+single block representations
+bfloat<8,2,uint8_t>      copy              10000000 per       0.0024806sec ->   4 Gops/sec
+bfloat<16,5,uint16_t>    copy              10000000 per       0.0024583sec ->   4 Gops/sec
+bfloat<32,8,uint32_t>    copy              10000000 per       0.0024478sec ->   4 Gops/sec
+bfloat<64,11,uint64_t>   copy              10000000 per       0.0024541sec ->   4 Gops/sec
+byte representations
+bfloat<8,2,uint8_t>      copy              10000000 per       0.0024634sec ->   4 Gops/sec
+bfloat<16,5,uint8_t>     copy              10000000 per       0.0490892sec -> 203 Mops/sec
+bfloat<32,8,uint8_t>     copy              10000000 per        0.051731sec -> 193 Mops/sec
+bfloat<64,11,uint8_t>    copy              10000000 per       0.0614276sec -> 162 Mops/sec
+bfloat<128,11,uint8_t>   copy              10000000 per        0.160459sec ->  62 Mops/sec
+2-byte representations
+bfloat<8,2,uint16_t>     copy              10000000 per       0.0049371sec ->   2 Gops/sec
+bfloat<16,5,uint16_t>    copy              10000000 per       0.0029677sec ->   3 Gops/sec
+bfloat<32,8,uint16_t>    copy              10000000 per       0.0521831sec -> 191 Mops/sec
+bfloat<64,11,uint16_t>   copy              10000000 per       0.0526742sec -> 189 Mops/sec
+bfloat<128,11,uint16_t>  copy              10000000 per       0.0540298sec -> 185 Mops/sec
+4-byte representations
+bfloat<8,2,uint32_t>     copy              10000000 per       0.0097006sec ->   1 Gops/sec
+bfloat<16,5,uint32_t>    copy              10000000 per       0.0844581sec -> 118 Mops/sec   <--- weird
+bfloat<32,8,uint32_t>    copy              10000000 per       0.0025548sec ->   3 Gops/sec
+bfloat<64,11,uint32_t>   copy              10000000 per       0.0495027sec -> 202 Mops/sec
+bfloat<128,11,uint32_t>  copy              10000000 per       0.0470849sec -> 212 Mops/sec
+8-byte representations
+bfloat<8,2,uint64_t>     copy              10000000 per       0.0024524sec ->   4 Gops/sec
+bfloat<16,5,uint64_t>    copy              10000000 per       0.0023941sec ->   4 Gops/sec
+bfloat<32,8,uint64_t>    copy              10000000 per       0.0023966sec ->   4 Gops/sec
+bfloat<64,11,uint64_t>   copy              10000000 per        0.002542sec ->   3 Gops/sec
+bfloat<128,11,uint64_t>  copy              10000000 per           1e-07sec ->  99 Tops/sec
+very large representations
+bfloat<80,11,uint64_t>   copy              10000000 per               0sec ->   0  ops/sec   <--- this whole section is suspect
+bfloat<96,11,uint64_t>   copy              10000000 per       0.0054762sec ->   1 Gops/sec
+bfloat<128,11,uint64_t>  copy              10000000 per           1e-07sec ->  99 Tops/sec
+bfloat<256,11,uint64_t>  copy              10000000 per           1e-07sec ->  99 Tops/sec
+bfloat<512,11,uint64_t>  copy              10000000 per           1e-07sec ->  99 Tops/sec
+
+The optimizer appears to be able to sometimes completel remove whole sections of code in the CopyWorkload function.
+When running in debug, the assembly is identical, but in Release builts the performance is ordres of magnitude higher.
+*/
+
+/// <summary>
+/// measure performance of copying numbers around
+/// </summary>
+void TestCopyPerformance() {
+	using namespace std;
+	using namespace sw::universal;
+	cout << endl << "BFLOAT decode operator performance" << endl;
+
+	uint64_t NR_OPS = 10000000;
+	// single block representations
+	cout << "single block representations\n";
+	PerformanceRunner("bfloat<8,2,uint8_t>      copy           ", CopyWorkload< sw::universal::bfloat<8, 2, uint8_t> >, NR_OPS);
+	PerformanceRunner("bfloat<16,5,uint16_t>    copy           ", CopyWorkload< sw::universal::bfloat<16, 5, uint16_t> >, NR_OPS);
+	PerformanceRunner("bfloat<32,8,uint32_t>    copy           ", CopyWorkload< sw::universal::bfloat<32, 8, uint32_t> >, NR_OPS);
+	PerformanceRunner("bfloat<64,11,uint64_t>   copy           ", CopyWorkload< sw::universal::bfloat<64, 11, uint64_t> >, NR_OPS);
+
+	// multi-block representations
+	cout << "byte representations\n";
+	PerformanceRunner("bfloat<8,2,uint8_t>      copy           ", CopyWorkload< sw::universal::bfloat<8, 2, uint8_t> >, NR_OPS);
+	PerformanceRunner("bfloat<16,5,uint8_t>     copy           ", CopyWorkload< sw::universal::bfloat<16, 5, uint8_t> >, NR_OPS);
+	PerformanceRunner("bfloat<32,8,uint8_t>     copy           ", CopyWorkload< sw::universal::bfloat<32, 8, uint8_t> >, NR_OPS);
+	PerformanceRunner("bfloat<64,11,uint8_t>    copy           ", CopyWorkload< sw::universal::bfloat<64, 11, uint8_t> >, NR_OPS);
+	PerformanceRunner("bfloat<128,11,uint8_t>   copy           ", CopyWorkload< sw::universal::bfloat<128, 11, uint8_t> >, NR_OPS);
+
+	cout << "2-byte representations\n";
+	PerformanceRunner("bfloat<8,2,uint16_t>     copy           ", CopyWorkload< sw::universal::bfloat<8, 2, uint16_t> >, NR_OPS);
+	PerformanceRunner("bfloat<16,5,uint16_t>    copy           ", CopyWorkload< sw::universal::bfloat<16, 5, uint16_t> >, NR_OPS);
+	PerformanceRunner("bfloat<32,8,uint16_t>    copy           ", CopyWorkload< sw::universal::bfloat<32, 8, uint16_t> >, NR_OPS);
+	PerformanceRunner("bfloat<64,11,uint16_t>   copy           ", CopyWorkload< sw::universal::bfloat<64, 11, uint16_t> >, NR_OPS);
+	PerformanceRunner("bfloat<128,11,uint16_t>  copy           ", CopyWorkload< sw::universal::bfloat<128, 11, uint16_t> >, NR_OPS);
+
+	cout << "4-byte representations\n";
+	PerformanceRunner("bfloat<8,2,uint32_t>     copy           ", CopyWorkload< sw::universal::bfloat<8, 2, uint32_t> >, NR_OPS);
+	PerformanceRunner("bfloat<16,5,uint32_t>    copy           ", CopyWorkload< sw::universal::bfloat<16, 5, uint32_t> >, NR_OPS);
+	PerformanceRunner("bfloat<32,8,uint32_t>    copy           ", CopyWorkload< sw::universal::bfloat<32, 8, uint32_t> >, NR_OPS);
+	PerformanceRunner("bfloat<64,11,uint32_t>   copy           ", CopyWorkload< sw::universal::bfloat<64, 11, uint32_t> >, NR_OPS);
+	PerformanceRunner("bfloat<128,11,uint32_t>  copy           ", CopyWorkload< sw::universal::bfloat<128, 11, uint32_t> >, NR_OPS);
+
+	cout << "8-byte representations\n";
+	PerformanceRunner("bfloat<8,2,uint64_t>     copy           ", CopyWorkload< sw::universal::bfloat<8, 2, uint8_t> >, NR_OPS);
+	PerformanceRunner("bfloat<16,5,uint64_t>    copy           ", CopyWorkload< sw::universal::bfloat<16, 5, uint16_t> >, NR_OPS);
+	PerformanceRunner("bfloat<32,8,uint64_t>    copy           ", CopyWorkload< sw::universal::bfloat<32, 8, uint32_t> >, NR_OPS);
+	PerformanceRunner("bfloat<64,11,uint64_t>   copy           ", CopyWorkload< sw::universal::bfloat<64, 11, uint64_t> >, NR_OPS);
+	PerformanceRunner("bfloat<128,11,uint64_t>  copy           ", CopyWorkload< sw::universal::bfloat<128, 11, uint64_t> >, NR_OPS);
+
+	cout << "very large representations\n";
+	PerformanceRunner("bfloat<80,11,uint64_t>   copy           ", CopyWorkload< sw::universal::bfloat<80, 11, uint64_t> >, NR_OPS);
+	PerformanceRunner("bfloat<96,11,uint64_t>   copy           ", CopyWorkload< sw::universal::bfloat<96, 11, uint64_t> >, NR_OPS);
+	PerformanceRunner("bfloat<128,11,uint64_t>  copy           ", CopyWorkload< sw::universal::bfloat<128, 11, uint64_t> >, NR_OPS);
+	PerformanceRunner("bfloat<256,11,uint64_t>  copy           ", CopyWorkload< sw::universal::bfloat<256, 11, uint64_t> >, NR_OPS);
+	PerformanceRunner("bfloat<512,11,uint64_t>  copy           ", CopyWorkload< sw::universal::bfloat<512, 11, uint64_t> >, NR_OPS);
+
 }
 
 template<typename Scalar>
@@ -157,7 +268,7 @@ void TestDecodePerformance() {
 	PerformanceRunner("bfloat<96,11,uint64_t>   decode         ", DecodeWorkload< sw::universal::bfloat<96, 11, uint64_t> >, NR_OPS);
 	PerformanceRunner("bfloat<128,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::bfloat<128, 11, uint64_t> >, NR_OPS); 
 	PerformanceRunner("bfloat<256,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::bfloat<256, 11, uint64_t> >, NR_OPS);
-	PerformanceRunner("bfloat<256,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::bfloat<256, 11, uint64_t> >, NR_OPS);
+	PerformanceRunner("bfloat<512,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::bfloat<512, 11, uint64_t> >, NR_OPS);
 }
 
 template<typename BfloatConfiguration>
@@ -225,6 +336,16 @@ void TestNormalizePerformance() {
 	PerformanceRunner("bfloat<128,11,uint8_t>   normalize      ", NormalizeWorkload< sw::universal::bfloat<128, 11, uint8_t> >, NR_OPS);
 }
 
+
+// measure performance of conversion operators
+void TestConversionPerformance() {
+	using namespace std;
+	using namespace sw::universal;
+	cout << endl << "BFLOAT Conversion operator performance" << endl;
+
+//	uint64_t NR_OPS = 1000000;
+}
+
 // measure performance of arithmetic operators
 void TestArithmeticOperatorPerformance() {
 	using namespace std;
@@ -280,22 +401,15 @@ try {
 
 #if MANUAL_TESTING
 
-	using Scalar = bfloat<64, 11, uint64_t>;
-	Scalar a;
-	a.set_raw_bits(0xEEEEEEEEEEEEEEEEull);
-	bool s{ false };
-	blockbinary<a.es, typename Scalar::BlockType> e;
-	blockbinary<a.fbits, typename Scalar::BlockType> f;
-	sw::universal::decode(a, s, e, f);
-	cout << typeid(a).name() << " :\n"
-		<< to_binary(a, true) << "\n"
-		<< "sign    : " << (s ? "-1\n" : "+1\n")
-		<< "exponent: " << to_binary(e, true) << "\n"
-		<< "fraction: " << to_binary(f, true) << "\n";
+	using Scalar = bfloat<16, 5, uint16_t>;
+	Scalar a{ 1.0f }, b;
+	b = a;
+	std::cout << a << " : " << b << std::endl;
 
-	cout << "nbits: " << a.nbits << endl;
-	cout << "es   : " << a.es << endl;
-	cout << "fbits: " << a.fbits << endl;
+	size_t NR_OPS = 10000000;
+	PerformanceRunner("bfloat<16,5,uint16_t>    copy           ", CopyWorkload< sw::universal::bfloat<16, 5, uint16_t> >, NR_OPS);
+	PerformanceRunner("bfloat<16,5,uint32_t>    copy           ", CopyWorkload< sw::universal::bfloat<16, 5, uint32_t> >, NR_OPS);
+
 
 	cout << "done" << endl;
 
@@ -305,6 +419,7 @@ try {
 
 	int nrOfFailedTestCases = 0;
 	   
+	TestCopyPerformance();
 	TestDecodePerformance();
 	TestNormalizePerformance();
 	TestArithmeticOperatorPerformance();

@@ -506,9 +506,10 @@ try {
 
 #endif
 
+	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
-#else
+#else //!MANUAL_TESTING
 	cout << "BFLOAT assignment validation" << endl;
 
 	bool bVerbose = false;

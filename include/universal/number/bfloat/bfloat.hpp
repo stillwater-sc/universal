@@ -307,7 +307,7 @@ public:
 		uint32_t shift = sizeInBits - exponent - 1;
 		raw <<= shift;
 		raw = round<sizeInBits, uint64_t>(raw, exponent);
-#ifdef LATER
+#ifdef TODO
 		// construct the target bfloat
 		if constexpr (64 >= nbits - es - 1ull) {
 			uint64_t bits = (s ? 1u : 0u);
@@ -878,6 +878,10 @@ public:
 			return *this;
 		}
 #endif
+		if (isinf() || rhs.isinf()) {
+			setinf(false); // set to +inf
+			return *this;
+		}
 		if (iszero()) {
 			*this = rhs;
 			return *this;

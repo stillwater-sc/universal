@@ -33,8 +33,6 @@ try {
 
 #if MANUAL_TESTING
 
-
-
 	{
 		bfloat<16, 4, uint16_t> a(1.0);
 		bfloat<16, 4, uint16_t> b;
@@ -72,6 +70,9 @@ try {
 	for (int i = 1; i < 12; ++i) {
 		std::cout << "es = " << exponents[i] << " " << std::setprecision(17) << subnormal_exponent[i] << std::endl;
 	}
+
+	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
+	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
 #else // !MANUAL_TESTING
 
