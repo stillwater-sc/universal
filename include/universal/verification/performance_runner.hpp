@@ -10,6 +10,18 @@
 
 namespace sw::universal {
 
+	// Generic workload for testing construction/destruction performance
+	template<typename Scalar>
+	void ConstructionPerformanceWorkload(uint64_t NR_OPS) {
+		int positives{ 0 }, negatives{ 0 };
+		for (uint64_t i = 0; i < NR_OPS; ++i) {
+			Scalar a; // don't initialize with i as that is a conversion operation
+			a.set_raw_bits(i);
+			if (a.sign()) ++positives; else ++negatives;
+		}
+		if (positives == negatives) std::cout << "positives and negatives are identical (unlikely event to select)\n";
+	}
+
 	// Generic workload for testing shift operations on a given number system type that supports operator>> and operator<<
 	template<typename Scalar>
 	void ShiftPerformanceWorkload(uint64_t NR_OPS) {
