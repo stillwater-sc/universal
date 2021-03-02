@@ -890,11 +890,11 @@ public:
 
 		// arithmetic operation
 		blocktriple<abits + 1, BlockType> sum;
-		blocktriple<fhbits, BlockType> a, b;
+		blocktriple<abits, BlockType> a, b;
 
-		normalize(a); // transform the inputs into (sign,scale,significant) triples
-		rhs.normalize(b);
-		module_add<fhbits, abits>(a, b, sum); // add the two inputs
+//		normalize(a); // transform the inputs into (sign,scale,significant) triples
+//		rhs.normalize(b);
+//		module_add<abits, abits+1>(a, b, sum); // add the two inputs
 
 		// special case handling of the result
 		if (sum.iszero()) {

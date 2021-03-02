@@ -70,7 +70,13 @@ blocktriple<nbits, bt>& convert(unsigned long long uint, blocktriple<nbits, bt>&
 template<size_t nbits, typename bt = uint32_t>
 class blocktriple {
 public:
+	static constexpr size_t fhbits = nbits;
 	static constexpr size_t fbits = nbits - 1;
+	static constexpr size_t abits = fhbits + 3ull;         // size of the addend
+	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
+	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
+
+	using BlockType = bt;
 	using bits = blockbinary<nbits, bt>;
 
 	constexpr blocktriple(const blocktriple&) noexcept = default;
@@ -493,23 +499,22 @@ inline bool operator>=(const blocktriple<sbits, bt>& lhs, const blocktriple<sbit
 
 template<size_t nbits, typename bt>
 std::string to_binary(const sw::universal::blocktriple<nbits, bt>& a, bool bNibbleMarker = true) {
-	std::stringstream s;
-	s << (a._sign ? "(-, " : "(+, ");
-	s << a._scale << ", "; 
-	s << to_binary(a._significant, bNibbleMarker) << ')';
-	return s.str();
+	return to_triple(a, bNibbleMarker);
 }
 
 template<size_t nbits, typename bt>
 std::string to_triple(const blocktriple<nbits, bt>& a, bool bNibbleMarker = true) {
 	std::stringstream s;
-	s << (a._sign ? "(-, " : "(+, ") << a._scale << ", " << to_binary(a._significant, bNibbleMarker) << ')';
+	s << (a._sign ? "(-, " : "(+, ");
+	s << a._scale << ", ";
+	s << to_binary(a._significant, bNibbleMarker) << ')';
 	return s.str();
 }
 
-// add two values with fbits fraction bits, round them to abits, and return the abits+1 result value
-template<size_t fhbits, size_t abits, typename bt>
-void module_add(const blocktriple<fhbits, bt>& lhs, const blocktriple<fhbits,bt>& rhs, blocktriple<abits + 1, bt>& result) {
+// add two values with fbits fraction bits, expand them to abits, and return the abits+1 result value
+// break encapsulation to avoid copies.
+template<size_t abits, typename bt>
+void module_add(blocktriple<abits, bt>& lhs, blocktriple<abits,bt>& rhs, blocktriple<abits + 1, bt>& result) {
 	// with sign/magnitude adders it is customary to organize the computation 
 	// along the four quadrants of sign combinations
 	//  + + = +
