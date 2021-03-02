@@ -89,6 +89,7 @@ public:
 		_nan{ false }, 	_inf{ false }, _zero{ true }, 
 		_sign{ false }, _scale{ 0 }, _significant{ 0 } {}
 
+	// decorated constructors
 	constexpr blocktriple(signed char iv) noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
 		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
@@ -129,6 +130,7 @@ public:
 		_nan{ false }, _inf{ false }, _zero{ true },
 		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
 
+	// conversion operators
 	constexpr blocktriple& operator=(signed char rhs) noexcept { return convert_signed_integer(rhs); }
 	constexpr blocktriple& operator=(short rhs)       noexcept { return convert_signed_integer(rhs); }
 	constexpr blocktriple& operator=(int rhs)         noexcept { return convert_signed_integer(rhs); }
@@ -223,6 +225,9 @@ public:
 		return *this = double(rhs);
 	};
 	
+	void add(blocktriple<nbits - 1, bt>& a, blocktriple<nbits - 1, bt>& b) {
+
+	}
 	/// <summary>
 	/// round a set of source bits to the present representation.
 	/// srcbits is the number of bits of significant in the source representation

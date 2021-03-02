@@ -3,18 +3,15 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 4514)  // unreferenced function is removed
-#pragma warning(disable : 4710)  // function is not inlined
-#pragma warning(disable : 5045)  // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#endif
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 #include <fstream>
 #include <typeinfo>
 // minimum set of include files to reflect source code dependencies
 #include <universal/internal/blocktriple/blocktriple.hpp>
-#include <universal/number/fixpnt/fixpnt.hpp>
+#include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/bfloat/manipulators.hpp>
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -32,23 +29,56 @@ try {
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
-/*
-	{
-		fixpnt<20, 9> a;
-		a.set_raw_bits(0x15);
-		cout << to_binary(a, true) << " " << a << endl;
-	}
-*/
+
 
 	{
-		CONSTEXPRESSION blocktriple<9, uint32_t> a = 511.5f;
+		CONSTEXPRESSION blocktriple<10, uint32_t> a = 511.5f;
 		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
 	}
 	{
 		constexpr double d = 511.5;
-		//cout << to_binary(d, true) << '\n';
-		CONSTEXPRESSION blocktriple<9, uint64_t> a = d;
+		cout << to_binary(d, true) << '\n';
+		CONSTEXPRESSION blocktriple<8, uint64_t> a = d;
 		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
+		CONSTEXPRESSION blocktriple<9, uint64_t> b = d;
+		cout << to_binary(b) << " : " << to_triple(b) << " : " << b << '\n';
+		CONSTEXPRESSION blocktriple<10, uint64_t> c = d;
+		cout << to_binary(c) << " : " << to_triple(c) << " : " << c << '\n';
+	}
+	{
+		/*
+		 * BlockTriple is the unifying compute engine for any of the 
+		 * floating-point number systems, linear, tapered, compressed, etc.
+		 * 
+		 * The use case of BlockTriple is as a input/operator/round/output pipeline 
+		 * from source number system, through BlockTriple, back to source, or a new target number system
+		 * To make this fast, we need to avoid any unnecessary copies.
+		 * This will be particularly important for precise numbers, that is,
+		 * numbers with many fraction bits.
+		 * 
+		 * The input step is a normalization from number system to a (sign, scale, significant) triple.
+		 * BlockTriple uses significant, that is, the fraction bits including the hidden bit.
+		 * TODO: is there an optimization that can be applied that I am missing?
+		 * 
+		 * The significant is the input to the ALU operators. 
+		 * For addition and subtraction the significant needs to be aligned,
+		 * which involves a shift operation, which is expensive for multi-block
+		 * representations.
+		 */
+
+		bfloat<8, 2, uint8_t> a, b, c;
+		a = 1.0f;
+		b = -1.0f;
+		constexpr size_t abits = a.fhbits; // a.abits;
+		blocktriple<abits, uint8_t> aa, bb;
+		blocktriple<abits + 1, uint8_t> sum;
+		a.normalize(aa);  // decode of a bits into a triple form aa
+		b.normalize(bb);  // decode of b bits into a triple form bb
+		sum.add(aa, bb);  // ALU add operator
+		convert(sum, c);
+		cout << to_triple(sum) << " : " << sum << '\n';
+		cout << color_print(c) << " : " << c << endl;
+
 	}
 
 #else // !MANUAL_TESTING

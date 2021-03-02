@@ -69,7 +69,7 @@ namespace sw::universal {
 	static constexpr double oneOver2p510 = oneOver2p254 * oneOver2p254 * 0.25;
 	static constexpr double oneOver2p1022 = oneOver2p510 * oneOver2p510 * 0.25;
 
-// precomputed values for subnormal exponents as a function of es
+	// precomputed values for subnormal exponents as a function of es
 	static constexpr int subnormal_reciprocal_shift[] = {
 		0,                    // es = 0 : not a valid value
 		-1,                   // es = 1 : 2^(2 - 2^(es-1)) = 2^1
@@ -84,7 +84,7 @@ namespace sw::universal {
 		510,                  // es = 10 : 2^(2 - 2^(es-1)) = 2^-510
 		1022                  // es = 11 : 2^(2 - 2^(es-1)) = 2^-1022
 	};
-// es > 11 requires a long double representation, which MSVC does not provide.
+	// es > 11 requires a long double representation, which MSVC does not provide.
 	static constexpr double subnormal_exponent[] = {
 		0,                    // es = 0 : not a valid value
 		2.0,                  // es = 1 : 2^(2 - 2^(es-1)) = 2^1
@@ -100,47 +100,51 @@ namespace sw::universal {
 		oneOver2p1022         // es = 11 : 2^(2 - 2^(es-1)) = 2^-1022
 	};
 
-// Forward definitions
-template<size_t nbits, size_t es, typename bt> class bfloat;
-template<size_t nbits, size_t es, typename bt> bfloat<nbits,es,bt> abs(const bfloat<nbits,es,bt>&);
-template<typename bt> inline std::string to_binary_storage(const bt&, bool);
+	// Forward definitions
+	template<size_t nbits, size_t es, typename bt> class bfloat;
+	template<size_t nbits, size_t es, typename bt> bfloat<nbits, es, bt> abs(const bfloat<nbits, es, bt>&);
+	template<typename bt> inline std::string to_binary_storage(const bt&, bool);
 
-static constexpr int NAN_TYPE_SIGNALLING = -1;   // a Signalling NaN
-static constexpr int NAN_TYPE_EITHER     = 0;    // any NaN
-static constexpr int NAN_TYPE_QUIET      = 1;    // a Quiet NaN
+	static constexpr int NAN_TYPE_SIGNALLING = -1;   // a Signalling NaN
+	static constexpr int NAN_TYPE_EITHER = 0;    // any NaN
+	static constexpr int NAN_TYPE_QUIET = 1;    // a Quiet NaN
 
-static constexpr int INF_TYPE_NEGATIVE   = -1;   // -inf
-static constexpr int INF_TYPE_EITHER     = 0;    // any inf
-static constexpr int INF_TYPE_POSITIVE   = 1;    // +inf
+	static constexpr int INF_TYPE_NEGATIVE = -1;   // -inf
+	static constexpr int INF_TYPE_EITHER = 0;    // any inf
+	static constexpr int INF_TYPE_POSITIVE = 1;    // +inf
 
-constexpr bool BFLOAT_NIBBLE_MARKER = true;
+	constexpr bool BFLOAT_NIBBLE_MARKER = true;
 
 
-/// <summary>
-/// decode an bfloat value into its constituent parts
-/// </summary>
-/// <typeparam name="bt"></typeparam>
-/// <param name="v"></param>
-/// <param name="s"></param>
-/// <param name="e"></param>
-/// <param name="f"></param>
-template<size_t nbits, size_t es, size_t fbits, typename bt>
-void decode(const bfloat<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f) {
-	v.sign(s);
-	v.exponent(e);
-	v.fraction(f);
-}
+	/// <summary>
+	/// decode an bfloat value into its constituent parts
+	/// </summary>
+	/// <typeparam name="bt"></typeparam>
+	/// <param name="v"></param>
+	/// <param name="s"></param>
+	/// <param name="e"></param>
+	/// <param name="f"></param>
+	template<size_t nbits, size_t es, size_t fbits, typename bt>
+	void decode(const bfloat<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f) {
+		v.sign(s);
+		v.exponent(e);
+		v.fraction(f);
+	}
 
-/// <summary>
-/// return the binary scale of the given number
-/// </summary>
-/// <typeparam name="bt">Block type used for storage: derived through ADL</typeparam>
-/// <param name="v">the bfloat number for which we seek to know the binary scale</param>
-/// <returns>binary scale, i.e. 2^scale, of the value of the bfloat</returns>
-template<size_t nbits, size_t es, typename bt>
-int scale(const bfloat<nbits, es, bt>& v) {
-	return v.scale();
-}
+	/// <summary>
+	/// return the binary scale of the given number
+	/// </summary>
+	/// <typeparam name="bt">Block type used for storage: derived through ADL</typeparam>
+	/// <param name="v">the bfloat number for which we seek to know the binary scale</param>
+	/// <returns>binary scale, i.e. 2^scale, of the value of the bfloat</returns>
+	template<size_t nbits, size_t es, typename bt>
+	int scale(const bfloat<nbits, es, bt>& v) {
+		return v.scale();
+	}
+
+	template<size_t srcbits, size_t nbits, size_t es, typename bt>
+	void convert(const blocktriple<srcbits, bt>& src, bfloat<nbits, es, bt>& tgt) {
+	}
 
 /////////////////////////////////////////////////////////////////////////////////
 /// free functions that can set an bfloat to extreme values in its state space
