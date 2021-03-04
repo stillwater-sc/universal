@@ -1476,10 +1476,11 @@ public:
 	explicit operator float() const { return to_native<float>(); }
 
 	// normalize a non-special bfloat, that is, no zero, inf, or nan
-	void normalize(blocktriple<fhbits, BlockType>& v) const {
+	template<size_t tgtSize>
+	void normalize(blocktriple<tgtSize, BlockType>& v) const {
 		bool _sign = sign();
 		int  _scale = scale();
-		blockbinary<fhbits, BlockType> _significant;
+		blockbinary<tgtSize, BlockType> _significant;
 		if (_scale < MIN_EXP_NORMAL) { // need to normalize the subnormal number to yield a consistent significant
 			/* size_t shift = */significant(_significant, false);
 		}

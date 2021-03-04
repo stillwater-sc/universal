@@ -228,6 +228,9 @@ public:
 	void add(blocktriple<nbits - 1, bt>& a, blocktriple<nbits - 1, bt>& b) {
 
 	}
+	void mul(blocktriple<nbits / 2, bt>& a, blocktriple<nbits / 2, bt>& b) {
+
+	}
 	/// <summary>
 	/// round a set of source bits to the present representation.
 	/// srcbits is the number of bits of significant in the source representation
@@ -341,6 +344,47 @@ public:
 	explicit operator float()       const noexcept { return to_float(); }
 	explicit operator double()      const noexcept { return to_double(); }
 	explicit operator long double() const noexcept { return to_long_double(); }
+
+	void alignSignificant(int alignmentShift) {
+		if (fhbits + alignmentShift >= abits) {
+			std::cerr << "alignmentShift is too large\n";
+			return;
+		}
+		_significant <<= alignmentShift;
+	}
+
+#ifdef NEVER
+	/// Normalized shift (e.g., for addition).
+	template <size_t tgtSize>
+	blockbinary<tgtSize, bt> nshift(int shift) const {
+		blockbinary<tgtSize, bt> number;
+
+		// Check range
+		if (static_cast<int>(fbits) + shift >= static_cast<int>(tgtSize)) {
+			std::cerr << "nshift: shift is too large\n";
+			number.reset();
+			return number;
+		}
+
+		int hpos = static_cast<int>(fbits) + shift;       // position of hidden bit
+		if (hpos <= 0) {   // If hidden bit is LSB or beyond just set uncertainty bit and call it a day
+			number[0] = true;
+			return number;
+		}
+		number[size_t(hpos)] = true;           // hidden bit now safely set
+
+											   // Copy fraction bits into certain part
+		for (int npos = hpos - 1, fpos = int(fbits) - 1; npos > 0 && fpos >= 0; --npos, --fpos)
+			number[size_t(npos)] = _fraction[size_t(fpos)];
+
+		// Set uncertainty bit
+		bool uncertainty = false;
+		for (int fpos = std::min(int(fbits) - 1, -shift); fpos >= 0 && !uncertainty; --fpos)
+			uncertainty |= _fraction[size_t(fpos)];
+		number[0] = uncertainty;
+		return number;
+	}
+#endif
 
 private:
 	           // special cases to keep track of
@@ -534,9 +578,9 @@ void module_add(blocktriple<abits, bt>& lhs, blocktriple<abits,bt>& rhs, blocktr
 	int scale_of_result = std::max(lhs_scale, rhs_scale);
 
 #ifdef LATER
-	// align the fractions
-	blockbinary<abits> r1 = lhs.template nshift<abits>(lhs_scale - scale_of_result + 3);
-	blockbinary<abits> r2 = rhs.template nshift<abits>(rhs_scale - scale_of_result + 3);
+	// align the significants
+	lhs.alignSignificant(lhs_scale - scale_of_result);
+	rhs.alignSignificant(rhs_scale - scale_of_result);
 	bool r1_sign = lhs.sign(), r2_sign = rhs.sign();
 	bool signs_are_different = r1_sign != r2_sign;
 

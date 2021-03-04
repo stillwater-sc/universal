@@ -46,6 +46,22 @@ try {
 		cout << to_binary(c) << " : " << to_triple(c) << " : " << c << '\n';
 	}
 	{
+		blockbinary<16, uint8_t> bba, bbb;
+		blocktriple<16, uint8_t> a, b;
+		//blocktriple<8, uint8_t> sum;
+		bba.set_raw_bits(0xAAAAu);
+		a.set(false, 7, bba);
+		cout << to_triple(a) << " : " << a << '\n';
+		bbb.set_raw_bits(0xAAAAu);
+		b.set(false, 8, bbb);
+		cout << to_triple(b) << " : " << b << '\n';
+		int aScale = a.scale();
+		int bScale = b.scale();
+		int maxScale = (aScale > bScale ? aScale : bScale);
+		a.alignSignificant(aScale - maxScale);
+		cout << to_triple(a) << " : " << a << '\n';  // at this point the scale is off
+	}
+	{
 		/*
 		 * BlockTriple is the unifying compute engine for any of the 
 		 * floating-point number systems, linear, tapered, compressed, etc.
@@ -74,11 +90,24 @@ try {
 		blocktriple<abits + 1, uint8_t> sum;
 		a.normalize(aa);  // decode of a bits into a triple form aa
 		b.normalize(bb);  // decode of b bits into a triple form bb
-		sum.add(aa, bb);  // ALU add operator
+		module_add(aa, bb, sum);  // ALU add operator
 		convert(sum, c);
 		cout << to_triple(sum) << " : " << sum << '\n';
 		cout << color_print(c) << " : " << c << endl;
-
+	}
+	{
+		bfloat<8, 2, uint8_t> a, b, c;
+		a = 1.0f;
+		b = -1.0f;
+		constexpr size_t mbits = a.fhbits; // a.abits;
+		blocktriple<mbits, uint8_t> aa, bb;
+		blocktriple<2*mbits, uint8_t> product;
+		a.normalize(aa);  // decode of a bits into a triple form aa
+		b.normalize(bb);  // decode of b bits into a triple form bb
+		product.mul(aa, bb);  // ALU mule operator
+		convert(product, c);
+		cout << to_triple(product) << " : " << product << '\n';
+		cout << color_print(c) << " : " << c << endl;
 	}
 
 #else // !MANUAL_TESTING
