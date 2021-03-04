@@ -416,10 +416,10 @@ public:
 	inline constexpr uint8_t nibble(size_t n) const {
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
-			int nibbleIndexInWord = n % (bitsInBlock >> 2);
-			bt mask = 0xF << (nibbleIndexInWord*4);
-			bt nibblebits = mask & word;
-			return (nibblebits >> (nibbleIndexInWord*4));
+			size_t nibbleIndexInWord = n % (bitsInBlock >> 2);
+			bt mask = static_cast<bt>(0x0Fu << (nibbleIndexInWord*4));
+			bt nibblebits = static_cast<bt>(mask & word);
+			return static_cast<uint8_t>(nibblebits >> static_cast<bt>(nibbleIndexInWord*4));
 		}
 		throw "nibble index out of bounds";
 	}
@@ -438,7 +438,7 @@ public:
 		for (size_t i = 0; i < minNrBlocks; ++i) {
 			_block[i] = rhs.block(i);
 		}
-		if (nbits > nnbits) { // check if we need to sign extend
+		if constexpr (nbits > nnbits) { // check if we need to sign extend
 			if (rhs.sign()) {
 				for (size_t i = nnbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
 					set(i);
@@ -450,13 +450,13 @@ public:
 		return *this;
 	}
 	// return the position of the most significant bit, -1 if v == 0
-	inline signed msb() const noexcept {
+	inline int msb() const noexcept {
 		for (int i = int(MSU); i >= 0; --i) {
 			if (_block[i] != 0) {
 				bt mask = (bt(1u) << (bitsInBlock-1));
-				for (signed j = bitsInBlock - 1; j >= 0; --j) {
+				for (int j = bitsInBlock - 1; j >= 0; --j) {
 					if (_block[i] & mask) {
-						return i * bitsInBlock + j;
+						return i * static_cast<int>(bitsInBlock) + j;
 					}
 					mask >>= 1;
 				}
@@ -647,10 +647,10 @@ quorem<nbits, bt> longdivision(const blockbinary<nbits, bt>& _a, const blockbina
 	for (int i = shift; i >= 0; --i) {
 		if (subtractand <= accumulator) {
 			accumulator -= subtractand;
-			result.quo.set(i);
+			result.quo.set(static_cast<size_t>(i));
 		}
 		else {
-			result.quo.reset(i);
+			result.quo.reset(static_cast<size_t>(i));
 		}
 		subtractand >>= 1;
 	}
@@ -832,7 +832,7 @@ std::string to_binary(const blockbinary<nbits, bt>& number, bool nibbleMarker = 
 
 // local helper to display the contents of a byte array
 template<size_t nbits, typename bt>
-std::string to_hex(const blockbinary<nbits, bt>& number, bool wordMarker = false) {
+std::string to_hex(const blockbinary<nbits, bt>& number, bool wordMarker = true) {
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
@@ -842,10 +842,10 @@ std::string to_hex(const blockbinary<nbits, bt>& number, bool wordMarker = false
 	std::stringstream ss;
 	ss << "0x" << std::hex;
 	int nrNibbles = int(1 + ((nbits - 1) >> 2));
-	for (long n = nrNibbles - 1; n >= 0; --n) {
-		uint8_t nibble = number.nibble(n);
+	for (int n = nrNibbles - 1; n >= 0; --n) {
+		uint8_t nibble = number.nibble(static_cast<size_t>(n));
 		ss << hexChar[nibble];
-		if (n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
+		if (wordMarker && n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
 	}
 	return ss.str();
 }

@@ -3,12 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 4514)  // unreferenced function is removed
-#pragma warning(disable : 4710)  // function is not inlined
-#pragma warning(disable : 4820)  // bytes padding added after data member
-#pragma warning(disable : 5045)  // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#endif
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 // Configure the bfloat template environment
@@ -41,7 +36,7 @@ void EnumerateSubnormals(float topOfRange, size_t bitRange) {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -49,9 +44,7 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	if (argc > 0) {
-		std::cout << argv[0] << std::endl;
-	}
+	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 	std::string tag = "float conversion: ";
@@ -68,24 +61,35 @@ try {
 
 	{
 		bfloat<6,2> a;
-		a.debug();
-		std::cout << "maxpos : " << maxpos(a) << " : " << scale(a) << '\n';
-		std::cout << "minpos : " << minpos(a) << " : " << scale(a) << '\n';
-		std::cout << "zero   : " << zero(a)   << " : " << scale(a) << '\n';
-		std::cout << "minneg : " << minneg(a) << " : " << scale(a) << '\n';
-		std::cout << "maxneg : " << maxneg(a) << " : " << scale(a) << '\n';
+		a.constexprParameters();
+
 		float testValue = 8.0f;
 		a = testValue;
 		float f = float(a);
 		std::cout << to_binary(a) << " : " << a << " : " << f << " : " << setprecision(8) << testValue << endl;
 	}
+	{
+		bfloat<8, 6, uint8_t> a;
+		float testValue = 14680063.0f;
+		a = testValue;
+		float f = float(a);
+		std::cout << to_binary(a) << " : " << a << " : " << f << " : " << setprecision(8) << testValue << endl;
+		f = 4 * 1024.0 * 1024.0;
+		for (size_t i = 0; i < 10; ++i) {
+			float fulp = ulp(f);
+			std::cout << to_binary(f) << " : " << f << endl;
+			std::cout << to_binary(fulp) << " : " << fulp << endl;
+			f *= 2.0f;
+		}
+	}
+	return 0;
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 4, 1, uint8_t>, float >(false), tag, "bfloat<4,1,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 6, 2, uint8_t>, float >(false), tag, "bfloat<6,2,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 8, 3, uint8_t>, float >(false), tag, "bfloat<8,3,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<10, 4, uint8_t>, float >(false), tag, "bfloat<10,4,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<12, 5, uint8_t>, float >(false), tag, "bfloat<12,5,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<4, 1, uint8_t>, float >(false), tag, "bfloat<4,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 1, uint8_t>, float >(false), tag, "bfloat<5,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 2, uint8_t>, float >(false), tag, "bfloat<5,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<6, 2, uint8_t>, float >(false), tag, "bfloat<6,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<7, 2, uint8_t>, float >(false), tag, "bfloat<7,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<8, 2, uint8_t>, float >(false), tag, "bfloat<8,2,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 8, 6, uint8_t>, float >(true), tag, "bfloat<8,6,uint8_t>");
 
 	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system

@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 // minimum set of include files to reflect source code dependencies
@@ -14,8 +15,10 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	const size_t nbits = 24;
-	const size_t ebits = 8;
+	print_cmd_line(argc, argv);
+
+	constexpr size_t nbits = 24;
+	constexpr size_t ebits = 8;
 
 	int nrOfFailedTestCases = 0;
 	std::string tag = " bfloat<24,8>";

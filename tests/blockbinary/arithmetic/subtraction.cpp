@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 
@@ -14,7 +15,7 @@
 
 // enumerate all addition cases for an blockbinary configuration
 template<size_t nbits, typename StorageBlockType = uint8_t>
-int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifySubtraction(bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace sw::universal;
 
@@ -23,15 +24,15 @@ int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 	int64_t aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.set_raw_bits(i);
-		aref = i;
+		aref = static_cast<int64_t>(i);
 		for (size_t j = 0; j < NR_VALUES; j++) {
 			b.set_raw_bits(j);
-			bref = j;
+			bref = static_cast<int64_t>(j);
 			cref = aref - bref;
 
 			result = a - b;
 
-			refResult.set_raw_bits(cref);
+			refResult.set_raw_bits(static_cast<uint64_t>(cref));
 			if (result != refResult) {
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, result, cref);
@@ -68,7 +69,7 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 	std::cout << std::setw(nbits) << _a << " / " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << std::endl;
 	std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _c << ")   " << std::endl;
 	//	std::cout << to_hex(a) << " * " << to_hex(b) << " = " << to_hex(result) << " (reference: " << std::hex << ref << ")   ";
-	reference.set_raw_bits(_c);
+	reference.set_raw_bits(static_cast<uint64_t>(_c));
 	std::cout << (result == reference ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
@@ -91,6 +92,8 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
+	if (argc > 1) std::cout << argv[0] << std::endl; 
+	
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
@@ -106,10 +109,10 @@ try {
 	b = twosComplement(a);
 	cout << to_hex(a) << ' ' << to_hex(b) << ' ' << to_hex(twosComplement(b)) << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint8_t>("Manual Testing", true), "uint8_t<4>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint16_t>("Manual Testing", true), "uint16_t<4>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint32_t>("Manual Testing", true), "uint32_t<4>", "subtraction");
-//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint64_t>("Manual Testing", true), "uint64_t<4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint8_t>(true), "uint8_t<4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint16_t>(true), "uint16_t<4>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint32_t>(true), "uint32_t<4>", "subtraction");
+//	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, uint64_t>(true), "uint64_t<4>", "subtraction");
 
 	nrOfFailedTestCases = (bReportIndividualTestCases ? 0 : -1);
 
@@ -121,13 +124,13 @@ try {
 
 	cout << "block subtraction validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint8_t>(tag, bReportIndividualTestCases), "uint8_t<8>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint16_t>(tag, bReportIndividualTestCases), "uint16_t<8>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint32_t>(tag, bReportIndividualTestCases), "uint32_t<8>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint8_t>(bReportIndividualTestCases), "uint8_t<8>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint16_t>(bReportIndividualTestCases), "uint16_t<8>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, uint32_t>(bReportIndividualTestCases), "uint32_t<8>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint8_t>(tag, bReportIndividualTestCases), "uint8_t<12>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint16_t>(tag, bReportIndividualTestCases), "uint16_t<12>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint32_t>(tag, bReportIndividualTestCases), "uint32_t<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint8_t>(bReportIndividualTestCases), "uint8_t<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint16_t>(bReportIndividualTestCases), "uint16_t<12>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<12, uint32_t>(bReportIndividualTestCases), "uint32_t<12>", "subtraction");
 
 #if STRESS_TESTING
 

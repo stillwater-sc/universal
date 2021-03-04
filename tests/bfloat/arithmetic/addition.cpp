@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/bfloat/bfloat.hpp>
 #include <universal/verification/test_status.hpp>
@@ -11,9 +11,10 @@
 
 // generate specific test case that you can trace with the trace conditions in bfloat.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, size_t es, typename Ty>
+template<typename BfloatConfiguration, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
-	sw::universal::bfloat<nbits, es> a, b, sum, ref;
+	constexpr size_t nbits = BfloatConfiguration::nbits;
+	BfloatConfiguration a, b, sum, ref;
 	a = _a;
 	b = _b;
 	sum = a + b;
@@ -37,25 +38,21 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	if (argc > 1) {
-		for (int i = 0; i < argc; ++i) {
-			std::cout << argv[i] << ' ';
-		}
-		std::cout << std::endl;
-	}
+	print_cmd_line(argc, argv);
+
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<16, 8, double>(INFINITY, INFINITY);
-	GenerateTestCase<8, 4, float>(0.5f, -0.5f);
+	GenerateTestCase< bfloat<16, 8, uint16_t>, double>(INFINITY, INFINITY);
+	GenerateTestCase< bfloat<8, 4, uint8_t>, float>(0.5f, -0.5f);
 
 	// manual exhaustive test
-	//nrOfFailedTestCases += ReportTestResult(VerifyAddition< bfloat<8, 2, uint8_t> >("Manual Testing", true), "bfloat<8,2,uint8_t>", "addition");
+	//nrOfFailedTestCases += ReportTestResult(VerifyAddition< bfloat<8, 2, uint8_t> >(true), "bfloat<8,2,uint8_t>", "addition");
 
-	
-	nrOfFailedTestCases = 0;
+	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
+	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
 #else
 	cout << "Arbitrary Real addition validation" << endl;

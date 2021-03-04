@@ -3,8 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <iostream>
-#include <string>
+#include <universal/utility/directives.hpp>
 #include <chrono>
 // configure the arithmetic class
 #define UNUM_THROW_ARITHMETIC_EXCEPTION 0

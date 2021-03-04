@@ -3,12 +3,9 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 4514)  // unreferenced function is removed
-#pragma warning(disable : 4710)  // function is not inlined
-#pragma warning(disable : 4820)  // bytes padding added after data member
-#pragma warning(disable : 5045)  // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#endif
+#include <universal/utility/directives.hpp>
+
+// minimum set of include files to reflect source code dependencies
 // Configure the bfloat template environment
 // first: enable general or specialized configurations
 #define BFLOAT_FAST_SPECIALIZATION
@@ -16,13 +13,11 @@
 #define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 // enabling tracing
 #define TRACE_CONVERSION 0
-// minimum set of include files to reflect source code dependencies
+
 #include <universal/number/bfloat/bfloat.hpp>
-// fixed-point type manipulators such as pretty printers
 #include <universal/number/bfloat/manipulators.hpp>
 #include <universal/number/bfloat/math_functions.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
-#include <universal/number/bfloat/table.hpp>
 
 // print the constexpr values of the bfloat class
 template<size_t nbits, size_t es, typename bt>
@@ -452,17 +447,13 @@ try {
 	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
-	if (argc > 0) {
-		std::cout << argv[0] << std::endl;
-	}
+	print_cmd_line(argc, argv);
 
 	std::string tag = "BFLOAT assignment: ";
 
 #if MANUAL_TESTING
 
 	using Real = sw::universal::bfloat<8, 2>;
-
-	// GenerateBfloatTable<4, 1>(cout, false);
 
 	bool bConversionTest = true;
 	if (bConversionTest) {
@@ -515,9 +506,10 @@ try {
 
 #endif
 
+	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
 
-#else
+#else //!MANUAL_TESTING
 	cout << "BFLOAT assignment validation" << endl;
 
 	bool bVerbose = false;

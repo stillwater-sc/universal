@@ -10,6 +10,7 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/native/bit_functions.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/bfloat/exceptions.hpp>
 
 // compiler specific operators
@@ -48,15 +49,16 @@
 
 #endif
 
-#ifndef THROW_ARITHMETIC_EXCEPTION
-#define THROW_ARITHMETIC_EXCEPTION 0
+#ifndef BFLOAT_THROW_ARITHMETIC_EXCEPTION
+#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 #endif
 #ifndef TRACE_CONVERSION
 #define TRACE_CONVERSION 0
 #endif
 
 namespace sw::universal {
-		
+	constexpr bool _trace_bfloat_add = false;
+
 	static constexpr double oneOver2p6 = 0.015625;
 	static constexpr double oneOver2p14 = 0.00006103515625;
 	static constexpr double oneOver2p30 = 1.0 / 1073741824.0;
@@ -67,7 +69,7 @@ namespace sw::universal {
 	static constexpr double oneOver2p510 = oneOver2p254 * oneOver2p254 * 0.25;
 	static constexpr double oneOver2p1022 = oneOver2p510 * oneOver2p510 * 0.25;
 
-// precomputed values for subnormal exponents as a function of es
+	// precomputed values for subnormal exponents as a function of es
 	static constexpr int subnormal_reciprocal_shift[] = {
 		0,                    // es = 0 : not a valid value
 		-1,                   // es = 1 : 2^(2 - 2^(es-1)) = 2^1
@@ -82,7 +84,7 @@ namespace sw::universal {
 		510,                  // es = 10 : 2^(2 - 2^(es-1)) = 2^-510
 		1022                  // es = 11 : 2^(2 - 2^(es-1)) = 2^-1022
 	};
-// es > 11 requires a long double representation, which MSVC does not provide.
+	// es > 11 requires a long double representation, which MSVC does not provide.
 	static constexpr double subnormal_exponent[] = {
 		0,                    // es = 0 : not a valid value
 		2.0,                  // es = 1 : 2^(2 - 2^(es-1)) = 2^1
@@ -98,47 +100,51 @@ namespace sw::universal {
 		oneOver2p1022         // es = 11 : 2^(2 - 2^(es-1)) = 2^-1022
 	};
 
-// Forward definitions
-template<size_t nbits, size_t es, typename bt> class bfloat;
-template<size_t nbits, size_t es, typename bt> bfloat<nbits,es,bt> abs(const bfloat<nbits,es,bt>&);
-template<typename bt> inline std::string to_binary_storage(const bt&, bool);
+	// Forward definitions
+	template<size_t nbits, size_t es, typename bt> class bfloat;
+	template<size_t nbits, size_t es, typename bt> bfloat<nbits, es, bt> abs(const bfloat<nbits, es, bt>&);
+	template<typename bt> inline std::string to_binary_storage(const bt&, bool);
 
-static constexpr int NAN_TYPE_SIGNALLING = -1;   // a Signalling NaN
-static constexpr int NAN_TYPE_EITHER     = 0;    // any NaN
-static constexpr int NAN_TYPE_QUIET      = 1;    // a Quiet NaN
+	static constexpr int NAN_TYPE_SIGNALLING = -1;   // a Signalling NaN
+	static constexpr int NAN_TYPE_EITHER = 0;    // any NaN
+	static constexpr int NAN_TYPE_QUIET = 1;    // a Quiet NaN
 
-static constexpr int INF_TYPE_NEGATIVE   = -1;   // -inf
-static constexpr int INF_TYPE_EITHER     = 0;    // any inf
-static constexpr int INF_TYPE_POSITIVE   = 1;    // +inf
+	static constexpr int INF_TYPE_NEGATIVE = -1;   // -inf
+	static constexpr int INF_TYPE_EITHER = 0;    // any inf
+	static constexpr int INF_TYPE_POSITIVE = 1;    // +inf
 
-constexpr bool BFLOAT_NIBBLE_MARKER = true;
+	constexpr bool BFLOAT_NIBBLE_MARKER = true;
 
 
-/// <summary>
-/// decode an bfloat value into its constituent parts
-/// </summary>
-/// <typeparam name="bt"></typeparam>
-/// <param name="v"></param>
-/// <param name="s"></param>
-/// <param name="e"></param>
-/// <param name="f"></param>
-template<size_t nbits, size_t es, size_t fbits, typename bt>
-void decode(const bfloat<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f) {
-	v.sign(s);
-	v.exponent(e);
-	v.fraction(f);
-}
+	/// <summary>
+	/// decode an bfloat value into its constituent parts
+	/// </summary>
+	/// <typeparam name="bt"></typeparam>
+	/// <param name="v"></param>
+	/// <param name="s"></param>
+	/// <param name="e"></param>
+	/// <param name="f"></param>
+	template<size_t nbits, size_t es, size_t fbits, typename bt>
+	void decode(const bfloat<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, blockbinary<fbits, bt>& f) {
+		v.sign(s);
+		v.exponent(e);
+		v.fraction(f);
+	}
 
-/// <summary>
-/// return the binary scale of the given number
-/// </summary>
-/// <typeparam name="bt">Block type used for storage: derived through ADL</typeparam>
-/// <param name="v">the bfloat number for which we seek to know the binary scale</param>
-/// <returns>binary scale, i.e. 2^scale, of the value of the bfloat</returns>
-template<size_t nbits, size_t es, typename bt>
-int scale(const bfloat<nbits, es, bt>& v) {
-	return v.scale();
-}
+	/// <summary>
+	/// return the binary scale of the given number
+	/// </summary>
+	/// <typeparam name="bt">Block type used for storage: derived through ADL</typeparam>
+	/// <param name="v">the bfloat number for which we seek to know the binary scale</param>
+	/// <returns>binary scale, i.e. 2^scale, of the value of the bfloat</returns>
+	template<size_t nbits, size_t es, typename bt>
+	int scale(const bfloat<nbits, es, bt>& v) {
+		return v.scale();
+	}
+
+	template<size_t srcbits, size_t nbits, size_t es, typename bt>
+	void convert(const blocktriple<srcbits, bt>& src, bfloat<nbits, es, bt>& tgt) {
+	}
 
 /////////////////////////////////////////////////////////////////////////////////
 /// free functions that can set an bfloat to extreme values in its state space
@@ -206,7 +212,7 @@ public:
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t es = _es;
 	static constexpr size_t fbits  = nbits - 1ull - es;    // number of fraction bits excluding the hidden bit
-	static constexpr size_t fhbits = fbits + 1ull;         // number of fraction bits including the hidden bit
+	static constexpr size_t fhbits = nbits - es;           // number of fraction bits including the hidden bit
 	static constexpr size_t abits = fhbits + 3ull;         // size of the addend
 	static constexpr size_t mbits = 2ull * fhbits;         // size of the multiplier output
 	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
@@ -221,7 +227,7 @@ public:
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt LSB_BIT_MASK = bt(1ull);
 	static constexpr bool MSU_CAPTURES_E = (1ull + es) <= bitsInMSU;
-	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (nbits - 1ull - es) : 0);
+	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull -es)) : 0);
 	static constexpr bt MSU_EXP_MASK = ((ALL_ONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;
@@ -305,7 +311,7 @@ public:
 		uint32_t shift = sizeInBits - exponent - 1;
 		raw <<= shift;
 		raw = round<sizeInBits, uint64_t>(raw, exponent);
-#ifdef LATER
+#ifdef TODO
 		// construct the target bfloat
 		if constexpr (64 >= nbits - es - 1ull) {
 			uint64_t bits = (s ? 1u : 0u);
@@ -327,7 +333,6 @@ public:
 #endif
 		return *this;
 	}
-
 
 	CONSTEXPRESSION bfloat& operator=(float rhs) {
 		clear();
@@ -865,31 +870,68 @@ public:
 	}
 
 	bfloat& operator+=(const bfloat& rhs) {
+		if constexpr (_trace_bfloat_add) std::cout << "---------------------- ADD -------------------" << std::endl;
+		// special case handling of the inputs
+#if BFLOAT_THROW_ARITHMETIC_EXCEPTION
+		if (isnan(NAN_TYPE_SIGNALLING) || rhs.isnan(NAN_TYPE_SIGNALLING)) {
+			throw bfloat_operand_is_nan{};
+		}
+#else
+		if (isnan(NAN_TYPE_QUIET) || rhs.isnan(NAN_TYPE_QUIET)) {
+			setnan(NAN_TYPE_QUIET);
+			return *this;
+		}
+#endif
+		if (isinf() || rhs.isinf()) {
+			setinf(false); // set to +inf
+			return *this;
+		}
+		if (iszero()) {
+			*this = rhs;
+			return *this;
+		}
+		if (rhs.iszero()) return *this;
+
+		// arithmetic operation
+		blocktriple<abits + 1, BlockType> sum;
+		blocktriple<abits, BlockType> a, b;
+
+//		normalize(a); // transform the inputs into (sign,scale,significant) triples
+//		rhs.normalize(b);
+//		module_add<abits, abits+1>(a, b, sum); // add the two inputs
+
+		// special case handling of the result
+		if (sum.iszero()) {
+			setzero();
+		}
+		else if (sum.isinf()) {
+			setinf(sum.sign());
+		}
+		else {
+//			convert(sum.sign(), sum.scale(), sum.significant(), *this);
+		}
 		return *this;
 	}
 	bfloat& operator+=(double rhs) {
 		return *this += bfloat(rhs);
 	}
 	bfloat& operator-=(const bfloat& rhs) {
-
-		return *this;
+		return *this += -rhs;
 	}
 	bfloat& operator-=(double rhs) {
-		return *this -= bfloat<nbits, es>(rhs);
+		return *this -= bfloat(rhs);
 	}
 	bfloat& operator*=(const bfloat& rhs) {
-
 		return *this;
 	}
 	bfloat& operator*=(double rhs) {
-		return *this *= bfloat<nbits, es>(rhs);
+		return *this *= bfloat(rhs);
 	}
 	bfloat& operator/=(const bfloat& rhs) {
-
 		return *this;
 	}
 	bfloat& operator/=(double rhs) {
-		return *this /= bfloat<nbits, es>(rhs);
+		return *this /= bfloat(rhs);
 	}
 	/// <summary>
 	/// move to the next bit encoding modulo 2^nbits
@@ -938,7 +980,6 @@ public:
 		return tmp;
 	}
 	inline bfloat& operator--() {
-
 		return *this;
 	}
 	inline bfloat operator--(int) {
@@ -1094,8 +1135,8 @@ public:
 	}
 
 	// selectors
-	inline constexpr bool sign() const { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
-	inline constexpr int scale() const {
+	inline constexpr bool sign() const noexcept { return (_block[MSU] & SIGN_BIT_MASK) == SIGN_BIT_MASK; }
+	inline constexpr int  scale() const noexcept {
 		int e{ 0 };
 		if constexpr (MSU_CAPTURES_E) {
 			e = int((_block[MSU] & ~SIGN_BIT_MASK) >> EXP_SHIFT);
@@ -1117,7 +1158,8 @@ public:
 			exponent(ebits);
 			if (ebits.iszero()) {
 				// subnormal scale is determined by fraction
-				e = -1;
+				// subnormals: (-1)^s * 2^(2-2^(es-1)) * (f/2^fbits))
+				e = (2l - (1l << (es - 1ull))) - 1;
 				for (size_t i = nbits - 2ull - es; i > 0; --i) {
 					if (test(i)) break;
 					--e;
@@ -1130,9 +1172,9 @@ public:
 		return e;
 	}
 	// tests
-	inline constexpr bool isneg() const { return sign(); }
-	inline constexpr bool ispos() const { return !sign(); }
-	inline constexpr bool iszero() const {
+	inline constexpr bool isneg() const noexcept { return sign(); }
+	inline constexpr bool ispos() const noexcept { return !sign(); }
+	inline constexpr bool iszero() const noexcept {
 		if constexpr (0 == nrBlocks) {
 			return true;
 		}
@@ -1150,7 +1192,7 @@ public:
 			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		}
 	}
-	inline constexpr bool isone() const {
+	inline constexpr bool isone() const noexcept {
 		// unbiased exponent = scale = 0, fraction = 0
 		int s = scale();
 		if (scale() == 0) {
@@ -1167,8 +1209,7 @@ public:
 	/// </summary>
 	/// <param name="InfType">default is 0, both types, -1 checks for -inf, 1 checks for +inf</param>
 	/// <returns>true if +-inf, false otherwise</returns>
-	inline constexpr bool isinf(int InfType = INF_TYPE_EITHER) const {
-		bool isInf = false;
+	inline constexpr bool isinf(int InfType = INF_TYPE_EITHER) const noexcept {
 		bool isNegInf = false;
 		bool isPosInf = false;
 		if constexpr (0 == nrBlocks) {
@@ -1179,17 +1220,17 @@ public:
 			isPosInf = (_block[MSU] & MSU_MASK) == ((MSU_MASK ^ SIGN_BIT_MASK) ^ LSB_BIT_MASK);
 		}
 		else if constexpr (2 == nrBlocks) {
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
+			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
 			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
 			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
 		else if constexpr (3 == nrBlocks) {
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) && (_block[1] == BLOCK_MASK);
+			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) && (_block[1] == BLOCK_MASK);
 			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
 			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
 		else {
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
+			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
 			for (size_t i = 1; i < nrBlocks - 1; ++i) {
 				if (_block[i] != BLOCK_MASK) {
 					isInf = false;
@@ -1211,7 +1252,7 @@ public:
 	/// </summary>
 	/// <param name="NaNType">default is 0, both types, 1 checks for Signalling NaN, -1 checks for Quiet NaN</param>
 	/// <returns>true if the right kind of NaN, false otherwise</returns>
-	inline constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const {
+	inline constexpr bool isnan(int NaNType = NAN_TYPE_EITHER) const noexcept {
 		bool isNaN = true;
 		if constexpr (0 == nrBlocks) {
 			return false;
@@ -1238,7 +1279,16 @@ public:
 			     (NaNType == NAN_TYPE_SIGNALLING ? isNegNaN : 
 				   (NaNType == NAN_TYPE_QUIET ? isPosNaN : false)));
 	}
-
+	inline constexpr bool isnormal() const noexcept {
+		blockbinary<es, bt> e;
+		exponent(e);
+		return !e.iszero() && !isinf() && !isnan();
+	}
+	inline constexpr bool issubnorm() const noexcept {
+		blockbinary<es, bt> e;
+		exponent(e);
+		return e.iszero();
+	}
 	inline constexpr bool test(size_t bitIndex) const noexcept {
 		return at(bitIndex);
 	}
@@ -1267,7 +1317,7 @@ public:
 		return 0;
 	}
 
-	void debug() const {
+	void constexprParameters() const {
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
 		std::cout << "ALL_ONES          : " << to_binary_storage(ALL_ONES, true) << '\n';
@@ -1319,6 +1369,49 @@ public:
 		else if constexpr (nrBlocks > 1) {
 			for (size_t i = 0; i < fbits; ++i) { f.set(i, at(nbits - 1ull - es - fbits + i)); } // TODO: TEST!
 		}
+	}
+	// construct the significant from the encoding, returns normalization offset
+	inline constexpr size_t significant(blockbinary<fhbits, bt>& s, bool isNormal = true) const {
+		size_t shift = 0;
+		if (iszero()) return 0;
+		if constexpr (0 == nrBlocks) return 0;
+		else if constexpr (1 == nrBlocks) {
+			bt significant = bt(_block[MSU] & ~MSU_EXP_MASK & ~SIGN_BIT_MASK);
+			if (isNormal) {
+				significant |= (bt(0x1ul) << fbits);
+			}
+			else {
+				size_t msb = findMostSignificantBit(significant);
+//				std::cout << "msb : " << msb << " : fhbits : " << fhbits << " : " << to_binary_storage(significant, true) << std::endl;
+				shift = fhbits - msb;
+				significant <<= shift;
+			}
+			s.set_raw_bits(significant);
+		}
+		else if constexpr (nrBlocks > 1) {
+			s.clear();
+			// TODO: design and implement a block-oriented algorithm, this sequential algorithm is super slow
+			if (isNormal) {
+				s.set(fbits);
+				for (size_t i = 0; i < fbits; ++i) { s.set(i, at(i)); }
+			}
+			else {
+				// Find the MSB of the subnormal: 
+				size_t msb = 0;
+				for (size_t i = 0; i < fbits; ++i) { // msb protected from not being assigned through iszero test at prelude of function
+					msb = fbits - 1ull - i;
+					if (test(msb)) break;
+				}
+				//      m-----lsb
+				// h00001010101
+				// 101010100000
+				for (size_t i = 0; i <= msb; ++i) {
+					s.set(fbits - msb + i, at(i));
+				}
+				shift = fhbits - msb;
+			}
+		}
+		return shift;
 	}
 	
 	// casts to native types
@@ -1382,8 +1475,24 @@ public:
 	explicit operator double() const { return to_native<double>(); }
 	explicit operator float() const { return to_native<float>(); }
 
+	// normalize a non-special bfloat, that is, no zero, inf, or nan
+	template<size_t tgtSize>
+	void normalize(blocktriple<tgtSize, BlockType>& v) const {
+		bool _sign = sign();
+		int  _scale = scale();
+		blockbinary<tgtSize, BlockType> _significant;
+		if (_scale < MIN_EXP_NORMAL) { // need to normalize the subnormal number to yield a consistent significant
+			/* size_t shift = */significant(_significant, false);
+		}
+		else {
+			significant(_significant, true);
+		}
+		v.set(_sign, _scale, _significant);
+	}
+
 protected:
 	// HELPER methods
+
 
 	/// <summary>
 	/// round a set of source bits to the present representation.
@@ -1479,7 +1588,6 @@ protected:
 		}
 		_block[0] <<= bitsToShift;
 	}
-
 	void shiftRight(int bitsToShift) {
 		if (bitsToShift == 0) return;
 		if (bitsToShift < 0) return shiftLeft(-bitsToShift);
@@ -1672,14 +1780,25 @@ inline std::string to_string(const bfloat<nbits,es,bt>& v) {
 // transform bfloat to a binary representation
 template<size_t nbits, size_t es, typename bt>
 inline std::string to_binary(const bfloat<nbits, es, bt>& number, bool nibbleMarker = false) {
-	std::stringstream ss;
-	ss << 'b';
+	std::stringstream s;
+	s << 'b';
 	size_t index = nbits;
-	for (size_t i = 0; i < nbits; ++i) {
-		ss << (number.at(--index) ? '1' : '0');
-		if (index > 0 && (index % 4) == 0 && nibbleMarker) ss << '\'';
+	s << (number.at(--index) ? '1' : '0') << '.';
+
+	for (int i = int(es)-1; i >= 0; --i) {
+		s << (number.at(--index) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 	}
-	return ss.str();
+
+	s << '.';
+
+	constexpr int fbits = nbits - 1ull - es;
+	for (int i = fbits-1; i >= 0; --i) {
+		s << (number.at(--index) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	}
+
+	return s.str();
 }
 
 // helper to report on BlockType blocks

@@ -16,6 +16,16 @@
 
 namespace sw::universal {
 
+// report dynamic range of a type, specialized for a posit
+template<size_t nbits, size_t es, typename bt>
+std::string dynamic_range(bfloat<nbits, es, bt>& b) {
+	std::stringstream ss;
+	ss << type_tag(b) << ": ";
+	ss << "minpos scale " << std::setw(10) << minpos(b).scale() << "     ";
+	ss << "maxpos scale " << std::setw(10) << maxpos(b).scale();
+	return ss.str();
+}
+
 // Generate a type tag for this posit, for example, posit<8,1>
 template<size_t nbits, size_t es, typename bt>
 std::string type_tag(const bfloat<nbits, es, bt>& v) {
@@ -72,7 +82,7 @@ inline std::string hex_print(const bfloat<nbits, es, bt>& r) {
 }
 
 template<size_t nbits, size_t es, typename bt>
-std::string pretty_print(const bfloat<nbits, es, bt>& r, int printPrecision = std::numeric_limits<double>::max_digits10) {
+std::string pretty_print(const bfloat<nbits, es, bt>& r) {
 	std::stringstream ss;
 	constexpr size_t fbits = bfloat<nbits, es, bt>::fbits;
 	bool s{ false };
@@ -108,7 +118,7 @@ std::string color_print(const bfloat<nbits, es, bt>& r) {
 	std::stringstream ss;
 	bool s{ false };
 	blockbinary<es,bt> e;
-	blockbinary<bfloat<nbits, es, bt>::fbits> f;
+	blockbinary<r.fbits,bt> f;
 	decode(r, s, e, f);
 
 	Color red(ColorCode::FG_RED);
@@ -120,7 +130,7 @@ std::string color_print(const bfloat<nbits, es, bt>& r) {
 	Color def(ColorCode::FG_DEFAULT);
 
 	// sign bit
-	ss << red << (r.isneg() ? "1" : "0");
+	ss << red << (r.isneg() ? '1' : '0');
 
 	// exponent bits
 	for (int i = int(es) - 1; i >= 0; --i) {

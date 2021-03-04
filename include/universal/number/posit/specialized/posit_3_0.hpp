@@ -258,29 +258,20 @@ namespace sw {	namespace universal {
 				return p;
 			}
 			// SELECTORS
-			inline bool isnar() const {
-				return (_bits == nar_encoding);
-			}
-			inline bool iszero() const {
-				return (_bits == 0);
-			}
+			inline bool sign()   const { return (_bits & 0x4u); }
+			inline bool isnar()  const { return (_bits == nar_encoding); }
+			inline bool iszero() const { return (_bits == 0x0u); }
 			inline bool isone() const { // pattern 010....
 				return (_bits == one_encoding);
 			}
 			inline bool isminusone() const { // pattern 110...
 				return (_bits == minus_one_encoding);
 			}
-			inline bool isneg() const {
-				return (_bits & 0x2);
-			}
-			inline bool ispos() const {
-				return !isneg();
-			}
-			inline bool ispowerof2() const {
-				return !(_bits & 0x1);
-			}
+			inline bool isneg()      const { return (_bits & 0x4u); }
+			inline bool ispos()      const { return !isneg(); }
+			inline bool ispowerof2() const { return !(_bits & 0x1u); }
 
-			inline int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
+			inline int sign_value() const { return (_bits & 0x4 ? -1 : 1); }
 
 			bitblock<NBITS_IS_3> get() const { bitblock<NBITS_IS_3> bb; bb = int(_bits); return bb; }
 			unsigned int encoding() const { return (unsigned int)(_bits & bit_mask); }

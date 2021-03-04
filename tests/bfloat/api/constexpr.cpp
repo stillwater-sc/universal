@@ -3,16 +3,16 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 
+// minimum set of include files to reflect source code dependencies
 // Configure the bfloat template environment
 // first: enable general or specialized fixed-point configurations
 #define BFLOAT_FAST_SPECIALIZATION
 // second: enable/disable bfloat arithmetic exceptions
 #define BFLOAT_THROW_ARITHMETIC_EXCEPTION 1
 
-// minimum set of include files to reflect source code dependencies
 #include <universal/number/bfloat/bfloat.hpp>
-// fixed-point type manipulators such as pretty printers
 #include <universal/number/bfloat/manipulators.hpp>
 #include <universal/number/bfloat/math_functions.hpp>
 
@@ -84,13 +84,15 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
+	print_cmd_line(argc, argv);
+
 	int nrOfFailedTestCases = 0;
 
 	cout << "BFLOAT constexpr tests" << endl;
 	
 	using Real = bfloat<12, 2>;
 	Real a;
-	a.debug();
+	a.constexprParameters();
 
 	TestConstexprConstruction<Real>();
 	TestConstexprAssignment<Real>();

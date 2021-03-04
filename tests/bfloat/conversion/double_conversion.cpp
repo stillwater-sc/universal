@@ -3,12 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 4514)  // unreferenced function is removed
-#pragma warning(disable : 4710)  // function is not inlined
-#pragma warning(disable : 4820)  // bytes padding added after data member
-#pragma warning(disable : 5045)  // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#endif
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 // Configure the bfloat template environment
@@ -79,9 +74,7 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	if (argc > 0) {
-		std::cout << argv[0] << std::endl;
-	}
+	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 	std::string tag = "double conversion: ";
@@ -94,7 +87,7 @@ try {
 
 	{
 		bfloat<6, 2> a;
-		a.debug();
+		a.constexprParameters();
 		double testValue = 0.0625000074505806;
 		a = testValue;
 		double da = double(a);
@@ -104,7 +97,7 @@ try {
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<4, 1, uint8_t>, double >(false), tag, "bfloat<4,1,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 1, uint8_t>, double >(false), tag, "bfloat<5,1,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 2, uint8_t>, double >(false), tag, "bfloat<5,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<6, 2, uint8_t>, double >(false), tag, "bfloat<6,2,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<6, 2, uint8_t>, double >(true), tag, "bfloat<6,2,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<7, 2, uint8_t>, double >(false), tag, "bfloat<7,2,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<8, 2, uint8_t>, double >(false), tag, "bfloat<8,2,uint8_t>");
 

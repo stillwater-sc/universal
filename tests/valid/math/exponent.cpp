@@ -47,8 +47,6 @@ try {
 
 	GenerateEulersNumber();
 
-	return 0;
-	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Exponent failed: ";
@@ -73,6 +71,7 @@ try {
 
 	cout << endl;
 
+	bool bReportIndividualTestCases = true;
 	// manual exhaustive test
 	nrOfFailedTestCases += ReportTestResult(VerifyExp<2, 0>("Manual Testing", bReportIndividualTestCases), "valid<2,0>", "exp");
 

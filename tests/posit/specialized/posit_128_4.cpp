@@ -48,6 +48,18 @@ try {
 	posit<nbits, es> p;
 	cout << dynamic_range(p) << endl << endl;
 
+	// special cases
+	p = 0;
+	if (!p.iszero()) ++nrOfFailedTestCases;
+	p = NAN;
+	if (!p.isnar()) ++nrOfFailedTestCases;
+	p = INFINITY;
+	if (!p.isnar()) ++nrOfFailedTestCases;
+	p = -1.0f;
+	if (!p.sign()) ++nrOfFailedTestCases;
+	p = +1.0f;
+	if (p.sign()) ++nrOfFailedTestCases;
+
 	// TODO: as we don't have a reference floating point implementation to Verify
 	// the arithmetic operations we are going to ignore the failures
 #if STRESS_TESTING

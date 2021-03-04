@@ -158,6 +158,7 @@ namespace sw { namespace universal {
 		}
 		
 		// SELECTORS
+		inline bool sign() const       { return (_bits & sign_mask); }
 		inline bool isnar() const      { return (_bits == sign_mask); }
 		inline bool iszero() const     { return (_bits == 0x00); }
 		inline bool isone() const      { return (_bits == 0x40); } // pattern 010000...
