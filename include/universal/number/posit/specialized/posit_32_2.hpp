@@ -426,11 +426,12 @@ public:
 	inline constexpr void setnar() { _bits = 0x80000000; }
 
 	// SELECTORS
-	inline constexpr bool isnar() const      { return (_bits == 0x80000000); }
+	inline constexpr bool sign() const       { return (_bits & 0x80000000u); }
+	inline constexpr bool isnar() const      { return (_bits == 0x80000000u); }
 	inline constexpr bool iszero() const     { return (_bits == 0x0); }
-	inline constexpr bool isone() const      { return (_bits == 0x40000000); } // pattern 010000...
-	inline constexpr bool isminusone() const { return (_bits == 0xC0000000); } // pattern 110000...
-	inline constexpr bool isneg() const      { return (_bits & 0x80000000); }
+	inline constexpr bool isone() const      { return (_bits == 0x40000000u); } // pattern 010000...
+	inline constexpr bool isminusone() const { return (_bits == 0xC0000000u); } // pattern 110000...
+	inline constexpr bool isneg() const      { return (_bits & 0x80000000u); }
 	inline constexpr bool ispos() const      { return !isneg(); }
 	inline constexpr bool ispowerof2() const { return !(_bits & 0x1); }
 

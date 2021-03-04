@@ -402,6 +402,7 @@ public:
 	}
 
 	// SELECTORS
+	inline bool sign() const       { return (_bits & sign_mask); }
 	inline bool isnar() const      { return (_bits == sign_mask); }
 	inline bool iszero() const     { return (_bits == 0x0); }
 	inline bool isone() const      { return (_bits == 0x4000); } // pattern 010000...

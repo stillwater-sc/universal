@@ -148,7 +148,7 @@ try {
 
 	// special cases
 	cout << "Special case tests " << endl;
-	string test = "Initialize to zero";
+	string test = "Initialize to zero: ";
 	p = 0;
 	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
 	test = "Initialize to NAN";
@@ -157,15 +157,25 @@ try {
 	test = "Initialize to INFINITY";
 	p = INFINITY;
 	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	test = "sign is true";
+	p = -1.0f;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.sign());
+	test = "is negative";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isneg());
+	test = "sign is false";
+	p = +1.0f;
+	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
+	test = "is positive";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
 	// logic tests
 	cout << "Logic operator tests " << endl;
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicEqual             <nbits, es>(), tag, "    ==          (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicNotEqual          <nbits, es>(), tag, "    !=          (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessThan          <nbits, es>(), tag, "    <           (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=          (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterThan       <nbits, es>(), tag, "    >           (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=          (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicEqual             <nbits, es>(), tag, "    ==          (native) ");
+	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicNotEqual          <nbits, es>(), tag, "    !=          (native) ");
+	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessThan          <nbits, es>(), tag, "    <           (native) ");
+	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=          (native) ");
+	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterThan       <nbits, es>(), tag, "    >           (native) ");
+	nrOfFailedTestCases += ReportTestResult( VerifyPositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=          (native) ");
 
 	// conversion tests
 	// internally this generators are clamped as the state space 2^33 is too big

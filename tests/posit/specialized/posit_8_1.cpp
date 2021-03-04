@@ -61,12 +61,26 @@ try {
 	cout << dynamic_range(p) << endl;
 
 	// special cases
+	cout << "Special case tests " << endl;
+	string test = "Initialize to zero: ";
 	p = 0;
-	if (!p.iszero()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
+	test = "Initialize to NAN";
 	p = NAN;
-	if (!p.isnar()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	test = "Initialize to INFINITY";
 	p = INFINITY;
-	if (!p.isnar()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	test = "sign is true";
+	p = -1.0f;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.sign());
+	test = "is negative";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isneg());
+	test = "sign is false";
+	p = +1.0f;
+	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
+	test = "is positive";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
 	// logic tests
 	cout << "Logic operator tests " << endl;

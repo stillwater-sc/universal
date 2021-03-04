@@ -47,24 +47,43 @@ try {
 	cout << dynamic_range(p) << endl;
 
 	// special cases
+	cout << "Special case tests " << endl;
+	string test = "Initialize to zero: ";
 	p = 0;
-	if (!p.iszero()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
+	test = "Initialize to NAN";
 	p = NAN;
-	if (!p.isnar()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	test = "Initialize to INFINITY";
 	p = INFINITY;
-	if (!p.isnar()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	test = "sign is true";
+	p = -1.0f;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.sign());
+	test = "is negative";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isneg());
+	test = "sign is false";
+	p = +1.0f;
+	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
+	test = "is positive";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
 	// logic tests
+	cout << "Logic operator tests " << endl;
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual             <nbits, es>(), tag, "    ==         ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan          <nbits, es>(), tag, "    <          ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
+	
 	// conversion tests
+	cout << "Assignment/conversion tests " << endl;
 	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(bReportIndividualTestCases), tag, "integer assign ");
 	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(bReportIndividualTestCases), tag, "float assign   ");
+	
 	// arithmetic tests
+	cout << "Arithmetic tests " << endl;
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(bReportIndividualTestCases), tag, "add            ");
 	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <nbits, es>(bReportIndividualTestCases), tag, "subtract       ");
 	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <nbits, es>(bReportIndividualTestCases), tag, "multiply       ");
