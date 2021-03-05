@@ -22,7 +22,7 @@ constexpr bool _trace_btriple_reciprocate = false;
 constexpr bool _trace_btriple_sqrt        = false;
 
 // quire update tracing
-constexpr bool _trace_quire_add   = false;
+constexpr bool _trace_btriple_quire_add   = false;
 
 # else // !BLOCKTRIPLE_VERBOSE_OUTPUT
 

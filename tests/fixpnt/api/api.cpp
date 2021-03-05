@@ -3,12 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#pragma warning(disable : 4514)  // unreferenced function is removed
-#pragma warning(disable : 4820) // bytes padding added after data member
-#pragma warning(disable : 4710)  // function is not inlined
-#endif
+#include <universal/utility/directives.hpp>
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
 #define FIXPNT_FAST_SPECIALIZATION

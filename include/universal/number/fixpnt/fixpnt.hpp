@@ -175,11 +175,11 @@ fixpnt<nbits, rbits, arithmetic, bt>& maxneg(fixpnt<nbits, rbits, arithmetic, bt
 
 // conversion helpers
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline constexpr void convert(int64_t v, fixpnt<nbits, rbits, arithmetic, bt>& result) {
-	if (0 == v) { result.setzero();	return; }
+inline constexpr fixpnt<nbits, rbits, arithmetic, bt>& convert(int64_t v, fixpnt<nbits, rbits, arithmetic, bt>& result) {
+	if (0 == v) { result.setzero();	return result; }
 	if (arithmetic == Saturating) { // check if we are in the representable range
-		if (v >= static_cast<int64_t>(maxpos(result))) return;
-		if (v <= static_cast<int64_t>(maxneg(result))) return;
+		if (v >= static_cast<int64_t>(maxpos(result))) return result;
+		if (v <= static_cast<int64_t>(maxneg(result))) return result;
 	}
 	bool negative = (v < 0 ? true : false);
 	v = (v < 0 ? -v : v); // how do you deal with maxneg?
@@ -192,13 +192,14 @@ inline constexpr void convert(int64_t v, fixpnt<nbits, rbits, arithmetic, bt>& r
 		v >>= 1;
 	}
 	if (negative) result.twoscomplement();
+	return result;
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline void convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic, bt>& result) {
-	if (0 == v) { result.setzero();	return;	}
+inline constexpr fixpnt<nbits, rbits, arithmetic, bt>& convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic, bt>& result) {
+	if (0 == v) { result.setzero();	return result;	}
 	if (arithmetic == Saturating) {	// check if we are in the representable range
-		if (v >= static_cast<uint64_t>(maxpos(result))) return;
-		if (v <= static_cast<uint64_t>(maxneg(result))) return;
+		if (v >= static_cast<uint64_t>(maxpos(result))) return result;
+		if (v <= static_cast<uint64_t>(maxneg(result))) return result;
 	}
 	result.clear();
 	constexpr uint64_t mask = 0x1;
@@ -207,6 +208,7 @@ inline void convert_unsigned(uint64_t v, fixpnt<nbits, rbits, arithmetic, bt>& r
 		if (v & mask) result.set(i + rbits); // we have no fractional part in v
 		v >>= 1;
 	}
+	return result;
 }
 
 // fixpnt is a binary fixed point number of nbits with rbits after the radix point
@@ -220,8 +222,7 @@ public:
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInChar;
 	static constexpr size_t nrBlocks = (1 + ((nbits - 1) / bitsInBlock));
 	static constexpr size_t MSU = nrBlocks - 1;
-	// warning C4310: cast truncates constant value
-	static constexpr bt MSU_MASK = (bt(-1) >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr bt     MSU_MASK = bt(bt(~0) >> (nrBlocks * bitsInBlock - nbits));
 
 	constexpr fixpnt() noexcept : bb(0) {}
 
@@ -254,19 +255,19 @@ public:
 	}
 
 	// initializers for native types
-	fixpnt(signed char initial_value) noexcept { *this = initial_value; }
-	fixpnt(short initial_value) noexcept { *this = initial_value; }
-	fixpnt(int initial_value) noexcept { *this = initial_value; }
-	fixpnt(long initial_value) noexcept { *this = initial_value; }
-	fixpnt(long long initial_value) noexcept { *this = initial_value; }
-	fixpnt(char initial_value) noexcept { *this = initial_value; }
-	fixpnt(unsigned short initial_value) noexcept { *this = initial_value; }
-	fixpnt(unsigned int initial_value) noexcept { *this = initial_value; }
-	fixpnt(unsigned long initial_value)  noexcept { *this = initial_value; }
+	fixpnt(signed char initial_value)        noexcept { *this = initial_value; }
+	fixpnt(short initial_value)              noexcept { *this = initial_value; }
+	fixpnt(int initial_value)                noexcept { *this = initial_value; }
+	fixpnt(long initial_value)               noexcept { *this = initial_value; }
+	fixpnt(long long initial_value)          noexcept { *this = initial_value; }
+	fixpnt(char initial_value)               noexcept { *this = initial_value; }
+	fixpnt(unsigned short initial_value)     noexcept { *this = initial_value; }
+	fixpnt(unsigned int initial_value)       noexcept { *this = initial_value; }
+	fixpnt(unsigned long initial_value)      noexcept { *this = initial_value; }
 	fixpnt(unsigned long long initial_value) noexcept { *this = initial_value; }
-	fixpnt(float initial_value) noexcept { *this = initial_value; }
-	constexpr fixpnt(double initial_value) noexcept { *this = initial_value; }
-	fixpnt(long double initial_value) noexcept { *this = initial_value; }
+	fixpnt(float initial_value)              noexcept { *this = initial_value; }
+	fixpnt(double initial_value)   noexcept { *this = initial_value; }
+	fixpnt(long double initial_value)        noexcept { *this = initial_value; }
 
 	// access operator for bits
 	// this needs a proxy to be able to create l-values
@@ -275,46 +276,16 @@ public:
 	// simpler interface for now, using at(i) and set(i)/reset(i)
 
 	// assignment operators for native types
-	fixpnt& operator=(signed char rhs) {
-		convert(rhs, *this);
-		return *this;
-	}
-	fixpnt& operator=(short rhs) {
-		convert(rhs, *this);
-		return *this;
-	}
-	fixpnt& operator=(int rhs) {
-		convert(rhs, *this);
-		return *this;
-	}
-	fixpnt& operator=(long rhs) {
-		convert(rhs, *this);
-		return *this;
-	}
-	fixpnt& operator=(long long rhs) {
-		convert(rhs, *this);
-		return *this;
-	}
-	fixpnt& operator=(char rhs) {
-		convert_unsigned(rhs, *this);
-		return *this;
-	}
-	fixpnt& operator=(unsigned short rhs) {
-		convert_unsigned(rhs, *this);
-		return *this;
-	}
-	fixpnt& operator=(unsigned int rhs) {
-		convert_unsigned(rhs, *this);
-		return *this;
-	}
-	fixpnt& operator=(unsigned long rhs) {
-		convert_unsigned(rhs, *this);
-		return *this;
-	}
-	fixpnt& operator=(unsigned long long rhs) {
-		convert_unsigned(rhs, *this);
-		return *this;
-	}
+	fixpnt& operator=(signed char rhs)        { return convert(rhs, *this); }
+	fixpnt& operator=(short rhs)              { return convert(rhs, *this); }
+	fixpnt& operator=(int rhs)                { return convert(rhs, *this); }
+	fixpnt& operator=(long rhs)               { return convert(rhs, *this); }
+	fixpnt& operator=(long long rhs)          { return convert(rhs, *this); }
+	fixpnt& operator=(char rhs)               { return convert_unsigned(rhs, *this); }
+	fixpnt& operator=(unsigned short rhs)     { return convert_unsigned(rhs, *this); }
+	fixpnt& operator=(unsigned int rhs)       { return convert_unsigned(rhs, *this); }
+	fixpnt& operator=(unsigned long rhs)      { return convert_unsigned(rhs, *this); }
+	fixpnt& operator=(unsigned long long rhs) { return convert_unsigned(rhs, *this); }
 	fixpnt& operator=(float rhs) {
 		clear();
 		if (rhs == 0.0) {
@@ -699,10 +670,10 @@ public:
 	}
 
 	// selectors
+	inline constexpr bool sign()   const { return bb.sign(); }
 	inline constexpr bool iszero() const { return bb.iszero(); }
-	inline constexpr bool ispos() const { return bb.ispos(); }
-	inline constexpr bool isneg() const { return bb.isneg(); }
-	inline constexpr bool sign() const { return bb.sign(); }
+	inline constexpr bool ispos()  const { return bb.ispos(); }
+	inline constexpr bool isneg()  const { return bb.isneg(); }
 	inline constexpr bool at(size_t bitIndex) const { return bb.at(bitIndex); }
 	inline constexpr bool test(size_t bitIndex) const { return bb.test(bitIndex); }
 	inline blockbinary<nbits, bt> getbb() const { return blockbinary<nbits, bt>(bb); }
@@ -1978,7 +1949,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, bt>
 	std::stringstream ss;
 	if (value.iszero()) {
 		ss << '0';
-		if (rbits > 0) {
+		if constexpr (rbits > 0) {
 			ss << '.';
 			for (size_t i = 0; i < rbits; ++i) {
 				ss << '0';
@@ -2009,7 +1980,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, bt>
 		ss << '0';
 	}
 
-	if (rbits > 0) {
+	if constexpr (rbits > 0) {
 		ss << ".";
 		// and secondly, the fraction part
 		support::decimal range, discretizationLevels, step;
@@ -2189,9 +2160,11 @@ inline std::string to_binary(const fixpnt<nbits, rbits, arithmetic, bt>& number,
 		if (bNibbleMarker && (i - rbits) > 0 && (i - rbits) % 4 == 0) ss << '\'';
 	}
 	ss << '.';
-	for (int i = int(rbits) - 1; i >= 0; --i) {
-		ss << (number.at(static_cast<size_t>(i)) ? '1' : '0');
-		if (bNibbleMarker && (rbits - i) % 4 == 0 && i != 0) ss << '\'';
+	if constexpr (rbits > 0) {
+		for (int i = int(rbits) - 1; i >= 0; --i) {
+			ss << (number.at(static_cast<size_t>(i)) ? '1' : '0');
+			if (bNibbleMarker && (rbits - i) % 4 == 0 && i != 0) ss << '\'';
+		}
 	}
 	return ss.str();
 }
@@ -2203,7 +2176,7 @@ inline std::string to_triple(const fixpnt<nbits, rbits, arithmetic, bt>& number)
 	ss << (number.sign() ? "(-," : "(+,");
 	ss << scale(number) << ',';
 	for (int i = static_cast<int>(rbits) - 1; i >= 0; --i) {
-		ss << (number.at(i) ? '1' : '0');
+		ss << (number.at(static_cast<size_t>(i)) ? '1' : '0');
 	}
 	ss << (rbits == 0 ? "~)" : ")");
 	return ss.str();

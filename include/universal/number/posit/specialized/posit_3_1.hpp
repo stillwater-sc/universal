@@ -177,36 +177,27 @@ namespace sw { namespace universal {
 					return p;
 				}
 				// SELECTORS
-				inline bool isnar() const {
-					return (_bits == 0x04);
-				}
-				inline bool iszero() const {
-					return (_bits == 0);
-				}
+				inline bool sign() const { return (_bits & 0x4u); }
+				inline bool isnar() const { return (_bits == 0x4u); }
+				inline bool iszero() const { return (_bits == 0); }
 				inline bool isone() const { // pattern 010....
-					return (_bits == 0x02);
+					return (_bits == 0x2u);
 				}
 				inline bool isminusone() const { // pattern 110...
-					return (_bits == 0x06);
+					return (_bits == 0x6u);
 				}
-				inline bool isneg() const {
-					return (_bits & 0x04);
-				}
-				inline bool ispos() const {
-					return !isneg();
-				}
-				inline bool ispowerof2() const {
-					return !(_bits & 0x1);
-				}
+				inline bool isneg() const { return (_bits & 0x4u); }
+				inline bool ispos() const { return !isneg(); }
+				inline bool ispowerof2() const { return !(_bits & 0x1u); }
 
-				inline int sign_value() const { return (_bits & 0x04 ? -1 : 1); }
+				inline int sign_value() const { return (_bits & 0x4u ? -1 : 1); }
 
 				bitblock<NBITS_IS_3> get() const { bitblock<NBITS_IS_3> bb; bb = int(_bits); return bb; }
-				unsigned int encoding() const { return (unsigned int)(_bits & 0x07); }
+				unsigned int encoding() const { return (unsigned int)(_bits & 0x7u); }
 
 				inline void clear() { _bits = 0; }
 				inline void setzero() { clear(); }
-				inline void setnar() { _bits = 0x04; }
+				inline void setnar() { _bits = 0x4u; }
 
 			private:
 				uint8_t _bits;

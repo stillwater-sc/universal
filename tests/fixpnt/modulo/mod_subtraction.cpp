@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 
@@ -67,44 +68,44 @@ try {
 
 #if STRESS_TESTING
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 1>("Manual Testing", true), "fixpnt<4,1,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 2>("Manual Testing", true), "fixpnt<4,2,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 3>("Manual Testing", true), "fixpnt<4,3,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 4>("Manual Testing", true), "fixpnt<4,4,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 1>(true), "fixpnt<4,1,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 2>(true), "fixpnt<4,2,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 3>(true), "fixpnt<4,3,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 4>(true), "fixpnt<4,4,Modulo,uint8_t>", "subtraction");
 #endif
 
 #else
 
 	cout << "Fixed-point modular subtraction validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 1, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 2, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,2,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,3,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,4,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,5,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,2,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,3,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,4,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<5,5,Modulo,uint8_t>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 1, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 2, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,3,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,5,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 6, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,6,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 7, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,7,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 8, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,8,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,3,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,5,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,6,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,7,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,8,Modulo,uint8_t>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<9,3,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<9,5,Modulo,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 7, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<9,7,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<9,3,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<9,5,Modulo,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<9,7,Modulo,uint8_t>", "subtraction");
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(VerifyModuloAddition<13, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<13,0,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModuloAddition<13, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<13,5,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModuloAddition<13, 9, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<13,9,Modulo,uint8_t>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyModuloAddition<13, 12, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<13,12,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModuloAddition<13, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<13,0,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModuloAddition<13, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<13,5,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModuloAddition<13, 9, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<13,9,Modulo,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyModuloAddition<13, 12, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<13,12,Modulo,uint8_t>", "addition");
 
 #endif  // STRESS_TESTING
 

@@ -148,15 +148,16 @@ public:
 		return p;
 	}
 	// SELECTORS
-	inline bool isnar() const      { return (_bits == 0x80); }
-	inline bool iszero() const     { return (_bits == 0x00); }
-	inline bool isone() const      { return (_bits == 0x40); } // pattern 010000...
-	inline bool isminusone() const { return (_bits == 0xC0); } // pattern 110000...
-	inline bool isneg() const      { return (_bits & 0x80); }
+	inline bool sign() const       { return (_bits & 0x80u); }
+	inline bool isnar() const      { return (_bits == 0x80u); }
+	inline bool iszero() const     { return (_bits == 0x00u); }
+	inline bool isone() const      { return (_bits == 0x40u); } // pattern 010000...
+	inline bool isminusone() const { return (_bits == 0xC0u); } // pattern 110000...
+	inline bool isneg() const      { return (_bits & 0x80u); }
 	inline bool ispos() const      { return !isneg(); }
-	inline bool ispowerof2() const { return !(_bits & 0x1); }
+	inline bool ispowerof2() const { return !(_bits & 0x1u); }
 
-	inline int sign_value() const  { return (_bits & 0x80 ? -1 : 1); }
+	inline int sign_value() const  { return (_bits & 0x80u ? -1 : 1); }
 
 	bitblock<NBITS_IS_8> get() const { bitblock<NBITS_IS_8> bb; bb = int(_bits); return bb; }
 	unsigned long long encoding() const { return (unsigned long long)(_bits); }

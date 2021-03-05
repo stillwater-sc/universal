@@ -36,7 +36,7 @@
 
 #endif
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 // base class for fixed-point arithmetic exceptions
 struct fixpnt_arithmetic_exception
@@ -74,4 +74,4 @@ struct fixpnt_byte_index_out_of_bounds : public fixpnt_internal_exception {
 		: fixpnt_internal_exception(error) {}
 };
 
-}} // namespace sw::universal
+} // namespace sw::universal

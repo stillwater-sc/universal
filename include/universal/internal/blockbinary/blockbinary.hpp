@@ -257,13 +257,15 @@ public:
 			bitsToShift -= static_cast<int>(blockShift * bitsInBlock);
 			if (bitsToShift == 0) return *this;
 		}
-		// construct the mask for the upper bits in the block that need to move to the higher word
-		bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
-		for (size_t i = MSU; i > 0; --i) {
-			_block[i] <<= bitsToShift;
-			// mix in the bits from the right
-			bt bits = bt(mask & _block[i - 1]);
-			_block[i] |= (bits >> (bitsInBlock - bitsToShift));
+		if constexpr (MSU > 0) {
+			// construct the mask for the upper bits in the block that need to move to the higher word
+			bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
+			for (size_t i = MSU; i > 0; --i) {
+				_block[i] <<= bitsToShift;
+				// mix in the bits from the right
+				bt bits = bt(mask & _block[i - 1]);
+				_block[i] |= (bits >> (bitsInBlock - bitsToShift));
+			}
 		}
 		_block[0] <<= bitsToShift;
 		return *this;
@@ -307,14 +309,15 @@ public:
 				return *this;
 			}
 		}
-		//bt mask = 0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock);  // is that shift necessary?
-		bt mask = ALL_ONES;
-		mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
-		for (size_t i = 0; i < MSU; ++i) {  // TODO: can this be improved? we should not have to work on the upper blocks in case we block shifted
-			_block[i] >>= bitsToShift;
-			// mix in the bits from the left
-			bt bits = bt(mask & _block[i + 1]);
-			_block[i] |= (bits << (bitsInBlock - bitsToShift));
+		if constexpr (MSU > 0) {
+			bt mask = ALL_ONES;
+			mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
+			for (size_t i = 0; i < MSU; ++i) {  // TODO: can this be improved? we should not have to work on the upper blocks in case we block shifted
+				_block[i] >>= bitsToShift;
+				// mix in the bits from the left
+				bt bits = bt(mask & _block[i + 1]);
+				_block[i] |= (bits << (bitsInBlock - bitsToShift));
+			}
 		}
 		_block[MSU] >>= bitsToShift;
 
@@ -503,6 +506,7 @@ public:
 		return (lsb && tie) || (guard && !tie);
 	}
 	bool any(size_t msb) const {
+		msb = (msb > nbits - 1 ? nbits - 1 : msb);
 		size_t topBlock = msb / bitsInBlock;
 		bt mask = bt(ALL_ONES >> (bitsInBlock - 1 - (msb % bitsInBlock)));
 		for (size_t i = 0; i < topBlock; ++i) {
@@ -797,10 +801,10 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 
 		if (subtractand <= decimator) {
 			decimator -= subtractand;
-			result.set(i);
+			result.set(static_cast<size_t>(i));
 		}
 		else {
-			result.reset(i);
+			result.reset(static_cast<size_t>(i));
 		}
 		subtractand >>= 1;
 

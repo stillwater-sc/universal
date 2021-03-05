@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 #include <typeinfo>
@@ -100,10 +101,10 @@ inline sw::universal::blockbinary<2 * nbits + roundingBits, BlockType> unrounded
 
 		if (subtractand <= decimator) {
 			decimator -= subtractand;
-			quotient.set(i);
+			quotient.set(static_cast<size_t>(i));
 		}
 		else {
-			quotient.reset(i);
+			quotient.reset(static_cast<size_t>(i));
 		}
 		subtractand >>= 1;
 
@@ -169,11 +170,11 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 	{
 		cout << "multiplication trace\n";
 
-		blockbinary<2 * nbits> c = unrounded_mul(a.getbb(), b.getbb());
-		bool roundUp = c.roundingMode(rbits);
-		c >>= rbits;
-		if (roundUp) ++c;
-		fixpnt<nbits, rbits> result; result = c; // select the lower nbits of the result
+		blockbinary<2 * nbits> cc = unrounded_mul(a.getbb(), b.getbb());
+		bool roundUp = cc.roundingMode(rbits);
+		cc >>= rbits;
+		if (roundUp) ++cc;
+		fixpnt<nbits, rbits> result; result = cc; // select the lower nbits of the result
 		cout << "final result: " << result << endl;
 	}
 
@@ -248,19 +249,19 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<4, 1>(3.0f, 1.5f); 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modulo,uint8_t>", "division");
-	//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>("Manual Testing", true), "fixpnt<8,4,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", "division");
+	//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>(true), "fixpnt<8,4,Modulo,uint8_t>", "division");
 
 
 #if STRESS_TESTING
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,2,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,3,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,4,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2, Modulo, uint8_t>(true), "fixpnt<4,2,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3, Modulo, uint8_t>(true), "fixpnt<4,3,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4, Modulo, uint8_t>(true), "fixpnt<4,4,Modulo,uint8_t>", "division");
 
 #endif
 
@@ -270,15 +271,15 @@ try {
 
 	cout << "Fixed-point modular division validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,3,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,5,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 6, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,6,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 7, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,7,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 8, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,8,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,3,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,5,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,6,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,7,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,8,Modulo,uint8_t>", "division");
 
 #if STRESS_TESTING
 
