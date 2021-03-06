@@ -626,18 +626,31 @@ inline bool operator<=(const value<nfbits>& lhs, const value<nfbits>& rhs) { ret
 template<size_t nfbits>
 inline bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator< (lhs, rhs); }
 
+template<size_t nbits>
+inline std::string to_binary(const bitblock<nbits>& a, bool nibbleMarker = true) {
+	std::stringstream s;
+	s << 'b';
+	for (int i = int(nbits - 1); i >= 0; --i) {
+		s << (a[i] ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	}
+	return s.str();
+}
 template<size_t fbits>
 inline std::string to_triple(const value<fbits>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
-		s << "(+,0," << std::setw(fbits) << v.fraction() << ')';
+		s << "(+, 0," << std::setw(fbits) << v.fraction() << ')';
 		return s.str();
 	}
 	else if (v.isinf()) {
 		s << "(inf," << std::setw(fbits) << v.fraction() << ')';
 		return s.str();
 	}
-	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ')';
+	s << (v.sign() ? "(-, " : "(+, ");
+	s << v.scale() << ", ";
+	s << to_binary(v.fraction(), true) << ')';
+//	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ')';
 	return s.str();
 }
 

@@ -825,13 +825,13 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 // create a binary representation of the storage
 template<size_t nbits, typename bt>
 std::string to_binary(const blockbinary<nbits, bt>& number, bool nibbleMarker = false) {
-	std::stringstream ss;
-	ss << 'b';
+	std::stringstream s;
+	s << 'b';
 	for (int i = int(nbits - 1); i >= 0; --i) {
-		ss << (number.at(size_t(i)) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) ss << '\'';
+		s << (number.at(size_t(i)) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 	}
-	return ss.str();
+	return s.str();
 }
 
 // local helper to display the contents of a byte array
