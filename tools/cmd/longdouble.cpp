@@ -27,7 +27,7 @@ try {
 	long double q = atof(argv[1]);
 	value<fbits> v(q);
 
-	cout << "long double: " << setprecision(max_digits10) << q << " " << components(v) << endl;
+	cout << "long double: " << setprecision(max_digits10) << q << " " << to_triple(v) << endl;
 	return EXIT_SUCCESS;
 }
 catch (const char* const msg) {

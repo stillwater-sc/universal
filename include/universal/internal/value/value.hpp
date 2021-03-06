@@ -627,7 +627,7 @@ template<size_t nfbits>
 inline bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator< (lhs, rhs); }
 
 template<size_t fbits>
-inline std::string components(const value<fbits>& v) {
+inline std::string to_triple(const value<fbits>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
 		s << "(+,0," << std::setw(fbits) << v.fraction() << ')';
@@ -833,7 +833,7 @@ void module_subtract_BROKEN(const value<fbits>& lhs, const value<fbits>& rhs, va
 template<size_t fbits, size_t mbits>
 void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbits>& result) {
 	static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
-	if (_trace_value_mul) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
+	if (_trace_value_mul) std::cout << "lhs  " << to_triple(lhs) << std::endl << "rhs  " << to_triple(rhs) << std::endl;
 
 	if (lhs.isinf() || rhs.isinf()) {
 		result.setinf();
@@ -876,7 +876,7 @@ void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbi
 template<size_t fbits, size_t divbits>
 void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbits>& result) {
 	static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
-	if (_trace_value_div) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
+	if (_trace_value_div) std::cout << "lhs  " << to_triple(lhs) << std::endl << "rhs  " << to_triple(rhs) << std::endl;
 
 	if (lhs.isinf() || rhs.isinf()) {
 		result.setinf();

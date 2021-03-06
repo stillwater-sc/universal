@@ -272,7 +272,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	//bool sign = v.sign();
 	int scale = v.scale();
 	bitblock<nrfbits> bits = v.fraction();
-	cout << v << " = " << components(v) << endl;
+	cout << v << " = " << to_triple(v) << endl;
 
 	float minpos = (float)minpos_value<nbits, es>();
 	float maxpos = (float)maxpos_value<nbits, es>();
@@ -608,9 +608,9 @@ void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
 	internal::value<23> v_mineps(f_mineps);
 	internal::value<23> v(f);
 	internal::value<23> v_pluseps(f_pluseps);
-	cout << roundingType << " mean - eps: " << f_mineps  << " " << components(v_mineps) << endl;
-	cout << roundingType << " mean      : " << f         << " " << components(v) << endl;
-	cout << roundingType << " mean + eps: " << f_pluseps << " " << components(v_pluseps) << endl;
+	cout << roundingType << " mean - eps: " << f_mineps  << " " << to_triple(v_mineps) << endl;
+	cout << roundingType << " mean      : " << f         << " " << to_triple(v) << endl;
+	cout << roundingType << " mean + eps: " << f_pluseps << " " << to_triple(v_pluseps) << endl;
 	convert_to_posit<nbits, es>(f_mineps, bPrintIntermediateSteps);
 	posit_component_conversion<nbits, es>(f_mineps, bPrintIntermediateSteps);
 	convert_to_posit<nbits, es>(f, bPrintIntermediateSteps);

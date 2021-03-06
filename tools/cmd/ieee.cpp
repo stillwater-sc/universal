@@ -133,9 +133,9 @@ try {
 
 	cout << "Scientific triple representation (sign, scale, fraction):\n";
 	cout << "input value: " << setprecision(f_prec) << setw(width) << argv[1] << '\n';
-	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    triple: " << components(vf) << '\n';
-	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    triple: " << components(vd) << '\n';
-	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    triple: " << components(vq) << '\n';
+	cout << "      float: " << setprecision(f_prec) << setw(width) << f << "    triple: " << to_triple(vf) << '\n';
+	cout << "     double: " << setprecision(d_prec) << setw(width) << d << "    triple: " << to_triple(vd) << '\n';
+	cout << "long double: " << setprecision(q_prec) << setw(width) << q << "    triple: " << to_triple(vq) << '\n';
 	// TODO: implement a parse for that value to represent exactly
 	cout << "      exact: " << "TBD" << '\n';
 

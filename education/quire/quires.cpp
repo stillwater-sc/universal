@@ -119,11 +119,11 @@ try {
 		long double dmax = sw::universal::maxpos_value<nbits, es>();
 		maxpos = dmax;
 		maxpos_squared = dmax*dmax;
-		std::cout << "maxpos * maxpos = " << components(maxpos_squared) << std::endl;
+		std::cout << "maxpos * maxpos = " << to_triple(maxpos_squared) << std::endl;
 		long double dmin = sw::universal::minpos_value<nbits, es>();
 		minpos = dmin;
 		minpos_squared = dmin*dmin;
-		std::cout << "minpos * minpos = " << components(minpos_squared) << std::endl;
+		std::cout << "minpos * minpos = " << to_triple(minpos_squared) << std::endl;
 		internal::value<5> c(maxpos_squared);
 
 		std::cout << "Add/Subtract propagating carry/borrows to and from capacity segment" << std::endl;
@@ -164,7 +164,7 @@ try {
 
 		std::cout << "Add/Subtract propagating carry/borrows across lower/upper accumulators" << std::endl;
 		q.clear();  // equivalent to q = 0, but more articulate/informative
-		v = 3.875 + 0.0625; std::cout << "v " << components(v) << std::endl; // the input value is 11.1111 so hidden + 5 fraction bits
+		v = 3.875 + 0.0625; std::cout << "v " << to_triple(v) << std::endl; // the input value is 11.1111 so hidden + 5 fraction bits
 		q += v;		std::cout << q << std::endl;
 		q += v;		std::cout << q << std::endl;
 		q += v;		std::cout << q << std::endl;

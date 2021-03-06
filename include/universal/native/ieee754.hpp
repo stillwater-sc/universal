@@ -991,8 +991,8 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 /// <returns>binary scale</returns>
 inline int scale(float v) {
 	int exponent{ 0 };
-	float f = frexpf(v, &exponent);
-	if (f == 0.0f) exponent = 0;
+	float frac = frexpf(v, &exponent);
+	if (frac == 0.0f) exponent = 0;
 	return exponent;
 }
 /// <summary>
@@ -1002,7 +1002,8 @@ inline int scale(float v) {
 /// <returns>binary scale</returns>
 inline int scale(double v) {
 	int exponent{ 0 };
-	frexp(v, &exponent); // C6031: return value ignored
+	double frac = frexp(v, &exponent);
+	if (frac == 0.0) exponent = 0;
 	return exponent;
 }
 /// <summary>
@@ -1012,7 +1013,8 @@ inline int scale(double v) {
 /// <returns>binary scale</returns>
 inline int scale(long double v) {
 	int exponent{ 0 };
-	frexpl(v, &exponent);
+	long double frac = frexpl(v, &exponent);
+	if (frac == 0.0l) exponent = 0;
 	return exponent;
 }
 
