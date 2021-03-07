@@ -36,34 +36,48 @@ try {
 	// generate individual testcases to hand trace/debug
 
 	{
-		internal::value<8> a,b;
+		constexpr size_t fbits = 7;
+		constexpr size_t fhbits = fbits + 1;
+		constexpr size_t abits = fhbits + 3;
+		constexpr size_t sumbits = abits + 1;
+		internal::value<fbits> a,b;
 		a = 1.0f;
 		b = 1.0f;
 		cout << to_triple(a) << " : " << a << '\n';
 		cout << to_triple(b) << " : " << b << '\n';
 		// add is adding 3 bits to the mantissa to 
 		// have all rounding bits available after alignment
-		internal::value<13> c;
-		internal::module_add<8,12>(a, b, c);
+		internal::value<sumbits> c;
+		internal::module_add<fbits, abits>(a, b, c);  // this API is too confusing: caused by the <abits + 1> argument
 		cout << to_triple(c) << " : " << c << '\n';
 	}
+
+	// blocktriple stores the significant as you need the hidden bit in any
+	// arithmetic operators.
+
+	// to support the quire (Kulisch superaccumulator):
+	// - operators add/sub/mul need to produce unrounded results
+	// - oprarators div/sqrt are rounded as part of the conversion iteration
+	
+	// for a significant of nbits, the add/sub input size is nbits + 3
+	// The extra 3 bits, are the guard, round, and stick bits that need
+	// to come into play to correctly round add/sub as operand alignment
+	// shifts information into these bits.
+	// The output of the add/sub is nbits + 3 + 1 representing the unrounded result.
 	{
-		blocktriple<8> a,b;
+		constexpr size_t nbits = 8;  // hidden + fraction bits
+		constexpr size_t abits = nbits + 3;
+		constexpr size_t sumbits = abits + 1;
+		blocktriple<nbits> a,b;
 		a = 1.0f;
 		b = 1.0f;
 		cout << to_triple(a) << " : " << a << '\n';
 		cout << to_triple(b) << " : " << b << '\n';
-		// with blocktriple we hide the internals
-		// and present an unrounded external interface
-		// But how could you do that if the guard/round/sticky
-		// bits are required for proper rounding?
-		blocktriple<9> c;
+		// blocktriple presents an unrounded external interface for add/sub
+		blocktriple<sumbits> c;
 		module_add(a, b, c);
 		cout << to_triple(c) << " : " << c << '\n';
 	}
-
-
-
 
 #if STRESS_TESTING
 

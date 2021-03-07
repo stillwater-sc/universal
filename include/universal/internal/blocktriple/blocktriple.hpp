@@ -325,6 +325,7 @@ public:
 		_scale = scale;
 		_significant = significant;
 	}
+	constexpr void setpos() noexcept { _sign = false; }
 
 	// selectors
 	inline constexpr bool isnan()       const noexcept { return _nan; }
@@ -345,12 +346,15 @@ public:
 	explicit operator double()      const noexcept { return to_double(); }
 	explicit operator long double() const noexcept { return to_long_double(); }
 
-	void alignSignificant(int alignmentShift) {
-		if (fhbits + alignmentShift >= abits) {
-			std::cerr << "alignmentShift is too large\n";
-			return;
+	template<size_t targetBits>
+	blockbinary<targetBits, bt> alignSignificant(int alignmentShift) {
+		blockbinary<targetBits, bt> v(_significant);
+		if (fhbits + alignmentShift >= targetBits) {
+			std::cerr << "alignmentShift " << alignmentShift << " is too large (>" << targetBits << ")\n";
+			v.clear();
+			return v;
 		}
-		_significant <<= alignmentShift;
+		return v <<= alignmentShift;
 	}
 
 #ifdef NEVER
@@ -535,7 +539,6 @@ inline bool operator< (const blocktriple<sbits, bt>& lhs, const blocktriple<sbit
 			}
 		}
 	}
-	return false;
 }
 
 template<size_t sbits, typename bt>
@@ -545,6 +548,8 @@ inline bool operator<=(const blocktriple<sbits, bt>& lhs, const blocktriple<sbit
 template<size_t sbits, typename bt>
 inline bool operator>=(const blocktriple<sbits, bt>& lhs, const blocktriple<sbits, bt>& rhs) { return !operator< (lhs, rhs); }
 
+
+////////////////////////////////// string conversion functions //////////////////////////////
 
 template<size_t nbits, typename bt>
 std::string to_binary(const sw::universal::blocktriple<nbits, bt>& a, bool bNibbleMarker = true) {
@@ -560,10 +565,16 @@ std::string to_triple(const blocktriple<nbits, bt>& a, bool bNibbleMarker = true
 	return s.str();
 }
 
+template<size_t nbits, typename bt>
+blocktriple<nbits, bt> abs(const blocktriple<nbits, bt>& a) {
+	blocktriple<nbits, bt> absolute(a);
+	absolute.setpos();
+	return absolute;
+}
 // add two values with fbits fraction bits, expand them to abits, and return the abits+1 result value
 // break encapsulation to avoid copies.
-template<size_t abits, typename bt>
-void module_add(blocktriple<abits, bt>& lhs, blocktriple<abits,bt>& rhs, blocktriple<abits + 1, bt>& result) {
+template<size_t nbits, size_t sumbits, typename bt>
+void module_add(blocktriple<nbits, bt>& lhs, blocktriple<nbits,bt>& rhs, blocktriple<sumbits, bt>& result) {
 	// with sign/magnitude adders it is customary to organize the computation 
 	// along the four quadrants of sign combinations
 	//  + + = +
@@ -577,10 +588,9 @@ void module_add(blocktriple<abits, bt>& lhs, blocktriple<abits,bt>& rhs, blocktr
 	int rhs_scale = rhs.scale();
 	int scale_of_result = std::max(lhs_scale, rhs_scale);
 
-#ifdef LATER
-	// align the significants
-	lhs.alignSignificant(lhs_scale - scale_of_result);
-	rhs.alignSignificant(rhs_scale - scale_of_result);
+	// align the significants and add a leading 0 bit so that we can transform to a 2's complement encoding
+	blockbinary<sumbits, bt> r1 = lhs.alignSignificant<sumbits>(lhs_scale - scale_of_result + 3);
+	blockbinary<sumbits, bt> r2 = rhs.alignSignificant<sumbits>(rhs_scale - scale_of_result + 3);
 	bool r1_sign = lhs.sign(), r2_sign = rhs.sign();
 	bool signs_are_different = r1_sign != r2_sign;
 
@@ -588,7 +598,7 @@ void module_add(blocktriple<abits, bt>& lhs, blocktriple<abits,bt>& rhs, blocktr
 		std::swap(r1, r2);
 		std::swap(r1_sign, r2_sign);
 	}
-
+#ifdef LATER
 //	if (signs_are_different) r2 = twos_complement(r2);
 
 //	if (_trace_btriple_add) {

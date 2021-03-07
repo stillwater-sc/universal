@@ -358,7 +358,8 @@ public:
 	inline bool sign() const { return _sign; }
 	inline int scale() const { return _scale; }
 	bitblock<fbits> fraction() const { return _fraction; }
-	/// Normalized shift (e.g., for addition).
+
+	// Normalized shift (e.g., for addition).
 	template <size_t Size>
 	bitblock<Size> nshift(int shift) const {
 	bitblock<Size> number;
@@ -381,9 +382,9 @@ public:
 			number[0] = true;
 			return number;
 		}
-		number[size_t(hpos)] = true;                   // hidden bit now safely set
+		number[size_t(hpos)] = true; // hidden bit now safely set
 
-											   // Copy fraction bits into certain part
+		// Copy fraction bits into certain part
 		for (int npos = hpos - 1, fpos = int(fbits) - 1; npos > 0 && fpos >= 0; --npos, --fpos)
 			number[size_t(npos)] = _fraction[size_t(fpos)];
 
@@ -417,9 +418,10 @@ public:
 		return v;
 	}
 	int sign_value() const { return (_sign ? -1 : 1); }
-	long double scale_value() const {
-		if (_zero) return (long double)(0.0);
-		return std::pow((long double)2.0, (long double)_scale);
+	template<typename Ty = double>
+	Ty scale_value() const {
+		if (_zero) return Ty(0.0);
+		return std::pow(Ty(2.0), Ty(_scale));
 	}
 	template<typename Ty = double>
 	Ty fraction_value() const {
@@ -433,16 +435,19 @@ public:
 		}
 		return v;
 	}
+
+	// conversion helpers
 	long double to_long_double() const {
-		return sign_value() * scale_value() * fraction_value<long double>();
+		return sign_value() * scale_value<long double>() * fraction_value<long double>();
 	}
 	double to_double() const {
-		return sign_value() * scale_value() * fraction_value<double>();
+		return sign_value() * scale_value<double>() * fraction_value<double>();
 	}
 	float to_float() const {
-		return float(sign_value() * scale_value() * fraction_value<float>());
+		return sign_value() * scale_value<float>() * fraction_value<float>();
 	}
-	// Maybe remove explicit
+
+	// explicit conversion operators to native types
 	explicit operator long double() const { return to_long_double(); }
 	explicit operator double() const { return to_double(); }
 	explicit operator float() const { return to_float(); }
@@ -462,14 +467,15 @@ public:
 				_fraction[t] = src_fraction[s];
 		}
 	}
+	// round to a target size number of bits using round-to-nearest round-to-even-on-tie
 	template<size_t tgt_size>
 	value<tgt_size> round_to() {
 		bitblock<tgt_size> rounded_fraction;
 		if (tgt_size == 0) {
 			bool round_up = false;
 			if (fbits >= 2) {
-				bool blast = _fraction[int(fbits) - 1];
-				bool sb = anyAfter(_fraction, int(fbits) - 2);
+				bool blast = _fraction[fbits - 1ull];
+				bool sb = anyAfter(_fraction, static_cast<int>(fbits) - 2);
 				if (blast && sb) round_up = true;
 			}
 			else if (fbits == 1) {
@@ -483,23 +489,24 @@ public:
 					int rb = int(tgt_size) - 1;
 					int lb = int(fbits) - int(tgt_size) - 1;
 					for (int i = int(fbits) - 1; i > lb; i--, rb--) {
-						rounded_fraction[rb] = _fraction[i];
+						rounded_fraction[static_cast<size_t>(rb)] = _fraction[static_cast<size_t>(i)];
 					}
-					bool blast = _fraction[lb];
+					bool blast = _fraction[static_cast<size_t>(lb)];
 					bool sb = false;
 					if (lb > 0) sb = anyAfter(_fraction, lb-1);
-					if (blast || sb) rounded_fraction[0] = true;
+					if (blast || sb) rounded_fraction[0ull] = true;
 				}
 				else {
 					int rb = int(tgt_size) - 1;
 					for (int i = int(fbits) - 1; i >= 0; i--, rb--) {
-						rounded_fraction[rb] = _fraction[i];
+						rounded_fraction[static_cast<size_t>(rb)] = _fraction[static_cast<size_t>(i)];
 					}
 				}
 			}
 		}
 		return value<tgt_size>(_sign, _scale, rounded_fraction, _zero, _inf);
 	}
+
 private:
 	bool                _sign;
 	int                 _scale;
@@ -631,7 +638,7 @@ inline std::string to_binary(const bitblock<nbits>& a, bool nibbleMarker = true)
 	std::stringstream s;
 	s << 'b';
 	for (int i = int(nbits - 1); i >= 0; --i) {
-		s << (a[i] ? '1' : '0');
+		s << (a[static_cast<size_t>(i)] ? '1' : '0');
 		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 	}
 	return s.str();

@@ -3,7 +3,11 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#include <universal/internal/bitblock/bitblock.hpp> // TODO: remove: should not have an internal type in the public interface
+#include <universal/utility/directives.hpp>
+// as we are using the raw include, we need to 
+// setup the conditional compilation flags
+#define VALUE_THROW_ARITHMETIC_EXCEPTION 0
+#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/internal/value/value.hpp>
 #include <universal/performance/number_system.hpp>
 
@@ -15,6 +19,8 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 	using namespace sw::universal::internal;
+
+	if (argc > 1) for (int i = 0; i < argc; ++i) std::cout << argv[i] << ' ';
 
 	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
