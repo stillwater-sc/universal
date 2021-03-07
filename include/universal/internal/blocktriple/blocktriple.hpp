@@ -354,7 +354,6 @@ public:
 
 	template<size_t targetBits>
 	blockbinary<targetBits, bt> alignSignificant(int alignmentShift) const {
-		constexpr bool signExtend = false; // do not sign-extend the number as significants lead with the hidden bit, which is not a sign bit
 		blockbinary<targetBits, bt> v;
 		v.assignWithoutSignExtend(_significant);
 		if (fhbits + static_cast<size_t>(alignmentShift) >= targetBits) {
@@ -588,8 +587,8 @@ void module_add(const blocktriple<nbits, bt>& lhs, const blocktriple<nbits,bt>& 
 
 	// align the significants and add a leading 0 bit so that we can 
 	// transform to a 2's complement encoding for negative numbers
-	blockbinary<sumbits, bt> r1 = lhs.alignSignificant<sumbits>(lhs_scale - scale_of_result + 3);
-	blockbinary<sumbits, bt> r2 = rhs.alignSignificant<sumbits>(rhs_scale - scale_of_result + 3);
+	blockbinary<sumbits, bt> r1 = lhs.template alignSignificant<sumbits>(lhs_scale - scale_of_result + 3);
+	blockbinary<sumbits, bt> r2 = rhs.template alignSignificant<sumbits>(rhs_scale - scale_of_result + 3);
 
 	if (lhs.isneg()) r1 = twosComplement(r1);
 	if (rhs.isneg()) r2 = twosComplement(r2);
