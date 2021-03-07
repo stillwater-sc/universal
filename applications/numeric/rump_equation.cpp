@@ -197,10 +197,6 @@ There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#
 		"posit80",
 		"posit128",
 		"posit156",
-		"integer96",
-		"integer112",
-		"integer128",
-		"integer256",
 		"bfloat16",
 		"bfloat32",
 		"bfloat64",
@@ -227,10 +223,7 @@ There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#
 	GenerateRow<posit<80, 2>>(a, b, table, 8);
 	GenerateRow<posit<128, 2>>(a, b, table, 9);
 	GenerateRow<posit<156, 2>>(a, b, table, 10);
-	GenerateRow<integer<96,uint32_t>>(a, b, table, 11);
-	GenerateRow<integer<112, uint32_t>>(a, b, table, 12);
-	GenerateRow<integer<128, uint32_t>>(a, b, table, 13);
-	GenerateRow<integer<256, uint32_t>>(a, b, table, 14);
+
 	// print the table
 	constexpr size_t COLUMN_WIDTH = 20;
 	cout << setw(COLUMN_WIDTH) << "type" << "  |  ";
@@ -238,7 +231,7 @@ There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#
 		cout << setw(COLUMN_WIDTH) << column[j] << "  |  ";
 	}
 	cout << '\n';
-	for (size_t i; i < size(rowLbls); ++i) {
+	for (size_t i = 0; i < size(rowLbls); ++i) {
 		cout << setw(COLUMN_WIDTH) << rowLbls[i] << "  |  ";
 		for (size_t j = 0; j < 3; ++j) {
 			cout << setw(COLUMN_WIDTH) << table(i, j) << "  |  ";
@@ -251,8 +244,6 @@ There are a couple fpbench versions of it:  https://fpbench.org/benchmarks.html#
 	// trace out the original Rump equation with different number systems
 	TraceRump1<double>(a, b);
 	TraceRump1<posit<156,2>>(a, b);
-	TraceRump1<integer<256, uint32_t>>(a, b);
-	TraceRump1<decimal>(a, b);                      // TODO: some serious errors here
 
 	return EXIT_SUCCESS;
 }
