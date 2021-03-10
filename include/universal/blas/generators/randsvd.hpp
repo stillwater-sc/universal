@@ -3,6 +3,7 @@
 #include<algorithm>
 #include<vector>
 #include<tuple>
+#include<universal/blas/operators.hpp>
 #include<universal/blas/matrix.hpp>
 #include<mtl/operation/qr.hpp>
 #include<mtl/operation/svd.hpp>
@@ -40,7 +41,9 @@ namespace sw {
             }
             template<typename Scalar>
             void qr(const matrix<Scalar> A, matrix<Scalar> Q, matrix<Scalar> R) {
-            		
+            	//R is the upper triangular matrix
+            	//Q is the orthogonal matrix
+            	
             }
             
             template<typename Scalar>
@@ -53,7 +56,7 @@ namespace sw {
                 Y = A * omega;
                 tie(Q, R) = qr(Y);
                 //implement qr decomposition & svd here
-                Q = transpose();
+                Q.transpose();
                 B = Q * A;
                 std::tie(S, V, D) = svd(B,k);
 
