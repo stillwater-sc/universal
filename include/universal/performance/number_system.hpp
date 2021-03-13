@@ -10,47 +10,28 @@
 #include <random>
 #include <limits>
 #include <chrono>
+#include <universal/native/ieee754.hpp>
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 	// standardized structure to hold performance measurement results
 	// 
 	struct OperatorPerformance {
 		OperatorPerformance() : intconvert(0), ieeeconvert(0), prefix(0), postfix(0), neg(0), add(0), sub(0), mul(0), div(0), sqrt(0) {}
-		float intconvert;
-		float ieeeconvert;
-		float prefix;
-		float postfix;
-		float neg;
-		float add;
-		float sub;
-		float mul;
-		float div;
-		float sqrt;
+		double intconvert;
+		double ieeeconvert;
+		double prefix;
+		double postfix;
+		double neg;
+		double add;
+		double sub;
+		double mul;
+		double div;
+		double sqrt;
 	};
 
-	template<typename Ty>
-	std::string to_scientific(Ty value) {
-		const char* scales[] = { "", "K", "M", "G", "T" };
-		Ty lower_bound = Ty(1);
-		Ty scale_factor = 1.0;
-		int integer_value = 0;
-		int scale = 0;
-		for (unsigned i = 0; i < sizeof(scales); ++i) {
-			if (value > lower_bound && value < 1000 * lower_bound) {
-				integer_value = int(value / scale_factor);
-				scale = i;
-				break;
-			}
-			lower_bound *= 1000;
-			scale_factor *= 1000.0;
-		}
-		std::stringstream ss;
-		ss << std::setw(3) << std::right << integer_value << ' ' << scales[scale];
-		return ss.str();
-	}
 	static constexpr int NR_TEST_CASES = 100000;
-	static constexpr unsigned FLOAT_TABLE_WIDTH = 15;
+	static constexpr size_t FLOAT_TABLE_WIDTH = 15;
 
 	template<typename Scalar>
 	std::string ReportPerformance(const Scalar& number, OperatorPerformance &perf) {
@@ -332,70 +313,70 @@ namespace sw { namespace universal {
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
-		report.intconvert = float((positives + negatives) / elapsed);
+		report.intconvert = (double(positives) + double(negatives)) / elapsed;
 
 		begin = steady_clock::now();
 			MeasureIeeeConversionPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
-		report.ieeeconvert = float((positives + negatives) / elapsed);
+		report.ieeeconvert = (double(positives) + double(negatives)) / elapsed;
 
 		begin = steady_clock::now();
 		    MeasurePrefixPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
-		report.prefix = float((positives + negatives) / elapsed);
+		report.prefix = (double(positives) + double(negatives)) / elapsed;
 
 		begin = steady_clock::now();
 		    MeasurePostfixPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
-		report.postfix = float((positives + negatives) / elapsed);
+		report.postfix = (double(positives) + double(negatives)) / elapsed;
 
 		begin = steady_clock::now();
 		    MeasureNegationPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
-		report.neg = float((positives + negatives) / elapsed);
+		report.neg = (double(positives) + double(negatives)) / elapsed;
 
 		begin = steady_clock::now();
 		    MeasureSqrtPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
-		report.sqrt = float((positives + negatives) / elapsed);
+		report.sqrt = (double(positives) + double(negatives)) / elapsed;
 
 		begin = steady_clock::now();
 		    MeasureAdditionPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
-		report.add = float((positives + negatives) / elapsed);
+		report.add = (double(positives) + double(negatives)) / elapsed;
 
 		begin = steady_clock::now();
 		    MeasureSubtractionPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
-		report.sub = float((positives + negatives) / elapsed);
+		report.sub = (double(positives) + double(negatives)) / elapsed;
 
 		begin = steady_clock::now();
 		    MeasureMultiplicationPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
-		report.mul = float((positives + negatives) / elapsed);
+		report.mul = (double(positives) + double(negatives)) / elapsed;
 
 		begin = steady_clock::now();
 		    MeasureDivisionPerformance(number, positives, negatives);
 		end = steady_clock::now();
 		time_span = duration_cast<duration<double>>(end - begin);
 		elapsed = time_span.count();
-		report.div = float((positives + negatives) / elapsed);
+		report.div = (double(positives) + double(negatives)) / elapsed;
 	}
 
-}} // namespace sw::universal
+} // namespace sw::universal

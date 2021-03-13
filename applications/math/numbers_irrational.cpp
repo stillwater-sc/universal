@@ -32,7 +32,7 @@ Ty PhiThroughFibonacciSequence(unsigned terms) {
 template<typename Ty>
 void GoldenRatioTerms(unsigned terms) {
 	auto p = sw::sequences::GoldenRatio<Ty>(terms);
-	std::cout << p.first << " " << p.second << std::endl;
+	std::cout << p.first << " " << p.second << " : approximation to phi " << 1.0 + p.first / p. second << std::endl;
 }
 
 int main(int argc, char** argv)
@@ -62,8 +62,23 @@ try {
 	
 	GoldenRatioTerms<sw::universal::integer<256>>(100);
 	GoldenRatioTerms<sw::universal::posit<128,4>>(100);
-	GoldenRatioTerms<sw::universal::posit<256,5>>(100);
-	GoldenRatioTerms<sw::universal::posit<512,6>>(100);
+	// why are we not seeing an improvement in the approximation for Fib pair for increasing n?
+	GoldenRatioTerms<sw::universal::posit<256,5>>(200);
+	GoldenRatioTerms<sw::universal::posit<512,6>>(300);
+
+	cout << "\n\nEnumerating increasingly accurate approximations\n";
+	using int256 = sw::universal::integer<256>;
+	streamsize precision = cout.precision();
+	for (unsigned i = 40; i < 50; i++) {
+		auto p = sw::sequences::GoldenRatio<int256>(i);
+		cout << "Using " << p.first << " " << p.second << endl;
+		cout << "approximation to golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< float >(i) << endl;
+		cout << "approximation to golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< double >(i) << endl;
+		cout << "approximation to golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< posit<32, 2> >(i) << endl;
+		cout << "approximation to golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< posit<64, 3> >(i) << endl;
+		cout << "approximation to golden ratio: " << setprecision(27) << PhiThroughFibonacciSequence< posit<128, 4> >(i) << endl;
+	}
+	cout << setprecision(precision);
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

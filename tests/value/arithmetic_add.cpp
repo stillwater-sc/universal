@@ -41,7 +41,7 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 							ref = dsum;
 							if (sum != ref) {
 								++nrOfFailedTestCases;
-								if (bReportIndividualTestCases)	std::cout << components(sum) << " != " << components(ref) << std::endl;
+								if (bReportIndividualTestCases)	std::cout << to_triple(sum) << " != " << to_triple(ref) << std::endl;
 								if (nrOfFailedTestCases > 25) return nrOfFailedTestCases;
 								std::cout << a << " + " << b << " = " << sum << " vs " << ref << std::endl;
 							}
@@ -53,7 +53,7 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 							ref = dsum;
 							if (sum != ref) {
 								++nrOfFailedTestCases;
-								if (bReportIndividualTestCases)	std::cout << components(sum) << " != " << components(ref) << std::endl;
+								if (bReportIndividualTestCases)	std::cout << to_triple(sum) << " != " << to_triple(ref) << std::endl;
 								if (nrOfFailedTestCases > 25) return nrOfFailedTestCases;
 								std::cout << a << " + " << b << " = " << sum << " vs " << ref << std::endl;
 							}

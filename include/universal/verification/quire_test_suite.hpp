@@ -115,11 +115,11 @@ void GenerateValueAssignments() {
 			double in = double(v);
 			double out = (double)r;
 			if (std::abs(in - out) > 0.0000001) {
-				std::cerr << "quire value conversion failed: " << components(v) << " != " << components(r) << std::endl;
+				std::cerr << "quire value conversion failed: " << to_triple(v) << " != " << to_triple(r) << std::endl;
 			}
 		}
 		catch (const quire_exception& err) {
-			std::cerr << "Caught the exception: " << err.what() << ". RHS was " << v << " " << components(v) << std::endl;
+			std::cerr << "Caught the exception: " << err.what() << ". RHS was " << v << " " << to_triple(v) << std::endl;
 		}
 		catch (...) {
 			std::cerr << "Why can't I catch quire_exception type?\n";

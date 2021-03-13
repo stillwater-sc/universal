@@ -32,11 +32,13 @@ public:
 	long double value() const { 
 		long double v = 0.0l;
 		if (_Bits.none()) return v;
-		long double scale = 0.5l;
-		for (int i = int(fbits) - 1; i >= 0; i--) {
-			if (_Bits.test(size_t(i))) v += scale;
-			scale *= 0.5l;
-			if (scale == 0.0l) break;
+		if constexpr (fbits > 0) {
+			long double scale = 0.5l;
+			for (int i = int(fbits) - 1; i >= 0; i--) {
+				if (_Bits.test(size_t(i))) v += scale;
+				scale *= 0.5l;
+				if (scale == 0.0l) break;
+			}
 		}
 		return v;
 	}

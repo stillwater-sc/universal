@@ -78,8 +78,8 @@ bool twosComplementLessThan(const bitblock<nbits>& lhs, const bitblock<nbits>& r
 template<size_t nbits>
 bool operator==(const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	// compare remaining bits
-	for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-		if (lhs[size_t(i)] != rhs[size_t(i)]) return false;
+	if constexpr (nbits > 0) {
+		for (size_t i = 0; i < nbits; ++i) if (lhs[i] != rhs[i]) return false;
 	}
 	// numbers are equal
 	return true;
@@ -97,7 +97,7 @@ bool operator< (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	return false;
 }
 
-// this comparison is for unsigned numbers only
+// test less than or equal for unsigned numbers only
 template<size_t nbits>
 bool operator<= (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	// compare remaining bits
@@ -109,13 +109,15 @@ bool operator<= (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	return true;
 }
 
-// this comparison is for unsigned numbers only
+// test greater than for unsigned numbers only
 template<size_t nbits>
 bool operator> (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	// compare remaining bits
-	for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-		if (lhs[size_t(i)] == 0 && rhs[size_t(i)] == 1)	return false;
-		if (lhs[size_t(i)] == 1 && rhs[size_t(i)] == 0) return true;
+	if constexpr (nbits > 0) {
+		for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
+			if (lhs[size_t(i)] == 0 && rhs[size_t(i)] == 1)	return false;
+			if (lhs[size_t(i)] == 1 && rhs[size_t(i)] == 0) return true;
+		}
 	}
 	// numbers are equal
 	return false;

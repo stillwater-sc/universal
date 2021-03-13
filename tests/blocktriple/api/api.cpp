@@ -46,19 +46,24 @@ try {
 		cout << to_binary(c) << " : " << to_triple(c) << " : " << c << '\n';
 	}
 	{
-		blockbinary<16, uint8_t> bba, bbb;
-		blocktriple<16, uint8_t> a, b;
+		constexpr size_t fbits = 7;
+		constexpr size_t fhbits = fbits + 1;
+		constexpr size_t abits = fhbits + 3;
+		constexpr size_t sumbits = abits + 1;
+
+		blocktriple<fhbits, uint8_t> a, b;
 		//blocktriple<8, uint8_t> sum;
+		blockbinary<fhbits, uint8_t> bba, bbb;
 		bba.set_raw_bits(0xAAAAu);
 		a.set(false, 7, bba);
 		cout << to_triple(a) << " : " << a << '\n';
-		bbb.set_raw_bits(0xAAAAu);
+		b.set_raw_bits(0xAAAAu);
 		b.set(false, 8, bbb);
 		cout << to_triple(b) << " : " << b << '\n';
 		int aScale = a.scale();
 		int bScale = b.scale();
 		int maxScale = (aScale > bScale ? aScale : bScale);
-		a.alignSignificant(aScale - maxScale);
+		blockbinary<sumbits, uint8_t> r1 = a.alignSignificant<sumbits>(aScale - maxScale + 3);
 		cout << to_triple(a) << " : " << a << '\n';  // at this point the scale is off
 	}
 	{

@@ -27,7 +27,7 @@ try {
 	float f = float(atof(argv[1]));
 	value<fbits> v(f);
 
-	cout << "float: " << setprecision(max_digits10) << f << " " << components(v) << endl;
+	cout << "float: " << setprecision(max_digits10) << f << " " << to_triple(v) << endl;
 	return EXIT_SUCCESS;
 }
 catch (const char* const msg) {

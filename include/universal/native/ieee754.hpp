@@ -106,6 +106,26 @@ union double_decoder {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // native single precision IEEE floating point
 
+template<typename Ty>
+std::string to_scientific(Ty value) {
+	const char* scales[] = { "", "K", "M", "G", "T", "P", "E", "Z" };
+	Ty lower_bound = Ty(1);
+	Ty scale_factor = 1.0;
+	size_t scale = 0;
+	for (size_t i = 0; i < sizeof(scales); ++i) {
+		if (value >= lower_bound && value < 1000 * lower_bound) {
+			scale = i;
+			break;
+		}
+		lower_bound *= 1000;
+		scale_factor *= 1000.0;
+	}
+	int integer_value = int(value / scale_factor);
+	std::stringstream ostr;
+	ostr << std::setw(3) << std::right << integer_value << ' ' << scales[scale];
+	return ostr.str();
+}
+
 // generate a binary string for a native single precision IEEE floating point
 inline std::string to_hex(const float& number) {
 	std::stringstream s;
@@ -991,8 +1011,8 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 /// <returns>binary scale</returns>
 inline int scale(float v) {
 	int exponent{ 0 };
-	float f = frexpf(v, &exponent);
-	if (f == 0.0f) exponent = 0;
+	float frac = frexpf(v, &exponent);
+	if (frac == 0.0f) exponent = 0;
 	return exponent;
 }
 /// <summary>
@@ -1002,7 +1022,8 @@ inline int scale(float v) {
 /// <returns>binary scale</returns>
 inline int scale(double v) {
 	int exponent{ 0 };
-	frexp(v, &exponent); // C6031: return value ignored
+	double frac = frexp(v, &exponent);
+	if (frac == 0.0) exponent = 0;
 	return exponent;
 }
 /// <summary>
@@ -1012,7 +1033,8 @@ inline int scale(double v) {
 /// <returns>binary scale</returns>
 inline int scale(long double v) {
 	int exponent{ 0 };
-	frexpl(v, &exponent);
+	long double frac = frexpl(v, &exponent);
+	if (frac == 0.0l) exponent = 0;
 	return exponent;
 }
 

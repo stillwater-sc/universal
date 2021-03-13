@@ -171,7 +171,7 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 	// If the fraction is one bit, we have still have fraction of nbits-3, with the msb representing 2^-1, and the rest are right extended 0's
 	bitblock<fbits> _frac;
 	msb = msb - int(nrExponentBits);
-	size_t nrFractionBits = (msb < 0 ? 0ull : static_cast<size_t>(msb + 1));
+	size_t nrFractionBits = (msb < 0 ? 0ull : static_cast<size_t>(msb) + 1ull);
 	if (msb >= 0) {
 		for (int i = msb; i >= 0; --i) {
 			_frac[fbits - 1ull - static_cast<size_t>(msb - i)] = tmp[static_cast<size_t>(i)];
