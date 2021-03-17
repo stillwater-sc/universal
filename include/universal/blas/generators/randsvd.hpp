@@ -19,7 +19,7 @@ namespace sw {
                 vector<bool> row(n, false);
                 for (size_t i = 0; i < m; ++i) {
                     for (size_t j = 0; j < n; ++j) {
-                        if (abs(A[j][i]) > EPS && !row[j]) break;
+                        if (abs(A[j][i]) > EPS && row[j]!=Scalar(0)) break;
                     }
 
                     if (j != n) {
@@ -38,9 +38,9 @@ namespace sw {
             }
             template<typename Matrix, typename MatrixQ, typename MatrixR, typename Scalar>
             void qr(const Matrix& A, MatrixQ& Q, MatrixR& R) {
-                typedef typename matrix<Scalar>::value_type     value_type;//use Scalar
-                typedef typename matrix<Scalar>::size_type      size_type;//use size_type directly
-                typedef typename Magnitude<value_type>::type    magnitude_type;
+                using value_type = typename matrix::value_type;
+                using size_type = typename matrix::size_type;
+                using Magnitude<value_type>::type = typename matrix::magnitude_type;
 
                 size_type ncols = num_cols(A), nrows = num_cols(A);
                 mini = ncols == nrows ? ncols - 1 : (nrows >= ncols ? ncols : nrows);
@@ -65,8 +65,8 @@ namespace sw {
             }
             template<typename Scalar>
             inline void svd(const matrix<Scalar>& A, matrix<Scalar>& S, matrix<Scalar>& V, matrix<Scalar>& D, double tol = 10e-10) {
-                typedef typename matrix<Scalar>::value_type   value_type;
-                typedef typename matrix<Scalar>::size_type    size_type;
+                using value_type = typename matrix::value_type;
+                using size_type = typename matrix::size_type;
                 size_type        ncols = num_cols(A), nrows = num_rows(A);
                 value_type       ref, zero = math::zero(ref), one = math::one(ref);
                 double 	     err(std::numeric_limits<double>::max()), e, f;
@@ -85,9 +85,9 @@ namespace sw {
                     //have to implement when upper(R)=0
                 }
             }
-            template<typename Scalar>
+            template<typename Scalar, typename Tolerance>
             std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>>
-            inline svd(const matrix<Scalar>& A, double tol= 10e-10) {
+            inline svd(const matrix<Scalar>& A, Tolerance tol= 10e-10) {
                 typedef typename Collection<Matrix>::size_type    size_type;
                 size_type    ncols = num_cols(A), nrows = num_rows(A);
                 if (nrows != ncols) std::swap(row, col);
