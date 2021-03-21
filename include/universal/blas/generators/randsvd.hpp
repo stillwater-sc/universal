@@ -36,24 +36,34 @@ namespace sw {
                 }
                 return rank;
             }
+            template<typename Scalar, typename Mean, typename Stddev>
+            inline void gauss_rand_matrix(matrix<Scalar>& omega, Mean mean = 100, Stddev stddev = 6){
+                size_type ncols = num_cols(omega), nrows = num_rows(omega);
+                std::random_device rd;
+                std::mt19937 rng(rd());
+                for(size_t i=0; i<nrows; ++i){
+                    for(size_t j=0; j<ncols; ++j){
+                        std::normal_distribution<size_t> s(mean, stddev);
+                        omega[i][j]=s(rng);
+                    }
+                }
+            }
             template<typename Matrix, typename MatrixQ, typename MatrixR, typename Scalar>
-            void qr(const Matrix& A, MatrixQ& Q, MatrixR& R) {
+            inline void qr(const Matrix& A, MatrixQ& Q, MatrixR& R) {
                 using value_type = typename matrix::value_type;
                 using size_type = typename matrix::size_type;
                 using Magnitude<value_type>::type = typename matrix::magnitude_type;
 
-                size_type ncols = num_cols(A), nrows = num_cols(A);
+                size_type ncols = num_cols(A), nrows = num_rows(A);
                 mini = ncols == nrows ? ncols - 1 : (nrows >= ncols ? ncols : nrows);
                 magnitude_type  factor = magnitude_type(2);
-
                 Q = 1;
                 for (size_type i = 0; i < mini; ++i) {
                     //have to compute Q && R Here
                 }
 
             }
-
-
+            
             template<typename Scalar>
             std::pair<matrix<Scalar>, matrix<Scalar>>
                 inline qr(const matrix<Scalar>& A) {
@@ -63,8 +73,8 @@ namespace sw {
                 qr(A, Q, R);
                 return std::make_pair(Q, R);
             }
-            template<typename Scalar>
-            inline void svd(const matrix<Scalar>& A, matrix<Scalar>& S, matrix<Scalar>& V, matrix<Scalar>& D, double tol = 10e-10) {
+            template<typename Scalar, typename Tolerance>
+            inline void svd(const matrix<Scalar>& A, matrix<Scalar>& S, matrix<Scalar>& V, matrix<Scalar>& D, Tolerance tol = 10e-10) {
                 using value_type = typename matrix::value_type;
                 using size_type = typename matrix::size_type;
                 size_type        ncols = num_cols(A), nrows = num_rows(A);
@@ -95,7 +105,7 @@ namespace sw {
                 svd(A, ST, V, D, tol);
                 return std::make_tuple(ST, V, D);
 
-            }
+            }                        
             template<typename Scalar>
             std::tuple<matrix<Scalar>,matrix<Scalar>, matrix<Scalar>>
                 inline randsvd(const matrix<Scalar>& A) {
@@ -104,6 +114,7 @@ namespace sw {
                 //generate a gaussian random matrix of size n x k omega here
                 matrix<Scalar> omega(n,k),Y, B;
                 //omega(n x k) x A(m x n) == Y(m x k)
+                gauss_rand_matrix(omega);
                 Y = A * omega;
                 tie(Q, R) = qr(Y);
                 //implement qr decomposition & svd here
