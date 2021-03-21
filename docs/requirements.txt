@@ -1,0 +1,6 @@
+# File: docs/requirements.txt
+
+# Defining the exact version will make sure things don't break
+sphinx==3.5.3
+sphinx_rtd_theme==0.5.1
+readthedocs-sphinx-search==0.1.0
