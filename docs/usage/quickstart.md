@@ -1,4 +1,4 @@
-## Quick start
+# Quick start
 
 If you just want to experiment with the number system tools and test suites, and don't want to bother cloning and building the source code, there is a Docker container to get started:
 
