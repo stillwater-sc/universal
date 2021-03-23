@@ -17,3 +17,5 @@
 
 #include <universal/blas/generators/tridiag.hpp>
 #include <universal/blas/generators/laplace2D.hpp>
+#include <universal/blas/generators/gaussian_random.hpp>
+#include <universal/blas/generators/randsvd.hpp>
