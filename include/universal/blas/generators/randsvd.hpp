@@ -4,6 +4,7 @@
 #include<vector>
 #include<universal/blas/operators.hpp>
 #include<universal/blas/solvers.hpp>
+#include<universal/blas/generators.hpp>
 const double EPS = 1E-9;
 const double k = 0.0000001;
 namespace sw {
@@ -35,18 +36,6 @@ namespace sw {
                     }
                 }
                 return rank;
-            }
-            template<typename Scalar, typename Mean, typename Stddev>
-            inline void gauss_rand_matrix(matrix<Scalar>& omega, Mean mean = 100, Stddev stddev = 6){
-                size_type ncols = num_cols(omega), nrows = num_rows(omega);
-                std::random_device rd;
-                std::mt19937 rng(rd());
-                for(size_t i=0; i<nrows; ++i){
-                    for(size_t j=0; j<ncols; ++j){
-                        std::normal_distribution<size_t> s(mean, stddev);
-                        omega[i][j]=s(rng);
-                    }
-                }
             }
             template<typename Matrix, typename MatrixQ, typename MatrixR, typename Scalar>
             inline void qr(const Matrix& A, MatrixQ& Q, MatrixR& R) {
@@ -114,7 +103,7 @@ namespace sw {
                 //generate a gaussian random matrix of size n x k omega here
                 matrix<Scalar> omega(n,k),Y, B;
                 //omega(n x k) x A(m x n) == Y(m x k)
-                gauss_rand_matrix(omega);
+                gaussian_random(omega);
                 Y = A * omega;
                 tie(Q, R) = qr(Y);
                 //implement qr decomposition & svd here
