@@ -11,7 +11,7 @@ namespace sw{
     namespace universal{ 
         namespace blas{            
             template<typename Scalar, typename Mean, typename Stddev>
-            inline void gaussian_random(matrix<Scalar>& omega, Mean mean = 100, Stddev stddev = 6){
+            inline void gaussian_random(matrix<Scalar>& omega, Mean mean = 100.00, Stddev stddev = 6.00){
                 using value_type = typename matrix::value_type;
                 using size_type = typename matrix::size_type;
                 const size_type ncols = num_cols(omega), nrows = num_rows(omega);                
