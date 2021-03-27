@@ -164,30 +164,92 @@ void strided_print(std::ostream& ostr, size_t n, Vector& x, size_t incx = 1) {
 	ostr << "]";
 }
 
+// norms
 
+// L1-norm of a vector
+template<typename Scalar>
+Scalar normL1(const sw::universal::blas::vector<Scalar>& v) {
+	Scalar L1Norm{ 0 };
+	for (auto e : v) {
+		L1Norm += abs(e);
+	}
+	return L1Norm;
+}
+
+// L2-norm of a vector
+template<typename Scalar>
+Scalar normL2(const sw::universal::blas::vector<Scalar>& v) {
+	Scalar L2Norm{ 0 };
+	for (auto e : v) {
+		L2Norm += e * e;
+	}
+	return sqrt(L2Norm);
+}
+
+// L3-norm of a vector
+template<typename Scalar>
+Scalar normL3(const sw::universal::blas::vector<Scalar>& v) {
+	Scalar L3Norm{ 0 };
+	for (auto e : v) {
+		Scalar abse = abs(e);
+		L3Norm += abse * abse * abse;
+	}
+	return pow(L3Norm, Scalar{ 1 } / Scalar{ 3 });
+}
+
+// L4-norm of a vector
+template<typename Scalar>
+Scalar normL4(const sw::universal::blas::vector<Scalar>& v) {
+	Scalar L4Norm{ 0 };
+	for (auto e : v) {
+		Scalar esqr = e * e;
+		L4Norm += esqr * esqr;
+	}
+	return pow(L4Norm, Scalar{ 1 } / Scalar{ 4 });
+}
+
+// Linf-norm of a vector
+template<typename Scalar>
+Scalar normLinf(const sw::universal::blas::vector<Scalar>& v) {
+	Scalar LinfNorm{ 0 };
+	for (auto e : v) {
+		LinfNorm = (abs(e) > LinfNorm) ? abs(e) : LinfNorm;
+	}
+	return LinfNorm;
+}
+
+template<typename Scalar>
+Scalar norm(const sw::universal::blas::vector<Scalar>& v, int p) {
+	Scalar norm{ 0 };
+	switch (p) {
+	case 0:
+		break;
+	case 1:
+		norm = normL1(v);
+		break;
+	case 2:
+		norm = normL2(v);
+		break;
+	case 3:
+		norm = normL3(v);
+		break;
+	case 4:
+		norm = normL4(v);
+		break;
+	default:
+		{
+			for (auto e : v) {
+				norm += pow(abs(e), p);
+			}
+			norm = pow(norm, Scalar{ 1 } / Scalar{ p });
+		}
+		break;
+	}
+	return norm;
+}
 } } } // namespace sw::universal::blas
 
-// free function norms
 
-// 1-norm of a vector
-template<typename Scalar>
-Scalar norm1(const sw::universal::blas::vector<Scalar>& v) {
-	Scalar oneNorm = 0;
-	for (auto e : v) {
-		oneNorm += abs(e);
-	}
-	return oneNorm;
-}
-
-// 2-norm of a vector
-template<typename Scalar>
-Scalar norm2(const sw::universal::blas::vector<Scalar>& v) {
-	Scalar twoNorm = 0;
-	for (auto e : v) {
-		twoNorm += e * e;
-	}
-	return sqrt(twoNorm);
-}
 
 // specializations for STL vectors
 
