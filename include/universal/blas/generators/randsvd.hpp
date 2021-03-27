@@ -36,9 +36,9 @@ namespace sw {
                     }
                 }
                 return rank;
-            }
-            template<typename Matrix, typename MatrixQ, typename MatrixR, typename Scalar>
-            inline void qr(const Matrix& A, MatrixQ& Q, MatrixR& R) {
+            }            
+            template<typename Scalar>
+            inline void qr(const matrix<Scalar>& A, matrix<Scalar>& Q, matrix<Scalar>& R) {
                 using value_type = typename matrix::value_type;
                 using size_type = typename matrix::size_type;
                 using Magnitude<value_type>::type = typename matrix::magnitude_type;
@@ -46,13 +46,25 @@ namespace sw {
                 size_type ncols = num_cols(A), nrows = num_rows(A);
                 mini = ncols == nrows ? ncols - 1 : (nrows >= ncols ? ncols : nrows);
                 magnitude_type  factor = magnitude_type(2);
-                Q = 1;
-                for (size_type i = 0; i < mini; ++i) {
-                    //have to compute Q && R Here
+                //static_assert(nrows<ncols,"Required Columns<=Rows");
+                matrix<Scalar> A_tmp(A),tmp;
+                vector<matrix<Scalar>> qi(nrows);
+                for(size_t i=0;i<ncols && i<nrows-1; ++i){
+                    vector<Scalar> e(nrows),x(nrows);
+                    Scalar a;
+                    tmp=minor(A_tmp, i);
+                    get_col(tmp, x, i);
+                    a=norm(x);
+                    if(A[nrows][nrows]>0) a-=a;
+                    for(size_t j=0; j<e.size();++j){
+                        e[j]=(j==nrows) ? 1:0;
+                    }
+                    for(size_t j=0;j<e.size();++j) e[j]=x[j]+a*e[j];
+                    Scalar f=norm(e);
+                    for(size_t j=0;j<e.size();++j) e[j]/=f;
+                    
                 }
-
             }
-            
             template<typename Scalar>
             std::pair<matrix<Scalar>, matrix<Scalar>>
                 inline qr(const matrix<Scalar>& A) {
@@ -99,14 +111,11 @@ namespace sw {
             std::tuple<matrix<Scalar>,matrix<Scalar>, matrix<Scalar>>
                 inline randsvd(const matrix<Scalar>& A) {
                 size_t k = min(num_cols(A), num_rows(A));
-                size_t n = num_cols(A), m = num_row(A);
-                //generate a gaussian random matrix of size n x k omega here
-                matrix<Scalar> omega(n,k),Y, B;
-                //omega(n x k) x A(m x n) == Y(m x k)
+                size_t n = num_cols(A), m = num_row(A);                
+                matrix<Scalar> omega(n, k),Y(m, k), B(k, n);                
                 gaussian_random(omega);
                 Y = A * omega;
                 tie(Q, R) = qr(Y);
-                //implement qr decomposition & svd here
                 Q.transpose();
                 B = Q * A;
                 std::tie(S, V, D) = svd(B,k);
