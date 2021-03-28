@@ -63,9 +63,17 @@ namespace sw {
                     for(size_t j=0;j<e.size();++j) e[j]=x[j]+a*e[j];
                     Scalar f=norm(e);
                     for(size_t j=0;j<e.size();++j) e[j]/=f;
-                    
+                    householder_factors(qi[i], e);
+                    A_tmp=qi[i]*tmp;
                 }
-            }
+                Q=qi[0];
+                for(size_t i=1;i<ncols && i<nrows-1;++i){
+                    tmp=qi[i]*Q;
+                    Q=tmp;
+                }
+                R=Q*A;
+                Q.transpose();
+            }//completed QR-decomposition
             template<typename Scalar>
             std::pair<matrix<Scalar>, matrix<Scalar>>
                 inline qr(const matrix<Scalar>& A) {
@@ -74,6 +82,16 @@ namespace sw {
                 matrix<Scalar> Q(num_rows(A), num_cols(A)), R(A);
                 qr(A, Q, R);
                 return std::make_pair(Q, R);
+            }
+            template<Scalar, Vector>
+            void householder_factors(matrix<Scalar>& A, const Vector& v){
+                Scalar n=num_cols(A);
+                for(size_t i=0;i<n;++i){
+                    for(size_t j=0;j<n;++j){
+                        A[i][j]=-2*v[i]*v[j];
+                    }
+                }
+                for(size_t i=0;i<n;++i) A[i][i]+=1;
             }
             template<typename Scalar, typename Tolerance>
             inline void svd(const matrix<Scalar>& A, matrix<Scalar>& S, matrix<Scalar>& V, matrix<Scalar>& D, Tolerance tol = 10e-10) {
