@@ -846,7 +846,7 @@ public:
 
 		// arithmetic operation
 		blocktriple<abits + 1, BlockType> sum;
-		blocktriple<abits, BlockType> a, b;
+//		blocktriple<abits, BlockType> a, b;
 
 //		normalize(a); // transform the inputs into (sign,scale,significant) triples
 //		rhs.normalize(b);
@@ -1147,7 +1147,7 @@ public:
 	inline constexpr bool isone() const noexcept {
 		// unbiased exponent = scale = 0, fraction = 0
 		int s = scale();
-		if (scale() == 0) {
+		if (s == 0) {
 			blockbinary<fbits, bt> f;
 			fraction(f);
 			return f.iszero();

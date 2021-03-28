@@ -703,7 +703,7 @@ void TestScale(int& nrOfFailedTestCases) {
 	}
 	{
 		std::cout << "scale areal<128,15,uint64_t>   : ";
-		areal<128, 15, uint64_t> a;
+		//areal<128, 15, uint64_t> a;
 		// [1-111'1111'1111'1111-'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'0000]
 //		a.assign("0xFFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFF0"); if (a.scale() != 16*1024) ++nrOfFailedTestCases;
 		// [1-011'1111'1111'1111-'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'0000]

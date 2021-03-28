@@ -4,6 +4,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <cmath>
 #include <universal/number/posit/posit_fwd.hpp>
 #include <universal/blas/matrix.hpp>
 
@@ -26,7 +27,7 @@ size_t Jacobi(const Matrix& A, const Vector& b, Vector& x, typename Matrix::valu
 			}
 			x(i) = (b(i) - sigma) / A(i, i);
 		}
-		residual = norm1(x_old - x);
+		residual = normL1(x_old - x);
 		std::cout << '[' << itr << "] " << std::setw(10) << x << "         residual " << residual << std::endl;
 		++itr;
 	}

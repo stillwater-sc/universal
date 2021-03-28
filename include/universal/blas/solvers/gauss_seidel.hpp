@@ -29,7 +29,7 @@ size_t GaussSeidel(const Matrix& A, const Vector& b, Vector& x, typename Matrix:
 			}
 			x(i - 1) = (b(i - 1) - sigma) / A(i - 1, i - 1);
 		}
-		residual = norm1(x_old - x);
+		residual = norm(x_old - x, 1);
 		std::cout << '[' << itr << "] " << std::setw(10) << x << "        residual " << residual << std::endl;
 		++itr;
 	}

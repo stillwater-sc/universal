@@ -36,6 +36,8 @@ inline bool iszero(const Real& a) {
 	return (std::fpclassify(a) == FP_ZERO);
 }
 
+/* defined in <universal/math/stub/classify.hpp>
+ *
 // check if the floating-point number is normal
 template<typename Real,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >:: type
@@ -67,6 +69,7 @@ template<typename Real,
 inline bool isinf(const Real& a) {
 	return (std::fpclassify(a) == FP_INFINITE);
 }
+*/
 
 // IEEE double precision constants
 static constexpr unsigned IEEE_FLOAT_FRACTION_BITS = 23;

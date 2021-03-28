@@ -25,7 +25,7 @@ void TestConversionPerformance() {
 	using namespace sw::universal;
 	cout << endl << "AREAL Conversion operator performance" << endl;
 
-	uint64_t NR_OPS = 1000000;
+	//uint64_t NR_OPS = 1000000;
 }
 
 template<typename Scalar>
