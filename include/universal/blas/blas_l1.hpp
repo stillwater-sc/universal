@@ -5,10 +5,11 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
+#include <universal/math/math>
 #include <universal/number/posit/posit>
 #include <universal/blas/vector.hpp>
 
-namespace sw { namespace universal { namespace blas { 
+namespace sw::universal::blas { 
 
 // 1-norm of a vector: sum of magnitudes of the vector elements, default increment stride is 1
 template<typename Vector>
@@ -169,6 +170,7 @@ void strided_print(std::ostream& ostr, size_t n, Vector& x, size_t incx = 1) {
 // L1-norm of a vector
 template<typename Scalar>
 Scalar normL1(const sw::universal::blas::vector<Scalar>& v) {
+	using namespace sw::universal; // to specialize abs()
 	Scalar L1Norm{ 0 };
 	for (auto e : v) {
 		L1Norm += abs(e);
@@ -189,12 +191,14 @@ Scalar normL2(const sw::universal::blas::vector<Scalar>& v) {
 // L3-norm of a vector
 template<typename Scalar>
 Scalar normL3(const sw::universal::blas::vector<Scalar>& v) {
+	using namespace std;
+	using namespace sw::universal; // to specialize abs()
 	Scalar L3Norm{ 0 };
 	for (auto e : v) {
 		Scalar abse = abs(e);
 		L3Norm += abse * abse * abse;
 	}
-	return pow(L3Norm, Scalar{ 1 } / Scalar{ 3 });
+	return pow(L3Norm, Scalar(1) / Scalar(3));
 }
 
 // L4-norm of a vector
@@ -205,12 +209,14 @@ Scalar normL4(const sw::universal::blas::vector<Scalar>& v) {
 		Scalar esqr = e * e;
 		L4Norm += esqr * esqr;
 	}
-	return pow(L4Norm, Scalar{ 1 } / Scalar{ 4 });
+	return pow(L4Norm, Scalar(1) / Scalar(4));
 }
 
 // Linf-norm of a vector
 template<typename Scalar>
 Scalar normLinf(const sw::universal::blas::vector<Scalar>& v) {
+	using namespace std;
+	using namespace sw::universal; // to specialize abs()
 	Scalar LinfNorm{ 0 };
 	for (auto e : v) {
 		LinfNorm = (abs(e) > LinfNorm) ? abs(e) : LinfNorm;
@@ -220,6 +226,8 @@ Scalar normLinf(const sw::universal::blas::vector<Scalar>& v) {
 
 template<typename Scalar>
 Scalar norm(const sw::universal::blas::vector<Scalar>& v, int p) {
+	using namespace std;
+	using namespace sw::universal; // to specialize pow() and abs()
 	Scalar norm{ 0 };
 	switch (p) {
 	case 0:
@@ -239,15 +247,16 @@ Scalar norm(const sw::universal::blas::vector<Scalar>& v, int p) {
 	default:
 		{
 			for (auto e : v) {
-				norm += pow(abs(e), p);
+				norm += pow(abs(e), Scalar( p ));
 			}
-			norm = pow(norm, Scalar{ 1 } / Scalar{ p });
+			norm = pow(norm, Scalar( 1 ) / Scalar( p ));
 		}
 		break;
 	}
 	return norm;
 }
-} } } // namespace sw::universal::blas
+
+} // namespace sw::universal::blas
 
 
 
