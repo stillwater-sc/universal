@@ -72,13 +72,7 @@ void get_col(matrix<Scalar>& A, vector<Scalar>& v, size_t x){
     for (size_t i = 0; i < num_rows(A); i++)
     v[i] = A[i][x];
 }
-template<typename Scalar>
-Scalar norm(vector<Scalar>& x){
-    using size_type = typename matrix<Scalar>::size_type;
-    Scalar s;
-    for (size_t i = 0; i < x.size(); i++) s+=i*i;
-    return size_type(std::sqrt(sum));
-}
+
 // return lower triangular matrix of A
 template<typename Scalar>
 matrix<Scalar> tril(const matrix<Scalar>& A, size_t k = 0) {

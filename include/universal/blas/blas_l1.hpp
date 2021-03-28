@@ -169,26 +169,35 @@ void strided_print(std::ostream& ostr, size_t n, Vector& x, size_t incx = 1) {
 
 // free function norms
 
-// 1-norm of a vector
-template<typename Scalar>
-Scalar norm1(const sw::universal::blas::vector<Scalar>& v) {
-	Scalar oneNorm = 0;
-	for (auto e : v) {
-		oneNorm += abs(e);
-	}
-	return oneNorm;
+// norm's of a vector
+template<typename Scalar, typename String>
+Scalar norm(const std::vector<Scalar>& v, const String s="one_norm"){
+    Scalar ans=0;
+        if(strcmp(s, "one_norm")){
+            for(auto i:v){
+                ans+=abs(i);
+            }
+        } 
+        if(strcmp(s, "two_norm")){
+            for(auto i:v){
+                ans+=i*i;
+            }
+            ans=Scalar(sqrt(ans));
+        }
+        if(strcmp(s, "inf_norm")){
+            for(auto i:v){
+                ans=Scalar(-1e9);
+                ans=std::max(ans,abs(i));
+            }
+        }
+        if(strcmp(s, "frobenius_norm")){
+            for(auto i:v){
+                ans+=abs(i*i);
+            }
+            ans=Scalar(sqrt(ans));
+        }
+        return ans;
 }
-
-// 2-norm of a vector
-template<typename Scalar>
-Scalar norm2(const sw::universal::blas::vector<Scalar>& v) {
-	Scalar twoNorm = 0;
-	for (auto e : v) {
-		twoNorm += e * e;
-	}
-	return sqrt(twoNorm);
-}
-
 // specializations for STL vectors
 
 template<typename Ty>
