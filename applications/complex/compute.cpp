@@ -138,12 +138,6 @@ try {
 #if MANUAL_TESTING
 
 	{
-		using Scalar = posit<32,2>;
-
-		Scalar p;
-	}
-
-	{
 		using Scalar = fixpnt<4, 3>;
 		Scalar fp{ 1.0f };
 		cout << to_binary(fp) << " : " << fp << endl;

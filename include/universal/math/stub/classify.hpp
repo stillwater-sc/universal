@@ -6,6 +6,11 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
 
+// CLANG has these functions in its stdlib
+// fpclassify
+// isnormal/isinf/isnan
+// isfinite
+
 namespace sw::universal {
 
 #if defined(__clang__)
@@ -18,6 +23,13 @@ namespace sw::universal {
 
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
+
+	// STD LIB function for IEEE floats: Categorizes floating point value arg into the following categories: zero, subnormal, normal, infinite, NAN, or implementation-defined category.
+	template<typename Scalar,
+		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
+	int fpclassify(const Scalar& v) {
+		return std::fpclassify(v);
+	}
 
 	// STD LIB function for IEEE floats: Determines if the given floating point number arg has finite value i.e. it is normal, subnormal or zero, but not infinite or NaN.
 	template<typename Scalar,
@@ -56,6 +68,13 @@ namespace sw::universal {
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
 
+	// STD LIB function for IEEE floats: Categorizes floating point value arg into the following categories: zero, subnormal, normal, infinite, NAN, or implementation-defined category.
+	template<typename Scalar,
+		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
+	int fpclassify(const Scalar& v) {
+		return std::fpclassify(v);
+	}
+
 
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
@@ -65,12 +84,6 @@ namespace sw::universal {
 
 #endif
 
-	// STD LIB function for IEEE floats: Categorizes floating point value arg into the following categories: zero, subnormal, normal, infinite, NAN, or implementation-defined category.
-	template<typename Scalar,
-		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
-	int fpclassify(const Scalar& v) {
-		return std::fpclassify(v);
-	}
 
 	// Universal function supported by all number systems
 	template<typename Scalar,
