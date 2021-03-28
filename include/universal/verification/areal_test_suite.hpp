@@ -10,6 +10,8 @@
 #include <random>
 #include <limits>
 
+#include <universal/math/stub/classify.hpp> // fpclassify, isnormal, issubnormal, isinf, isnan
+
 namespace sw::universal {
 
 	template<typename SrcType, typename TestType>

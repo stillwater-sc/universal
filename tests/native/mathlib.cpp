@@ -81,11 +81,15 @@ try {
 
 	// test Class Template Argument Deduction (CTAD) for elementary functions
 	
-	float f         = 1.0e0;
-	double d        = 1.0e10;
-	long double ld  = 1.0e10;
+	{
+		float f         = 1.5e-1;
+		MathLib(f);
+	}
 
-	MathLib(f);
+	{
+		double d         = 1.5e-1;
+		MathLib(d);
+	}
 
 	return EXIT_SUCCESS;
 }
