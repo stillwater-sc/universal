@@ -5,6 +5,7 @@
 #include<universal/blas/operators.hpp>
 #include<universal/blas/solvers.hpp>
 #include<universal/blas/generators.hpp>
+#include<universal/include/universal/blas/blas_l1.hpp>
 const double EPS = 1E-9;
 const double k = 0.0000001;
 namespace sw {
@@ -54,7 +55,7 @@ namespace sw {
                     Scalar a;
                     tmp=minor(A_tmp, i);
                     get_col(tmp, x, i);
-                    a=norm(x);
+                    a=norm(x, "two_norm");
                     if(A[nrows][nrows]>0) a-=a;
                     for(size_t j=0; j<e.size();++j){
                         e[j]=(j==nrows) ? 1:0;

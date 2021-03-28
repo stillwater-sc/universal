@@ -258,8 +258,6 @@ Scalar norm(const sw::universal::blas::vector<Scalar>& v, int p) {
 
 } // namespace sw::universal::blas
 
-
-
 // specializations for STL vectors
 
 template<typename Ty>
