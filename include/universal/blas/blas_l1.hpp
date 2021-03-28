@@ -171,7 +171,7 @@ void strided_print(std::ostream& ostr, size_t n, Vector& x, size_t incx = 1) {
 
 // norm's of a vector
 template<typename Scalar, typename String>
-Scalar norm(const std::vector<Scalar>& v, const String s="one_norm"){
+Scalar norm(const std::vector<Scalar>& v, String s="one_norm"){
     Scalar ans=0;
         if(strcmp(s, "one_norm")){
             for(auto i:v){
