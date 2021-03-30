@@ -46,8 +46,8 @@ namespace sw {
 
                 size_type ncols = num_cols(A), nrows = num_rows(A);
                 mini = ncols == nrows ? ncols - 1 : (nrows >= ncols ? ncols : nrows);
-                magnitude_type  factor = magnitude_type(2);
-                //static_assert(nrows<ncols,"Required Columns<=Rows");
+                //magnitude_type  factor = magnitude_type(2);
+                static_assert(nrows<ncols,"Required Columns <= Rows");
                 matrix<Scalar> A_tmp(A),tmp;
                 vector<matrix<Scalar>> qi(nrows);
                 for(size_t i=0;i<ncols && i<nrows-1; ++i){
@@ -112,7 +112,21 @@ namespace sw {
                     D *= Q;
                     E = triu(R, 1);
                     V = trans(R);
-                    //have to implement when upper(R)=0
+                    f=norm(diag(R), "two_norm");
+                    e=norm(E);
+                    if(f==zero) f=1;
+                    err=e/f;
+                }
+                {
+	                V= 0;  
+	                matrix<Scalar>  ins_V(V), ins_S(S);
+	                
+	                for (size_type i= 0, end= std::min(nrows, ncols); i < end; i++) {
+	                    ins_V[i][i] *= std::abs(R[i][i]);
+	                    if (R[i][i] < zero) 	
+		                for (size_type j= 0; j < nrows; j++) 
+		                ins_S[j][i] *= -1; 
+	                }
                 }
             }
             template<typename Scalar, typename Tolerance>
