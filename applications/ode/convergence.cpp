@@ -99,6 +99,43 @@ std::vector<std::vector<Scalar>> GRKSpan(Scalar b_table[5][5], Scalar(*f)(const 
     return(approximations);
 }
 
+template <typename Scalar, typename Vector>
+void GRKSpanDemo(Scalar b_table[5][5], 
+                Scalar(*f)(const Scalar&, const Scalar&), 
+                Scalar u0, Scalar tspan[2], int n,
+                Vector& t_s, Vector& ui_s) {
+
+    int s = sizeof(b_table[0]) / sizeof(b_table[0][0]) - 1; // number of steps    : if b_table would be a dynamic matrix then number of rows and columns would be known: TODO
+    Scalar h = (tspan[1] - tspan[0]) / n;
+    Scalar ui = u0;
+    int row = 0;
+    for (Scalar t = tspan[0]; t <= tspan[1]; t = t + h) {
+        Scalar ks[4];
+        std::fill(ks, ks + s, Scalar(0));
+
+        for (int i = 0; i < s; i++) {
+            Scalar sum = 0;
+            for (int j = 1; j <= s; j++) {
+                sum = sum + b_table[i][j] * ks[j - 1];
+            }
+            sum = h * sum;
+            ks[i] = f(t + h * b_table[0][i], ui + sum);
+        }
+
+        Scalar out = 0;
+        for (int i = 1; i <= s; i++) {
+            out = out + b_table[s][i] * ks[i - 1];
+        }
+        ui = ui + out;
+
+        t_s[row] = t;    // TODO: can we make this cleaner/simpler?
+        ui_s[row] = ui;
+        row = row + 1;
+    }
+
+
+}
+
 int main() {
     using namespace std;
     using namespace sw::universal;
@@ -116,16 +153,36 @@ int main() {
     Scalar u0 = 1;
     Scalar tspan[2] = {0, 1};
 
-    auto solution = GRKSpan(butcher, my_ode_func, u0, tspan, steps[1]);
-    std::string outputFile("ode_convergence.csv");
-    std::cout << "Record the ODE solver convergence steps for offline graphing\nWriting to file: " << outputFile << '\n';
-    std::ofstream ofs;
-    ofs.open(outputFile);
-    ofs << "t,approximation,true,error\n";
-    for (unsigned int i = 0; i < solution[0].size(); i++) {
-        Scalar true_value = golden_reference(solution[0][i]);
-        Scalar error = true_value - solution[1][i];
-        ofs << solution[0][i] << "," << solution[1][i] << "," << true_value << "," << error << "\n";
-    };
-    ofs.close();
+    {
+        auto solution = GRKSpan(butcher, my_ode_func, u0, tspan, steps[1]);
+        std::string outputFile("ode_convergence.csv");
+        std::cout << "Record the ODE solver convergence steps for offline graphing\nWriting to file: " << outputFile << '\n';
+        std::ofstream ofs;
+        ofs.open(outputFile);
+        ofs << "t,approximation,true,error\n";
+        for (unsigned int i = 0; i < solution[0].size(); i++) {
+            Scalar true_value = golden_reference(solution[0][i]);
+            Scalar error = true_value - solution[1][i];
+            ofs << solution[0][i] << "," << solution[1][i] << "," << true_value << "," << error << "\n";
+        };
+        ofs.close();  
+    }
+
+    {
+        std::string outputFile("ode_convergence2.csv");
+        int N = steps[1];
+        std::vector<Scalar> t_s(N);
+        std::vector<Scalar> ui_s(N);
+        GRKSpanDemo(butcher, my_ode_func, u0, tspan, steps[1], t_s, ui_s);
+        std::ofstream ofs;
+        ofs.open(outputFile);
+        ofs << "t,approximation,true,error\n";
+        for (unsigned int i = 0; i < t_s.size(); i++) {
+            Scalar true_value = golden_reference(t_s[i]);
+            Scalar error = true_value - ui_s[i];
+            ofs << t_s[i] << "," << ui_s[i] << "," << true_value << "," << error << "\n";
+        };
+        ofs.close();  
+    }
+
 }
