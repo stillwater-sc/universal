@@ -99,11 +99,11 @@ namespace sw {
                 using size_type = typename matrix::size_type;
                 size_type        ncols = num_cols(A), nrows = num_rows(A);
                 value_type       ref, zero = math::zero(ref), one = math::one(ref);
-                double 	     err(std::numeric_limits<double>::max()), e, f;
+                double 	     err(std::numeric_limits<double>::max()), f, e;
                 if (nrows != ncols) std::swap(row, col);
                 matrix<Scalar> Q(nrows, nrows), R(nrows, ncols), VT(nrows, ncols), E(nrows, ncols),QT(ncols, ncols), RT(ncols, nrows);
                 size_type l = 100 * std::max(nrows, ncols);
-                S = one; D = one; E = zero;
+                S= 1; D= 1; E;
                 for (size_type i = 0; err > tol && i < l; ++i) {
                     std::tie(QT, RT) = qr(V);
                     S *= QT;
@@ -114,17 +114,17 @@ namespace sw {
                     V = trans(R);
                     f=norm(diag(R), "two_norm");
                     e=norm(E);
-                    if(f==zero) f=1;
+                    if(f==0) f=1;
                     err=e/f;
                 }
                 {
 	                V= 0;  
 	                matrix<Scalar>  ins_V(V), ins_S(S);
 	                
-	                for (size_type i= 0, end= std::min(nrows, ncols); i < end; i++) {
+	                for (size_type i= 0, end= std::min(nrows, ncols); i < end; ++i) {
 	                    ins_V[i][i] *= std::abs(R[i][i]);
-	                    if (R[i][i] < zero) 	
-		                for (size_type j= 0; j < nrows; j++) 
+	                    if (R[i][i] < Scalar(0)) 	
+		                for (size_type j= 0; j < nrows; ++j) 
 		                ins_S[j][i] *= -1; 
 	                }
                 }
@@ -137,7 +137,8 @@ namespace sw {
                 if (nrows != ncols) std::swap(row, col);
                 matrix<Scalar> ST(ncols, ncols), V(A), D(nrows, nrows);
                 svd(A, ST, V, D, tol);
-                return std::make_tuple(ST, V, D);
+                
+                return std::make_tuple (ST, V, D);
 
             }                        
             template<typename Scalar>
