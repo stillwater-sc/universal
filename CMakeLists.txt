@@ -612,7 +612,7 @@ add_subdirectory("mixedprecision/integration")
 add_subdirectory("mixedprecision/interpolation")
 add_subdirectory("mixedprecision/optimization")
 add_subdirectory("mixedprecision/linearalgebra/cg")
-endif(BUILD_NUMERICAL_TESTS)
+endif(BUILD_MIXEDPRECISION)
 
 if(BUILD_NUMERICAL_TESTS)
 add_subdirectory("tests/numerical/properties")
