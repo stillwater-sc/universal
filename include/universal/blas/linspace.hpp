@@ -7,7 +7,7 @@
 #include <universal/blas/vector.hpp>
 #include <universal/blas/vmath/power.hpp>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw::universal::blas {
 
 /*
  * arange generates an integer sequence between start and stop with stride
@@ -65,7 +65,7 @@ sw::universal::blas::vector<Scalar> logspace(const Scalar& start, const Scalar& 
 }
 
 /*
- * TODO: geomspace: return evenly spaced samples over a geometric progression.
+ * geomspace: return evenly spaced samples over a geometric progression.
  * 
  * Returns `steps` evenly spaced samples, calculated over the interval [`base ^ start`, `base ^ stop`].
  * 
@@ -113,4 +113,4 @@ array([-1.00000000e+00+1.22464680e-16j, -7.07106781e-01+7.07106781e-01j,
 1.00000000e+00+0.00000000e+00j])
 */
 
-} } }  // namespace sw::universal::blas
+}  // namespace sw::universal::blas

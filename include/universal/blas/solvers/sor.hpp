@@ -30,7 +30,7 @@ size_t sor(const Matrix& A, const Vector& b, Vector& x, typename Matrix::value_t
 			}
 			x(i - 1) = (1 - w) * x_old(i - 1) + w * (b(i - 1) - sigma) / A(i - 1, i - 1);
 		}
-		residual = norm1(x_old - x);
+		residual = norm(x_old - x, 1);
 		// std::cout << '[' << itr << "] " << x << " residual " << residual << std::endl;
 		++itr;
 	}

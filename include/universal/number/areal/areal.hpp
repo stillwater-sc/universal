@@ -899,7 +899,7 @@ public:
 	inline constexpr bool isone() const {
 		// unbiased exponent = scale = 0, fraction = 0
 		int s = scale();
-		if (scale() == 0) {
+		if (s == 0) {
 			blockbinary<fbits, bt> f;
 			fraction(f);
 			return f.iszero();

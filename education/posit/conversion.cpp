@@ -19,7 +19,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 
 	cout << setprecision(numeric_limits<Ty>::digits10) << v << "   input value\n";
 	cout << "Test for ZERO\n";
-	cout << components(v);
+	cout << to_triple(v);
 	if (v.iszero()) {
 		p.setzero();
 		cout << " input value is zero\n";
@@ -30,7 +30,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 		cout << " input value is NOT zero\n";
 	}
 	cout << "Test for NaR\n";
-	cout << components(v);
+	cout << to_triple(v);
 	if (v.isnan() || v.isinf()) {
 		p.setnar();
 		cout << " input value is NaR\n";

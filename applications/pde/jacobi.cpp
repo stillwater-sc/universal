@@ -22,6 +22,16 @@
 #include <universal/blas/solvers/jacobi.hpp>
 
 
+// specialized for native floating-point
+template<typename Scalar,
+	typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
+Scalar normL1(const sw::universal::blas::vector<float>& v) {
+	float L1Norm{ 0 };
+	for (auto e : v) {
+		L1Norm += std::abs(e);
+	}
+	return L1Norm;
+}
 
 int main(int argc, char** argv)
 try {

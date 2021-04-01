@@ -168,15 +168,19 @@ inline int scale(const exponent<nbits, es>& e) { return e.scale(); }
 template<size_t nbits, size_t es>
 inline std::ostream& operator<<(std::ostream& ostr, const exponent<nbits, es>& e) {
 	size_t nrOfExponentBitsProcessed = 0;
-	for (int i = int(es) - 1; i >= 0; --i) {
-		if (e._NrOfBits > nrOfExponentBitsProcessed++) {
-			ostr << (e._Bits[size_t(i)] ? "1" : "0");
-		}
-		else {
-			ostr << "-";
+	if constexpr (es > 0) {
+		for (int i = int(es) - 1; i >= 0; --i) {
+			if (e._NrOfBits > nrOfExponentBitsProcessed++) {
+				ostr << (e._Bits[size_t(i)] ? "1" : "0");
+			}
+			else {
+				ostr << "-";
+			}
 		}
 	}
-	if (nrOfExponentBitsProcessed == 0) ostr << "~"; // for proper alignment in tables
+	else {
+		ostr << "~"; // for proper alignment in tables
+	}
 	return ostr;
 }
 
@@ -188,19 +192,23 @@ inline std::istream& operator>> (std::istream& istr, const exponent<nbits, es>& 
 
 template<size_t nbits, size_t es>
 inline std::string to_string(const exponent<nbits, es>& e, bool dashExtent = true) {
-	std::stringstream ss;
+	std::stringstream ostr;
 	bitblock<es> bb = e.get();
 	size_t nrOfExponentBitsProcessed = 0;
-	for (int i = int(es) - 1; i >= 0; --i) {
-		if (e.nrBits() > nrOfExponentBitsProcessed++) {
-			ss << (bb[size_t(i)] ? "1" : "0");
-		}
-		else {
-			ss << (dashExtent ? "-" : "");
+	if constexpr (es > 0) {
+		for (int i = int(es) - 1; i >= 0; --i) {
+			if (e.nrBits() > nrOfExponentBitsProcessed++) {
+				ostr << (bb[size_t(i)] ? "1" : "0");
+			}
+			else {
+				ostr << (dashExtent ? "-" : "");
+			}
 		}
 	}
-	if (nrOfExponentBitsProcessed == 0) ss << "~"; // for proper alignment in tables
-	return ss.str();
+	else {
+		ostr << "~"; // for proper alignment in tables
+	}
+	return ostr.str();
 }
 
 template<size_t nbits, size_t es>

@@ -131,23 +131,23 @@ bool ValidateSubnormalFloats() {
 
 	internal::value<23> v;
 	float flt = flt_min;
-	std::cout << components(v) << std::endl;
+	std::cout << to_triple(v) << std::endl;
 	for (size_t i = 0; i < 24; ++i) {
 		flt /= 2.0;
 		v = flt;
-		cout << hexfloat << flt << defaultfloat << " " << flt << " " << components(v) << " " << v << endl;
+		cout << hexfloat << flt << defaultfloat << " " << flt << " " << to_triple(v) << " " << v << endl;
 	}
 
 	flt = flt_min + 3*flt_true_min;
 	v = flt;
-	cout << hexfloat << flt << defaultfloat << " " << flt << " " << components(v) << " " << v << endl;
+	cout << hexfloat << flt << defaultfloat << " " << flt << " " << to_triple(v) << " " << v << endl;
 
 	return bSuccess;
 }
 
 template<size_t fbits>
 void PrintValue(float f, const sw::universal::internal::value<fbits>& v) {
-	std::cout << "float: " << std::setw(fbits) << f << sw::universal::internal::components(v) << std::endl;
+	std::cout << "float: " << std::setw(fbits) << f << sw::universal::internal::to_triple(v) << std::endl;
 }
 
 int main()
@@ -193,23 +193,23 @@ try {
 	internal::bitblock<8> fraction;
 	fraction = 0x55;
 	internal::value<8> r8(false, 0, fraction, false, false);
-	cout << "Value is " << r8 << " components are " << components(r8) << endl;
+	cout << "Value is " << r8 << " components are " << to_triple(r8) << endl;
 	internal::value<7> r7 = r8.round_to<7>();
-	cout << "Value is " << r7 << " components are " << components(r7) << endl;
+	cout << "Value is " << r7 << " components are " << to_triple(r7) << endl;
 	internal::value<6> r6 = r8.round_to<6>();
-	cout << "Value is " << r6 << " components are " << components(r6) << endl;
+	cout << "Value is " << r6 << " components are " << to_triple(r6) << endl;
 	internal::value<5> r5 = r8.round_to<5>();
-	cout << "Value is " << r5 << " components are " << components(r5) << endl;
+	cout << "Value is " << r5 << " components are " << to_triple(r5) << endl;
 	internal::value<4> r4 = r8.round_to<4>();
-	cout << "Value is " << r4 << " components are " << components(r4) << endl;
+	cout << "Value is " << r4 << " components are " << to_triple(r4) << endl;
 	internal::value<3> r3 = r8.round_to<3>();
-	cout << "Value is " << r3 << " components are " << components(r3) << endl;
+	cout << "Value is " << r3 << " components are " << to_triple(r3) << endl;
 	internal::value<2> r2 = r8.round_to<2>();
-	cout << "Value is " << r2 << " components are " << components(r2) << endl;
+	cout << "Value is " << r2 << " components are " << to_triple(r2) << endl;
 	internal::value<1> r1 = r8.round_to<1>();
-	cout << "Value is " << r1 << " components are " << components(r1) << endl;
+	cout << "Value is " << r1 << " components are " << to_triple(r1) << endl;
 	internal::value<0> r0 = r8.round_to<0>();
-	cout << "Value is " << r0 << " components are " << components(r0) << endl;
+	cout << "Value is " << r0 << " components are " << to_triple(r0) << endl;
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

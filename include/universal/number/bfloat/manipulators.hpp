@@ -115,10 +115,11 @@ std::string info_print(const bfloat<nbits, es, bt>& p, int printPrecision = 17) 
 
 template<size_t nbits, size_t es, typename bt>
 std::string color_print(const bfloat<nbits, es, bt>& r) {
+	using Real = bfloat<nbits, es, bt>;
 	std::stringstream ss;
 	bool s{ false };
 	blockbinary<es,bt> e;
-	blockbinary<r.fbits,bt> f;
+	blockbinary<Real::fbits,bt> f;
 	decode(r, s, e, f);
 
 	Color red(ColorCode::FG_RED);

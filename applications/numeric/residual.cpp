@@ -74,7 +74,7 @@ void FrankMatrixTest(int N) {
 	x = solve(A, b);
 //	cout << "solution vector [" << x << "]\n";
 	Vector e = A * x - b;
-	cout << "1-norm of error vector: " << norm1(e) << endl;
+	cout << "L1-norm of error vector: " << norm(e, 1) << endl;
 }
 
 void Experiment1() {
@@ -188,7 +188,7 @@ void Experiment2() {
 		Matrix A = sw::universal::blas::hilbert<Scalar>(N);
 		b = A * ones;
 		Vector x = solve(A, b);
-		cout << "1-norm of float ref    :   " << norm1(x - ones) << endl;
+		cout << "1-norm of float ref    :   " << norm(x - ones, 1) << endl;
 
 	}
 
@@ -204,7 +204,7 @@ void Experiment2() {
 		Matrix A = sw::universal::blas::hilbert<Scalar>(N);
 		b = A * ones;
 		Vector x = solve(A, b);
-		cout << "1-norm of double ref   :   " << norm1(x - ones) << endl;
+		cout << "1-norm of double ref   :   " << norm(x - ones, 1) << endl;
 
 	}
 
@@ -239,7 +239,7 @@ void QuireCompensation(const sw::universal::blas::matrix<sw::universal::posit<nb
 	size_t iterations = 0;
 	x = lubksb(LU, indx, b);
 	r = residual(A, x, b);
-	Scalar error = norm1(r);
+	Scalar error = norm(r, 1);
 	constexpr size_t columnWidth = 14;
 	if (M < MAX_COLUMNS) std::cout << "solution vector: " << std::setw(columnWidth) << x << "\n";
 	std::cout << "error: " << error << "\n";
@@ -252,7 +252,7 @@ void QuireCompensation(const sw::universal::blas::matrix<sw::universal::posit<nb
 		if (M < MAX_COLUMNS) std::cout << "solution     vector: " << std::setw(columnWidth) << x << "\n";
 		if (M < MAX_COLUMNS) std::cout << "solution     vector: " << hex_format(x) << "\n";
 		r = residual(A, c, r);
-		error = norm1(r);
+		error = norm(r, 1);
 		std::cout << "error: " << error << "\n";
 		++iterations;
 		if (error < eps) break;
@@ -280,7 +280,7 @@ void IeeeReference(size_t MATRIX_ROWS) {
 	Vector b = A * ones;
 	Vector x = solve(A, b);
 	Vector r = A * x - b;
-	Scalar error = norm1(r);
+	Scalar error = norm(r, 1);
 	std::cout << "error : " << error << "\n";
 }
 

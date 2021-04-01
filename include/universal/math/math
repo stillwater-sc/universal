@@ -1,0 +1,19 @@
+// <universal/math/math>: universal math standard header
+//
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
+//
+// This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#ifndef _UNIVERSAL_MATH_STANDARD_HEADER_
+#define _UNIVERSAL_MATH_STANDARD_HEADER_
+
+////////////////////////////////////////////////////////////////////////////////////////
+///  BEHAVIORAL COMPILATION SWITCHES
+
+////////////////////////////////////////////////////////////////////////////////////////
+/// INCLUDE FILES that make up the library
+
+///////////////////////////////////////////////////////////////////////////////////////
+/// math functions
+#include <universal/math/math_functions.hpp>
+
+#endif

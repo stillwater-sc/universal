@@ -433,17 +433,19 @@ public:
 		throw "block index out of bounds";
 	}
 
-	template<size_t nnbits>
-	inline blockbinary<nbits, bt>& assign(const blockbinary<nnbits, bt>& rhs) {
+	// copy a value over from one blockbinary to this
+	// blockbinary is a 2's complement encoding, so we sign-extend by default
+	template<size_t srcbits>
+	inline blockbinary<nbits, bt>& assign(const blockbinary<srcbits, bt>& rhs) {
 		clear();
 		// since bt is the same, we can simply copy the blocks in
 		size_t minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
 		for (size_t i = 0; i < minNrBlocks; ++i) {
 			_block[i] = rhs.block(i);
 		}
-		if constexpr (nbits > nnbits) { // check if we need to sign extend
+		if constexpr (nbits > srcbits) { // check if we need to sign extend
 			if (rhs.sign()) {
-				for (size_t i = nnbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
+				for (size_t i = srcbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
 					set(i);
 				}
 			}
@@ -452,6 +454,23 @@ public:
 		_block[MSU] &= MSU_MASK;
 		return *this;
 	}
+
+	// copy a value over from one blockbinary to this without sign-extending the value
+	// blockbinary is a 2's complement encoding, so we sign-extend by default
+	// for fraction/significent encodings, we need to turn off sign-extending.
+	template<size_t srcbits>
+	inline blockbinary<nbits, bt>& assignWithoutSignExtend(const blockbinary<srcbits, bt>& rhs) {
+		clear();
+		// since bt is the same, we can simply copy the blocks in
+		size_t minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
+		for (size_t i = 0; i < minNrBlocks; ++i) {
+			_block[i] = rhs.block(i);
+		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block[MSU] &= MSU_MASK;
+		return *this;
+	}
+
 	// return the position of the most significant bit, -1 if v == 0
 	inline int msb() const noexcept {
 		for (int i = int(MSU); i >= 0; --i) {
@@ -825,13 +844,13 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 // create a binary representation of the storage
 template<size_t nbits, typename bt>
 std::string to_binary(const blockbinary<nbits, bt>& number, bool nibbleMarker = false) {
-	std::stringstream ss;
-	ss << 'b';
+	std::stringstream s;
+	s << 'b';
 	for (int i = int(nbits - 1); i >= 0; --i) {
-		ss << (number.at(size_t(i)) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) ss << '\'';
+		s << (number.at(size_t(i)) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 	}
-	return ss.str();
+	return s.str();
 }
 
 // local helper to display the contents of a byte array

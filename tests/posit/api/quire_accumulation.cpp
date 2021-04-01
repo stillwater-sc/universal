@@ -107,11 +107,11 @@ int ValidateQuireMagnitudeComparison() {
 	q += v;
 	v = 0xAAAB;
 	cout << "quire: " << q << endl;
-	cout << "value: " << v.get_fixed_point() << " " << components(v) << endl;
+	cout << "value: " << v.get_fixed_point() << " " << to_triple(v) << endl;
 	cout << (q < v ? "correct" : "incorrect") << endl;
 	cout << (q > v ? "incorrect" : "correct") << endl;
 	v = 0xAAAA;
-	cout << "value: " << v.get_fixed_point() << " " << components(v) << endl;
+	cout << "value: " << v.get_fixed_point() << " " << to_triple(v) << endl;
 	cout << (q == v ? "correct" : "incorrect") << endl;
 	return 0;
 }
@@ -158,69 +158,69 @@ int ValidateSignMagnitudeTransitions() {
 	cout << q << "                                               <-- start at zero" << endl;
 	// start in the positive, SE quadrant with minpos^2
 	q += addend = quire_mul(minp, minp);
-	cout << q << " q += minpos^2  addend = " << components(addend) << endl;
+	cout << q << " q += minpos^2  addend = " << to_triple(addend) << endl;
 	// move to the negative SW quadrant by adding negative value that is bigger
 	q += addend = quire_mul(min2, -min2);
-	cout << q << " q += min2^2    addend = " << components(addend) << endl;
+	cout << q << " q += min2^2    addend = " << to_triple(addend) << endl;
 	// remove minpos^2 from the quire by subtracting it
 	q -= addend = quire_mul(minp, minp);
-	cout << q << " q -= minpos^2  addend = " << components(addend) << endl;
+	cout << q << " q -= minpos^2  addend = " << to_triple(addend) << endl;
 	// move back into posit, SE quadrant by adding the next bigger product
 	q += addend = quire_mul(min3, min3);
-	cout << q << " q += min3^2    addend = " << components(addend) << endl;
+	cout << q << " q += min3^2    addend = " << to_triple(addend) << endl;
 	// remove the min2^2 from the quire by subtracting it
 	q -= addend = quire_mul(min2, min2);
-	cout << q << " q -= min2^2    addend = " << components(addend) << endl;
+	cout << q << " q -= min2^2    addend = " << to_triple(addend) << endl;
 	// add a -maxpos^2, to flip it again
 	q += addend = quire_mul(maxp, -maxp);
-	cout << q << " q += -maxpos^2 addend = " << components(addend) << endl;
+	cout << q << " q += -maxpos^2 addend = " << to_triple(addend) << endl;
 	// subtract min3^2 to propagate the carry
 	q -= addend = quire_mul(min3, min3);
-	cout << q << " q -= min3^2    addend = " << components(addend) << endl;
+	cout << q << " q -= min3^2    addend = " << to_triple(addend) << endl;
 	// remove min2^2 remenants
 	q += addend = quire_mul(min2, min2);
-	cout << q << " q += min2^2    addend = " << components(addend) << endl;
+	cout << q << " q += min2^2    addend = " << to_triple(addend) << endl;
 	q += addend = quire_mul(min2, min2);
-	cout << q << " q += min2^2    addend = " << components(addend) << endl;
+	cout << q << " q += min2^2    addend = " << to_triple(addend) << endl;
 	// borrow propagate
 	q += addend = quire_mul(minp, minp);
-	cout << q << " q += minpos^2  addend = " << components(addend) << endl;
+	cout << q << " q += minpos^2  addend = " << to_triple(addend) << endl;
 	// flip the max3 bit
 	q += addend = quire_mul(max3, max3);
-	cout << q << " q += max3^2    addend = " << components(addend) << endl;
+	cout << q << " q += max3^2    addend = " << to_triple(addend) << endl;
 	// add maxpos^2 to be left with max3^2
 	q += addend = quire_mul(maxp, maxp);
-	cout << q << " q += maxpos^2  addend = " << components(addend) << endl;;
+	cout << q << " q += maxpos^2  addend = " << to_triple(addend) << endl;;
 	// subtract max2^2 to flip the sign again
 	q -= addend = quire_mul(max2, max2);
-	cout << q << " q -= max2^2    addend = " << components(addend) << endl;
+	cout << q << " q -= max2^2    addend = " << to_triple(addend) << endl;
 	// remove the max3^2 remenants
 	q -= addend = quire_mul(max3, max3);
-	cout << q << " q -= max3^2    addend = " << components(addend) << endl;
+	cout << q << " q -= max3^2    addend = " << to_triple(addend) << endl;
 	// remove the minpos^2 bits
 	q -= addend = quire_mul(minp, minp);
-	cout << q << " q -= minpos^2  addend = " << components(addend) << endl;
+	cout << q << " q -= minpos^2  addend = " << to_triple(addend) << endl;
 	// add maxpos^2 to be left with max2^2 and flipped back to positive quadrant
 	q += addend = quire_mul(maxp, maxp);
-	cout << q << " q += maxpos^2  addend = " << components(addend) << endl;
+	cout << q << " q += maxpos^2  addend = " << to_triple(addend) << endl;
 	// add max2^2 to remove its remenants
 	q += addend = quire_mul(max2, max2);
-	cout << q << " q += max2^2    addend = " << components(addend) << endl;
+	cout << q << " q += max2^2    addend = " << to_triple(addend) << endl;
 	// subtract minpos^2 to propagate the borrow across the quire
 	q -= addend = quire_mul(minp, minp);
-	cout << q << " q -= minpos^2  addend = " << components(addend) << endl;
+	cout << q << " q -= minpos^2  addend = " << to_triple(addend) << endl;
 	// subtract maxpos^2 to flip the sign and be left with minpos^2
 	q -= addend = quire_mul(maxp, maxp);
-	cout << q << " q -= maxpos^2  addend = " << components(addend) << endl;
+	cout << q << " q -= maxpos^2  addend = " << to_triple(addend) << endl;
 	// add minpos^2 to get to zero
 	q += addend = quire_mul(minp, minp);
-	cout << q << " q += minpos^2  addend = " << components(addend) << endl;
+	cout << q << " q += minpos^2  addend = " << to_triple(addend) << endl;
 	// subtract minpos^2 to go negative
 	q += addend = -quire_mul(minp, minp);
-	cout << q << " q += -minpos^2 addend = " << components(addend) << endl;
+	cout << q << " q += -minpos^2 addend = " << to_triple(addend) << endl;
 	// add minpos^2 to get to zero
 	q += addend = quire_mul(minp, minp);
-	cout << q << " q += minpos^2  addend = " << components(addend) << " <-- back to zero" << endl;
+	cout << q << " q += minpos^2  addend = " << to_triple(addend) << " <-- back to zero" << endl;
 
 	return nrOfFailedTestCases;
 }
@@ -283,9 +283,9 @@ void TestCaseForProperZeroHandling() {
 	internal::value<3> v3 = q.to_value().round_to<3>();
 	internal::value<5> v5 = q.to_value().round_to<5>();
 	internal::value<7> v7 = q.to_value().round_to<7>();
-	cout << components(v3) << endl;
-	cout << components(v5) << endl;
-	cout << components(v7) << endl;
+	cout << to_triple(v3) << endl;
+	cout << to_triple(v5) << endl;
+	cout << to_triple(v7) << endl;
 
 	// test correct handling of 0
 	q = 1;
@@ -293,11 +293,11 @@ void TestCaseForProperZeroHandling() {
 	posit<8, 1> one = 1;
 	posit<8, 1> aThird = 0.3333333333333333333333333333333333333333333;
 	internal::value< posit<8, 1>::mbits > mul = quire_mul(aThird, -one);
-	cout << components(mul) << endl;
+	cout << to_triple(mul) << endl;
 	q += quire_mul(aThird, -one);
 	cout << q << endl;
 	internal::value<8> result = q.to_value().round_to<8>();
-	cout << result << " " << components(result) << endl;
+	cout << result << " " << to_triple(result) << endl;
 }
 
 #define MANUAL_TESTING 1

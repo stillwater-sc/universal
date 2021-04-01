@@ -57,7 +57,6 @@ namespace sw::universal {
 template<size_t nbits, typename bt> class blocktriple;
 template<size_t nbits, typename bt> blocktriple<nbits,bt> abs(const blocktriple<nbits,bt>& v);
 
-
 template<size_t nbits, typename bt>
 blocktriple<nbits, bt>& convert(unsigned long long uint, blocktriple<nbits, bt>& tgt) {
 	return tgt;
@@ -280,7 +279,14 @@ public:
 		}
 		else {
 			constexpr size_t shift = nbits - srcbits;
-			raw <<= shift;
+			if constexpr (shift < sizeof(StorageType)) {
+				raw <<= shift;
+			}
+			else {
+#if !BIT_CAST_SUPPORT
+				std::cerr << "round: shift " << shift << " is too large (>= " << sizeof(StorageType) << ")\n";
+#endif
+			}
 		}
 		bt significant = bt(raw);
 		return significant;
@@ -325,6 +331,7 @@ public:
 		_scale = scale;
 		_significant = significant;
 	}
+	constexpr void setpos() noexcept { _sign = false; }
 
 	// selectors
 	inline constexpr bool isnan()       const noexcept { return _nan; }
@@ -345,12 +352,16 @@ public:
 	explicit operator double()      const noexcept { return to_double(); }
 	explicit operator long double() const noexcept { return to_long_double(); }
 
-	void alignSignificant(int alignmentShift) {
-		if (fhbits + alignmentShift >= abits) {
-			std::cerr << "alignmentShift is too large\n";
-			return;
+	template<size_t targetBits>
+	blockbinary<targetBits, bt> alignSignificant(int alignmentShift) const {
+		blockbinary<targetBits, bt> v;
+		v.assignWithoutSignExtend(_significant);
+		if (fhbits + static_cast<size_t>(alignmentShift) >= targetBits) {
+			std::cerr << "alignmentShift " << alignmentShift << " is too large (>" << targetBits << ")\n";
+			v.clear();
+			return v;
 		}
-		_significant <<= alignmentShift;
+		return v <<= alignmentShift;
 	}
 
 #ifdef NEVER
@@ -535,7 +546,6 @@ inline bool operator< (const blocktriple<sbits, bt>& lhs, const blocktriple<sbit
 			}
 		}
 	}
-	return false;
 }
 
 template<size_t sbits, typename bt>
@@ -545,6 +555,8 @@ inline bool operator<=(const blocktriple<sbits, bt>& lhs, const blocktriple<sbit
 template<size_t sbits, typename bt>
 inline bool operator>=(const blocktriple<sbits, bt>& lhs, const blocktriple<sbits, bt>& rhs) { return !operator< (lhs, rhs); }
 
+
+////////////////////////////////// string conversion functions //////////////////////////////
 
 template<size_t nbits, typename bt>
 std::string to_binary(const sw::universal::blocktriple<nbits, bt>& a, bool bNibbleMarker = true) {
@@ -560,76 +572,47 @@ std::string to_triple(const blocktriple<nbits, bt>& a, bool bNibbleMarker = true
 	return s.str();
 }
 
-// add two values with fbits fraction bits, expand them to abits, and return the abits+1 result value
-// break encapsulation to avoid copies.
-template<size_t abits, typename bt>
-void module_add(blocktriple<abits, bt>& lhs, blocktriple<abits,bt>& rhs, blocktriple<abits + 1, bt>& result) {
-	// with sign/magnitude adders it is customary to organize the computation 
-	// along the four quadrants of sign combinations
-	//  + + = +
-	//  + - =   lhs > rhs ? + : -
-	//  - + =   lhs > rhs ? - : +
-	//  - - = 
-	// to simplify the result processing assign the biggest 
-	// absolute value to R1, then the sign of the result will be sign of the value in R1.
-
+template<size_t nbits, typename bt>
+blocktriple<nbits, bt> abs(const blocktriple<nbits, bt>& a) {
+	blocktriple<nbits, bt> absolute(a);
+	absolute.setpos();
+	return absolute;
+}
+// add two numbers with nbits significant bits, return the sumbits unrounded result value
+template<size_t nbits, size_t sumbits, typename bt>
+void module_add(const blocktriple<nbits, bt>& lhs, const blocktriple<nbits,bt>& rhs, blocktriple<sumbits, bt>& result) {
 	int lhs_scale = lhs.scale();
 	int rhs_scale = rhs.scale();
 	int scale_of_result = std::max(lhs_scale, rhs_scale);
 
-#ifdef LATER
-	// align the significants
-	lhs.alignSignificant(lhs_scale - scale_of_result);
-	rhs.alignSignificant(rhs_scale - scale_of_result);
-	bool r1_sign = lhs.sign(), r2_sign = rhs.sign();
-	bool signs_are_different = r1_sign != r2_sign;
+	// align the significants and add a leading 0 bit so that we can 
+	// transform to a 2's complement encoding for negative numbers
+	blockbinary<sumbits, bt> r1 = lhs.template alignSignificant<sumbits>(lhs_scale - scale_of_result + 3);
+	blockbinary<sumbits, bt> r2 = rhs.template alignSignificant<sumbits>(rhs_scale - scale_of_result + 3);
 
-	if (signs_are_different && abs(lhs) < abs(rhs)) {
-		std::swap(r1, r2);
-		std::swap(r1_sign, r2_sign);
+	if (lhs.isneg()) r1 = twosComplement(r1);
+	if (rhs.isneg()) r2 = twosComplement(r2);
+	blockbinary<sumbits, bt> sum = r1 + r2;
+
+	if constexpr (_trace_btriple_add) {
+		std::cout << "r1  : " << to_binary(r1) << " : " << r1 << '\n';
+		std::cout << "r2  : " << to_binary(r2) << " : " << r2 << '\n';
+		std::cout << "sum : " << to_binary(sum) << " : " << sum << '\n';
 	}
-
-//	if (signs_are_different) r2 = twos_complement(r2);
-
-//	if (_trace_btriple_add) {
-//		std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r1       " << r1 << std::endl;
-//		if (signs_are_different) {
-//			std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2 orig  " << twos_complement(r2) << std::endl;
-//		}
-//		std::cout << (r2_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " r2       " << r2 << std::endl;
-//	}
-
-	blockbinary<abits + 1> sum;
-	bool carry = false; // add_unsigned(r1, r2, sum);
-
-//	if (_trace_btriple_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " carry " << std::setw(3) << (carry ? 1 : 0) << " sum     " << sum << std::endl;
-
-	int shift = 0;
-	if (carry) {
-		if (r1_sign == r2_sign) {  // the carry && signs== implies that we have a number bigger than r1
-			shift = -1;
+	if (sum.iszero()) {                         
+		result.clear();
+	}
+	else {
+		bool sign = false;
+		if (sum.isneg()) {
+			sum = twosComplement(sum);
+			sign = true;
 		}
-		else {
-			// the carry && signs!= implies ||result|| < ||r1||, must find MSB (in the complement)
-			for (int i = int(abits) - 1; i >= 0 && !sum[size_t(i)]; --i) {
-				++shift;
-			}
-		}
+		int shift = 0;
+		// TODO: normalize subnormal if needed
+		scale_of_result -= shift;
+		result.set(sign, scale_of_result, sum);
 	}
-	assert(shift >= -1);
-
-	if (shift >= long(abits)) {            // we have actual 0                            
-		sum.reset();
-		result.set(false, 0, sum, true, false, false);
-		return;
-	}
-
-	scale_of_result -= shift;
-	const int hpos = int(abits) - 1 - shift;         // position of the hidden bit 
-	sum <<= abits - hpos + 1;
-	if (_trace_btriple_add) std::cout << (r1_sign ? "sign -1" : "sign  1") << " scale " << std::setw(3) << scale_of_result << " sum     " << sum << std::endl;
-	result.set(r1_sign, scale_of_result, sum, false, false, false);
-#endif
 }
 
 }  // namespace sw::universal

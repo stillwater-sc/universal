@@ -1,0 +1,11 @@
+# File: docs/environment.yaml
+#
+
+name: docs
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - sphinx=3.5.3
+  - pip:
+    - myst-parser=0.13.5

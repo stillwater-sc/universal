@@ -53,7 +53,7 @@ size_t cg_dot_dot(const Matrix& M, const Matrix& A, const Vector& b, Vector& x, 
 		x = x + alpha * p;
 		rho = rho - alpha * q;
 		// check for convergence of the system
-		residual = norm1(x_1 - x);
+		residual = norm(x_1 - x, 1);
 		//		std::cout << '[' << itr << "] " << std::setw(12) << x << " residual " << residual << std::endl;
 		residuals.push_back(residual);
 		++itr;

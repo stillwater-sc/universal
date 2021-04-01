@@ -4,7 +4,7 @@ branches:
   - master
 clone_folder: c:\projects\cmake-init
 image:
-- Visual Studio 2017
+- Visual Studio 2019
 configuration:
 - Release
 #- Debug
@@ -23,7 +23,7 @@ init:
 - if "%arch%"=="Win64" ( set arch= Win64)
 - echo %arch%
 - echo %APPVEYOR_BUILD_WORKER_IMAGE%
-- if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2017" ( set generator="Visual Studio 15 2017%arch%" )
+- if "%APPVEYOR_BUILD_WORKER_IMAGE%"=="Visual Studio 2019" ( set generator="Visual Studio 16 2019%arch%" )
 - echo %generator%
 
 before_build:
@@ -31,7 +31,7 @@ before_build:
     mkdir build
     cd build
     cmake --version
-    cmake -DBUILD_POSITS=ON -DBUILD_FIXPNTS=ON -DBUILD_AREALS=ON -DBUILD_BFLOATS=ON -DBUILD_STORAGE_CLASSES=ON .. -G %generator%
+    cmake -DBUILD_STORAGE_CLASSES=ON .. -G %generator%
 build:
   project: c:\projects\cmake-init\build\universal.sln
   verbosity: minimal
