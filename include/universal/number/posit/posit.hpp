@@ -157,7 +157,7 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 		if (msb >= 0 && es > 0) {
 			nrExponentBits = (msb >= static_cast<int>(es - 1ull)) ? es : static_cast<size_t>(msb + 1ll);
 			for (size_t i = 0; i < nrExponentBits; ++i) {
-				_exp[size_t(es - 1ull - i)] = tmp[static_cast<size_t>(msb) - i];
+				_exp[es - size_t{1} - i] = tmp[static_cast<size_t>(msb) - i];
 			}
 		}
 		_exponent.set(_exp, nrExponentBits);
@@ -174,7 +174,7 @@ void extract_fields(const bitblock<nbits>& raw_bits, bool& _sign, regime<nbits, 
 	size_t nrFractionBits = (msb < 0 ? 0ull : static_cast<size_t>(msb) + 1ull);
 	if (msb >= 0) {
 		for (int i = msb; i >= 0; --i) {
-			_frac[fbits - 1ull - static_cast<size_t>(msb - i)] = tmp[static_cast<size_t>(i)];
+			_frac[fbits - size_t{ 1 } - static_cast<size_t>(msb - i)] = tmp[static_cast<size_t>(i)];
 		}
 	}
 	_fraction.set(_frac, nrFractionBits);
