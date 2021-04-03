@@ -54,13 +54,12 @@ matrix<Scalar> diag(const vector<Scalar>& d) {
 template<typename Scalar>
 matrix<Scalar> minor(const matrix<Scalar>& A, size_t x=1){
     using size_type = typename matrix<Scalar>::size_type;
-    matrix<Scalar> tmp(A);
     for (size_t i = 0; i < x; i++){ 
-        tmp[i,i] = size_type(1.0);
+        (*this)(i,i) = size_type(1.0);
     }
-    for (size_t i = x; i < num_rows(A); i++){
-        for (size_t j = x; j < num_cols(A); j++){
-            tmp[i][j] = A[i][j];
+    for (size_t i = x; i < num_rows(A); ++i){
+        for (size_t j = x; j < num_cols(A); j){
+            (*this)(i,j) = A[i][j];
         }
     }
     return tmp;
