@@ -188,7 +188,6 @@ Scalar normL2(const sw::universal::blas::vector<Scalar>& v) {
 	return sqrt(L2Norm);
 }
 
-<<<<<<< HEAD
 // L3-norm of a vector
 template<typename Scalar>
 Scalar normL3(const sw::universal::blas::vector<Scalar>& v) {
@@ -259,6 +258,7 @@ Scalar norm(const sw::universal::blas::vector<Scalar>& v, int p) {
 
 } // namespace sw::universal::blas
 
+<<<<<<< HEAD
 
 
 =======
@@ -292,6 +292,8 @@ Scalar norm(const std::vector<Scalar>& v, String& s="one_norm"){
         return ans;
 }
 >>>>>>> f6d62f71b46f68e6a23342c79a905a56a5b27ad6
+=======
+>>>>>>> d14b018c28cc05755f550479ce4a269ca37cb235
 // specializations for STL vectors
 
 template<typename Ty>
