@@ -1,3 +1,14 @@
+########################################################################################
+# CMakeList.txt
+#
+# Authors: 
+#          Matthias Moller, William Zorn
+#          Theodore Omtzigt, Peter Gottschling
+#          Universal Numerical Analysis Community
+########################################################################################
+include(tools/cmake/banners.cmake)
+print_header()
+
 ####
 # Set minimum version of CMake. Since we are using the VERSION option of the
 # project command, we need at least 3.0. To honor the amazing work that
@@ -341,7 +352,7 @@ macro (compile_all testing prefix folder)
         get_filename_component (test ${source} NAME_WE)
         string(REPLACE " " ";" new_source ${source})
         set(test_name ${prefix}_${test})
-        message(STATUS "Add test ${test_name} from source ${new_source}.")
+        #message(STATUS "Add test ${test_name} from source ${new_source}.")
         add_executable (${test_name} ${new_source})
 
         #add_custom_target(valid SOURCES ${SOURCES})
@@ -647,3 +658,4 @@ endif(BUILD_IEEE_FLOAT_QUIRES)
 # Configuration summary
 include(tools/cmake/summary.cmake)
 universal_print_configuration_summary()
+print_footer()
