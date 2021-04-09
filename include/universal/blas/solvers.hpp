@@ -12,6 +12,8 @@
 #include <universal/blas/solvers/jacobi.hpp>
 #include <universal/blas/solvers/gauss_seidel.hpp>
 #include <universal/blas/solvers/sor.hpp>
+#include <universal/blas/solvers/find_rank.hpp>
+#include <universal/blas/solvers/svd.hpp>
 
 #include <universal/blas/solvers/cg_dot_dot.hpp>
 #include <universal/blas/solvers/cg_dot_fdp.hpp>
