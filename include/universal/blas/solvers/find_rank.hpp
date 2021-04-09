@@ -14,7 +14,8 @@ namespace sw {
                 size_t rank = 0;
                 vector<bool> row(n, false);
                 for (size_t i = 0; i < m; ++i) {
-                    for (size_t j = 0; j < n; ++j) {
+                    size_t j = 0;
+                    for (j = 0; j < n; ++j) {
                         if (abs(A[j][i]) > Scalar(-1E9) && row[j]!=Scalar(0)) break;
                     }
 

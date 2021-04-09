@@ -50,6 +50,8 @@ matrix<Scalar> diag(const vector<Scalar>& d) {
 	}
 	return A;
 }
+
+/*
 //compute minor in-place
 template<typename Scalar>
 matrix<Scalar> minor(const matrix<Scalar>& A, size_t x=1){
@@ -64,6 +66,8 @@ matrix<Scalar> minor(const matrix<Scalar>& A, size_t x=1){
     }
     return tmp;
 }
+*/
+
 //get xth column
 template<typename Scalar>
 void get_col(matrix<Scalar>& A, vector<Scalar>& v, size_t x){
