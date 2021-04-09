@@ -12,7 +12,7 @@
 // Configure the posit template environment
 // first: enable fast specialized posit<128,4>
 //#define POSIT_FAST_SPECIALIZATION   // turns on all fast specializations
-#define POSIT_FAST_POSIT_128_4 0
+#define POSIT_FAST_POSIT_128_4 1// TODO: fast posit<128,4> not implemented yet
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 0
 #include <universal/number/posit/posit>

@@ -12,7 +12,7 @@ print_header()
 ####
 # Set minimum version of CMake. Since we are using the VERSION option of the
 # project command, we need at least 3.0. To honor the amazing work that
-# the folks at KitWare have done for the open source community, we are
+# the folks at KitWare have done for the open-source community, we are
 # going to specify a recent version. 
 # As of UNIVERSAL v3.0 December 2019
 # Ubuntu 16.04 LTS runs cmake 3.5.1
@@ -33,7 +33,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 5)
+  set(UNIVERSAL_VERSION_MINOR 6)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)

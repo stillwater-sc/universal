@@ -11,8 +11,7 @@
 #endif
 // Configure the posit template environment
 // first: enable fast specialized posit<48,2>
-// TODO: no implementation yet
-#define POSIT_FAST_POSIT_48_2 0
+#define POSIT_FAST_POSIT_48_2 1    // TODO: fast posit<48,2> not implemented yet
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit>
@@ -41,7 +40,7 @@ try {
 	bool bReportIndividualTestCases = false;
 	std::string tag = " posit<48,2>";
 
-#if defined(POSIT_FAST_POSIT_48_2)
+#if POSIT_FAST_POSIT_48_2
 	cout << "Fast specialization posit<48,2> configuration tests" << endl;
 #else
 	cout << "Extended Standard posit<48,2> configuration tests" << endl;

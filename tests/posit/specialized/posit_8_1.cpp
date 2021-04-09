@@ -11,8 +11,7 @@
 #endif
 // Configure the posit template environment
 // first: enable fast specialized posit<8,1>
-// TODO: no implementation yet
-#define POSIT_FAST_POSIT_8_1 0
+#define POSIT_FAST_POSIT_8_1 1
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit>

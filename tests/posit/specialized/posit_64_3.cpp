@@ -11,7 +11,7 @@
 #endif
 // Configure the posit template environment
 // first: enable fast specialized posit<64,3>
-#define POSIT_FAST_POSIT_64_3 0  // TODO: fast posit<64,3> not implemented yet
+#define POSIT_FAST_POSIT_64_3 1  // TODO: fast posit<64,3> not implemented yet
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit>

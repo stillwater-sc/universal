@@ -21,6 +21,7 @@
 #define POSIT_FAST_POSIT_8_1   1
 #define POSIT_FAST_POSIT_16_1  1
 #define POSIT_FAST_POSIT_32_2  1
+#define POSIT_FAST_POSIT_48_2  0
 #define POSIT_FAST_POSIT_64_3  0
 #define POSIT_FAST_POSIT_128_4 0
 #define POSIT_FAST_POSIT_256_5 0
@@ -34,17 +35,42 @@
 #endif
 
 // fast specializations for special posit configurations
+#if POSIT_FAST_POSIT_2_0
 #include <universal/number/posit/specialized/posit_2_0.hpp>
+#endif
+#if POSIT_FAST_POSIT_3_0
 #include <universal/number/posit/specialized/posit_3_0.hpp>
+#endif
+#if POSIT_FAST_POSIT_3_1
 #include <universal/number/posit/specialized/posit_3_1.hpp>
+#endif
+#if POSIT_FAST_POSIT_4_0
 #include <universal/number/posit/specialized/posit_4_0.hpp>
+#endif
+#if POSIT_FAST_POSIT_8_0
 #include <universal/number/posit/specialized/posit_8_0.hpp>
+#endif
+#if POSIT_FAST_POSIT_8_1
 #include <universal/number/posit/specialized/posit_8_1.hpp>
+#endif
+#if POSIT_FAST_POSIT_16_1
 #include <universal/number/posit/specialized/posit_16_1.hpp>
+#endif
+#if POSIT_FAST_POSIT_32_2
 #include <universal/number/posit/specialized/posit_32_2.hpp>
+#endif
+#if POSIT_FAST_POSIT_48_2
+#include <universal/number/posit/specialized/posit_48_2.hpp>
+#endif
+#if POSIT_FAST_POSIT_64_3
 #include <universal/number/posit/specialized/posit_64_3.hpp>
+#endif
+#if POSIT_FAST_POSIT_128_4
 #include <universal/number/posit/specialized/posit_128_4.hpp>
+#endif
+#if POSIT_FAST_POSIT_256_5
 #include <universal/number/posit/specialized/posit_256_5.hpp>
+#endif
 
 #ifdef _MSC_VER
 #pragma warning( pop )
