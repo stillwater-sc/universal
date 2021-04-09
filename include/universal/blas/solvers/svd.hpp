@@ -1,12 +1,9 @@
 #pragma once
 
-#include<algorithm>
-#include<universal/blas/operators.hpp>
-#include<universal/blas/matrix.hpp>
-#include<universal/blas/vector.hpp>
-#include<universal/blas/solvers.hpp>
-#include<universal/blas/generators.hpp>
-#include<universal/blas/blas_l1.hpp>
+#include <algorithm>
+
+#include <universal/blas/blas_l1.hpp>
+#include <universal/blas/matrix.hpp>
 
 namespace sw::universal::blas {
 

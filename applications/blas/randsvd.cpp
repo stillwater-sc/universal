@@ -24,7 +24,6 @@
 #include <universal/number/posit/posit>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <universal/blas/blas.hpp>
-#include <universal/blas/solvers/svd.hpp>
 #include <universal/blas/generators.hpp>
 
 template<typename Scalar>
@@ -38,7 +37,6 @@ void RandsvdMatrixTest(size_t N = 5) {
 	cout << S << '\n';
 	cout << V << '\n';
 	cout << D << '\n';
-
 }
 
 int main(int argc, char* argv[])
@@ -48,9 +46,8 @@ try {
 
 	if (argc == 1) cout << argv[0] << endl;
 
-	RandsvdMatrixTest<float>();
+	RandsvdMatrixTest< float >();
 	RandsvdMatrixTest< posit<32, 2> >();
-	RandsvdMatrixTest< posit<256, 5> >();
 
 	return EXIT_SUCCESS;
 }
