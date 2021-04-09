@@ -16,13 +16,13 @@ template<typename Scalar, typename Tolerance>
                 using value_type = typename matrix::value_type;
                 using size_type = typename matrix::size_type;
                 size_type        ncols = num_cols(A), nrows = num_rows(A);
-                value_type       ref, zero = math::zero(ref), one = math::one(ref);
-                double 	     err(std::numeric_limits<double>::max()), e, f;
+                value_type       ref, zero = math::zero(ref), one = math::one(ref);                
                 if (nrows != ncols) std::swap(row, col);
                 matrix<Scalar> Q(nrows, nrows), R(nrows, ncols), VT(nrows, ncols), E(nrows, ncols),QT(ncols, ncols), RT(ncols, nrows);
                 size_type l = 100 * std::max(nrows, ncols);
-                S = one; D = one; E = zero;
+                S = one; D = one; E;
                 for (size_type i = 0; err > tol && i < l; ++i) {
+                    double err(std::numeric_limits<double>::max()), e, f;
                     std::tie(QT, RT) = qr(V);
                     S *= QT;
                     VT = RT.transpose();
@@ -39,10 +39,10 @@ template<typename Scalar, typename Tolerance>
 	                V= 0;  
 	                matrix<Scalar>  ins_V(V), ins_S(S);
 	                
-	                for (size_type i= 0, end= std::min(nrows, ncols); i < end; i++) {
+	                for (size_type i= 0, end= std::min(nrows, ncols); i < end; ++i) {
 	                    ins_V[i][i] *= std::abs(R[i][i]);
 	                    if (R[i][i] < zero) 	
-		                for (size_type j= 0; j < nrows; j++) 
+		                for (size_type j= 0; j < nrows; ++j) 
 		                ins_S[j][i] *= -1; 
 	                }
                 }
