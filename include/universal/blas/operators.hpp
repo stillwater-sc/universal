@@ -68,12 +68,28 @@ matrix<Scalar> minor(const matrix<Scalar>& A, size_t x=1){
 }
 */
 
-//get xth column
+//get mth row
 template<typename Scalar>
-void get_col(matrix<Scalar>& A, vector<Scalar>& v, size_t x){
-    using size_type = typename matrix<Scalar>::size_type;
-    for (size_t i = 0; i < num_rows(A); i++)
-    v[i] = A[i][x];
+void row(const matrix<Scalar>& A, vector<Scalar>& v, size_t n){
+	auto nrCols = num_cols(A);
+	if (nrCols != size(v)) {
+		v.clear();
+	}
+	else {
+	    for (size_t j = 0; j < num_cols(A); ++j) v[j] = A[n][j];
+	}
+}
+
+//get nth column
+template<typename Scalar>
+void column(const matrix<Scalar>& A, vector<Scalar>& v, size_t n){
+	auto nrRows = num_rows(A);
+	if (nrRows != size(v)) {
+		v.clear();
+	}
+	else {
+	    for (size_t i = 0; i < nrRows; ++i) v[i] = A[i][n];
+	}
 }
 
 // return lower triangular matrix of A
