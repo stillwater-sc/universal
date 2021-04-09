@@ -9,7 +9,7 @@
 
 int main(int argc, char* argv[])
 {
-	const int maxNr = 256;
+	const int maxNr = 128;
 	posit128_t pa, pb, pc;
 	char str[posit128_str_SIZE];
 	bool failures = false;
