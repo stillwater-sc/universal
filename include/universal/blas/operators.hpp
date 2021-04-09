@@ -58,7 +58,7 @@ matrix<Scalar> minor(const matrix<Scalar>& A, size_t x=1){
         (*this)(i,i) = size_type(1.0);
     }
     for (size_t i = x; i < num_rows(A); ++i){
-        for (size_t j = x; j < num_cols(A); j){
+        for (size_t j = x; j < num_cols(A); ++j){
             (*this)(i,j) = A[i][j];
         }
     }
