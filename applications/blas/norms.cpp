@@ -13,6 +13,7 @@
 #pragma warning(disable : 4820) // warning C4820: 'std::_Mpunct<_Elem>': '4' bytes padding added after data member 'std::_Mpunct<_Elem>::_Kseparator'
 #pragma warning(disable : 5026) // warning C5026 : 'std::_Generic_error_category' : move constructor was implicitly defined as deleted
 #pragma warning(disable : 5027) // warning C5027 : 'std::_Generic_error_category' : move assignment operator was implicitly defined as deleted
+#pragma warning(disable : 5045) // warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified 
 #endif 
 
 // enable the following define to show the intermediate steps in the fused-dot product
@@ -56,11 +57,7 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	//constexpr size_t nbits = 16;
-	//constexpr size_t es = 1;
-	//constexpr size_t capacity = 6;   // 2^3 accumulations of maxpos^2
-	//constexpr size_t vecSizePwr = 5;
-	//constexpr size_t vecSize = (size_t(1) << vecSizePwr);
+	if (argc == 1) cout << argv[0] << endl;
 
 	using Scalar = posit<16, 2>;
 	// generate an interesting vector

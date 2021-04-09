@@ -160,7 +160,7 @@ public:
 		}
 		else {
 			reset();
-			_scale = sw::universal::findMostSignificantBit(rhs) - 1;
+			_scale = static_cast<int>(sw::universal::findMostSignificantBit(rhs)) - 1;
 			uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0ull : (rhs << (64 - _scale)); // the scale == -1 case is handled above
 			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 			_nrOfBits = fbits;
@@ -417,7 +417,10 @@ public:
 		}
 		return v;
 	}
-	int sign_value() const { return (_sign ? -1 : 1); }
+	template<typename Ty = double>
+	Ty sign_value() const { 
+		return (_sign ? Ty{ -1 } : Ty{ 1 });
+	}
 	template<typename Ty = double>
 	Ty scale_value() const {
 		if (_zero) return Ty(0.0);
@@ -438,13 +441,13 @@ public:
 
 	// conversion helpers
 	long double to_long_double() const {
-		return sign_value() * scale_value<long double>() * fraction_value<long double>();
+		return sign_value<long double>() * scale_value<long double>() * fraction_value<long double>();
 	}
 	double to_double() const {
-		return sign_value() * scale_value<double>() * fraction_value<double>();
+		return sign_value<double>() * scale_value<double>() * fraction_value<double>();
 	}
 	float to_float() const {
-		return sign_value() * scale_value<float>() * fraction_value<float>();
+		return sign_value<float>() * scale_value<float>() * fraction_value<float>();
 	}
 
 	// explicit conversion operators to native types
