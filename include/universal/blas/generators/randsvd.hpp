@@ -1,8 +1,8 @@
 #pragma once
 
 #include <universal/blas/blas.hpp>
+#include <universal/blas/generators/gaussian_random.hpp>
 
-//const double k = 0.0000001;
 namespace sw::universal::blas {  
 
 template<typename Scalar>

@@ -6,9 +6,8 @@
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cstdint>
 #include <random>
-#include <algorithm>
 
-namespace sw { namespace universal { namespace blas {
+namespace sw::universal::blas {
 
 // fill a dense (N, N) matrix with linear index values in row order
 template <typename Scalar>
@@ -63,4 +62,4 @@ matrix<Scalar> frank(int N) {
 	return A;
 }
 
-}}} // namespace sw::universal::blas
+} // namespace sw::universal::blas
