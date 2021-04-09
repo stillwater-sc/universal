@@ -24,14 +24,15 @@
 #include <universal/number/posit/posit>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <universal/blas/blas.hpp>
+#include <universal/blas/solvers/svd.hpp>
 #include <universal/blas/generators.hpp>
 
 template<typename Scalar>
 void RandsvdMatrixTest(size_t N = 5) {
-	namespace std;
-	namespace sw::universal::blas;
+	using namespace std;
+	using namespace sw::universal::blas;
 	using Matrix = sw::universal::blas::matrix<Scalar>;
-	Matrix S(N, N), V(N, N), D(N, N);
+	Matrix A(N,N), S(N, N), V(N, N), D(N, N);
 	cout << "RandsvdMatrixTest for type: " << typeid(Scalar).name() << endl;
 	std::tie(S, V, D) = randsvd(A);
 	cout << S << '\n';

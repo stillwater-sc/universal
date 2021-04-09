@@ -52,6 +52,7 @@ constexpr uint64_t SIZE_512G = 512 * SIZE_1G;
 // solvers
 #include <universal/blas/solvers/lu.hpp>
 #include <universal/blas/solvers/lsq.hpp>
+#include <universal/blas/solvers/svd.hpp>
 
 // Matrix operators
 #include <universal/blas/operators.hpp>
