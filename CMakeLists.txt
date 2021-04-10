@@ -108,8 +108,9 @@ option(BUILD_LNS                         "Set to ON to build LNS tests"         
 option(BUILD_BLAS                        "Set to ON to build the BLAS tests"                   OFF)
 # conversion test suites
 option(BUILD_CONVERSION_TESTS            "Set to ON to build conversion test suites"           OFF)
-# performance benchmarking
+# benchmarking
 option(BUILD_PERFORMANCE_TESTS           "Set to ON to build performance benchmarks"           OFF)
+option(BUILD_ENERGY_TESTS                "Set to ON to build mixed-prec energy benchmarks"     OFF)
 option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"         OFF)
 # documentation
 option(BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
@@ -566,16 +567,21 @@ endif(BUILD_CONVERSION_TESTS)
 
 # performance benchmarks
 if(BUILD_PERFORMANCE_TESTS)
-add_subdirectory("performance/decimal")
-add_subdirectory("performance/integer")
-add_subdirectory("performance/fixpnt")
-add_subdirectory("performance/bfloat")
-add_subdirectory("performance/areal")
-add_subdirectory("performance/lns")
-add_subdirectory("performance/posit")
-add_subdirectory("performance/valid")
-add_subdirectory("performance/unum")
+add_subdirectory("benchmark/performance/arithmetic/decimal")
+add_subdirectory("benchmark/performance/arithmetic/integer")
+add_subdirectory("benchmark/performance/arithmetic/fixpnt")
+add_subdirectory("benchmark/performance/arithmetic/bfloat")
+add_subdirectory("benchmark/performance/arithmetic/areal")
+add_subdirectory("benchmark/performance/arithmetic/lns")
+add_subdirectory("benchmark/performance/arithmetic/posit")
+add_subdirectory("benchmark/performance/arithmetic/valid")
+add_subdirectory("benchmark/performance/arithmetic/unum")
 endif(BUILD_PERFORMANCE_TESTS)
+
+# performance benchmarks
+if(BUILD_ENERGY_TESTS)
+add_subdirectory("benchmark/energy/blas")
+endif(BUILD_ENERGY_TESTS)
 
 # command line tools and utilities 
 if(BUILD_CMD_LINE_TOOLS)
