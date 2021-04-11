@@ -31,7 +31,7 @@ std::string conditional_fdp(const sw::universal::blas::vector< sw::universal::po
 }
 
 #if DECIMAL_OPERATIONS_COUNT
-
+// create the static storage for the occurrence measurements of the decimal number system
 bool sw::universal::decimal::enableAdd = true;
 sw::universal::occurrence<sw::universal::decimal> sw::universal::decimal::ops;
 
