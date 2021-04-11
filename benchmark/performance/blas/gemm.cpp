@@ -1,4 +1,4 @@
-// l2_fused_mv.cpp: example program showing a fused matrix-vector product
+// gemm.cpp: data flow performance measurement of mixed-precision matrix-matrix product
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -11,46 +11,50 @@
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit>
+// enable operation counts
+#define DECIMAL_OPERATIONS_COUNT 1
+#include <universal/number/decimal/decimal>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <universal/blas/blas.hpp>
+#include <universal/blas/generators.hpp>
 
 template<typename Scalar>
-void catastrophicCancellationTest() {
-	using namespace std;
-	cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	using Vector = sw::universal::blas::vector<Scalar>;
-
-	Scalar a1 = 3.2e8;
-	Scalar a2 = 1;
-	Scalar a3 = -1;
-	Scalar a4 = 8e7;
-	Matrix A = { 
-		{ a1, a2, a3, a4 }, 
-		{ a1, a2, a3, a4 } 
-	};
-	cout << std::setprecision(10);
-	cout << "matrix A: \n" << A << endl;
-	Vector x = { 4.0e7, 1, -1, -1.6e8 };
-	cout << "vector x: \n" << x << endl;
-	Vector b(2);
-	b = A * x;
-	cout << "vector b: \n" << b << endl;
-	if (b[0] == 2 && b[1] == 2) {
-		cout << "PASS\n";
-	}
-	else {
-		cout << "FAIL\n";
-	}
+std::string conditional_fdp(const sw::universal::blas::vector< Scalar >& a, const sw::universal::blas::vector< Scalar >& b) {
+	return std::string("no FDP for non-posit value_type");
 }
+template<size_t nbits, size_t es>
+std::string conditional_fdp(const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& a, const sw::universal::blas::vector< sw::universal::posit<nbits, es> >& b) {
+	using namespace std;
+	stringstream ss;
+	ss << sw::universal::fdp(a, b);
+	return ss.str();
+}
+
+#if DECIMAL_OPERATIONS_COUNT
+
+// create the static storage for the occurrence measurements of the decimal number system
+bool sw::universal::decimal::enableAdd = true;
+sw::universal::occurrence<sw::universal::decimal> sw::universal::decimal::ops;
+
+#endif
 
 int main(int argc, char** argv)
 try {
 	using namespace std;
+	using namespace sw::universal::blas;
 
-	catastrophicCancellationTest<float>();
-	catastrophicCancellationTest<double>();
-	catastrophicCancellationTest< sw::universal::posit<32,2> >();
+	using Scalar = decimal;
+	using Matrix = matrix<Scalar>;
+
+	constexpr size_t N = 5;
+
+	Matrix A = eye<Scalar>(N);
+	Matrix B = frank<Scalar>(N);
+	decimal proxy;
+	proxy.resetStats();
+	Matrix C = A * B;
+	cout << C << endl;
+	proxy.printStats(cout);
 
 	return EXIT_SUCCESS;
 }

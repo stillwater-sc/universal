@@ -33,7 +33,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 6)
+  set(UNIVERSAL_VERSION_MINOR 8)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -73,16 +73,24 @@ option(USE_SSE3                          "Build code with SSE3 ISA support"     
 option(USE_AVX                           "Build code with AVX ISA support"                     OFF)
 option(USE_AVX2                          "Build code with AVX2 ISA support"                    OFF)
 # control which projects get enabled
-# Continuous Integration override to build all components
+# Continuous Integration override to build all
 option(BUILD_CI_CHECK                    "Set to ON to build all components"                   OFF)
+# or subsets of the components
+option(BUILD_INTRODUCTION                "Set to ON to build the introductory components"      ON)
+option(BUILD_NUMERICAL_CHECKS            "Set to ON to build all the numerical components"     OFF)
+option(BUILD_BENCHMARKS                  "Set to ON to build all the benchmark components"     OFF)
+option(BUILD_REGRESSION_SUITES           "Set to ON to build all the regression suites"        OFF)
+option(BUILD_MIXEDPRECISION_SDK          "Set to ON to build the mixed-precision SDK"          OFF)
 
+# or, build individual components
 # utilities and educational examples
-option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   ON)
-option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       ON)
-option(BUILD_EDUCATION                   "Set to ON to build educational examples"             ON)
-option(BUILD_APPLICATIONS                "Set to ON to build epplication examples"             ON)
-option(BUILD_MIXEDPRECISION              "Set to ON to build mixed-precision environment"      ON)
-option(BUILD_NUMERICAL_TESTS             "Set to ON to build numerical test programs"          OFF)
+option(BUILD_CMD_LINE_TOOLS              "Set to ON to build cmd line tools"                   OFF)
+option(BUILD_PLAYGROUND                  "Set to ON to build experimentation playground"       OFF)
+option(BUILD_EDUCATION                   "Set to ON to build educational examples"             OFF)
+option(BUILD_APPLICATIONS                "Set to ON to build application examples"             OFF)
+
+# numerical and special math functions
+option(BUILD_NUMERICAL_CHALLENGES        "Set to ON to build numerical challenge programs"     OFF)
 option(BUILD_FUNCTIONS                   "Set to ON to build special functions programs"       OFF)
 
 # C API library and test programs
@@ -104,14 +112,29 @@ option(BUILD_POSITS                      "Set to ON to build unum Type 3 posit t
 option(BUILD_VALIDS                      "Set to ON to build unum Type 3 valid tests"          OFF)
 option(BUILD_REALS                       "Set to ON to build real tests"                       OFF)
 option(BUILD_LNS                         "Set to ON to build LNS tests"                        OFF)
-# Basic Linear Algebra 
-option(BUILD_BLAS                        "Set to ON to build the BLAS tests"                   OFF)
 # conversion test suites
-option(BUILD_CONVERSION_TESTS            "Set to ON to build conversion test suites"           OFF)
-# benchmarking
-option(BUILD_PERFORMANCE_TESTS           "Set to ON to build performance benchmarks"           OFF)
-option(BUILD_ENERGY_TESTS                "Set to ON to build mixed-prec energy benchmarks"     OFF)
+option(BUILD_CONVERSIONS                 "Set to ON to build conversion test suites"           OFF)
+
+# reproducible IEEE-754
 option(BUILD_IEEE_FLOAT_QUIRES           "Set to ON to build reproducible IEEE floats"         OFF)
+
+# Basic Linear Algebra tests
+option(BUILD_BLAS                        "Set to ON to build the BLAS tests"                   OFF)
+option(BUILD_VMATH                       "Set to ON to build the BLAS vector math lib"         OFF)
+
+# benchmarking
+option(BUILD_BENCHMARK_PERFORMANCE       "Set to ON to build performance benchmarks"           OFF)
+option(BUILD_BENCHMARK_ENERGY            "Set to ON to build mixed-prec energy benchmarks"     OFF)
+option(BUILD_BENCHMARK_ACCURACY          "Set to ON to build accuracy benchmarks"              OFF)
+
+# mixed-precision algorithm design and optimization
+option(BUILD_MIXEDPRECISION_ROOTS        "Set to ON to build mixed-precision root finders"     OFF)
+option(BUILD_MIXEDPRECISION_APPROXIMATE  "Set to ON to build mixed-precision approximation"    OFF)
+option(BUILD_MIXEDPRECISION_INTEGRATE    "Set to ON to build mixed-precision integration"      OFF)
+option(BUILD_MIXEDPRECISION_INTERPOLATE  "Set to ON to build mixed-precision interpolation"    OFF)
+option(BUILD_MIXEDPRECISION_OPTIMIZE     "Set to ON to build mixed-precision optimization"     OFF)
+option(BUILD_MIXEDPRECISION_CONJUGATE    "Set to ON to build mixed-precision CG"               OFF)
+
 # documentation
 option(BUILD_DOCS                        "Set to ON to build documentation"                    OFF)
 
@@ -453,14 +476,48 @@ install(DIRECTORY   ${PROJECT_SOURCE_DIR}/include/${project_library_target_name}
         DESTINATION ${include_install_dir})
 
 if(BUILD_CI_CHECK)
+	# set the grouped components to build (will trigger builds when tested)
+	set(BUILD_INTRODUCTION ON)
+	set(BUILD_NUMERICAL_CHECKS ON)
+	set(BUILD_BENCHMARKS ON)
+	set(BUILD_REGRESSION_SUITES ON)
+	set(BUILD_MIXEDPRECISION_SDK ON)
+
+	# build the BLAS test/verification suites
+	set(BUILD_BLAS ON)
+	set(BUILD_VMATH ON)
+
+	# build the C API library
+	set(BUILD_C_API_PURE_LIB ON)
+	set(BUILD_C_API_SHIM_LIB ON)
+
+	# build IEEE float/double quire capability
+	set(BUILD_IEEE_FLOAT_QUIRES ON)
+
+endif(BUILD_CI_CHECK)
+
+if(BUILD_INTRODUCTION)
 	# core example applications that use the library
 	set(BUILD_EDUCATION ON)
 	set(BUILD_APPLICATIONS ON)
-	set(BUILD_MIXEDPRECISION ON)
 	set(BUILD_CMD_LINE_TOOLS ON)
-	set(BUILD_NUMERICAL_TESTS ON)
-	set(BUILD_FUNCTIONS ON)
+
 	set(BUILD_PLAYGROUND ON)
+endif(BUILD_INTRODUCTION)
+
+if(BUILD_NUMERICAL_CHECKS)
+	set(BUILD_NUMERICAL_CHALLENGES ON)
+	set(BUILD_FUNCTIONS ON)
+endif(BUILD_NUMERICAL_CHECKS)
+
+if(BUILD_BENCHMARKS)
+	# build the benchmark suites
+	set(BUILD_BENCHMARK_PERFORMANCE ON)
+	set(BUILD_BENCHMARK_ACCURACY ON)
+	set(BUILD_BENCHMARK_ENERGY ON)
+endif(BUILD_BENCHMARKS)
+
+if(BUILD_REGRESSION_SUITES)
 	# build the different test/verification suites for each number system
 	set(BUILD_STORAGE_CLASSES ON)
 	set(BUILD_NATIVE_TYPES ON)
@@ -475,20 +532,19 @@ if(BUILD_CI_CHECK)
 	set(BUILD_POSITS ON)
 	set(BUILD_VALIDS ON)
 	set(BUILD_LNS ON)
-	# build the BLAS test/verification suites
-	set(BUILD_BLAS ON)
-	set(BUILD_VMATH ON)
+	
 	# build the conversion test suites
-	set(BUILD_CONVERSION_TESTS ON)
-	# build the performance suites
-	set(BUILD_PERFORMANCE_TESTS ON)
-	# build the C API library
-	set(BUILD_C_API_PURE_LIB ON)
-	set(BUILD_C_API_SHIM_LIB ON)
-	# build IEEE float/double quire capability
-	set(BUILD_IEEE_FLOAT_QUIRES ON)
-	#
-endif(BUILD_CI_CHECK)
+	set(BUILD_CONVERSIONS ON)
+endif(BUILD_REGRESSION_SUITES)
+
+if(BUILD_MIXEDPRECISION_SDK)
+	set(BUILD_MIXEDPRECISION_ROOTS ON)
+	set(BUILD_MIXEDPRECISION_APPROXIMATE ON)
+	set(BUILD_MIXEDPRECISION_INTEGRATE ON)
+	set(BUILD_MIXEDPRECISION_INTERPOLATE ON)
+	set(BUILD_MIXEDPRECISION_OPTIMIZE ON)
+	set(BUILD_MIXEDPRECISION_CONJUGATE ON)
+endif(BUILD_MIXEDPRECISION_SDK)
 
 # Build the tests for the underlying storage classes
 if(BUILD_STORAGE_CLASSES)
@@ -554,19 +610,39 @@ if(BUILD_BFLOATS)
 add_subdirectory("tests/bfloat")
 endif(BUILD_BFLOATS)
 
-# Basic Linear Algebra library
-if(BUILD_BLAS)
-add_subdirectory("tests/blas")
-add_subdirectory("tests/vmath")
-endif(BUILD_BLAS)
-
 # conversion tests suites
 if(BUILD_CONVERSION_TESTS)
 add_subdirectory("tests/conversions")
 endif(BUILD_CONVERSION_TESTS)
 
+
+if(BUILD_MIXEDPRECISION_ROOTS)
+add_subdirectory("mixedprecision/roots")
+endif(BUILD_MIXEDPRECISION_ROOTS)
+
+if(BUILD_MIXEDPRECISION_APPROXIMATE)
+add_subdirectory("mixedprecision/approximation")
+endif(BUILD_MIXEDPRECISION_APPROXIMATE)
+
+if(BUILD_MIXEDPRECISION_INTEGRATE)
+add_subdirectory("mixedprecision/integration")
+endif(BUILD_MIXEDPRECISION_INTEGRATE)
+
+if(BUILD_MIXEDPRECISION_INTERPOLATE)
+add_subdirectory("mixedprecision/interpolation")
+endif(BUILD_MIXEDPRECISION_INTERPOLATE)
+
+if(BUILD_MIXEDPRECISION_OPTIMIZE)
+add_subdirectory("mixedprecision/optimization")
+endif(BUILD_MIXEDPRECISION_OPTIMIZE)
+
+if(BUILD_MIXEDPRECISION_CONJUGATE)
+add_subdirectory("mixedprecision/linearalgebra/cg")
+endif(BUILD_MIXEDPRECISION_CONJUGATE)
+
 # performance benchmarks
-if(BUILD_PERFORMANCE_TESTS)
+if(BUILD_BENCHMARK_PERFORMANCE)
+add_subdirectory("benchmark/performance/blas")
 add_subdirectory("benchmark/performance/arithmetic/decimal")
 add_subdirectory("benchmark/performance/arithmetic/integer")
 add_subdirectory("benchmark/performance/arithmetic/fixpnt")
@@ -576,12 +652,17 @@ add_subdirectory("benchmark/performance/arithmetic/lns")
 add_subdirectory("benchmark/performance/arithmetic/posit")
 add_subdirectory("benchmark/performance/arithmetic/valid")
 add_subdirectory("benchmark/performance/arithmetic/unum")
-endif(BUILD_PERFORMANCE_TESTS)
+endif(BUILD_BENCHMARK_PERFORMANCE)
 
-# performance benchmarks
-if(BUILD_ENERGY_TESTS)
+# accuracy benchmarks
+if(BUILD_BENCHMARK_ACCURACY)
+add_subdirectory("benchmark/accuracy/blas")
+endif(BUILD_BENCHMARK_ACCURACY)
+
+# energy benchmarks
+if(BUILD_BENCHMARK_ENERGY)
 add_subdirectory("benchmark/energy/blas")
-endif(BUILD_ENERGY_TESTS)
+endif(BUILD_BENCHMARK_ENERGY)
 
 # command line tools and utilities 
 if(BUILD_CMD_LINE_TOOLS)
@@ -622,19 +703,10 @@ add_subdirectory("applications/trigonometry")
 add_subdirectory("applications/weather")
 endif(BUILD_APPLICATIONS)
 
-if(BUILD_MIXEDPRECISION)
-add_subdirectory("mixedprecision/roots")
-add_subdirectory("mixedprecision/approximation")
-add_subdirectory("mixedprecision/integration")
-add_subdirectory("mixedprecision/interpolation")
-add_subdirectory("mixedprecision/optimization")
-add_subdirectory("mixedprecision/linearalgebra/cg")
-endif(BUILD_MIXEDPRECISION)
-
-if(BUILD_NUMERICAL_TESTS)
+if(BUILD_NUMERICAL_CHALLENGES)
 add_subdirectory("tests/numerical/properties")
 add_subdirectory("tests/numerical/fpbench")
-endif(BUILD_NUMERICAL_TESTS)
+endif(BUILD_NUMERICAL_CHALLENGES)
 
 if(BUILD_FUNCTIONS)
 add_subdirectory("tests/functions")
@@ -659,6 +731,12 @@ endif(BUILD_C_API_SHIM_LIB)
 if(BUILD_IEEE_FLOAT_QUIRES)
 add_subdirectory("tests/float")
 endif(BUILD_IEEE_FLOAT_QUIRES)
+
+# Basic Linear Algebra library
+if(BUILD_BLAS)
+add_subdirectory("tests/blas")
+add_subdirectory("tests/vmath")
+endif(BUILD_BLAS)
 
 ####
 # Configuration summary

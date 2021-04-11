@@ -1,4 +1,4 @@
-// l1_fused_dot.cpp: example program showing a fused-dot product for error free linear algebra
+// dot.cpp: energy measurement of mixed-precision dot product
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

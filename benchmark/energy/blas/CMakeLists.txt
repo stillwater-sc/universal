@@ -1,3 +1,3 @@
 file (GLOB SOURCES "./*.cpp")
 
-compile_all("true" "blas" "Benchmarks/Energy/BLAS" "${SOURCES}")
+compile_all("true" "energy" "Benchmarks/Energy/BLAS" "${SOURCES}")
