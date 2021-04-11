@@ -1,4 +1,4 @@
-// l3_fused_mm.cpp: example program showing a fused matrix-matrix product
+// gemm.cpp: data flow performance measurement of mixed-precision matrix-matrix product
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //

@@ -1,4 +1,4 @@
-// l2_fused_mv.cpp: example program showing a fused matrix-vector product
+// matvec.cpp: accuracy/precision measurment of mixed-precision matrix-vector product
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
