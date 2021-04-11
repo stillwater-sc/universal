@@ -18,10 +18,6 @@
 #include <universal/string/strmanip.hpp>
 #include <universal/number/decimal/exceptions.hpp>
 
-#if !defined(DECIMAL_OPERATIONS_COUNT)
-#define DECIMAL_OPERATIONS_COUNT 0
-#endif
-
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 
@@ -52,6 +48,14 @@
 
 #endif
 
+// occurrence is NOT an official API for any of the Universal number systems
+#if !defined(DECIMAL_OPERATIONS_COUNT)
+#define DECIMAL_OPERATIONS_COUNT 0
+#endif
+#if DECIMAL_OPERATIONS_COUNT
+#include <universal/utility/occurrence.hpp>
+#endif
+
 namespace sw::universal {
 
 /////////////////////////////////////////////
@@ -69,13 +73,8 @@ template<typename Ty> decimal& convert_to_decimal(Ty, decimal&);
 /// The digits are managed as a vector with the digit for 10^0 stored at index 0, 10^1 stored at index 1, etc.
 class decimal : public std::vector<uint8_t> {
 #if DECIMAL_OPERATIONS_COUNT
-	static size_t nrLoads;
 	static bool enableAdd;
-	static size_t nrAdds;
-	static size_t nrSubs;
-	static size_t nrMuls;
-	static size_t nrDivs;
-	static size_t nrRems;
+	static occurrence<decimal> ops;
 #endif
 public:
 	decimal() { setzero(); }
@@ -156,7 +155,6 @@ public:
 		else {
 			// same sign implies this->negative is invariant
 		}
-		// std::cout << *this << " += " << rhs << " -> ";
 		size_t l = size();
 		size_t r = _rhs.size();
 		// zero pad the shorter decimal
@@ -181,8 +179,7 @@ public:
 		}
 		if (carry) push_back(1);
 #if DECIMAL_OPERATIONS_COUNT
-		if (enableAdd) ++nrAdds;
-//		std::cout << *this << " : current Adds = " << nrAdds << '\n';
+		if (enableAdd) ++ops.add;
 #endif
 		return *this;
 	}
@@ -236,18 +233,16 @@ public:
 			this->setsign(sign);
 		}
 #if DECIMAL_OPERATIONS_COUNT
-		++nrSubs;
+		++ops.sub;
 #endif
 		return *this;
 	}
 	decimal& operator*=(const decimal& rhs) {
-		// std::cout << *this << " *= " << rhs << " -> ";
 		// special case
 		if (iszero() || rhs.iszero()) {
 			setzero();
 #if DECIMAL_OPERATIONS_COUNT
-			++nrMuls;
-			//std::cout << *this << " : current Muls = " << nrMuls << '\n';
+			++ops.mul;
 #endif
 			return *this;
 		}
@@ -301,22 +296,21 @@ public:
 		setsign(signOfFinalResult);
 #if DECIMAL_OPERATIONS_COUNT
 		enableAdd = true;
-		++nrMuls;
-		//std::cout << *this << " : current nrMuls = " << nrMuls << '\n';
+		++ops.mul;
 #endif
 		return *this;
 	}
 	decimal& operator/=(const decimal& rhs) {
 		*this = quotient(*this, rhs);
 #if DECIMAL_OPERATIONS_COUNT
-		++nrDivs;
+		++ops.div;
 #endif
 		return *this;
 	}
 	decimal& operator%=(const decimal& rhs) {
 		*this = remainder(*this, rhs);
 #if DECIMAL_OPERATIONS_COUNT
-		++nrRems;
+		++ops.rem;
 #endif
 		return *this;
 	}
@@ -492,21 +486,10 @@ public:
 #if DECIMAL_OPERATIONS_COUNT
 	// reset the operation statistics
 	void resetStats() {
-		nrLoads = 0;
-		enableAdd = true;
-		nrAdds = 0;
-		nrSubs = 0;
-		nrMuls = 0;
-		nrDivs = 0;
-		nrRems = 0;
+		ops.reset();
 	}
 	void printStats(std::ostream& ostr) {
-		ostr << "Load    : " << nrLoads << '\n';
-		ostr << "Add     : " << nrAdds << '\n';
-		ostr << "Sub     : " << nrSubs << '\n';
-		ostr << "Mul     : " << nrMuls << '\n';
-		ostr << "Div     : " << nrDivs << '\n';
-		ostr << "Rem     : " << nrRems << '\n';
+		ops.report(ostr);
 	}
 #endif
 
