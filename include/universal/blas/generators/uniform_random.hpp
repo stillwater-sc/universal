@@ -11,7 +11,7 @@ namespace sw::universal::blas {
 
 // fill a dense matrix with random values between [lowerbound, upperbound]
 template <typename Matrix>
-void uniform_rand(Matrix& A, double lowerbound = 0.0, double upperbound = 1.0)
+void uniform_random(Matrix& A, double lowerbound = 0.0, double upperbound = 1.0)
 {
 	// Use random_device to generate a seed for Mersenne twister engine.
 	std::random_device rd{};

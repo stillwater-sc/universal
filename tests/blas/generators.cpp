@@ -34,28 +34,38 @@ void generateMatrices() {
 	Matrix A(5, 5);
 	// create an Identity matrix
 	A = 1;
-	std::cout << A << std::endl;
+	std::cout << "Identity\n" << A << std::endl;
 
 	// create a 2D Laplacian
 	sw::universal::blas::laplace2D(A, 5, 5);
-	cout << A << endl;
+	cout << "Laplace-2D\n" << A << endl;
 
 	// create a row order index matrix
 	Matrix roi = sw::universal::blas::row_order_index<Scalar>(5, 6);
-	cout << roi << endl;
+	cout << "Row order index\n" << roi << endl;
 
 	// create a column order index matrix
 	Matrix coi = sw::universal::blas::column_order_index<Scalar>(6,5);
-	cout << coi << endl;
+	cout << "Column order index\n" << coi << endl;
+
+	// create a min-ij matrix
+	Matrix mij(9, 9);
+	sw::universal::blas::minij(mij);
+	cout << "Min-ij\n" << mij << endl;
 
 	// create a magic square matrix
 	Matrix ms = sw::universal::blas::magic<Scalar>(5);
-	cout << ms << endl;
+	cout << "Magic Square\n" << ms << endl;
 
 	// create a uniform random matrix
-	Matrix B(10, 10);
-	sw::universal::blas::uniform_rand(B, -1.0, 1.0);
-	cout << setprecision(5) << setw(10) << B << endl;
+	Matrix uniform(10, 10);
+	sw::universal::blas::uniform_random(uniform, -1.0, 1.0);
+	cout << "Uniform random\n" << setprecision(5) << setw(10) << uniform << endl;
+
+	// create a uniform random matrix
+	Matrix gaussian(10, 10);
+	sw::universal::blas::gaussian_random(gaussian, -1.0, 1.0);
+	cout << "Gaussian Random\n" << setprecision(5) << setw(10) << gaussian << endl;
 }
 
 int main(int argc, char* argv[])
