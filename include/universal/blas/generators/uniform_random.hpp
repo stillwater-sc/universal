@@ -9,9 +9,16 @@
 
 namespace sw::universal::blas {
 
+// generate a uniform random MxN matrix
+template<typename Matrix>
+Matrix uniform_random(size_t M, size_t N, double lowerbound = 0.0, double upperbound = 1.0) {
+	Matrix A(M, N);
+	return uniform_random(A, lowerbound, upperbound);
+}
+
 // fill a dense matrix with random values between [lowerbound, upperbound]
 template <typename Matrix>
-void uniform_random(Matrix& A, double lowerbound = 0.0, double upperbound = 1.0)
+Matrix& uniform_random(Matrix& A, double lowerbound = 0.0, double upperbound = 1.0)
 {
 	// Use random_device to generate a seed for Mersenne twister engine.
 	std::random_device rd{};
@@ -35,6 +42,7 @@ void uniform_random(Matrix& A, double lowerbound = 0.0, double upperbound = 1.0)
 			A[r][c] = value_type(dist(engine));
 		}
 	}
+	return A;
 }
 
 } // namespace sw::universal::blas

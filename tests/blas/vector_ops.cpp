@@ -60,11 +60,18 @@ try {
 	}
 	
 	// accumulation of 32K epsilons for a posit<32,2> yields
+	// 	   a:   maxpos     1       1    ...    1     maxpos
+	// 	   b:    -1     epsilon epsilon ... epsilon    1
+	// 	   the two maxpos values will cancel out leaving the 32k epsilon's accumulated
+	// 	the dot product will experience catastrophic cancellation, 
+	//  fdp will calculate the sum of products correctly
 	// dot: 0
 	// fdp: 0.000244141
 	cout << "\naccumulation of 32k epsilons (" << hex_format(epsilon) << " = " << epsilon << ") for a " << typeid(Scalar).name() << " yields:\n";
-	cout << "dot: " << dot(a, b) << endl;
-	cout << "fdp: " << fdp(a, b) << " : " << hex_format(fdp(a,b)) << endl;
+	cout << "dot            : " << dot(a, b)  << " : " << hex_format(dot(a,b)) << '\n';
+	cout << "fdp            : " << fdp(a, b)  << " : " << hex_format(fdp(a,b)) << '\n';
+	Scalar validation = (vectorSize - 2) * epsilon;
+	cout << "32k * epsilon  : " << validation << " : " << hex_format(validation) << '\n';
 
 	// scale a vector
 	cout << "\nscaling a vector\n";

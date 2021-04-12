@@ -1,6 +1,175 @@
 #pragma once
-// blas_l1.hpp: BLAS Level 1 functions
+// blas_l3.hpp: BLAS Level 3 functions
 //
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+
+namespace sw::universal::blas {
+
+// sum entire matrix (dim == 0), all rows (dim == 1), or all columns (dim == 2)
+template<typename Matrix>
+vector<typename Matrix::value_type> sum(Matrix& A, int dim = 0) {
+	using value_type = typename Matrix::value_type;
+	using size_type = typename Matrix::size_type;
+
+	size_type rows = num_rows(A);
+	size_type cols = num_cols(A);
+
+	switch (dim) {
+	case 0:
+	{
+		value_type sum{ 0 };
+		for (size_type i = 0; i < rows; ++i) {
+			for (size_type j = 0; j < cols; ++j) {
+				sum += A(i, j);
+			}
+		}
+		return vector<value_type>{sum};
+	}
+
+	case 1: 
+	{
+		vector<value_type> rowSums(rows);
+		for (size_type i = 0; i < rows; ++i) {
+			for (size_type j = 0; j < cols; ++j) {
+				rowSums[i] += A(i, j);
+			}
+		}
+		return rowSums;
+	}
+
+	case 2:
+	{
+		vector<value_type> colSums(cols);
+		for (size_type i = 0; i < rows; ++i) {
+			for (size_type j = 0; j < cols; ++j) {
+				colSums[j] += A(i, j);
+			}
+		}
+		return colSums;
+	}
+
+	default:
+		break;
+	}
+
+	return vector<value_type>{0};
+}
+
+
+// normalize entire matrix (dim == 0), all rows (dim == 1), or all columns (dim == 2)
+template<typename Matrix>
+void normalize(Matrix& A, int dim = 0) {
+	using value_type = typename Matrix::value_type;
+	using size_type = typename Matrix::size_type;
+
+	size_type rows = num_rows(A);
+	size_type cols = num_cols(A);
+
+	switch (dim) {
+	case 0:
+	{
+		value_type sum{ 0 };
+		for (size_type i = 0; i < rows; ++i) {
+			for (size_type j = 0; j < cols; ++j) {
+				sum += A(i, j);
+			}
+		}
+		for (size_type i = 0; i < rows; ++i) {
+			for (size_type j = 0; j < cols; ++j) {
+				A(i, j) /= sum;
+			}
+		}
+	}
+
+	case 1:
+	{
+		vector<value_type> rowSums(rows);
+		for (size_type i = 0; i < rows; ++i) {
+			for (size_type j = 0; j < cols; ++j) {
+				rowSums[i] += A(i, j);
+			}
+		}
+		for (size_type i = 0; i < rows; ++i) {
+			for (size_type j = 0; j < cols; ++j) {
+				A(i, j) /= rowSums[i];
+			}
+		}
+	}
+
+	case 2:
+	{
+		vector<value_type> colSums(cols);
+		for (size_type i = 0; i < rows; ++i) {
+			for (size_type j = 0; j < cols; ++j) {
+				colSums[j] += A(i, j);
+			}
+		}
+		for (size_type i = 0; i < rows; ++i) {
+			for (size_type j = 0; j < cols; ++j) {
+				A(i, j) /= colSums[j];
+			}
+		}
+	}
+
+	default:
+		break;
+	}
+}
+
+// 2-norm of entire matrix (dim == 0), each rows (dim == 1), or each columns (dim == 2)
+template<typename Matrix>
+vector<typename Matrix::value_type> norm(Matrix& A, int dim = 0) {
+	using value_type = typename Matrix::value_type;
+	using size_type = typename Matrix::size_type;
+
+	size_type rows = num_rows(A);
+	size_type cols = num_cols(A);
+
+	value_type sos{ 0 };
+	switch (dim) {
+	case 0:
+	{
+		value_type sum{ 0 };
+		for (size_type i = 0; i < rows; ++i) {
+			for (size_type j = 0; j < cols; ++j) {
+				sum += A(i, j) * A(i,j);
+			}
+		}
+		return vector<value_type>{sqrt(sum)};
+	}
+
+	case 1:
+	{
+		vector<value_type> rowSoS(rows);
+		for (size_type i = 0; i < rows; ++i) {
+			for (size_type j = 0; j < cols; ++j) {
+				rowSoS[i] += A(i, j) * A(i, j);
+			}
+			rowSoS[i] = sqrt(rowSoS[i]);
+		}
+		return rowSoS;
+	}
+
+	case 2:
+	{
+		vector<value_type> colSoS(cols);
+		for (size_type i = 0; i < rows; ++i) {
+			for (size_type j = 0; j < cols; ++j) {
+				colSoS[j] += A(i, j) * A(i, j);
+			}
+		}
+		for (size_type j = 0; j < cols; ++j) {
+			colSoS[j] = sqrt(colSoS[j]);
+		}
+		return colSoS;
+	}
+
+	default:
+		break;
+	}
+	return vector<value_type>{-1};
+}
+
+}

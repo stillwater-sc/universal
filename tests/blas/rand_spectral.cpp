@@ -1,4 +1,4 @@
-// minij.cpp: Minimum IJ matrix
+// rand_spectral.cpp: random matrix with a given spectrum
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -24,34 +24,41 @@
 #include <universal/number/posit/posit>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <universal/blas/blas.hpp>
-#include <universal/blas/generators/minij.hpp>
+#include <universal/blas/generators.hpp>
 
-template<typename Scalar>
-void MinIJMatrixTest(size_t N = 5) {
-	using namespace std;
-	using namespace sw::universal::blas;
-
-	cout << "MinIJ MatrixTest for type: " << typeid(Scalar).name() << endl;
-	auto M = minij<Scalar>(N);
-
-	// normalize the column vectors
-	auto total = sum(M);
-	cout << "Total    : " << total << endl;
-	auto rowSums = sum(M, 1);
-	cout << "Row sums : " << rowSums << endl;
-	auto colSums = sum(M, 2);
-	cout << "Col sums : " << colSums << endl;
-}
 
 int main(int argc, char* argv[])
 try {
 	using namespace std;
-	using namespace sw::universal;
+	using namespace sw::universal::blas;
+
 
 	if (argc == 1) cout << argv[0] << endl;
 
-	MinIJMatrixTest< float >();
-	MinIJMatrixTest< posit<32, 2> >();
+	// Av = lambda * v
+	// AQ = Q * Sigma
+	// A  = Q * Sigma * Q^-1
+	
+	// generate a random base matrix for Q
+	using Scalar = float;
+	using Matrix = matrix<Scalar>;
+	constexpr size_t M = 5;
+	constexpr size_t N = 2;
+	Matrix Qbase = uniform_random<Matrix>(M, N);
+	cout << Qbase << endl;
+
+	// normalize the column vectors
+	auto total = sum(Qbase);
+	cout << "Total    : " << total << endl;
+	auto rowSums = sum(Qbase, 1);
+	cout << "Row sums : " << rowSums << endl;
+	auto colSums = sum(Qbase, 2);
+	cout << "Col sums : " << colSums << endl;
+
+	normalize(Qbase, 2);  // normalize columns so they are unit length
+	cout << Qbase << endl;
+	auto colNorms = norm(Qbase, 2);
+	cout << "Col norms: " << colNorms << endl;
 
 	return EXIT_SUCCESS;
 }
