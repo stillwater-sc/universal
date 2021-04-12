@@ -7,12 +7,13 @@
 
 namespace sw::universal::blas {
 
-    // minij returns the n-by-n symmetric positive definite matrix with entries A(i,j) = min(i,j).
+    // minij returns the n-by-n symmetric positive definite matrix with entries A(i,j) = min(i+1,j+1) 
+    // as C++ is zero indexed
     template<typename Scalar>
     matrix<Scalar>& minij(matrix<Scalar>& A) {
         for (size_t i = 0; i < num_rows(A); ++i) {
             for (size_t j = 0; j < num_cols(A); ++j) {
-                A(i, j) = Scalar(std::min(i, j));
+                A(i, j) = Scalar(std::min(i+1, j+1));
             }
         }
         return A;
