@@ -57,7 +57,7 @@ try {
 
 	normalize(Qbase, 2);  // normalize columns so they are unit length
 	cout << Qbase << endl;
-	auto colNorms = norm(Qbase, 2);
+	auto colNorms = matrixNorm(Qbase, 2);
 	cout << "Col norms: " << colNorms << endl;
 
 	return EXIT_SUCCESS;

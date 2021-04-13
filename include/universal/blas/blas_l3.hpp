@@ -57,6 +57,13 @@ vector<typename Matrix::value_type> sum(Matrix& A, int dim = 0) {
 	return vector<value_type>{0};
 }
 
+enum NormalizationMethod {
+	Norm2,
+	Center,
+	Zscore,
+	Scale,
+	Range
+};
 
 // normalize entire matrix (dim == 0), all rows (dim == 1), or all columns (dim == 2)
 template<typename Matrix>
@@ -69,50 +76,50 @@ void normalize(Matrix& A, int dim = 0) {
 
 	switch (dim) {
 	case 0:
-	{
-		value_type sum{ 0 };
-		for (size_type i = 0; i < rows; ++i) {
-			for (size_type j = 0; j < cols; ++j) {
-				sum += A(i, j);
+		{
+			value_type sos{ 0 };
+			for (size_type i = 0; i < rows; ++i) {
+				for (size_type j = 0; j < cols; ++j) {
+					sos += A(i, j) * A(i, j);
+				}
+			}
+			for (size_type i = 0; i < rows; ++i) {
+				for (size_type j = 0; j < cols; ++j) {
+					A(i, j) /= sqrt(sos);
+				}
 			}
 		}
-		for (size_type i = 0; i < rows; ++i) {
-			for (size_type j = 0; j < cols; ++j) {
-				A(i, j) /= sum;
-			}
-		}
-	}
-
+		break;
 	case 1:
-	{
-		vector<value_type> rowSums(rows);
-		for (size_type i = 0; i < rows; ++i) {
-			for (size_type j = 0; j < cols; ++j) {
-				rowSums[i] += A(i, j);
+		{
+			vector<value_type> rowSos(rows);
+			for (size_type i = 0; i < rows; ++i) {
+				for (size_type j = 0; j < cols; ++j) {
+					rowSos[i] += A(i, j) * A(i, j);
+				}
+			}
+			for (size_type i = 0; i < rows; ++i) {
+				for (size_type j = 0; j < cols; ++j) {
+					A(i, j) /= sqrt(rowSos[i]);
+				}
 			}
 		}
-		for (size_type i = 0; i < rows; ++i) {
-			for (size_type j = 0; j < cols; ++j) {
-				A(i, j) /= rowSums[i];
-			}
-		}
-	}
-
+		break;
 	case 2:
-	{
-		vector<value_type> colSums(cols);
-		for (size_type i = 0; i < rows; ++i) {
-			for (size_type j = 0; j < cols; ++j) {
-				colSums[j] += A(i, j);
+		{
+			vector<value_type> colSos(cols);
+			for (size_type i = 0; i < rows; ++i) {
+				for (size_type j = 0; j < cols; ++j) {
+					colSos[j] += A(i, j) * A(i, j);
+				}
+			}
+			for (size_type i = 0; i < rows; ++i) {
+				for (size_type j = 0; j < cols; ++j) {
+					A(i, j) /= sqrt(colSos[j]);
+				}
 			}
 		}
-		for (size_type i = 0; i < rows; ++i) {
-			for (size_type j = 0; j < cols; ++j) {
-				A(i, j) /= colSums[j];
-			}
-		}
-	}
-
+		break;
 	default:
 		break;
 	}
@@ -120,7 +127,7 @@ void normalize(Matrix& A, int dim = 0) {
 
 // 2-norm of entire matrix (dim == 0), each rows (dim == 1), or each columns (dim == 2)
 template<typename Matrix>
-vector<typename Matrix::value_type> norm(Matrix& A, int dim = 0) {
+vector<typename Matrix::value_type> matrixNorm(Matrix& A, int dim = 0) {
 	using value_type = typename Matrix::value_type;
 	using size_type = typename Matrix::size_type;
 
