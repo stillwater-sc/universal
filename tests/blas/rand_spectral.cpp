@@ -1,4 +1,4 @@
-// l2_fused_mv.cpp: example program showing a fused matrix-vector product
+// rand_spectral.cpp: random matrix with a given spectrum
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -15,49 +15,50 @@
 // #define POSIT_VERBOSE_OUTPUT
 #define POSIT_TRACE_MUL
 #define QUIRE_TRACE_ADD
+// configure posit environment
+#define POSIT_FAST_POSIT_8_0 1
+#define POSIT_FAST_POSIT_16_1 1
+#define POSIT_FAST_POSIT_32_2 1
 // enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit>
 #define BLAS_TRACE_ROUNDING_EVENTS 1
 #include <universal/blas/blas.hpp>
+#include <universal/blas/generators.hpp>
 
-template<typename Scalar>
-void catastrophicCancellationTest() {
-	using namespace std;
-	cout << "\nScalar type : " << typeid(Scalar).name() << '\n';
-	using Matrix = sw::universal::blas::matrix<Scalar>;
-	using Vector = sw::universal::blas::vector<Scalar>;
 
-	Scalar a1 = 3.2e8;
-	Scalar a2 = 1;
-	Scalar a3 = -1;
-	Scalar a4 = 8e7;
-	Matrix A = { 
-		{ a1, a2, a3, a4 }, 
-		{ a1, a2, a3, a4 } 
-	};
-	cout << std::setprecision(10);
-	cout << "matrix A: \n" << A << endl;
-	Vector x = { 4.0e7, 1, -1, -1.6e8 };
-	cout << "vector x: \n" << x << endl;
-	Vector b(2);
-	b = A * x;
-	cout << "vector b: \n" << b << endl;
-	if (b[0] == 2 && b[1] == 2) {
-		cout << "PASS\n";
-	}
-	else {
-		cout << "FAIL\n";
-	}
-}
-
-int main(int argc, char** argv)
+int main(int argc, char* argv[])
 try {
 	using namespace std;
+	using namespace sw::universal::blas;
 
-	catastrophicCancellationTest<float>();
-	catastrophicCancellationTest<double>();
-	catastrophicCancellationTest< sw::universal::posit<32,2> >();
+
+	if (argc == 1) cout << argv[0] << endl;
+
+	// Av = lambda * v
+	// AQ = Q * Sigma
+	// A  = Q * Sigma * Q^-1
+	
+	// generate a random base matrix for Q
+	using Scalar = float;
+	using Matrix = matrix<Scalar>;
+	constexpr size_t M = 5;
+	constexpr size_t N = 2;
+	Matrix Qbase = uniform_random<Matrix>(M, N);
+	cout << Qbase << endl;
+
+	// normalize the column vectors
+	auto total = sum(Qbase);
+	cout << "Total    : " << total << endl;
+	auto rowSums = sum(Qbase, 1);
+	cout << "Row sums : " << rowSums << endl;
+	auto colSums = sum(Qbase, 2);
+	cout << "Col sums : " << colSums << endl;
+
+	normalize(Qbase, 2);  // normalize columns so they are unit length
+	cout << Qbase << endl;
+	auto colNorms = matrixNorm(Qbase, 2);
+	cout << "Col norms: " << colNorms << endl;
 
 	return EXIT_SUCCESS;
 }

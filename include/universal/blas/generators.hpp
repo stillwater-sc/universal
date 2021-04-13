@@ -13,7 +13,13 @@
 #include <universal/blas/generators/magic.hpp>
 #include <universal/blas/generators/frank.hpp>
 #include <universal/blas/generators/hilbert.hpp>
-#include <universal/blas/generators/uniform_random.hpp>
+#include <universal/blas/generators/minij.hpp>
 
+// random matrices
+#include <universal/blas/generators/uniform_random.hpp>
+#include <universal/blas/generators/gaussian_random.hpp>
+#include <universal/blas/generators/randsvd.hpp>
+
+// PDE and ODE matrices
 #include <universal/blas/generators/tridiag.hpp>
 #include <universal/blas/generators/laplace2D.hpp>

@@ -35,38 +35,74 @@
 #endif
 
 // fast specializations for special posit configurations
+#ifndef POSIT_FAST_POSIT_2_0
+#define POSIT_FAST_POSIT_2_0 0
+#endif
 #if POSIT_FAST_POSIT_2_0
 #include <universal/number/posit/specialized/posit_2_0.hpp>
+#endif
+#ifndef POSIT_FAST_POSIT_3_0
+#define POSIT_FAST_POSIT_3_0 0
 #endif
 #if POSIT_FAST_POSIT_3_0
 #include <universal/number/posit/specialized/posit_3_0.hpp>
 #endif
+#ifndef POSIT_FAST_POSIT_3_1
+#define POSIT_FAST_POSIT_3_1 0
+#endif
 #if POSIT_FAST_POSIT_3_1
 #include <universal/number/posit/specialized/posit_3_1.hpp>
+#endif
+#ifndef POSIT_FAST_POSIT_4_0
+#define POSIT_FAST_POSIT_4_0 0
 #endif
 #if POSIT_FAST_POSIT_4_0
 #include <universal/number/posit/specialized/posit_4_0.hpp>
 #endif
+#ifndef POSIT_FAST_POSIT_8_0
+#define POSIT_FAST_POSIT_8_0 0
+#endif
 #if POSIT_FAST_POSIT_8_0
 #include <universal/number/posit/specialized/posit_8_0.hpp>
+#endif
+#ifndef POSIT_FAST_POSIT_8_1
+#define POSIT_FAST_POSIT_8_1 0
 #endif
 #if POSIT_FAST_POSIT_8_1
 #include <universal/number/posit/specialized/posit_8_1.hpp>
 #endif
+#ifndef POSIT_FAST_POSIT_16_1
+#define POSIT_FAST_POSIT_16_1 0
+#endif
 #if POSIT_FAST_POSIT_16_1
 #include <universal/number/posit/specialized/posit_16_1.hpp>
+#endif
+#ifndef POSIT_FAST_POSIT_32_2
+#define POSIT_FAST_POSIT_32_2 0
 #endif
 #if POSIT_FAST_POSIT_32_2
 #include <universal/number/posit/specialized/posit_32_2.hpp>
 #endif
+#ifndef POSIT_FAST_POSIT_48_2
+#define POSIT_FAST_POSIT_48_2 0
+#endif
 #if POSIT_FAST_POSIT_48_2
 #include <universal/number/posit/specialized/posit_48_2.hpp>
+#endif
+#ifndef POSIT_FAST_POSIT_64_3
+#define POSIT_FAST_POSIT_64_3 0
 #endif
 #if POSIT_FAST_POSIT_64_3
 #include <universal/number/posit/specialized/posit_64_3.hpp>
 #endif
+#ifndef POSIT_FAST_POSIT_128_4
+#define POSIT_FAST_POSIT_128_4 0
+#endif
 #if POSIT_FAST_POSIT_128_4
 #include <universal/number/posit/specialized/posit_128_4.hpp>
+#endif
+#ifndef POSIT_FAST_POSIT_256_5
+#define POSIT_FAST_POSIT_256_5 0
 #endif
 #if POSIT_FAST_POSIT_256_5
 #include <universal/number/posit/specialized/posit_256_5.hpp>
