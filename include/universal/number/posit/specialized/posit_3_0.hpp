@@ -442,7 +442,7 @@ namespace sw::universal {
 		}
 
 		// convert a posit value to a string using "nar" as designation of NaR
-		std::string to_string(const posit<NBITS_IS_3, ES_IS_0>& p, std::streamsize precision) {
+		inline std::string to_string(const posit<NBITS_IS_3, ES_IS_0>& p, std::streamsize precision) {
 			if (p.isnar()) {
 				return std::string("nar");
 			}

@@ -824,7 +824,7 @@ inline std::istream& operator>> (std::istream& istr, posit<NBITS_IS_16, ES_IS_1>
 }
 
 // convert a posit value to a string using "nar" as designation of NaR
-std::string to_string(const posit<NBITS_IS_16, ES_IS_1>& p, std::streamsize precision) {
+inline std::string to_string(const posit<NBITS_IS_16, ES_IS_1>& p, std::streamsize precision) {
 	if (p.isnar()) {
 		return std::string("nar");
 	}
