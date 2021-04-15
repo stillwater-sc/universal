@@ -46,8 +46,6 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	cout << endl;
 	cout << "blocktriple<" <<fhbits << ',' << typeid(BlockType).name() << '>' << endl;
 
-	constexpr bool bReportOverflowCondition = false;
-
 	int nrOfFailedTests = 0;
 
 	blocktriple<abits, BlockType> a, b;
@@ -112,9 +110,9 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	if (argc > 1) std::cout << argv[0] << std::endl; 
+	print_cmd_line(argc, argv);
 	
-	bool bReportIndividualTestCases = false;
+//	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "modular addition failed: ";

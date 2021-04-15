@@ -91,43 +91,43 @@ public:
 	// decorated constructors
 	constexpr blocktriple(signed char iv) noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
 	constexpr blocktriple(short iv)       noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
 	constexpr blocktriple(int iv)         noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
 	constexpr blocktriple(long iv)        noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
 	constexpr blocktriple(long long iv)   noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
 	constexpr blocktriple(char iv)               noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
 	constexpr blocktriple(unsigned short iv)     noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
 	constexpr blocktriple(unsigned int iv)       noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
 	constexpr blocktriple(unsigned long iv)      noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
 	constexpr blocktriple(unsigned long long iv) noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
 	constexpr blocktriple(float iv)       noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
 	constexpr blocktriple(double iv)      noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
 	constexpr blocktriple(long double iv) noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } { *this = iv; }
+		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
 
 	// conversion operators
 	constexpr blocktriple& operator=(signed char rhs) noexcept { return convert_signed_integer(rhs); }
@@ -211,7 +211,7 @@ public:
 		_sign = (0x8000'0000'0000'0000 & bc);
 		_scale = int((0x7FF0'0000'0000'0000ull & bc) >> 52) - 1023;
 		uint64_t raw = (1ull << 52) | (0x000F'FFFF'FFFF'FFFFull & bc);
-		_significant = round<53, uint64_t>(raw);
+		_significant = static_cast<bt>(round<53, uint64_t>(raw));
 #else
 		_zero = true;
 		_sign = false;

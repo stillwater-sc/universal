@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 // minimum set of include files to reflect source code dependencies
@@ -16,8 +17,7 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	for (int i = 0; i < argc; ++i) std::cout << argv[0] << ' ';
-	std::cout << std::endl;
+	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 	std::string tag = " blocktriple<23>";

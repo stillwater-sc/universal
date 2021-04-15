@@ -21,15 +21,13 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	for (int i = 0; i < argc; ++i) std::cout << argv[0] << ' ';
-	std::cout << std::endl;
+	print_cmd_line(argc, argv);
 
 	std::cout << "blocktriple<> class interface tests" << std::endl;
 
 	int nrOfFailedTestCases = 0;
 
 #if MANUAL_TESTING
-
 
 	{
 		CONSTEXPRESSION blocktriple<10, uint32_t> a = 511.5f;

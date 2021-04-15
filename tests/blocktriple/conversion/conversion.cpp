@@ -3,12 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 4514) // 'sw::universal::scale': unreferenced inline function has been removed
-#pragma warning(disable : 4515) // 'sw::universal::findMostSignificantBit': unreferenced inline function has been removed
-#pragma warning(disable : 4820) // 'sw::universal::blocktriple<32,uint32_t>': '3' bytes padding added after data member 'sw::universal::blocktriple<32,uint32_t>::_sign'
-#pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#endif
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 #include <string>
@@ -35,8 +30,7 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	for (int i = 0; i < argc; ++i) std::cout << argv[0] << ' ';
-	std::cout << std::endl;
+	print_cmd_line(argc, argv);
 
 	//bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;

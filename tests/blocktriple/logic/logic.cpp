@@ -3,7 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/verification/test_status.hpp>
@@ -248,8 +248,7 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	for (int i = 0; i < argc; ++i) std::cout << argv[i] << ' ';
-	std::cout << endl;
+	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 

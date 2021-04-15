@@ -3,11 +3,8 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-#if defined(_MSC_VER)
-#pragma warning(disable : 4515) // 'sw::universal::findMostSignificantBit': unreferenced inline function has been removed
-#pragma warning(disable : 4820) // 'sw::universal::blocktriple<32,uint32_t>': '3' bytes padding added after data member 'sw::universal::blocktriple<32,uint32_t>::_sign'
-#pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
-#endif
+
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 #include <cstdint>
@@ -60,12 +57,12 @@ namespace sw::experiment {
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
-constexpr double pi = 3.14159265358979323846;
-
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::universal;
+
+	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
 
