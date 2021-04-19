@@ -645,16 +645,16 @@ private:
 	}
 
 	// template parameters need names different from class template parameters (for gcc and clang)
-	template<size_t nbits>
-	friend std::ostream& operator<< (std::ostream& ostr, const blocktriple<nbits>& a);
-	template<size_t nbits>
-	friend std::istream& operator>> (std::istream& istr, blocktriple<nbits>& a);
+	template<size_t nnbits>
+	friend std::ostream& operator<< (std::ostream& ostr, const blocktriple<nnbits>& a);
+	template<size_t nnbits>
+	friend std::istream& operator>> (std::istream& istr, blocktriple<nnbits>& a);
 
 	// declare as friends to avoid needing a marshalling function to get significant bits out
-	template<size_t nbits>
-	friend std::string to_binary(const blocktriple<nbits>&, bool);
-	template<size_t nbits>
-	friend std::string to_triple(const blocktriple<nbits>&, bool);
+	template<size_t nnbits>
+	friend std::string to_binary(const blocktriple<nnbits>&, bool);
+	template<size_t nnbits>
+	friend std::string to_triple(const blocktriple<nnbits>&, bool);
 
 	// logic operators
 	template<size_t nnbits>
