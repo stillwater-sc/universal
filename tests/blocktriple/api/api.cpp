@@ -30,17 +30,17 @@ try {
 #if MANUAL_TESTING
 
 	{
-		CONSTEXPRESSION blocktriple<10, uint32_t> a = 511.5f;
+		CONSTEXPRESSION blocktriple<10> a = 511.5f;
 		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
 	}
 	{
 		constexpr double d = 511.5;
 		cout << to_binary(d, true) << '\n';
-		CONSTEXPRESSION blocktriple<8, uint64_t> a = d;
+		CONSTEXPRESSION blocktriple<8> a = d;
 		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
-		CONSTEXPRESSION blocktriple<9, uint64_t> b = d;
+		CONSTEXPRESSION blocktriple<9> b = d;
 		cout << to_binary(b) << " : " << to_triple(b) << " : " << b << '\n';
-		CONSTEXPRESSION blocktriple<10, uint64_t> c = d;
+		CONSTEXPRESSION blocktriple<10> c = d;
 		cout << to_binary(c) << " : " << to_triple(c) << " : " << c << '\n';
 	}
 	{
@@ -49,9 +49,10 @@ try {
 		//constexpr size_t abits = fhbits + 3;
 		//constexpr size_t sumbits = abits + 1;
 
-		blocktriple<fhbits, uint8_t> a, b;
+		blocktriple<fhbits> a, b;
 		//blocktriple<8, uint8_t> sum;
-		blockbinary<fhbits, uint8_t> bba, bbb;
+		using BlockType = typename blocktriple<fhbits>::bt;
+		blockbinary<fhbits, BlockType> bba, bbb;
 		bba.set_raw_bits(0xAAAAu);
 		a.set(false, 7, bba);
 		cout << to_triple(a) << " : " << a << '\n';
@@ -89,8 +90,8 @@ try {
 		a = 1.0f;
 		b = -1.0f;
 		constexpr size_t abits = a.fhbits; // a.abits;
-		blocktriple<abits, uint8_t> aa, bb;
-		blocktriple<abits + 1, uint8_t> sum;
+		blocktriple<abits> aa, bb;
+		blocktriple<abits + 1> sum;
 		a.normalize(aa);  // decode of a bits into a triple form aa
 		b.normalize(bb);  // decode of b bits into a triple form bb
 		module_add(aa, bb, sum);  // ALU add operator
@@ -103,8 +104,8 @@ try {
 		a = 1.0f;
 		b = -1.0f;
 		constexpr size_t mbits = a.fhbits; // a.abits;
-		blocktriple<mbits, uint8_t> aa, bb;
-		blocktriple<2*mbits, uint8_t> product;
+		blocktriple<mbits> aa, bb;
+		blocktriple<2*mbits> product;
 		a.normalize(aa);  // decode of a bits into a triple form aa
 		b.normalize(bb);  // decode of b bits into a triple form bb
 		product.mul(aa, bb);  // ALU mule operator

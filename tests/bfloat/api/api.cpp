@@ -37,7 +37,7 @@ try {
 		bfloat<16, 4, uint16_t> a(1.0);
 		bfloat<16, 4, uint16_t> b;
 		b = 1.5f;
-		blocktriple<12, uint16_t> bt;
+		blocktriple<12> bt;
 		b.normalize(bt);
 		std::cout << to_binary(b) << " : " << b << " : " << to_binary(bt) << std::endl;
 		std::cout << color_print(b) << std::endl;

@@ -93,28 +93,15 @@ namespace sw::universal::internal {
 
 		constexpr size_t NR_OPS = 32ull * 1024ull * 1024ull;
 
-		PerformanceRunner("blocktriple<4,uint8>      add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<4, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<8,uint8>      add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<8, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<16,uint8>     add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<16, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<16,uint16>    add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<16, uint16_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<32,uint8>     add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<32, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<32,uint16>    add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<32, uint16_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<32,uint32>    add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<32, uint32_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<64,uint8>     add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<64, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<64,uint16>    add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<64, uint16_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<64,uint32>    add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<64, uint32_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<128,uint8>    add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<128, uint8_t> >, NR_OPS / 2);
-		PerformanceRunner("blocktriple<128,uint16>   add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<128, uint16_t> >, NR_OPS / 2);
-		PerformanceRunner("blocktriple<128,uint32>   add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<128, uint32_t> >, NR_OPS / 2);
-		PerformanceRunner("blocktriple<256,uint8>    add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<256, uint8_t> >, NR_OPS / 4);
-		PerformanceRunner("blocktriple<256,uint16>   add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<256, uint16_t> >, NR_OPS / 4);
-		PerformanceRunner("blocktriple<256,uint32>   add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<256, uint32_t> >, NR_OPS / 4);
-		PerformanceRunner("blocktriple<512,uint8>    add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<512, uint8_t> >, NR_OPS / 8);
-		PerformanceRunner("blocktriple<512,uint16>   add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<512, uint16_t> >, NR_OPS / 8);
-		PerformanceRunner("blocktriple<512,uint32>   add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<512, uint32_t> >, NR_OPS / 8);
-		PerformanceRunner("blocktriple<1024,uint8>   add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<1024, uint8_t> >, NR_OPS / 16);
-		PerformanceRunner("blocktriple<1024,uint16>  add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<1024, uint16_t> >, NR_OPS / 16);
-		PerformanceRunner("blocktriple<1024,uint32>  add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<1024, uint32_t> >, NR_OPS / 16);
+		PerformanceRunner("blocktriple<4,uint8>      add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<4> >, NR_OPS);
+		PerformanceRunner("blocktriple<8,uint8>      add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<8> >, NR_OPS);
+		PerformanceRunner("blocktriple<16,uint8>     add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<16> >, NR_OPS);
+		PerformanceRunner("blocktriple<32,uint8>     add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<32> >, NR_OPS);
+		PerformanceRunner("blocktriple<64,uint8>     add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<64> >, NR_OPS);
+		PerformanceRunner("blocktriple<128,uint8>    add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<128> >, NR_OPS / 2);
+		PerformanceRunner("blocktriple<256,uint8>    add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<256> >, NR_OPS / 4);
+		PerformanceRunner("blocktriple<512,uint8>    add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<512> >, NR_OPS / 8);
+		PerformanceRunner("blocktriple<1024,uint8>   add   ", AdditionSubtractionWorkload< sw::universal::blocktriple<1024> >, NR_OPS / 16);
 	}
 
 	void TestBlockPerformanceOnDiv() {
@@ -123,28 +110,15 @@ namespace sw::universal::internal {
 		cout << endl << "DIVISION: blocktriple arithemetic performance as a function of size and BlockType" << endl;
 
 		constexpr size_t NR_OPS = 1024ull * 1024;
-		PerformanceRunner("blocktriple<4,uint8>      div   ", DivisionWorkload< sw::universal::blocktriple<4, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<8,uint8>      div   ", DivisionWorkload< sw::universal::blocktriple<8, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<16,uint8>     div   ", DivisionWorkload< sw::universal::blocktriple<16, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<16,uint16>    div   ", DivisionWorkload< sw::universal::blocktriple<16, uint16_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<32,uint8>     div   ", DivisionWorkload< sw::universal::blocktriple<32, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<32,uint16>    div   ", DivisionWorkload< sw::universal::blocktriple<32, uint16_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<32,uint32>    div   ", DivisionWorkload< sw::universal::blocktriple<32, uint32_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<64,uint8>     div   ", DivisionWorkload< sw::universal::blocktriple<64, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<64,uint16>    div   ", DivisionWorkload< sw::universal::blocktriple<64, uint16_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<64,uint32>    div   ", DivisionWorkload< sw::universal::blocktriple<64, uint32_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<128,uint8>    div   ", DivisionWorkload< sw::universal::blocktriple<128, uint8_t> >, NR_OPS / 2);
-		PerformanceRunner("blocktriple<128,uint16>   div   ", DivisionWorkload< sw::universal::blocktriple<128, uint16_t> >, NR_OPS / 2);
-		PerformanceRunner("blocktriple<128,uint32>   div   ", DivisionWorkload< sw::universal::blocktriple<128, uint32_t> >, NR_OPS / 2);
-		PerformanceRunner("blocktriple<256,uint8>    div   ", DivisionWorkload< sw::universal::blocktriple<256, uint8_t> >, NR_OPS / 4);
-		PerformanceRunner("blocktriple<256,uint16>   div   ", DivisionWorkload< sw::universal::blocktriple<256, uint16_t> >, NR_OPS / 4);
-		PerformanceRunner("blocktriple<256,uint32>   div   ", DivisionWorkload< sw::universal::blocktriple<256, uint32_t> >, NR_OPS / 4);
-		PerformanceRunner("blocktriple<512,uint8>    div   ", DivisionWorkload< sw::universal::blocktriple<512, uint8_t> >, NR_OPS / 8);
-		PerformanceRunner("blocktriple<512,uint16>   div   ", DivisionWorkload< sw::universal::blocktriple<512, uint16_t> >, NR_OPS / 8);
-		PerformanceRunner("blocktriple<512,uint32>   div   ", DivisionWorkload< sw::universal::blocktriple<512, uint32_t> >, NR_OPS / 8);
-		PerformanceRunner("blocktriple<1024,uint8>   div   ", DivisionWorkload< sw::universal::blocktriple<1024, uint8_t> >, NR_OPS / 16);
-		PerformanceRunner("blocktriple<1024,uint16>  div   ", DivisionWorkload< sw::universal::blocktriple<1024, uint16_t> >, NR_OPS / 16);
-		PerformanceRunner("blocktriple<1024,uint32>  div   ", DivisionWorkload< sw::universal::blocktriple<1024, uint32_t> >, NR_OPS / 16);
+		PerformanceRunner("blocktriple<4,uint8>      div   ", DivisionWorkload< sw::universal::blocktriple<4> >, NR_OPS);
+		PerformanceRunner("blocktriple<8,uint8>      div   ", DivisionWorkload< sw::universal::blocktriple<8> >, NR_OPS);
+		PerformanceRunner("blocktriple<16,uint8>     div   ", DivisionWorkload< sw::universal::blocktriple<16> >, NR_OPS);
+		PerformanceRunner("blocktriple<32,uint8>     div   ", DivisionWorkload< sw::universal::blocktriple<32> >, NR_OPS);
+		PerformanceRunner("blocktriple<64,uint8>     div   ", DivisionWorkload< sw::universal::blocktriple<64> >, NR_OPS);
+		PerformanceRunner("blocktriple<128,uint8>    div   ", DivisionWorkload< sw::universal::blocktriple<128> >, NR_OPS / 2);
+		PerformanceRunner("blocktriple<256,uint8>    div   ", DivisionWorkload< sw::universal::blocktriple<256> >, NR_OPS / 4);
+		PerformanceRunner("blocktriple<512,uint8>    div   ", DivisionWorkload< sw::universal::blocktriple<512> >, NR_OPS / 8);
+		PerformanceRunner("blocktriple<1024,uint8>   div   ", DivisionWorkload< sw::universal::blocktriple<1024> >, NR_OPS / 16);
 	}
 
 	void TestBlockPerformanceOnMul() {
@@ -153,28 +127,15 @@ namespace sw::universal::internal {
 		cout << endl << "MULTIPLICATION: blocktriple arithemetic performance as a function of size and BlockType" << endl;
 
 		constexpr size_t NR_OPS = 512ull * 1024;
-		PerformanceRunner("blocktriple<4,uint8>      mul   ", MultiplicationWorkload< sw::universal::blocktriple<4, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<8,uint8>      mul   ", MultiplicationWorkload< sw::universal::blocktriple<8, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<16,uint8>     mul   ", MultiplicationWorkload< sw::universal::blocktriple<16, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<16,uint16>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<16, uint16_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<32,uint8>     mul   ", MultiplicationWorkload< sw::universal::blocktriple<32, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<32,uint16>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<32, uint16_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<32,uint32>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<32, uint32_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<64,uint8>     mul   ", MultiplicationWorkload< sw::universal::blocktriple<64, uint8_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<64,uint16>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<64, uint16_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<64,uint32>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<64, uint32_t> >, NR_OPS);
-		PerformanceRunner("blocktriple<128,uint8>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<128, uint8_t> >, NR_OPS / 2);
-		PerformanceRunner("blocktriple<128,uint16>   mul   ", MultiplicationWorkload< sw::universal::blocktriple<128, uint16_t> >, NR_OPS / 2);
-		PerformanceRunner("blocktriple<128,uint32>   mul   ", MultiplicationWorkload< sw::universal::blocktriple<128, uint32_t> >, NR_OPS / 2);
-		PerformanceRunner("blocktriple<256,uint8>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<256, uint8_t> >, NR_OPS / 16);
-		PerformanceRunner("blocktriple<256,uint16>   mul   ", MultiplicationWorkload< sw::universal::blocktriple<256, uint16_t> >, NR_OPS / 8);
-		PerformanceRunner("blocktriple<256,uint32>   mul   ", MultiplicationWorkload< sw::universal::blocktriple<256, uint32_t> >, NR_OPS / 4);
-		PerformanceRunner("blocktriple<512,uint8>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<512, uint8_t> >, NR_OPS / 512);
-		PerformanceRunner("blocktriple<512,uint16>   mul   ", MultiplicationWorkload< sw::universal::blocktriple<512, uint16_t> >, NR_OPS / 256);
-		PerformanceRunner("blocktriple<512,uint32>   mul   ", MultiplicationWorkload< sw::universal::blocktriple<512, uint32_t> >, NR_OPS / 128);
-		PerformanceRunner("blocktriple<1024,uint8>   mul   ", MultiplicationWorkload< sw::universal::blocktriple<1024, uint8_t> >, NR_OPS / 1024);
-		PerformanceRunner("blocktriple<1024,uint16>  mul   ", MultiplicationWorkload< sw::universal::blocktriple<1024, uint16_t> >, NR_OPS / 512);
-		PerformanceRunner("blocktriple<1024,uint32>  mul   ", MultiplicationWorkload< sw::universal::blocktriple<1024, uint32_t> >, NR_OPS / 256);
+		PerformanceRunner("blocktriple<4,uint8>      mul   ", MultiplicationWorkload< sw::universal::blocktriple<4> >, NR_OPS);
+		PerformanceRunner("blocktriple<8,uint8>      mul   ", MultiplicationWorkload< sw::universal::blocktriple<8> >, NR_OPS);
+		PerformanceRunner("blocktriple<16,uint8>     mul   ", MultiplicationWorkload< sw::universal::blocktriple<16> >, NR_OPS);
+		PerformanceRunner("blocktriple<32,uint8>     mul   ", MultiplicationWorkload< sw::universal::blocktriple<32> >, NR_OPS);
+		PerformanceRunner("blocktriple<64,uint8>     mul   ", MultiplicationWorkload< sw::universal::blocktriple<64> >, NR_OPS);
+		PerformanceRunner("blocktriple<128,uint8>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<128> >, NR_OPS / 2);
+		PerformanceRunner("blocktriple<256,uint8>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<256> >, NR_OPS / 16);
+		PerformanceRunner("blocktriple<512,uint8>    mul   ", MultiplicationWorkload< sw::universal::blocktriple<512> >, NR_OPS / 512);
+		PerformanceRunner("blocktriple<1024,uint8>   mul   ", MultiplicationWorkload< sw::universal::blocktriple<1024> >, NR_OPS / 1024);
 
 	}
 }
@@ -194,7 +155,7 @@ try {
 	TestShiftOperatorPerformance();
 	TestArithmeticOperatorPerformance();
 
-	ShiftPerformanceWorkload< sw::universal::blocktriple<8, uint8_t> >(1);
+	ShiftPerformanceWorkload< sw::universal::blocktriple<8> >(1);
 	
 	cout << "done" << endl;
 
