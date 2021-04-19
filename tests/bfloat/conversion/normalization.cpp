@@ -37,7 +37,7 @@ namespace sw::universal {
 		using bt = typename BfloatConfiguration::BlockType;
 		constexpr size_t fhbits = nbits - es;
 		bfloat<nbits, es, bt> a;
-		blocktriple<fhbits, bt> b;  // representing significant
+		blocktriple<fhbits> b;  // representing significant
 		int nrOfTestFailures{ 0 };
 		for (size_t i = 0; i < 64; ++i) {
 			a.set_raw_bits(i);

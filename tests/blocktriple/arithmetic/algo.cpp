@@ -77,7 +77,7 @@ try {
 			bbb.assignWithoutSignExtend(bba);
 			cout << to_binary(bbb, true) << '\n';
 		}
-		blocktriple<nbits, uint32_t> a,b;
+		blocktriple<nbits> a,b;
 		a = 1.0f;
 		b = 1.0f;
 		cout << to_triple(a) << " : " << a << '\n';
