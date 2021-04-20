@@ -284,7 +284,8 @@ public:
 		_significant.set_raw_bits(raw);
 	}
 	// set a non-zero, non-inf, non-nan value
-	constexpr void set(bool s, int scale, bits& significant) {
+	template<typename SrcBlockType>
+	constexpr void set(bool s, int scale, blockbinary<nbits, SrcBlockType>& significant) {
 		_nan = false;
 		_inf = false;
 		_zero = false;

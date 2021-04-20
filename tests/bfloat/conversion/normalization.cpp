@@ -59,7 +59,7 @@ namespace sw::universal {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -85,7 +85,7 @@ try {
 		constexpr size_t es = 4;
 		constexpr size_t fbits = nbits - 1ull - es;
 		bfloat<nbits, es, uint8_t> a;
-		blocktriple<fbits + 1, uint8_t> b;  // representing significant
+		blocktriple<fbits + 1> b;  // representing significant
 		a = 0.015625f;
 		a.normalize(b);
 		cout << to_binary(a) << " : " << a << " : scale " << a.scale() << " : " << to_triple(b) << " : " << b << endl;
@@ -94,6 +94,7 @@ try {
 
 	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<3, 1, uint8_t> >(true);
 	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<4, 1, uint8_t> >(true);
+	return 0;
 	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<5, 1, uint8_t> >(true);
 	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<6, 1, uint8_t> >(true);
 	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<7, 1, uint8_t> >(true);
