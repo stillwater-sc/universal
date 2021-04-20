@@ -985,7 +985,12 @@ public:
 		else {
 			for (size_t i = 0; i < nrBlocks; ++i) {
 				_block[i] = raw_bits & storageMask;
-				raw_bits >>= bitsInBlock; // shift can be the same size as type as it is protected by loop constraints
+				if constexpr (bitsInBlock < 64) {
+				    raw_bits >>= bitsInBlock; 
+				}
+				else {
+				    raw_bits = 0;
+				}
 			}
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
