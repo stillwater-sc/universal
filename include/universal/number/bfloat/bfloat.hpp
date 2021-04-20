@@ -1387,19 +1387,14 @@ public:
 	explicit operator double() const { return to_native<double>(); }
 	explicit operator float() const { return to_native<float>(); }
 
-	// normalize a non-special bfloat, that is, no zero, inf, or nan
+	// normalize a non-special bfloat, that is, not a zero, inf, or nan, into a blocktriple
 	template<size_t tgtSize>
 	void normalize(blocktriple<tgtSize>& v) const {
 		bool _sign = sign();
 		int  _scale = scale();
-		using StorageType = typename blocktriple<tgtSize>::bt;
-		blockbinary<tgtSize, StorageType> _significant;
-		if (_scale < MIN_EXP_NORMAL) { // need to normalize the subnormal number to yield a consistent significant
-		//	/* size_t shift = */significant(_significant, false);
-		}
-		else {
-		//	significant(_significant, true);
-		}
+		blockbinary<tgtSize, bt> _significant;
+		// need to normalize the subnormal number to yield a consistent significant
+		significant(_significant, (_scale < MIN_EXP_NORMAL));
 		v.set(_sign, _scale, _significant);
 	}
 

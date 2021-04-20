@@ -433,7 +433,7 @@ public:
 		throw "block index out of bounds";
 	}
 
-	// copy a value over from one blockbinary to this
+	// copy a value over from one blockbinary to this blockbinary
 	// blockbinary is a 2's complement encoding, so we sign-extend by default
 	template<size_t srcbits>
 	inline blockbinary<nbits, bt>& assign(const blockbinary<srcbits, bt>& rhs) {
