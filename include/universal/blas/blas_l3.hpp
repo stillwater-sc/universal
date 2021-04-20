@@ -134,17 +134,16 @@ vector<typename Matrix::value_type> matrixNorm(Matrix& A, int dim = 0) {
 	size_type rows = num_rows(A);
 	size_type cols = num_cols(A);
 
-	value_type sos{ 0 };
 	switch (dim) {
 	case 0:
 	{
-		value_type sum{ 0 };
+		value_type sos{ 0 };
 		for (size_type i = 0; i < rows; ++i) {
 			for (size_type j = 0; j < cols; ++j) {
-				sum += A(i, j) * A(i,j);
+				sos += A(i, j) * A(i,j);
 			}
 		}
-		return vector<value_type>{sqrt(sum)};
+		return vector<value_type>{sqrt(sos)};
 	}
 
 	case 1:

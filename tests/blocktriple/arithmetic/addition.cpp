@@ -48,8 +48,8 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 
 	int nrOfFailedTests = 0;
 
-	blocktriple<abits, BlockType> a, b;
-	blocktriple<abits+1, BlockType> result, refResult;
+	blocktriple<abits> a, b;
+	blocktriple<abits+1> result, refResult;
 	double aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.set_raw_bits(i);

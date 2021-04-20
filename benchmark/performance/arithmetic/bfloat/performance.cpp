@@ -22,10 +22,6 @@ template<typename BfloatConfiguration>
 void CopyWorkload(uint64_t NR_OPS) {
 	using namespace std;
 	using namespace sw::universal;
-	constexpr size_t nbits = BfloatConfiguration::nbits;
-	constexpr size_t es = BfloatConfiguration::es;
-	using bt = typename BfloatConfiguration::BlockType;
-	constexpr size_t fhbits = nbits - es;
 	BfloatConfiguration a,b,c;
 
 	bool bFail = false;
@@ -280,7 +276,7 @@ void NormalizeWorkload(uint64_t NR_OPS) {
 	using bt = typename BfloatConfiguration::BlockType;
 	constexpr size_t fhbits = nbits - es;
 	bfloat<nbits, es, bt> a;
-	blocktriple<fhbits, bt> b;  // representing significant
+	blocktriple<fhbits> b;  // representing significant
 
 	bool bFail = false;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
