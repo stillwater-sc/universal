@@ -13,7 +13,7 @@
 #define POSIT_FAST_POSIT_8_0 0
 #endif
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_8_0
@@ -158,6 +158,7 @@ namespace sw { namespace universal {
 		}
 		
 		// SELECTORS
+		inline bool sign() const       { return (_bits & sign_mask); }
 		inline bool isnar() const      { return (_bits == sign_mask); }
 		inline bool iszero() const     { return (_bits == 0x00); }
 		inline bool isone() const      { return (_bits == 0x40); } // pattern 010000...
@@ -400,7 +401,7 @@ namespace sw { namespace universal {
 	}
 
 	// convert a posit value to a string using "nar" as designation of NaR
-	std::string to_string(const posit<NBITS_IS_8, ES_IS_0>& p, std::streamsize precision) {
+	inline std::string to_string(const posit<NBITS_IS_8, ES_IS_0>& p, std::streamsize precision) {
 		if (p.isnar()) {
 			return std::string("nar");
 		}
@@ -488,4 +489,4 @@ namespace sw { namespace universal {
 
 #endif // POSIT_FAST_POSIT_8_0
 
-}} // namespace sw::universal
+} // namespace sw::universal

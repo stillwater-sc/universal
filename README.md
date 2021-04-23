@@ -6,16 +6,16 @@
 [ ![Codeship Status for stillwater-sc/universal](https://app.codeship.com/projects/22533f00-252a-0136-2ba6-6657a5454f61/status?branch=master)](https://app.codeship.com/projects/286490)
 [![Coverage Status](https://coveralls.io/repos/github/stillwater-sc/universal/badge.svg?branch=master)](https://coveralls.io/github/stillwater-sc/universal?branch=master)
 
-The goal of Universal Numbers, or unums, is to replace IEEE floating-point with a number system that is more efficient and mathematically consistent in concurrent execution environments.
+The goal of the Universal Numbers Library is to offer applications alternatives to IEEE floating-point that are more efficient and mathematically robust.
 
-The motivation to replace IEEE floating-point had been brewing in the HPC community since the late 90's as most algorithms became memory bound. The inefficiency of IEEE floating-point has been measured and agreed upon, but it was the AI Deep Learning community that moved first and replaced IEEE with number systems that are tailored to the application to yield speed-ups of two to three orders of magnitude.
+The motivation to find improvements to IEEE floating-point had been brewing in the HPC community since the late 90's as most algorithms became memory bound and computational scientists were looking for alternatives that provided more granularity in precision and dynamic range. Even though the inefficiency of IEEE floating-point had been measured and agreed upon in the HPC community, it was the commercial demands of Deep Learning that provided the incentive to replaced IEEE-754 with alternatives, such as half-floats, and bfloats. These alternatives are tailored to the application and yield speed-ups of two to three orders of magnitude, making rapid innovation in AI possible.
 
 The Universal library is a ready-to-use header-only library that provides plug-in replacement for native types, and provides a low-friction environment to start exploring alternatives to IEEE floating-point in your own algorithms. 
 
 The basic use pattern is as simple as:
 
 ```code
-#include <universal/posit/posit>
+#include <universal/number/posit/posit>
 
 template<typename Real>
 Real MyKernel(const Real& a, const Real& b) {
@@ -25,7 +25,7 @@ Real MyKernel(const Real& a, const Real& b) {
 constexpr double pi = 3.14159265358979323846;
 
 int main() {
-    using Real = sw::unum::posit<32,2>;  
+    using Real = sw::universal::posit<32,2>;  
 
     Real a = sqrt(2);
     Real b = pi;
@@ -34,7 +34,28 @@ int main() {
 }
 ```
 
-The library contains integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and several multi-precision integers and floats. There are example skeletons to get you started quickly if you desire to add your own number system, which is highly encouraged.
+The library contains integers, decimals, fixed-points, rationals, linear floats, tapered floats, logarithmic, interval and adaptive-precision integers and floats. There are example number system skeletons to get you started quickly if you desire to add your own, which is highly encouraged.
+
+## Communication channels
+
+* [GitHub Issue](https://github.com/stillwater-sc/universal/issues): bug reports,
+  feature requests, etc.
+* [Forum](https://groups.google.com/u/1/g/unum-computing): discussion of alternatives to IEEE-754 for computational science.
+* [Slack](https://fptalks.slack.com): online chats, discussions,
+  and collaboration with other users, researchers and developers.
+
+## Citation
+
+Please cite [our work](https://arxiv.org/abs/2012.11011) if you use _Universal_.
+
+```bib
+@article{Omtzigt2020,
+    author    = {E. Theodore L. Omtzigt and Peter Gottschling and Mark Seligman and William Zorn},
+    title     = {{Universal Numbers Library}: design and implementation of a high-performance reproducible number systems library},
+    journal   = {arXiv:2012.11011},
+    year      = {2020},
+}
+```
 
 ## Quick start
 
@@ -47,191 +68,6 @@ stillwater@b3e6708fd732:~/universal/build$ ls
 CMakeCache.txt       Makefile      cmake-uninstall.cmake  playground  universal-config-version.cmake
 CMakeFiles           applications  cmake_install.cmake    tests       universal-config.cmake
 CTestTestfile.cmake  c_api         education              tools       universal-targets.cmake
-```
-
-From the build directory, it is convenient to run any of the regression test suites:
-
-```text
-stillwater@b3e6708fd732:~/universal/build$ tests/posit/specialized/fast_posit_8_0
-Fast specialization posit<8,0> configuration tests
- posit<  8,0> useed scale     1     minpos scale         -6     maxpos scale          6
-Logic operator tests
- posit<8,0>     ==         (native)   PASS
- posit<8,0>     !=         (native)   PASS
- posit<8,0>     <          (native)   PASS
- posit<8,0>     <=         (native)   PASS
- posit<8,0>     >          (native)   PASS
- posit<8,0>     >=         (native)   PASS
-Assignment/conversion tests
- posit<8,0> integer assign (native)   PASS
- posit<8,0> float assign   (native)   PASS
-Arithmetic tests
- posit<8,0> add            (native)   PASS
- posit<8,0> +=             (native)   PASS
- posit<8,0> subtract       (native)   PASS
- posit<8,0> -=             (native)   PASS
- posit<8,0> multiply       (native)   PASS
- posit<8,0> *=             (native)   PASS
- posit<8,0> divide         (native)   PASS
- posit<8,0> /=             (native)   PASS
- posit<8,0> negate         (native)   PASS
- posit<8,0> reciprocate    (native)   PASS
-Elementary function tests
- posit<8,0> sqrt           (native)   PASS
- posit<8,0> exp                       PASS
- posit<8,0> exp2                      PASS
- posit<8,0> log                       PASS
- posit<8,0> log2                      PASS
- posit<8,0> log10                     PASS
- posit<8,0> sin                       PASS
- posit<8,0> cos                       PASS
- posit<8,0> tan                       PASS
- posit<8,0> atan                      PASS
- posit<8,0> asin                      PASS
- posit<8,0> acos                      PASS
- posit<8,0> sinh                      PASS
- posit<8,0> cosh                      PASS
- posit<8,0> tanh                      PASS
- posit<8,0> atanh                     PASS
- posit<8,0> acosh                     PASS
- posit<8,0> asinh                     PASS
-ValidatePower has been truncated
- posit<8,0> pow                       PASS
-```
-
-In /usr/local/bin there are a set of command line utilities to inspect floating point encodings.
-
-```text
-stillwater@b3e6708fd732:~/universal/build$ ls /usr/local/bin
-compd  compf  compfp  compieee  compld  complns  compp  compsi  compui  float2posit  propenv  propp
-
-stillwater@b3e6708fd732:~/universal$ compieee 1.2345678901234567890123
-compiler              : 7.5.0
-float precision       : 23 bits
-double precision      : 52 bits
-long double precision : 63 bits
-
-Representable?        : maybe
-
-Decimal representations
-input value:  1.2345678901234567890123
-      float:                1.23456788
-     double:        1.2345678901234567
-long double:    1.23456789012345678899
-
-Hex representations
-input value:  1.2345678901234567890123
-      float:                1.23456788    hex: 0.7f.1e0652
-     double:        1.2345678901234567    hex: 0.3ff.3c0ca428c59fb
-long double:    1.23456789012345678899    hex: 0.3fff.1e06521462cfdb8d
-
-Binary representations:
-      float:                1.23456788    bin: 0.01111111.00111100000011001010010
-     double:        1.2345678901234567    bin: 0.01111111111.00111100000011001010010000101000110001011001                        11111011
-long double:    1.23456789012345678899    bin: 0.011111111111111.0011110000001100101001000010100011000101                        10011111101101110001101
-
-Native triple representations (sign, scale, fraction):
-      float:                1.23456788    triple: (+,0,00111100000011001010010)
-     double:        1.2345678901234567    triple: (+,0,00111100000011001010010000101000110001011001111110                        11)
-long double:    1.23456789012345678899    triple: (+,0,00111100000011001010010000101000110001011001111110                        1101110001101)
-
-Scientific triple representation (sign, scale, fraction):
-input value:  1.2345678901234567890123
-      float:                1.23456788    triple: (+,0,00111100000011001010010)
-     double:        1.2345678901234567    triple: (+,0,00111100000011001010010000101000110001011001111110                        11)
-long double:    1.23456789012345678899    triple: (+,0,00111100000011001010010000101000110001011001111110                        1101110001101)
-      exact: TBD
-```
-
-Or posit encodings:
-
-```text
-stillwater@b3e6708fd732:~/universal/build$ compp 1.2345678901234567890123
-posit< 8,0> = s0 r10 e f01000 qNE v1.25
-posit< 8,1> = s0 r10 e0 f0100 qNE v1.25
-posit< 8,2> = s0 r10 e00 f010 qNE v1.25
-posit< 8,3> = s0 r10 e000 f01 qNE v1.25
-posit<16,1> = s0 r10 e0 f001111000001 qNE v1.234619140625
-posit<16,2> = s0 r10 e00 f00111100000 qNE v1.234375
-posit<16,3> = s0 r10 e000 f0011110000 qNE v1.234375
-posit<32,1> = s0 r10 e0 f0011110000001100101001000011 qNE v1.2345678918063641
-posit<32,2> = s0 r10 e00 f001111000000110010100100001 qNE v1.2345678880810738
-posit<32,3> = s0 r10 e000 f00111100000011001010010001 qNE v1.2345678955316544
-posit<48,1> = s0 r10 e0 f00111100000011001010010000101000110001011010 qNE v1.2345678901234578
-posit<48,2> = s0 r10 e00 f0011110000001100101001000010100011000101101 qNE v1.2345678901234578
-posit<48,3> = s0 r10 e000 f001111000000110010100100001010001100010110 qNE v1.2345678901233441
-posit<64,1> = s0 r10 e0 f001111000000110010100100001010001100010110011111101100000000 qNE v1.2345678901234567
-posit<64,2> = s0 r10 e00 f00111100000011001010010000101000110001011001111110110000000 qNE v1.2345678901234567
-posit<64,3> = s0 r10 e000 f0011110000001100101001000010100011000101100111111011000000 qNE v1.2345678901234567
-posit<64,4> = s0 r10 e0000 f001111000000110010100100001010001100010110011111101100000 qNE v1.2345678901234567
-```
-
-The following two educational examples are pretty informative when you are just starting out learning about posits: edu_scales and edu_tables.
-
-```text
-stillwater@b3e6708fd732:~/universal/build$ education/posit/edu_scales
-Experiments with the scale of posit numbers
-Posit specificiation examples and their ranges:
-Scales are represented as the binary scale of the number: i.e. 2^scale
-
-Small, specialized posit configurations
-nbits = 3
- posit<  3,0> useed scale     1     minpos scale         -1     maxpos scale          1
- posit<  3,1> useed scale     2     minpos scale         -2     maxpos scale          2
- posit<  3,2> useed scale     4     minpos scale         -4     maxpos scale          4
- posit<  3,3> useed scale     8     minpos scale         -8     maxpos scale          8
- posit<  3,4> useed scale    16     minpos scale        -16     maxpos scale         16
-nbits = 4
- posit<  4,0> useed scale     1     minpos scale         -2     maxpos scale          2
- posit<  4,1> useed scale     2     minpos scale         -4     maxpos scale          4
- posit<  4,2> useed scale     4     minpos scale         -8     maxpos scale          8
- posit<  4,3> useed scale     8     minpos scale        -16     maxpos scale         16
- posit<  4,4> useed scale    16     minpos scale        -32     maxpos scale         32
-nbits = 5
- posit<  5,0> useed scale     1     minpos scale         -3     maxpos scale          3
- posit<  5,1> useed scale     2     minpos scale         -6     maxpos scale          6
- posit<  5,2> useed scale     4     minpos scale        -12     maxpos scale         12
- posit<  5,3> useed scale     8     minpos scale        -24     maxpos scale         24
- posit<  5,4> useed scale    16     minpos scale        -48     maxpos scale         48
-...
-```
-
-The command `edu_tables` generates tables of full posit encodings and their constituent parts:
-
-```text
-stillwater@b3e6708fd732:~/universal/build$ education/posit/edu_tables | more
-Generate posit configurations
-Generate Posit Lookup table for a POSIT<2,0> in TXT format
-   #           Binary         Decoded       k    sign   scale          regime        exponent        fraction
-     value    posit_format
-   0:               00              00      -1       0       0               0               ~               ~
-          0           2.0x0p
-   1:               01              01       0       0       0               1               ~               ~
-          1           2.0x1p
-   2:               10              10       1       1       0               0               ~               ~
-        nar           2.0x2p
-   3:               11              11       0       1       0               1               ~               ~
-         -1           2.0x3p
-Generate Posit Lookup table for a POSIT<3,0> in TXT format
-   #           Binary         Decoded       k    sign   scale          regime        exponent        fraction
-     value    posit_format
-   0:              000             000      -2       0      -1              00               ~               ~
-          0           3.0x0p
-   1:              001             001      -1       0      -1              01               ~               ~
-        0.5           3.0x1p
-   2:              010             010       0       0       0              10               ~               ~
-          1           3.0x2p
-   3:              011             011       1       0       1              11               ~               ~
-          2           3.0x3p
-   4:              100             100       2       1      -1              00               ~               ~
-        nar           3.0x4p
-   5:              101             111       1       1       1              11               ~               ~
-         -2           3.0x5p
-   6:              110             110       0       1       0              10               ~               ~
-         -1           3.0x6p
-   7:              111             101      -1       1      -1              01               ~               ~
-       -0.5           3.0x7p
-...
 ```
 
 ## How to build
@@ -255,14 +91,14 @@ For Ubuntu, snap will install the latest cmake, and would be the preferred metho
 The Universal library is a pure C++ template library without any further dependencies, even for the regression test suites,
 to enable hassle-free installation and use.
 
-Simply clone the github repo, and you are ready to build the different components of the Universal library. 
+Simply clone the github repo, and you are ready to build the different components of the Universal library.  
 The library contains tools to work with integers, decimals, fixed-points, floats, posits, valids, and logarithmic
 number systems. It contains educational programs that showcase simple use cases to familiarize yourself with
 different number systems, and application examples to highlight the use of different number systems to gain performance
 or numerical accuracy. Finally, each number system offers its own verification suite. 
 
-The easiest way to become familiar with all the options in the build process is to fire up the CMake GUI 
-(or ccmake if you are on a headless server). The cmake output will summarize which options have been set. 
+The easiest way to become familiar with all the options in the build process is to fire up the CMake GUI
+(or ccmake if you are on a headless server). The cmake output will summarize which options have been set.  
 The output will looks something like this:
 
 ```text
@@ -593,18 +429,21 @@ In contrast, the _posit_ number system is designed to be efficient, symmetric, a
 
 ## Goals of the library
 
-This library is a bit-level arithmetic reference implementation of the evolving unum III (posit and valid) standard.
-The goal is to provide a faithful posit arithmetic layer for any C/C++/Python environment.
+The _Universal_ library started as a bit-level arithmetic reference implementation of the evolving unum Type III (posit and valid) standard.
+However, the demands for supporting number systems, such as adaptive-precision integers to solve large factorials, adaptive-precision 
+floats to act as Oracles, or comparing linear and tapered floats provided the opportunity to create a complete platform for
+numerical analysis and computational mathematics. With this _Universal_ platform we enable a new direction for optimization of algorithms 
+to take advantage of mixed-precision to maximize performance and/or minimize energy demands. Energy efficiency is going to be the
+key differentiator for embedded intelligence applications.
 
-As a reference library, there is extensive test infrastructure to validate the arithmetic, and there is a host
-of utilities to become familiar with the internal workings of posits and valids.
+As a reference library, _Universal_ offers an xtensive test infrastructure to validate number system arithmetic operations, and there is 
+a host of utilities to inspect the internal encodings and operations of the different number systems.
 
-We want to provide a complete unum library, and we are looking for contributors to finish the Type I and II unum implementations.
+The design space for custom arithmetic is vast, and any contribution to expand the capability of the _Universal_ library is encouraged. 
 
 ## Contributing to universal
 
-We are happy to accept pull requests via GitHub. The only requirement that we would like PR's to adhere to
-is that all the test cases pass, so that we know the new code isn't breaking any functionality.
+We are happy to accept pull requests via GitHub. The only requirement is that the entire regression test suite passes.
 
 [![Stargazers over time](https://starchart.cc/stillwater-sc/universal.svg)](https://starchart.cc/stillwater-sc/universal)
 
@@ -637,17 +476,21 @@ The universal library contains a set of functional groups to deal with different
 
 Here is a complete list:
 
-- *universal/unum* - flexible configuration unum number system
-- *universal/integer* - arbitrary configuration integers
-- *universal/fixpnt* - arbitrary configuration fixed-point number systems
-- *universal/areal* - arbitrary configuration linear floating-point number systems
-- *universal/posit* - arbitrary configuration posit number systems
-- *universal/valid* - arbitrary configuration valid number systems
-- *universal/decimal* - multi-precision decimal
-- *universal/mpfloat* - multi-precision linear floating-point
-- *universal/rational* - multi-precision rational number system
-- *universal/float* - contains the implementation of the IEEE floating point augmentations for reproducible computation
-- *universal/lns* - logarithmic number system
+- *universal/number/integer* - arbitrary configuration fixed-size integer
+- *universal/number/fixpnt* - arbitrary configuration fixed-size fixed-point number system
+- *universal/number/areal* - arbitrary configuration fixed-size linear floating-point
+- *universal/number/posit* - arbitrary configuration fixed-size posit number system
+- *universal/number/valid* - arbitrary configuration fixed-size valid number system
+- *universal/number/quire* - arbitrary configuration fixed-size super accumulator number system (add/sub/abs/sqrt)
+- *universal/number/unum* - flexible configuration unum Type 1 number system
+- *universal/number/unum2* - flexible configuration unum Type 2 number system
+- *universal/number/lns* - logarithmic number system
+- *universal/number/float* - contains the implementation of the IEEE floating point augmentations for reproducible computation
+- *universal/number/decimal* - adaptive-precision decimal
+- *universal/number/rational* - adaptive-precision rational number system
+- *universal/number/adaptiveint* - adaptive-precision binary integer
+- *universal/number/adaptivefloat* - adaptive-precision linear floating-point
+- *universal/number/adaptiveposit* - adaptive-precision tapered floating-point
 
 And each of these functionality groups have an associated test suite located in ".../universal/tests/..."
 

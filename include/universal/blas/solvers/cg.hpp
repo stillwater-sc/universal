@@ -53,7 +53,7 @@ size_t cg(const Matrix& M, const Matrix& A, const Vector& b, Vector& x, Vector& 
 		x = x + alpha * p;
 		rho = rho - alpha * q;
 		// check for convergence of the system
-		residual = norm1(x_1 - x);
+		residual = norm(x_1 - x, 1);
 		residuals.push_back(residual);
 		++itr;
 	}

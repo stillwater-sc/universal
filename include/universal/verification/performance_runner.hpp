@@ -10,6 +10,18 @@
 
 namespace sw::universal {
 
+	// Generic workload for testing construction/destruction performance
+	template<typename Scalar>
+	void ConstructionPerformanceWorkload(uint64_t NR_OPS) {
+		int positives{ 0 }, negatives{ 0 };
+		for (uint64_t i = 0; i < NR_OPS; ++i) {
+			Scalar a; // don't initialize with i as that is a conversion operation
+			a.set_raw_bits(i);
+			if (a.sign()) ++positives; else ++negatives;
+		}
+		if (positives == negatives) std::cout << "positives and negatives are identical (unlikely event to select)\n";
+	}
+
 	// Generic workload for testing shift operations on a given number system type that supports operator>> and operator<<
 	template<typename Scalar>
 	void ShiftPerformanceWorkload(uint64_t NR_OPS) {
@@ -75,14 +87,14 @@ namespace sw::universal {
 	// convert a floating point value to a power-of-ten string
 	template<typename Ty>
 	std::string toPowerOfTen(Ty value) {
-		const char* scales[] = { " ", "K", "M", "G", "T" };
+		const char* scales[] = { " ", "K", "M", "G", "T", "P", "E", "Z" };
 		Ty lower_bound = Ty(1);
 		Ty scale_factor = 1.0;
 		int integer_value = 0;
-		int scale = 0;
-		for (unsigned i = 0; i < sizeof(scales); ++i) {
+		size_t scale = 0;
+		for (size_t i = 0; i < sizeof(scales); ++i) {
 			if (value > lower_bound && value < 1000 * lower_bound) {
-				integer_value = int(value / scale_factor);
+				integer_value = static_cast<int>(value / scale_factor);
 				scale = i;
 				break;
 			}

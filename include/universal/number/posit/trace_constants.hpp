@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 # ifndef POSIT_VERBOSE_OUTPUT
 // posit decode and conversion
@@ -119,5 +119,4 @@ constexpr bool _trace_quire_add = true;
 
 # endif
 
-
-}}  // namespace sw::universal
+}  // namespace sw::universal

@@ -12,7 +12,7 @@
 #define POSIT_FAST_POSIT_3_0 0
 #endif
 
-namespace sw {	namespace universal {
+namespace sw::universal {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_3_0
@@ -258,29 +258,20 @@ namespace sw {	namespace universal {
 				return p;
 			}
 			// SELECTORS
-			inline bool isnar() const {
-				return (_bits == nar_encoding);
-			}
-			inline bool iszero() const {
-				return (_bits == 0);
-			}
+			inline bool sign()   const { return (_bits & 0x4u); }
+			inline bool isnar()  const { return (_bits == nar_encoding); }
+			inline bool iszero() const { return (_bits == 0x0u); }
 			inline bool isone() const { // pattern 010....
 				return (_bits == one_encoding);
 			}
 			inline bool isminusone() const { // pattern 110...
 				return (_bits == minus_one_encoding);
 			}
-			inline bool isneg() const {
-				return (_bits & 0x2);
-			}
-			inline bool ispos() const {
-				return !isneg();
-			}
-			inline bool ispowerof2() const {
-				return !(_bits & 0x1);
-			}
+			inline bool isneg()      const { return (_bits & 0x4u); }
+			inline bool ispos()      const { return !isneg(); }
+			inline bool ispowerof2() const { return !(_bits & 0x1u); }
 
-			inline int sign_value() const { return (_bits & 0x8 ? -1 : 1); }
+			inline int sign_value() const { return (_bits & 0x4 ? -1 : 1); }
 
 			bitblock<NBITS_IS_3> get() const { bitblock<NBITS_IS_3> bb; bb = int(_bits); return bb; }
 			unsigned int encoding() const { return (unsigned int)(_bits & bit_mask); }
@@ -451,7 +442,7 @@ namespace sw {	namespace universal {
 		}
 
 		// convert a posit value to a string using "nar" as designation of NaR
-		std::string to_string(const posit<NBITS_IS_3, ES_IS_0>& p, std::streamsize precision) {
+		inline std::string to_string(const posit<NBITS_IS_3, ES_IS_0>& p, std::streamsize precision) {
 			if (p.isnar()) {
 				return std::string("nar");
 			}
@@ -522,4 +513,4 @@ namespace sw {	namespace universal {
 
 #endif // POSIT_FAST_POSIT_3_0
 	
-}} // namespace sw::universal
+} // namespace sw::universal

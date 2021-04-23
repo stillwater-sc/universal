@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 
@@ -61,48 +62,48 @@ try {
 	GenerateTestCase<4, 1>(-4.0f, -4.0f);
 
 	bReportIndividualTestCases = true;
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 1, Saturating, uint8_t>("Manual Testing", bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<4,1,Saturating,uint8_t>", "subtraction");
 
 #if STRESS_TESTING
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0, Saturating, uint8_t>("Manual Testing", true), "fixpnt<4,0,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 1, Saturating, uint8_t>("Manual Testing", true), "fixpnt<4,1,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 2, Saturating, uint8_t>("Manual Testing", true), "fixpnt<4,2,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 3, Saturating, uint8_t>("Manual Testing", true), "fixpnt<4,3,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 4, Saturating, uint8_t>("Manual Testing", true), "fixpnt<4,4,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 0, Saturating, uint8_t>(true), "fixpnt<4,0,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 1, Saturating, uint8_t>(true), "fixpnt<4,1,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 2, Saturating, uint8_t>(true), "fixpnt<4,2,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 3, Saturating, uint8_t>(true), "fixpnt<4,3,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<4, 4, Saturating, uint8_t>(true), "fixpnt<4,4,Saturating,uint8_t>", "subtraction");
 #endif
 
 #else
 
 	cout << "Fixed-point modular subtraction validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,0,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,1,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,2,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,3,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,4,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 5, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<5,5,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<5,0,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<5,1,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<5,2,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 3, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<5,3,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 4, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<5,4,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<5, 5, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<5,5,Saturating,uint8_t>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,0,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 1, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,1,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 2, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,2,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,3,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 4, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 5, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,5,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 6, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,6,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 7, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,7,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 8, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,8,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 1, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 2, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,2,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 3, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,3,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 4, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 5, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,5,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 6, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,6,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 7, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,7,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<8, 8, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<8,8,Saturating,uint8_t>", "subtraction");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 3, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<9,3,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 5, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<9,5,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 7, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<9,7,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 3, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<9,3,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 5, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<9,5,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<9, 7, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<9,7,Saturating,uint8_t>", "subtraction");
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 0, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<13,0,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 5, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<13,5,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 9, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<13,9,Saturating,uint8_t>", "subtraction");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 12, Saturating, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<13,12,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 0, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<13,0,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 5, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<13,5,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 9, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<13,9,Saturating,uint8_t>", "subtraction");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction<13, 12, Saturating, uint8_t>(bReportIndividualTestCases), "fixpnt<13,12,Saturating,uint8_t>", "subtraction");
 
 #endif  // STRESS_TESTING
 

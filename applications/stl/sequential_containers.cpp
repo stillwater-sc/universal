@@ -108,7 +108,7 @@ try {
 	using namespace std;
 
 #ifdef NDEBUG
-	constexpr size_t NR_SAMPLES = 10'000'000;
+	constexpr size_t NR_SAMPLES = 1'000'000;
 #else
 	constexpr size_t NR_SAMPLES = 1000;
 #endif

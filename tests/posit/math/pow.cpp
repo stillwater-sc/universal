@@ -11,6 +11,7 @@
 #define POSIT_TRACE_POW
 
 // minimum set of include files to reflect source code dependencies
+#include <universal/native/integers.hpp>
 #include <universal/number/posit/posit.hpp>
 #include <universal/number/posit/manipulators.hpp>
 #include <universal/number/posit/math/pow.hpp>
@@ -35,105 +36,7 @@ void GenerateTestCase(Ty a, Ty b) {
 	std::cout << std::setprecision(5);
 }
 
-// integer power function, for efficiency
-int ipow(int base, int exp)
-{
-	int result = 1;
-	for (;;) {
-		if (exp & 1)
-			result *= base;
-		exp >>= 1;
-		if (!exp)
-			break;
-		base *= base;
-	}
-
-	return result;
-}
-
-// super fast ipow, courtesy of 
-// Orson Peters
-// github: orlp
-// location: Leiden, Netherlands 
-// email: orsonpeters@gmail.com
-int64_t ipow(int64_t base, uint8_t exp) {
-	static const uint8_t highest_bit_set[] = {
-		0, 1, 2, 2, 3, 3, 3, 3,
-		4, 4, 4, 4, 4, 4, 4, 4,
-		5, 5, 5, 5, 5, 5, 5, 5,
-		5, 5, 5, 5, 5, 5, 5, 5,
-		6, 6, 6, 6, 6, 6, 6, 6,
-		6, 6, 6, 6, 6, 6, 6, 6,
-		6, 6, 6, 6, 6, 6, 6, 6,
-		6, 6, 6, 6, 6, 6, 6, 255, // anything past 63 is a guaranteed overflow with base > 1
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-		255, 255, 255, 255, 255, 255, 255, 255,
-	};
-
-	uint64_t result = 1;
-
-	switch (highest_bit_set[exp]) {
-	case 255: // we use 255 as an overflow marker and return 0 on overflow/underflow
-		if (base == 1) {
-			return 1;
-		}
-
-		if (base == -1) {
-			return 1 - 2 * (exp & 1);
-		}
-
-		return 0;
-	case 6:
-		if (exp & 1) result *= base;
-		exp >>= 1;
-		base *= base;
-	case 5:
-		if (exp & 1) result *= base;
-		exp >>= 1;
-		base *= base;
-	case 4:
-		if (exp & 1) result *= base;
-		exp >>= 1;
-		base *= base;
-	case 3:
-		if (exp & 1) result *= base;
-		exp >>= 1;
-		base *= base;
-	case 2:
-		if (exp & 1) result *= base;
-		exp >>= 1;
-		base *= base;
-	case 1:
-		if (exp & 1) result *= base;
-	default:
-		return result;
-	}
-}
-
-
-#define MANUAL_TESTING 1
+#define MANUAL_TESTING 0
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -141,7 +44,6 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	//bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "Addition failed: ";
@@ -149,15 +51,6 @@ try {
 #if MANUAL_TESTING
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<16, 1, float>(4.0f, 2.0f);
-
-	int a = 2;
-	int b = 5;
-	cout << "2 ^ 32   = " << ipow(a, b) << endl;
-
-	uint64_t c = 1024;
-	uint8_t d = 2;
-	cout << "1024 ^ 2 = " << ipow(c, d) << endl;
-	cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << endl;
 
 #if GENERATE_POW_TABLES
 	GeneratePowTable<3, 0>();
@@ -195,60 +88,72 @@ try {
 	//nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>("Manual Testing", true), "posit<16,1>", "pow");
 
 #else
+	bool bReportIndividualTestCases = false;
 
-	cout << "Posit Power function validation" << endl;
+	cout << "Integer power function\n";
+	int a = 2;
+	int b = 32;
+	cout << "2 ^ 32   = " << ipow(a, b) << endl;
+	cout << "2 ^ 32   = " << fastipow(a, b) << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "pow");
+	uint64_t c = 1024;
+	uint8_t d = 2;
+	cout << "1024 ^ 2 = " << ipow(c, d) << endl;
+	cout << "1M ^ 2   = " << ipow(ipow(c, d), d) << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "pow");
+	cout << "Posit Power function validation\n";
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<2, 0>(bReportIndividualTestCases), "posit<2,0>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 0>(bReportIndividualTestCases), "posit<3,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<3, 1>(bReportIndividualTestCases), "posit<3,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 0>(bReportIndividualTestCases), "posit<4,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<4, 1>(bReportIndividualTestCases), "posit<4,1>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 0>(bReportIndividualTestCases), "posit<5,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 1>(bReportIndividualTestCases), "posit<5,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<5, 2>(bReportIndividualTestCases), "posit<5,2>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 0>(bReportIndividualTestCases), "posit<6,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 1>(bReportIndividualTestCases), "posit<6,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 2>(bReportIndividualTestCases), "posit<6,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<6, 3>(bReportIndividualTestCases), "posit<6,3>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 3>(tag, bReportIndividualTestCases), "posit<9,3>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 4>(tag, bReportIndividualTestCases), "posit<9,4>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 5>(tag, bReportIndividualTestCases), "posit<9,5>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 6>(tag, bReportIndividualTestCases), "posit<9,6>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 0>(bReportIndividualTestCases), "posit<7,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 1>(bReportIndividualTestCases), "posit<7,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 2>(bReportIndividualTestCases), "posit<7,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 3>(bReportIndividualTestCases), "posit<7,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<7, 4>(bReportIndividualTestCases), "posit<7,4>", "pow");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 0>(bReportIndividualTestCases), "posit<8,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 1>(bReportIndividualTestCases), "posit<8,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 2>(bReportIndividualTestCases), "posit<8,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 3>(bReportIndividualTestCases), "posit<8,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 4>(bReportIndividualTestCases), "posit<8,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<8, 5>(bReportIndividualTestCases), "posit<8,5>", "pow");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 0>(bReportIndividualTestCases), "posit<9,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 1>(bReportIndividualTestCases), "posit<9,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 2>(bReportIndividualTestCases), "posit<9,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 3>(bReportIndividualTestCases), "posit<9,3>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 4>(bReportIndividualTestCases), "posit<9,4>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 5>(bReportIndividualTestCases), "posit<9,5>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<9, 6>(bReportIndividualTestCases), "posit<9,6>", "pow");
 	
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 0>(bReportIndividualTestCases), "posit<10,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 1>(bReportIndividualTestCases), "posit<10,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<10, 2>(bReportIndividualTestCases), "posit<10,2>", "pow");
 	// fails due to regime representation not being able to be represented by double
-	// nrOfFailedTestCases += ReportTestResult(VerifyPowMethod<10, 7>(tag, bReportIndividualTestCases), "posit<10,7>", "pow");
+	// nrOfFailedTestCases += ReportTestResult(VerifyPowMethod<10, 7>(bReportIndividualTestCases), "posit<10,7>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 0>(bReportIndividualTestCases), "posit<12,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 1>(bReportIndividualTestCases), "posit<12,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<12, 2>(bReportIndividualTestCases), "posit<12,2>", "pow");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "pow");
-	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 0>(bReportIndividualTestCases), "posit<16,0>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 1>(bReportIndividualTestCases), "posit<16,1>", "pow");
+	nrOfFailedTestCases += ReportTestResult(VerifyPowerFunction<16, 2>(bReportIndividualTestCases), "posit<16,2>", "pow");
 
 
 #if STRESS_TESTING

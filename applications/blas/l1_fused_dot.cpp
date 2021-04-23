@@ -13,6 +13,7 @@
 #pragma warning(disable : 4820) // warning C4820: 'std::_Mpunct<_Elem>': '4' bytes padding added after data member 'std::_Mpunct<_Elem>::_Kseparator'
 #pragma warning(disable : 5026) // warning C5026 : 'std::_Generic_error_category' : move constructor was implicitly defined as deleted
 #pragma warning(disable : 5027) // warning C5027 : 'std::_Generic_error_category' : move assignment operator was implicitly defined as deleted
+#pragma warning(disable : 5045) // warning C5045: Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified 
 #endif 
 
 // enable the following define to show the intermediate steps in the fused-dot product
@@ -56,11 +57,7 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	//constexpr size_t nbits = 16;
-	//constexpr size_t es = 1;
-	//constexpr size_t capacity = 6;   // 2^3 accumulations of maxpos^2
-	//constexpr size_t vecSizePwr = 5;
-	//constexpr size_t vecSize = (size_t(1) << vecSizePwr);
+	if (argc == 1) cout << argv[0] << endl;
 
 	// generate an interesting vector x with 0.5 ULP round-off errors in each product
 	// that the fused-dot product will be able to resolve
@@ -106,9 +103,10 @@ try {
 		// and not some input precision shenanigans. The magic is all in the quire
 		// accumulating UNROUNDED multiplies: that gives you in affect double the 
 		// fraction bits.
-		using Scalar = float;
-		Scalar a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
-		Scalar b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
+
+		using Real = float;
+		Real a1 = 3.2e8, a2 = 1, a3 = -1, a4 = 8e7;
+		Real b1 = 4.0e7, b2 = 1, b3 = -1, b4 = -1.6e8;
 
 #ifdef LATER
 		{

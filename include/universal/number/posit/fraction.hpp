@@ -32,11 +32,13 @@ public:
 	long double value() const { 
 		long double v = 0.0l;
 		if (_Bits.none()) return v;
-		long double scale = 0.5l;
-		for (int i = int(fbits) - 1; i >= 0; i--) {
-			if (_Bits.test(size_t(i))) v += scale;
-			scale *= 0.5l;
-			if (scale == 0.0l) break;
+		if constexpr (fbits > 0) {
+			long double scale = 0.5l;
+			for (int i = int(fbits) - 1; i >= 0; i--) {
+				if (_Bits.test(size_t(i))) v += scale;
+				scale *= 0.5l;
+				if (scale == 0.0l) break;
+			}
 		}
 		return v;
 	}
@@ -269,7 +271,7 @@ inline std::string to_string(const fraction<nfbits>& f, bool dashExtent = true) 
 		upperbound--;
 		for (int i = upperbound; i >= 0; --i) {
 			if (f.nrBits() > nrOfFractionBitsProcessed++) {
-				ss << (bb[i] ? "1" : "0");
+				ss << (bb[static_cast<size_t>(i)] ? "1" : "0");
 			}
 			else {
 				ss << (dashExtent ? "-" : "");

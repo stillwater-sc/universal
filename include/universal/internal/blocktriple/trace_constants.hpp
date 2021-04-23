@@ -5,24 +5,24 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 # ifndef BLOCKTRIPLE_VERBOSE_OUTPUT
 // blocktriple decode and conversion
-constexpr bool _trace_decode      = false;
-constexpr bool _trace_conversion  = false;
-constexpr bool _trace_rounding    = false;
+constexpr bool _trace_btriple_decode      = false;
+constexpr bool _trace_btriple_conversion  = false;
+constexpr bool _trace_btriple_rounding    = false;
 
 // arithmetic operator tracing
-constexpr bool _trace_add         = false;
-constexpr bool _trace_sub         = false;
-constexpr bool _trace_mul         = false;
-constexpr bool _trace_div         = false;
-constexpr bool _trace_reciprocate = false;
-constexpr bool _trace_sqrt        = false;
+constexpr bool _trace_btriple_add         = false;
+constexpr bool _trace_btriple_sub         = false;
+constexpr bool _trace_btriple_mul         = false;
+constexpr bool _trace_btriple_div         = false;
+constexpr bool _trace_btriple_reciprocate = false;
+constexpr bool _trace_btriple_sqrt        = false;
 
 // quire update tracing
-constexpr bool _trace_quire_add   = false;
+constexpr bool _trace_btriple_quire_add   = false;
 
 # else // !BLOCKTRIPLE_VERBOSE_OUTPUT
 
@@ -45,68 +45,68 @@ constexpr bool _trace_quire_add   = false;
 // blocktriple decode and conversion
 
 #ifndef BLOCKTRIPLE_TRACE_DECODE
-constexpr bool _trace_decode = false;
+constexpr bool _trace_btriple_decode = false;
 #else
-constexpr bool _trace_decode = true;
+constexpr bool _trace_btriple_decode = true;
 #endif
 
 #ifndef BLOCKTRIPLE_TRACE_CONVERSION
-constexpr bool _trace_conversion = false;
+constexpr bool _trace_btriple_conversion = false;
 #else
-constexpr bool _trace_conversion = true;
+constexpr bool _trace_btriple_conversion = true;
 #endif
 
 #ifndef BLOCKTRIPLE_TRACE_ROUNDING
-constexpr bool _trace_rounding = false;
+constexpr bool _trace_btriple_rounding = false;
 #else
-constexpr bool _trace_rounding = true;
+constexpr bool _trace_btriple_rounding = true;
 #endif
 
 // arithmetic operator tracing
 #ifndef BLOCKTRIPLE_TRACE_ADD
-constexpr bool _trace_add = false;
+constexpr bool _trace_btriple_add = false;
 #else
-constexpr bool _trace_add = true;
+constexpr bool _trace_btriple_add = true;
 #endif
 
 #ifndef BLOCKTRIPLE_TRACE_SUB
-constexpr bool _trace_sub = false;
+constexpr bool _trace_btriple_sub = false;
 #else
-constexpr bool _trace_sub = true;
+constexpr bool _trace_btriple_sub = true;
 #endif
 
 #ifndef BLOCKTRIPLE_TRACE_MUL
-constexpr bool _trace_mul = false;
+constexpr bool _trace_btriple_mul = false;
 #else
-constexpr bool _trace_mul = true;
+constexpr bool _trace_btriple_mul = true;
 #endif
 
 #ifndef BLOCKTRIPLE_TRACE_DIV
-constexpr bool _trace_div = false;
+constexpr bool _trace_btriple_div = false;
 #else
-constexpr bool _trace_div = true;
+constexpr bool _trace_btriple_div = true;
 #endif
 
 #ifndef BLOCKTRIPLE_TRACE_RECIPROCATE
-constexpr bool _trace_reciprocate = false;
+constexpr bool _trace_btriple_reciprocate = false;
 #else
-constexpr bool _trace_reciprocate = true;
+constexpr bool _trace_btriple_reciprocate = true;
 #endif
 
 #ifndef BLOCKTRIPLE_TRACE_SQRT
-constexpr bool _trace_sqrt = false;
+constexpr bool _trace_btriple_sqrt = false;
 #else
-constexpr bool _trace_sqrt = true;
+constexpr bool _trace_btriple_sqrt = true;
 #endif
 
 // QUIRE tracing
 #ifndef QUIRE_TRACE_ADD
-constexpr bool _trace_quire_add = false;
+constexpr bool _trace_btriple_quire_add = false;
 #else
-constexpr bool _trace_quire_add = true;
+constexpr bool _trace_btriple_quire_add = true;
 #endif
 
 # endif
 
 
-}}  // namespace sw::universal
+}  // namespace sw::universal

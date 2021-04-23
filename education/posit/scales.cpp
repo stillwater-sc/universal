@@ -7,8 +7,8 @@
 #include <universal/number/posit/posit>
 #include <universal/utility/number_system_properties.hpp>
 
-#ifdef UNIVERSAL_MPRF_ENABLED
-// TODO: this needs to be done with MPRF as these scale factors grow very large
+#ifdef UNIVERSAL_ORACLE_ENABLED
+// TODO: this needs to be done with an adaptive precision floating-point as these scale factors grow very large
 constexpr size_t MAX_ES = 5;
 constexpr size_t MAX_K = 10;
 uint64_t GENERATED_SCALE_FACTORS[MAX_ES][MAX_K];
@@ -390,6 +390,7 @@ try {
 	nrOfFailedTestCases += ReportTestResult(ValidateScales<4, 1>(tag, bReportIndividualTestCases), "posit<4,0>", "scales");
 
 #else
+
 	ReportPositScales();
 	ReportStandardPositScales();
 	ReportSmallPositScales();

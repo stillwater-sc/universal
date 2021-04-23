@@ -3,10 +3,10 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include<universal/utility/directives.hpp>
 #include <iostream>
 #include <bitset>
 #include <complex>
-
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
 #define FIXPNT_FAST_SPECIALIZATION
@@ -19,7 +19,7 @@
 #include <universal/number/fixpnt/math_functions.hpp>
 #include <universal/verification/fixpnt_test_suite.hpp>
 
-namespace sw { namespace universal { namespace complex_literals {
+namespace sw::universal::complex_literals {
 
 	std::complex<fixpnt<8, 4>> operator""_i(long double _Val)
 	{	// return imaginary _Val
@@ -31,10 +31,25 @@ namespace sw { namespace universal { namespace complex_literals {
 		return (std::complex<fixpnt<8, 4>>(0.0, static_cast<fixpnt<8, 4>>(_Val)));
 	}
 
-} // namespace complex_literals
-} // namespace universal
-} // namespace sw
+} // namespace sw::universal::complex_literals
 
+
+namespace sw::universal {
+
+	template<typename FixedPoint>
+	bool isnan(std::complex<FixedPoint> x) {
+		return (isnan(x.real()) || isnan(x.imag()));
+	}
+	template<typename FixedPoint>
+	bool isinf(std::complex<FixedPoint> x) {
+		return (isinf(x.real()) || isinf(x.imag()));
+	}
+	template<typename FixedPoint>
+	std::complex<FixedPoint> copysign(std::complex<FixedPoint> x, std::complex<FixedPoint> y) {
+		return std::complex<FixedPoint>(copysign(x.real(), y.real()), copysign(x.real(), y.real()));
+	}
+
+}
 
 // conditional compile flags
 #define MANUAL_TESTING 1
@@ -44,6 +59,8 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::universal;
+
+	if (argc > 0) { cout << argv[0] << endl; }
 
 	int nrOfFailedTestCases = 0;
 
@@ -71,9 +88,9 @@ try {
 
 #undef GPP_FIX
 #ifdef GPP_FIX
-	// for some reason the g++ doesn't compile this section as it is casting the constants differently
-	// than other compilers.
-	// no idea how to fix the code below to make it compile with g++
+	// for some reason the g++ doesn't compile this section as it is 
+	// casting the constants differently than other compilers.
+	// TODO: no idea how to fix the code below to make it compile with g++
 	{
 		using namespace sw::universal::complex_literals;
 		using Real = sw::universal::fixpnt<8, 4>;
@@ -92,7 +109,7 @@ try {
 		std::complex<Real> z4 = 1.0 + 2i, z5 = 1.0 - 2i; // conjugates
 		std::cout << "(1+2i)*(1-2i) = " << z4 * z5 << '\n';
 	}
-#endif // GPP_FIX
+#endif // !GPP_FIX
 /*
 	error: conversion from '__complex__ int' to non - scalar type 'std::complex<sw::universal::fixpnt<8, 4> >' requested
 		std::complex<Real> z1 = 1i * 1i;     // imaginary unit squared
@@ -106,7 +123,7 @@ try {
 */
     // furthermore, the pow and exp functions don't match the correct complex<double> arguments in g++
 
-#else  // not G++
+#else  // GPP_FIX
 
 	{
 		// reference using native double precision floating point type
@@ -152,6 +169,21 @@ try {
 	}
 #endif
 
+	{
+		using FixedPoint = sw::universal::fixpnt<4, 3, sw::universal::Saturating, uint8_t>;
+		FixedPoint one = 1;
+		FixedPoint minus_one = -1;
+		FixedPoint fp = 1.0f;
+		std::complex<FixedPoint> z1{ 1.0f, 1.0f }, z2{ minus_one, minus_one }, z3;
+		std::cout << "z1 : " << z1 << '\n';
+		std::cout << "z2 : " << z2 << '\n';
+		z3 = std::complex<FixedPoint>(0.0f, 0.0f);
+		std::cout << "z3 : " << z3 << '\n';
+		fp = copysign(one, minus_one);
+		std::cout << "copysign(0.875, -1) : " << fp << '\n';
+		z3 = copysign(z1, z2);
+		std::cout << "z3 : " << z3 << '\n';
+	}
 
 #if STRESS_TESTING
 	// manual exhaustive test

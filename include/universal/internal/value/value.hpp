@@ -160,7 +160,7 @@ public:
 		}
 		else {
 			reset();
-			_scale = sw::universal::findMostSignificantBit(rhs) - 1;
+			_scale = static_cast<int>(sw::universal::findMostSignificantBit(rhs)) - 1;
 			uint64_t _fraction_without_hidden_bit = _scale == 0 ? 0ull : (rhs << (64 - _scale)); // the scale == -1 case is handled above
 			_fraction = copy_integer_fraction<fbits>(_fraction_without_hidden_bit);
 			_nrOfBits = fbits;
@@ -358,7 +358,8 @@ public:
 	inline bool sign() const { return _sign; }
 	inline int scale() const { return _scale; }
 	bitblock<fbits> fraction() const { return _fraction; }
-	/// Normalized shift (e.g., for addition).
+
+	// Normalized shift (e.g., for addition).
 	template <size_t Size>
 	bitblock<Size> nshift(int shift) const {
 	bitblock<Size> number;
@@ -381,9 +382,9 @@ public:
 			number[0] = true;
 			return number;
 		}
-		number[size_t(hpos)] = true;                   // hidden bit now safely set
+		number[size_t(hpos)] = true; // hidden bit now safely set
 
-											   // Copy fraction bits into certain part
+		// Copy fraction bits into certain part
 		for (int npos = hpos - 1, fpos = int(fbits) - 1; npos > 0 && fpos >= 0; --npos, --fpos)
 			number[size_t(npos)] = _fraction[size_t(fpos)];
 
@@ -416,10 +417,14 @@ public:
 		}
 		return v;
 	}
-	int sign_value() const { return (_sign ? -1 : 1); }
-	long double scale_value() const {
-		if (_zero) return (long double)(0.0);
-		return std::pow((long double)2.0, (long double)_scale);
+	template<typename Ty = double>
+	Ty sign_value() const { 
+		return (_sign ? Ty{ -1 } : Ty{ 1 });
+	}
+	template<typename Ty = double>
+	Ty scale_value() const {
+		if (_zero) return Ty(0.0);
+		return std::pow(Ty(2.0), Ty(_scale));
 	}
 	template<typename Ty = double>
 	Ty fraction_value() const {
@@ -433,16 +438,19 @@ public:
 		}
 		return v;
 	}
+
+	// conversion helpers
 	long double to_long_double() const {
-		return sign_value() * scale_value() * fraction_value<long double>();
+		return sign_value<long double>() * scale_value<long double>() * fraction_value<long double>();
 	}
 	double to_double() const {
-		return sign_value() * scale_value() * fraction_value<double>();
+		return sign_value<double>() * scale_value<double>() * fraction_value<double>();
 	}
 	float to_float() const {
-		return float(sign_value() * scale_value() * fraction_value<float>());
+		return sign_value<float>() * scale_value<float>() * fraction_value<float>();
 	}
-	// Maybe remove explicit
+
+	// explicit conversion operators to native types
 	explicit operator long double() const { return to_long_double(); }
 	explicit operator double() const { return to_double(); }
 	explicit operator float() const { return to_float(); }
@@ -462,14 +470,15 @@ public:
 				_fraction[t] = src_fraction[s];
 		}
 	}
+	// round to a target size number of bits using round-to-nearest round-to-even-on-tie
 	template<size_t tgt_size>
 	value<tgt_size> round_to() {
 		bitblock<tgt_size> rounded_fraction;
 		if (tgt_size == 0) {
 			bool round_up = false;
 			if (fbits >= 2) {
-				bool blast = _fraction[int(fbits) - 1];
-				bool sb = anyAfter(_fraction, int(fbits) - 2);
+				bool blast = _fraction[fbits - 1ull];
+				bool sb = anyAfter(_fraction, static_cast<int>(fbits) - 2);
 				if (blast && sb) round_up = true;
 			}
 			else if (fbits == 1) {
@@ -483,23 +492,24 @@ public:
 					int rb = int(tgt_size) - 1;
 					int lb = int(fbits) - int(tgt_size) - 1;
 					for (int i = int(fbits) - 1; i > lb; i--, rb--) {
-						rounded_fraction[rb] = _fraction[i];
+						rounded_fraction[static_cast<size_t>(rb)] = _fraction[static_cast<size_t>(i)];
 					}
-					bool blast = _fraction[lb];
+					bool blast = _fraction[static_cast<size_t>(lb)];
 					bool sb = false;
 					if (lb > 0) sb = anyAfter(_fraction, lb-1);
-					if (blast || sb) rounded_fraction[0] = true;
+					if (blast || sb) rounded_fraction[0ull] = true;
 				}
 				else {
 					int rb = int(tgt_size) - 1;
 					for (int i = int(fbits) - 1; i >= 0; i--, rb--) {
-						rounded_fraction[rb] = _fraction[i];
+						rounded_fraction[static_cast<size_t>(rb)] = _fraction[static_cast<size_t>(i)];
 					}
 				}
 			}
 		}
 		return value<tgt_size>(_sign, _scale, rounded_fraction, _zero, _inf);
 	}
+
 private:
 	bool                _sign;
 	int                 _scale;
@@ -626,18 +636,31 @@ inline bool operator<=(const value<nfbits>& lhs, const value<nfbits>& rhs) { ret
 template<size_t nfbits>
 inline bool operator>=(const value<nfbits>& lhs, const value<nfbits>& rhs) { return !operator< (lhs, rhs); }
 
+template<size_t nbits>
+inline std::string to_binary(const bitblock<nbits>& a, bool nibbleMarker = true) {
+	std::stringstream s;
+	s << 'b';
+	for (int i = int(nbits - 1); i >= 0; --i) {
+		s << (a[static_cast<size_t>(i)] ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	}
+	return s.str();
+}
 template<size_t fbits>
-inline std::string components(const value<fbits>& v) {
+inline std::string to_triple(const value<fbits>& v) {
 	std::stringstream s;
 	if (v.iszero()) {
-		s << "(+,0," << std::setw(fbits) << v.fraction() << ')';
+		s << "(+, 0," << std::setw(fbits) << v.fraction() << ')';
 		return s.str();
 	}
 	else if (v.isinf()) {
 		s << "(inf," << std::setw(fbits) << v.fraction() << ')';
 		return s.str();
 	}
-	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ')';
+	s << (v.sign() ? "(-, " : "(+, ");
+	s << v.scale() << ", ";
+	s << to_binary(v.fraction(), true) << ')';
+//	s << "(" << (v.sign() ? "-" : "+") << "," << v.scale() << "," << v.fraction() << ')';
 	return s.str();
 }
 
@@ -833,7 +856,7 @@ void module_subtract_BROKEN(const value<fbits>& lhs, const value<fbits>& rhs, va
 template<size_t fbits, size_t mbits>
 void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbits>& result) {
 	static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
-	if (_trace_value_mul) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
+	if (_trace_value_mul) std::cout << "lhs  " << to_triple(lhs) << std::endl << "rhs  " << to_triple(rhs) << std::endl;
 
 	if (lhs.isinf() || rhs.isinf()) {
 		result.setinf();
@@ -876,7 +899,7 @@ void module_multiply(const value<fbits>& lhs, const value<fbits>& rhs, value<mbi
 template<size_t fbits, size_t divbits>
 void module_divide(const value<fbits>& lhs, const value<fbits>& rhs, value<divbits>& result) {
 	static constexpr size_t fhbits = fbits + 1;  // fraction + hidden bit
-	if (_trace_value_div) std::cout << "lhs  " << components(lhs) << std::endl << "rhs  " << components(rhs) << std::endl;
+	if (_trace_value_div) std::cout << "lhs  " << to_triple(lhs) << std::endl << "rhs  " << to_triple(rhs) << std::endl;
 
 	if (lhs.isinf() || rhs.isinf()) {
 		result.setinf();

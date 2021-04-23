@@ -3,10 +3,15 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#if defined(_MSC_VER)
+#pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#pragma warning(disable : 4514) // unreferenced inline function has been removed
+#pragma warning(disable : 4820) // bytes padding added after data member
+#pragma warning(disable : 4710) // function not inlined
+#endif
 // Configure the posit template environment
 // first: enable fast specialized posit<64,3>
-#define POSIT_FAST_POSIT_64_3 0  // TODO: fast posit<64,3> not implemented yet
+#define POSIT_FAST_POSIT_64_3 1  // TODO: fast posit<64,3> not implemented yet
 // second: enable posit arithmetic exceptions
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit>
@@ -22,6 +27,8 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::universal;
+
+	if (argc > 0) { cout << argv[0] << endl; }
 
 	constexpr size_t RND_TEST_CASES = 10000;
 
@@ -57,6 +64,16 @@ try {
 	test = "Initialize to INFINITY";
 	p = INFINITY;
 	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	test = "sign is true";
+	p = -1.0f;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.sign());
+	test = "is negative";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isneg());
+	test = "sign is false";
+	p = +1.0f;
+	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
+	test = "is positive";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
 	// logic tests
 	cout << "Logic operator tests " << endl;
@@ -70,45 +87,45 @@ try {
 	// conversion tests
 	// internally this generators are clamped as the state space 2^33 is too big
 	cout << "Assignment/conversion tests " << endl;
-	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion           <nbits, es>(tag, bReportIndividualTestCases), tag, "sint32 assign   (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUintConversion              <nbits, es>(tag, bReportIndividualTestCases), tag, "uint32 assign   (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign    (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyIntegerConversion           <nbits, es>(bReportIndividualTestCases), tag, "sint32 assign   (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUintConversion              <nbits, es>(bReportIndividualTestCases), tag, "uint32 assign   (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyConversion                  <nbits, es>(bReportIndividualTestCases), tag, "float assign    (native)  ");
 //	nrOfFailedTestCases += ReportTestResult( VerifyConversionThroughRandoms <nbits, es>(tag, true, 100), tag, "float assign   ");
 
 	// arithmetic tests
 	cout << "Arithmetic tests " << RND_TEST_CASES << " randoms each" << endl;
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition        (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction     (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication  (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division        (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "+=              (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "-=              (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "*=              (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "/=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "addition        (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "subtraction     (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "multiplication  (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "division        (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_ADD, RND_TEST_CASES), tag, "+=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_SUB, RND_TEST_CASES), tag, "-=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_MUL, RND_TEST_CASES), tag, "*=              (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_DIV, RND_TEST_CASES), tag, "/=              (native)  ");
 
 	// elementary function tests
 	cout << "Elementary function tests " << endl;
 	double dminpos = double(minpos<nbits, es>(p));
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_SQRT,  RND_TEST_CASES, dminpos), tag, "sqrt            (native)  ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_EXP,   RND_TEST_CASES, dminpos), tag, "exp                       ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_EXP2,  RND_TEST_CASES, dminpos), tag, "exp2                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_LOG,   RND_TEST_CASES, dminpos), tag, "log                       ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_LOG2,  RND_TEST_CASES, dminpos), tag, "log2                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_LOG10, RND_TEST_CASES, dminpos), tag, "log10                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_SIN,   RND_TEST_CASES, dminpos), tag, "sin                       ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_COS,   RND_TEST_CASES, dminpos), tag, "cos                       ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_TAN,   RND_TEST_CASES, dminpos), tag, "tan                       ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_ASIN,  RND_TEST_CASES, dminpos), tag, "asin                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_ACOS,  RND_TEST_CASES, dminpos), tag, "acos                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_ATAN,  RND_TEST_CASES, dminpos), tag, "atan                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_SINH,  RND_TEST_CASES, dminpos), tag, "sinh                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_COSH,  RND_TEST_CASES, dminpos), tag, "cosh                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_TANH,  RND_TEST_CASES, dminpos), tag, "tanh                      ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_ASINH, RND_TEST_CASES, dminpos), tag, "asinh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_ACOSH, RND_TEST_CASES, dminpos), tag, "acosh                     ");
-	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(tag, bReportIndividualTestCases, OPCODE_ATANH, RND_TEST_CASES, dminpos), tag, "atanh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_SQRT,  RND_TEST_CASES, dminpos), tag, "sqrt            (native)  ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_EXP,   RND_TEST_CASES, dminpos), tag, "exp                       ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_EXP2,  RND_TEST_CASES, dminpos), tag, "exp2                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_LOG,   RND_TEST_CASES, dminpos), tag, "log                       ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_LOG2,  RND_TEST_CASES, dminpos), tag, "log2                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_LOG10, RND_TEST_CASES, dminpos), tag, "log10                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_SIN,   RND_TEST_CASES, dminpos), tag, "sin                       ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_COS,   RND_TEST_CASES, dminpos), tag, "cos                       ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_TAN,   RND_TEST_CASES, dminpos), tag, "tan                       ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_ASIN,  RND_TEST_CASES, dminpos), tag, "asin                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_ACOS,  RND_TEST_CASES, dminpos), tag, "acos                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_ATAN,  RND_TEST_CASES, dminpos), tag, "atan                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_SINH,  RND_TEST_CASES, dminpos), tag, "sinh                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_COSH,  RND_TEST_CASES, dminpos), tag, "cosh                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_TANH,  RND_TEST_CASES, dminpos), tag, "tanh                      ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_ASINH, RND_TEST_CASES, dminpos), tag, "asinh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_ACOSH, RND_TEST_CASES, dminpos), tag, "acosh                     ");
+	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_ATANH, RND_TEST_CASES, dminpos), tag, "atanh                     ");
 	// elementary functions with two operands
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(tag, bReportIndividualTestCases, OPCODE_POW, RND_TEST_CASES),   tag, "pow                       ");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<nbits, es>(bReportIndividualTestCases, OPCODE_POW, RND_TEST_CASES),   tag, "pow                       ");
 
 
 #if STRESS_TESTING

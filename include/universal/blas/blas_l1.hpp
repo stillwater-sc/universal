@@ -5,10 +5,11 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 #include <cmath>
+#include <universal/math/math>
 #include <universal/number/posit/posit>
 #include <universal/blas/vector.hpp>
 
-namespace sw { namespace universal { namespace blas { 
+namespace sw::universal::blas { 
 
 // 1-norm of a vector: sum of magnitudes of the vector elements, default increment stride is 1
 template<typename Vector>
@@ -164,30 +165,98 @@ void strided_print(std::ostream& ostr, size_t n, Vector& x, size_t incx = 1) {
 	ostr << "]";
 }
 
+// norms
 
-} } } // namespace sw::universal::blas
-
-// free function norms
-
-// 1-norm of a vector
+// L1-norm of a vector
 template<typename Scalar>
-Scalar norm1(const sw::universal::blas::vector<Scalar>& v) {
-	Scalar oneNorm = 0;
+Scalar normL1(const sw::universal::blas::vector<Scalar>& v) {
+	using namespace sw::universal; // to specialize abs()
+	Scalar L1Norm{ 0 };
 	for (auto e : v) {
-		oneNorm += abs(e);
+		L1Norm += abs(e);
 	}
-	return oneNorm;
+	return L1Norm;
 }
 
-// 2-norm of a vector
+// L2-norm of a vector
 template<typename Scalar>
-Scalar norm2(const sw::universal::blas::vector<Scalar>& v) {
-	Scalar twoNorm = 0;
+Scalar normL2(const sw::universal::blas::vector<Scalar>& v) {
+	Scalar L2Norm{ 0 };
 	for (auto e : v) {
-		twoNorm += e * e;
+		L2Norm += e * e;
 	}
-	return sqrt(twoNorm);
+	return sqrt(L2Norm);
 }
+
+// L3-norm of a vector
+template<typename Scalar>
+Scalar normL3(const sw::universal::blas::vector<Scalar>& v) {
+	using namespace std;
+	using namespace sw::universal; // to specialize abs()
+	Scalar L3Norm{ 0 };
+	for (auto e : v) {
+		Scalar abse = abs(e);
+		L3Norm += abse * abse * abse;
+	}
+	return pow(L3Norm, Scalar(1) / Scalar(3));
+}
+
+// L4-norm of a vector
+template<typename Scalar>
+Scalar normL4(const sw::universal::blas::vector<Scalar>& v) {
+	Scalar L4Norm{ 0 };
+	for (auto e : v) {
+		Scalar esqr = e * e;
+		L4Norm += esqr * esqr;
+	}
+	return pow(L4Norm, Scalar(1) / Scalar(4));
+}
+
+// Linf-norm of a vector
+template<typename Scalar>
+Scalar normLinf(const sw::universal::blas::vector<Scalar>& v) {
+	using namespace std;
+	using namespace sw::universal; // to specialize abs()
+	Scalar LinfNorm{ 0 };
+	for (auto e : v) {
+		LinfNorm = (abs(e) > LinfNorm) ? abs(e) : LinfNorm;
+	}
+	return LinfNorm;
+}
+
+template<typename Scalar>
+Scalar norm(const sw::universal::blas::vector<Scalar>& v, int p) {
+	using namespace std;
+	using namespace sw::universal; // to specialize pow() and abs()
+	Scalar norm{ 0 };
+	switch (p) {
+	case 0:
+		break;
+	case 1:
+		norm = normL1(v);
+		break;
+	case 2:
+		norm = normL2(v);
+		break;
+	case 3:
+		norm = normL3(v);
+		break;
+	case 4:
+		norm = normL4(v);
+		break;
+	default:
+		{
+			for (auto e : v) {
+				norm += pow(abs(e), Scalar( p ));
+			}
+			norm = pow(norm, Scalar( 1 ) / Scalar( p ));
+		}
+		break;
+	}
+	return norm;
+}
+
+} // namespace sw::universal::blas
 
 // specializations for STL vectors
 

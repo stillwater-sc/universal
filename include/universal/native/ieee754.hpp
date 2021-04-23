@@ -25,15 +25,51 @@ template<typename Real,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
 >
 inline Real ulp(const Real& a) {
-	return std::nextafter(a, a + 1.0f) - a;
+	return std::nextafter(a, a + a/2.0f) - a;
 }
 
+// check if the floating-point number is zero
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline bool iszero(const Real& a) {
+	return (std::fpclassify(a) == FP_ZERO);
+}
+
+/* defined in <universal/math/stub/classify.hpp>
+ *
+// check if the floating-point number is normal
 template<typename Real,
 	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >:: type
 >
-inline bool isdenorm(const Real& a) {
+inline bool isnormal(const Real& a) {
+	return (std::fpclassify(a) == FP_NORMAL);
+}
+
+// check if the floating-point number is subnormal
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline bool issubnorm(const Real& a) {
 	return (std::fpclassify(a) == FP_SUBNORMAL);
 }
+
+// check if the floating-point number is Not-a-Number
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline bool isnan(const Real& a) {
+	return (std::fpclassify(a) == FP_NAN);
+}
+
+// check if the floating-point number is infinite
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
+inline bool isinf(const Real& a) {
+	return (std::fpclassify(a) == FP_INFINITE);
+}
+*/
 
 // IEEE double precision constants
 static constexpr unsigned IEEE_FLOAT_FRACTION_BITS = 23;
@@ -64,7 +100,7 @@ union double_decoder {
   struct {
     uint64_t fraction : 52;
     uint64_t exponent : 11;
-    uint64_t  sign    :  1;
+    uint64_t sign     :  1;
   } parts;
 };
 
@@ -73,53 +109,76 @@ union double_decoder {
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
 // native single precision IEEE floating point
 
-// generate a binary string for a native single precision IEEE floating point
-inline std::string to_hex(const float& number) {
-	std::stringstream ss;
-	float_decoder decoder;
-	decoder.f = number;
-	ss << (decoder.parts.sign ? '1' : '0') << '.' << std::hex << int(decoder.parts.exponent) << '.' << decoder.parts.fraction;
-	return ss.str();
+template<typename Ty>
+std::string to_scientific(Ty value) {
+	const char* scales[] = { "", "K", "M", "G", "T", "P", "E", "Z" };
+	Ty lower_bound = Ty(1);
+	Ty scale_factor = 1.0;
+	size_t scale = 0;
+	for (size_t i = 0; i < sizeof(scales); ++i) {
+		if (value >= lower_bound && value < 1000 * lower_bound) {
+			scale = i;
+			break;
+		}
+		lower_bound *= 1000;
+		scale_factor *= 1000.0;
+	}
+	int integer_value = int(value / scale_factor);
+	std::stringstream ostr;
+	ostr << std::setw(3) << std::right << integer_value << ' ' << scales[scale];
+	return ostr.str();
 }
 
 // generate a binary string for a native single precision IEEE floating point
-inline std::string to_binary(const float& number) {
-	std::stringstream ss;
+inline std::string to_hex(const float& number) {
+	std::stringstream s;
+	float_decoder decoder;
+	decoder.f = number;
+	s << (decoder.parts.sign ? '1' : '0') << '.' << std::hex << int(decoder.parts.exponent) << '.' << decoder.parts.fraction;
+	return s.str();
+}
+
+// generate a binary string for a native single precision IEEE floating point
+inline std::string to_binary(const float& number, bool bNibbleMarker = false) {
+	std::stringstream s;
 	float_decoder decoder;
 	decoder.f = number;
 
+	s << 'b';
 	// print sign bit
-	ss << (decoder.parts.sign ? '1' : '0') << '.';
+	s << (decoder.parts.sign ? '1' : '0') << '.';
 
 	// print exponent bits
 	{
 		uint8_t mask = 0x80;
 		for (int i = 7; i >= 0; --i) {
-			ss << ((decoder.parts.exponent & mask) ? '1' : '0');
+			s << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
 			mask >>= 1;
 		}
 	}
 
-	ss << '.';
+	s << '.';
 
 	// print fraction bits
 	uint32_t mask = (uint32_t(1) << 22);
 	for (int i = 22; i >= 0; --i) {
-		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
+		s << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
 		mask >>= 1;
 	}
 
-	return ss.str();
+	return s.str();
 }
 
 // return in triple form (sign, scale, fraction)
 inline std::string to_triple(const float& number) {
-	std::stringstream ss;
+	std::stringstream s;
 	float_decoder decoder;
 	decoder.f = number;
 
 	// print sign bit
-	ss << '(' << (decoder.parts.sign ? '-' : '+') << ',';
+	s << '(' << (decoder.parts.sign ? '-' : '+') << ',';
 
 	// exponent 
 	// the exponent value used in the arithmetic is the exponent shifted by a bias 
@@ -127,51 +186,51 @@ inline std::string to_triple(const float& number) {
 	// (i.e. for 2^(e - 127) to be one, e must be 127). 
 	// Exponents range from ¿126 to +127 because exponents of ¿127 (all 0s) and +128 (all 1s) are reserved for special numbers.
 	if (decoder.parts.exponent == 0) {
-		ss << "exp=0,";
+		s << "exp=0,";
 	}
 	else if (decoder.parts.exponent == 0xFF) {
-		ss << "exp=1, ";
+		s << "exp=1, ";
 	}
 	int scale = int(decoder.parts.exponent) - 127;
-	ss << scale << ',';
+	s << scale << ',';
 
 	// print fraction bits
 	uint32_t mask = (uint32_t(1) << 22);
 	for (int i = 22; i >= 0; --i) {
-		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
+		s << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
 	}
 
-	ss << ')';
-	return ss.str();
+	s << ')';
+	return s.str();
 }
 
 // specialization for IEEE single precision floats
 inline std::string to_base2_scientific(const float& number) {
-	std::stringstream ss;
+	std::stringstream s;
 	float_decoder decoder;
 	decoder.f = number;
-	ss << (decoder.parts.sign == 1 ? "-" : "+") << "1.";
+	s << (decoder.parts.sign == 1 ? "-" : "+") << "1.";
 	uint32_t mask = (uint32_t(1) << 22);
 	for (int i = 22; i >= 0; --i) {
-		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
+		s << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
 	}
-	ss << "e2^" << std::showpos << (decoder.parts.exponent - 127);
+	s << "e2^" << std::showpos << (decoder.parts.exponent - 127);
 /* deprecated
 	bool s;
 	int base2Exp;
 	float _fr;
 	unsigned int mantissa;
 	extract_fp_components(number, s, base2Exp, _fr, mantissa);
-	ss << (s ? "-" : "+") << "1." << std::bitset<23>(mantissa) << "e2^" << std::showpos << base2Exp - 1;
+	s << (s ? "-" : "+") << "1." << std::bitset<23>(mantissa) << "e2^" << std::showpos << base2Exp - 1;
 */
-	return ss.str();
+	return s.str();
 }
 
 // generate a color coded binary string for a native single precision IEEE floating point
 inline std::string color_print(const float& number) {
-	std::stringstream ss;
+	std::stringstream s;
 	float_decoder decoder;
 	decoder.f = number;
 
@@ -184,35 +243,35 @@ inline std::string color_print(const float& number) {
 	Color def(ColorCode::FG_DEFAULT);
 
 	// print sign bit
-	ss << red << (decoder.parts.sign ? '1' : '0') << '.';
+	s << red << (decoder.parts.sign ? '1' : '0') << '.';
 
 	// print exponent bits
 	{
 		uint8_t mask = 0x80;
 		for (int i = 7; i >= 0; --i) {
-			ss << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
-			if (i > 0 && i % 4 == 0) ss << cyan << '\'';
+			s << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (i > 0 && i % 4 == 0) s << cyan << '\'';
 			mask >>= 1;
 		}
 	}
 
-	ss << '.';
+	s << '.';
 
 	// print fraction bits
 	uint32_t mask = (uint32_t(1) << 22);
 	for (int i = 22; i >= 0; --i) {
-		ss << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
-		if (i > 0 && i % 4 == 0) ss << magenta << '\'';
+		s << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (i > 0 && i % 4 == 0) s << magenta << '\'';
 		mask >>= 1;
 	}
 	
-	ss << def;
-	return ss.str();
+	s << def;
+	return s.str();
 }
 
 // generate a color coded binary string for a native double precision IEEE floating point
 inline std::string color_print(const double& number) {
-	std::stringstream ss;
+	std::stringstream s;
 	double_decoder decoder;
 	decoder.d = number;
 
@@ -225,30 +284,30 @@ inline std::string color_print(const double& number) {
 	Color def(ColorCode::FG_DEFAULT);
 
 	// print sign bit
-	ss << red << (decoder.parts.sign ? '1' : '0') << '.';
+	s << red << (decoder.parts.sign ? '1' : '0') << '.';
 
 	// print exponent bits
 	{
 		uint64_t mask = 0x800;
 		for (int i = 11; i >= 0; --i) {
-			ss << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
-			if (i > 0 && i % 4 == 0) ss << cyan << '\'';
+			s << cyan << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (i > 0 && i % 4 == 0) s << cyan << '\'';
 			mask >>= 1;
 		}
 	}
 
-	ss << '.';
+	s << '.';
 
 	// print fraction bits
 	uint64_t mask = (uint64_t(1) << 52);
 	for (int i = 52; i >= 0; --i) {
-		ss << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
-		if (i > 0 && i % 4 == 0) ss << magenta << '\'';
+		s << magenta << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (i > 0 && i % 4 == 0) s << magenta << '\'';
 		mask >>= 1;
 	}
 
-	ss << def;
-	return ss.str();
+	s << def;
+	return s.str();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -256,43 +315,44 @@ inline std::string color_print(const double& number) {
 
 // generate a binary string for a native double precision IEEE floating point
 inline std::string to_hex(const double& number) {
-	std::stringstream ss;
+	std::stringstream s;
 	double_decoder decoder;
 	decoder.d = number;
-	ss << (decoder.parts.sign ? '1' : '0') << '.' << std::hex << int(decoder.parts.exponent) << '.' << decoder.parts.fraction;
-	return ss.str();
+	s << (decoder.parts.sign ? '1' : '0') << '.' << std::hex << int(decoder.parts.exponent) << '.' << decoder.parts.fraction;
+	return s.str();
 }
 
 // generate a binary string for a native double precision IEEE floating point
 inline std::string to_binary(const double& number, bool bNibbleMarker = false) {
-	std::stringstream ss;
+	std::stringstream s;
 	double_decoder decoder;
 	decoder.d = number;
 
+	s << 'b';
 	// print sign bit
-	ss << (decoder.parts.sign ? '1' : '0') << '.';
+	s << (decoder.parts.sign ? '1' : '0') << '.';
 
 	// print exponent bits
 	{
 		uint64_t mask = 0x400;
 		for (int i = 10; i >= 0; --i) {
-			ss << ((decoder.parts.exponent & mask) ? '1' : '0');
-			if (bNibbleMarker && (i % 4) == 0) ss << '\'';
+			s << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
 			mask >>= 1;
 		}
 	}
 
-	ss << '.';
+	s << '.';
 
 	// print fraction bits
 	uint64_t mask = (uint64_t(1) << 51);
 	for (int i = 51; i >= 0; --i) {
-		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
-		if (bNibbleMarker && (i % 4) == 0) ss << '\'';
+		s << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
 		mask >>= 1;
 	}
 
-	return ss.str();
+	return s.str();
 }
 
 // return in triple form (+, scale, fraction)
@@ -407,8 +467,9 @@ inline std::tuple<bool, int64_t, uint64_t> ieee_components(double fp)
 	infinity and Not a Number.If the exponent field is zero, the
 	value is a denormal number and the exponent of 2 is ¿16382.
 */
-#if defined(__clang__)
+#if defined(__clang__) || defined(__GNUC__) || defined(__GNUG__)
 /* Clang/LLVM. ---------------------------------------------- */
+/* GNU GCC/G++. --------------------------------------------- */
 union long_double_decoder {
 	long_double_decoder() : ld{0.0l} {}
 	long_double_decoder(long double _ld) : ld{_ld} {}
@@ -431,7 +492,7 @@ inline std::string to_hex(const long double& number) {
 }
 
 // generate a binary string for a native double precision IEEE floating point
-inline std::string to_binary(const long double& number) {
+inline std::string to_binary(const long double& number, bool bNibbleMarker = false) {
 	std::stringstream ss;
 	long_double_decoder decoder;
 	decoder.ld = number;
@@ -444,6 +505,7 @@ inline std::string to_binary(const long double& number) {
 		uint64_t mask = 0x4000;
 		for (int i = 14; i >= 0; --i) {
 			ss << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (bNibbleMarker && i != 0 && (i % 4) == 0) ss << '\'';
 			mask >>= 1;
 		}
 	}
@@ -454,6 +516,7 @@ inline std::string to_binary(const long double& number) {
 	uint64_t mask = (uint64_t(1) << 62);
 	for (int i = 62; i >= 0; --i) {
 		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (bNibbleMarker && i != 0 && (i % 4) == 0) ss << '\'';
 		mask >>= 1;
 	}
 
@@ -588,7 +651,7 @@ inline std::string to_hex(const long double& number) {
 }
 
 // generate a binary string for a native double precision IEEE floating point
-inline std::string to_binary(const long double& number) {
+inline std::string to_binary(const long double& number, bool bNibbleMarker = false) {
 	return std::string("not-implemented");
 }
 
@@ -625,7 +688,7 @@ inline std::string to_hex(const long double& number) {
 }
 
 // generate a binary string for a native double precision IEEE floating point
-inline std::string to_binary(const long double& number) {
+inline std::string to_binary(const long double& number, bool bNibbleMarker = false) {
 	std::stringstream ss;
 	long_double_decoder decoder;
 	decoder.ld = number;
@@ -638,6 +701,7 @@ inline std::string to_binary(const long double& number) {
 		uint64_t mask = 0x4000;
 		for (int i = 14; i >= 0; --i) {
 			ss << ((decoder.parts.exponent & mask) ? '1' : '0');
+			if (bNibbleMarker && i != 0 && (i % 4) == 0) ss << '\'';
 			mask >>= 1;
 		}
 	}
@@ -649,6 +713,7 @@ inline std::string to_binary(const long double& number) {
 	ss << (decoder.parts.bit63 ? '1' : '0');
 	for (int i = 62; i >= 0; --i) {
 		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
+		if (bNibbleMarker && i != 0 && (i % 4) == 0) ss << '\'';
 		mask >>= 1;
 	}
 
@@ -784,7 +849,7 @@ inline std::string to_hex(const long double& number) {
 }
 
 // generate a binary string for a native long double precision IEEE floating point
-inline std::string to_binary(const long double& number) {
+inline std::string to_binary(const long double& number, bool bNibbleMarker = false) {
 	return std::string("to_binary() not implemented for HP compiler");
 }
 
@@ -811,7 +876,7 @@ inline std::string to_hex(const long double& number) {
 }
 
 // generate a binary string for a native long double precision IEEE floating point
-inline std::string to_binary(const long double& number) {
+inline std::string to_binary(const long double& number, bool bNibbleMarker = false) {
 	return std::string("to_binary() not implemented for IBM compiler");
 }
 
@@ -852,8 +917,8 @@ inline std::string to_hex(const long double& number) {
 }
 
 // generate a binary string for a native long double precision IEEE floating point
-inline std::string to_binary(const long double& number) {
-	return to_binary(double(number));
+inline std::string to_binary(const long double& number, bool bNibbleMarker = false) {
+	return to_binary(double(number), bNibbleMarker);
 }
 
 // return in triple form (+, scale, fraction)
@@ -913,7 +978,6 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
 
-
 #elif defined(__SUNPRO_C) || defined(__SUNPRO_CC)
 /* Oracle Solaris Studio. ----------------------------------- */
 
@@ -950,8 +1014,8 @@ inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, l
 /// <returns>binary scale</returns>
 inline int scale(float v) {
 	int exponent{ 0 };
-	float f = frexpf(v, &exponent);
-	if (f == 0.0f) exponent = 0;
+	float frac = frexpf(v, &exponent);
+	if (frac == 0.0f) exponent = 0;
 	return exponent;
 }
 /// <summary>
@@ -961,7 +1025,8 @@ inline int scale(float v) {
 /// <returns>binary scale</returns>
 inline int scale(double v) {
 	int exponent{ 0 };
-	frexp(v, &exponent); // C6031: return value ignored
+	double frac = frexp(v, &exponent);
+	if (frac == 0.0) exponent = 0;
 	return exponent;
 }
 /// <summary>
@@ -971,7 +1036,8 @@ inline int scale(double v) {
 /// <returns>binary scale</returns>
 inline int scale(long double v) {
 	int exponent{ 0 };
-	frexpl(v, &exponent);
+	long double frac = frexpl(v, &exponent);
+	if (frac == 0.0l) exponent = 0;
 	return exponent;
 }
 

@@ -202,7 +202,7 @@ namespace sw::universal {
 	// Basic design is that we generate nrOfRandom posit values and store them in an operand array.
 	// We will then execute the binary operator nrOfRandom combinations.
 	template<size_t nbits, size_t es>
-	int VerifyBinaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
+	int VerifyBinaryOperatorThroughRandoms(bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms) {
 		std::string operation_string;
 		switch (opcode) {
 		case OPCODE_ADD:
@@ -286,7 +286,7 @@ namespace sw::universal {
 	// We will then execute the binary operator nrOfRandom combinations.
 	// provide 		double dminpos = double(minpos<nbits, es>(pminpos));
 	template<typename TestType>
-	int VerifyUnaryOperatorThroughRandoms(const std::string& tag, bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms, double dminpos) {
+	int VerifyUnaryOperatorThroughRandoms(bool bReportIndividualTestCases, int opcode, uint32_t nrOfRandoms, double dminpos) {
 		std::string operation_string;
 		bool sqrtOperator = false;  // we need to filter negative values from the randoms
 		switch (opcode) {

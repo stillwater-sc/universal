@@ -222,89 +222,89 @@ try {
 	cout << endl;
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifySine<2, 0>("Manual Testing", true), "posit<2,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<2, 0>(true), "posit<2,0>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<3, 0>("Manual Testing", true), "posit<3,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<3, 1>("Manual Testing", true), "posit<3,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<3, 0>(true), "posit<3,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<3, 1>(true), "posit<3,1>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<4, 0>("Manual Testing", true), "posit<4,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<4, 1>("Manual Testing", true), "posit<4,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<4, 0>(true), "posit<4,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<4, 1>(true), "posit<4,1>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 0>("Manual Testing", true), "posit<5,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 1>("Manual Testing", true), "posit<5,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 2>("Manual Testing", true), "posit<5,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 0>(true), "posit<5,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 1>(true), "posit<5,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 2>(true), "posit<5,2>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 0>("Manual Testing", true), "posit<8,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifyCosine<8, 0>("Manual Testing", true), "posit<8,0>", "cos");
-	nrOfFailedTestCases += ReportTestResult(VerifyTangent<8, 0>("Manual Testing", true), "posit<8,0>", "tan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAtan<8, 0>("Manual Testing", true), "posit<8,0>", "atan");
-	nrOfFailedTestCases += ReportTestResult(VerifyAsin<8, 0>("Manual Testing", true), "posit<8,0>", "asin");
-	nrOfFailedTestCases += ReportTestResult(VerifyAcos<8, 0>("Manual Testing", true), "posit<8,0>", "acos");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 0>(true), "posit<8,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifyCosine<8, 0>(true), "posit<8,0>", "cos");
+	nrOfFailedTestCases += ReportTestResult(VerifyTangent<8, 0>(true), "posit<8,0>", "tan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAtan<8, 0>(true), "posit<8,0>", "atan");
+	nrOfFailedTestCases += ReportTestResult(VerifyAsin<8, 0>(true), "posit<8,0>", "asin");
+	nrOfFailedTestCases += ReportTestResult(VerifyAcos<8, 0>(true), "posit<8,0>", "acos");
 #else
 
 	cout << "Posit sine function validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<2, 0>(bReportIndividualTestCases), "posit<2,0>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<3, 0>(bReportIndividualTestCases), "posit<3,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<3, 1>(bReportIndividualTestCases), "posit<3,1>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<4, 0>(bReportIndividualTestCases), "posit<4,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<4, 1>(bReportIndividualTestCases), "posit<4,1>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 0>(bReportIndividualTestCases), "posit<5,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 1>(bReportIndividualTestCases), "posit<5,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<5, 2>(bReportIndividualTestCases), "posit<5,2>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<6, 0>(bReportIndividualTestCases), "posit<6,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<6, 1>(bReportIndividualTestCases), "posit<6,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<6, 2>(bReportIndividualTestCases), "posit<6,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<6, 3>(bReportIndividualTestCases), "posit<6,3>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<7, 0>(bReportIndividualTestCases), "posit<7,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<7, 1>(bReportIndividualTestCases), "posit<7,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<7, 2>(bReportIndividualTestCases), "posit<7,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<7, 3>(bReportIndividualTestCases), "posit<7,3>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<7, 4>(bReportIndividualTestCases), "posit<7,4>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 0>(bReportIndividualTestCases), "posit<8,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 1>(bReportIndividualTestCases), "posit<8,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 2>(bReportIndividualTestCases), "posit<8,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 3>(bReportIndividualTestCases), "posit<8,3>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 4>(bReportIndividualTestCases), "posit<8,4>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<8, 5>(bReportIndividualTestCases), "posit<8,5>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 3>(tag, bReportIndividualTestCases), "posit<9,3>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 4>(tag, bReportIndividualTestCases), "posit<9,4>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 5>(tag, bReportIndividualTestCases), "posit<9,5>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 6>(tag, bReportIndividualTestCases), "posit<9,6>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 0>(bReportIndividualTestCases), "posit<9,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 1>(bReportIndividualTestCases), "posit<9,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 2>(bReportIndividualTestCases), "posit<9,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 3>(bReportIndividualTestCases), "posit<9,3>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 4>(bReportIndividualTestCases), "posit<9,4>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 5>(bReportIndividualTestCases), "posit<9,5>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<9, 6>(bReportIndividualTestCases), "posit<9,6>", "sin");
 	
-	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 7>(tag, bReportIndividualTestCases), "posit<10,7>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 0>(bReportIndividualTestCases), "posit<10,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 1>(bReportIndividualTestCases), "posit<10,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 2>(bReportIndividualTestCases), "posit<10,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 7>(bReportIndividualTestCases), "posit<10,7>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<12, 0>(bReportIndividualTestCases), "posit<12,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<12, 1>(bReportIndividualTestCases), "posit<12,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<12, 2>(bReportIndividualTestCases), "posit<12,2>", "sin");
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 0>(bReportIndividualTestCases), "posit<16,0>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 1>(bReportIndividualTestCases), "posit<16,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 2>(bReportIndividualTestCases), "posit<16,2>", "sin");
 
 
 #if STRESS_TESTING
 	// nbits=64 requires long double compiler support
-	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(tag, bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "sin");
+	// nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(bReportIndividualTestCases, OPCODE_SQRT, 1000), "posit<64,2>", "sin");
 
 
-	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "sin");
-	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<10, 1>(bReportIndividualTestCases), "posit<10,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<12, 1>(bReportIndividualTestCases), "posit<12,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<14, 1>(bReportIndividualTestCases), "posit<14,1>", "sin");
+	nrOfFailedTestCases += ReportTestResult(VerifySine<16, 1>(bReportIndividualTestCases), "posit<16,1>", "sin");
 	
 #endif  // STRESS_TESTING
 

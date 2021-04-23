@@ -54,7 +54,7 @@ RUN cmake -DBUILD_CI_CHECK=ON .. && make
 # the command 'make test' is run as part of the CI test pipeline of the release container
 
 # add a command that when you run the container without a command, it produces something meaningful
-CMD ["echo", "Universal Numbers Library Builder Version 3.0.11"]
+CMD ["echo", "Universal Numbers Library Builder Version 3.8.1"]
 
 
 # RELEASE stage
@@ -89,9 +89,19 @@ COPY --from=builder /home/stillwater/universal/docs /home/stillwater/universal/d
 COPY --from=builder /home/stillwater/universal/build /home/stillwater/universal/build
 
 # copy the CLI tools to /usr/local/bin so they are immediately usable
-COPY --from=builder /home/stillwater/universal/build/tools/cmd/prop* /usr/local/bin/
-COPY --from=builder /home/stillwater/universal/build/tools/cmd/comp* /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/areal /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/double /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/fixpnt /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/float /usr/local/bin/
 COPY --from=builder /home/stillwater/universal/build/tools/cmd/float2posit /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/ieee /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/lns /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/longdouble /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/plimits /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/posit /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/prop* /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/signedint /usr/local/bin/
+COPY --from=builder /home/stillwater/universal/build/tools/cmd/unsignedint /usr/local/bin/
 
 # double check we have all the executables of interest
 #RUN find /home/stillwater/universal/build
@@ -101,4 +111,4 @@ WORKDIR /home/stillwater/universal/build
 
 # the command 'make test' is run as part of the CI test pipeline of this release container
 
-CMD ["echo", "Universal Numbers Library Version 3.0.11"]
+CMD ["echo", "Universal Numbers Library Version 3.8.1"]

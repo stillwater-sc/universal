@@ -237,61 +237,61 @@ try {
 
 	cout << "Posit conversion validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<3, 0>(bReportIndividualTestCases), "posit<3,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<4, 0>(bReportIndividualTestCases), "posit<4,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<5, 0>(bReportIndividualTestCases), "posit<5,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<6, 0>(bReportIndividualTestCases), "posit<6,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<7, 0>(bReportIndividualTestCases), "posit<7,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<8, 0>(bReportIndividualTestCases), "posit<8,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<9, 0>(bReportIndividualTestCases), "posit<9,0>", "conversion");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 0>(tag, bReportIndividualTestCases), "posit<9,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 3, 0>(bReportIndividualTestCases), "posit<3,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 0>(bReportIndividualTestCases), "posit<4,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 5, 0>(bReportIndividualTestCases), "posit<5,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 0>(bReportIndividualTestCases), "posit<6,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 0>(bReportIndividualTestCases), "posit<7,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 0>(bReportIndividualTestCases), "posit<8,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 0>(bReportIndividualTestCases), "posit<9,0>", "conversion");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 1>(tag, bReportIndividualTestCases), "posit<9,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 4, 1>(bReportIndividualTestCases), "posit<4,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 5, 1>(bReportIndividualTestCases), "posit<5,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 1>(bReportIndividualTestCases), "posit<6,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 1>(bReportIndividualTestCases), "posit<7,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 1>(bReportIndividualTestCases), "posit<8,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 1>(bReportIndividualTestCases), "posit<9,1>", "conversion");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 2>(tag, bReportIndividualTestCases), "posit<9,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 5, 2>(bReportIndividualTestCases), "posit<5,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 2>(bReportIndividualTestCases), "posit<6,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 2>(bReportIndividualTestCases), "posit<7,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 2>(bReportIndividualTestCases), "posit<8,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 2>(bReportIndividualTestCases), "posit<9,2>", "conversion");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 3>(tag, bReportIndividualTestCases), "posit<9,3>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 6, 3>(bReportIndividualTestCases), "posit<6,3>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 7, 3>(bReportIndividualTestCases), "posit<7,3>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 8, 3>(bReportIndividualTestCases), "posit<8,3>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion< 9, 3>(bReportIndividualTestCases), "posit<9,3>", "conversion");
 
 
 #if STRESS_TESTING
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 2>(tag, bReportIndividualTestCases), "posit<10,2>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 3>(tag, bReportIndividualTestCases), "posit<10,3>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 0>(bReportIndividualTestCases), "posit<10,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 1>(bReportIndividualTestCases), "posit<10,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 2>(bReportIndividualTestCases), "posit<10,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<10, 3>(bReportIndividualTestCases), "posit<10,3>", "conversion");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 0>(tag, bReportIndividualTestCases), "posit<12,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 2>(tag, bReportIndividualTestCases), "posit<12,2>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 3>(tag, bReportIndividualTestCases), "posit<12,3>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 0>(bReportIndividualTestCases), "posit<12,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 1>(bReportIndividualTestCases), "posit<12,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 2>(bReportIndividualTestCases), "posit<12,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<12, 3>(bReportIndividualTestCases), "posit<12,3>", "conversion");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<14, 0>(tag, bReportIndividualTestCases), "posit<14,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<14, 2>(tag, bReportIndividualTestCases), "posit<14,2>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<14, 3>(tag, bReportIndividualTestCases), "posit<14,3>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<14, 0>(bReportIndividualTestCases), "posit<14,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<14, 1>(bReportIndividualTestCases), "posit<14,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<14, 2>(bReportIndividualTestCases), "posit<14,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<14, 3>(bReportIndividualTestCases), "posit<14,3>", "conversion");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 0>(tag, bReportIndividualTestCases), "posit<16,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 2>(tag, bReportIndividualTestCases), "posit<16,2>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 3>(tag, bReportIndividualTestCases), "posit<16,3>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 0>(bReportIndividualTestCases), "posit<16,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 1>(bReportIndividualTestCases), "posit<16,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 2>(bReportIndividualTestCases), "posit<16,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<16, 3>(bReportIndividualTestCases), "posit<16,3>", "conversion");
 
 #endif // STRESS_TESTING
 

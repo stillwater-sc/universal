@@ -10,7 +10,7 @@
 
 int main(int argc, char* argv[])
 {
-	const int maxNr = 1024;
+	const int maxNr = 512;
 	const int fullState = 256*256;
 	posit16_t pa, pb, pc;
 	char str[posit16_str_SIZE];

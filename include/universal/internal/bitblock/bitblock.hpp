@@ -78,8 +78,8 @@ bool twosComplementLessThan(const bitblock<nbits>& lhs, const bitblock<nbits>& r
 template<size_t nbits>
 bool operator==(const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	// compare remaining bits
-	for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-		if (lhs[size_t(i)] != rhs[size_t(i)]) return false;
+	if constexpr (nbits > 0) {
+		for (size_t i = 0; i < nbits; ++i) if (lhs[i] != rhs[i]) return false;
 	}
 	// numbers are equal
 	return true;
@@ -97,7 +97,7 @@ bool operator< (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	return false;
 }
 
-// this comparison is for unsigned numbers only
+// test less than or equal for unsigned numbers only
 template<size_t nbits>
 bool operator<= (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	// compare remaining bits
@@ -109,13 +109,15 @@ bool operator<= (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	return true;
 }
 
-// this comparison is for unsigned numbers only
+// test greater than for unsigned numbers only
 template<size_t nbits>
 bool operator> (const bitblock<nbits>& lhs, const bitblock<nbits>& rhs) {
 	// compare remaining bits
-	for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
-		if (lhs[size_t(i)] == 0 && rhs[size_t(i)] == 1)	return false;
-		if (lhs[size_t(i)] == 1 && rhs[size_t(i)] == 0) return true;
+	if constexpr (nbits > 0) {
+		for (int i = static_cast<int>(nbits) - 1; i >= 0; --i) {
+			if (lhs[size_t(i)] == 0 && rhs[size_t(i)] == 1)	return false;
+			if (lhs[size_t(i)] == 1 && rhs[size_t(i)] == 0) return true;
+		}
 	}
 	// numbers are equal
 	return false;
@@ -350,7 +352,7 @@ void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, size_t be
 	for (size_t i = begin; i < end; i++)
 		tgt.set(i + shift, src[i]);
 }
-#else
+#else // !BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 // copy a slice of a bitset into a bigger bitset starting at position indicated by the shift value
 template<size_t src_size, size_t tgt_size>
 void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, size_t begin = 0, size_t end = src_size, size_t shift = 0) {
@@ -360,7 +362,7 @@ void copy_slice_into(bitblock<src_size>& src, bitblock<tgt_size>& tgt, size_t be
 	for (size_t i = begin; i < end; i++)
 		tgt.set(i + shift, src[i]);
 }
-#endif // BITBLOCK_THROW_ARITHMETIC_EXCEPTION
+#endif // !BITBLOCK_THROW_ARITHMETIC_EXCEPTION
 
 template<size_t from, size_t to, size_t src_size>
 bitblock<to - from> fixed_subset(const bitblock<src_size>& src) {

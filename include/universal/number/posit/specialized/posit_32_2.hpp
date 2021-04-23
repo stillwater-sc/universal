@@ -13,7 +13,7 @@
 #define POSIT_FAST_POSIT_32_2 0
 #endif
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_32_2
@@ -426,11 +426,12 @@ public:
 	inline constexpr void setnar() { _bits = 0x80000000; }
 
 	// SELECTORS
-	inline constexpr bool isnar() const      { return (_bits == 0x80000000); }
+	inline constexpr bool sign() const       { return (_bits & 0x80000000u); }
+	inline constexpr bool isnar() const      { return (_bits == 0x80000000u); }
 	inline constexpr bool iszero() const     { return (_bits == 0x0); }
-	inline constexpr bool isone() const      { return (_bits == 0x40000000); } // pattern 010000...
-	inline constexpr bool isminusone() const { return (_bits == 0xC0000000); } // pattern 110000...
-	inline constexpr bool isneg() const      { return (_bits & 0x80000000); }
+	inline constexpr bool isone() const      { return (_bits == 0x40000000u); } // pattern 010000...
+	inline constexpr bool isminusone() const { return (_bits == 0xC0000000u); } // pattern 110000...
+	inline constexpr bool isneg() const      { return (_bits & 0x80000000u); }
 	inline constexpr bool ispos() const      { return !isneg(); }
 	inline constexpr bool ispowerof2() const { return !(_bits & 0x1); }
 
@@ -895,7 +896,7 @@ inline std::istream& operator>> (std::istream& istr, posit<NBITS_IS_32, ES_IS_2>
 }
 
 // convert a posit value to a string using "nar" as designation of NaR
-std::string to_string(const posit<NBITS_IS_32, ES_IS_2>& p, std::streamsize precision) {
+inline std::string to_string(const posit<NBITS_IS_32, ES_IS_2>& p, std::streamsize precision) {
 	if (p.isnar()) {
 		return std::string("nar");
 	}
@@ -976,4 +977,4 @@ inline bool operator>=(int lhs, const posit<NBITS_IS_32, ES_IS_2>& rhs) {
 
 #endif // POSIT_FAST_POSIT_32_2
 
-}} // namespace sw::universal
+} // namespace sw::universal

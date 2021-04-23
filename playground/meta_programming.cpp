@@ -22,10 +22,10 @@ struct hasSerialize {
 	template<typename U, U function>
 	struct reallyHas;
 
-	template<typename S> static yes& test(reallyHas<std::string(S::*)(), &S::serialize>* /*unused*/) {}
-	template<typename S> static yes& test(reallyHas<std::string(S::*)() const, &S::serialize>* /*unused*/) {}
+	template<typename S> static yes& test(reallyHas<std::string(S::*)(), &S::serialize>* /*unused*/) { yes y{0}; return y; }
+	template<typename S> static yes& test(reallyHas<std::string(S::*)() const, &S::serialize>* /*unused*/) { yes y{0}; return y; } 
 
-	template<typename> static no& test(...) { }
+	template<typename> static no& test(...) { no n{0}; return n; }
 
 	// constant used as return value for the test
 	static const bool value = sizeof(test<T>(0)) == sizeof(yes);

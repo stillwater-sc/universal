@@ -166,9 +166,9 @@ void CompareIEEEValues(std::ostream& ostr, long double constant) {
 	cout << endl;
 
 //	ostr << "input value: " << setprecision(f_prec) << setw(width) << constant << endl;
-	ostr << "      float: " << setprecision(f_prec) << setw(width) << f << " " << components(vf) << endl;
-	ostr << "     double: " << setprecision(d_prec) << setw(width) << d << " " << components(vd) << endl;
-	ostr << "long double: " << setprecision(q_prec) << setw(width) << q << " " << components(vq) << endl;
+	ostr << "      float: " << setprecision(f_prec) << setw(width) << f << " " << to_triple(vf) << endl;
+	ostr << "     double: " << setprecision(d_prec) << setw(width) << d << " " << to_triple(vd) << endl;
+	ostr << "long double: " << setprecision(q_prec) << setw(width) << q << " " << to_triple(vq) << endl;
 
 	cout << setprecision(old_precision);
 }

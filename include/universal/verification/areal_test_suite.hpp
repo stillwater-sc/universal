@@ -10,6 +10,8 @@
 #include <random>
 #include <limits>
 
+#include <universal/math/stub/classify.hpp> // fpclassify, isnormal, issubnormal, isinf, isnan
+
 namespace sw::universal {
 
 	template<typename SrcType, typename TestType>
@@ -140,7 +142,7 @@ namespace sw::universal {
 					}
 					// da + delta = (0,minpos)
 					testValue = da + delta;
-					if (isdenorm(testValue)) { std::cout << testValue << " is denormalized\n"; }
+					if (issubnorm(testValue)) { std::cout << testValue << " is denormalized\n"; }
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, interval, bReportIndividualTestCases);
 				}

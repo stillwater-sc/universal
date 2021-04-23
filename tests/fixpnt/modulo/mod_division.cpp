@@ -3,6 +3,7 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+#include <universal/utility/directives.hpp>
 #include <iostream>
 #include <iomanip>
 #include <typeinfo>
@@ -99,10 +100,10 @@ inline sw::universal::blockbinary<2 * nbits + roundingBits, BlockType> unrounded
 
 		if (subtractand <= decimator) {
 			decimator -= subtractand;
-			quotient.set(i);
+			quotient.set(static_cast<size_t>(i));
 		}
 		else {
-			quotient.reset(i);
+			quotient.reset(static_cast<size_t>(i));
 		}
 		subtractand >>= 1;
 
@@ -168,11 +169,11 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 	{
 		cout << "multiplication trace\n";
 
-		blockbinary<2 * nbits> c = unrounded_mul(a.getbb(), b.getbb());
-		bool roundUp = c.roundingMode(rbits);
-		c >>= rbits;
-		if (roundUp) ++c;
-		fixpnt<nbits, rbits> result; result = c; // select the lower nbits of the result
+		blockbinary<2 * nbits> cc = unrounded_mul(a.getbb(), b.getbb());
+		bool roundUp = cc.roundingMode(rbits);
+		cc >>= rbits;
+		if (roundUp) ++cc;
+		fixpnt<nbits, rbits> result; result = cc; // select the lower nbits of the result
 		cout << "final result: " << result << endl;
 	}
 
@@ -190,13 +191,13 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 
 			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
 			blockbinary<roundingDecisionBits> roundingBits;
-			blockbinary<2 * nbits + roundingDecisionBits> a = unrounded_div(c.getbb(), b.getbb(), roundingBits);
-			std::cout << c.getbb() << " / " << b.getbb() << " = " << a << " rounding bits " << roundingBits;
-			bool roundUp = a.roundingMode(rbits + roundingDecisionBits);
-			a >>= rbits + nbits + roundingDecisionBits - 1;
+			blockbinary<2 * nbits + roundingDecisionBits> aa = unrounded_div(c.getbb(), b.getbb(), roundingBits);
+			std::cout << c.getbb() << " / " << b.getbb() << " = " << aa << " rounding bits " << roundingBits;
+			bool roundUp = aa.roundingMode(rbits + roundingDecisionBits);
+			aa >>= rbits + nbits + roundingDecisionBits - 1;
 			if (roundUp) ++a;
-			std::cout << " rounded " << a << std::endl;
-			fixpnt<nbits, rbits> result; result = a; // select the lower nbits of the result
+			std::cout << " rounded " << aa << std::endl;
+			fixpnt<nbits, rbits> result; result = aa; // select the lower nbits of the result
 			cout << "final result: " << to_binary(result) << " : " << result << endl;
 		}
 
@@ -206,13 +207,13 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 
 			constexpr size_t roundingDecisionBits = 4; // guard, round, and 2 sticky bits
 			blockbinary<roundingDecisionBits> roundingBits;
-			blockbinary<2 * nbits + roundingDecisionBits> b = unrounded_div(c.getbb(), a.getbb(), roundingBits);
-			std::cout << c.getbb() << " / " << a.getbb() << " = " << b << " rounding bits " << roundingBits;
-			bool roundUp = b.roundingMode(rbits + roundingDecisionBits);
-			b >>= rbits + nbits + roundingDecisionBits - 1;
-			if (roundUp) ++b;
-			std::cout << " rounded " << b << std::endl;
-			fixpnt<nbits, rbits> result; result = b; // select the lower nbits of the result
+			blockbinary<2 * nbits + roundingDecisionBits> bb = unrounded_div(c.getbb(), a.getbb(), roundingBits);
+			std::cout << c.getbb() << " / " << a.getbb() << " = " << bb << " rounding bits " << roundingBits;
+			bool roundUp = bb.roundingMode(rbits + roundingDecisionBits);
+			bb >>= rbits + nbits + roundingDecisionBits - 1;
+			if (roundUp) ++bb;
+			std::cout << " rounded " << bb << std::endl;
+			fixpnt<nbits, rbits> result; result = bb; // select the lower nbits of the result
 			cout << "final result: " << to_binary(result) << " : " << result << endl;
 		}
 
@@ -247,19 +248,19 @@ try {
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<4, 1>(3.0f, 1.5f); 
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modulo,uint8_t>", "division");
-	//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>("Manual Testing", true), "fixpnt<8,4,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", "division");
+	//	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>(true), "fixpnt<8,4,Modulo,uint8_t>", "division");
 
 
 #if STRESS_TESTING
 
 	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,1,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,2,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,3,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4, Modulo, uint8_t>("Manual Testing", true), "fixpnt<4,4,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 0, Modulo, uint8_t>(true), "fixpnt<4,0,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 1, Modulo, uint8_t>(true), "fixpnt<4,1,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 2, Modulo, uint8_t>(true), "fixpnt<4,2,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 3, Modulo, uint8_t>(true), "fixpnt<4,3,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<4, 4, Modulo, uint8_t>(true), "fixpnt<4,4,Modulo,uint8_t>", "division");
 
 #endif
 
@@ -269,15 +270,15 @@ try {
 
 	cout << "Fixed-point modular division validation" << endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 3, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,3,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 5, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,5,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 6, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,6,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 7, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,7,Modulo,uint8_t>", "division");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 8, Modulo, uint8_t>(tag, bReportIndividualTestCases), "fixpnt<8,8,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 0, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,0,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 1, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,1,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 2, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,2,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 3, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,3,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 4, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,4,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 5, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,5,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 6, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,6,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 7, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,7,Modulo,uint8_t>", "division");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision<8, 8, Modulo, uint8_t>(bReportIndividualTestCases), "fixpnt<8,8,Modulo,uint8_t>", "division");
 
 #if STRESS_TESTING
 

@@ -292,6 +292,9 @@ u = -(2.0*sr);
 oss = sr;
 ovv = v = bnd;
 
+otv = 1.0;
+ots = 1.0;
+
 //Evaluate polynomial by synthetic division
 QuadSD_ak1(NN, u, v, p, qp, &a, &b);
 

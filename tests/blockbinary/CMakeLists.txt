@@ -1,3 +1,11 @@
-file (GLOB SOURCES "./*.cpp")
+file (GLOB API_SRC "./api/*.cpp")
+file (GLOB CONVERSION_SRC "./conversion/*.cpp")
+file (GLOB ARITHMETIC_SRC "./arithmetic/*.cpp")
+file (GLOB LOGIC_SRC "./logic/*.cpp")
+file (GLOB PERFORMANCE_SRC "./performance/*.cpp")
 
-compile_all("true" "blockbinary" "Internal/Storage Classes/block-oriented" "${SOURCES}")
+compile_all("true" "bb" "Internal/Storage Classes/block-oriented/blockbinary/api" "${API_SRC}")
+compile_all("true" "bb" "Internal/Storage Classes/block-oriented/blockbinary/conversion" "${CONVERSION_SRC}")
+compile_all("true" "bb" "Internal/Storage Classes/block-oriented/blockbinary/logic" "${LOGIC_SRC}")
+compile_all("true" "bb" "Internal/Storage Classes/block-oriented/blockbinary/arithmetic" "${ARITHMETIC_SRC}")
+compile_all("true" "bb" "Internal/Storage Classes/block-oriented/blockbinary/performance" "${PERFORMANCE_SRC}")

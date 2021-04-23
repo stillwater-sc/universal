@@ -8,8 +8,12 @@
 #include <limits>
 
 #include <universal/native/ieee754.hpp>
+#include <universal/native/subnormal.hpp>
 #include <universal/native/bit_functions.hpp>
+#include <universal/native/integers.hpp>
 #include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/number/shared/nan_encoding.hpp>
+#include <universal/number/shared/infinite_encoding.hpp>
 #include <universal/number/areal/exceptions.hpp>
 
 // compiler specific operators
@@ -20,7 +24,6 @@
 
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
 /* Intel ICC/ICPC. ------------------------------------------ */
-
 
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
@@ -58,62 +61,12 @@
 
 namespace sw::universal {
 		
-	static constexpr double oneOver2p6 = 0.015625;
-	static constexpr double oneOver2p14 = 0.00006103515625;
-	static constexpr double oneOver2p30 = 1.0 / 1073741824.0;
-	static constexpr double oneOver2p50 = 1.0 / 1125899906842624.0;
-	static constexpr double oneOver2p62 = 1.0 / 4611686018427387904.0;
-	static constexpr double oneOver2p126 = oneOver2p62 * oneOver2p62 * 0.25;
-	static constexpr double oneOver2p254 = oneOver2p126 * oneOver2p126 * 0.25;
-	static constexpr double oneOver2p510 = oneOver2p254 * oneOver2p254 * 0.25;
-	static constexpr double oneOver2p1022 = oneOver2p510 * oneOver2p510 * 0.25;
-
-// precomputed values for subnormal exponents as a function of es
-	static constexpr int subnormal_reciprocal_shift[] = {
-		0,                    // es = 0 : not a valid value
-		-1,                   // es = 1 : 2^(2 - 2^(es-1)) = 2^1
-		0,                    // es = 2 : 2^(2 - 2^(es-1)) = 2^0
-		2,                    // es = 3 : 2^(2 - 2^(es-1)) = 2^-2
-		6,                    // es = 4 : 2^(2 - 2^(es-1)) = 2^-6
-		14,                   // es = 5 : 2^(2 - 2^(es-1)) = 2^-14
-		30,                   // es = 6 : 2^(2 - 2^(es-1)) = 2^-30
-		62,                   // es = 7 : 2^(2 - 2^(es-1)) = 2^-62
-		126,                  // es = 8 : 2^(2 - 2^(es-1)) = 2^-126
-		254,                  // es = 9 : 2^(2 - 2^(es-1)) = 2^-254
-		510,                  // es = 10 : 2^(2 - 2^(es-1)) = 2^-510
-		1022                  // es = 11 : 2^(2 - 2^(es-1)) = 2^-1022
-	};
-// es > 11 requires a long double representation, which MSVC does not provide.
-	static constexpr double subnormal_exponent[] = {
-		0,                    // es = 0 : not a valid value
-		2.0,                  // es = 1 : 2^(2 - 2^(es-1)) = 2^1
-		1.0,                  // es = 2 : 2^(2 - 2^(es-1)) = 2^0
-		0.25,                 // es = 3 : 2^(2 - 2^(es-1)) = 2^-2
-		oneOver2p6,           // es = 4 : 2^(2 - 2^(es-1)) = 2^-6
-		oneOver2p14,          // es = 5 : 2^(2 - 2^(es-1)) = 2^-14
-		oneOver2p30,          // es = 6 : 2^(2 - 2^(es-1)) = 2^-30
-		oneOver2p62,          // es = 7 : 2^(2 - 2^(es-1)) = 2^-62
-		oneOver2p126,         // es = 8 : 2^(2 - 2^(es-1)) = 2^-126
-		oneOver2p254,         // es = 9 : 2^(2 - 2^(es-1)) = 2^-254
-		oneOver2p510,         // es = 10 : 2^(2 - 2^(es-1)) = 2^-510
-		oneOver2p1022         // es = 11 : 2^(2 - 2^(es-1)) = 2^-1022
-	};
+	constexpr bool AREAL_NIBBLE_MARKER = true;
 
 // Forward definitions
 template<size_t nbits, size_t es, typename bt> class areal;
 template<size_t nbits, size_t es, typename bt> areal<nbits,es,bt> abs(const areal<nbits,es,bt>&);
-template<typename bt> inline std::string to_binary_storage(const bt&, bool);
-
-static constexpr int NAN_TYPE_SIGNALLING = -1;   // a Signalling NaN
-static constexpr int NAN_TYPE_EITHER     = 0;    // any NaN
-static constexpr int NAN_TYPE_QUIET      = 1;    // a Quiet NaN
-
-static constexpr int INF_TYPE_NEGATIVE   = -1;   // -inf
-static constexpr int INF_TYPE_EITHER     = 0;    // any inf
-static constexpr int INF_TYPE_POSITIVE   = 1;    // +inf
-
-constexpr bool AREAL_NIBBLE_MARKER = true;
-
+template<typename bt> inline std::string to_binary(const bt&, bool);
 
 /// <summary>
 /// decode an areal value into its constituent parts
@@ -226,7 +179,7 @@ public:
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt LSB_BIT_MASK = bt(1ull);
 	static constexpr bool MSU_CAPTURES_E = (1ull + es) <= bitsInMSU;
-	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (nbits - 1ull - es) : 0);
+	static constexpr size_t EXP_SHIFT = (MSU_CAPTURES_E ? (1 == nrBlocks ? (nbits - 1ull - es) : (bitsInMSU - 1ull - es)) : 0);
 	static constexpr bt MSU_EXP_MASK = ((ALLONES << EXP_SHIFT) & ~SIGN_BIT_MASK) & MSU_MASK;
 	static constexpr int EXP_BIAS = ((1l << (es - 1ull)) - 1l);
 	static constexpr int MAX_EXP = (1l << es) - EXP_BIAS;
@@ -340,31 +293,33 @@ public:
 		clear();
 #if BIT_CAST_SUPPORT
 		// normal number
-		uint32_t bc = std::bit_cast<uint32_t>(rhs);
-		bool s = (0x8000'0000 & bc);
-		int exponent = int((0x7F80'0000 & bc) >> 23) - 127;
-		uint32_t raw = (0x007F'FFFF & bc);
+		uint32_t bc      = std::bit_cast<uint32_t>(rhs);
+		bool s           = (0x8000'0000u & bc);
+		uint32_t raw_exp = uint32_t((0x7F80'0000u & bc) >> 23u);
+		uint32_t raw     = (0x007F'FFFFu & bc);
 #else // !BIT_CAST_SUPPORT
 		float_decoder decoder;
-		decoder.f = rhs;
-		bool s = decoder.parts.sign ? true : false;
-		uint32_t raw = decoder.parts.fraction; // don't bring in a hidden bit
-		int exponent = static_cast<int>(decoder.parts.exponent) - 127;  // apply bias
+		decoder.f        = rhs;
+		bool s           = decoder.parts.sign ? true : false;
+		uint32_t raw_exp = decoder.parts.exponent;
+		uint32_t raw     = decoder.parts.fraction;
 #endif // !BIT_CAST_SUPPORT
 
 		// special case handling
-		if (exponent == 0xFF) { // special cases
-			if (!s && raw == 1) {
+		if (raw_exp == 0xFFu) { // special cases
+			if (raw == 1ul) {
+				// 1.11111111.00000000000000000000001 signalling nan
 				// 0.11111111.00000000000000000000001 signalling nan
 				setnan(NAN_TYPE_SIGNALLING);
 				return *this;
 			}
-			if (!s && raw == 0x0040'0000ul) {
+			if (raw == 0x0040'0000ul) {
+				// 1.11111111.10000000000000000000000 quiet nan
 				// 0.11111111.10000000000000000000000 quiet nan
 				setnan(NAN_TYPE_QUIET);
 				return *this;
 			}
-			if (raw == 0) {
+			if (raw == 0ul) {
 				// 1.11111111.00000000000000000000000 -inf
 				// 0.11111111.00000000000000000000000 +inf
 				setinf(s);
@@ -375,7 +330,9 @@ public:
 			set(nbits - 1ull, s);
 			return *this;
 		}
+		
 		// this is not a special number
+		int exponent = int(raw_exp) - 127;  // unbias the exponent
 
 #if TRACE_CONVERSION
 		std::cout << '\n';
@@ -383,7 +340,7 @@ public:
 		std::cout << "segments        : " << to_binary(rhs) << '\n';
 		std::cout << "sign     bit    : " << (s ? '1' : '0') << '\n';
 		std::cout << "exponent value  : " << exponent << '\n';
-		std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
+		std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
 		// saturate to minpos/maxpos with uncertainty bit set to 1
 		if (exponent > MAX_EXP) {
@@ -413,9 +370,9 @@ public:
 			if (exponent > -127) {
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 23);
-				mask = 0x00FF'FFFF >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
 #if TRACE_CONVERSION
-				std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
+				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
 				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits 
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
@@ -432,9 +389,9 @@ public:
 			}
 			else {
 				// the source real is a subnormal number, and the target representation is a subnormal representation
-				mask = 0x00FF'FFFF >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
+				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
 #if TRACE_CONVERSION
-				std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
+				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
 				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits 
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
@@ -473,9 +430,9 @@ public:
 		std::cout << "biased exponent : " << biasedExponent << " : 0x" << std::hex << biasedExponent << std::dec << '\n';
 		std::cout << "shift           : " << shiftRight << '\n';
 		std::cout << "adjustment shift: " << adjustment << '\n';
-		std::cout << "sticky bit mask : " << to_binary_storage(mask, true) << '\n';
+		std::cout << "sticky bit mask : " << to_binary(mask, true) << '\n';
 		std::cout << "uncertainty bit : " << (ubit ? "1\n" : "0\n");
-		std::cout << "fraction bits   : " << to_binary_storage(raw, true) << '\n';
+		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
 #endif
 		// construct the target areal
 		uint32_t bits = (s ? 1u : 0u);
@@ -483,8 +440,8 @@ public:
 		bits |= biasedExponent;
 		bits <<= nbits - 1ull - es;
 		bits |= raw;
-		bits &= 0xFFFF'FFFE;
-		bits |= (ubit ? 0x1 : 0x0);
+		bits &= 0xFFFF'FFFEu;
+		bits |= (ubit ? 0x1u : 0x0u);
 		if constexpr (1 == nrBlocks) {
 			_block[MSU] = bt(bits);
 		}
@@ -497,29 +454,31 @@ public:
 		clear();
 #if BIT_CAST_SUPPORT
 		// normal number
-		uint64_t bc = std::bit_cast<uint64_t>(rhs);
-		bool s = (0x8000'0000'0000'0000 & bc);
-		int exponent = int((0x7FF0'0000'0000'0000ull & bc) >> 52) - 1023;
-		uint64_t raw = (0x000F'FFFF'FFFF'FFFFull & bc);
+		uint64_t bc      = std::bit_cast<uint64_t>(rhs);
+		bool s           = (0x8000'0000'0000'0000ull & bc);
+		uint32_t raw_exp = static_cast<uint32_t>((0x7FF0'0000'0000'0000ull & bc) >> 52);
+		uint64_t raw     = (0x000F'FFFF'FFFF'FFFFull & bc);
 #else // !BIT_CAST_SUPPORT
 		double_decoder decoder;
-		decoder.d = rhs;
-		bool s = decoder.parts.sign ? true : false;
-		int exponent = static_cast<int>(decoder.parts.exponent) - 1023;  // apply bias
-		uint64_t raw = decoder.parts.fraction; // no hidden bit
+		decoder.d        = rhs;
+		bool s           = decoder.parts.sign ? true : false;
+		uint32_t raw_exp = static_cast<uint32_t>(decoder.parts.exponent);
+		uint64_t raw     = decoder.parts.fraction;
 #endif // !BIT_CAST_SUPPORT
-		if (exponent == 0x7FF) { // special cases
-			if (!s && raw == 1) {
+		if (raw_exp == 0x7FFul) { // special cases
+			if (raw == 1ull) {
+				// 1.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
 				// 0.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
 				setnan(NAN_TYPE_SIGNALLING);
 				return *this;
 			}
-			if (!s && raw == 0x0008'FFFF'FFFF'FFFFull) {
+			if (raw == 0x0008'0000'0000'0000ull) {
+				// 1.11111111111.1000000000000000000000000000000000000000000000000000 quiet nan
 				// 0.11111111111.1000000000000000000000000000000000000000000000000000 quiet nan
 				setnan(NAN_TYPE_QUIET);
 				return *this;
 			}
-			if (raw == 0) {
+			if (raw == 0ull) {
 				// 1.11111111111.0000000000000000000000000000000000000000000000000000 -inf
 				// 0.11111111111.0000000000000000000000000000000000000000000000000000 +inf
 				setinf(s);
@@ -531,14 +490,14 @@ public:
 			return *this;
 		}
 		// this is not a special number
-
+		int exponent = int(raw_exp) - 1023;  // unbias the exponent
 #if TRACE_CONVERSION
 		std::cout << '\n';
 		std::cout << "value           : " << rhs << '\n';
 		std::cout << "segments        : " << to_binary(rhs) << '\n';
 		std::cout << "sign   bits     : " << (s ? '1' : '0') << '\n';
 		std::cout << "exponent value  : " << exponent << '\n';
-		std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
+		std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
 		// saturate to minpos/maxpos with uncertainty bit set to 1
 		if (exponent > MAX_EXP) {	
@@ -571,8 +530,8 @@ public:
 				// the source real is a normal number, so we must add the hidden bit to the fraction bits
 				raw |= (1ull << 52);
 #if TRACE_CONVERSION
-				std::cout << "mask     bits   : " << to_binary_storage(mask, true) << std::endl;
-				std::cout << "fraction bits   : " << to_binary_storage(raw, true) << std::endl;
+				std::cout << "mask     bits   : " << to_binary(mask, true) << std::endl;
+				std::cout << "fraction bits   : " << to_binary(raw, true) << std::endl;
 #endif
 				// fraction processing: we have 53 bits = 1 hidden + 52 explicit fraction bits 
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (-exponent + fbits - (2 -2^(es-1))))
@@ -620,9 +579,9 @@ public:
 #if TRACE_CONVERSION
 		std::cout << "biased exponent : " << biasedExponent << " : " << std::hex << biasedExponent << std::dec << '\n';
 		std::cout << "shift           : " << shiftRight << '\n';
-		std::cout << "sticky bit mask : " << to_binary_storage(mask, true) << '\n';
+		std::cout << "sticky bit mask : " << to_binary(mask, true) << '\n';
 		std::cout << "uncertainty bit : " << (ubit ? "1\n" : "0\n");
-		std::cout << "fraction bits   : " << to_binary_storage(raw, true) << '\n';
+		std::cout << "fraction bits   : " << to_binary(raw, true) << '\n';
 #endif
 		// construct the target areal
 		uint64_t bits = (s ? 1ull : 0ull);
@@ -937,6 +896,16 @@ public:
 			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		}
 	}
+	inline constexpr bool isone() const {
+		// unbiased exponent = scale = 0, fraction = 0
+		int s = scale();
+		if (s == 0) {
+			blockbinary<fbits, bt> f;
+			fraction(f);
+			return f.iszero();
+		}
+		return false;
+	}
 	/// <summary>
 	/// check if value is infinite, -inf, or +inf. 
 	/// +inf = 0-1111-11111-0: sign = 0, uncertainty = 0, es/fraction bits = 1
@@ -945,7 +914,6 @@ public:
 	/// <param name="InfType">default is 0, both types, -1 checks for -inf, 1 checks for +inf</param>
 	/// <returns>true if +-inf, false otherwise</returns>
 	inline constexpr bool isinf(int InfType = INF_TYPE_EITHER) const {
-		bool isInf = false;
 		bool isNegInf = false;
 		bool isPosInf = false;
 		if constexpr (0 == nrBlocks) {
@@ -954,30 +922,29 @@ public:
 		else if constexpr (1 == nrBlocks) {
 			isNegInf = (_block[MSU] & MSU_MASK) == (MSU_MASK ^ LSB_BIT_MASK);
 			isPosInf = (_block[MSU] & MSU_MASK) == ((MSU_MASK ^ SIGN_BIT_MASK) ^ LSB_BIT_MASK);
-			return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
-				(InfType == INF_TYPE_NEGATIVE ? isNegInf :
-					(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
 		}
 		else if constexpr (2 == nrBlocks) {
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
-			// fall through to the MSU processing
+			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
+			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
+			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
 		else if constexpr (3 == nrBlocks) {
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) && (_block[1] == BLOCK_MASK);
-			// fall through to the MSU processing 
+			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) && (_block[1] == BLOCK_MASK);
+			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
+			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
 		else {
-			isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
+			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
 			for (size_t i = 1; i < nrBlocks - 1; ++i) {
 				if (_block[i] != BLOCK_MASK) {
 					isInf = false;
 					break;
 				}
 			}
-			// fall through to the MSU processing 
+			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
+			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
-		isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
-		isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
+
 		return (InfType == INF_TYPE_EITHER ? (isNegInf || isPosInf) :
 			(InfType == INF_TYPE_NEGATIVE ? isNegInf :
 				(InfType == INF_TYPE_POSITIVE ? isPosInf : false)));
@@ -1048,17 +1015,17 @@ public:
 	void debug() const {
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
-		std::cout << "ALLONES           : " << to_binary_storage(ALLONES, true) << '\n';
-		std::cout << "BLOCK_MASK        : " << to_binary_storage(BLOCK_MASK, true) << '\n';
+		std::cout << "ALLONES           : " << to_binary(ALLONES, true) << '\n';
+		std::cout << "BLOCK_MASK        : " << to_binary(BLOCK_MASK, true) << '\n';
 		std::cout << "nrBlocks          : " << nrBlocks << '\n';
 		std::cout << "bits in MSU       : " << bitsInMSU << '\n';
 		std::cout << "MSU               : " << MSU << '\n';
-		std::cout << "MSU MASK          : " << to_binary_storage(MSU_MASK, true) << '\n';
-		std::cout << "SIGN_BIT_MASK     : " << to_binary_storage(SIGN_BIT_MASK, true) << '\n';
-		std::cout << "LSB_BIT_MASK      : " << to_binary_storage(LSB_BIT_MASK, true) << '\n';
+		std::cout << "MSU MASK          : " << to_binary(MSU_MASK, true) << '\n';
+		std::cout << "SIGN_BIT_MASK     : " << to_binary(SIGN_BIT_MASK, true) << '\n';
+		std::cout << "LSB_BIT_MASK      : " << to_binary(LSB_BIT_MASK, true) << '\n';
 		std::cout << "MSU CAPTURES E    : " << (MSU_CAPTURES_E ? "yes\n" : "no\n");
 		std::cout << "EXP_SHIFT         : " << EXP_SHIFT << '\n';
-		std::cout << "MSU EXP MASK      : " << to_binary_storage(MSU_EXP_MASK, true) << '\n';
+		std::cout << "MSU EXP MASK      : " << to_binary(MSU_EXP_MASK, true) << '\n';
 		std::cout << "EXP_BIAS          : " << EXP_BIAS << '\n';
 		std::cout << "MAX_EXP           : " << MAX_EXP << '\n';
 		std::cout << "MIN_EXP_NORMAL    : " << MIN_EXP_NORMAL << '\n';
@@ -1175,13 +1142,13 @@ protected:
 		   // this same logic will work for the case where
 		   // we only have a guard bit and no round and sticky bits
 		   // because the mask logic will make round and sticky both 0
-			constexpr uint32_t shift = srcbits - fhbits - 1;
+			constexpr uint32_t shift = srcbits - fhbits - 1ull;
 			StorageType mask = (StorageType(1ull) << shift);
 			bool guard = (mask & raw);
 			mask >>= 1;
 			bool round = (mask & raw);
-			if constexpr (shift > 1) { // protect against a negative shift
-				StorageType allones(~0);
+			if constexpr (shift > 1u) { // protect against a negative shift
+				StorageType allones(StorageType(~0));
 				mask = StorageType(allones << (shift - 2));
 				mask = ~mask;
 			}
@@ -1191,7 +1158,7 @@ protected:
 			bool sticky = (mask & raw);
 
 			raw >>= (shift + 1);  // shift out the bits we are rounding away
-			bool lsb = (raw & 0x1);
+			bool lsb = (raw & 0x1u);
 			//  ... lsb | guard  round sticky   round
 			//       x     0       x     x       down
 			//       0     1       0     0       down  round to even
@@ -1204,7 +1171,7 @@ protected:
 				if (round || sticky) ++raw;
 				if (raw == (1ull << nbits)) { // overflow
 					++exponent;
-					raw >>= 1;
+					raw >>= 1u;
 				}
 			}
 		}
@@ -1474,7 +1441,7 @@ inline std::string to_binary(const areal<nbits, es, bt>& number, bool nibbleMark
 
 // helper to report on BlockType blocks
 template<typename bt>
-inline std::string to_binary_storage(const bt& number, bool nibbleMarker) {
+inline std::string to_binary(const bt& number, bool nibbleMarker) {
 	std::stringstream ss;
 	ss << 'b';
 	constexpr size_t nbits = sizeof(bt) * 8;

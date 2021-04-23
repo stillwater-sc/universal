@@ -3,7 +3,11 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#if defined(_MSC_VER)
+#pragma warning(disable : 4514)  // unreferenced function is removed
+#pragma warning(disable : 4710)  // function is not inlined
+#pragma warning(disable : 5045)  // compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#endif 
 // Configure the fixpnt template environment
 // first: enable general or specialized fixed-point configurations
 #define FIXPNT_FAST_SPECIALIZATION
@@ -17,11 +21,8 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/fixpnt_test_suite.hpp>
 
-// conditional compile flags
-#define MANUAL_TESTING 0
-#define STRESS_TESTING 0
 
-		// generate a full binary representation table for a given posit configuration
+// generate a full binary representation table for a given posit configuration
 template<size_t nbits, size_t rbits>
 void GenerateFixedPointTable(std::ostream& ostr, bool csvFormat = false) {
 	const size_t size = (1 << nbits);
@@ -69,48 +70,52 @@ void GenerateFixedPointTable(std::ostream& ostr, bool csvFormat = false) {
 		}
 	}
 }
+
 int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::universal;
 
-	int nrOfFailedTestCases = 0;
-
-	std::string tag = "Generate fixed-point value tables";
-
-#if MANUAL_TESTING
-
-	fixpnt<8, 4> f;
-	f = 3.5f;
-	bitset<8> bs(f.byte(0));
-	cout << bs << endl;
-	cout << f << endl;
+	// Usage: fixpnts [-csv]
+	bool csv = false;
+	if (argc == 2) {
+		if (std::string(argv[1]) == std::string("-csv")) csv = true;
+	}
+	cout << "Generate value tables for fixpnt configurations" << endl;
 
 
+	GenerateFixedPointTable<4, 0>(cout, csv);
+	GenerateFixedPointTable<4, 1>(cout, csv);
+	GenerateFixedPointTable<4, 2>(cout, csv);
+	GenerateFixedPointTable<4, 3>(cout, csv);
+	GenerateFixedPointTable<4, 4>(cout, csv);
 
-#if STRESS_TESTING
-	// manual exhaustive test
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<4, 0, Modular, uint8_t>("Manual Testing", true), "fixpnt<4,0,Modular,uint8_t>", "addition");
-#endif
+	GenerateFixedPointTable<5, 0>(cout, csv);
+	GenerateFixedPointTable<5, 1>(cout, csv);
+	GenerateFixedPointTable<5, 2>(cout, csv);
+	GenerateFixedPointTable<5, 3>(cout, csv);
+	GenerateFixedPointTable<5, 4>(cout, csv);
+	GenerateFixedPointTable<5, 5>(cout, csv);
 
-#else
+	GenerateFixedPointTable<6, 0>(cout, csv);
+	GenerateFixedPointTable<6, 1>(cout, csv);
+	GenerateFixedPointTable<6, 2>(cout, csv);
+	GenerateFixedPointTable<6, 3>(cout, csv);
+	GenerateFixedPointTable<6, 4>(cout, csv);
+	GenerateFixedPointTable<6, 5>(cout, csv);
+	GenerateFixedPointTable<6, 6>(cout, csv);
 
-	cout << "Generate fixed-point value tables:\n";
+	GenerateFixedPointTable<8, 0>(cout, csv);
+	GenerateFixedPointTable<8, 1>(cout, csv);
+	GenerateFixedPointTable<8, 2>(cout, csv);
+	GenerateFixedPointTable<8, 3>(cout, csv);
+	GenerateFixedPointTable<8, 4>(cout, csv);
+	GenerateFixedPointTable<8, 5>(cout, csv);
+	GenerateFixedPointTable<8, 6>(cout, csv);	
+	GenerateFixedPointTable<8, 7>(cout, csv);
+	GenerateFixedPointTable<8, 8>(cout, csv);
 
-	GenerateFixedPointTable<4, 0>(cout, false);
-	GenerateFixedPointTable<4, 3>(cout, false);
-	GenerateFixedPointTable<4, 4>(cout, false);
-
-	GenerateFixedPointTable<8, 7>(cout, false);
-
-#if STRESS_TESTING
-
-
-#endif  // STRESS_TESTING
-
-#endif  // MANUAL_TESTING
-
-	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
+	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
 	std::cerr << msg << std::endl;

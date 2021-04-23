@@ -64,7 +64,7 @@ int VerifyAssignment(bool bReportIndividualTestCases) {
  */
 // enumerate all conversion cases for a fixed-point configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyConversion(bool bReportIndividualTestCases) {
 	// we are going to generate a test set that consists of all fixed-point configs and their midpoints
 	// we do this by enumerating a fixed-point that is 1-bit larger than the test configuration
 	// with the extra bit allocated to the fraction => rbits+1
@@ -194,7 +194,7 @@ int VerifyConversion(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all addition cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyAddition(bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
@@ -249,7 +249,7 @@ int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all subtraction cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifySubtraction(bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
@@ -304,7 +304,7 @@ int VerifySubtraction(const std::string& tag, bool bReportIndividualTestCases) {
 
 // enumerate all multiplication cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifyMultiplication(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyMultiplication(bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;
@@ -359,7 +359,7 @@ int VerifyMultiplication(const std::string& tag, bool bReportIndividualTestCases
 
 // enumerate all division cases for an fixpnt<nbits,rbits> configuration
 template<size_t nbits, size_t rbits, bool arithmetic, typename BlockType>
-int VerifyDivision(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyDivision(bool bReportIndividualTestCases) {
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 	fixpnt<nbits, rbits, arithmetic, BlockType> a, b, result, cref;

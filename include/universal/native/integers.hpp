@@ -18,6 +18,125 @@ inline Integer two_to_the_power(Integer n) {
 	return (Integer(1) << n);
 }
 
+/// <summary>
+/// efficient and fast integer power function
+/// </summary>
+/// <param name="base"></param>
+/// <param name="exp"></param>
+/// <returns></returns>
+int64_t ipow(int64_t base, unsigned exp) {
+	int64_t result = 1;
+	for (;;) {
+		if (exp & 1)
+			result *= base;
+		exp >>= 1;
+		if (!exp)
+			break;
+		base *= base;
+	}
+
+	return result;
+}
+
+// super fast ipow, courtesy of 
+// Orson Peters
+// github: orlp
+// location: Leiden, Netherlands 
+// email: orsonpeters@gmail.com
+int64_t fastipow(int64_t base, uint8_t exp) {
+	static const uint8_t highest_bit_set[] = {
+		0, 1, 2, 2, 3, 3, 3, 3,
+		4, 4, 4, 4, 4, 4, 4, 4,
+		5, 5, 5, 5, 5, 5, 5, 5,
+		5, 5, 5, 5, 5, 5, 5, 5,
+		6, 6, 6, 6, 6, 6, 6, 6,
+		6, 6, 6, 6, 6, 6, 6, 6,
+		6, 6, 6, 6, 6, 6, 6, 6,
+		6, 6, 6, 6, 6, 6, 6, 255, // anything past 63 is a guaranteed overflow with base > 1
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+		255, 255, 255, 255, 255, 255, 255, 255,
+	};
+
+	int64_t result = 1;
+
+	switch (highest_bit_set[exp]) {
+	case 255: // we use 255 as an overflow marker and return 0 on overflow/underflow
+		if (base == 1) {
+			return 1;
+		}
+
+		if (base == -1) {
+			return 1ll - 2ll * static_cast<int64_t>(exp & 0x01u);
+		}
+
+		return 0;
+	case 6:
+		if (exp & 1) result *= base;
+		exp >>= 1;
+		base *= base;
+#if defined(_MSC_VER)
+		[[fallthrough]]; // fallthrough is explicit
+#endif
+	case 5:
+		if (exp & 1) result *= base;
+		exp >>= 1;
+		base *= base;
+#if defined(_MSC_VER)
+		[[fallthrough]]; // fallthrough is explicit
+#endif
+	case 4:
+		if (exp & 1) result *= base;
+		exp >>= 1;
+		base *= base;
+#if defined(_MSC_VER)
+		[[fallthrough]]; // fallthrough is explicit
+#endif
+	case 3:
+		if (exp & 1) result *= base;
+		exp >>= 1;
+		base *= base;
+#if defined(_MSC_VER)
+		[[fallthrough]]; // fallthrough is explicit
+#endif
+	case 2:
+		if (exp & 1) result *= base;
+		exp >>= 1;
+		base *= base;
+#if defined(_MSC_VER)
+		[[fallthrough]]; // fallthrough is explicit
+#endif
+	case 1:
+		if (exp & 1) result *= base;
+#if defined(_MSC_VER)
+		[[fallthrough]]; // fallthrough is explicit
+#endif
+	default:
+		return result;
+	}
+}
+
 ////////////////// string operators
 
 // generate a binary string for a native integer

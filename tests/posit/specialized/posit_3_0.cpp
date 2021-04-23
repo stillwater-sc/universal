@@ -3,7 +3,12 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
-
+#if defined(_MSC_VER)
+#pragma warning(disable : 5045) // Compiler will insert Spectre mitigation for memory load if /Qspectre switch specified
+#pragma warning(disable : 4514) // unreferenced inline function has been removed
+#pragma warning(disable : 4820) // bytes padding added after data member
+#pragma warning(disable : 4710) // function not inlined
+#endif
 // enable fast specialized posit<3,0>
 //#define POSIT_FAST_SPECIALIZATION
 #define POSIT_FAST_POSIT_3_0 1
@@ -18,6 +23,8 @@ int main(int argc, char** argv)
 try {
 	using namespace std;
 	using namespace sw::universal;
+
+	if (argc > 0) { cout << argv[0] << endl; }
 
 	// no randoms, 3-bit posits can be done exhaustively
 
@@ -38,30 +45,49 @@ try {
 	cout << dynamic_range(p) << endl;
 
 	// special cases
+	cout << "Special case tests " << endl;
+	string test = "Initialize to zero: ";
 	p = 0;
-	if (!p.iszero()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.iszero());
+	test = "Initialize to NAN";
 	p = NAN;
-	if (!p.isnar()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	test = "Initialize to INFINITY";
 	p = INFINITY;
-	if (!p.isnar()) ++nrOfFailedTestCases;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isnar());
+	test = "sign is true";
+	p = -1.0f;
+	nrOfFailedTestCases += ReportCheck(tag, test, p.sign());
+	test = "is negative";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.isneg());
+	test = "sign is false";
+	p = +1.0f;
+	nrOfFailedTestCases += ReportCheck(tag, test, !p.sign());
+	test = "is positive";
+	nrOfFailedTestCases += ReportCheck(tag, test, p.ispos());
 
 	// logic tests
+	cout << "Logic operator tests " << endl;
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicEqual             <nbits, es>(), tag, "    ==         ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicNotEqual          <nbits, es>(), tag, "    !=         ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessThan          <nbits, es>(), tag, "    <          ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicLessOrEqualThan   <nbits, es>(), tag, "    <=         ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterThan       <nbits, es>(), tag, "    >          ");
 	nrOfFailedTestCases += ReportTestResult(VerifyPositLogicGreaterOrEqualThan<nbits, es>(), tag, "    >=         ");
+
 	// conversion tests
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(tag, bReportIndividualTestCases), tag, "integer assign ");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(tag, bReportIndividualTestCases), tag, "float assign   ");
+	cout << "Assignment/conversion tests " << endl;
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<nbits, es>(bReportIndividualTestCases), tag, "integer assign ");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion       <nbits, es>(bReportIndividualTestCases), tag, "float assign   ");
+	
 	// arithmetic tests
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(tag, bReportIndividualTestCases), tag, "add            ");
-	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <nbits, es>(tag, bReportIndividualTestCases), tag, "subtract       ");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <nbits, es>(tag, bReportIndividualTestCases), tag, "multiply       ");
-	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <nbits, es>(tag, bReportIndividualTestCases), tag, "divide         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <nbits, es>(tag, bReportIndividualTestCases), tag, "negate         ");
-	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <nbits, es>(tag, bReportIndividualTestCases), tag, "reciprocate    ");
+	cout << "Arithmetic tests " << endl;
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition         <nbits, es>(bReportIndividualTestCases), tag, "add            ");
+	nrOfFailedTestCases += ReportTestResult(VerifySubtraction      <nbits, es>(bReportIndividualTestCases), tag, "subtract       ");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication   <nbits, es>(bReportIndividualTestCases), tag, "multiply       ");
+	nrOfFailedTestCases += ReportTestResult(VerifyDivision         <nbits, es>(bReportIndividualTestCases), tag, "divide         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyNegation         <nbits, es>(bReportIndividualTestCases), tag, "negate         ");
+	nrOfFailedTestCases += ReportTestResult(VerifyReciprocation    <nbits, es>(bReportIndividualTestCases), tag, "reciprocate    ");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

@@ -154,66 +154,66 @@ try {
 
 #else
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<2, 0>(tag, bReportIndividualTestCases), "posit<2,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<2, 0>(bReportIndividualTestCases), "posit<2,0>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 0>(tag, bReportIndividualTestCases), "posit<3,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 1>(tag, bReportIndividualTestCases), "posit<3,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 2>(tag, bReportIndividualTestCases), "posit<3,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 3>(tag, bReportIndividualTestCases), "posit<3,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 0>(bReportIndividualTestCases), "posit<3,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 1>(bReportIndividualTestCases), "posit<3,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 2>(bReportIndividualTestCases), "posit<3,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<3, 3>(bReportIndividualTestCases), "posit<3,3>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0>(tag, bReportIndividualTestCases), "posit<4,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1>(tag, bReportIndividualTestCases), "posit<4,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2>(tag, bReportIndividualTestCases), "posit<4,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 0>(bReportIndividualTestCases), "posit<4,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 1>(bReportIndividualTestCases), "posit<4,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, 2>(bReportIndividualTestCases), "posit<4,2>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 0>(tag, bReportIndividualTestCases), "posit<5,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 1>(tag, bReportIndividualTestCases), "posit<5,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 2>(tag, bReportIndividualTestCases), "posit<5,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 3>(tag, bReportIndividualTestCases), "posit<5,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 0>(bReportIndividualTestCases), "posit<5,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 1>(bReportIndividualTestCases), "posit<5,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 2>(bReportIndividualTestCases), "posit<5,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<5, 3>(bReportIndividualTestCases), "posit<5,3>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 0>(tag, bReportIndividualTestCases), "posit<6,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 1>(tag, bReportIndividualTestCases), "posit<6,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 2>(tag, bReportIndividualTestCases), "posit<6,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 3>(tag, bReportIndividualTestCases), "posit<6,3>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 4>(tag, bReportIndividualTestCases), "posit<6,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 0>(bReportIndividualTestCases), "posit<6,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 1>(bReportIndividualTestCases), "posit<6,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 2>(bReportIndividualTestCases), "posit<6,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 3>(bReportIndividualTestCases), "posit<6,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<6, 4>(bReportIndividualTestCases), "posit<6,4>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 0>(tag, bReportIndividualTestCases), "posit<7,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 1>(tag, bReportIndividualTestCases), "posit<7,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 2>(tag, bReportIndividualTestCases), "posit<7,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 3>(tag, bReportIndividualTestCases), "posit<7,3>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 4>(tag, bReportIndividualTestCases), "posit<7,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 0>(bReportIndividualTestCases), "posit<7,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 1>(bReportIndividualTestCases), "posit<7,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 2>(bReportIndividualTestCases), "posit<7,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 3>(bReportIndividualTestCases), "posit<7,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<7, 4>(bReportIndividualTestCases), "posit<7,4>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 0>(tag, bReportIndividualTestCases), "posit<8,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(tag, bReportIndividualTestCases), "posit<8,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 2>(tag, bReportIndividualTestCases), "posit<8,2>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 3>(tag, bReportIndividualTestCases), "posit<8,3>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4>(tag, bReportIndividualTestCases), "posit<8,4>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 5>(tag, bReportIndividualTestCases), "posit<8,5>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 0>(bReportIndividualTestCases), "posit<8,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 1>(bReportIndividualTestCases), "posit<8,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 2>(bReportIndividualTestCases), "posit<8,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 3>(bReportIndividualTestCases), "posit<8,3>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 4>(bReportIndividualTestCases), "posit<8,4>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, 5>(bReportIndividualTestCases), "posit<8,5>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 1>(tag, bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<16,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 1>(tag, bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<24,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 1>(tag, bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<32,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 2>(tag, bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<32,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<16, 1>(bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<16,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<24, 1>(bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<24,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 1>(bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<32,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyBinaryOperatorThroughRandoms<32, 2>(bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<32,2>", "multiplication");
 
 
 #if STRESS_TESTING
 	// nbits=48 is also showing failures
-	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<48, 2>(tag, bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<48,2>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<48, 2>(bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<48,2>", "multiplication");
 
 	// disabled until we can get long doubles to work: -> test is 64bit_posits.cpp
 	// nbits=64 requires long double compiler support
-	//nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(tag, bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<64,2>", "multiplication");
-	//nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 3>(tag, bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<64,3>", "multiplication");
+	//nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 2>(bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<64,2>", "multiplication");
+	//nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 3>(bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<64,3>", "multiplication");
 	// posit<64,4> is hitting subnormal numbers
-	//nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 4>(tag, bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<64,4>", "multiplication");
+	//nrOfFailedTestCases += ReportTestResult(VerifyThroughRandoms<64, 4>(bReportIndividualTestCases, OPCODE_MUL, 1000), "posit<64,4>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 0>(tag, bReportIndividualTestCases), "posit<10,0>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 1>(tag, bReportIndividualTestCases), "posit<10,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 2>(tag, bReportIndividualTestCases), "posit<10,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 3>(tag, bReportIndividualTestCases), "posit<10,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 0>(bReportIndividualTestCases), "posit<10,0>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 1>(bReportIndividualTestCases), "posit<10,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 2>(bReportIndividualTestCases), "posit<10,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, 3>(bReportIndividualTestCases), "posit<10,1>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 1>(tag, bReportIndividualTestCases), "posit<12,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<14, 1>(tag, bReportIndividualTestCases), "posit<14,1>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<16, 1>(tag, bReportIndividualTestCases), "posit<16,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, 1>(bReportIndividualTestCases), "posit<12,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<14, 1>(bReportIndividualTestCases), "posit<14,1>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<16, 1>(bReportIndividualTestCases), "posit<16,1>", "multiplication");
 
 #endif  // STRESS_TESTING
 

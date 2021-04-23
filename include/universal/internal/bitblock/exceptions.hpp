@@ -8,7 +8,13 @@
 #include <stdexcept>
 #include <string>
 
-namespace sw { namespace universal {
+// this is a supporting class, and its exception behavior needs to be configure by the calling environment.
+// this means that the value of BITBLOCK_THROW_ARITHMETIC_EXCEPTION must be set externally
+// #define BITBLOCK_THROW_ARITHMETIC_EXCEPTION exception-config-of-calling-class
+// TODO: do we want to support the use-case where two seperate classes that use bitblock<> 
+// but desire different exception behavior?
+
+namespace sw::universal {
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 /// BITBLOCK ARITHMETIC EXCEPTIONS
@@ -60,4 +66,4 @@ struct cut_off_leading_bit
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
-}} // namespace sw::universal
+} // namespace sw::universal

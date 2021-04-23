@@ -48,7 +48,15 @@
 
 #endif
 
-namespace sw { namespace universal {
+// occurrence is NOT an official API for any of the Universal number systems
+#if !defined(DECIMAL_OPERATIONS_COUNT)
+#define DECIMAL_OPERATIONS_COUNT 0
+#endif
+#if DECIMAL_OPERATIONS_COUNT
+#include <universal/utility/occurrence.hpp>
+#endif
+
+namespace sw::universal {
 
 /////////////////////////////////////////////
 // Forward references
@@ -57,13 +65,17 @@ struct decintdiv;
 decimal quotient(const decimal&, const decimal&);
 decimal remainder(const decimal&, const decimal&);
 int findMsd(const decimal&);
-template<typename Ty> void convert_to_decimal(Ty, decimal&);
+template<typename Ty> decimal& convert_to_decimal(Ty, decimal&);
 
 /// <summary>
 /// Adaptive precision decimal number type
 /// </summary>
 /// The digits are managed as a vector with the digit for 10^0 stored at index 0, 10^1 stored at index 1, etc.
 class decimal : public std::vector<uint8_t> {
+#if DECIMAL_OPERATIONS_COUNT
+	static bool enableAdd;
+	static occurrence<decimal> ops;
+#endif
 public:
 	decimal() { setzero(); }
 
@@ -94,104 +106,34 @@ public:
 		return *this;
 	}
 	decimal& operator=(char rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_to_decimal(rhs, *this);
-		}
-		return *this;
+		return convert_to_decimal(rhs, *this);
 	}
 	decimal& operator=(short rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_to_decimal(rhs, *this);
-		}
-		return *this;
+		return convert_to_decimal(rhs, *this);
 	}
 	decimal& operator=(int rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_to_decimal(rhs, *this);
-		}
-		return *this;
+		return convert_to_decimal(rhs, *this);
 	}
 	decimal& operator=(long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_to_decimal(rhs, *this);
-		}
-		return *this;
+		return convert_to_decimal(rhs, *this);
 	}
 	decimal& operator=(long long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_to_decimal(rhs, *this);
-		}
-		return *this;
+		return convert_to_decimal(rhs, *this);
 	}
 	decimal& operator=(unsigned char rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_to_decimal(rhs, *this);
-		}
-		return *this;
+		return convert_to_decimal(rhs, *this);
 	}
 	decimal& operator=(unsigned short rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_to_decimal(rhs, *this);
-		}
-		return *this;
+		return convert_to_decimal(rhs, *this);
 	}
 	decimal& operator=(unsigned int rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_to_decimal(rhs, *this);
-		}
-		return *this;
+		return convert_to_decimal(rhs, *this);
 	}
 	decimal& operator=(unsigned long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_to_decimal(rhs, *this);
-		}
-		return *this;
+		return convert_to_decimal(rhs, *this);
 	}
 	decimal& operator=(unsigned long long rhs) {
-		if (0 == rhs) {
-			setzero();
-			return *this;
-		}
-		else {
-			convert_to_decimal(rhs, *this);
-		}
-		return *this;
+		return convert_to_decimal(rhs, *this);
 	}
 	decimal& operator=(float rhs) {
 		return float_assign(rhs);
@@ -236,6 +178,9 @@ public:
 			}
 		}
 		if (carry) push_back(1);
+#if DECIMAL_OPERATIONS_COUNT
+		if (enableAdd) ++ops.add;
+#endif
 		return *this;
 	}
 	decimal& operator-=(const decimal& rhs) {
@@ -287,16 +232,25 @@ public:
 		else {
 			this->setsign(sign);
 		}
+#if DECIMAL_OPERATIONS_COUNT
+		++ops.sub;
+#endif
 		return *this;
 	}
 	decimal& operator*=(const decimal& rhs) {
 		// special case
 		if (iszero() || rhs.iszero()) {
 			setzero();
+#if DECIMAL_OPERATIONS_COUNT
+			++ops.mul;
+#endif
 			return *this;
 		}
 		bool signOfFinalResult = (negative != rhs.negative) ? true : false;
 		decimal product;
+#if DECIMAL_OPERATIONS_COUNT
+		enableAdd = false;
+#endif
 		// find the smallest decimal to minimize the amount of work
 		size_t l = size();
 		size_t r = rhs.size();
@@ -340,14 +294,24 @@ public:
 		product.unpad();
 		*this = product;
 		setsign(signOfFinalResult);
+#if DECIMAL_OPERATIONS_COUNT
+		enableAdd = true;
+		++ops.mul;
+#endif
 		return *this;
 	}
 	decimal& operator/=(const decimal& rhs) {
 		*this = quotient(*this, rhs);
+#if DECIMAL_OPERATIONS_COUNT
+		++ops.div;
+#endif
 		return *this;
 	}
 	decimal& operator%=(const decimal& rhs) {
 		*this = remainder(*this, rhs);
+#if DECIMAL_OPERATIONS_COUNT
+		++ops.rem;
+#endif
 		return *this;
 	}
 	decimal& operator<<=(int shift) {
@@ -519,6 +483,16 @@ public:
 		return bSuccess;
 	}
 
+#if DECIMAL_OPERATIONS_COUNT
+	// reset the operation statistics
+	void resetStats() {
+		ops.reset();
+	}
+	void printStats(std::ostream& ostr) {
+		ops.report(ostr);
+	}
+#endif
+
 protected:
 	// HELPER methods
 
@@ -623,12 +597,12 @@ inline int findMsd(const decimal& v) {
 // Convert integer types to a decimal representation
 // TODO: needs SFINAE enable_if to constrain it to native integer types
 template<typename Ty>
-void convert_to_decimal(Ty v, decimal& d) {
+decimal& convert_to_decimal(Ty v, decimal& d) {
 	using namespace std;
 	//cout << numeric_limits<Ty>::digits << " max value " << numeric_limits<Ty>::max() << endl;
 	bool sign = false;
 	d.setzero(); // initialize the decimal value to 0
-	if (v == 0) return;
+	if (v == 0) return d;
 	if (numeric_limits<Ty>::is_signed) {
 		if (v < 0) {
 			sign = true; // negative number
@@ -652,6 +626,7 @@ void convert_to_decimal(Ty v, decimal& d) {
 	}
 	// finally set the sign
 	d.setsign(sign);
+	return d;
 }
 
 
@@ -926,5 +901,5 @@ decimal remainder(const decimal& _a, const decimal& _b) {
 	return decint_divide(_a, _b).rem;
 }
 
-}} // namespace sw::universal
+} // namespace sw::universal
 

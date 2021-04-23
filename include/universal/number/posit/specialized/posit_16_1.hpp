@@ -13,7 +13,7 @@
 #define POSIT_FAST_POSIT_16_1 0
 #endif
 
-namespace sw {  namespace universal {
+namespace sw::universal {
 
 // set the fast specialization variable to indicate that we are running a special template specialization
 #if POSIT_FAST_POSIT_16_1
@@ -402,6 +402,7 @@ public:
 	}
 
 	// SELECTORS
+	inline bool sign() const       { return (_bits & sign_mask); }
 	inline bool isnar() const      { return (_bits == sign_mask); }
 	inline bool iszero() const     { return (_bits == 0x0); }
 	inline bool isone() const      { return (_bits == 0x4000); } // pattern 010000...
@@ -823,7 +824,7 @@ inline std::istream& operator>> (std::istream& istr, posit<NBITS_IS_16, ES_IS_1>
 }
 
 // convert a posit value to a string using "nar" as designation of NaR
-std::string to_string(const posit<NBITS_IS_16, ES_IS_1>& p, std::streamsize precision) {
+inline std::string to_string(const posit<NBITS_IS_16, ES_IS_1>& p, std::streamsize precision) {
 	if (p.isnar()) {
 		return std::string("nar");
 	}
@@ -904,4 +905,4 @@ inline bool operator>=(int lhs, const posit<NBITS_IS_16, ES_IS_1>& rhs) {
 
 #endif // POSIT_FAST_POSIT_16_1
 
-}} // namespace sw::universal
+} // namespace sw::universal

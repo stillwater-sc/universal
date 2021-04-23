@@ -106,8 +106,8 @@ public:
 	static constexpr bt maxBlockValue = bt(-1);
 
 	static constexpr size_t MSU = nrBlocks - 1; // MSU == Most Significant Unit
-	// warning C4310 : cast truncates constant value
-	static constexpr bt MSU_MASK = (bt(-1) >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr bt ALL_ONES = bt(~0);
+	static constexpr bt MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1) << ((nbits - 1ull) % bitsInBlock));
 
 	// constructors
@@ -246,24 +246,26 @@ public:
 		if (bitsToShift < 0) return operator>>=(-bitsToShift);
 		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
 		if (bitsToShift >= long(bitsInBlock)) {
-			int blockShift = bitsToShift / bitsInBlock;
-			for (signed i = signed(MSU); i >= blockShift; --i) {
+			int blockShift = bitsToShift / static_cast<int>(bitsInBlock);
+			for (int i = static_cast<int>(MSU); i >= blockShift; --i) {
 				_block[i] = _block[i - blockShift];
 			}
-			for (signed i = blockShift - 1; i >= 0; --i) {
+			for (int i = blockShift - 1; i >= 0; --i) {
 				_block[i] = bt(0);
 			}
 			// adjust the shift
-			bitsToShift -= (long)(blockShift * bitsInBlock);
+			bitsToShift -= static_cast<int>(blockShift * bitsInBlock);
 			if (bitsToShift == 0) return *this;
 		}
-		// construct the mask for the upper bits in the block that need to move to the higher word
-		bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
-		for (unsigned i = MSU; i > 0; --i) {
-			_block[i] <<= bitsToShift;
-			// mix in the bits from the right
-			bt bits = (mask & _block[i - 1]);
-			_block[i] |= (bits >> (bitsInBlock - bitsToShift));
+		if constexpr (MSU > 0) {
+			// construct the mask for the upper bits in the block that need to move to the higher word
+			bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
+			for (size_t i = MSU; i > 0; --i) {
+				_block[i] <<= bitsToShift;
+				// mix in the bits from the right
+				bt bits = bt(mask & _block[i - 1]);
+				_block[i] |= (bits >> (bitsInBlock - bitsToShift));
+			}
 		}
 		_block[0] <<= bitsToShift;
 		return *this;
@@ -272,13 +274,13 @@ public:
 	blockbinary& operator>>=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
 		if (bitsToShift < 0) return operator<<=(-bitsToShift);
-		if (bitsToShift >= long(nbits)) {
+		if (bitsToShift >= static_cast<int>(nbits)) {
 			setzero();
 			return *this;
 		}
 		bool signext = sign();
 		size_t blockShift = 0;
-		if (bitsToShift >= long(bitsInBlock)) {
+		if (bitsToShift >= static_cast<int>(bitsInBlock)) {
 			blockShift = bitsToShift / bitsInBlock;
 			if (MSU >= blockShift) {
 				// shift by blocks
@@ -287,19 +289,19 @@ public:
 				}
 			}
 			// adjust the shift
-			bitsToShift -= (long)(blockShift * bitsInBlock);
+			bitsToShift -= static_cast<int>(blockShift * bitsInBlock);
 			if (bitsToShift == 0) {
 				// fix up the leading zeros if we have a negative number
 				if (signext) {
 					// bitsToShift is guaranteed to be less than nbits
-					bitsToShift += (long)(blockShift * bitsInBlock);
+					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
 						this->set(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
-					bitsToShift += (long)(blockShift * bitsInBlock);
+					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
 						this->reset(i);
 					}
@@ -307,28 +309,29 @@ public:
 				return *this;
 			}
 		}
-		//bt mask = 0xFFFFFFFFFFFFFFFFull >> (64 - bitsInBlock);  // is that shift necessary?
-		bt mask = bt(0xFFFFFFFFFFFFFFFFull);
-		mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
-		for (unsigned i = 0; i < MSU; ++i) {  // TODO: can this be improved? we should not have to work on the upper blocks in case we block shifted
-			_block[i] >>= bitsToShift;
-			// mix in the bits from the left
-			bt bits = (mask & _block[i + 1]);
-			_block[i] |= (bits << (bitsInBlock - bitsToShift));
+		if constexpr (MSU > 0) {
+			bt mask = ALL_ONES;
+			mask >>= (bitsInBlock - bitsToShift); // this is a mask for the lower bits in the block that need to move to the lower word
+			for (size_t i = 0; i < MSU; ++i) {  // TODO: can this be improved? we should not have to work on the upper blocks in case we block shifted
+				_block[i] >>= bitsToShift;
+				// mix in the bits from the left
+				bt bits = bt(mask & _block[i + 1]);
+				_block[i] |= (bits << (bitsInBlock - bitsToShift));
+			}
 		}
 		_block[MSU] >>= bitsToShift;
 
 		// fix up the leading zeros if we have a negative number
 		if (signext) {
 			// bitsToShift is guaranteed to be less than nbits
-			bitsToShift += (long)(blockShift * bitsInBlock);
+			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
 				this->set(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
-			bitsToShift += (long)(blockShift * bitsInBlock);
+			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
 				this->reset(i);
 			}
@@ -351,7 +354,7 @@ public:
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt mask = ~(1ull << (i % bitsInBlock));
-			_block[i / bitsInBlock] = block & mask;
+			_block[i / bitsInBlock] = bt(block & mask);
 			return;
 		}
 		throw "blockbinary<nbits, bt>.reset(index): bit index out of bounds";
@@ -416,10 +419,10 @@ public:
 	inline constexpr uint8_t nibble(size_t n) const {
 		if (n < (1 + ((nbits - 1) >> 2))) {
 			bt word = _block[(n * 4) / bitsInBlock];
-			int nibbleIndexInWord = n % (bitsInBlock >> 2);
-			bt mask = 0xF << (nibbleIndexInWord*4);
-			bt nibblebits = mask & word;
-			return (nibblebits >> (nibbleIndexInWord*4));
+			size_t nibbleIndexInWord = n % (bitsInBlock >> 2);
+			bt mask = static_cast<bt>(0x0Fu << (nibbleIndexInWord*4));
+			bt nibblebits = static_cast<bt>(mask & word);
+			return static_cast<uint8_t>(nibblebits >> static_cast<bt>(nibbleIndexInWord*4));
 		}
 		throw "nibble index out of bounds";
 	}
@@ -430,17 +433,19 @@ public:
 		throw "block index out of bounds";
 	}
 
-	template<size_t nnbits>
-	inline blockbinary<nbits, bt>& assign(const blockbinary<nnbits, bt>& rhs) {
+	// copy a value over from one blockbinary to this
+	// blockbinary is a 2's complement encoding, so we sign-extend by default
+	template<size_t srcbits>
+	inline blockbinary<nbits, bt>& assign(const blockbinary<srcbits, bt>& rhs) {
 		clear();
 		// since bt is the same, we can simply copy the blocks in
-		size_t nrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
-		for (size_t i = 0; i < nrBlocks; ++i) {
+		size_t minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
+		for (size_t i = 0; i < minNrBlocks; ++i) {
 			_block[i] = rhs.block(i);
 		}
-		if (nbits > nnbits) { // check if we need to sign extend
+		if constexpr (nbits > srcbits) { // check if we need to sign extend
 			if (rhs.sign()) {
-				for (size_t i = nnbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
+				for (size_t i = srcbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
 					set(i);
 				}
 			}
@@ -449,14 +454,31 @@ public:
 		_block[MSU] &= MSU_MASK;
 		return *this;
 	}
+
+	// copy a value over from one blockbinary to this without sign-extending the value
+	// blockbinary is a 2's complement encoding, so we sign-extend by default
+	// for fraction/significent encodings, we need to turn off sign-extending.
+	template<size_t srcbits>
+	inline blockbinary<nbits, bt>& assignWithoutSignExtend(const blockbinary<srcbits, bt>& rhs) {
+		clear();
+		// since bt is the same, we can simply copy the blocks in
+		size_t minNrBlocks = (this->nrBlocks < rhs.nrBlocks) ? this->nrBlocks : rhs.nrBlocks;
+		for (size_t i = 0; i < minNrBlocks; ++i) {
+			_block[i] = rhs.block(i);
+		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block[MSU] &= MSU_MASK;
+		return *this;
+	}
+
 	// return the position of the most significant bit, -1 if v == 0
-	inline signed msb() const noexcept {
-		for (signed i = int(MSU); i >= 0; --i) {
+	inline int msb() const noexcept {
+		for (int i = int(MSU); i >= 0; --i) {
 			if (_block[i] != 0) {
-				bt mask = (bt(1) << (bitsInBlock-1));
-				for (signed j = bitsInBlock - 1; j >= 0; --j) {
+				bt mask = (bt(1u) << (bitsInBlock-1));
+				for (int j = bitsInBlock - 1; j >= 0; --j) {
 					if (_block[i] & mask) {
-						return i * bitsInBlock + j;
+						return i * static_cast<int>(bitsInBlock) + j;
 					}
 					mask >>= 1;
 				}
@@ -503,8 +525,9 @@ public:
 		return (lsb && tie) || (guard && !tie);
 	}
 	bool any(size_t msb) const {
+		msb = (msb > nbits - 1 ? nbits - 1 : msb);
 		size_t topBlock = msb / bitsInBlock;
-		bt mask = bt(0xFFFFFFFFFFFFFFFFull) >> (bitsInBlock - 1 - (msb % bitsInBlock));
+		bt mask = bt(ALL_ONES >> (bitsInBlock - 1 - (msb % bitsInBlock)));
 		for (size_t i = 0; i < topBlock; ++i) {
 			if (_block[i] > 0) return true;
 		}
@@ -647,10 +670,10 @@ quorem<nbits, bt> longdivision(const blockbinary<nbits, bt>& _a, const blockbina
 	for (int i = shift; i >= 0; --i) {
 		if (subtractand <= accumulator) {
 			accumulator -= subtractand;
-			result.quo.set(i);
+			result.quo.set(static_cast<size_t>(i));
 		}
 		else {
-			result.quo.reset(i);
+			result.quo.reset(static_cast<size_t>(i));
 		}
 		subtractand >>= 1;
 	}
@@ -797,10 +820,10 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 
 		if (subtractand <= decimator) {
 			decimator -= subtractand;
-			result.set(i);
+			result.set(static_cast<size_t>(i));
 		}
 		else {
-			result.reset(i);
+			result.reset(static_cast<size_t>(i));
 		}
 		subtractand >>= 1;
 
@@ -821,18 +844,18 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 // create a binary representation of the storage
 template<size_t nbits, typename bt>
 std::string to_binary(const blockbinary<nbits, bt>& number, bool nibbleMarker = false) {
-	std::stringstream ss;
-	ss << 'b';
+	std::stringstream s;
+	s << 'b';
 	for (int i = int(nbits - 1); i >= 0; --i) {
-		ss << (number.at(size_t(i)) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) ss << '\'';
+		s << (number.at(size_t(i)) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 	}
-	return ss.str();
+	return s.str();
 }
 
 // local helper to display the contents of a byte array
 template<size_t nbits, typename bt>
-std::string to_hex(const blockbinary<nbits, bt>& number, bool wordMarker = false) {
+std::string to_hex(const blockbinary<nbits, bt>& number, bool wordMarker = true) {
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	char hexChar[16] = {
@@ -842,10 +865,10 @@ std::string to_hex(const blockbinary<nbits, bt>& number, bool wordMarker = false
 	std::stringstream ss;
 	ss << "0x" << std::hex;
 	int nrNibbles = int(1 + ((nbits - 1) >> 2));
-	for (long n = nrNibbles - 1; n >= 0; --n) {
-		uint8_t nibble = number.nibble(n);
+	for (int n = nrNibbles - 1; n >= 0; --n) {
+		uint8_t nibble = number.nibble(static_cast<size_t>(n));
 		ss << hexChar[nibble];
-		if (n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
+		if (wordMarker && n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
 	}
 	return ss.str();
 }
