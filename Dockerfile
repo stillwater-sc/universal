@@ -60,7 +60,7 @@ CMD ["echo", "Universal Numbers Library Builder Version 3.8.1"]
 # RELEASE stage
 #FROM alpine:latest as release    # hitting a segfault during startup of some playground programs
 #FROM debian:buster-slim as release
-FROM ubuntu:groovy as release
+FROM ubuntu:20.10 as release
 LABEL Theodore Omtzigt
 
 #RUN apk add --no-cache libc6-compat libstdc++ cmake make bash gawk sed grep bc coreutils
