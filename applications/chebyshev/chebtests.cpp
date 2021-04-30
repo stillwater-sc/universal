@@ -58,21 +58,26 @@ try {
 	// 
 
 	// 1. Test Chebpts
-	auto x = chebpts<Scalar>(5,1); 				// x = chebypts(n,kind,[a,b])
-	std::cout << "Chebyshev 1st kind = " << x << std::endl;				// Print results
-	
-	auto y = chebpts<Scalar>(5); 				// x = chebypts(n,kind,[a,b])
-	std::cout << "Chebyshev 2nd kind = " << y << std::endl;				// Print results
+	auto x = chebpts<Scalar>(5,1); 							// x = chebypts(n,1,[a,b])
+	std::cout << "Chebyshev 1st kind = " << x << std::endl;	// Print results
 
-	auto z = chebpts<Scalar>(-3,1); 				// x = chebypts(n,kind,[a,b])
-	std::cout << "Chebyshev WRONG = " << z << std::endl;				// Print results
+	
+	auto y = chebpts<Scalar>(5); 							// x = chebypts(n,2,[a,b])
+	std::cout << "Chebyshev 2nd kind = " << y << std::endl;	// Print results
+
+	
+	auto z = chebpts<Scalar>(-3,1); 						// x = chebypts(n,kind,[a,b])
+	std::cout << "Chebyshev WRONG = " << z << std::endl;	// Print results
 
 
 	// 2. Calculate mean distance
 	//auto y = prod<Scalar>(x);
 	// std::cout << y << std::endl;
 
-	
+	// 3. 
+
+
+	// 4. 
 
 
 
