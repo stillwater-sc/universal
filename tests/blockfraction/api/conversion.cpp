@@ -17,9 +17,9 @@ try {
 
 	{
 		// scenario that happens in unrounded add/sub where blockfraction is used as storage type for fraction or significant
-		constexpr size_t fbits = 8;
-		constexpr size_t fhbits = fbits + 1;
-		constexpr size_t abits = fhbits + 3;
+		constexpr size_t fbits   = 8;
+		constexpr size_t fhbits  = fbits + 1;
+		constexpr size_t abits   = fhbits + 3;
 		constexpr size_t sumbits = abits + 1;
 		size_t msbMask = 1;
 		blockfraction<fhbits, uint8_t> a;
