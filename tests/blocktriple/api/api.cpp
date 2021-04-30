@@ -85,7 +85,7 @@ try {
 		 * which involves a shift operation, which is expensive for multi-block
 		 * representations.
 		 */
-
+#ifdef LATER
 		bfloat<8, 2, uint8_t> a, b, c;
 		a = 1.0f;
 		b = -1.0f;
@@ -98,8 +98,10 @@ try {
 		convert(sum, c);
 		cout << to_triple(sum) << " : " << sum << '\n';
 		cout << color_print(c) << " : " << c << endl;
+#endif
 	}
 	{
+#ifdef LATER
 		bfloat<8, 2, uint8_t> a, b, c;
 		a = 1.0f;
 		b = -1.0f;
@@ -112,6 +114,7 @@ try {
 		convert(product, c);
 		cout << to_triple(product) << " : " << product << '\n';
 		cout << color_print(c) << " : " << c << endl;
+#endif
 	}
 
 #else // !MANUAL_TESTING

@@ -20,6 +20,7 @@
 #include <universal/verification/test_suite_conversion.hpp>
 #include <universal/verification/bfloat_test_suite.hpp>
 
+#ifdef LATER
 namespace sw::universal {
 
 	/// <summary>
@@ -57,6 +58,7 @@ namespace sw::universal {
 	}
 
 }
+#endif
 
 // conditional compile flags
 #define MANUAL_TESTING 1
@@ -87,11 +89,12 @@ try {
 		bfloat<nbits, es, uint8_t> a;
 		blocktriple<fbits + 1> b;  // representing significant
 		a = 0.015625f;
-		a.normalize(b);
+//		a.normalize(b);
 		cout << to_binary(a) << " : " << a << " : scale " << a.scale() << " : " << to_triple(b) << " : " << b << endl;
 
 	}
 
+#ifdef LATER
 	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<3, 1, uint8_t> >(true);
 	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<4, 1, uint8_t> >(true);
 	return 0;
@@ -100,6 +103,7 @@ try {
 	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<7, 1, uint8_t> >(true);
 	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<8, 1, uint8_t> >(true);
 	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<9, 1, uint8_t> >(true);
+#endif
 
 	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
