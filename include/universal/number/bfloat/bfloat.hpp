@@ -1389,13 +1389,13 @@ public:
 
 	// normalize a non-special bfloat, that is, not a zero, inf, or nan, into a blocktriple
 	template<size_t tgtSize>
-	void normalize(blocktriple<tgtSize>& v) const {
+	void normalize_(blocktriple<tgtSize>& v) const {
 		bool _sign = sign();
 		int  _scale = scale();
 		blockbinary<tgtSize, bt> _significant;
 		// need to normalize the subnormal number to yield a consistent significant
-		significant(_significant, (_scale < MIN_EXP_NORMAL));
-		v.set(_sign, _scale, _significant);
+//		significant(_significant, (_scale < MIN_EXP_NORMAL));
+//		v.set(_sign, _scale, _significant);
 	}
 
 protected:

@@ -267,6 +267,7 @@ void TestDecodePerformance() {
 	PerformanceRunner("bfloat<512,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::bfloat<512, 11, uint64_t> >, NR_OPS);
 }
 
+#ifdef LATER
 template<typename BfloatConfiguration>
 void NormalizeWorkload(uint64_t NR_OPS) {
 	using namespace std;
@@ -331,7 +332,7 @@ void TestNormalizePerformance() {
 	PerformanceRunner("bfloat<64,11,uint8_t>    normalize      ", NormalizeWorkload< sw::universal::bfloat<64, 11, uint8_t> >, NR_OPS);
 	PerformanceRunner("bfloat<128,11,uint8_t>   normalize      ", NormalizeWorkload< sw::universal::bfloat<128, 11, uint8_t> >, NR_OPS);
 }
-
+#endif // LATER
 
 // measure performance of conversion operators
 void TestConversionPerformance() {
@@ -417,7 +418,9 @@ try {
 	   
 	TestCopyPerformance();
 	TestDecodePerformance();
+#ifdef LATER
 	TestNormalizePerformance();
+#endif
 	TestArithmeticOperatorPerformance();
 
 #if STRESS_TESTING
