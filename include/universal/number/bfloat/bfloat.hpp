@@ -95,7 +95,7 @@ namespace sw::universal {
 	}
 
 	template<size_t srcbits, size_t nbits, size_t es, typename bt>
-	void convert(const blocktriple<srcbits, bt>& src, bfloat<nbits, es, bt>& tgt) {
+	void convert(const blocktriple<srcbits>& src, bfloat<nbits, es, bt>& tgt) {
 	}
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -240,51 +240,6 @@ public:
 	constexpr bfloat& operator=(unsigned long rhs)      { return convert_unsigned_integer(rhs); }
 	constexpr bfloat& operator=(unsigned long long rhs) { return convert_unsigned_integer(rhs); }
 
-	template<typename Ty>
-	constexpr bfloat& convert_unsigned_integer(const Ty& rhs) noexcept {
-		clear();
-		if (0 == rhs) return *this;
-		uint64_t raw = static_cast<uint64_t>(rhs);
-		int exponent = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-		uint32_t shift = sizeInBits - exponent - 1;
-		raw <<= shift;
-		raw = round<sizeInBits, uint64_t>(raw, exponent);
-		return *this;
-	}
-	template<typename Ty>
-	constexpr bfloat& convert_signed_integer(const Ty& rhs) noexcept {
-		clear();
-		if (0 == rhs) return *this;
-		bool s = (rhs < 0);
-		uint64_t raw = static_cast<uint64_t>(s ? -rhs : rhs);
-		int exponent = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
-		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
-		uint32_t shift = sizeInBits - exponent - 1;
-		raw <<= shift;
-		raw = round<sizeInBits, uint64_t>(raw, exponent);
-#ifdef TODO
-		// construct the target bfloat
-		if constexpr (64 >= nbits - es - 1ull) {
-			uint64_t bits = (s ? 1u : 0u);
-			bits <<= es;
-			bits |= exponent + EXP_BIAS;
-			bits <<= nbits - 1ull - es;
-			bits |= raw;
-			bits &= 0xFFFF'FFFF;
-			if constexpr (1 == nrBlocks) {
-				_block[MSU] = bt(bits);
-			}
-			else {
-				copyBits(bits);
-			}
-		}
-		else {
-			std::cerr << "TBD\n";
-		}
-#endif
-		return *this;
-	}
 
 	CONSTEXPRESSION bfloat& operator=(float rhs) {
 		clear();
@@ -845,8 +800,8 @@ public:
 		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
-		blocktriple<abits + 1, BlockType> sum;
-//		blocktriple<abits, BlockType> a, b;
+		blocktriple<abits + 1> sum;
+//		blocktriple<abits> a, b;
 
 //		normalize(a); // transform the inputs into (sign,scale,significant) triples
 //		rhs.normalize(b);
@@ -1030,7 +985,12 @@ public:
 		else {
 			for (size_t i = 0; i < nrBlocks; ++i) {
 				_block[i] = raw_bits & storageMask;
-				raw_bits >>= bitsInBlock; // shift can be the same size as type as it is protected by loop constraints
+				if constexpr (bitsInBlock < 64) {
+				    raw_bits >>= bitsInBlock; 
+				}
+				else {
+				    raw_bits = 0;
+				}
 			}
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
@@ -1427,23 +1387,64 @@ public:
 	explicit operator double() const { return to_native<double>(); }
 	explicit operator float() const { return to_native<float>(); }
 
-	// normalize a non-special bfloat, that is, no zero, inf, or nan
+	// normalize a non-special bfloat, that is, not a zero, inf, or nan, into a blocktriple
 	template<size_t tgtSize>
-	void normalize(blocktriple<tgtSize, BlockType>& v) const {
+	void normalize_(blocktriple<tgtSize>& v) const {
 		bool _sign = sign();
 		int  _scale = scale();
-		blockbinary<tgtSize, BlockType> _significant;
-		if (_scale < MIN_EXP_NORMAL) { // need to normalize the subnormal number to yield a consistent significant
-			/* size_t shift = */significant(_significant, false);
-		}
-		else {
-			significant(_significant, true);
-		}
-		v.set(_sign, _scale, _significant);
+		blockbinary<tgtSize, bt> _significant;
+		// need to normalize the subnormal number to yield a consistent significant
+//		significant(_significant, (_scale < MIN_EXP_NORMAL));
+//		v.set(_sign, _scale, _significant);
 	}
 
 protected:
 	// HELPER methods
+	template<typename Ty>
+	constexpr bfloat& convert_unsigned_integer(const Ty& rhs) noexcept {
+		clear();
+		if (0 == rhs) return *this;
+		uint64_t raw = static_cast<uint64_t>(rhs);
+		int exponent = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
+		uint32_t shift = sizeInBits - exponent - 1;
+		raw <<= shift;
+		raw = round<sizeInBits, uint64_t>(raw, exponent);
+		return *this;
+	}
+	template<typename Ty>
+	constexpr bfloat& convert_signed_integer(const Ty& rhs) noexcept {
+		clear();
+		if (0 == rhs) return *this;
+		bool s = (rhs < 0);
+		uint64_t raw = static_cast<uint64_t>(s ? -rhs : rhs);
+		int exponent = int(findMostSignificantBit(raw)) - 1; // precondition that msb > 0 is satisfied by the zero test above
+		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
+		uint32_t shift = sizeInBits - exponent - 1;
+		raw <<= shift;
+		raw = round<sizeInBits, uint64_t>(raw, exponent);
+#ifdef TODO
+		// construct the target bfloat
+		if constexpr (64 >= nbits - es - 1ull) {
+			uint64_t bits = (s ? 1u : 0u);
+			bits <<= es;
+			bits |= exponent + EXP_BIAS;
+			bits <<= nbits - 1ull - es;
+			bits |= raw;
+			bits &= 0xFFFF'FFFF;
+			if constexpr (1 == nrBlocks) {
+				_block[MSU] = bt(bits);
+			}
+			else {
+				copyBits(bits);
+			}
+		}
+		else {
+			std::cerr << "TBD\n";
+		}
+#endif
+		return *this;
+	}
 
 
 	/// <summary>
@@ -1457,10 +1458,10 @@ protected:
 	constexpr uint64_t round(StorageType raw, int& exponent) noexcept {
 		if constexpr (fhbits < srcbits) {
 			// round to even: lsb guard round sticky
-		   // collect guard, round, and sticky bits
-		   // this same logic will work for the case where
-		   // we only have a guard bit and no round and sticky bits
-		   // because the mask logic will make round and sticky both 0
+		    // collect guard, round, and sticky bits
+		    // this same logic will work for the case where
+		    // we only have a guard bit and no round and sticky bits
+		    // because the mask logic will make round and sticky both 0
 			constexpr uint32_t shift = srcbits - fhbits - 1ull;
 			StorageType mask = (StorageType(1ull) << shift);
 			bool guard = (mask & raw);
@@ -1496,7 +1497,13 @@ protected:
 		}
 		else {
 			constexpr size_t shift = fhbits - srcbits;
-			raw <<= shift;
+			if constexpr (shift < (sizeof(StorageType))) {
+				raw <<= shift;
+			}
+			else {
+				std::cerr << "round: shift " << shift << " >= " << sizeof(StorageType) << std::endl;
+				raw = 0;
+			}
 		}
 		uint64_t significant = raw;
 		return significant;

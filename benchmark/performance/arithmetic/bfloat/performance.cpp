@@ -22,10 +22,6 @@ template<typename BfloatConfiguration>
 void CopyWorkload(uint64_t NR_OPS) {
 	using namespace std;
 	using namespace sw::universal;
-	constexpr size_t nbits = BfloatConfiguration::nbits;
-	constexpr size_t es = BfloatConfiguration::es;
-	using bt = typename BfloatConfiguration::BlockType;
-	constexpr size_t fhbits = nbits - es;
 	BfloatConfiguration a,b,c;
 
 	bool bFail = false;
@@ -271,6 +267,7 @@ void TestDecodePerformance() {
 	PerformanceRunner("bfloat<512,11,uint64_t>  decode         ", DecodeWorkload< sw::universal::bfloat<512, 11, uint64_t> >, NR_OPS);
 }
 
+#ifdef LATER
 template<typename BfloatConfiguration>
 void NormalizeWorkload(uint64_t NR_OPS) {
 	using namespace std;
@@ -280,7 +277,7 @@ void NormalizeWorkload(uint64_t NR_OPS) {
 	using bt = typename BfloatConfiguration::BlockType;
 	constexpr size_t fhbits = nbits - es;
 	bfloat<nbits, es, bt> a;
-	blocktriple<fhbits, bt> b;  // representing significant
+	blocktriple<fhbits> b;  // representing significant
 
 	bool bFail = false;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
@@ -335,7 +332,7 @@ void TestNormalizePerformance() {
 	PerformanceRunner("bfloat<64,11,uint8_t>    normalize      ", NormalizeWorkload< sw::universal::bfloat<64, 11, uint8_t> >, NR_OPS);
 	PerformanceRunner("bfloat<128,11,uint8_t>   normalize      ", NormalizeWorkload< sw::universal::bfloat<128, 11, uint8_t> >, NR_OPS);
 }
-
+#endif // LATER
 
 // measure performance of conversion operators
 void TestConversionPerformance() {
@@ -421,7 +418,9 @@ try {
 	   
 	TestCopyPerformance();
 	TestDecodePerformance();
+#ifdef LATER
 	TestNormalizePerformance();
+#endif
 	TestArithmeticOperatorPerformance();
 
 #if STRESS_TESTING

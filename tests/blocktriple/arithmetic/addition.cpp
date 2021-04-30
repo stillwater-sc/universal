@@ -48,8 +48,8 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 
 	int nrOfFailedTests = 0;
 
-	blocktriple<abits, BlockType> a, b;
-	blocktriple<abits+1, BlockType> result, refResult;
+	blocktriple<abits> a, b;
+	blocktriple<abits+1> result, refResult;
 	double aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.set_raw_bits(i);
@@ -78,14 +78,14 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 
 // generate specific test case that you can trace with the trace conditions in blocktriple
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits, typename StorageBlockType = uint8_t>
+template<size_t nbits>
 void GenerateTestCase(double lhs, double rhs) {
 	using namespace sw::universal;
-	blocktriple<nbits, StorageBlockType> a, b, result, reference;
+	blocktriple<nbits> a, b, result, reference;
 
 	a = lhs;
 	b = rhs;
-//	result = a + b;
+	module_add(a, b, result);
 
 	double _a, _b, _c;
 	_a = double(a);
@@ -94,10 +94,11 @@ void GenerateTestCase(double lhs, double rhs) {
 
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << std::endl;
-	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _c << ")   " << std::endl;
+	std::cout << std::setw(nbits) << lhs << " + " << std::setw(nbits) << rhs << " = " << std::setw(nbits) << lhs + rhs << '\n';
+	std::cout << std::setw(nbits) << _a << " + " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << '\n';
+	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _c << ")   " << '\n';
 	reference = _c;
-	std::cout << (result == reference ? "PASS" : "FAIL") << std::endl << std::endl;
+	std::cout << (result == reference ? "PASS" : "FAIL") << '\n' << std::endl;
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
@@ -120,8 +121,8 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<18, uint8_t>(12345, 54321); // result is 66,666, thus needs 18 bits to be represented by 2's complement
-	GenerateTestCase<18, uint8_t>(66666, -54321); // result is 12,345
+	GenerateTestCase<18>(12345, 54321); // result is 66,666, thus needs 18 bits to be represented by 2's complement
+	GenerateTestCase<18>(66666, -54321); // result is 12,345
 
 	blocktriple<12> a, b, c;
 	a = -1024.0f;
