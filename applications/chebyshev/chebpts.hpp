@@ -1,5 +1,5 @@
 // CHEBPTS(n,kind) - returns the n Chebyshev nodes of the kind.
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
@@ -10,19 +10,20 @@
 #include <universal/number/posit/posit>
 #include <universal/blas/blas>
 
-namespace sw::universal{
+namespace sw::universal {
 	template<typename Scalar>
-	blas::vector<Scalar>chebpts(int n, size_t kind = 2)
+	blas::vector<Scalar> chebpts(int n, size_t kind = 2)
 	{
 		if(n<0){
-			std::cerr<<"Parameter must be a positive integer." << std::endl;
-			return blas::vector<Scalar>{0};
+			std::cerr << "Parameter must be a positive integer. Provided n == " << n << '\n';
+			return blas::vector<Scalar>(1);
 		}
+		constexpr double M_PI = 3.14159265358979323846;
 		blas::vector<Scalar>x(n);
 		int m = n - 1; 
-		switch(kind){
+		switch (kind) {
 			case 1: // Chebyshev 1st Kind 
-				for(int k = n; k >= 0; --k){
+				for(int k = n; k > 0; --k){
 					x(n-k) = sin(M_PI*(n - 2*k + 1 )/(2*n)); 
 				}
 				break;
