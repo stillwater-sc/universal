@@ -1,65 +1,76 @@
 #pragma once
+#include <universal/blas/matrix.hpp>
+#include <universal/blas/vector.hpp>
+#include <universal/blas/blas_l1.hpp>
 
-#include<universal/blas/blas_l1.hpp>
-
-// const double k = 0.0000001;
-
-namespace sw::universal::blas {  
-
-template<typename Scalar>
-void householder_factors(matrix<Scalar>& A, const vector<Scalar>& v){
-    size_t n=num_cols(A);
-    for(size_t i=0;i<n;++i){
-        for(size_t j=0;j<n;++j){
-            A[i][j]=-2*v[i]*v[j];
-        }
+namespace sw {
+namespace universal {
+namespace blas {
+namespace solvers {
+template <typename Scalar>
+std::tuple<matrix<Scalar>, matrix<Scalar>> qr(const matrix<Scalar>& A,
+                                             matrix<Scalar>& Q,
+                                             matrix<Scalar>& R)
+{
+  matrix<Scalar> A_tmp = A;
+  size_t row = num_rows(A_tmp), col = num_cols(A_tmp);
+  assert(row != col);
+  // static_assert(n != m, "matrix should be square");
+  // vector to store the matrices for each cols
+  std::vector<matrix<Scalar>> list;
+  for (size_t i = 0; i < col - 1; ++i) {
+    vector<Scalar> a(col - 1), b(col - 1);
+    for (size_t j = i; j < col; ++j) {
+      a[j - i] = A_tmp[j][i];
+      b[j - i] = Scalar(0.0);
     }
-    for(size_t i=0;i<n;++i) A[i][i]+=1;
+    b[0]          = Scalar(1.0);
+    Scalar A_norm = norm(a, 2), sgn = -1;
+    if (a[0] < Scalar(0.0))
+      sgn = 1;
+    vector<Scalar> u = a - (sgn * A_norm * b);
+    Scalar vecNorm   = norm(u, 2);
+    vector<Scalar> res(u);
+    vector<Scalar> n = res * (Scalar(1.0) / vecNorm);
+    matrix<Scalar> nmat(col - 1, 1);
+    for (size_t j = 0; j < (col - j); ++j) { nmat[j][0] = n[i]; }
+    matrix<Scalar> nmatT = nmat.transpose();
+    matrix<Scalar> I(col - i, col - i);
+    for (size_t j = 0; j < col - i; ++j) {
+      for (size_t k = 0; k < col - i; ++k) { I[j][k] = Scalar(1); }
+    }
+    matrix<Scalar> P_tmp = I - Scalar(2.0) * nmat * nmatT;
+    matrix<Scalar> P(col, col);
+    for (size_t j = 0; j < col - i; ++j) {
+      for (size_t k = 0; k < col - i; ++k) { P[j][k] = Scalar(1); }
+    }
+    for (size_t rows = i; rows < col; ++rows) {
+      for (size_t cols = i; cols < col; ++cols) {
+        P[rows][cols] = P_tmp[rows - i][cols - i];
+      }
+    }
+    list.push_back(P);
+    A_tmp = P * A_tmp;
+  }
+  matrix<Scalar> Q_tmp = list.at(0);
+  for (size_t i = 1; i < (col - 1); ++i) {
+    Q_tmp = Q_tmp * list.at(i).transpose();
+  }
+
+  Q = Q_tmp;
+
+  size_t n             = list.size();
+  matrix<Scalar> R_tmp = list.at(n - 1);
+  for (size_t i = (n - 2); i >= 0; --i) { R_tmp = R_tmp * list.at(i); }
+  R_tmp = R_tmp * A;
+
+  R = R_tmp;
+
+  return std::make_tuple(Q, R);
 }
 
-template<typename Scalar>
-void qr(const matrix<Scalar>& A, matrix<Scalar>& Q, matrix<Scalar>& R) {
-    /*
-    using value_type = typename matrix<Scalar>::value_type;
-    using size_type = typename matrix<Scalar>::size_type;
 
-    size_type ncols = num_cols(A), nrows = num_rows(A);
-//                static_assert(nrows < ncols, "Required Columns <= Rows");
-    matrix<Scalar> A_tmp(A),tmp;
-    vector<matrix<Scalar>> qi(nrows);
-    for(size_t i=0;i<ncols && i<nrows-1; ++i){
-        vector<Scalar> e(nrows),x(nrows);
-        Scalar a;
-        tmp=minor(A_tmp, i);
-        get_col(tmp, x, i);
-        a=norm(x, 2);
-        if(A[nrows][nrows]>0) a-=a;
-        for(size_t j=0; j<e.size();++j){
-            e[j]=(j==nrows) ? 1:0;
-        }
-        for(size_t j=0;j<e.size();++j) e[j]=x[j]+a*e[j];
-        Scalar f=norm(e);
-        for(size_t j=0;j<e.size();++j) e[j]/=f;
-        householder_factors(qi[i], e);
-        A_tmp=qi[i]*tmp;
-    }
-    Q=qi[0];
-    for(size_t i=1;i<ncols && i<nrows-1;++i){
-        tmp=qi[i]*Q;
-        Q=tmp;
-    }
-    R=Q*A;
-    Q.transpose();
-    */
-}
-
-template<typename Scalar>
-std::pair<matrix<Scalar>, matrix<Scalar>> qr(const matrix<Scalar>& A) {
-    //R is the upper triangular matrix
-    //Q is the orthogonal matrix
-    matrix<Scalar> Q(num_rows(A), num_cols(A)), R(A);
-    qr(A, Q, R);
-    return std::make_pair(Q, R);
-}
-
-} // namespace sw::universal::blas
+}   // namespace solvers
+}   // namespace blas
+}   // namespace universal
+}   // namespace sw
