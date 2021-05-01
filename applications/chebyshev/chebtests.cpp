@@ -1,6 +1,5 @@
-
 // ChebyTESTS
-// Copyright (C) 2017-2020 Stillwater Supercomputing, Inc.
+// Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 //
@@ -65,9 +64,8 @@ try {
 	auto y = chebpts<Scalar>(5); 							// x = chebypts(n,2,[a,b])
 	std::cout << "Chebyshev 2nd kind = " << y << std::endl;	// Print results
 
-	
-	auto z = chebpts<Scalar>(-3,1); 						// x = chebypts(n,kind,[a,b])
-	std::cout << "Chebyshev WRONG = " << z << std::endl;	// Print results
+	auto z = chebpts<Scalar>(-3,1); 				// x = chebypts(n,kind,[a,b])
+	std::cout << "Chebpts called with incorrect parameters = " << z << std::endl;				// Print results
 
 
 	// 2. Calculate mean distance

@@ -16,7 +16,6 @@ namespace sw::universal{
 	{
         Scalar y = 1;
 		for(int k = 0; k < size(x); ++k){
-            //std::cout << y << std::endl;
 			y = y*x(k); 
 		}
 		return y;
