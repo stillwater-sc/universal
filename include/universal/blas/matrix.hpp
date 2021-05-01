@@ -7,6 +7,7 @@
 #include <iostream>
 #include <vector>
 #include <initializer_list>
+#include <iomanip>
 #include <map>
 #include <universal/blas/exceptions.hpp>
 #include <universal/number/posit/posit_fwd.hpp>

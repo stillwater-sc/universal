@@ -6,11 +6,10 @@
 namespace sw {
 namespace universal {
 namespace blas {
-namespace solvers {
 template <typename Scalar>
 std::tuple<matrix<Scalar>, matrix<Scalar>> qr(const matrix<Scalar>& A,
-                                             matrix<Scalar>& Q,
-                                             matrix<Scalar>& R)
+                                              matrix<Scalar>& Q,
+                                              matrix<Scalar>& R)
 {
   matrix<Scalar> A_tmp = A;
   size_t row = num_rows(A_tmp), col = num_cols(A_tmp);
@@ -32,14 +31,14 @@ std::tuple<matrix<Scalar>, matrix<Scalar>> qr(const matrix<Scalar>& A,
     Scalar vecNorm   = norm(u, 2);
     vector<Scalar> res(u);
     vector<Scalar> n = res * (Scalar(1.0) / vecNorm);
-    matrix<Scalar> nmat(col - 1, 1);
-    for (size_t j = 0; j < (col - j); ++j) { nmat[j][0] = n[i]; }
-    matrix<Scalar> nmatT = nmat.transpose();
+    matrix<Scalar> mat(col - 1, 1);
+    for (size_t j = 0; j < (col - j); ++j) { mat[j][0] = n[i]; }
+    matrix<Scalar> matT = mat.transpose();
     matrix<Scalar> I(col - i, col - i);
     for (size_t j = 0; j < col - i; ++j) {
       for (size_t k = 0; k < col - i; ++k) { I[j][k] = Scalar(1); }
     }
-    matrix<Scalar> P_tmp = I - Scalar(2.0) * nmat * nmatT;
+    matrix<Scalar> P_tmp = I - Scalar(2.0) * mat * matT;
     matrix<Scalar> P(col, col);
     for (size_t j = 0; j < col - i; ++j) {
       for (size_t k = 0; k < col - i; ++k) { P[j][k] = Scalar(1); }
@@ -61,7 +60,7 @@ std::tuple<matrix<Scalar>, matrix<Scalar>> qr(const matrix<Scalar>& A,
 
   size_t n             = list.size();
   matrix<Scalar> R_tmp = list.at(n - 1);
-  for (size_t i = (n - 2); i >= 0; --i) { R_tmp = R_tmp * list.at(i); }
+  for (long i = long(n) - 2; i >= 0; --i) { R_tmp = R_tmp * list.at(i); }
   R_tmp = R_tmp * A;
 
   R = R_tmp;
@@ -70,7 +69,6 @@ std::tuple<matrix<Scalar>, matrix<Scalar>> qr(const matrix<Scalar>& A,
 }
 
 
-}   // namespace solvers
 }   // namespace blas
 }   // namespace universal
 }   // namespace sw
