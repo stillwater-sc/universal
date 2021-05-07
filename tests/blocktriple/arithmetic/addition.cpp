@@ -7,6 +7,9 @@
 #include <iostream>
 #include <iomanip>
 
+// temporary
+#define BITBLOCK_THROW_ARITHMETIC_EXCEPTION 0
+#include <universal/internal/bitblock/bitblock.hpp>
 // minimum set of include files to reflect source code dependencies
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
@@ -85,7 +88,7 @@ void GenerateTestCase(double lhs, double rhs) {
 
 	a = lhs;
 	b = rhs;
-	module_add(a, b, result);
+//	module_add(a, b, result);
 
 	double _a, _b, _c;
 	_a = double(a);
@@ -119,6 +122,10 @@ try {
 	std::string tag = "modular addition failed: ";
 
 #if MANUAL_TESTING
+
+	internal::bitblock<23> bb;
+	bb = internal::convert_to_bitblock<23>(-1);
+	cout << bb << endl;
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase<18>(12345, 54321); // result is 66,666, thus needs 18 bits to be represented by 2's complement

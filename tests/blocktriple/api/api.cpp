@@ -54,10 +54,10 @@ try {
 		using BlockType = typename blocktriple<fhbits>::bt;
 		blockbinary<fhbits, BlockType> bba, bbb;
 		bba.set_raw_bits(0xAAAAu);
-		a.set(false, 7, bba);
+//		a.set(false, 7, bba);
 		cout << to_triple(a) << " : " << a << '\n';
 		b.set_raw_bits(0xAAAAu);
-		b.set(false, 8, bbb);
+//		b.set(false, 8, bbb);
 		cout << to_triple(b) << " : " << b << '\n';
 		//int aScale = a.scale();
 		//int bScale = b.scale();

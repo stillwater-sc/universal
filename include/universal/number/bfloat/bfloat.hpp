@@ -94,9 +94,13 @@ namespace sw::universal {
 		return v.scale();
 	}
 
+	// convert a blocktriple to a bfloat
 	template<size_t srcbits, size_t nbits, size_t es, typename bt>
 	void convert(const blocktriple<srcbits>& src, bfloat<nbits, es, bt>& tgt) {
+		// test special cases
+
 	}
+
 
 /////////////////////////////////////////////////////////////////////////////////
 /// free functions that can set an bfloat to extreme values in its state space
@@ -1229,7 +1233,8 @@ public:
 		return 0;
 	}
 
-	void constexprParameters() const {
+	// helper debug function
+	void constexprClassParameters() const {
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
 		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, 0, true) << '\n';
@@ -1248,7 +1253,7 @@ public:
 		std::cout << "MIN_EXP_NORMAL    : " << MIN_EXP_NORMAL << '\n';
 		std::cout << "MIN_EXP_SUBNORMAL : " << MIN_EXP_SUBNORMAL << '\n';
 	}
-	// extract the sign firld from the encoding
+	// extract the sign field from the encoding
 	inline constexpr void sign(bool& s) const {
 		s = sign();
 	}
@@ -1389,13 +1394,46 @@ public:
 
 	// normalize a non-special bfloat, that is, not a zero, inf, or nan, into a blocktriple
 	template<size_t tgtSize>
-	void normalize_(blocktriple<tgtSize>& v) const {
+	void generate_add_input(blocktriple<tgtSize>& v) const {
 		bool _sign = sign();
 		int  _scale = scale();
-		blockbinary<tgtSize, bt> _significant;
-		// need to normalize the subnormal number to yield a consistent significant
-//		significant(_significant, (_scale < MIN_EXP_NORMAL));
-//		v.set(_sign, _scale, _significant);
+		// fraction bits are the bottom fbits in the raw encoding
+		// normal    encoding : 1.fffff
+		// subnormal encoding : 0.fffff
+
+	}
+	// convert a bfloat to a blocktriple with the fraction format 01.ffffeeee
+	template<size_t tbits>
+	constexpr void normalize(blocktriple<tbits>& tgt) const {
+		// test special cases
+		if (isnan()) {
+			tgt.setnan();
+		}
+		else if (isinf()) {
+			tgt.setinf();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			if (isnormal()) {
+				// we are going to unify to the format 01.ffffeeee
+				// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
+				if constexpr (tbits < (size_t{ 2u } + fbits)) {
+					// we are contracting and thus need rounding
+				}
+				else {
+					// brute force copy of bits
+					size_t bit = tbits - 2;
+					tgt.set(bit--);
+					for (size_t i = 0; i < fbits; ++i) {
+						tgt.set(bit--, at(fbits - 1 - i));
+					}
+					tgt.setsign(sign());
+					tgt.setscale(scale());
+				}
+			}
+		}
 	}
 
 protected:
@@ -1757,6 +1795,16 @@ inline std::string to_binary(const bfloat<nbits, es, bt>& number, bool nibbleMar
 		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
 	}
 
+	return s.str();
+}
+
+// transform a bfloat into a triple representation
+template<size_t nbits, size_t es, typename bt>
+inline std::string to_triple(const bfloat<nbits, es, bt>& number, bool nibbleMarket = true) {
+	std::stringstream s;
+	blocktriple<bfloat<nbits, es, bt>::fbits + 2> triple;
+	number.normalize(triple);
+	s << to_triple(triple);
 	return s.str();
 }
 

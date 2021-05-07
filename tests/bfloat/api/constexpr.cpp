@@ -92,7 +92,7 @@ try {
 	
 	using Real = bfloat<12, 2>;
 	Real a;
-	a.constexprParameters();
+	a.constexprClassParameters();
 
 	TestConstexprConstruction<Real>();
 	TestConstexprAssignment<Real>();

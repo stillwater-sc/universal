@@ -12,7 +12,7 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/native/subnormal.hpp>
 #include <universal/native/bit_functions.hpp>
-#include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blockfraction/blockfraction.hpp>
 #include <universal/internal/blocktriple/trace_constants.hpp>
 
 
@@ -71,7 +71,7 @@ template<size_t nbits>
 class blocktriple {
 public:
 	using bt = uint32_t;
-	using bits = blockbinary<nbits, bt>; // can we make it uint64_t?
+	using Fraction = blockfraction<nbits, bt>; // can we make it uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t: carry propagation on uint64_t requires assembly code
 
 	static constexpr size_t bitsInByte = 8ull;
@@ -97,48 +97,48 @@ public:
 
 	constexpr blocktriple() noexcept : 
 		_nan{ false }, 	_inf{ false }, _zero{ true }, 
-		_sign{ false }, _scale{ 0 }, _significant{ 0 } {}
+		_sign{ false }, _scale{ 0 } {} //, _significant{ 0 } {}
 
 	// decorated constructors
 	constexpr blocktriple(signed char iv) noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+		_sign{ false }, _scale{ 0 } { *this = iv; }
 	constexpr blocktriple(short iv)       noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+		_sign{ false }, _scale{ 0 } { *this = iv; }
 	constexpr blocktriple(int iv)         noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+		_sign{ false }, _scale{ 0 } { *this = iv; }
 	constexpr blocktriple(long iv)        noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+		_sign{ false }, _scale{ 0 } { *this = iv; }
 	constexpr blocktriple(long long iv)   noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+		_sign{ false }, _scale{ 0 } { *this = iv; }
 	constexpr blocktriple(char iv)               noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+		_sign{ false }, _scale{ 0 } { *this = iv; }
 	constexpr blocktriple(unsigned short iv)     noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+		_sign{ false }, _scale{ 0 } { *this = iv; }
 	constexpr blocktriple(unsigned int iv)       noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+		_sign{ false }, _scale{ 0 } { *this = iv; }
 	constexpr blocktriple(unsigned long iv)      noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+		_sign{ false }, _scale{ 0 } { *this = iv; }
 	constexpr blocktriple(unsigned long long iv) noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+		_sign{ false }, _scale{ 0 } { *this = iv; }
 	constexpr blocktriple(float iv)       noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+		_sign{ false }, _scale{ 0 } { *this = iv; }
 	constexpr blocktriple(double iv)      noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+		_sign{ false }, _scale{ 0 } { *this = iv; }
 	constexpr blocktriple(long double iv) noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 }, _significant{ 0u } { *this = iv; }
+		_sign{ false }, _scale{ 0 } { *this = iv; }
 
 	// conversion operators
 	constexpr blocktriple& operator=(signed char rhs) noexcept { return convert_signed_integer(rhs); }
@@ -283,17 +283,10 @@ public:
 		clear();
 		_significant.set_raw_bits(raw);
 	}
-	// set a non-zero, non-inf, non-nan value
-	template<typename SrcBlockType>
-	constexpr void set(bool s, int scale, blockbinary<nbits, SrcBlockType>& significant) {
-		_nan = false;
-		_inf = false;
-		_zero = false;
-		_sign = s;
-		_scale = scale;
-		_significant = significant;
-	}
 	constexpr void setpos() noexcept { _sign = false; }
+	constexpr void setsign(bool s) { _sign = s; }
+	constexpr void setscale(int scale) { _scale = scale; }
+	constexpr void set(size_t index, bool v = true) { _significant.set(index, v); }
 
 	// selectors
 	inline constexpr bool isnan()       const noexcept { return _nan; }
@@ -303,7 +296,7 @@ public:
 	inline constexpr bool isneg()       const noexcept { return _sign; }
 	inline constexpr bool sign()        const noexcept { return _sign; }
 	inline constexpr int  scale()       const noexcept { return _scale; }
-	inline constexpr bits significant() const noexcept { return _significant; }
+	inline constexpr Fraction significant() const noexcept { return _significant; }
 
 	// fraction bit accessors
 	inline constexpr bool at(size_t index)   const noexcept { return _significant.at(index); }
@@ -315,8 +308,8 @@ public:
 	explicit operator long double() const noexcept { return to_long_double(); }
 
 	template<size_t targetBits>
-	blockbinary<targetBits, bt> alignSignificant(int alignmentShift) const {
-		blockbinary<targetBits, bt> v;
+	blockfraction<targetBits, bt> alignSignificant(int alignmentShift) const {
+		blockfraction<targetBits, bt> v;
 		v.assignWithoutSignExtend(_significant);
 		if (fhbits + static_cast<size_t>(alignmentShift) >= targetBits) {
 			std::cerr << "alignmentShift " << alignmentShift << " is too large (>" << targetBits << ")\n";
@@ -360,15 +353,15 @@ public:
 #endif
 
 private:
-	           // special cases to keep track of
+	// special cases to keep track of
 	bool _nan; // most dominant state
 	bool _inf; // second most dominant state
 	bool _zero;// third most dominant special case
 
-			   // the triple (sign, scale, significant)
-	bool _sign;
-	int  _scale;
-	bits _significant;
+	// the triple (sign, scale, significant)
+	bool     _sign;
+	int      _scale;
+	Fraction _significant;
 
 	// helpers
 
@@ -385,7 +378,7 @@ private:
 		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
 		uint32_t shift = sizeInBits - _scale - 1;
 		raw <<= shift;
-		_significant = round<sizeInBits, uint64_t>(raw);
+//		_significant = round<sizeInBits, uint64_t>(raw);
 		return *this;
 	}
 	template<typename Ty>
@@ -401,7 +394,7 @@ private:
 		constexpr uint32_t sizeInBits = 8 * sizeof(Ty);
 		uint32_t shift = sizeInBits - _scale - 1;
 		raw <<= shift;
-		_significant = round<sizeInBits, uint64_t>(raw);
+//		_significant = round<sizeInBits, uint64_t>(raw);
 		return *this;
 	}
 
@@ -794,6 +787,8 @@ blocktriple<nbits> abs(const blocktriple<nbits>& a) {
 	absolute.setpos();
 	return absolute;
 }
+
+#ifdef LATER
 // add two numbers with nbits significant bits, return the sumbits unrounded result value
 template<size_t nbits, size_t sumbits>
 void module_add(const blocktriple<nbits>& lhs, const blocktriple<nbits>& rhs, blocktriple<sumbits>& result) {
@@ -804,12 +799,12 @@ void module_add(const blocktriple<nbits>& lhs, const blocktriple<nbits>& rhs, bl
 
 	// align the significants and add a leading 0 bit so that we can 
 	// transform to a 2's complement encoding for negative numbers
-	blockbinary<sumbits, bt> r1 = lhs.template alignSignificant<sumbits>(lhs_scale - scale_of_result + 3);
-	blockbinary<sumbits, bt> r2 = rhs.template alignSignificant<sumbits>(rhs_scale - scale_of_result + 3);
+	blockfraction<sumbits, bt> r1 = lhs.template alignSignificant<sumbits>(lhs_scale - scale_of_result + 3);
+	blockfraction<sumbits, bt> r2 = rhs.template alignSignificant<sumbits>(rhs_scale - scale_of_result + 3);
 
 	if (lhs.isneg()) r1 = twosComplement(r1);
 	if (rhs.isneg()) r2 = twosComplement(r2);
-	blockbinary<sumbits, bt> sum = r1 + r2;
+	blockfraction<sumbits, bt> sum = r1 + r2;
 
 	if constexpr (_trace_btriple_add) {
 		std::cout << "r1  : " << to_binary(r1) << " : " << r1 << '\n';
@@ -831,5 +826,6 @@ void module_add(const blocktriple<nbits>& lhs, const blocktriple<nbits>& rhs, bl
 		result.set(sign, scale_of_result, sum);
 	}
 }
+#endif
 
 }  // namespace sw::universal

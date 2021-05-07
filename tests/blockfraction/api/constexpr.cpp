@@ -18,18 +18,18 @@ try {
 
 	{
 		constexpr blockfraction<8> b8;
-		constexpr blockfraction<8, uint8_t> b8_1b(0x5555);
-		constexpr blockfraction<8, uint16_t> b8_2b(0x5555);
-		constexpr blockfraction<8, uint32_t> b8_4b(0x5555);
+		constexpr blockfraction<8, uint8_t> b8_1b;
+		constexpr blockfraction<8, uint16_t> b8_2b;
+		constexpr blockfraction<8, uint32_t> b8_4b;
 
 		cout << b8 << '\n' << b8_1b << '\n' << b8_2b << '\n' << b8_4b << endl;
 	}
 
 	{
 		constexpr blockfraction<16> b16;
-		constexpr blockfraction<16, uint8_t> b16_2(0x5555);
-		constexpr blockfraction<16, uint16_t> b16_1(0x5555);
-		constexpr blockfraction<16, uint32_t> b16_4b(0x5555);
+		constexpr blockfraction<16, uint8_t> b16_2;
+		constexpr blockfraction<16, uint16_t> b16_1;
+		constexpr blockfraction<16, uint32_t> b16_4b;
 
 		cout << b16 << '\n' << b16_1 << '\n' << b16_2 << '\n' << b16_4b << endl;
 	}

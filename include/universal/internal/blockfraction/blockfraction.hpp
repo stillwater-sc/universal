@@ -43,7 +43,7 @@ namespace sw::universal {
 
 // forward references
 template<size_t nbits, typename bt> class blockfraction;
-template<size_t nbits, typename bt> blockfraction<nbits, bt> twosComplement(const blockfraction<nbits, bt>&);
+template<size_t nbits, typename bt> constexpr blockfraction<nbits, bt> twosComplement(const blockfraction<nbits, bt>&);
 template<size_t nbits, typename bt> struct quorem;
 template<size_t nbits, typename bt> quorem<nbits, bt> longdivision(const blockfraction<nbits, bt>&, const blockfraction<nbits, bt>&);
 
@@ -66,7 +66,13 @@ We could use a sint64_t and then convert to uint64_t and observe the MSB. Very d
 logic though.
 */
 
-// a block-based floating-point fraction including the leading 1 bit
+
+/// <summary>
+/// a block-based floating-point fraction of the form  ##.ff---ff
+/// for add/sub, expanded to ##.ff---ffaaa
+/// for mul, expanded to ##.ff--ffff--ff
+/// </summary>
+/// <typeparam name="bt"></typeparam>
 template<size_t nbits, typename bt = uint8_t>
 class blockfraction {
 public:
@@ -98,7 +104,11 @@ public:
 		this->assign(rhs);
 	}
 
-	// initializer for long long
+#ifdef NEVER
+	// blockfraction cannot have decorated constructors or assignment
+	// as blockfraction does not have all the information to interpret a value
+	// So by design, the class interface does not interact with values
+
 	constexpr blockfraction(long long initial_value) noexcept : _block{ 0 } { *this = initial_value; }
 
 	constexpr blockfraction& operator=(long long rhs) noexcept {
@@ -117,6 +127,7 @@ public:
 		}
 		return *this;
 	}
+#endif
 
 	// conversion operators
 	explicit operator float() const              { return float(to_long_long()); }
@@ -197,14 +208,16 @@ public:
 		// we don't need to null here
 		return *this;
 	}
+	// division operator
 	blockfraction& operator/=(const blockfraction& rhs) {
-		quorem<nbits, bt> result = longdivision(*this, rhs);
-		*this = result.quo;
+//		quorem<nbits, bt> result = longdivision(*this, rhs);
+//		*this = result.quo;
 		return *this;
 	}
+	// remainder operator
 	blockfraction& operator%=(const blockfraction& rhs) {
-		quorem<nbits, bt> result = longdivision(*this, rhs);
-		*this = result.rem;
+//		quorem<nbits, bt> result = longdivision(*this, rhs);
+//		*this = result.rem;
 		return *this;
 	}
 	// shift left operator
@@ -357,7 +370,8 @@ public:
 		return *this;
 	}
 	inline constexpr blockfraction& twoscomplement() noexcept { // in-place 2's complement
-		blockfraction<nbits, bt> plusOne(1);
+		blockfraction<nbits, bt> plusOne;
+		plusOne.set(0);
 		flip();
 		return *this += plusOne;
 	}
@@ -590,7 +604,6 @@ inline blockfraction<nbits, bt> operator%(const blockfraction<nbits, bt>& a, con
 	blockfraction<nbits, bt> c(a);
 	return c %= b;
 }
-
 template<size_t nbits, typename bt>
 inline blockfraction<nbits, bt> operator<<(const blockfraction<nbits, bt>& a, const long b) {
 	blockfraction<nbits, bt> c(a);
@@ -662,9 +675,9 @@ quorem<nbits, bt> longdivision(const blockfraction<nbits, bt>& _a, const blockfr
 
 // unrounded addition, returns a blockfraction that is of size nbits+1
 template<size_t nbits, typename bt>
-inline blockfraction<nbits + 1, bt> uradd(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b) {
-	blockfraction<nbits + 1, bt> result(a);
-	return result += blockfraction<nbits + 1, bt>(b);
+inline blockfraction<nbits + 1, bt>& uradd(blockfraction<nbits + 1, bt>& result, const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b) {
+	result = blockfraction<nbits + 1, bt>(a); // 1st copy
+	return result += blockfraction<nbits + 1, bt>(b); // 2nd copy
 }
 
 // unrounded subtraction, returns a blockfraction that is of size nbits+1
@@ -846,5 +859,11 @@ std::ostream& operator<<(std::ostream& ostr, const blockfraction<nbits, bt>& num
 	return ostr << to_binary(number);
 }
 
+// generate the 2's complement of a blockfraction
+template<size_t nbits, typename bt> 
+inline constexpr blockfraction<nbits, bt> twosComplement(const blockfraction<nbits, bt>& a) {
+	blockfraction<nbits, bt> b(a);
+	return b.twoscomplement();
+}
 
 } // namespace sw::universal
