@@ -77,11 +77,11 @@ logic though.
 /// in sync.
 /// </summary>
 /// <typeparam name="bt"></typeparam>
-template<size_t nbits, typename bt>
+template<size_t _nbits, typename bt>
 class blockfraction {
 public:
 	typedef bt BlockType;
-	static constexpr size_t nbits = nbits;
+	static constexpr size_t nbits = _nbits;
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t");
