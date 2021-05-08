@@ -80,6 +80,8 @@ logic though.
 template<size_t nbits, typename bt>
 class blockfraction {
 public:
+	typedef bt BlockType;
+	static constexpr size_t nbits = nbits;
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t");
@@ -739,7 +741,7 @@ std::ostream& operator<<(std::ostream& ostr, const blockfraction<nbits, bt>& num
 template<size_t nbits, typename bt> 
 inline constexpr blockfraction<nbits, bt> twosComplement(const blockfraction<nbits, bt>& a) {
 	blockfraction<nbits, bt> b(a);
-	return b.twoscomplement();
+	return b.twosComplement();
 }
 
 } // namespace sw::universal

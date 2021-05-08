@@ -70,25 +70,15 @@ try {
 		constexpr size_t nbits = 8;  // hidden + fraction bits
 		constexpr size_t abits = nbits + 3;
 		constexpr size_t sumbits = abits + 1;
-		{
-			blockfraction<nbits, uint32_t> bba;
-			bba.set_raw_bits(0x80);
-			blockfraction<sumbits, uint32_t> bbb;
-			bbb.assignWithoutSignExtend(bba);
-			cout << to_binary(bbb, true) << '\n';
-		}
-		blocktriple<nbits> a,b;
+
+		blocktriple<nbits, uint32_t> a, b;
 		a = 1.0f;
 		b = 1.0f;
 		cout << to_triple(a) << " : " << a << '\n';
 		cout << to_triple(b) << " : " << b << '\n';
 
-
-		blockfraction<sumbits, uint32_t> bb = a.alignSignificant<sumbits>(3);
-		cout << to_binary(bb, true) << '\n';
-		// blocktriple presents an unrounded external interface for add/sub
-		blocktriple<sumbits> c;
-//		module_add(a, b, c);
+		blocktriple<nbits+1, uint32_t> c;
+		c.add(a, b);
 		cout << to_triple(c) << " : " << c << '\n';
 	}
 

@@ -13,6 +13,22 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
 
+template<typename TestType, typename ResultType, typename RefType>
+void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const TestType& lhs, const TestType& rhs, const ResultType& result, const RefType& ref) {
+	auto old_precision = std::cerr.precision();
+	std::cerr << test_case << " "
+		<< std::setprecision(20)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << lhs
+		<< " " << op << " "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
+		<< " != "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
+//		<< " " << to_binary(result) << " vs " << to_binary(ref)
+		<< std::setprecision(old_precision)
+		<< std::endl;
+}
+
 // enumerate all addition cases for an blockfraction configuration
 template<size_t nbits, typename StorageBlockType = uint8_t>
 int VerifySubtraction(bool bReportIndividualTestCases) {
@@ -20,7 +36,8 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 	using namespace sw::universal;
 
 	int nrOfFailedTests = 0;
-	blockfraction<nbits, StorageBlockType> a, b, result, refResult;
+	blockfraction<nbits, StorageBlockType> a, b;
+	blockfraction<nbits+1, StorageBlockType> result, refResult;
 	int64_t aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.set_raw_bits(i);
@@ -30,7 +47,7 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 			bref = static_cast<int64_t>(j);
 			cref = aref - bref;
 
-			result = a - b;
+			result.sub(a, b);
 
 			refResult.set_raw_bits(static_cast<uint64_t>(cref));
 			if (result != refResult) {
@@ -53,11 +70,12 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 template<size_t nbits, typename StorageBlockType = uint8_t>
 void GenerateTestCase(int64_t lhs, int64_t rhs) {
 	using namespace sw::universal;
-	blockfraction<nbits, StorageBlockType> a, b, result, reference;
+	blockfraction<nbits, StorageBlockType> a, b;
+	blockfraction<nbits+1, StorageBlockType> result, reference;
 
 	a.set_raw_bits(uint64_t(lhs));
 	b.set_raw_bits(uint64_t(rhs));
-	result = a - b;
+	result.sub(a, b);
 
 	double _a, _b, _c;
 	_a = double(a);
