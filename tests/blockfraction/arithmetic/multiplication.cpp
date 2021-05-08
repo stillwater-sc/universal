@@ -36,7 +36,7 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 		for (size_t j = 0; j < NR_VALUES; j++) {
 			b.set_raw_bits(j);
 			bref = int64_t(b.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
-			result = a * b;
+			result.mul(a, b);
 			cref = aref * bref;
 
 			if (bReportOverflowCondition) cout << setw(5) << aref << " * " << setw(5) << bref << " = " << setw(5) << cref << " : ";

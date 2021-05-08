@@ -40,8 +40,8 @@ namespace sw::universal {
 		d.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
 		a = b = c = d;
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
-			c = a + b;
-			a = c - b;
+			c.add(a, b);
+			a.sub(c, b);
 		}
 	}
 
@@ -52,7 +52,7 @@ namespace sw::universal {
 		d.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
 		a = b = c = d;
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
-			c = a * b;
+			c.mul(a, b);
 			c.clear(); // reset to zero so d = c is fast
 			d = c;
 		}
@@ -65,12 +65,13 @@ namespace sw::universal {
 		d.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
 		a = b = c = d;
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
-			c = a / b;
+			c.div(a, b);
 			c.clear(); // reset to zero so d = c is fast
 			d = c;
 		}
 	}
 
+#ifdef FRACTION_REMAINDER
 	// Generic set of remainder calculations for a given number system type that supports the % operator
 	template<typename Scalar>
 	void RemainderWorkload(uint64_t NR_OPS) {
@@ -83,6 +84,7 @@ namespace sw::universal {
 			d = c;
 		}
 	}
+#endif
 
 	// convert a floating point value to a power-of-ten string
 	template<typename Ty>

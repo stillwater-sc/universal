@@ -15,7 +15,6 @@
 #include <universal/internal/blockfraction/blockfraction.hpp>
 #include <universal/internal/blocktriple/trace_constants.hpp>
 
-
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 
@@ -55,11 +54,11 @@
 namespace sw::universal {
 
 // Forward definitions
-template<size_t nbits> class blocktriple;
-template<size_t nbits> blocktriple<nbits> abs(const blocktriple<nbits>& v);
+template<size_t nbits, typename bt> class blocktriple;
+template<size_t nbits, typename bt> blocktriple<nbits, bt> abs(const blocktriple<nbits, bt>& v);
 
-template<size_t nbits>
-blocktriple<nbits>& convert(unsigned long long uint, blocktriple<nbits>& tgt) {
+template<size_t nbits, typename bt>
+blocktriple<nbits, bt>& convert(unsigned long long uint, blocktriple<nbits, bt>& tgt) {
 	return tgt;
 }
 
@@ -67,12 +66,13 @@ blocktriple<nbits>& convert(unsigned long long uint, blocktriple<nbits>& tgt) {
 /// Generalized blocktriple representing a (sign, scale, significant) with unrounded arithmetic
 /// </summary>
 /// <typeparam name="nbits">number of fraction bits, including a leading 1 bit</typeparam>
-template<size_t nbits>
+template<size_t nbits, typename bt = uint32_t> 
 class blocktriple {
 public:
-	using bt = uint32_t;
-	using Fraction = blockfraction<nbits, bt>; // can we make it uint64_t?
-	// storage unit for block arithmetic needs to be uin32_t: carry propagation on uint64_t requires assembly code
+	// to maximize performance, can we make the default blocktype a uint64_t?
+	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
+	// how to manage carry propagation on uint64_t using assembly code
+	using Frac = sw::universal::blockfraction<nbits, bt>;
 
 	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
@@ -80,7 +80,6 @@ public:
 	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
 
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
-
 
 	static constexpr size_t fhbits = nbits;
 	static constexpr size_t fbits = nbits - 1;
@@ -183,11 +182,15 @@ public:
 		return *this = double(rhs);
 	};
 	
-	void add(blocktriple<nbits - 1>& a, blocktriple<nbits - 1>& b) {
-
+	// align the blocktriple
+	inline constexpr void align(int rightShift) noexcept {
+		_scale += rightShift;
+		_significant >>= rightShift;
 	}
-	void mul(blocktriple<nbits / 2>& a, blocktriple<nbits / 2>& b) {
 
+	// apply a 2's complement recoding of the fraction bits
+	inline constexpr void twosComplement() noexcept {
+		_significant.twosComplement();
 	}
 	/// <summary>
 	/// round a set of source bits to the present representation.
@@ -296,7 +299,7 @@ public:
 	inline constexpr bool isneg()       const noexcept { return _sign; }
 	inline constexpr bool sign()        const noexcept { return _sign; }
 	inline constexpr int  scale()       const noexcept { return _scale; }
-	inline constexpr Fraction significant() const noexcept { return _significant; }
+	inline constexpr Frac significant() const noexcept { return _significant; }
 
 	// fraction bit accessors
 	inline constexpr bool at(size_t index)   const noexcept { return _significant.at(index); }
@@ -307,50 +310,50 @@ public:
 	explicit operator double()      const noexcept { return to_double(); }
 	explicit operator long double() const noexcept { return to_long_double(); }
 
-	template<size_t targetBits>
-	blockfraction<targetBits, bt> alignSignificant(int alignmentShift) const {
-		blockfraction<targetBits, bt> v;
-		v.assignWithoutSignExtend(_significant);
-		if (fhbits + static_cast<size_t>(alignmentShift) >= targetBits) {
-			std::cerr << "alignmentShift " << alignmentShift << " is too large (>" << targetBits << ")\n";
-			v.clear();
-			return v;
+	// ALU operators
+	/// <summary>
+	/// add two real numbers with (nbits-1) fraction bits yielding an nbits unrounded sum
+	/// </summary>
+	/// <param name="lhs">blocktriple<nbits> that may get modified</param>
+	/// <param name="rhs">blocktriple<nbits> that may get modified</param>
+	/// <param name="result">unrounded sum</param>
+	void add(blocktriple<nbits-1>& lhs, blocktriple<nbits-1>& rhs) {
+		int lhs_scale = lhs.scale();
+		int rhs_scale = rhs.scale();
+		int scale_of_result = std::max(lhs_scale, rhs_scale);
+
+		// avoid copy by directly manipulating the fraction bits of the arguments
+		int expDiff = lhs_scale - rhs_scale;
+		if (expDiff < 0) {
+			lhs.align(-expDiff);
 		}
-		return v <<= alignmentShift;
+		else if (expDiff > 0) {
+			rhs.align(expDiff);
+		}
+		if (lhs.isneg()) lhs._significant.twosComplement();
+		if (rhs.isneg()) rhs._significant.twosComplement();
+		_significant.add(lhs._significant, rhs._significant);
+
+		if constexpr (_trace_btriple_add) {
+			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
+			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << "sum : " << to_binary(*this) << " : " << *this << '\n';
+		}
+		if (iszero()) {
+			clear();
+		}
+		else {
+			if (isneg()) {
+				_significant.twosComplement();
+				_sign = true;
+			}
+			_scale = scale_of_result;
+			if (_significant.test(nbits - 1)) {
+				_scale -= 1;
+				_significant >>= 1;
+			}
+		}
 	}
-
-#ifdef NEVER
-	/// Normalized shift (e.g., for addition).
-	template <size_t tgtSize>
-	blockbinary<tgtSize, bt> nshift(int shift) const {
-		blockbinary<tgtSize, bt> number;
-
-		// Check range
-		if (static_cast<int>(fbits) + shift >= static_cast<int>(tgtSize)) {
-			std::cerr << "nshift: shift is too large\n";
-			number.reset();
-			return number;
-		}
-
-		int hpos = static_cast<int>(fbits) + shift;       // position of hidden bit
-		if (hpos <= 0) {   // If hidden bit is LSB or beyond just set uncertainty bit and call it a day
-			number[0] = true;
-			return number;
-		}
-		number[size_t(hpos)] = true;           // hidden bit now safely set
-
-											   // Copy fraction bits into certain part
-		for (int npos = hpos - 1, fpos = int(fbits) - 1; npos > 0 && fpos >= 0; --npos, --fpos)
-			number[size_t(npos)] = _fraction[size_t(fpos)];
-
-		// Set uncertainty bit
-		bool uncertainty = false;
-		for (int fpos = std::min(int(fbits) - 1, -shift); fpos >= 0 && !uncertainty; --fpos)
-			uncertainty |= _fraction[size_t(fpos)];
-		number[0] = uncertainty;
-		return number;
-	}
-#endif
 
 private:
 	// special cases to keep track of
@@ -361,7 +364,9 @@ private:
 	// the triple (sign, scale, significant)
 	bool     _sign;
 	int      _scale;
-	Fraction _significant;
+
+public:
+	Frac _significant;
 
 	// helpers
 
@@ -787,45 +792,5 @@ blocktriple<nbits> abs(const blocktriple<nbits>& a) {
 	absolute.setpos();
 	return absolute;
 }
-
-#ifdef LATER
-// add two numbers with nbits significant bits, return the sumbits unrounded result value
-template<size_t nbits, size_t sumbits>
-void module_add(const blocktriple<nbits>& lhs, const blocktriple<nbits>& rhs, blocktriple<sumbits>& result) {
-	using bt = uint32_t; // same as the storage of blocktriple
-	int lhs_scale = lhs.scale();
-	int rhs_scale = rhs.scale();
-	int scale_of_result = std::max(lhs_scale, rhs_scale);
-
-	// align the significants and add a leading 0 bit so that we can 
-	// transform to a 2's complement encoding for negative numbers
-	blockfraction<sumbits, bt> r1 = lhs.template alignSignificant<sumbits>(lhs_scale - scale_of_result + 3);
-	blockfraction<sumbits, bt> r2 = rhs.template alignSignificant<sumbits>(rhs_scale - scale_of_result + 3);
-
-	if (lhs.isneg()) r1 = twosComplement(r1);
-	if (rhs.isneg()) r2 = twosComplement(r2);
-	blockfraction<sumbits, bt> sum = r1 + r2;
-
-	if constexpr (_trace_btriple_add) {
-		std::cout << "r1  : " << to_binary(r1) << " : " << r1 << '\n';
-		std::cout << "r2  : " << to_binary(r2) << " : " << r2 << '\n';
-		std::cout << "sum : " << to_binary(sum) << " : " << sum << '\n';
-	}
-	if (sum.iszero()) {                         
-		result.clear();
-	}
-	else {
-		bool sign = false;
-		if (sum.isneg()) {
-			sum = twosComplement(sum);
-			sign = true;
-		}
-		int shift = 0;
-		// TODO: normalize subnormal if needed
-		scale_of_result -= shift;
-		result.set(sign, scale_of_result, sum);
-	}
-}
-#endif
 
 }  // namespace sw::universal
