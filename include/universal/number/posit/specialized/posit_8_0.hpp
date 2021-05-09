@@ -84,7 +84,7 @@ namespace sw::universal {
 		explicit operator unsigned long() const { return to_long(); }
 		explicit operator unsigned int() const { return to_int(); }
 
-		posit& set(const sw::universal::bitblock<NBITS_IS_8>& raw) {
+		posit& setBitblock(const sw::universal::bitblock<NBITS_IS_8>& raw) {
 			_bits = uint8_t(raw.to_ulong());
 			return *this;
 		}

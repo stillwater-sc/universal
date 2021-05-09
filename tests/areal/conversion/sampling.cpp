@@ -38,11 +38,11 @@ void GenerateArealComparisonTable(const std::string& tag) {
 
 	// enumerate and compare the sampling of the real value line of the two types
 	for (size_t i = 0; i < NR_VALUES; ++i) {
-		a.set_raw_bits(i);
-		b.set_raw_bits(2*i);
+		a.setBits(i);
+		b.setBits(2*i);
 		cout << setw(columnWidth - 11ull) << pretty_print(b) << ' ' << setw(10) << b << "  |  " << pretty_print(a) << ' ' << setw(10) << a << endl;
 
-		b.set_raw_bits(2 * i + 1);
+		b.setBits(2 * i + 1);
 		cout << setw(columnWidth - 11ull) << pretty_print(b) << ' ' << setw(10) << b << "  |  " << endl;
 	}
 }

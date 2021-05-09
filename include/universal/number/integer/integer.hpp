@@ -540,7 +540,7 @@ public:
 		throw integer_byte_index_out_of_bounds{};
 	}
 	// use un-interpreted raw bits to set the bits of the integer
-	inline void set_raw_bits(unsigned long long value) {
+	inline void setBits(unsigned long long value) {
 		clear();
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			b[i] = value & 0xFF;

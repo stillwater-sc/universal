@@ -82,7 +82,7 @@ public:
 	explicit operator unsigned long() const { return to_long(); }
 	explicit operator unsigned int() const { return to_int(); }
 
-	posit& set(const sw::universal::bitblock<NBITS_IS_32>& raw) {
+	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_32>& raw) {
 		_bits = uint32_t(raw.to_ulong());
 		return *this;
 	}

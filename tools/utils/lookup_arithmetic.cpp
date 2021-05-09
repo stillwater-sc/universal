@@ -32,9 +32,9 @@ void GenerateLookupTable(BINARY_ARITHMETIC_OPERATOR op) {
 	constexpr size_t nr_of_posits = (1 << nbits);
 	sw::universal::posit<nbits, es> pa, pb, presult;
 	for (size_t i = 0; i < nr_of_posits; i++) {
-		pa.set_raw_bits(i);
+		pa.setBits(i);
 		for (size_t j = 0; j < nr_of_posits; j++) {
-			pb.set_raw_bits(j);
+			pb.setBits(j);
 			switch (op) {
 			case ADD:
 				presult = pa + pb;
@@ -65,9 +65,9 @@ void GenerateLookupTable(BINARY_LOGIC_OPERATOR op) {
 	sw::universal::posit<nbits, es> pa, pb;
 	bool result;
 	for (size_t i = 0; i < nr_of_posits; i++) {
-		pa.set_raw_bits(i);
+		pa.setBits(i);
 		for (size_t j = 0; j < nr_of_posits; j++) {
-			pb.set_raw_bits(j);
+			pb.setBits(j);
 			switch (op) {
 			case LT:
 				result = pa < pb;
@@ -102,7 +102,7 @@ void GenerateLookupTable(UNARY_ARITHMETIC_OPERATOR op) {
 		for (int j = 0; j < 8; ++j) {
 			size_t index = i + j;
 			//std::cout << "index[" << index << "]";
-			pa.set_raw_bits(index);
+			pa.setBits(index);
 			switch (op) {
 			case RECIPROCAL:
 				presult = 1.0 / pa;
@@ -190,7 +190,7 @@ namespace sw {
 
 			posit(int initial_value) { _bits = uint8_t(initial_value & 0xff); }
 
-			posit<5, 0>& set_raw_bits(uint64_t value) { _bits = uint8_t(value & 0xff); return *this;  }
+			posit<5, 0>& setBits(uint64_t value) { _bits = uint8_t(value & 0xff); return *this;  }
 			posit<5,0>& operator+=(const posit& b) {
 				uint16_t index = (_bits << 5) | b._bits;
 				_bits = lookup[index];
@@ -258,11 +258,11 @@ int Validate5_0_Lookup() {
 	sw::universal::posit<nbits, es> pa, pb, psum;
 	sw::spec::posit<nbits, es> sa, sb, ssum;
 	for (size_t i = 0; i < nr_of_posits; i++) {
-		pa.set_raw_bits(i);
-		sa.set_raw_bits(i);
+		pa.setBits(i);
+		sa.setBits(i);
 		for (size_t j = 0; j < nr_of_posits; j++) {
-			pb.set_raw_bits(j);
-			sb.set_raw_bits(j);
+			pb.setBits(j);
+			sb.setBits(j);
 			psum = pa + pb;
 			ssum = sa + sb;
 
@@ -284,7 +284,7 @@ int MeasureAdditionPerformance(int &positives, int &negatives) {
 
 	positives = 0; negatives = 0;
 	for (int i = 0; i < NR_TEST_CASES; i++) {
-		pb.set_raw_bits(i);
+		pb.setBits(i);
 		psum = pa + pb;
 		psum >= 0 ? positives++ : negatives++;
 	}

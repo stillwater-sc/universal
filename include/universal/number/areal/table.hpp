@@ -29,7 +29,7 @@ void GenerateArealTable(std::ostream& ostr, bool uncertainty = true, bool csvFor
 		ostr << "#, Binary, sign, scale, exponent, fraction, ubit, scientific, hex\n";
 		for (size_t i = 0; i < NR_VALUES; i++) {
 			if (!uncertainty && i % 2) continue;
-			v.set_raw_bits(i);
+			v.setBits(i);
 			bool s{ false };
 			blockbinary<es, bt> e;
 			blockbinary<fbits, bt> f;
@@ -72,7 +72,7 @@ void GenerateArealTable(std::ostream& ostr, bool uncertainty = true, bool csvFor
 			<< std::endl;
 		for (size_t i = 0; i < NR_VALUES; i++) {
 			if (!uncertainty && i % 2) continue;
-			v.set_raw_bits(i);
+			v.setBits(i);
 			bool s{ false };
 			blockbinary<es, bt> e;
 			blockbinary<fbits, bt> f;

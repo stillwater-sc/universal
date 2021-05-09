@@ -22,7 +22,7 @@ void GeneratePositTable(std::ostream& ostr, bool csvFormat = false)	{
 		ostr << "\"Generate Posit Lookup table for a POSIT<" << nbits << "," << es << "> in CSV format\"" << std::endl;
 		ostr << "#, Binary, Decoded, k, sign, scale, regime, exponent, fraction, value, posit\n";
 		for (size_t i = 0; i < size; i++) {
-			p.set_raw_bits(i);
+			p.setBits(i);
 			bool		     	 s;
 			regime<nbits, es>    r;
 			exponent<nbits, es>  e;
@@ -70,7 +70,7 @@ void GeneratePositTable(std::ostream& ostr, bool csvFormat = false)	{
 			<< std::setw(posit_format_column) << "posit_format"
 			<< std::endl;
 		for (size_t i = 0; i < size; i++) {
-			p.set_raw_bits(i);
+			p.setBits(i);
 			bool		     	 s;
 			regime<nbits, es>    r;
 			exponent<nbits, es>  e;

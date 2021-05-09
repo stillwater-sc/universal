@@ -60,7 +60,7 @@ template<size_t nbits, typename bt = uint8_t>
 constexpr blockbinary<nbits, bt>& maxpos(blockbinary<nbits, bt>& a) {
 	a.clear();
 	a.flip();
-	a.reset(nbits - 1);
+	a.setBit(nbits - 1, false);
 	return a;
 }
 
@@ -178,7 +178,7 @@ public:
 	}
 	blockbinary& operator++() {
 		blockbinary increment;
-		increment.set_raw_bits(0x1);
+		increment.setBits(0x1);
 		*this += increment;
 		return *this;
 	}
@@ -189,7 +189,7 @@ public:
 	}
 	blockbinary& operator--() {
 		blockbinary decrement;
-		decrement.set_raw_bits(0x1);
+		decrement.setBits(0x1);
 		return *this -= decrement;
 	}
 	// logic operators
@@ -359,7 +359,7 @@ public:
 			_block[i / bitsInBlock] = bt((block & null) | mask);
 			return;
 		}
-		throw "blockbinary<nbits, bt>.set(index): bit index out of bounds";
+		throw "blockbinary<nbits, bt>.setBit(index): bit index out of bounds";
 	}
 	inline constexpr void setBits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
@@ -745,8 +745,8 @@ inline blockbinary<2 * nbits, bt> urmul2(const blockbinary<nbits, bt>& a, const 
 	// normalize both arguments to positive in new size
 	blockbinary<nbits + 1, bt> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
 	blockbinary<nbits + 1, bt> b_new(b);
-	if (a.sign()) a_new.twoscomplement();
-	if (b.sign()) b_new.twoscomplement();
+	if (a.sign()) a_new.twosComplement();
+	if (b.sign()) b_new.twosComplement();
 	blockbinary<2*nbits, bt> multiplicant(b_new);
 
 #if TRACE_URMUL
@@ -762,7 +762,7 @@ inline blockbinary<2 * nbits, bt> urmul2(const blockbinary<nbits, bt>& a, const 
 		std::cout << std::setw(3) << i << ' ' << multiplicant << ' ' << result << std::endl;
 #endif
 	}
-	if (result_sign) result.twoscomplement();
+	if (result_sign) result.twosComplement();
 #if TRACE_URMUL
 	std::cout << "fnl " << result << std::endl;
 #endif
@@ -786,8 +786,8 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 	// normalize both arguments to positive in new size
 	blockbinary<nbits + 1, bt> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
 	blockbinary<nbits + 1, bt> b_new(b);
-	if (a_sign) a_new.twoscomplement();
-	if (b_sign) b_new.twoscomplement();
+	if (a_sign) a_new.twosComplement();
+	if (b_sign) b_new.twosComplement();
 
 	// initialize the long division
 	blockbinary<2 * nbits + roundingBits, bt> decimator(a_new);
@@ -812,10 +812,10 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 
 		if (subtractand <= decimator) {
 			decimator -= subtractand;
-			result.set(static_cast<size_t>(i));
+			result.setBit(static_cast<size_t>(i));
 		}
 		else {
-			result.reset(static_cast<size_t>(i));
+			result.setBit(static_cast<size_t>(i), false);
 		}
 		subtractand >>= 1;
 
@@ -825,7 +825,7 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 #endif
 	}
 	result <<= scale;
-	if (result_negative) result.twoscomplement();
+	if (result_negative) result.twosComplement();
 	r.assign(result); // copy the lowest bits which represent the bits on which we need to apply the rounding test
 	return result;
 }
