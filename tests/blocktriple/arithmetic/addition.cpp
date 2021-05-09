@@ -14,8 +14,9 @@
 #include <universal/native/ieee754.hpp>
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
-// #include <universal/verification/test_reporters.hpp>
+#include <universal/verification/test_reporters.hpp>
 
+#ifdef DEPRECATED
 #define NUMBER_COLUMN_WIDTH 20
 
 template<typename InputType, typename ResultType, typename RefType>
@@ -34,6 +35,7 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 		<< std::setprecision(old_precision)
 		<< std::endl;
 }
+#endif
 
 // enumerate all addition cases for an blocktriple<nbits,BlockType> configuration
 template<typename BlockTripleConfiguration>
@@ -52,24 +54,24 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	int nrOfFailedTests = 0;
 
 	blocktriple<abits> a, b;
-	blocktriple<abits+1> result, refResult;
+	blocktriple<abits+1> c, refResult;
 	double aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
+		a.setBits(i);
 		aref = double(a); // cast to double is reasonable constraint for exhaustive test
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
+			b.setBits(j);
 			bref = double(b); // cast to double is reasonable constraint for exhaustive test
 			cref = aref + bref;
-			module_add(a, b, result);
+			c.add(a, b);
 			refResult = cref;
 
-			if (result != refResult) {
+			if (c != refResult) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, result, cref);
+				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, cref);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, result, cref);
+				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, cref);
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
@@ -116,7 +118,7 @@ try {
 
 	print_cmd_line(argc, argv);
 	
-//	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = false;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "modular addition failed: ";
@@ -141,7 +143,7 @@ try {
 	cout << a << endl;	
 	cout << c << endl;
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, uint8_t> >(bReportIndividualTestCases), "blocktriple<8, uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 8, uint8_t> >(bReportIndividualTestCases), "blocktriple<8, uint8_t>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, uint8_t> >(bReportIndividualTestCases), "blocktriple<12, uint8_t>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, uint16_t> >(bReportIndividualTestCases), "blocktriple<12, uint16_t>", "addition");
 

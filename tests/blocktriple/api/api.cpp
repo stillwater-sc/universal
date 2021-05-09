@@ -9,6 +9,7 @@
 #include <fstream>
 #include <typeinfo>
 // minimum set of include files to reflect source code dependencies
+#define BLOCKTRIPLE_VERBOSE_OUTPUT
 #define BLOCKTRIPLE_TRACE_ADD 1
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/bfloat/bfloat.hpp>
@@ -79,6 +80,18 @@ try {
 	// test the bfloat conversion 
 	{
 		using Real = bfloat<8, 2, uint8_t>;
+		Real a;
+		a = 1.875f;
+		cout << color_print(a) << " : " << a << endl;
+		constexpr size_t abits = Real::abits;
+		blocktriple<abits> aa;
+		a.normalize(aa);  // decode bfloat into a triple form
+		cout << to_triple(aa) << " : " << a << '\n';
+	}
+
+	// test the bfloat addition 
+	{
+		using Real = bfloat<8, 2, uint8_t>;
 		Real a, b, c;
 		a = 1.0f;
 		b = -1.0f;
@@ -88,10 +101,9 @@ try {
 		a.normalize(aa);  // decode bfloat into a triple form aa ready for add/sub
 		b.normalize(bb);  // decode bfloat into a triple form bb ready for add/sub
 		cc.add(aa, bb);   // ALU unrounded add operator
-		convert(cc, c);  // round and convert back to bfloat
+		convert(cc, c);   // round and convert back to bfloat
 		cout << to_triple(cc) << " : " << cc << '\n';
 		cout << color_print(c) << " : " << c << endl;
-
 	}
 	{
 #ifdef LATER
@@ -103,7 +115,7 @@ try {
 		blocktriple<2*mbits> product;
 		a.normalize(aa);  // decode of a bits into a triple form aa
 		b.normalize(bb);  // decode of b bits into a triple form bb
-		product.mul(aa, bb);  // ALU mule operator
+		product.mul(aa, bb);  // ALU mul operator
 		convert(product, c);
 		cout << to_triple(product) << " : " << product << '\n';
 		cout << color_print(c) << " : " << c << endl;

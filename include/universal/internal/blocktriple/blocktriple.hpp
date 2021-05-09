@@ -69,6 +69,7 @@ blocktriple<nbits, bt>& convert(unsigned long long uint, blocktriple<nbits, bt>&
 template<size_t nbits, typename bt = uint32_t> 
 class blocktriple {
 public:
+	typedef bt BlockType;
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
 	// how to manage carry propagation on uint64_t using assembly code
@@ -314,8 +315,8 @@ public:
 	/// <summary>
 	/// add two real numbers with (nbits-1) fraction bits yielding an nbits unrounded sum
 	/// </summary>
-	/// <param name="lhs">blocktriple<nbits> that may get modified</param>
-	/// <param name="rhs">blocktriple<nbits> that may get modified</param>
+	/// <param name="lhs">ephemeral blocktriple<nbits> that may get modified</param>
+	/// <param name="rhs">ephemeral blocktriple<nbits> that may get modified</param>
 	/// <param name="result">unrounded sum</param>
 	void add(blocktriple<nbits-1>& lhs, blocktriple<nbits-1>& rhs) {
 		int lhs_scale = lhs.scale();
@@ -332,6 +333,10 @@ public:
 		}
 		if (lhs.isneg()) lhs._significant.twosComplement();
 		if (rhs.isneg()) rhs._significant.twosComplement();
+		// problem: blockfraction add result will have incorrectly 
+		// aligned radix point. If you align it by making the
+		// arguments nbits, then you are triggering a copy
+		// and thus lose performance
 		_significant.add(lhs._significant, rhs._significant);
 
 		if constexpr (_trace_btriple_add) {
