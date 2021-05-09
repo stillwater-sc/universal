@@ -92,7 +92,7 @@ void BFAdditionWorkload(uint64_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
 	sw::universal::blockfraction<nbits, bt> a, b, c, d;
-	a.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
+	a.setBits(0xFFFFFFFFFFFFFFFFull);
 	a = b;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
 		c.add(a, b);
@@ -105,7 +105,7 @@ void BFSubtractionWorkload(uint64_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
 	sw::universal::blockfraction<nbits, bt> a, b, c, d;
-	a.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
+	a.setBits(0xFFFFFFFFFFFFFFFFull);
 	a = b;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
 		c.sub(a, b);
@@ -119,7 +119,7 @@ void BFMultiplicationWorkload(uint64_t NR_OPS) {
 	using bt = typename Scalar::BlockType;
 	sw::universal::blockfraction<nbits, bt> a, b;
 	Scalar c, d;
-	a.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
+	a.setBits(0xFFFFFFFFFFFFFFFFull);
 	a = b;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
 		c.mul(a, b);
@@ -134,7 +134,7 @@ void BFDivisionWorkload(uint64_t NR_OPS) {
 	using bt = typename Scalar::BlockType;
 	sw::universal::blockfraction<nbits, bt> a, b;
 	Scalar c, d;
-	a.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
+	a.setBits(0xFFFFFFFFFFFFFFFFull);
 	a = b;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
 		c.div(a, b);

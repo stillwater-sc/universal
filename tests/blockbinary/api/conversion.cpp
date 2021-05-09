@@ -24,7 +24,7 @@ try {
 		size_t msbMask = 1;
 		blockbinary<fhbits, uint8_t> a;
 		for (size_t i = 0; i < fbits; ++i) {
-			a.set_raw_bits(msbMask);
+			a.setBits(msbMask);
 			blockbinary<sumbits> b(a);
 			cout << to_binary(a, true) << '\n';
 			cout << to_binary(b, true) << '\n';

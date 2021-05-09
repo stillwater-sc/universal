@@ -336,7 +336,11 @@ public:
 		}
 		throw "blockfraction<nbits, bt>.set(index): bit index out of bounds";
 	}
-	inline constexpr void set_raw_bits(uint64_t value) noexcept {
+	inline constexpr void setBlock(size_t b, const bt& block) {
+		if (b >= nrBlocks) throw "block index out of bounds";
+		_block[b] = block;
+	}
+	inline constexpr void setBits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
 			_block[0] = value & storageMask;
 		}
@@ -396,10 +400,8 @@ public:
 		throw "nibble index out of bounds";
 	}
 	inline constexpr bt block(size_t b) const {
-		if (b < nrBlocks) {
-			return _block[b];
-		}
-		throw "block index out of bounds";
+		if (b >= nrBlocks) throw "block index out of bounds";
+		return _block[b];
 	}
 
 	// copy a value over from one blockfraction to this blockfraction

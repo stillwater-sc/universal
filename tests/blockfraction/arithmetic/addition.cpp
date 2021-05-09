@@ -43,23 +43,24 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	using namespace std;
 	using namespace sw::universal;
 	
-	cout << endl;
-	cout << "blockfraction<" <<nbits << ',' << typeid(BlockType).name() << '>' << endl;
+//	cout << endl;
+//	cout << "blockfraction<" <<nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
 	int nrOfFailedTests = 0;
 
 	blockfraction<nbits, BlockType> a, b, c;
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
+	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
-		aref.set_raw_bits(i);
+		a.setBits(i);
+		aref.setBits(i);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
-			bref.set_raw_bits(j);
+			b.setBits(j);
+			bref.setBits(j);
 			cref = aref + bref;
 			c.add(a, b);
-			for (size_t k = 0; k < nbits; ++k) {
-				refResult.set(k, c.test(k));
+			for (size_t k = 0; k < nrBlocks; ++k) {
+				refResult.setBlock(k, c.block(k));
 			}
 
 			if (refResult != cref) {

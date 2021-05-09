@@ -30,10 +30,10 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 	blockbinary<nbits, BlockType> a, b, result, refResult;
 	int64_t aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
+		a.setBits(i);
 		aref = int64_t(a.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
+			b.setBits(j);
 			bref = int64_t(b.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
 			result = a * b;
 			cref = aref * bref;
@@ -51,7 +51,7 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 				if (bReportOverflowCondition)cout << endl;
 			}
 
-			refResult.set_raw_bits(static_cast<uint64_t>(cref));
+			refResult.setBits(static_cast<uint64_t>(cref));
 			if (result != refResult) {
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, result, cref);
@@ -74,8 +74,8 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 	using namespace sw::universal;
 	blockbinary<nbits, StorageBlockType> a, b, result, reference;
 
-	a.set_raw_bits(uint64_t(lhs));
-	b.set_raw_bits(uint64_t(rhs));
+	a.setBits(uint64_t(lhs));
+	b.setBits(uint64_t(rhs));
 	result = a * b;
 
 	long long _a, _b, _c;
@@ -88,7 +88,7 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 	std::cout << std::setw(nbits) << _a << " * " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << std::endl;
 	std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _c << ")   " << std::endl;
 //	std::cout << to_hex(a) << " * " << to_hex(b) << " = " << to_hex(result) << " (reference: " << std::hex << ref << ")   ";
-	reference.set_raw_bits(_c);
+	reference.setBits(_c);
 	std::cout << (result == reference ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }
@@ -139,8 +139,8 @@ try {
 	
 	{
 		blockbinary<4> a, b, c;
-		a.set_raw_bits(0x8);
-		b.set_raw_bits(0x2);
+		a.setBits(0x8);
+		b.setBits(0x2);
 	b.sign();
 		int bb = (int)b.to_long_long();
 		cout << (b.sign() ? "-1" : "+1") << "  value = " << bb << endl;

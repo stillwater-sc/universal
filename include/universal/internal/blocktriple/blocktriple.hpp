@@ -169,7 +169,7 @@ public:
 		_sign = (0x8000'0000'0000'0000 & bc);
 		_scale = int((0x7FF0'0000'0000'0000ull & bc) >> 52) - 1023;
 		uint64_t raw = (1ull << 52) | (0x000F'FFFF'FFFF'FFFFull & bc);
-		_significant.set_raw_bits(round<53, uint64_t>(raw));
+		_significant.setBits(round<53, uint64_t>(raw));
 #else
 		_zero = true;
 		_sign = false;
@@ -282,14 +282,14 @@ public:
 		_zero = false;
 		_sign = sign;
 	}
-	constexpr void set_raw_bits(uint64_t raw) noexcept {
-		clear();
-		_significant.set_raw_bits(raw);
-	}
 	constexpr void setpos() noexcept { _sign = false; }
 	constexpr void setsign(bool s) { _sign = s; }
 	constexpr void setscale(int scale) { _scale = scale; }
-	constexpr void set(size_t index, bool v = true) { _significant.set(index, v); }
+	constexpr void setBit(size_t index, bool v = true) { _significant.set(index, v); }
+	constexpr void setBits(uint64_t raw) noexcept {
+		clear();
+		_significant.setBits(raw);
+	}
 
 	// selectors
 	inline constexpr bool isnan()       const noexcept { return _nan; }
@@ -605,7 +605,7 @@ public:
 		bits |= biasedExponent;
 		bits <<= nbits - 1ull - es;
 		bits |= raw;
-		_significant.set_raw_bits(bits);
+		_significant.setBits(bits);
 
 #ifdef LATER
 		// implement saturation

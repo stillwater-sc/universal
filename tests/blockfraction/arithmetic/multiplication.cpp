@@ -15,60 +15,67 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
 
-// enumerate all multiplication cases for an blockfraction<nbits,BlockType> configuration
-template<size_t nbits, typename BlockType = uint8_t>
+#define NUMBER_COLUMN_WIDTH 20
+
+template<typename InputType, typename ResultType, typename RefType>
+void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const InputType& lhs, const InputType& rhs, const ResultType& result, const RefType& ref) {
+	using namespace sw::universal;
+	auto old_precision = std::cerr.precision();
+	std::cerr << test_case << " "
+		<< std::setprecision(20)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << lhs
+		<< " " << op << " "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
+		<< " != "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
+		<< " " << to_binary(result) << " vs " << to_binary(ref, true)
+		<< std::setprecision(old_precision)
+		<< std::endl;
+}
+
+// enumerate all addition cases for an blockfraction<nbits,BlockType> configuration
+template<typename BlockFractionConfiguration>
 int VerifyMultiplication(bool bReportIndividualTestCases) {
-	int nrOfFailedTests = 0;
-	/*
+	constexpr size_t nbits = BlockFractionConfiguration::nbits;
+	using BlockType = typename BlockFractionConfiguration::BlockType;
+
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace std;
 	using namespace sw::universal;
 
-	cout << endl;
-	cout << "blockfraction<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
+	//	cout << endl;
+	//	cout << "blockfraction<" <<nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
-	bool bReportOverflowCondition = false;
+	int nrOfFailedTests = 0;
 
-	int nrOfOverflows = 0;   // ref > maxpos
-	int nrOfUnderflows = 0;  // ref < maxneg
-	blockfraction<nbits, BlockType> a, b, c, refResult;
-	blockbinary<nbits, BlockType> aref, bref, cref;
+	blockfraction<nbits, BlockType> a, b, c;
+	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
+	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
-		aref.set_raw_bits(i);
+		a.setBits(i);
+		aref.setBits(i);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
-			bref.set_raw_bits(j);
-			c.mul(a, b);
+			b.setBits(j);
+			bref.setBits(j);
 			cref = aref * bref;
-
-			if (bReportOverflowCondition) cout << setw(5) << aref << " * " << setw(5) << bref << " = " << setw(5) << cref << " : ";
-			if (cref < -(1 << (nbits - 1))) {
-				if (bReportOverflowCondition) cout << "underflow: " << setw(5) << cref << " < " << setw(5) << -(1 << (nbits - 1)) << "(maxneg) assigned value = " << setw(5) << c << " " << setw(5) << to_hex(c) << " vs " << to_binary(cref, 12) << endl;
-				++nrOfUnderflows;
-			}
-			else if (cref > ((1 << (nbits - 1)) - 1)) {
-				if (bReportOverflowCondition) cout << "overflow: " << setw(5) << cref << " > " << setw(5) << (1 << (nbits - 1)) - 1 << "(maxpos) assigned value = " << setw(5) << c << " " << setw(5) << to_hex(c) << " vs " << to_binary(cref, 12) << endl;
-				++nrOfOverflows;
-			}
-			else {
-				if (bReportOverflowCondition)cout << endl;
+			c.mul(a, b);
+			for (size_t k = 0; k < nrBlocks; ++k) {
+				refResult.setBlock(k, c.block(k));
 			}
 
-			refResult.set_raw_bits(static_cast<uint64_t>(cref));
-			if (c != refResult) {
+			if (refResult != cref) {
 				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", a, b, c, cref);
+				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, refResult);
 			}
 			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "*", a, b, result, cref);
+				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, cref);
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}
-//		if (i % 1024 == 0) std::cout << '.';
+		//		if (i % 1024 == 0) cout << '.'; /// if you enable this, put the endl back
 	}
-	cout << "Total State Space: " << setw(10) << NR_VALUES * NR_VALUES << " Overflows: " << setw(10) << nrOfOverflows << " Underflows " << setw(10) << nrOfUnderflows << endl;
-	*/
+	//	cout << endl;
 	return nrOfFailedTests;
 }
 
@@ -170,29 +177,29 @@ try {
 	bool bReportIndividualTestCases = false;
 	cout << "block multiplication validation" << endl;;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, uint8_t>(bReportIndividualTestCases),  "blockfraction<8,uint8>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, uint16_t>(bReportIndividualTestCases), "blockfraction<8,uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<4, uint32_t>(bReportIndividualTestCases), "blockfraction<8,uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<4, uint8_t> >(bReportIndividualTestCases),  "blockfraction< 8, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<4, uint16_t> >(bReportIndividualTestCases), "blockfraction< 8, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<4, uint32_t> >(bReportIndividualTestCases), "blockfraction< 8, uint32>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, uint8_t>(bReportIndividualTestCases),  "blockfraction<8,uint8>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, uint16_t>(bReportIndividualTestCases), "blockfraction<8,uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<8, uint32_t>(bReportIndividualTestCases), "blockfraction<8,uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<8, uint8_t> >(bReportIndividualTestCases),  "blockfraction< 8, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<8, uint16_t> >(bReportIndividualTestCases), "blockfraction< 8, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<8, uint32_t> >(bReportIndividualTestCases), "blockfraction< 8, uint32>", "multiplication");
 	 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<9, uint8_t>(bReportIndividualTestCases),  "blockfraction<9,uint8>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<9, uint16_t>(bReportIndividualTestCases), "blockfraction<9,uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<9, uint32_t>(bReportIndividualTestCases), "blockfraction<9,uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<9, uint8_t> >(bReportIndividualTestCases),  "blockfraction< 9, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<9, uint16_t> >(bReportIndividualTestCases), "blockfraction< 9, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<9, uint32_t> >(bReportIndividualTestCases), "blockfraction< 9, uint32>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, uint8_t>(bReportIndividualTestCases),  "blockfraction<10,uint8>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, uint16_t>(bReportIndividualTestCases), "blockfraction<10,uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<10, uint32_t>(bReportIndividualTestCases), "blockfraction<10,uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<10, uint8_t> >(bReportIndividualTestCases),  "blockfraction<10, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<10, uint16_t> >(bReportIndividualTestCases), "blockfraction<10, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<10, uint32_t> >(bReportIndividualTestCases), "blockfraction<10, uint32>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<11, uint8_t>(bReportIndividualTestCases), "blockfraction<11,uint8>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<11, uint16_t>(bReportIndividualTestCases), "blockfraction<11,uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<11, uint32_t>(bReportIndividualTestCases), "blockfraction<11,uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<11, uint8_t> >(bReportIndividualTestCases),  "blockfraction<11, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<11, uint16_t> >(bReportIndividualTestCases), "blockfraction<11, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<11, uint32_t> >(bReportIndividualTestCases), "blockfraction<11, uint32>", "multiplication");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint8_t>(bReportIndividualTestCases), "blockfraction<12,uint8>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint16_t>(bReportIndividualTestCases), "blockfraction<12,uint16>", "multiplication");
-	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication<12, uint32_t>(bReportIndividualTestCases), "blockfraction<12,uint32>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<12, uint8_t> >(bReportIndividualTestCases),  "blockfraction<12, uint8 >", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<12, uint16_t> >(bReportIndividualTestCases), "blockfraction<12, uint16>", "multiplication");
+	nrOfFailedTestCases += ReportTestResult(VerifyMultiplication< blockfraction<12, uint32_t> >(bReportIndividualTestCases), "blockfraction<12, uint32>", "multiplication");
 
 
 

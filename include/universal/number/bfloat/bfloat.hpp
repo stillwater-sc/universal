@@ -1263,12 +1263,12 @@ public:
 		if constexpr (0 == nrBlocks) return;
 		else if constexpr (1 == nrBlocks) {
 			bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
-			e.set_raw_bits(uint64_t(ebits >> EXP_SHIFT));
+			e.setBits(uint64_t(ebits >> EXP_SHIFT));
 		}
 		else if constexpr (nrBlocks > 1) {
 			if (MSU_CAPTURES_E) {
 				bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
-				e.set_raw_bits(uint64_t(ebits >> ((nbits - 1ull - es) % bitsInBlock)));
+				e.setBits(uint64_t(ebits >> ((nbits - 1ull - es) % bitsInBlock)));
 			}
 			else {
 				for (size_t i = 0; i < es; ++i) { e.set(i, at(nbits - 1ull - es + i)); }
@@ -1281,7 +1281,7 @@ public:
 		if constexpr (0 == nrBlocks) return;
 		else if constexpr (1 == nrBlocks) {
 			bt fraction = bt(_block[MSU] & ~MSU_EXP_MASK);
-			f.set_raw_bits(fraction);
+			f.setBits(fraction);
 		}
 		else if constexpr (nrBlocks > 1) {
 			for (size_t i = 0; i < fbits; ++i) { f.set(i, at(nbits - 1ull - es - fbits + i)); } // TODO: TEST!
@@ -1303,7 +1303,7 @@ public:
 				shift = fhbits - msb;
 				significant <<= shift;
 			}
-			s.set_raw_bits(significant);
+			s.setBits(significant);
 		}
 		else if constexpr (nrBlocks > 1) {
 			s.clear();
@@ -1425,9 +1425,9 @@ public:
 				else {
 					// brute force copy of bits
 					size_t bit = tbits - 2;
-					tgt.set(bit--);
+					tgt.setBit(bit--);
 					for (size_t i = 0; i < fbits; ++i) {
-						tgt.set(bit--, at(fbits - 1 - i));
+						tgt.setBit(bit--, at(fbits - 1 - i));
 					}
 					tgt.setsign(sign());
 					tgt.setscale(scale());

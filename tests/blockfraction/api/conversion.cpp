@@ -39,7 +39,7 @@ try {
 		size_t frac = msbMask;
 		blockfraction<fhbits, uint8_t> a;
 		for (size_t i = 0; i < fbits; ++i) {
-			a.set_raw_bits(frac);
+			a.setBits(frac);
 			blockfraction<sumbits, uint8_t> b(a);   // blockfraction copies map MSB -> MSB
 			cout << to_binary(a, true) << '\n';
 			cout << to_binary(b, true) << '\n';
