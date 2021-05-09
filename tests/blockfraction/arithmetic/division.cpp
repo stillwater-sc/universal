@@ -17,6 +17,8 @@
 // enumerate all multiplication cases for an blockfraction<nbits,BlockType> configuration
 template<size_t nbits, typename BlockType = uint8_t>
 int VerifyDivision(bool bReportIndividualTestCases) {
+	int nrOfFailedTests = 0;
+	/*
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	using namespace std;
 	using namespace sw::universal;
@@ -25,7 +27,7 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 	cout << "blockfraction<" << nbits << ',' << typeid(BlockType).name() << '>' << endl;
 
 	bool bReportOverflowCondition = false;
-	int nrOfFailedTests = 0;
+
 	int nrOfOverflows = 0;   // ref > maxpos
 	int nrOfUnderflows = 0;  // ref < maxneg
 	blockfraction<nbits, BlockType> a, b, result, refResult;
@@ -65,6 +67,7 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 		//		if (i % 1024 == 0) std::cout << '.';
 	}
 	cout << "Total State Space: " << setw(10) << NR_VALUES * NR_VALUES << " Overflows: " << setw(10) << nrOfOverflows << " Underflows " << setw(10) << nrOfUnderflows << endl;
+	*/
 	return nrOfFailedTests;
 }
 
@@ -85,26 +88,7 @@ void TestMostSignificantBit() {
 // for most bugs they are traceable with _trace_conversion and _trace_add
 template<size_t nbits, typename BlockType = uint8_t>
 void GenerateTestCase(int64_t lhs, int64_t rhs) {
-	using namespace sw::universal;
-	blockfraction<nbits, BlockType> a, b, result, reference;
 
-	a.set_raw_bits(uint64_t(lhs));
-	b.set_raw_bits(uint64_t(rhs));
-//	result = a / b;
-
-	long long _a, _b, _c;
-	_a = double(a);
-	_b = double(b);
-	_c = _a / _b;
-
-	std::streamsize oldPrecision = std::cout.precision();
-	std::cout << std::setprecision(nbits - 2);
-	std::cout << std::setw(nbits) << _a << " / " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << std::endl;
-	std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _c << ")   " << std::endl;
-	//	std::cout << to_hex(a) << " * " << to_hex(b) << " = " << to_hex(result) << " (reference: " << std::hex << ref << ")   ";
-	reference.set_raw_bits(_c);
-	std::cout << (result == reference ? "PASS" : "FAIL") << std::endl << std::endl;
-	std::cout << std::dec << std::setprecision(oldPrecision);
 }
 
 // conditional compile flags

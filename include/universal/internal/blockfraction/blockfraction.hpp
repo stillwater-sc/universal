@@ -136,9 +136,9 @@ public:
 #endif
 
 	/// conversion operators
-	explicit operator float() const              { return float(to_long_long()); }
-	explicit operator double() const             { return double(to_long_long()); }
-	explicit operator long double() const        { return (long double)to_long_long(); }
+	explicit operator float() const              { return float(to_float()); }
+	explicit operator double() const             { return double(to_double()); }
+	explicit operator long double() const        { return (long double)to_long_double(); }
 
 	/// prefix operators
 	//
@@ -156,20 +156,26 @@ public:
 	/// arithmetic operators
 	//
 
-	void add(const blockfraction<nbits-1, bt>& lhs, const blockfraction<nbits-1, bt>& rhs) {
+	/// <summary>
+	/// add two fractions of the form 0h.fffff, that is, radix point at nbits-2
+	/// by design, the carry gets lopped off
+	/// </summary>
+	/// <param name="lhs">nbits of fraction in the form 0h.ffff</param>
+	/// <param name="rhs">nbits of fraction in the form 0h.ffff</param>
+	void add(const blockfraction<nbits, bt>& lhs, const blockfraction<nbits, bt>& rhs) {
 		bool carry = false;
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			// cast up so we can test for overflow
 			uint64_t l = uint64_t(lhs._block[i]);
 			uint64_t r = uint64_t(rhs._block[i]);
 			uint64_t s = l + r + (carry ? uint64_t(1) : uint64_t(0));
-			carry = (s > maxBlockValue ? true : false);
+			carry = (s > maxBlockValue);
 			_block[i] = bt(s);
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] &= MSU_MASK;
 	}
-	void sub(const blockfraction<nbits - 1, bt>& lhs, blockfraction<nbits - 1, bt>& rhs) {
+	void sub(const blockfraction<nbits, bt>& lhs, blockfraction<nbits, bt>& rhs) {
 		add(lhs, rhs.twosComplement());
 	}
 	void mul(const blockfraction<nbits, bt>& lhs, const blockfraction<nbits, bt>& rhs) {
@@ -433,7 +439,6 @@ public:
 		_block[MSU] &= MSU_MASK;
 		return *this;
 	}
-#endif
 
 	// return the position of the most significant bit, -1 if v == 0
 	inline int msb() const noexcept {
@@ -450,35 +455,50 @@ public:
 		}
 		return -1; // no significant bit found, all bits are zero
 	}
+#endif
+
 	// conversion to native types
-	int64_t to_long_long() const {
-		constexpr unsigned sizeoflonglong = 8 * sizeof(long long);
-		int64_t ll{ 0 };
-		int64_t mask{ 1 };
-		unsigned upper = (nbits < sizeoflonglong ? nbits : sizeoflonglong);
-		for (unsigned i = 0; i < upper; ++i) {
-			ll |= at(i) ? mask : 0;
-			mask <<= 1;
-		}
-		if (sign() && upper < sizeoflonglong) { // sign extend
-			for (unsigned i = upper; i < sizeoflonglong; ++i) {
-				ll |= mask;
-				mask <<= 1;
+	inline constexpr float to_float() const noexcept {
+		float f{ 0.0f };
+		// nbits in the form 0h.fffff in 2's complement, so check if we are negative and fix that first
+		blockfraction<nbits, bt> tmp(*this);
+		if (test(nbits - 1)) tmp.twosComplement();
+		if (test(nbits - 2)) f = 1.0f;  // check hidden bit
+		// enumerate from the smallest bit position and add and increment value
+		if (nbits < 21) { // check if we can represent this value with a native normal float with 23 fraction bits => nbits <= (23 - 2)
+			float v = std::pow(0.5f, float(nbits - 2));
+			for (size_t i = 0; i < nbits - 2u; ++i) {
+				if (test(i)) f += v;
+				v *= 2.0;
 			}
 		}
-		return ll;
-	}
-	uint64_t to_ull() const {
-		uint64_t ull{ 0 };
-		uint64_t mask{ 1 };
-		uint32_t msb = nbits < 64 ? nbits : 64;
-		for (uint32_t i = 0; i < msb; ++i) {
-			ull |= at(i) ? mask : 0;
-			mask <<= 1;
+		else {
+			std::cerr << "to_float() will yield inaccurate result since blockfraction has more precision than native IEEE-754 double\n";
 		}
-		return ull;
+		return f;
 	}
-
+	inline constexpr double to_double() const noexcept {
+		double d{ 0.0 };
+		// nbits in the form 0h.fffff in 2's complement, so check if we are negative and fix that first
+		blockfraction<nbits, bt> tmp(*this);
+		if (test(nbits - 1)) tmp.twosComplement();
+		if (test(nbits - 2)) d = 1.0;  // check hidden bit
+		// enumerate from the smallest bit position and add and increment value
+		if (nbits < 51) { // check if we can represent this value with a native normal double with 52 fraction bits => nbits <= (52 - 2)
+			double v = std::pow(0.5, double(nbits - 2));
+			for (size_t i = 0; i < nbits - 2u; ++i) {
+				if (test(i)) d += v;
+				v *= 2.0;
+			}
+		}
+		else {
+			std::cerr << "to_double() will yield inaccurate result since blockfraction has more precision than native IEEE-754 double\n";
+		}
+		return d;
+	}
+	inline constexpr long double to_long_double() const noexcept {
+		return (long double)to_double();
+	}
 	// determine the rounding mode: result needs to be rounded up if true
 	bool roundingMode(size_t targetLsb) const {
 		bool lsb = at(targetLsb);

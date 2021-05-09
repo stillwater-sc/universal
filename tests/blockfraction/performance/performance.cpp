@@ -91,12 +91,12 @@ template<typename Scalar>
 void BFAdditionWorkload(uint64_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
-	sw::universal::blockfraction<nbits - 1, bt> a, b;
-	Scalar c;
+	sw::universal::blockfraction<nbits, bt> a, b, c, d;
 	a.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
 	a = b;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
 		c.add(a, b);
+		d = c;
 	}
 }
 
@@ -104,8 +104,7 @@ template<typename Scalar>
 void BFSubtractionWorkload(uint64_t NR_OPS) {
 	constexpr size_t nbits = Scalar::nbits;
 	using bt = typename Scalar::BlockType;
-	sw::universal::blockfraction<nbits - 1, bt> a, b;
-	Scalar c, d;
+	sw::universal::blockfraction<nbits, bt> a, b, c, d;
 	a.set_raw_bits(0xFFFFFFFFFFFFFFFFull);
 	a = b;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
