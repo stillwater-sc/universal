@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <cmath> // for std::pow() used in conversions to native IEEE-754 formats values
 
 // compiler specific operators
 #if defined(__clang__)
