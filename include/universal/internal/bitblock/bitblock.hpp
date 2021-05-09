@@ -638,7 +638,7 @@ bitblock<nbits> twos_complement(bitblock<nbits> number) {
 template<size_t nbits, class Type>
 bitblock<nbits> convert_to_bitblock(Type number) {
 	bitblock<nbits> _Bits;
-	uint64_t mask = uint64_t(1);
+	uint64_t mask = 1ull;
 	for (size_t i = 0; i < nbits; i++) {
 		_Bits[i] = mask & number;
 		mask <<= 1;

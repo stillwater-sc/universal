@@ -28,14 +28,14 @@ int VerifyValueAdd(const std::string& tag, bool bReportIndividualTestCases) {
 			for (size_t afrac = 0; afrac < max_fract; ++afrac) {
 				afraction = convert_to_bitblock<fbits>(afrac);
 				a.set(sign == 1, scale, afraction, false, false);
-				// std::cout << components(a) << std::endl;
+				std::cout << to_triple(a) << std::endl;
 				for (size_t sign = 0; sign < 2; ++sign) {
 					for (int scale = scale_lb; scale < scale_ub; ++scale) {
 						for (size_t bfrac = 0; bfrac < max_fract; ++bfrac) {
 							bfraction = convert_to_bitblock<fbits>(bfrac);
 							b.set(sign == 1, scale, bfraction, false, false);
 							module_add<fbits, abits>(a, b, sum);
-							// std::cout << components(a) << " + " << components(b) << " = " << components(sum) << std::endl;
+							std::cout << to_triple(a) << " + " << to_triple(b) << " = " << to_triple(sum) << std::endl;
 
 							double dsum = sum.to_double();
 							ref = dsum;
@@ -103,8 +103,9 @@ try {
 
 #else
 
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 5>("FAIL", bReportIndividualTestCases), "value<5>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 8>("FAIL", bReportIndividualTestCases), "value<8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 3>("FAIL", bReportIndividualTestCases), "value<3>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 5>("FAIL", bReportIndividualTestCases), "value<5>", "addition");
+//	nrOfFailedTestCases += ReportTestResult(VerifyValueAdd<3, 8>("FAIL", bReportIndividualTestCases), "value<8>", "addition");
 
 #endif // MANUAL_TESTING
 

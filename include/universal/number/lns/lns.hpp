@@ -121,9 +121,8 @@ public:
 	}
 
 	// modifiers
-	inline void reset() {	}
-	inline void clear() { reset(); }
-	inline void set_raw_bits(uint64_t v) { _bits.set_raw_bits(v); } // API to be consistent with the other number systems
+	inline void clear() { _bits.clear(); }
+	inline void setBits(uint64_t v) { _bits.setBits(v); } // API to be consistent with the other number systems
 
 	// selectors
 	inline constexpr bool iszero() const { return false; }

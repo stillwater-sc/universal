@@ -55,17 +55,17 @@ int VerifyComplexAddition(const std::string& tag, bool bReportIndividualTestCase
 
 	complex<double> da, db, dc;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		ar.set_raw_bits(i);
+		ar.setBits(i);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			ar.set_raw_bits(j);
+			ar.setBits(j);
 			a = complex<FixedPoint>(ar, ai);
 			da = complex<double>(double(ar), double(ai));
 
 			// generate all the right sides
 			for (size_t k = 0; k < NR_VALUES; ++k) {
-				br.set_raw_bits(k);
+				br.setBits(k);
 				for (size_t l = 0; l < NR_VALUES; ++l) {
-					bi.set_raw_bits(l);
+					bi.setBits(l);
 					b = complex<FixedPoint>(br, bi);
 					db = complex<double>(double(br), double(bi));
 					dc = da + db;

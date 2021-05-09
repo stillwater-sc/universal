@@ -141,11 +141,11 @@ namespace sw::universal {
 				explicit operator unsigned long() const { return to_long(); }
 				explicit operator unsigned int() const { return to_int(); }
 
-				posit& set(sw::universal::bitblock<NBITS_IS_2>& raw) {
+				posit& setBitblock(sw::universal::bitblock<NBITS_IS_2>& raw) {
 					_bits = uint8_t(raw.to_ulong() & bit_mask);
 					return *this;
 				}
-				posit& set_raw_bits(uint64_t value) {
+				posit& setBits(uint64_t value) {
 					_bits = uint8_t(value & bit_mask);
 					return *this;
 				}
@@ -153,19 +153,19 @@ namespace sw::universal {
 					posit p;
 					switch (_bits) {
 					case 0x00:
-						p.set_raw_bits(0x00);
+						p.setBits(0x00);
 						break;
 					case 0x01:
-						p.set_raw_bits(0x03);
+						p.setBits(0x03);
 						break;
 					case 0x02:
-						p.set_raw_bits(0x02);
+						p.setBits(0x02);
 						break;
 					case 0x03:
-						p.set_raw_bits(0x01);
+						p.setBits(0x01);
 						break;
 					default:
-						p.set_raw_bits(0x02);
+						p.setBits(0x02);
 					}
 					return p;
 				}
@@ -209,7 +209,7 @@ namespace sw::universal {
 				}
 				posit reciprocate() const {
 					posit p;
-					p.set_raw_bits(posit_2_0_reciprocal_lookup[_bits]);
+					p.setBits(posit_2_0_reciprocal_lookup[_bits]);
 					return p;
 				}
 				

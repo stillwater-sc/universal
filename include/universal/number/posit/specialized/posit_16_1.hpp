@@ -82,11 +82,11 @@ public:
 	explicit operator unsigned long() const { return to_long(); }
 	explicit operator unsigned int() const { return to_int(); }
 
-	posit& set(const bitblock<NBITS_IS_16>& raw) {
+	posit& setBitblock(const bitblock<NBITS_IS_16>& raw) {
 		_bits = uint16_t(raw.to_ulong());
 		return *this;
 	}
-	constexpr posit& set_raw_bits(uint64_t value) {
+	constexpr posit& setBits(uint64_t value) {
 		_bits = uint16_t(value & 0xffff);
 		return *this;
 	}
@@ -94,7 +94,7 @@ public:
 	// arithmetic assignment operators
 	constexpr posit operator-() const {
 		posit p;
-		return p.set_raw_bits((~_bits) + 1);
+		return p.setBits((~_bits) + 1);
 	}
 	posit& operator+=(const posit& b) {
 		// process special cases
@@ -421,7 +421,7 @@ public:
 	inline void setnar() { _bits = sign_mask; }
 	inline posit twosComplement() const {
 		posit p;
-		return p.set_raw_bits(~_bits + 1);
+		return p.setBits(~_bits + 1);
 	}
 
 	internal::value<fbits> to_value() const {

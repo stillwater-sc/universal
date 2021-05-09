@@ -133,7 +133,7 @@ public:
 	inline void clear() { sign = false; exp = 0; coef.clear(); }
 	inline void setzero() { clear(); }
 	// use un-interpreted raw bits to set the bits of the adaptiveint
-	inline void set_raw_bits(unsigned long long value) {
+	inline void setBits(unsigned long long value) {
 		clear();
 	}
 	inline adaptiveint& assign(const std::string& txt) {

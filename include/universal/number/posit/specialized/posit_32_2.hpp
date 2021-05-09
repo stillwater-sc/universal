@@ -82,17 +82,17 @@ public:
 	explicit operator unsigned long() const { return to_long(); }
 	explicit operator unsigned int() const { return to_int(); }
 
-	posit& set(const sw::universal::bitblock<NBITS_IS_32>& raw) {
+	posit& setBitblock(const sw::universal::bitblock<NBITS_IS_32>& raw) {
 		_bits = uint32_t(raw.to_ulong());
 		return *this;
 	}
-	constexpr posit& set_raw_bits(uint64_t value) {
+	constexpr posit& setBits(uint64_t value) {
 		_bits = uint32_t(value & 0xFFFFFFFF);
 		return *this;
 	}
 	posit operator-() const {
 		posit p;
-		return p.set_raw_bits((~_bits) + 1);
+		return p.setBits((~_bits) + 1);
 	}
 	// arithmetic assignment operators
 	posit& operator+=(const posit& b) {
@@ -441,7 +441,7 @@ public:
 	unsigned long long encoding() const { return (unsigned long long)(_bits); }
 	inline posit twosComplement() const {
 		posit p;
-		return p.set_raw_bits((~_bits) + 1);
+		return p.setBits((~_bits) + 1);
 	}
 
 #ifdef NEW_TO_VALUE

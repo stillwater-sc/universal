@@ -54,7 +54,6 @@ int Conversions() {
 	return nrOfFailedTestCases;
 }
 
-
 // ? what is this trying to test TODO
 int IncrementRightAdjustedBitset() {
 	using namespace sw::universal::internal;

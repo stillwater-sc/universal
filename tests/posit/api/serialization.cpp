@@ -21,7 +21,7 @@ void VerifyToBinary() {
 
 	posit<nbits, es> p;
 	for (size_t i = 0; i < NR_VALUES; ++i) {
-		p.set_raw_bits(i);
+		p.setBits(i);
 		std::cout << hex_format(p) << ' ' << color_print(p) << ' ' << to_binary(p) << ' ' << p << std::endl;
 	}
 }

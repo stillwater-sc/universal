@@ -61,7 +61,7 @@ try {
 
 	{
 		bfloat<6,2> a;
-		a.constexprParameters();
+		a.constexprClassParameters();
 
 		float testValue = 8.0f;
 		a = testValue;

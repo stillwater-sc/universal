@@ -7,6 +7,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <cmath> // for std::pow() used in conversions to native IEEE-754 formats values
 
 // compiler specific operators
 #if defined(__clang__)
@@ -43,7 +44,7 @@ namespace sw::universal {
 
 // forward references
 template<size_t nbits, typename bt> class blockfraction;
-template<size_t nbits, typename bt> blockfraction<nbits, bt> twosComplement(const blockfraction<nbits, bt>&);
+template<size_t nbits, typename bt> constexpr blockfraction<nbits, bt> twosComplement(const blockfraction<nbits, bt>&);
 template<size_t nbits, typename bt> struct quorem;
 template<size_t nbits, typename bt> quorem<nbits, bt> longdivision(const blockfraction<nbits, bt>&, const blockfraction<nbits, bt>&);
 
@@ -66,10 +67,22 @@ We could use a sint64_t and then convert to uint64_t and observe the MSB. Very d
 logic though.
 */
 
-// a block-based floating-point fraction including the leading 1 bit
-template<size_t nbits, typename bt = uint8_t>
+
+/// <summary>
+/// a block-based floating-point fraction of the form  ##.ff---ff
+/// for add/sub, expanded to ##.ff---ffaaa
+/// for mul, expanded to ##.ff--ffff--ff
+/// 
+/// NOTE: don't set a default blocktype as this makes the integration more brittle
+/// as blocktriple uses the blockfraction as storage class and thus needs to be
+/// in sync.
+/// </summary>
+/// <typeparam name="bt"></typeparam>
+template<size_t _nbits, typename bt>
 class blockfraction {
 public:
+	typedef bt BlockType;
+	static constexpr size_t nbits = _nbits;
 	static constexpr size_t bitsInByte = 8;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t");
@@ -98,7 +111,11 @@ public:
 		this->assign(rhs);
 	}
 
-	// initializer for long long
+#ifdef NEVER
+	// blockfraction cannot have decorated constructors or assignment
+	// as blockfraction does not have all the information to interpret a value
+	// So by design, the class interface does not interact with values
+
 	constexpr blockfraction(long long initial_value) noexcept : _block{ 0 } { *this = initial_value; }
 
 	constexpr blockfraction& operator=(long long rhs) noexcept {
@@ -117,96 +134,78 @@ public:
 		}
 		return *this;
 	}
+#endif
 
-	// conversion operators
-	explicit operator float() const              { return float(to_long_long()); }
-	explicit operator double() const             { return double(to_long_long()); }
-	explicit operator long double() const        { return (long double)to_long_long(); }
+	/// conversion operators
+	explicit operator float() const              { return float(to_float()); }
+	explicit operator double() const             { return double(to_double()); }
+	explicit operator long double() const        { return (long double)to_long_double(); }
 
-	// prefix operators
-	blockfraction operator-() const {
-		blockfraction negated(*this);
-		blockfraction plusOne(1);
-		negated.flip();
-		negated += plusOne;
-		return negated;
-	}
+	/// prefix operators
+	//
+	// 
 	// one's complement
 	blockfraction operator~() const {
 		blockfraction complement(*this);
 		complement.flip();
 		return complement;
 	}
-	// increment/decrement
-	blockfraction operator++(int) {
-		blockfraction tmp(*this);
-		operator++();
-		return tmp;
-	}
-	blockfraction& operator++() {
-		blockfraction increment;
-		increment.set_raw_bits(0x1);
-		*this += increment;
-		return *this;
-	}
-	blockfraction operator--(int) {
-		blockfraction tmp(*this);
-		operator--();
-		return tmp;
-	}
-	blockfraction& operator--() {
-		blockfraction decrement;
-		decrement.set_raw_bits(0x1);
-		return *this -= decrement;
-	}
-	// logic operators
-	blockfraction  operator~() {
-		blockfraction<nbits, bt> complement(*this);
-		complement.flip();
-		return complement;
-	}
-	// arithmetic operators
-	blockfraction& operator+=(const blockfraction& rhs) {
+
+	/// logic operators
+	// none
+
+	/// arithmetic operators
+	//
+
+	/// <summary>
+	/// add two fractions of the form 0h.fffff, that is, radix point at nbits-2
+	/// by design, the carry gets lopped off
+	/// </summary>
+	/// <param name="lhs">nbits of fraction in the form 0h.ffff</param>
+	/// <param name="rhs">nbits of fraction in the form 0h.ffff</param>
+	void add(const blockfraction<nbits, bt>& lhs, const blockfraction<nbits, bt>& rhs) {
 		bool carry = false;
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			// cast up so we can test for overflow
-			uint64_t l = uint64_t(_block[i]);
+			uint64_t l = uint64_t(lhs._block[i]);
 			uint64_t r = uint64_t(rhs._block[i]);
 			uint64_t s = l + r + (carry ? uint64_t(1) : uint64_t(0));
-			carry = (s > maxBlockValue ? true : false);
+			carry = (s > maxBlockValue);
 			_block[i] = bt(s);
 		}
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 		_block[MSU] &= MSU_MASK;
-		return *this;
 	}
-	blockfraction& operator-=(const blockfraction& rhs) {
-		return operator+=(twosComplement(rhs));
+	void sub(const blockfraction<nbits, bt>& lhs, blockfraction<nbits, bt>& rhs) {
+		add(lhs, rhs.twosComplement());
 	}
-	blockfraction& operator*=(const blockfraction& rhs) { // modulo in-place
-		blockfraction base(*this);
-		blockfraction multiplicant(rhs);
+	void mul(const blockfraction<nbits, bt>& lhs, const blockfraction<nbits, bt>& rhs) {
+		blockfraction<nbits, bt> base(lhs);
+		blockfraction<nbits, bt> multiplicant(rhs);
 		clear();
 		for (size_t i = 0; i < nbits; ++i) {
 			if (base.at(i)) {
-				operator+=(multiplicant);
+				add(*this, multiplicant);
 			}
 			multiplicant <<= 1;
 		}
 		// since we used operator+=, which enforces the nulling of leading bits
 		// we don't need to null here
-		return *this;
 	}
-	blockfraction& operator/=(const blockfraction& rhs) {
-		quorem<nbits, bt> result = longdivision(*this, rhs);
-		*this = result.quo;
-		return *this;
+	// division operator
+	void div(const blockfraction<nbits, bt>& lhs, const blockfraction<nbits, bt>& rhs) {
+//		quorem<nbits, bt> result = longdivision(*this, rhs);
+//		*this = result.quo;
 	}
+
+#ifdef FRACTION_REMAINDER
+	// remainder operator
 	blockfraction& operator%=(const blockfraction& rhs) {
-		quorem<nbits, bt> result = longdivision(*this, rhs);
-		*this = result.rem;
+//		quorem<nbits, bt> result = longdivision(*this, rhs);
+//		*this = result.rem;
 		return *this;
 	}
+#endif
 	// shift left operator
 	blockfraction& operator<<=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
@@ -337,7 +336,11 @@ public:
 		}
 		throw "blockfraction<nbits, bt>.set(index): bit index out of bounds";
 	}
-	inline constexpr void set_raw_bits(uint64_t value) noexcept {
+	inline constexpr void setBlock(size_t b, const bt& block) {
+		if (b >= nrBlocks) throw "block index out of bounds";
+		_block[b] = block;
+	}
+	inline constexpr void setBits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
 			_block[0] = value & storageMask;
 		}
@@ -356,10 +359,13 @@ public:
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
-	inline constexpr blockfraction& twoscomplement() noexcept { // in-place 2's complement
-		blockfraction<nbits, bt> plusOne(1);
+	// in-place 2's complement
+	inline constexpr blockfraction& twosComplement() noexcept {
+		blockfraction<nbits, bt> plusOne;
+		plusOne.set(0);
 		flip();
-		return *this += plusOne;
+		add(*this, plusOne);
+		return *this;
 	}
 
 	// selectors
@@ -394,10 +400,8 @@ public:
 		throw "nibble index out of bounds";
 	}
 	inline constexpr bt block(size_t b) const {
-		if (b < nrBlocks) {
-			return _block[b];
-		}
-		throw "block index out of bounds";
+		if (b >= nrBlocks) throw "block index out of bounds";
+		return _block[b];
 	}
 
 	// copy a value over from one blockfraction to this blockfraction
@@ -422,6 +426,7 @@ public:
 		return *this;
 	}
 
+#ifdef DEPRECATED
 	// copy a value over from one blockfraction to this without sign-extending the value
 	// blockfraction is a 2's complement encoding, so we sign-extend by default
 	// for fraction/significent encodings, we need to turn off sign-extending.
@@ -453,35 +458,50 @@ public:
 		}
 		return -1; // no significant bit found, all bits are zero
 	}
+#endif
+
 	// conversion to native types
-	int64_t to_long_long() const {
-		constexpr unsigned sizeoflonglong = 8 * sizeof(long long);
-		int64_t ll{ 0 };
-		int64_t mask{ 1 };
-		unsigned upper = (nbits < sizeoflonglong ? nbits : sizeoflonglong);
-		for (unsigned i = 0; i < upper; ++i) {
-			ll |= at(i) ? mask : 0;
-			mask <<= 1;
-		}
-		if (sign() && upper < sizeoflonglong) { // sign extend
-			for (unsigned i = upper; i < sizeoflonglong; ++i) {
-				ll |= mask;
-				mask <<= 1;
+	inline constexpr float to_float() const noexcept {
+		float f{ 0.0f };
+		// nbits in the form 0h.fffff in 2's complement, so check if we are negative and fix that first
+		blockfraction<nbits, bt> tmp(*this);
+		if (test(nbits - 1)) tmp.twosComplement();
+		if (test(nbits - 2)) f = 1.0f;  // check hidden bit
+		// enumerate from the smallest bit position and add and increment value
+		if (nbits < 21) { // check if we can represent this value with a native normal float with 23 fraction bits => nbits <= (23 - 2)
+			float v = std::pow(0.5f, float(nbits - 2));
+			for (size_t i = 0; i < nbits - 2u; ++i) {
+				if (test(i)) f += v;
+				v *= 2.0;
 			}
 		}
-		return ll;
-	}
-	uint64_t to_ull() const {
-		uint64_t ull{ 0 };
-		uint64_t mask{ 1 };
-		uint32_t msb = nbits < 64 ? nbits : 64;
-		for (uint32_t i = 0; i < msb; ++i) {
-			ull |= at(i) ? mask : 0;
-			mask <<= 1;
+		else {
+			std::cerr << "to_float() will yield inaccurate result since blockfraction has more precision than native IEEE-754 double\n";
 		}
-		return ull;
+		return f;
 	}
-
+	inline constexpr double to_double() const noexcept {
+		double d{ 0.0 };
+		// nbits in the form 0h.fffff in 2's complement, so check if we are negative and fix that first
+		blockfraction<nbits, bt> tmp(*this);
+		if (test(nbits - 1)) tmp.twosComplement();
+		if (test(nbits - 2)) d = 1.0;  // check hidden bit
+		// enumerate from the smallest bit position and add and increment value
+		if (nbits < 51) { // check if we can represent this value with a native normal double with 52 fraction bits => nbits <= (52 - 2)
+			double v = std::pow(0.5, double(nbits - 2));
+			for (size_t i = 0; i < nbits - 2u; ++i) {
+				if (test(i)) d += v;
+				v *= 2.0;
+			}
+		}
+		else {
+			std::cerr << "to_double() will yield inaccurate result since blockfraction has more precision than native IEEE-754 double\n";
+		}
+		return d;
+	}
+	inline constexpr long double to_long_double() const noexcept {
+		return (long double)to_double();
+	}
 	// determine the rounding mode: result needs to be rounded up if true
 	bool roundingMode(size_t targetLsb) const {
 		bool lsb = at(targetLsb);
@@ -503,13 +523,15 @@ public:
 		return false;
 	}
 
+
 protected:
 	// HELPER methods
 	// none
 
-private:
+public:
 	bt _block[nrBlocks];
 
+private:
 	//////////////////////////////////////////////////////////////////////////////
 	// friend functions
 
@@ -562,34 +584,9 @@ template<size_t N, typename B>
 inline bool operator>=(const blockfraction<N, B>& lhs, const blockfraction<N, B>& rhs) {
 	return !(lhs < rhs);
 }
+
 ///////////////////////////////////////////////////////////////////////////////
 // binary operators
-
-template<size_t nbits, typename bt>
-inline blockfraction<nbits, bt> operator+(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b) {
-	blockfraction<nbits, bt> c(a);
-	return c += b;
-}
-template<size_t nbits, typename bt>
-inline blockfraction<nbits, bt> operator-(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b) {
-	blockfraction<nbits, bt> c(a);
-	return c -= b;
-}
-template<size_t nbits, typename bt>
-inline blockfraction<nbits, bt> operator*(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b) {
-	blockfraction<nbits, bt> c(a);
-	return c *= b;
-}
-template<size_t nbits, typename bt>
-inline blockfraction<nbits, bt> operator/(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b) {
-	blockfraction<nbits, bt> c(a);
-	return c /= b;
-}
-template<size_t nbits, typename bt>
-inline blockfraction<nbits, bt> operator%(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b) {
-	blockfraction<nbits, bt> c(a);
-	return c %= b;
-}
 
 template<size_t nbits, typename bt>
 inline blockfraction<nbits, bt> operator<<(const blockfraction<nbits, bt>& a, const long b) {
@@ -660,89 +657,6 @@ quorem<nbits, bt> longdivision(const blockfraction<nbits, bt>& _a, const blockfr
 ///////////////////////////////////////////////////////////////////////////////
 // specialty binary operators
 
-// unrounded addition, returns a blockfraction that is of size nbits+1
-template<size_t nbits, typename bt>
-inline blockfraction<nbits + 1, bt> uradd(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b) {
-	blockfraction<nbits + 1, bt> result(a);
-	return result += blockfraction<nbits + 1, bt>(b);
-}
-
-// unrounded subtraction, returns a blockfraction that is of size nbits+1
-template<size_t nbits, typename bt>
-inline blockfraction<nbits + 1, bt> ursub(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b) {
-	blockfraction<nbits + 1, bt> result(a);
-	return result -= blockfraction<nbits + 1, bt>(b);
-}
-
-#define TRACE_URMUL 0
-// unrounded multiplication, returns a blockfraction that is of size 2*nbits
-// using brute-force sign-extending of operands to yield correct sign-extended result for 2*nbits 2's complement.
-template<size_t nbits, typename bt>
-inline blockfraction<2*nbits, bt> urmul(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b) {
-	blockfraction<2 * nbits, bt> result;
-	if (a.iszero() || b.iszero()) return result;
-
-	// compute the result
-	blockfraction<2 * nbits, bt> signextended_a(a);
-	blockfraction<2 * nbits, bt> multiplicant(b);
-#if TRACE_URMUL
-	std::cout << "    " << to_binary(a) << " * " << to_binary(b) << std::endl;
-	std::cout << std::setw(3) << 0 << ' ' << to_binary(multiplicant) << ' ' << to_binary(result) << std::endl;
-#endif
-	for (size_t i = 0; i < 2* nbits; ++i) {
-		if (signextended_a.at(i)) {
-			result += multiplicant;
-		}
-		multiplicant <<= 1;
-#if TRACE_URMUL
-		std::cout << std::setw(3) << i << ' ' << to_binary(multiplicant) << ' ' << to_binary(result) << std::endl;
-#endif
-
-	}
-#if TRACE_URMUL
-	std::cout << "fnl " << to_binary(result) << std::endl;
-#endif
-	//blockfraction<2 * nbits, bt> clipped(result);
-	// since we used operator+=, which enforces the nulling of leading bits
-	// we don't need to null here
-	return result;
-}
-
-// unrounded multiplication, returns a blockfraction that is of size 2*nbits
-// using nbits modulo arithmetic with final sign
-template<size_t nbits, typename bt>
-inline blockfraction<2 * nbits, bt> urmul2(const blockfraction<nbits, bt>& a, const blockfraction<nbits, bt>& b) {
-	blockfraction<2 * nbits, bt> result;
-	if (a.iszero() || b.iszero()) return result;
-
-	// compute the result
-	bool result_sign = a.sign() ^ b.sign();
-	// normalize both arguments to positive in new size
-	blockfraction<nbits + 1, bt> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
-	blockfraction<nbits + 1, bt> b_new(b);
-	if (a.sign()) a_new.twoscomplement();
-	if (b.sign()) b_new.twoscomplement();
-	blockfraction<2*nbits, bt> multiplicant(b_new);
-
-#if TRACE_URMUL
-	std::cout << "    " << a_new << " * " << b_new << std::endl;
-	std::cout << std::setw(3) << 0 << ' ' << multiplicant << ' ' << result << std::endl;
-#endif
-	for (size_t i = 0; i < (nbits+1); ++i) {
-		if (a_new.at(i)) {
-			result += multiplicant;  // if multiplicant is not the same size as result, the assignment will get sign-extended if the MSB is true, this is not correct because we are assuming unsigned binaries in this loop
-		}
-		multiplicant <<= 1;
-#if TRACE_URMUL
-		std::cout << std::setw(3) << i << ' ' << multiplicant << ' ' << result << std::endl;
-#endif
-	}
-	if (result_sign) result.twoscomplement();
-#if TRACE_URMUL
-	std::cout << "fnl " << result << std::endl;
-#endif
-	return result;
-}
 
 #define TRACE_DIV 0
 // unrounded division, returns a blockfraction that is of size 2*nbits
@@ -846,5 +760,11 @@ std::ostream& operator<<(std::ostream& ostr, const blockfraction<nbits, bt>& num
 	return ostr << to_binary(number);
 }
 
+// free function generator of the 2's complement of a blockfraction
+template<size_t nbits, typename bt> 
+inline constexpr blockfraction<nbits, bt> twosComplement(const blockfraction<nbits, bt>& a) {
+	blockfraction<nbits, bt> b(a);
+	return b.twosComplement();
+}
 
 } // namespace sw::universal

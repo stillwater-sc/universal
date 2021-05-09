@@ -40,7 +40,7 @@ void ColorPrintTable()
 	sw::universal::posit<nbits, es> p;
 	cout << "Color Printing a posit configuration\n";
 	for (size_t i = 0; i < NR_POSITS; ++i) {
-		p.set_raw_bits(i);
+		p.setBits(i);
 		cout << type_tag(p) << ": " << color_print(p) << " " << pretty_print(p) << std::endl;
 	}
 	cout << endl << endl;
@@ -233,7 +233,7 @@ void Conversions() {
 	posit<32, 2> p32;
 	cout << "Arbitrary conversions\n";
 	for (uint16_t i = 0; i < 256; ++i) {
-		p8a.set_raw_bits(i);
+		p8a.setBits(i);
 		p16 = posit<16, 1>(p8a);
 		p32 = posit<32, 2>(p8a);
 		cout << "p8 " << setw(10) << p8a << " : " << color_print(p8a) << " p16 " << setw(10) << p16 << " : " << color_print(p16) << " p32 " << setw(10) << p32 << " : " << color_print(p32) << endl;
@@ -329,7 +329,7 @@ try {
 	Conversions();
 
 	posit<32, 2> p;
-	p.set_raw_bits(0xb0bfe591u);
+	p.setBits(0xb0bfe591u);
 	cout << color_print(p) << " " << setprecision(30) << p << setprecision(old_precision) << endl;
 
 	return (bSuccess ? EXIT_SUCCESS : EXIT_FAILURE);

@@ -119,7 +119,7 @@ template<size_t nbits, size_t es, class positN_t> class convert_bytes : convert<
 		sw::universal::posit<nbits, es> pa;
 		sw::universal::bitblock<nbits> raw;
 		marshal<nbits,es>(bits, raw);
-		pa.set(raw);
+		pa.setBitblock(raw);
 		return pa;
 	}
 	static positN_t encode(sw::universal::posit<nbits, es> p) {

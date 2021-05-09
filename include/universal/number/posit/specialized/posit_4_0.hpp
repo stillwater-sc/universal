@@ -193,11 +193,11 @@ namespace sw::universal {
 				explicit operator unsigned long() const { return to_long(); }
 				explicit operator unsigned int() const { return to_int(); }
 
-				posit& set(sw::universal::bitblock<NBITS_IS_4>& raw) {
+				posit& setBitblock(sw::universal::bitblock<NBITS_IS_4>& raw) {
 					_bits = uint8_t(raw.to_ulong());
 					return *this;
 				}
-				posit& set_raw_bits(uint64_t value) {
+				posit& setBits(uint64_t value) {
 					_bits = uint8_t(value & bit_mask);
 					return *this;
 				}
@@ -209,7 +209,7 @@ namespace sw::universal {
 						return *this;
 					}
 					posit p;
-					return p.set_raw_bits((~_bits) + 1);
+					return p.setBits((~_bits) + 1);
 				}
 				posit& operator+=(const posit& b) {
 					uint16_t index = (_bits << index_shift) | b._bits;
@@ -251,7 +251,7 @@ namespace sw::universal {
 				}
 				posit reciprocate() const {
 					posit p;
-					p.set_raw_bits(posit_4_0_reciprocal_lookup[_bits]);
+					p.setBits(posit_4_0_reciprocal_lookup[_bits]);
 					return p;
 				}
 				// SELECTORS

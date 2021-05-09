@@ -207,7 +207,7 @@ namespace sw::universal {
 			return p;
 		}
 		unsigned root = posit_3_0_roots[a.encoding()];
-		p.set_raw_bits(root);
+		p.setBits(root);
 		return p;
 	}
 
@@ -220,7 +220,7 @@ namespace sw::universal {
 			return p;
 		}
 		unsigned root = posit_3_1_roots[a.encoding()];
-		p.set_raw_bits(root);
+		p.setBits(root);
 		return p;
 	}
 
@@ -234,7 +234,7 @@ namespace sw::universal {
 		}
 
 		unsigned root = posit_4_0_roots[a.encoding()];
-		p.set_raw_bits(root);
+		p.setBits(root);
 		return p;
 	}
 
@@ -247,7 +247,7 @@ namespace sw::universal {
 			return p;
 		}
 		unsigned root = posit_5_0_roots[a.encoding()];
-		p.set_raw_bits(root);
+		p.setBits(root);
 		return p;
 	}
 
@@ -260,7 +260,7 @@ namespace sw::universal {
 			return p;
 		}
 		unsigned root = posit_8_0_roots[a.encoding()];
-		p.set_raw_bits(root);
+		p.setBits(root);
 		return p;
 	}
 
@@ -273,7 +273,7 @@ namespace sw::universal {
 			return p;
 		}
 		unsigned root = posit_8_1_roots[a.encoding()];
-		p.set_raw_bits(root);
+		p.setBits(root);
 		return p;
 	}
 
@@ -375,7 +375,7 @@ namespace sw::universal {
 			if (((result_fraction >> 4) & 1) | (result_fraction & 7)) result_fraction += 0x0010;
 		}
 		// Assemble the result and return it.
-		p.set_raw_bits(raw | (result_fraction >> 4));
+		p.setBits(raw | (result_fraction >> 4));
 		return p;
 	}
 #endif // POSIT_FAST_POSIT_16_1
@@ -471,7 +471,7 @@ namespace sw::universal {
 			if (((mask - 1) & result_fraction) | ((mask << 1ul) & result_fraction)) result_fraction += (mask << 1ul);
 		}
 		// Assemble the result and return it.
-		p.set_raw_bits(uint64_t(raw) | (uint64_t(result_exp) << (27 - shift)) | uint64_t(result_fraction >> (5 + shift)));
+		p.setBits(uint64_t(raw) | (uint64_t(result_exp) << (27 - shift)) | uint64_t(result_fraction >> (5 + shift)));
 		return p;
 	}
 

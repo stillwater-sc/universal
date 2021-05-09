@@ -106,9 +106,9 @@ public:
 		ub = _ub;
 		uubit = ubit;
 	}
-	inline void set_raw_bits(uint64_t v) { // API to be consistent with the other number systems
-		lb.set_raw_bits(v & 0xFFFFFFFFul);
-		ub.set_raw_bits((v >> 32) & 0xFFFFFFFFul);
+	inline void setBits(uint64_t v) { // API to be consistent with the other number systems
+		lb.setBits(v & 0xFFFFFFFFul);
+		ub.setBits((v >> 32) & 0xFFFFFFFFul);
 		lubit = false;
 		uubit = false;
 	} 

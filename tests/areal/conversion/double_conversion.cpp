@@ -32,7 +32,7 @@ void CompilerBug() {
 	using namespace sw::universal;
 	{
 		areal<5, 1> a;
-		a.set_raw_bits(0x0);
+		a.setBits(0x0);
 		cout << "areal<5,1> : " << to_binary(a) << " : " << a << endl;
 		float f = float(a);
 		cout << "float      : " << f << endl;
@@ -41,7 +41,7 @@ void CompilerBug() {
 	}
 	{
 		areal<5, 1> a;
-		a.set_raw_bits(0x10);
+		a.setBits(0x10);
 		cout << "areal<5,1> : " << to_binary(a) << " : " << a << endl;
 		float f = float(a);
 		cout << "float      : " << f << endl;
@@ -51,7 +51,7 @@ void CompilerBug() {
 
 	{
 		areal<6, 1> a;
-		a.set_raw_bits(0x0);
+		a.setBits(0x0);
 		cout << "areal<6,1> : " << to_binary(a) << " : " << a << endl;
 		float f = float(a);
 		cout << "float      : " << f << endl;
@@ -60,7 +60,7 @@ void CompilerBug() {
 	}
 	{
 		areal<6, 1> a;
-		a.set_raw_bits(0x20);
+		a.setBits(0x20);
 		cout << "areal<6,1> : " << to_binary(a) << " : " << a << endl;
 		float f = float(a);
 		cout << "float      : " << f << endl;
@@ -106,7 +106,7 @@ try {
 //	GenerateArealTable<10, 7>(cout, true); // fails
 
 	areal<10, 7> a;
-	a.set_raw_bits(0x1F6);  // b01'1111'0110;
+	a.setBits(0x1F6);  // b01'1111'0110;
 	cout << to_binary(a) << " : " << a << endl;
 	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<10, 7, uint8_t> >(tag, true), tag, "areal<10,7,uint8_t>");
 //	nrOfFailedTestCases = ReportTestResult(VerifyArealIntervalConversion< areal<10, 7, uint16_t> >(tag, true), tag, "areal<10,7,uint16_t>");

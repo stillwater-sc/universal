@@ -774,7 +774,7 @@ public:
 	/// </summary>
 	/// <param name="raw_bits">unsigned long long carrying bits that will be written verbatim to the areal</param>
 	/// <returns>reference to the areal</returns>
-	inline constexpr areal& set_raw_bits(uint64_t raw_bits) noexcept {
+	inline constexpr areal& setBits(uint64_t raw_bits) noexcept {
 		if constexpr (0 == nrBlocks) {
 			return *this;
 		}
@@ -1038,15 +1038,15 @@ public:
 		if constexpr (0 == nrBlocks) return;
 		else if constexpr (1 == nrBlocks) {
 			bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
-			e.set_raw_bits(uint64_t(ebits >> EXP_SHIFT));
+			e.setBits(uint64_t(ebits >> EXP_SHIFT));
 		}
 		else if constexpr (nrBlocks > 1) {
 			if (MSU_CAPTURES_E) {
 				bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
-				e.set_raw_bits(uint64_t(ebits >> ((nbits - 1ull - es) % bitsInBlock)));
+				e.setBits(uint64_t(ebits >> ((nbits - 1ull - es) % bitsInBlock)));
 			}
 			else {
-				for (size_t i = 0; i < es; ++i) { e.set(i, at(nbits - 1ull - es + i)); }
+				for (size_t i = 0; i < es; ++i) { e.setBit(i, at(nbits - 1ull - es + i)); }
 			}
 		}
 	}
@@ -1056,10 +1056,10 @@ public:
 		if constexpr (0 == nrBlocks) return;
 		else if constexpr (1 == nrBlocks) {
 			bt fraction = bt(_block[MSU] & ~MSU_EXP_MASK);
-			f.set_raw_bits(bt(fraction >> bt(1ull)));
+			f.setBits(bt(fraction >> bt(1ull)));
 		}
 		else if constexpr (nrBlocks > 1) {
-			for (size_t i = 0; i < fbits; ++i) { f.set(i, at(nbits - 1ull - es - fbits + i)); }
+			for (size_t i = 0; i < fbits; ++i) { f.setBit(i, at(nbits - 1ull - es - fbits + i)); }
 		}
 	}
 	
