@@ -17,10 +17,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.set_raw_bits(i);
+			a.setBits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.set_raw_bits(j);
+				b.setBits(j);
 
 				// set the golden reference
 
@@ -55,10 +55,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.set_raw_bits(i);
+			a.setBits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.set_raw_bits(j);
+				b.setBits(j);
 
 				// set the golden reference
 
@@ -93,10 +93,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.set_raw_bits(i);
+			a.setBits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.set_raw_bits(j);
+				b.setBits(j);
 
 				// set the golden reference
 
@@ -131,10 +131,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.set_raw_bits(i);
+			a.setBits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.set_raw_bits(j);
+				b.setBits(j);
 
 				// set the golden reference
 
@@ -169,10 +169,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.set_raw_bits(i);
+			a.setBits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.set_raw_bits(j);
+				b.setBits(j);
 
 				// set the golden reference
 
@@ -207,10 +207,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.set_raw_bits(i);
+			a.setBits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.set_raw_bits(j);
+				b.setBits(j);
 
 				// set the golden reference
 

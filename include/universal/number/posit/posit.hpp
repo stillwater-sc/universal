@@ -304,7 +304,7 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		if (_trace_conversion) std::cout << "inward projection" << std::endl;
 		// we are projecting to minpos/maxpos
 		int k = calculate_unconstrained_k<nbits, es>(_scale);
-		k < 0 ? p.set(minpos_pattern<nbits, es>(_sign)) : p.set(maxpos_pattern<nbits, es>(_sign));
+		k < 0 ? p.setBits(minpos_pattern<nbits, es>(_sign)) : p.setBits(maxpos_pattern<nbits, es>(_sign));
 		// we are done
 		if (_trace_rounding) std::cout << "projection  rounding ";
 	}
@@ -362,7 +362,7 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		truncate(pt_bits, ptt);
 		if (rb) increment_bitset(ptt);
 		if (s) ptt = twos_complement(ptt);
-		p.set(ptt);
+		p.setBits(ptt);
 	}
 	return p;
 }
@@ -647,7 +647,7 @@ public:
 		}
 		posit<nbits, es> negated(0);  // TODO: artificial initialization to pass -Wmaybe-uninitialized
 		bitblock<nbits> raw_bits = twos_complement(_raw_bits);
-		negated.set(raw_bits);
+		negated.setBits(raw_bits);
 		return negated;
 	}
 	// prefix/postfix operators
@@ -882,7 +882,7 @@ public:
 		if (ispowerof2()) {
 			raw_bits = twos_complement(_raw_bits);
 			raw_bits.set(nbits-1, old_sign);
-			p.set(raw_bits);
+			p.setBits(raw_bits);
 		}
 		else {
 			bool s{ false };
@@ -999,12 +999,12 @@ public:
 	}
 			
 	// set the posit bits explicitely
-	constexpr posit<nbits, es>& set(const bitblock<nbits>& raw_bits) {
+	constexpr posit<nbits, es>& setBits(const bitblock<nbits>& raw_bits) {
 		_raw_bits = raw_bits;
 		return *this;
 	}
 	// Set the raw bits of the posit given an unsigned value starting from the lsb. Handy for enumerating a posit state space
-	constexpr posit<nbits,es>& set_raw_bits(uint64_t value) {
+	constexpr posit<nbits,es>& setBits(uint64_t value) {
 		clear();
 		bitblock<nbits> raw_bits;
 		uint64_t mask = 1;

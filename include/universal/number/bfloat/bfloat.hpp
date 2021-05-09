@@ -112,8 +112,8 @@ bfloat<nbits, es, bt>& maxpos(bfloat<nbits, es, bt>& bmaxpos) {
 	// maximum positive value has this bit pattern: 0-1...1-111...111, that is, sign = 0, e = 1.1, f = 111...101
 	bmaxpos.clear();
 	bmaxpos.flip();
-	bmaxpos.reset(nbits - 1ull);
-	bmaxpos.reset(1ull);
+	bmaxpos.setBit(nbits - 1ull, false);
+	bmaxpos.setBit(1ull, false);
 	return bmaxpos;
 }
 // fill an bfloat object with mininum positive value
@@ -121,7 +121,7 @@ template<size_t nbits, size_t es, typename bt>
 bfloat<nbits, es, bt>& minpos(bfloat<nbits, es, bt>& bminpos) {
 	// minimum positive value has this bit pattern: 0-000-00...010, that is, sign = 0, e = 00, f = 00001, u = 0
 	bminpos.clear();
-	bminpos.set(0);
+	bminpos.setBit(0);
 	return bminpos;
 }
 // fill an bfloat object with the zero encoding: 0-0...0-00...000-0
@@ -135,8 +135,8 @@ template<size_t nbits, size_t es, typename bt>
 bfloat<nbits, es, bt>& minneg(bfloat<nbits, es, bt>& bminneg) {
 	// minimum negative value has this bit pattern: 1-000-00...010, that is, sign = 1, e = 00, f = 00001, u = 0
 	bminneg.clear();
-	bminneg.set(nbits - 1ull);
-	bminneg.set(0);
+	bminneg.setBit(nbits - 1ull);
+	bminneg.setBit(0);
 	return bminneg;
 }
 // fill an bfloat object with largest negative value
@@ -145,7 +145,7 @@ bfloat<nbits, es, bt>& maxneg(bfloat<nbits, es, bt>& bmaxneg) {
 	// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1.1, f = 111...101, u = 0
 	bmaxneg.clear();
 	bmaxneg.flip();
-	bmaxneg.reset(1ull);
+	bmaxneg.setBit(1ull, false);
 	return bmaxneg;
 }
 
@@ -286,7 +286,7 @@ public:
 			}
 		}
 		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
-			set(nbits - 1ull, s);
+			setBit(nbits - 1ull, s);
 			return *this;
 		}
 		
@@ -309,7 +309,7 @@ public:
 			return *this;
 		}
 		if (exponent < MIN_EXP_SUBNORMAL-1) { // TODO: explain the MIN_EXP_SUBMORNAL - 1
-			if (s) this->set(nbits - 1); // set -0
+			if (s) this->setBit(nbits - 1); // set -0
 			return *this;
 		}
 		// set the exponent
@@ -505,13 +505,13 @@ public:
 		if (this->isinf(INF_TYPE_POSITIVE) || this->isnan(NAN_TYPE_QUIET)) {
 			clear();
 			flip();
-			reset(nbits - 1ull);
-			reset(1ull);
+			setBit(nbits - 1ull, false);
+			setBit(1ull, false);
 		}
 		else if (this->isinf(INF_TYPE_NEGATIVE) || this->isnan(NAN_TYPE_SIGNALLING)) {
 			clear();
 			flip();
-			reset(1ull);
+			setBit(1ull, false);
 		}
 		return *this;
 	}
@@ -554,7 +554,7 @@ public:
 			}
 		}
 		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
-			set(nbits - 1ull, s);
+			setBit(nbits - 1ull, s);
 			return *this;
 		}
 		// this is not a special number
@@ -575,7 +575,7 @@ public:
 			return *this;
 		}
 		if (exponent < MIN_EXP_SUBNORMAL-1) { // TODO: explain the MIN_EXP_SUBMORNAL - 1
-			if (s) this->set(nbits - 1); // set -0
+			if (s) this->setBit(nbits - 1); // set -0
 			return *this;
 		}
 		// set the exponent
@@ -758,13 +758,13 @@ public:
 		if (this->isinf(INF_TYPE_POSITIVE) || this->isnan(NAN_TYPE_QUIET)) {
 			clear();
 			flip();
-			reset(nbits - 1ull);
-			reset(1ull);
+			setBit(nbits - 1ull, false);
+			setBit(1ull, false);
 		}
 		else if (this->isinf(INF_TYPE_NEGATIVE) || this->isnan(NAN_TYPE_SIGNALLING)) {
 			clear();
 			flip();
-			reset(1ull);
+			setBit(1ull, false);
 		}
 		return *this;
 	}
@@ -972,41 +972,12 @@ public:
 	}
 
 	/// <summary>
-	/// set the raw bits of the bfloat. This is a required API function for number systems in the Universal Numbers Library
-	/// This enables verification test suites to inject specific test bit patterns using a common interface.
-	//  This is a memcpy type operator, but the target number system may not have a linear memory layout and
-	//  thus needs to steer the bits in potentially more complicated ways then memcpy.
-	/// </summary>
-	/// <param name="raw_bits">unsigned long long carrying bits that will be written verbatim to the bfloat</param>
-	/// <returns>reference to the bfloat</returns>
-	inline constexpr bfloat& set_raw_bits(uint64_t raw_bits) noexcept {
-		if constexpr (0 == nrBlocks) {
-			return *this;
-		}
-		else if constexpr (1 == nrBlocks) {
-			_block[0] = raw_bits & storageMask;
-		}
-		else {
-			for (size_t i = 0; i < nrBlocks; ++i) {
-				_block[i] = raw_bits & storageMask;
-				if constexpr (bitsInBlock < 64) {
-				    raw_bits >>= bitsInBlock; 
-				}
-				else {
-				    raw_bits = 0;
-				}
-			}
-		}
-		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
-		return *this;
-	}
-	/// <summary>
 	/// set a specific bit in the encoding to true or false. If bit index is out of bounds, no modification takes place.
 	/// </summary>
 	/// <param name="i">bit index to set</param>
 	/// <param name="v">boolean value to set the bit to. Default is true.</param>
 	/// <returns>void</returns>
-	inline constexpr void set(size_t i, bool v = true) noexcept {
+	inline constexpr void setBit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
@@ -1017,18 +988,35 @@ public:
 		}
 	}
 	/// <summary>
-	/// reset a specific bit in the encoding to false. If bit index is out of bounds, no modification takes place.
+	/// set the raw bits of the bfloat. This is a required API function for number systems in the Universal Numbers Library
+	/// This enables verification test suites to inject specific test bit patterns using a common interface.
+	//  This is a memcpy type operator, but the target number system may not have a linear memory layout and
+	//  thus needs to steer the bits in potentially more complicated ways then memcpy.
 	/// </summary>
-	/// <param name="i">bit index to reset</param>
-	/// <returns>void</returns>
-	inline constexpr void reset(size_t i) noexcept {
-		if (i < nbits) {
-			bt block = _block[i / bitsInBlock];
-			bt mask = ~(1ull << (i % bitsInBlock));
-			_block[i / bitsInBlock] = bt(block & mask);
-			return;
+	/// <param name="raw_bits">unsigned long long carrying bits that will be written verbatim to the bfloat</param>
+	/// <returns>reference to the bfloat</returns>
+	inline constexpr bfloat& setBits(uint64_t raw_bits) noexcept {
+		if constexpr (0 == nrBlocks) {
+			return *this;
 		}
+		else if constexpr (1 == nrBlocks) {
+			_block[0] = raw_bits & storageMask;
+		}
+		else {
+			for (size_t i = 0; i < nrBlocks; ++i) {
+				_block[i] = raw_bits & storageMask;
+				if constexpr (bitsInBlock < 64) {
+					raw_bits >>= bitsInBlock;
+				}
+				else {
+					raw_bits = 0;
+				}
+			}
+		}
+		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		return *this;
 	}
+
 	/// <summary>
 	/// 1's complement of the encoding
 	/// </summary>
@@ -1271,7 +1259,7 @@ public:
 				e.setBits(uint64_t(ebits >> ((nbits - 1ull - es) % bitsInBlock)));
 			}
 			else {
-				for (size_t i = 0; i < es; ++i) { e.set(i, at(nbits - 1ull - es + i)); }
+				for (size_t i = 0; i < es; ++i) { e.setBit(i, at(nbits - 1ull - es + i)); }
 			}
 		}
 	}
@@ -1284,7 +1272,7 @@ public:
 			f.setBits(fraction);
 		}
 		else if constexpr (nrBlocks > 1) {
-			for (size_t i = 0; i < fbits; ++i) { f.set(i, at(nbits - 1ull - es - fbits + i)); } // TODO: TEST!
+			for (size_t i = 0; i < fbits; ++i) { f.setBit(i, at(nbits - 1ull - es - fbits + i)); } // TODO: TEST!
 		}
 	}
 	// construct the significant from the encoding, returns normalization offset
@@ -1309,8 +1297,8 @@ public:
 			s.clear();
 			// TODO: design and implement a block-oriented algorithm, this sequential algorithm is super slow
 			if (isNormal) {
-				s.set(fbits);
-				for (size_t i = 0; i < fbits; ++i) { s.set(i, at(i)); }
+				s.setBit(fbits);
+				for (size_t i = 0; i < fbits; ++i) { s.setBit(i, at(i)); }
 			}
 			else {
 				// Find the MSB of the subnormal: 
@@ -1323,7 +1311,7 @@ public:
 				// h00001010101
 				// 101010100000
 				for (size_t i = 0; i <= msb; ++i) {
-					s.set(fbits - msb + i, at(i));
+					s.setBit(fbits - msb + i, at(i));
 				}
 				shift = fhbits - msb;
 			}
@@ -1610,14 +1598,14 @@ protected:
 					// bitsToShift is guaranteed to be less than nbits
 					bitsToShift += (long)(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->set(i);
+						this->setBit(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
 					bitsToShift += (long)(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->reset(i);
+						this->setBit(i, false);
 					}
 				}
 			}
@@ -1638,14 +1626,14 @@ protected:
 			// bitsToShift is guaranteed to be less than nbits
 			bitsToShift += (long)(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->set(i);
+				this->setBit(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
 			bitsToShift += (long)(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->reset(i);
+				this->setBit(i, false);
 			}
 		}
 

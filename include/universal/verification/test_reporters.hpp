@@ -83,6 +83,7 @@ void ReportUnaryArithmeticSucces(const std::string& test_case, const std::string
 		<< std::endl;
 }
 
+#ifdef DEPRECATED
 template<typename TestType, typename RefType>
 void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const TestType& lhs, const TestType& rhs, const TestType& result, const RefType& ref) {
 	auto old_precision = std::cerr.precision();
@@ -101,6 +102,41 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 
 template<typename TestType, typename RefType>
 void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const TestType& lhs, const TestType& rhs, const TestType& result, const RefType& ref) {
+	auto old_precision = std::cerr.precision();
+	std::cerr << test_case << " "
+		<< std::setprecision(20)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << lhs
+		<< " " << op << " "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
+		<< " == "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " matches reference "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
+		<< " " << to_binary(result) << " vs " << to_binary(ref)
+		<< std::setprecision(old_precision)
+		<< std::endl;
+}
+#endif
+
+template<typename InputType, typename ResultType, typename RefType>
+void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const InputType& lhs, const InputType& rhs, const ResultType& result, const RefType& ref) {
+	using namespace sw::universal;
+	auto old_precision = std::cerr.precision();
+	std::cerr << test_case << " "
+		<< std::setprecision(20)
+		<< std::setw(NUMBER_COLUMN_WIDTH) << lhs
+		<< " " << op << " "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
+		<< " != "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
+		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
+//		<< " " << to_binary(result) << " vs " << to_binary(ref, true)    // helpful if RefType is an IEEE-754 float
+		<< " " << to_binary(result) << " vs " << to_binary(ref)
+		<< std::setprecision(old_precision)
+		<< std::endl;
+}
+
+template<typename TestType, typename ResultType, typename RefType>
+void ReportBinaryArithmeticSuccess(const std::string& test_case, const std::string& op, const TestType& lhs, const TestType& rhs, const ResultType& result, const RefType& ref) {
 	auto old_precision = std::cerr.precision();
 	std::cerr << test_case << " "
 		<< std::setprecision(20)

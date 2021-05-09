@@ -14,22 +14,6 @@
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp> // ReportBinaryArithmeticError
 
-template<typename TestType, typename ResultType, typename RefType>
-void ReportBinaryArithmeticError(const std::string& test_case, const std::string& op, const TestType& lhs, const TestType& rhs, const ResultType& result, const RefType& ref) {
-	auto old_precision = std::cerr.precision();
-	std::cerr << test_case << " "
-		<< std::setprecision(20)
-		<< std::setw(NUMBER_COLUMN_WIDTH) << lhs
-		<< " " << op << " "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << rhs
-		<< " != "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << result << " golden reference is "
-		<< std::setw(NUMBER_COLUMN_WIDTH) << ref
-		<< " " << to_binary(result) << " vs " << to_binary(ref)
-		<< std::setprecision(old_precision)
-		<< std::endl;
-}
-
 // enumerate all addition cases for an blockfraction configuration
 template<typename BlockFractionConfiguration>
 int VerifySubtraction(bool bReportIndividualTestCases) {

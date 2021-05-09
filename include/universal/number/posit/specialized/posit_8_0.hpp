@@ -88,13 +88,13 @@ namespace sw::universal {
 			_bits = uint8_t(raw.to_ulong());
 			return *this;
 		}
-		constexpr posit& set_raw_bits(uint64_t value) {
+		constexpr posit& setBits(uint64_t value) {
 			_bits = uint8_t(value & 0xff);
 			return *this;
 		}
 		constexpr posit operator-() const {
 			posit p;
-			return p.set_raw_bits((~_bits) + 1);
+			return p.setBits((~_bits) + 1);
 		}
 		// arithmetic assignment operators
 		posit& operator+=(const posit& b) {
@@ -178,7 +178,7 @@ namespace sw::universal {
 		inline posit twosComplement() const {
 			posit<NBITS_IS_8, ES_IS_0> p;
 			int8_t v = -*(int8_t*)&_bits;
-			p.set_raw_bits(v);
+			p.setBits(v);
 			return p;
 		}
 	private:
