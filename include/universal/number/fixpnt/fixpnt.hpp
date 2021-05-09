@@ -232,19 +232,21 @@ public:
 	constexpr fixpnt& operator=(const fixpnt&) noexcept = default;
 	fixpnt& operator=(fixpnt&&) noexcept = default;
 
-	/// Construct a new fixpnt from another, sign extend when necessary: src and tgt fixpnt need to have the same arithmetic and bt
+	/// Construct a new fixpnt from another, sign extend when necessary: 
+	// src and tgt fixpnt need to have the same arithmetic and blocktype
 	template<size_t src_nbits, size_t src_rbits>
 	fixpnt(const fixpnt<src_nbits, src_rbits, arithmetic, bt>& a) noexcept {
 		*this = a;
 	}
 	template<size_t src_nbits, size_t src_rbits>
-	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic, bt>& a) {
+	fixpnt& operator=(const fixpnt<src_nbits, src_rbits, arithmetic, bt>& a) noexcept {
 		std::cout << typeid(a).name() << " goes into " << typeid(*this).name() << std::endl;
-//		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); // TODO: do we want prohibit this condition? To be consistent with native types we need to round down automatically.
+//		static_assert(src_nbits > nbits, "Source fixpnt is bigger than target: potential loss of precision"); 
+// TODO: do we want prohibit this condition? To be consistent with native types we need to round down automatically.
 		if (src_nbits <= nbits) {
 			bb = a.bb;
 			if (a.sign()) { // sign extend
-				for (size_t i = src_nbits; i < nbits; ++i) set(i);
+				for (size_t i = src_nbits; i < nbits; ++i) setBit(i);
 			}
 		}
 		else {
