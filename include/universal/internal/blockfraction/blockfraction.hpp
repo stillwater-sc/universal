@@ -262,14 +262,14 @@ public:
 					// bitsToShift is guaranteed to be less than nbits
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->set(i);
+						this->setBit(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->reset(i);
+						this->setBit(i, false);
 					}
 				}
 				return *this;
@@ -292,14 +292,14 @@ public:
 			// bitsToShift is guaranteed to be less than nbits
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->set(i);
+				this->setBit(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->reset(i);
+				this->setBit(i, false);
 			}
 		}
 
@@ -316,29 +316,19 @@ public:
 		}
 	}
 	inline constexpr void setzero() noexcept { clear(); }
-	inline constexpr void reset(size_t i) {
-		if (i < nbits) {
-			bt block = _block[i / bitsInBlock];
-			bt mask = ~(1ull << (i % bitsInBlock));
-			_block[i / bitsInBlock] = bt(block & mask);
-			return;
-		}
-		throw "blockfraction<nbits, bt>.reset(index): bit index out of bounds";
-	}
-	inline constexpr void set(size_t i, bool v = true) {
+	inline constexpr void setBit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
 			bt bit = bt(v ? 1 : 0);
 			bt mask = bt(bit << (i % bitsInBlock));
 			_block[i / bitsInBlock] = bt((block & null) | mask);
-			return;
 		}
-		throw "blockfraction<nbits, bt>.set(index): bit index out of bounds";
+		// when i is out of bounds, fail silently as no-op
 	}
-	inline constexpr void setBlock(size_t b, const bt& block) {
-		if (b >= nrBlocks) throw "block index out of bounds";
-		_block[b] = block;
+	inline constexpr void setBlock(size_t b, const bt& block) noexcept {
+		if (b < nrBlocks) _block[b] = block;
+		// when b is out of bounds, fail silently as no-op
 	}
 	inline constexpr void setBits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
@@ -362,7 +352,7 @@ public:
 	// in-place 2's complement
 	inline constexpr blockfraction& twosComplement() noexcept {
 		blockfraction<nbits, bt> plusOne;
-		plusOne.set(0);
+		plusOne.setBit(0);
 		flip();
 		add(*this, plusOne);
 		return *this;
@@ -417,7 +407,7 @@ public:
 		if constexpr (nbits > srcbits) { // check if we need to sign extend
 			if (rhs.sign()) {
 				for (size_t i = srcbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
-					set(i);
+					setBit(i);
 				}
 			}
 		}

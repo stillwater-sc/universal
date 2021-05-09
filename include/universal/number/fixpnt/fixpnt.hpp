@@ -82,17 +82,17 @@ struct fixpntdiv_t {
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 bool parse(const std::string& number, fixpnt<nbits, rbits, arithmetic, bt>& v);
 
-// free function to create a 1's complement copy of a fixpnt
+// free function generator to create a 1's complement copy of a fixpnt
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline fixpnt<nbits, rbits, arithmetic, bt> ones_complement(const fixpnt<nbits, rbits, arithmetic, bt>& value) {
+inline fixpnt<nbits, rbits, arithmetic, bt> onesComplement(const fixpnt<nbits, rbits, arithmetic, bt>& value) {
 	fixpnt<nbits, rbits, arithmetic, bt> ones(value);
 	return ones.flip();
 }
-// free function to create the 2's complement of a fixpnt
+// free function generator to create the 2's complement of a fixpnt
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
-inline fixpnt<nbits, rbits, arithmetic, bt> twos_complement(const fixpnt<nbits, rbits, arithmetic, bt>& value) {
+inline fixpnt<nbits, rbits, arithmetic, bt> twosComplement(const fixpnt<nbits, rbits, arithmetic, bt>& value) {
 	fixpnt<nbits, rbits, arithmetic, bt> twos(value);
-	return twos.twoscomplement();;
+	return twos.twosComplement();;
 }
 
 // The free function scale calculates the power of 2 exponent that would capture an approximation of a normalized real value
@@ -100,7 +100,7 @@ template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
 inline int scale(const fixpnt<nbits, rbits, arithmetic, bt>& i) {
 	fixpnt<nbits,rbits,arithmetic,bt> v(i);
 	if (i.sign()) { // special case handling
-		v = twos_complement(v);
+		v = twosComplement(v);
 		if (v == i) {  // special case of 10000..... largest negative number in 2's complement encoding
 			return long(nbits - rbits);
 		}
@@ -191,7 +191,7 @@ inline constexpr fixpnt<nbits, rbits, arithmetic, bt>& convert(int64_t v, fixpnt
 		if (v & mask) result.setBit(i);
 		v >>= 1;
 	}
-	if (negative) result.twoscomplement();
+	if (negative) result.twosComplement();
 	return result;
 }
 template<size_t nbits, size_t rbits, bool arithmetic, typename bt>
@@ -485,7 +485,7 @@ public:
 #endif
 
 	// prefix operators
-	fixpnt operator-() const { return twos_complement(*this); }
+	fixpnt operator-() const { return sw::universal::twosComplement(*this); }
 	// one's complement
 	fixpnt operator~() const { 
 		fixpnt complement(*this);
@@ -556,7 +556,7 @@ public:
 	}
 	fixpnt& operator-=(const fixpnt& rhs) {
 		if (arithmetic == Modulo) {
-			operator+=(twos_complement(rhs));
+			operator+=(sw::universal::twosComplement(rhs));
 		}
 		else {
 			using biggerbb = blockbinary<nbits + 1, bt>;
@@ -639,12 +639,9 @@ public:
 	// modifiers
 	inline constexpr void clear() noexcept { bb.clear(); }
 	inline constexpr void setzero() noexcept { bb.clear(); }
-	inline constexpr void setBit(size_t bitIndex, bool v = true) {
-		if (bitIndex < nbits) {
-			bb.setBit(bitIndex, v);
-			return;
-		}
-		throw "fixpnt bit index out of bounds";
+	inline constexpr void setBit(size_t bitIndex, bool v = true) noexcept {
+		if (bitIndex < nbits) bb.setBit(bitIndex, v);
+		// when bitIndex is out-of-bounds, fail silently as no-op
 	}
 	// use un-interpreted raw bits to set the bits of the fixpnt: TODO: expand the API to support fixed-points > 64 bits
 	inline constexpr void setBits(uint64_t value) noexcept { bb.setBits(value); }
@@ -659,16 +656,16 @@ public:
 	// in-place 1's complement
 	inline constexpr fixpnt& flip() noexcept { bb.flip(); return *this; }
 	// in-place 2's complement
-	inline constexpr fixpnt& twoscomplement() { bb.twosComplement(); return *this; }
+	inline constexpr fixpnt& twosComplement() noexcept { bb.twosComplement(); return *this; }
 
 	// selectors
-	inline constexpr bool sign()   const { return bb.sign(); }
-	inline constexpr bool iszero() const { return bb.iszero(); }
-	inline constexpr bool ispos()  const { return bb.ispos(); }
-	inline constexpr bool isneg()  const { return bb.isneg(); }
-	inline constexpr bool at(size_t bitIndex) const { return bb.at(bitIndex); }
-	inline constexpr bool test(size_t bitIndex) const { return bb.test(bitIndex); }
-	inline blockbinary<nbits, bt> getbb() const { return blockbinary<nbits, bt>(bb); }
+	inline constexpr bool sign()   const noexcept { return bb.sign(); }
+	inline constexpr bool iszero() const noexcept { return bb.iszero(); }
+	inline constexpr bool ispos()  const noexcept { return bb.ispos(); }
+	inline constexpr bool isneg()  const noexcept { return bb.isneg(); }
+	inline constexpr bool at(size_t bitIndex) const noexcept { return bb.at(bitIndex); }
+	inline constexpr bool test(size_t bitIndex) const noexcept { return bb.test(bitIndex); }
+	inline blockbinary<nbits, bt> getbb() const noexcept { return blockbinary<nbits, bt>(bb); }
 
 protected:
 	// HELPER methods
@@ -728,7 +725,7 @@ protected:
 			}
 		}
 		// you pop out here with the starting bit value
-		fixpnt<nbits, rbits, arithmetic, bt> raw = (sign() ? twos_complement(*this) : *this);
+		fixpnt<nbits, rbits, arithmetic, bt> raw = (sign() ? sw::universal::twosComplement(*this) : *this);
 		// construct the value
 		float value = 0;
 		for (size_t i = 0; i < nbits; ++i) {
@@ -758,7 +755,7 @@ protected:
 			}
 		}
 		// you pop out here with the starting bit value
-		fixpnt<nbits, rbits, arithmetic, bt> raw = (sign() ? twos_complement(*this) : *this);
+		fixpnt<nbits, rbits, arithmetic, bt> raw = (sign() ? sw::universal::twosComplement(*this) : *this);
 		// construct the value
 		double value = 0;
 		for (size_t i = 0; i < nbits; ++i) {
@@ -1952,7 +1949,7 @@ std::string convert_to_decimal_string(const fixpnt<nbits, rbits, arithmetic, bt>
 	if (value.sign()) ss << '-';
 	support::decimal partial, multiplier;
 	fixpnt<nbits, rbits, arithmetic, bt> number;
-	number = value.sign() ? twos_complement(value) : value;
+	number = value.sign() ? sw::universal::twosComplement(value) : value;
 	if (nbits > rbits) {
 		// convert the fixed point by first handling the integer part
 		multiplier.setdigit(1);

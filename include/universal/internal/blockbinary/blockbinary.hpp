@@ -399,16 +399,14 @@ public:
 	}
 	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
 	inline constexpr bool iseven() const noexcept { return !isodd(); }
-	inline constexpr bool test(size_t bitIndex) const {
+	inline constexpr bool test(size_t bitIndex) const noexcept {
 		return at(bitIndex);
 	}
-	inline constexpr bool at(size_t bitIndex) const {
-		if (bitIndex < nbits) {
-			bt word = _block[bitIndex / bitsInBlock];
-			bt mask = bt(1ull << (bitIndex % bitsInBlock));
-			return (word & mask);
-		}
-		throw "bit index out of bounds";
+	inline constexpr bool at(size_t bitIndex) const noexcept {
+		if (bitIndex >= nbits) return false; // fail silently as no-op
+		bt word = _block[bitIndex / bitsInBlock];
+		bt mask = bt(1ull << (bitIndex % bitsInBlock));
+		return (word & mask);
 	}
 	inline constexpr uint8_t nibble(size_t n) const {
 		if (n < (1 + ((nbits - 1) >> 2))) {
@@ -420,6 +418,7 @@ public:
 		}
 		throw "nibble index out of bounds";
 	}
+	// TODO: convert to noexcept function?
 	inline constexpr bt block(size_t b) const {
 		if (b >= nrBlocks) throw "block index out of bounds";
 		return _block[b];

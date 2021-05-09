@@ -283,9 +283,9 @@ public:
 		_sign = sign;
 	}
 	constexpr void setpos() noexcept { _sign = false; }
-	constexpr void setsign(bool s) { _sign = s; }
-	constexpr void setscale(int scale) { _scale = scale; }
-	constexpr void setBit(size_t index, bool v = true) { _significant.set(index, v); }
+	constexpr void setsign(bool s) noexcept { _sign = s; }
+	constexpr void setscale(int scale) noexcept { _scale = scale; }
+	constexpr void setBit(size_t index, bool v = true) noexcept { _significant.setBit(index, v); }
 	constexpr void setBits(uint64_t raw) noexcept {
 		clear();
 		_significant.setBits(raw);
