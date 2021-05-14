@@ -57,14 +57,30 @@ struct fractionquorem {
 };
 
 /*
-NOTES
-
-for block arithmetic, we need to manage a carry bit.
+NOTE 1
+   For block arithmetic, we need to manage a carry bit.
 This disqualifies using uint64_t as a block type as we can't catch the overflow condition
 in the same way as the other native types, uint8_t, uint16_t, uint32_t.
+   We could use a sint64_t and then convert to uint64_t and observe the MSB. 
+That requires different logic though. 
+TODO: the highest performance for 32bits and up would be to have a uint64_t base type
+for which we need asm to get the carry bit logic to work.
 
-We could use a sint64_t and then convert to uint64_t and observe the MSB. Very different 
-logic though.
+TODO: are there mechanisms where we can use SIMD for vector operations?
+If there are, then doing something with more fitting and smaller base types might
+yield more concurrency and thus more throughput for that ISA.
+
+
+NOTE 2
+adding two block triples of nbits would yield a result of nbits+1. To implement a
+fast use of blockfraction storage complicates this relationship. 
+
+Standardizing the blocktriple add to take two arguments of nbits, and product a result
+of nbits+1, makes sense in the abstract pipeline as the triple would gain one bit of
+accuracy. Any subsequent use would need to make a decision whether to round or not.
+If we go to a quire, we wouldn't round, if we reassign it to a source precision, we would.
+
+What is the required API of blockfraction to support that semantic?
 */
 
 
@@ -164,6 +180,24 @@ public:
 	/// <param name="lhs">nbits of fraction in the form 0h.ffff</param>
 	/// <param name="rhs">nbits of fraction in the form 0h.ffff</param>
 	void add(const blockfraction<nbits, bt>& lhs, const blockfraction<nbits, bt>& rhs) {
+		bool carry = false;
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			// cast up so we can test for overflow
+			uint64_t l = uint64_t(lhs._block[i]);
+			uint64_t r = uint64_t(rhs._block[i]);
+			uint64_t s = l + r + (carry ? uint64_t(1) : uint64_t(0));
+			carry = (s > maxBlockValue);
+			_block[i] = bt(s);
+		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block[MSU] &= MSU_MASK;
+	}
+	/// <summary>
+	/// add two fractions of the form 0h.ffff and produce a result of the form 0hf.ffff
+	/// </summary>
+	/// <param name="lhs"></param>
+	/// <param name="rhs"></param>
+	void uradd(const blockfraction<nbits-1, bt>& lhs, const blockfraction<nbits-1, bt>& rhs) {
 		bool carry = false;
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			// cast up so we can test for overflow
