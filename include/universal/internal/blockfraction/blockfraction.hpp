@@ -121,13 +121,19 @@ public:
 	blockfraction& operator=(const blockfraction&) noexcept = default;
 	blockfraction& operator=(blockfraction&&) noexcept = default;
 
+#ifdef NEVER
+	// disable the ability to copy different blockfractions to catch any
+	// unintended (implicit) copies when working with blockfractions.
+	// For performance, the blockfraction must be used in-place.
+	// Typical design, allocates a blocktriple on the stack, and subsequently
+	// uses in add/sub/mul/div/sqrt will directly access the encapsulated blockfraction.
+
 	/// construct a blockfraction from another: bt must be the same
 	template<size_t nnbits>
 	blockfraction(const blockfraction<nnbits, bt>& rhs) {
 		this->assign(rhs);
 	}
 
-#ifdef NEVER
 	// blockfraction cannot have decorated constructors or assignment
 	// as blockfraction does not have all the information to interpret a value
 	// So by design, the class interface does not interact with values
@@ -195,8 +201,8 @@ public:
 	/// <summary>
 	/// add two fractions of the form 0h.ffff and produce a result of the form 0hf.ffff
 	/// </summary>
-	/// <param name="lhs"></param>
-	/// <param name="rhs"></param>
+	/// <param name="lhs">nbits-1 of fraction in the form 0h.ffff</param>
+	/// <param name="rhs">nbits-1 of fraction in the form 0h.ffff</param>
 	void uradd(const blockfraction<nbits-1, bt>& lhs, const blockfraction<nbits-1, bt>& rhs) {
 		bool carry = false;
 		for (unsigned i = 0; i < nrBlocks; ++i) {

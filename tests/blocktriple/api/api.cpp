@@ -11,6 +11,7 @@
 // minimum set of include files to reflect source code dependencies
 #define BLOCKTRIPLE_VERBOSE_OUTPUT
 #define BLOCKTRIPLE_TRACE_ADD 1
+#define BIT_CAST_SUPPORT 0
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/bfloat/bfloat.hpp>
 #include <universal/number/bfloat/manipulators.hpp>
@@ -63,14 +64,23 @@ try {
 #if MANUAL_TESTING
 
 	{
-		CONSTEXPRESSION blocktriple<10> a = 511.5f;
-		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
+		cout << "\nFloat conversion use case and result\n";
+		constexpr float f = 511.5f;
+		cout << to_binary(f, true) << '\n';
+		CONSTEXPRESSION blocktriple<8> a = f;
+		cout << to_triple(a) << " : " << a << '\n';
+		CONSTEXPRESSION blocktriple<9> b = f;
+		cout << to_binary(b) << " : " << to_triple(b) << " : " << b << '\n';
+		CONSTEXPRESSION blocktriple<10> c = f;
+		cout << to_binary(c) << " : " << to_triple(c) << " : " << c << '\n';
 	}
+
 	{
+		cout << "\nDouble conversion use case and result\n";
 		constexpr double d = 511.5;
 		cout << to_binary(d, true) << '\n';
 		CONSTEXPRESSION blocktriple<8> a = d;
-		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
+		cout << to_triple(a) << " : " << a << '\n';
 		CONSTEXPRESSION blocktriple<9> b = d;
 		cout << to_binary(b) << " : " << to_triple(b) << " : " << b << '\n';
 		CONSTEXPRESSION blocktriple<10> c = d;
@@ -93,8 +103,8 @@ try {
 	{
 		using Real = bfloat<8, 2, uint8_t>;
 		Real a, b, c;
-		a = 1.0f;
-		b = -1.0f;
+		a = 1.03125f;
+		b = -1.03125f;
 		constexpr size_t abits = Real::abits;
 		blocktriple<abits> aa, bb;
 		blocktriple<abits + 1> cc;

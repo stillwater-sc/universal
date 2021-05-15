@@ -41,9 +41,14 @@
 /* Microsoft Visual Studio. --------------------------------- */
 //#pragma warning(disable : 4310)  // cast truncates constant value
 
+// TODO: does this collide with the definitions in blocktriple?
+#ifndef BIT_CAST_SUPPORT
 #define BIT_CAST_SUPPORT 1
 #define CONSTEXPRESSION constexpr
 #include <bit>
+#else
+#define CONSTEXPRESSION
+#endif
 
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
@@ -531,18 +536,18 @@ public:
 		uint64_t raw     = decoder.parts.fraction;
 #endif // !BIT_CAST_SUPPORT
 		if (raw_exp == 0x7FFul) { // special cases
-			if (raw == 1ull) {
-				// 1.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
-				// 0.11111111111.0000000000000000000000000000000000000000000000000001 signalling nan
+			if (raw == 1ull || raw == 0x0008'0000'0000'0000ull) {
+				// 1.111'1111'1111.0000000000000000000000000000000000000000000000000001 signalling nan
+				// 0.111'1111'1111.0000000000000000000000000000000000000000000000000001 signalling nan
 				// MSVC
-				// 1.11111111111.1000000000000000000000000000000000000000000000000001 signalling nan
-				// 0.11111111111.1000000000000000000000000000000000000000000000000001 signalling nan
+				// 1.111'1111'1111.1000000000000000000000000000000000000000000000000001 signalling nan
+				// 0.111'1111'1111.1000000000000000000000000000000000000000000000000001 signalling nan
 				setnan(NAN_TYPE_SIGNALLING);
 				return *this;
 			}
 			if (raw == 0x0008'0000'0000'0000ull) {
-				// 1.11111111111.1000000000000000000000000000000000000000000000000000 quiet nan
-				// 0.11111111111.1000000000000000000000000000000000000000000000000000 quiet nan
+				// 1.111'1111'1111.1000000000000000000000000000000000000000000000000000 quiet nan
+				// 0.111'1111'1111.1000000000000000000000000000000000000000000000000000 quiet nan
 				setnan(NAN_TYPE_QUIET);
 				return *this;
 			}
@@ -559,7 +564,7 @@ public:
 		}
 		// this is not a special number
 		// normal number consists of 52 fraction bits and one hidden bit, and no hidden bit for a subnormal
-		int exponent = int(raw_exp) - 1023;  // unbias the exponent
+		int exponent = static_cast<int>(raw_exp) - 1023;  // unbias the exponent
 
 #if TRACE_CONVERSION
 		std::cout << '\n';

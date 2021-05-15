@@ -39,9 +39,13 @@
 
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
+
+// TODO: does this collide with the definitions in bfloat/areal?
+#ifndef BIT_CAST_SUPPORT
 #define BIT_CAST_SUPPORT 1
 #define CONSTEXPRESSION constexpr
 #include <bit>
+#endif
 
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
@@ -97,7 +101,7 @@ public:
 
 	constexpr blocktriple() noexcept : 
 		_nan{ false }, 	_inf{ false }, _zero{ true }, 
-		_sign{ false }, _scale{ 0 } {} //, _significant{ 0 } {}
+		_sign{ false }, _scale{ 0 } {} // _significant has default constructor
 
 	// decorated constructors
 	constexpr blocktriple(signed char iv) noexcept :
@@ -130,15 +134,9 @@ public:
 	constexpr blocktriple(unsigned long long iv) noexcept :
 		_nan{ false }, _inf{ false }, _zero{ true },
 		_sign{ false }, _scale{ 0 } { *this = iv; }
-	constexpr blocktriple(float iv)       noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 } { *this = iv; }
-	constexpr blocktriple(double iv)      noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 } { *this = iv; }
-	constexpr blocktriple(long double iv) noexcept :
-		_nan{ false }, _inf{ false }, _zero{ true },
-		_sign{ false }, _scale{ 0 } { *this = iv; }
+	constexpr blocktriple(float iv)       noexcept { *this = iv; }
+	constexpr blocktriple(double iv)      noexcept { *this = iv; }
+	constexpr blocktriple(long double iv) noexcept { *this = iv; }
 
 	// conversion operators
 	constexpr blocktriple& operator=(signed char rhs) noexcept { return convert_signed_integer(rhs); }
@@ -153,32 +151,8 @@ public:
 	constexpr blocktriple& operator=(unsigned long rhs)      noexcept { return convert_unsigned_integer(rhs); }
 	constexpr blocktriple& operator=(unsigned long long rhs) noexcept { return convert_unsigned_integer(rhs); }
 
-	constexpr blocktriple& operator=(float rhs) noexcept { // TODO: deal with subnormals and inf
-		return convert_float(rhs);
-	}
-	constexpr blocktriple& operator=(double rhs) noexcept { // TODO: deal with subnormals and inf
-		_nan = false;
-		_inf = false;
-		_zero = true;
-		if (rhs == 0.0f) return *this;
-#if BIT_CAST_SUPPORT
-		_zero = false; 
-		// TODO: check inf and NaN
-		_inf = false; _nan = false;
-		// normal
-		uint64_t bc = std::bit_cast<uint64_t>(rhs);
-		_sign = (0x8000'0000'0000'0000 & bc);
-		_scale = int((0x7FF0'0000'0000'0000ull & bc) >> 52) - 1023;
-		uint64_t raw = (1ull << 52) | (0x000F'FFFF'FFFF'FFFFull & bc);
-		_significant.setBits(round<53, uint64_t>(raw));
-#else
-		_zero = true;
-		_sign = false;
-		_scale = 0;
-		_significant.clear();
-#endif // !BIT_CAST_SUPPORT
-		return *this;
-	}
+	constexpr blocktriple& operator=(float rhs)              noexcept { return convert_float(rhs); }
+	constexpr blocktriple& operator=(double rhs)             noexcept { return convert_double(rhs); }
 	constexpr blocktriple& operator=(long double rhs) noexcept {
 		return *this = double(rhs);
 	};
@@ -192,69 +166,6 @@ public:
 	// apply a 2's complement recoding of the fraction bits
 	inline constexpr void twosComplement() noexcept {
 		_significant.twosComplement();
-	}
-	/// <summary>
-	/// round a set of source bits to the present representation.
-	/// srcbits is the number of bits of significant in the source representation
-	/// </summary>
-	/// <typeparam name="StorageType"></typeparam>
-	/// <param name="raw"></param>
-	/// <returns></returns>
-	template<size_t srcbits, typename StorageType>
-	constexpr StorageType round(StorageType raw) noexcept {
-		if constexpr (nbits < srcbits) {
-			// round to even: lsb guard round sticky
-			// collect guard, round, and sticky bits
-			// this same logic will work for the case where
-			// we only have a guard bit and no round and/or sticky bits
-			// because the mask logic will make round and sticky both 0
-			constexpr uint32_t upper = 8*sizeof(StorageType) + 2;
-			constexpr uint32_t shift = srcbits - nbits - 1ull;
-			StorageType mask = (StorageType{ 1ull } << shift);
-			bool guard = (mask & raw);
-			mask >>= 1;
-			bool round = (mask & raw);
-			if constexpr (shift > 1 && shift < upper) { // protect against a negative shift
-				StorageType allones(StorageType(~0)); 
-				mask = StorageType(allones << (shift - 2));
-				mask = ~mask;
-			}
-			else {
-				mask = 0;
-			}
-			bool sticky = (mask & raw);
-
-			raw >>= (shift + 1);  // shift out the bits we are rounding away
-			bool lsb = (raw & 0x1);
-			//  ... lsb | guard  round sticky   round
-			//       x     0       x     x       down
-			//       0     1       0     0       down  round to even
-			//       1     1       0     0        up   round to even
-			//       x     1       0     1        up
-			//       x     1       1     0        up
-			//       x     1       1     1        up
-			if (guard) {
-				if (lsb && (!round && !sticky)) ++raw; // round to even
-				if (round || sticky) ++raw;
-				if (raw == (1ull << nbits)) { // overflow
-					++_scale;
-					raw >>= 1;
-				}
-			}
-		}
-		else {
-			constexpr size_t shift = nbits - srcbits;
-			if constexpr (shift < sizeof(StorageType)) {
-				raw <<= shift;
-			}
-			else {
-#if !BIT_CAST_SUPPORT
-				std::cerr << "round: shift " << shift << " is too large (>= " << sizeof(StorageType) << ")\n";
-#endif
-			}
-		}
-		StorageType significant = raw;
-		return significant;
 	}
 
 	// modifiers
@@ -333,11 +244,8 @@ public:
 		}
 		if (lhs.isneg()) lhs._significant.twosComplement();
 		if (rhs.isneg()) rhs._significant.twosComplement();
-		// problem: blockfraction add result will have incorrectly 
-		// aligned radix point. If you align it by making the
-		// arguments nbits, then you are triggering a copy
-		// and thus lose performance
-		_significant.add(lhs._significant, rhs._significant);
+
+		_significant.uradd(lhs._significant, rhs._significant);
 
 		if constexpr (_trace_btriple_add) {
 			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
@@ -375,6 +283,72 @@ public:
 
 	// helpers
 
+private:
+	/// <summary>
+/// round a set of source bits to the present representation.
+/// srcbits is the number of bits of significant in the source representation
+/// round<> is intended only for rounding raw IEEE-754 bits
+/// </summary>
+/// <typeparam name="StorageType"></typeparam>
+/// <param name="raw"></param>
+/// <returns></returns>
+	template<size_t srcbits, typename StorageType>
+	constexpr StorageType round(StorageType raw) noexcept {
+		if constexpr (nbits < srcbits) {
+			// round to even: lsb guard round sticky
+			// collect guard, round, and sticky bits
+			// this same logic will work for the case where
+			// we only have a guard bit and no round and/or sticky bits
+			// because the mask logic will make round and sticky both 0
+			constexpr uint32_t upper = 8 * sizeof(StorageType) + 2;
+			constexpr uint32_t shift = srcbits - nbits - 1ull;
+			StorageType mask = (StorageType{ 1ull } << shift);
+			bool guard = (mask & raw);
+			mask >>= 1;
+			bool round = (mask & raw);
+			if constexpr (shift > 1 && shift < upper) { // protect against a negative shift
+				StorageType allones(StorageType(~0));
+				mask = StorageType(allones << (shift - 2));
+				mask = ~mask;
+			}
+			else {
+				mask = 0;
+			}
+			bool sticky = (mask & raw);
+
+			raw >>= (shift + 1);  // shift out the bits we are rounding away
+			bool lsb = (raw & 0x1);
+			//  ... lsb | guard  round sticky   round
+			//       x     0       x     x       down
+			//       0     1       0     0       down  round to even
+			//       1     1       0     0        up   round to even
+			//       x     1       0     1        up
+			//       x     1       1     0        up
+			//       x     1       1     1        up
+			if (guard) {
+				if (lsb && (!round && !sticky)) ++raw; // round to even
+				if (round || sticky) ++raw;
+				if (raw == (1ull << nbits)) { // overflow
+					++_scale;
+					raw >>= 1;
+				}
+			}
+		}
+		else {
+			constexpr size_t shift = nbits - srcbits;
+			if constexpr (shift < sizeof(StorageType)) {
+				raw <<= shift;
+			}
+			else {
+#if !BIT_CAST_SUPPORT
+				std::cerr << "round: shift " << shift << " is too large (>= " << sizeof(StorageType) << ")\n";
+#endif
+			}
+		}
+		StorageType significant = raw;
+		return significant;
+	}
+
 	template<typename Ty>
 	constexpr inline blocktriple& convert_unsigned_integer(const Ty& rhs) noexcept {
 		_nan = false;
@@ -408,20 +382,19 @@ public:
 		return *this;
 	}
 
-	constexpr inline blocktriple& convert_float(const float& rhs) noexcept {
-		clear();
+	constexpr inline blocktriple& convert_float(float rhs) noexcept {
 #if BIT_CAST_SUPPORT
 		// normal number
 		uint32_t bc = std::bit_cast<uint32_t>(rhs);
-		bool s = (0x8000'0000u & bc);
-		uint32_t raw_exp = uint32_t((0x7F80'0000u & bc) >> 23u);
-		uint32_t raw = (0x007F'FFFFu & bc);
+		bool s = (0x8000'0000ul & bc);
+		uint32_t raw_exp = static_cast<uint32_t>((0x7F80'0000ul & bc) >> 23);
+		uint32_t raw = (1ul << 23) | (0x007F'FFFFul & bc);
 #else // !BIT_CAST_SUPPORT
 		float_decoder decoder;
 		decoder.f = rhs;
 		bool s = decoder.parts.sign ? true : false;
 		uint32_t raw_exp = decoder.parts.exponent;
-		uint32_t raw = decoder.parts.fraction;
+		uint32_t raw = (1ul << 23) | decoder.parts.fraction;
 #endif // !BIT_CAST_SUPPORT
 
 		// special case handling
@@ -448,184 +421,86 @@ public:
 			if (raw == 0ul) {
 				// 1.11111111.00000000000000000000000 -inf
 				// 0.11111111.00000000000000000000000 +inf
+				_nan = false;
 				_inf = true;
 				_sign = s;  // + or - infinity
 				return *this;
 			}
 		}
-		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
+		if (rhs == 0.0f) { // IEEE rule: this is valid for + and - 0.0
+			_nan = false;
+			_inf = false;
 			_zero = true;
 			_sign = s;
 			return *this;
 		}
-
-		// this is not a special number
-		// normal number consists of 23 fraction bits and one hidden bit, and no hidden bit for a subnormal
-		int exponent = int(raw_exp) - 127;  // unbias the exponent
-
-		constexpr size_t es = 8;
-		constexpr int EXP_BIAS = 127;
-		constexpr int MAX_EXP = 128;
-		constexpr int MIN_EXP_NORMAL = 1 - EXP_BIAS;
-		constexpr int MIN_EXP_SUBNORMAL = MIN_EXP_NORMAL - 23;
-		// saturate to maxpos if out of range
-		if (exponent > MAX_EXP) {
-			// saturate to maxpos or maxneg
-			return *this;
-		}
-		if (exponent < MIN_EXP_SUBNORMAL - 1) { // TODO: explain the MIN_EXP_SUBMORNAL - 1
-			// set -0
-			return *this;
-		}
-		// set the exponent
-		uint32_t biasedExponent{ 0 };
-		int shiftRight = 23 - static_cast<int>(fbits); // this is the bit shift to get the MSB of the src to the MSB of the tgt
-		int adjustment{ 0 };
-		uint32_t mask = 0x007F'FFFFu >> fbits; // mask for rounding
-		if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
-			// this number is a subnormal number in this representation
-			// but it might be a normal number in IEEE single precision (float) representation
-			if (exponent > -127) {
-				// the source real is a normal number, so we must add the hidden bit to the fraction bits
-				raw |= (1ull << 23);
-				uint32_t subnormalShift = static_cast<uint32_t>(static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1);
-				mask = 0x00FF'FFFFu >> subnormalShift; // mask for rounding 
-				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits 
-				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
-				// -exponent because we are right shifting and exponent in this range is negative
-				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment required for subnormal representation due to the scale of the input number, i.e. the exponent of 2^-adjustment
-				if (shiftRight > 0) {		// if true we need to round
-					//  ... lsb | guard  round sticky   round
-					//       x     0       x     x       down
-					//       0     1       0     0       down  round to even
-					//       1     1       0     0        up   round to even
-					//       x     1       0     1        up
-					//       x     1       1     0        up
-					//       x     1       1     1        up
-					// collect lsb, guard, round, and sticky bits
-
-					// we need to project the rounding masks to the source bits to maximize information
-
-					mask = (1ul << (23 - static_cast<int>(fbits) + adjustment)); // bit mask for the lsb bit
-					bool lsb = (mask & raw);
-					mask >>= 1;
-					bool guard = (mask & raw);
-					mask >>= 1;
-					bool round = (mask & raw);
-					if (shiftRight > 1) {
-						mask = (0xFFFF'FFFFul << ((shiftRight - 2) + adjustment));
-						mask = ~mask;
-					}
-					else {
-						mask = 0;
-					}
-
-					bool sticky = (mask & raw);
-					raw >>= shiftRight + adjustment;
-
-					if (guard) {
-						if (lsb && (!round && !sticky)) ++raw; // round to even
-						if (round || sticky) ++raw;
-						if (raw == (1ul << fbits)) { // overflow
-							++biasedExponent;
-							raw = 0;
-						}
-					}
-				}
-				else { // all bits of the float go into this representation and need to be shifted up
-					std::cout << "conversion of IEEE float to more precise bfloats not implemented yet\n";
-				}
-			}
-			else {
-				// the source real is a subnormal number, and the target representation is a subnormal representation
-				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
-				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits 
-				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
-				// -exponent because we are right shifting and exponent in this range is negative
-				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
-				if (shiftRight > 0) {		// if true we need to round
-					std::cout << "conversion of subnormal IEEE float to subnormal bfloat not implemented yet\n";
-				}
-				else { // all bits of the float go into this representation and need to be shifted up
-					std::cout << "conversion of subnormal IEEE float to more precise bfloats not implemented yet\n";
-				}
-			}
-		}
-		else {
-			// the input is a normal, and the representation is a normal
-			biasedExponent = static_cast<uint32_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
-
-			// fraction processing
-			// float structure is: seee'eeee'efff'ffff'ffff'ffff'ffff'ffff, s = sign, e - exponent bit, f = fraction bit
-			// target structure is for example bfloat<8,2>: seef'ffff
-			// since both are normals, we can shift the incoming fraction to the target structure bits, and round
-			// MSB of source = 23 - 1, MSB of target = fbits - 1: shift = MSB of src - MSB of tgt => 23 - fbits
-			adjustment = 0;
-			if (shiftRight > 0) {		// if true we need to round
-				// round-to-even logic
-				//  ... lsb | guard  round sticky   round
-				//       x     0       x     x       down
-				//       0     1       0     0       down  round to even
-				//       1     1       0     0        up   round to even
-				//       x     1       0     1        up
-				//       x     1       1     0        up
-				//       x     1       1     1        up
-				// collect lsb, guard, round, and sticky bits
-				mask = (1ul << (23 - static_cast<int>(fbits)));
-				bool lsb = (mask & raw);
-				mask >>= 1;
-				bool guard = (mask & raw);
-				mask >>= 1;
-				bool round = (mask & raw);
-				if (shiftRight > 1) {
-					mask = (0xFFFF'FFFFul << (shiftRight - 2));
-					mask = ~mask;
-				}
-				else {
-					mask = 0;
-				}
-
-				bool sticky = (mask & raw);
-				raw >>= shiftRight + adjustment;
-
-				// execute rounding operation
-				if (guard) {
-					if (lsb && (!round && !sticky)) ++raw; // round to even
-					if (round || sticky) ++raw;
-					if (raw == (1ul << fbits)) { // overflow
-						++biasedExponent;
-						raw = 0;
-					}
-				}
-
-		}
-			else { // all bits of the double go into this representation and need to be shifted up
-//				std::cout << "conversion of IEEE double to more precise bfloats not implemented yet\n";
-			}
+		// normal number, not zero
+		_nan = false;
+		_inf = false;
+		_zero = false;
+		_sign = s;
+		_scale = static_cast<int>(raw_exp) - 127;
+		_significant.setBits(round<24, uint32_t>(raw));
+		return *this;
 	}
+	constexpr inline blocktriple& convert_double(double rhs) noexcept { // TODO: deal with subnormals and inf
+#if BIT_CAST_SUPPORT
+		uint64_t bc = std::bit_cast<uint64_t>(rhs);
+		bool s = (0x8000'0000'0000'0000ull & bc);
+		uint32_t raw_exp = static_cast<uint32_t>((0x7FF0'0000'0000'0000ull & bc) >> 52);
+		uint64_t raw = (1ull << 52) | (0x000F'FFFF'FFFF'FFFFull & bc);
+#else
+		double_decoder decoder;
+		decoder.d = rhs;
+		bool s = decoder.parts.sign ? true : false;
+		uint64_t raw_exp = decoder.parts.exponent;
+		uint64_t raw = (1ull << 52) | decoder.parts.fraction;
+#endif // !BIT_CAST_SUPPORT
 
-		// construct the target bfloat
-		uint32_t bits = (s ? 1u : 0u);
-		bits <<= es;
-		bits |= biasedExponent;
-		bits <<= nbits - 1ull - es;
-		bits |= raw;
-		_significant.setBits(bits);
-
-#ifdef LATER
-		// implement saturation
-		if (this->isinf(INF_TYPE_POSITIVE) || this->isnan(NAN_TYPE_QUIET)) {
-			clear();
-			flip();
-			reset(nbits - 1ull);
-			reset(1ull);
+		// special case handling
+		if (raw_exp == 0x7FFu) { // special cases
+			if (raw == 1ul || raw == 0x0040'0001ul) {
+				// 1.111'1111'1111.0000000000...0000000001 signalling nan
+				// 0.111'1111'1111.0000000000...0000000001 signalling nan
+				// MSVC
+				// 1.111'1111'1111.1000000000...0000000001 signalling nan
+				// 0.111'1111'1111.1000000000...0000000001 signalling nan
+				// NAN_TYPE_SIGNALLING;
+				_nan = true;
+				_inf = true; // this is the encoding of a signalling NaN
+				return *this;
+	}
+			if (raw == 0x0008'0000'0000'0000ull) {
+				// 1.111'1111'1111.1000000000...0000000000 quiet nan
+				// 0.111'1111'1111.1000000000...0000000000 quiet nan
+				// NAN_TYPE_QUIET);
+				_nan = true;
+				_inf = false; // this is the encoding of a quiet NaN
+				return *this;
+			}
+			if (raw == 0ul) {
+				// 1.11111111.00000000000000000000000 -inf
+				// 0.11111111.00000000000000000000000 +inf
+				_nan = false;
+				_inf = true;
+				_sign = s;  // + or - infinity
+				return *this;
+			}
 		}
-		else if (this->isinf(INF_TYPE_NEGATIVE) || this->isnan(NAN_TYPE_SIGNALLING)) {
-			clear();
-			flip();
-			reset(1ull);
+		if (rhs == 0.0f) { // IEEE rule: this is valid for + and - 0.0
+			_nan = false;
+			_inf = false;
+			_zero = true;
+			_sign = s;
+			return *this;
 		}
-#endif
+		// normal number
+		_nan = false;
+		_inf = false;
+		_zero = false;
+		_sign = s;
+		_scale = static_cast<int>(raw_exp) - 1023;
+		_significant.setBits(round<53, uint64_t>(raw));
 		return *this;
 	}
 
