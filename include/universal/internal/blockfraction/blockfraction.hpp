@@ -447,7 +447,7 @@ public:
 		if constexpr (nbits > srcbits) { // check if we need to sign extend
 			if (rhs.sign()) {
 				for (size_t i = srcbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
-					setBit(i);
+					setbit(i);
 				}
 			}
 		}
