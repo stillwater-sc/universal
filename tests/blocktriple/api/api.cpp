@@ -9,7 +9,9 @@
 #include <fstream>
 #include <typeinfo>
 // minimum set of include files to reflect source code dependencies
+#define BLOCKTRIPLE_VERBOSE_OUTPUT
 #define BLOCKTRIPLE_TRACE_ADD 1
+#define BIT_CAST_SUPPORT 0
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/bfloat/bfloat.hpp>
 #include <universal/number/bfloat/manipulators.hpp>
@@ -62,39 +64,73 @@ try {
 #if MANUAL_TESTING
 
 	{
-		CONSTEXPRESSION blocktriple<10> a = 511.5f;
-		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
+		cout << "\nFloat conversion use case and result\n";
+		constexpr float f = 511.5f;
+		cout << to_binary(f, true) << '\n';
+		CONSTEXPRESSION blocktriple<8> a = f;
+		cout << to_triple(a) << " : " << a << '\n';
+		CONSTEXPRESSION blocktriple<9> b = f;
+		cout << to_binary(b) << " : " << to_triple(b) << " : " << b << '\n';
+		CONSTEXPRESSION blocktriple<10> c = f;
+		cout << to_binary(c) << " : " << to_triple(c) << " : " << c << '\n';
 	}
+
 	{
+		cout << "\nDouble conversion use case and result\n";
 		constexpr double d = 511.5;
 		cout << to_binary(d, true) << '\n';
 		CONSTEXPRESSION blocktriple<8> a = d;
-		cout << to_binary(a) << " : " << to_triple(a) << " : " << a << '\n';
+		cout << to_triple(a) << " : " << a << '\n';
 		CONSTEXPRESSION blocktriple<9> b = d;
 		cout << to_binary(b) << " : " << to_triple(b) << " : " << b << '\n';
 		CONSTEXPRESSION blocktriple<10> c = d;
 		cout << to_binary(c) << " : " << to_triple(c) << " : " << c << '\n';
 	}
 
+	{
+		cout << "\nblocktriple add\n";
+		constexpr size_t abits = 7;
+		blocktriple<abits> a, b;
+		blocktriple<abits + 1> c;
+		a = 1.03125f;
+		b = -1.03125f;
+		cout << to_triple(a) << '\n' << to_triple(b) << '\n';
+		c.add(a, b);   // ALU unrounded add operator
+		cout << to_triple(c) << " : " << c << '\n';
+	}
+
+#ifdef BFLOAT
 	// test the bfloat conversion 
 	{
+		cout << "\nbfloat conversion\n";
+		using Real = bfloat<8, 2, uint8_t>;
+		Real a;
+		a = 1.875f;
+		cout << color_print(a) << " : " << a << endl;
+		constexpr size_t abits = Real::abits;
+		blocktriple<abits> aa;
+		a.normalize(aa);  // decode bfloat into a triple form
+		cout << to_triple(aa) << " : " << a << '\n';
+	}
+
+	// test the bfloat addition 
+	{
+		cout << "\nbfloat addition\n";
 		using Real = bfloat<8, 2, uint8_t>;
 		Real a, b, c;
-		a = 1.0f;
-		b = -1.0f;
+		a = 1.03125f;
+		b = -1.03125f;
 		constexpr size_t abits = Real::abits;
 		blocktriple<abits> aa, bb;
 		blocktriple<abits + 1> cc;
 		a.normalize(aa);  // decode bfloat into a triple form aa ready for add/sub
 		b.normalize(bb);  // decode bfloat into a triple form bb ready for add/sub
 		cc.add(aa, bb);   // ALU unrounded add operator
-		convert(cc, c);  // round and convert back to bfloat
+		convert(cc, c);   // round and convert back to bfloat
 		cout << to_triple(cc) << " : " << cc << '\n';
 		cout << color_print(c) << " : " << c << endl;
-
 	}
 	{
-#ifdef LATER
 		bfloat<8, 2, uint8_t> a, b, c;
 		a = 1.0f;
 		b = -1.0f;
@@ -103,12 +139,13 @@ try {
 		blocktriple<2*mbits> product;
 		a.normalize(aa);  // decode of a bits into a triple form aa
 		b.normalize(bb);  // decode of b bits into a triple form bb
-		product.mul(aa, bb);  // ALU mule operator
+		product.mul(aa, bb);  // ALU mul operator
 		convert(product, c);
 		cout << to_triple(product) << " : " << product << '\n';
 		cout << color_print(c) << " : " << c << endl;
-#endif
+
 	}
+#endif
 
 #else // !MANUAL_TESTING
 

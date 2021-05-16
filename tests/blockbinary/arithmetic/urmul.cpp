@@ -30,11 +30,11 @@ int VerifyUnroundedMultiplication(bool bReportIndividualTestCases) {
 	blockbinary<2*nbits, BlockType> signext_a, signext_b, signext_result, result_reference;
 	int64_t aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.setBits(i);
+		a.setbits(i);
 		signext_a = a;
 		aref = int64_t(signext_a.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.setBits(j);
+			b.setbits(j);
 			signext_b = b;
 			bref = int64_t(signext_b.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
 			signext_result = signext_a * signext_b;
@@ -53,7 +53,7 @@ int VerifyUnroundedMultiplication(bool bReportIndividualTestCases) {
 				if (bReportOverflowCondition)cout << endl;
 			}
 
-			result_reference.setBits(static_cast<uint64_t>(cref)); // in 2*nbits representation
+			result_reference.setbits(static_cast<uint64_t>(cref)); // in 2*nbits representation
 			if (signext_result != result_reference) {
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "*", signext_a, signext_b, signext_result, cref);
@@ -76,8 +76,8 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 	using namespace sw::universal;
 	blockbinary<nbits, StorageBlockType> a, b, result, reference;
 
-	a.setBits(uint64_t(lhs));
-	b.setBits(uint64_t(rhs));
+	a.setbits(uint64_t(lhs));
+	b.setbits(uint64_t(rhs));
 	long long _a, _b, _c;
 	_a = (long long)a;
 	_b = (long long)b;
@@ -90,7 +90,7 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 	std::cout << std::setw(nbits) << _a << " * " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _a * _b << std::endl;
 	std::cout << to_binary(a) << " * " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _a * _b << ")   " << std::endl;
 //	std::cout << to_hex(a) << " * " << to_hex(b) << " = " << to_hex(result) << " (reference: " << std::hex << ref << ")   ";
-	reference.setBits(_a * _b);
+	reference.setbits(_a * _b);
 	std::cout << (result == reference ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }

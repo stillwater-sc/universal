@@ -96,13 +96,13 @@ namespace sw::universal {
 		// NUT: number under test
 		TestType nut;
 		TestType debugTarget;
-//		debugTarget.setBits(0x1FE); // set it to something to catch
+//		debugTarget.setbits(0x1FE); // set it to something to catch
 
 		for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; i += 2) {
 			TestType current, interval;
 			SrcType testValue{ 0.0 };
-			current.setBits(i);
-			interval.setBits(i + 1);  // sets the ubit
+			current.setbits(i);
+			interval.setbits(i + 1);  // sets the ubit
 			SrcType da = SrcType(current);
 
 			// basic design of the test suite
@@ -161,8 +161,8 @@ namespace sw::universal {
 			}
 			else {
 				TestType previous, previousInterval;
-				previous.setBits(i - 2);
-				previousInterval.setBits(i - 1);
+				previous.setbits(i - 2);
+				previousInterval.setbits(i - 1);
 				SrcType prev = SrcType(previous);
 				SrcType delta = SrcType(SrcType(da - prev) / SrcType(2.0));  // NOTE: the sign will flip the relationship between the enumeration and the values
 				int currentFailures = nrOfFailedTests;

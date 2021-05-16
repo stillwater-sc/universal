@@ -27,10 +27,10 @@ void PositiveTestCases() {
 	fixpnt<8, 4> a, b, c, d;
 
 	cout << "POSITIVE TEST CASES\n";
-	a.setBits(0x14);
-	b.setBits(0x15);
-	c.setBits(0x16);
-	d.setBits(0x17);
+	a.setbits(0x14);
+	b.setbits(0x15);
+	c.setbits(0x16);
+	d.setbits(0x17);
 	fa = float(a);
 	fb = float(b);
 	fc = float(c);
@@ -102,10 +102,10 @@ void NegativeTestCases() {
 	fixpnt<8, 4> a, b, c, d;
 
 	cout << "NEGATIVE TEST CASES\n";
-	a.setBits(~0x14u + 1u);
-	b.setBits(~0x15u + 1u);
-	c.setBits(~0x16u + 1u);
-	d.setBits(~0x17u + 1u);
+	a.setbits(~0x14u + 1u);
+	b.setbits(~0x15u + 1u);
+	c.setbits(~0x16u + 1u);
+	d.setbits(~0x17u + 1u);
 	fa = float(a);
 	fb = float(b);
 	fc = float(c);

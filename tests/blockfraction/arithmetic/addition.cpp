@@ -33,15 +33,15 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
 	constexpr size_t nrBlocks = blockbinary<nbits, BlockType>::nrBlocks;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.setBits(i);
-		aref.setBits(i);
+		a.setbits(i);
+		aref.setbits(i);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.setBits(j);
-			bref.setBits(j);
+			b.setbits(j);
+			bref.setbits(j);
 			cref = aref + bref;
 			c.add(a, b);
 			for (size_t k = 0; k < nrBlocks; ++k) {
-				refResult.setBlock(k, c.block(k));
+				refResult.setblock(k, c.block(k));
 			}
 
 			if (refResult != cref) {

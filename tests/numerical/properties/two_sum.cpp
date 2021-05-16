@@ -91,9 +91,9 @@ int ValidateTwoSum(const std::string& tag, bool bReportIndividualTestCases) {
 	Posit pa, pb, ps, pr, psum, pref;
 	pair<Posit, Posit> s_and_r;
 	for (size_t i = 0; i < NR_POSITS; i++) {
-		pa.setBits(i);
+		pa.setbits(i);
 		for (size_t j = 0; j < NR_POSITS; j++) {
-			pb.setBits(j);
+			pb.setbits(j);
 
 			s_and_r = sw::universal::twoSum(pa, pb);
 			ps = s_and_r.first;

@@ -134,7 +134,7 @@ fixpnt<nbits, rbits, arithmetic, bt>& minpos(fixpnt<nbits, rbits, arithmetic, bt
 	static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
 	// minpos = 0000....00001
 	a.clear();
-	a.setBit(0, true);
+	a.setbit(0, true);
 	return a;
 }
 
@@ -149,7 +149,7 @@ constexpr fixpnt<nbits, rbits, arithmetic, bt>& maxpos(fixpnt<nbits, rbits, arit
 	// maxpos = 01111....1111
 	a.clear();
 	a.flip();
-	a.setBit(nbits - 1, false);
+	a.setbit(nbits - 1, false);
 	return a;
 }
 
@@ -169,7 +169,7 @@ fixpnt<nbits, rbits, arithmetic, bt>& maxneg(fixpnt<nbits, rbits, arithmetic, bt
 	static_assert(rbits <= nbits, "incorrect configuration of fixed-point number: nbits >= rbits");
 	// maxneg = 10000....0000
 	a.clear();
-	a.setBit(nbits - 1);
+	a.setbit(nbits - 1);
 	return a;
 }
 
@@ -188,7 +188,7 @@ inline constexpr fixpnt<nbits, rbits, arithmetic, bt>& convert(int64_t v, fixpnt
 	constexpr uint64_t mask = 0x1;
 	unsigned upper = (nbits < 64 ? nbits : 64);
 	for (unsigned i = 0; i < upper; ++i) {
-		if (v & mask) result.setBit(i);
+		if (v & mask) result.setbit(i);
 		v >>= 1;
 	}
 	if (negative) result.twosComplement();
@@ -205,7 +205,7 @@ inline constexpr fixpnt<nbits, rbits, arithmetic, bt>& convert_unsigned(uint64_t
 	constexpr uint64_t mask = 0x1;
 	unsigned upper = (nbits <= 64 ? nbits : 64);
 	for (unsigned i = 0; i < upper - rbits && v > 0; ++i) {
-		if (v & mask) result.setBit(i + rbits); // we have no fractional part in v
+		if (v & mask) result.setbit(i + rbits); // we have no fractional part in v
 		v >>= 1;
 	}
 	return result;
@@ -246,7 +246,7 @@ public:
 		if (src_nbits <= nbits) {
 			bb = a.bb;
 			if (a.sign()) { // sign extend
-				for (size_t i = src_nbits; i < nbits; ++i) setBit(i);
+				for (size_t i = src_nbits; i < nbits; ++i) setbit(i);
 			}
 		}
 		else {
@@ -342,7 +342,7 @@ public:
 			}
 		}
 		raw = (decoder.parts.sign == 0) ? raw : (~raw + 1); // map to two's complement
-		setBits(raw);
+		setbits(raw);
 		return *this;
 	}
 	fixpnt& operator=(double rhs) {
@@ -409,7 +409,7 @@ public:
 			}
 		}
 		raw = sign ? (~raw + 1) : raw; // take two's complement if negative
-		setBits(raw);
+		setbits(raw);
 		return *this;
 	}
 	fixpnt& operator=(long double rhs) {
@@ -501,7 +501,7 @@ public:
 	// increment by 1 ULP
 	fixpnt& operator++() {
 		fixpnt increment;
-		increment.setBits(0x1);
+		increment.setbits(0x1);
 		*this += increment;
 		return *this;
 	}
@@ -514,7 +514,7 @@ public:
 	// decrement by 1 ULP
 	fixpnt& operator--() {
 		fixpnt decrement;
-		decrement.setBits(0x1);
+		decrement.setbits(0x1);
 		return *this -= decrement;
 	}
 	// conversion operators
@@ -639,12 +639,12 @@ public:
 	// modifiers
 	inline constexpr void clear() noexcept { bb.clear(); }
 	inline constexpr void setzero() noexcept { bb.clear(); }
-	inline constexpr void setBit(size_t bitIndex, bool v = true) noexcept {
-		if (bitIndex < nbits) bb.setBit(bitIndex, v);
+	inline constexpr void setbit(size_t bitIndex, bool v = true) noexcept {
+		if (bitIndex < nbits) bb.setbit(bitIndex, v);
 		// when bitIndex is out-of-bounds, fail silently as no-op
 	}
 	// use un-interpreted raw bits to set the bits of the fixpnt: TODO: expand the API to support fixed-points > 64 bits
-	inline constexpr void setBits(uint64_t value) noexcept { bb.setBits(value); }
+	inline constexpr void setbits(uint64_t value) noexcept { bb.setbits(value); }
 	inline fixpnt& assign(const std::string& txt) noexcept {
 		if (!parse(txt, *this)) {
 			std::cerr << "Unable to parse: " << txt << std::endl;
@@ -780,12 +780,12 @@ protected:
 			if (rhs >= (Ty)maxpos<nbits, rbits, arithmetic, bt>(fp)) {
 				// set to max value
 				flip();
-				setBit(nbits - 1, false);
+				setbit(nbits - 1, false);
 				return;
 			}
 			if (rhs <= (Ty)maxneg<nbits, rbits, arithmetic, bt>(fp)) {
 				// set to max neg value
-				setBit(nbits - 1, true);
+				setbit(nbits - 1, true);
 				return;
 			}
 		}

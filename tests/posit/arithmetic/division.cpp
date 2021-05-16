@@ -149,10 +149,10 @@ Notice that multiplying the B/A and A/B results gives 1 exactly, but multiplying
 */
 void ToughDivisions2() {
 	sw::universal::posit<16, 1> a, b, c, d;
-	a.setBits(20479);
-	b.setBits(2);
-	c.setBits(16383);
-	d.setBits(16385);
+	a.setbits(20479);
+	b.setbits(2);
+	c.setbits(16383);
+	d.setbits(16385);
 
 	GenerateTestCase<16, 1>(b, a);
 	GenerateTestCase<16, 1>(a, b);

@@ -100,10 +100,10 @@ inline sw::universal::blockbinary<2 * nbits + roundingBits, BlockType> unrounded
 
 		if (subtractand <= decimator) {
 			decimator -= subtractand;
-			quotient.setBit(static_cast<size_t>(i));
+			quotient.setbit(static_cast<size_t>(i));
 		}
 		else {
-			quotient.setBit(static_cast<size_t>(i), false);
+			quotient.setbit(static_cast<size_t>(i), false);
 		}
 		subtractand >>= 1;
 
@@ -145,7 +145,7 @@ void GenerateValueTable() {
 	cout << "Fixed-point type: " << typeid(a).name() << endl;
 
 	for (size_t i = 0; i < NR_VALUES; ++i) {
-		a.setBits(i);
+		a.setbits(i);
 		cout << to_binary(i,nbits) << " : " << to_binary(a) << " = " << setw(10) << a << endl;
 	}
 }
@@ -156,8 +156,8 @@ void GenerateComparison(size_t a_bits, size_t b_bits) {
 	using namespace sw::universal;
 
 	fixpnt<nbits, rbits> a, b, c;
-	a.setBits(a_bits);
-	b.setBits(b_bits);
+	a.setbits(a_bits);
+	b.setbits(b_bits);
 	c = a * b;
 	float fa = float(a);
 	float fb = float(b);

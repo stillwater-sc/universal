@@ -65,9 +65,9 @@ void ShiftExamples() {
 	blockbinary<37, uint32_t> c;
 	//	blockbinary<37, int64_t> d;
 
-	a.setBits(0xAAAAAAAAAA);
-	b.setBits(0x5555555555);
-	c.setBits(0xAAAAAAAAAA);
+	a.setbits(0xAAAAAAAAAA);
+	b.setbits(0x5555555555);
+	c.setbits(0xAAAAAAAAAA);
 	//	d.set_raw_bits(0x5555555555);
 
 	cout << to_binary(a, true) << endl;
@@ -79,7 +79,7 @@ void ShiftExamples() {
 	//	cout << to_hex(d, true) << endl;
 
 	cout << "shifting\n";
-	a.setBits(0x155555555);
+	a.setbits(0x155555555);
 	cout << to_binary(a, true) << endl;
 	a <<= 1;
 	cout << to_binary(a, true) << endl;
@@ -94,7 +94,7 @@ void ShiftExamples() {
 	a >>= 9;
 	cout << to_binary(a, true) << endl;
 
-	b.setBits(0x155555555);
+	b.setbits(0x155555555);
 	cout << to_binary(b, true) << endl;
 	b <<= 1;
 	cout << to_binary(b, true) << endl;

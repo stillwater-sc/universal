@@ -1,4 +1,4 @@
-//  conversion.cpp : test suite runner for blockfraction construction and conversion from float/double
+//  api.cpp : test suite runner for blockfraction application programming interface tests
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -29,30 +29,26 @@ try {
 
 	std::string tag = "blockfraction storage class construction/conversion testing";
 
-#ifdef DEPRECATED
-	// we have deprecated the blockfraction copy constructor to catch any
-	// unsuspecting conversion copies in blockfraction use-cases
 	{
-		// scenario that happens in unrounded add/sub where blockfraction 
-		// is used as storage type for the significant using a very specific format 0h.ffff
-		constexpr size_t fbits   = 8;
-		constexpr size_t fhbits  = fbits + 1;
-		constexpr size_t abits   = fhbits + 3;
-		constexpr size_t sumbits = abits + 1;
-		size_t msbMask = (1 << fbits);
-		size_t frac = msbMask;
-		blockfraction<fhbits, uint8_t> a;
-		for (size_t i = 0; i < fbits; ++i) {
-			a.setBits(frac);
-			blockfraction<sumbits, uint8_t> b(a);   // blockfraction copies map MSB -> MSB
-			cout << to_binary(a, true) << '\n';
-			cout << to_binary(b, true) << '\n';
-			msbMask >>= 1;
-			frac |= msbMask;
-		}
+		blockfraction<7, uint8_t> a, b;
+		blockfraction<8, uint8_t> c;
+		a.setbits(0x21); // 1.0 in 7-bit blockfraction form
+		b.setbits(0x21);
+		cout << ' ' << a << "\n " << b << '\n';
+		c.uradd(a, b);
+		// this moves the radix from nbits-2 to nbits-3
+		cout << c << endl;
 	}
-#endif 
 
+	{
+		blockfraction<7, uint8_t> a, b, c;
+		a.setbits(0x21); // 1.0 in 7-bit blockfraction form
+		b.setbits(0x21);
+		cout << ' ' << a << "\n " << b << '\n';
+		c.add(a, b);
+		// add() keeps the radix point at nbits-2
+		cout << ' ' << c << endl;
+	}
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

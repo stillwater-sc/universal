@@ -58,17 +58,17 @@ int VerifyComplexMultiplication(const std::string& tag, bool bReportIndividualTe
 
 	complex<double> da, db, dc;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		ar.setBits(i);
+		ar.setbits(i);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			ar.setBits(j);
+			ar.setbits(j);
 			a = complex<FixedPoint>(ar, ai);
 			da = complex<double>(double(ar), double(ai));
 
 			// generate all the right sides
 			for (size_t k = 0; k < NR_VALUES; ++k) {
-				br.setBits(k);
+				br.setbits(k);
 				for (size_t l = 0; l < NR_VALUES; ++l) {
-					bi.setBits(l);
+					bi.setbits(l);
 					b = complex<FixedPoint>(br, bi);
 					db = complex<double>(double(br), double(bi));
 					dc = da * db;
@@ -130,8 +130,8 @@ try {
 
 	{
 		blockbinary<8> a, b;
-		a.setBits(0x02);
-		b.setBits(0x80);
+		a.setbits(0x02);
+		b.setbits(0x80);
 		blockbinary<16> c;
 		c = urmul2(a, b);
 		cout << a << " * " << b << " = " << c << " : " << (long long)c << endl;

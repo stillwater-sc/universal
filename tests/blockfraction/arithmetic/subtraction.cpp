@@ -32,15 +32,15 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 	blockfraction<nbits, BlockType> a, b, c;
 	blockbinary<nbits, BlockType> aref, bref, cref, refResult;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.setBits(i);
-		aref.setBits(i);
+		a.setbits(i);
+		aref.setbits(i);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.setBits(j);
-			bref.setBits(j);
+			b.setbits(j);
+			bref.setbits(j);
 			cref = aref - bref;
 			c.sub(a, b);
 			for (size_t k = 0; k < blockbinary<nbits, BlockType>::nrBlocks; ++k) {
-				refResult.setBlock(k, c.block(k));
+				refResult.setblock(k, c.block(k));
 			}
 			if (refResult != cref) {
 				nrOfFailedTests++;

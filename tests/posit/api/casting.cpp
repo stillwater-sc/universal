@@ -46,7 +46,7 @@ void TestCase1() {
 	using namespace sw::universal;
 
 	posit<64, 1> p;
-	p.setBits(0x7B32352A00000013);
+	p.setbits(0x7B32352A00000013);
 
 	cout << color_print(p) << " " << p << endl;
 

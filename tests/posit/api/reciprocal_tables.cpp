@@ -17,7 +17,7 @@ void GeneratePositReciprocalLookupTable(std::ostream& os) {
 	sw::universal::posit<nbits, es> p, r;
 	double v,rv;
 	for (size_t i = 0; i < NR_OF_ENTRIES; i++) {
-		p.setBits(i);
+		p.setbits(i);
 		v = double(p);
 		rv = 1.0 / v;
 		r = rv;

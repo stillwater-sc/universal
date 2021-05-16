@@ -29,7 +29,7 @@ void GenerateValues() {
 
 	posit<8, 1> a;
 	for (unsigned int i = 0; i < NR_POSITS; ++i) {
-		a.setBits(i);
+		a.setbits(i);
 		cout << hex << i << " " << dec << a << endl;
 	}
 }

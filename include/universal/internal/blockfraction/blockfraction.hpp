@@ -57,14 +57,30 @@ struct fractionquorem {
 };
 
 /*
-NOTES
-
-for block arithmetic, we need to manage a carry bit.
+NOTE 1
+   For block arithmetic, we need to manage a carry bit.
 This disqualifies using uint64_t as a block type as we can't catch the overflow condition
 in the same way as the other native types, uint8_t, uint16_t, uint32_t.
+   We could use a sint64_t and then convert to uint64_t and observe the MSB. 
+That requires different logic though. 
+TODO: the highest performance for 32bits and up would be to have a uint64_t base type
+for which we need asm to get the carry bit logic to work.
 
-We could use a sint64_t and then convert to uint64_t and observe the MSB. Very different 
-logic though.
+TODO: are there mechanisms where we can use SIMD for vector operations?
+If there are, then doing something with more fitting and smaller base types might
+yield more concurrency and thus more throughput for that ISA.
+
+
+NOTE 2
+adding two block triples of nbits would yield a result of nbits+1. To implement a
+fast use of blockfraction storage complicates this relationship. 
+
+Standardizing the blocktriple add to take two arguments of nbits, and product a result
+of nbits+1, makes sense in the abstract pipeline as the triple would gain one bit of
+accuracy. Any subsequent use would need to make a decision whether to round or not.
+If we go to a quire, we wouldn't round, if we reassign it to a source precision, we would.
+
+What is the required API of blockfraction to support that semantic?
 */
 
 
@@ -105,13 +121,19 @@ public:
 	blockfraction& operator=(const blockfraction&) noexcept = default;
 	blockfraction& operator=(blockfraction&&) noexcept = default;
 
+#ifdef NEVER
+	// disable the ability to copy different blockfractions to catch any
+	// unintended (implicit) copies when working with blockfractions.
+	// For performance, the blockfraction must be used in-place.
+	// Typical design, allocates a blocktriple on the stack, and subsequently
+	// uses in add/sub/mul/div/sqrt will directly access the encapsulated blockfraction.
+
 	/// construct a blockfraction from another: bt must be the same
 	template<size_t nnbits>
 	blockfraction(const blockfraction<nnbits, bt>& rhs) {
 		this->assign(rhs);
 	}
 
-#ifdef NEVER
 	// blockfraction cannot have decorated constructors or assignment
 	// as blockfraction does not have all the information to interpret a value
 	// So by design, the class interface does not interact with values
@@ -164,6 +186,24 @@ public:
 	/// <param name="lhs">nbits of fraction in the form 0h.ffff</param>
 	/// <param name="rhs">nbits of fraction in the form 0h.ffff</param>
 	void add(const blockfraction<nbits, bt>& lhs, const blockfraction<nbits, bt>& rhs) {
+		bool carry = false;
+		for (unsigned i = 0; i < nrBlocks; ++i) {
+			// cast up so we can test for overflow
+			uint64_t l = uint64_t(lhs._block[i]);
+			uint64_t r = uint64_t(rhs._block[i]);
+			uint64_t s = l + r + (carry ? uint64_t(1) : uint64_t(0));
+			carry = (s > maxBlockValue);
+			_block[i] = bt(s);
+		}
+		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+		_block[MSU] &= MSU_MASK;
+	}
+	/// <summary>
+	/// add two fractions of the form 0h.ffff and produce a result of the form 0hf.ffff
+	/// </summary>
+	/// <param name="lhs">nbits-1 of fraction in the form 0h.ffff</param>
+	/// <param name="rhs">nbits-1 of fraction in the form 0h.ffff</param>
+	void uradd(const blockfraction<nbits-1, bt>& lhs, const blockfraction<nbits-1, bt>& rhs) {
 		bool carry = false;
 		for (unsigned i = 0; i < nrBlocks; ++i) {
 			// cast up so we can test for overflow
@@ -262,14 +302,14 @@ public:
 					// bitsToShift is guaranteed to be less than nbits
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->setBit(i);
+						this->setbit(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->setBit(i, false);
+						this->setbit(i, false); // reset
 					}
 				}
 				return *this;
@@ -292,14 +332,14 @@ public:
 			// bitsToShift is guaranteed to be less than nbits
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->setBit(i);
+				this->setbit(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->setBit(i, false);
+				this->setbit(i, false); // reset
 			}
 		}
 
@@ -316,7 +356,7 @@ public:
 		}
 	}
 	inline constexpr void setzero() noexcept { clear(); }
-	inline constexpr void setBit(size_t i, bool v = true) noexcept {
+	inline constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
@@ -326,11 +366,11 @@ public:
 		}
 		// when i is out of bounds, fail silently as no-op
 	}
-	inline constexpr void setBlock(size_t b, const bt& block) noexcept {
+	inline constexpr void setblock(size_t b, const bt& block) noexcept {
 		if (b < nrBlocks) _block[b] = block;
 		// when b is out of bounds, fail silently as no-op
 	}
-	inline constexpr void setBits(uint64_t value) noexcept {
+	inline constexpr void setbits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
 			_block[0] = value & storageMask;
 		}
@@ -352,7 +392,7 @@ public:
 	// in-place 2's complement
 	inline constexpr blockfraction& twosComplement() noexcept {
 		blockfraction<nbits, bt> plusOne;
-		plusOne.setBit(0);
+		plusOne.setbit(0);
 		flip();
 		add(*this, plusOne);
 		return *this;
@@ -368,9 +408,9 @@ public:
 	}
 	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
 	inline constexpr bool iseven() const noexcept { return !isodd(); }
-	inline constexpr bool test(size_t bitIndex) const {
-		return at(bitIndex);
-	}
+	inline constexpr bool test(size_t bitIndex) const {	return at(bitIndex); }
+	// check carry bit in output of the ALU
+	inline constexpr bool checkCarry() const { return at(nbits - 2); }
 	inline constexpr bool at(size_t bitIndex) const {
 		if (bitIndex < nbits) {
 			bt word = _block[bitIndex / bitsInBlock];
@@ -407,7 +447,7 @@ public:
 		if constexpr (nbits > srcbits) { // check if we need to sign extend
 			if (rhs.sign()) {
 				for (size_t i = srcbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
-					setBit(i);
+					setbit(i);
 				}
 			}
 		}
@@ -535,6 +575,54 @@ private:
 	template<size_t nnbits, typename Bbt>
 	friend std::ostream& operator<<(std::ostream& ostr, const blockfraction<nnbits, Bbt>& v);
 };
+
+//////////////////////////////////////////////////////////////////////////////////
+// stream operators
+
+// ostream operator
+template<size_t nbits, typename bt>
+std::ostream& operator<<(std::ostream& ostr, const blockfraction<nbits, bt>& number) {
+	return ostr << to_binary(number);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// conversions to string representations
+
+// create a binary representation of the blockfraction: 0h.ffff
+// by design, the radix point is at nbits-2
+template<size_t nbits, typename bt>
+std::string to_binary(const blockfraction<nbits, bt>& number, bool nibbleMarker = false) {
+	std::stringstream s;
+	s << 'b';
+	s << (number.at(size_t(nbits - 1)) ? '1' : '0');
+	s << (number.at(size_t(nbits - 2)) ? '1' : '0');
+	s << '.';
+	for (int i = int(nbits - 3); i >= 0; --i) {
+		s << (number.at(size_t(i)) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	}
+	return s.str();
+}
+
+// local helper to display the contents of a byte array
+template<size_t nbits, typename bt>
+std::string to_hex(const blockfraction<nbits, bt>& number, bool wordMarker = true) {
+	static constexpr size_t bitsInByte = 8;
+	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
+	char hexChar[16] = {
+		'0', '1', '2', '3', '4', '5', '6', '7',
+		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+	};
+	std::stringstream ss;
+	ss << "0x" << std::hex;
+	int nrNibbles = int(1 + ((nbits - 1) >> 2));
+	for (int n = nrNibbles - 1; n >= 0; --n) {
+		uint8_t nibble = number.nibble(static_cast<size_t>(n));
+		ss << hexChar[nibble];
+		if (wordMarker && n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
+	}
+	return ss.str();
+}
 
 //////////////////////////////////////////////////////////////////////////////////
 // logic operators
@@ -707,47 +795,6 @@ inline blockfraction<2 * nbits + roundingBits, bt> urdiv(const blockfraction<nbi
 	if (result_negative) result.twoscomplement();
 	r.assign(result); // copy the lowest bits which represent the bits on which we need to apply the rounding test
 	return result;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// conversions to string representations
-
-// create a binary representation of the storage
-template<size_t nbits, typename bt>
-std::string to_binary(const blockfraction<nbits, bt>& number, bool nibbleMarker = false) {
-	std::stringstream s;
-	s << 'b';
-	for (int i = int(nbits - 1); i >= 0; --i) {
-		s << (number.at(size_t(i)) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
-	}
-	return s.str();
-}
-
-// local helper to display the contents of a byte array
-template<size_t nbits, typename bt>
-std::string to_hex(const blockfraction<nbits, bt>& number, bool wordMarker = true) {
-	static constexpr size_t bitsInByte = 8;
-	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
-	char hexChar[16] = {
-		'0', '1', '2', '3', '4', '5', '6', '7',
-		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
-	};
-	std::stringstream ss;
-	ss << "0x" << std::hex;
-	int nrNibbles = int(1 + ((nbits - 1) >> 2));
-	for (int n = nrNibbles - 1; n >= 0; --n) {
-		uint8_t nibble = number.nibble(static_cast<size_t>(n));
-		ss << hexChar[nibble];
-		if (wordMarker && n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
-	}
-	return ss.str();
-}
-
-// ostream operator
-template<size_t nbits, typename bt>
-std::ostream& operator<<(std::ostream& ostr, const blockfraction<nbits, bt>& number) {
-	return ostr << to_binary(number);
 }
 
 // free function generator of the 2's complement of a blockfraction

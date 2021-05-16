@@ -71,7 +71,7 @@ try {
 		std::cout << "   bfloat<32,8,uint32_t>         IEEE-754 float\n";
 		uint32_t pattern = 0x00000001ul;
 		for (unsigned i = 0; i < 24; ++i) {
-			a.setBits(pattern);
+			a.setbits(pattern);
 			std::cout << to_binary(a, true) << " " << a << ": ";
 			pattern <<= 1;
 			std::cout << to_binary(subnormal, true) << " : " << subnormal << std::endl;

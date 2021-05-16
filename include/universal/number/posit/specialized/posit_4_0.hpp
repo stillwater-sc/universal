@@ -197,7 +197,7 @@ namespace sw::universal {
 					_bits = uint8_t(raw.to_ulong());
 					return *this;
 				}
-				posit& setBits(uint64_t value) {
+				posit& setbits(uint64_t value) {
 					_bits = uint8_t(value & bit_mask);
 					return *this;
 				}
@@ -209,7 +209,7 @@ namespace sw::universal {
 						return *this;
 					}
 					posit p;
-					return p.setBits((~_bits) + 1);
+					return p.setbits((~_bits) + 1);
 				}
 				posit& operator+=(const posit& b) {
 					uint16_t index = (_bits << index_shift) | b._bits;
@@ -251,7 +251,7 @@ namespace sw::universal {
 				}
 				posit reciprocate() const {
 					posit p;
-					p.setBits(posit_4_0_reciprocal_lookup[_bits]);
+					p.setbits(posit_4_0_reciprocal_lookup[_bits]);
 					return p;
 				}
 				// SELECTORS

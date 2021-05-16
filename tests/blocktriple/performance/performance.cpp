@@ -19,7 +19,7 @@ namespace sw::universal::internal {
 	template<typename Scalar>
 	void AdditionSubtractionWorkload(uint64_t NR_OPS) {
 		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
-		d.setBits(0xFFFFFFFFFFFFFFFFull);
+		d.setbits(0xFFFFFFFFFFFFFFFFull);
 		a = b = c = d;
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
 			//sw::universal::module_add(a, b, c);
@@ -31,7 +31,7 @@ namespace sw::universal::internal {
 	template<typename Scalar>
 	void MultiplicationWorkload(uint64_t NR_OPS) {
 		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
-		d.setBits(0xFFFFFFFFFFFFFFFFull);
+		d.setbits(0xFFFFFFFFFFFFFFFFull);
 		a = b = c = d;
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
 			//c = a * b;
@@ -44,7 +44,7 @@ namespace sw::universal::internal {
 	template<typename Scalar>
 	void DivisionWorkload(uint64_t NR_OPS) {
 		Scalar a{ 0 }, b{ 0 }, c{ 0 }, d{ 0 };
-		d.setBits(0xFFFFFFFFFFFFFFFFull);
+		d.setbits(0xFFFFFFFFFFFFFFFFull);
 		a = b = c = d;
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
 			//c = a / b;

@@ -28,7 +28,7 @@ void CompilerBug() {
 	using namespace sw::universal;
 	{
 		bfloat<5, 1> a;
-		a.setBits(0x0);
+		a.setbits(0x0);
 		cout << "bfloat<5,1> : " << to_binary(a) << " : " << a << endl;
 		float f = float(a);
 		cout << "float      : " << f << endl;
@@ -37,7 +37,7 @@ void CompilerBug() {
 	}
 	{
 		bfloat<5, 1> a;
-		a.setBits(0x10);
+		a.setbits(0x10);
 		cout << "bfloat<5,1> : " << to_binary(a) << " : " << a << endl;
 		float f = float(a);
 		cout << "float      : " << f << endl;
@@ -47,7 +47,7 @@ void CompilerBug() {
 
 	{
 		bfloat<6, 1> a;
-		a.setBits(0x0);
+		a.setbits(0x0);
 		cout << "bfloat<6,1> : " << to_binary(a) << " : " << a << endl;
 		float f = float(a);
 		cout << "float      : " << f << endl;
@@ -56,7 +56,7 @@ void CompilerBug() {
 	}
 	{
 		bfloat<6, 1> a;
-		a.setBits(0x20);
+		a.setbits(0x20);
 		cout << "bfloat<6,1> : " << to_binary(a) << " : " << a << endl;
 		float f = float(a);
 		cout << "float      : " << f << endl;
