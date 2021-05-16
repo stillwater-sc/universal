@@ -29,8 +29,12 @@ try {
 
 	std::string tag = "blockfraction storage class construction/conversion testing";
 
+#ifdef DEPRECATED
+	// we have deprecated the blockfraction copy constructor to catch any
+	// unsuspecting conversion copies in blockfraction use-cases
 	{
-		// scenario that happens in unrounded add/sub where blockfraction is used as storage type for fraction or significant
+		// scenario that happens in unrounded add/sub where blockfraction 
+		// is used as storage type for the significant using a very specific format 0h.ffff
 		constexpr size_t fbits   = 8;
 		constexpr size_t fhbits  = fbits + 1;
 		constexpr size_t abits   = fhbits + 3;
@@ -47,6 +51,8 @@ try {
 			frac |= msbMask;
 		}
 	}
+#endif 
+
 }
 catch (char const* msg) {
 	std::cerr << msg << '\n';

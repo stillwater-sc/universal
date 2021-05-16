@@ -25,7 +25,7 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	// Usage: bfloats [-csv]
+	// Usage: tables_bfloats [-csv]
 	bool csv = false;
 	if (argc == 2) {
 		if (std::string(argv[1]) == std::string("-csv")) csv = true;

@@ -577,6 +577,54 @@ private:
 };
 
 //////////////////////////////////////////////////////////////////////////////////
+// stream operators
+
+// ostream operator
+template<size_t nbits, typename bt>
+std::ostream& operator<<(std::ostream& ostr, const blockfraction<nbits, bt>& number) {
+	return ostr << to_binary(number);
+}
+
+//////////////////////////////////////////////////////////////////////////////
+// conversions to string representations
+
+// create a binary representation of the blockfraction: 0h.ffff
+// by design, the radix point is at nbits-2
+template<size_t nbits, typename bt>
+std::string to_binary(const blockfraction<nbits, bt>& number, bool nibbleMarker = false) {
+	std::stringstream s;
+	s << 'b';
+	s << (number.at(size_t(nbits - 1)) ? '1' : '0');
+	s << (number.at(size_t(nbits - 2)) ? '1' : '0');
+	s << '.';
+	for (int i = int(nbits - 3); i >= 0; --i) {
+		s << (number.at(size_t(i)) ? '1' : '0');
+		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
+	}
+	return s.str();
+}
+
+// local helper to display the contents of a byte array
+template<size_t nbits, typename bt>
+std::string to_hex(const blockfraction<nbits, bt>& number, bool wordMarker = true) {
+	static constexpr size_t bitsInByte = 8;
+	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
+	char hexChar[16] = {
+		'0', '1', '2', '3', '4', '5', '6', '7',
+		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
+	};
+	std::stringstream ss;
+	ss << "0x" << std::hex;
+	int nrNibbles = int(1 + ((nbits - 1) >> 2));
+	for (int n = nrNibbles - 1; n >= 0; --n) {
+		uint8_t nibble = number.nibble(static_cast<size_t>(n));
+		ss << hexChar[nibble];
+		if (wordMarker && n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
+	}
+	return ss.str();
+}
+
+//////////////////////////////////////////////////////////////////////////////////
 // logic operators
 
 template<size_t N, typename B>
@@ -747,47 +795,6 @@ inline blockfraction<2 * nbits + roundingBits, bt> urdiv(const blockfraction<nbi
 	if (result_negative) result.twoscomplement();
 	r.assign(result); // copy the lowest bits which represent the bits on which we need to apply the rounding test
 	return result;
-}
-
-//////////////////////////////////////////////////////////////////////////////
-// conversions to string representations
-
-// create a binary representation of the storage
-template<size_t nbits, typename bt>
-std::string to_binary(const blockfraction<nbits, bt>& number, bool nibbleMarker = false) {
-	std::stringstream s;
-	s << 'b';
-	for (int i = int(nbits - 1); i >= 0; --i) {
-		s << (number.at(size_t(i)) ? '1' : '0');
-		if (i > 0 && (i % 4) == 0 && nibbleMarker) s << '\'';
-	}
-	return s.str();
-}
-
-// local helper to display the contents of a byte array
-template<size_t nbits, typename bt>
-std::string to_hex(const blockfraction<nbits, bt>& number, bool wordMarker = true) {
-	static constexpr size_t bitsInByte = 8;
-	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
-	char hexChar[16] = {
-		'0', '1', '2', '3', '4', '5', '6', '7',
-		'8', '9', 'A', 'B', 'C', 'D', 'E', 'F',
-	};
-	std::stringstream ss;
-	ss << "0x" << std::hex;
-	int nrNibbles = int(1 + ((nbits - 1) >> 2));
-	for (int n = nrNibbles - 1; n >= 0; --n) {
-		uint8_t nibble = number.nibble(static_cast<size_t>(n));
-		ss << hexChar[nibble];
-		if (wordMarker && n > 0 && ((n * 4ll) % bitsInBlock) == 0) ss << '\'';
-	}
-	return ss.str();
-}
-
-// ostream operator
-template<size_t nbits, typename bt>
-std::ostream& operator<<(std::ostream& ostr, const blockfraction<nbits, bt>& number) {
-	return ostr << to_binary(number);
 }
 
 // free function generator of the 2's complement of a blockfraction

@@ -40,27 +40,29 @@ void ReportBinaryArithmeticError(const std::string& test_case, const std::string
 // enumerate all addition cases for an blocktriple<nbits,BlockType> configuration
 template<typename BlockTripleConfiguration>
 int VerifyAddition(bool bReportIndividualTestCases) {
-	constexpr size_t fhbits = BlockTripleConfiguration::fhbits;  // includes hidden bit
+	constexpr size_t fbits = BlockTripleConfiguration::fbits;  // just the number of fraction bits
 	constexpr size_t abits = BlockTripleConfiguration::abits;
 	using BlockType = typename BlockTripleConfiguration::BlockType;
 
-	constexpr size_t NR_VALUES = (size_t(1) << fhbits);
+	constexpr size_t NR_VALUES = (size_t(1) << fbits);
 	using namespace std;
 	using namespace sw::universal;
 	
 	cout << endl;
-	cout << "blocktriple<" <<fhbits << ',' << typeid(BlockType).name() << '>' << endl;
+	cout << "blocktriple<" <<fbits << ',' << typeid(BlockType).name() << '>' << endl;
 
 	int nrOfFailedTests = 0;
 
 	blocktriple<abits> a, b;
 	blocktriple<abits+1> c, refResult;
+	a.setnormal();
+	b.setnormal();
 	double aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.setBits(i);
+		a.setBits(i + NR_VALUES);  // the + NR_VALUES is to set the hidden bit in the blockfraction
 		aref = double(a); // cast to double is reasonable constraint for exhaustive test
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.setBits(j);
+			b.setBits(j + NR_VALUES);
 			bref = double(b); // cast to double is reasonable constraint for exhaustive test
 			cref = aref + bref;
 			c.add(a, b);
@@ -83,20 +85,24 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 
 // generate specific test case that you can trace with the trace conditions in blocktriple
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<size_t nbits>
-void GenerateTestCase(double lhs, double rhs) {
+template<size_t nbits, typename ArgumentType>
+void GenerateTestCase(ArgumentType lhs, ArgumentType rhs) {
 	using namespace sw::universal;
-	blocktriple<nbits> a, b, result, reference;
+	blocktriple<nbits> a, b;
+	blocktriple<nbits+1> result, reference;
 
+	// convert to blocktriple
 	a = lhs;
 	b = rhs;
-//	module_add(a, b, result);
+	result.add(a, b);
 
-	double _a, _b, _c;
-	_a = double(a);
-	_b = double(b);
+	// convert blocktriples back to argument type
+	ArgumentType _a, _b, _c;
+	_a = ArgumentType(a);
+	_b = ArgumentType(b);
 	_c = _a + _b;
 
+	// check that the round-trip through the blocktriple yields the same value as direct conversion
 	std::streamsize oldPrecision = std::cout.precision();
 	std::cout << std::setprecision(nbits - 2);
 	std::cout << std::setw(nbits) << lhs << " + " << std::setw(nbits) << rhs << " = " << std::setw(nbits) << lhs + rhs << '\n';
@@ -130,13 +136,19 @@ try {
 	cout << bb << endl;
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase<18>(12345, 54321); // result is 66,666, thus needs 18 bits to be represented by 2's complement
-	GenerateTestCase<18>(66666, -54321); // result is 12,345
+	GenerateTestCase<18, float>(12345.0, 54321.0); // result is 66,666, and needs 18 bits to be represented by 2's complement
+	GenerateTestCase<18, float>(66666, -54321); // result is 12,345
 
-	blocktriple<12> a, b, c;
-	a = -1024.0f;
-	b = a;
-//	c = a + b;
+	blocktriple<18> aa = 12345.0f;
+	cout << "aa : " << aa << endl;
+	aa = 12345;
+	cout << "aa : " << aa << endl;
+
+	blocktriple<18> a, b;
+	blocktriple<19> c;
+	a =  66666.0f;
+	b = -66666.0f;
+	c.add(a, b);
 	a.sign();
 	cout << (a.sign() ? "neg" : "pos") << endl;
 	cout << (c.sign() ? "neg" : "pos") << endl;
