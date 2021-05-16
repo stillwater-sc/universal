@@ -30,10 +30,10 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 	blockbinary<nbits, BlockType> a, b, result, refResult;
 	int64_t aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.setBits(i);
+		a.setbits(i);
 		aref = int64_t(a.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.setBits(j);
+			b.setbits(j);
 			bref = int64_t(b.to_long_long()); // cast to long long is reasonable constraint for exhaustive test
 			result = a / b;
 		
@@ -51,7 +51,7 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 				++nrOfOverflows;
 			}
 
-			refResult.setBits(static_cast<uint64_t>(cref));
+			refResult.setbits(static_cast<uint64_t>(cref));
 			if (result != refResult) {
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "/", a, b, result, cref);
@@ -87,8 +87,8 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 	using namespace sw::universal;
 	blockbinary<nbits, BlockType> a, b, result, reference;
 
-	a.setBits(uint64_t(lhs));
-	b.setBits(uint64_t(rhs));
+	a.setbits(uint64_t(lhs));
+	b.setbits(uint64_t(rhs));
 	result = a / b;
 
 	long long _a, _b, _c;

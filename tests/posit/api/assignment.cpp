@@ -61,7 +61,7 @@ int ValidateAssignment(bool bReportIndividualTestCases) {
 	// posit_raw -> to value in Ty -> assign to posit -> compare posits
 	sw::universal::posit<nbits, es> p, assigned;
 	for (size_t i = 0; i < NR_POSITS; i++) {
-		p.setBits(i); // std::cout << p.get() << endl;
+		p.setbits(i); // std::cout << p.get() << endl;
 		if (p.isnar() && std::numeric_limits<Ty>::is_exact) continue; // can't assign NaR for integer types
 		Ty value = (Ty)(p);
 		assigned = value;

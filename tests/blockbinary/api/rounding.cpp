@@ -29,7 +29,7 @@ int ValidateAny(bool bReportIndividualTestCases) {
 	int nrFailures = 0;
 	sw::universal::blockbinary<18> a;
 
-	a.setBits(0x32000); // 11'0010'0000'0000'0000
+	a.setbits(0x32000); // 11'0010'0000'0000'0000
 	if (a.any(8)) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
 	if (a.any(9)) {	++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
 	if (a.any(10)) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
@@ -39,10 +39,10 @@ int ValidateAny(bool bReportIndividualTestCases) {
 	if (a.any(14) != true) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
 	if (a.any(16) != true) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
 
-	a.setBits(0x3244); // 00'0011'0010'0100'0100
+	a.setbits(0x3244); // 00'0011'0010'0100'0100
 	if (a.any(1)) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
 	if (a.any(4) != true) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
-	a.setBits(0x3240); // 00'0011'0010'0100'0000
+	a.setbits(0x3240); // 00'0011'0010'0100'0000
 	if (a.any(5)) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
 	if (a.any(6) != true) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }
 	if (a.any(7) != true) { ++nrFailures; if (bReportIndividualTestCases) std::cout << "fail\n"; }

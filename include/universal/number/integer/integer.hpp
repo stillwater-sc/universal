@@ -58,7 +58,7 @@ template<size_t nbits, typename BlockType>
 inline integer<nbits, BlockType> max_int() {
 	// two's complement max is 01111111
 	integer<nbits, BlockType> mx;
-	mx.set(nbits - 1, true);
+	mx.setbit(nbits - 1, true);
 	mx.flip();
 	return mx;
 }
@@ -127,13 +127,13 @@ inline void convert(int64_t v, integer<nbits, BlockType>& result) {
 	result.clear();
 	unsigned upper = (nbits <= 64 ? nbits : 64);
 	for (unsigned i = 0; i < upper && v != 0; ++i) {
-		if (v & mask) result.set(i);
+		if (v & mask) result.setbit(i);
 		v >>= 1;
 	}
 	if (nbits > 64 && negative) {
 		// sign extend
 		for (unsigned i = upper; i < nbits; ++i) {
-			result.set(i);
+			result.setbit(i);
 		}
 	}
 }
@@ -143,7 +143,7 @@ inline void convert_unsigned(uint64_t v, integer<nbits, BlockType>& result) {
 	result.clear();
 	unsigned upper = (nbits <= 64 ? nbits : 64);
 	for (unsigned i = 0; i < upper; ++i) {
-		if (v & mask) result.set(i);
+		if (v & mask) result.setbit(i);
 		v >>= 1;
 	}
 }
@@ -200,7 +200,7 @@ public:
 		bitcopy(a);
 		if (a.sign()) { // sign extend
 			for (int i = int(srcbits); i < int(nbits); ++i) {
-				set(i);
+				setbit(i);
 			}
 		}
 	}
@@ -459,7 +459,7 @@ public:
 		}
 		integer<nbits, BlockType> target;
 		for (size_t i = shift; i < nbits; ++i) {  // TODO: inefficient as it works at the bit level
-			target.set(i, at(i - shift));
+			target.setbit(i, at(i - shift));
 		}
 		*this = target;
 		return *this;
@@ -476,7 +476,7 @@ public:
 		}
 		integer<nbits, BlockType> target;
 		for (int i = nbits - 1; i >= int(shift); --i) {  // TODO: inefficient as it works at the bit level
-			target.set(i - shift, at(i));
+			target.setbit(i - shift, at(i));
 		}
 		*this = target;
 		return *this;
@@ -504,27 +504,10 @@ public:
 	}
 
 	// modifiers
-	inline void clear() { std::memset(&b, 0, nrBytes); }
-	inline void setzero() { clear(); }
-	inline void set(unsigned int i) {
-		if (i < nbits) {
-			uint8_t byte = b[i / 8];
-			uint8_t mask = 1 << (i % 8);
-			b[i / 8] = byte | mask;
-			return;
-		}
-		throw "integer<nbits, BlockType> bit index out of bounds";
-	}
-	inline void reset(size_t i) {
-		if (i < nbits) {
-			uint8_t byte = b[i / 8];
-			uint8_t mask = ~(1 << (i % 8));
-			b[i / 8] = byte & mask;
-			return;
-		}
-		throw "integer<nbits, BlockType> bit index out of bounds";
-	}
-	inline void set(size_t i, bool v) {
+	inline void clear() noexcept { std::memset(&b, 0, nrBytes); }
+	inline void setzero() noexcept { clear(); }
+
+	inline void setbit(size_t i, bool v = true) {
 		if (i < nbits) {
 			uint8_t byte = b[i / 8];
 			uint8_t null = ~(1 << (i % 8));
@@ -540,7 +523,7 @@ public:
 		throw integer_byte_index_out_of_bounds{};
 	}
 	// use un-interpreted raw bits to set the bits of the integer
-	inline void setBits(unsigned long long value) {
+	inline void setbits(unsigned long long value) {
 		clear();
 		for (unsigned i = 0; i < nrBytes; ++i) {
 			b[i] = value & 0xFF;
@@ -1066,10 +1049,10 @@ idiv_t<nbits, BlockType> idiv(const integer<nbits, BlockType>& _a, const integer
 	for (int i = shift; i >= 0; --i) {
 		if (subtractand <= accumulator) {
 			accumulator -= subtractand;
-			divresult.quot.set(i);
+			divresult.quot.setbit(i);
 		}
 		else {
-			divresult.quot.reset(i);
+			divresult.quot.setbit(i, false);
 		}
 		subtractand >>= 1;
 	}

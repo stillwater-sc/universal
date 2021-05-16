@@ -54,7 +54,7 @@ inline void convert_p2i(const posit<nbits, es>& p, integer<ibits, BlockType>& v)
 		v.clear();
 		int msb = (v.nbits < p.fbits + 1) ? v.nbits : p.fbits + 1;
 		for (int i = msb-1; i >= 0; --i) {
-			v.set(i, significant[i]);
+			v.setbit(i, significant[i]);
 		}
 		int shift = scale - p.fbits;  // if scale > fbits we need to shift left
 		v <<= shift;

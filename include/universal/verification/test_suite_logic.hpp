@@ -35,10 +35,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.setBits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.setBits(j);
+				b.setbits(j);
 				// generate the golden reference
 				bool ref = (i == j);	 // the same bit pattern should clearly be the same value
 				// generate the number system's answer
@@ -59,10 +59,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.setBits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.setBits(j);
+				b.setbits(j);
 				// generate the golden reference
 				bool ref = (i != j);	 // the same bit pattern should clearly be the same value
 				// generate the number system's answer
@@ -83,10 +83,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			TestType a;
-			a.setBits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				TestType b;
-				b.setBits(j);
+				b.setbits(j);
 
 				// generate the golden reference
 				bool ref;
@@ -118,10 +118,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
-			a.setBits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				posit<nbits, es> b;
-				b.setBits(j);
+				b.setbits(j);
 
 				// generate the golden reference
 				bool ref = (double(a) > double(b)); // same behavior as IEEE floats 
@@ -147,10 +147,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
-			a.setBits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				posit<nbits, es> b;
-				b.setBits(j);
+				b.setbits(j);
 
 				// set the golden reference			
 				bool ref = (double(a) <= double(b));// same behavior as IEEE floats
@@ -177,10 +177,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
-			a.setBits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				posit<nbits, es> b;
-				b.setBits(j);
+				b.setbits(j);
 
 				// set the golden reference			
 				bool ref = (double(a) >= double(b));// same behavior as IEEE floats

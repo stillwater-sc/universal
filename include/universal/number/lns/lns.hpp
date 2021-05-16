@@ -122,7 +122,7 @@ public:
 
 	// modifiers
 	inline void clear() { _bits.clear(); }
-	inline void setBits(uint64_t v) { _bits.setBits(v); } // API to be consistent with the other number systems
+	inline void setbits(uint64_t v) { _bits.setbits(v); } // API to be consistent with the other number systems
 
 	// selectors
 	inline constexpr bool iszero() const { return false; }

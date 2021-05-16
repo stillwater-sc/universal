@@ -93,9 +93,9 @@ public:
 
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
 
-	static constexpr size_t abits = bfbits + 3ull;         // size of the addend
-	static constexpr size_t mbits = 2ull * bfbits;         // size of the multiplier output
-	static constexpr size_t divbits = 3ull * bfbits + 4ull;// size of the divider output
+	static constexpr size_t abits = fbits + 3ull;          // size of the addend
+	static constexpr size_t mbits = 2ull * fbits;          // size of the multiplier output
+	static constexpr size_t divbits = 3ull * fbits + 4ull; // size of the divider output
 	static constexpr bt ALL_ONES = bt(~0);
 
 	constexpr blocktriple(const blocktriple&) noexcept = default;
@@ -187,10 +187,10 @@ public:
 	}
 	constexpr void setsign(bool s) noexcept { _sign = s; }
 	constexpr void setscale(int scale) noexcept { _scale = scale; }
-	constexpr void setBit(size_t index, bool v = true) noexcept { _significant.setBit(index, v); }
-	constexpr void setBits(uint64_t raw) noexcept {
+	constexpr void setbit(size_t index, bool v = true) noexcept { _significant.setbit(index, v); }
+	constexpr void setbits(uint64_t raw) noexcept {
 		// do not clear the nan/inf/zero booleans: caller must manage
-		_significant.setBits(raw);
+		_significant.setbits(raw);
 	}
 
 	// selectors
@@ -214,12 +214,14 @@ public:
 
 	// ALU operators
 	/// <summary>
-	/// add two real numbers with (nbits-1) fraction bits yielding an nbits unrounded sum
+	/// add two real numbers with abits fraction bits yielding an nbits unrounded sum
+	/// To avoid fraction bit copies, the input requirements are pushed to the
+	/// calling environment to prepare the correct storage
 	/// </summary>
-	/// <param name="lhs">ephemeral blocktriple<nbits> that may get modified</param>
-	/// <param name="rhs">ephemeral blocktriple<nbits> that may get modified</param>
+	/// <param name="lhs">ephemeral blocktriple<abits> that may get modified</param>
+	/// <param name="rhs">ephemeral blocktriple<abits> that may get modified</param>
 	/// <param name="result">unrounded sum</param>
-	void add(blocktriple<nbits-1>& lhs, blocktriple<nbits-1>& rhs) {
+	void add(blocktriple<nbits-1, bt>& lhs, blocktriple<nbits-1, bt>& rhs) {
 		int lhs_scale = lhs.scale();
 		int rhs_scale = rhs.scale();
 		int scale_of_result = std::max(lhs_scale, rhs_scale);
@@ -238,11 +240,13 @@ public:
 		_significant.uradd(lhs._significant, rhs._significant);
 
 		if constexpr (_trace_btriple_add) {
+			std::cout << typeid(*this).name() << '\n';
 			std::cout << "lhs : " << to_binary(lhs) << " : " << lhs << '\n';
 			std::cout << "rhs : " << to_binary(rhs) << " : " << rhs << '\n';
+			std::cout << typeid(_significant).name() << '\n';
 			std::cout << "sum : " << to_binary(*this) << " : " << *this << '\n';
 		}
-		if (iszero()) {
+		if (_significant.iszero()) {
 			clear();
 		}
 		else {
@@ -251,9 +255,14 @@ public:
 				_sign = true;
 			}
 			_scale = scale_of_result;
-			if (_significant.test(nbits - 1)) {
-				_scale -= 1;
-				_significant >>= 1;
+			if (_significant.checkCarry()) {
+				_scale += 1;
+				// no need to shift as the default behavior has all the bits
+				// already at the right place for this case
+			}
+			else {
+				// need to normalize
+				_significant <<= 1;
 			}
 		}
 	}
@@ -430,9 +439,9 @@ private:
 		_zero = false;
 		_sign = s;
 		_scale = static_cast<int>(raw_exp) - 127;
+		raw <<= 1;
 		uint32_t rounded_bits = round<24, uint32_t>(raw);
-		rounded_bits <<= 1;
-		_significant.setBits(rounded_bits);
+		_significant.setbits(rounded_bits);
 		return *this;
 	}
 	constexpr inline blocktriple& convert_double(double rhs) noexcept { // TODO: deal with subnormals and inf
@@ -492,9 +501,9 @@ private:
 		_zero = false;
 		_sign = s;
 		_scale = static_cast<int>(raw_exp) - 1023;
+		raw <<= 1;
 		uint64_t rounded_bits = round<53, uint64_t>(raw); // round manipulates _scale if needed
-		rounded_bits <<= 1;
-		_significant.setBits(rounded_bits);
+		_significant.setbits(rounded_bits);
 		return *this;
 	}
 

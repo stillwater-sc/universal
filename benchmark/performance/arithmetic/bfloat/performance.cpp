@@ -27,9 +27,9 @@ void CopyWorkload(uint64_t NR_OPS) {
 	bool bFail = false;
 	size_t j = 0;
 	for (size_t i = 0; i < NR_OPS; ++i,++j) {
-		a.setBits(i);
+		a.setbits(i);
 		b = a;
-		c.setBits(j);
+		c.setbits(j);
 		if (b.sign() != c.sign()) {
 			bFail = true;
 		}
@@ -143,7 +143,7 @@ void DecodeWorkload(uint64_t NR_OPS) {
 	size_t success{ 0 };
 	bool first{ true };
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a.setBits(i);
+		a.setbits(i);
 		bool s{ false };
 		blockbinary<a.es, typename Scalar::BlockType> e;
 		blockbinary<a.fbits, typename Scalar::BlockType> f;
@@ -168,7 +168,7 @@ void DecodeWorkload(uint64_t NR_OPS) {
 
 /*
 2/26/2021
-BFLOAT decode operator performance                                                           <---- this includes setBits()
+BFLOAT decode operator performance                                                           <---- this includes setbits()
 bfloat<8,2,uint8_t>      decode            10000000 per       0.0105318sec -> 949 Mops/sec
 bfloat<16,5,uint16_t>    decode            10000000 per        0.017448sec -> 573 Mops/sec
 bfloat<32,8,uint32_t>    decode            10000000 per       0.0158896sec -> 629 Mops/sec
@@ -281,7 +281,7 @@ void NormalizeWorkload(uint64_t NR_OPS) {
 
 	bool bFail = false;
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a.setBits(i);
+		a.setbits(i);
 		a.normalize(b);
 		if (a.sign() != b.sign()) {
 //			cout << to_binary(a, true) << " : " << to_triple(b, true) << '\n';

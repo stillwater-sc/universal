@@ -16,7 +16,7 @@ namespace sw::universal {
 		int positives{ 0 }, negatives{ 0 };
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
 			Scalar a; // don't initialize with i as that is a conversion operation
-			a.setBits(i);
+			a.setbits(i);
 			if (a.sign()) ++positives; else ++negatives;
 		}
 		if (positives == negatives) std::cout << "positives and negatives are identical (unlikely event to select)\n";
@@ -26,7 +26,7 @@ namespace sw::universal {
 	template<typename Scalar>
 	void ShiftPerformanceWorkload(uint64_t NR_OPS) {
 		Scalar a;
-		a.setBits(0xFFFFFFFFFFFFFFFFull);
+		a.setbits(0xFFFFFFFFFFFFFFFFull);
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
 			a >>= 13;
 			a <<= 37;
@@ -37,7 +37,7 @@ namespace sw::universal {
 	template<typename Scalar>
 	void AdditionSubtractionWorkload(uint64_t NR_OPS) {
 		Scalar a, b, c, d;
-		d.setBits(0xFFFFFFFFFFFFFFFFull);
+		d.setbits(0xFFFFFFFFFFFFFFFFull);
 		a = b = c = d;
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
 			c = a + b;
@@ -49,7 +49,7 @@ namespace sw::universal {
 	template<typename Scalar>
 	void MultiplicationWorkload(uint64_t NR_OPS) {
 		Scalar a, b, c, d;
-		d.setBits(0xFFFFFFFFFFFFFFFFull);
+		d.setbits(0xFFFFFFFFFFFFFFFFull);
 		a = b = c = d;
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
 			c = a * b;
@@ -62,7 +62,7 @@ namespace sw::universal {
 	template<typename Scalar>
 	void DivisionWorkload(uint64_t NR_OPS) {
 		Scalar a, b, c, d;
-		d.setBits(0xFFFFFFFFFFFFFFFFull);
+		d.setbits(0xFFFFFFFFFFFFFFFFull);
 		a = b = c = d;
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
 			c = a / b;
@@ -75,7 +75,7 @@ namespace sw::universal {
 	template<typename Scalar>
 	void RemainderWorkload(uint64_t NR_OPS) {
 		Scalar a, b, c, d;
-		d.setBits(0xFFFFFFFFFFFFFFFFull);
+		d.setbits(0xFFFFFFFFFFFFFFFFull);
 		a = b = c = d;
 		for (uint64_t i = 0; i < NR_OPS; ++i) {
 			c = a % b;

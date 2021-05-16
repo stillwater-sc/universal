@@ -12,6 +12,8 @@
 #include <universal/internal/bitblock/bitblock.hpp>
 // minimum set of include files to reflect source code dependencies
 #include <universal/native/ieee754.hpp>
+//#define BLOCKTRIPLE_VERBOSE_OUTPUT
+#define BLOCKTRIPLE_TRACE_ADD 0
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/verification/test_status.hpp> // ReportTestResult
 #include <universal/verification/test_reporters.hpp>
@@ -44,40 +46,62 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 	constexpr size_t abits = BlockTripleConfiguration::abits;
 	using BlockType = typename BlockTripleConfiguration::BlockType;
 
+	// for the test we are going to enumerate the fbits state space
+	// and then shift the values into place into the declared ALU inputs.
+	// forall i in NR_VALUES
+	//    setBits(i + shiftLeft + hiddenBit);
 	constexpr size_t NR_VALUES = (size_t(1) << fbits);
+	constexpr size_t hiddenBit = (size_t(1) << abits);
+	constexpr size_t shiftLeft = (size_t(1) << (abits - fbits));
 	using namespace std;
 	using namespace sw::universal;
 	
 	cout << endl;
 	cout << "blocktriple<" <<fbits << ',' << typeid(BlockType).name() << '>' << endl;
+	cout << "blockfraction<" << abits << ',' << typeid(BlockType).name() << '>' << endl;
+	cout << "Fractions bits : " << fbits << endl;
+	cout << "Addition  bits : " << abits << endl;
 
 	int nrOfFailedTests = 0;
 
+	// when adding, arguments must be aligned. The rounding decision
+	// of the final result looks at the values of lsb|guard|round|sticky.
+	// During the alignment, we may shift information into these rounding
+	// bit positions. This then forces us to expand the adder inputs by
+	// 3 bits, so that we are able to correctly round.
 	blocktriple<abits> a, b;
 	blocktriple<abits+1> c, refResult;
 	a.setnormal();
 	b.setnormal();
-	double aref, bref, cref;
-	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.setBits(i + NR_VALUES);  // the + NR_VALUES is to set the hidden bit in the blockfraction
-		aref = double(a); // cast to double is reasonable constraint for exhaustive test
-		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.setBits(j + NR_VALUES);
-			bref = double(b); // cast to double is reasonable constraint for exhaustive test
-			cref = aref + bref;
-			c.add(a, b);
-			refResult = cref;
+	c.setnormal();  // we are only enumerating normal values, special handling is not tested here
 
-			if (c != refResult) {
-				nrOfFailedTests++;
-				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, cref);
+	double aref, bref, cref;
+	for (int scale = -3; scale < 4; ++scale) {
+		for (size_t i = 0; i < NR_VALUES; i++) {
+			a.setbits(i * shiftLeft + hiddenBit);  // the + NR_VALUES is to set the hidden bit in the blockfraction
+			a.setscale(scale);
+			aref = double(a); // cast to double is reasonable constraint for exhaustive test
+			for (size_t j = 0; j < NR_VALUES; j++) {
+				b.setbits(j * shiftLeft + hiddenBit);
+				bref = double(b); // cast to double is reasonable constraint for exhaustive test
+				cref = aref + bref;
+				c.add(a, b);
+				refResult = cref;
+
+				if (c != refResult) {
+					cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << endl;
+					cout << aref << " + " << bref << " = " << cref << " vs " << refResult << endl;;
+					
+					nrOfFailedTests++;
+					if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, c, refResult);
+				}
+				else {
+					// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, refResult);
+				}
+				if (nrOfFailedTests > 25) return nrOfFailedTests;
 			}
-			else {
-				// if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, c, cref);
-			}
-			if (nrOfFailedTests > 100) return nrOfFailedTests;
+			//		if (i % 1024 == 0) cout << '.'; /// if you enable this, put the endl back
 		}
-//		if (i % 1024 == 0) cout << '.'; /// if you enable this, put the endl back
 	}
 //	cout << endl;
 	return nrOfFailedTests;
@@ -124,37 +148,15 @@ try {
 
 	print_cmd_line(argc, argv);
 	
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
 	int nrOfFailedTestCases = 0;
 
 	std::string tag = "modular addition failed: ";
 
 #if MANUAL_TESTING
 
-	internal::bitblock<23> bb;
-	bb = internal::convert_to_bitblock<23>(-1);
-	cout << bb << endl;
-
-	// generate individual testcases to hand trace/debug
-	GenerateTestCase<18, float>(12345.0, 54321.0); // result is 66,666, and needs 18 bits to be represented by 2's complement
-	GenerateTestCase<18, float>(66666, -54321); // result is 12,345
-
-	blocktriple<18> aa = 12345.0f;
-	cout << "aa : " << aa << endl;
-	aa = 12345;
-	cout << "aa : " << aa << endl;
-
-	blocktriple<18> a, b;
-	blocktriple<19> c;
-	a =  66666.0f;
-	b = -66666.0f;
-	c.add(a, b);
-	a.sign();
-	cout << (a.sign() ? "neg" : "pos") << endl;
-	cout << (c.sign() ? "neg" : "pos") << endl;
-	cout << a << endl;	
-	cout << c << endl;
-
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 1, uint8_t> >(bReportIndividualTestCases), "blocktriple<1, uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 4, uint8_t> >(bReportIndividualTestCases), "blocktriple<4, uint8_t>", "addition");
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple< 8, uint8_t> >(bReportIndividualTestCases), "blocktriple<8, uint8_t>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, uint8_t> >(bReportIndividualTestCases), "blocktriple<12, uint8_t>", "addition");
 //	nrOfFailedTestCases += ReportTestResult(VerifyAddition< blocktriple<12, uint16_t> >(bReportIndividualTestCases), "blocktriple<12, uint16_t>", "addition");

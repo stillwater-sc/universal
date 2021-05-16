@@ -29,10 +29,10 @@ namespace sw::universal {
 
 		short i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
-			ia.setBits(i);
+			ia.setbits(i);
 			i64a = short(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
-				ib.setBits(j);
+				ib.setbits(j);
 				i64b = short(ib);
 				iref = i64a + i64b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
@@ -77,10 +77,10 @@ namespace sw::universal {
 
 		short i16a, i16b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
-			ia.setBits(i);
+			ia.setbits(i);
 			i16a = short(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
-				ib.setBits(j);
+				ib.setbits(j);
 				i16b = short(ib);
 				iref = i16a - i16b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
@@ -125,10 +125,10 @@ namespace sw::universal {
 
 		short i16a, i16b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
-			ia.setBits(i);
+			ia.setbits(i);
 			i16a = short(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
-				ib.setBits(j);
+				ib.setbits(j);
 				i16b = short(ib);
 				iref = i16a * i16b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
@@ -173,10 +173,10 @@ namespace sw::universal {
 
 		short i16a, i16b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
-			ia.setBits(i);
+			ia.setbits(i);
 			i16a = short(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
-				ib.setBits(j);
+				ib.setbits(j);
 				i16b = short(ib);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				if (j == 0) {
@@ -234,10 +234,10 @@ namespace sw::universal {
 
 		short i16a, i16b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
-			ia.setBits(i);
+			ia.setbits(i);
 			i16a = short(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
-				ib.setBits(j);
+				ib.setbits(j);
 				i16b = short(ib);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
@@ -280,10 +280,10 @@ namespace sw::universal {
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
-			ia.setBits(i);
+			ia.setbits(i);
 			i64a = int64_t(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
-				ib.setBits(j);
+				ib.setbits(j);
 				i64b = int64_t(ib);
 				iref = i64a + i64b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
@@ -326,10 +326,10 @@ namespace sw::universal {
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
-			ia.setBits(i);
+			ia.setbits(i);
 			i64a = int64_t(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
-				ib.setBits(j);
+				ib.setbits(j);
 				i64b = int64_t(ib);
 				iref = i64a - i64b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
@@ -373,10 +373,10 @@ namespace sw::universal {
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
-			ia.setBits(i);
+			ia.setbits(i);
 			i64a = int64_t(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
-				ib.setBits(j);
+				ib.setbits(j);
 				i64b = int64_t(ib);
 				iref = i64a * i64b;
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
@@ -420,10 +420,10 @@ namespace sw::universal {
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
-			ia.setBits(i);
+			ia.setbits(i);
 			i64a = int64_t(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
-				ib.setBits(j);
+				ib.setbits(j);
 				i64b = int64_t(ib);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {
@@ -480,10 +480,10 @@ namespace sw::universal {
 
 		int64_t i64a, i64b;
 		for (size_t i = 0; i < NR_INTEGERS; i++) {
-			ia.setBits(i);
+			ia.setbits(i);
 			i64a = int64_t(ia);
 			for (size_t j = 0; j < NR_INTEGERS; j++) {
-				ib.setBits(j);
+				ib.setbits(j);
 				i64b = int64_t(ib);
 #if INTEGER_THROW_ARITHMETIC_EXCEPTION
 				try {

@@ -145,7 +145,7 @@ namespace sw::universal {
 					_bits = uint8_t(raw.to_ulong() & bit_mask);
 					return *this;
 				}
-				posit& setBits(uint64_t value) {
+				posit& setbits(uint64_t value) {
 					_bits = uint8_t(value & bit_mask);
 					return *this;
 				}
@@ -153,19 +153,19 @@ namespace sw::universal {
 					posit p;
 					switch (_bits) {
 					case 0x00:
-						p.setBits(0x00);
+						p.setbits(0x00);
 						break;
 					case 0x01:
-						p.setBits(0x03);
+						p.setbits(0x03);
 						break;
 					case 0x02:
-						p.setBits(0x02);
+						p.setbits(0x02);
 						break;
 					case 0x03:
-						p.setBits(0x01);
+						p.setbits(0x01);
 						break;
 					default:
-						p.setBits(0x02);
+						p.setbits(0x02);
 					}
 					return p;
 				}
@@ -209,7 +209,7 @@ namespace sw::universal {
 				}
 				posit reciprocate() const {
 					posit p;
-					p.setBits(posit_2_0_reciprocal_lookup[_bits]);
+					p.setbits(posit_2_0_reciprocal_lookup[_bits]);
 					return p;
 				}
 				

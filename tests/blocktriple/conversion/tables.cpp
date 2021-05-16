@@ -41,7 +41,7 @@ namespace sw::universal {
 			ostr << "\"Generate Lookup table for a " << typeid(v).name() << " in CSV format\"" << std::endl;
 			ostr << "#, Binary, sign, scale, exponent, fraction, value, hex\n";
 			for (size_t i = 0; i < NR_VALUES; i++) {
-				v.setBits(i + NR_VALUES);
+				v.setbits(i + NR_VALUES);
 				bool s = v.sign();
 				int scale = v.scale();
 				blockfraction<bfbits, bt> f = v.significant();
@@ -75,7 +75,7 @@ namespace sw::universal {
 				<< std::setw(value_column) << "value"
 				<< std::endl;
 			for (size_t i = 0; i < NR_VALUES; i++) {
-				v.setBits(i + NR_VALUES);
+				v.setbits(i + NR_VALUES);
 				bool s = v.sign();
 				int scale = v.scale();
 				blockfraction<bfbits, bt> f = v.significant();

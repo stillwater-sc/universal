@@ -171,7 +171,7 @@ namespace sw::universal {
 		for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
 			RefType ref, prev, next;
 			SrcType testValue{ 0.0 };
-			ref.setBits(i);
+			ref.setbits(i);
 			SrcType da = SrcType(ref);
 			int old = nrOfFailedTests;
 			SrcType oneULP = ulp(da);
@@ -186,7 +186,7 @@ namespace sw::universal {
 					// this rounds up 
 					testValue = SrcType(da + oneULP);  // the test value between 0 and minpos
 					nut = testValue;
-					next.setBits(i + 1);
+					next.setbits(i + 1);
 					golden = double(next);
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
@@ -219,7 +219,7 @@ namespace sw::universal {
 					// round-down
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
-					prev.setBits(i - 1);
+					prev.setbits(i - 1);
 					golden = double(prev);
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 					
@@ -230,7 +230,7 @@ namespace sw::universal {
 					else {
 						testValue = SrcType(da + oneULP);
 						nut = testValue;
-						next.setBits(i + 1);
+						next.setbits(i + 1);
 						golden = double(next);
 						nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 					}

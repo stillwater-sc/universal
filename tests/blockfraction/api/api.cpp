@@ -32,8 +32,8 @@ try {
 	{
 		blockfraction<7, uint8_t> a, b;
 		blockfraction<8, uint8_t> c;
-		a.setBits(0x21); // 1.0 in 7-bit blockfraction form
-		b.setBits(0x21);
+		a.setbits(0x21); // 1.0 in 7-bit blockfraction form
+		b.setbits(0x21);
 		cout << ' ' << a << "\n " << b << '\n';
 		c.uradd(a, b);
 		// this moves the radix from nbits-2 to nbits-3
@@ -42,8 +42,8 @@ try {
 
 	{
 		blockfraction<7, uint8_t> a, b, c;
-		a.setBits(0x21); // 1.0 in 7-bit blockfraction form
-		b.setBits(0x21);
+		a.setbits(0x21); // 1.0 in 7-bit blockfraction form
+		b.setbits(0x21);
 		cout << ' ' << a << "\n " << b << '\n';
 		c.add(a, b);
 		// add() keeps the radix point at nbits-2

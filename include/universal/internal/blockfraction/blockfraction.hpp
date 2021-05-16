@@ -302,14 +302,14 @@ public:
 					// bitsToShift is guaranteed to be less than nbits
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->setBit(i);
+						this->setbit(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->setBit(i, false);
+						this->setbit(i, false); // reset
 					}
 				}
 				return *this;
@@ -332,14 +332,14 @@ public:
 			// bitsToShift is guaranteed to be less than nbits
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->setBit(i);
+				this->setbit(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->setBit(i, false);
+				this->setbit(i, false); // reset
 			}
 		}
 
@@ -356,7 +356,7 @@ public:
 		}
 	}
 	inline constexpr void setzero() noexcept { clear(); }
-	inline constexpr void setBit(size_t i, bool v = true) noexcept {
+	inline constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
@@ -366,11 +366,11 @@ public:
 		}
 		// when i is out of bounds, fail silently as no-op
 	}
-	inline constexpr void setBlock(size_t b, const bt& block) noexcept {
+	inline constexpr void setblock(size_t b, const bt& block) noexcept {
 		if (b < nrBlocks) _block[b] = block;
 		// when b is out of bounds, fail silently as no-op
 	}
-	inline constexpr void setBits(uint64_t value) noexcept {
+	inline constexpr void setbits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
 			_block[0] = value & storageMask;
 		}
@@ -392,7 +392,7 @@ public:
 	// in-place 2's complement
 	inline constexpr blockfraction& twosComplement() noexcept {
 		blockfraction<nbits, bt> plusOne;
-		plusOne.setBit(0);
+		plusOne.setbit(0);
 		flip();
 		add(*this, plusOne);
 		return *this;
@@ -408,9 +408,9 @@ public:
 	}
 	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
 	inline constexpr bool iseven() const noexcept { return !isodd(); }
-	inline constexpr bool test(size_t bitIndex) const {
-		return at(bitIndex);
-	}
+	inline constexpr bool test(size_t bitIndex) const {	return at(bitIndex); }
+	// check carry bit in output of the ALU
+	inline constexpr bool checkCarry() const { return at(nbits - 2); }
 	inline constexpr bool at(size_t bitIndex) const {
 		if (bitIndex < nbits) {
 			bt word = _block[bitIndex / bitsInBlock];

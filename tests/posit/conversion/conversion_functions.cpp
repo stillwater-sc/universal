@@ -39,7 +39,7 @@ void GenerateLogicPatternsForDebug() {
 	sw::universal::posit<nbits, es> pa;
 	std::cout << sw::universal::dynamic_range(pa) << std::endl;
 	for (size_t i = 0; i < NR_TEST_CASES; i++) {
-		pref.setBits(i);
+		pref.setbits(i);
 		da = double(pref);
 		if (i % 2) {
 			if (i == 1) {
@@ -47,7 +47,7 @@ void GenerateLogicPatternsForDebug() {
 				// even the -delta goes to +minpos
 				input = da - eps;
 				pa = input;
-				pnext.setBits(i + 1);
+				pnext.setbits(i + 1);
 				std::cout << "p"; // indicate that this needs to 'project'
 				GenerateLogicPattern(input, pa, pnext);
 				input = da + eps;
@@ -60,7 +60,7 @@ void GenerateLogicPatternsForDebug() {
 				// special case of projecting to +maxpos
 				input = da - eps;
 				pa = input;
-				pprev.setBits(HALF - 2);
+				pprev.setbits(HALF - 2);
 				std::cout << "p"; // indicate that this needs to 'project'
 				GenerateLogicPattern(input, pa, pprev);
 			}
@@ -68,7 +68,7 @@ void GenerateLogicPatternsForDebug() {
 				// special case of projecting to -maxpos
 				input = da - eps;
 				pa = input;
-				pprev.setBits(HALF + 2);
+				pprev.setbits(HALF + 2);
 				std::cout << "p"; // indicate that this needs to 'project'
 				GenerateLogicPattern(input, pa, pprev);
 			}
@@ -77,7 +77,7 @@ void GenerateLogicPatternsForDebug() {
 				// even the +delta goes to -minpos
 				input = da - eps;
 				pa = input;
-				pprev.setBits(i - 1);
+				pprev.setbits(i - 1);
 				std::cout << "p"; // indicate that this needs to 'project'
 				GenerateLogicPattern(input, pa, pprev);
 				input = da + eps;
@@ -90,13 +90,13 @@ void GenerateLogicPatternsForDebug() {
 				// round-down
 				input = da - eps;
 				pa = input;
-				pprev.setBits(i - 1);
+				pprev.setbits(i - 1);
 				std::cout << "d"; // indicate that this needs to round down
 				GenerateLogicPattern(input, pa, pprev);
 				// round-up
 				input = da + eps;
 				pa = input;
-				pnext.setBits(i + 1);
+				pnext.setbits(i + 1);
 				std::cout << "u"; // indicate that this needs to round up
 				GenerateLogicPattern(input, pa, pnext);
 			}
@@ -107,7 +107,7 @@ void GenerateLogicPatternsForDebug() {
 				// special case of projecting to +minpos
 				input = da + eps;
 				pa = input;
-				pnext.setBits(i + 2);
+				pnext.setbits(i + 2);
 				std::cout << "p"; // indicate that this needs to 'project'
 				GenerateLogicPattern(input, pa, pnext);
 			}
@@ -115,7 +115,7 @@ void GenerateLogicPatternsForDebug() {
 				// special case of projecting to -minpos
 				input = da - eps;
 				pa = input;
-				pprev.setBits(NR_TEST_CASES - 2);
+				pprev.setbits(NR_TEST_CASES - 2);
 				std::cout << "p"; // indicate that this needs to 'project'
 				GenerateLogicPattern(input, pa, pprev);
 			}
@@ -367,7 +367,7 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	internal::bitblock<nbits> ptt_t;
 	CopyLowerSegment(ptt, ptt_t);
 	posit<nbits, es> p;
-	p.setBits(ptt_t.to_ullong());
+	p.setbits(ptt_t.to_ullong());
 	cout << "p = " << components(p) << endl;
 }
 
@@ -587,9 +587,9 @@ void GenerateTestSample(int quadrant, bool bPrintIntermediateSteps = false) {
 		sign_factor = -1.0;
 		break;
 	}
-	p.setBits(index);		cout << components_to_string(p) << endl; 	float f1 = p.to_float();
-	p.setBits(index+1);	cout << components_to_string(p) << endl;	float f2 = p.to_float();
-	p.setBits(index+2);	cout << components_to_string(p) << endl;	float f3 = p.to_float();
+	p.setbits(index);		cout << components_to_string(p) << endl; 	float f1 = p.to_float();
+	p.setbits(index+1);	cout << components_to_string(p) << endl;	float f2 = p.to_float();
+	p.setbits(index+2);	cout << components_to_string(p) << endl;	float f3 = p.to_float();
 
 	float eps = float(f1 / 100000.0);
 	float f_mineps, f, f_pluseps;

@@ -57,7 +57,7 @@ int VerifySubnormalReverseSampling(const std::string& tag, bool bReportIndividua
 	using Real = sw::universal::areal<nbits, es, bt>;
 	Real ref{ 0 }; Real result{ 0 };
 	for (size_t i = 0; i < NR_SAMPLES; i += 2) {
-		ref.setBits(i);
+		ref.setbits(i);
 		NativeFloatingPointType input = NativeFloatingPointType(ref);
 		result = input;
 		if (result != ref) {
@@ -80,7 +80,7 @@ int VerifyReverseSampling(const std::string& tag, bool bReportIndividualTestCase
 	Real ref{ 0 }; Real result{ 0 };
 	std::cout << std::setw(40) << typeid(result).name() << "   : ";
 	for (size_t i = 0; i < NR_SAMPLES; i += 2) {
-		ref.setBits(i);
+		ref.setbits(i);
 		NativeFloatingPointType input = NativeFloatingPointType(ref);
 		result = input;
 		// special cases do not have consistent compiler behavior
@@ -172,7 +172,7 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 
 	// test 0.0
 	std::cout << "Test positive 0.0\n";
-	a.setBits(0x00);
+	a.setbits(0x00);
 	std::cout << "conversion(a)= " << NativeFloatingPointType(a) << '\n';
 	fa = NativeFloatingPointType(a);
 	std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
@@ -183,7 +183,7 @@ int VerifySpecialCases(const std::string& tag, bool bReportIndividualTestCases =
 	// Testing problem: the optimizer might destroy the sign of a copy of a -0.0
 	// test -0.0
 	std::cout << "Test negative 0.0\n";
-	a.setBits(0x80);
+	a.setbits(0x80);
 	std::cout << "conversion(a)= " << double(a) << '\n';
 	fa = double(a);
 	std::cout << "reference  a = " << a << " " << to_binary(fa) << " " << fa << " : ";
@@ -471,13 +471,13 @@ try {
 	{
 		float f;
 		sw::universal::areal<9, 1> a;
-		a.setBits(0x1FF); f = float(a);
+		a.setbits(0x1FF); f = float(a);
 		std::cout << "signalling NaN : " << color_print(a) << " : " << a << " : " << f << '\n';
-		a.setBits(0x0FF); f = float(a);
+		a.setbits(0x0FF); f = float(a);
 		std::cout << "     quiet NaN : " << color_print(a) << " : " << a << " : " << f << '\n';
-		a.setBits(0x1FE); f = float(a);
+		a.setbits(0x1FE); f = float(a);
 		std::cout << "     -INFINITY : " << color_print(a) << " : " << a << " : " << f << '\n';
-		a.setBits(0x0FE); f = float(a);
+		a.setbits(0x0FE); f = float(a);
 		std::cout << "     +INFINITY : " << color_print(a) << " : " << a << " : " << f << '\n';
 	}
 	
@@ -487,7 +487,7 @@ try {
 	{
 		float f;
 		sw::universal::areal<5, 2> a;
-		a.setBits(0x18);
+		a.setbits(0x18);
 		std::cout << color_print(a) << " : " << a << '\n';
 		f = float(a);
 		a = f;

@@ -41,10 +41,10 @@ int VerifyEqual(bool bReportIndividualTestCases) {
 
 	int64_t i64a, i64b;
 	for (size_t i = 0; i < NR_INTEGERS; i++) {
-		ia.setBits(i);
+		ia.setbits(i);
 		i64a = (long long)(ia);
 		for (size_t j = 0; j < NR_INTEGERS; j++) {
-			ib.setBits(j);
+			ib.setbits(j);
 			i64b = (long long)(ib);
 			iref = i64a == i64b;
 			iresult = ia == ib;
@@ -73,10 +73,10 @@ int VerifyNotEqual(bool bReportIndividualTestCases) {
 
 	int64_t i64a, i64b;
 	for (size_t i = 0; i < NR_INTEGERS; i++) {
-		ia.setBits(i);
+		ia.setbits(i);
 		i64a = (long long)(ia);
 		for (size_t j = 0; j < NR_INTEGERS; j++) {
-			ib.setBits(j);
+			ib.setbits(j);
 			i64b = (long long)(ib);
 			iref = i64a != i64b;
 			iresult = ia != ib;
@@ -105,10 +105,10 @@ int VerifyLessThan(bool bReportIndividualTestCases) {
 
 	int64_t i64a, i64b;
 	for (size_t i = 0; i < NR_INTEGERS; i++) {
-		ia.setBits(i);
+		ia.setbits(i);
 		i64a = (long long)(ia);
 		for (size_t j = 0; j < NR_INTEGERS; j++) {
-			ib.setBits(j);
+			ib.setbits(j);
 			i64b = (long long)(ib);
 			iref = i64a < i64b;
 			iresult = ia < ib;
@@ -137,10 +137,10 @@ int VerifyLessOrEqualThan(bool bReportIndividualTestCases) {
 
 	int64_t i64a, i64b;
 	for (size_t i = 0; i < NR_INTEGERS; i++) {
-		ia.setBits(i);
+		ia.setbits(i);
 		i64a = (long long)(ia);
 		for (size_t j = 0; j < NR_INTEGERS; j++) {
-			ib.setBits(j);
+			ib.setbits(j);
 			i64b = (long long)(ib);
 			iref = i64a <= i64b;
 			iresult = ia <= ib;
@@ -169,10 +169,10 @@ int VerifyGreaterThan(bool bReportIndividualTestCases) {
 
 	int64_t i64a, i64b;
 	for (size_t i = 0; i < NR_INTEGERS; i++) {
-		ia.setBits(i);
+		ia.setbits(i);
 		i64a = (long long)(ia);
 		for (size_t j = 0; j < NR_INTEGERS; j++) {
-			ib.setBits(j);
+			ib.setbits(j);
 			i64b = (long long)(ib);
 			iref = i64a < i64b;
 			iresult = ia < ib;
@@ -201,10 +201,10 @@ int VerifyGreaterOrEqualThan(bool bReportIndividualTestCases) {
 
 	int64_t i64a, i64b;
 	for (size_t i = 0; i < NR_INTEGERS; i++) {
-		ia.setBits(i);
+		ia.setbits(i);
 		i64a = (long long)(ia);
 		for (size_t j = 0; j < NR_INTEGERS; j++) {
-			ib.setBits(j);
+			ib.setbits(j);
 			i64b = (long long)(ib);
 			iref = i64a >= i64b;
 			iresult = ia >= ib;

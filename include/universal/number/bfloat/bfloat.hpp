@@ -119,8 +119,8 @@ bfloat<nbits, es, bt>& maxpos(bfloat<nbits, es, bt>& bmaxpos) {
 	// maximum positive value has this bit pattern: 0-1...1-111...111, that is, sign = 0, e = 1.1, f = 111...101
 	bmaxpos.clear();
 	bmaxpos.flip();
-	bmaxpos.setBit(nbits - 1ull, false);
-	bmaxpos.setBit(1ull, false);
+	bmaxpos.setbit(nbits - 1ull, false);
+	bmaxpos.setbit(1ull, false);
 	return bmaxpos;
 }
 // fill an bfloat object with mininum positive value
@@ -128,7 +128,7 @@ template<size_t nbits, size_t es, typename bt>
 bfloat<nbits, es, bt>& minpos(bfloat<nbits, es, bt>& bminpos) {
 	// minimum positive value has this bit pattern: 0-000-00...010, that is, sign = 0, e = 00, f = 00001, u = 0
 	bminpos.clear();
-	bminpos.setBit(0);
+	bminpos.setbit(0);
 	return bminpos;
 }
 // fill an bfloat object with the zero encoding: 0-0...0-00...000-0
@@ -142,8 +142,8 @@ template<size_t nbits, size_t es, typename bt>
 bfloat<nbits, es, bt>& minneg(bfloat<nbits, es, bt>& bminneg) {
 	// minimum negative value has this bit pattern: 1-000-00...010, that is, sign = 1, e = 00, f = 00001, u = 0
 	bminneg.clear();
-	bminneg.setBit(nbits - 1ull);
-	bminneg.setBit(0);
+	bminneg.setbit(nbits - 1ull);
+	bminneg.setbit(0);
 	return bminneg;
 }
 // fill an bfloat object with largest negative value
@@ -152,7 +152,7 @@ bfloat<nbits, es, bt>& maxneg(bfloat<nbits, es, bt>& bmaxneg) {
 	// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1.1, f = 111...101, u = 0
 	bmaxneg.clear();
 	bmaxneg.flip();
-	bmaxneg.setBit(1ull, false);
+	bmaxneg.setbit(1ull, false);
 	return bmaxneg;
 }
 
@@ -293,7 +293,7 @@ public:
 			}
 		}
 		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
-			setBit(nbits - 1ull, s);
+			setbit(nbits - 1ull, s);
 			return *this;
 		}
 		
@@ -316,7 +316,7 @@ public:
 			return *this;
 		}
 		if (exponent < MIN_EXP_SUBNORMAL-1) { // TODO: explain the MIN_EXP_SUBMORNAL - 1
-			if (s) this->setBit(nbits - 1); // set -0
+			if (s) this->setbit(nbits - 1); // set -0
 			return *this;
 		}
 		// set the exponent
@@ -512,13 +512,13 @@ public:
 		if (this->isinf(INF_TYPE_POSITIVE) || this->isnan(NAN_TYPE_QUIET)) {
 			clear();
 			flip();
-			setBit(nbits - 1ull, false);
-			setBit(1ull, false);
+			setbit(nbits - 1ull, false);
+			setbit(1ull, false);
 		}
 		else if (this->isinf(INF_TYPE_NEGATIVE) || this->isnan(NAN_TYPE_SIGNALLING)) {
 			clear();
 			flip();
-			setBit(1ull, false);
+			setbit(1ull, false);
 		}
 		return *this;
 	}
@@ -561,7 +561,7 @@ public:
 			}
 		}
 		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
-			setBit(nbits - 1ull, s);
+			setbit(nbits - 1ull, s);
 			return *this;
 		}
 		// this is not a special number
@@ -582,7 +582,7 @@ public:
 			return *this;
 		}
 		if (exponent < MIN_EXP_SUBNORMAL-1) { // TODO: explain the MIN_EXP_SUBMORNAL - 1
-			if (s) this->setBit(nbits - 1); // set -0
+			if (s) this->setbit(nbits - 1); // set -0
 			return *this;
 		}
 		// set the exponent
@@ -765,13 +765,13 @@ public:
 		if (this->isinf(INF_TYPE_POSITIVE) || this->isnan(NAN_TYPE_QUIET)) {
 			clear();
 			flip();
-			setBit(nbits - 1ull, false);
-			setBit(1ull, false);
+			setbit(nbits - 1ull, false);
+			setbit(1ull, false);
 		}
 		else if (this->isinf(INF_TYPE_NEGATIVE) || this->isnan(NAN_TYPE_SIGNALLING)) {
 			clear();
 			flip();
-			setBit(1ull, false);
+			setbit(1ull, false);
 		}
 		return *this;
 	}
@@ -984,7 +984,7 @@ public:
 	/// <param name="i">bit index to set</param>
 	/// <param name="v">boolean value to set the bit to. Default is true.</param>
 	/// <returns>void</returns>
-	inline constexpr void setBit(size_t i, bool v = true) noexcept {
+	inline constexpr void setbit(size_t i, bool v = true) noexcept {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
@@ -1002,7 +1002,7 @@ public:
 	/// </summary>
 	/// <param name="raw_bits">unsigned long long carrying bits that will be written verbatim to the bfloat</param>
 	/// <returns>reference to the bfloat</returns>
-	inline constexpr bfloat& setBits(uint64_t raw_bits) noexcept {
+	inline constexpr bfloat& setbits(uint64_t raw_bits) noexcept {
 		if constexpr (0 == nrBlocks) {
 			return *this;
 		}
@@ -1258,15 +1258,15 @@ public:
 		if constexpr (0 == nrBlocks) return;
 		else if constexpr (1 == nrBlocks) {
 			bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
-			e.setBits(uint64_t(ebits >> EXP_SHIFT));
+			e.setbits(uint64_t(ebits >> EXP_SHIFT));
 		}
 		else if constexpr (nrBlocks > 1) {
 			if (MSU_CAPTURES_E) {
 				bt ebits = bt(_block[MSU] & ~SIGN_BIT_MASK);
-				e.setBits(uint64_t(ebits >> ((nbits - 1ull - es) % bitsInBlock)));
+				e.setbits(uint64_t(ebits >> ((nbits - 1ull - es) % bitsInBlock)));
 			}
 			else {
-				for (size_t i = 0; i < es; ++i) { e.setBit(i, at(nbits - 1ull - es + i)); }
+				for (size_t i = 0; i < es; ++i) { e.setbit(i, at(nbits - 1ull - es + i)); }
 			}
 		}
 	}
@@ -1276,10 +1276,10 @@ public:
 		if constexpr (0 == nrBlocks) return;
 		else if constexpr (1 == nrBlocks) {
 			bt fraction = bt(_block[MSU] & ~MSU_EXP_MASK);
-			f.setBits(fraction);
+			f.setbits(fraction);
 		}
 		else if constexpr (nrBlocks > 1) {
-			for (size_t i = 0; i < fbits; ++i) { f.setBit(i, at(nbits - 1ull - es - fbits + i)); } // TODO: TEST!
+			for (size_t i = 0; i < fbits; ++i) { f.setbit(i, at(nbits - 1ull - es - fbits + i)); } // TODO: TEST!
 		}
 	}
 	// construct the significant from the encoding, returns normalization offset
@@ -1298,14 +1298,14 @@ public:
 				shift = fhbits - msb;
 				significant <<= shift;
 			}
-			s.setBits(significant);
+			s.setbits(significant);
 		}
 		else if constexpr (nrBlocks > 1) {
 			s.clear();
 			// TODO: design and implement a block-oriented algorithm, this sequential algorithm is super slow
 			if (isNormal) {
-				s.setBit(fbits);
-				for (size_t i = 0; i < fbits; ++i) { s.setBit(i, at(i)); }
+				s.setbit(fbits);
+				for (size_t i = 0; i < fbits; ++i) { s.setbit(i, at(i)); }
 			}
 			else {
 				// Find the MSB of the subnormal: 
@@ -1318,7 +1318,7 @@ public:
 				// h00001010101
 				// 101010100000
 				for (size_t i = 0; i <= msb; ++i) {
-					s.setBit(fbits - msb + i, at(i));
+					s.setbit(fbits - msb + i, at(i));
 				}
 				shift = fhbits - msb;
 			}
@@ -1420,9 +1420,9 @@ public:
 				else {
 					// brute force copy of bits
 					size_t bit = tbits - 2;
-					tgt.setBit(bit--);
+					tgt.setbit(bit--);
 					for (size_t i = 0; i < fbits; ++i) {
-						tgt.setBit(bit--, at(fbits - 1 - i));
+						tgt.setbit(bit--, at(fbits - 1 - i));
 					}
 					tgt.setsign(sign());
 					tgt.setscale(scale());
@@ -1605,14 +1605,14 @@ protected:
 					// bitsToShift is guaranteed to be less than nbits
 					bitsToShift += (long)(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->setBit(i);
+						this->setbit(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
 					bitsToShift += (long)(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->setBit(i, false);
+						this->setbit(i, false);
 					}
 				}
 			}
@@ -1633,14 +1633,14 @@ protected:
 			// bitsToShift is guaranteed to be less than nbits
 			bitsToShift += (long)(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->setBit(i);
+				this->setbit(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
 			bitsToShift += (long)(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->setBit(i, false);
+				this->setbit(i, false);
 			}
 		}
 

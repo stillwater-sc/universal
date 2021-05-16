@@ -60,7 +60,7 @@ template<size_t nbits, typename bt = uint8_t>
 constexpr blockbinary<nbits, bt>& maxpos(blockbinary<nbits, bt>& a) {
 	a.clear();
 	a.flip();
-	a.setBit(nbits - 1, false);
+	a.setbit(nbits - 1, false);
 	return a;
 }
 
@@ -68,7 +68,7 @@ constexpr blockbinary<nbits, bt>& maxpos(blockbinary<nbits, bt>& a) {
 template<size_t nbits, typename bt = uint8_t>
 constexpr blockbinary<nbits, bt>& maxneg(blockbinary<nbits, bt>& a) {
 	a.clear();
-	a.setBit(nbits - 1);
+	a.setbit(nbits - 1);
 	return a;
 }
 
@@ -178,7 +178,7 @@ public:
 	}
 	blockbinary& operator++() {
 		blockbinary increment;
-		increment.setBits(0x1);
+		increment.setbits(0x1);
 		*this += increment;
 		return *this;
 	}
@@ -189,7 +189,7 @@ public:
 	}
 	blockbinary& operator--() {
 		blockbinary decrement;
-		decrement.setBits(0x1);
+		decrement.setbits(0x1);
 		return *this -= decrement;
 	}
 	// logic operators
@@ -296,14 +296,14 @@ public:
 					// bitsToShift is guaranteed to be less than nbits
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->setBit(i);
+						this->setbit(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->setBit(i, false);
+						this->setbit(i, false);
 					}
 				}
 				return *this;
@@ -326,14 +326,14 @@ public:
 			// bitsToShift is guaranteed to be less than nbits
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->setBit(i);
+				this->setbit(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->setBit(i, false);
+				this->setbit(i, false);
 			}
 		}
 
@@ -350,7 +350,7 @@ public:
 		}
 	}
 	inline constexpr void setzero() noexcept { clear(); }
-	inline constexpr void setBit(size_t i, bool v = true) {
+	inline constexpr void setbit(size_t i, bool v = true) {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
@@ -359,9 +359,9 @@ public:
 			_block[i / bitsInBlock] = bt((block & null) | mask);
 			return;
 		}
-		throw "blockbinary<nbits, bt>.setBit(index): bit index out of bounds";
+		throw "blockbinary<nbits, bt>.setbit(index): bit index out of bounds";
 	}
-	inline constexpr void setBits(uint64_t value) noexcept {
+	inline constexpr void setbits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
 			_block[0] = value & storageMask;
 		}
@@ -373,7 +373,7 @@ public:
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	inline constexpr void setBlock(size_t b, const bt& block) {
+	inline constexpr void setblock(size_t b, const bt& block) {
 		if (b >= nrBlocks) throw "block index out of bounds";
 		_block[b] = block;
 	}	inline constexpr blockbinary& flip() noexcept { // in-place one's complement
@@ -437,7 +437,7 @@ public:
 		if constexpr (nbits > srcbits) { // check if we need to sign extend
 			if (rhs.sign()) {
 				for (size_t i = srcbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
-					setBit(i);
+					setbit(i);
 				}
 			}
 		}
@@ -661,10 +661,10 @@ quorem<nbits, bt> longdivision(const blockbinary<nbits, bt>& _a, const blockbina
 	for (int i = shift; i >= 0; --i) {
 		if (subtractand <= accumulator) {
 			accumulator -= subtractand;
-			result.quo.setBit(static_cast<size_t>(i));
+			result.quo.setbit(static_cast<size_t>(i));
 		}
 		else {
-			result.quo.setBit(static_cast<size_t>(i), false);
+			result.quo.setbit(static_cast<size_t>(i), false);
 		}
 		subtractand >>= 1;
 	}
@@ -811,10 +811,10 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 
 		if (subtractand <= decimator) {
 			decimator -= subtractand;
-			result.setBit(static_cast<size_t>(i));
+			result.setbit(static_cast<size_t>(i));
 		}
 		else {
-			result.setBit(static_cast<size_t>(i), false);
+			result.setbit(static_cast<size_t>(i), false);
 		}
 		subtractand >>= 1;
 

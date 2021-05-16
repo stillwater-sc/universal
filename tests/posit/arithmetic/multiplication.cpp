@@ -93,9 +93,9 @@ void DifficultRoundingCases() {
 	};
 	// size_t nrOfTests = cases.size() >> 2;  // divide by 4
 	for (size_t i = 0; i < cases.size(); i+= 4) {
-		a.setBits(cases[i]);
-		b.setBits(cases[i + 1]);
-		pref.setBits(cases[i + 3]);
+		a.setbits(cases[i]);
+		b.setbits(cases[i + 1]);
+		pref.setbits(cases[i + 3]);
 		//cout << a.get() << " * " << b.get() << " = " << pref.get() << endl;
 		GenerateTestCase(a, b, pref);
 	}
@@ -131,8 +131,8 @@ try {
 	*/
 
 	posit<32, 2> x, y, z;
-	x.setBits(0x3BCB2F0D);
-	y.setBits(0x3ADA6F8A);
+	x.setbits(0x3BCB2F0D);
+	y.setbits(0x3ADA6F8A);
 	z = x * y;
 	bitblock<32> raw = z.get();
 	cout << components_to_string(z) << "\n0x" << hex << raw.to_ulong() <<  endl;
