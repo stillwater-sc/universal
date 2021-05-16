@@ -47,7 +47,9 @@
 #define CONSTEXPRESSION constexpr
 #include <bit>
 #else
+#ifndef CONSTEXPRESSION
 #define CONSTEXPRESSION
+#endif
 #endif
 
 #elif defined(__PGI)

@@ -45,6 +45,10 @@
 #define BIT_CAST_SUPPORT 1
 #define CONSTEXPRESSION constexpr
 #include <bit>
+#else
+#ifndef CONSTEXPRESSION
+#define CONSTEXPRESSION
+#endif
 #endif
 
 #elif defined(__PGI)
@@ -426,7 +430,9 @@ private:
 		_zero = false;
 		_sign = s;
 		_scale = static_cast<int>(raw_exp) - 127;
-		_significant.setBits(round<24, uint32_t>(raw));
+		uint32_t rounded_bits = round<24, uint32_t>(raw);
+		rounded_bits <<= 1;
+		_significant.setBits(rounded_bits);
 		return *this;
 	}
 	constexpr inline blocktriple& convert_double(double rhs) noexcept { // TODO: deal with subnormals and inf
@@ -486,7 +492,9 @@ private:
 		_zero = false;
 		_sign = s;
 		_scale = static_cast<int>(raw_exp) - 1023;
-		_significant.setBits(round<53, uint64_t>(raw));
+		uint64_t rounded_bits = round<53, uint64_t>(raw); // round manipulates _scale if needed
+		rounded_bits <<= 1;
+		_significant.setBits(rounded_bits);
 		return *this;
 	}
 

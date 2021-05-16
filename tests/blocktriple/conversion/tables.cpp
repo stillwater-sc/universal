@@ -120,6 +120,10 @@ try {
 
 	blocktriple<8, uint8_t> a;
 	a = 1.5f;
+	cout << "float  : " << to_binary(1.5f, true) << endl;
+	cout << "a : " << to_triple(a) << endl;
+	a = 1.5;
+	cout << "double : " << to_binary(1.5, true) << endl;
 	cout << "a : " << to_triple(a) << endl;
 
 #if STRESS_TESTING
