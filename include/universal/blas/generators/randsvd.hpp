@@ -3,9 +3,7 @@
 #include <universal/blas/blas.hpp>
 #include <universal/blas/generators/gaussian_random.hpp>
 
-namespace sw {
-namespace universal {
-namespace blas {
+namespace sw::universal::blas{
 
 template <typename Scalar>
 std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> randsvd(
@@ -26,6 +24,4 @@ std::tuple<matrix<Scalar>, matrix<Scalar>, matrix<Scalar>> randsvd(
   std::tie(S, V, D) = svd(B, k);
   return std::make_tuple(S, V, D);
 }
-}   // namespace blas
-}   // namespace universal
-}   // namespace sw
+}

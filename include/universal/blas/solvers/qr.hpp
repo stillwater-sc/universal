@@ -67,7 +67,15 @@ std::tuple<matrix<Scalar>, matrix<Scalar>> qr(const matrix<Scalar>& A,
 
   return std::make_tuple(Q, R);
 }
-
+template <typename Scalar>
+std::tuple<matrix<Scalar>, matrix<Scalar>> qr(const matrix<Scalar>& A)
+{
+  using size_type = typename matrix<Scalar>::size_type;
+  size_type ncols = num_cols(A), nrows = num_rows(A);
+  matrix<Scalar> Q, R;
+  qr(A, Q, R);
+  return std::make_tuple(Q, R);
+}
 
 }   // namespace blas
 }   // namespace universal
