@@ -4,79 +4,46 @@
 #include <universal/blas/blas_l1.hpp>
 
 namespace sw {
-namespace universal {
-namespace blas {
-template <typename Scalar>
-std::tuple<matrix<Scalar>, matrix<Scalar>> qr(const matrix<Scalar>& A,
-                                              matrix<Scalar>& Q,
-                                              matrix<Scalar>& R)
-{
-  matrix<Scalar> A_tmp = A;
-  size_t row = num_rows(A_tmp), col = num_cols(A_tmp);
-  assert(row != col);
-  // static_assert(n != m, "matrix should be square");
-  // vector to store the matrices for each cols
-  std::vector<matrix<Scalar>> list;
-  for (size_t i = 0; i < col - 1; ++i) {
-    vector<Scalar> a(col - 1), b(col - 1);
-    for (size_t j = i; j < col; ++j) {
-      a[j - i] = A_tmp[j][i];
-      b[j - i] = Scalar(0.0);
-    }
-    b[0]          = Scalar(1.0);
-    Scalar A_norm = norm(a, 2), sgn = -1;
-    if (a[0] < Scalar(0.0))
-      sgn = 1;
-    vector<Scalar> u = a - (sgn * A_norm * b);
-    Scalar vecNorm   = norm(u, 2);
-    vector<Scalar> res(u);
-    vector<Scalar> n = res * (Scalar(1.0) / vecNorm);
-    matrix<Scalar> mat(col - 1, 1);
-    for (size_t j = 0; j < (col - j); ++j) { mat[j][0] = n[i]; }
-    matrix<Scalar> matT = mat.transpose();
-    matrix<Scalar> I(col - i, col - i);
-    for (size_t j = 0; j < col - i; ++j) {
-      for (size_t k = 0; k < col - i; ++k) { I[j][k] = Scalar(1); }
-    }
-    matrix<Scalar> P_tmp = I - Scalar(2.0) * mat * matT;
-    matrix<Scalar> P(col, col);
-    for (size_t j = 0; j < col - i; ++j) {
-      for (size_t k = 0; k < col - i; ++k) { P[j][k] = Scalar(1); }
-    }
-    for (size_t rows = i; rows < col; ++rows) {
-      for (size_t cols = i; cols < col; ++cols) {
-        P[rows][cols] = P_tmp[rows - i][cols - i];
-      }
-    }
-    list.push_back(P);
-    A_tmp = P * A_tmp;
-  }
-  matrix<Scalar> Q_tmp = list.at(0);
-  for (size_t i = 1; i < (col - 1); ++i) {
-    Q_tmp = Q_tmp * list.at(i).transpose();
-  }
+    namespace universal {
+        namespace blas {
+            template <typename Scalar>
+            std::tuple<matrix<Scalar>, matrix<Scalar>> qr(const matrix<Scalar>& A,
+                matrix<Scalar>& Q,
+                matrix<Scalar>& R)
+            {
+                size_t m = num_cols(A), n = num_rows(A);
+                assert(n == m);
+                std::vector<vector<Scalar>>columnExtractor(Scalar(n), vector<int>(Scalar(m)));
+                std::vector<vector<Scalar>>signal(Scalar(n), vector<int>(Scalar(m), Scalar(-1)));
+                std::vector<Scalar> alpha(n), alpha_norm(n);
+                for (size_t i = 1; i <= n; ++i) get_column(A, i, columnExtractor);//put ith column of A ith index of columnExtractor
+                alpha[1] = columnExtractor[1] / Scalar(norm(columnExtractor[1],2));
+                set_column(Q, 1, alpha[1]);
+                for (size_t i = 2; i <= n; ++i) {
+                    for (size_t j = 1; j <= i - 1; ++j) {
+                        if (signal[i][j] == Scalar(-1)) signal[i][j] = calculateSignal(columnExtractor[i], alpha[j]);
+                        alpha[i] = columnExtractor[i] - signal[i][j];//we don't have signal here
+                        alpha_norm[i] = alpha[i] / Scalar(norm(alpha[i],2));
+                        set_column(Q, i, alpha_norm[i]);
+                    }
+                }
+                R = Q.transpose();
+                return std::make_tuple(Q, R);
+            }
+            template<typename Scalar>
+            vector<Scalar> calculateSignal(vector<Scalar>& columnExtractor, vector<Scalar>& alpha) {
+                return columnExtractor * alpha / norm(columnExtractor) * alpha;
+            }
+            template <typename Scalar>
+            std::tuple<matrix<Scalar>, matrix<Scalar>> qr(const matrix<Scalar>& A)
+            {
+                using size_type = typename matrix<Scalar>::size_type;
+                size_type ncols = num_cols(A), nrows = num_rows(A);
+                matrix<Scalar> Q, R;
+                qr(A, Q, R);
+                return std::make_tuple(Q, R);
+            }
 
-  Q = Q_tmp;
-
-  size_t n             = list.size();
-  matrix<Scalar> R_tmp = list.at(n - 1);
-  for (long i = long(n) - 2; i >= 0; --i) { R_tmp = R_tmp * list.at(i); }
-  R_tmp = R_tmp * A;
-
-  R = R_tmp;
-
-  return std::make_tuple(Q, R);
-}
-template <typename Scalar>
-std::tuple<matrix<Scalar>, matrix<Scalar>> qr(const matrix<Scalar>& A)
-{
-  using size_type = typename matrix<Scalar>::size_type;
-  size_type ncols = num_cols(A), nrows = num_rows(A);
-  matrix<Scalar> Q, R;
-  qr(A, Q, R);
-  return std::make_tuple(Q, R);
-}
-
-}   // namespace blas
-}   // namespace universal
+        }   // namespace blas
+    }   // namespace universal
 }   // namespace sw
