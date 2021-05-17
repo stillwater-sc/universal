@@ -68,8 +68,6 @@ try {
 	// The output of the add/sub is nbits + 3 + 1 representing the unrounded result.
 	{
 		constexpr size_t nbits = 8;  // hidden + fraction bits
-		constexpr size_t abits = nbits + 3;
-		constexpr size_t sumbits = abits + 1;
 
 		blocktriple<nbits, uint32_t> a, b;
 		a = 1.0f;

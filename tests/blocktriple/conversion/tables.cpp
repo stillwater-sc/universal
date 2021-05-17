@@ -63,7 +63,6 @@ namespace sw::universal {
 			const size_t bin_column = 16;
 			const size_t sign_column = 8;
 			const size_t scale_column = 8;
-			const size_t exponent_column = 16;
 			const size_t fraction_column = 16;
 			const size_t value_column = 30;
 

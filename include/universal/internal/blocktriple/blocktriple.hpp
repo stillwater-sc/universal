@@ -381,7 +381,7 @@ private:
 		return *this;
 	}
 
-	constexpr inline blocktriple& convert_float(float rhs) noexcept {
+	CONSTEXPRESSION inline blocktriple& convert_float(float rhs) noexcept {
 #if BIT_CAST_SUPPORT
 		// normal number
 		uint32_t bc = std::bit_cast<uint32_t>(rhs);
@@ -444,7 +444,7 @@ private:
 		_significant.setbits(rounded_bits);
 		return *this;
 	}
-	constexpr inline blocktriple& convert_double(double rhs) noexcept { // TODO: deal with subnormals and inf
+	CONSTEXPRESSION inline blocktriple& convert_double(double rhs) noexcept { // TODO: deal with subnormals and inf
 #if BIT_CAST_SUPPORT
 		uint64_t bc = std::bit_cast<uint64_t>(rhs);
 		bool s = (0x8000'0000'0000'0000ull & bc);
