@@ -94,7 +94,7 @@ try {
 	
 	using Real = areal<12, 2>;
 	Real a;
-	a.debug();
+	a.constexprClassParameters();
 
 	TestConstexprConstruction<Real>();
 	TestConstexprAssignment<Real>();

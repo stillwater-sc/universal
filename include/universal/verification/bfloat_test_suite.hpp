@@ -164,7 +164,8 @@ namespace sw::universal {
 		// execute the test
 		int nrOfFailedTests = 0;
 		RefType positive_minimum;
-		double dminpos = double(minpos(positive_minimum));
+		positive_minimum.minpos();
+		double dminpos = double(positive_minimum);
 
 		// NUT: number under test
 		TestType nut, golden;

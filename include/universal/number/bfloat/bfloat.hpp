@@ -113,47 +113,38 @@ namespace sw::universal {
 /// free functions that can set an bfloat to extreme values in its state space
 /// organized in descending order.
 
-// fill an bfloat object with maximum positive value
+	// how do these utility functions differentiate between number systems?
+	// 	   do we need an enable_if?
+	// 
+// return a bfloat object with maximum positive value
 template<size_t nbits, size_t es, typename bt>
-bfloat<nbits, es, bt>& maxpos(bfloat<nbits, es, bt>& bmaxpos) {
-	// maximum positive value has this bit pattern: 0-1...1-111...111, that is, sign = 0, e = 1.1, f = 111...101
-	bmaxpos.clear();
-	bmaxpos.flip();
-	bmaxpos.setbit(nbits - 1ull, false);
-	bmaxpos.setbit(1ull, false);
-	return bmaxpos;
+inline constexpr bfloat<nbits, es, bt> maxpos() {
+	bfloat<nbits, es, bt> b;
+	return b.maxpos();
 }
-// fill an bfloat object with mininum positive value
+// return a bfloat object with mininum positive value
 template<size_t nbits, size_t es, typename bt>
-bfloat<nbits, es, bt>& minpos(bfloat<nbits, es, bt>& bminpos) {
-	// minimum positive value has this bit pattern: 0-000-00...010, that is, sign = 0, e = 00, f = 00001, u = 0
-	bminpos.clear();
-	bminpos.setbit(0);
-	return bminpos;
+inline constexpr bfloat<nbits, es, bt> minpos() {
+	bfloat<nbits, es, bt> b;
+	return b.minpos();
 }
-// fill an bfloat object with the zero encoding: 0-0...0-00...000-0
+// return a bfloat object with the zero encoding: 0-0...0-00...000-0
 template<size_t nbits, size_t es, typename bt>
-bfloat<nbits, es, bt>& zero(bfloat<nbits, es, bt>& tobezero) {
-	tobezero.clear();
-	return tobezero;
+inline constexpr bfloat<nbits, es, bt> zero() {
+	bfloat<nbits, es, bt> b;
+	return b.zero();
 }
-// fill an bfloat object with smallest negative value
+// return a bfloat object with smallest negative value
 template<size_t nbits, size_t es, typename bt>
-bfloat<nbits, es, bt>& minneg(bfloat<nbits, es, bt>& bminneg) {
-	// minimum negative value has this bit pattern: 1-000-00...010, that is, sign = 1, e = 00, f = 00001, u = 0
-	bminneg.clear();
-	bminneg.setbit(nbits - 1ull);
-	bminneg.setbit(0);
-	return bminneg;
+inline constexpr bfloat<nbits, es, bt> minneg() {
+	bfloat<nbits, es, bt> b;
+	return b.minneg();
 }
-// fill an bfloat object with largest negative value
+// return a bfloat object with largest negative value
 template<size_t nbits, size_t es, typename bt>
-bfloat<nbits, es, bt>& maxneg(bfloat<nbits, es, bt>& bmaxneg) {
-	// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1.1, f = 111...101, u = 0
-	bmaxneg.clear();
-	bmaxneg.flip();
-	bmaxneg.setbit(1ull, false);
-	return bmaxneg;
+inline constexpr bfloat<nbits, es, bt> maxneg() {
+	bfloat<nbits, es, bt> b;
+	return b.maxneg();
 }
 
 /// <summary>
@@ -198,7 +189,7 @@ public:
 	static constexpr int MIN_EXP_SUBNORMAL = 1 - EXP_BIAS - int(fbits); // the scale of smallest ULP
 	static constexpr bt BLOCK_MASK = bt(-1);
 
-	using BlockType = bt;
+	typedef bt BlockType;
 
 	// constructors
 	constexpr bfloat() noexcept : _block{ 0 } {};
@@ -312,7 +303,7 @@ public:
 #endif
 		// saturate to maxpos if out of range
 		if (exponent > MAX_EXP) {
-			if (s) maxneg(*this); else maxpos(*this); // saturate to maxpos or maxneg
+			if (s) this->maxneg(); else this->maxpos(); // saturate to maxpos or maxneg
 			return *this;
 		}
 		if (exponent < MIN_EXP_SUBNORMAL-1) { // TODO: explain the MIN_EXP_SUBMORNAL - 1
@@ -578,7 +569,7 @@ public:
 #endif
 		// saturate to maxpos if out of range
 		if (exponent > MAX_EXP) {	
-			if (s) maxneg(*this); else maxpos(*this); // saturate the maxpos or maxneg
+			if (s) this->maxneg(); else this->maxpos(); // saturate the maxpos or maxneg
 			return *this;
 		}
 		if (exponent < MIN_EXP_SUBNORMAL-1) { // TODO: explain the MIN_EXP_SUBMORNAL - 1
@@ -977,7 +968,39 @@ public:
 		}
 		_block[MSU] = NaNType == NAN_TYPE_SIGNALLING ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 	}
-
+	inline constexpr bfloat<nbits, es, bt>& maxpos() {
+		// maximum positive value has this bit pattern: 0-1...1-111...111, that is, sign = 0, e = 1.1, f = 111...101
+		clear();
+		flip();
+		setbit(nbits - 1ull, false);
+		setbit(1ull, false);
+		return *this;
+	}
+	inline constexpr bfloat<nbits, es, bt>& minpos() {
+		// minimum positive value has this bit pattern: 0-000-00...010, that is, sign = 0, e = 00, f = 00001, u = 0
+		clear();
+		setbit(0);
+		return *this;
+	}
+	inline constexpr bfloat<nbits, es, bt>& zero() {
+		// the zero value
+		clear();
+		return *this;
+	}
+	inline constexpr bfloat<nbits, es, bt>& minneg() {
+		// minimum negative value has this bit pattern: 1-000-00...010, that is, sign = 1, e = 00, f = 00001, u = 0
+		clear();
+		setbit(nbits - 1ull);
+		setbit(0);
+		return *this;
+	}
+	inline constexpr bfloat<nbits, es, bt>& maxneg() {
+		// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1.1, f = 111...101, u = 0
+		clear();
+		flip();
+		setbit(1ull, false);
+		return *this;
+	}
 	/// <summary>
 	/// set a specific bit in the encoding to true or false. If bit index is out of bounds, no modification takes place.
 	/// </summary>

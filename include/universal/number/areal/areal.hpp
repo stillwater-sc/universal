@@ -40,9 +40,16 @@
 /* Microsoft Visual Studio. --------------------------------- */
 //#pragma warning(disable : 4310)  // cast truncates constant value
 
+// TODO: does this collide with the definitions in blocktriple?
+#ifndef BIT_CAST_SUPPORT
 #define BIT_CAST_SUPPORT 1
 #define CONSTEXPRESSION constexpr
 #include <bit>
+#else
+#ifndef CONSTEXPRESSION
+#define CONSTEXPRESSION
+#endif
+#endif
 
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
@@ -1012,7 +1019,8 @@ public:
 		return 0;
 	}
 
-	void debug() const {
+	// helper debug function, can remove/deprecate
+	void constexprClassParameters() const {
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
 		std::cout << "ALLONES           : " << to_binary(ALLONES, true) << '\n';

@@ -75,6 +75,33 @@ void TestConstexprAssignment() {
 #endif // BIT_CAST_SUPPORT
 }
 
+template<typename Real>
+void TestConstexprSpecialValues() {
+	constexpr size_t nbits = Real::nbits;
+	constexpr size_t es    = Real::es;
+	using bt = typename Real::BlockType;
+	{
+		CONSTEXPRESSION Real positiveMax = sw::universal::maxpos<nbits, es, bt>();
+		std::cout << "maxpos  : " << to_binary(positiveMax) << " : " << positiveMax << '\n';
+	}
+	{
+		CONSTEXPRESSION Real positiveMin = sw::universal::minpos<nbits, es, bt>();
+		std::cout << "minpos  : " << to_binary(positiveMin) << " : " << positiveMin << '\n';
+	}
+	{
+		CONSTEXPRESSION Real zero = sw::universal::zero<nbits, es, bt>();
+		std::cout << "zero    : " << to_binary(zero) << " : " << zero << '\n';
+	}
+	{
+		CONSTEXPRESSION Real negativeMin = sw::universal::minneg<nbits, es, bt>();
+		std::cout << "minneg  : " << to_binary(negativeMin) << " : " << negativeMin << '\n';
+	}
+	{
+		CONSTEXPRESSION Real negativeMax = sw::universal::maxneg<nbits, es, bt>();
+		std::cout << "maxneg  : " << to_binary(negativeMax) << " : " << negativeMax << '\n';
+	}
+}
+
 // conditional compile flags
 #define MANUAL_TESTING 0
 #define STRESS_TESTING 0
@@ -96,6 +123,7 @@ try {
 
 	TestConstexprConstruction<Real>();
 	TestConstexprAssignment<Real>();
+	TestConstexprSpecialValues<Real>();
 
 	if (nrOfFailedTestCases > 0) {
 		cout << "FAIL" << endl;
