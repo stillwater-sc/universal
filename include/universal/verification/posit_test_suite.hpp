@@ -235,6 +235,7 @@ namespace sw::universal {
 			std::cout << "VerifyConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 20" << std::endl;
 		}
 
+		double halfMinpos = double(posit<nbits + 1, es>(SpecificValue::minpos)) / 2.0;
 		// execute the test
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_TEST_CASES; i++) {
@@ -242,7 +243,7 @@ namespace sw::universal {
 
 			pref.setbits(i);
 			double da = double(pref);
-			double eps = double(i == 0 ? minpos_value<nbits + 1, es>() / 2.0 : (da > 0 ? da * 1.0e-6 : da * -1.0e-6));
+			double eps = double(i == 0 ? halfMinpos : (da > 0 ? da * 1.0e-6 : da * -1.0e-6));
 			double input;
 			posit<nbits, es> pa;
 			if (i % 2) {

@@ -82,6 +82,7 @@ constexpr double useed_value() {
 	return double(uint64_t(1) << useed_scale<nbits, es>());
 }
 
+#ifdef DEPRECATED
 // calculate the value of maxpos
 template<size_t nbits, size_t es>
 constexpr long double maxpos_value() {
@@ -93,6 +94,7 @@ template<size_t nbits, size_t es>
 constexpr long double minpos_value() {
 	return std::pow((long double)(useed_value<nbits, es>()), (long double)(static_cast<int>(2 - int(nbits))));
 }
+#endif
 
 // generate the minpos bit pattern for the sign requested (true is negative half, false is positive half)
 template<size_t nbits, size_t es>

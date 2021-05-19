@@ -15,6 +15,7 @@
 #include <universal/internal/blocktriple/blocktriple.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
+#include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/bfloat/exceptions.hpp>
 
 // compiler specific operators
@@ -109,44 +110,6 @@ namespace sw::universal {
 	}
 
 
-/////////////////////////////////////////////////////////////////////////////////
-/// free functions that can set an bfloat to extreme values in its state space
-/// organized in descending order.
-
-	// how do these utility functions differentiate between number systems?
-	// 	   do we need an enable_if?
-	// 
-// return a bfloat object with maximum positive value
-template<size_t nbits, size_t es, typename bt>
-inline constexpr bfloat<nbits, es, bt> maxpos() {
-	bfloat<nbits, es, bt> b;
-	return b.maxpos();
-}
-// return a bfloat object with mininum positive value
-template<size_t nbits, size_t es, typename bt>
-inline constexpr bfloat<nbits, es, bt> minpos() {
-	bfloat<nbits, es, bt> b;
-	return b.minpos();
-}
-// return a bfloat object with the zero encoding: 0-0...0-00...000-0
-template<size_t nbits, size_t es, typename bt>
-inline constexpr bfloat<nbits, es, bt> zero() {
-	bfloat<nbits, es, bt> b;
-	return b.zero();
-}
-// return a bfloat object with smallest negative value
-template<size_t nbits, size_t es, typename bt>
-inline constexpr bfloat<nbits, es, bt> minneg() {
-	bfloat<nbits, es, bt> b;
-	return b.minneg();
-}
-// return a bfloat object with largest negative value
-template<size_t nbits, size_t es, typename bt>
-inline constexpr bfloat<nbits, es, bt> maxneg() {
-	bfloat<nbits, es, bt> b;
-	return b.maxneg();
-}
-
 /// <summary>
 /// An arbitrary configuration real number with gradual under/overflow and uncertainty bit
 /// </summary>
@@ -209,6 +172,27 @@ public:
 	template<size_t nnbits, size_t ees>
 	bfloat(const bfloat<nnbits, ees, bt>& rhs) {
 		// this->assign(rhs);
+	}
+
+	// specific value constructor
+	constexpr bfloat(const SpecificValue code) {
+		switch (code) {
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		}
 	}
 
 	/// <summary>
@@ -968,7 +952,8 @@ public:
 		}
 		_block[MSU] = NaNType == NAN_TYPE_SIGNALLING ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 	}
-	inline constexpr bfloat<nbits, es, bt>& maxpos() {
+	// specific number system values of interest
+	inline constexpr bfloat& maxpos() noexcept {
 		// maximum positive value has this bit pattern: 0-1...1-111...111, that is, sign = 0, e = 1.1, f = 111...101
 		clear();
 		flip();
@@ -976,25 +961,25 @@ public:
 		setbit(1ull, false);
 		return *this;
 	}
-	inline constexpr bfloat<nbits, es, bt>& minpos() {
+	inline constexpr bfloat& minpos() noexcept {
 		// minimum positive value has this bit pattern: 0-000-00...010, that is, sign = 0, e = 00, f = 00001, u = 0
 		clear();
 		setbit(0);
 		return *this;
 	}
-	inline constexpr bfloat<nbits, es, bt>& zero() {
+	inline constexpr bfloat& zero() noexcept {
 		// the zero value
 		clear();
 		return *this;
 	}
-	inline constexpr bfloat<nbits, es, bt>& minneg() {
+	inline constexpr bfloat& minneg() noexcept {
 		// minimum negative value has this bit pattern: 1-000-00...010, that is, sign = 1, e = 00, f = 00001, u = 0
 		clear();
 		setbit(nbits - 1ull);
 		setbit(0);
 		return *this;
 	}
-	inline constexpr bfloat<nbits, es, bt>& maxneg() {
+	inline constexpr bfloat& maxneg() noexcept {
 		// maximum negative value has this bit pattern: 1-1...1-111...101, that is, sign = 1, e = 1.1, f = 111...101, u = 0
 		clear();
 		flip();

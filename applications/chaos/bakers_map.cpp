@@ -185,8 +185,7 @@ try {
 	{
 		using Real = sw::universal::posit<32, 2>;
 		std::cout << std::setprecision(17);
-		Real x;
-		sw::universal::minpos(x);
+		Real x(sw::universal::SpecificValue::minpos);
 		std::cout << "minpos<32,2> : " << x << '\n';
 		Real y = 0.75;
 		TraceBakersMap(x, y, 5);
@@ -195,8 +194,7 @@ try {
 	{
 		using Real = sw::universal::posit<32, 2>;
 		std::cout << std::setprecision(17);
-		Real x;
-		sw::universal::minpos(x);
+		Real x(sw::universal::SpecificValue::minpos);
 		x *= sw::universal::useed<32, 2>();
 		std::cout << "minpos<32,2> * useed : " << x << '\n';
 		Real y = 0.75;
@@ -206,8 +204,7 @@ try {
 	{
 		using Real = sw::universal::posit<32, 2>;
 		std::cout << std::setprecision(17);
-		Real x;
-		sw::universal::minpos(x);
+		Real x(sw::universal::SpecificValue::minpos);
 		x *= sw::universal::useed<32, 2>() * sw::universal::useed<32,2>();
 		std::cout << "minpos<32,2> * useed^2 : " << x << '\n';
 		Real y = 0.75;

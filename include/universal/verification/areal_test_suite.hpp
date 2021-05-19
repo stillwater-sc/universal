@@ -90,8 +90,8 @@ namespace sw::universal {
 
 		// execute the test
 		int nrOfFailedTests = 0;
-		TestType positive_minimum;
-		SrcType dminpos = SrcType(minpos(positive_minimum));
+		TestType minpos(sw::universal::SpecificValue::minpos);
+		SrcType dminpos = SrcType(minpos);
 
 		// NUT: number under test
 		TestType nut;

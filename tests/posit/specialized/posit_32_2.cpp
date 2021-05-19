@@ -198,7 +198,8 @@ try {
 
 	// elementary function tests
 	cout << "Elementary function tests " << endl;
-	double dminpos = double(minpos<nbits, es>(p));
+	p.minpos();
+	double dminpos = double(p);
 	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_SQRT,  RND_TEST_CASES, dminpos), tag, "sqrt            (native)  ");
 	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_EXP,   RND_TEST_CASES, dminpos), tag, "exp                       ");
 	nrOfFailedTestCases += ReportTestResult( VerifyUnaryOperatorThroughRandoms<Scalar>(bReportIndividualTestCases, OPCODE_EXP2,  RND_TEST_CASES, dminpos), tag, "exp2                      ");

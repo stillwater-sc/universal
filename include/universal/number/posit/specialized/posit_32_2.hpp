@@ -42,6 +42,27 @@ public:
 	posit& operator=(const posit&) = default;
 	posit& operator=(posit&&) = default;
 
+	// specific value constructor
+	constexpr posit(const SpecificValue code) {
+		switch (code) {
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		}
+	}
+
 	// initializers for native types
 	explicit constexpr posit(signed char initial_value) : _bits(0) { *this = initial_value; }
 	explicit constexpr posit(short initial_value) : _bits(0) { *this = initial_value; }
@@ -420,12 +441,32 @@ public:
 		return *this;
 	}
 
-	// MODIFIERS
+	// Modifiers
 	inline constexpr void clear() { _bits = 0x0; }
 	inline constexpr void setzero() { clear(); }
 	inline constexpr void setnar() { _bits = 0x80000000; }
+	inline posit& minpos() {
+		clear();
+		return ++(*this);
+	}
+	inline posit& maxpos() {
+		setnar();
+		return --(*this);
+	}
+	inline posit& zero() {
+		clear();
+		return *this;
+	}
+	inline posit& minneg() {
+		clear();
+		return --(*this);
+	}
+	inline posit& maxneg() {
+		setnar();
+		return ++(*this);
+	}
 
-	// SELECTORS
+	// Selectors
 	inline constexpr bool sign() const       { return (_bits & 0x80000000u); }
 	inline constexpr bool isnar() const      { return (_bits == 0x80000000u); }
 	inline constexpr bool iszero() const     { return (_bits == 0x0); }

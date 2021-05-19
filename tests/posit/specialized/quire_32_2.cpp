@@ -50,7 +50,6 @@ try {
 	cout << "Standard quire<32,2> configuration tests" << endl;
 #endif
 
-	posit<nbits, es> p;
 	quire<nbits, es> q;
 	cout << dynamic_range<nbits,es>() << endl << endl;
 
@@ -66,7 +65,7 @@ try {
 
 	// conversion tests
 	cout << "Assignment/conversion tests " << endl;
-	minpos<nbits, es>(p);
+	posit<nbits, es> p(SpecificValue::minpos);
 	q = p;
 
 	// arithmetic tests

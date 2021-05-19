@@ -76,28 +76,28 @@ void TestConstexprAssignment() {
 }
 
 template<typename Real>
-void TestConstexprSpecialValues() {
+void TestConstexprSpecificValues() {
 	constexpr size_t nbits = Real::nbits;
 	constexpr size_t es    = Real::es;
 	using bt = typename Real::BlockType;
 	{
-		CONSTEXPRESSION Real positiveMax = sw::universal::maxpos<nbits, es, bt>();
+		constexpr Real positiveMax(sw::universal::SpecificValue::maxpos);
 		std::cout << "maxpos  : " << to_binary(positiveMax) << " : " << positiveMax << '\n';
 	}
 	{
-		CONSTEXPRESSION Real positiveMin = sw::universal::minpos<nbits, es, bt>();
+		constexpr Real positiveMin(sw::universal::SpecificValue::minpos);
 		std::cout << "minpos  : " << to_binary(positiveMin) << " : " << positiveMin << '\n';
 	}
 	{
-		CONSTEXPRESSION Real zero = sw::universal::zero<nbits, es, bt>();
+		constexpr Real zero(sw::universal::SpecificValue::zero);
 		std::cout << "zero    : " << to_binary(zero) << " : " << zero << '\n';
 	}
 	{
-		CONSTEXPRESSION Real negativeMin = sw::universal::minneg<nbits, es, bt>();
+		constexpr Real negativeMin(sw::universal::SpecificValue::minneg);
 		std::cout << "minneg  : " << to_binary(negativeMin) << " : " << negativeMin << '\n';
 	}
 	{
-		CONSTEXPRESSION Real negativeMax = sw::universal::maxneg<nbits, es, bt>();
+		constexpr Real negativeMax(sw::universal::SpecificValue::maxneg);
 		std::cout << "maxneg  : " << to_binary(negativeMax) << " : " << negativeMax << '\n';
 	}
 }
@@ -123,7 +123,7 @@ try {
 
 	TestConstexprConstruction<Real>();
 	TestConstexprAssignment<Real>();
-	TestConstexprSpecialValues<Real>();
+	TestConstexprSpecificValues<Real>();
 
 	if (nrOfFailedTestCases > 0) {
 		cout << "FAIL" << endl;
