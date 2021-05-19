@@ -85,24 +85,22 @@ const long double eps(size_t nbits) {
 template<size_t nbits, size_t es>
 std::string properties(const std::string& label) {
 	using Scalar = sw::universal::posit<nbits, es>;
-	Scalar minp(0), maxp(0);
-	sw::universal::minpos<nbits, es>(minp);
-	sw::universal::maxpos<nbits, es>(maxp);
+	Scalar minpos(sw::universal::SpecificValue::minpos), maxpos(sw::universal::SpecificValue::maxpos);
 	Scalar eps  = std::numeric_limits<Scalar>::epsilon();
 	std::stringstream ostr;
 	ostr << nbits
 		<< '\t'
 		<< label
 		<< '\t'
-		<< minp
+		<< minpos
 		<< '\t'
 		<< eps
 		<< '\t'
-		<< maxp
+		<< maxpos
 		<< '\t'
-		<< eps / minp
+		<< eps / minpos
 		<< '\t'
-		<< maxp / eps
+		<< maxpos / eps
 		<< '\n';
 	return ostr.str();
 }

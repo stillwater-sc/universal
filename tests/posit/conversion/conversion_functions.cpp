@@ -274,8 +274,8 @@ void convert_to_posit(float x, bool bPrintIntermediateSteps = false) {
 	bitblock<nrfbits> bits = v.fraction();
 	cout << v << " = " << to_triple(v) << endl;
 
-	float minpos = (float)minpos_value<nbits, es>();
-	float maxpos = (float)maxpos_value<nbits, es>();
+	float minpos = (float)posit<nbits, es>(SpecificValue::minpos);
+	float maxpos = (float)posit<nbits, es>(SpecificValue::maxpos);
 
 	const size_t pt_len = nbits + 3 + es;
 	internal::bitblock<pt_len> pt_bits;

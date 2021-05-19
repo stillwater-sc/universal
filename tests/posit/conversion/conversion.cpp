@@ -49,7 +49,7 @@ void GenerateLogicPatternsForDebug() {
 	sw::universal::posit<nbits + 1, es> pref, pprev, pnext;
 
 	// execute the test
-	double minpos = sw::universal::minpos_value<nbits+1, es>();
+	double minpos = double(sw::universal::posit<nbits+1, es>(sw::universal::SpecificValue::minpos));
 	double eps = 1.0e-10;
 	double da, input;
 	sw::universal::posit<nbits, es> pa;
@@ -208,30 +208,24 @@ try {
 	cout << "----------------\n";
 #endif
 
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<3, 0>(tag, true), "posit<3,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<4, 0>(tag, true), "posit<4,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<5, 0>(tag, true), "posit<5,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<6, 0>(tag, true), "posit<6,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<7, 0>(tag, true), "posit<7,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<8, 0>(tag, true), "posit<8,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<9, 0>(tag, true), "posit<9,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<3, 0>(true), "posit<3,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<4, 0>(true), "posit<4,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<5, 0>(true), "posit<5,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<6, 0>(true), "posit<6,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<7, 0>(true), "posit<7,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<8, 0>(true), "posit<8,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyIntegerConversion<9, 0>(true), "posit<9,0>", "conversion");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<3, 0>(tag, true), "posit<3,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<3, 0>(true), "posit<3,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 1>(true), "posit<4,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<5, 2>(true), "posit<5,2>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<6, 3>(true), "posit<6,3>", "conversion");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 1>(tag, true), "posit<4,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<5, 2>(tag, true), "posit<5,2>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<6, 3>(tag, true), "posit<6,3>", "conversion");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 0>(tag, true), "posit<4,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 1>(tag, true), "posit<4,1>", "conversion"); 
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<5, 0>(tag, true), "posit<5,0>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<5, 1>(tag, true), "posit<5,1>", "conversion");
-	nrOfFailedTestCases += ReportTestResult(VerifyConversion<5, 2>(tag, true), "posit<5,2>", "conversion");
-
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 0>("Posit<6,0> addition failed: ", bReportIndividualTestCases), "posit<6,0>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 1>("Posit<6,1> addition failed: ", bReportIndividualTestCases), "posit<6,1>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 2>("Posit<6,2> addition failed: ", bReportIndividualTestCases), "posit<6,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition<6, 3>("Posit<6,3> addition failed: ", bReportIndividualTestCases), "posit<6,3>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 0>(true), "posit<4,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<4, 1>(true), "posit<4,1>", "conversion"); 
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<5, 0>(true), "posit<5,0>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<5, 1>(true), "posit<5,1>", "conversion");
+	nrOfFailedTestCases += ReportTestResult(VerifyConversion<5, 2>(true), "posit<5,2>", "conversion");
 
 #else
 

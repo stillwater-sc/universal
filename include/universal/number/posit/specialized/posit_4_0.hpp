@@ -126,6 +126,27 @@ namespace sw::universal {
 				posit& operator=(const posit&) = default;
 				posit& operator=(posit&&) = default;
 
+				// specific value constructor
+				constexpr posit(const SpecificValue code) {
+					switch (code) {
+					case SpecificValue::maxpos:
+						maxpos();
+						break;
+					case SpecificValue::minpos:
+						minpos();
+						break;
+					default:
+						zero();
+						break;
+					case SpecificValue::minneg:
+						minneg();
+						break;
+					case SpecificValue::maxneg:
+						maxneg();
+						break;
+					}
+				}
+
 				explicit posit(signed char initial_value) { *this = (long long)initial_value; }
 				explicit posit(short initial_value) { *this = (long long)initial_value; }
 				explicit posit(int initial_value) { *this = (long long)initial_value; }
@@ -276,7 +297,26 @@ namespace sw::universal {
 				inline void clear() { _bits = 0; }
 				inline void setzero() { clear(); }
 				inline void setnar() { _bits = nar_encoding; }
-
+				inline posit& minpos() {
+					clear();
+					return ++(*this);
+				}
+				inline posit& maxpos() {
+					setnar();
+					return --(*this);
+				}
+				inline posit& zero() {
+					clear();
+					return *this;
+				}
+				inline posit& minneg() {
+					clear();
+					return --(*this);
+				}
+				inline posit& maxneg() {
+					setnar();
+					return ++(*this);
+				}
 			private:
 				uint8_t _bits;
 

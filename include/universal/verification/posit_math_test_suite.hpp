@@ -189,7 +189,7 @@ int VerifyExp2(bool bReportIndividualTestCases) {
 		double da = double(pa);
 		pref = std::exp2(da);
 		if (pexp2 != pref) {
-			if (std::exp(da) != 0.0) { // exclude special posit rounding rule that projects to minpos
+			if (std::exp2(da) != 0.0) { // exclude special posit rounding rule that projects to minpos
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases)	ReportOneInputFunctionError("FAIL", "exp2", pa, pref, pexp2);
 			}

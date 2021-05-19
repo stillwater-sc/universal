@@ -14,6 +14,7 @@
 #include <universal/internal/blockbinary/blockbinary.hpp>
 #include <universal/number/shared/nan_encoding.hpp>
 #include <universal/number/shared/infinite_encoding.hpp>
+#include <universal/number/shared/specific_value_encoding.hpp>
 #include <universal/number/areal/exceptions.hpp>
 
 // compiler specific operators
@@ -40,9 +41,16 @@
 /* Microsoft Visual Studio. --------------------------------- */
 //#pragma warning(disable : 4310)  // cast truncates constant value
 
+// TODO: does this collide with the definitions in blocktriple?
+#ifndef BIT_CAST_SUPPORT
 #define BIT_CAST_SUPPORT 1
 #define CONSTEXPRESSION constexpr
 #include <bit>
+#else
+#ifndef CONSTEXPRESSION
+#define CONSTEXPRESSION
+#endif
+#endif
 
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
@@ -94,55 +102,6 @@ void decode(const areal<nbits, es, bt>& v, bool& s, blockbinary<es, bt>& e, bloc
 template<size_t nbits, size_t es, typename bt>
 int scale(const areal<nbits, es, bt>& v) {
 	return v.scale();
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-/// free functions that can set an areal to extreme values in its state space
-/// organized in descending order.
-
-// fill an areal object with maximum positive value
-template<size_t nbits, size_t es, typename bt>
-areal<nbits, es, bt>& maxpos(areal<nbits, es, bt>& amaxpos) {
-	// maximum positive value has this bit pattern: 0-1...1-111...100, that is, sign = 0, e = 1.1, f = 111...110, u = 0
-	amaxpos.clear();
-	amaxpos.flip();
-	amaxpos.reset(nbits - 1ull);
-	amaxpos.reset(0ull);
-	amaxpos.reset(1ull);
-	return amaxpos;
-}
-// fill an areal object with mininum positive value
-template<size_t nbits, size_t es, typename bt>
-areal<nbits, es, bt>& minpos(areal<nbits, es, bt>& aminpos) {
-	// minimum positive value has this bit pattern: 0-000-00...010, that is, sign = 0, e = 00, f = 00001, u = 0
-	aminpos.clear();
-	aminpos.set(1);
-	return aminpos;
-}
-// fill an areal object with the zero encoding: 0-0...0-00...000-0
-template<size_t nbits, size_t es, typename bt>
-areal<nbits, es, bt>& zero(areal<nbits, es, bt>& tobezero) {
-	tobezero.clear();
-	return tobezero;
-}
-// fill an areal object with smallest negative value
-template<size_t nbits, size_t es, typename bt>
-areal<nbits, es, bt>& minneg(areal<nbits, es, bt>& aminneg) {
-	// minimum negative value has this bit pattern: 1-000-00...010, that is, sign = 1, e = 00, f = 00001, u = 0
-	aminneg.clear();
-	aminneg.set(nbits - 1ull);
-	aminneg.set(1);
-	return aminneg;
-}
-// fill an areal object with largest negative value
-template<size_t nbits, size_t es, typename bt>
-areal<nbits, es, bt>& maxneg(areal<nbits, es, bt>& amaxneg) {
-	// maximum negative value has this bit pattern: 1-1...1-111...110, that is, sign = 1, e = 1.1, f = 111...110, u = 0
-	amaxneg.clear();
-	amaxneg.flip();
-	amaxneg.reset(0ull);
-	amaxneg.reset(1ull);
-	return amaxneg;
 }
 
 /// <summary>
@@ -207,6 +166,27 @@ public:
 	template<size_t nnbits, size_t ees>
 	areal(const areal<nnbits, ees, bt>& rhs) {
 		// this->assign(rhs);
+	}
+
+	// specific value constructor
+	constexpr areal(const SpecificValue code) {
+		switch (code) {
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		}
 	}
 
 	/// <summary>
@@ -344,7 +324,7 @@ public:
 #endif
 		// saturate to minpos/maxpos with uncertainty bit set to 1
 		if (exponent > MAX_EXP) {
-			if (s) maxneg(*this); else maxpos(*this); // saturate the maxpos or maxneg
+			if (s) maxneg(); else maxpos(); // saturate the maxpos or maxneg
 			this->set(0);
 			return *this;
 		}
@@ -501,7 +481,7 @@ public:
 #endif
 		// saturate to minpos/maxpos with uncertainty bit set to 1
 		if (exponent > MAX_EXP) {	
-			if (s) maxneg(*this); else maxpos(*this); // saturate the maxpos or maxneg
+			if (s) maxneg(); else maxpos(); // saturate the maxpos or maxneg
 			this->set(0); // and set the uncertainty bit to reflect it is (maxpos, inf) or (maxneg, -inf)
 			return *this;
 		}
@@ -766,6 +746,46 @@ public:
 		_block[MSU] = NaNType == NAN_TYPE_SIGNALLING ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 	}
 
+	// fill an areal object with maximum positive value
+	inline constexpr areal<nbits, es, bt>& maxpos() noexcept {
+		// maximum positive value has this bit pattern: 0-1...1-111...100, that is, sign = 0, e = 1.1, f = 111...110, u = 0
+		clear();
+		flip();
+		reset(nbits - 1ull);
+		reset(0ull);
+		reset(1ull);
+		return *this;
+	}
+	// fill an areal object with mininum positive value
+	inline constexpr areal<nbits, es, bt>& minpos() noexcept {
+		// minimum positive value has this bit pattern: 0-000-00...010, that is, sign = 0, e = 00, f = 00001, u = 0
+		clear();
+		set(1);
+		return *this;
+	}
+	// fill an areal object with the zero encoding: 0-0...0-00...000-0
+	inline constexpr areal<nbits, es, bt>& zero() noexcept {
+		clear();
+		return *this;
+	}
+	// fill an areal object with smallest negative value
+	inline constexpr areal<nbits, es, bt>& minneg() noexcept {
+		// minimum negative value has this bit pattern: 1-000-00...010, that is, sign = 1, e = 00, f = 00001, u = 0
+		clear();
+		set(nbits - 1ull);
+		set(1);
+		return *this;
+	}
+	// fill an areal object with largest negative value
+	inline constexpr areal<nbits, es, bt>& maxneg() noexcept {
+		// maximum negative value has this bit pattern: 1-1...1-111...110, that is, sign = 1, e = 1.1, f = 111...110, u = 0
+		clear();
+		flip();
+		reset(0ull);
+		reset(1ull);
+		return *this;
+	}
+
 	/// <summary>
 	/// set the raw bits of the areal. This is a required API function for number systems in the Universal Numbers Library
 	/// This enables verification test suites to inject specific test bit patterns using a common interface.
@@ -1012,7 +1032,8 @@ public:
 		return 0;
 	}
 
-	void debug() const {
+	// helper debug function, can remove/deprecate
+	void constexprClassParameters() const {
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
 		std::cout << "ALLONES           : " << to_binary(ALLONES, true) << '\n';

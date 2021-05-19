@@ -8,66 +8,15 @@
 #include <limits>
 
 #include <universal/native/ieee754.hpp>
+#include <universal/number/shared/nan_encoding.hpp>
+#include <universal/number/shared/infinite_encoding.hpp>
+#include <universal/number/shared/specific_value_encoding.hpp>
 
-namespace sw {	namespace universal {
+namespace sw::universal {
 		
 // Forward definitions
 template<size_t esizesize, size_t fsizesize, typename bt> class unum2;
 template<size_t esizesize, size_t fsizesize, typename bt> unum2<esizesize,fsizesize,bt> abs(const unum2<esizesize,fsizesize,bt>& v);
-
-
-// fill an unum2 object with mininum positive value
-template<size_t esizesize, size_t fsizesize, typename bt>
-unum2<esizesize, fsizesize, bt>& minpos(unum2<esizesize, fsizesize, bt>& minposu) {
-
-	return minposu;
-}
-// fill an unum2 object with maximum positive value
-template<size_t esizesize, size_t fsizesize, typename bt>
-unum2<esizesize, fsizesize, bt>& maxpos(unum2<esizesize, fsizesize, bt>& maxposu) {
-
-	return maxposu;
-}
-// fill an unum2 object with mininum negative value
-template<size_t esizesize, size_t fsizesize, typename bt>
-unum2<esizesize, fsizesize, bt>& minneg(unum2<esizesize, fsizesize, bt>& minnegu) {
-
-	return minnegu;
-}
-// fill an unum2 object with maximum negative value
-template<size_t esizesize, size_t fsizesize, typename bt>
-unum2<esizesize, fsizesize, bt>& maxneg(unum2<esizesize, fsizesize, bt>& maxnegu) {
-
-	return maxnegu;
-}
-
-// fill an unum object with positive infinity
-template<size_t esizesize, size_t fsizesize, typename bt>
-unum2<esizesize, fsizesize, bt>& posinf(unum2<esizesize, fsizesize, bt>& posinfu) {
-
-	return posinfu;
-}
-
-// fill an unum object with negative infinity
-template<size_t esizesize, size_t fsizesize, typename bt>
-unum2<esizesize, fsizesize, bt>& neginf(unum2<esizesize, fsizesize, bt>& neginfu) {
-
-	return neginfu;
-}
-
-// fill an unum object with quiet NaN
-template<size_t esizesize, size_t fsizesize, typename bt>
-unum2<esizesize, fsizesize, bt>& qnan(unum2<esizesize, fsizesize, bt>& qnanu) {
-
-	return qnanu;
-}
-
-// fill an unum object with signalling NaN
-template<size_t esizesize, size_t fsizesize, typename bt>
-unum2<esizesize, fsizesize, bt>& snan(unum2<esizesize, fsizesize, bt>& snanu) {
-
-	return snanu;
-}
 
 // template class reprfsizesizeenting a value in scientific notation, using a template size for the number of fraction bits
 template<size_t esizesize, size_t fsizesize, typename bt = uint8_t>
@@ -79,6 +28,27 @@ public:
 	static constexpr size_t FBITSMASK  = 2;
 
 	unum2() {}
+
+	// specific value constructor
+	constexpr unum2(const SpecificValue code) {
+		switch (code) {
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		}
+	}
 
 	unum2(signed char initial_value)        { *this = initial_value; }
 	unum2(short initial_value)              { *this = initial_value; }
@@ -170,7 +140,55 @@ public:
 	}
 
 	// modifiers
-	void reset() {	}
+
+	/// <summary>
+	/// clear the content of this bfloat to zero
+	/// </summary>
+	/// <returns>void</returns>
+	inline constexpr void clear() noexcept {
+
+	}
+	/// <summary>
+	/// set the number to +0
+	/// </summary>
+	/// <returns>void</returns>
+	inline constexpr void setzero() noexcept { clear(); }
+	/// <summary>
+	/// set the number to +inf
+	/// </summary>
+	/// <param name="sign">boolean to make it + or - infinity, default is -inf</param>
+	/// <returns>void</returns> 
+	inline constexpr void setinf(bool sign = true) noexcept {
+
+	}
+	/// <summary>
+	/// set the number to a quiet NaN (+nan) or a signalling NaN (-nan, default)
+	/// </summary>
+	/// <param name="sign">boolean to make it + or - infinity, default is -inf</param>
+	/// <returns>void</returns> 
+	inline constexpr void setnan(int NaNType = NAN_TYPE_SIGNALLING) noexcept {
+	}
+	// specific number system values of interest
+	inline constexpr unum2& maxpos() noexcept {
+
+		return *this;
+	}
+	inline constexpr unum2& minpos() noexcept {
+
+		return *this;
+	}
+	inline constexpr unum2& zero() noexcept {
+
+		return *this;
+	}
+	inline constexpr unum2& minneg() noexcept {
+
+		return *this;
+	}
+	inline constexpr unum2& maxneg() noexcept {
+
+		return *this;
+	}
 
 	// selectors
 	inline bool isneg() const { return false; }
@@ -299,4 +317,4 @@ unum2<esizesize,fsizesize> abs(const unum2<esizesize,fsizesize,bt>& v) {
 }
 
 
-}}  // namespace sw::universal
+}  // namespace sw::universal
