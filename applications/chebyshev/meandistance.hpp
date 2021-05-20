@@ -8,18 +8,15 @@
 #define POSIT_THROW_ARITHMETIC_EXCEPTION 1
 #include <universal/number/posit/posit>
 #include <universal/blas/blas>
-#include "prod.hpp"
-#include "diff.hpp"
 
 namespace sw::universal{
-
 	template<typename Scalar>
 	blas::vector<Scalar> meandistance(blas::vector<Scalar> x)
 	{
         size_t n = size(x);
         blas::vector<Scalar>z(n);
 	
-        for (size_t i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i){
             Scalar y = 1;
             for (size_t j = 0; j < n; ++j) {
                 if (i == j) {

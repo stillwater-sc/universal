@@ -9,7 +9,7 @@
 // Dependencies
 #include<cmath> /* sin, cos, etc. */
 // using namespace sw::universal::blas;
-//	using Matrix = sw::universal::blas::matrix<Scalar>;
+// using Matrix = sw::universal::blas::matrix<Scalar>;
 /*
 
 Mathematical 	C++ Symbol	Decimal Representation
@@ -35,8 +35,13 @@ log_e(10)		M_LN10		2.30258509299404568402
 #include <universal/number/posit/posit>
 #include <universal/blas/blas>
 #include "chebpts.hpp"
-#include "prod.hpp"
-
+//#include "prod.hpp"
+//#include "diff.hpp"
+#include "meandistance.hpp"
+//#include "linscale.hpp"
+//#include "ones.hpp"
+#include "rpad.hpp"
+#include "chebpoly.hpp"
 
 int main()
 try {
@@ -46,40 +51,95 @@ try {
 	
 	#define USE_POSIT 0
 	#if USE_POSIT
-		constexpr size_t nbits = 16;
+		constexpr size_t nbits = 32;
 		constexpr size_t es = 1;
 		using Scalar = posit<nbits, es>;
 		cout << "\nUsing POSIT<" << nbits << "," <<  es << ">\n" <<  endl;
 	#else	  
 		using Scalar = double;
+		cout << "\nUsing DOUBLE " << "\n" <<  endl;
 	#endif
 
-	// 
+	// TESTS
+	// ---------------------------------------------------
 
 	// 1. Test Chebpts
-	auto x = chebpts<Scalar>(5,1); 							// x = chebypts(n,1,[a,b])
-	std::cout << "Chebyshev 1st kind = " << x << std::endl;	// Print results
+	//auto x = chebpts<Scalar>(5,1); 							// x = chebypts(n,1,[a,b])
+	//std::cout << "Chebyshev 1st kind = " << x << std::endl;	 
 
 	
-	auto y = chebpts<Scalar>(5); 							// x = chebypts(n,2,[a,b])
-	std::cout << "Chebyshev 2nd kind = " << y << std::endl;	// Print results
+	 auto y = chebpts<Scalar>(10); 							// x = chebypts(n,2,[a,b])
+	//std::cout << "Chebyshev 2nd kind = " << y << std::endl;	 
 
-	auto z = chebpts<Scalar>(-3,1); 				// x = chebypts(n,kind,[a,b])
-	std::cout << "Chebpts called with incorrect parameters = " << z << std::endl;				// Print results
-
-
-	// 2. Calculate mean distance
-	//auto y = prod<Scalar>(x);
-	// std::cout << y << std::endl;
-
-	// 3. 
+	//auto z = chebpts<Scalar>(-3,1); 						// x = chebypts(n,kind,[a,b])
+	//std::cout << "Chebpts called with incorrect parameters = " << z << std::endl;				 
 
 
-	// 4. 
+	// 2. Test prod(x)
+	//blas::vector<Scalar> a(5);
+	//a(0)=1;a(1)=2;a(2)=3;a(3)=4;a(4)=5; 
+	
+	 //auto b = prod<Scalar>(a);
+	 //std::cout << b << std::endl;
+
+	// 3. Checking abs and sqrt functions
+	// std::cout << "Abs = " << abs(b) << " , SQRT =  " << sqrt(b) << std::endl;
+
+	// 4. Test diff(x,y)
+	//auto c = diff<Scalar>(x,y); 
+	//std::cout << c << std::endl;
+
+	// 5. Test meandistance(x)
+	auto d = meandistance<Scalar>(y);
+	std::cout << d << std::endl;
+
+	// 6. Ones vector
+	// blas::vector<Scalar> a(5,1);
+	// std::cout << "a = " << a << std::endl;
 
 
+	// 7. Test linear shift and scale interval 
+		//blas::vector<Scalar> a(5);
+		//a(0)=2;a(1)=3;a(2)=4;a(3)=5;a(4)=6; 
+		//std::cout << "a = " << a << std::endl;
 
+		//auto b = linscale<Scalar>(a,-M_PI,M_PI);
+		//std::cout << "b = " << b << std::endl;
 
+	// 8. Ones vector
+	// auto b = ones<Scalar>(8);
+	// std::cout << "b = " << b << std::endl;
+
+	// 9. Norm test
+	// blas::vector<Scalar> a(5);
+	// a(0)=1;a(1)=2;a(2)=3;a(3)=4;a(4)=5; 
+	// std::cout << "norm(a) = " << norm(a,1) << std::endl;
+
+	// int INF = std::numeric_limits<int>::max();
+	// std::cout << "norm(a) = " << norm(a,INF) << std::endl;
+
+	// 10. pad right
+	// blas::vector<Scalar> a(5);
+	// a(0)=1;a(1)=2;a(2)=3;a(3)=4;a(4)=5;
+	// std::cout << "padded vector = " << rpad(a,4) << std::endl;
+
+	// 11. element-wise add
+	//blas::vector<Scalar> a(5);
+	//a(0)=1;a(1)=2;a(2)=3;a(3)=4;a(4)=5;
+
+	//blas::vector<Scalar> b(5);
+	//b(0)=3;b(1)=5;b(2)=7;b(3)=9;b(4)=11;
+	//std::cout << "element-wise difference = " << a - b << std::endl;
+
+	// 12. Chebpoly
+	// size_t n = 1;
+	//std::cout << "Chebyshev Polynomial T_0" << " = " << chebpoly<Scalar>(0) << std::endl;
+	//std::cout << "Chebyshev Polynomial T_1" << " = " << chebpoly<Scalar>(1) << std::endl;
+	//std::cout << "Chebyshev Polynomial T_2" << " = " << chebpoly<Scalar>(2) << std::endl;
+	//std::cout << "Chebyshev Polynomial T_3" << " = " << chebpoly<Scalar>(3) << std::endl;
+
+	//std::cout << chebpoly<Scalar>(3) + rpad<Scalar>(chebpoly<Scalar>(1), 3-1) << std::endl;
+	//chebpoly<Scalar>(n);
 
 
 

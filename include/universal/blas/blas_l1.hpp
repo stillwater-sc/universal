@@ -33,7 +33,7 @@ typename Vector::value_type sum(const Vector& x) {
 	return sum;
 }
 
-// a time x plus y
+// a times x plus y
 template<typename Scalar, typename Vector>
 void axpy(size_t n, Scalar a, const Vector& x, size_t incx, Vector& y, size_t incy) {
 	size_t cnt, ix, iy;
@@ -231,7 +231,7 @@ Scalar norm(const sw::universal::blas::vector<Scalar>& v, int p) {
 	Scalar norm{ 0 };
 	switch (p) {
 	case 0:
-		break;
+		break; //should be the geometric mean
 	case 1:
 		norm = normL1(v);
 		break;
@@ -243,6 +243,9 @@ Scalar norm(const sw::universal::blas::vector<Scalar>& v, int p) {
 		break;
 	case 4:
 		norm = normL4(v);
+		break;
+	case std::numeric_limits<int>::max():
+		norm = normLinf(v);
 		break;
 	default:
 		{

@@ -25,7 +25,7 @@ class chebfun {
     
     // Class Constructor:     
         chebfun():domain(0){}
-        chebfun(size_type n):domain(n){-cos(k*pi/6)}
+        chebfun(size_type n):domain(n){chebpts(n)}
 
         Scalar operator[](size_type i){return domain[i];}
 
