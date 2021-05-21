@@ -110,7 +110,6 @@ public:
 	static constexpr size_t MSU = nrBlocks - 1; // MSU == Most Significant Unit
 	static constexpr bt ALL_ONES = bt(~0);
 	static constexpr bt MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
-	static constexpr bt SIGN_BIT_MASK = bt(bt(1) << ((nbits - 1ull) % bitsInBlock));
 
 	// constructors
 	constexpr blockfraction() noexcept : _block{ 0 } {}
@@ -246,10 +245,11 @@ public:
 		return *this;
 	}
 #endif
+
 	// shift left operator
 	blockfraction& operator<<=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
-		if (bitsToShift < 0) return operator>>=(-bitsToShift);
+		if (bitsToShift < 0) return *this; // a NOP instead of operator>>=(-bitsToShift);
 		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
 		if (bitsToShift >= long(bitsInBlock)) {
 			int blockShift = bitsToShift / static_cast<int>(bitsInBlock);
@@ -276,15 +276,16 @@ public:
 		_block[0] <<= bitsToShift;
 		return *this;
 	}
+
 	// shift right operator
 	blockfraction& operator>>=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
-		if (bitsToShift < 0) return operator<<=(-bitsToShift);
+		if (bitsToShift < 0) return *this; // a NOP instead of operator<<=(-bitsToShift);
 		if (bitsToShift >= static_cast<int>(nbits)) {
 			setzero();
 			return *this;
 		}
-		bool signext = sign();
+		bool signext = false; // fraction is magnitude encoded
 		size_t blockShift = 0;
 		if (bitsToShift >= static_cast<int>(bitsInBlock)) {
 			blockShift = bitsToShift / bitsInBlock;
@@ -399,9 +400,6 @@ public:
 	}
 
 	// selectors
-	inline constexpr bool sign() const noexcept { return _block[MSU] & SIGN_BIT_MASK; }
-	inline constexpr bool ispos() const noexcept { return !sign(); }
-	inline constexpr bool isneg() const noexcept { return sign(); }
 	inline constexpr bool iszero() const noexcept {
 		for (size_t i = 0; i < nrBlocks; ++i) if (_block[i] != 0) return false;
 		return true;
@@ -433,7 +431,14 @@ public:
 		if (b >= nrBlocks) throw "block index out of bounds";
 		return _block[b];
 	}
-
+	inline constexpr uint64_t fraction_ull() const {
+		uint64_t raw{ 0 };
+		if constexpr (nrBlocks == 1) {
+			raw = _block[MSU];
+			raw &= (storageMask >> 2);   // remove the hidden bits
+		}
+		return raw;
+	}
 	// copy a value over from one blockfraction to this blockfraction
 	// blockfraction is a 2's complement encoding, so we sign-extend by default
 	template<size_t srcbits>

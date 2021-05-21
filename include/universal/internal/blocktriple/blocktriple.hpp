@@ -202,7 +202,7 @@ public:
 	inline constexpr bool sign()        const noexcept { return _sign; }
 	inline constexpr int  scale()       const noexcept { return _scale; }
 	inline constexpr Frac significant() const noexcept { return _significant; }
-
+	inline constexpr uint64_t fraction_ull() const noexcept{ return _significant.fraction_ull(); }
 	// fraction bit accessors
 	inline constexpr bool at(size_t index)   const noexcept { return _significant.at(index); }
 	inline constexpr bool test(size_t index) const noexcept { return _significant.at(index); }

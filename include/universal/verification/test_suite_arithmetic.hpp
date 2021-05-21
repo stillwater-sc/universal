@@ -70,22 +70,20 @@ int VerifyNegation(const std::string& tag, bool bReportIndividualTestCases) {
 /// <returns></returns>
 template<typename TestType>
 int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
-	TestType a{ 0 }, b{ 0 }, result, cref;
-	constexpr size_t nbits = a.nbits;  // number system concept requires a static member indicating its size in bits
+	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;
 
 	// set the saturation clamps
-	TestType maxpositive{ 0 }, maxnegative{ 0 };
-	maxpos(maxpositive); // depend on ADL to specialize
-	maxneg(maxnegative);
+	TestType maxpos(sw::universal::SpecificValue::maxpos), maxneg(sw::universal::SpecificValue::maxneg);
 
 	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
-	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i); // number system concept requires a member function set_raw_bits()
+	TestType a, b, result, cref;
+	for (size_t i = 1; i < NR_VALUES; i++) {
+		a.setbits(i); // number system concept requires a member function setbits()
 		da = double(a);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
+			b.setbits(j);
 			db = double(b);
 			ref = da + db;
 #if THROW_ARITHMETIC_EXCEPTION
@@ -94,7 +92,7 @@ int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 				result = a + b;
 			}
 			catch (...) {
-				if (ref < double(maxnegative) || ref > double(maxpositive)) {
+				if (ref < double(maxneg) || ref > double(maxpos)) {
 					// correctly caught the overflow exception
 					continue;
 				}
@@ -112,7 +110,7 @@ int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
 			}
 			else {
-				//if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
+				if (bReportIndividualTestCases) ReportBinaryArithmeticSuccess("PASS", "+", a, b, cref, result);
 			}
 			if (nrOfFailedTests > 100) return nrOfFailedTests;
 		}

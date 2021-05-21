@@ -41,6 +41,7 @@ try {
 	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
+	std::string tag = "Addition failed: ";
 
 #if MANUAL_TESTING
 
@@ -48,8 +49,7 @@ try {
 	GenerateTestCase< bfloat<16, 8, uint16_t>, double>(INFINITY, INFINITY);
 	GenerateTestCase< bfloat<8, 4, uint8_t>, float>(0.5f, -0.5f);
 
-	// manual exhaustive test
-	//nrOfFailedTestCases += ReportTestResult(VerifyAddition< bfloat<8, 2, uint8_t> >(true), "bfloat<8,2,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< bfloat<8, 2, uint8_t> >(tag, true), "bfloat<8,2,uint8_t>", "addition");
 
 	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
@@ -58,7 +58,6 @@ try {
 	cout << "Arbitrary Real addition validation" << endl;
 
 	bool bReportIndividualTestCases = false;
-	std::string tag = "Addition failed: ";
 
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>(tag, bReportIndividualTestCases), "bfloat<8,2>", "addition");
 	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(tag, bReportIndividualTestCases), "bfloat<8,4>", "addition");
