@@ -46,8 +46,10 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
+	GenerateTestCase< bfloat<8, 2, uint8_t>, float>(0.03125f, 0.03125f);
+	return 0;
 	GenerateTestCase< bfloat<16, 8, uint16_t>, double>(INFINITY, INFINITY);
-	GenerateTestCase< bfloat<8, 4, uint8_t>, float>(0.5f, -0.5f);
+
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< bfloat<8, 2, uint8_t> >(tag, true), "bfloat<8,2,uint8_t>", "addition");
 

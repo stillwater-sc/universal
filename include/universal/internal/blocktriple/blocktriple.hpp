@@ -202,6 +202,8 @@ public:
 	inline constexpr bool sign()        const noexcept { return _sign; }
 	inline constexpr int  scale()       const noexcept { return _scale; }
 	inline constexpr Frac significant() const noexcept { return _significant; }
+	// specialty function to offer a fast path to get the fraction bits out of the representation
+	// to convert to a target number system: only valid for nbits <= 64
 	inline constexpr uint64_t fraction_ull() const noexcept{ return _significant.fraction_ull(); }
 	// fraction bit accessors
 	inline constexpr bool at(size_t index)   const noexcept { return _significant.at(index); }

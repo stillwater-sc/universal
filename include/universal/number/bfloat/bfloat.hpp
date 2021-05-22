@@ -161,7 +161,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits>& src, bfloat<nbits,
 			// compose the segments
 			tgt.setsign(src.sign());
 			tgt.setexponent(src.scale());
-			tgt.setfraction(src.significant());
+			// this api doesn't work: tgt.setfraction(src.significant());
 		}
 
 	}
@@ -746,6 +746,11 @@ public:
 				uint32_t exponent_bits = scale + EXP_BIAS;
 			}
 		}
+		else {
+			// TBD
+			return false;
+		}
+		return true;
 	}
 	/// <summary>
 	/// set the fraction bits given a significant in the form ???
@@ -1006,7 +1011,7 @@ public:
 		exponent(e);
 		return !e.iszero() && !isinf() && !isnan();
 	}
-	inline constexpr bool issubnorm() const noexcept {
+	inline constexpr bool issubnormal() const noexcept {
 		blockbinary<es, bt> e;
 		exponent(e);
 		return e.iszero();
@@ -1224,6 +1229,7 @@ public:
 		else {
 			if (isnormal()) {
 				// we are going to unify to the format 01.ffffeeee
+				// where 'f' is a fraction bit, and 'e' is an extension bit
 				// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
 				if constexpr (tbits < (size_t{ 2u } + fbits)) {
 					// we are contracting and thus need rounding

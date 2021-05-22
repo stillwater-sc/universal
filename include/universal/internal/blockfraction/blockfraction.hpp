@@ -249,7 +249,7 @@ public:
 	// shift left operator
 	blockfraction& operator<<=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
-		if (bitsToShift < 0) return *this; // a NOP instead of operator>>=(-bitsToShift);
+		if (bitsToShift < 0) return operator>>=(-bitsToShift);
 		if (bitsToShift > long(nbits)) bitsToShift = nbits; // clip to max
 		if (bitsToShift >= long(bitsInBlock)) {
 			int blockShift = bitsToShift / static_cast<int>(bitsInBlock);
@@ -280,12 +280,12 @@ public:
 	// shift right operator
 	blockfraction& operator>>=(int bitsToShift) {
 		if (bitsToShift == 0) return *this;
-		if (bitsToShift < 0) return *this; // a NOP instead of operator<<=(-bitsToShift);
+		if (bitsToShift < 0) return operator<<=(-bitsToShift);
 		if (bitsToShift >= static_cast<int>(nbits)) {
 			setzero();
 			return *this;
 		}
-		bool signext = false; // fraction is magnitude encoded
+
 		size_t blockShift = 0;
 		if (bitsToShift >= static_cast<int>(bitsInBlock)) {
 			blockShift = bitsToShift / bitsInBlock;
@@ -298,21 +298,12 @@ public:
 			// adjust the shift
 			bitsToShift -= static_cast<int>(blockShift * bitsInBlock);
 			if (bitsToShift == 0) {
-				// fix up the leading zeros if we have a negative number
-				if (signext) {
-					// bitsToShift is guaranteed to be less than nbits
-					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->setbit(i);
-					}
+				// clean up the blocks we have shifted clean
+				bitsToShift += static_cast<int>(blockShift * bitsInBlock);
+				for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+					this->setbit(i, false); // reset
 				}
-				else {
-					// clean up the blocks we have shifted clean
-					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->setbit(i, false); // reset
-					}
-				}
+
 				return *this;
 			}
 		}
@@ -328,20 +319,10 @@ public:
 		}
 		_block[MSU] >>= bitsToShift;
 
-		// fix up the leading zeros if we have a negative number
-		if (signext) {
-			// bitsToShift is guaranteed to be less than nbits
-			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->setbit(i);
-			}
-		}
-		else {
-			// clean up the blocks we have shifted clean
-			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
-			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->setbit(i, false); // reset
-			}
+		// clean up the blocks we have shifted clean
+		bitsToShift += static_cast<int>(blockShift * bitsInBlock);
+		for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
+			this->setbit(i, false); // reset
 		}
 
 		// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
@@ -406,6 +387,7 @@ public:
 	}
 	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
 	inline constexpr bool iseven() const noexcept { return !isodd(); }
+	inline constexpr bool sign() const { return false; } // dummy to unify the API with other number systems in Universal 
 	inline constexpr bool test(size_t bitIndex) const {	return at(bitIndex); }
 	// check carry bit in output of the ALU
 	inline constexpr bool checkCarry() const { return at(nbits - 2); }
