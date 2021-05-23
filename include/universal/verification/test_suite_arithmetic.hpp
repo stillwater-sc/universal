@@ -79,7 +79,7 @@ int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 
 	double da, db, ref;  // make certain that IEEE doubles are sufficient as reference
 	TestType a, b, result, cref;
-	for (size_t i = 1; i < NR_VALUES; i++) {
+	for (size_t i = 0; i < NR_VALUES; i++) {
 		a.setbits(i); // number system concept requires a member function setbits()
 		da = double(a);
 		for (size_t j = 0; j < NR_VALUES; j++) {

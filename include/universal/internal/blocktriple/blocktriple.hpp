@@ -62,11 +62,11 @@
 namespace sw::universal {
 
 // Forward definitions
-template<size_t nbits, typename bt> class blocktriple;
-template<size_t nbits, typename bt> blocktriple<nbits, bt> abs(const blocktriple<nbits, bt>& v);
+template<size_t fbits, typename bt> class blocktriple;
+template<size_t fbits, typename bt> blocktriple<fbits, bt> abs(const blocktriple<fbits, bt>& v);
 
-template<size_t nbits, typename bt>
-blocktriple<nbits, bt>& convert(unsigned long long uint, blocktriple<nbits, bt>& tgt) {
+template<size_t fbits, typename bt>
+blocktriple<fbits, bt>& convert(unsigned long long uint, blocktriple<fbits, bt>& tgt) {
 	return tgt;
 }
 
@@ -74,12 +74,12 @@ blocktriple<nbits, bt>& convert(unsigned long long uint, blocktriple<nbits, bt>&
 /// Generalized blocktriple representing a (sign, scale, significant) with unrounded arithmetic
 /// </summary>
 /// <typeparam name="nbits">number of fraction bits in the significant</typeparam>
-template<size_t _nbits, typename bt = uint32_t> 
+template<size_t _fbits, typename bt = uint32_t> 
 class blocktriple {
 public:
-	static constexpr size_t nbits = _nbits;
-	static constexpr size_t fbits = nbits;  // a convenience and consistency alias
-	static constexpr size_t bfbits = nbits + 2; // bf = 0h.ffff <- nbits of fraction bits plus two bits before radix point
+	static constexpr size_t nbits = _fbits;  // a convenience and consistency alias
+	static constexpr size_t fbits = _fbits;  
+	static constexpr size_t bfbits = fbits + 2; // bf = 0h.ffff <- nbits of fraction bits plus two bits before radix point
 	typedef bt BlockType;
 	// to maximize performance, can we make the default blocktype a uint64_t?
 	// storage unit for block arithmetic needs to be uin32_t until we can figure out 
@@ -188,6 +188,11 @@ public:
 	constexpr void setsign(bool s) noexcept { _sign = s; }
 	constexpr void setscale(int scale) noexcept { _scale = scale; }
 	constexpr void setbit(size_t index, bool v = true) noexcept { _significant.setbit(index, v); }
+	/// <summary>
+	/// set the bits of the significant given raw fraction bits
+	/// </summary>
+	/// <param name="raw">fraction bits</param>
+	/// <returns></returns>
 	constexpr void setbits(uint64_t raw) noexcept {
 		// do not clear the nan/inf/zero booleans: caller must manage
 		_significant.setbits(raw);
@@ -252,6 +257,7 @@ public:
 			clear();
 		}
 		else {
+			_zero = false;
 			if (isneg()) {
 				_significant.twosComplement();
 				_sign = true;

@@ -105,7 +105,7 @@ int scale(const bfloat<nbits, es, bt>& v) {
 
 // convert a blocktriple to a bfloat
 template<size_t srcbits, size_t nbits, size_t es, typename bt>
-inline /*constexpr*/ void convert(const blocktriple<srcbits>& src, bfloat<nbits, es, bt>& tgt) {
+inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, bfloat<nbits, es, bt>& tgt) {
 	// test special cases
 	if (src.isnan()) {
 		tgt.setnan(src.sign());
@@ -572,11 +572,13 @@ public:
 		if (rhs.iszero()) return *this;
 
 		// arithmetic operation
-		blocktriple<abits + 1> sum;
-		blocktriple<abits> a, b;
+		blocktriple<abits + 1, bt> sum;
+		blocktriple<abits, bt> a, b;
 
-		normalize(a); // transform the inputs into (sign,scale,significant) triples
-		rhs.normalize(b);
+		// transform the inputs into (sign,scale,significant) 
+		// triples of the correct width
+		normalizeAddition(a); 
+		rhs.normalizeAddition(b);
 		sum.add(a, b);
 
 		convert(sum, *this);
@@ -893,7 +895,7 @@ public:
 				}
 			}
 			else {
-				e = int(ebits) - EXP_BIAS;
+				e = unsigned(ebits) - EXP_BIAS;
 			}
 		}
 		return e;
@@ -1098,6 +1100,37 @@ public:
 			for (size_t i = 0; i < fbits; ++i) { f.setbit(i, at(nbits - 1ull - es - fbits + i)); } // TODO: TEST!
 		}
 	}
+	inline constexpr uint64_t fraction_ull() const {
+		uint64_t raw{ 0 };
+		if constexpr (nbits - es - 1ull < 65ull) { // no-op if precondition doesn't hold
+			if constexpr (1 == nrBlocks) {
+				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
+				raw = fbitMask & _block[0];
+			}
+			else if constexpr (2 == nrBlocks) {
+				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
+				raw = fbitMask & ((_block[1] << bitsInBlock) | _block[0]);
+			}
+			else if constexpr (3 == nrBlocks) {
+				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
+				raw = fbitMask & ((_block[2] << (2*bitsInBlock)) | (_block[1] << bitsInBlock) | _block[0]);
+			}
+			else if constexpr (4 == nrBlocks) {
+				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
+				raw = fbitMask & ((_block[3] << (3 * bitsInBlock)) | (_block[2] << (2 * bitsInBlock)) | (_block[1] << bitsInBlock) | _block[0]);
+			}
+			else {
+				uint64_t mask{ 1 };
+				for (size_t i = 0; i < fbits; ++i) { 
+					if (test(nbits - 1ull - es - fbits + i)) {
+						raw |= mask;
+						mask <<= 1;
+					}
+				}
+			}
+		}
+		return raw;
+	}
 	// construct the significant from the encoding, returns normalization offset
 	inline constexpr size_t significant(blockbinary<fhbits, bt>& s, bool isNormal = true) const {
 		size_t shift = 0;
@@ -1203,19 +1236,25 @@ public:
 	explicit operator double() const { return to_native<double>(); }
 	explicit operator float() const { return to_native<float>(); }
 
+#ifdef NEVER
 	// normalize a non-special bfloat, that is, not a zero, inf, or nan, into a blocktriple
 	template<size_t tgtSize>
-	void generate_add_input(blocktriple<tgtSize>& v) const {
+	void generate_add_input(blocktriple<tgtSize, bt>& v) const {
 		bool _sign = sign();
 		int  _scale = scale();
 		// fraction bits are the bottom fbits in the raw encoding
 		// normal    encoding : 1.fffff
 		// subnormal encoding : 0.fffff
-
 	}
+#endif
+
 	// convert a bfloat to a blocktriple with the fraction format 01.ffffeeee
-	template<size_t tbits>
-	constexpr void normalize(blocktriple<tbits>& tgt) const {
+	// we are using the same block type so that we can use block copies to move bits around.
+	// Since we tend to have at least two exponent bits, this will lead to
+	// most bfloat<->blocktriple cases being efficient as the block types are aligned.
+	// The relationship between the source bfloat and target blocktriple is not
+	// arbitrary, enforce it: blocktriple fbits = bfloat (nbits - es - 1)
+	constexpr void normalize(blocktriple<fbits, bt>& tgt) const {
 		// test special cases
 		if (isnan()) {
 			tgt.setnan();
@@ -1227,27 +1266,89 @@ public:
 			tgt.setzero();
 		}
 		else {
+			tgt.setnormal(); // a blocktriple is always normalized
+			int scale = this->scale();
+			tgt.setsign(sign());
+			tgt.setscale(scale);
+			// set significant
+			// we are going to unify to the format 01.ffffeeee
+			// where 'f' is a fraction bit, and 'e' is an extension bit
+			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
 			if (isnormal()) {
-				// we are going to unify to the format 01.ffffeeee
-				// where 'f' is a fraction bit, and 'e' is an extension bit
-				// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
-				if constexpr (tbits < (size_t{ 2u } + fbits)) {
-					// we are contracting and thus need rounding
+				if constexpr (fbits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+					uint64_t raw = fraction_ull();
+					raw |= (1ull << fbits);
+					tgt.setbits(raw);
 				}
 				else {
-					// brute force copy of bits
-					size_t bit = tbits - 2;
-					tgt.setbit(bit--);
-					for (size_t i = 0; i < fbits; ++i) {
-						tgt.setbit(bit--, at(fbits - 1 - i));
-					}
-					tgt.setsign(sign());
-					tgt.setscale(scale());
+					// brute force copy of blocks
+					throw "block normalization not implemented yet";
+				}
+			}
+			else { // it is a subnormal encoding in this target bfloat
+				if constexpr (fbits < 64) {
+					uint64_t raw = fraction_ull();
+					int shift = MIN_EXP_NORMAL - scale;
+					raw <<= shift;
+					raw |= (1ull << fbits);
+					tgt.setbits(raw);
+				}
+				else {
+					// brute force copy of blocks
+					throw "block normalization not implemented yet";
 				}
 			}
 		}
 	}
 
+	constexpr void normalizeAddition(blocktriple<abits, bt>& tgt) const {
+		// test special cases
+		if (isnan()) {
+			tgt.setnan();
+		}
+		else if (isinf()) {
+			tgt.setinf();
+		}
+		else if (iszero()) {
+			tgt.setzero();
+		}
+		else {
+			tgt.setnormal(); // a blocktriple is always normalized
+			int scale = this->scale();
+			tgt.setsign(sign());
+			tgt.setscale(scale);
+			// set significant
+			// we are going to unify to the format 01.ffffeeee
+			// where 'f' is a fraction bit, and 'e' is an extension bit
+			// so that normalize can be used to generate blocktriples for add/sub/mul/div/sqrt
+			if (isnormal()) {
+				if constexpr (abits < 64) { // max 63 bits of fraction to yield 64bit of raw significant bits
+					uint64_t raw = fraction_ull();
+					raw <<= (abits - fbits);
+					raw |= (1ull << abits);
+					tgt.setbits(raw);
+				}
+				else {
+					// brute force copy of blocks
+					throw "block normalization not implemented yet";
+				}
+			}
+			else { // it is a subnormal encoding in this target bfloat
+				if constexpr (abits < 64) {
+					uint64_t raw = fraction_ull();
+					raw <<= (abits - fbits);
+					int shift = MIN_EXP_NORMAL - scale;
+					raw <<= shift;
+					raw |= (1ull << fbits);
+					tgt.setbits(raw);
+				}
+				else {
+					// brute force copy of blocks
+					throw "block normalization not implemented yet";
+				}
+			}
+		}
+	}
 protected:
 	// HELPER methods
 
@@ -2138,7 +2239,7 @@ inline std::string to_binary(const bfloat<nbits, es, bt>& number, bool nibbleMar
 template<size_t nbits, size_t es, typename bt>
 inline std::string to_triple(const bfloat<nbits, es, bt>& number, bool nibbleMarket = true) {
 	std::stringstream s;
-	blocktriple<bfloat<nbits, es, bt>::fbits + 2> triple;
+	blocktriple<bfloat<nbits, es, bt>::fbits, bt> triple;
 	number.normalize(triple);
 	s << to_triple(triple);
 	return s.str();

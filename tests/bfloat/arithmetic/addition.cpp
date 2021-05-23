@@ -46,8 +46,10 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase< bfloat<8, 2, uint8_t>, float>(0.03125f, 0.03125f);
+	GenerateTestCase< bfloat<8, 2, uint8_t>, float>(1.0f, 1.0f);
 	return 0;
+	GenerateTestCase< bfloat<8, 2, uint8_t>, float>(0.03125f, 0.03125f);
+
 	GenerateTestCase< bfloat<16, 8, uint16_t>, double>(INFINITY, INFINITY);
 
 
