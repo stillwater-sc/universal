@@ -233,7 +233,7 @@ public:
 	}
 
 	// specific value constructor
-	constexpr bfloat(const SpecificValue code) {
+	constexpr bfloat(const SpecificValue code) : _block{ 0 } {
 		switch (code) {
 		case SpecificValue::maxpos:
 			maxpos();
@@ -1013,7 +1013,7 @@ public:
 		exponent(e);
 		return !e.iszero() && !isinf() && !isnan();
 	}
-	inline constexpr bool issubnormal() const noexcept {
+	inline constexpr bool isdenorm() const noexcept {
 		blockbinary<es, bt> e;
 		exponent(e);
 		return e.iszero();

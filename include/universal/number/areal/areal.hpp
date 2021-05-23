@@ -169,7 +169,7 @@ public:
 	}
 
 	// specific value constructor
-	constexpr areal(const SpecificValue code) {
+	constexpr areal(const SpecificValue code) : _block{ 0 } {
 		switch (code) {
 		case SpecificValue::maxpos:
 			maxpos();

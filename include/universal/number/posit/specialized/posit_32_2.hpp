@@ -43,7 +43,7 @@ public:
 	posit& operator=(posit&&) = default;
 
 	// specific value constructor
-	constexpr posit(const SpecificValue code) {
+	constexpr posit(const SpecificValue code) : _bits(0) {
 		switch (code) {
 		case SpecificValue::maxpos:
 			maxpos();
