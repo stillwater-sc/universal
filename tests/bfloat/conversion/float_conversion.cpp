@@ -82,7 +82,7 @@ try {
 			f *= 2.0f;
 		}
 	}
-	return 0;
+
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 4, 1, uint8_t>, float >(false), tag, "bfloat<4,1,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 6, 2, uint8_t>, float >(false), tag, "bfloat<6,2,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 8, 3, uint8_t>, float >(false), tag, "bfloat<8,3,uint8_t>");

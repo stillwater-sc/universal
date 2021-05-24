@@ -24,8 +24,6 @@ try {
 
 #if MANUAL_TESTING
 
-
-	// manual exhaustive test
 	//nrOfFailedTestCases += ReportTestResult(VerifyAddition< bfloat<8, 2, uint8_t> >("Manual Testing", true), "bfloat<8,2,uint8_t>", "addition");
 
 	

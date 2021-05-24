@@ -118,7 +118,8 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, bfloat<nb
 		tgt.setsign(src.sign()); // preserve sign
 	}
 	else {
-		int scale = src.scale();
+		int64_t scale   = src.scale();
+		int64_t expBias = bfloat<nbits, es, bt>::EXP_BIAS;
 		if (scale < bfloat<nbits, es, bt>::MIN_EXP_SUBNORMAL) {
 			tgt.setzero();
 			return;
@@ -133,11 +134,6 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, bfloat<nb
 			return;
 		}
 
-		if constexpr (nbits < 65) {
-			// we can use a uint64_t to construct the bfloat
-			uint64_t raw{ 0 };
-
-		}
 		// tgt.clear();
 		if constexpr (nbits < 65) {
 			// we can use a uint64_t to construct the bfloat
@@ -150,11 +146,11 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, bfloat<nb
 			}
 			else {
 				// we are a normal number
-				raw &= scale + bfloat<nbits, es, bt>::EXP_BIAS;
+				raw |= scale + expBias;  // this is guaranteed to be an unsigned string of bits
 			}
 			// construct the fraction
 			raw <<= nbits - es - 1;
-			raw &= src.fraction_ull();
+			raw |= src.fraction_ull();
 			tgt.setbits(raw);
 		}
 		else {
@@ -183,6 +179,8 @@ public:
 	static constexpr size_t bitsInByte = 8ull;
 	static constexpr size_t bitsInBlock = sizeof(bt) * bitsInByte;
 	static_assert(bitsInBlock <= 64, "storage unit for block arithmetic needs to be <= uint64_t"); // TODO: carry propagation on uint64_t requires assembly code
+	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
+	static constexpr bt ALL_ONES = bt(~0); // block type specific all 1's value
 
 	static constexpr size_t nbits = _nbits;
 	static constexpr size_t es = _es;
@@ -193,12 +191,14 @@ public:
 	static constexpr size_t divbits = 3ull * fhbits + 4ull;// size of the divider output
 
 	static constexpr size_t nrBlocks = 1ull + ((nbits - 1ull) / bitsInBlock);
-	static constexpr size_t storageMask = (0xFFFFFFFFFFFFFFFFull >> (64ull - bitsInBlock));
-
 	static constexpr size_t MSU = nrBlocks - 1ull; // MSU == Most Significant Unit, as MSB is already taken
-	static constexpr bt ALL_ONES = bt(~0);
-	static constexpr bt MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
+	static constexpr bt     MSU_MASK = (ALL_ONES >> (nrBlocks * bitsInBlock - nbits));
 	static constexpr size_t bitsInMSU = bitsInBlock - (nrBlocks * bitsInBlock - nbits);
+	static constexpr size_t fBlocks = 1ull + ((fbits - 1ull) / bitsInBlock); // nr of blocks with fraction bits
+	static constexpr size_t FSU = fBlocks - 1ull;  // FSU = Fraction Significant Unit: the index of the block that contains the most significant fraction bits
+	static constexpr bt     FSU_MASK = (ALL_ONES >> (fBlocks * bitsInBlock - fbits));
+	static constexpr size_t bitsInFSU = bitsInBlock - (fBlocks * bitsInBlock - fbits);
+
 	static constexpr bt SIGN_BIT_MASK = bt(bt(1ull) << ((nbits - 1ull) % bitsInBlock));
 	static constexpr bt LSB_BIT_MASK = bt(1ull);
 	static constexpr bool MSU_CAPTURES_E = (1ull + es) <= bitsInMSU;
@@ -1048,6 +1048,8 @@ public:
 
 	// helper debug function
 	void constexprClassParameters() const {
+		std::cout << "-------------------------------------------------------------\n";
+		std::cout << "type              : " << typeid(*this).name() << '\n';
 		std::cout << "nbits             : " << nbits << '\n';
 		std::cout << "es                : " << es << std::endl;
 		std::cout << "ALL_ONES          : " << to_binary(ALL_ONES, 0, true) << '\n';
@@ -1065,6 +1067,10 @@ public:
 		std::cout << "MAX_EXP           : " << MAX_EXP << '\n';
 		std::cout << "MIN_EXP_NORMAL    : " << MIN_EXP_NORMAL << '\n';
 		std::cout << "MIN_EXP_SUBNORMAL : " << MIN_EXP_SUBNORMAL << '\n';
+		std::cout << "fraction Blocks   : " << fBlocks << '\n';
+		std::cout << "bits in FSU       : " << bitsInFSU << '\n';
+		std::cout << "FSU               : " << FSU << '\n';
+		std::cout << "FSU MASK          : " << to_binary(FSU_MASK, 0, true) << '\n';
 	}
 	// extract the sign field from the encoding
 	inline constexpr void sign(bool& s) const {
@@ -1282,7 +1288,30 @@ public:
 				}
 				else {
 					// brute force copy of blocks
-					throw "block normalization not implemented yet";
+					if constexpr (1 == fBlocks) {
+						tgt.setblock(0, _block[0] & FSU_MASK);
+					}
+					else if constexpr (2 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1] & FSU_MASK);
+					}
+					else if constexpr (3 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2] & FSU_MASK);
+					}
+					else if constexpr (4 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else {
+						for (size_t i = 0; i < FSU; ++i) {
+							tgt.setblock(i, _block[i]);
+						}
+						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+					}
 				}
 			}
 			else { // it is a subnormal encoding in this target bfloat
@@ -1295,7 +1324,30 @@ public:
 				}
 				else {
 					// brute force copy of blocks
-					throw "block normalization not implemented yet";
+					if constexpr (1 == fBlocks) {
+						tgt.setblock(0, _block[0] & FSU_MASK);
+					}
+					else if constexpr (2 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1] & FSU_MASK);
+					}
+					else if constexpr (3 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2] & FSU_MASK);
+					}
+					else if constexpr (4 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else {
+						for (size_t i = 0; i < FSU; ++i) {
+							tgt.setblock(i, _block[i]);
+						}
+						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+					}
 				}
 			}
 		}
@@ -1330,7 +1382,30 @@ public:
 				}
 				else {
 					// brute force copy of blocks
-					throw "block normalization not implemented yet";
+					if constexpr (1 == fBlocks) {
+						tgt.setblock(0, _block[0] & FSU_MASK);
+					}
+					else if constexpr (2 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1] & FSU_MASK);
+					}
+					else if constexpr (3 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2] & FSU_MASK);
+					}
+					else if constexpr (4 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else {
+						for (size_t i = 0; i < FSU; ++i) {
+							tgt.setblock(i, _block[i]);
+						}
+						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+					}
 				}
 			}
 			else { // it is a subnormal encoding in this target bfloat
@@ -1344,7 +1419,30 @@ public:
 				}
 				else {
 					// brute force copy of blocks
-					throw "block normalization not implemented yet";
+					if constexpr (1 == fBlocks) {
+						tgt.setblock(0, _block[0] & FSU_MASK);
+					}
+					else if constexpr (2 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1] & FSU_MASK);
+					}
+					else if constexpr (3 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2] & FSU_MASK);
+					}
+					else if constexpr (4 == fBlocks) {
+						tgt.setblock(0, _block[0]);
+						tgt.setblock(1, _block[1]);
+						tgt.setblock(2, _block[2]);
+						tgt.setblock(3, _block[3] & FSU_MASK);
+					}
+					else {
+						for (size_t i = 0; i < FSU; ++i) {
+							tgt.setblock(i, _block[i]);
+						}
+						tgt.setblock(FSU, _block[FSU] & FSU_MASK);
+					}
 				}
 			}
 		}
@@ -1467,9 +1565,10 @@ protected:
 		}
 		// set the exponent
 		uint32_t biasedExponent{ 0 };
-		int shiftRight = 23 - static_cast<int>(fbits); // this is the bit shift to get the MSB of the src to the MSB of the tgt
+		constexpr int shiftRight = 23 - static_cast<int>(fbits); // this is the bit shift to get the MSB of the src to the MSB of the tgt
 		int adjustment{ 0 };
-		uint32_t mask = 0x007F'FFFFu >> fbits; // mask for rounding
+		uint32_t mask{ 0x007F'FFFFu };
+		if constexpr (fbits < 23) mask >>= fbits; else mask = 0; // mask for rounding
 		if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
 			// this number is a subnormal number in this representation
 			// but it might be a normal number in IEEE single precision (float) representation
@@ -1486,7 +1585,7 @@ protected:
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
 				// -exponent because we are right shifting and exponent in this range is negative
 				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment required for subnormal representation due to the scale of the input number, i.e. the exponent of 2^-adjustment
-				if (shiftRight > 0) {		// if true we need to round
+				if constexpr (shiftRight > 0) {		// if true we need to round
 					//  ... lsb | guard  round sticky   round
 					//       x     0       x     x       down
 					//       0     1       0     0       down  round to even
@@ -1557,7 +1656,7 @@ protected:
 				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
 				// -exponent because we are right shifting and exponent in this range is negative
 				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
-				if (shiftRight > 0) {		// if true we need to round
+				if constexpr (shiftRight > 0) {		// if true we need to round
 					std::cout << "conversion of subnormal IEEE float to subnormal bfloat not implemented yet\n";
 				}
 				else { // all bits of the float go into this representation and need to be shifted up

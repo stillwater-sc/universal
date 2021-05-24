@@ -48,7 +48,7 @@ namespace sw::universal {
 			if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, testValue);
 		}
 		else {
-			if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, testValue);
+			// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, testValue);
 		}
 		return fail;
 	}
@@ -124,14 +124,14 @@ namespace sw::universal {
 
 	*/
 
-/// <summary>
-/// enumerate all conversion cases for a TestType
-/// </summary>
-/// <typeparam name="TestType">the test configuration</typeparam>
-/// <typeparam name="RefType">the reference configuration</typeparam>
-/// <param name="tag">string to indicate what is being tested</param>
-/// <param name="bReportIndividualTestCases">if true print results of each test case. Default is false.</param>
-/// <returns>number of failed test cases</returns>
+	/// <summary>
+	/// enumerate all conversion cases for a TestType
+	/// </summary>
+	/// <typeparam name="TestType">the test configuration</typeparam>
+	/// <typeparam name="RefType">the reference configuration</typeparam>
+	/// <param name="tag">string to indicate what is being tested</param>
+	/// <param name="bReportIndividualTestCases">if true print results of each test case. Default is false.</param>
+	/// <returns>number of failed test cases</returns>
 	template<typename TestType, typename SrcType = double>
 	int VerifyBfloatConversion(bool bReportIndividualTestCases) {
 		// we are going to generate a test set that consists of all configs and their midpoints

@@ -197,6 +197,9 @@ public:
 		// do not clear the nan/inf/zero booleans: caller must manage
 		_significant.setbits(raw);
 	}
+	constexpr void setblock(size_t i, const bt& block) {
+		_significant.setblock(i, block);
+	}
 
 	// selectors
 	inline constexpr bool isnan()       const noexcept { return _nan; }
