@@ -120,7 +120,7 @@ try {
 #endif // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << '\n';
+	std::cerr << "Caught exception: " << msg << '\n';
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

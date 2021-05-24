@@ -205,7 +205,7 @@ try {
 	return (nrOfFailedTestCases == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::posit_arithmetic_exception& err) {
