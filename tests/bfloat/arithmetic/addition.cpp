@@ -45,13 +45,28 @@ try {
 
 #if MANUAL_TESTING
 
+	// helper to get all the constexpr values for a particular bfloat printed
+	bfloat < 8, 2, uint8_t > a, b, c, cref;
+	a.setzero();
+//	b.setnan(NAN_TYPE_SIGNALLING);
+	b.setnan(NAN_TYPE_QUIET);
+	b.setbits(0x7f);
+	c = a + b;
+	float _a = float(a);
+	float _b = float(b);
+	float _c = _a + _b;
+	cref = c;
+	std::cout << c << " vs " << _c << " vs " << cref << std::endl;
+	if (cref == c) std::cout << "PASS\n";
+
+//	a.constexprClassParameters();
+
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase< bfloat<8, 2, uint8_t>, float>(1.0f, 1.0f);
-	GenerateTestCase< bfloat<8, 2, uint8_t>, float>(0.03125f, 0.03125f);
+	GenerateTestCase< bfloat<8, 2, uint8_t>, float>(0.03125f, 0.0625f);
 	GenerateTestCase< bfloat<16, 8, uint16_t>, double>(INFINITY, INFINITY);
 
-
-//	nrOfFailedTestCases += ReportTestResult(VerifyAddition< bfloat<8, 2, uint8_t> >(tag, true), "bfloat<8,2,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< bfloat<8, 2, uint8_t> >(tag, true), "bfloat<8,2,uint8_t>", "addition");
 
 	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode

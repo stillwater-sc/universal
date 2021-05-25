@@ -106,6 +106,7 @@ int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
 #endif // THROW_ARITHMETIC_EXCEPTION
 			cref = ref;
 			if (result != cref) {
+				if (ref == 0) continue; // ignored as compiler optimizes away negative zero
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "+", a, b, cref, result);
 			}

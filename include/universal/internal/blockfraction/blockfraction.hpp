@@ -415,9 +415,41 @@ public:
 	}
 	inline constexpr uint64_t fraction_ull() const {
 		uint64_t raw{ 0 };
-		if constexpr (nrBlocks == 1) {
+		if constexpr (1 == nrBlocks) {
 			raw = _block[MSU];
-			raw &= (storageMask >> 2);   // remove the hidden bits
+			raw &= (MSU_MASK >> 2);   // remove the hidden bits
+		}
+		else if constexpr (2 == nrBlocks) {
+			raw = _block[MSU];
+			raw &= (MSU_MASK >> 2);   // remove the hidden bits
+			raw <<= bitsInBlock;
+			raw |= _block[0];
+		}
+		else if constexpr (3 == nrBlocks) {
+			raw = _block[MSU];
+			raw &= (MSU_MASK >> 2);   // remove the hidden bits
+			raw <<= bitsInBlock;
+			raw |= _block[1];
+			raw <<= bitsInBlock;
+			raw |= _block[0];
+		}
+		else if constexpr (4 == nrBlocks) {
+			raw = _block[MSU];
+			raw &= (MSU_MASK >> 2);   // remove the hidden bits
+			raw <<= bitsInBlock;
+			raw |= _block[2];
+			raw <<= bitsInBlock;
+			raw |= _block[1];
+			raw <<= bitsInBlock;
+			raw |= _block[0];
+		}
+		else {
+			raw = _block[MSU];
+			raw &= (MSU_MASK >> 2);   // remove the hidden bits
+			for (int i = MSU - 1; i >= 0; ++i) {
+				raw <<= bitsInBlock;
+				raw |= _block[i];
+			}
 		}
 		return raw;
 	}
