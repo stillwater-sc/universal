@@ -1295,7 +1295,7 @@ protected:
 		extractFields(rhs, s, rawExponent, rawFraction);
 
 		// special case handling
-		if (rawExponent == ieee754_parameters<Real>::eallset) { // nan and inf
+		if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
 			if ((rawFraction & 1ull) == 1ull) {
 				// 1.11111111.00000000.......00000001 signalling nan
 				// 0.11111111.00000000000000000000001 signalling nan
@@ -1305,7 +1305,7 @@ protected:
 				setnan(NAN_TYPE_SIGNALLING);
 				return *this;
 			}
-			if (rawFraction == ieee754_parameters<Real>::fmsb) {
+			if (rawFraction == ieee754_parameter<Real>::fmsb) {
 				// 1.11111111.10000000.......00000000 quiet nan
 				// 0.11111111.10000000.......00000000 quiet nan
 				setnan(NAN_TYPE_QUIET);

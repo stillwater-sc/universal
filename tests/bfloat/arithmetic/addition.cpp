@@ -38,7 +38,7 @@ void test754functions(Real value) {
 	cout << to_binary(value) << '\n';
 	cout << to_triple(value) << '\n';
 	cout << to_base2_scientific(value) << '\n';
-	cout << color_print<Real>(value) << '\n';
+	cout << color_print(value) << '\n';
 }
 
 #define MANUAL_TESTING 1
