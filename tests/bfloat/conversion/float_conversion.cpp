@@ -77,8 +77,8 @@ try {
 		f = 4 * 1024.0 * 1024.0;
 		for (size_t i = 0; i < 10; ++i) {
 			float fulp = ulp(f);
-			std::cout << to_binary(f) << " : " << f << endl;
-			std::cout << to_binary(fulp) << " : " << fulp << endl;
+			std::cout << to_binary(f, true) << " : " << f << endl;
+			std::cout << to_binary(fulp, true) << " : " << fulp << endl;
 			f *= 2.0f;
 		}
 	}

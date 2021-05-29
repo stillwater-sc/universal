@@ -12,22 +12,58 @@
 
 namespace sw::universal {
 
+template<typename Real>
+class ieee754_parameters {
+public:
+	static constexpr int ebits = 0;
+	static constexpr int bias = 0;
+	static constexpr uint64_t emask = 0;
+	static constexpr uint64_t eallset = 0;
+	static constexpr int fbits = 0;
+	static constexpr int fmask = 0;
+};
+template<>
+class ieee754_parameters<float> {
+public:
+	static constexpr uint64_t smask   = 0x8000'0000ull;
+	static constexpr int      ebits   = 8;
+	static constexpr int      bias    = 127;
+	static constexpr uint64_t emask   = 0x7F80'0000ull;
+	static constexpr uint64_t eallset = 0xFFull;
+	static constexpr int      fbits   = 23;
+	static constexpr uint64_t fmask   = 0x007F'FFFFull;
+};
+template<>
+class ieee754_parameters<double> {
+public:
+	static constexpr uint64_t smask   = 0x8000'0000'0000'0000ull;
+	static constexpr int      ebits   = 11;
+	static constexpr int      bias    = 1023;
+	static constexpr uint64_t emask   = 0x7FF0'0000'0000'0000ull;
+	static constexpr uint64_t eallset = 0x7FF;
+	static constexpr int      fbits   = 52;
+	static constexpr uint64_t fmask   = 0x000F'FFFF'FFFF'FFFFull;
+};
+
 ////////////////////////////////////////////////////////////////////////
 // numerical helpers
 
-inline constexpr void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) {
-	// normal number
-	uint32_t bc = std::bit_cast<uint32_t>(value);
-	s = (0x8000'0000u & bc);
-	rawExponentBits = (0x7F80'0000u & bc) >> 23;
-	rawFractionBits = (0x007F'FFFFu & bc);
+template<typename Real>
+inline constexpr void extractFields(Real value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
+	// empty general case
 }
-
-inline constexpr void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) {
-	uint64_t bc = std::bit_cast<uint64_t>(value);
-	s = (0x8000'0000'0000'0000ull & bc);
-	rawExponentBits = (0x7FF0'0000'0000'0000ull & bc) >> 52;
-	rawFractionBits = (0x000F'FFFF'FFFF'FFFFull & bc);
+template<>
+inline constexpr void extractFields(float value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
+	uint64_t bc = std::bit_cast<uint32_t, float>(value);
+	s = (ieee754_parameters<float>::smask & bc);
+	rawExponentBits = (ieee754_parameters<float>::emask & bc) >> ieee754_parameters<float>::fbits;
+	rawFractionBits = (ieee754_parameters<float>::fmask & bc);
+}
+inline constexpr void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
+	uint64_t bc = std::bit_cast<uint64_t, double>(value);
+	s = (ieee754_parameters<double>::smask & bc);
+	rawExponentBits = (ieee754_parameters<double>::emask & bc) >> ieee754_parameters<double>::fbits;
+	rawFractionBits = (ieee754_parameters<double>::fmask & bc);
 }
 
 // generate a hex formatted string for a native IEEE floating point
@@ -45,9 +81,7 @@ inline std::string to_hex(Real number) {
 }
 
 // generate a binary string for a native IEEE floating point
-template<typename Real,
-	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
->
+template<typename Real>
 inline std::string to_binary(Real number, bool bNibbleMarker = false) {
 	std::stringstream s;
 
@@ -56,27 +90,14 @@ inline std::string to_binary(Real number, bool bNibbleMarker = false) {
 	uint64_t rawFraction{ 0 };
 	extractFields(number, sign, rawExponent, rawFraction);
 
-	int maxExponentBits{ 0 };
-	int maxFractionBits{ 0 };
-	if constexpr (sizeof(Real) == 4) {
-		// single precision float
-		maxExponentBits = IEEE_FLOAT_EXPONENT_BITS;
-		maxFractionBits = IEEE_FLOAT_FRACTION_BITS;
-	}
-	else if constexpr (sizeof(Real) == 8) {
-		// double precision float
-		maxExponentBits = IEEE_DOUBLE_EXPONENT_BITS;
-		maxFractionBits = IEEE_DOUBLE_FRACTION_BITS;
-	}
-
 	s << 'b';
 	// print sign bit
 	s << (sign ? '1' : '0') << '.';
 
 	// print exponent bits
 	{
-		uint32_t mask = (uint32_t(1) << (maxExponentBits-1));
-		for (int i = maxExponentBits - 1; i >= 0; --i) {
+		uint32_t mask = (uint32_t(1) << (ieee754_parameters<Real>::ebits-1));
+		for (int i = ieee754_parameters<Real>::ebits - 1; i >= 0; --i) {
 			s << ((rawExponent & mask) ? '1' : '0');
 			if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
 			mask >>= 1;
@@ -86,8 +107,8 @@ inline std::string to_binary(Real number, bool bNibbleMarker = false) {
 	s << '.';
 
 	// print fraction bits
-	uint32_t mask = (uint32_t(1) << (maxFractionBits - 1));
-	for (int i = maxFractionBits - 1; i >= 0; --i) {
+	uint64_t mask = (uint64_t(1) << (ieee754_parameters<Real>::fbits - 1));
+	for (int i = ieee754_parameters<Real>::fbits - 1; i >= 0; --i) {
 		s << ((rawFraction & mask) ? '1' : '0');
 		if (bNibbleMarker && i != 0 && (i % 4) == 0) s << '\'';
 		mask >>= 1;
@@ -108,25 +129,6 @@ inline std::string to_triple(Real number) {
 	uint64_t rawFraction{ 0 };
 	extractFields(number, sign, rawExponent, rawFraction);
 
-	int maxExponentBits{ 0 };
-	int maxFractionBits{ 0 };
-	int exponentBias{ 0 };
-	uint64_t exponentMask{ 0 };
-	if constexpr (sizeof(Real) == 4) {
-		// single precision float
-		maxExponentBits = IEEE_FLOAT_EXPONENT_BITS;
-		maxFractionBits = IEEE_FLOAT_FRACTION_BITS;
-		exponentBias = 127;
-		exponentMask = 0xFF;
-	}
-	else if constexpr (sizeof(Real) == 8) {
-		// double precision float
-		maxExponentBits = IEEE_DOUBLE_EXPONENT_BITS;
-		maxFractionBits = IEEE_DOUBLE_FRACTION_BITS;
-		exponentBias = 1023;
-		exponentMask = 0x7FF;
-	}
-
 	// print sign bit
 	s << '(' << (sign ? '-' : '+') << ',';
 
@@ -138,15 +140,15 @@ inline std::string to_triple(Real number) {
 	if (rawExponent == 0) {
 		s << "exp=0,";
 	}
-	else if (rawExponent == exponentMask) {
+	else if (rawExponent == ieee754_parameters<Real>::eallset) {
 		s << "exp=1, ";
 	}
-	int scale = int(rawExponent) - exponentBias;
+	int scale = static_cast<int>(rawExponent) - ieee754_parameters<Real>::bias;
 	s << scale << ',';
 
 	// print fraction bits
-	uint32_t mask = (uint32_t(1) << (maxFractionBits - 1));
-	for (int i = (maxFractionBits - 1); i >= 0; --i) {
+	uint64_t mask = (uint64_t(1) << (ieee754_parameters<Real>::fbits - 1));
+	for (int i = (ieee754_parameters<Real>::fbits - 1); i >= 0; --i) {
 		s << ((rawFraction & mask) ? '1' : '0');
 		mask >>= 1;
 	}
@@ -166,35 +168,17 @@ inline std::string to_base2_scientific(Real number) {
 	uint64_t rawFraction{ 0 };
 	extractFields(number, sign, rawExponent, rawFraction);
 
-	int maxExponentBits{ 0 };
-	int maxFractionBits{ 0 };
-	int exponentBias{ 0 };
-	uint64_t exponentMask{ 0 };
-	if constexpr (sizeof(Real) == 4) {
-		// single precision float
-		maxExponentBits = IEEE_FLOAT_EXPONENT_BITS;
-		maxFractionBits = IEEE_FLOAT_FRACTION_BITS;
-		exponentBias = 127;
-		exponentMask = 0xFF;
-	}
-	else if constexpr (sizeof(Real) == 8) {
-		// double precision float
-		maxExponentBits = IEEE_DOUBLE_EXPONENT_BITS;
-		maxFractionBits = IEEE_DOUBLE_FRACTION_BITS;
-		exponentBias = 1023;
-		exponentMask = 0x7FF;
-	}
-
 	s << (sign == 1 ? "-" : "+") << "1.";
-	uint64_t mask = (uint64_t(1) << (maxFractionBits - 1));
-	for (int i = (maxFractionBits - 1); i >= 0; --i) {
+	uint64_t mask = (uint64_t(1) << (ieee754_parameters<Real>::fbits - 1));
+	for (int i = (ieee754_parameters<Real>::fbits - 1); i >= 0; --i) {
 		s << ((rawFraction & mask) ? '1' : '0');
 		mask >>= 1;
 	}
-	s << "e2^" << std::showpos << (rawExponent - exponentBias);
+	s << "e2^" << std::showpos << (rawExponent - ieee754_parameters<Real>::bias);
 
 	return s.str();
 }
+
 
 // generate a color coded binary string for a native single precision IEEE floating point
 template<typename Real,
@@ -207,25 +191,6 @@ inline std::string color_print(Real number) {
 	uint64_t rawExponent{ 0 };
 	uint64_t rawFraction{ 0 };
 	extractFields(number, sign, rawExponent, rawFraction);
-
-	int maxExponentBits{ 0 };
-	int maxFractionBits{ 0 };
-	int exponentBias{ 0 };
-	uint64_t exponentMask{ 0 };
-	if constexpr (sizeof(Real) == 4) {
-		// single precision float
-		maxExponentBits = IEEE_FLOAT_EXPONENT_BITS;
-		maxFractionBits = IEEE_FLOAT_FRACTION_BITS;
-		exponentBias = 127;
-		exponentMask = 0xFF;
-	}
-	else if constexpr (sizeof(Real) == 8) {
-		// double precision float
-		maxExponentBits = IEEE_DOUBLE_EXPONENT_BITS;
-		maxFractionBits = IEEE_DOUBLE_FRACTION_BITS;
-		exponentBias = 1023;
-		exponentMask = 0x7FF;
-	}
 
 	Color red(ColorCode::FG_RED);
 	Color yellow(ColorCode::FG_YELLOW);
@@ -240,8 +205,8 @@ inline std::string color_print(Real number) {
 
 	// print exponent bits
 	{
-		uint64_t mask = (1 << (maxExponentBits - 1));
-		for (int i = (maxExponentBits - 1); i >= 0; --i) {
+		uint64_t mask = (1 << (ieee754_parameters<Real>::ebits - 1));
+		for (int i = (ieee754_parameters<Real>::ebits - 1); i >= 0; --i) {
 			s << cyan << ((rawExponent & mask) ? '1' : '0');
 			if (i > 0 && i % 4 == 0) s << cyan << '\'';
 			mask >>= 1;
@@ -251,8 +216,8 @@ inline std::string color_print(Real number) {
 	s << '.';
 
 	// print fraction bits
-	uint64_t mask = (uint64_t(1) << (maxFractionBits - 1));
-	for (int i = (maxFractionBits - 1); i >= 0; --i) {
+	uint64_t mask = (uint64_t(1) << (ieee754_parameters<Real>::fbits - 1));
+	for (int i = (ieee754_parameters<Real>::fbits - 1); i >= 0; --i) {
 		s << magenta << ((rawFraction & mask) ? '1' : '0');
 		if (i > 0 && i % 4 == 0) s << magenta << '\'';
 		mask >>= 1;
