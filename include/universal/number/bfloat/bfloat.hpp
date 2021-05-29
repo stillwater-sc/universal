@@ -35,7 +35,6 @@
 #ifndef BIT_CAST_SUPPORT
 #define BIT_CAST_SUPPORT 1
 #define CONSTEXPRESSION constexpr
-#include <bit>
 #else
 #ifndef CONSTEXPRESSION
 #define CONSTEXPRESSION
@@ -52,7 +51,6 @@
 
 // supporting types and functions
 #include <universal/native/ieee754.hpp>
-#include <universal/native/constexpr754.hpp>
 #include <universal/native/subnormal.hpp>
 #include <universal/native/bit_functions.hpp>
 #include <universal/native/integers.hpp>

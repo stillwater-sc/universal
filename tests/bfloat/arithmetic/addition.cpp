@@ -30,6 +30,17 @@ void GenerateTestCase(Ty _a, Ty _b) {
 	std::cout << std::setprecision(5);
 }
 
+template<typename Real>
+void test754functions(Real value) {
+	using namespace std;
+	using namespace sw::universal;
+	cout << to_hex(value) << '\n';
+	cout << to_binary(value) << '\n';
+	cout << to_triple(value) << '\n';
+	cout << to_base2_scientific(value) << '\n';
+	cout << color_print<Real>(value) << '\n';
+}
+
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
@@ -53,6 +64,13 @@ try {
 	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
 	// FAIL              0.03125 + 0.5 != 0.53125 golden reference is               0.5625 b0.00.10001 vs b0.00.10010
 	GenerateTestCase< bfloat<8, 2, uint8_t>, float>(0.03125f, 0.5f);
+
+	std::cout << "single precision IEEE-754\n";
+	float f = 1.06125f;
+	test754functions(f);
+	std::cout << "double precision IEEE-754\n";
+	double d = 1.06125;
+	test754functions(d);
 
 	{
 		float f0 = 0.5f;
