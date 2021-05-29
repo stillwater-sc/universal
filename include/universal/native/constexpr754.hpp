@@ -20,7 +20,8 @@ public:
 	static constexpr uint64_t emask = 0;
 	static constexpr uint64_t eallset = 0;
 	static constexpr int fbits = 0;
-	static constexpr int fmask = 0;
+	static constexpr uint64_t fmask = 0;
+	static constexpr uint64_t fmsb = 0;
 };
 template<>
 class ieee754_parameters<float> {
@@ -32,6 +33,7 @@ public:
 	static constexpr uint64_t eallset = 0xFFull;
 	static constexpr int      fbits   = 23;
 	static constexpr uint64_t fmask   = 0x007F'FFFFull;
+	static constexpr uint64_t fmsb    = 0x0040'0000ull;
 };
 template<>
 class ieee754_parameters<double> {
@@ -43,6 +45,7 @@ public:
 	static constexpr uint64_t eallset = 0x7FF;
 	static constexpr int      fbits   = 52;
 	static constexpr uint64_t fmask   = 0x000F'FFFF'FFFF'FFFFull;
+	static constexpr uint64_t fmsb    = 0x0008'0000'0000'0000ull;
 };
 
 ////////////////////////////////////////////////////////////////////////

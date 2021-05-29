@@ -35,6 +35,37 @@ void EnumerateSubnormals(float topOfRange, size_t bitRange) {
 	}
 }
 
+template<typename BfloatType>
+void Test1() 
+{
+	BfloatType a;
+	a.constexprClassParameters();
+
+	float testValue = 8.0f;
+	a = testValue;
+	float f = float(a);
+	std::cout << to_binary(a) << " : " << a << " : " << f << " : " << std::setprecision(8) << testValue << '\n';
+}
+
+template<typename BfloatType>
+void Test2()
+{
+	using namespace sw::universal;
+	
+	bfloat<8, 6, uint8_t> a;
+	float testValue = 14680063.0f;
+	a = testValue;
+	float f = float(a);
+	std::cout << to_binary(a) << " : " << a << " : " << f << " : " << std::setprecision(8) << testValue << '\n';
+	f = 4 * 1024.0 * 1024.0;
+	for (size_t i = 0; i < 10; ++i) {
+		float fulp = ulp(f);
+		std::cout << to_binary(f, true) << " : " << f << '\n';
+		std::cout << to_binary(fulp, true) << " : " << fulp << '\n';
+		f *= 2.0f;
+	}
+}
+
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -59,31 +90,9 @@ try {
 #
 //	EnumerateSubnormals<bfloat<6, 2, uint8_t>>(1.0f, 6);
 
-	{
-		bfloat<6,2> a;
-		a.constexprClassParameters();
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 4, 1, uint8_t>, float >(true), tag, "bfloat<4,1,uint8_t>");
 
-		float testValue = 8.0f;
-		a = testValue;
-		float f = float(a);
-		std::cout << to_binary(a) << " : " << a << " : " << f << " : " << setprecision(8) << testValue << endl;
-	}
-	{
-		bfloat<8, 6, uint8_t> a;
-		float testValue = 14680063.0f;
-		a = testValue;
-		float f = float(a);
-		std::cout << to_binary(a) << " : " << a << " : " << f << " : " << setprecision(8) << testValue << endl;
-		f = 4 * 1024.0 * 1024.0;
-		for (size_t i = 0; i < 10; ++i) {
-			float fulp = ulp(f);
-			std::cout << to_binary(f, true) << " : " << f << endl;
-			std::cout << to_binary(fulp, true) << " : " << fulp << endl;
-			f *= 2.0f;
-		}
-	}
-
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 4, 1, uint8_t>, float >(false), tag, "bfloat<4,1,uint8_t>");
+	return 0;
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 6, 2, uint8_t>, float >(false), tag, "bfloat<6,2,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 8, 3, uint8_t>, float >(false), tag, "bfloat<8,3,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<10, 4, uint8_t>, float >(false), tag, "bfloat<10,4,uint8_t>");

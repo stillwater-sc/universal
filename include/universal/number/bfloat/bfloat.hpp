@@ -978,12 +978,14 @@ public:
 	// with a final rounding step.
 	template<typename TargetFloat>
 	TargetFloat to_native() const { 
-		TargetFloat v = TargetFloat(0);
+		TargetFloat v{ 0 };
 		if (iszero()) {
-			if (sign()) // the optimizer might destroy the sign
+			if (sign()) { // the optimizer might destroy the sign
 				return -TargetFloat(0);
-			else
+			}
+			else {
 				return TargetFloat(0);
+			}
 		}
 		else if (isnan()) {
 			v = sign() ? std::numeric_limits<TargetFloat>::signaling_NaN() : std::numeric_limits<TargetFloat>::quiet_NaN();
@@ -1286,6 +1288,40 @@ protected:
 	template<typename Real>
 	CONSTEXPRESSION bfloat& convert_ieee754(Real rhs) {
 		clear();
+		// extract raw IEEE-754 bits
+		bool s{ false };
+		uint64_t rawExponent{ 0 };
+		uint64_t rawFraction{ 0 };
+		extractFields(rhs, s, rawExponent, rawFraction);
+
+		// special case handling
+		if (rawExponent == ieee754_parameters<Real>::eallset) { // nan and inf
+			if ((rawFraction & 1ull) == 1ull) {
+				// 1.11111111.00000000.......00000001 signalling nan
+				// 0.11111111.00000000000000000000001 signalling nan
+				// MSVC
+				// 1.11111111.10000000.......00000001 signalling nan
+				// 0.11111111.10000000.......00000001 signalling nan
+				setnan(NAN_TYPE_SIGNALLING);
+				return *this;
+			}
+			if (rawFraction == ieee754_parameters<Real>::fmsb) {
+				// 1.11111111.10000000.......00000000 quiet nan
+				// 0.11111111.10000000.......00000000 quiet nan
+				setnan(NAN_TYPE_QUIET);
+				return *this;
+			}
+			if (rawFraction == 0ull) {
+				// 1.11111111.0000000.......000000000 -inf
+				// 0.11111111.0000000.......000000000 +inf
+				setinf(s);
+				return *this;
+			}
+		}
+		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
+			setbit(nbits - 1ull, s);
+			return *this;
+		}
 
 		return *this;
 	}

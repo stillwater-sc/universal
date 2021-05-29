@@ -22,7 +22,7 @@ namespace sw::universal {
 			<< " did not convert to "
 			<< std::setw(NUMBER_COLUMN_WIDTH) << reference << " instead it yielded  "
 			<< std::setw(NUMBER_COLUMN_WIDTH) << result
-			<< "  raw " << to_binary(result)
+			<< "  reference " << to_binary(reference) << " vs result " << to_binary(result)
 			<< std::setprecision(old_precision)
 			<< std::endl;
 	}
@@ -137,12 +137,18 @@ namespace sw::universal {
 		// we are going to generate a test set that consists of all configs and their midpoints
 		// we do this by enumerating a configuration that is 1-bit larger than the test configuration
 		// with the extra bit allocated to the fraction.
+		// 
 		// The sample values of the  larger configuration will be at the mid-point between the smaller 
 		// configuration sample values thus creating a full cover test set for value conversions.
-		// The precondition for this type of test is that the value conversion is verified.
-		// To generate the three test cases, we'll enumerate the exact value, and a perturbation slightly
-		// smaller from the midpoint that will round down, and one slightly larger that will round up,
-		// to test the rounding logic of the conversion.
+		// The precondition for this type of test is that the value conversion, that is,
+		// how to go from bfloat bits to IEEE-754 double values, is verified.
+		// 
+		// To test the rounding logic of the conversion we are going to 
+		// generate the three test cases per sample:
+		// 1- we'll enumerate the exact value, 
+		// 2- a perturbation slightly smaller from the midpoint that will round down, and
+		// 3- a perturbation slightly larger that will round up
+		// 
 		constexpr size_t nbits = TestType::nbits;
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
@@ -163,9 +169,9 @@ namespace sw::universal {
 
 		// execute the test
 		int nrOfFailedTests = 0;
-		RefType positive_minimum;
-		positive_minimum.minpos();
-		double dminpos = double(positive_minimum);
+		RefType refminpos;
+		refminpos.minpos();
+		double dminpos = double(refminpos);
 
 		// NUT: number under test
 		TestType nut, golden;
@@ -192,12 +198,12 @@ namespace sw::universal {
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else if (i == HALF - 3) { // encoding of maxpos
-					// ignore
-					if (bReportIndividualTestCases) std::cout << i << " : >" << da << " ignored\n";
+					// sample + delta -> saturates to maxpos
+					if (bReportIndividualTestCases) std::cout << i << " : >" << da << " : ref " << to_binary(ref) << " ignored\n";
 				}
 				else if (i == HALF - 1) { // encoding of qNaN
 					// ignore
-					if (bReportIndividualTestCases) std::cout << i << " : >" << da << " ignored\n";
+					if (bReportIndividualTestCases) std::cout << i << " : >" << da << " : ref " << to_binary(ref) << " ignored\n";
 				}
 				else if (i == HALF + 1) {
 					// special case of projecting to -0
@@ -208,11 +214,11 @@ namespace sw::universal {
 				}
 				else if (i == NR_TEST_CASES - 3) { // encoding of maxneg
 					// ignore
-					if (bReportIndividualTestCases) std::cout << i << " : < " << da << " ignored\n";
+					if (bReportIndividualTestCases) std::cout << i << " : < " << da << " : ref " << to_binary(ref) << " ignored\n";
 				}
 				else if (i == NR_TEST_CASES - 1) { // encoding of SIGNALLING NAN
-					// ignore
-					if (bReportIndividualTestCases) std::cout << i << " : < " << da << " ignored\n";
+					
+					if (bReportIndividualTestCases) std::cout << i << " : < " << da << " : ref " << to_binary(ref) << " ignored\n";
 				}
 				else {
 					// for odd values of i, we are between sample values of the NUT
@@ -226,7 +232,7 @@ namespace sw::universal {
 					
 					// round-up
 					if (i == HALF - 5 || i == NR_TEST_CASES - 5) {
-						if (bReportIndividualTestCases) std::cout << i << " : >" << da << " ignored\n";
+						if (bReportIndividualTestCases) std::cout << i << " : >" << da << " : ref " << ref << " ignored\n";
 					}
 					else {
 						testValue = SrcType(da + oneULP);
@@ -247,12 +253,22 @@ namespace sw::universal {
 					testValue = da;
 					nut = testValue;
 					golden.setzero(); // make certain we are +0
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					//nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					if (!nut.iszero()) {
+						std::cout << "number under test is not zero: " << to_binary(nut) << '\n';
+						++nrOfFailedTests;
+					}
 
 					// half of next rounds down to 0
 					testValue = SrcType(dminpos / 2.0);
 					nut = testValue;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					// special handling as optimizer can destroy the sign on 0
+					// nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					if (!nut.iszero()) {
+						std::cout << "number under test is not zero: " << to_binary(nut) << '\n';
+						++nrOfFailedTests;
+					}
+					
 				}
 				else if (i == HALF) {
 					// ref = -0
@@ -260,34 +276,40 @@ namespace sw::universal {
 					// half of next     -> value = 0
 					// special case of assigning to 0
 
-					/* ignore
-					testValue = da;  // the optimizer removes the sign on -0
+					testValue = da;
 					nut = testValue;
-					golden.setzero(); golden = -golden; // make certain we are -0
-					std::cout << i << " : " << to_binary(nut) << " : " << to_binary(golden) << std::endl;
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
-					*/
+					golden.setzero(); golden.setsign(); // make certain we are -0
+					// special handling as optimizer can destroy the -0
+					// nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					if (!nut.iszero()) {
+						std::cout << "number under test is not zero: " << to_binary(nut) << '\n';
+						++nrOfFailedTests;
+					}
 
 					// half of next rounds down to -0
 					testValue = SrcType(-dminpos / 2.0);
 					nut = testValue;
-					golden.setzero(); golden = -golden; // make certain we are -0
-					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					golden.setzero(); golden.setsign(); // make certain we are -0
+					// nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					if (!nut.iszero()) {
+						std::cout << "number under test is not zero: " << to_binary(nut) << '\n';
+						++nrOfFailedTests;
+					}
 				}
 				else if (i == HALF - 4) {
-					if (bReportIndividualTestCases) std::cout << i << " : > " << da << " ignored\n";
+					if (bReportIndividualTestCases) std::cout << i << " : > " << da << " : ref " << ref << " ignored\n";
 				}
 				else if (i == HALF - 2) { // encoding of INF
 					// ignore
-					if (bReportIndividualTestCases) std::cout << i << " : " << da << " ignored\n";
+					if (bReportIndividualTestCases) std::cout << i << " : " << da << " : ref " << ref << " ignored\n";
 				}
 				else if (i == NR_TEST_CASES - 4) { // encoding of maxneg
 					// ignore
-					if (bReportIndividualTestCases) std::cout << i << " : < " << da << " ignored\n";
+					if (bReportIndividualTestCases) std::cout << i << " : < " << da << " : ref " << ref << " ignored\n";
 				}
 				else if (i == NR_TEST_CASES - 2) { // encoding of -INF
 					// ignore
-					if (bReportIndividualTestCases) std::cout << i << " : " << da << " ignored\n";
+					if (bReportIndividualTestCases) std::cout << i << " : " << da << " : ref " << ref << " ignored\n";
 				}
 				else {
 					// for even values, we are on actual representable values, so we create the round-up and round-down cases
