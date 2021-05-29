@@ -91,14 +91,12 @@ try {
 //	EnumerateSubnormals<bfloat<6, 2, uint8_t>>(1.0f, 6);
 
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 4, 1, uint8_t>, float >(true), tag, "bfloat<4,1,uint8_t>");
-
-	return 0;
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 6, 2, uint8_t>, float >(false), tag, "bfloat<6,2,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 8, 3, uint8_t>, float >(false), tag, "bfloat<8,3,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<10, 4, uint8_t>, float >(false), tag, "bfloat<10,4,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<12, 5, uint8_t>, float >(false), tag, "bfloat<12,5,uint8_t>");
 
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 8, 6, uint8_t>, float >(true), tag, "bfloat<8,6,uint8_t>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 8, 6, uint8_t>, float >(false), tag, "bfloat<8,6,uint8_t>");
 
 	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system

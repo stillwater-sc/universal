@@ -198,12 +198,21 @@ namespace sw::universal {
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else if (i == HALF - 3) { // encoding of maxpos
-					// sample + delta -> saturates to maxpos
-					if (bReportIndividualTestCases) std::cout << i << " : >" << da << " : ref " << to_binary(ref) << " ignored\n";
+					golden.maxpos();
+
+					testValue = SrcType(da - oneULP);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+
+					testValue = SrcType(da + oneULP);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else if (i == HALF - 1) { // encoding of qNaN
-					// ignore
-					if (bReportIndividualTestCases) std::cout << i << " : >" << da << " : ref " << to_binary(ref) << " ignored\n";
+					golden.setnan(NAN_TYPE_QUIET);
+					testValue = SrcType(da);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else if (i == HALF + 1) {
 					// special case of projecting to -0
@@ -213,12 +222,21 @@ namespace sw::universal {
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else if (i == NR_TEST_CASES - 3) { // encoding of maxneg
-					// ignore
-					if (bReportIndividualTestCases) std::cout << i << " : < " << da << " : ref " << to_binary(ref) << " ignored\n";
+					golden.maxneg();
+
+					testValue = SrcType(da - oneULP);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+
+					testValue = SrcType(da + oneULP);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else if (i == NR_TEST_CASES - 1) { // encoding of SIGNALLING NAN
-					
-					if (bReportIndividualTestCases) std::cout << i << " : < " << da << " : ref " << to_binary(ref) << " ignored\n";
+					golden.setnan(NAN_TYPE_SIGNALLING);
+					testValue = SrcType(da);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else {
 					// for odd values of i, we are between sample values of the NUT
@@ -231,16 +249,11 @@ namespace sw::universal {
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 					
 					// round-up
-					if (i == HALF - 5 || i == NR_TEST_CASES - 5) {
-						if (bReportIndividualTestCases) std::cout << i << " : >" << da << " : ref " << ref << " ignored\n";
-					}
-					else {
-						testValue = SrcType(da + oneULP);
-						nut = testValue;
-						next.setbits(i + 1);
-						golden = double(next);
-						nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
-					}
+					testValue = SrcType(da + oneULP);
+					nut = testValue;
+					next.setbits(i + 1);
+					golden = double(next);
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 			}
 			else {
@@ -296,20 +309,39 @@ namespace sw::universal {
 						++nrOfFailedTests;
 					}
 				}
-				else if (i == HALF - 4) {
-					if (bReportIndividualTestCases) std::cout << i << " : > " << da << " : ref " << ref << " ignored\n";
+				else if (i == HALF - 4) { // saturation to maxpos
+					golden.maxpos();
+
+					testValue = SrcType(da - oneULP);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+
+					testValue = SrcType(da + oneULP);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else if (i == HALF - 2) { // encoding of INF
-					// ignore
-					if (bReportIndividualTestCases) std::cout << i << " : " << da << " : ref " << ref << " ignored\n";
+					golden.setinf(false);
+					testValue = SrcType(da);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
-				else if (i == NR_TEST_CASES - 4) { // encoding of maxneg
-					// ignore
-					if (bReportIndividualTestCases) std::cout << i << " : < " << da << " : ref " << ref << " ignored\n";
+				else if (i == NR_TEST_CASES - 4) { // saturation to maxneg
+					golden.maxneg();
+
+					testValue = SrcType(da - oneULP);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+
+					testValue = SrcType(da + oneULP);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else if (i == NR_TEST_CASES - 2) { // encoding of -INF
-					// ignore
-					if (bReportIndividualTestCases) std::cout << i << " : " << da << " : ref " << ref << " ignored\n";
+					golden.setinf(true);
+					testValue = SrcType(da);
+					nut = testValue;
+					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
 				else {
 					// for even values, we are on actual representable values, so we create the round-up and round-down cases
