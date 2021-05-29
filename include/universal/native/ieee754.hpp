@@ -12,15 +12,42 @@
 
 namespace sw::universal {
 
-// IEEE double precision constants
-static constexpr int IEEE_FLOAT_FRACTION_BITS = 23;
-static constexpr int IEEE_FLOAT_EXPONENT_BITS = 8;
-static constexpr int IEEE_FLOAT_SIGN_BITS = 1;
-// IEEE double precision constants
-static constexpr int IEEE_DOUBLE_FRACTION_BITS = 52;
-static constexpr int IEEE_DOUBLE_EXPONENT_BITS = 11;
-static constexpr int IEEE_DOUBLE_SIGN_BITS = 1;
-// IEEE long double precision constants are compiler dependent
+// IEEE-754 parameter constexpressions
+template<typename Real>
+class ieee754_parameter {
+public:
+	static constexpr int ebits = 0;
+	static constexpr int bias = 0;
+	static constexpr uint64_t emask = 0;
+	static constexpr uint64_t eallset = 0;
+	static constexpr int fbits = 0;
+	static constexpr uint64_t fmask = 0;
+	static constexpr uint64_t fmsb = 0;
+};
+template<>
+class ieee754_parameter<float> {
+public:
+	static constexpr uint64_t smask   = 0x8000'0000ull;
+	static constexpr int      ebits   = 8;
+	static constexpr int      bias    = 127;
+	static constexpr uint64_t emask   = 0x7F80'0000ull;
+	static constexpr uint64_t eallset = 0xFFull;
+	static constexpr int      fbits   = 23;
+	static constexpr uint64_t fmask   = 0x007F'FFFFull;
+	static constexpr uint64_t fmsb    = 0x0040'0000ull;
+};
+template<>
+class ieee754_parameter<double> {
+public:
+	static constexpr uint64_t smask   = 0x8000'0000'0000'0000ull;
+	static constexpr int      ebits   = 11;
+	static constexpr int      bias    = 1023;
+	static constexpr uint64_t emask   = 0x7FF0'0000'0000'0000ull;
+	static constexpr uint64_t eallset = 0x7FF;
+	static constexpr int      fbits   = 52;
+	static constexpr uint64_t fmask   = 0x000F'FFFF'FFFF'FFFFull;
+	static constexpr uint64_t fmsb    = 0x0008'0000'0000'0000ull;
+};
 
 ////////////////////////////////////////////////////////////////////////
 // numerical helpers
