@@ -45,8 +45,72 @@ try {
 
 #if MANUAL_TESTING
 
-	// helper to get all the constexpr values for a particular bfloat printed
 	bfloat < 8, 2, uint8_t > a, b, c, cref;
+	a = 0.3125f;
+	b = 0.5f;
+	c = a + b;
+	std::cout << a << " + " << b << " = " << c << '\n';
+	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
+	// FAIL              0.03125 + 0.5 != 0.53125 golden reference is               0.5625 b0.00.10001 vs b0.00.10010
+	GenerateTestCase< bfloat<8, 2, uint8_t>, float>(0.03125f, 0.5f);
+
+	{
+		float f0 = 0.5f;
+		float f1 = 0.5625f;
+		float f2 = 0.53125f;
+		bfloat<8, 2> s;
+		s = f0; std::cout << to_binary(s) << " : " << s << '\n';
+		s = f1; std::cout << to_binary(s) << " : " << s << '\n';
+		s = f2; std::cout << to_binary(s) << " : " << s << '\n';
+	}
+	{
+		float f1 = 0.5625f;
+		float f2 = 0.53125f;
+		bfloat<32, 8> s;
+		s = f1; 
+		std::cout << to_binary(s) << " : " << s << '\n';
+		s = f2; 
+		std::cout << to_binary(s) << " : " << s << '\n';
+	}
+	{
+		float f1 = 0.5625f;
+		float f2 = 0.53125f;
+		bfloat<64, 11> s;
+		s = f1;
+		std::cout << to_binary(s) << " : " << s << '\n';
+		s = f2; 
+		std::cout << to_binary(s) << " : " << s << '\n';
+	}
+	{
+		double f0 = 0.5f;
+		double f1 = 0.5625f;
+		double f2 = 0.53125f;
+		bfloat<8, 2> s;
+		s = f0; std::cout << to_binary(s) << " : " << s << '\n';
+		s = f1; std::cout << to_binary(s) << " : " << s << '\n';
+		s = f2; std::cout << to_binary(s) << " : " << s << '\n';
+	}
+	{
+		double f1 = 0.5625f;
+		double f2 = 0.53125f;
+		bfloat<32, 8> s;
+		s = f1;
+		std::cout << to_binary(s) << " : " << s << '\n';
+		s = f2; 
+		std::cout << to_binary(s) << " : " << s << '\n';
+	}
+	{
+		double f1 = 0.5625f;
+		double f2 = 0.53125f;
+		bfloat<64, 11> s;
+		s = f1;
+		std::cout << to_binary(s) << " : " << s << '\n';
+		s = f2; 
+		std::cout << to_binary(s) << " : " << s << '\n';
+	}
+	return 0;
+
+
 	a.setzero();
 //	b.setnan(NAN_TYPE_SIGNALLING);
 	b.setnan(NAN_TYPE_QUIET);
@@ -63,7 +127,7 @@ try {
 
 	// generate individual testcases to hand trace/debug
 	GenerateTestCase< bfloat<8, 2, uint8_t>, float>(1.0f, 1.0f);
-	GenerateTestCase< bfloat<8, 2, uint8_t>, float>(0.03125f, 0.0625f);
+
 	GenerateTestCase< bfloat<16, 8, uint16_t>, double>(INFINITY, INFINITY);
 
 	nrOfFailedTestCases += ReportTestResult(VerifyAddition< bfloat<8, 2, uint8_t> >(tag, true), "bfloat<8,2,uint8_t>", "addition");

@@ -8,6 +8,7 @@
 #include <limits>
 
 #include <universal/native/ieee754.hpp>
+#include <universal/native/constexpr754.hpp>
 #include <universal/native/subnormal.hpp>
 #include <universal/native/bit_functions.hpp>
 #include <universal/native/integers.hpp>
@@ -690,6 +691,9 @@ public:
 		else if constexpr (3 == nrBlocks) {
 			return (_block[0] == 0) && _block[1] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
 		}
+		else if constexpr (4 == nrBlocks) {
+			return (_block[0] == 0) && _block[1] == 0 && _block[2] == 0 && (_block[MSU] & ~SIGN_BIT_MASK) == 0;
+		}
 		else {
 			for (size_t i = 0; i < nrBlocks-1; ++i) if (_block[i] != 0) return false;
 			return (_block[MSU] & ~SIGN_BIT_MASK) == 0;
@@ -732,6 +736,11 @@ public:
 			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
 			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
 		}
+		else if constexpr (4 == nrBlocks) {
+			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK)) && (_block[1] == BLOCK_MASK) && (_block[2] == BLOCK_MASK);
+			isNegInf = isInf && ((_block[MSU] & MSU_MASK) == MSU_MASK);
+			isPosInf = isInf && (_block[MSU] & MSU_MASK) == (MSU_MASK ^ SIGN_BIT_MASK);
+		}
 		else {
 			bool isInf = (_block[0] == (BLOCK_MASK ^ LSB_BIT_MASK));
 			for (size_t i = 1; i < nrBlocks - 1; ++i) {
@@ -767,6 +776,9 @@ public:
 		}
 		else if constexpr (3 == nrBlocks) {
 			isNaN = (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK);
+		}
+		else if constexpr (4 == nrBlocks) {
+			isNaN = (_block[0] == BLOCK_MASK) && (_block[1] == BLOCK_MASK) && (_block[2] == BLOCK_MASK);
 		}
 		else {
 			for (size_t i = 0; i < nrBlocks - 1; ++i) {
@@ -1417,7 +1429,8 @@ protected:
 #endif
 				}
 				else { // all bits of the float go into this representation and need to be shifted up
-					std::cout << "conversion of IEEE float to more precise bfloats not implemented yet\n";
+					int shiftLeft = fbits - 23;
+					raw <<= shiftLeft;
 				}
 			}
 			else {
@@ -1504,8 +1517,17 @@ protected:
 				std::cout << "rounding direction: " << (round || sticky ? "round up\n" : "round down\n");
 #endif
 			}
-			else { // all bits of the double go into this representation and need to be shifted up
-				std::cout << "conversion of IEEE double to more precise bfloats not implemented yet\n";
+			else { // all bits of the float go into this representation and need to be shifted up
+				if constexpr (fbits < 32) {
+					int shiftLeft = fbits - 23;
+					raw <<= shiftLeft;
+				}
+				else if constexpr (fbits < 64) {
+					// special case where we can use a native uint64_t to gather and shift the fraction bits
+				}
+				else {
+					// the case where our shifting needs to happen in block-aware fashion
+				}
 			}
 		}
 #if TRACE_CONVERSION
@@ -1684,7 +1706,8 @@ protected:
 #endif
 				}
 				else { // all bits of the double go into this representation and need to be shifted up
-					std::cout << "conversion of IEEE double to more precise bfloats not implemented yet\n";
+					int shiftLeft = fbits - 52;
+					raw <<= shiftLeft;
 				}
 			}
 			else {
@@ -1694,7 +1717,7 @@ protected:
 		}
 		else {
 			// this number is a normal/supernormal number in this representation, we can leave the hidden bit hidden
-			biasedExponent = static_cast<uint64_t>(static_cast<int64_t>(exponent) + EXP_BIAS); // reasonable to limit exponent to 32bits
+			biasedExponent = static_cast<uint64_t>(static_cast<int64_t>(exponent) + EXP_BIAS);
 
 			// fraction processing
 			// double structure is: seee'eeee'eeee'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff, s = sign, e - exponent bit, f = fraction bit
@@ -1759,7 +1782,8 @@ protected:
 #endif
 			}
 			else { // all bits of the double go into this representation and need to be shifted up
-				std::cout << "conversion of IEEE double to more precise bfloats not implemented yet\n";
+				int shiftLeft = fbits - 52;
+				raw <<= shiftLeft;
 			}
 		}
 #if TRACE_CONVERSION

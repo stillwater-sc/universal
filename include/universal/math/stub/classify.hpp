@@ -93,7 +93,8 @@ namespace sw::universal {
 	}
 
 	// define an alias for isdenorm
-	template<typename Scalar>
+	template<typename Scalar,
+		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
 	inline bool issubnorm(const Scalar& v) { return isdenorm(v); }
 
 }  // namespace sw::universal
