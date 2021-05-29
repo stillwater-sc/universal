@@ -48,7 +48,9 @@ inline std::string to_hex(Real number) {
 }
 
 // generate a binary string for a native IEEE floating point
-template<typename Real>
+template<typename Real,
+	typename = typename std::enable_if< std::is_floating_point<Real>::value, Real >::type
+>
 inline std::string to_binary(Real number, bool bNibbleMarker = false) {
 	std::stringstream s;
 

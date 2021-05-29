@@ -12,7 +12,7 @@
 // second: enable/disable arithmetic exceptions
 #define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable trace conversion
-#define TRACE_CONVERSION 0
+#define TRACE_CONVERSION 1
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/bfloat/bfloat.hpp>
@@ -89,6 +89,11 @@ try {
 	std::cerr << std::setprecision(8);
 #
 //	EnumerateSubnormals<bfloat<6, 2, uint8_t>>(1.0f, 6);
+
+	bfloat<4, 1, uint8_t> a;
+	a.convert_ieee754(1.0f);
+	a.convert_ieee754(1.0);
+	return 0;
 
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 4, 1, uint8_t>, float >(true), tag, "bfloat<4,1,uint8_t>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 6, 2, uint8_t>, float >(false), tag, "bfloat<6,2,uint8_t>");
