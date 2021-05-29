@@ -7,18 +7,6 @@
 #include <cassert>
 #include <limits>
 
-#include <universal/native/ieee754.hpp>
-#include <universal/native/constexpr754.hpp>
-#include <universal/native/subnormal.hpp>
-#include <universal/native/bit_functions.hpp>
-#include <universal/native/integers.hpp>
-#include <universal/internal/blockbinary/blockbinary.hpp>
-#include <universal/internal/blocktriple/blocktriple.hpp>
-#include <universal/number/shared/nan_encoding.hpp>
-#include <universal/number/shared/infinite_encoding.hpp>
-#include <universal/number/shared/specific_value_encoding.hpp>
-#include <universal/number/bfloat/exceptions.hpp>
-
 // compiler specific operators
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
@@ -61,6 +49,21 @@
 /* Oracle Solaris Studio. ----------------------------------- */
 
 #endif
+
+// supporting types and functions
+#include <universal/native/ieee754.hpp>
+#include <universal/native/constexpr754.hpp>
+#include <universal/native/subnormal.hpp>
+#include <universal/native/bit_functions.hpp>
+#include <universal/native/integers.hpp>
+#include <universal/number/shared/nan_encoding.hpp>
+#include <universal/number/shared/infinite_encoding.hpp>
+#include <universal/number/shared/specific_value_encoding.hpp>
+// bfloat exception structure
+#include <universal/number/bfloat/exceptions.hpp>
+// composition types
+#include <universal/internal/blockbinary/blockbinary.hpp>
+#include <universal/internal/blocktriple/blocktriple.hpp>
 
 #ifndef BFLOAT_THROW_ARITHMETIC_EXCEPTION
 #define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
