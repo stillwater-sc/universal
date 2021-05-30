@@ -22,6 +22,7 @@
 #include <universal/verification/bfloat_test_suite.hpp>
 #include <universal/number/bfloat/table.hpp> // only used for value table generation
 
+#if BIT_CAST_SUPPORT
 void ToNativeBug() {  // now resolved... exponentiation was incorrect
 	using namespace sw::universal;
 	bfloat<32, 8, uint32_t> a, b;
@@ -47,6 +48,7 @@ void ToNativeBug() {  // now resolved... exponentiation was incorrect
 	uint64_t rawExponentBits = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
 	uint64_t rawFractionBits = (ieee754_parameter<float>::fmask & bc);
 }
+#endif // BIT_CAST_SUPPORT
 
 template<typename BfloatType>
 void Test1() 

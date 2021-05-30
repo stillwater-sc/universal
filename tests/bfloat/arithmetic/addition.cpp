@@ -148,7 +148,7 @@ try {
 
 	GenerateTestCase< bfloat<16, 8, uint16_t>, double>(INFINITY, INFINITY);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< bfloat<8, 2, uint8_t> >(tag, true), "bfloat<8,2,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< bfloat<8, 2, uint8_t> >(true), "bfloat<8,2,uint8_t>", "addition");
 
 	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
@@ -158,13 +158,13 @@ try {
 
 	bool bReportIndividualTestCases = false;
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>(tag, bReportIndividualTestCases), "bfloat<8,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(tag, bReportIndividualTestCases), "bfloat<8,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>(bReportIndividualTestCases), "bfloat<8,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(bReportIndividualTestCases), "bfloat<8,4>", "addition");
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<10, 4>(tag, bReportIndividualTestCases), "bfloat<10,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<16, 8>(tag, bReportIndividualTestCases), "bfloat<16,8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<10, 4>(bReportIndividualTestCases), "bfloat<10,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<16, 8>(bReportIndividualTestCases), "bfloat<16,8>", "addition");
 #endif  // STRESS_TESTING
 
 #endif  // MANUAL_TESTING
