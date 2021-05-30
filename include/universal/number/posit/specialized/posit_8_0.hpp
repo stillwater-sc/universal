@@ -44,6 +44,27 @@ namespace sw::universal {
 		posit& operator=(const posit&) = default;
 		posit& operator=(posit&&) = default;
 
+		// specific value constructor
+		constexpr posit(const SpecificValue code) {
+			switch (code) {
+			case SpecificValue::maxpos:
+				maxpos();
+				break;
+			case SpecificValue::minpos:
+				minpos();
+				break;
+			default:
+				zero();
+				break;
+			case SpecificValue::minneg:
+				minneg();
+				break;
+			case SpecificValue::maxneg:
+				maxneg();
+				break;
+			}
+		}
+
 		// initializers for native types
 		constexpr explicit posit(signed char initial_value) : _bits(0)        { *this = initial_value; }
 		constexpr explicit posit(short initial_value) : _bits(0)              { *this = initial_value; }
@@ -84,17 +105,17 @@ namespace sw::universal {
 		explicit operator unsigned long() const { return to_long(); }
 		explicit operator unsigned int() const { return to_int(); }
 
-		posit& set(const sw::universal::bitblock<NBITS_IS_8>& raw) {
+		posit& setBitblock(const sw::universal::bitblock<NBITS_IS_8>& raw) {
 			_bits = uint8_t(raw.to_ulong());
 			return *this;
 		}
-		constexpr posit& set_raw_bits(uint64_t value) {
+		constexpr posit& setbits(uint64_t value) {
 			_bits = uint8_t(value & 0xff);
 			return *this;
 		}
 		constexpr posit operator-() const {
 			posit p;
-			return p.set_raw_bits((~_bits) + 1);
+			return p.setbits((~_bits) + 1);
 		}
 		// arithmetic assignment operators
 		posit& operator+=(const posit& b) {
@@ -157,7 +178,7 @@ namespace sw::universal {
 			return *this;
 		}
 		
-		// SELECTORS
+		// Selelctors
 		inline bool sign() const       { return (_bits & sign_mask); }
 		inline bool isnar() const      { return (_bits == sign_mask); }
 		inline bool iszero() const     { return (_bits == 0x00); }
@@ -172,13 +193,34 @@ namespace sw::universal {
 		bitblock<NBITS_IS_8> get() const { bitblock<NBITS_IS_8> bb; bb = int(_bits); return bb; }
 		unsigned long long encoding() const { return (unsigned long long)(_bits); }
 
+		// Modifiers
 		inline void clear() { _bits = 0; }
 		inline void setzero() { clear(); }
 		inline void setnar() { _bits = 0x80; }
+		inline posit& minpos() {
+			clear();
+			return ++(*this);
+		}
+		inline posit& maxpos() {
+			setnar();
+			return --(*this);
+		}
+		inline posit& zero() {
+			clear();
+			return *this;
+		}
+		inline posit& minneg() {
+			clear();
+			return --(*this);
+		}
+		inline posit& maxneg() {
+			setnar();
+			return ++(*this);
+		}
 		inline posit twosComplement() const {
 			posit<NBITS_IS_8, ES_IS_0> p;
 			int8_t v = -*(int8_t*)&_bits;
-			p.set_raw_bits(v);
+			p.setbits(v);
 			return p;
 		}
 	private:

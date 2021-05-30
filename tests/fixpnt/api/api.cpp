@@ -104,7 +104,7 @@ try {
 		fixpnt<nbits, rbits> a, b;
 		a = 1;
 		if (!a.test(4)) ++nrOfFailedTestCases;
-		b.set_raw_bits(1); // set the ULP
+		b.setbits(1); // set the ULP
 		if (!b.at(0)) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
 			cout << "FAIL : selectors\n";
@@ -121,18 +121,18 @@ try {
 		constexpr size_t rbits = 4;
 		fixpnt<nbits, rbits> a, b, c, d;
 		for (size_t i = 0; i < rbits; ++i) {
-			a.set(i, true);
+			a.setbit(i, true);
 		}
-		b.set_raw_bits(0x0F); // same as the fixpnt a above
+		b.setbits(0x0F); // same as the fixpnt a above
 		if ((a - b) != 0) ++nrOfFailedTestCases;
 		c = b;
-		// manually flip the bits of b
+		// manually flip the bits of b: don't use flip() as we are going to confirm flip() is correct
 		for (size_t i = 0; i < nbits; ++i) {
-			b.at(i) ? b.reset(i) : b.set(i);
+			b.setbit(i, !b.test(i));
 		}
 		c.flip();  // in-place 1's complement, so now b and c are the same
 		if (b != c) ++nrOfFailedTestCases;	
-		d.set_raw_bits(0xFFFFFFF);
+		d.setbits(0xFFFFFFF);
 		if (0 == d) ++nrOfFailedTestCases;
 		d.setzero();
 		if (d != 0) ++nrOfFailedTestCases;
@@ -148,11 +148,11 @@ try {
 		constexpr size_t nbits = 8;
 		constexpr size_t rbits = 4;
 		fixpnt<nbits, rbits> a, b;
-		a.set_raw_bits(0xFF);
-		b = ones_complement(a);
+		a.setbits(0xFF);
+		b = onesComplement(a);
 		if (b != 0) ++nrOfFailedTestCases;
 		a = -1;
-		b = twos_complement(a);
+		b = twosComplement(a);
 		if (b != 1) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
 			cout << "FAIL : complements 1\n";
@@ -163,11 +163,11 @@ try {
 		constexpr size_t nbits = 8;
 		constexpr size_t rbits = 4;
 		fixpnt<nbits, rbits, Modulo, uint16_t> a, b; // testing poorly selected BlockType
-		a.set_raw_bits(0xFF);
-		b = ones_complement(a);
+		a.setbits(0xFF);
+		b = onesComplement(a);
 		if (b != 0) ++nrOfFailedTestCases;
 		a = -1;
-		b = twos_complement(a);
+		b = twosComplement(a);
 		if (b != 1) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
 			cout << "FAIL : complements 2\n";
@@ -178,11 +178,11 @@ try {
 		constexpr size_t nbits = 8;
 		constexpr size_t rbits = 4;
 		fixpnt<nbits, rbits, Modulo, uint32_t> a, b; // testing poorly selected BlockType
-		a.set_raw_bits(0xFF);
-		b = ones_complement(a);
+		a.setbits(0xFF);
+		b = onesComplement(a);
 		if (b != 0) ++nrOfFailedTestCases;
 		a = -1;
-		b = twos_complement(a);
+		b = twosComplement(a);
 		if (b != 1) ++nrOfFailedTestCases;
 		if (nrOfFailedTestCases - start > 0) {
 			cout << "FAIL : complements 3\n";
@@ -342,7 +342,7 @@ try {
 
 		fixpnt<nbits, rbits, arithmetic, blocktype> a, b, c, d;
 		for (size_t i = 0; i < NR_VALUES; ++i) {
-			a.set_raw_bits(i);
+			a.setbits(i);
 			float f = float(a);
 			b = int(f);
 			c = f;

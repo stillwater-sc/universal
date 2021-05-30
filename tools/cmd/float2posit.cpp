@@ -51,7 +51,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 	if (check_inward_projection_range<nbits, es>(_scale)) {    // regime dominated
 															   // we are projecting to minpos/maxpos
 		int k = calculate_unconstrained_k<nbits, es>(_scale);
-		k < 0 ? p.set(minpos_pattern<nbits, es>(_sign)) : p.set(maxpos_pattern<nbits, es>(_sign));
+		k < 0 ? p.setBitblock(minpos_pattern<nbits, es>(_sign)) : p.setBitblock(maxpos_pattern<nbits, es>(_sign));
 		// we are done
 		std::cout << "projection  rounding ";
 	}
@@ -140,7 +140,7 @@ sw::universal::posit<nbits, es> convert_to_posit(Ty rhs) {
 		cout << ptt << "  rounded posit\n";
 		if (s) ptt = twos_complement(ptt);
 		cout << ptt << "  final posit\n";
-		p.set(ptt);
+		p.setBitblock(ptt);
 	}
 	return p;
 }

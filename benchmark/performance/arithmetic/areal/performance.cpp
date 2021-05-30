@@ -37,7 +37,7 @@ void DecodeWorkload(uint64_t NR_OPS) {
 	size_t success{ 0 };
 	bool first{ true };
 	for (uint64_t i = 0; i < NR_OPS; ++i) {
-		a.set_raw_bits(i);
+		a.setbits(i);
 		bool s{ false };
 		blockbinary<a.es, typename Scalar::BlockType> e;
 		blockbinary<a.fbits, typename Scalar::BlockType> f;
@@ -89,7 +89,7 @@ areal<32,8,uint32_t>    decode             1000000 per       0.0465827sec ->  21
 areal<64,11,uint64_t>   decode             1000000 per        0.104031sec ->   9 Mops/sec
 
 2/26/2021
-AREAL decode operator performance                                                               <--- this includes set_raw_bits() so we have more dynamic behavior of the test
+AREAL decode operator performance                                                               <--- this includes setbits() so we have more dynamic behavior of the test
 areal<8,2,uint8_t>      decode             1000000 per       0.0017149sec -> 583 Mops/sec
 areal<16,5,uint16_t>    decode             1000000 per       0.0015602sec -> 640 Mops/sec
 areal<32,8,uint32_t>    decode             1000000 per       0.0021211sec -> 471 Mops/sec
@@ -153,7 +153,7 @@ try {
 
 	using Scalar = areal<64, 11, uint64_t>;
 	Scalar a;
-	a.set_raw_bits(0xEEEEEEEEEEEEEEEEull);
+	a.setbits(0xEEEEEEEEEEEEEEEEull);
 	bool s{ false };
 	blockbinary<a.es, typename Scalar::BlockType> e;
 	blockbinary<a.fbits, typename Scalar::BlockType> f;

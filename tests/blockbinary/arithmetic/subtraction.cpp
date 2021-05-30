@@ -23,16 +23,16 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 	blockbinary<nbits, StorageBlockType> a, b, result, refResult;
 	int64_t aref, bref, cref;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
+		a.setbits(i);
 		aref = static_cast<int64_t>(i);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
+			b.setbits(j);
 			bref = static_cast<int64_t>(j);
 			cref = aref - bref;
 
 			result = a - b;
 
-			refResult.set_raw_bits(static_cast<uint64_t>(cref));
+			refResult.setbits(static_cast<uint64_t>(cref));
 			if (result != refResult) {
 				nrOfFailedTests++;
 				if (bReportIndividualTestCases)	ReportBinaryArithmeticError("FAIL", "-", a, b, result, cref);
@@ -55,8 +55,8 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 	using namespace sw::universal;
 	blockbinary<nbits, StorageBlockType> a, b, result, reference;
 
-	a.set_raw_bits(uint64_t(lhs));
-	b.set_raw_bits(uint64_t(rhs));
+	a.setbits(uint64_t(lhs));
+	b.setbits(uint64_t(rhs));
 	result = a - b;
 
 	long long _a, _b, _c;
@@ -69,7 +69,7 @@ void GenerateTestCase(int64_t lhs, int64_t rhs) {
 	std::cout << std::setw(nbits) << _a << " / " << std::setw(nbits) << _b << " = " << std::setw(nbits) << _c << std::endl;
 	std::cout << to_binary(a) << " / " << to_binary(b) << " = " << to_binary(result) << " (reference: " << _c << ")   " << std::endl;
 	//	std::cout << to_hex(a) << " * " << to_hex(b) << " = " << to_hex(result) << " (reference: " << std::hex << ref << ")   ";
-	reference.set_raw_bits(static_cast<uint64_t>(_c));
+	reference.setbits(static_cast<uint64_t>(_c));
 	std::cout << (result == reference ? "PASS" : "FAIL") << std::endl << std::endl;
 	std::cout << std::dec << std::setprecision(oldPrecision);
 }

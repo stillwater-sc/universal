@@ -116,11 +116,11 @@ try {
 		// [ 0  0    0  0  0  0  0  0  0  0    0  0  0  0  0  0  0  0 ]
 		quire<nbits, es, capacity> q;
 		internal::value<5> maxpos, maxpos_squared, minpos, minpos_squared;
-		long double dmax = sw::universal::maxpos_value<nbits, es>();
+		long double dmax = (long double)sw::universal::posit<nbits, es>(sw::universal::SpecificValue::maxpos);
 		maxpos = dmax;
 		maxpos_squared = dmax*dmax;
 		std::cout << "maxpos * maxpos = " << to_triple(maxpos_squared) << std::endl;
-		long double dmin = sw::universal::minpos_value<nbits, es>();
+		long double dmin = (long double)sw::universal::posit<nbits, es>(sw::universal::SpecificValue::minpos);
 		minpos = dmin;
 		minpos_squared = dmin*dmin;
 		std::cout << "minpos * minpos = " << to_triple(minpos_squared) << std::endl;

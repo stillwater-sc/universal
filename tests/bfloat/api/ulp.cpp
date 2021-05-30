@@ -51,7 +51,7 @@ try {
 #if MANUAL_TESTING
 
 	bfloat<8,2,uint8_t> begin(0), end;
-	end.set_raw_bits(0x7Fu);
+	end.setbits(0x7Fu);
 	GenerateUlpsInRange(begin, end);
 
 #else // !MANUAL_TESTING

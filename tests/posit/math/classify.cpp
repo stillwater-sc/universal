@@ -36,7 +36,7 @@ try {
 	posit<nbits, es> pnar; pnar.setnar();
 	posit<nbits, es> pinf; pinf.setnar();
 	posit<nbits, es> pzero(0);
-	posit<nbits, es> pminpos; minpos<nbits, es>(pminpos);
+	posit<nbits, es> pminpos(SpecificValue::minpos);
 	posit<nbits, es> pdblmin(MY_DBL_MIN);
 	posit<nbits, es> pone(1);
 

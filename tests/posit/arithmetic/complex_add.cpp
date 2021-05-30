@@ -75,17 +75,17 @@ int ValidateComplexAddition(const std::string& tag, bool bReportIndividualTestCa
 
 	complex<double> da, db, dc;
 	for (size_t i = 0; i < NR_POSITS; ++i) {
-		ar.set_raw_bits(i);
+		ar.setbits(i);
 		for (size_t j = 0; j < NR_POSITS; ++j) {
-			ai.set_raw_bits(j);
+			ai.setbits(j);
 			a = complex<posit<nbits, es>>(ar, ai);
 			da = complex<double>(double(ar), double(ai));
 
 			// generate all the right sides
 			for (size_t k = 0; k < NR_POSITS; ++k) {
-				br.set_raw_bits(k);
+				br.setbits(k);
 				for (size_t l = 0; l < NR_POSITS; ++l) {
-					bi.set_raw_bits(l);
+					bi.setbits(l);
 					b = complex<posit<nbits, es>>(br, bi);
 					db = complex<double>(double(br), double(bi));
 

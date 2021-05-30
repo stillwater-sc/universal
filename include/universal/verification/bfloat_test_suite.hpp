@@ -164,14 +164,15 @@ namespace sw::universal {
 		// execute the test
 		int nrOfFailedTests = 0;
 		RefType positive_minimum;
-		double dminpos = double(minpos(positive_minimum));
+		positive_minimum.minpos();
+		double dminpos = double(positive_minimum);
 
 		// NUT: number under test
 		TestType nut, golden;
 		for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
 			RefType ref, prev, next;
 			SrcType testValue{ 0.0 };
-			ref.set_raw_bits(i);
+			ref.setbits(i);
 			SrcType da = SrcType(ref);
 			int old = nrOfFailedTests;
 			SrcType oneULP = ulp(da);
@@ -186,7 +187,7 @@ namespace sw::universal {
 					// this rounds up 
 					testValue = SrcType(da + oneULP);  // the test value between 0 and minpos
 					nut = testValue;
-					next.set_raw_bits(i + 1);
+					next.setbits(i + 1);
 					golden = double(next);
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 				}
@@ -219,7 +220,7 @@ namespace sw::universal {
 					// round-down
 					testValue = SrcType(da - oneULP);
 					nut = testValue;
-					prev.set_raw_bits(i - 1);
+					prev.setbits(i - 1);
 					golden = double(prev);
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 					
@@ -230,7 +231,7 @@ namespace sw::universal {
 					else {
 						testValue = SrcType(da + oneULP);
 						nut = testValue;
-						next.set_raw_bits(i + 1);
+						next.setbits(i + 1);
 						golden = double(next);
 						nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
 					}

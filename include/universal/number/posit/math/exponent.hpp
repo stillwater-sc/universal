@@ -18,7 +18,7 @@ posit<nbits,es> exp(posit<nbits,es> x) {
 	posit<nbits, es> p;
 	double d = std::exp(double(x));
 	if (d == 0.0) {
-		minpos<nbits, es>(p);
+		p.minpos();
 	}
 	else {
 		p = d;
@@ -33,7 +33,7 @@ posit<nbits,es> exp2(posit<nbits,es> x) {
 	posit<nbits, es> p;
 	double d = std::exp2(double(x));
 	if (d == 0.0) {
-		minpos<nbits, es>(p);
+		p.minpos();
 	}
 	else {
 		p = d;

@@ -38,6 +38,7 @@
 // TODO: these need to be redesigned to enable constexpr and improve performance: roadmap V3 Q1 2021
 #include <universal/internal/bitblock/bitblock.hpp>
 #include <universal/internal/value/value.hpp>
+#include <universal/number/shared/specific_value_encoding.hpp>
 // posit environment
 #include <universal/number/posit/posit_fwd.hpp>
 #include <universal/number/posit/trace_constants.hpp>
@@ -304,7 +305,7 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		if (_trace_conversion) std::cout << "inward projection" << std::endl;
 		// we are projecting to minpos/maxpos
 		int k = calculate_unconstrained_k<nbits, es>(_scale);
-		k < 0 ? p.set(minpos_pattern<nbits, es>(_sign)) : p.set(maxpos_pattern<nbits, es>(_sign));
+		k < 0 ? p.setBitblock(minpos_pattern<nbits, es>(_sign)) : p.setBitblock(maxpos_pattern<nbits, es>(_sign));
 		// we are done
 		if (_trace_rounding) std::cout << "projection  rounding ";
 	}
@@ -362,7 +363,7 @@ inline posit<nbits, es>& convert_(bool _sign, int _scale, const bitblock<fbits>&
 		truncate(pt_bits, ptt);
 		if (rb) increment_bitset(ptt);
 		if (s) ptt = twos_complement(ptt);
-		p.set(ptt);
+		p.setBitblock(ptt);
 	}
 	return p;
 }
@@ -480,6 +481,27 @@ public:
 	template<size_t nnbits, size_t ees>
 	posit(const posit<nnbits, ees>& a) {
 		*this = a.to_value();
+	}
+
+	// specific value constructor
+	constexpr posit(const SpecificValue code) {
+		switch (code) {
+		case SpecificValue::maxpos:
+			maxpos();
+			break;
+		case SpecificValue::minpos:
+			minpos();
+			break;
+		default:
+			zero();
+			break;
+		case SpecificValue::minneg:
+			minneg();
+			break;
+		case SpecificValue::maxneg:
+			maxneg();
+			break;
+		}
 	}
 
 	// initializers for native types, allow for implicit conversion (Peter)
@@ -647,7 +669,7 @@ public:
 		}
 		posit<nbits, es> negated(0);  // TODO: artificial initialization to pass -Wmaybe-uninitialized
 		bitblock<nbits> raw_bits = twos_complement(_raw_bits);
-		negated.set(raw_bits);
+		negated.setBitblock(raw_bits);
 		return negated;
 	}
 	// prefix/postfix operators
@@ -882,7 +904,7 @@ public:
 		if (ispowerof2()) {
 			raw_bits = twos_complement(_raw_bits);
 			raw_bits.set(nbits-1, old_sign);
-			p.set(raw_bits);
+			p.setBitblock(raw_bits);
 		}
 		else {
 			bool s{ false };
@@ -933,10 +955,10 @@ public:
 	posit abs() const {
 		posit p;
 		if (isneg()) {
-			p.set(twos_complement(_raw_bits));
+			p.setBitblock(twos_complement(_raw_bits));
 		}
 		else {
-			p.set(_raw_bits);
+			p.setBitblock(_raw_bits);
 		}
 		return p;
 	}
@@ -955,7 +977,7 @@ public:
 	explicit operator double() const { return to_double(); }
 	explicit operator long double() const { return to_long_double(); }
 
-	// SELECTORS
+	// Selectors
 	inline bool sign() const { return _raw_bits[nbits - 1]; }
 	inline bool isnar() const {
 		if (_raw_bits[nbits - 1] == false) return false;
@@ -990,21 +1012,46 @@ public:
 	bitblock<nbits>    get() const { return _raw_bits; }
 	unsigned long long encoding() const { return _raw_bits.to_ullong(); }
 
-	// MODIFIERS
+	// Modifiers
 	inline constexpr void clear() { _raw_bits.reset(); }
 	inline constexpr void setzero() { clear(); }
 	inline constexpr void setnar() {
 		_raw_bits.reset();
 		_raw_bits.set(nbits - 1, true);
 	}
-			
+	// set minpos value
+	inline posit& minpos() {
+		clear();
+		return ++(*this);
+	}
+	// set maxpos value
+	inline posit& maxpos() {
+		setnar();
+		return --(*this);
+	}
+	// set zero value
+	inline posit& zero() {
+		clear();
+		return *this;
+	}
+	// set minneg value
+	inline posit& minneg() {
+		clear();
+		return --(*this);
+	}
+	// set maxneg value
+	inline posit& maxneg() {
+		setnar();
+		return ++(*this);
+	}
+
 	// set the posit bits explicitely
-	constexpr posit<nbits, es>& set(const bitblock<nbits>& raw_bits) {
+	constexpr posit<nbits, es>& setBitblock(const bitblock<nbits>& raw_bits) {
 		_raw_bits = raw_bits;
 		return *this;
 	}
 	// Set the raw bits of the posit given an unsigned value starting from the lsb. Handy for enumerating a posit state space
-	constexpr posit<nbits,es>& set_raw_bits(uint64_t value) {
+	constexpr posit<nbits,es>& setbits(uint64_t value) {
 		clear();
 		bitblock<nbits> raw_bits;
 		uint64_t mask = 1;
@@ -2557,41 +2604,6 @@ posit<nbits, es> fabs(const posit<nbits, es>& p) {
 template<typename Scalar>
 Scalar fabs(Scalar s) {
 	return std::fabs(s);
-}
-
-// fill a posit with minpos value
-template<size_t nbits, size_t es>
-constexpr posit<nbits, es>& minpos(posit<nbits, es>& p) {
-	p = 0;
-	return ++p;
-}
-
-// fill a posit with maxpos value
-template<size_t nbits, size_t es>
-constexpr posit<nbits, es>& maxpos(posit<nbits, es>& p) {
-	p.setnar();
-	return --p;
-}
-
-// create a posit with maxpos value
-template<size_t nbits, size_t es>
-constexpr posit<nbits, es> maxpos() {
-	posit<nbits, es> p;
-	return maxpos(p);
-}
-
-// fill a posit with minneg value
-template<size_t nbits, size_t es>
-constexpr posit<nbits, es>& minneg(posit<nbits, es>& p) {
-	p = 0;
-	return --p;
-}
-
-// fill a posit with maxneg value
-template<size_t nbits, size_t es>
-constexpr posit<nbits, es>& maxneg(posit<nbits, es>& p) {
-	p.setnar();
-	return ++p;
 }
 
 // Atomic fused operators

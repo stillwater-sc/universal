@@ -51,7 +51,7 @@ try {
 		a[i] = 1;
 		b[i] = epsilon;
 	}
-	a[0] = a[vectorSize - 1] = maxpos<nbits, es>();
+	a[0] = a[vectorSize - 1] = posit<nbits, es>(SpecificValue::maxpos);
 	b[0] = -1;  b[vectorSize - 1] = 1;
 	if (vectorSize < 10) {
 		cout << a << endl;

@@ -10,38 +10,35 @@ namespace std {
 template <size_t nbits, size_t es, typename bt> 
 class numeric_limits< sw::universal::bfloat<nbits,es,bt> > {
 public:
-	using AREAL = sw::universal::bfloat<nbits, es, bt>;
+	using BFLOAT = sw::universal::bfloat<nbits, es, bt>;
 	static constexpr bool is_specialized = true;
-	static constexpr AREAL min() { // return minimum value
-		AREAL aminpos;
-		return sw::universal::minpos<nbits,es,bt>(aminpos);
+	static constexpr BFLOAT min() { // return minimum value
+		return BFLOAT(sw::universal::SpecificValue::minpos);
 	} 
-	static constexpr AREAL max() { // return maximum value
-		AREAL amaxpos;
-		return sw::universal::maxpos<nbits, es, bt>(amaxpos);
+	static constexpr BFLOAT max() { // return maximum value
+		return BFLOAT(sw::universal::SpecificValue::maxpos);
 	} 
-	static constexpr AREAL lowest() { // return most negative value
-		AREAL amaxneg;
-		return sw::universal::maxneg<nbits, es, bt>(amaxneg);
+	static constexpr BFLOAT lowest() { // return most negative value
+		return BFLOAT(sw::universal::SpecificValue::maxneg);
 	} 
-	static constexpr AREAL epsilon() { // return smallest effective increment from 1.0
-		AREAL one{ 1.0f }, incr{ 1.0f };
+	static constexpr BFLOAT epsilon() { // return smallest effective increment from 1.0
+		BFLOAT one{ 1.0f }, incr{ 1.0f };
 		return ++incr - one;
 	}
-	static constexpr AREAL round_error() { // return largest rounding error
-		return AREAL(0.5f);
+	static constexpr BFLOAT round_error() { // return largest rounding error
+		return BFLOAT(0.5f);
 	}
-	static constexpr AREAL denorm_min() {  // return minimum denormalized value
-		return AREAL(1.0f); 
+	static constexpr BFLOAT denorm_min() {  // return minimum denormalized value
+		return BFLOAT(1.0f); 
 	}
-	static constexpr AREAL infinity() { // return positive infinity
-		return AREAL(INFINITY); 
+	static constexpr BFLOAT infinity() { // return positive infinity
+		return BFLOAT(INFINITY); 
 	}
-	static constexpr AREAL quiet_NaN() { // return non-signaling NaN
-		return AREAL(NAN); 
+	static constexpr BFLOAT quiet_NaN() { // return non-signaling NaN
+		return BFLOAT(NAN); 
 	}
-	static constexpr AREAL signaling_NaN() { // return signaling NaN
-		return AREAL(NAN);
+	static constexpr BFLOAT signaling_NaN() { // return signaling NaN
+		return BFLOAT(NAN);
 	}
 
 	static constexpr int digits       = nbits - 1 - es + 1;

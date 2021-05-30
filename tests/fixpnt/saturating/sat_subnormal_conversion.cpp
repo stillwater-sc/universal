@@ -77,7 +77,7 @@ void FloatGenerateFixedPointValues(std::ostream& ostr = std::cout) {
 	sw::universal::fixpnt<nbits, rbits> a;
 	ostr << "  fixpnt<" << nbits << "," << rbits << ">\n";
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
-		a.set_raw_bits(i);
+		a.setbits(i);
 		float f = float(a);
 		ostr << to_binary(a) << " | " << to_triple(a) << " | " << std::setw(15) << a << " | " << std::setw(15) << f << std::endl;
 	}
@@ -89,7 +89,7 @@ void DoubleGenerateFixedPointValues(std::ostream& ostr = std::cout) {
 	sw::universal::fixpnt<nbits, rbits> a;
 	ostr << "  fixpnt<" << nbits << "," << rbits << ">\n";
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
-		a.set_raw_bits(i);
+		a.setbits(i);
 		double f = double(a);
 		ostr << to_binary(a) << " | " << to_triple(a) << " | " << std::setw(15) << a << " | " << std::setw(15) << f << std::endl;
 	}

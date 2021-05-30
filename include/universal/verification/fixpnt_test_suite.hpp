@@ -42,7 +42,7 @@ int VerifyAssignment(bool bReportIndividualTestCases) {
 	// fixpnt_raw -> to value in Ty -> assign to fixpnt -> compare fixpnts
 	fixpnt<nbits, rbits, arithmetic, BlockType> p, assigned;
 	for (size_t i = 0; i < NR_NUMBERS; i++) {
-		p.set_raw_bits(i); 
+		p.setbits(i); 
 		//std::cout << to_binary(p) << std::endl;
 		Ty value = (Ty)(p);
 		assigned = value;
@@ -96,7 +96,7 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 	double eps = dminpos / 2.0;  // the test value between 0 and minpos
 	for (size_t i = 0; i < NR_TEST_CASES && i < max_tests; ++i) {
 		double testValue{ 0.0 };
-		ref.set_raw_bits(i);
+		ref.setbits(i);
 		double da = double(ref);
 		if (i > 0) {
 			eps = da > 0 ? da * 1.0e-6 : da * -1.0e-6;
@@ -111,7 +111,7 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				// this rounds up
 				testValue = da + eps;
 				nut = testValue;
-				next.set_raw_bits(i + 1);
+				next.setbits(i + 1);
 				nrOfFailedTests += Compare(testValue, nut, (double)next, bReportIndividualTestCases);
 
 			}
@@ -119,7 +119,7 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				// special case of projecting to maxpos
 				testValue = da - eps;
 				nut = testValue;
-				prev.set_raw_bits(HALF - 2);
+				prev.setbits(HALF - 2);
 				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
 			}
 			else if (i == HALF + 1) {
@@ -132,7 +132,7 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				// special case of projecting to minneg
 				testValue = da - eps;
 				nut = testValue;
-				prev.set_raw_bits(i - 1);
+				prev.setbits(i - 1);
 				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
 				// but the +delta goes to 0
 				testValue = da + eps;
@@ -145,12 +145,12 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				// round-down
 				testValue = da - eps;
 				nut = testValue;
-				prev.set_raw_bits(i - 1);
+				prev.setbits(i - 1);
 				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
 				// round-up
 				testValue = da + eps;
 				nut = testValue;
-				next.set_raw_bits(i + 1);
+				next.setbits(i + 1);
 				nrOfFailedTests += Compare(testValue, nut, (double)next, bReportIndividualTestCases);
 			}
 		}
@@ -173,7 +173,7 @@ int VerifyConversion(bool bReportIndividualTestCases) {
 				// special case of projecting to minneg
 				testValue = da - eps;
 				nut = testValue;
-				prev.set_raw_bits(NR_TEST_CASES - 2);
+				prev.setbits(NR_TEST_CASES - 2);
 				nrOfFailedTests += Compare(testValue, nut, (double)prev, bReportIndividualTestCases);
 			}
 			else {
@@ -207,10 +207,10 @@ int VerifyAddition(bool bReportIndividualTestCases) {
 
 	double da, db;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
+		a.setbits(i);
 		da = double(a);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
+			b.setbits(j);
 			db = double(b);
 			ref = da + db;
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
@@ -262,10 +262,10 @@ int VerifySubtraction(bool bReportIndividualTestCases) {
 
 	double da, db;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
+		a.setbits(i);
 		da = double(a);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
+			b.setbits(j);
 			db = double(b);
 			ref = da - db;
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
@@ -317,10 +317,10 @@ int VerifyMultiplication(bool bReportIndividualTestCases) {
 
 	double da, db;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
+		a.setbits(i);
 		da = double(a);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
+			b.setbits(j);
 			db = double(b);
 			ref = da * db;
 #if FIXPNT_THROW_ARITHMETIC_EXCEPTION
@@ -372,10 +372,10 @@ int VerifyDivision(bool bReportIndividualTestCases) {
 
 	double da, db;
 	for (size_t i = 0; i < NR_VALUES; i++) {
-		a.set_raw_bits(i);
+		a.setbits(i);
 		da = double(a);
 		for (size_t j = 0; j < NR_VALUES; j++) {
-			b.set_raw_bits(j);
+			b.setbits(j);
 			db = double(b);
 			if (j != 0) {
 				ref = da / db;
@@ -426,7 +426,7 @@ void GenerateFixedPointValues(std::ostream& ostr = std::cout) {
 	fixpnt<nbits, rbits, arithmetic, BlockType> a;
 	ostr << "  fixpnt<" << nbits << "," << rbits << ">\n";
 	for (size_t i = 0; i < NR_TEST_CASES; ++i) {
-		a.set_raw_bits(i);
+		a.setbits(i);
 		float f = float(a);
 		ostr << to_binary(a) << " | " << to_triple(a) << " | " << std::setw(15) << a << " | " << std::setw(15) << f << std::endl;
 	}

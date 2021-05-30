@@ -44,7 +44,7 @@ try {
 	areal<8, 2> a;
 	uint32_t pattern = 0x00000001ul;
 	for (unsigned i = 0; i < 23; ++i) {
-		a.set_raw_bits(pattern);
+		a.setbits(pattern);
 		std::cout << std::setw(10) << pattern << " " << to_binary(a) << " " << a << std::endl;
 		pattern <<= 1;
 	}

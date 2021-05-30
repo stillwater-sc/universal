@@ -21,8 +21,8 @@ try {
 	const size_t es = 1;
 	posit<nbits, es> p1, p2, p3, p4, p5, p6;
 
-	/* constexpr */ double minpos = minpos_value<nbits, es>();
-	/* constexpr */ double maxpos = maxpos_value<nbits, es>();
+	/* constexpr */ double minpos = double(posit<nbits, es>(SpecificValue::minpos));
+	/* constexpr */ double maxpos = double(posit<nbits, es>(SpecificValue::maxpos));
 
 	// the two special cases of a posit configuration: 0 and NaR
 	p1 = 0;        checkSpecialCases(p1);

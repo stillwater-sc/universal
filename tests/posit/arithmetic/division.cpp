@@ -50,10 +50,10 @@ void GenerateWorstCaseDivision() {
 	p_minus_eps--;
 	p_result = p_plus_eps / p_minus_eps;
 	if (es < 2) {
-		std::cout << posit_descriptor.str() << " minpos = " << std::fixed << std::setprecision(nbits) << sw::universal::minpos_value<nbits, es>() << std::dec << std::endl;
+		std::cout << posit_descriptor.str() << " minpos = " << std::fixed << std::setprecision(nbits) << sw::universal::posit<nbits, es>(sw::universal::SpecificValue::minpos) << std::dec << std::endl;
 	}
 	else {
-		std::cout << posit_descriptor.str() << " minpos = " << std::setprecision(nbits) << sw::universal::minpos_value<nbits, es>() << std::endl;
+		std::cout << posit_descriptor.str() << " minpos = " << std::setprecision(nbits) << sw::universal::posit<nbits, es>(sw::universal::SpecificValue::minpos) << std::endl;
 
 	}
 	std::cout << p_plus_eps.get() << " / " << p_minus_eps.get() << " = " << p_result.get() << std::endl;
@@ -149,10 +149,10 @@ Notice that multiplying the B/A and A/B results gives 1 exactly, but multiplying
 */
 void ToughDivisions2() {
 	sw::universal::posit<16, 1> a, b, c, d;
-	a.set_raw_bits(20479);
-	b.set_raw_bits(2);
-	c.set_raw_bits(16383);
-	d.set_raw_bits(16385);
+	a.setbits(20479);
+	b.setbits(2);
+	c.setbits(16383);
+	d.setbits(16385);
 
 	GenerateTestCase<16, 1>(b, a);
 	GenerateTestCase<16, 1>(a, b);

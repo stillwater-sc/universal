@@ -32,13 +32,13 @@ public:
 	static constexpr Integer min() { return 1; } // return minimum value
 	static constexpr Integer max() {             // return maximum value
 		Integer imax(0); // sw::universal::integers are 2's complement encoded numbers
-		imax.set(nbits - 1);
+		imax.setbit(nbits - 1);
 		imax.flip();
 		return imax;
 	} 
 	static constexpr Integer lowest() { // return most negative value
 		Integer ilowest(0); // 2's complement maxneg is 1000...0000
-		ilowest.set(nbits - 1);
+		ilowest.setbit(nbits - 1);
 		return ilowest;
 	}
 	static constexpr float epsilon() { // return smallest effective increment from 1.0

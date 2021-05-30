@@ -37,10 +37,10 @@ int ValidateAdditionWithLiteral(const std::string& tag, bool bReportIndividualTe
 
 	double da, db;
 	for (int i = 0; i < NR_POSITS; i++) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		da = double(pa);
 		for (int j = 0; j < NR_POSITS; j++) {
-			pb.set_raw_bits(j);
+			pb.setbits(j);
 			db = double(pb);
 			psum1 = pa + db;
 			psum2 = da + pb;
@@ -67,10 +67,10 @@ int ValidateSubtractionWithLiteral(const std::string& tag, bool bReportIndividua
 
 	double da, db;
 	for (int i = 0; i < NR_POSITS; i++) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		da = double(pa);
 		for (int j = 0; j < NR_POSITS; j++) {
-			pb.set_raw_bits(j);
+			pb.setbits(j);
 			db = double(pb);
 			pdiff1 = pa - db;
 			pdiff2 = da - pb;
@@ -97,10 +97,10 @@ int ValidateMultiplicationWithLiteral(const std::string& tag, bool bReportIndivi
 
 	double da, db;
 	for (int i = 0; i < NR_POSITS; i++) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		da = double(pa);
 		for (int j = 0; j < NR_POSITS; j++) {
-			pb.set_raw_bits(j);
+			pb.setbits(j);
 			db = double(pb);
 			pmul1 = pa * db;
 			pmul2 = da * pb;
@@ -127,10 +127,10 @@ int ValidateDivisionWithLiteral(const std::string& tag, bool bReportIndividualTe
 
 	double da, db;
 	for (int i = 0; i < NR_POSITS; i++) {
-		pa.set_raw_bits(i);
+		pa.setbits(i);
 		da = double(pa);
 		for (int j = 0; j < NR_POSITS; j++) {
-			pb.set_raw_bits(j);
+			pb.setbits(j);
 			db = double(pb);
 			pdiv1 = pa / db;
 			pdiv2 = da / pb;

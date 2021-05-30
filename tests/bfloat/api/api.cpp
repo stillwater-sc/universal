@@ -34,6 +34,24 @@ try {
 #if MANUAL_TESTING
 
 	{
+		using Real = bfloat<8, 3, uint8_t>;
+		Real a(1.0f);
+		Real b(1.0f);
+		Real c{ 0 };
+		// emulate addition
+		constexpr size_t fbits = Real::fbits;
+		constexpr size_t abits = Real::abits;
+		blocktriple<fbits> _a, _b;
+		a.generate_add_input(_a);
+		b.generate_add_input(_b);
+		std::cout << to_binary(a) << " : " << to_triple(a) << std::endl;
+	
+		blocktriple<12> tmp;
+		a.normalize(tmp);
+		std::cout << to_triple(tmp) << std::endl;
+	}
+
+	{
 		bfloat<16, 4, uint16_t> a(1.0);
 		bfloat<16, 4, uint16_t> b;
 		b = 1.5f;
@@ -53,7 +71,7 @@ try {
 		std::cout << "   bfloat<32,8,uint32_t>         IEEE-754 float\n";
 		uint32_t pattern = 0x00000001ul;
 		for (unsigned i = 0; i < 24; ++i) {
-			a.set_raw_bits(pattern);
+			a.setbits(pattern);
 			std::cout << to_binary(a, true) << " " << a << ": ";
 			pattern <<= 1;
 			std::cout << to_binary(subnormal, true) << " : " << subnormal << std::endl;

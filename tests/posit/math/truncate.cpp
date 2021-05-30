@@ -23,7 +23,7 @@ int VerifyFloor(bool bReportIndividualTestCases) {
 
 	posit<nbits, es> p;
 	for (size_t i = 0; i < NR_VALUES; ++i) {
-		p.set_raw_bits(i);
+		p.setbits(i);
 		long l1 = long(sw::universal::floor(p));
 		// generate the reference
 		float f = float(p);

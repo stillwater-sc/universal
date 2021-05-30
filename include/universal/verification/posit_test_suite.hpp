@@ -235,14 +235,15 @@ namespace sw::universal {
 			std::cout << "VerifyConversion<" << nbits << "," << es << ">: NR_TEST_CASES = " << NR_TEST_CASES << " constrained due to nbits > 20" << std::endl;
 		}
 
+		double halfMinpos = double(posit<nbits + 1, es>(SpecificValue::minpos)) / 2.0;
 		// execute the test
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits + 1, es> pref, pprev, pnext;
 
-			pref.set_raw_bits(i);
+			pref.setbits(i);
 			double da = double(pref);
-			double eps = double(i == 0 ? minpos_value<nbits + 1, es>() / 2.0 : (da > 0 ? da * 1.0e-6 : da * -1.0e-6));
+			double eps = double(i == 0 ? halfMinpos : (da > 0 ? da * 1.0e-6 : da * -1.0e-6));
 			double input;
 			posit<nbits, es> pa;
 			if (i % 2) {
@@ -251,7 +252,7 @@ namespace sw::universal {
 					// even the -delta goes to +minpos
 					input = da - eps;
 					pa = input;
-					pnext.set_raw_bits(i + 1);
+					pnext.setbits(i + 1);
 					nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
 					input = da + eps;
 					pa = input;
@@ -261,14 +262,14 @@ namespace sw::universal {
 					// special case of projecting to +maxpos
 					input = da - eps;
 					pa = input;
-					pprev.set_raw_bits(HALF - 2);
+					pprev.setbits(HALF - 2);
 					nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
 				}
 				else if (i == HALF + 1) {
 					// special case of projecting to -maxpos
 					input = da - eps;
 					pa = input;
-					pprev.set_raw_bits(HALF + 2);
+					pprev.setbits(HALF + 2);
 					nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
 				}
 				else if (i == NR_TEST_CASES - 1) {
@@ -276,7 +277,7 @@ namespace sw::universal {
 					// even the +delta goes to -minpos
 					input = da - eps;
 					pa = input;
-					pprev.set_raw_bits(i - 1);
+					pprev.setbits(i - 1);
 					nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
 					input = da + eps;
 					pa = input;
@@ -287,12 +288,12 @@ namespace sw::universal {
 					// round-down
 					input = da - eps;
 					pa = input;
-					pprev.set_raw_bits(i - 1);
+					pprev.setbits(i - 1);
 					nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
 					// round-up
 					input = da + eps;
 					pa = input;
-					pnext.set_raw_bits(i + 1);
+					pnext.setbits(i + 1);
 					nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
 				}
 			}
@@ -306,14 +307,14 @@ namespace sw::universal {
 					// special case of projecting to +minpos
 					input = da + eps;
 					pa = input;
-					pnext.set_raw_bits(i + 2);
+					pnext.setbits(i + 2);
 					nrOfFailedTests += Compare(input, pa, (double)pnext, bReportIndividualTestCases);
 				}
 				else if (i == NR_TEST_CASES - 2) {
 					// special case of projecting to -minpos
 					input = da - eps;
 					pa = input;
-					pprev.set_raw_bits(NR_TEST_CASES - 2);
+					pprev.setbits(NR_TEST_CASES - 2);
 					nrOfFailedTests += Compare(input, pa, (double)pprev, bReportIndividualTestCases);
 				}
 				else {
@@ -489,7 +490,7 @@ namespace sw::universal {
 		posit<nbits, es> p;
 		// generate raw set, which will sort later
 		for (size_t i = 0; i < NR_OF_REALS; i++) {
-			p.set_raw_bits(i);
+			p.setbits(i);
 			s[i] = p;
 		}
 		// sort the set
@@ -601,7 +602,7 @@ namespace sw::universal {
 
 		double da;
 		for (size_t i = 1; i < NR_TEST_CASES; i++) {
-			pa.set_raw_bits(i);
+			pa.setbits(i);
 			pneg = -pa;
 			// generate reference
 			da = double(pa);
@@ -625,7 +626,7 @@ namespace sw::universal {
 
 		for (size_t i = 1; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> pa, psqrt, pref;
-			pa.set_raw_bits(i);
+			pa.setbits(i);
 			psqrt = sw::universal::sqrt(pa);
 			// generate reference
 			double da = double(pa);
@@ -652,10 +653,10 @@ namespace sw::universal {
 
 		double da, db;
 		for (size_t i = 0; i < NR_POSITS; i++) {
-			pa.set_raw_bits(i);
+			pa.setbits(i);
 			da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
-				pb.set_raw_bits(j);
+				pb.setbits(j);
 				db = double(pb);
 				pref = da + db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -695,11 +696,11 @@ namespace sw::universal {
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
-			pa.set_raw_bits(i);
+			pa.setbits(i);
 			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, psum, pref;
-				pb.set_raw_bits(j);
+				pb.setbits(j);
 				double db = double(pb);
 				pref = da + db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -741,12 +742,12 @@ namespace sw::universal {
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
-			pa.set_raw_bits(i);
+			pa.setbits(i);
 			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, pref, pdif;
 
-				pb.set_raw_bits(j);
+				pb.setbits(j);
 				double db = double(pb);
 				pref = da - db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -785,11 +786,11 @@ namespace sw::universal {
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
-			pa.set_raw_bits(i);
+			pa.setbits(i);
 			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, pref, pdif;
-				pb.set_raw_bits(j);
+				pb.setbits(j);
 				double db = double(pb);
 				pref = da - db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -830,11 +831,11 @@ namespace sw::universal {
 		const size_t NR_POSITS = (size_t(1) << nbits);
 		for (size_t i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
-			pa.set_raw_bits(i);
+			pa.setbits(i);
 			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, pmul, pref;
-				pb.set_raw_bits(j);
+				pb.setbits(j);
 				double db = double(pb);
 				pref = da * db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -872,11 +873,11 @@ namespace sw::universal {
 		const size_t NR_POSITS = (size_t(1) << nbits);
 		for (size_t i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
-			pa.set_raw_bits(i);
+			pa.setbits(i);
 			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, pmul, pref;
-				pb.set_raw_bits(j);
+				pb.setbits(j);
 				double db = double(pb);
 				pref = da * db;
 #if POSIT_THROW_ARITHMETIC_EXCEPTION
@@ -916,7 +917,7 @@ namespace sw::universal {
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> pa, preciprocal, preference;
-			pa.set_raw_bits(i);
+			pa.setbits(i);
 			// generate reference
 			double da;
 			if (pa.isnar()) {
@@ -946,11 +947,11 @@ namespace sw::universal {
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
-			pa.set_raw_bits(i);
+			pa.setbits(i);
 			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, pdiv, pref;
-				pb.set_raw_bits(j);
+				pb.setbits(j);
 				double db = double(pb);
 				if (pb.isnar()) {
 					pref.setnar();
@@ -1019,11 +1020,11 @@ namespace sw::universal {
 		int nrOfFailedTests = 0;
 		for (size_t i = 0; i < NR_POSITS; i++) {
 			posit<nbits, es> pa;
-			pa.set_raw_bits(i);
+			pa.setbits(i);
 			double da = double(pa);
 			for (size_t j = 0; j < NR_POSITS; j++) {
 				posit<nbits, es> pb, pdiv, pref;
-				pb.set_raw_bits(j);
+				pb.setbits(j);
 				double db = double(pb);
 				if (pb.isnar()) {
 					pref.setnar();
@@ -1096,10 +1097,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
-			a.set_raw_bits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				posit<nbits, es> b;
-				b.set_raw_bits(j);
+				b.setbits(j);
 				// set the golden reference
 				bool ref;
 				if (a.isnar() && b.isnar()) {
@@ -1141,10 +1142,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
-			a.set_raw_bits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				posit<nbits, es> b;
-				b.set_raw_bits(j);
+				b.setbits(j);
 
 				// set the golden reference
 				bool ref;
@@ -1187,10 +1188,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
-			a.set_raw_bits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				posit<nbits, es> b;
-				b.set_raw_bits(j);
+				b.setbits(j);
 
 				// generate the golden reference
 				bool ref;
@@ -1224,10 +1225,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
-			a.set_raw_bits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				posit<nbits, es> b;
-				b.set_raw_bits(j);
+				b.setbits(j);
 
 				// generate the golden reference
 				bool ref = (double(a) > double(b)); // same behavior as IEEE floats 
@@ -1253,10 +1254,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
-			a.set_raw_bits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				posit<nbits, es> b;
-				b.set_raw_bits(j);
+				b.setbits(j);
 
 				// set the golden reference			
 				bool ref = (double(a) <= double(b));// same behavior as IEEE floats
@@ -1283,10 +1284,10 @@ namespace sw::universal {
 		int nrOfFailedTestCases = 0;
 		for (unsigned i = 0; i < NR_TEST_CASES; i++) {
 			posit<nbits, es> a;
-			a.set_raw_bits(i);
+			a.setbits(i);
 			for (unsigned j = 0; j < NR_TEST_CASES; j++) {
 				posit<nbits, es> b;
-				b.set_raw_bits(j);
+				b.setbits(j);
 
 				// set the golden reference			
 				bool ref = (double(a) >= double(b));// same behavior as IEEE floats

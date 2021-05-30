@@ -60,7 +60,7 @@ template<size_t nbits, typename bt = uint8_t>
 constexpr blockbinary<nbits, bt>& maxpos(blockbinary<nbits, bt>& a) {
 	a.clear();
 	a.flip();
-	a.reset(nbits - 1);
+	a.setbit(nbits - 1, false);
 	return a;
 }
 
@@ -68,7 +68,7 @@ constexpr blockbinary<nbits, bt>& maxpos(blockbinary<nbits, bt>& a) {
 template<size_t nbits, typename bt = uint8_t>
 constexpr blockbinary<nbits, bt>& maxneg(blockbinary<nbits, bt>& a) {
 	a.clear();
-	a.set(nbits - 1);
+	a.setbit(nbits - 1);
 	return a;
 }
 
@@ -178,7 +178,7 @@ public:
 	}
 	blockbinary& operator++() {
 		blockbinary increment;
-		increment.set_raw_bits(0x1);
+		increment.setbits(0x1);
 		*this += increment;
 		return *this;
 	}
@@ -189,7 +189,7 @@ public:
 	}
 	blockbinary& operator--() {
 		blockbinary decrement;
-		decrement.set_raw_bits(0x1);
+		decrement.setbits(0x1);
 		return *this -= decrement;
 	}
 	// logic operators
@@ -214,7 +214,7 @@ public:
 		return *this;
 	}
 	blockbinary& operator-=(const blockbinary& rhs) {
-		return operator+=(twosComplement(rhs));
+		return operator+=(sw::universal::twosComplement(rhs));
 	}
 	blockbinary& operator*=(const blockbinary& rhs) { // modulo in-place
 		blockbinary base(*this);
@@ -296,14 +296,14 @@ public:
 					// bitsToShift is guaranteed to be less than nbits
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->set(i);
+						this->setbit(i);
 					}
 				}
 				else {
 					// clean up the blocks we have shifted clean
 					bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 					for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-						this->reset(i);
+						this->setbit(i, false);
 					}
 				}
 				return *this;
@@ -326,14 +326,14 @@ public:
 			// bitsToShift is guaranteed to be less than nbits
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->set(i);
+				this->setbit(i);
 			}
 		}
 		else {
 			// clean up the blocks we have shifted clean
 			bitsToShift += static_cast<int>(blockShift * bitsInBlock);
 			for (size_t i = nbits - bitsToShift; i < nbits; ++i) {
-				this->reset(i);
+				this->setbit(i, false);
 			}
 		}
 
@@ -350,16 +350,7 @@ public:
 		}
 	}
 	inline constexpr void setzero() noexcept { clear(); }
-	inline constexpr void reset(size_t i) {
-		if (i < nbits) {
-			bt block = _block[i / bitsInBlock];
-			bt mask = ~(1ull << (i % bitsInBlock));
-			_block[i / bitsInBlock] = bt(block & mask);
-			return;
-		}
-		throw "blockbinary<nbits, bt>.reset(index): bit index out of bounds";
-	}
-	inline constexpr void set(size_t i, bool v = true) {
+	inline constexpr void setbit(size_t i, bool v = true) {
 		if (i < nbits) {
 			bt block = _block[i / bitsInBlock];
 			bt null = ~(1ull << (i % bitsInBlock));
@@ -368,9 +359,9 @@ public:
 			_block[i / bitsInBlock] = bt((block & null) | mask);
 			return;
 		}
-		throw "blockbinary<nbits, bt>.set(index): bit index out of bounds";
+		throw "blockbinary<nbits, bt>.setbit(index): bit index out of bounds";
 	}
-	inline constexpr void set_raw_bits(uint64_t value) noexcept {
+	inline constexpr void setbits(uint64_t value) noexcept {
 		if constexpr (1 == nrBlocks) {
 			_block[0] = value & storageMask;
 		}
@@ -382,14 +373,17 @@ public:
 		}
 		_block[MSU] &= MSU_MASK; // enforce precondition for fast comparison by properly nulling bits that are outside of nbits
 	}
-	inline constexpr blockbinary& flip() noexcept { // in-place one's complement
+	inline constexpr void setblock(size_t b, const bt& block) {
+		if (b >= nrBlocks) throw "block index out of bounds";
+		_block[b] = block;
+	}	inline constexpr blockbinary& flip() noexcept { // in-place one's complement
 		for (size_t i = 0; i < nrBlocks; ++i) {
 			_block[i] = bt(~_block[i]);
 		}		
 		_block[MSU] &= MSU_MASK; // assert precondition of properly nulled leading non-bits
 		return *this;
 	}
-	inline constexpr blockbinary& twoscomplement() noexcept { // in-place 2's complement
+	inline constexpr blockbinary& twosComplement() noexcept { // in-place 2's complement
 		blockbinary<nbits, bt> plusOne(1);
 		flip();
 		return *this += plusOne;
@@ -405,16 +399,14 @@ public:
 	}
 	inline constexpr bool isodd() const noexcept { return _block[0] & 0x1;	}
 	inline constexpr bool iseven() const noexcept { return !isodd(); }
-	inline constexpr bool test(size_t bitIndex) const {
+	inline constexpr bool test(size_t bitIndex) const noexcept {
 		return at(bitIndex);
 	}
-	inline constexpr bool at(size_t bitIndex) const {
-		if (bitIndex < nbits) {
-			bt word = _block[bitIndex / bitsInBlock];
-			bt mask = bt(1ull << (bitIndex % bitsInBlock));
-			return (word & mask);
-		}
-		throw "bit index out of bounds";
+	inline constexpr bool at(size_t bitIndex) const noexcept {
+		if (bitIndex >= nbits) return false; // fail silently as no-op
+		bt word = _block[bitIndex / bitsInBlock];
+		bt mask = bt(1ull << (bitIndex % bitsInBlock));
+		return (word & mask);
 	}
 	inline constexpr uint8_t nibble(size_t n) const {
 		if (n < (1 + ((nbits - 1) >> 2))) {
@@ -426,11 +418,10 @@ public:
 		}
 		throw "nibble index out of bounds";
 	}
+	// TODO: convert to noexcept function?
 	inline constexpr bt block(size_t b) const {
-		if (b < nrBlocks) {
-			return _block[b];
-		}
-		throw "block index out of bounds";
+		if (b >= nrBlocks) throw "block index out of bounds";
+		return _block[b];
 	}
 
 	// copy a value over from one blockbinary to this blockbinary
@@ -446,7 +437,7 @@ public:
 		if constexpr (nbits > srcbits) { // check if we need to sign extend
 			if (rhs.sign()) {
 				for (size_t i = srcbits; i < nbits; ++i) { // TODO: replace bit-oriented sequence with block
-					set(i);
+					setbit(i);
 				}
 			}
 		}
@@ -651,8 +642,8 @@ quorem<nbits, bt> longdivision(const blockbinary<nbits, bt>& _a, const blockbina
 	// normalize both arguments to positive, which requires expansion by 1-bit to deal with maxneg
 	blockbinary<nbits + 1, bt> a(_a);
 	blockbinary<nbits + 1, bt> b(_b);
-	if (a_sign) a.twoscomplement();
-	if (b_sign) b.twoscomplement();
+	if (a_sign) a.twosComplement();
+	if (b_sign) b.twosComplement();
 
 	if (a < b) { // optimization for integer numbers
 		result.rem = _a; // a % b = a when a / b = 0
@@ -670,10 +661,10 @@ quorem<nbits, bt> longdivision(const blockbinary<nbits, bt>& _a, const blockbina
 	for (int i = shift; i >= 0; --i) {
 		if (subtractand <= accumulator) {
 			accumulator -= subtractand;
-			result.quo.set(static_cast<size_t>(i));
+			result.quo.setbit(static_cast<size_t>(i));
 		}
 		else {
-			result.quo.reset(static_cast<size_t>(i));
+			result.quo.setbit(static_cast<size_t>(i), false);
 		}
 		subtractand >>= 1;
 	}
@@ -753,8 +744,8 @@ inline blockbinary<2 * nbits, bt> urmul2(const blockbinary<nbits, bt>& a, const 
 	// normalize both arguments to positive in new size
 	blockbinary<nbits + 1, bt> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
 	blockbinary<nbits + 1, bt> b_new(b);
-	if (a.sign()) a_new.twoscomplement();
-	if (b.sign()) b_new.twoscomplement();
+	if (a.sign()) a_new.twosComplement();
+	if (b.sign()) b_new.twosComplement();
 	blockbinary<2*nbits, bt> multiplicant(b_new);
 
 #if TRACE_URMUL
@@ -770,7 +761,7 @@ inline blockbinary<2 * nbits, bt> urmul2(const blockbinary<nbits, bt>& a, const 
 		std::cout << std::setw(3) << i << ' ' << multiplicant << ' ' << result << std::endl;
 #endif
 	}
-	if (result_sign) result.twoscomplement();
+	if (result_sign) result.twosComplement();
 #if TRACE_URMUL
 	std::cout << "fnl " << result << std::endl;
 #endif
@@ -794,8 +785,8 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 	// normalize both arguments to positive in new size
 	blockbinary<nbits + 1, bt> a_new(a); // TODO optimize: now create a, create _a.bb, copy, destroy _a.bb_copy
 	blockbinary<nbits + 1, bt> b_new(b);
-	if (a_sign) a_new.twoscomplement();
-	if (b_sign) b_new.twoscomplement();
+	if (a_sign) a_new.twosComplement();
+	if (b_sign) b_new.twosComplement();
 
 	// initialize the long division
 	blockbinary<2 * nbits + roundingBits, bt> decimator(a_new);
@@ -820,10 +811,10 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 
 		if (subtractand <= decimator) {
 			decimator -= subtractand;
-			result.set(static_cast<size_t>(i));
+			result.setbit(static_cast<size_t>(i));
 		}
 		else {
-			result.reset(static_cast<size_t>(i));
+			result.setbit(static_cast<size_t>(i), false);
 		}
 		subtractand >>= 1;
 
@@ -833,7 +824,7 @@ inline blockbinary<2 * nbits + roundingBits, bt> urdiv(const blockbinary<nbits, 
 #endif
 	}
 	result <<= scale;
-	if (result_negative) result.twoscomplement();
+	if (result_negative) result.twosComplement();
 	r.assign(result); // copy the lowest bits which represent the bits on which we need to apply the rounding test
 	return result;
 }
