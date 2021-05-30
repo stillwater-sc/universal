@@ -425,15 +425,15 @@ namespace sw::universal {
 		constexpr size_t es = 11;
 		int nrOfFailedTests = 0;
 		bfloat<nbits, es, BlockType> nut, result;
-		float f{ 0.0f };
+		double d{ 0.0f };
 		// verify the subnormals
 		nut = 0;
 		++nut;
 		for (size_t i = 0; i < ieee754_parameter<float>::fbits; ++i) {
-			f = float(nut);
-			result = f;
+			d = double(nut);
+			result = d;
 			if (result != nut) {
-				nrOfFailedTests += Compare(f, result, nut, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(d, result, nut, bReportIndividualTestCases);
 			}
 			uint64_t fraction = nut.fraction_ull();
 			fraction <<= 1;
@@ -448,11 +448,11 @@ namespace sw::universal {
 		for (unsigned i = 1; i < nrOfRandoms; i++) {
 			uint64_t rawBits = distr(eng);
 			nut.setbits(rawBits);
-			f = float(nut);
-			result = f;
+			d = double(nut);
+			result = d;
 			if (result != nut) {
 				if (result.isinf()) continue; // bfloat has gradual overflow, IEEE-754 does not
-				nrOfFailedTests += Compare(f, result, nut, bReportIndividualTestCases);
+				nrOfFailedTests += Compare(d, result, nut, bReportIndividualTestCases);
 			}
 		}
 		return nrOfFailedTests;
