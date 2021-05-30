@@ -94,7 +94,12 @@ try {
 		std::cout << to_binary(a) << " : " << a << " : " << da << " : " << setprecision(8) << testValue << endl;
 	}
 
-	bool bReportIndividualTestCases = false;
+	bool bReportIndividualTestCases = true;
+	nrOfFailedTestCases += ReportTestResult(VerifyDoublePrecision<uint8_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDoublePrecision<uint16_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDoublePrecision<uint32_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDoublePrecision<uint64_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint64_t>");
+
 	// es = 1
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 4, 1>, double >(bReportIndividualTestCases), tag, "bfloat< 4,1>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 5, 1>, double >(bReportIndividualTestCases), tag, "bfloat< 5,1>");

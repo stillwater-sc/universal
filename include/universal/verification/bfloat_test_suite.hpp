@@ -368,6 +368,95 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
+	/// <summary>
+	/// random test bfloat<32,8, bt> as it is a special case
+	/// </summary>
+	template<typename BlockType>
+	int VerifySinglePrecision(bool bReportIndividualTestCases) {
+		using namespace std;
+		using namespace sw::universal;
+		constexpr size_t nbits = 32;
+		constexpr size_t es = 8;
+		int nrOfFailedTests = 0;
+		bfloat<nbits, es, BlockType> nut, result;
+		float f{ 0.0f };
+		// verify the subnormals
+		nut = 0;
+		++nut;
+		for (size_t i = 0; i < ieee754_parameter<float>::fbits; ++i) {
+			f = float(nut);
+			result = f;
+			if (result != nut) {
+				nrOfFailedTests += Compare(f, result, nut, bReportIndividualTestCases);
+			}
+			uint64_t fraction = nut.fraction_ull();
+			fraction <<= 1;
+			nut.setfraction(fraction);
+		}
+		// run randoms
+		constexpr size_t nrOfRandoms = 10000;
+		std::random_device rd;     // get a random seed from the OS entropy device
+		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
+		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
+		std::uniform_int_distribution<uint32_t> distr;
+		for (unsigned i = 1; i < nrOfRandoms; i++) {
+			uint32_t rawBits = distr(eng);
+			nut.setbits(rawBits);
+//			std::cout << to_binary(rawBits, 32) << '\n';
+//			std::cout << to_binary(nut, true) << '\n';
+			f = float(nut);
+			result = f;
+			if (result != nut) {
+				if (result.isinf()) continue; // bfloat has gradual overflow, IEEE-754 does not
+				nrOfFailedTests += Compare(f, result, nut, bReportIndividualTestCases);
+			}
+		}
+		return nrOfFailedTests;
+	}
+
+	/// <summary>
+/// random test bfloat<64, 11, bt> as it is a special case
+/// </summary>
+	template<typename BlockType>
+	int VerifyDoublePrecision(bool bReportIndividualTestCases) {
+		using namespace std;
+		using namespace sw::universal;
+		constexpr size_t nbits = 64;
+		constexpr size_t es = 11;
+		int nrOfFailedTests = 0;
+		bfloat<nbits, es, BlockType> nut, result;
+		float f{ 0.0f };
+		// verify the subnormals
+		nut = 0;
+		++nut;
+		for (size_t i = 0; i < ieee754_parameter<float>::fbits; ++i) {
+			f = float(nut);
+			result = f;
+			if (result != nut) {
+				nrOfFailedTests += Compare(f, result, nut, bReportIndividualTestCases);
+			}
+			uint64_t fraction = nut.fraction_ull();
+			fraction <<= 1;
+			nut.setfraction(fraction);
+		}
+		// run randoms
+		constexpr size_t nrOfRandoms = 10;
+		std::random_device rd;     // get a random seed from the OS entropy device
+		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
+		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
+		std::uniform_int_distribution<uint64_t> distr;
+		for (unsigned i = 1; i < nrOfRandoms; i++) {
+			uint64_t rawBits = distr(eng);
+			nut.setbits(rawBits);
+			f = float(nut);
+			result = f;
+			if (result != nut) {
+				if (result.isinf()) continue; // bfloat has gradual overflow, IEEE-754 does not
+				nrOfFailedTests += Compare(f, result, nut, bReportIndividualTestCases);
+			}
+		}
+		return nrOfFailedTests;
+	}
 
 	// validate the increment operator++
 	template<size_t nbits, size_t es>

@@ -69,7 +69,7 @@ int VerifyNegation(const std::string& tag, bool bReportIndividualTestCases) {
 /// <param name="bReportIndividualTestCases">if yes, report on individual test failures</param>
 /// <returns></returns>
 template<typename TestType>
-int VerifyAddition(const std::string& tag, bool bReportIndividualTestCases) {
+int VerifyAddition(bool bReportIndividualTestCases) {
 	constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 	constexpr size_t NR_VALUES = (size_t(1) << nbits);
 	int nrOfFailedTests = 0;

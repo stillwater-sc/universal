@@ -105,6 +105,34 @@ int scale(const bfloat<nbits, es, bt>& v) {
 	return v.scale();
 }
 
+/// <summary>
+/// parse a text string into a bfloat value
+/// </summary>
+/// <typeparam name="bt"></typeparam>
+/// <param name="str"></param>
+/// <returns></returns>
+template<size_t nbits, size_t es, typename bt>
+bfloat<nbits, es, bt> parse(const std::string& str) {
+	bfloat<nbits, es, bt> a{ 0 };
+	if (str[0] == 'b') {
+		size_t index = nbits;
+		for (size_t i = 1; i < str.size(); ++i) {
+			if (str[i] == '1') {
+				a.setbit(--index, true);
+			}
+			else if (str[i] == '0') {
+				a.setbit(--index, false);
+			}
+			else if (str[i] == '.' || str[i] == '\'') {
+				// ignore annotation
+			}
+		}
+	}
+	else {
+		std::cerr << "parse currently only parses binary string formats\n";
+	}
+	return a;
+}
 // convert a blocktriple to a bfloat
 template<size_t srcbits, size_t nbits, size_t es, typename bt>
 inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, bfloat<nbits, es, bt>& tgt) {
@@ -289,7 +317,7 @@ public:
 	constexpr bfloat& operator=(unsigned long rhs)      { return convert_unsigned_integer(rhs); }
 	constexpr bfloat& operator=(unsigned long long rhs) { return convert_unsigned_integer(rhs); }
 
-	CONSTEXPRESSION bfloat& operator=(float rhs)        { return convert_float(rhs); }
+	CONSTEXPRESSION bfloat& operator=(float rhs)        { return convert_ieee754(rhs); }
 	CONSTEXPRESSION bfloat& operator=(double rhs)       { return convert_double(rhs); }
 	CONSTEXPRESSION bfloat& operator=(long double rhs)  { return convert_double(rhs); }
 
@@ -1000,7 +1028,11 @@ public:
 		}
 		return shift;
 	}
-	
+	// get the raw bits from the encoding
+	inline constexpr void getbits(blockbinary<nbits, bt>& b) const {
+		b.clear();
+		for (size_t i = 0; i < nbits; ++i) { b.setbit(i, at(i)); }
+	}
 	// casts to native types
 	long to_long() const { return long(to_native<double>()); }
 	long long to_long_long() const { return (long long)(to_native<double>()); }
@@ -1042,8 +1074,8 @@ public:
 			}
 			else {
 				// regular: (-1)^s * 2^(e+1-2^(es-1)) * (1 + f/2^fbits))
-				int exponent = unsigned(ebits) + 1ll - (1ll << (es - 1ull));
-				if (exponent < 64) {
+				int exponent = unsigned(ebits) - EXP_BIAS;
+				if (-64 < exponent && exponent < 64) {
 					TargetFloat exponentiation = (exponent >= 0 ? TargetFloat(1ull << exponent) : (1.0f / TargetFloat(1ull << -exponent)));
 					v = exponentiation * (TargetFloat(1.0) + f);
 				}
@@ -1356,6 +1388,24 @@ public:
 			setbit(nbits - 1ull, s);
 			return *this;
 		}
+		// when we are a perfect match to single precision IEEE-754
+		if constexpr (nbits == 32 && es == 8) {
+			uint64_t raw{ s ? 1ull : 0ull };
+			raw <<= 31;
+			raw |= (rawExponent << fbits);
+			raw |= rawFraction;
+			setbits(raw);
+			return *this;
+		}
+		// when we are a perfect match to double precision IEEE-754
+		if constexpr (nbits == 64 && es == 11) {
+			uint64_t raw{ s ? 1ull : 0ull };
+			raw <<= 63;
+			raw |= (rawExponent << fbits);
+			raw |= rawFraction;
+			setbits(raw);
+			return *this;
+		}
 		// normal number consists of fbits fraction bits and one hidden bit
 		// subnormal number has no hidden bit
 		int exponent = int(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
@@ -1382,11 +1432,7 @@ public:
 		std::cout << "exponent value    : " << exponent << '\n';
 #endif
 
-		uint32_t biasedExponent{ 0 };
-		int adjustment{ 0 };
-		uint32_t mask{ 0x007F'FFFFu };
-		if constexpr (fbits < 23) mask >>= fbits; else mask = 0; // mask for rounding
-		constexpr int shiftRight = 23 - static_cast<int>(fbits); // this is the bit shift to get the MSB of the src to the MSB of the tgt
+		uint64_t biasedExponent{ 0 }; // a 64-bit container to OR with sign and friction bits
 
 		// do the following scenarios have different rounding bits?
 		// input is normal, bfloat is normal           <-- rounding can happen with native ieee-754 bits
@@ -1394,16 +1440,26 @@ public:
 		// input is subnormal, bfloat is normal
 		// input is subnormal, bfloat is subnormal
 
-		// second set of conditions is the relationship between the number of fraction bits from the source
-		// and the number of fraction bits in the bfloat target: these are constexpressions and guard the shifts
+		// The first condition is the relationship between the number 
+		// of fraction bits from the source and the number of fraction bits 
+		// in the target bfloat: these are constexpressions and guard the shifts
 		// input fbits >= bfloat fbits                 <-- need to round
 		// input fbits < bfloat fbits                  <-- no need to round
-		if constexpr (ieee754_parameter<Real>::fbits >= fbits) {  
-			// this is the common case for small bfloats with nbits < 32bits
 
+		if constexpr (ieee754_parameter<Real>::fbits > fbits) {  
+			// this is the common case for bfloats that are smaller than single and double precision IEEE-754
+			constexpr int shiftRight = ieee754_parameter<Real>::fbits - static_cast<int>(fbits); // this is the bit shift to get the MSB of the src to the MSB of the tgt
+			int adjustment{ 0 };
+			uint64_t mask;
 		}
 		else {
 			// no need to round, but we need to shift left to deliver the bits
+			// bfloat<32,  8> = float
+			// bfloat<40,  8> = float
+			// bfloat<48,  9> = float
+			// bfloat<56, 10> = float
+			// bfloat<64, 11> = float
+			// bfloat<64, 11> = double 
 			// can we go from an input subnormal to a bfloat normal? 
 			// yes, for example a bfloat<64,11> assigned to a subnormal float
 		}

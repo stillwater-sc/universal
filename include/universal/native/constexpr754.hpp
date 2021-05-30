@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <bit>    // bit_cast
 
+#include <universal/native/integers.hpp>
 #include <universal/utility/color_print.hpp>
 
 namespace sw::universal {
