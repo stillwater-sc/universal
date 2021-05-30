@@ -13,9 +13,9 @@ namespace sw {
             {
                 size_t m = num_cols(A), n = num_rows(A);
                 assert(n == m);
-                std::vector<vector<Scalar>>columnExtractor(Scalar(n), vector<int>(Scalar(m)));
-                std::vector<vector<Scalar>>signal(Scalar(n), vector<int>(Scalar(m), Scalar(-1)));
-                std::vector<Scalar> alpha(n), alpha_norm(n);
+                vector<vector<Scalar>>columnExtractor(Scalar(n), vector<int>(Scalar(m)));
+                vector<vector<Scalar>>signal(Scalar(n), vector<int>(Scalar(m), Scalar(-1)));
+                vector<Scalar> alpha(n), alpha_norm(n);
                 for (size_t i = 1; i <= n; ++i) get_column(A, i, columnExtractor);//put ith column of A ith index of columnExtractor
                 alpha[1] = columnExtractor[1] / Scalar(norm(columnExtractor[1],2));
                 set_column(Q, 1, alpha[1]);

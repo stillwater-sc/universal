@@ -255,7 +255,14 @@ Scalar norm(const sw::universal::blas::vector<Scalar>& v, int p) {
 	}
 	return norm;
 }
-
+template<typename T>
+void get_column(const matrix<T>& A, size_t j, vector<vector<T>>B(T(n), vector<int>(T(m)))) {
+	for (size_t i = 1; i < num_cols(A); ++i) { B[i][j] = A[i][j]; }
+}
+template<typename T>
+void set_column(const matrix<T>& A, size_t j, vector<vector<T>>B(T(n), vector<int>(T(m)))){
+	for (size_t i = 1; i < num_rows(A); ++i) { B[i][j] = B[i]; }
+}
 } // namespace sw::universal::blas
 
 // specializations for STL vectors
@@ -270,13 +277,5 @@ template<typename Ty>
 Ty maxValue(const std::vector<Ty>& samples) {
 	typename std::vector<Ty>::const_iterator it = max_element(samples.begin(), samples.end());
 	return *it;
-}
-template<typename T>
-void get_column(const matrix<Scalar>& A, size_t j, std::vector<vector<Scalar>>B(Scalar(n), vector<int>(Scalar(m))); {
-	for (size_t i = 1; i < num_cols(A), ++i) B[i][j] = A[i][j];
-}
-template<typename T>
-void set_column(const matrix<Scalar>& A, size_t j, std::vector<vector<Scalar>>B(Scalar(n), vector<int>(Scalar(m))); {
-	for (size_t i = 1; i < num_rows(A), ++i) B[i][j] = B[i];
 }
 
