@@ -48,7 +48,7 @@ inline std::string to_triple(long double number) {
 	return to_triple(double(number));
 }
 
-// generate a color coded binary string for a native double precision IEEE floating point
+// generate a color coded binary string for a native long double precision IEEE floating point
 inline std::string color_print(long double number) {
 	return color_print(double(number));
 }

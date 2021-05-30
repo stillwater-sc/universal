@@ -534,8 +534,10 @@ public:
 	/// set the fraction bits given a significant in the form ???
 	/// </summary>
 	/// <param name="significant"></param>
-	inline constexpr void setfraction(const blockfraction<fbits, bt>& significant) {
-
+	inline constexpr void setfraction(const blockbinary<fbits, bt>& fraction) {
+		for (size_t i = 0; i < fbits; ++i) {
+			setbit(i, fraction.test(i));
+		}
 	}
 	inline constexpr void setfraction(uint64_t raw_bits) {
 		// unoptimized as it is not meant to be an end-user API, it is a test API
@@ -612,6 +614,27 @@ public:
 		}
 		else if constexpr (1 == nrBlocks) {
 			_block[0] = raw_bits & storageMask;
+		}
+		else if constexpr (2 == nrBlocks) {
+			_block[0] = raw_bits & storageMask;
+			raw_bits >>= bitsInBlock;
+			_block[1] = raw_bits & storageMask;
+		}
+		else if constexpr (3 == nrBlocks) {
+			_block[0] = raw_bits & storageMask;
+			raw_bits >>= bitsInBlock;
+			_block[1] = raw_bits & storageMask;
+			raw_bits >>= bitsInBlock;
+			_block[2] = raw_bits & storageMask;
+		}
+		else if constexpr (4 == nrBlocks) {
+			_block[0] = raw_bits & storageMask;
+			raw_bits >>= bitsInBlock;
+			_block[1] = raw_bits & storageMask;
+			raw_bits >>= bitsInBlock;
+			_block[2] = raw_bits & storageMask;
+			raw_bits >>= bitsInBlock;
+			_block[3] = raw_bits & storageMask;
 		}
 		else {
 			for (size_t i = 0; i < nrBlocks; ++i) {
@@ -900,7 +923,7 @@ public:
 			f.setbits(fraction);
 		}
 		else if constexpr (nrBlocks > 1) {
-			for (size_t i = 0; i < fbits; ++i) { f.setbit(i, at(nbits - 1ull - es - fbits + i)); } // TODO: TEST!
+			for (size_t i = 0; i < fbits; ++i) { f.setbit(i, at(i)); } // TODO: TEST!
 		}
 	}
 	inline constexpr uint64_t fraction_ull() const {
@@ -908,19 +931,19 @@ public:
 		if constexpr (nbits - es - 1ull < 65ull) { // no-op if precondition doesn't hold
 			if constexpr (1 == nrBlocks) {
 				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
-				raw = fbitMask & _block[0];
+				raw = fbitMask & uint64_t(_block[0]);
 			}
 			else if constexpr (2 == nrBlocks) {
 				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
-				raw = fbitMask & ((_block[1] << bitsInBlock) | _block[0]);
+				raw = fbitMask & ((uint64_t(_block[1]) << bitsInBlock) | uint64_t(_block[0]));
 			}
 			else if constexpr (3 == nrBlocks) {
 				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
-				raw = fbitMask & ((_block[2] << (2*bitsInBlock)) | (_block[1] << bitsInBlock) | _block[0]);
+				raw = fbitMask & ((uint64_t(_block[2]) << (2*bitsInBlock)) | (uint64_t(_block[1]) << bitsInBlock) | uint64_t(_block[0]));
 			}
 			else if constexpr (4 == nrBlocks) {
 				uint64_t fbitMask = 0xFFFF'FFFF'FFFF'FFFF >> (64 - fbits);
-				raw = fbitMask & ((_block[3] << (3 * bitsInBlock)) | (_block[2] << (2 * bitsInBlock)) | (_block[1] << bitsInBlock) | _block[0]);
+				raw = fbitMask & ((uint64_t(_block[3]) << (3 * bitsInBlock)) | (uint64_t(_block[2]) << (2 * bitsInBlock)) | (uint64_t(_block[1]) << bitsInBlock) | uint64_t(_block[0]));
 			}
 			else {
 				uint64_t mask{ 1 };

@@ -23,18 +23,6 @@
 #include <universal/number/bfloat/table.hpp> // only used for value table generation
 
 
-template<typename TestType>
-void EnumerateSubnormals() {
-	TestType a{ 0 };
-	++a;
-	for (size_t i = 0; i < TestType::fbits; ++i) {
-		std::cout << sw::universal::to_binary(a, true) << " : " << sw::universal::color_print(a) << " : " << a << '\n';
-		uint64_t fraction = a.fraction_ull();
-		fraction <<= 1;
-		a.setfraction(fraction);
-	}
-}
-
 template<typename BfloatType>
 void Test1() 
 {
@@ -104,18 +92,15 @@ try {
 	// to track conversion in more detail
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
-#
-	EnumerateSubnormals<bfloat<8, 2, uint8_t>>();
-//	EnumerateSubnormals<bfloat<16, 5, uint8_t>>();
-//	EnumerateSubnormals<bfloat<32, 8, uint8_t>>();
-//	EnumerateSubnormals<bfloat<64, 11, uint8_t>>();
+
+
 
 	float f = 2.2420775e-44f;
 	std::cout << to_binary(0.5f*f) << '\n' 
 		<< to_binary(f) << '\n'
 		<< to_binary(2*f) << std::endl;
 
-	return 0;
+
 	GenerateTable< bfloat<4, 1, uint8_t> >(cout);
 	f = 1.875f + 0.0625f;
 	compareSmallBfloats<1>(f);

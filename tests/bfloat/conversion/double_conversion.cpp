@@ -66,7 +66,7 @@ void CompilerBug() {
 }
 
 // conditional compile flags
-#define MANUAL_TESTING 0
+#define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
 int main(int argc, char** argv)
@@ -77,7 +77,7 @@ try {
 	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = "double conversion: ";
+	std::string tag = "double to bfloat conversion: ";
 
 #if MANUAL_TESTING
 
@@ -86,20 +86,24 @@ try {
 	std::cerr << std::setprecision(15);
 
 	{
-		bfloat<6, 2> a;
-		a.constexprParameters();
+		bfloat<6, 2, uint8_t> a;
+		a.constexprClassParameters();
 		double testValue = 0.0625000074505806;
 		a = testValue;
 		double da = double(a);
 		std::cout << to_binary(a) << " : " << a << " : " << da << " : " << setprecision(8) << testValue << endl;
 	}
 
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<4, 1, uint8_t>, double >(false), tag, "bfloat<4,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 1, uint8_t>, double >(false), tag, "bfloat<5,1,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<5, 2, uint8_t>, double >(false), tag, "bfloat<5,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<6, 2, uint8_t>, double >(true), tag, "bfloat<6,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<7, 2, uint8_t>, double >(false), tag, "bfloat<7,2,uint8_t>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<8, 2, uint8_t>, double >(false), tag, "bfloat<8,2,uint8_t>");
+	bool bReportIndividualTestCases = false;
+	// es = 1
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 4, 1>, double >(bReportIndividualTestCases), tag, "bfloat< 4,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 5, 1>, double >(bReportIndividualTestCases), tag, "bfloat< 5,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 6, 1>, double >(bReportIndividualTestCases), tag, "bfloat< 6,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 7, 1>, double >(bReportIndividualTestCases), tag, "bfloat< 7,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 8, 1>, double >(bReportIndividualTestCases), tag, "bfloat< 8,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 9, 1>, double >(bReportIndividualTestCases), tag, "bfloat< 9,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<10, 1>, double >(bReportIndividualTestCases), tag, "bfloat<10,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat<12, 1>, double >(bReportIndividualTestCases), tag, "bfloat<12,1>");
 
 	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
