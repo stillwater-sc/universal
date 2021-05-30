@@ -78,7 +78,7 @@ b0.00000001.00000000000000000000000 : 1.175494350822288e-38
 b0.00000010.00000000000000000000000 : 2.350988701644575e-38
 */
 // float subnormals with the last entry being the smallest normal value
-float ieee754_float_subnormals[24] = {
+constexpr float ieee754_float_subnormals[24] = {
  1.401298464324817e-45,
  2.802596928649634e-45,
  5.605193857299268e-45,

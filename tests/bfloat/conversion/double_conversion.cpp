@@ -124,7 +124,7 @@ b0.00000000010.0000000000000000000000000000000000000000000000000000 : 4.45014771
 */
 
 // double subnormals with the last entry being the smallest normal value
-double ieee754_double_subnormals[53] = {
+constexpr double ieee754_double_subnormals[53] = {
  4.940656458412465e-324,
  9.881312916824931e-324,
  1.976262583364986e-323,
