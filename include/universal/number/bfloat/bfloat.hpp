@@ -537,6 +537,16 @@ public:
 	inline constexpr void setfraction(const blockfraction<fbits, bt>& significant) {
 
 	}
+	inline constexpr void setfraction(uint64_t raw_bits) {
+		// unoptimized as it is not meant to be an end-user API, it is a test API
+		if constexpr (fbits < 65) {
+			uint64_t mask{ 1ull };
+			for (size_t i = 0; i < fbits; ++i) {
+				setbit(i, (mask & raw_bits));
+				mask <<= 1;
+			}
+		}
+	}
 	// specific number system values of interest
 	inline constexpr bfloat& maxpos() noexcept {
 		// maximum positive value has this bit pattern: 0-1...1-111...111, that is, sign = 0, e = 1.1, f = 111...101
@@ -915,10 +925,10 @@ public:
 			else {
 				uint64_t mask{ 1 };
 				for (size_t i = 0; i < fbits; ++i) { 
-					if (test(nbits - 1ull - es - fbits + i)) {
+					if (test(i)) {
 						raw |= mask;
-						mask <<= 1;
 					}
+					mask <<= 1;
 				}
 			}
 		}
@@ -1327,15 +1337,6 @@ public:
 		// subnormal number has no hidden bit
 		int exponent = int(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
 
-#if TRACE_CONVERSION
-		std::cout << '\n';
-		std::cout << "value             : " << rhs << '\n';
-		std::cout << "segments          : " << to_binary(rhs) << '\n';
-		std::cout << "sign     bit      : " << (s ? '1' : '0') << '\n';
-		std::cout << "exponent bits     : " << to_binary(rawExponent, ieee754_parameter<Real>::ebits, true) << '\n';
-		std::cout << "fraction bits     : " << to_binary(rawFraction, ieee754_parameter<Real>::fbits, true) << std::endl;
-		std::cout << "exponent value    : " << exponent << '\n';
-#endif
 		// check special case of saturating to maxpos/maxneg if out of range
 		if (exponent > MAX_EXP) {
 			if (s) this->maxneg(); else this->maxpos(); // saturate to maxpos or maxneg
@@ -1348,6 +1349,43 @@ public:
 		/////////////////  
 		/// end of special case processing, move on to value projection and rounding
 
+#if TRACE_CONVERSION
+		std::cout << '\n';
+		std::cout << "value             : " << rhs << '\n';
+		std::cout << "segments          : " << to_binary(rhs) << '\n';
+		std::cout << "sign     bit      : " << (s ? '1' : '0') << '\n';
+		std::cout << "exponent bits     : " << to_binary(rawExponent, ieee754_parameter<Real>::ebits, true) << '\n';
+		std::cout << "fraction bits     : " << to_binary(rawFraction, ieee754_parameter<Real>::fbits, true) << std::endl;
+		std::cout << "exponent value    : " << exponent << '\n';
+#endif
+
+		uint32_t biasedExponent{ 0 };
+		int adjustment{ 0 };
+		uint32_t mask{ 0x007F'FFFFu };
+		if constexpr (fbits < 23) mask >>= fbits; else mask = 0; // mask for rounding
+		constexpr int shiftRight = 23 - static_cast<int>(fbits); // this is the bit shift to get the MSB of the src to the MSB of the tgt
+
+		// do the following scenarios have different rounding bits?
+		// input is normal, bfloat is normal           <-- rounding can happen with native ieee-754 bits
+		// input is normal, bfloat is subnormal
+		// input is subnormal, bfloat is normal
+		// input is subnormal, bfloat is subnormal
+
+		// second set of conditions is the relationship between the number of fraction bits from the source
+		// and the number of fraction bits in the bfloat target: these are constexpressions and guard the shifts
+		// input fbits >= bfloat fbits                 <-- need to round
+		// input fbits < bfloat fbits                  <-- no need to round
+		if constexpr (ieee754_parameter<Real>::fbits >= fbits) {  
+			// this is the common case for small bfloats with nbits < 32bits
+
+		}
+		else {
+			// no need to round, but we need to shift left to deliver the bits
+			// can we go from an input subnormal to a bfloat normal? 
+			// yes, for example a bfloat<64,11> assigned to a subnormal float
+		}
+
+		// output processing
 		if constexpr (nbits < 65) {
 			// we can compose the bits in a native 64-bit unsigned integer
 		}
@@ -1444,7 +1482,7 @@ protected:
 				uint32_t subnormalShift = static_cast<uint32_t>(static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1);
 				mask = 0x00FF'FFFFu >> subnormalShift; // mask for rounding 
 #if TRACE_CONVERSION
-				std::cout << "mask     bits   : " << to_binary(mask, 32, true) << std::endl;
+				std::cout << "mask     bits     : " << to_binary(mask, 32, true) << std::endl;
 				std::cout << "fraction bits     : " << to_binary(raw, 32, true) << std::endl;
 #endif
 				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits 

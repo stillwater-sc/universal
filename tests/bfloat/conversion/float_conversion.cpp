@@ -12,7 +12,7 @@
 // second: enable/disable arithmetic exceptions
 #define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable trace conversion
-#define TRACE_CONVERSION 1
+#define TRACE_CONVERSION 0
 
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/bfloat/bfloat.hpp>
@@ -24,14 +24,14 @@
 
 
 template<typename TestType>
-void EnumerateSubnormals(float topOfRange, size_t bitRange) {
-	TestType a;
-	float testValue = topOfRange;
-	for (size_t i = 0; i < bitRange; ++i) {
-		a = testValue;
+void EnumerateSubnormals() {
+	TestType a{ 0 };
+	++a;
+	for (size_t i = 0; i < TestType::fbits; ++i) {
 		std::cout << sw::universal::to_binary(a, true) << " : " << sw::universal::color_print(a) << " : " << a << '\n';
-		std::cout << sw::universal::to_binary(testValue, true) << " : " << testValue << "\n---\n";
-		testValue *= 0.5f;
+		uint64_t fraction = a.fraction_ull();
+		fraction <<= 1;
+		a.setfraction(fraction);
 	}
 }
 
@@ -66,6 +66,23 @@ void Test2()
 	}
 }
 
+template<size_t nbits, size_t es, typename bt>
+void testConversion(float f) {
+	sw::universal::bfloat<nbits, es, bt> a;
+	a.convert_ieee754(f);
+}
+
+template<size_t es>
+void compareSmallBfloats(float f) {
+	std::cout << "----------------- small bfloat comparision with es = " << es << '\n';
+	testConversion<4, es, uint8_t>(f);
+	testConversion<5, es, uint8_t>(f);
+	testConversion<6, es, uint8_t>(f);
+	testConversion<7, es, uint8_t>(f);
+	testConversion<8, es, uint8_t>(f);
+	std::cout << std::endl;
+}
+
 // conditional compile flags
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -88,11 +105,21 @@ try {
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
 #
-//	EnumerateSubnormals<bfloat<6, 2, uint8_t>>(1.0f, 6);
+	EnumerateSubnormals<bfloat<8, 2, uint8_t>>();
+//	EnumerateSubnormals<bfloat<16, 5, uint8_t>>();
+//	EnumerateSubnormals<bfloat<32, 8, uint8_t>>();
+//	EnumerateSubnormals<bfloat<64, 11, uint8_t>>();
 
-	bfloat<4, 1, uint8_t> a;
-	a.convert_ieee754(1.0f);
-	a.convert_ieee754(1.0);
+	float f = 2.2420775e-44f;
+	std::cout << to_binary(0.5f*f) << '\n' 
+		<< to_binary(f) << '\n'
+		<< to_binary(2*f) << std::endl;
+
+	return 0;
+	GenerateTable< bfloat<4, 1, uint8_t> >(cout);
+	f = 1.875f + 0.0625f;
+	compareSmallBfloats<1>(f);
+	compareSmallBfloats<2>(f);
 	return 0;
 
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 4, 1, uint8_t>, float >(true), tag, "bfloat<4,1,uint8_t>");
