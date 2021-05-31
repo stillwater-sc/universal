@@ -1469,25 +1469,30 @@ public:
 			// map exponent into target bfloat encoding
 			uint64_t biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS);
 
-
 			constexpr int bitsToShift = fbits - ieee754_parameter<Real>::fbits;
 			// output processing
 			if constexpr (nbits < 65) {
 				// we can compose the bits in a native 64-bit unsigned integer
-							// common case: normal to normal
-				if (rawExponent != 0) {  // rhs is not a subnormal
-					// nbits = 40, es = 8, fbits = 31: rhs = float fbits = 23; shift left by (31 - 23) = 8
+				// common case: normal to normal
+				// nbits = 40, es = 8, fbits = 31: rhs = float fbits = 23; shift left by (31 - 23) = 8
 
+				if (rawExponent != 0) {
+					// rhs is a normal encoding
+					uint64_t bits{ s ? 1ull : 0ull };
+					bits <<= es;
+					bits |= biasedExponent;
+					bits <<= fbits;
+					rawFraction <<= bitsToShift;
+					bits |= rawFraction;
+					setbits(bits);				
 				}
-				else { // rhs is a subnormal
+				else {
+					// rhs is a subnormal
+//					std::cerr << "rhs is a subnormal : " << to_binary(rhs) << " : " << rhs << '\n';
+					// we need to calculate the effective scale to see 
+					// if this value becomes a normal, or maps to a subnormal encoding
+					// in this target format
 				}
-				uint64_t bits{ s ? 1ull : 0ull };
-				bits <<= es;
-				bits |= biasedExponent;
-				bits <<= fbits;
-				rawFraction <<= bitsToShift;
-				bits |= rawFraction;
-				setbits(bits);
 			}
 			else {
 				// we need to write and shift bits into place

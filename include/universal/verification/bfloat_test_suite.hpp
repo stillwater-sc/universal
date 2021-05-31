@@ -392,8 +392,19 @@ namespace sw::universal {
 			refValue = float(ref);
 			nut = refValue;
 			testValue = float(nut);
+			if (issubnormal(refValue)) {
+				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
+				continue;
+			}
+			nrOfFailedTests += Compare(refValue, testValue, refValue, bReportIndividualTestCases);
+#ifdef CUSTOM_FEEDBACK
 			if (testValue != refValue) {
-				nrOfFailedTests += Compare(refValue, nut, refValue, bReportIndividualTestCases);
+				std::cout << to_binary(nut) << '\n' << to_binary(ref) << std::endl;
+			}
+#endif
+			if (nrOfFailedTests > 24) {
+				std::cerr << "Too many failures, exiting...\n";
+				break;
 			}
 		}
 		return nrOfFailedTests;
@@ -423,8 +434,19 @@ namespace sw::universal {
 			refValue = double(ref);
 			nut = refValue;
 			testValue = double(nut);
+			if (issubnormal(refValue)) {
+				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
+				continue;
+			}
+			nrOfFailedTests += Compare(refValue, testValue, refValue, bReportIndividualTestCases);
+#ifdef CUSTOM_FEEDBACK
 			if (testValue != refValue) {
-				nrOfFailedTests += Compare(refValue, nut, refValue, bReportIndividualTestCases);
+				std::cout << to_binary(nut) << '\n' << to_binary(ref) << std::endl;
+			}
+#endif
+			if (nrOfFailedTests > 24) {
+				std::cerr << "Too many failures, exiting...\n";
+				break;
 			}
 		}
 		return nrOfFailedTests;

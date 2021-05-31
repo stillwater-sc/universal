@@ -232,10 +232,11 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint32_t> >(true), tag, "bfloat<64, 8, uint32_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint64_t> >(true), tag, "bfloat<64, 8, uint64_t>");
 
-//	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 9, uint8_t> >(true), tag, "bfloat<64, 9, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 9, uint8_t> >(true), tag, "bfloat<64, 9, uint8_t>");
 //	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 9, uint16_t> >(true), tag, "bfloat<64, 9, uint16_t>");
 //	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 9, uint32_t> >(true), tag, "bfloat<64, 9, uint32_t>");
 //	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 9, uint64_t> >(true), tag, "bfloat<64, 9, uint64_t>");
+	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
 	return 0;
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBfloatConversion< bfloat< 4, 1, uint8_t>, float >(true), tag, "bfloat<4,1,uint8_t>");
