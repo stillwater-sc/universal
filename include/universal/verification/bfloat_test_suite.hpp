@@ -10,6 +10,8 @@
 #include <random>
 #include <limits>
 
+#include <universal/math/stub/classify.hpp>
+
 namespace sw::universal {
 
 	template<typename SrcType, typename TestType>
@@ -391,7 +393,7 @@ namespace sw::universal {
 			refValue = float(ref);
 			nut = refValue;
 			testValue = float(nut);
-			if (issubnormal(refValue)) {
+			if (isdenorm(refValue)) {
 				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
 				continue;
 			}
@@ -432,7 +434,7 @@ namespace sw::universal {
 			refValue = double(ref);
 			nut = refValue;
 			testValue = double(nut);
-			if (issubnormal(refValue)) {
+			if (isdenorm(refValue)) {
 				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
 				continue;
 			}

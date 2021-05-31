@@ -1,5 +1,5 @@
 #pragma once
-// math_classify.hpp: templated classification function stubs for native floating-point
+// classify.hpp: templated classification function stubs for native floating-point
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -88,7 +88,7 @@ namespace sw::universal {
 	// Universal function supported by all number systems
 	template<typename Scalar,
 		typename = typename std::enable_if<std::is_floating_point<Scalar>::value>::type>
-		inline bool isdenorm(const Scalar& v) {
+	inline bool isdenorm(const Scalar& v) {
 		return !std::isnormal(v) && !std::isnan(v) && !std::isinf(v);
 	}
 

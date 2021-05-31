@@ -43,9 +43,10 @@ int main()
 	decoder.parts.sign = 0b1;
 
 	cout << decoder.f << endl;
-
+#ifdef BIT_CAST_SUPPORT
 	uint32_t bc = std::bit_cast<uint32_t, float>(decoder.f);
 	cout << to_binary(bc, 32) << endl;
+#endif
 
 	return EXIT_SUCCESS;
 }
