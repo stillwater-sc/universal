@@ -542,7 +542,12 @@ public:
 		_block[MSU] = NaNType == NAN_TYPE_SIGNALLING ? MSU_MASK : bt(~SIGN_BIT_MASK & MSU_MASK);
 	}
 	inline constexpr void setsign(bool sign = true) {
-		_block[MSU] &= (sign ? SIGN_BIT_MASK : ~SIGN_BIT_MASK);
+		if (sign) {
+			_block[MSU] |= SIGN_BIT_MASK;
+		}
+		else {
+			_block[MSU] &= ~SIGN_BIT_MASK;
+		}
 	}
 	inline constexpr bool setexponent(int scale) {
 		if (scale < MIN_EXP_SUBNORMAL || scale > MAX_EXP) return false; // this scale cannot be represented
@@ -1467,9 +1472,9 @@ public:
 			// yes, for example a bfloat<64,11> assigned to a subnormal float
 			
 			// map exponent into target bfloat encoding
-			uint64_t biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS);
+			uint64_t biasedExponent = static_cast<uint64_t>(static_cast<int64_t>(exponent) + EXP_BIAS);
 
-			constexpr int bitsToShift = fbits - ieee754_parameter<Real>::fbits;
+			constexpr int upshift = fbits - ieee754_parameter<Real>::fbits;
 			// output processing
 			if constexpr (nbits < 65) {
 				// we can compose the bits in a native 64-bit unsigned integer
@@ -1482,7 +1487,7 @@ public:
 					bits <<= es;
 					bits |= biasedExponent;
 					bits <<= fbits;
-					rawFraction <<= bitsToShift;
+					rawFraction <<= upshift;
 					bits |= rawFraction;
 					setbits(bits);				
 				}
@@ -1509,7 +1514,7 @@ public:
 					// copy fraction bits
 					size_t blocksRequired = (8 * sizeof(rawFraction) + 1) / bitsInBlock;
 					size_t maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
-					bt mask = ALL_ONES;
+					uint64_t mask = static_cast<uint64_t>(ALL_ONES); // set up the block mask
 					size_t shift = 0;
 					for (size_t i = 0; i < maxBlockNr; ++i) {
 						fractionBlock[i] = bt((mask & rawFraction) >> shift);
@@ -1517,27 +1522,29 @@ public:
 						shift += bitsInBlock;
 					}
 					// shift fraction bits
-					if (bitsToShift >= long(bitsInBlock)) {
+					int bitsToShift = upshift;
+					if (bitsToShift >= int(bitsInBlock)) {
 						int blockShift = bitsToShift / bitsInBlock;
-						for (signed i = signed(MSU); i >= blockShift; --i) {
+						for (int i = MSU; i >= blockShift; --i) {
 							fractionBlock[i] = fractionBlock[i - blockShift];
 						}
-						for (signed i = blockShift - 1; i >= 0; --i) {
+						for (int i = blockShift - 1; i >= 0; --i) {
 							fractionBlock[i] = bt(0);
 						}
 						// adjust the shift
-						bitsToShift -= (long)(blockShift * bitsInBlock);
-						if (bitsToShift == 0) return;
+						bitsToShift -= blockShift * bitsInBlock;
 					}
-					// construct the mask for the upper bits in the block that need to move to the higher word
-					bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
-					for (unsigned i = MSU; i > 0; --i) {
-						fractionBlock[i] <<= bitsToShift;
-						// mix in the bits from the right
-						bt bits = (mask & _block[i - 1]);
-						fractionBlock[i] |= (bits >> (bitsInBlock - bitsToShift));
+					if (bitsToShift > 0) {
+						// construct the mask for the upper bits in the block that need to move to the higher word
+						bt mask = ALL_ONES << (bitsInBlock - bitsToShift);
+						for (size_t i = MSU; i > 0; --i) {
+							fractionBlock[i] <<= bitsToShift;
+							// mix in the bits from the right
+							bt bits = (mask & fractionBlock[i - 1]);
+							fractionBlock[i] |= (bits >> (bitsInBlock - bitsToShift));
+						}
+						fractionBlock[0] <<= bitsToShift;
 					}
-					fractionBlock[0] <<= bitsToShift;
 					// OR the bits in
 					for (size_t i = 0; i < MSU; ++i) {
 						_block[i] |= fractionBlock[i];
@@ -1548,6 +1555,7 @@ public:
 					setsign(s);
 				}
 				else { // rhs is a subnormal
+					std::cerr << "rhs is a subnormal : " << to_binary(rhs) << " : " << rhs << '\n';
 				}
 			}
 		}

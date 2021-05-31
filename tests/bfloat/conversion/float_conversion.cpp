@@ -211,31 +211,25 @@ try {
 
 	bool bReportIndividualTestCases = true;
 	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint8_t>(bReportIndividualTestCases), tag, "bfloat<32, 8, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint16_t>(bReportIndividualTestCases), tag, "bfloat<32, 8, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint32_t>(bReportIndividualTestCases), tag, "bfloat<32, 8, uint32_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint64_t>(bReportIndividualTestCases), tag, "bfloat<32, 8, uint64_t>");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<40, 8, uint8_t> >(true), tag, "bfloat<40, 8, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<40, 8, uint16_t> >(true), tag, "bfloat<40, 8, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<40, 8, uint32_t> >(true), tag, "bfloat<40, 8, uint32_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<40, 8, uint64_t> >(true), tag, "bfloat<40, 8, uint64_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<48, 8, uint8_t> >(true), tag, "bfloat<48, 8, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<48, 8, uint16_t> >(true), tag, "bfloat<48, 8, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<48, 8, uint32_t> >(true), tag, "bfloat<48, 8, uint32_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<48, 8, uint64_t> >(true), tag, "bfloat<48, 8, uint64_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<56, 8, uint8_t> >(true), tag, "bfloat<56, 8, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<56, 8, uint16_t> >(true), tag, "bfloat<56, 8, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<56, 8, uint32_t> >(true), tag, "bfloat<56, 8, uint32_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<56, 8, uint64_t> >(true), tag, "bfloat<56, 8, uint64_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint8_t> >(true), tag, "bfloat<64, 8, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint16_t> >(true), tag, "bfloat<64, 8, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint32_t> >(true), tag, "bfloat<64, 8, uint32_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint64_t> >(true), tag, "bfloat<64, 8, uint64_t>");
+	{
+		bfloat<32, 8, uint8_t> a = parse<32, 8, uint8_t>("b1.00111000.00110010001101101000111");
+		f = float(a);
+		std::cout << to_binary(a) << " : " << a << std::endl;
+		std::cout << to_binary(f) << " : " << f << std::endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 9, uint8_t> >(true), tag, "bfloat<64, 9, uint8_t>");
-//	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 9, uint16_t> >(true), tag, "bfloat<64, 9, uint16_t>");
-//	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 9, uint32_t> >(true), tag, "bfloat<64, 9, uint32_t>");
-//	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 9, uint64_t> >(true), tag, "bfloat<64, 9, uint64_t>");
+	}
+	bfloat<80, 11, uint8_t> a, b;
+	//f = 1.5f + 0.125f + 0.03125f;
+	a = f;
+	std::cout << to_binary(a, true) << " : " << a << '\n';
+	std::cout << to_binary(f, true) << " : " << f << std::endl;
+
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<80, 11, uint8_t> >(true, 1000), tag, "bfloat<80, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<96, 11, uint8_t> >(true, 1000), tag, "bfloat<96, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<112, 11, uint8_t> >(true, 1000), tag, "bfloat<112, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<128, 11, uint8_t> >(true, 1000), tag, "bfloat<128, 11, uint8_t>");
+
 	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
 	return 0;
 
@@ -259,6 +253,37 @@ try {
 #else  // !MANUAL_TESTING
 	bool bReportIndividualTestCases = false;
 	cout << "BFLOAT conversion from float validation" << endl;
+
+	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint8_t>(bReportIndividualTestCases), tag, "bfloat<32, 8, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint16_t>(bReportIndividualTestCases), tag, "bfloat<32, 8, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint32_t>(bReportIndividualTestCases), tag, "bfloat<32, 8, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint64_t>(bReportIndividualTestCases), tag, "bfloat<32, 8, uint64_t>");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<40, 8, uint8_t> >(true), tag, "bfloat<40, 8, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<40, 8, uint16_t> >(true), tag, "bfloat<40, 8, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<40, 8, uint32_t> >(true), tag, "bfloat<40, 8, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<40, 8, uint64_t> >(true), tag, "bfloat<40, 8, uint64_t>");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<48, 8, uint8_t> >(true), tag, "bfloat<48, 8, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<48, 8, uint16_t> >(true), tag, "bfloat<48, 8, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<48, 8, uint32_t> >(true), tag, "bfloat<48, 8, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<48, 8, uint64_t> >(true), tag, "bfloat<48, 8, uint64_t>");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<56, 8, uint8_t> >(true), tag, "bfloat<56, 8, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<56, 8, uint16_t> >(true), tag, "bfloat<56, 8, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<56, 8, uint32_t> >(true), tag, "bfloat<56, 8, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<56, 8, uint64_t> >(true), tag, "bfloat<56, 8, uint64_t>");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint8_t> >(true), tag, "bfloat<64, 8, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint16_t> >(true), tag, "bfloat<64, 8, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint32_t> >(true), tag, "bfloat<64, 8, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint64_t> >(true), tag, "bfloat<64, 8, uint64_t>");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 9, uint8_t> >(true), tag, "bfloat<64, 9, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 9, uint16_t> >(true), tag, "bfloat<64, 9, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 9, uint32_t> >(true), tag, "bfloat<64, 9, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 9, uint64_t> >(true), tag, "bfloat<64, 9, uint64_t>");
+
 
 	// es = 1
 	nrOfFailedTestCases += ReportTestResult(VerifyBfloatConversion< bfloat<3, 1>, float >(bReportIndividualTestCases), tag, "bfloat<3,1>");

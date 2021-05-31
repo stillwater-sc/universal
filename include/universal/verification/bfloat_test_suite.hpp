@@ -13,7 +13,7 @@
 namespace sw::universal {
 
 	template<typename SrcType, typename TestType>
-	void ReportConversionError(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
+	void BfloatReportConversionError(const std::string& test_case, const std::string& op, SrcType input, const TestType& reference, const TestType& result) {
 		// constexpr size_t nbits = TestType::nbits;  // number system concept requires a static member indicating its size in bits
 		auto old_precision = std::cerr.precision();
 		std::cerr << test_case
@@ -45,7 +45,7 @@ namespace sw::universal {
 		int fail = 0;
 		if (testValue != reference) {
 			fail++;
-			if (bReportIndividualTestCases)	ReportConversionError("FAIL", "=", input, reference, testValue);
+			if (bReportIndividualTestCases)	BfloatReportConversionError("FAIL", "=", input, reference, testValue);
 		}
 		else {
 			// if (bReportIndividualTestCases) ReportConversionSuccess("PASS", "=", input, reference, testValue);
@@ -370,7 +370,7 @@ namespace sw::universal {
 
 	// generate random test cases to test conversion from an IEEE-754 float to a bfloat
 	template<typename TestType>
-	int VerifyFloat2BfloatConversionRnd(bool bReportIndividualTestCases) {
+	int VerifyFloat2BfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
 		constexpr size_t nbits = TestType::nbits;
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
@@ -381,7 +381,6 @@ namespace sw::universal {
 		float refValue{ 0.0f };
 		float testValue{ 0.0f };
 		// run randoms
-		constexpr size_t nrOfRandoms = 10000;
 		std::random_device rd;     // get a random seed from the OS entropy device
 		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
@@ -412,7 +411,7 @@ namespace sw::universal {
 
 	// generate random test cases to test conversion from an IEEE-754 double to a bfloat
 	template<typename TestType>
-	int VerifyDouble2BfloatConversionRnd(bool bReportIndividualTestCases) {
+	int VerifyDouble2BfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
 		constexpr size_t nbits = TestType::nbits;
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
@@ -423,7 +422,6 @@ namespace sw::universal {
 		double refValue{ 0.0 };
 		double testValue{ 0.0 };
 		// run randoms
-		constexpr size_t nrOfRandoms = 10;
 		std::random_device rd;     // get a random seed from the OS entropy device
 		std::mt19937_64 eng(rd()); // use the 64-bit Mersenne Twister 19937 generator and seed it with entropy.
 		// define the distribution, by default it goes from 0 to MAX(unsigned long long)
