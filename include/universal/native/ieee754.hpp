@@ -48,6 +48,7 @@ public:
 	static constexpr uint64_t fmask   = 0x000F'FFFF'FFFF'FFFFull;
 	static constexpr uint64_t fmsb    = 0x0008'0000'0000'0000ull;
 };
+// <long double> specializations are in the compiler specific sections
 
 ////////////////////////////////////////////////////////////////////////
 // numerical helpers

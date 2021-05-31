@@ -5,14 +5,26 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-
 #if defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
 // Visual C++ compiler is 15.00.20706.01, the _MSC_FULL_VER will be 15002070601
 
-
-
 namespace sw::universal {
+
+	// MSVC long double = double precision
+// IEEE-754 parameter constexpressions for long double
+template<>
+class ieee754_parameter<long double> {
+public:
+	static constexpr uint64_t smask   = 0x8000'0000'0000'0000ull;
+	static constexpr int      ebits   = 11;
+	static constexpr int      bias    = 1023;
+	static constexpr uint64_t emask   = 0x7FF0'0000'0000'0000ull;
+	static constexpr uint64_t eallset = 0x7FF;
+	static constexpr int      fbits   = 52;
+	static constexpr uint64_t fmask   = 0x000F'FFFF'FFFF'FFFFull;
+	static constexpr uint64_t fmsb    = 0x0008'0000'0000'0000ull;
+};
 
 ////////////////////////////////////////////////////////////////////////
 // numerical helpers

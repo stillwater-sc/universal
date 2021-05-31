@@ -4,10 +4,27 @@
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
+
 #if defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
 
 namespace sw::universal {
+
+// GNU long double = 80 bit extended precision
+// 
+// IEEE-754 parameter constexpressions for long double
+template<>
+class ieee754_parameter<long double> {
+public:
+	static constexpr uint64_t smask   = 0x0000'0000'8000'0000ull; // mask for the top half
+	static constexpr int      ebits   = 15;
+	static constexpr int      bias    = 16383;
+	static constexpr uint64_t emask   = 0x0000'0000'0000'7FFFull; // msak for the top half
+	static constexpr uint64_t eallset = 0x7FFF;
+	static constexpr int      fbits   = 64;
+	static constexpr uint64_t fmask   = 0xFFFF'FFFF'FFFF'FFFFull; // mask for the bottom half
+	static constexpr uint64_t fmsb    = 0x8000'0000'0000'0000ull;
+};
 
 ////////////////////////////////////////////////////////////////////////
 // numerical helpers

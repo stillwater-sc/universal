@@ -32,6 +32,11 @@
 //#pragma warning(disable : 4310)  // cast truncates constant value
 
 // TODO: does this collide with the definitions in blocktriple?
+// how would you enforce this across the WHOLE library?
+// you can't: customers may only pull in one specific number system
+// so it has to be driven by the number system include
+// but therefor you might want to move this conditional compile
+// to the <bfloat> include
 #ifndef BIT_CAST_SUPPORT
 #define BIT_CAST_SUPPORT 1
 #define CONSTEXPRESSION constexpr
@@ -1408,7 +1413,7 @@ public:
 		}
 		// normal number consists of fbits fraction bits and one hidden bit
 		// subnormal number has no hidden bit
-		int exponent = int(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
+		int exponent = static_cast<int>(rawExponent) - ieee754_parameter<Real>::bias;  // unbias the exponent
 
 		// check special case of saturating to maxpos/maxneg if out of range
 		if (exponent > MAX_EXP) {
@@ -1416,7 +1421,7 @@ public:
 			return *this;
 		}
 		if (exponent < MIN_EXP_SUBNORMAL - 1) { // TODO: explain the MIN_EXP_SUBMORNAL - 1
-			if (s) this->setbit(nbits - 1); // set -0
+			this->setbit(nbits - 1, s);
 			return *this;
 		}
 		/////////////////  
@@ -1431,8 +1436,6 @@ public:
 		std::cout << "fraction bits     : " << to_binary(rawFraction, ieee754_parameter<Real>::fbits, true) << std::endl;
 		std::cout << "exponent value    : " << exponent << '\n';
 #endif
-
-		uint64_t biasedExponent{ 0 }; // a 64-bit container to OR with sign and friction bits
 
 		// do the following scenarios have different rounding bits?
 		// input is normal, bfloat is normal           <-- rounding can happen with native ieee-754 bits
@@ -1459,20 +1462,89 @@ public:
 			// bfloat<48,  9> = float
 			// bfloat<56, 10> = float
 			// bfloat<64, 11> = float
-			// bfloat<64, 11> = double 
+			// bfloat<64, 10> = double 
 			// can we go from an input subnormal to a bfloat normal? 
 			// yes, for example a bfloat<64,11> assigned to a subnormal float
-		}
+			
+			// map exponent into target bfloat encoding
+			uint64_t biasedExponent = static_cast<uint64_t>(exponent + EXP_BIAS);
 
-		// output processing
-		if constexpr (nbits < 65) {
-			// we can compose the bits in a native 64-bit unsigned integer
-		}
-		else {
-			// we need to write and shift bits into place
-			// use cases are bfloats like bfloat<80, 11, bt>
-			// even though the bits that come in are single or double precision
-			// we need to write the fields and then shifting them in place
+
+			constexpr int bitsToShift = fbits - ieee754_parameter<Real>::fbits;
+			// output processing
+			if constexpr (nbits < 65) {
+				// we can compose the bits in a native 64-bit unsigned integer
+							// common case: normal to normal
+				if (rawExponent != 0) {  // rhs is not a subnormal
+					// nbits = 40, es = 8, fbits = 31: rhs = float fbits = 23; shift left by (31 - 23) = 8
+
+				}
+				else { // rhs is a subnormal
+				}
+				uint64_t bits{ s ? 1ull : 0ull };
+				bits <<= es;
+				bits |= biasedExponent;
+				bits <<= fbits;
+				rawFraction <<= bitsToShift;
+				bits |= rawFraction;
+				setbits(bits);
+			}
+			else {
+				// we need to write and shift bits into place
+				// use cases are bfloats like bfloat<80, 11, bt>
+				// even though the bits that come in are single or double precision
+				// we need to write the fields and then shifting them in place
+				// 
+				// common case: normal to normal
+				if (rawExponent != 0) {
+					// nbits = 128, es = 15, fbits = 112: rhs = float: shift left by (112 - 23) = 89
+					setbits(biasedExponent);
+					shiftLeft(fbits);
+					bt fractionBlock[nrBlocks]{ 0 };
+					// copy fraction bits
+					size_t blocksRequired = (8 * sizeof(rawFraction) + 1) / bitsInBlock;
+					size_t maxBlockNr = (blocksRequired < nrBlocks ? blocksRequired : nrBlocks);
+					bt mask = ALL_ONES;
+					size_t shift = 0;
+					for (size_t i = 0; i < maxBlockNr; ++i) {
+						fractionBlock[i] = bt((mask & rawFraction) >> shift);
+						mask <<= bitsInBlock;
+						shift += bitsInBlock;
+					}
+					// shift fraction bits
+					if (bitsToShift >= long(bitsInBlock)) {
+						int blockShift = bitsToShift / bitsInBlock;
+						for (signed i = signed(MSU); i >= blockShift; --i) {
+							fractionBlock[i] = fractionBlock[i - blockShift];
+						}
+						for (signed i = blockShift - 1; i >= 0; --i) {
+							fractionBlock[i] = bt(0);
+						}
+						// adjust the shift
+						bitsToShift -= (long)(blockShift * bitsInBlock);
+						if (bitsToShift == 0) return;
+					}
+					// construct the mask for the upper bits in the block that need to move to the higher word
+					bt mask = 0xFFFFFFFFFFFFFFFF << (bitsInBlock - bitsToShift);
+					for (unsigned i = MSU; i > 0; --i) {
+						fractionBlock[i] <<= bitsToShift;
+						// mix in the bits from the right
+						bt bits = (mask & _block[i - 1]);
+						fractionBlock[i] |= (bits >> (bitsInBlock - bitsToShift));
+					}
+					fractionBlock[0] <<= bitsToShift;
+					// OR the bits in
+					for (size_t i = 0; i < MSU; ++i) {
+						_block[i] |= fractionBlock[i];
+					}
+					// enforce precondition for fast comparison by properly nulling bits that are outside of nbits
+					_block[MSU] &= MSU_MASK;
+					// finally, set the sign bit
+					setsign(s);
+				}
+				else { // rhs is a subnormal
+				}
+			}
 		}
 
 		return *this;

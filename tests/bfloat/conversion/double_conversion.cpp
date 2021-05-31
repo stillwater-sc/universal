@@ -235,10 +235,15 @@ try {
 	}
 
 	bool bReportIndividualTestCases = true;
-	nrOfFailedTestCases += ReportTestResult(VerifyDoublePrecision<uint8_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyDoublePrecision<uint16_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyDoublePrecision<uint32_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint32_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyDoublePrecision<uint64_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint64_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDoubleSubnormals<uint8_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDoubleSubnormals<uint16_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDoubleSubnormals<uint32_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDoubleSubnormals<uint64_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint64_t>");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint8_t> >(true), tag, "bfloat<64, 8, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint16_t> >(true), tag, "bfloat<64, 8, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint32_t> >(true), tag, "bfloat<64, 8, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<64, 8, uint64_t> >(true), tag, "bfloat<64, 8, uint64_t>");
 
 	// es = 1
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 4, 1>, double >(bReportIndividualTestCases), tag, "bfloat< 4,1>");
