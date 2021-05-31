@@ -377,6 +377,8 @@ namespace sw::universal {
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
 
+		std::cerr << "                                                     ignoring subnormals for the moment\n";
+
 		int nrOfFailedTests = 0;
 		bfloat<32, 8, uint32_t> ref;
 		TestType nut;
@@ -394,7 +396,7 @@ namespace sw::universal {
 			nut = refValue;
 			testValue = float(nut);
 			if (isdenorm(refValue)) {
-				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
+//				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
 				continue;
 			}
 			nrOfFailedTests += Compare(refValue, testValue, refValue, bReportIndividualTestCases);
@@ -418,6 +420,8 @@ namespace sw::universal {
 		constexpr size_t es = TestType::es;
 		using BlockType = typename TestType::BlockType;
 
+		std::cerr << "                                                     ignoring subnormals for the moment\n";
+
 		int nrOfFailedTests = 0;
 		bfloat<64, 11, uint64_t> ref;
 		TestType nut;
@@ -435,7 +439,7 @@ namespace sw::universal {
 			nut = refValue;
 			testValue = double(nut);
 			if (isdenorm(refValue)) {
-				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
+//				std::cerr << "rhs is subnormal: " << to_binary(refValue) << " ignoring for the moment\n";
 				continue;
 			}
 			nrOfFailedTests += Compare(refValue, testValue, refValue, bReportIndividualTestCases);

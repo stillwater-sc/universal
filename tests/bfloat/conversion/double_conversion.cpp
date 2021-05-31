@@ -250,7 +250,6 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<112, 11, uint8_t> >(true, 1000), tag, "bfloat<112, 11, uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<128, 11, uint8_t> >(true, 1000), tag, "bfloat<128, 11, uint8_t>");
 
-
 	// es = 1
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 4, 1>, double >(bReportIndividualTestCases), tag, "bfloat< 4,1>");
 	nrOfFailedTestCases = ReportTestResult(VerifyBfloatConversion< bfloat< 5, 1>, double >(bReportIndividualTestCases), tag, "bfloat< 5,1>");

@@ -199,6 +199,7 @@ try {
 	std::cout << std::setprecision(8);
 	std::cerr << std::setprecision(8);
 
+#ifdef SETASIDE
 	float f = ieee754_float_subnormals[1];
 	std::cout << to_binary(0.5f*f) << '\n' 
 		<< to_binary(f) << '\n'
@@ -208,9 +209,6 @@ try {
 	f = 1.875f + 0.0625f;
 	compareSmallBfloats<1>(f);
 	compareSmallBfloats<2>(f);
-
-	bool bReportIndividualTestCases = true;
-	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint8_t>(bReportIndividualTestCases), tag, "bfloat<32, 8, uint8_t>");
 
 	{
 		bfloat<32, 8, uint8_t> a = parse<32, 8, uint8_t>("b1.00111000.00110010001101101000111");
@@ -224,14 +222,22 @@ try {
 	a = f;
 	std::cout << to_binary(a, true) << " : " << a << '\n';
 	std::cout << to_binary(f, true) << " : " << f << std::endl;
+#endif
+	{
+		float f = 2.7500005f;
+		std::cout << to_binary(f) << " : " << f << std::endl;
 
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<80, 11, uint8_t> >(true, 1000), tag, "bfloat<80, 11, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<96, 11, uint8_t> >(true, 1000), tag, "bfloat<96, 11, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<112, 11, uint8_t> >(true, 1000), tag, "bfloat<112, 11, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<128, 11, uint8_t> >(true, 1000), tag, "bfloat<128, 11, uint8_t>");
+		bfloat<4, 1, uint8_t> a;
+		a.convert_float(f);
+		std::cout << to_binary(a, true) << " : " << a << '\n';
 
-	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
-	return 0;
+		std::cout << "\n-------------\n";
+		a.convert_ieee754(f);
+		std::cout << to_binary(a, true) << " : " << a << '\n';
+	}
+
+	bool bReportIndividualTestCases = true;
+	nrOfFailedTestCases += ReportTestResult(VerifyFloatSubnormals<uint8_t>(bReportIndividualTestCases), tag, "bfloat<32, 8, uint8_t>");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyBfloatConversion< bfloat< 4, 1, uint8_t>, float >(true), tag, "bfloat<4,1,uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyBfloatConversion< bfloat< 6, 2, uint8_t>, float >(false), tag, "bfloat<6,2,uint8_t>");
@@ -239,7 +245,13 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyBfloatConversion< bfloat<10, 4, uint8_t>, float >(false), tag, "bfloat<10,4,uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyBfloatConversion< bfloat<12, 5, uint8_t>, float >(false), tag, "bfloat<12,5,uint8_t>");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyBfloatConversion< bfloat< 8, 6, uint8_t>, float >(false), tag, "bfloat<8,6,uint8_t>");
+//	nrOfFailedTestCases += ReportTestResult(VerifyBfloatConversion< bfloat< 8, 6, uint8_t>, float >(false), tag, "bfloat<8,6,uint8_t>");
+
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<80, 11, uint8_t> >(true, 1000), tag, "bfloat<80, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<96, 11, uint8_t> >(true, 1000), tag, "bfloat<96, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<112, 11, uint8_t> >(true, 1000), tag, "bfloat<112, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyFloat2BfloatConversionRnd< bfloat<128, 11, uint8_t> >(true, 1000), tag, "bfloat<128, 11, uint8_t>");
+
 
 	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
 	nrOfFailedTestCases = 0; // in manual testing we ignore failures for the regression system
