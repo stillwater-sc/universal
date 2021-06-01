@@ -553,13 +553,13 @@ public:
 		if (scale < MIN_EXP_SUBNORMAL || scale > MAX_EXP) return false; // this scale cannot be represented
 		if constexpr (nbits < 65) {
 			// we can use a uint64_t to construct the bfloat
-			uint64_t raw{ 0 };
+			//uint64_t raw{ 0 };
 			if (scale >= MIN_EXP_SUBNORMAL && scale < MIN_EXP_NORMAL) {
 				// we are a subnormal number: all exponent bits are 1
 			}
 			else {
 				// we are a normal number
-				uint32_t exponent_bits = scale + EXP_BIAS;
+				//uint32_t exponent_bits = scale + EXP_BIAS;
 			}
 		}
 		else {

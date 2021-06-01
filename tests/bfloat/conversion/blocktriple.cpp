@@ -42,7 +42,6 @@ namespace sw::universal {
 		constexpr size_t NR_VALUES = (1u << nbits);
 		bfloat<nbits, es, bt> a;
 		blocktriple<fbits, bt> b;   // the size of the blocktriple is configured by the number of fraction bits of the source number system
-		blocktriple<abits, bt> bAdd;
 
 		if (bReportIndividualTestCases) a.constexprClassParameters();
 

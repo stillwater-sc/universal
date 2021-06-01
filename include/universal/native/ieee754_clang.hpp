@@ -25,8 +25,8 @@ public:
 	static constexpr uint64_t fmask    = 0x007F'FFFFull;
 	static constexpr uint64_t hfmask   = 0x00FF'FFFFull;
 	static constexpr uint64_t fmsb     = 0x0040'0000ull;
-	static constexpr uint64_t qnanmask = 0x7FC0'0001ull;
-	static constexpr uint64_t snanmask = 0x7FC0'0000ull;
+	static constexpr uint64_t qnanmask = 0x7FC0'0000ull;
+	static constexpr uint64_t snanmask = 0x7FA0'0000ull;
 };
 
 template<>
@@ -42,8 +42,8 @@ public:
 	static constexpr uint64_t fmask    = 0x000F'FFFF'FFFF'FFFFull;
 	static constexpr uint64_t hfmask   = 0x001F'FFFF'FFFF'FFFFull;
 	static constexpr uint64_t fmsb     = 0x0008'0000'0000'0000ull;
-	static constexpr uint64_t qnanmask = 0x7FF8'0000'0000'0001ull;
-	static constexpr uint64_t snanmask = 0x7FF8'0000'0000'0000ull;
+	static constexpr uint64_t qnanmask = 0x7FF8'0000'0000'0000ull;
+	static constexpr uint64_t snanmask = 0x7FF4'0000'0000'0000ull;
 };
 
 // CLang long double = 80 bit extended precision
@@ -62,8 +62,8 @@ public:
 	static constexpr uint64_t fmask    = 0x7FFF'FFFF'FFFF'FFFFull; // mask for the bottom half
 	static constexpr uint64_t hfmask   = 0xFFFF'FFFF'FFFF'FFFFull; // mask for the bottom half
 	static constexpr uint64_t fmsb     = 0x8000'0000'0000'0000ull;
-	static constexpr uint64_t qnanmask = 0x7FF8'0000'0000'0001ull;
-	static constexpr uint64_t snanmask = 0x7FF8'0000'0000'0000ull;
+	static constexpr uint64_t qnanmask = 0x7FF8'0000'0000'0000ull;
+	static constexpr uint64_t snanmask = 0x7FF4'0000'0000'0000ull;
 };
 
 ////////////////////////////////////////////////////////////////////////

@@ -188,7 +188,7 @@ void GenerateDoublePrecisionSubnormals()
 	constexpr size_t es = 11;
 	using bt = uint64_t;
 	using namespace sw::universal;
-	bfloat<nbits, es, bt> a, b;
+	bfloat<nbits, es, bt> a;
 	++a;
 	double d = double(a);
 	std::cout << std::setprecision(20);

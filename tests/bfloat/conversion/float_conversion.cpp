@@ -111,7 +111,7 @@ void GenerateSinglePrecisionSubnormals()
 	constexpr size_t nbits = 32;
 	constexpr size_t es = 8;
 	using bt = uint32_t;
-	bfloat<nbits, es, bt> a, b;
+	bfloat<nbits, es, bt> a;
 	++a;
 	float f = float(a);
 	std::cout << std::setprecision(16);
