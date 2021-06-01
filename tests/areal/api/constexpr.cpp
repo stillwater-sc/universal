@@ -82,9 +82,6 @@ void TestConstexprAssignment() {
 //
 template<typename Real>
 void TestConstexprSpecificValues() {
-	constexpr size_t nbits = Real::nbits;
-	constexpr size_t es = Real::es;
-	using bt = typename Real::BlockType;
 	{
 		constexpr Real positiveMax(sw::universal::SpecificValue::maxpos);
 		std::cout << "maxpos  : " << to_binary(positiveMax) << " : " << positiveMax << '\n';

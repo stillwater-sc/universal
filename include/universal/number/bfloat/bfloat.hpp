@@ -654,34 +654,58 @@ public:
 			_block[0] = raw_bits & storageMask;
 		}
 		else if constexpr (2 == nrBlocks) {
-			_block[0] = raw_bits & storageMask;
-			raw_bits >>= bitsInBlock;
-			_block[1] = raw_bits & storageMask;
+			if constexpr (bitsInBlock < 64) {
+				_block[0] = raw_bits & storageMask;
+				raw_bits >>= bitsInBlock;
+				_block[1] = raw_bits & storageMask;
+			}
+			else {
+				_block[0] = raw_bits & storageMask;
+				_block[1] = 0;
+			}
 		}
 		else if constexpr (3 == nrBlocks) {
-			_block[0] = raw_bits & storageMask;
-			raw_bits >>= bitsInBlock;
-			_block[1] = raw_bits & storageMask;
-			raw_bits >>= bitsInBlock;
-			_block[2] = raw_bits & storageMask;
+			if constexpr (bitsInBlock < 64) {
+				_block[0] = raw_bits & storageMask;
+				raw_bits >>= bitsInBlock;
+				_block[1] = raw_bits & storageMask;
+				raw_bits >>= bitsInBlock;
+				_block[2] = raw_bits & storageMask;
+			}
+			else {
+				_block[0] = raw_bits & storageMask;
+				_block[1] = 0;
+				_block[2] = 0;
+			}
 		}
 		else if constexpr (4 == nrBlocks) {
-			_block[0] = raw_bits & storageMask;
-			raw_bits >>= bitsInBlock;
-			_block[1] = raw_bits & storageMask;
-			raw_bits >>= bitsInBlock;
-			_block[2] = raw_bits & storageMask;
-			raw_bits >>= bitsInBlock;
-			_block[3] = raw_bits & storageMask;
+			if constexpr (bitsInBlock < 64) {
+				_block[0] = raw_bits & storageMask;
+				raw_bits >>= bitsInBlock;
+				_block[1] = raw_bits & storageMask;
+				raw_bits >>= bitsInBlock;
+				_block[2] = raw_bits & storageMask;
+				raw_bits >>= bitsInBlock;
+				_block[3] = raw_bits & storageMask;
+			}
+			else {
+				_block[0] = raw_bits & storageMask;
+				_block[1] = 0;
+				_block[2] = 0;
+				_block[3] = 0;
+			}
 		}
 		else {
-			for (size_t i = 0; i < nrBlocks; ++i) {
-				_block[i] = raw_bits & storageMask;
-				if constexpr (bitsInBlock < 64) {
+			if constexpr (bitsInBlock < 64) {
+				for (size_t i = 0; i < nrBlocks; ++i) {
+					_block[i] = raw_bits & storageMask;
 					raw_bits >>= bitsInBlock;
 				}
-				else {
-					raw_bits = 0;
+			}
+			else {
+				_block[0] = raw_bits & storageMask;
+				for (size_t i = 1; i < nrBlocks; ++i) {
+					_block[i] = 0;
 				}
 			}
 		}
@@ -1372,7 +1396,7 @@ public:
 
 		// special case handling
 		if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
-			if ((rawFraction & 1ull) == 1ull) {
+			if (rawFraction & ieee754_parameter<Real>::snanmask) {
 				// 1.11111111.00000000.......00000001 signalling nan
 				// 0.11111111.00000000000000000000001 signalling nan
 				// MSVC
@@ -1381,7 +1405,7 @@ public:
 				setnan(NAN_TYPE_SIGNALLING);
 				return *this;
 			}
-			if (rawFraction == ieee754_parameter<Real>::fmsb) {
+			if (rawFraction & ieee754_parameter<Real>::qnanmask) {
 				// 1.11111111.10000000.......00000000 quiet nan
 				// 0.11111111.10000000.......00000000 quiet nan
 				setnan(NAN_TYPE_QUIET);

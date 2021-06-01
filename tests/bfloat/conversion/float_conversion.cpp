@@ -298,7 +298,7 @@ try {
 
 
 	// es = 1
-	nrOfFailedTestCases += ReportTestResult(VerifyBfloatConversion< bfloat<3, 1>, float >(bReportIndividualTestCases), tag, "bfloat<3,1>");
+	nrOfFailedTestCases += ReportTestResult(VerifyBfloatConversion< bfloat<3, 1>, float >(true), tag, "bfloat<3,1>");
 	nrOfFailedTestCases += ReportTestResult(VerifyBfloatConversion< bfloat<4, 1>, float >(bReportIndividualTestCases), tag, "bfloat<4,1>");
 	nrOfFailedTestCases += ReportTestResult(VerifyBfloatConversion< bfloat<5, 1>, float >(bReportIndividualTestCases), tag, "bfloat<5,1>");
 	nrOfFailedTestCases += ReportTestResult(VerifyBfloatConversion< bfloat<6, 1>, float >(bReportIndividualTestCases), tag, "bfloat<6,1>");

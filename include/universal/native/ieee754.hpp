@@ -16,45 +16,20 @@ namespace sw::universal {
 template<typename Real>
 class ieee754_parameter {
 public:
-	static constexpr int ebits        = 0; // number of exponent bits
-	static constexpr int bias         = 0; // exponent bias
-	static constexpr uint64_t emask   = 0; // mask of the exponent field
-	static constexpr uint64_t eallset = 0; // mask of exponent value
-	static constexpr int fbits        = 0; // number of fraction bits
-	static constexpr uint64_t hmask   = 0; // mask of the hidden bit
-	static constexpr uint64_t fmask   = 0; // mask of the fraction field
-	static constexpr uint64_t hfmask  = 0; // mask of the signficicant field, i.e. hidden bit + fraction bits
-	static constexpr uint64_t fmsb    = 0; // mask of the most significant fraction bit
+	static constexpr int ebits         = 0; // number of exponent bits
+	static constexpr int bias          = 0; // exponent bias
+	static constexpr uint64_t emask    = 0; // mask of the exponent field
+	static constexpr uint64_t eallset  = 0; // mask of exponent value
+	static constexpr int fbits         = 0; // number of fraction bits
+	static constexpr uint64_t hmask    = 0; // mask of the hidden bit
+	static constexpr uint64_t fmask    = 0; // mask of the fraction field
+	static constexpr uint64_t hfmask   = 0; // mask of the signficicant field, i.e. hidden bit + fraction bits
+	static constexpr uint64_t fmsb     = 0; // mask of the most significant fraction bit
+	static constexpr uint64_t qnanmask = 0; // mask of quiet NaN
+	static constexpr uint64_t snanmask = 0; // mask of signalling NaN
 };
-template<>
-class ieee754_parameter<float> {
-public:
-	static constexpr uint64_t smask   = 0x8000'0000ull;
-	static constexpr int      ebits   = 8;
-	static constexpr int      bias    = 127;
-	static constexpr uint64_t emask   = 0x7F80'0000ull;
-	static constexpr uint64_t eallset = 0xFFull;
-	static constexpr int      fbits   = 23;
-	static constexpr uint64_t hmask   = 0x0080'0000ull;
-	static constexpr uint64_t fmask   = 0x007F'FFFFull;
-	static constexpr uint64_t hfmask  = 0x00FF'FFFFull;
-	static constexpr uint64_t fmsb    = 0x0040'0000ull;
-};
-template<>
-class ieee754_parameter<double> {
-public:
-	static constexpr uint64_t smask   = 0x8000'0000'0000'0000ull;
-	static constexpr int      ebits   = 11;
-	static constexpr int      bias    = 1023;
-	static constexpr uint64_t emask   = 0x7FF0'0000'0000'0000ull;
-	static constexpr uint64_t eallset = 0x7FF;
-	static constexpr int      fbits   = 52;
-	static constexpr uint64_t hmask   = 0x0010'0000'0000'0000ull;
-	static constexpr uint64_t fmask   = 0x000F'FFFF'FFFF'FFFFull;
-	static constexpr uint64_t hfmask  = 0x001F'FFFF'FFFF'FFFFull;
-	static constexpr uint64_t fmsb    = 0x0008'0000'0000'0000ull;
-};
-// <long double> specializations are in the compiler specific sections
+
+// IEEE-754 paramter specializations are in the compiler specific sections
 
 ////////////////////////////////////////////////////////////////////////
 // numerical helpers

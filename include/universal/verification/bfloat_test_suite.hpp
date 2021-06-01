@@ -215,6 +215,8 @@ namespace sw::universal {
 					testValue = SrcType(da);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					std::cout << "quiet      NAN : " << to_binary(testValue) << std::endl;
+					std::cout << "quiet NaN mask : " << to_binary(ieee754_parameter<SrcType>::qnanmask, sizeof(testValue)*8) << std::endl;
 				}
 				else if (i == HALF + 1) {
 					// special case of projecting to -0
@@ -239,6 +241,8 @@ namespace sw::universal {
 					testValue = SrcType(da);
 					nut = testValue;
 					nrOfFailedTests += Compare(testValue, nut, golden, bReportIndividualTestCases);
+					std::cout << "signalling NAN : " << to_binary(testValue) << std::endl;
+					std::cout << "signalNaN mask : " << to_binary(ieee754_parameter<SrcType>::snanmask, sizeof(testValue)*8) << std::endl;
 				}
 				else {
 					// for odd values of i, we are between sample values of the NUT
@@ -360,11 +364,11 @@ namespace sw::universal {
 				}
 			}
 			if (bReportIndividualTestCases && nrOfFailedTests > old) {
-				std::cout << to_binary(oneULP, true) << " : " << oneULP << '\n';
-				std::cout << to_binary(da - oneULP, true) << " : " << da - oneULP << '\n';
-				std::cout << to_binary(da, true) << " : " << da << '\n';
-				std::cout << to_binary(da + oneULP, true) << " : " << da + oneULP << '\n';
-				std::cout << "[" << i << "]\n";
+				std::cout << "test case [" << i << "]\n";
+				std::cout << "oneULP        : " << to_binary(oneULP, true) << " : " << oneULP << '\n';
+				std::cout << "da - oneULP   : " << to_binary(da - oneULP, true) << " : " << da - oneULP << '\n';
+				std::cout << "da            : " << to_binary(da, true) << " : " << da << '\n';
+				std::cout << "da + oneULP   : " << to_binary(da + oneULP, true) << " : " << da + oneULP << '\n';
 			}
 		}
 		return nrOfFailedTests;
@@ -381,7 +385,7 @@ namespace sw::universal {
 
 		int nrOfFailedTests = 0;
 		bfloat<32, 8, uint32_t> ref;
-		TestType nut;
+		bfloat<nbits, es, BlockType> nut;
 		float refValue{ 0.0f };
 		float testValue{ 0.0f };
 		// run randoms
@@ -424,7 +428,7 @@ namespace sw::universal {
 
 		int nrOfFailedTests = 0;
 		bfloat<64, 11, uint64_t> ref;
-		TestType nut;
+		bfloat<nbits, es, BlockType> nut;
 		double refValue{ 0.0 };
 		double testValue{ 0.0 };
 		// run randoms
