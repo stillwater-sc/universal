@@ -5,7 +5,7 @@
 //
 // This file is part of the universal numbers project, which is released under an MIT Open Source license.
 
-#if defined(__GNUC__) || defined(__GNUG__)
+#if (defined(__GNUC__) || defined(__GNUG__)) && !defined(__clang__)
 /* GNU GCC/G++. --------------------------------------------- */
 
 namespace sw::universal {
