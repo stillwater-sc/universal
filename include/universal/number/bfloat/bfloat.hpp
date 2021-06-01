@@ -179,7 +179,7 @@ inline /*constexpr*/ void convert(const blocktriple<srcbits, bt>& src, bfloat<nb
 				// we are a subnormal number: all exponent bits are 0
 				raw <<= bfloat<nbits, es, bt>::fbits;
 				int rightShift = bfloat<nbits, es, bt>::MIN_EXP_NORMAL - static_cast<int>(scale);
-				uint64_t fracbits = (1 << srcbits) | src.fraction_ull(); // add the hidden bit back as it will shift into the msb of the denorm
+				uint64_t fracbits = (1ull << srcbits) | src.fraction_ull(); // add the hidden bit back as it will shift into the msb of the denorm
 				fracbits >>= rightShift + (srcbits - bfloat<nbits, es, bt>::fbits);
 				raw |= fracbits;
 			}
@@ -323,8 +323,8 @@ public:
 	constexpr bfloat& operator=(unsigned long long rhs) { return convert_unsigned_integer(rhs); }
 
 	CONSTEXPRESSION bfloat& operator=(float rhs)        { return convert_ieee754(rhs); }
-	CONSTEXPRESSION bfloat& operator=(double rhs)       { return convert_double(rhs); }
-	CONSTEXPRESSION bfloat& operator=(long double rhs)  { return convert_double(rhs); }
+	CONSTEXPRESSION bfloat& operator=(double rhs)       { return convert_ieee754(rhs); }
+	CONSTEXPRESSION bfloat& operator=(long double rhs)  { return convert_ieee754(rhs); }
 
 	// arithmetic operators
 	// prefix operator
@@ -1457,187 +1457,95 @@ public:
 		if constexpr (ieee754_parameter<Real>::fbits > fbits) {  
 			// this is the common case for bfloats that are smaller than single and double precision IEEE-754
 			constexpr int shiftRight = ieee754_parameter<Real>::fbits - fbits; // this is the bit shift to get the MSB of the src to the MSB of the tgt
+			uint32_t biasedExponent{ 0 };
 			int adjustment{ 0 };
 			uint64_t mask;
 			if (rawExponent != 0) {
 				// the source real is a normal number, 
 				if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
-					// the value is a subnormal number in this representation
-					uint64_t biasedExponent{ 0 };
+					// the value is a subnormal number in this representation: biasedExponent = 0
 					// add the hidden bit to the fraction bits so the denormalization has the correct MSB
 					rawFraction |= ieee754_parameter<Real>::hmask;
-					uint32_t subnormalShift = static_cast<uint32_t>(static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1);
-					mask = ieee754_parameter<Real>::hfmask >> subnormalShift; // mask for rounding 
-#if TRACE_CONVERSION
-					std::cout << "mask     bits     : " << to_binary(mask, 32, true) << std::endl;
-					std::cout << "fraction bits     : " << to_binary(rawFraction, 32, true) << std::endl;
-#endif
+
 					// fraction processing: we have 1 hidden + 23 explicit fraction bits 
 					// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
 					// -exponent because we are right shifting and exponent in this range is negative
 					adjustment = -(exponent + subnormal_reciprocal_shift[es]); 
 					// this is the right shift adjustment required for subnormal representation due 
 					// to the scale of the input number, i.e. the exponent of 2^-adjustment
-					if constexpr (shiftRight > 0) {		// if true we need to round
-						//  ... lsb | guard  round sticky   round
-						//       x     0       x     x       down
-						//       0     1       0     0       down  round to even
-						//       1     1       0     0        up   round to even
-						//       x     1       0     1        up
-						//       x     1       1     0        up
-						//       x     1       1     1        up
-						// collect lsb, guard, round, and sticky bits
-						// we need to project the rounding masks to the source bits to maximize information
-						mask = (1ull << (shiftRight + adjustment)); // bit mask for the lsb bit
-#if TRACE_CONVERSION
-						std::cout << "lsb bit mask      : " << to_binary(mask, 32, true) << std::endl;
-#endif
-						bool lsb = (mask & rawFraction);
-						mask >>= 1;
-#if TRACE_CONVERSION
-						std::cout << "guard bit mask    : " << to_binary(mask, 32, true) << std::endl;
-#endif
-						bool guard = (mask & rawFraction);
-						mask >>= 1;
-#if TRACE_CONVERSION
-						std::cout << "round bit mask    : " << to_binary(mask, 32, true) << std::endl;
-#endif
-						bool round = (mask & rawFraction);
-						if (shiftRight > 1) {
-							mask = (0xFFFF'FFFF'FFFF'FFFFull << ((shiftRight - 2) + adjustment));
-							mask = ~mask;
-						}
-						else {
-							mask = 0;
-						}
-#if TRACE_CONVERSION
-						std::cout << "sticky bit mask   : " << to_binary(mask, 32, true) << std::endl;
-#endif
-						bool sticky = (mask & rawFraction);
-						rawFraction >>= shiftRight + adjustment;
-
-						if (guard) {
-							if (lsb && (!round && !sticky)) ++rawFraction; // round to even
-							if (round || sticky) ++rawFraction;
-							if (rawFraction == (1ul << fbits)) { // overflow
-								++biasedExponent;
-								rawFraction = 0;
-							}
-						}
-#if TRACE_CONVERSION
-						std::cout << "lsb               : " << (lsb ? "1\n" : "0\n");
-						std::cout << "guard             : " << (guard ? "1\n" : "0\n");
-						std::cout << "round             : " << (round ? "1\n" : "0\n");
-						std::cout << "sticky            : " << (sticky ? "1\n" : "0\n");
-						std::cout << "rounding decision : " << (lsb && (!round && !sticky) ? "round to even\n" : "-\n");
-						std::cout << "rounding direction: " << (round || sticky ? "round up\n" : "round down\n");
-#endif
-
-					}
-					else {
-						// no need to round
-						int shiftLeft = fbits - ieee754_parameter<Real>::fbits;
-						rawFraction <<= shiftLeft;
-					}
-#if TRACE_CONVERSION
-					std::cout << "biased exponent   : " << biasedExponent << " : 0x" << std::hex << biasedExponent << std::dec << '\n';
-					std::cout << "shift             : " << shiftRight << '\n';
-					std::cout << "adjustment shift  : " << adjustment << '\n';
-					std::cout << "sticky bit mask   : " << to_binary(mask, 32, true) << '\n';
-					std::cout << "fraction bits     : " << to_binary(rawFraction, 32, true) << '\n';
-#endif
-					// construct the target bfloat
-					uint64_t bits = (s ? 1ull : 0ull);
-					bits <<= es;
-					bits |= biasedExponent;
-					bits <<= fbits;
-					bits |= rawFraction;
-					setbits(bits);
 				}
 				else {
 					// the value is a normal number in this representation: common case
-					uint32_t biasedExponent = static_cast<uint32_t>(exponent + EXP_BIAS); // project the exponent into the target 
-			// fraction processing
-			// float structure is: seee'eeee'efff'ffff'ffff'ffff'ffff'ffff, s = sign, e - exponent bit, f = fraction bit
-			// target structure is for example bfloat<8,2>: seef'ffff
-			// since both are normals, we can shift the incoming fraction to the target structure bits, and round
-			// MSB of source = 23 - 1, MSB of target = fbits - 1: shift = MSB of src - MSB of tgt => 23 - fbits
+					biasedExponent = static_cast<uint32_t>(exponent + EXP_BIAS); // project the exponent into the target 
+					// fraction processing
+					// float structure is: seee'eeee'efff'ffff'ffff'ffff'ffff'ffff, s = sign, e - exponent bit, f = fraction bit
+					// target structure is for example bfloat<8,2>: seef'ffff
+					// since both are normals, we can shift the incoming fraction to the target structure bits, and round
+					// MSB of source = 23 - 1, MSB of target = fbits - 1: shift = MSB of src - MSB of tgt => 23 - fbits
 					adjustment = 0;
-					if (shiftRight > 0) {		// if true we need to round
-						// round-to-even logic
-						//  ... lsb | guard  round sticky   round
-						//       x     0       x     x       down
-						//       0     1       0     0       down  round to even
-						//       1     1       0     0        up   round to even
-						//       x     1       0     1        up
-						//       x     1       1     0        up
-						//       x     1       1     1        up
-						// collect lsb, guard, round, and sticky bits
-						mask = (1ul << (23 - static_cast<int>(fbits)));
-#if TRACE_CONVERSION
-						std::cout << "lsb bit mask      : " << to_binary(mask, 32, true) << std::endl;
-#endif
-						bool lsb = (mask & rawFraction);
-						mask >>= 1;
-#if TRACE_CONVERSION
-						std::cout << "guard bit mask    : " << to_binary(mask, 32, true) << std::endl;
-#endif
-						bool guard = (mask & rawFraction);
-						mask >>= 1;
-#if TRACE_CONVERSION
-						std::cout << "round bit mask    : " << to_binary(mask, 32, true) << std::endl;
-#endif
-						bool round = (mask & rawFraction);
-						if (shiftRight > 1) {
-							mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
-							mask = ~mask;
-						}
-						else {
-							mask = 0;
-						}
-#if TRACE_CONVERSION
-						std::cout << "mask for sticky  : " << to_binary(mask, 32, true) << std::endl;
-#endif
-						bool sticky = (mask & rawFraction);
-						rawFraction >>= shiftRight + adjustment;
-
-						// execute rounding operation
-						if (guard) {
-							if (lsb && (!round && !sticky)) ++rawFraction; // round to even
-							if (round || sticky) ++rawFraction;
-							if (rawFraction == (1ul << fbits)) { // overflow
-								++biasedExponent;
-								rawFraction = 0;
-							}
-						}
-#if TRACE_CONVERSION
-						std::cout << "lsb               : " << (lsb ? "1\n" : "0\n");
-						std::cout << "guard             : " << (guard ? "1\n" : "0\n");
-						std::cout << "round             : " << (round ? "1\n" : "0\n");
-						std::cout << "sticky            : " << (sticky ? "1\n" : "0\n");
-						std::cout << "rounding decision : " << (lsb && (!round && !sticky) ? "round to even\n" : "-\n");
-						std::cout << "rounding direction: " << (round || sticky ? "round up\n" : "round down\n");
-#endif
-					}
-					else { // all bits of the float go into this representation and need to be shifted up
-						int shiftLeft = fbits - ieee754_parameter<Real>::fbits;
-						rawFraction <<= shiftLeft;
-					}
-#if TRACE_CONVERSION
-					std::cout << "biased exponent   : " << biasedExponent << " : 0x" << std::hex << biasedExponent << std::dec << '\n';
-					std::cout << "shift             : " << shiftRight << '\n';
-					std::cout << "adjustment shift  : " << adjustment << '\n';
-					std::cout << "sticky bit mask   : " << to_binary(mask, 32, true) << '\n';
-					std::cout << "fraction bits     : " << to_binary(rawFraction, 32, true) << '\n';
-#endif
-					// construct the target bfloat
-					uint64_t bits = (s ? 1ull : 0ull);
-					bits <<= es;
-					bits |= biasedExponent;
-					bits <<= fbits;
-					bits |= rawFraction;
-					setbits(bits);
 				}
+				if constexpr (shiftRight > 0) {		// if true we need to round
+					// round-to-even logic
+					//  ... lsb | guard  round sticky   round
+					//       x     0       x     x       down
+					//       0     1       0     0       down  round to even
+					//       1     1       0     0        up   round to even
+					//       x     1       0     1        up
+					//       x     1       1     0        up
+					//       x     1       1     1        up
+					// collect lsb, guard, round, and sticky bits
+					mask = (1ull << (shiftRight + adjustment)); // bit mask for the lsb bit
+					bool lsb = (mask & rawFraction);
+					mask >>= 1;
+					bool guard = (mask & rawFraction);
+					mask >>= 1;
+					bool round = (mask & rawFraction);
+					if (shiftRight > 1) {
+						mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
+						mask = ~mask;
+					}
+					else {
+						mask = 0;
+					}
+					bool sticky = (mask & rawFraction);
+					rawFraction >>= shiftRight + adjustment;
+
+					// execute rounding operation
+					if (guard) {
+						if (lsb && (!round && !sticky)) ++rawFraction; // round to even
+						if (round || sticky) ++rawFraction;
+						if (rawFraction == (1ul << fbits)) { // overflow
+							++biasedExponent;
+							rawFraction = 0;
+						}
+					}
+#if TRACE_CONVERSION
+					std::cout << "lsb               : " << (lsb ? "1\n" : "0\n");
+					std::cout << "guard             : " << (guard ? "1\n" : "0\n");
+					std::cout << "round             : " << (round ? "1\n" : "0\n");
+					std::cout << "sticky            : " << (sticky ? "1\n" : "0\n");
+					std::cout << "rounding decision : " << (lsb && (!round && !sticky) ? "round to even\n" : "-\n");
+					std::cout << "rounding direction: " << (round || sticky ? "round up\n" : "round down\n");
+#endif
+				}
+				else { // all bits of the float go into this representation and need to be shifted up
+					int shiftLeft = fbits - ieee754_parameter<Real>::fbits;
+					rawFraction <<= shiftLeft;
+				}
+#if TRACE_CONVERSION
+				std::cout << "biased exponent   : " << biasedExponent << " : 0x" << std::hex << biasedExponent << std::dec << '\n';
+				std::cout << "shift             : " << shiftRight << '\n';
+				std::cout << "adjustment shift  : " << adjustment << '\n';
+				std::cout << "sticky bit mask   : " << to_binary(mask, 32, true) << '\n';
+				std::cout << "fraction bits     : " << to_binary(rawFraction, 32, true) << '\n';
+#endif
+				// construct the target bfloat
+				uint64_t bits = (s ? 1ull : 0ull);
+				bits <<= es;
+				bits |= biasedExponent;
+				bits <<= fbits;
+				bits |= rawFraction;
+				setbits(bits);
 			}
 			else {
 				// the source real is a subnormal number				
@@ -1658,7 +1566,6 @@ public:
 		}
 		else {
 			// no need to round, but we need to shift left to deliver the bits
-			// bfloat<32,  8> = float
 			// bfloat<40,  8> = float
 			// bfloat<48,  9> = float
 			// bfloat<56, 10> = float
@@ -1669,7 +1576,6 @@ public:
 			
 			// map exponent into target bfloat encoding
 			uint64_t biasedExponent = static_cast<uint64_t>(static_cast<int64_t>(exponent) + EXP_BIAS);
-
 			constexpr int upshift = fbits - ieee754_parameter<Real>::fbits;
 			// output processing
 			if constexpr (nbits < 65) {
@@ -1771,535 +1677,7 @@ public:
 		return *this;
 	}
 
-// protected:
-	CONSTEXPRESSION bfloat& convert_float(float rhs) {
-		clear();
-#if BIT_CAST_SUPPORT
-		// normal number
-		uint32_t bc = std::bit_cast<uint32_t>(rhs);
-		bool s = (0x8000'0000u & bc);
-		uint32_t raw_exp = uint32_t((0x7F80'0000u & bc) >> 23u);
-		uint32_t raw = (0x007F'FFFFu & bc);
-#else // !BIT_CAST_SUPPORT
-		float_decoder decoder;
-		decoder.f = rhs;
-		bool s = decoder.parts.sign ? true : false;
-		uint32_t raw_exp = decoder.parts.exponent;
-		uint32_t raw = decoder.parts.fraction;
-#endif // !BIT_CAST_SUPPORT
-
-		// special case handling
-		if (raw_exp == 0xFFu) { // special cases
-			if (raw == 1ul || raw == 0x0040'0001ul) {
-				// 1.11111111.00000000000000000000001 signalling nan
-				// 0.11111111.00000000000000000000001 signalling nan
-				// MSVC
-				// 1.11111111.10000000000000000000001 signalling nan
-				// 0.11111111.10000000000000000000001 signalling nan
-				setnan(NAN_TYPE_SIGNALLING);
-				return *this;
-			}
-			if (raw == 0x0040'0000ul) {
-				// 1.11111111.10000000000000000000000 quiet nan
-				// 0.11111111.10000000000000000000000 quiet nan
-				setnan(NAN_TYPE_QUIET);
-				return *this;
-			}
-			if (raw == 0ul) {
-				// 1.11111111.00000000000000000000000 -inf
-				// 0.11111111.00000000000000000000000 +inf
-				setinf(s);
-				return *this;
-			}
-		}
-		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
-			setbit(nbits - 1ull, s);
-			return *this;
-		}
-
-		// this is not a special number
-		// normal number consists of 23 fraction bits and one hidden bit, and no hidden bit for a subnormal
-		int exponent = int(raw_exp) - 127;  // unbias the exponent
-
-#if TRACE_CONVERSION
-		std::cout << '\n';
-		std::cout << "value             : " << rhs << '\n';
-		std::cout << "segments          : " << to_binary(rhs) << '\n';
-		std::cout << "sign     bit      : " << (s ? '1' : '0') << '\n';
-		std::cout << "exponent bits     : " << to_binary(raw_exp, 8, true) << '\n';
-		std::cout << "fraction bits     : " << to_binary(raw, 23, true) << std::endl;
-		std::cout << "exponent value    : " << exponent << '\n';
-#endif
-		// saturate to maxpos if out of range
-		if (exponent > MAX_EXP) {
-			if (s) this->maxneg(); else this->maxpos(); // saturate to maxpos or maxneg
-			return *this;
-		}
-		if (exponent < MIN_EXP_SUBNORMAL - 1) { // TODO: explain the MIN_EXP_SUBMORNAL - 1
-			if (s) this->setbit(nbits - 1); // set -0
-			return *this;
-		}
-		// set the exponent
-		uint32_t biasedExponent{ 0 };
-		constexpr int shiftRight = 23 - static_cast<int>(fbits); // this is the bit shift to get the MSB of the src to the MSB of the tgt
-		int adjustment{ 0 };
-		uint32_t mask{ 0x007F'FFFFu };
-		if constexpr (fbits < 23) mask >>= fbits; else mask = 0; // mask for rounding
-		if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
-			// this number is a subnormal number in this representation
-			// but it might be a normal number in IEEE single precision (float) representation
-			if (exponent > -127) {
-				// the source real is a normal number, so we must add the hidden bit to the fraction bits
-				raw |= (1ull << 23);
-				uint32_t subnormalShift = static_cast<uint32_t>(static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1);
-				mask = 0x00FF'FFFFu >> subnormalShift; // mask for rounding 
-#if TRACE_CONVERSION
-				std::cout << "mask     bits     : " << to_binary(mask, 32, true) << std::endl;
-				std::cout << "fraction bits     : " << to_binary(raw, 32, true) << std::endl;
-#endif
-				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits 
-				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
-				// -exponent because we are right shifting and exponent in this range is negative
-				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment required for subnormal representation due to the scale of the input number, i.e. the exponent of 2^-adjustment
-				if constexpr (shiftRight > 0) {		// if true we need to round
-					//  ... lsb | guard  round sticky   round
-					//       x     0       x     x       down
-					//       0     1       0     0       down  round to even
-					//       1     1       0     0        up   round to even
-					//       x     1       0     1        up
-					//       x     1       1     0        up
-					//       x     1       1     1        up
-					// collect lsb, guard, round, and sticky bits
-
-					// we need to project the rounding masks to the source bits to maximize information
-
-					mask = (1ul << (23 - static_cast<int>(fbits) + adjustment)); // bit mask for the lsb bit
-#if TRACE_CONVERSION
-					std::cout << "lsb bit mask      : " << to_binary(mask, 32, true) << std::endl;
-#endif
-					bool lsb = (mask & raw);
-					mask >>= 1;
-#if TRACE_CONVERSION
-					std::cout << "guard bit mask    : " << to_binary(mask, 32, true) << std::endl;
-#endif
-					bool guard = (mask & raw);
-					mask >>= 1;
-#if TRACE_CONVERSION
-					std::cout << "round bit mask    : " << to_binary(mask, 32, true) << std::endl;
-#endif
-					bool round = (mask & raw);
-					if (shiftRight > 1) {
-						mask = (0xFFFF'FFFFul << ((shiftRight - 2) + adjustment));
-						mask = ~mask;
-					}
-					else {
-						mask = 0;
-					}
-#if TRACE_CONVERSION
-					std::cout << "sticky bit mask   : " << to_binary(mask, 32, true) << std::endl;
-#endif
-					bool sticky = (mask & raw);
-					raw >>= shiftRight + adjustment;
-
-					if (guard) {
-						if (lsb && (!round && !sticky)) ++raw; // round to even
-						if (round || sticky) ++raw;
-						if (raw == (1ul << fbits)) { // overflow
-							++biasedExponent;
-							raw = 0;
-						}
-					}
-#if TRACE_CONVERSION
-					std::cout << "lsb               : " << (lsb ? "1\n" : "0\n");
-					std::cout << "guard             : " << (guard ? "1\n" : "0\n");
-					std::cout << "round             : " << (round ? "1\n" : "0\n");
-					std::cout << "sticky            : " << (sticky ? "1\n" : "0\n");
-					std::cout << "rounding decision : " << (lsb && (!round && !sticky) ? "round to even\n" : "-\n");
-					std::cout << "rounding direction: " << (round || sticky ? "round up\n" : "round down\n");
-#endif
-				}
-				else { // all bits of the float go into this representation and need to be shifted up
-					int shiftLeft = fbits - 23;
-					raw <<= shiftLeft;
-				}
-			}
-			else {
-				// the source real is a subnormal number, and the target representation is a subnormal representation
-				mask = 0x00FF'FFFFu >> (fbits + exponent + subnormal_reciprocal_shift[es] + 1); // mask for sticky bit 
-#if TRACE_CONVERSION
-				std::cout << "fraction bits     : " << to_binary(raw, 23, true) << std::endl;
-#endif
-				// fraction processing: we have 24 bits = 1 hidden + 23 explicit fraction bits 
-				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (23 - (-exponent + fbits - (2 -2^(es-1))))
-				// -exponent because we are right shifting and exponent in this range is negative
-				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment due to the scale of the input number, i.e. the exponent of 2^-adjustment
-				if constexpr (shiftRight > 0) {		// if true we need to round
-					std::cout << "conversion of subnormal IEEE float to subnormal bfloat not implemented yet\n";
-				}
-				else { // all bits of the float go into this representation and need to be shifted up
-					std::cout << "conversion of subnormal IEEE float to more precise bfloats not implemented yet\n";
-				}
-			}
-		}
-		else {
-			// the input is a normal, and the representation is a normal
-			biasedExponent = static_cast<uint32_t>(exponent + EXP_BIAS); // reasonable to limit exponent to 32bits
-
-			// fraction processing
-			// float structure is: seee'eeee'efff'ffff'ffff'ffff'ffff'ffff, s = sign, e - exponent bit, f = fraction bit
-			// target structure is for example bfloat<8,2>: seef'ffff
-			// since both are normals, we can shift the incoming fraction to the target structure bits, and round
-			// MSB of source = 23 - 1, MSB of target = fbits - 1: shift = MSB of src - MSB of tgt => 23 - fbits
-			adjustment = 0;
-			if (shiftRight > 0) {		// if true we need to round
-				// round-to-even logic
-				//  ... lsb | guard  round sticky   round
-				//       x     0       x     x       down
-				//       0     1       0     0       down  round to even
-				//       1     1       0     0        up   round to even
-				//       x     1       0     1        up
-				//       x     1       1     0        up
-				//       x     1       1     1        up
-				// collect lsb, guard, round, and sticky bits
-				mask = (1ul << (23 - static_cast<int>(fbits)));
-#if TRACE_CONVERSION
-				std::cout << "lsb bit mask      : " << to_binary(mask, 32, true) << std::endl;
-#endif
-				bool lsb = (mask & raw);
-				mask >>= 1;
-#if TRACE_CONVERSION
-				std::cout << "guard bit mask    : " << to_binary(mask, 32, true) << std::endl;
-#endif
-				bool guard = (mask & raw);
-				mask >>= 1;
-#if TRACE_CONVERSION
-				std::cout << "round bit mask    : " << to_binary(mask, 32, true) << std::endl;
-#endif
-				bool round = (mask & raw);
-				if (shiftRight > 1) {
-					mask = (0xFFFF'FFFFul << (shiftRight - 2));
-					mask = ~mask;
-				}
-				else {
-					mask = 0;
-				}
-#if TRACE_CONVERSION
-				std::cout << "mask for sticky  : " << to_binary(mask, 32, true) << std::endl;
-#endif
-				bool sticky = (mask & raw);
-				raw >>= shiftRight + adjustment;
-
-				// execute rounding operation
-				if (guard) {
-					if (lsb && (!round && !sticky)) ++raw; // round to even
-					if (round || sticky) ++raw;
-					if (raw == (1ul << fbits)) { // overflow
-						++biasedExponent;
-						raw = 0;
-					}
-				}
-#if TRACE_CONVERSION
-				std::cout << "lsb               : " << (lsb ? "1\n" : "0\n");
-				std::cout << "guard             : " << (guard ? "1\n" : "0\n");
-				std::cout << "round             : " << (round ? "1\n" : "0\n");
-				std::cout << "sticky            : " << (sticky ? "1\n" : "0\n");
-				std::cout << "rounding decision : " << (lsb && (!round && !sticky) ? "round to even\n" : "-\n");
-				std::cout << "rounding direction: " << (round || sticky ? "round up\n" : "round down\n");
-#endif
-			}
-			else { // all bits of the float go into this representation and need to be shifted up
-				if constexpr (fbits < 32) {
-					int shiftLeft = fbits - 23;
-					raw <<= shiftLeft;
-				}
-				else if constexpr (fbits < 64) {
-					// special case where we can use a native uint64_t to gather and shift the fraction bits
-				}
-				else {
-					// the case where our shifting needs to happen in block-aware fashion
-				}
-			}
-		}
-#if TRACE_CONVERSION
-		std::cout << "biased exponent   : " << biasedExponent << " : 0x" << std::hex << biasedExponent << std::dec << '\n';
-		std::cout << "shift             : " << shiftRight << '\n';
-		std::cout << "adjustment shift  : " << adjustment << '\n';
-		std::cout << "sticky bit mask   : " << to_binary(mask, 32, true) << '\n';
-		std::cout << "fraction bits     : " << to_binary(raw, 32, true) << '\n';
-#endif
-		// construct the target bfloat
-		uint32_t bits = (s ? 1u : 0u);
-		bits <<= es;
-		bits |= biasedExponent;
-		bits <<= nbits - 1ull - es;
-		bits |= raw;
-		if constexpr (1 == nrBlocks) {
-			_block[MSU] = bt(bits);
-		}
-		else {
-			copyBits(bits);
-		}
-		// implement saturation
-		if (this->isinf(INF_TYPE_POSITIVE) || this->isnan(NAN_TYPE_QUIET)) {
-			clear();
-			flip();
-			setbit(nbits - 1ull, false);
-			setbit(1ull, false);
-		}
-		else if (this->isinf(INF_TYPE_NEGATIVE) || this->isnan(NAN_TYPE_SIGNALLING)) {
-			clear();
-			flip();
-			setbit(1ull, false);
-		}
-		return *this;
-	}
-	CONSTEXPRESSION bfloat& convert_double(double rhs) {
-		clear();
-		bool s{ false };
-		uint64_t rawExponent{ 0 };
-		uint64_t rawFraction{ 0 };
-		extractFields(rhs, s, rawExponent, rawFraction);
-		// process special cases
-		if (rawExponent == 0x7FFul) {
-			if (rawFraction == 1ull || rawFraction == 0x0008'0000'0000'0001ull) {
-				// 1.111'1111'1111.0000000000000000000000000000000000000000000000000001 signalling nan
-				// 0.111'1111'1111.0000000000000000000000000000000000000000000000000001 signalling nan
-				// MSVC
-				// 1.111'1111'1111.1000000000000000000000000000000000000000000000000001 signalling nan
-				// 0.111'1111'1111.1000000000000000000000000000000000000000000000000001 signalling nan
-				setnan(NAN_TYPE_SIGNALLING);
-				return *this;
-			}
-			if (rawFraction == 0x0008'0000'0000'0000ull) {
-				// 1.111'1111'1111.1000000000000000000000000000000000000000000000000000 quiet nan
-				// 0.111'1111'1111.1000000000000000000000000000000000000000000000000000 quiet nan
-				setnan(NAN_TYPE_QUIET);
-				return *this;
-			}
-			if (rawFraction == 0ull) {
-				// 1.11111111111.0000000000000000000000000000000000000000000000000000 -inf
-				// 0.11111111111.0000000000000000000000000000000000000000000000000000 +inf
-				setinf(s);
-				return *this;
-			}
-		}
-		if (rhs == 0.0) { // IEEE rule: this is valid for + and - 0.0
-			setbit(nbits - 1ull, s);
-			return *this;
-		}
-		// this is not a special number
-		// normal number consists of 52 fraction bits and one hidden bit, and no hidden bit for a subnormal
-		int exponent = static_cast<int>(rawExponent) - 1023;  // unbias the exponent
-
-#if TRACE_CONVERSION
-		std::cout << '\n';
-		std::cout << "value             : " << rhs << '\n';
-		std::cout << "segments          : " << to_binary(rhs) << '\n';
-		std::cout << "sign   bits       : " << (s ? '1' : '0') << '\n';
-		std::cout << "exponent value    : " << exponent << '\n';
-		std::cout << "fraction bits     : " << to_binary(rawFraction, ieee754_parameter<double>::ebits, true) << std::endl;
-#endif
-		// saturate to maxpos if out of range
-		if (exponent > MAX_EXP) {
-			if (s) this->maxneg(); else this->maxpos(); // saturate the maxpos or maxneg
-			return *this;
-		}
-		if (exponent < MIN_EXP_SUBNORMAL - 1) { // TODO: explain the MIN_EXP_SUBMORNAL - 1
-			if (s) this->setbit(nbits - 1); // set -0
-			return *this;
-		}
-		// set the exponent
-		uint64_t biasedExponent{ 0 };
-		int shiftRight = 52 - static_cast<int>(fbits); // this is the bit shift to get the MSB of the src to the MSB of the tgt
-		int adjustment{ 0 };
-		uint64_t mask;
-		if (exponent >= (MIN_EXP_SUBNORMAL - 1) && exponent < MIN_EXP_NORMAL) {
-			// this number is a subnormal number in this representation
-			// but it might be a normal number in IEEE double precision representation
-			// which will require a reinterpretation of the bits as the hidden bit becomes explicit in a subnormal representation
-			if (exponent > -1022) {
-				// the source real is a normal number, so we must add the hidden bit to the fraction bits
-				rawFraction |= (1ull << 52);
-				uint32_t subnormalShift = static_cast<uint32_t>(static_cast<int>(fbits) + exponent + subnormal_reciprocal_shift[es] + 1);
-				mask = 0x001F'FFFF'FFFF'FFFFull >> subnormalShift; // mask for rounding (just display) TODO: can be removed as it is not part of the conversion, just tracing
-
-#if TRACE_CONVERSION
-				std::cout << "mask     bits     : " << to_binary(mask, 64, true) << std::endl;
-				std::cout << "fraction bits     : " << to_binary(rawFraction, 64, true) << std::endl;
-#endif
-				// fraction processing: we have 53 bits = 1 hidden + 52 explicit fraction bits 
-				// f = 1.ffff 2^exponent * 2^fbits * 2^-(2-2^(es-1)) = 1.ff...ff >> (52 - (-exponent + fbits - (2 -2^(es-1))))
-				// -exponent because we are right shifting and exponent in this range is negative
-				adjustment = -(exponent + subnormal_reciprocal_shift[es]); // this is the right shift adjustment required for subnormal representation due to the scale of the input number, i.e. the exponent of 2^-adjustment
-				if (shiftRight > 0) {		// if true we need to round
-					//  ... lsb | guard  round sticky   round
-					//       x     0       x     x       down
-					//       0     1       0     0       down  round to even
-					//       1     1       0     0        up   round to even
-					//       x     1       0     1        up
-					//       x     1       1     0        up
-					//       x     1       1     1        up
-					// collect lsb, guard, round, and sticky bits
-
-					// we need to project the rounding masks to the source bits to maximize information
-					mask = (1ull << (52 - static_cast<int>(fbits) + adjustment)); // bit mask for the lsb bit
-#if TRACE_CONVERSION
-					std::cout << "lsb bit mask      : " << to_binary(mask, 64, true) << std::endl;
-#endif
-					bool lsb = (mask & rawFraction);
-					mask >>= 1;
-#if TRACE_CONVERSION
-					std::cout << "guard bit mask    : " << to_binary(mask, 64, true) << std::endl;
-#endif
-					bool guard = (mask & rawFraction);
-					mask >>= 1;
-#if TRACE_CONVERSION
-					std::cout << "round bit mask    : " << to_binary(mask, 64, true) << std::endl;
-#endif
-					bool round = (mask & rawFraction);
-					if (shiftRight > 1) {
-						mask = (0xFFFF'FFFF'FFFF'FFFFull << ((shiftRight - 2) + adjustment));
-						mask = ~mask;
-					}
-					else {
-						mask = 0;
-					}
-#if TRACE_CONVERSION
-					std::cout << "sticky bit mask   : " << to_binary(mask, 64, true) << std::endl;
-#endif
-					bool sticky = (mask & rawFraction);
-					rawFraction >>= shiftRight + adjustment;
-
-					if (guard) {
-						if (lsb && (!round && !sticky)) ++rawFraction; // round to even
-						if (round || sticky) ++rawFraction;
-						if (rawFraction == (1ull << fbits)) { // overflow TODO: doesn't work for fbits > 63: this statement is protected by surrounding shiftRight > 0 test
-							++biasedExponent;
-							rawFraction = 0;
-						}
-					}
-#if TRACE_CONVERSION
-					std::cout << "lsb               : " << (lsb ? "1\n" : "0\n");
-					std::cout << "guard             : " << (guard ? "1\n" : "0\n");
-					std::cout << "round             : " << (round ? "1\n" : "0\n");
-					std::cout << "sticky            : " << (sticky ? "1\n" : "0\n");
-					std::cout << "rounding decision : " << (lsb && (!round && !sticky) ? "round to even\n" : "-\n");
-					std::cout << "rounding direction: " << (round || sticky ? "round up\n" : "round down\n");
-#endif
-				}
-				else { // all bits of the double go into this representation and need to be shifted up
-					int shiftLeft = fbits - 52;
-					rawFraction <<= shiftLeft;
-				}
-			}
-			else {
-				// this is a subnormal double
-				std::cout << "conversion of subnormal IEEE doubles not implemented yet\n";
-			}
-		}
-		else {
-			// this number is a normal/supernormal number in this representation, we can leave the hidden bit hidden
-			biasedExponent = static_cast<uint64_t>(static_cast<int64_t>(exponent) + EXP_BIAS);
-
-			// fraction processing
-			// double structure is: seee'eeee'eeee'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff'ffff, s = sign, e - exponent bit, f = fraction bit
-			// target structure is for example bfloat<8,2>: seef'ffff
-			// since both are normals, we can shift the incoming fraction to the target structure bits, and round
-			// MSB of source = 52 - 1, MSB of target = fbits - 1: shift = MSB of src - MSB of tgt => 52 - fbits
-			adjustment = 0;
-			if (shiftRight > 0) {		// if true we need to round
-				// round-to-even logic
-				//  ... lsb | guard  round sticky   round
-				//       x     0       x     x       down
-				//       0     1       0     0       down  round to even
-				//       1     1       0     0        up   round to even
-				//       x     1       0     1        up
-				//       x     1       1     0        up
-				//       x     1       1     1        up
-				// collect lsb, guard, round, and sticky bits
-				mask = (1ull << (52 - static_cast<int>(fbits)));
-#if TRACE_CONVERSION
-				std::cout << "lsb bit mask      : " << to_binary(mask, 64, true) << std::endl;
-#endif
-				bool lsb = (mask & rawFraction);
-				mask >>= 1;
-#if TRACE_CONVERSION
-				std::cout << "guard bit mask    : " << to_binary(mask, 64, true) << std::endl;
-#endif
-				bool guard = (mask & rawFraction);
-				mask >>= 1;
-#if TRACE_CONVERSION
-				std::cout << "round bit mask    : " << to_binary(mask, 64, true) << std::endl;
-#endif
-				bool round = (mask & rawFraction);
-				if (shiftRight > 1) {
-					mask = (0xFFFF'FFFF'FFFF'FFFFull << (shiftRight - 2));
-					mask = ~mask;
-				}
-				else {
-					mask = 0;
-				}
-#if TRACE_CONVERSION
-				std::cout << "mask for sticky  : " << to_binary(mask, 64, true) << std::endl;
-#endif
-				bool sticky = (mask & rawFraction);
-				rawFraction >>= shiftRight + adjustment;
-
-				// execute rounding operation
-				if (guard) {
-					if (lsb && (!round && !sticky)) ++rawFraction; // round to even
-					if (round || sticky) ++rawFraction;
-					if (rawFraction == (1ul << fbits)) { // overflow
-						++biasedExponent;
-						rawFraction = 0;
-					}
-				}
-#if TRACE_CONVERSION
-				std::cout << "lsb               : " << (lsb ? "1\n" : "0\n");
-				std::cout << "guard             : " << (guard ? "1\n" : "0\n");
-				std::cout << "round             : " << (round ? "1\n" : "0\n");
-				std::cout << "sticky            : " << (sticky ? "1\n" : "0\n");
-				std::cout << "rounding decision : " << (lsb && (!round && !sticky) ? "round to even\n" : "-\n");
-				std::cout << "rounding direction: " << (round || sticky ? "round up\n" : "round down\n");
-#endif
-			}
-			else { // all bits of the double go into this representation and need to be shifted up
-				int shiftLeft = fbits - 52;
-				rawFraction <<= shiftLeft;
-			}
-		}
-#if TRACE_CONVERSION
-		std::cout << "biased exponent   : " << biasedExponent << " : " << std::hex << biasedExponent << std::dec << '\n';
-		std::cout << "shift             : " << shiftRight << '\n';
-		std::cout << "sticky bit mask   : " << to_binary(mask, 64, true) << '\n';
-		std::cout << "fraction bits     : " << to_binary(rawFraction, 64, true) << '\n';
-#endif
-		// construct the target bfloat
-		uint64_t bits = (s ? 1ull : 0ull);
-		bits <<= es;
-		bits |= biasedExponent;
-		bits <<= nbits - 1ull - es;
-		bits |= rawFraction;
-		if (nrBlocks == 1) {
-			_block[MSU] = bt(bits);
-		}
-		else {
-			copyBits(bits);
-		}
-		// implement saturation
-		if (this->isinf(INF_TYPE_POSITIVE) || this->isnan(NAN_TYPE_QUIET)) {
-			clear();
-			flip();
-			setbit(nbits - 1ull, false);
-			setbit(1ull, false);
-		}
-		else if (this->isinf(INF_TYPE_NEGATIVE) || this->isnan(NAN_TYPE_SIGNALLING)) {
-			clear();
-			flip();
-			setbit(1ull, false);
-		}
-		return *this;
-	}
+protected:
 
 	/// <summary>
 	/// round a set of source bits to the present representation.

@@ -19,10 +19,12 @@ public:
 	static constexpr uint64_t smask   = 0x0000'0000'8000'0000ull; // mask for the top half
 	static constexpr int      ebits   = 15;
 	static constexpr int      bias    = 16383;
-	static constexpr uint64_t emask   = 0x0000'0000'0000'7FFFull; // msak for the top half
+	static constexpr uint64_t emask   = 0x0000'0000'0000'7FFFull; // mask for the top half
 	static constexpr uint64_t eallset = 0x7FFF;
 	static constexpr int      fbits   = 64;
+	static constexpr uint64_t hmask   = 0x0000'0000'0000'0001ull; // mask for the top half
 	static constexpr uint64_t fmask   = 0xFFFF'FFFF'FFFF'FFFFull; // mask for the bottom half
+	static constexpr uint64_t hfmask  = 0xFFFF'FFFF'FFFF'FFFFull; // requires special logic
 	static constexpr uint64_t fmsb    = 0x8000'0000'0000'0000ull;
 };
 

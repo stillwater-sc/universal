@@ -22,7 +22,9 @@ public:
 	static constexpr uint64_t emask   = 0x7FF0'0000'0000'0000ull;
 	static constexpr uint64_t eallset = 0x7FF;
 	static constexpr int      fbits   = 52;
+	static constexpr uint64_t hmask   = 0x0010'0000'0000'0000ull;
 	static constexpr uint64_t fmask   = 0x000F'FFFF'FFFF'FFFFull;
+	static constexpr uint64_t hfmask  = 0x001F'FFFF'FFFF'FFFFull;
 	static constexpr uint64_t fmsb    = 0x0008'0000'0000'0000ull;
 };
 
