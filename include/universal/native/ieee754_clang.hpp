@@ -16,15 +16,15 @@ namespace sw::universal {
 template<>
 class ieee754_parameter<long double> {
 public:
-	static constexpr uint64_t smask   = 0x0000'0000'8000'0000ull; // mask for the top half
+	static constexpr uint64_t smask   = 0x0000'0000'0000'8000ull; // mask for the top half
 	static constexpr int      ebits   = 15;
 	static constexpr int      bias    = 16383;
 	static constexpr uint64_t emask   = 0x0000'0000'0000'7FFFull; // mask for the top half
 	static constexpr uint64_t eallset = 0x7FFF;
 	static constexpr int      fbits   = 64;
-	static constexpr uint64_t hmask   = 0x0000'0000'0000'0001ull; // mask for the top half
-	static constexpr uint64_t fmask   = 0xFFFF'FFFF'FFFF'FFFFull; // mask for the bottom half
-	static constexpr uint64_t hfmask  = 0xFFFF'FFFF'FFFF'FFFFull; // requires special logic
+	static constexpr uint64_t hmask   = 0x8000'0000'0000'0000ull; // mask for the bottom half
+	static constexpr uint64_t fmask   = 0x7FFF'FFFF'FFFF'FFFFull; // mask for the bottom half
+	static constexpr uint64_t hfmask  = 0xFFFF'FFFF'FFFF'FFFFull; // mask for the bottom half
 	static constexpr uint64_t fmsb    = 0x8000'0000'0000'0000ull;
 };
 
@@ -45,6 +45,14 @@ union long_double_decoder {
 		uint64_t sign : 1;
 	} parts;
 };
+
+inline void extractFields(long double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) {
+	long_double_decoder decoder;
+	decoder.ld = value;
+	s = decoder.parts.sign == 1 ? true : false;
+	rawExponentBits = decoder.parts.exponent;
+	rawFractionBits = decoder.parts.fraction;
+}
 
 // generate a binary string for a native double precision IEEE floating point
 inline std::string to_hex(const long double& number) {
