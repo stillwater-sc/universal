@@ -16,6 +16,13 @@
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
 
+// TODO: make it work for long double
+// that special bit[63] is a kicker
+//                         16  15   14   13   12   11   10    9    8    7    6    5    4    3    2    1
+// 0b0.111'1111'1111'1111.x100'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+// 0b0.000'0000'0000'0000.0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000'0000
+
+// Convert a uint64_t mask into an IEEE-754 field-aligned bit pattern
 std::string MaskToIeee754(size_t mask, unsigned nbits, unsigned es) {
 	std::stringstream s;
 	size_t bit = (1ull << (nbits - 1));

@@ -107,7 +107,7 @@ inline std::string to_triple(const long double& number) {
 	}
 
 	s << ')';
-	return ss.str();
+	return s.str();
 }
 
 // generate a color coded binary string for a native double precision IEEE floating point
@@ -149,7 +149,7 @@ inline std::string color_print(const long double& number) {
 	}
 
 	s << def;
-	return ss.str();
+	return s.str();
 }
 
 // floating point component extractions

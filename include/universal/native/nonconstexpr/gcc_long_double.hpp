@@ -44,7 +44,7 @@ inline std::string to_hex(const long double& number) {
 	long_double_decoder decoder;
 	decoder.ld = number;
 	s << (decoder.parts.sign ? '1' : '0') << '.' << std::hex << int(decoder.parts.exponent) << '.' << decoder.parts.fraction;
-	return ss.str();
+	return s.str();
 }
 
 // generate a binary string for a native double precision IEEE floating point
