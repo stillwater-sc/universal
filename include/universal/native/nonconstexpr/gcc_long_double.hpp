@@ -53,7 +53,7 @@ inline std::string to_binary(const long double& number, bool bNibbleMarker = fal
 	long_double_decoder decoder;
 	decoder.ld = number;
 
-	s << "0b"
+	s << "0b";
 	// print sign bit
 	s << (decoder.parts.sign ? '1' : '0') << '.';
 
