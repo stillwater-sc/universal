@@ -27,6 +27,7 @@ inline constexpr void extractFields(float value, bool& s, uint64_t& rawExponentB
 	rawExponentBits = (ieee754_parameter<float>::emask & bc) >> ieee754_parameter<float>::fbits;
 	rawFractionBits = (ieee754_parameter<float>::fmask & bc);
 }
+template<>
 inline constexpr void extractFields(double value, bool& s, uint64_t& rawExponentBits, uint64_t& rawFractionBits) noexcept {
 	uint64_t bc = std::bit_cast<uint64_t, double>(value);
 	s = (ieee754_parameter<double>::smask & bc);
@@ -148,7 +149,6 @@ inline std::string to_base2_scientific(Real number) {
 
 	return s.str();
 }
-
 
 // generate a color coded binary string for a native single precision IEEE floating point
 template<typename Real,

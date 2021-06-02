@@ -9,14 +9,11 @@
 #if defined(__clang__)
 /* Clang/LLVM. ---------------------------------------------- */
 
-
 #elif defined(__ICC) || defined(__INTEL_COMPILER)
 /* Intel ICC/ICPC. ------------------------------------------ */
 
-
 #elif defined(__GNUC__) || defined(__GNUG__)
 /* GNU GCC/G++. --------------------------------------------- */
-
 
 #elif defined(__HP_cc) || defined(__HP_aCC)
 /* Hewlett-Packard C/aC++. ---------------------------------- */
@@ -27,7 +24,6 @@
 #elif defined(_MSC_VER)
 /* Microsoft Visual Studio. --------------------------------- */
 
-
 #elif defined(__PGI)
 /* Portland Group PGCC/PGCPP. ------------------------------- */
 
@@ -36,7 +32,7 @@
 
 #endif
 
-namespace sw { namespace universal {
+namespace sw::universal {
 
 
 }} // namespace sw::universal

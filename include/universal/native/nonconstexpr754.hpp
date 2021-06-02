@@ -1,5 +1,5 @@
 #pragma once
-// ieee754.hpp: manipulation functions for IEEE-754 native types
+// nonconstexpr754.hpp: manipulation functions for IEEE-754 native types
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -76,7 +76,7 @@ inline std::string to_binary(float number, bool bNibbleMarker = false) {
 	float_decoder decoder;
 	decoder.f = number;
 
-	s << 'b';
+	s << "0b";
 	// print sign bit
 	s << (decoder.parts.sign ? '1' : '0') << '.';
 
@@ -260,7 +260,7 @@ inline std::string to_binary(double number, bool bNibbleMarker = false) {
 	double_decoder decoder;
 	decoder.d = number;
 
-	s << 'b';
+	s << "0b";
 	// print sign bit
 	s << (decoder.parts.sign ? '1' : '0') << '.';
 
@@ -289,12 +289,12 @@ inline std::string to_binary(double number, bool bNibbleMarker = false) {
 
 // return in triple form (+, scale, fraction)
 inline std::string to_triple(double number) {
-	std::stringstream ss;
+	std::stringstream s;
 	double_decoder decoder;
 	decoder.d = number;
 
 	// print sign bit
-	ss << '(' << (decoder.parts.sign ? '-' : '+') << ',';
+	s << '(' << (decoder.parts.sign ? '-' : '+') << ',';
 
 	// exponent 
 	// the exponent value used in the arithmetic is the exponent shifted by a bias 
@@ -302,38 +302,38 @@ inline std::string to_triple(double number) {
 	// (i.e. for 2^(e - 127) to be one, e must be 127). 
 	// Exponents range from -126 to +127 because exponents of -127 (all 0s) and +128 (all 1s) are reserved for special numbers.
 	if (decoder.parts.exponent == 0) {
-		ss << "exp=0,";
+		s << "exp=0,";
 	}
 	else if (decoder.parts.exponent == 0xFF) {
-		ss << "exp=1, ";
+		s << "exp=1, ";
 	}
 	int scale = int(decoder.parts.exponent) - 1023;
-	ss << scale << ',';
+	s << scale << ',';
 
 	// print fraction bits
 	uint64_t mask = (uint64_t(1) << 51);
 	for (int i = 51; i >= 0; --i) {
-		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
+		s << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
 	}
 
-	ss << ')';
-	return ss.str();
+	s << ')';
+	return s.str();
 }
 
 // specialization for IEEE double precision floats
 inline std::string to_base2_scientific(double number) {
-	std::stringstream ss;
+	std::stringstream s;
 	double_decoder decoder;
 	decoder.d = number;
-	ss << (decoder.parts.sign == 1 ? "-" : "+") << "1.";
+	s << (decoder.parts.sign == 1 ? "-" : "+") << "1.";
 	uint64_t mask = (uint64_t(1) << 52);
 	for (int i = 52; i >= 0; --i) {
-		ss << ((decoder.parts.fraction & mask) ? '1' : '0');
+		s << ((decoder.parts.fraction & mask) ? '1' : '0');
 		mask >>= 1;
 	} 
-	ss << "e2^" << std::showpos << (decoder.parts.exponent - 1023);
-	return ss.str();
+	s << "e2^" << std::showpos << (decoder.parts.exponent - 1023);
+	return s.str();
 }
 
 /// Returns a tuple of sign, exponent, and fraction.
@@ -376,40 +376,6 @@ inline std::tuple<bool, int64_t, uint64_t> ieee_components(double fp)
 	);
 }
 
-/// <summary>
-/// return the binary scale ( = 2^scale ) of a float
-/// </summary>
-/// <param name="v">single precision value</param>
-/// <returns>binary scale</returns>
-inline int scale(float v) {
-	int exponent{ 0 };
-	float frac = frexpf(v, &exponent);
-	if (frac == 0.0f) exponent = 0;
-	return exponent;
-}
-/// <summary>
-/// return the binary scale ( = 2^scale ) of a double
-/// </summary>
-/// <param name="v">double precision value</param>
-/// <returns>binary scale</returns>
-inline int scale(double v) {
-	int exponent{ 0 };
-	double frac = frexp(v, &exponent);
-	if (frac == 0.0) exponent = 0;
-	return exponent;
-}
-/// <summary>
-/// return the binary scale ( = 2^scale ) of a long double
-/// </summary>
-/// <param name="v">quad precision value</param>
-/// <returns>binary scale</returns>
-inline int scale(long double v) {
-	int exponent{ 0 };
-	long double frac = frexpl(v, &exponent);
-	if (frac == 0.0l) exponent = 0;
-	return exponent;
-}
-
 } // namespace sw::universal
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -434,13 +400,13 @@ so as to enable the representation of special states such as
 infinity and Not a Number.If the exponent field is zero, the
 value is a denormal number and the exponent of 2 is 16382.
 */
-#include <universal/native/ieee754_msvc.hpp>
-#include <universal/native/ieee754_clang.hpp>
-#include <universal/native/ieee754_gcc.hpp>
-#include <universal/native/ieee754_intelicc.hpp>
-#include <universal/native/ieee754_riscv.hpp>
-#include <universal/native/ieee754_ibmxlc.hpp>
-#include <universal/native/ieee754_hpcc.hpp>
-#include <universal/native/ieee754_pgi.hpp>
-#include <universal/native/ieee754_sunpro.hpp>
+#include <universal/native/nonconstexpr/msvc_long_double.hpp>
+#include <universal/native/nonconstexpr/clang_long_double.hpp>
+#include <universal/native/nonconstexpr/gcc_long_double.hpp>
+#include <universal/native/nonconstexpr/intelicc_long_double.hpp>
+#include <universal/native/nonconstexpr/riscv_long_double.hpp>
+#include <universal/native/nonconstexpr/ibmxlc_long_double.hpp>
+#include <universal/native/nonconstexpr/hpcc_long_double.hpp>
+#include <universal/native/nonconstexpr/pgi_long_double.hpp>
+#include <universal/native/nonconstexpr/sunpro_long_double.hpp>
 

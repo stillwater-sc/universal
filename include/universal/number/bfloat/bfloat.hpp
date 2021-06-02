@@ -1396,7 +1396,7 @@ public:
 
 		// special case handling
 		if (rawExponent == ieee754_parameter<Real>::eallset) { // nan and inf
-			if (rawFraction & ieee754_parameter<Real>::snanmask) {
+			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::snanmask)) {
 				// 1.11111111.00000000.......00000001 signalling nan
 				// 0.11111111.00000000000000000000001 signalling nan
 				// MSVC
@@ -1405,7 +1405,7 @@ public:
 				setnan(NAN_TYPE_SIGNALLING);
 				return *this;
 			}
-			if (rawFraction & ieee754_parameter<Real>::qnanmask) {
+			if (rawFraction == (ieee754_parameter<Real>::fmask & ieee754_parameter<Real>::qnanmask)) {
 				// 1.11111111.10000000.......00000000 quiet nan
 				// 0.11111111.10000000.......00000000 quiet nan
 				setnan(NAN_TYPE_QUIET);

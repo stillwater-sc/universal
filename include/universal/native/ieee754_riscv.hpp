@@ -10,34 +10,61 @@
 
 namespace sw::universal {
 
-////////////////////////////////////////////////////////////////////////
-// numerical helpers
+// specializations for IEEE-754 parameters RISC-V GCC/G++
+template<>
+class ieee754_parameter<float> {
+public:
+	static constexpr int      nbits    = 32;
+	static constexpr uint64_t smask    = 0x8000'0000ull;
+	static constexpr int      ebits    = 8;
+	static constexpr int      bias     = 127;
+	static constexpr uint64_t emask    = 0x7F80'0000ull;
+	static constexpr uint64_t eallset  = 0xFFull;
+	static constexpr int      fbits    = 23;
+	static constexpr uint64_t hmask    = 0x0080'0000ull;
+	static constexpr uint64_t fmask    = 0x007F'FFFFull;
+	static constexpr uint64_t hfmask   = 0x00FF'FFFFull;
+	static constexpr uint64_t fmsb     = 0x0040'0000ull;
+	static constexpr uint64_t qnanmask = 0x7FC0'0000ull;
+	static constexpr uint64_t snanmask = 0x7FC0'0001ull;
+};
+template<>
+class ieee754_parameter<double> {
+public:
+	static constexpr int      nbits    = 64;
+	static constexpr uint64_t smask    = 0x8000'0000'0000'0000ull;
+	static constexpr int      ebits    = 11;
+	static constexpr int      bias     = 1023;
+	static constexpr uint64_t emask    = 0x7FF0'0000'0000'0000ull;
+	static constexpr uint64_t eallset  = 0x7FF;
+	static constexpr int      fbits    = 52;
+	static constexpr uint64_t hmask    = 0x0010'0000'0000'0000ull;
+	static constexpr uint64_t fmask    = 0x000F'FFFF'FFFF'FFFFull;
+	static constexpr uint64_t hfmask   = 0x001F'FFFF'FFFF'FFFFull;
+	static constexpr uint64_t fmsb     = 0x0008'0000'0000'0000ull;
+	static constexpr uint64_t qnanmask = 0x7FF8'0000'0000'0000ull;
+	static constexpr uint64_t snanmask = 0x7FF0'0000'0000'0001ull;
+};
 
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-// compiler specific long double IEEE floating point
-
-// floating point component extractions
-inline void extract_fp_components(float fp, bool& _sign, int& _exponent, float& _fr, uint32_t& _fraction) {
-	static_assert(sizeof(float) == 4, "This function only works when float is 32 bits.");
-	_sign = fp < 0.0 ? true : false;
-	_fr = frexpf(fp, &_exponent);
-	_fraction = uint32_t(0x007FFFFFul) & reinterpret_cast<uint32_t&>(_fr);
-}
-inline void extract_fp_components(double fp, bool& _sign, int& _exponent, double& _fr, uint64_t& _fraction) {
-	static_assert(sizeof(double) == 8, "This function only works when double is 64 bits.");
-	_sign = fp < 0.0 ? true : false;
-	_fr = frexp(fp, &_exponent);
-	_fraction = uint64_t(0x000FFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
-}
-inline void extract_fp_components(long double fp, bool& _sign, int& _exponent, long double& _fr, uint64_t& _fraction) {
-	// RISC-V ABI defines long double as a 128-bit quadprecision floating point
-	static_assert(sizeof(double) == 16, "This function only works when long double is 128 bits.");
-	_sign = fp < 0.0 ? true : false;
-	_fr = frexpl(fp, &_exponent);
-	_fraction = uint64_t(0x7FFFFFFFFFFFFFFFull) & reinterpret_cast<uint64_t&>(_fr);
-}
-
+	// MSVC long double = double precision
+// IEEE-754 parameter constexpressions for long double
+template<>
+class ieee754_parameter<long double> {
+public:
+	static constexpr int      nbits    = 64;
+	static constexpr uint64_t smask    = 0x8000'0000'0000'0000ull;
+	static constexpr int      ebits    = 11;
+	static constexpr int      bias     = 1023;
+	static constexpr uint64_t emask    = 0x7FF0'0000'0000'0000ull;
+	static constexpr uint64_t eallset  = 0x7FF;
+	static constexpr int      fbits    = 52;
+	static constexpr uint64_t hmask    = 0x0010'0000'0000'0000ull;
+	static constexpr uint64_t fmask    = 0x000F'FFFF'FFFF'FFFFull;
+	static constexpr uint64_t hfmask   = 0x001F'FFFF'FFFF'FFFFull;
+	static constexpr uint64_t fmsb     = 0x0008'0000'0000'0000ull;
+	static constexpr uint64_t qnanmask = 0x7FF8'0000'0000'0000ull;
+	static constexpr uint64_t snanmask = 0x7FF0'0000'0000'0001ull;
+};
 
 } // namespace sw::universal
 

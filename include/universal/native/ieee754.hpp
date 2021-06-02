@@ -16,6 +16,8 @@ namespace sw::universal {
 template<typename Real>
 class ieee754_parameter {
 public:
+	static constexpr int nbits         = 0; // number of bits total
+	static constexpr uint64_t smask    = 0; // mask of the sign field
 	static constexpr int ebits         = 0; // number of exponent bits
 	static constexpr int bias          = 0; // exponent bias
 	static constexpr uint64_t emask    = 0; // mask of the exponent field
@@ -50,36 +52,43 @@ inline bool iszero(const Real& a) {
 	return (std::fpclassify(a) == FP_ZERO);
 }
 
+/// <summary>
+/// return the binary scale ( = 2^scale ) of a float
+/// </summary>
+/// <param name="v">single precision value</param>
+/// <returns>binary scale</returns>
+inline int scale(float v) {
+	int exponent{ 0 };
+	float frac = frexpf(v, &exponent);
+	if (frac == 0.0f) exponent = 0;
+	return exponent;
+}
+/// <summary>
+/// return the binary scale ( = 2^scale ) of a double
+/// </summary>
+/// <param name="v">double precision value</param>
+/// <returns>binary scale</returns>
+inline int scale(double v) {
+	int exponent{ 0 };
+	double frac = frexp(v, &exponent);
+	if (frac == 0.0) exponent = 0;
+	return exponent;
+}
+/// <summary>
+/// return the binary scale ( = 2^scale ) of a long double
+/// </summary>
+/// <param name="v">quad precision value</param>
+/// <returns>binary scale</returns>
+inline int scale(long double v) {
+	int exponent{ 0 };
+	long double frac = frexpl(v, &exponent);
+	if (frac == 0.0l) exponent = 0;
+	return exponent;
+}
+
 } // namespace sw::universal
 
-#if BIT_CAST_SUPPORT
-#include <universal/native/constexpr754.hpp>
-#else
-#include <universal/native/nonconstexpr754.hpp>
-#endif
-
-/////////////////////////////////////////////////////////////////////////////////////////////////////////
-// compiler specific long double IEEE floating point
-
-/*
-	Long double is not consistently implemented across different compilers.
-	The following section organizes the implementation details of each
-	of the compilers supported.
-
-	The x86 extended precision format is an 80-bit format first
-	implemented in the Intel 8087 math coprocessor and is supported
-	by all processors that are based on the x86 design that incorporate
-	a floating-point unit(FPU).This 80 - bit format uses one bit for
-	the sign of the significand, 15 bits for the exponent field
-	(i.e. the same range as the 128 - bit quadruple precision IEEE 754 format)
-	and 64 bits for the significand. The exponent field is biased by 16383,
-	meaning that 16383 has to be subtracted from the value in the
-	exponent field to compute the actual power of 2.
-	An exponent field value of 32767 (all fifteen bits 1) is reserved
-	so as to enable the representation of special states such as
-	infinity and Not a Number.If the exponent field is zero, the
-	value is a denormal number and the exponent of 2 is ¿16382.
-*/
+// compiler specializations for IEEE-754 parameters
 #include <universal/native/ieee754_msvc.hpp>
 #include <universal/native/ieee754_clang.hpp>
 #include <universal/native/ieee754_gcc.hpp>
@@ -89,4 +98,10 @@ inline bool iszero(const Real& a) {
 #include <universal/native/ieee754_hpcc.hpp>
 #include <universal/native/ieee754_pgi.hpp>
 #include <universal/native/ieee754_sunpro.hpp>
+
+#if BIT_CAST_SUPPORT
+#include <universal/native/constexpr754.hpp>
+#else
+#include <universal/native/nonconstexpr754.hpp>
+#endif
 
