@@ -417,6 +417,7 @@ namespace sw::universal {
 		return nrOfFailedTests;
 	}
 
+#define CUSTOM_FEEDBACK
 	// generate random test cases to test conversion from an IEEE-754 double to a bfloat
 	template<typename TestType>
 	int VerifyDouble2BfloatConversionRnd(bool bReportIndividualTestCases, size_t nrOfRandoms = 10000) {
@@ -449,7 +450,7 @@ namespace sw::universal {
 			nrOfFailedTests += Compare(refValue, testValue, refValue, bReportIndividualTestCases);
 #ifdef CUSTOM_FEEDBACK
 			if (testValue != refValue) {
-				std::cout << to_binary(nut) << '\n' << to_binary(ref) << std::endl;
+				std::cout << "nut : " << to_binary(nut) << '\n' << "ref : " << to_binary(ref) << std::endl;
 			}
 #endif
 			if (nrOfFailedTests > 24) {

@@ -225,14 +225,47 @@ try {
 	std::cout << std::setprecision(15);
 	std::cerr << std::setprecision(15);
 
+//	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<64, 8, uint8_t> >(true, 10), tag, "bfloat<64, 8, uint8_t>");
+/*
+FAIL = 1.9140625784168e+210 did not convert to 1.9140625784168e+210 instead it yielded  6.80564733841877e+38  reference b0.11010111001.0111010010011101001011001010000101110001000011010111 vs result b0.10010000000.0000000000000000000000000000000000000000000000000000
+nut : b0.11111111.1111111111111111111111111111111111111111111111111111101
+ref : b0.11010111001.0111010010011101001011001010000101110001000011010111
+FAIL = 6.52565833484258e+216 did not convert to 6.52565833484258e+216 instead it yielded  6.80564733841877e+38  reference b0.11011001111.0010111011100000101101100111000010011000100111010010 vs result b0.10010000000.0000000000000000000000000000000000000000000000000000
+nut : b0.11111111.1111111111111111111111111111111111111111111111111111101
+ref : b0.11011001111.0010111011100000101101100111000010011000100111010010
+FAIL = -1.08577635870661e-152 did not convert to -1.08577635870661e-152 instead it yielded                    -0  reference b1.01000000110.0010001100101000010110011001110111111001010110100011 vs result b1.00000000000.0000000000000000000000000000000000000000000000000000
+nut : b1.00000000.0000000000000000000000000000000000000000000000000000000
+ref : b1.01000000110.0010001100101000010110011001110111111001010110100011
+FAIL = -2.13894797086933e+52 did not convert to -2.13894797086933e+52 instead it yielded  -6.80564733841877e+38  reference b1.10010101100.1100100101011010001101010001000110001001001000100101 vs result b1.10010000000.0000000000000000000000000000000000000000000000000000
+nut : b1.11111111.1111111111111111111111111111111111111111111111111111101
+ref : b1.10010101100.1100100101011010001101010001000110001001001000100101
+FAIL = -8.66772523939892e+299 did not convert to -8.66772523939892e+299 instead it yielded  -6.80564733841877e+38  reference b1.11111100011.0100101101010110001010111101100011111010001110011100 vs result b1.10010000000.0000000000000000000000000000000000000000000000000000
+nut : b1.11111111.1111111111111111111111111111111111111111111111111111101
+ref : b1.11111100011.0100101101010110001010111101100011111010001110011100
+FAIL = 9.08154230920465e+207 did not convert to 9.08154230920465e+207 instead it yielded  6.80564733841877e+38  reference b0.11010110001.1100010010010110011001110100010011101000000011001110 vs result b0.10010000000.0000000000000000000000000000000000000000000000000000
+nut : b0.11111111.1111111111111111111111111111111111111111111111111111101
+ref : b0.11010110001.1100010010010110011001110100010011101000000011001110
+FAIL = 2.15764331834369e-132 did not convert to 2.15764331834369e-132 instead it yielded                     0  reference b0.01001001001.1000100000010000100011101101000110110100100110101000 vs result b0.00000000000.0000000000000000000000000000000000000000000000000000
+nut : b0.00000000.0000000000000000000000000000000000000000000000000000000
+ref : b0.01001001001.1000100000010000100011101101000110110100100110101000
+FAIL = 3.98637310862432e+128 did not convert to 3.98637310862432e+128 instead it yielded  6.80564733841877e+38  reference b0.10110101010.0010011001110010111000110101011001101000111101100111 vs result b0.10010000000.0000000000000000000000000000000000000000000000000000
+nut : b0.11111111.1111111111111111111111111111111111111111111111111111101
+ref : b0.10110101010.0010011001110010111000110101011001101000111101100111
+*/
+	
 	{
-		bfloat<6, 2, uint8_t> a;
-		a.constexprClassParameters();
-		double testValue = 0.0625000074505806;
-		a = testValue;
-		double da = double(a);
-		std::cout << to_binary(a) << " : " << a << " : " << da << " : " << setprecision(8) << testValue << endl;
+		bfloat<64, 11, uint8_t> ref = parse<64,8, uint8_t>("b0.11010111001.0111010010011101001011001010000101110001000011010111");
+		double testValue = double(ref);
+		std::cout << "ref : " << to_binary(ref) << " : " << ref << '\n';
+		std::cout << "test: " << to_binary(testValue) << " : " << testValue << endl;
+		bfloat<64, 8, uint8_t> nut;
+		//		a.constexprClassParameters();
+		nut = testValue;
+		double da = double(nut);
+		std::cout << "nut : " << to_binary(nut) << " : " << nut << '\n';
+		std::cout << "da  : " << to_binary(da) << " : " << da << endl;
 	}
+
 
 	bool bReportIndividualTestCases = true;
 	nrOfFailedTestCases += ReportTestResult(VerifyDoubleSubnormals<uint8_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint8_t>");
@@ -240,10 +273,20 @@ try {
 	nrOfFailedTestCases += ReportTestResult(VerifyDoubleSubnormals<uint32_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint32_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyDoubleSubnormals<uint64_t>(bReportIndividualTestCases), tag, "bfloat<64, 11, uint64_t>");
 
-	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<64, 8, uint8_t> >(true, 1000), tag, "bfloat<64, 8, uint8_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<64, 8, uint16_t> >(true, 1000), tag, "bfloat<64, 8, uint16_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<64, 8, uint32_t> >(true, 1000), tag, "bfloat<64, 8, uint32_t>");
-	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<64, 8, uint64_t> >(true, 1000), tag, "bfloat<64, 8, uint64_t>");
+#ifdef FLOATING_POINT_CONTRACTION_TESTS
+	// double 2 bfloat conversion uses an ieee-754 double value to assign.
+	// a bfloat<64, 8> will have a 8x smaller dynamic range and thus we will have a 7 in 8 change to saturate
+	// as we saturate to maxpos, which is a regularly looking value, it is difficult to recognize this failure mode
+	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<64, 8, uint8_t> >(true, 10), tag, "bfloat<64, 8, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<64, 8, uint16_t> >(true, 10), tag, "bfloat<64, 8, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<64, 8, uint32_t> >(true, 10), tag, "bfloat<64, 8, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<64, 8, uint64_t> >(true, 10), tag, "bfloat<64, 8, uint64_t>");
+#endif
+
+	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<64, 11, uint8_t> >(true, 1000), tag, "bfloat<64, 11, uint8_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<64, 11, uint16_t> >(true, 1000), tag, "bfloat<64, 11, uint16_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<64, 11, uint32_t> >(true, 1000), tag, "bfloat<64, 11, uint32_t>");
+	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<64, 11, uint64_t> >(true, 1000), tag, "bfloat<64, 11, uint64_t>");
 
 	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<80, 11, uint8_t> >(true, 1000), tag, "bfloat<80, 11, uint8_t>");
 	nrOfFailedTestCases += ReportTestResult(VerifyDouble2BfloatConversionRnd< bfloat<96, 11, uint8_t> >(true, 1000), tag, "bfloat<96, 11, uint8_t>");
