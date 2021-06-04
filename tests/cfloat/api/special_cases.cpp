@@ -1,4 +1,4 @@
-// special_cases.cpp: test special case values for bfloats
+// special_cases.cpp: test special case values for classic cfloats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -6,17 +6,17 @@
 #include <universal/utility/directives.hpp>
 
 // minimum set of include files to reflect source code dependencies
-// Configure the bfloat template environment
+// Configure the cfloat template environment
 // first: enable general or specialized configurations
-#define BFLOAT_FAST_SPECIALIZATION
+#define CFLOAT_FAST_SPECIALIZATION
 // second: enable/disable arithmetic exceptions
-#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/cfloat/manipulators.hpp>  // hex_print and the like
 
-// marshall the exception state of bfloat to the test suite
-#if BFLOAT_THROW_ARITHMETIC_EXCEPTION 
+// marshall the exception state of cfloat to the test suite
+#if CFLOAT_THROW_ARITHMETIC_EXCEPTION 
 #define THROW_ARITHMETIC_EXCEPTION 1
 #else
 #define THROW_ARITHMETIC_EXCEPTION 0
@@ -26,7 +26,7 @@
 template<size_t nbits, size_t es, typename bt = uint8_t>
 inline int TestZero() {
 	int fails = 0;
-	sw::universal::bfloat<nbits, es, bt> r;
+	sw::universal::cfloat<nbits, es, bt> r;
 	//std::cout << to_binary(r) << std::endl;
 	if (!r.iszero()) ++fails;
 	r = -r;
@@ -103,7 +103,7 @@ void TestIsZero(int& nrOfFailedTestCases) {
 template<size_t nbits, size_t es, typename bt = uint8_t>
 inline int TestInf() {
 	int fails = 0;
-	sw::universal::bfloat<nbits, es, bt> r;
+	sw::universal::cfloat<nbits, es, bt> r;
 	r.setinf(); // default is to set -inf
 	//std::cout << to_binary(r) << std::endl;
 	if (!r.isinf()) ++fails;
@@ -185,7 +185,7 @@ void TestIsInf(int& nrOfFailedTestCases) {
 template<size_t nbits, size_t es, typename bt = uint8_t>
 inline int TestNaN() {
 	int fails = 0;
-	sw::universal::bfloat<nbits, es, bt> r;
+	sw::universal::cfloat<nbits, es, bt> r;
 	r.setnan();
 	//std::cout << to_binary(r) << std::endl;
 	if (!r.isnan()) ++fails;
@@ -271,97 +271,97 @@ void TestSizeof(int& nrOfFailedTestCases) {
 	using namespace sw::universal;
 	int currentFails = nrOfFailedTestCases;
 	std::cout << "sizeof with blocktype uint8_t   : ";
-	if (sizeof(bfloat<4, 1>(0)) != 1) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<5, 1>(0)) != 1) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<8, 2>(0)) != 1) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<9, 2>(0)) != 2) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<12, 3>(0)) != 2) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<16, 5>(0)) != 2) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<17, 5>(0)) != 3) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<20, 5>(0)) != 3) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<24, 5>(0)) != 3) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<25, 6>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<28, 6>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<32, 8>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<33, 8>(0)) != 5) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<36, 8>(0)) != 5) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<40, 9>(0)) != 5) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<44, 9>(0)) != 6) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<48, 9>(0)) != 6) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<52, 10>(0)) != 7) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<56, 10>(0)) != 7) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<60, 10>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<64, 11>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<72, 11>(0)) != 9) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<80, 11>(0)) != 10) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<88, 11>(0)) != 11) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<96, 11>(0)) != 12) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<104, 11>(0)) != 13) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<112, 11>(0)) != 14) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<120, 11>(0)) != 15) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<128, 11>(0)) != 16) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<4, 1>(0)) != 1) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<5, 1>(0)) != 1) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<8, 2>(0)) != 1) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<9, 2>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<12, 3>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<16, 5>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<17, 5>(0)) != 3) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<20, 5>(0)) != 3) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<24, 5>(0)) != 3) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<25, 6>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<28, 6>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<32, 8>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<33, 8>(0)) != 5) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<36, 8>(0)) != 5) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<40, 9>(0)) != 5) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<44, 9>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<48, 9>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<52, 10>(0)) != 7) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<56, 10>(0)) != 7) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<60, 10>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<64, 11>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<72, 11>(0)) != 9) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<80, 11>(0)) != 10) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<88, 11>(0)) != 11) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<96, 11>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<104, 11>(0)) != 13) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<112, 11>(0)) != 14) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<120, 11>(0)) != 15) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<128, 11>(0)) != 16) ++nrOfFailedTestCases;
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	std::cout << "sizeof with blocktype uint16_t  : ";
-	if (sizeof(bfloat<4, 1, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<5, 1, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<8, 2, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<9, 2, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<12, 3, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<16, 5, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<17, 5, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<20, 5, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<24, 5, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<25, 6, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<28, 6, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<32, 8, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<33, 8, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<36, 8, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<40, 9, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<44, 9, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<48, 9, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<52, 10, uint16_t>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<56, 10, uint16_t>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<60, 10, uint16_t>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<64, 11, uint16_t>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<72, 11, uint16_t>(0)) != 10) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<80, 11, uint16_t>(0)) != 10) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<88, 11, uint16_t>(0)) != 12) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<96, 11, uint16_t>(0)) != 12) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<104, 11, uint16_t>(0)) != 14) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<112, 11, uint16_t>(0)) != 14) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<120, 11, uint16_t>(0)) != 16) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<128, 11, uint16_t>(0)) != 16) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<4, 1, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<5, 1, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<8, 2, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<9, 2, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<12, 3, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<16, 5, uint16_t>(0)) != 2) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<17, 5, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<20, 5, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<24, 5, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<25, 6, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<28, 6, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<32, 8, uint16_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<33, 8, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<36, 8, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<40, 9, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<44, 9, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<48, 9, uint16_t>(0)) != 6) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<52, 10, uint16_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<56, 10, uint16_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<60, 10, uint16_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<64, 11, uint16_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<72, 11, uint16_t>(0)) != 10) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<80, 11, uint16_t>(0)) != 10) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<88, 11, uint16_t>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<96, 11, uint16_t>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<104, 11, uint16_t>(0)) != 14) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<112, 11, uint16_t>(0)) != 14) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<120, 11, uint16_t>(0)) != 16) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<128, 11, uint16_t>(0)) != 16) ++nrOfFailedTestCases;
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	std::cout << "sizeof with blocktype uint32_t  : ";
-	if (sizeof(bfloat<4, 1, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<5, 1, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<8, 2, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<9, 2, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<12, 3, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<16, 5, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<17, 5, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<20, 5, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<24, 5, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<25, 6, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<28, 6, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<32, 8, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<33, 8, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<36, 8, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<40, 9, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<44, 9, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<48, 9, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<52, 10, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<56, 10, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<60, 10, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<64, 11, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<72, 11, uint32_t>(0)) != 12) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<80, 11, uint32_t>(0)) != 12) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<88, 11, uint32_t>(0)) != 12) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<96, 11, uint32_t>(0)) != 12) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<104, 11, uint32_t>(0)) != 16) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<112, 11, uint32_t>(0)) != 16) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<120, 11, uint32_t>(0)) != 16) ++nrOfFailedTestCases;
-	if (sizeof(bfloat<128, 11, uint32_t>(0)) != 16) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<4, 1, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<5, 1, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<8, 2, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<9, 2, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<12, 3, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<16, 5, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<17, 5, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<20, 5, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<24, 5, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<25, 6, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<28, 6, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<32, 8, uint32_t>(0)) != 4) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<33, 8, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<36, 8, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<40, 9, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<44, 9, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<48, 9, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<52, 10, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<56, 10, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<60, 10, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<64, 11, uint32_t>(0)) != 8) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<72, 11, uint32_t>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<80, 11, uint32_t>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<88, 11, uint32_t>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<96, 11, uint32_t>(0)) != 12) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<104, 11, uint32_t>(0)) != 16) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<112, 11, uint32_t>(0)) != 16) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<120, 11, uint32_t>(0)) != 16) ++nrOfFailedTestCases;
+	if (sizeof(cfloat<128, 11, uint32_t>(0)) != 16) ++nrOfFailedTestCases;
 	std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 }
 
@@ -371,15 +371,15 @@ void TestScale(int& nrOfFailedTestCases) {
 	int currentFails = nrOfFailedTestCases;
 
 	/*
-	an bfloat is encoded as 1 sign bit, es exponent bits, f fraction bits, and 1 uncertainty bit
+	an cfloat is encoded as 1 sign bit, es exponent bits, f fraction bits, and 1 uncertainty bit
 	we are specifying just the size, nbits, and the number of exponent bits, es,
 	from which we deduce the number of fraction bits, fbits.
 	fbits = nbits - 1 sign bit - 1 uncertainty bit - es exponent bits
 	fbits > 0 if nbits > es + 2
-	thus an bfloat<3,1> fails that test
+	thus an cfloat<3,1> fails that test
 	{
-		std::cout << "scale bfloat<3,1>               : ";
-		bfloat<3, 1> a; 
+		std::cout << "scale cfloat<3,1>               : ";
+		cfloat<3, 1> a; 
 		a.setbits(2); if (a.scale() != 1) ++nrOfFailedTestCases;
 		a.setbits(3); if (a.scale() != 1) ++nrOfFailedTestCases;
 		a.setbits(5); if (a.scale() != 0) ++nrOfFailedTestCases;
@@ -388,8 +388,8 @@ void TestScale(int& nrOfFailedTestCases) {
 	*/
 
 	{
-		std::cout << "scale bfloat<4,1>               : ";
-		bfloat<4, 1> a; 
+		std::cout << "scale cfloat<4,1>               : ";
+		cfloat<4, 1> a; 
 		a.setbits(5); if (a.scale() != 1) ++nrOfFailedTestCases;
 		a.setbits(11); if (a.scale() != 0) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
@@ -397,15 +397,15 @@ void TestScale(int& nrOfFailedTestCases) {
 	}
 
 	{
-		std::cout << "scale bfloat<5,1>               : ";
-		bfloat<5, 1> a;
+		std::cout << "scale cfloat<5,1>               : ";
+		cfloat<5, 1> a;
 		a.setbits(12); if (a.scale() != 1) ++nrOfFailedTestCases;
 		a.setbits(20); if (a.scale() != 0) ++nrOfFailedTestCases;
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
-		std::cout << "scale bfloat<5,2>               : ";
-		bfloat<5, 2> a;
+		std::cout << "scale cfloat<5,2>               : ";
+		cfloat<5, 2> a;
 		// [1-11-11]
 		a.setbits(0x1F); if (a.scale() != 2) ++nrOfFailedTestCases;
 		// [1-10-11]
@@ -417,8 +417,8 @@ void TestScale(int& nrOfFailedTestCases) {
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
-		std::cout << "scale bfloat<6,1>               : ";
-		bfloat<6, 1> a;
+		std::cout << "scale cfloat<6,1>               : ";
+		cfloat<6, 1> a;
 		// [1-1-1111]
 		a.setbits(0x3F); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-0-1111]
@@ -426,8 +426,8 @@ void TestScale(int& nrOfFailedTestCases) {
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
-		std::cout << "scale bfloat<7,1>               : ";
-		bfloat<7, 1> a;
+		std::cout << "scale cfloat<7,1>               : ";
+		cfloat<7, 1> a;
 		// [1-1-1'1111]
 		a.setbits(0x7F); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-0-1'1111]
@@ -435,8 +435,8 @@ void TestScale(int& nrOfFailedTestCases) {
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
-		std::cout << "scale bfloat<8,1>               : ";
-		bfloat<8, 1> a;
+		std::cout << "scale cfloat<8,1>               : ";
+		cfloat<8, 1> a;
 		// [1-1-11'1111]
 		a.setbits(0xFF); if (a.scale() != 1) ++nrOfFailedTestCases;
 		// [1-0-11'1111]
@@ -444,8 +444,8 @@ void TestScale(int& nrOfFailedTestCases) {
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
-		std::cout << "scale bfloat<8,2>               : ";
-		bfloat<8, 2> a;
+		std::cout << "scale cfloat<8,2>               : ";
+		cfloat<8, 2> a;
 		// [1-11-1'1111]
 		a.setbits(0xFF); if (a.scale() != 2) ++nrOfFailedTestCases;
 		// [1-10-1'1111]
@@ -457,8 +457,8 @@ void TestScale(int& nrOfFailedTestCases) {
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
-		std::cout << "scale bfloat<8,3>               : ";
-		bfloat<8, 3> a;
+		std::cout << "scale cfloat<8,3>               : ";
+		cfloat<8, 3> a;
 		// [1-111-'1111]
 		a.setbits(0xFF); if (a.scale() != 4) ++nrOfFailedTestCases;
 		// [1-110-'1111]
@@ -478,8 +478,8 @@ void TestScale(int& nrOfFailedTestCases) {
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
-		std::cout << "scale bfloat<8,4>               : ";
-		bfloat<8, 4> a;
+		std::cout << "scale cfloat<8,4>               : ";
+		cfloat<8, 4> a;
 		// [1-111'1-111]
 		a.setbits(0xFF); if (a.scale() != 8) ++nrOfFailedTestCases;
 		// [1-111'0-111]
@@ -516,8 +516,8 @@ void TestScale(int& nrOfFailedTestCases) {
 	}
 
 	{
-		std::cout << "scale bfloat<8,5>               : ";
-		bfloat<8, 5> a;
+		std::cout << "scale cfloat<8,5>               : ";
+		cfloat<8, 5> a;
 		// [1-111'11-11]
 		a.setbits(0xFF); if (a.scale() != 16) ++nrOfFailedTestCases;
 		// [1-111'10-11]
@@ -586,22 +586,22 @@ void TestScale(int& nrOfFailedTestCases) {
 	}
 #if 0
 	{
-		bfloat<9, 2> a; a.scale();
+		cfloat<9, 2> a; a.scale();
 	}
 	{
-		bfloat<9, 3> a; a.scale();
+		cfloat<9, 3> a; a.scale();
 	}
 	{
-		bfloat<10, 2> a; a.scale();
+		cfloat<10, 2> a; a.scale();
 	}
 	{
-		bfloat<10, 3> a; a.scale();
+		cfloat<10, 3> a; a.scale();
 	}
 #endif
 	std::cout << "\n\nStandard floating-point sizes\n";
 	{
-		std::cout << "scale bfloat<8,2,uint8_t>       : ";
-		bfloat<8, 2, uint8_t> a;
+		std::cout << "scale cfloat<8,2,uint8_t>       : ";
+		cfloat<8, 2, uint8_t> a;
 		// [1-11-1'1111]
 		a.setbits(0xFF); if (a.scale() != 2) ++nrOfFailedTestCases;
 		// [1-10-1'1111]
@@ -613,8 +613,8 @@ void TestScale(int& nrOfFailedTestCases) {
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
-		std::cout << "scale bfloat<16,5,uint16_t>     : ";
-		bfloat<16, 5, uint16_t> a;
+		std::cout << "scale cfloat<16,5,uint16_t>     : ";
+		cfloat<16, 5, uint16_t> a;
 		// [1-111'11-11'0000'0000]
 		a.setbits(0xFF00); if (a.scale() != 16) ++nrOfFailedTestCases;
 		// [1-111'10-11'0000'0000]
@@ -682,8 +682,8 @@ void TestScale(int& nrOfFailedTestCases) {
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
-		std::cout << "scale bfloat<32,8,uint32_t>     : ";
-		bfloat<32, 8, uint32_t> a;
+		std::cout << "scale cfloat<32,8,uint32_t>     : ";
+		cfloat<32, 8, uint32_t> a;
 		// [1-111'1111'1-111'1111'1111'1111'1111'0000]
 		a.setbits(0xFFFF'FFF0); if (a.scale() != 128) ++nrOfFailedTestCases;
 		// [1-011'1111'1-111'1111'1111'1111'1111'0000]
@@ -693,8 +693,8 @@ void TestScale(int& nrOfFailedTestCases) {
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
-		std::cout << "scale bfloat<64,11,uint64_t>    : ";
-		bfloat<64, 11, uint64_t> a;
+		std::cout << "scale cfloat<64,11,uint64_t>    : ";
+		cfloat<64, 11, uint64_t> a;
 		// [1-111'1111'1111-'1111'1111'1111'1111'0000]
 		a.setbits(0xFFFF'FFFF'FFFF'FFF0); if (a.scale() != 1024) ++nrOfFailedTestCases;
 		// [1-111'1111'1110-'1111'1111'1111'1111'0000]
@@ -707,8 +707,8 @@ void TestScale(int& nrOfFailedTestCases) {
 		std::cout << ((currentFails == nrOfFailedTestCases) ? "PASS\n" : "FAIL\n");
 	}
 	{
-		std::cout << "scale bfloat<128,15,uint64_t>   : ";
-//		bfloat<128, 15, uint64_t> a;
+		std::cout << "scale cfloat<128,15,uint64_t>   : ";
+//		cfloat<128, 15, uint64_t> a;
 		// [1-111'1111'1111'1111-'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'0000]
 //		a.assign("0xFFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFFF'FFF0"); if (a.scale() != 16*1024) ++nrOfFailedTestCases;
 		// [1-011'1111'1111'1111-'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'1111'0000]
@@ -731,7 +731,7 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	std::cout << "bfloat<> Application Programming Interface tests" << std::endl;
+	std::cout << "cfloat<> Application Programming Interface tests" << std::endl;
 
 #if MANUAL_TESTING
 
@@ -739,10 +739,10 @@ try {
 	// also scales for es = 1 are just underflow and overflow ranges, and currently incorrect
 
 	/// TODO: subnormal numbers have a scale adjustment as 2^(2-2^(es - 1)).
-	/// check if this is correct if es is > 2. In particular, bfloat<32,8> and bfloat<64,11> should write test suite for that
+	/// check if this is correct if es is > 2. In particular, cfloat<32,8> and cfloat<64,11> should write test suite for that
 
 	{
-		bfloat<8, 2> a;
+		cfloat<8, 2> a;
 		std::cout << "maxpos : " << maxpos(a) << " : " << scale(a) << '\n';
 		std::cout << "minpos : " << minpos(a) << " : " << scale(a) << '\n';
 		std::cout << "zero   : " << zero(a) << " : " << scale(a) << '\n';
@@ -762,7 +762,7 @@ try {
 
 #endif // MANUAL_TESTING
 
-	std::cout << "\nBFLOAT special cases test suite : " << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
+	std::cout << "\nCFLOAT special cases test suite : " << (nrOfFailedTestCases == 0 ? "PASS\n" : "FAIL\n");
 
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }

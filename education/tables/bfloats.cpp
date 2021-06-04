@@ -1,4 +1,4 @@
-// bfloats.cpp: create detailed component tables that decompose the components that comprise a bfloat
+// cfloats.cpp: create detailed component tables that decompose the components that comprise a classic cfloat
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -12,7 +12,7 @@
 #include <iomanip>
 
 // enable/disable special hex format I/O
-#define BFLOAT_ROUNDING_ERROR_FREE_IO_FORMAT 1
+#define CFLOAT_ROUNDING_ERROR_FREE_IO_FORMAT 1
 // if you want to trace conversion: NOTE: tracing will destroy the constexpr-ness of operator=()
 #define TRACE_CONVERSION 0
 #include <universal/number/cfloat/cfloat>
@@ -25,52 +25,52 @@ try {
 	using namespace std;
 	using namespace sw::universal;
 
-	// Usage: tables_bfloats [-csv]
+	// Usage: tables_cfloats [-csv]
 	bool csv = false;
 	if (argc == 2) {
 		if (std::string(argv[1]) == std::string("-csv")) csv = true;
 	}
-	cout << "Generate value tables for bfloat configurations" << endl;
+	cout << "Generate value tables for cfloat configurations" << endl;
 
 #if MANUAL_TESTING
 
-	GenerateTable< bfloat<8, 3, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<8, 3, uint8_t> >(cout, csv);
 
 	/*
 	* #include <fstream>
 	ofstream ostr;
-	ostr.open("bfloat_8_1.csv");
-	GenerateTable< bfloat<8, 1, uint8_t> >(cout, true);
+	ostr.open("cfloat_8_1.csv");
+	GenerateTable< cfloat<8, 1, uint8_t> >(cout, true);
 	ostr.close();
 	*/
 
 #else // !MANUAL_TESTING
-	GenerateTable< bfloat<3, 1, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<3, 1, uint8_t> >(cout, csv);
 
-	GenerateTable< bfloat<4, 1, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<4, 2, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<4, 1, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<4, 2, uint8_t> >(cout, csv);
 
-	GenerateTable< bfloat<5, 1, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<5, 2, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<5, 3, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<5, 1, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<5, 2, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<5, 3, uint8_t> >(cout, csv);
 
-	GenerateTable< bfloat<6, 1, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<6, 2, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<6, 3, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<6, 4, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<6, 1, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<6, 2, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<6, 3, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<6, 4, uint8_t> >(cout, csv);
 
-	GenerateTable< bfloat<7, 1, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<7, 2, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<7, 3, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<7, 4, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<7, 5, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<7, 1, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<7, 2, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<7, 3, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<7, 4, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<7, 5, uint8_t> >(cout, csv);
 
-	GenerateTable< bfloat<8, 1, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<8, 2, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<8, 3, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<8, 4, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<8, 5, uint8_t> >(cout, csv);
-	GenerateTable< bfloat<8, 6, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<8, 1, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<8, 2, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<8, 3, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<8, 4, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<8, 5, uint8_t> >(cout, csv);
+	GenerateTable< cfloat<8, 6, uint8_t> >(cout, csv);
 #endif
 
 	return EXIT_SUCCESS;

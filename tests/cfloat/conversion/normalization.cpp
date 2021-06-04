@@ -1,4 +1,4 @@
-// normalization.cpp: test suite runner for normalization tests of bfloats
+// normalization.cpp: test suite runner for normalization tests of classic cfloats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -6,11 +6,11 @@
 #include <universal/utility/directives.hpp>
 
 // minimum set of include files to reflect source code dependencies
-// Configure the bfloat template environment
+// Configure the cfloat template environment
 // first: enable general or specialized configurations
-#define BFLOAT_FAST_SPECIALIZATION
+#define CFLOAT_FAST_SPECIALIZATION
 // second: enable/disable arithmetic exceptions
-#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 0
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 0
 // third: enable trace conversion
 #define TRACE_CONVERSION 0
 
@@ -28,15 +28,15 @@ namespace sw::universal {
 	/// <typeparam name="bt">block storage type of representation</typeparam>
 	/// <param name="bReportIndividualTestCases">if true print individual test cases</param>
 	/// <returns></returns>
-	template<typename BfloatConfiguration>
-	int VerifyBfloatNormalization(bool bReportIndividualTestCases) {
+	template<typename cfloatConfiguration>
+	int VerifyCfloatNormalization(bool bReportIndividualTestCases) {
 		using namespace std;
 		using namespace sw::universal;
-		constexpr size_t nbits = BfloatConfiguration::nbits;
-		constexpr size_t es = BfloatConfiguration::es;
-		using bt = typename BfloatConfiguration::BlockType;
+		constexpr size_t nbits = cfloatConfiguration::nbits;
+		constexpr size_t es = cfloatConfiguration::es;
+		using bt = typename cfloatConfiguration::BlockType;
 		constexpr size_t fhbits = nbits - es;
-		bfloat<nbits, es, bt> a;
+		cfloat<nbits, es, bt> a;
 		blocktriple<fhbits> b;  // representing significant
 		int nrOfTestFailures{ 0 };
 		for (size_t i = 0; i < 64; ++i) {
@@ -70,11 +70,11 @@ try {
 	print_cmd_line(argc, argv);
 
 	int nrOfFailedTestCases = 0;
-	std::string tag = "bfloat normalization: ";
+	std::string tag = "cfloat normalization: ";
 
 #if MANUAL_TESTING
 
-	// bfloat<> is a linear floating-point
+	// cfloat<> is a linear floating-point
 
 	// to track conversion in more detail
 	std::cout << std::setprecision(8);
@@ -84,7 +84,7 @@ try {
 		constexpr size_t nbits = 10;
 		constexpr size_t es = 4;
 		constexpr size_t fbits = nbits - 1ull - es;
-		bfloat<nbits, es, uint8_t> a;
+		cfloat<nbits, es, uint8_t> a;
 		blocktriple<fbits + 1> b;  // representing significant
 		a = 0.015625f;
 //		a.normalize(b);
@@ -93,14 +93,14 @@ try {
 	}
 
 #ifdef LATER
-	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<3, 1, uint8_t> >(true);
-	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<4, 1, uint8_t> >(true);
+	nrOfFailedTestCases += VerifyCfloatNormalization< cfloat<3, 1, uint8_t> >(true);
+	nrOfFailedTestCases += VerifyCfloatNormalization< cfloat<4, 1, uint8_t> >(true);
 	return 0;
-	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<5, 1, uint8_t> >(true);
-	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<6, 1, uint8_t> >(true);
-	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<7, 1, uint8_t> >(true);
-	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<8, 1, uint8_t> >(true);
-	nrOfFailedTestCases += VerifyBfloatNormalization< bfloat<9, 1, uint8_t> >(true);
+	nrOfFailedTestCases += VerifyCfloatNormalization< cfloat<5, 1, uint8_t> >(true);
+	nrOfFailedTestCases += VerifyCfloatNormalization< cfloat<6, 1, uint8_t> >(true);
+	nrOfFailedTestCases += VerifyCfloatNormalization< cfloat<7, 1, uint8_t> >(true);
+	nrOfFailedTestCases += VerifyCfloatNormalization< cfloat<8, 1, uint8_t> >(true);
+	nrOfFailedTestCases += VerifyCfloatNormalization< cfloat<9, 1, uint8_t> >(true);
 #endif
 
 	std::cout << "failed tests: " << nrOfFailedTestCases << endl;
@@ -114,84 +114,84 @@ try {
 
 #else  // !MANUAL_TESTING
 	bool bReportIndividualTestCases = false;
-	cout << "BFLOAT normalization validation" << endl;
+	cout << "cfloat normalization validation" << endl;
 
 	// es = 1
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<3, 1> >(bReportIndividualTestCases), tag, "bfloat<3,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<4, 1> >(bReportIndividualTestCases), tag, "bfloat<4,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<5, 1> >(bReportIndividualTestCases), tag, "bfloat<5,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<6, 1> >(bReportIndividualTestCases), tag, "bfloat<6,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<7, 1> >(bReportIndividualTestCases), tag, "bfloat<7,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<8, 1> >(bReportIndividualTestCases), tag, "bfloat<8,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<9, 1> >(bReportIndividualTestCases), tag, "bfloat<9,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<10, 1> >(bReportIndividualTestCases), tag, "bfloat<10,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<12, 1> >(bReportIndividualTestCases), tag, "bfloat<12,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<16, 1> >(bReportIndividualTestCases), tag, "bfloat<16,1>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<18, 1> >(bReportIndividualTestCases), tag, "bfloat<18,1>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<3, 1> >(bReportIndividualTestCases), tag, "cfloat<3,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<4, 1> >(bReportIndividualTestCases), tag, "cfloat<4,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<5, 1> >(bReportIndividualTestCases), tag, "cfloat<5,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<6, 1> >(bReportIndividualTestCases), tag, "cfloat<6,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 1> >(bReportIndividualTestCases), tag, "cfloat<7,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 1> >(bReportIndividualTestCases), tag, "cfloat<8,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<9, 1> >(bReportIndividualTestCases), tag, "cfloat<9,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 1> >(bReportIndividualTestCases), tag, "cfloat<10,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 1> >(bReportIndividualTestCases), tag, "cfloat<12,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<16, 1> >(bReportIndividualTestCases), tag, "cfloat<16,1>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 1> >(bReportIndividualTestCases), tag, "cfloat<18,1>");   // 3 blocks
 
 
 	// es = 2
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<4, 2> >(bReportIndividualTestCases), tag, "bfloat<4,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<5, 2> >(bReportIndividualTestCases), tag, "bfloat<5,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<6, 2> >(bReportIndividualTestCases), tag, "bfloat<6,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<7, 2> >(bReportIndividualTestCases), tag, "bfloat<7,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<8, 2> >(bReportIndividualTestCases), tag, "bfloat<8,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<10, 2> >(bReportIndividualTestCases), tag, "bfloat<10,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<12, 2> >(bReportIndividualTestCases), tag, "bfloat<12,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<14, 2> >(bReportIndividualTestCases), tag, "bfloat<14,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<16, 2> >(bReportIndividualTestCases), tag, "bfloat<16,2>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<18, 2> >(bReportIndividualTestCases), tag, "bfloat<18,2>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<4, 2> >(bReportIndividualTestCases), tag, "cfloat<4,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<5, 2> >(bReportIndividualTestCases), tag, "cfloat<5,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<6, 2> >(bReportIndividualTestCases), tag, "cfloat<6,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 2> >(bReportIndividualTestCases), tag, "cfloat<7,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 2> >(bReportIndividualTestCases), tag, "cfloat<8,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 2> >(bReportIndividualTestCases), tag, "cfloat<10,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 2> >(bReportIndividualTestCases), tag, "cfloat<12,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 2> >(bReportIndividualTestCases), tag, "cfloat<14,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<16, 2> >(bReportIndividualTestCases), tag, "cfloat<16,2>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 2> >(bReportIndividualTestCases), tag, "cfloat<18,2>");   // 3 blocks
 
 
 	// es = 3
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<5, 3> >(bReportIndividualTestCases), tag, "bfloat<5,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<6, 3> >(bReportIndividualTestCases), tag, "bfloat<6,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<7, 3> >(bReportIndividualTestCases), tag, "bfloat<7,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<8, 3> >(bReportIndividualTestCases), tag, "bfloat<8,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<10, 3> >(bReportIndividualTestCases), tag, "bfloat<10,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<12, 3> >(bReportIndividualTestCases), tag, "bfloat<12,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<14, 3> >(bReportIndividualTestCases), tag, "bfloat<14,3>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<18, 3> >(bReportIndividualTestCases), tag, "bfloat<18,3>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<5, 3> >(bReportIndividualTestCases), tag, "cfloat<5,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<6, 3> >(bReportIndividualTestCases), tag, "cfloat<6,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 3> >(bReportIndividualTestCases), tag, "cfloat<7,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 3> >(bReportIndividualTestCases), tag, "cfloat<8,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 3> >(bReportIndividualTestCases), tag, "cfloat<10,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 3> >(bReportIndividualTestCases), tag, "cfloat<12,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 3> >(bReportIndividualTestCases), tag, "cfloat<14,3>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 3> >(bReportIndividualTestCases), tag, "cfloat<18,3>");   // 3 blocks
 
 
 	// es = 4
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<6, 4> >(bReportIndividualTestCases), tag, "bfloat<6,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<7, 4> >(bReportIndividualTestCases), tag, "bfloat<7,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<8, 4> >(bReportIndividualTestCases), tag, "bfloat<8,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<10, 4> >(bReportIndividualTestCases), tag, "bfloat<10,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<12, 4> >(bReportIndividualTestCases), tag, "bfloat<12,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<14, 4> >(bReportIndividualTestCases), tag, "bfloat<14,4>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<18, 4> >(bReportIndividualTestCases), tag, "bfloat<18,4>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<6, 4> >(bReportIndividualTestCases), tag, "cfloat<6,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 4> >(bReportIndividualTestCases), tag, "cfloat<7,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 4> >(bReportIndividualTestCases), tag, "cfloat<8,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 4> >(bReportIndividualTestCases), tag, "cfloat<10,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 4> >(bReportIndividualTestCases), tag, "cfloat<12,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 4> >(bReportIndividualTestCases), tag, "cfloat<14,4>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 4> >(bReportIndividualTestCases), tag, "cfloat<18,4>");   // 3 blocks
 
 
 	// es = 5
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<7, 5> >(bReportIndividualTestCases), tag, "bfloat<7,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<8, 5> >(bReportIndividualTestCases), tag, "bfloat<8,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<10, 5> >(bReportIndividualTestCases), tag, "bfloat<10,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<12, 5> >(bReportIndividualTestCases), tag, "bfloat<12,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<14, 5> >(bReportIndividualTestCases), tag, "bfloat<14,5>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<18, 5> >(bReportIndividualTestCases), tag, "bfloat<18,5>");   // 3 blocks
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<7, 5> >(bReportIndividualTestCases), tag, "cfloat<7,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 5> >(bReportIndividualTestCases), tag, "cfloat<8,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 5> >(bReportIndividualTestCases), tag, "cfloat<10,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 5> >(bReportIndividualTestCases), tag, "cfloat<12,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 5> >(bReportIndividualTestCases), tag, "cfloat<14,5>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<18, 5> >(bReportIndividualTestCases), tag, "cfloat<18,5>");   // 3 blocks
 
 
 	// es = 6
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<8, 6> >(bReportIndividualTestCases), tag, "bfloat<8,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<9, 6> >(bReportIndividualTestCases), tag, "bfloat<9,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<10, 6> >(bReportIndividualTestCases), tag, "bfloat<10,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<12, 6> >(bReportIndividualTestCases), tag, "bfloat<12,6>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<14, 6> >(bReportIndividualTestCases), tag, "bfloat<14,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<8, 6> >(bReportIndividualTestCases), tag, "cfloat<8,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<9, 6> >(bReportIndividualTestCases), tag, "cfloat<9,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 6> >(bReportIndividualTestCases), tag, "cfloat<10,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 6> >(bReportIndividualTestCases), tag, "cfloat<12,6>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 6> >(bReportIndividualTestCases), tag, "cfloat<14,6>");
 
 
 	// es = 7
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat< 9, 7> >(bReportIndividualTestCases), tag, "bfloat<9,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<10, 7> >(bReportIndividualTestCases), tag, "bfloat<10,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<12, 7> >(bReportIndividualTestCases), tag, "bfloat<12,7>");
-	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<14, 7> >(bReportIndividualTestCases), tag, "bfloat<14,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat< 9, 7> >(bReportIndividualTestCases), tag, "cfloat<9,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<10, 7> >(bReportIndividualTestCases), tag, "cfloat<10,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 7> >(bReportIndividualTestCases), tag, "cfloat<12,7>");
+	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 7> >(bReportIndividualTestCases), tag, "cfloat<14,7>");
 
 	// still failing
 	// es = 8
-//	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<11, 8> >(bReportIndividualTestCases), tag, "bfloat<11,8>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<12, 8> >(bReportIndividualTestCases), tag, "bfloat<12,8>");
-//	nrOfFailedTestCases = ReportTestResult(VerifyBfloatNormalization< bfloat<14, 8> >(bReportIndividualTestCases), tag, "bfloat<14,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<11, 8> >(bReportIndividualTestCases), tag, "cfloat<11,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<12, 8> >(bReportIndividualTestCases), tag, "cfloat<12,8>");
+//	nrOfFailedTestCases = ReportTestResult(VerifyCfloatNormalization< cfloat<14, 8> >(bReportIndividualTestCases), tag, "cfloat<14,8>");
 
 
 #if STRESS_TESTING
@@ -206,12 +206,12 @@ catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::bfloat_arithmetic_exception& err) {
-	std::cerr << "Uncaught bfloat arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::cfloat_arithmetic_exception& err) {
+	std::cerr << "Uncaught cfloat arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::bfloat_internal_exception& err) {
-	std::cerr << "Uncaught bfloat internal exception: " << err.what() << std::endl;
+catch (const sw::universal::cfloat_internal_exception& err) {
+	std::cerr << "Uncaught cfloat internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

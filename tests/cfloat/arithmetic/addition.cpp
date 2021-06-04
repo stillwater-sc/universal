@@ -1,4 +1,4 @@
-// addition.cpp: test suite runner for addition on arbitrary reals
+// addition.cpp: test suite runner for addition on classic floats
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -9,12 +9,12 @@
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
 
-// generate specific test case that you can trace with the trace conditions in bfloat.hpp
+// generate specific test case that you can trace with the trace conditions in cfloat.hpp
 // for most bugs they are traceable with _trace_conversion and _trace_add
-template<typename BfloatConfiguration, typename Ty>
+template<typename cfloatConfiguration, typename Ty>
 void GenerateTestCase(Ty _a, Ty _b) {
-	constexpr size_t nbits = BfloatConfiguration::nbits;
-	BfloatConfiguration a, b, sum, ref;
+	constexpr size_t nbits = cfloatConfiguration::nbits;
+	cfloatConfiguration a, b, sum, ref;
 	a = _a;
 	b = _b;
 	sum = a + b;
@@ -56,14 +56,14 @@ try {
 
 #if MANUAL_TESTING
 
-	bfloat < 8, 2, uint8_t > a, b, c, cref;
+	cfloat < 8, 2, uint8_t > a, b, c, cref;
 	a = 0.3125f;
 	b = 0.5f;
 	c = a + b;
 	std::cout << a << " + " << b << " = " << c << '\n';
 	std::cout << to_binary(a) << " + " << to_binary(b) << " = " << to_binary(c) << '\n';
 	// FAIL              0.03125 + 0.5 != 0.53125 golden reference is               0.5625 b0.00.10001 vs b0.00.10010
-	GenerateTestCase< bfloat<8, 2, uint8_t>, float>(0.03125f, 0.5f);
+	GenerateTestCase< cfloat<8, 2, uint8_t>, float>(0.03125f, 0.5f);
 
 	std::cout << "single precision IEEE-754\n";
 	float f = 1.06125f;
@@ -76,7 +76,7 @@ try {
 		float f0 = 0.5f;
 		float f1 = 0.5625f;
 		float f2 = 0.53125f;
-		bfloat<8, 2> s;
+		cfloat<8, 2> s;
 		s = f0; std::cout << to_binary(s) << " : " << s << '\n';
 		s = f1; std::cout << to_binary(s) << " : " << s << '\n';
 		s = f2; std::cout << to_binary(s) << " : " << s << '\n';
@@ -84,7 +84,7 @@ try {
 	{
 		float f1 = 0.5625f;
 		float f2 = 0.53125f;
-		bfloat<32, 8> s;
+		cfloat<32, 8> s;
 		s = f1; 
 		std::cout << to_binary(s) << " : " << s << '\n';
 		s = f2; 
@@ -93,7 +93,7 @@ try {
 	{
 		float f1 = 0.5625f;
 		float f2 = 0.53125f;
-		bfloat<64, 11> s;
+		cfloat<64, 11> s;
 		s = f1;
 		std::cout << to_binary(s) << " : " << s << '\n';
 		s = f2; 
@@ -103,7 +103,7 @@ try {
 		double f0 = 0.5f;
 		double f1 = 0.5625f;
 		double f2 = 0.53125f;
-		bfloat<8, 2> s;
+		cfloat<8, 2> s;
 		s = f0; std::cout << to_binary(s) << " : " << s << '\n';
 		s = f1; std::cout << to_binary(s) << " : " << s << '\n';
 		s = f2; std::cout << to_binary(s) << " : " << s << '\n';
@@ -111,7 +111,7 @@ try {
 	{
 		double f1 = 0.5625f;
 		double f2 = 0.53125f;
-		bfloat<32, 8> s;
+		cfloat<32, 8> s;
 		s = f1;
 		std::cout << to_binary(s) << " : " << s << '\n';
 		s = f2; 
@@ -120,7 +120,7 @@ try {
 	{
 		double f1 = 0.5625f;
 		double f2 = 0.53125f;
-		bfloat<64, 11> s;
+		cfloat<64, 11> s;
 		s = f1;
 		std::cout << to_binary(s) << " : " << s << '\n';
 		s = f2; 
@@ -144,11 +144,11 @@ try {
 //	a.constexprClassParameters();
 
 	// generate individual testcases to hand trace/debug
-	GenerateTestCase< bfloat<8, 2, uint8_t>, float>(1.0f, 1.0f);
+	GenerateTestCase< cfloat<8, 2, uint8_t>, float>(1.0f, 1.0f);
 
-	GenerateTestCase< bfloat<16, 8, uint16_t>, double>(INFINITY, INFINITY);
+	GenerateTestCase< cfloat<16, 8, uint16_t>, double>(INFINITY, INFINITY);
 
-	nrOfFailedTestCases += ReportTestResult(VerifyAddition< bfloat<8, 2, uint8_t> >(true), "bfloat<8,2,uint8_t>", "addition");
+	nrOfFailedTestCases += ReportTestResult(VerifyAddition< cfloat<8, 2, uint8_t> >(true), "cfloat<8,2,uint8_t>", "addition");
 
 	std::cout << "Number of failed test cases : " << nrOfFailedTestCases << std::endl;
 	nrOfFailedTestCases = 0; // disregard any test failures in manual testing mode
@@ -158,13 +158,13 @@ try {
 
 	bool bReportIndividualTestCases = false;
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>(bReportIndividualTestCases), "bfloat<8,2>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(bReportIndividualTestCases), "bfloat<8,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 2>(bReportIndividualTestCases), "cfloat<8,2>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<8, 4>(bReportIndividualTestCases), "cfloat<8,4>", "addition");
 
 #if STRESS_TESTING
 
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<10, 4>(bReportIndividualTestCases), "bfloat<10,4>", "addition");
-	nrOfFailedTestCases += ReportTestResult(ValidateAddition<16, 8>(bReportIndividualTestCases), "bfloat<16,8>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<10, 4>(bReportIndividualTestCases), "cfloat<10,4>", "addition");
+	nrOfFailedTestCases += ReportTestResult(ValidateAddition<16, 8>(bReportIndividualTestCases), "cfloat<16,8>", "addition");
 #endif  // STRESS_TESTING
 
 #endif  // MANUAL_TESTING
@@ -176,7 +176,7 @@ catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::bfloat_divide_by_zero& err) {
+catch (const sw::universal::cfloat_divide_by_zero& err) {
 	std::cerr << "Uncaught runtime exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }

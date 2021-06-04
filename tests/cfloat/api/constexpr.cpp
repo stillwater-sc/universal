@@ -1,4 +1,4 @@
-// constexpr.cpp: compile time tests for bfloat constexpr
+// constexpr.cpp: compile time tests for classic float constexpr
 //
 // Copyright (C) 2017-2021 Stillwater Supercomputing, Inc.
 //
@@ -6,18 +6,18 @@
 #include <universal/utility/directives.hpp>
 
 // minimum set of include files to reflect source code dependencies
-// Configure the bfloat template environment
+// Configure the cfloat template environment
 // first: enable general or specialized fixed-point configurations
-#define BFLOAT_FAST_SPECIALIZATION
-// second: enable/disable bfloat arithmetic exceptions
-#define BFLOAT_THROW_ARITHMETIC_EXCEPTION 1
+#define CFLOAT_FAST_SPECIALIZATION
+// second: enable/disable cfloat arithmetic exceptions
+#define CFLOAT_THROW_ARITHMETIC_EXCEPTION 1
 
 #include <universal/number/cfloat/cfloat.hpp>
 #include <universal/number/cfloat/manipulators.hpp>
 #include <universal/number/cfloat/math_functions.hpp>
 
 #if BIT_CAST_SUPPORT
-// stylistic constexpr of pi that we'll assign constexpr to an bfloat
+// stylistic constexpr of pi that we'll assign constexpr to an cfloat
 constexpr double pi = 3.14159265358979323846;
 #endif // BIT_CAST_SUPPORT
 
@@ -112,9 +112,9 @@ try {
 
 	int nrOfFailedTestCases = 0;
 
-	cout << "BFLOAT constexpr tests" << endl;
+	cout << "cfloat constexpr tests" << endl;
 	
-	using Real = bfloat<12, 2>;
+	using Real = cfloat<12, 2>;
 	Real a;
 	a.constexprClassParameters();
 
@@ -134,12 +134,12 @@ catch (char const* msg) {
 	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::bfloat_arithmetic_exception& err) {
-	std::cerr << "Uncaught bfloat arithmetic exception: " << err.what() << std::endl;
+catch (const sw::universal::cfloat_arithmetic_exception& err) {
+	std::cerr << "Uncaught cfloat arithmetic exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
-catch (const sw::universal::bfloat_internal_exception& err) {
-	std::cerr << "Uncaught bfloat internal exception: " << err.what() << std::endl;
+catch (const sw::universal::cfloat_internal_exception& err) {
+	std::cerr << "Uncaught cfloat internal exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
