@@ -200,11 +200,11 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (std::runtime_error& err) {
-	std::cerr << err.what() << std::endl;
+	std::cerr << "Caught exception: " << err.what() << std::endl;
 	return EXIT_FAILURE;
 }
 catch (...) {

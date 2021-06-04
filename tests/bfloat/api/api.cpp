@@ -34,21 +34,17 @@ try {
 #if MANUAL_TESTING
 
 	{
-		using Real = bfloat<8, 3, uint8_t>;
+		using bt = uint8_t;
+		using Real = bfloat<8, 3, bt>;
 		Real a(1.0f);
 		Real b(1.0f);
 		Real c{ 0 };
 		// emulate addition
 		constexpr size_t fbits = Real::fbits;
-		constexpr size_t abits = Real::abits;
-		blocktriple<fbits> _a, _b;
-		a.generate_add_input(_a);
-		b.generate_add_input(_b);
+		blocktriple<fbits, bt> _a, _b;
+		a.normalize(_a);
+		b.normalize(_b);
 		std::cout << to_binary(a) << " : " << to_triple(a) << std::endl;
-	
-		blocktriple<12> tmp;
-		a.normalize(tmp);
-		std::cout << to_triple(tmp) << std::endl;
 	}
 
 	{
@@ -121,7 +117,7 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

@@ -98,8 +98,16 @@ try {
 
 #if MANUAL_TESTING
 
-	TestShiftOperatorPerformance();
-	TestArithmeticOperatorPerformance();
+	{
+		// test a very large integer
+		integer<1024 * 128, uint32_t> a, b, c;
+		a = 1;
+		b = 1234567890;
+		c = a * b;
+		c /= a;
+		if (c == b) cout << "PASS\n";
+	}
+
 
 	cout << "done" << endl;
 
@@ -120,7 +128,7 @@ try {
 #endif // MANUAL_TESTING
 }
 catch (char const* msg) {
-	std::cerr << msg << '\n';
+	std::cerr << "Caught exception: " << msg << '\n';
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {

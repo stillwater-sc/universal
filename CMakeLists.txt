@@ -33,7 +33,7 @@ if(NOT DEFINED UNIVERSAL_VERSION_MAJOR)
   set(UNIVERSAL_VERSION_MAJOR 3)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_MINOR)
-  set(UNIVERSAL_VERSION_MINOR 11)
+  set(UNIVERSAL_VERSION_MINOR 12)
 endif()
 if(NOT DEFINED UNIVERSAL_VERSION_PATCH)
   set(UNIVERSAL_VERSION_PATCH 1)
@@ -76,7 +76,7 @@ option(USE_AVX2                          "Build code with AVX2 ISA support"     
 # Continuous Integration override to build all
 option(BUILD_CI_CHECK                    "Set to ON to build all components"                   OFF)
 # or subsets of the components
-option(BUILD_INTRODUCTION                "Set to ON to build the introductory components"      ON)
+option(BUILD_DEMONSTRATION               "Set to ON to build all demonstration components"      ON)
 option(BUILD_NUMERICAL_CHECKS            "Set to ON to build all the numerical components"     OFF)
 option(BUILD_BENCHMARKS                  "Set to ON to build all the benchmark components"     OFF)
 option(BUILD_REGRESSION_SUITES           "Set to ON to build all the regression suites"        OFF)
@@ -477,7 +477,7 @@ install(DIRECTORY   ${PROJECT_SOURCE_DIR}/include/${project_library_target_name}
 
 if(BUILD_CI_CHECK)
 	# set the grouped components to build (will trigger builds when tested)
-	set(BUILD_INTRODUCTION ON)
+	set(BUILD_DEMONSTRATION ON)
 	set(BUILD_NUMERICAL_CHECKS ON)
 	set(BUILD_BENCHMARKS ON)
 	set(BUILD_REGRESSION_SUITES ON)
@@ -496,14 +496,14 @@ if(BUILD_CI_CHECK)
 
 endif(BUILD_CI_CHECK)
 
-if(BUILD_INTRODUCTION)
-	# core example applications that use the library
+if(BUILD_DEMONSTRATION)
+	# core demonstration example applications that use the library
 	set(BUILD_EDUCATION ON)
 	set(BUILD_APPLICATIONS ON)
 	set(BUILD_CMD_LINE_TOOLS ON)
 
 	set(BUILD_PLAYGROUND ON)
-endif(BUILD_INTRODUCTION)
+endif(BUILD_DEMONSTRATION)
 
 if(BUILD_NUMERICAL_CHECKS)
 	set(BUILD_NUMERICAL_CHALLENGES ON)

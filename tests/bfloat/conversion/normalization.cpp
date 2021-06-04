@@ -20,7 +20,6 @@
 #include <universal/verification/test_suite_conversion.hpp>
 #include <universal/verification/bfloat_test_suite.hpp>
 
-#ifdef LATER
 namespace sw::universal {
 
 	/// <summary>
@@ -41,7 +40,7 @@ namespace sw::universal {
 		blocktriple<fhbits> b;  // representing significant
 		int nrOfTestFailures{ 0 };
 		for (size_t i = 0; i < 64; ++i) {
-			a.set_raw_bits(i);
+			a.setbits(i);
 			if (a.iszero() || a.isinf() || a.isnan()) {
 				// special values are not normalizable
 				b.setzero();
@@ -58,7 +57,6 @@ namespace sw::universal {
 	}
 
 }
-#endif
 
 // conditional compile flags
 #define MANUAL_TESTING 1
@@ -205,7 +203,7 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::bfloat_arithmetic_exception& err) {

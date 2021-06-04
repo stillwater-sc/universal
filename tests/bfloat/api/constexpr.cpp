@@ -77,9 +77,6 @@ void TestConstexprAssignment() {
 
 template<typename Real>
 void TestConstexprSpecificValues() {
-	constexpr size_t nbits = Real::nbits;
-	constexpr size_t es    = Real::es;
-	using bt = typename Real::BlockType;
 	{
 		constexpr Real positiveMax(sw::universal::SpecificValue::maxpos);
 		std::cout << "maxpos  : " << to_binary(positiveMax) << " : " << positiveMax << '\n';
@@ -134,7 +131,7 @@ try {
 	return (nrOfFailedTestCases > 0 ? EXIT_FAILURE : EXIT_SUCCESS);
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::bfloat_arithmetic_exception& err) {

@@ -6,9 +6,9 @@
 #include <universal/utility/directives.hpp>
 // minimum set of include files to reflect source code dependencies
 #include <universal/number/bfloat/bfloat.hpp>
+#include <universal/number/bfloat/manipulators.hpp>   // for subnormals and color_print
 #include <universal/verification/test_status.hpp>
 #include <universal/verification/test_suite_arithmetic.hpp>
-
 
 #define MANUAL_TESTING 1
 #define STRESS_TESTING 0
@@ -25,6 +25,13 @@ try {
 #if MANUAL_TESTING
 
 	// generate individual testcases to hand trace/debug
+
+	subnormals<bfloat<8, 2, uint8_t>>();  // 1 block
+	subnormals<bfloat<16, 5, uint8_t>>(); // 2 blocks
+	subnormals<bfloat<32, 8, uint8_t>>(); // 4 blocks
+	subnormals<bfloat<48, 11, uint16_t>>(); // 3 blocks
+	subnormals<bfloat<64, 11, uint16_t>>(); // 4 blocks
+	subnormals<bfloat<80, 11, uint16_t>>(); // 5 blocks
 
 	nrOfFailedTestCases = 0;
 
@@ -47,7 +54,7 @@ try {
 
 }
 catch (char const* msg) {
-	std::cerr << msg << std::endl;
+	std::cerr << "Caught exception: " << msg << std::endl;
 	return EXIT_FAILURE;
 }
 catch (const sw::universal::bfloat_divide_by_zero& err) {

@@ -175,11 +175,11 @@ try {
 	return EXIT_SUCCESS;
 }
 catch (char const* msg) {
-	std::cerr << msg;
+	std::cerr << "Caught exception: " << msg;
 	return EXIT_FAILURE;
 }
 catch (const std::runtime_error& err) {
-	std::cerr << "Uncaught runtime exception: " << err.what();
+	std::cerr << "Caught runtime exception: " << err.what();
 	return EXIT_FAILURE;
 }
 catch (...) {

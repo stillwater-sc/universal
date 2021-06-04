@@ -16,6 +16,43 @@
 
 namespace sw::universal {
 
+
+// Generate a type tag for this bfloat, for example, bfloat<8,1, class uint8_t>
+template<size_t nbits, size_t es, typename bt>
+std::string type_tag(const bfloat<nbits, es, bt>& v) {
+	std::stringstream ss;
+	ss << "bfloat<" << nbits << "," << es << "," << typeid(bt).name() << ">";
+	return ss.str();
+}
+
+template<typename BfloatConfiguration>
+void subnormals() {
+	constexpr size_t nbits = BfloatConfiguration::nbits;
+	constexpr size_t es = BfloatConfiguration::es;
+	constexpr size_t fbits = BfloatConfiguration::fbits;
+	using bt = typename BfloatConfiguration::BlockType;
+	bfloat<nbits, es, bt> a{ 0 };
+	std::cout << type_tag(a) << '\n';
+	++a;
+	if constexpr (nbits < 65) {
+		for (size_t i = 0; i < fbits; ++i) {
+			std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
+			uint64_t fraction = a.fraction_ull();
+			fraction <<= 1;
+			a.setfraction(fraction);
+		}
+	}
+	else {
+		blockbinary<fbits, bt> fraction{ 0 };
+		for (size_t i = 0; i < fbits; ++i) {
+			std::cout << to_binary(a, true) << " : " << color_print(a) << " : " << a << '\n';
+			a.fraction(fraction);
+			fraction <<= 1;
+			a.setfraction(fraction);
+		}
+	}
+}
+
 // report dynamic range of a type, specialized for a posit
 template<size_t nbits, size_t es, typename bt>
 std::string dynamic_range(bfloat<nbits, es, bt>& b) {
@@ -26,15 +63,7 @@ std::string dynamic_range(bfloat<nbits, es, bt>& b) {
 	return ss.str();
 }
 
-// Generate a type tag for this posit, for example, posit<8,1>
-template<size_t nbits, size_t es, typename bt>
-std::string type_tag(const bfloat<nbits, es, bt>& v) {
-	std::stringstream ss;
-	ss << "bfloat<" << nbits << "," << es << ">";
-	return ss.str();
-}
-
-// Generate a string representing the bfloat components: sign, exponent, faction, uncertainty bit, and value
+// Generate a string representing the bfloat components: sign, exponent, faction and value
 template<size_t nbits, size_t es, typename bt>
 std::string components(const bfloat<nbits, es, bt>& v) {
 	std::stringstream ss;
@@ -73,7 +102,7 @@ inline std::string to_hex(const bfloat<nbits, es, bt>& v) {
 	return ss.str();
 }
 
-// generate a bfloat format ASCII format nbits.esxNN...NNa
+// generate a bfloat format ASCII hex format nbits.esxNN...NNa
 template<size_t nbits, size_t es, typename bt>
 inline std::string hex_print(const bfloat<nbits, es, bt>& r) {
 	std::stringstream ss;
@@ -113,6 +142,7 @@ std::string info_print(const bfloat<nbits, es, bt>& p, int printPrecision = 17) 
 	return "TBD";
 }
 
+// generate a binary, color-coded representation of the bfloat
 template<size_t nbits, size_t es, typename bt>
 std::string color_print(const bfloat<nbits, es, bt>& r) {
 	using Real = bfloat<nbits, es, bt>;
@@ -146,6 +176,7 @@ std::string color_print(const bfloat<nbits, es, bt>& r) {
 	ss << def;
 	return ss.str();
 }
+
 
 }  // namespace sw::universal
 
