@@ -13,8 +13,8 @@
 #define BLOCKTRIPLE_TRACE_ADD 1
 #define BIT_CAST_SUPPORT 0
 #include <universal/internal/blocktriple/blocktriple.hpp>
-#include <universal/number/bfloat/bfloat.hpp>
-#include <universal/number/bfloat/manipulators.hpp>
+#include <universal/number/cfloat/cfloat.hpp>
+#include <universal/number/cfloat/manipulators.hpp>
 
 /*
  BlockTriple is the unifying compute engine for any of the

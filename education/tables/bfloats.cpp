@@ -15,8 +15,8 @@
 #define BFLOAT_ROUNDING_ERROR_FREE_IO_FORMAT 1
 // if you want to trace conversion: NOTE: tracing will destroy the constexpr-ness of operator=()
 #define TRACE_CONVERSION 0
-#include <universal/number/bfloat/bfloat>
-#include <universal/number/bfloat/table.hpp>
+#include <universal/number/cfloat/cfloat>
+#include <universal/number/cfloat/table.hpp>
 
 #define MANUAL_TESTING 0
 

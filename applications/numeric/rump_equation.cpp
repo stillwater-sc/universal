@@ -12,7 +12,7 @@
 #include <universal/number/integer/integer>
 #include <universal/number/fixpnt/fixpnt>
 #include <universal/number/areal/areal>
-#include <universal/number/bfloat/bfloat>
+#include <universal/number/cfloat/cfloat>
 #include <universal/number/posit/posit>
 #include <universal/number/lns/lns>
 

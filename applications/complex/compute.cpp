@@ -19,7 +19,7 @@
 #define BFLOAT_FAST_SPECIALIZATION
 // second: enable/disable fixpnt arithmetic exceptions
 #define FIXPNT_THROW_ARITHMETIC_EXCEPTION 1
-#include <universal/number/bfloat/bfloat>
+#include <universal/number/cfloat/cfloat>
 // Configure the fixpnt template environment
 // first: enable general or specialized posit configurations
 #define POSIT_FAST_SPECIALIZATION
